@@ -157,7 +157,7 @@ async function TimelineBoard() {
             const tone = PHASE_TONE[phase.status]
             const dateLabel =
               phase.startsOn && phase.endsOn
-                ? `${fmt(phase.startsOn)} – ${fmt(phase.endsOn)}`
+                ? `${fmt(phase.startsOn)} to ${fmt(phase.endsOn)}`
                 : 'Order only'
             return (
               <div key={phase.id} className="grid grid-cols-[8rem_1fr] items-center gap-3">

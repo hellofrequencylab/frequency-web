@@ -52,8 +52,8 @@ const TYPES: Record<CreateType, TypeCfg> = {
     hint: 'A richer vector illustration (SVG).',
     lane: 'vector',
     defaultEngine: 'studio',
-    placeholder: 'e.g. a set of flat icons: compass, book, flame — warm amber, minimal',
-    suggestions: ['a set of flat icons: compass, book, flame — warm amber, minimal', 'a cozy reading nook, flat vector, warm palette', 'a mountain trail scene, flat, amber and sage'],
+    placeholder: 'e.g. a set of flat icons: compass, book, flame, warm amber, minimal',
+    suggestions: ['a set of flat icons: compass, book, flame, warm amber, minimal', 'a cozy reading nook, flat vector, warm palette', 'a mountain trail scene, flat, amber and sage'],
   },
   trophy: {
     label: 'Trophy / reward',
@@ -196,7 +196,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
       <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-text">
         <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden />
         Create
-        <span className="font-normal text-subtle">— describe it, and the studio makes it</span>
+        <span className="font-normal text-subtle">(describe it, and the studio makes it)</span>
       </summary>
 
       <div className="mt-4 space-y-3">
@@ -259,7 +259,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                   reset()
                 }}
                 aria-pressed={engine === 'vera'}
-                title="Vera draws a clean house-style line mark — instant, no cost"
+                title="Vera draws a clean house-style line mark, instant, no cost"
                 className={`inline-flex items-center gap-1 rounded-[14px] px-3 py-1.5 text-sm font-semibold ${
                   engine === 'vera' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
                 }`}

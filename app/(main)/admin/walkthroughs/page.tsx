@@ -25,7 +25,7 @@ function scheduleLabel(w: Walkthrough): string | null {
     s ? new Date(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : null
   const from = fmt(w.startsAt)
   const to = fmt(w.endsAt)
-  if (from && to) return `${from} – ${to}`
+  if (from && to) return `${from} to ${to}`
   if (from) return `From ${from}`
   return `Until ${to}`
 }

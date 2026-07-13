@@ -131,8 +131,7 @@ the contract; keep them server-friendly (no client hooks unless interaction requ
   passes NO functions, so a Server page can render it). The page reads the params.
 - `StatusChip`: `{ tone: 'success'|'warning'|'danger'|'info'|'neutral', children }`.
   Pill, tokenized. The ONE status vocabulary (retire per-page `*_STYLES` dicts).
-- `Badge` / `DeltaBadge`: count badge; delta enum `increase|moderateIncrease|unchanged|
-  moderateDecrease|decrease` → icon+token color.
+- `Badge`: count badge (neutral, tabular).
 - `Banner`: `{ tone: 'info'|'warning'|'critical', title, children?, action?, dismissible? }`.
   `critical` sets `role="alert"`. The disciplined callout vocabulary (color = severity).
 - `EntityHeader`: context band: `{ title, avatar?, badges?, facts?: {label,value}[],

@@ -12,7 +12,7 @@ only; warm type; tabular numerals; AA.
 
 ## Status & feedback — `@/components/admin/status`
 - `StatusChip` — `{ tone:'success'|'warning'|'danger'|'info'|'neutral', size? }`. The ONE status vocabulary (retire per-page `*_STYLES`/`STATUS_STYLE`/`ACTION_LABEL` dicts).
-- `Badge` — count pill. `DeltaBadge` — `{ delta:'increase'|'moderateIncrease'|'unchanged'|'moderateDecrease'|'decrease' }`.
+- `Badge` — count pill.
 - `Banner` — `{ tone:'info'|'warning'|'critical', title, action?, dismissible? }`; `critical` ⇒ `role="alert"`.
 
 ## Tables — `@/components/admin/data-table`

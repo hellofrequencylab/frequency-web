@@ -14,7 +14,7 @@ Search helps you jump straight to what you're looking for instead of browsing fo
 ## What you can find
 
 - **People**: members by name or handle.
-- **Places**: jump straight to a part of Frequency by name, like the Marketplace, Housing, or the Shop. Matching places lead the results in a **Go to** group.
+- **Places**: jump straight to a part of Frequency by name, like the Marketplace, Housing, or the Frequency Store. Matching places lead the results in a **Go to** group.
 - **Circles**: groups by name or topic.
 - Other content across the community.
 

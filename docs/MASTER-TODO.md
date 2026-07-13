@@ -29,13 +29,21 @@ actions. Build/lint/test green; no migration drift; no known correctness or secu
 
 ## Code — the sweep (Phases 1–5, executing now)
 
-### Phase 1 — safe cleanup + bug/wiring/abandoned-code
-- ⏳ Re-verify the flagged single-symbol exports (`MapPreview`, `DeltaBadge`, `StudioSectionLabel`,
-  `canSeeMenuCategory`) — remove if truly dead, or keep with an explicit intended-surface reason.
-- ⏳ `docs/PAGE-EDITOR-SPEC.md` cites the retired `/studio/pages/[slug]/edit` route — fix + stale-pointer sweep.
-- 🟡 `_input` unused-var lint warning (`lib/importer/pipeline.test.ts:227`).
-- 🟡 Help-doc naming audit: sweep `content/help/**` for retired member terms.
-- 🟡 Em dashes in operator/admin copy + `lib/demo/engine.ts` demo content.
+### Phase 1 — safe cleanup + bug/wiring/abandoned-code ✅
+- ✅ Re-verified the flagged single-symbol exports. `MapPreview` no longer exists in the tree (only
+  stale doc mentions). `DeltaBadge`, `StudioSectionLabel`, and `canSeeMenuCategory` were genuinely
+  dead (no import/dynamic reference) and were REMOVED with their now-dead types/records/imports; the
+  kit reference docs (KIT.md, ADMIN-DESIGN-SYSTEM.md, STUDIO.md) were trimmed to match.
+- ✅ `docs/PAGE-EDITOR-SPEC.md` retired-route reference fixed (`/edit/[slug]`); stale `/studio/pages`
+  pointers corrected to `/pages` in PAGE-EDITOR-SPEC §5 + BUILD-PHASES.
+- ✅ `_input` (`lib/importer/pipeline.test.ts:227`) verified lint-clean: it is a warn-level
+  `no-unused-vars` with `argsIgnorePattern: '^_'` (already suppressed) and its TYPE is load-bearing for
+  `mock.calls[0][0]`, so no change was needed.
+- ✅ Help-doc naming audit: corpus is canon-aligned; the one retired-term swap was first-party
+  "the Shop" → "the Frequency Store" (ADR-596) in `content/help/connecting/search.md`.
+- ✅ Em/en dashes removed from operator/admin surfaced copy (prose + numeric/date ranges → "to") and
+  from `lib/demo/engine.ts` demo content. Code comments, null-value glyphs, and AI system prompts
+  left untouched (out of scope).
 
 ### Phase 2 — SEO / AIO completion ✅
 - ✅ Audit found coverage was already **complete**: every PUBLIC entity surface (`/discover/*` events,
@@ -80,9 +88,11 @@ Audit finding: the meaningful perf work is **already shipped** — the meta-scan
   write-twin of the already-tested `editedProsePaths` reader. A re-research (`runResearch`) carries the
   operator's tagline/about/story forward instead of overwriting with fresh AI copy. Closes the live
   `TODO(P5)` in `pipeline.ts`. 4 new pure tests + a writer→reader round-trip.
-- ⏳ **Edit-wins on RE-APPLY (materializer)** — a DISTINCT, larger item still open (`TODO(P5)` in
-  `materialize.ts`): an `edited_fields` marker on the live Space so a re-apply diffs the draft against
-  the Space and only writes un-edited fields. Needs a Space-side marker + per-field write gating.
+- ✅ **Edit-wins on RE-APPLY (materializer)** (ADR-606) — the materializer stamps
+  `preferences.importerEditWins` (`{ editedFields, appliedIdentity }`, no new column) recording the identity
+  values it last wrote; a re-apply diffs the live Space against that snapshot and skips any field the operator
+  edited (name / tagline / brandName / brandAccent). Pure diff logic in `lib/importer/edit-wins.ts` +
+  `edit-wins.test.ts`. Mirrors the re-research edit-wins. (`about`/profileData widening is a noted follow-up.)
 - ⏳ Confidence-threshold tuning · source-manager UI · demo decay (feature work; own phase).
 
 ## Importer v2 — strategic seeding + Loom (owner request, 2026-07-07)
@@ -94,12 +104,12 @@ space image ingest. So #3–6 are mostly WIRING the importer into existing infra
 
 | # | Request | Shape | Notes |
 |---|---|---|---|
-| 1 | Explore brand marketing language, ID primary demographic, improve via Frequency Voice | ⏳ code | Extend the reframe stage: add a demographic/positioning analysis pass whose output feeds the voice reframe. Prompt work in `lib/importer/reframe/`; a `demographic` field on the draft. |
+| 1 | Explore brand marketing language, ID primary demographic, improve via Frequency Voice | ✅ code (ADR-606) | `lib/importer/reframe/demographic.ts` runs a demographic/positioning pass over the verified grounding before reframe; stores `BusinessProfile.demographic` and folds it into the reframe prompt as a private voice steer. Additive + fail-safe. |
 | 2 | Multi-image upload in the importer | ⏳ code | An uploader on the seeder review page → the Space's Loom. Reuse `components/ui/image-upload` + `lib/library` ingest. |
 | 3 | Uploaded images assigned to the Space's Loom, available on claim/edit | ✅ infra | `library_assets.space_id` = the seeded Space; already surfaces in that Space's Loom on claim. Importer must write assets with the space_id. |
 | 4 | Each account has its own Loom | ✅ infra | Space-scoped Loom already exists per Space. No new work beyond seeding assets there. |
 | 5 | Uploaded images in the Master Loom, segmented by Space | ✅ infra | Master Loom = root-space Loom; segmentation = `space_id`. The admin Loom view filters by Space. |
-| 6 | Master (admin) Loom: a "Spaces" category with all their images | ⏳ code | A `library_collection` (or a lane) named "Spaces" on the root Loom, grouping space-scoped assets. Admin Loom UI surfaces it. |
+| 6 | Master (admin) Loom: a "Spaces" category with all their images | ✅ code (ADR-606) | A root-space `library_collection` (slug `spaces`, `ensureSpacesCollection`) groups seeded Spaces' assets; `fileSeedImagesIntoLoom` files each image into it; `searchLibraryAssets` gained a `crossSpace` mode so the admin Loom rail surfaces + browses them across spaces. No new schema. |
 | 7 | Seed AND Re-Seed using different moods | ⏳ code + decision | `runResearch` is already idempotent-friendly (reuses cached sources unless `forceRefetch`). NEEDS a **mood taxonomy** decision (what moods? how do they steer extract/reframe/compose + block choices?). |
 | 8 | Return to a Space's seed page, upload images, tweak, re-seed | ⏳ code | The seeder [id] page gains an editable inputs + image panel and a "Re-seed" action (calls `runResearch({forceRefetch})` / re-compose). Edit-wins (P5, shipped) protects operator prose. |
 | 9 | Analyze market/strategy/demographics → a best-practice block page with content, images, strategic CTAs specific to the business | ⏳ code + design | The biggest: a strategy pass that picks blocks + composes an `EntityLayout` (the materializer already composes layouts). Needs a compose-strategy design (which blocks, which CTAs per business type/mood). |

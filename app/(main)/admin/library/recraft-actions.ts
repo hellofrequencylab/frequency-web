@@ -214,7 +214,7 @@ export async function createBrandStyle(input: {
   const name = (input.name || '').trim().slice(0, 120)
   if (name.length < 2) return { error: 'Name the style.' }
   const ids = [...new Set((input.assetIds || []).filter(Boolean))].slice(0, 5)
-  if (ids.length === 0) return { error: 'Pick 1–5 reference images first.' }
+  if (ids.length === 0) return { error: 'Pick 1 to 5 reference images first.' }
 
   const spaceId = await getRootSpaceId()
   if (!spaceId) return { error: 'No root space found.' }

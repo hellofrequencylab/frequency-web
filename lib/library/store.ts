@@ -122,6 +122,10 @@ export type LibraryQuery = {
   category?: string
   /** Filter to assets that belong to this collection. */
   collectionId?: string
+  /** For a CROSS-SPACE collection (e.g. the master "Spaces" folder that groups seeded Spaces' own
+   *  assets, Importer v2 #6): drop the space_id scope so a root collection can surface assets that live
+   *  in OTHER spaces. Only honoured together with `collectionId`; ignored otherwise. */
+  crossSpace?: boolean
   sort?: LibrarySort
   includeArchived?: boolean
   /** 1-based page. */
@@ -146,10 +150,12 @@ async function collectionAssetIds(collectionId: string): Promise<string[]> {
  *  exact facets; collectionId scopes to a folder. Archived assets are hidden unless asked
  *  for. Returns the page + the exact total (for pagination). */
 export async function searchLibraryAssets(opts: LibraryQuery): Promise<LibraryPage> {
-  let query = db()
-    .from('library_assets')
-    .select(SELECT, { count: 'exact' })
-    .eq('space_id', opts.spaceId)
+  // A cross-space collection browse (Importer v2 #6) drops the space_id scope so a root collection can
+  // group assets that live in OTHER spaces; membership is enforced by the collection filter below.
+  const crossSpace = !!opts.crossSpace && !!opts.collectionId
+
+  let query = db().from('library_assets').select(SELECT, { count: 'exact' })
+  if (!crossSpace) query = query.eq('space_id', opts.spaceId)
 
   if (!opts.includeArchived) query = query.neq('status', 'archived')
   if (opts.kind) query = query.eq('kind', opts.kind)
@@ -349,4 +355,82 @@ export async function listCollections(spaceId: string): Promise<LibraryCollectio
     counts[it.collection_id] = (counts[it.collection_id] ?? 0) + 1
   }
   return collections.map((c) => ({ ...c, count: counts[c.id] ?? 0 }))
+}
+
+// ── The master "Spaces" collection (Importer v2 #6, ADR-606) ────────────────────────────────
+// A single root-space collection that groups every seeded Space's own images, so the admin (master)
+// Loom has one folder to browse all space-scoped assets. It uses the EXISTING collections infra (no new
+// schema): the collection row lives on the root space; its members are assets whose own space_id is the
+// seeded Space. The admin Loom surfaces it in the rail (listCollections) and, when it is the active
+// folder, browses it CROSS-SPACE (searchLibraryAssets crossSpace) so those other-space assets appear.
+
+/** The stable slug of the master "Spaces" collection on the root Loom. */
+export const SPACES_COLLECTION_SLUG = 'spaces'
+/** The display title of the master "Spaces" collection. */
+export const SPACES_COLLECTION_TITLE = 'Spaces'
+
+/** Ensure the root Loom's "Spaces" collection exists (idempotent, keyed by the stable slug), returning
+ *  its id. Creates it on first use so the folder appears the moment the first seeded image is filed.
+ *  Fail-safe to null on any error. */
+export async function ensureSpacesCollection(rootSpaceId: string): Promise<string | null> {
+  try {
+    const { data: existing } = await db()
+      .from('library_collections')
+      .select('id')
+      .eq('space_id', rootSpaceId)
+      .eq('slug', SPACES_COLLECTION_SLUG)
+      .maybeSingle()
+    const existingId = (existing as { id?: string } | null)?.id
+    if (existingId) return String(existingId)
+
+    const { data, error } = await db()
+      .from('library_collections')
+      .insert({
+        space_id: rootSpaceId,
+        slug: SPACES_COLLECTION_SLUG,
+        title: SPACES_COLLECTION_TITLE,
+        description: 'Images from seeded business Spaces, grouped for the master Loom.',
+      })
+      .select('id')
+      .maybeSingle()
+    if (error) {
+      // A concurrent insert may have won the (space_id, slug) unique index — re-read.
+      const { data: raced } = await db()
+        .from('library_collections')
+        .select('id')
+        .eq('space_id', rootSpaceId)
+        .eq('slug', SPACES_COLLECTION_SLUG)
+        .maybeSingle()
+      return (raced as { id?: string } | null)?.id ? String((raced as { id: string }).id) : null
+    }
+    return (data as { id?: string } | null)?.id ? String((data as { id: string }).id) : null
+  } catch {
+    return null
+  }
+}
+
+/** Add asset ids to a collection (idempotent membership upsert). Fail-safe to false. Used by the seeder
+ *  to file each seeded Space's image into the master "Spaces" collection. */
+export async function addAssetsToCollection(collectionId: string, assetIds: string[]): Promise<boolean> {
+  const ids = Array.from(new Set(assetIds.filter((s) => typeof s === 'string' && s.length > 0)))
+  if (!collectionId || ids.length === 0) return false
+  try {
+    const rows = ids.map((asset_id) => ({ collection_id: collectionId, asset_id }))
+    const { error } = await db()
+      .from('library_collection_items')
+      .upsert(rows, { onConflict: 'collection_id,asset_id', ignoreDuplicates: true })
+    return !error
+  } catch {
+    return false
+  }
+}
+
+/** File the given (already-inserted) asset ids into the root Loom's master "Spaces" collection. Ensures
+ *  the collection exists first. Best-effort: a filing miss never fails the caller. Returns whether it
+ *  grouped anything. */
+export async function fileAssetsIntoSpacesCollection(rootSpaceId: string, assetIds: string[]): Promise<boolean> {
+  if (!rootSpaceId || assetIds.length === 0) return false
+  const collectionId = await ensureSpacesCollection(rootSpaceId)
+  if (!collectionId) return false
+  return addAssetsToCollection(collectionId, assetIds)
 }

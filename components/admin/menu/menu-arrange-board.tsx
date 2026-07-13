@@ -208,7 +208,7 @@ export function MenuArrangeBoard({
                     <ul className="space-y-1">
                       {box.items.length === 0 ? (
                         <li className="rounded-lg border border-dashed border-border px-2 py-2 text-xs text-subtle">
-                          Empty group — drop a page here
+                          Empty group. Drop a page here
                         </li>
                       ) : (
                         box.items.map((it) => (

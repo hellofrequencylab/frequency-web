@@ -115,7 +115,7 @@ export function OnboardingControlsView({ data }: { data: Data }) {
       {/* Referral landing destination */}
       <FormSection
         title="Referral landing"
-        description="Where every personal QR code lands a scanner. A same-site path (default /, the splash). Saving retargets all existing codes too — the printed image never changes."
+        description="Where every personal QR code lands a scanner. A same-site path (default /, the splash). Saving retargets all existing codes too. The printed image never changes."
       >
         <form action={setReferralLanding} className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-subtle">{siteHost}</span>

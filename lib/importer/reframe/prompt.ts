@@ -73,6 +73,7 @@ The hard rules (these override everything else):
 - Do not restate a specific commercial claim (a price, a phone number, an address, opening hours, a rating) inside the story, about, or tagline. Those live in their own fields on the page. Your prose describes what the business is and what it is like to work with, not its price list.
 - Write the transformation plainly: what changes for the person who uses this business. Concrete and honest, never a promise of transformation, never a health claim.
 - If the verified facts are thin, write LESS. A short honest line beats a padded one. It is fine to leave a field empty.
+- If an audience and positioning steer is given, aim the copy at that reader and match that positioning. It is a private brief, not a fact: never quote it back or name the audience on the page.
 
 Call ${REFRAME_TOOL_NAME} once with the copy you can honestly write from these facts.`
 
@@ -91,6 +92,14 @@ export function buildGroundingBlock(verified: BusinessProfile): string {
   if (verified.category?.trim()) parts.push(`category: ${verified.category.trim()}`)
   if (verified.about?.trim()) parts.push(`current about copy (raw material to rewrite): ${verified.about.trim()}`)
   if (verified.story?.trim()) parts.push(`current story copy (raw material to rewrite): ${verified.story.trim()}`)
+
+  // Demographic + positioning steer (Importer v2 #1): a private read of who this business serves and how
+  // it is positioned, so the voice can aim at the right reader. It is a steer, NOT a fact to restate.
+  if (verified.demographic?.trim()) {
+    parts.push(
+      `audience and positioning (an internal steer for your voice, NOT a fact to restate on the page): ${verified.demographic.trim()}`,
+    )
+  }
 
   const offerings = (verified.offerings ?? []).filter((o) => o.title?.trim())
   if (offerings.length) {

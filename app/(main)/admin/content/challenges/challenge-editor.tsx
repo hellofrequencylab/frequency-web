@@ -262,7 +262,7 @@ function ChallengeListItem({
           type="button"
           onClick={toggleActive}
           disabled={acting}
-          title={active ? 'Active — click to pause' : 'Paused — click to activate'}
+          title={active ? 'Active, click to pause' : 'Paused, click to activate'}
           className={`rounded-md border border-border p-1.5 transition-colors disabled:opacity-50 ${
             active ? 'text-success hover:bg-success/10' : 'text-muted hover:bg-surface-elevated'
           }`}

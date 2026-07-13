@@ -114,6 +114,12 @@ vi.mock('@/lib/spaces/store', () => ({
       id: row.id as string,
       slug: row.slug as string,
       ownerProfileId: (row.owner_profile_id as string) ?? null,
+      // The identity columns the edit-wins diff reads off the live Space (mapSpace projects these).
+      name: (row.name as string) ?? '',
+      tagline: (row.tagline as string | null) ?? null,
+      brandName: (row.brand_name as string | null) ?? null,
+      brandAccent: (row.brand_accent as string | null) ?? null,
+      coverImageUrl: (row.cover_image_url as string | null) ?? null,
       preferences: (row.preferences as unknown) ?? {},
     }
   },

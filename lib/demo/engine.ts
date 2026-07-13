@@ -75,10 +75,10 @@ const CH: Record<string, Channel> = {
     slug: 'movement', label: 'Movement',
     activities: ['dawn run','sunrise surf','trail loop','mobility flow','bluff walk'],
     bio: ['Out the door before the sun. {activity} is my reset.','Slow miles, good company.','Trading screen time for {activity}.'],
-    intro: ['new here — first {activity} this week and already hooked. hi all 👋','total beginner, very stoked. see you at the {activity}?','lurked for a while, finally showed up. glad i did.'],
+    intro: ['new here, first {activity} this week and already hooked. hi all 👋','total beginner, very stoked. see you at the {activity}?','lurked for a while, finally showed up. glad i did.'],
     regular: ['{activity} this morning was unreal. {time} light hit different.','logged another week. the streak is doing the pulling now.','no-drop pace, every body welcome. come find us.'],
-    host: ['{day} {activity} is on — meet at {place}, all levels. bring a newbie.','six months of {activity} together and this crew just keeps growing. proud of us.','little reminder: showing up is the whole practice. the rest follows.'],
-    reply: ['in. 🤙','save me a spot!','this is the nudge i needed, thank you.','first-timer here — what should i bring?'],
+    host: ['{day} {activity} is on, meet at {place}, all levels. bring a newbie.','six months of {activity} together and this crew just keeps growing. proud of us.','little reminder: showing up is the whole practice. the rest follows.'],
+    reply: ['in. 🤙','save me a spot!','this is the nudge i needed, thank you.','first-timer here, what should i bring?'],
     event: ['{day} {activity} + coffee','Sunrise {activity} session','Community {activity}'],
   },
   'holistic-health': {
@@ -87,27 +87,27 @@ const CH: Record<string, Channel> = {
     bio: ['Down-regulating the week one {activity} at a time.','Came for the {activity}, stayed for the people.','Nervous-system maintenance, in good company.'],
     intro: ['first {activity} ever and i definitely cried. no regrets. hi everyone.','came for better sleep, leaving lighter. grateful.','skeptic turned regular after one session.'],
     regular: ['two minutes in the cold and i was buzzing all day.','the {activity} reset is real. same problem, calmer me.','three breaths in and i’m already settled walking in.'],
-    host: ['{day} {activity} at {place}, {time}. beginners, this is a great one to start on.','holding space here for a while now — slow is fast.','reminder: you don’t have to *do* anything. just arrive and let go.'],
-    reply: ['needed this today 🙏','count me in.','first time — is it beginner friendly?','the calm after is unreal.'],
+    host: ['{day} {activity} at {place}, {time}. beginners, this is a great one to start on.','holding space here for a while now, slow is fast.','reminder: you don’t have to *do* anything. just arrive and let go.'],
+    reply: ['needed this today 🙏','count me in.','first time, is it beginner friendly?','the calm after is unreal.'],
     event: ['{day} {activity}','New-moon {activity}','Sunrise {activity}'],
   },
   spirituality: {
     slug: 'spirituality', label: 'Spirituality',
     activities: ['morning sit','silent sit','meditation','journaling circle'],
     bio: ['Ten quiet minutes change my whole day.','Practicing beginning again.','Here for the stillness and the company.'],
-    intro: ['first meditation circle ever — less scary than i expected.','came for the quiet, found people too.','new to sitting, glad for the gentle start.'],
+    intro: ['first meditation circle ever, less scary than i expected.','came for the quiet, found people too.','new to sitting, glad for the gentle start.'],
     regular: ['the midday {activity} is the only ten minutes i’m not spiraling.','journaling > caffeine for my anxiety, who knew.','showing up and sitting with the restlessness IS the practice.'],
-    host: ['{day} {activity} at {place} — cushions provided, no experience needed.','a year of sitting together. this little circle carries me.','you don’t need to be good at it to benefit from it.'],
-    reply: ['saving this. 🙏','see you on the mat.','this is so reassuring, thank you.','first-timer — how long do we sit?'],
+    host: ['{day} {activity} at {place}, cushions provided, no experience needed.','a year of sitting together. this little circle carries me.','you don’t need to be good at it to benefit from it.'],
+    reply: ['saving this. 🙏','see you on the mat.','this is so reassuring, thank you.','first-timer, how long do we sit?'],
     event: ['{day} {activity}','Silent half-day sit','Midday {activity}'],
   },
   creative: {
     slug: 'creative', label: 'Creative',
     activities: ['maker night','sketch session','portfolio night','open studio'],
     bio: ['Making something most days. Done beats perfect.','Trading mugs for honest critique.','Keeping the channel open.'],
-    intro: ['new to the {activity} — mostly making sawdust so far. excited.','finally bringing work-in-progress instead of lurking.','first post! illustrator, here for the critique nights.'],
+    intro: ['new to the {activity}, mostly making sawdust so far. excited.','finally bringing work-in-progress instead of lurking.','first post! illustrator, here for the critique nights.'],
     regular: ['pulled my first set that didn’t crack 🎉 bringing them {day}.','met a collaborator on the coffee walk. this block is magic.','the {activity} unblocks me every single time.'],
-    host: ['{activity} is back {day} at {place} — bring a work-in-progress, finished or not.','fifteen years in the trade, happy to save you my mistakes.','bring the thing you’re avoiding, not the thing you’re proud of.'],
+    host: ['{activity} is back {day} at {place}, bring a work-in-progress, finished or not.','fifteen years in the trade, happy to save you my mistakes.','bring the thing you’re avoiding, not the thing you’re proud of.'],
     reply: ['so good 👏','can i bring a friend?','this is the push i needed.','what should a first-timer bring?'],
     event: ['{day} {activity}','First-Friday {activity}','Open studio + show-and-tell'],
   },
@@ -115,10 +115,10 @@ const CH: Record<string, Channel> = {
     slug: 'business-support', label: 'Business Support',
     activities: ['founders table','accountability circle','demo night'],
     bio: ['Building in public, kept honest by this crew.','Founder. Here for the accountability.','Warm intros over flat whites.'],
-    intro: ['pre-revenue and proud. first {activity}, slightly terrified.','bootstrapping out of my garage, glad to find this.','new in town and to founding — hi all.'],
+    intro: ['pre-revenue and proud. first {activity}, slightly terrified.','bootstrapping out of my garage, glad to find this.','new in town and to founding, hi all.'],
     regular: ['shipped the first prototype this week. this table talked me off the ledge twice.','two warm intros from last week’s asks. DM me.','honest accountability beats a pitch deck every time.'],
-    host: ['{day} {activity}, {time} at {place} — quick wins, one blocker, one ask. no decks.','second-time founder hosting the table. ask me the hard questions.','what would you build if you stopped optimizing for the next raise?'],
-    reply: ['in for {day}.','i’ve got an intro for that.','needed to hear this.','first time — what’s the format?'],
+    host: ['{day} {activity}, {time} at {place}, quick wins, one blocker, one ask. no decks.','second-time founder hosting the table. ask me the hard questions.','what would you build if you stopped optimizing for the next raise?'],
+    reply: ['in for {day}.','i’ve got an intro for that.','needed to hear this.','first time, what’s the format?'],
     event: ['{day} {activity}','Summer demo night','Coffee + accountability'],
   },
   'human-relating': {
@@ -127,18 +127,18 @@ const CH: Record<string, Channel> = {
     bio: ['New to town, collecting people.','The front-door crew. Pull up a chair.','Here to make a big place feel small.'],
     intro: ['just moved here knowing nobody. this looked warm. hi 👋','three weeks in and i have brunch plans. wild.','newcomer, nervous, showing up anyway.'],
     regular: ['showed up to one {activity} on a whim and now i have a standing crew.','this place made a new city feel like home fast.','bring a friend energy is strong here and i love it.'],
-    host: ['{day} {activity} at {place} — newcomers especially welcome. come as you are.','our whole thing is the first hello. so glad you’re here.','no agenda {day} except meeting your neighbors.'],
-    reply: ['welcome!! 🎉','so glad you’re here.','i’ll be there, come say hi.','first-timer too — let’s find each other.'],
+    host: ['{day} {activity} at {place}, newcomers especially welcome. come as you are.','our whole thing is the first hello. so glad you’re here.','no agenda {day} except meeting your neighbors.'],
+    reply: ['welcome!! 🎉','so glad you’re here.','i’ll be there, come say hi.','first-timer too, let’s find each other.'],
     event: ['{day} welcome dinner','Newcomers BBQ','Neighbors meetup'],
   },
   activism: {
     slug: 'activism', label: 'Activism',
     activities: ['beach cleanup','tide-pool steward','trail care day'],
     bio: ['Leaving it better than we found it.','Volunteer hours are my favorite hours.','Small acts, kept up, add up.'],
-    intro: ['first {activity} this weekend — point me at a trash bag. hi all.','new volunteer, big enthusiasm.','came once, hooked on the after-glow.'],
+    intro: ['first {activity} this weekend, point me at a trash bag. hi all.','new volunteer, big enthusiasm.','came once, hooked on the after-glow.'],
     regular: ['hauled out a record load this morning. many hands, light work.','the {activity} crew is the best part of my month.','small acts compound. proud of us.'],
-    host: ['{day} {activity} at {place}, {time} — gloves and bags provided. bring water.','a year of cleanups and the beach shows it. thank you, crew.','every bag matters. so does every person who shows up.'],
-    reply: ['count me in 💪','bringing the kids!','what time do we start?','first-timer — where do we meet?'],
+    host: ['{day} {activity} at {place}, {time}, gloves and bags provided. bring water.','a year of cleanups and the beach shows it. thank you, crew.','every bag matters. so does every person who shows up.'],
+    reply: ['count me in 💪','bringing the kids!','what time do we start?','first-timer, where do we meet?'],
     event: ['{day} {activity}','Earth Day cleanup','Tide-pool steward morning'],
   },
 }
@@ -151,33 +151,33 @@ const WALL = [   // written on a friend's wall
   'so good having you at the {activity} 🙌 you’re one of us now.',
   'welcome in, {name}! the {place} crew got luckier this week.',
   'still thinking about our talk after {activity}. coffee soon?',
-  'proud of you for showing up to that one — i know it wasn’t easy. 💛',
+  'proud of you for showing up to that one, i know it wasn’t easy. 💛',
   'missed you at the standing time! all good? door’s always open.',
   'you made a newcomer feel at home {day}. that’s the whole thing. thank you.',
 ]
 const FEED = [   // public, to the whole community feed
-  'the {place} {activity} crew keeps growing — if you’ve been meaning to come, this is your sign.',
+  'the {place} {activity} crew keeps growing, if you’ve been meaning to come, this is your sign.',
   'three months ago i knew nobody here. tonight i had dinner with people i met through {activity}. real life beats the feed, every time.',
   'small thing that made my week: someone noticed i skipped {activity} and checked in on me. that’s the entire point of this place.',
   'new to {place}? come find your people. we always save a spot for first-timers.',
   'reminder that you don’t have to be good at anything to belong here. you just have to show up. see you out there.',
 ]
 const DISPATCH_CIRCLE: { title: string; body: string }[] = [   // Host → their circle
-  { title: 'This week at {circle}', body: '{day}’s {activity} is on at {place}. Newcomers — this is a perfect one to start on, and we’ll look after you. Bring water and, if you can, bring a friend who’s been meaning to come. See you there. 💛' },
-  { title: 'Proud of this crew', body: 'We crossed a little milestone — more of you showing up, more first-timers staying. That’s exactly how a circle turns into a home. Keep coming back; the rest takes care of itself.' },
-  { title: 'A note before {day}', body: 'No agenda this week except being together. Whatever kind of week you’ve had, the standing time is here for you. Come as you are — that’s always enough.' },
+  { title: 'This week at {circle}', body: '{day}’s {activity} is on at {place}. Newcomers, this is a perfect one to start on, and we’ll look after you. Bring water and, if you can, bring a friend who’s been meaning to come. See you there. 💛' },
+  { title: 'Proud of this crew', body: 'We crossed a little milestone, more of you showing up, more first-timers staying. That’s exactly how a circle turns into a home. Keep coming back; the rest takes care of itself.' },
+  { title: 'A note before {day}', body: 'No agenda this week except being together. Whatever kind of week you’ve had, the standing time is here for you. Come as you are, that’s always enough.' },
 ]
 const DISPATCH_EVENT: { title: string; body: string }[] = [   // Host → circle, promoting an event
-  { title: '{title} — this week', body: 'We’ve got {title} coming up at {place}. All levels, good company, zero pressure. Tap RSVP so we know to look for you, and bring someone who’s been on the edges. The room is better with you in it.' },
+  { title: '{title}, this week', body: 'We’ve got {title} coming up at {place}. All levels, good company, zero pressure. Tap RSVP so we know to look for you, and bring someone who’s been on the edges. The room is better with you in it.' },
 ]
 const DISPATCH_HUB: { title: string; body: string }[] = [   // Guide → the hub (neighborhood-wide)
-  { title: 'What’s alive in {place} this week', body: 'A few of our circles have events on, the {activity} crews are growing, and we welcomed a wave of new neighbors. If you’ve been hovering on the edges, step in — pick one standing time and just show up once. That’s the whole trick.' },
+  { title: 'What’s alive in {place} this week', body: 'A few of our circles have events on, the {activity} crews are growing, and we welcomed a wave of new neighbors. If you’ve been hovering on the edges, step in, pick one standing time and just show up once. That’s the whole trick.' },
   { title: 'Welcome, new neighbors', body: 'To everyone who joined {place} this month: you’re not a number on a list, you’re part of how this place grows. Find a circle, find a standing time, and let us catch you when you show up. We’re glad you’re here.' },
 ]
 const EVENT_DESC = [
-  'All levels welcome. Come a few minutes early so we can say hi. Bring water — and a friend if you’ve got one.',
+  'All levels welcome. Come a few minutes early so we can say hi. Bring water, and a friend if you’ve got one.',
   'No experience needed; first-timers are the whole point. We’ll look after you. Stick around after for coffee.',
-  'Show up — that’s the only requirement. The rest takes care of itself.',
+  'Show up, that’s the only requirement. The rest takes care of itself.',
 ]
 
 // Rank bands (ghost -> master) — economy values per rank.
@@ -334,7 +334,7 @@ export function buildPlan(spec: AreaSpec, palette?: Palette | null): AreaPlan {
     ]
     circles.push({
       key: slug, name, slug, channel: chSlug, activity, lat, lng,
-      about: fill('A {activity} circle in {place}. All levels, good company — and a standing time worth showing up for.', { activity, place }),
+      about: fill('A {activity} circle in {place}. All levels, good company, and a standing time worth showing up for.', { activity, place }),
       people, posts, events,
     })
     totals.circles++; totals.people += people.length; totals.posts += posts.length; totals.events += events.length

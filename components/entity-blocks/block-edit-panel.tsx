@@ -29,7 +29,9 @@ import {
   ColorControl,
   ControlGroup,
   ControlRow,
+  ControlStack,
   HeightControl,
+  IconPicker,
   MarginControl,
   PickerControl,
   Segmented,
@@ -249,12 +251,17 @@ export function FieldEditor({
   value,
   uploadImage,
   pickerData,
+  textOnCanvas = false,
   onChange,
 }: {
   field: FieldDef
   value: unknown
   uploadImage?: UploadImage
   pickerData?: BlockPickerData
+  /** Email canvas surface (item 1): the per-item TITLE / TEXT are edited on the canvas, so the rail's
+   *  Features / Cards editors hide those textareas and keep only the non-text controls (icon / image / link /
+   *  button / stat / reorder). Absent / false on the web rail, where text is edited in the rail. */
+  textOnCanvas?: boolean
   onChange: (v: unknown) => void
 }) {
   if (field.type === 'text' || field.type === 'url' || field.type === 'embedUrl') {
@@ -335,7 +342,18 @@ export function FieldEditor({
     return <ImagesEditor label={field.label} value={value} uploadImage={field.upload ? uploadImage : undefined} onChange={onChange} />
   }
   if (field.type === 'features') {
-    return <FeaturesEditor label={field.label} value={value} onChange={onChange} />
+    return <FeaturesEditor label={field.label} value={value} textOnCanvas={textOnCanvas} onChange={onChange} />
+  }
+  if (field.type === 'cards') {
+    return (
+      <CardsEditor
+        label={field.label}
+        value={value}
+        uploadImage={uploadImage}
+        textOnCanvas={textOnCanvas}
+        onChange={onChange}
+      />
+    )
   }
   // links
   return <LinksEditor label={field.label} value={value} onChange={onChange} />
@@ -366,10 +384,12 @@ function PrimitiveField({
     )
   }
   if (field.type === 'height') {
+    // Stacked + wrapped (items 5/6/7): Banner HEIGHT (Short | Medium | Tall) reads in full instead of
+    // clipping in the narrow one-line row.
     return (
-      <ControlRow label={field.label}>
-        <HeightControl value={current as HeightValue} onSelect={set} />
-      </ControlRow>
+      <ControlStack label={field.label}>
+        <HeightControl value={current as HeightValue} onSelect={set} wrap />
+      </ControlStack>
     )
   }
   if (field.type === 'buttonOrientation') {
@@ -393,15 +413,17 @@ function PrimitiveField({
       </ControlRow>
     )
   }
-  // `segmented` + `margin` both render a generic segmented bar over the declared options.
+  // `segmented` + `margin` both render a generic segmented over the declared options. Stacked + wrapped
+  // (items 5/6/7): a several-word set (Image / Callout SHAPE, Banner CONTENT, Features LAYOUT) gets the full
+  // panel width and wraps instead of clipping in the one-line row.
   const options =
     field.type === 'margin'
       ? (allowed as MarginStep[]).map((v) => ({ value: v, label: v === 'none' ? 'None' : v.toUpperCase() }))
       : (field.options ?? allowed.map((v) => ({ value: v, label: v })))
   return (
-    <ControlRow label={field.label}>
-      <Segmented ariaLabel={field.label} options={options} value={current} onSelect={set} />
-    </ControlRow>
+    <ControlStack label={field.label}>
+      <Segmented ariaLabel={field.label} options={options} value={current} onSelect={set} wrap />
+    </ControlStack>
   )
 }
 
@@ -609,28 +631,83 @@ function ImagesEditor({
   )
 }
 
-/** The Features editor (ADR-542): a repeater of {icon, title, text} items with add / remove / reorder. The
- *  icon is a short token (an emoji or a word); title + text are free text. Blank rows are kept while editing
- *  (so "+ Add feature" actually opens a new row to type into) and pruned by the server sanitizer on save. */
+/** One Features item as edited in the rail. `link` is an optional whole-item link (email overhaul). */
+type FeatureRow = { icon: string; title: string; text: string; link: string }
+
+/** Reorder buttons + a remove button for a repeater row. Shared by the Features + Cards editors. */
+function RowControls({
+  index,
+  count,
+  noun,
+  onMove,
+  onRemove,
+}: {
+  index: number
+  count: number
+  noun: string
+  onMove: (delta: -1 | 1) => void
+  onRemove: () => void
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        aria-label={`Move ${noun} ${index + 1} up`}
+        disabled={index === 0}
+        onClick={() => onMove(-1)}
+        className="rounded p-1 text-subtle hover:text-text disabled:opacity-30"
+      >
+        <ChevronUp className="h-3.5 w-3.5" aria-hidden />
+      </button>
+      <button
+        type="button"
+        aria-label={`Move ${noun} ${index + 1} down`}
+        disabled={index === count - 1}
+        onClick={() => onMove(1)}
+        className="rounded p-1 text-subtle hover:text-text disabled:opacity-30"
+      >
+        <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+      </button>
+      <button
+        type="button"
+        aria-label={`Remove ${noun} ${index + 1}`}
+        onClick={onRemove}
+        className="ml-auto rounded p-1 text-subtle hover:bg-danger-bg hover:text-danger"
+      >
+        <X className="h-3.5 w-3.5" aria-hidden />
+      </button>
+    </div>
+  )
+}
+
+/** The Features editor (ADR-542 → email overhaul): a repeater of {icon, title, text, link} items. The icon is
+ *  the searchable IconPicker (site icons + emoji, item 4); title + text are free text; `link` is an optional
+ *  whole-item link. On the email canvas (textOnCanvas) the title + text move ON CANVAS (item 1), so the rail
+ *  keeps only the icon + link + reorder here. Blank rows are kept while editing (so "+ Add feature" opens a
+ *  row) and pruned by the server sanitizer on save. */
 function FeaturesEditor({
   label,
   value,
+  textOnCanvas = false,
   onChange,
 }: {
   label: string
   value: unknown
+  textOnCanvas?: boolean
   onChange: (v: unknown) => void
 }) {
-  const items: Array<{ icon: string; title: string; text: string }> = Array.isArray(value)
+  const items: FeatureRow[] = Array.isArray(value)
     ? (value as Array<Record<string, unknown>>).map((it) => ({
         icon: typeof it.icon === 'string' ? it.icon : '',
         title: typeof it.title === 'string' ? it.title : '',
         text: typeof it.text === 'string' ? it.text : '',
+        link: typeof it.link === 'string' ? it.link : '',
       }))
     : []
-  // Do NOT prune here: pruning empty rows swallowed the freshly-added blank row (bug), so adding a feature did
-  // nothing. Keep every row while the operator types; sanitizeFeature drops the still-blank ones on save.
-  const update = (next: Array<{ icon: string; title: string; text: string }>) => onChange(next)
+  // Do NOT prune here: pruning empty rows swallowed the freshly-added blank row (bug). Keep every row while
+  // the operator types; sanitizeFeature drops the still-blank ones on save.
+  const update = (next: FeatureRow[]) => onChange(next)
+  const patch = (i: number, p: Partial<FeatureRow>) => update(items.map((x, j) => (j === i ? { ...x, ...p } : x)))
   const move = (i: number, delta: -1 | 1) => {
     const j = i + delta
     if (j < 0 || j >= items.length) return
@@ -643,63 +720,208 @@ function FeaturesEditor({
       <span className={labelCls}>{label}</span>
       {items.map((it, i) => (
         <div key={i} className="space-y-1.5 rounded-lg border border-border bg-surface p-2">
-          <div className="flex items-center gap-1.5">
-            <input
-              value={it.icon}
-              placeholder="Icon or emoji"
-              onChange={(e) => update(items.map((x, j) => (j === i ? { ...x, icon: e.target.value } : x)))}
-              className={`${inputCls} w-24`}
-            />
-            <input
-              value={it.title}
-              placeholder="Title"
-              onChange={(e) => update(items.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
+          <div className="flex items-start gap-1.5">
+            <IconPicker value={it.icon} onChange={(token) => patch(i, { icon: token })} />
+            {textOnCanvas ? (
+              <p className="flex-1 pt-1 text-2xs leading-snug text-subtle">
+                {it.title || it.text ? it.title || it.text : 'Edit the title and text on the canvas.'}
+              </p>
+            ) : (
+              <input
+                value={it.title}
+                placeholder="Title"
+                onChange={(e) => patch(i, { title: e.target.value })}
+                className={inputCls}
+              />
+            )}
+          </div>
+          {!textOnCanvas && (
+            <textarea
+              rows={2}
+              value={it.text}
+              placeholder="Description"
+              onChange={(e) => patch(i, { text: e.target.value })}
               className={inputCls}
             />
-          </div>
-          <textarea
-            rows={2}
-            value={it.text}
-            placeholder="Description"
-            onChange={(e) => update(items.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))}
+          )}
+          <input
+            value={it.link}
+            placeholder="Link (optional), https://"
+            onChange={(e) => patch(i, { link: e.target.value })}
             className={inputCls}
           />
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              aria-label={`Move feature ${i + 1} up`}
-              disabled={i === 0}
-              onClick={() => move(i, -1)}
-              className="rounded p-1 text-subtle hover:text-text disabled:opacity-30"
-            >
-              <ChevronUp className="h-3.5 w-3.5" aria-hidden />
-            </button>
-            <button
-              type="button"
-              aria-label={`Move feature ${i + 1} down`}
-              disabled={i === items.length - 1}
-              onClick={() => move(i, 1)}
-              className="rounded p-1 text-subtle hover:text-text disabled:opacity-30"
-            >
-              <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-            </button>
-            <button
-              type="button"
-              aria-label={`Remove feature ${i + 1}`}
-              onClick={() => update(items.filter((_, j) => j !== i))}
-              className="ml-auto rounded p-1 text-subtle hover:bg-danger-bg hover:text-danger"
-            >
-              <X className="h-3.5 w-3.5" aria-hidden />
-            </button>
-          </div>
+          <RowControls index={i} count={items.length} noun="feature" onMove={(d) => move(i, d)} onRemove={() => update(items.filter((_, j) => j !== i))} />
         </div>
       ))}
       <button
         type="button"
-        onClick={() => update([...items, { icon: '', title: '', text: '' }])}
+        onClick={() => update([...items, { icon: '', title: '', text: '', link: '' }])}
         className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline"
       >
         <Plus className="h-3.5 w-3.5" aria-hidden /> Add feature
+      </button>
+    </div>
+  )
+}
+
+/** One Card-grid card as edited in the rail. A card is a PHOTO card (image) OR a STAT box (value + label),
+ *  plus title + text, an optional whole-card link, and an optional separate button. */
+type CardRow = {
+  icon: string
+  image: string
+  statValue: string
+  statLabel: string
+  title: string
+  text: string
+  link: string
+  buttonLabel: string
+  buttonHref: string
+}
+
+/** Read one raw card into a CardRow (tolerant of legacy {icon,title,text} rows). */
+function toCardRow(raw: unknown): CardRow {
+  const o = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  const stat = (o.stat && typeof o.stat === 'object' ? o.stat : {}) as Record<string, unknown>
+  const button = (o.button && typeof o.button === 'object' ? o.button : {}) as Record<string, unknown>
+  const s = (v: unknown) => (typeof v === 'string' ? v : '')
+  return {
+    icon: s(o.icon),
+    image: s(o.image),
+    statValue: s(stat.value),
+    statLabel: s(stat.label),
+    title: s(o.title),
+    text: s(o.text),
+    link: s(o.link),
+    buttonLabel: s(button.label),
+    buttonHref: s(button.href),
+  }
+}
+
+/** Serialize a CardRow back to the stored card shape (sparse: only non-empty sub-objects). */
+function fromCardRow(r: CardRow): Record<string, unknown> {
+  const out: Record<string, unknown> = { title: r.title, text: r.text }
+  if (r.icon) out.icon = r.icon
+  if (r.image) out.image = r.image
+  if (r.statValue || r.statLabel) out.stat = { value: r.statValue, label: r.statLabel }
+  if (r.link) out.link = r.link
+  if (r.buttonLabel) out.button = { label: r.buttonLabel, href: r.buttonHref }
+  return out
+}
+
+/** The Card-grid editor (email overhaul, item 3): a repeater of richer cards. Each card is a PHOTO card (an
+ *  image) OR a STAT box (a big number + a label), styled distinctly from Features. The rail owns the non-text
+ *  controls (image / stat / link / button); on the email canvas (textOnCanvas) the title + text move ON CANVAS
+ *  (item 1), so the rail hides those textareas. Blank rows are kept while editing; the sanitizer prunes them. */
+function CardsEditor({
+  label,
+  value,
+  uploadImage,
+  textOnCanvas = false,
+  onChange,
+}: {
+  label: string
+  value: unknown
+  uploadImage?: UploadImage
+  textOnCanvas?: boolean
+  onChange: (v: unknown) => void
+}) {
+  const rows: CardRow[] = Array.isArray(value) ? (value as unknown[]).map(toCardRow) : []
+  const update = (next: CardRow[]) => onChange(next.map(fromCardRow))
+  const patch = (i: number, p: Partial<CardRow>) => update(rows.map((x, j) => (j === i ? { ...x, ...p } : x)))
+  const move = (i: number, delta: -1 | 1) => {
+    const j = i + delta
+    if (j < 0 || j >= rows.length) return
+    const next = [...rows]
+    ;[next[i], next[j]] = [next[j], next[i]]
+    update(next)
+  }
+  return (
+    <div className="space-y-1.5">
+      <span className={labelCls}>{label}</span>
+      {rows.map((c, i) => (
+        <div key={i} className="space-y-1.5 rounded-lg border border-border bg-surface p-2">
+          {!textOnCanvas && (
+            <input
+              value={c.title}
+              placeholder="Card title"
+              onChange={(e) => patch(i, { title: e.target.value })}
+              className={inputCls}
+            />
+          )}
+          {!textOnCanvas && (
+            <textarea
+              rows={2}
+              value={c.text}
+              placeholder="Card text"
+              onChange={(e) => patch(i, { text: e.target.value })}
+              className={inputCls}
+            />
+          )}
+          {textOnCanvas && (
+            <p className="text-2xs leading-snug text-subtle">Edit this card&rsquo;s title and text on the canvas.</p>
+          )}
+
+          {/* Photo card: an image URL (+ upload when the surface allows it). */}
+          <label className="block space-y-1">
+            <span className={labelCls}>Photo</span>
+            <input
+              value={c.image}
+              placeholder="https:// (leave blank for a stat card)"
+              onChange={(e) => patch(i, { image: e.target.value })}
+              className={inputCls}
+            />
+            {uploadImage && <UploadButton uploadImage={uploadImage} onUploaded={(urls) => patch(i, { image: urls[urls.length - 1] })} />}
+          </label>
+
+          {/* Stat box: a big value + a label. Use INSTEAD of a photo for a metric card. */}
+          <div className="flex items-center gap-1.5">
+            <input
+              value={c.statValue}
+              placeholder="Stat, e.g. 500+"
+              onChange={(e) => patch(i, { statValue: e.target.value })}
+              className={`${inputCls} w-28`}
+            />
+            <input
+              value={c.statLabel}
+              placeholder="Stat label"
+              onChange={(e) => patch(i, { statLabel: e.target.value })}
+              className={inputCls}
+            />
+          </div>
+
+          {/* Whole-card link + an optional separate button. */}
+          <input
+            value={c.link}
+            placeholder="Card link (optional), https://"
+            onChange={(e) => patch(i, { link: e.target.value })}
+            className={inputCls}
+          />
+          <div className="flex items-center gap-1.5">
+            <input
+              value={c.buttonLabel}
+              placeholder="Button label"
+              onChange={(e) => patch(i, { buttonLabel: e.target.value })}
+              className={`${inputCls} w-1/3`}
+            />
+            <input
+              value={c.buttonHref}
+              placeholder="Button link, https://"
+              onChange={(e) => patch(i, { buttonHref: e.target.value })}
+              className={inputCls}
+            />
+          </div>
+
+          <RowControls index={i} count={rows.length} noun="card" onMove={(d) => move(i, d)} onRemove={() => update(rows.filter((_, j) => j !== i))} />
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() =>
+          update([...rows, { icon: '', image: '', statValue: '', statLabel: '', title: '', text: '', link: '', buttonLabel: '', buttonHref: '' }])
+        }
+        className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline"
+      >
+        <Plus className="h-3.5 w-3.5" aria-hidden /> Add card
       </button>
     </div>
   )

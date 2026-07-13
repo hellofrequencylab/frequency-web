@@ -160,16 +160,29 @@ export function DesignBlockView({ id, props: rawProps }: { id: string; props: Re
         />
       )
     case 'cardGrid': {
-      // The rail edits cards through the shared "features" repeater ({icon, title, text}); map text → the
-      // card body so a card grid authored in the arranger renders its cards.
+      // The rail edits cards through the Cards repeater (email overhaul): each card is a photo card (image) OR
+      // a stat box ({ value, label }), plus title + text, an optional whole-card link, and an optional button.
+      // Map text → the card body and pass the richer fields through; a legacy { icon, title, text } card still
+      // renders (icon + title + body).
       const items = Array.isArray(props.cards)
-        ? (props.cards as Array<{ icon?: unknown; title?: unknown; text?: unknown }>)
-            .map((it) => ({
-              icon: typeof it.icon === 'string' ? it.icon : undefined,
-              title: typeof it.title === 'string' ? it.title : undefined,
-              body: typeof it.text === 'string' ? it.text : undefined,
-            }))
-            .filter((c) => c.title || c.body)
+        ? (props.cards as Array<Record<string, unknown>>)
+            .map((it) => {
+              const stat = (it.stat && typeof it.stat === 'object' ? it.stat : {}) as Record<string, unknown>
+              const button = (it.button && typeof it.button === 'object' ? it.button : {}) as Record<string, unknown>
+              const statValue = typeof stat.value === 'string' ? stat.value : undefined
+              const statLabel = typeof stat.label === 'string' ? stat.label : undefined
+              const buttonLabel = typeof button.label === 'string' ? button.label : undefined
+              return {
+                icon: typeof it.icon === 'string' ? it.icon : undefined,
+                image: safeUrl(it.image) || undefined,
+                title: typeof it.title === 'string' ? it.title : undefined,
+                body: typeof it.text === 'string' ? it.text : undefined,
+                stat: statValue || statLabel ? { value: statValue, label: statLabel } : undefined,
+                href: safeUrl(it.link) || undefined,
+                button: buttonLabel ? { label: buttonLabel, href: safeUrl(button.href) || undefined } : undefined,
+              }
+            })
+            .filter((c) => c.title || c.body || c.image || c.stat)
         : []
       const browseHref = safeUrl(props.browseUrl) || undefined
       return (

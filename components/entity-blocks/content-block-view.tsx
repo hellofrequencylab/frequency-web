@@ -15,6 +15,7 @@ import {
   embedHeight,
   parseLinkCard,
 } from '@/lib/spotlight/embeds'
+import { BlockIcon } from './block-icon'
 
 // PRESENTATIONAL renderers for the operator's inline-authored CONTENT blocks (ADR-528) + the per-block
 // STYLE frame. Server-safe (no hooks / no 'use client'), so the Server Component profile renderers drop
@@ -108,26 +109,63 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       )
     }
     case 'features': {
-      // A responsive grid of features, each an optional icon (an emoji or short token), a title, and text.
+      // TEXT-FORWARD features (email overhaul): an optional eyebrow, then a list (or two-up) of items, each an
+      // icon + title + text and an OPTIONAL whole-item link. No images (that is the Card grid's job), so this
+      // reads clearly apart from the visual Card grid.
+      const eyebrow = s(props, 'eyebrow')
       const items = Array.isArray(props.items)
-        ? (props.items as Array<{ icon?: unknown; title?: unknown; text?: unknown }>)
+        ? (props.items as Array<{ icon?: unknown; title?: unknown; text?: unknown; link?: unknown }>)
             .map((it) => ({
               icon: typeof it.icon === 'string' ? it.icon : '',
               title: typeof it.title === 'string' ? it.title : '',
               text: typeof it.text === 'string' ? it.text : '',
+              link: safeUrl(it.link),
             }))
             .filter((it) => it.title || it.text)
         : []
-      if (!items.length) return null
+      if (!eyebrow && !items.length) return null
+      const twoUp = props.layout === 'twoUp'
+      const listCls = twoUp ? 'grid gap-5 sm:grid-cols-2' : 'flex flex-col gap-5'
       return (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((it, i) => (
-            <div key={`${it.title}-${i}`} className="space-y-2 rounded-2xl border border-border bg-surface p-5">
-              {it.icon && <div className="text-2xl leading-none" aria-hidden>{it.icon}</div>}
-              {it.title && <h4 className="text-base font-bold text-text">{it.title}</h4>}
-              {it.text && <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{it.text}</p>}
+        <div className="space-y-4">
+          {eyebrow && (
+            <p data-text-role="eyebrow" className="text-xs font-bold uppercase tracking-[0.12em] text-primary-strong">
+              {eyebrow}
+            </p>
+          )}
+          {items.length > 0 && (
+            <div className={listCls}>
+              {items.map((it, i) => {
+                const inner = (
+                  <>
+                    {it.icon && (
+                      <div className="shrink-0 text-primary-strong" aria-hidden>
+                        <BlockIcon name={it.icon} size={26} />
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      {it.title && <h4 className="text-base font-bold text-text">{it.title}</h4>}
+                      {it.text && <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{it.text}</p>}
+                    </div>
+                  </>
+                )
+                const rowCls = 'flex items-start gap-3'
+                return it.link ? (
+                  <a
+                    key={`${it.title}-${i}`}
+                    href={it.link}
+                    className={`${rowCls} rounded-xl transition-colors hover:bg-surface-elevated`}
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  <div key={`${it.title}-${i}`} className={rowCls}>
+                    {inner}
+                  </div>
+                )
+              })}
             </div>
-          ))}
+          )}
         </div>
       )
     }

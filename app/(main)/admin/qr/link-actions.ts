@@ -125,7 +125,7 @@ export async function createLink(input: LinkInput): Promise<ActionResult<{ id: s
   // Custom slug: validate + single attempt (collision = a clear message).
   const custom = input.slug ? normalizeSlug(input.slug) : ''
   if (input.slug && !isValidSlug(custom)) {
-    return fail('Custom links use letters, numbers, and hyphens (3–48 chars).')
+    return fail('Custom links use letters, numbers, and hyphens (3 to 48 chars).')
   }
 
   // Generated slug: retry a few collisions (astronomically unlikely, but cheap).
@@ -159,7 +159,7 @@ export async function updateLink(id: string, input: LinkInput): Promise<ActionRe
   let slugPatch: { slug?: string } = {}
   if (input.slug) {
     const slug = normalizeSlug(input.slug)
-    if (!isValidSlug(slug)) return fail('Custom links use letters, numbers, and hyphens (3–48 chars).')
+    if (!isValidSlug(slug)) return fail('Custom links use letters, numbers, and hyphens (3 to 48 chars).')
     slugPatch = { slug }
   }
 

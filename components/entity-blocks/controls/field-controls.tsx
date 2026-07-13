@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import {
   AlignCenter,
@@ -14,6 +14,7 @@ import {
   Plus,
   Rows2,
   Sparkles,
+  X,
 } from 'lucide-react'
 import {
   colorSwatchClass,
@@ -21,6 +22,8 @@ import {
   type MarginStep,
   type TextColorToken,
 } from '@/lib/entity-blocks/block-content'
+import { searchEmoji, searchLucide } from '@/lib/entity-blocks/icon-tokens'
+import { BlockIcon } from '@/components/entity-blocks/block-icon'
 
 // THE REUSABLE INSPECTOR CONTROL PRIMITIVES (ADR-569 C6). A tight, modern, Framer/Webflow/Notion-style set
 // of controls the block editor composes — and that a FEATURE agent attaches to a block by DECLARING a field,
@@ -71,6 +74,19 @@ export function ControlGroup({
   )
 }
 
+/** A control STACK: the label ABOVE a full-width control (items 5/6/7). The one-line ControlRow squeezes a
+ *  wide segmented until its options clip; stacking gives the control the whole panel width so a Shape /
+ *  Content / Height picker with several word-options reads in full. Used for the text-option segmented
+ *  controls; the compact icon-groups (align / shadow / orientation / color) stay on a single ControlRow. */
+export function ControlStack({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <span className="block text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</span>
+      <div>{children}</div>
+    </div>
+  )
+}
+
 // ── Segmented + icon-group (the core inline pattern) ────────────────────────────────────────────────────
 
 export interface SegOption<V extends string> {
@@ -89,12 +105,43 @@ export function Segmented<V extends string>({
   options,
   value,
   onSelect,
+  wrap = false,
 }: {
   ariaLabel: string
   options: readonly SegOption<V>[]
   value: V
   onSelect: (v: V) => void
+  /** WRAP mode (items 5/6/7): render the options as individual pills that wrap to the next line instead of a
+   *  single fixed bar, so a several-word set (Shape, Content, Height) never clips in a narrow rail. Pair with
+   *  ControlStack (label above, full width). */
+  wrap?: boolean
 }) {
+  if (wrap) {
+    return (
+      <div className="flex flex-wrap gap-1" role="group" aria-label={ariaLabel}>
+        {options.map((o) => {
+          const on = value === o.value
+          return (
+            <button
+              key={o.value}
+              type="button"
+              aria-pressed={on}
+              aria-label={o.icon ? o.label : undefined}
+              title={o.label}
+              onClick={() => onSelect(o.value)}
+              className={`flex min-h-[26px] items-center justify-center gap-1 rounded-md border px-2.5 py-1 text-2xs font-semibold transition-colors ${
+                on
+                  ? 'border-primary bg-primary text-on-primary'
+                  : 'border-border bg-surface text-muted hover:bg-surface-elevated hover:text-text'
+              }`}
+            >
+              {o.icon ?? o.label}
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
   return (
     <div className="flex overflow-hidden rounded-md border border-border" role="group" aria-label={ariaLabel}>
       {options.map((o) => {
@@ -202,8 +249,16 @@ const HEIGHT_OPTIONS: readonly SegOption<HeightValue>[] = [
 
 /** The 3-way HEIGHT selector (ADR-569 C6): Short | Medium | Tall. A feature agent attaches it via a `height`
  *  field; the hero / media blocks will read the value to size themselves. */
-export function HeightControl({ value, onSelect }: { value: HeightValue; onSelect: (v: HeightValue) => void }) {
-  return <Segmented ariaLabel="Height" options={HEIGHT_OPTIONS} value={value} onSelect={onSelect} />
+export function HeightControl({
+  value,
+  onSelect,
+  wrap = false,
+}: {
+  value: HeightValue
+  onSelect: (v: HeightValue) => void
+  wrap?: boolean
+}) {
+  return <Segmented ariaLabel="Height" options={HEIGHT_OPTIONS} value={value} onSelect={onSelect} wrap={wrap} />
 }
 
 // ── Button orientation (Row | Stacked) selector (C6) ────────────────────────────────────────────────────
@@ -448,6 +503,138 @@ export function PickerControl({
       <p className="text-3xs text-subtle">
         {showingAll ? 'Every one shows. Tap to feature only some.' : 'Only the ones you tap show. Tap all to clear.'}
       </p>
+    </div>
+  )
+}
+
+// ── Icon picker (site icons + emoji, both searchable) — email overhaul item 4 ─────────────────────────────
+
+/** The searchable ICON PICKER (email overhaul, 2026). Replaces the plain "Icon or emoji" text box with a
+ *  popover offering TWO searchable sources: curated Lucide SITE ICONS and a bundled EMOJI set. Whichever the
+ *  operator picks, it stores the SAME short token the renderer reads (a Lucide name, or an emoji char). A
+ *  trigger button shows the current pick (or a placeholder); the popover has a source toggle, a search box, a
+ *  result grid, and a Clear. Controlled + a11y (buttons, aria-pressed, labelled); token-driven; voice canon. */
+export function IconPicker({
+  value,
+  onChange,
+  ariaLabel = 'Icon',
+}: {
+  value: string
+  onChange: (token: string) => void
+  ariaLabel?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [source, setSource] = useState<'icon' | 'emoji'>('icon')
+  const [query, setQuery] = useState('')
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  const lucideResults = useMemo(() => (source === 'icon' ? searchLucide(query) : []), [source, query])
+  const emojiResults = useMemo(() => (source === 'emoji' ? searchEmoji(query) : []), [source, query])
+
+  const pick = (token: string) => {
+    onChange(token)
+    setOpen(false)
+    setQuery('')
+  }
+
+  const tabCls = (on: boolean) =>
+    `flex-1 rounded-md px-2 py-1 text-2xs font-semibold transition-colors ${
+      on ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:bg-surface-elevated hover:text-text'
+    }`
+
+  return (
+    <div ref={rootRef} className="relative">
+      {/* Trigger: shows the current icon (or a placeholder), opens the popover. */}
+      <button
+        type="button"
+        aria-label={value ? `${ariaLabel}: change` : `${ariaLabel}: choose`}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-text transition-colors hover:border-border-strong"
+      >
+        {value ? <BlockIcon name={value} size={20} /> : <Plus className="h-4 w-4 text-subtle" aria-hidden />}
+      </button>
+
+      {open && (
+        <>
+          {/* Click-catcher: closes the popover when the operator clicks away. */}
+          <button
+            type="button"
+            aria-label="Close icon picker"
+            className="fixed inset-0 z-40 cursor-default"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            role="dialog"
+            aria-label={`Choose ${ariaLabel.toLowerCase()}`}
+            className="absolute left-0 top-10 z-50 w-64 space-y-2 rounded-xl border border-border bg-surface p-2 shadow-lg"
+          >
+            <div className="flex items-center gap-1">
+              <button type="button" aria-pressed={source === 'icon'} className={tabCls(source === 'icon')} onClick={() => setSource('icon')}>
+                Icons
+              </button>
+              <button type="button" aria-pressed={source === 'emoji'} className={tabCls(source === 'emoji')} onClick={() => setSource('emoji')}>
+                Emoji
+              </button>
+              {value && (
+                <button
+                  type="button"
+                  aria-label="Clear icon"
+                  onClick={() => pick('')}
+                  className="rounded-md p-1 text-subtle hover:bg-danger-bg hover:text-danger"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              )}
+            </div>
+
+            <input
+              type="text"
+              value={query}
+              placeholder={source === 'icon' ? 'Search icons' : 'Search emoji'}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-subtle outline-none focus:border-primary"
+              autoFocus
+            />
+
+            <div className="grid max-h-48 grid-cols-6 gap-1 overflow-y-auto">
+              {source === 'icon'
+                ? lucideResults.map((i) => (
+                    <button
+                      key={i.name}
+                      type="button"
+                      aria-label={i.name}
+                      title={i.name}
+                      onClick={() => pick(i.name)}
+                      className={`flex h-8 w-8 items-center justify-center rounded-md border transition-colors hover:bg-surface-elevated ${
+                        value === i.name ? 'border-primary bg-primary-bg text-primary-strong' : 'border-transparent text-text'
+                      }`}
+                    >
+                      <BlockIcon name={i.name} size={18} />
+                    </button>
+                  ))
+                : emojiResults.map((e) => (
+                    <button
+                      key={e.char}
+                      type="button"
+                      aria-label={e.keywords.split(' ')[0]}
+                      title={e.keywords.split(' ')[0]}
+                      onClick={() => pick(e.char)}
+                      className={`flex h-8 w-8 items-center justify-center rounded-md border text-lg leading-none transition-colors hover:bg-surface-elevated ${
+                        value === e.char ? 'border-primary bg-primary-bg' : 'border-transparent'
+                      }`}
+                    >
+                      {e.char}
+                    </button>
+                  ))}
+              {((source === 'icon' && lucideResults.length === 0) || (source === 'emoji' && emojiResults.length === 0)) && (
+                <p className="col-span-6 py-3 text-center text-2xs text-subtle">No matches. Try another word.</p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

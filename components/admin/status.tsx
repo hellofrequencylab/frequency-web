@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowDown, ArrowDownRight, ArrowUp, ArrowUpRight, Minus, X } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { X } from 'lucide-react'
 
 // Admin status + feedback vocabulary (ADR-233, docs/ADMIN-DESIGN-SYSTEM.md §4). ONE
 // tokenized set so every admin surface speaks the same language and the per-page
@@ -10,7 +9,6 @@ import type { LucideIcon } from 'lucide-react'
 //
 //   <StatusChip tone="success">Active</StatusChip>
 //   <Badge>12</Badge>
-//   <DeltaBadge delta="moderateIncrease">+8%</DeltaBadge>
 //   <Banner tone="critical" title="Form could not be saved">Two fields are empty.</Banner>
 
 export type StatusTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral'
@@ -45,29 +43,6 @@ export function StatusChip({
 export function Badge({ children }: { children: React.ReactNode }) {
   return (
     <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-bold tabular-nums text-muted">
-      {children}
-    </span>
-  )
-}
-
-// The finite trend vocabulary (Tremor's deltaType) → icon + token color. Use the
-// MEANING (good/bad), not the raw direction, when choosing the delta.
-export type DeltaType = 'increase' | 'moderateIncrease' | 'unchanged' | 'moderateDecrease' | 'decrease'
-
-const DELTA: Record<DeltaType, { Icon: LucideIcon; cls: string }> = {
-  increase: { Icon: ArrowUp, cls: 'text-success' },
-  moderateIncrease: { Icon: ArrowUpRight, cls: 'text-success' },
-  unchanged: { Icon: Minus, cls: 'text-subtle' },
-  moderateDecrease: { Icon: ArrowDownRight, cls: 'text-danger' },
-  decrease: { Icon: ArrowDown, cls: 'text-danger' },
-}
-
-/** A signed-trend badge: directional icon + label, tokenized by trend meaning. */
-export function DeltaBadge({ delta, children }: { delta: DeltaType; children: React.ReactNode }) {
-  const { Icon, cls } = DELTA[delta]
-  return (
-    <span className={`inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums ${cls}`}>
-      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
       {children}
     </span>
   )

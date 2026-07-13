@@ -3,6 +3,8 @@ import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { HelpNav } from '@/components/help/help-nav'
 import { HelpSearch } from '@/components/help/help-search'
+import { SiteAlertBar } from '@/components/layout/site-alert-bar'
+import { SupportLauncher } from '@/components/support/support-launcher'
 import { getAllCategories, getSearchIndex, helpHref } from '@/lib/help/content'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 
@@ -35,6 +37,9 @@ export default async function HelpLayout({ children }: { children: React.ReactNo
       {/* id="main" is the target of MarketingHeader's "Skip to content" link (WCAG 2.4.1);
           without it the bypass-blocks link was broken on every help page. */}
       <main id="main" tabIndex={-1} className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
+        {/* Site-wide announcement strip, directly below the fixed header (full width, above the
+            two-column help body). Self-hides once dismissed (localStorage). */}
+        <SiteAlertBar />
         <div className="mx-auto flex max-w-6xl gap-10 px-4 py-10 lg:px-8">
           <aside className="hidden w-64 shrink-0 lg:block">
             <div className="sticky top-24 space-y-6">
@@ -63,6 +68,9 @@ export default async function HelpLayout({ children }: { children: React.ReactNo
         </div>
       </main>
       <MarketingFooter menu={footerMenu} />
+      {/* The report dialog the SiteAlertBar's "Submit a bug" button opens. This public tree has no
+          app shell, so it mounts the launcher here (it listens for the 'open-support' event). */}
+      <SupportLauncher />
     </>
   )
 }

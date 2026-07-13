@@ -59,7 +59,7 @@ export default async function BusinessImportReviewPage({ params }: { params: Pro
           <EmptyState
             variant="error"
             title="Research could not finish"
-            description={review.error ?? 'A stage errored. It is recoverable — re-run the import from the list.'}
+            description={review.error ?? 'A stage errored. It is recoverable. Re-run the import from the list.'}
           />
         ) : (
           <ResearchProgress

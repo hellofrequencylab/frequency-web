@@ -22,7 +22,6 @@ import { staffCan, type StaffRole, type StaffDomain, type Access } from '@/lib/c
 import type {
   MenuAccess,
   MenuMode,
-  ResolvedCategory,
   ResolvedItem,
   ResolvedRailCard,
 } from '@/lib/menus/types'
@@ -174,15 +173,8 @@ export function canSeeMenuItem(item: ResolvedItem, viewer: MenuViewer): boolean 
   return effectiveMode(item, viewer.viewerRole) !== 'hidden'
 }
 
-/** Does the viewer see this CATEGORY (a section / rail entry)? Union of its own
- *  minAccess floor and the staff axis. A category with no gate is visible to all. */
-export function canSeeMenuCategory(cat: ResolvedCategory, viewer: MenuViewer): boolean {
-  if (passesStaffAxis(cat, viewer, 'category')) return true
-  return meetsMenuAccess(viewer.viewerRole, cat.minAccess ?? 'visitor')
-}
-
 /** Generic union gate over any GateElement (item or category). Prefer the typed
- *  canSeeMenuItem / canSeeMenuCategory at call sites; this is for mixed lists. */
+ *  canSeeMenuItem at call sites; this is for mixed lists. */
 export function canSeeMenuEl(
   el: GateElement,
   viewer: MenuViewer,

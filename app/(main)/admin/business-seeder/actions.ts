@@ -826,7 +826,7 @@ export async function updateImportField(
       confirmLedger(ledger, path, value)
     } else if (action.kind === 'confirm') {
       const current = readDraftValue(draft, path)
-      if (!current) return { ok: false, error: 'Nothing to confirm — the field is empty.' }
+      if (!current) return { ok: false, error: 'Nothing to confirm. The field is empty.' }
       confirmLedger(ledger, path, current)
     } else if (action.kind === 'drop') {
       setDraftValue(draft, path, '')

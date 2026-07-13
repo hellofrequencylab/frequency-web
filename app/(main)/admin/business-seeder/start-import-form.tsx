@@ -195,7 +195,7 @@ export function StartImportForm() {
           What makes them different
           <textarea
             className={`${field} min-h-24 resize-y`}
-            placeholder="The angle, the specialty, the vibe, the proof — anything that sets them apart."
+            placeholder="The angle, the specialty, the vibe, the proof: anything that sets them apart."
             value={differentiators}
             onChange={(e) => setDifferentiators(e.target.value)}
           />

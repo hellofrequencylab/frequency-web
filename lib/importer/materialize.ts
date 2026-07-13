@@ -22,14 +22,18 @@
 // are matched by (space_id, slug); preferences are read-modify-write). For P0, overwrite
 // semantics are acceptable.
 //
-// TODO(P5 — edit-wins): preserve operator edits on re-apply. The spec (§5) calls for an
-// `edited_fields` marker on the Space so a re-harvest never clobbers a human edit. P0
-// overwrites; P5 diffs the draft against the live Space and only writes un-edited fields.
+// EDIT-WINS ON RE-APPLY (P5, docs §5 — shipped): a re-apply preserves operator edits to the live Space.
+// The materializer stamps an `importerEditWins` marker on spaces.preferences (NO new column) recording the
+// identity values it last wrote; on the next apply it DIFFS the live Space against that snapshot and skips
+// any field the operator changed (edit-wins). The diff logic lives in ./edit-wins (pure + tested). Mirrors
+// the shipped re-research edit-wins (draft._editedProse / nextEditedProse). Backwards-compatible: a Space
+// with no prior marker treats nothing as edited. Scope: the identity columns name/tagline/brandName/
+// brandAccent (the operator-editable columns updateSpaceIdentity overwrites).
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
-import { insertSpaceLibraryImage } from '@/lib/library/store'
+import { insertSpaceLibraryImage, fileAssetsIntoSpacesCollection } from '@/lib/library/store'
 import { withImageOrder } from './media-order'
 import { composeMarketingLayout } from './compose'
 import { addSpaceMember } from '@/lib/spaces/membership'
@@ -46,6 +50,15 @@ import { buildPlan, type MaterializationPlan, type CommercialPolicy } from './ma
 import { moodToSpaceTheme, normalizeSeedMood, type SeedMood } from './moods'
 import { DEFAULT_SPACE_THEME } from '@/lib/theme/space-themes'
 import { composeSiteHomeDoc } from './site-compose'
+import {
+  readSeedEditWins,
+  detectEditedFields,
+  gateIdentityPatch,
+  nextAppliedIdentity,
+  writeSeedEditWins,
+  type IdentityValues,
+  type SeedEditWinsMarker,
+} from './edit-wins'
 
 // ── Target + result ─────────────────────────────────────────────────────────────
 
@@ -167,10 +180,24 @@ export async function materializeBusiness(
     if (composed) plan.layout = composed
   }
 
+  // The plan's identity values for the gated fields (edit-wins on re-apply).
+  const planIdentity: IdentityValues = {
+    name: plan.identity.name,
+    tagline: plan.identity.tagline,
+    brandName: plan.identity.brandName,
+    brandAccent: plan.identity.brandAccent,
+  }
+
   // Resolve the target space id (provision on create).
   let spaceId: string
   let createdSpace = false
   let ownerProfileId: string | null = null
+  // The edit-wins marker to persist onto preferences (the new diff baseline + edited-field set). On
+  // create it is a fresh baseline (nothing edited); on update it is computed from the live diff below.
+  let seedMarker: SeedEditWinsMarker = {
+    editedFields: [],
+    appliedIdentity: nextAppliedIdentity(planIdentity, planIdentity, []),
+  }
 
   if (target.kind === 'create') {
     ownerProfileId = target.ownerProfileId
@@ -183,13 +210,27 @@ export async function materializeBusiness(
     if (!existing) return { ok: false, error: 'Target space not found.' }
     spaceId = existing.id
     ownerProfileId = existing.ownerProfileId
-    // Re-apply the identity columns + demo posture on update (overwrite semantics, P0).
-    await updateSpaceIdentity(spaceId, plan)
+
+    // EDIT-WINS (P5): diff the live Space identity against what the materializer last wrote. A field the
+    // operator changed since the last seed is preserved (skipped on this write); everything else refreshes.
+    const prior = readSeedEditWins(existing.preferences)
+    const live: IdentityValues = {
+      name: existing.name,
+      tagline: existing.tagline ?? null,
+      brandName: existing.brandName ?? null,
+      brandAccent: existing.brandAccent ?? null,
+    }
+    const editedFields = detectEditedFields(prior, live)
+    const identityPatch = gateIdentityPatch(planIdentity, editedFields)
+    seedMarker = { editedFields, appliedIdentity: nextAppliedIdentity(planIdentity, live, editedFields) }
+
+    // Re-apply the (un-edited) identity columns + demo posture on update.
+    await updateSpaceIdentity(spaceId, plan, identityPatch)
   }
 
   // Every step below binds to `spaceId`. Each is best-effort + idempotent; a single failure
   // does not abort the whole seed (the result reports counts so the caller/test can assert).
-  const prefsWrite = await writeProfileDataAndLayout(spaceId, plan, profile, policy, options.mood)
+  const prefsWrite = await writeProfileDataAndLayout(spaceId, plan, profile, policy, options.mood, seedMarker)
   const availabilityWindows = await seedAvailability(spaceId, plan)
   const faqs = await seedFaqs(spaceId, plan)
   const events = await seedEvents(spaceId, plan, ownerProfileId)
@@ -315,17 +356,24 @@ async function slugTaken(slug: string): Promise<boolean> {
   }
 }
 
-/** Re-apply identity columns to an existing Space (update target, overwrite semantics). Binds to
- *  the space id. Does NOT touch the slug (a live slug is load-bearing and never overwritten). */
-async function updateSpaceIdentity(spaceId: string, plan: MaterializationPlan): Promise<void> {
+/** Re-apply identity columns to an existing Space (update target). Binds to the space id. Does NOT
+ *  touch the slug (a live slug is load-bearing and never overwritten). `identityPatch` carries ONLY the
+ *  gated identity fields cleared to write by edit-wins (an operator-edited field is absent, so it is
+ *  preserved). The non-gated columns (type / about / logo / cover) still re-apply. */
+async function updateSpaceIdentity(
+  spaceId: string,
+  plan: MaterializationPlan,
+  identityPatch: IdentityValues,
+): Promise<void> {
   const patch: Record<string, unknown> = {
-    name: plan.identity.name,
     type: plan.identity.type,
-    brand_name: plan.identity.brandName,
-    tagline: plan.identity.tagline,
     about: plan.identity.about,
-    brand_accent: plan.identity.brandAccent,
   }
+  // Only the un-edited identity fields (edit-wins skips the operator's edits by omitting them).
+  if ('name' in identityPatch) patch.name = identityPatch.name
+  if ('tagline' in identityPatch) patch.tagline = identityPatch.tagline
+  if ('brandName' in identityPatch) patch.brand_name = identityPatch.brandName
+  if ('brandAccent' in identityPatch) patch.brand_accent = identityPatch.brandAccent
   if (plan.identity.brandLogoUrl) patch.brand_logo_url = plan.identity.brandLogoUrl
   if (plan.identity.coverImageUrl) patch.cover_image_url = plan.identity.coverImageUrl
   try {
@@ -358,7 +406,8 @@ async function writeProfileDataAndLayout(
   plan: MaterializationPlan,
   profile: BusinessProfile,
   policy: CommercialPolicy,
-  mood?: SeedMood,
+  mood: SeedMood | undefined,
+  seedMarker: SeedEditWinsMarker,
 ): Promise<{ profileData: boolean; siteDoc: boolean }> {
   const space = await getSpaceById(spaceId)
   const currentPrefs =
@@ -392,6 +441,11 @@ async function writeProfileDataAndLayout(
   if (siteDoc) {
     next = withPageDoc(next, HOME_SLUG, composeSiteHomeDoc(profile, policy))
   }
+
+  // EDIT-WINS baseline (P5): stamp the marker recording the identity values this apply left live, so the
+  // NEXT re-apply can diff against them and preserve any operator edit. Read-modify-write preserves every
+  // other preferences key.
+  next = writeSeedEditWins(next, seedMarker)
 
   try {
     await adminFrom('spaces').update({ preferences: next }).eq('id', spaceId)
@@ -666,6 +720,7 @@ export async function fileSeedImagesIntoLoom(
   opts: { primaryUrl?: string } = {},
 ): Promise<string[]> {
   const filed: string[] = []
+  const assetIds: string[] = []
   for (const [i, url] of images.entries()) {
     const path = storagePathFromPublicUrl(url)
     const ext = (url.split('.').pop() || 'jpg').split(/[?#]/)[0].toLowerCase()
@@ -681,9 +736,24 @@ export async function fileSeedImagesIntoLoom(
         mime,
         bytes: 0,
       })
-      if (id) filed.push(url)
+      if (id) {
+        filed.push(url)
+        assetIds.push(id)
+      }
     } catch {
       /* best-effort per image */
+    }
+  }
+
+  // Importer v2 #6: also group each filed asset into the ROOT Loom's master "Spaces" collection, so the
+  // admin Loom has one folder that browses every seeded Space's images (cross-space). Best-effort: a
+  // grouping miss never fails the seed, and the asset still lives in its own Space's Loom regardless.
+  if (assetIds.length > 0) {
+    try {
+      const rootSpaceId = await loadRootSpaceId()
+      if (rootSpaceId) await fileAssetsIntoSpacesCollection(rootSpaceId, assetIds)
+    } catch {
+      /* best-effort */
     }
   }
 

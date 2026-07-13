@@ -23,6 +23,7 @@ import {
   type TextColorToken,
   type MarginStep,
 } from '@/lib/entity-blocks/block-content'
+import { isLucideIconName } from '@/lib/entity-blocks/icon-tokens'
 
 // ── Brand palette → literal hex (mirrors app/globals.css DAWN tokens) ─────────────────────────────────────
 
@@ -278,28 +279,45 @@ interface Rendered {
   text: string
 }
 
+/** The email-safe glyph for an icon token: an emoji prints as text; a Lucide site-icon name yields nothing
+ *  (email cannot draw drawn icons, so a bare name would read as literal text). */
+function iconGlyph(token: unknown): string {
+  return typeof token === 'string' && token && !isLucideIconName(token) ? token : ''
+}
+
 function features(props: Record<string, unknown>, style: BlockStyle | undefined, colors: EmailColors): Rendered {
+  const eb = s(props, 'eyebrow')
   const items = Array.isArray(props.items)
-    ? (props.items as Array<{ icon?: unknown; title?: unknown; text?: unknown }>)
+    ? (props.items as Array<{ icon?: unknown; title?: unknown; text?: unknown; link?: unknown }>)
         .map((it) => ({
-          icon: typeof it.icon === 'string' ? it.icon : '',
+          icon: iconGlyph(it.icon),
           title: typeof it.title === 'string' ? it.title : '',
           text: typeof it.text === 'string' ? it.text : '',
+          link: safeUrl(it.link),
         }))
         .filter((it) => it.title || it.text)
     : []
-  if (!items.length) return { html: '', text: '' }
-  // Single-column email: each feature is a stacked row (no side-by-side grid).
+  if (!eb && !items.length) return { html: '', text: '' }
+  // Single-column email: each feature is a stacked row (no side-by-side grid). The title becomes a link when
+  // the item carries one (the whole-item link, made email-friendly).
   const rows = items
     .map((it) => {
       const icon = it.icon ? `<div${styleAttr([`font-size:22px`, `line-height:1`, `margin:0 0 6px 0`])}>${escapeHtml(it.icon)}</div>` : ''
-      const h = it.title ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${FONT_STACK}`, `font-size:16px`, `font-weight:700`, `color:${colors.text}`])}>${escapeHtml(it.title)}</p>` : ''
+      const titleInner = escapeHtml(it.title)
+      const titleNode = it.link
+        ? `<a href="${escapeHtml(it.link)}"${styleAttr([`color:${colors.primaryStrong}`, `text-decoration:none`])}>${titleInner}</a>`
+        : titleInner
+      const h = it.title ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${FONT_STACK}`, `font-size:16px`, `font-weight:700`, `color:${colors.text}`])}>${titleNode}</p>` : ''
       const b = it.text ? `<p${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:14px`, `line-height:1.6`, `color:${colors.muted}`])}>${escapeHtml(it.text).replace(/\n/g, '<br>')}</p>` : ''
       return `<tr><td${styleAttr([`padding:0 0 16px 0`])}>${icon}${h}${b}</td></tr>`
     })
     .join('')
-  const html = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">${rows}</table>`
-  const text = items.map((it) => `${it.title}${it.title && it.text ? ' - ' : ''}${it.text}`).join('\n')
+  const list = rows
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">${rows}</table>`
+    : ''
+  const head = eb ? eyebrow(eb, colors) : ''
+  const html = `${head}${list}`
+  const text = [eb, ...items.map((it) => `${it.title}${it.title && it.text ? ' - ' : ''}${it.text}`)].filter(Boolean).join('\n')
   void style
   return { html, text }
 }
@@ -308,30 +326,61 @@ function cardGrid(props: Record<string, unknown>, style: BlockStyle | undefined,
   const eb = s(props, 'eyebrow')
   const title = s(props, 'title')
   const cards = Array.isArray(props.cards)
-    ? (props.cards as Array<{ icon?: unknown; title?: unknown; text?: unknown }>)
-        .map((it) => ({
-          icon: typeof it.icon === 'string' ? it.icon : '',
-          title: typeof it.title === 'string' ? it.title : '',
-          text: typeof it.text === 'string' ? it.text : '',
-        }))
-        .filter((it) => it.title || it.text)
+    ? (props.cards as Array<Record<string, unknown>>)
+        .map((it) => {
+          const stat = (it.stat && typeof it.stat === 'object' ? it.stat : {}) as Record<string, unknown>
+          const button = (it.button && typeof it.button === 'object' ? it.button : {}) as Record<string, unknown>
+          return {
+            image: safeUrl(it.image),
+            statValue: typeof stat.value === 'string' ? stat.value : '',
+            statLabel: typeof stat.label === 'string' ? stat.label : '',
+            title: typeof it.title === 'string' ? it.title : '',
+            text: typeof it.text === 'string' ? it.text : '',
+            link: safeUrl(it.link),
+            buttonLabel: typeof button.label === 'string' ? button.label : '',
+            buttonHref: safeUrl(button.href),
+          }
+        })
+        .filter((c) => c.title || c.text || c.image || c.statValue || c.statLabel)
     : []
   const browseLabel = props.buttonOn === false ? '' : s(props, 'browseLabel')
   if (!eb && !title && !cards.length && !browseLabel) return { html: '', text: '' }
   // `title` is a rich `textarea` field; `eyebrow` is a plain `text` field.
   const head = [eyebrow(eb, colors), heading(title, style, colors, 22, true)].filter(Boolean).join('')
+  // Each card is a PHOTO card (image on top) OR a STAT box (a big number + a label), plus title + text, an
+  // optional separate button, and an optional whole-card link (applied to the title).
   const cardRows = cards
-    .map((it) => {
-      const icon = it.icon ? `<div${styleAttr([`font-size:20px`, `line-height:1`, `margin:0 0 6px 0`])}>${escapeHtml(it.icon)}</div>` : ''
-      const h = it.title ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${FONT_STACK}`, `font-size:16px`, `font-weight:700`, `color:${colors.text}`])}>${escapeHtml(it.title)}</p>` : ''
-      const b = it.text ? `<p${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:14px`, `line-height:1.6`, `color:${colors.muted}`])}>${escapeHtml(it.text).replace(/\n/g, '<br>')}</p>` : ''
-      return `<tr><td${styleAttr([`padding:16px`, `background:${colors.surfaceElevated}`, `border-radius:12px`])}>${icon}${h}${b}</td></tr><tr><td style="height:12px;line-height:12px;font-size:0;">&nbsp;</td></tr>`
+    .map((c) => {
+      const media = c.image
+        ? `${image(c.image, '', 8)}<div style="height:12px;line-height:12px;font-size:0;">&nbsp;</div>`
+        : c.statValue || c.statLabel
+          ? `<div${styleAttr([`margin:0 0 10px 0`])}><div${styleAttr([`font-family:${FONT_STACK}`, `font-size:32px`, `font-weight:800`, `line-height:1`, `color:${colors.primaryStrong}`])}>${escapeHtml(c.statValue)}</div>${c.statLabel ? `<div${styleAttr([`margin-top:4px`, `font-family:${FONT_STACK}`, `font-size:12px`, `font-weight:700`, `letter-spacing:0.08em`, `text-transform:uppercase`, `color:${colors.subtle}`])}>${escapeHtml(c.statLabel)}</div>` : ''}</div>`
+          : ''
+      const titleInner = escapeHtml(c.title)
+      const titleNode = c.link
+        ? `<a href="${escapeHtml(c.link)}"${styleAttr([`color:${colors.text}`, `text-decoration:none`])}>${titleInner}</a>`
+        : titleInner
+      const h = c.title ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${FONT_STACK}`, `font-size:16px`, `font-weight:700`, `color:${colors.text}`])}>${titleNode}</p>` : ''
+      const b = c.text ? `<p${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:14px`, `line-height:1.6`, `color:${colors.muted}`])}>${escapeHtml(c.text).replace(/\n/g, '<br>')}</p>` : ''
+      const btn = c.buttonLabel
+        ? `<div style="height:12px;line-height:12px;font-size:0;">&nbsp;</div>${ctaButton(c.buttonLabel, c.buttonHref, 'left', colors)}`
+        : ''
+      return `<tr><td${styleAttr([`padding:16px`, `background:${colors.surfaceElevated}`, `border-radius:12px`])}>${media}${h}${b}${btn}</td></tr><tr><td style="height:12px;line-height:12px;font-size:0;">&nbsp;</td></tr>`
     })
     .join('')
   const grid = cardRows ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;margin-top:12px;">${cardRows}</table>` : ''
   const browse = browseLabel ? ctaButton(browseLabel, s(props, 'browseUrl'), alignOf(style), colors) : ''
   const html = `${head}${grid}${browse}`
-  const text = [eb, richToText(title), ...cards.map((c) => `- ${c.title}${c.title && c.text ? ': ' : ''}${c.text}`), browseLabel && `${browseLabel}: ${safeUrl(s(props, 'browseUrl'))}`]
+  const text = [
+    eb,
+    richToText(title),
+    ...cards.map((c) => {
+      const stat = c.statValue || c.statLabel ? `${c.statValue} ${c.statLabel}`.trim() : ''
+      const lead = c.title || stat
+      return `- ${lead}${lead && c.text ? ': ' : ''}${c.text}`
+    }),
+    browseLabel && `${browseLabel}: ${safeUrl(s(props, 'browseUrl'))}`,
+  ]
     .filter(Boolean)
     .join('\n')
   return { html, text }

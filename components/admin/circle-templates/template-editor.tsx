@@ -213,7 +213,7 @@ export function TemplateEditor({ template }: { template: CircleTemplate }) {
 
       <FormSection
         title="The four Pillars inside"
-        description="One honest line each. Lean one Pillar, carry all four — every Circle works the whole person."
+        description="One honest line each. Lean one Pillar, carry all four. Every Circle works the whole person."
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {PILLAR_ORDER.map((p) => (
