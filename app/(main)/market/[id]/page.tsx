@@ -24,8 +24,9 @@ import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { getHighestOfferCents } from '@/lib/marketplace/listing-offers'
 import { BuyButton } from '../../marketplace/buy-button'
 import { listActiveVariants } from '@/lib/commerce/variants'
-import { effectiveVariantPriceCents, effectiveVariantStock, isBookableServiceKind } from '@/lib/commerce/types'
-import type { ServiceConfig } from '@/lib/commerce/types'
+import { effectiveVariantPriceCents, effectiveVariantStock, isBookableServiceKind, describePrice } from '@/lib/commerce/types'
+import type { ServiceConfig, Price } from '@/lib/commerce/types'
+import { PriceInput } from '@/components/commerce/price-input'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,10 +45,29 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return listingMetadata(listingDetailFromProduct(product, { isOwner: false, priceLabel }))
 }
 
-/** The price label for a service, honoring its priceModel (fixed / from / free / contact). */
+/** Map a service's quote onto the unified buyer Price (Pricing Options P2). `choose` reads the anchor
+ *  from the stored suggested amount (falling back to the base price) plus the optional floor. */
+function serviceToPrice(priceCents: number, svc: ServiceConfig): Price {
+  switch (svc.priceModel) {
+    case 'free':
+      return { mode: 'free' }
+    case 'contact':
+      return { mode: 'contact' }
+    case 'choose': {
+      const price: Price = { mode: 'choose', suggestedCents: svc.suggestedCents ?? priceCents }
+      if (svc.minCents != null) price.minCents = svc.minCents
+      return price
+    }
+    default:
+      return { mode: 'fixed', amountCents: priceCents }
+  }
+}
+
+/** The price label for a service, honoring its priceModel (fixed / from / free / contact / choose). */
 function servicePriceLabel(priceCents: number, currency: string, svc: ServiceConfig): string {
   if (svc.priceModel === 'free') return 'Free'
   if (svc.priceModel === 'contact') return 'Contact for pricing'
+  if (svc.priceModel === 'choose') return describePrice(serviceToPrice(priceCents, svc))
   const base = usd(priceCents, currency)
   return svc.priceModel === 'from' ? `From ${base}` : base
 }
@@ -176,12 +196,26 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
               isOwner ? (
                 <p className="text-sm text-subtle">This is your service. Members pick a time here to book.</p>
               ) : (
-                <ServiceBookingPicker
-                  productId={product.id}
-                  slots={slots}
-                  timezone={tz}
-                  contactOnly={svc.priceModel === 'contact'}
-                />
+                <div className="space-y-4">
+                  {/* Pricing Options P2: a Choose-your-price service shows the buyer control (suggested
+                      anchor + optional floor). DISPLAY only, no charge (booking stays on its existing
+                      gated path). */}
+                  {svc.priceModel === 'choose' && (
+                    <div>
+                      <p className="mb-2 text-xs font-semibold text-subtle">Name your price</p>
+                      <PriceInput
+                        price={serviceToPrice(product.priceCents, svc)}
+                        idPrefix={`svc-${product.id}`}
+                      />
+                    </div>
+                  )}
+                  <ServiceBookingPicker
+                    productId={product.id}
+                    slots={slots}
+                    timezone={tz}
+                    contactOnly={svc.priceModel === 'contact'}
+                  />
+                </div>
               )
             ) : soldOut ? (
               <p className="text-sm font-medium text-subtle">Sold out.</p>
