@@ -203,6 +203,30 @@ export function setRowColumns(layout: BuilderLayout, rowId: string, n: number): 
   return normalize({ ...layout, rows })
 }
 
+/** The four column layouts a SPACE section (row) can take, as ONE operator-facing choice (the on-canvas
+ *  editor's layout picker binds to this):
+ *   - `full`  — a single full-width column.
+ *   - `even`  — two even 50 / 50 columns.
+ *   - `lead`  — two columns, a WIDE lead column + a narrow rail (66 / 33).
+ *   - `sidebar` — two columns, a SKINNY LEFT rail + a WIDE right main (33 / 66). The new layout added
+ *     alongside the others; maps to the `trail` RowRatio the grid already renders (sm:grid-cols-[1fr_2fr]). */
+export type RowSplit = 'full' | 'even' | 'lead' | 'sidebar'
+
+/**
+ * Set a section's column layout in ONE additive op (the on-canvas editor's layout picker). Composes the
+ * existing primitives on a SINGLE layout value (so the ratio never lands on a stale pre-widen snapshot):
+ * `full` merges the row back to one column (setRowColumns folds every box onto the kept column, so nothing
+ * is lost); the three split choices widen to two columns and set the matching ratio. The new `sidebar`
+ * choice is the skinny-left / wide-right split (the `trail` ratio, 33 / 66). No-op for an unknown row id.
+ * Immutable — never rewrites setRowColumns / setRowRatio, only calls them.
+ */
+export function setRowSplit(layout: BuilderLayout, rowId: string, split: RowSplit): BuilderLayout {
+  if (split === 'full') return setRowColumns(layout, rowId, 1)
+  const widened = setRowColumns(layout, rowId, 2)
+  const ratio: RowRatio = split === 'even' ? 'even' : split === 'lead' ? 'lead' : 'trail'
+  return setRowRatio(widened, rowId, ratio)
+}
+
 /**
  * Set a 2-column row's split ratio ('even' = 50/50, 'lead' = 66/33 with a wider first column). A no-op
  * for an unknown row id or a row that is not 2 columns (the ratio has no meaning otherwise). Immutable.

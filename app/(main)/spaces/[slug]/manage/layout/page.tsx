@@ -14,6 +14,7 @@ import { readWebsitePublished } from '@/lib/spaces/website'
 import { FocusTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { SpacePagePanel } from '@/components/spaces/space-page-panel'
+import { SpaceCanvasEditorSection } from '@/components/entity-blocks/space-canvas/space-canvas-editor-section'
 
 // SPACE PAGE SETTINGS (multi-page model). The "Page" quick-edit surface in the unified console: a
 // compact panel that manages the operator-defined PAGES (create / rename / reorder / delete + pick the
@@ -74,6 +75,12 @@ export default async function SpacePageSettingsPage({
           <StaffPreviewBanner spaceName={brandName} />
         </div>
       )}
+      {/* The on-canvas WYSIWYG page editor: a compact settings-only section rail on the LEFT, a live
+          clickable page canvas on the RIGHT. Reads + writes the SAME persisted layout the panel below and the
+          in-rail arranger use (additive; nothing about persistence changes). */}
+      <section className="mb-8" aria-label="Page editor">
+        <SpaceCanvasEditorSection slug={slug} />
+      </section>
       <SpacePagePanel
         slug={slug}
         pages={pages}
