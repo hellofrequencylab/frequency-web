@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ImagePlus, Pencil } from 'lucide-react'
 import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
 import { DEFAULT_EMAIL_COLORS as C } from '@/lib/email-studio/render'
+import { BlockIcon } from '@/components/entity-blocks/block-icon'
 import { LoomImagePopup } from '../loom/loom-image-popup'
 import { EditableSlot } from './editable-slot'
 
@@ -21,7 +22,7 @@ import { EditableSlot } from './editable-slot'
 const FONT = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`
 
 /** The role a field plays on the canvas, or null when it belongs in the LEFT rail (structural) instead. */
-type Role = 'eyebrow' | 'heading' | 'quote' | 'attribution' | 'body' | 'button' | 'image' | 'features' | null
+type Role = 'eyebrow' | 'heading' | 'quote' | 'attribution' | 'body' | 'button' | 'image' | 'features' | 'cards' | null
 
 const IMAGE_KEYS = new Set(['image', 'src', 'images'])
 const BUTTON_LABEL_KEYS = new Set(['label', 'buttonLabel', 'browseLabel'])
@@ -36,10 +37,11 @@ function roleFor(blockId: string, f: FieldDef): Role {
   // slot, so it never double-renders.
   if (f.key === 'alt') return null
   if (isImageField(f)) return 'image'
-  // A FEATURES list (the Features block's items, the Card grid's cards) renders a PREVIEW on the canvas so the
-  // block is never invisible; its rows are edited in the LEFT-rail settings tile. links / embedUrl / picker have
-  // no canvas surface, so they stay rail-only.
+  // FEATURES items + CARD-GRID cards are edited ON CANVAS (item 1): their per-item title + text are inline
+  // slots here, while the non-text controls (icon / image / stat / link / button / reorder) stay in the LEFT
+  // rail. links / embedUrl / picker have no canvas surface, so they stay rail-only.
   if (f.type === 'features') return 'features'
+  if (f.type === 'cards') return 'cards'
   if (f.type === 'links') return null
   if (f.key === 'eyebrow') return 'eyebrow'
   if (BUTTON_LABEL_KEYS.has(f.key)) return 'button'
@@ -106,33 +108,110 @@ function ImageSlot({
   )
 }
 
-/** A read-only PREVIEW of a features list on the canvas (the Features block's items, the Card grid's cards).
- *  The rows themselves are authored in the LEFT-rail settings tile (the shared FeaturesEditor); this keeps the
- *  block visible on the canvas instead of rendering nothing. Empty === a hint pointing at the settings. */
-function FeaturesSlot({ label, value }: { label: string; value: unknown }) {
-  const items: Array<{ icon: string; title: string; text: string }> = Array.isArray(value)
-    ? (value as Array<Record<string, unknown>>).map((it) => ({
-        icon: typeof it.icon === 'string' ? it.icon : '',
-        title: typeof it.title === 'string' ? it.title : '',
-        text: typeof it.text === 'string' ? it.text : '',
-      }))
-    : []
-  if (items.length === 0) {
-    return (
-      <p className="text-sm italic" style={{ color: C.subtle }}>
-        Add {label.toLowerCase()} in this block&rsquo;s settings.
-      </p>
-    )
+/** An empty-state hint pointing the operator at the block's settings tile to add the first row. */
+function EmptyItemsHint({ label }: { label: string }) {
+  return (
+    <p className="text-sm italic" style={{ color: C.subtle }}>
+      Add {label.toLowerCase()} in this block&rsquo;s settings.
+    </p>
+  )
+}
+
+/** The EDITABLE Features list on the canvas (item 1): each item's title + text are inline slots; the icon is a
+ *  read-only preview (chosen with the rail's icon picker). Rows are added / removed / reordered in the LEFT
+ *  rail. Persists the WHOLE items array through onChange, preserving every non-text field of each item.
+ *  Robustness: the mapped slots are keyed by a STRUCTURAL signature (icon + link, the rail-owned fields) so a
+ *  rail reorder / add / remove remounts + re-seeds the slots, while a plain text keystroke leaves the key
+ *  stable (no caret jump). No effects, no set-state-in-effect. */
+function FeaturesCanvas({ label, value, onChange }: { label: string; value: unknown; onChange: (v: unknown) => void }) {
+  const items: Array<Record<string, unknown>> = Array.isArray(value) ? (value as Array<Record<string, unknown>>) : []
+  if (items.length === 0) return <EmptyItemsHint label={label} />
+  const sig = items.map((it) => `${typeof it.icon === 'string' ? it.icon : ''}~${typeof it.link === 'string' ? it.link : ''}`).join('|')
+  const patch = (i: number, key: 'title' | 'text', next: string) => {
+    const nextItems = items.map((it, j) => (j === i ? { ...it, [key]: next } : it))
+    onChange(nextItems)
   }
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {items.map((it, i) => (
-        <div key={i} style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}>
-          {it.icon && <div style={{ fontSize: 22, lineHeight: 1 }}>{it.icon}</div>}
-          {it.title && <div className="mt-1 text-base font-bold" style={{ color: C.text }}>{it.title}</div>}
-          {it.text && <div className="mt-0.5 text-sm leading-relaxed" style={{ color: C.muted }}>{it.text}</div>}
-        </div>
-      ))}
+      {items.map((it, i) => {
+        const icon = typeof it.icon === 'string' ? it.icon : ''
+        const title = typeof it.title === 'string' ? it.title : ''
+        const text = typeof it.text === 'string' ? it.text : ''
+        return (
+          <div key={`${sig}-${i}`} style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}>
+            {icon && (
+              <div style={{ color: C.primaryStrong, marginBottom: 6 }}>
+                <BlockIcon name={icon} size={22} />
+              </div>
+            )}
+            <div className="text-base font-bold" style={{ color: C.text }}>
+              <EditableSlot value={title} placeholder="Title" rich={false} onChange={(v) => patch(i, 'title', v)} />
+            </div>
+            <div className="mt-0.5 text-sm leading-relaxed" style={{ color: C.muted }}>
+              <EditableSlot value={text} placeholder="Description" rich={false} onChange={(v) => patch(i, 'text', v)} />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/** The EDITABLE Card-grid list on the canvas (item 1 + item 3): each card's title + text are inline slots; the
+ *  photo OR stat is a read-only preview (set in the rail). Styled distinctly from Features (a photo on top, or a
+ *  big stat number) so the two blocks read apart. Same structural-signature keying as FeaturesCanvas so rail
+ *  edits remount cleanly while typing stays stable. */
+function CardsCanvas({ label, value, onChange }: { label: string; value: unknown; onChange: (v: unknown) => void }) {
+  const cards: Array<Record<string, unknown>> = Array.isArray(value) ? (value as Array<Record<string, unknown>>) : []
+  if (cards.length === 0) return <EmptyItemsHint label={label} />
+  const sig = cards
+    .map((c) => {
+      const stat = (c.stat && typeof c.stat === 'object' ? c.stat : {}) as Record<string, unknown>
+      const btn = (c.button && typeof c.button === 'object' ? c.button : {}) as Record<string, unknown>
+      return [c.image, stat.value, stat.label, c.link, btn.label, btn.href].map((x) => (typeof x === 'string' ? x : '')).join('~')
+    })
+    .join('|')
+  const patch = (i: number, key: 'title' | 'text', next: string) => {
+    onChange(cards.map((c, j) => (j === i ? { ...c, [key]: next } : c)))
+  }
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {cards.map((c, i) => {
+        const image = typeof c.image === 'string' ? c.image : ''
+        const stat = (c.stat && typeof c.stat === 'object' ? c.stat : {}) as Record<string, unknown>
+        const statValue = typeof stat.value === 'string' ? stat.value : ''
+        const statLabel = typeof stat.label === 'string' ? stat.label : ''
+        const title = typeof c.title === 'string' ? c.title : ''
+        const text = typeof c.text === 'string' ? c.text : ''
+        const btn = (c.button && typeof c.button === 'object' ? c.button : {}) as Record<string, unknown>
+        const btnLabel = typeof btn.label === 'string' ? btn.label : ''
+        return (
+          <div key={`${sig}-${i}`} style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden', background: C.surface }}>
+            {image ? (
+              // eslint-disable-next-line @next/next/no-img-element -- operator Loom / URL asset, not a build asset
+              <img src={image} alt="" style={{ display: 'block', width: '100%', height: 120, objectFit: 'cover' }} />
+            ) : statValue || statLabel ? (
+              <div style={{ padding: '18px 16px 6px', background: C.surfaceElevated }}>
+                <div className="text-3xl font-black" style={{ color: C.primaryStrong, lineHeight: 1 }}>{statValue || '000'}</div>
+                {statLabel && <div className="mt-1 text-xs font-semibold uppercase tracking-wide" style={{ color: C.subtle }}>{statLabel}</div>}
+              </div>
+            ) : null}
+            <div style={{ padding: 14 }}>
+              <div className="text-base font-bold" style={{ color: C.text }}>
+                <EditableSlot value={title} placeholder="Card title" rich={false} onChange={(v) => patch(i, 'title', v)} />
+              </div>
+              <div className="mt-0.5 text-sm leading-relaxed" style={{ color: C.muted }}>
+                <EditableSlot value={text} placeholder="Card text" rich={false} onChange={(v) => patch(i, 'text', v)} />
+              </div>
+              {btnLabel && (
+                <span className="mt-2 inline-flex rounded-md px-3 py-1.5 text-xs font-bold" style={{ background: C.primary, color: C.onPrimary }}>
+                  {btnLabel}
+                </span>
+              )}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -230,7 +309,9 @@ export function CanvasBlock({
           </div>
         )
       case 'features':
-        return <FeaturesSlot key={key} label={f.label} value={props[f.key]} />
+        return <FeaturesCanvas key={key} label={f.label} value={props[f.key]} onChange={(v) => onField(f.key, v)} />
+      case 'cards':
+        return <CardsCanvas key={key} label={f.label} value={props[f.key]} onChange={(v) => onField(f.key, v)} />
       case 'body':
       default:
         return (

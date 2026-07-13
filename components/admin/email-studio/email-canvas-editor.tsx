@@ -40,6 +40,7 @@ const CORE_TYPES: ReadonlySet<FieldDef['type']> = new Set([
   'shadow',
   'margin',
   'features',
+  'cards',
   'links',
   'embedUrl',
 ])
@@ -193,6 +194,7 @@ export function EmailCanvasEditor() {
                             key={f.key}
                             field={f}
                             value={store.content[id]?.[f.key]}
+                            textOnCanvas
                             onChange={(v) => setField(id, f.key, v)}
                           />
                         ))

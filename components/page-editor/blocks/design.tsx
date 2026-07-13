@@ -354,6 +354,11 @@ type GridCard = {
   title?: string
   body?: string
   by?: string
+  // Email overhaul additions (rendered here too): a STAT box (a big number + label), a whole-card link, and a
+  // separate button. All optional + additive, so a legacy { icon, title, body } card renders exactly as before.
+  stat?: { value?: string; label?: string }
+  href?: string
+  button?: { label?: string; href?: string }
 }
 
 const GRID_COLS: Record<number, string> = {
@@ -383,7 +388,9 @@ export function CardGridBlock({
   browseHref?: string
   headerFont?: string
 }) {
-  const shown = (cards ?? []).filter((c) => c?.title || c?.body || c?.image || c?.by)
+  const shown = (cards ?? []).filter(
+    (c) => c?.title || c?.body || c?.image || c?.by || c?.stat?.value || c?.stat?.label,
+  )
   const n = Math.min(Math.max(columns, 1), 3)
   const cols = shown.length === 1 ? GRID_COLS[1] : GRID_COLS[n] ?? GRID_COLS[3]
   const browseSafe = safeHref(browseHref)
@@ -401,11 +408,21 @@ export function CardGridBlock({
               key={i}
               className="flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-pop"
             >
-              {(role === 'media' || role === 'testimonial') && card.image && (
-                <SiteImage src={card.image} alt={card.alt ?? ''} aspect="4/3" className="w-full" />
-              )}
+              {/* A photo card shows its image on top whenever one is set (email overhaul: not only the
+                  media / testimonial roles). */}
+              {card.image && <SiteImage src={card.image} alt={card.alt ?? ''} aspect="4/3" className="w-full" />}
               <div className="flex flex-1 flex-col gap-3 p-6">
-                {role === 'feature' && card.icon && (
+                {/* A STAT box (email overhaul): a big number + a label, shown when the card carries a stat and
+                    no photo (a metric card, styled apart from a photo card). */}
+                {!card.image && (card.stat?.value || card.stat?.label) && (
+                  <div>
+                    {card.stat?.value && <div className="font-display text-4xl leading-none text-primary-strong">{card.stat.value}</div>}
+                    {card.stat?.label && (
+                      <div className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-subtle">{card.stat.label}</div>
+                    )}
+                  </div>
+                )}
+                {role === 'feature' && !card.image && !card.stat?.value && card.icon && (
                   <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-bg text-xl leading-none text-primary-strong" aria-hidden>
                     {card.icon}
                   </span>
@@ -423,7 +440,15 @@ export function CardGridBlock({
                         : 'text-lg font-bold text-text'
                     }
                   >
-                    {card.title}
+                    {/* A whole-card link (email overhaul) applies to the title, so the card stays a single, valid
+                        link even when it also has its own button. */}
+                    {safeHref(card.href) ? (
+                      <Link href={safeHref(card.href) || '#'} className="transition-colors hover:text-primary-strong">
+                        {card.title}
+                      </Link>
+                    ) : (
+                      card.title
+                    )}
                   </h3>
                 )}
                 {card.body && (
@@ -433,6 +458,11 @@ export function CardGridBlock({
                 )}
                 {role === 'testimonial' && card.by && (
                   <p className="mt-auto text-sm font-semibold text-text">{card.by}</p>
+                )}
+                {card.button?.label && (
+                  <div className="mt-auto pt-1">
+                    <CtaButton href={safeHref(card.button.href) || '#'} label={card.button.label} variant="secondary" withArrow={false} />
+                  </div>
                 )}
               </div>
             </article>

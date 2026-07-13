@@ -174,6 +174,11 @@ export type FieldType =
   | 'links'
   | 'images'
   | 'features'
+  // The CARD-GRID cards repeater (email editor overhaul, 2026): a richer sibling of `features`. Each card is
+  // a PHOTO card (image on top) OR a STAT box (a big number + a label), plus a title + text, an optional
+  // whole-card link, and an optional separate button. Validated by sanitizeCard. Deliberately DISTINCT from
+  // `features` (which is text-forward, icon + title + text, no images) so the two blocks read + behave apart.
+  | 'cards'
   | 'toggle'
   // ADR-569 C6 primitives (attached to a block by a feature agent; validated against `options` / enum):
   | 'segmented'
@@ -286,7 +291,23 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'image', label: 'Image', type: 'url', placeholder: 'https://', upload: true },
     IMAGE_ASPECT_FIELD,
   ],
-  features: [{ key: 'items', label: 'Features', type: 'features' }],
+  // FEATURES (email overhaul, 2026): a TEXT-FORWARD list. An eyebrow leads it; each item is an icon + title
+  // + text (+ an optional whole-item link, authored in the rail). A Layout segmented reads it as a stacked
+  // list or a two-up grid. NO images here (that is the Card grid's job) so the two blocks stay distinct.
+  features: [
+    { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the features' },
+    { key: 'items', label: 'Features', type: 'features' },
+    {
+      key: 'layout',
+      label: 'Layout',
+      type: 'segmented',
+      defaultValue: 'list',
+      options: [
+        { value: 'list', label: 'List' },
+        { value: 'twoUp', label: 'Two up' },
+      ],
+    },
+  ],
   heading: [{ key: 'text', label: 'Heading', type: 'text', placeholder: 'Your heading goes here' }],
   // A first-class CALL-TO-ACTION button (Email Studio, 2026): a label, a link, and an alignment. The `align`
   // primitive reuses the shared enum sink in sanitizeBlockContent (start | center | end), so no bespoke
@@ -382,7 +403,7 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   cardGrid: [
     { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the heading' },
     { key: 'title', label: 'Heading', type: 'textarea', placeholder: 'What you offer' },
-    { key: 'cards', label: 'Cards', type: 'features' },
+    { key: 'cards', label: 'Cards', type: 'cards' },
     { key: 'buttonOn', label: 'Show browse link', type: 'toggle', default: true },
     { key: 'browseLabel', label: 'Browse link label', type: 'text', placeholder: 'See everything' },
     { key: 'browseUrl', label: 'Browse link', type: 'url', placeholder: 'https://' },
@@ -563,9 +584,10 @@ const BLOCK_TEXT_ROLES: Readonly<Record<string, readonly TextRole[]>> = {
   cardGrid: ['eyebrow', 'heading', 'body'],
   zigzag: ['eyebrow', 'heading', 'body'],
   accentBeat: ['eyebrow', 'heading', 'body'],
-  // The two multi-element content blocks: a heading + body (no eyebrow).
+  // The two multi-element content blocks. Callout is a heading + body (no eyebrow). Features now leads with an
+  // eyebrow (email overhaul), then its items' titles (heading role) + texts (body role).
   callout: ['heading', 'body'],
-  features: ['heading', 'body'],
+  features: ['eyebrow', 'heading', 'body'],
 }
 
 /** The ordered per-element text roles for a block id, or [] when the block styles its text as one whole
@@ -770,16 +792,76 @@ function sanitizeLink(raw: unknown): { label: string; url: string } | null {
   return { label: str(o.label, MAX_LABEL) || url, url }
 }
 
-/** Sanitize one Features item to `{ icon, title, text }` (ADR-542), dropping it (null) when it carries no
- *  title and no text. `icon` is a short free-text token (a Lucide icon name or an emoji); it is bounded and
- *  never used as an object key. */
-function sanitizeFeature(raw: unknown): { icon: string; title: string; text: string } | null {
+/** A sanitized Features item: an icon token + a title + text, plus an OPTIONAL whole-item link (email
+ *  overhaul, 2026). `link` is only present when a safe url survives, so the stored blob stays sparse and old
+ *  rows (which never carried one) round-trip unchanged. */
+export interface SanitizedFeature {
+  icon: string
+  title: string
+  text: string
+  link?: string
+}
+
+/** A sanitized Card-grid card (email overhaul, 2026): a PHOTO card (image) OR a STAT box ({ value, label }),
+ *  plus a title + text, an optional whole-card link, and an optional separate button. Every sub-field is
+ *  present only when it survives sanitize, so the blob stays sparse and legacy cards (icon + title + text)
+ *  round-trip. */
+export interface SanitizedCard {
+  icon?: string
+  image?: string
+  stat?: { value: string; label: string }
+  title: string
+  text: string
+  link?: string
+  button?: { label: string; href: string }
+}
+
+/** Sanitize one Features item to `{ icon, title, text, link? }` (ADR-542 → email overhaul), dropping it
+ *  (null) when it carries no title and no text. `icon` is a short free-text token (a Lucide icon name or an
+ *  emoji); it is bounded and never used as an object key. `link` is kept only when it is a safe url. */
+function sanitizeFeature(raw: unknown): SanitizedFeature | null {
   if (!raw || typeof raw !== 'object') return null
   const o = raw as Record<string, unknown>
   const title = str(o.title, MAX_LABEL)
   const text = str(o.text, MAX_TEXT)
   if (!title && !text) return null
-  return { icon: str(o.icon, 40), title, text }
+  const out: SanitizedFeature = { icon: str(o.icon, 40), title, text }
+  const link = safeUrl(o.link)
+  if (link) out.link = link
+  return out
+}
+
+/** Sanitize one Card-grid card to a `SanitizedCard`, dropping it (null) when it carries nothing to show (no
+ *  title, text, image, stat, or icon). Additive + fail-safe: a legacy card ({ icon, title, text }) survives
+ *  unchanged, and the new photo / stat / link / button fields are each kept only when valid + safe. */
+function sanitizeCard(raw: unknown): SanitizedCard | null {
+  if (!raw || typeof raw !== 'object') return null
+  const o = raw as Record<string, unknown>
+  const title = str(o.title, MAX_LABEL)
+  const text = str(o.text, MAX_TEXT)
+  const icon = str(o.icon, 40)
+  const image = safeUrl(o.image)
+  let stat: { value: string; label: string } | undefined
+  if (o.stat && typeof o.stat === 'object' && !Array.isArray(o.stat)) {
+    const so = o.stat as Record<string, unknown>
+    const value = str(so.value, MAX_LABEL)
+    const label = str(so.label, MAX_LABEL)
+    if (value || label) stat = { value, label }
+  }
+  if (!title && !text && !icon && !image && !stat) return null
+  const out: SanitizedCard = { title, text }
+  if (icon) out.icon = icon
+  if (image) out.image = image
+  if (stat) out.stat = stat
+  const link = safeUrl(o.link)
+  if (link) out.link = link
+  if (o.button && typeof o.button === 'object' && !Array.isArray(o.button)) {
+    const bo = o.button as Record<string, unknown>
+    const label = str(bo.label, MAX_LABEL)
+    const href = safeUrl(bo.href)
+    if (label) out.button = { label, href }
+  }
+  return out
 }
 
 /**
@@ -871,10 +953,14 @@ export function sanitizeBlockContent(id: string, raw: unknown): Record<string, u
       }
       case 'features': {
         const items = Array.isArray(v)
-          ? v
-              .slice(0, MAX_ITEMS)
-              .map(sanitizeFeature)
-              .filter((x): x is { icon: string; title: string; text: string } => x !== null)
+          ? v.slice(0, MAX_ITEMS).map(sanitizeFeature).filter((x): x is SanitizedFeature => x !== null)
+          : []
+        if (items.length) out[field.key] = items
+        break
+      }
+      case 'cards': {
+        const items = Array.isArray(v)
+          ? v.slice(0, MAX_ITEMS).map(sanitizeCard).filter((x): x is SanitizedCard => x !== null)
           : []
         if (items.length) out[field.key] = items
         break

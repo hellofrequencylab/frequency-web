@@ -200,6 +200,71 @@ describe('sanitizeBlockContent', () => {
   it('features with no valid items returns undefined', () => {
     expect(sanitizeBlockContent('features', { items: [{ icon: 'x' }] })).toBeUndefined()
   })
+
+  it('features (email overhaul): keeps an eyebrow, a valid layout, and an optional per-item link', () => {
+    expect(
+      sanitizeBlockContent('features', {
+        eyebrow: 'Why us',
+        layout: 'twoUp',
+        items: [
+          { icon: 'star', title: 'Fast', text: 'Very fast', link: 'https://x.com' },
+          { icon: '⭐', title: 'Safe', text: 'Locked down', link: 'javascript:1' }, // unsafe link dropped
+        ],
+      }),
+    ).toEqual({
+      eyebrow: 'Why us',
+      layout: 'twoUp',
+      items: [
+        { icon: 'star', title: 'Fast', text: 'Very fast', link: 'https://x.com' },
+        { icon: '⭐', title: 'Safe', text: 'Locked down' },
+      ],
+    })
+    // The default layout is dropped (sparse); a legacy items-only bag round-trips with no link key.
+    expect(sanitizeBlockContent('features', { layout: 'list', items: [{ title: 'A' }] })).toEqual({
+      items: [{ icon: '', title: 'A', text: '' }],
+    })
+  })
+})
+
+describe('sanitizeBlockContent cards (email overhaul, item 3)', () => {
+  it('keeps a photo card, a stat box, a whole-card link, and a button', () => {
+    expect(
+      sanitizeBlockContent('cardGrid', {
+        cards: [
+          { image: 'https://x/a.jpg', title: 'Photo', text: 'A photo card', link: 'https://x.com', button: { label: 'Open', href: 'https://x.com/o' } },
+          { stat: { value: '500+', label: 'members' }, title: 'Stat', text: 'A metric' },
+        ],
+      }),
+    ).toEqual({
+      cards: [
+        { title: 'Photo', text: 'A photo card', image: 'https://x/a.jpg', link: 'https://x.com', button: { label: 'Open', href: 'https://x.com/o' } },
+        { title: 'Stat', text: 'A metric', stat: { value: '500+', label: 'members' } },
+      ],
+    })
+  })
+
+  it('tolerates a legacy { icon, title, text } card and drops empties + unsafe urls', () => {
+    expect(
+      sanitizeBlockContent('cardGrid', {
+        cards: [
+          { icon: '🕖', title: 'When', text: 'Thursday' }, // legacy shape
+          { title: '', text: '' }, // nothing to show -> dropped
+          { image: 'javascript:1', title: 'Bad img' }, // unsafe image dropped, title kept
+          { button: { label: '', href: 'https://x.com' }, title: 'No button label' }, // button dropped (no label)
+        ],
+      }),
+    ).toEqual({
+      cards: [
+        { title: 'When', text: 'Thursday', icon: '🕖' },
+        { title: 'Bad img', text: '' },
+        { title: 'No button label', text: '' },
+      ],
+    })
+  })
+
+  it('cards with nothing usable returns undefined', () => {
+    expect(sanitizeBlockContent('cardGrid', { cards: [{ foo: 'x' }] })?.cards).toBeUndefined()
+  })
 })
 
 describe('sanitizeContentMap / sanitizeStyleMap (block-id allowlist)', () => {
@@ -350,9 +415,9 @@ describe('blockTextRoles (per-element text roles)', () => {
       expect(blockTextRoles(id)).toEqual(['eyebrow', 'heading', 'body'])
     }
   })
-  it('the two multi-element content blocks expose heading + body (no eyebrow)', () => {
+  it('Callout exposes heading + body; Features leads with an eyebrow too (email overhaul)', () => {
     expect(blockTextRoles('callout')).toEqual(['heading', 'body'])
-    expect(blockTextRoles('features')).toEqual(['heading', 'body'])
+    expect(blockTextRoles('features')).toEqual(['eyebrow', 'heading', 'body'])
   })
   it('single-text and data blocks style their text as one whole (no roles)', () => {
     for (const id of ['heading', 'text', 'quote', 'offerings', 'about', 'nope']) {
