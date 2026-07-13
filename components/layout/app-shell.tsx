@@ -18,7 +18,6 @@ import {
   Gem,
   Monitor,
   ChevronUp,
-  ChevronRight,
   Menu,
   ChevronsLeft,
   ChevronsRight,
@@ -616,29 +615,12 @@ function AccountDropdown({
             <p className="text-xs text-subtle truncate">@{profile.handle}</p>
           </div>
 
-          {/* People: Profile (fixed, dynamic href) + Invite (fixed event). */}
-          <div className="py-1">
-            <Link
-              href={profileHref}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
-            >
-              <User className="w-4 h-4 text-subtle" />
-              Profile
-            </Link>
-            <button
-              type="button"
-              onClick={() => { setOpen(false); window.dispatchEvent(new Event('open-invite')) }}
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated transition-colors"
-            >
-              <Gift className="w-4 h-4 text-primary-strong" />
-              Invite friends · earn Zaps
-            </button>
-          </div>
-
-          {/* Account links — the editable `profile` menu (ADR-390), grouped into labeled
-              sections (Account · Commerce · Community · Support). Operators add / move /
-              re-gate these in /admin/menu. Any ungrouped rootItems render first for safety. */}
+          {/* Account links — the editable `profile` menu (ADR-390), a prioritized, grouped
+              list (You · Membership · Commerce · Community · Support — docs/MOBILE-NAV-PLAN.md
+              §2). Gated items are HIDDEN unless the viewer qualifies (canSeeMenuItem). Fixed
+              chrome is WOVEN into the matching groups: View profile + Appearance in You, Invite
+              friends in Community, Report a bug in Support. Any ungrouped rootItems render first
+              for safety; fallbacks below catch a custom DB menu that renamed a group. */}
           {looseAccountLinks.length > 0 && (
             <div className="border-t border-border py-1">
               {looseAccountLinks.map(renderAccountLink)}
@@ -651,32 +633,94 @@ function AccountDropdown({
                   {s.label}
                 </p>
               ) : null}
+              {s.label === 'You' && (
+                <Link
+                  href={profileHref}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
+                >
+                  <User className="w-4 h-4 text-subtle" />
+                  View profile
+                </Link>
+              )}
               {s.items.map(renderAccountLink)}
+              {s.label === 'You' && (
+                <button
+                  onClick={() => { cycleTheme() }}
+                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated w-full text-left transition-colors"
+                >
+                  <ThemeIcon className="w-4 h-4 text-subtle" />
+                  {themeLabel}
+                </button>
+              )}
+              {s.label === 'Community' && (
+                <button
+                  type="button"
+                  onClick={() => { setOpen(false); window.dispatchEvent(new Event('open-invite')) }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated transition-colors"
+                >
+                  <Gift className="w-4 h-4 text-primary-strong" />
+                  Invite friends · earn Zaps
+                </button>
+              )}
+              {s.label === 'Support' && (
+                <button
+                  type="button"
+                  onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent('open-support', { detail: { type: 'bug' } })) }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated transition-colors"
+                >
+                  <Bug className="w-4 h-4 text-subtle" />
+                  Report a bug
+                </button>
+              )}
             </div>
           ))}
 
-          {/* Report a bug stays a fixed event button. */}
-          <div className="border-t border-border py-1">
-            <button
-              type="button"
-              onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent('open-support', { detail: { type: 'bug' } })) }}
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated transition-colors"
-            >
-              <Bug className="w-4 h-4 text-subtle" />
-              Report a bug
-            </button>
-          </div>
-
-          {/* Theme */}
-          <div className="border-t border-border py-1">
-            <button
-              onClick={() => { cycleTheme() }}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated w-full text-left transition-colors"
-            >
-              <ThemeIcon className="w-4 h-4 text-subtle" />
-              {themeLabel}
-            </button>
-          </div>
+          {/* Fallback chrome — only when a custom DB menu dropped/renamed a standard group, so
+              View profile / Appearance / Invite / Report a bug never vanish. Inert on defaults. */}
+          {!accountSections.some((s) => s.label === 'You') && (
+            <div className="border-t border-border py-1">
+              <Link
+                href={profileHref}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
+              >
+                <User className="w-4 h-4 text-subtle" />
+                View profile
+              </Link>
+              <button
+                onClick={() => { cycleTheme() }}
+                className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated w-full text-left transition-colors"
+              >
+                <ThemeIcon className="w-4 h-4 text-subtle" />
+                {themeLabel}
+              </button>
+            </div>
+          )}
+          {!accountSections.some((s) => s.label === 'Community') && (
+            <div className="border-t border-border py-1">
+              <button
+                type="button"
+                onClick={() => { setOpen(false); window.dispatchEvent(new Event('open-invite')) }}
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated transition-colors"
+              >
+                <Gift className="w-4 h-4 text-primary-strong" />
+                Invite friends · earn Zaps
+              </button>
+            </div>
+          )}
+          {!accountSections.some((s) => s.label === 'Support') && (
+            <div className="border-t border-border py-1">
+              <button
+                type="button"
+                onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent('open-support', { detail: { type: 'bug' } })) }}
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated transition-colors"
+              >
+                <Bug className="w-4 h-4 text-subtle" />
+                Report a bug
+              </button>
+            </div>
+          )}
 
           {/* Sign out */}
           <div className="border-t border-border py-1">
@@ -981,6 +1025,10 @@ function MobileLeftDrawer({
   onClose,
   role,
   identityRole,
+  realRole,
+  previewVisitor = false,
+  operatorContext,
+  availableContexts = [],
   profile,
   profileHref,
   isActive,
@@ -998,6 +1046,14 @@ function MobileLeftDrawer({
   role: CommunityRole | null
   /** The viewer's actual community role — drives the identity badge (not gated). */
   identityRole: CommunityRole
+  /** True DB role (ignores any view-as override) — gates the janitor View-as control. */
+  realRole: CommunityRole
+  /** Janitor previewing as a logged-out visitor — flows into View-as. */
+  previewVisitor?: boolean
+  /** Operator-identity context (framing) — powers the mobile context switcher. */
+  operatorContext?: OperatorContext
+  /** Contexts the caller may switch into (server-derived). */
+  availableContexts?: AvailableContext[]
   profile: Profile
   profileHref: string
   isActive: (href: string) => boolean
@@ -1013,6 +1069,11 @@ function MobileLeftDrawer({
   /** Sections are DB-driven (mode-per-item); forwarded to NavLinkList. */
   menuDriven?: boolean
 }) {
+  // Daily check-in streak (same source as the header streak pill) — a small visualizer
+  // under the identity card. Shown only once the member has a streak going.
+  const streak = Number(
+    (profile.meta as { daily_checkin_streak?: number } | null)?.daily_checkin_streak ?? 0,
+  )
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -1050,8 +1111,9 @@ function MobileLeftDrawer({
           </Link>
         </div>
 
-        {/* Identity + rewards — the bits that used to sit in the bottom bar. Tap the
-            card for your profile, the pill for your Dashboard. */}
+        {/* Identity — tap the card for your profile. Operators can switch hats here (View-as
+            + context switcher, both self-gating), and a small daily-streak visualizer sits
+            directly under the card. Stats moved to the bottom of the drawer. */}
         <div className="shrink-0 border-b border-border px-3 py-3">
           <Link
             href={profileHref}
@@ -1083,41 +1145,82 @@ function MobileLeftDrawer({
               </span>
             </div>
           </Link>
-          <Link
-            href="/crew"
-            onClick={onClose}
-            aria-label="Open rewards dashboard"
-            className="mt-2.5 flex items-center justify-center gap-5 rounded-lg bg-surface-elevated py-2 hover:bg-border-strong transition-colors"
-          >
-            <span className="flex items-center gap-1.5" title="Zaps (this season)">
-              <Zap className="w-4 h-4 text-primary" strokeWidth={2.5} />
-              <span className="text-sm font-bold text-text tabular-nums">
-                {(profile.current_season_zaps ?? 0).toLocaleString()}
-              </span>
-            </span>
-            <span className="flex items-center gap-1.5" title="Gems">
-              <Gem className="w-4 h-4 text-signal" strokeWidth={2.5} />
-              <span className="text-sm font-bold text-text tabular-nums">
-                {(profile.lifetime_gems ?? 0).toLocaleString()}
-              </span>
-            </span>
-          </Link>
+
+          {/* Operator hat-switching — both self-gate to null for viewers without them, so
+              a regular member sees nothing extra here. */}
+          <div className="mt-2 space-y-0.5">
+            <ViewAsControl realRole={realRole} currentRole={identityRole} asVisitor={previewVisitor} />
+            <ContextSwitcher context={operatorContext ?? { kind: 'personal' }} available={availableContexts} />
+          </div>
+
+          {/* Daily streak visualizer — a flame + count that links to your Quest dashboard. */}
+          {streak >= 1 && (
+            <Link
+              href="/crew"
+              onClick={onClose}
+              aria-label={`Daily streak: ${streak} ${streak === 1 ? 'day' : 'days'}. Open your Quest dashboard`}
+              className="mt-2.5 flex items-center gap-2 rounded-lg bg-primary-bg px-3 py-1.5 text-primary-strong transition-colors hover:bg-primary-bg/70"
+            >
+              <Flame className="h-4 w-4 shrink-0" strokeWidth={2.5} />
+              <span className="text-sm font-bold tabular-nums">{streak}</span>
+              <span className="text-xs font-medium">day streak</span>
+            </Link>
+          )}
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
           <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={sections} menuDriven={menuDriven} />
         </nav>
 
-        {/* Bottom close. Sits in the thumb zone */}
-        <div className="shrink-0 border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <button
-            onClick={onClose}
-            aria-label="Close navigation"
-            className="w-full flex items-center justify-center gap-2 rounded-lg bg-surface-elevated text-text text-sm font-medium py-3 hover:bg-border-strong transition-colors"
-          >
-            <X className="w-4 h-4" />
-            Close
-          </button>
+        {/* Bottom cluster — About/legal, then the stats section (Zaps · Gems + View stats),
+            then a thumb-zone Close. Stats sits directly above Close per the plan. */}
+        <div className="shrink-0 border-t border-border pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          {/* About / What is Frequency / Terms / Privacy — the site pages that were desktop
+              mega-menu only, so nothing is desktop-reachable-only. */}
+          <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pt-3 text-2xs text-subtle">
+            <Link href="/about" onClick={onClose} className="hover:text-text transition-colors">About</Link>
+            <Link href="/what-is-frequency" onClick={onClose} className="hover:text-text transition-colors">What is Frequency</Link>
+            <Link href="/terms" onClick={onClose} className="hover:text-text transition-colors">Terms</Link>
+            <Link href="/privacy" onClick={onClose} className="hover:text-text transition-colors">Privacy</Link>
+          </div>
+
+          {/* Stats — the Zaps · Gems pill that used to sit up top, now with a View stats link
+              to the full progress dashboard at /crew. */}
+          <div className="px-3 pt-3">
+            <div className="flex items-center gap-3 rounded-lg bg-surface-elevated px-3 py-2">
+              <span className="flex items-center gap-1.5" title="Zaps (this season)">
+                <Zap className="w-4 h-4 text-primary" strokeWidth={2.5} />
+                <span className="text-sm font-bold text-text tabular-nums">
+                  {(profile.current_season_zaps ?? 0).toLocaleString()}
+                </span>
+              </span>
+              <span className="flex items-center gap-1.5" title="Gems">
+                <Gem className="w-4 h-4 text-signal" strokeWidth={2.5} />
+                <span className="text-sm font-bold text-text tabular-nums">
+                  {(profile.lifetime_gems ?? 0).toLocaleString()}
+                </span>
+              </span>
+              <Link
+                href="/crew"
+                onClick={onClose}
+                className="ml-auto text-xs font-semibold text-primary-strong hover:underline"
+              >
+                View stats
+              </Link>
+            </div>
+          </div>
+
+          {/* Bottom close. Sits in the thumb zone */}
+          <div className="p-3">
+            <button
+              onClick={onClose}
+              aria-label="Close navigation"
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-surface-elevated text-text text-sm font-medium py-3 hover:bg-border-strong transition-colors"
+            >
+              <X className="w-4 h-4" />
+              Close
+            </button>
+          </div>
         </div>
       </aside>
     </div>
@@ -1130,35 +1233,32 @@ function MobileLeftDrawer({
 // and the long-tail nav). Keeps full content width: nothing is permanently eaten
 // from the side of an already-narrow phone screen.
 
-// The four calm spine worlds (§5a: Home · Community · The Quest · Messages), derived
-// from the ONE registry (lib/nav/registry.ts::calmSpine) — no parallel hardcoded list.
-// They flank the raised Zap center button (the action, below). Each tab carries its
+// The five calm spine worlds (§5a: Feed · Community · Events · The Quest · Marketplace),
+// derived from the ONE registry (lib/nav/registry.ts::calmSpine) — no parallel hardcoded
+// list. They flank the raised Zap center button (the action, below). Each tab carries its
 // backing calm NavNode (href · gate · icon key); icons still come from AREA_ICONS so the
 // bar stays in lockstep with the rail/drawer, and each tab gate-filters through canSee —
-// the same resolver every surface uses. Order here IS bar order (slots 1-2 · Zap · 3-4).
+// the same resolver every surface uses. Order here IS bar order (Menu · slots 1-2 · Zap ·
+// slots 3-5). Stats moved to the left drawer; Messages moved to the header.
 
 function MobileTabBar({
   isActive,
   viewer,
   onOpenMenu,
-  onOpenStats,
   menuOpen,
-  statsOpen,
   hideAppNav = false,
 }: {
   isActive: (href: string) => boolean
-  /** The gate identity the four spine tabs project through (canSee — the ONE resolver). */
+  /** The gate identity the five spine tabs project through (canSee — the ONE resolver). */
   viewer: NavViewer
   onOpenMenu: () => void
-  onOpenStats: () => void
   menuOpen: boolean
-  statsOpen: boolean
   /** Stripped shells (e.g. Studio) hide the app destinations; only the menu arrow remains. */
   hideAppNav?: boolean
 }) {
-  // The four calm spine worlds from the registry (§5a), gate-filtered through canSee — the
-  // same resolver every surface uses (so a visitor never sees a member-gated tab like
-  // Messages). Split around the Zap center button below (slots 1-2 · Zap · 3-4).
+  // The five calm spine worlds from the registry (§5a), gate-filtered through canSee — the
+  // same resolver every surface uses (so a visitor never sees a member-gated tab). Split
+  // around the Zap center button below (slots 1-2 left of Zap · Zap · slots 3-5 right).
   const tabs = calmSpine().filter((t) => canSee(t.node, viewer))
 
   // Every item — the two edge buttons AND the destination tabs — is flex-1 with the same
@@ -1245,101 +1345,14 @@ function MobileTabBar({
       )}
 
       {!hideAppNav && tabs.slice(2).map(renderTab)}
-
-      {/* Right → the stats drawer (zaps · gems · streak). */}
-      {!hideAppNav && (
-        <button
-          type="button"
-          onClick={onOpenStats}
-          aria-label={statsOpen ? 'Close stats' : 'Open stats'}
-          aria-expanded={statsOpen}
-          className={`${handle} ${statsOpen ? 'text-signal-strong' : ''}`}
-        >
-          <Gem className="h-[22px] w-[22px]" strokeWidth={2} />
-          <span className="leading-none">Stats</span>
-        </button>
-      )}
     </nav>
   )
 }
 
-// ── Mobile right drawer (The Quest: stats / streaks / gamification) ──────────
-// Mirrors the left drawer exactly (mobile-menus pass): same full-height panel,
-// same backdrop, same thumb-zone Close — the old micro/full size toggle is gone.
-// Opened only from the tab bar's gem control; one side open closes the other.
-// Dashboard lives at the top here (moved out of the account menu).
-
-function MobileRightDrawer({
-  open,
-  onClose,
-  children,
-}: {
-  open: boolean
-  onClose: () => void
-  children: React.ReactNode
-}) {
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-    }
-    if (open) window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
-
-  return (
-    <div
-      className={`md:hidden fixed inset-0 z-50 ${open ? 'pointer-events-auto' : 'pointer-events-none'}`}
-      aria-hidden={!open}
-    >
-      {/* Backdrop */}
-      <div
-        onClick={onClose}
-        className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${
-          open ? 'opacity-100' : 'opacity-0'
-        }`}
-      />
-
-      <aside
-        role="dialog"
-        aria-label="Streaks & stats"
-        className={`absolute inset-y-0 right-0 w-72 max-w-[85vw] bg-surface shadow-2xl flex flex-col transform transition-transform duration-200 ease-out ${
-          open ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        <div className="h-14 shrink-0 flex items-center gap-2 px-4 border-b border-border">
-          <Gem className="h-4 w-4 text-signal" strokeWidth={2.5} />
-          <p className="text-sm font-bold text-text">The Quest</p>
-        </div>
-
-        {/* My Quest — promoted here from the account menu (owner ask): the
-            gamification drawer is where the game lives. */}
-        <Link
-          href="/crew"
-          onClick={onClose}
-          className="mx-3 mt-3 flex shrink-0 items-center gap-2.5 rounded-lg bg-surface-elevated px-3 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-border-strong"
-        >
-          <Zap className="w-4 h-4 text-primary" />
-          My Quest
-          <ChevronRight className="ml-auto h-4 w-4 text-subtle" />
-        </Link>
-
-        <div className="flex-1 overflow-y-auto p-3">{children}</div>
-
-        {/* Bottom close. Sits in the thumb zone, same as the left drawer. */}
-        <div className="shrink-0 border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <button
-            onClick={onClose}
-            aria-label="Close stats"
-            className="w-full flex items-center justify-center gap-2 rounded-lg bg-surface-elevated text-text text-sm font-medium py-3 hover:bg-border-strong transition-colors"
-          >
-            <X className="w-4 h-4" />
-            Close
-          </button>
-        </div>
-      </aside>
-    </div>
-  )
-}
+// The old Mobile right drawer (The Quest stats peek) is retired: stats moved into the LEFT
+// drawer (a Zaps · Gems pill + a "View stats" link to /crew) and Messages moved to the
+// header, so the bottom bar's Gem/Stats edge button is gone. The full progress cockpit
+// still lives at /crew (linked from the left drawer's stats section).
 
 // ── Mindless launcher (header) ────────────────────────────────────────────────
 // Opens the global Mindless overlay (the On Air timer) from anywhere. Reads the
@@ -1376,7 +1389,6 @@ export default function AppShell({
   availableContexts = [],
   children,
   sidebar,
-  statsPanel,
   ticker,
   unreadCount = 0,
   extraSections,
@@ -1421,9 +1433,6 @@ export default function AppShell({
   availableContexts?: AvailableContext[]
   children: React.ReactNode
   sidebar?: React.ReactNode
-  /** Member stats / streaks / gamification body — hosted by the mobile right-edge
-   *  stats menu (the desktop dock shows the same content in the right rail). */
-  statsPanel?: React.ReactNode
   /** Community news ticker pinned above the page content (streamed via Suspense). */
   ticker?: React.ReactNode
   unreadCount?: number
@@ -1541,19 +1550,11 @@ export default function AppShell({
   // match. It never spills past the content's right column (it is its own pushing column).
   const [settings, setSettings] = useState<AdminBarState>({ open: false, width: 288, resizing: false })
 
-  // Mobile right drawer (The Quest stats) — opened only from the tab bar's gem
-  // control. The left side is the nav DRAWER (drawerOpen, also bottom-bar
-  // triggered); the shell keeps the two mutually exclusive.
-  const [rightOpen, setRightOpen] = useState(false)
-  function closeEdges() {
-    setRightOpen(false)
-  }
-
-  // Close mobile drawer + edge menu when the route changes (covers back/forward).
+  // Close the mobile nav drawer when the route changes (covers back/forward). The old
+  // right-edge stats drawer is retired (stats moved into the left drawer).
   if (lastPath !== pathname) {
     setLastPath(pathname)
     if (drawerOpen) setDrawerOpen(false)
-    if (rightOpen) closeEdges()
   }
 
   // ⌘K / Ctrl+K → open the live search overlay. Other surfaces (the admin command
@@ -1796,8 +1797,10 @@ export default function AppShell({
                 <Users className="w-5 h-5" />
               </Link>
             </HoverTip>
-            {/* Messages — desktop popover */}
-            <HoverTip label="Messages" className="hidden sm:inline-flex">
+            {/* Messages — all sizes now (its bottom tab moved to Events). DMs live in the
+                header top-right by convention; the popover fetches + carries its own unread
+                badge, exactly as on desktop. */}
+            <HoverTip label="Messages" className="inline-flex">
               <MessagesPopover />
             </HoverTip>
             {/* Notifications — sits before the streak (swapped per request); shown on
@@ -2043,36 +2046,18 @@ export default function AppShell({
       {/* Page-specific admin now lives inline at the top of the content
           (PageAdminBar in <main>), replacing the old right-edge admin drawer. */}
 
-      {/* ── Mobile right drawer — The Quest (stats / streaks / gamification),
-            opened only from the tab bar's gem. Mirrors the left drawer. ── */}
-      {/* Dropped on a full-viewport editor takeover: the editor owns the whole viewport (its own
-          thumb-zone dock), so the site's mobile nav + its drawers are suppressed here. */}
-      {!hideAppNav && !editorTakeover && statsPanel && (
-        <MobileRightDrawer open={rightOpen} onClose={closeEdges}>
-          {statsPanel}
-        </MobileRightDrawer>
-      )}
-
       {/* ── Mobile bottom tab bar ─────────────────────────── */}
-      {/* The four calm spine worlds (§5a: Home · Community · The Quest · Messages) from the
-          registry, flanking the raised Zap center action, with Menu/stats edge arrows.
-          Profile ("You") stays the top-right account avatar in the header (not a 5th tab).
-          Opening one side closes the other — never both drawers at once. Hidden on a
-          full-viewport editor takeover so it never sits over the editor's control dock. */}
+      {/* The five calm spine worlds (§5a: Feed · Community · Events · The Quest · Marketplace)
+          from the registry, flanking the raised Zap center action, with the Menu edge arrow.
+          Profile ("You") stays the top-right account avatar in the header (not a tab); stats
+          moved into the left drawer; Messages moved to the header. Hidden on a full-viewport
+          editor takeover so it never sits over the editor's control dock. */}
       {!editorTakeover && (
         <MobileTabBar
           isActive={isActive}
           viewer={{ role: gateRole, staffRole, operatesSpaces }}
-          onOpenMenu={() => {
-            setDrawerOpen((o) => !o)
-            setRightOpen(false)
-          }}
-          onOpenStats={() => {
-            setRightOpen((o) => !o)
-            setDrawerOpen(false)
-          }}
+          onOpenMenu={() => setDrawerOpen((o) => !o)}
           menuOpen={drawerOpen}
-          statsOpen={rightOpen}
           hideAppNav={hideAppNav}
         />
       )}
@@ -2084,6 +2069,10 @@ export default function AppShell({
           onClose={() => setDrawerOpen(false)}
           role={gateRole}
           identityRole={role}
+          realRole={effectiveRealRole}
+          previewVisitor={previewVisitor}
+          operatorContext={operatorContext}
+          availableContexts={availableContexts}
           profile={profile}
           profileHref={profileHref}
           isActive={isActive}

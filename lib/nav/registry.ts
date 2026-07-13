@@ -337,12 +337,20 @@ function footerNodes(): NavNode[] {
  *  Invite / theme / Sign-out chrome around this editable list.
  *
  *  Each link carries a `section` (its member-facing group label, NAMING.md governed): the
- *  four sections — Account · Commerce · Community · Support — segment the account menu into
- *  labeled groups. The seed order below IS both the section order AND the item order within
- *  each section, so `profileSections()` (and the derived `profileMenu()`) read top-to-bottom
- *  like the rendered menu. ("Community" over "Connect": the latter collides with the Zap
- *  Connect tile.) */
-type ProfileSectionLabel = 'Account' | 'Commerce' | 'Community' | 'Support'
+ *  five sections — You · Membership · Commerce · Community · Support — segment the account
+ *  menu into a prioritized, grouped list (docs/MOBILE-NAV-PLAN.md §2). The seed order below
+ *  IS both the section order AND the item order within each section, so `profileSections()`
+ *  (and the derived `profileMenu()`) read top-to-bottom like the rendered menu. The renderer
+ *  frames these editable links with fixed chrome woven into the matching groups — View
+ *  profile + Appearance in You, Invite friends in Community, Report a bug in Support — plus
+ *  Sign out at the foot. ("Community" over "Connect": the latter collides with the Zap
+ *  Connect tile.)
+ *
+ *  Gated items are HIDDEN unless the viewer qualifies (canSeeMenuItem's role/staff union):
+ *  Receive payments + My storefront ride `host` as the earner/seller proxy (the menu viewer
+ *  carries no seller/payout capability, so the trust tier is the closest available gate),
+ *  My orders is member+, Entry points is crew+. */
+type ProfileSectionLabel = 'You' | 'Membership' | 'Commerce' | 'Community' | 'Support'
 
 const PROFILE_LINK_SEEDS: readonly {
   id: string
@@ -352,20 +360,22 @@ const PROFILE_LINK_SEEDS: readonly {
   section: ProfileSectionLabel
   minAccess?: MenuAccess
 }[] = [
-  // Account
-  { id: 'settings', label: 'Settings', href: '/settings', icon: 'SlidersHorizontal', section: 'Account' },
-  { id: 'notifications', label: 'Notifications', href: '/settings/notifications', icon: 'BellRing', section: 'Account' },
-  { id: 'billing', label: 'Billing & Plans', href: '/settings/billing', icon: 'CreditCard', section: 'Account' },
+  // You (View profile + Appearance are fixed chrome woven in by the renderer)
+  { id: 'settings', label: 'Settings', href: '/settings', icon: 'SlidersHorizontal', section: 'You' },
+  { id: 'notifications', label: 'Notifications', href: '/settings/notifications', icon: 'BellRing', section: 'You' },
+  // Membership
+  { id: 'billing', label: 'Billing & Plans', href: '/settings/billing', icon: 'CreditCard', section: 'Membership' },
+  { id: 'payouts', label: 'Receive payments', href: '/settings/billing', icon: 'Banknote', section: 'Membership', minAccess: 'host' },
   // Commerce
   { id: 'orders', label: 'My orders', href: '/orders', icon: 'Receipt', section: 'Commerce', minAccess: 'member' },
-  { id: 'storefront', label: 'My storefront', href: '/market/manage', icon: 'Store', section: 'Commerce', minAccess: 'member' },
-  // Community
+  { id: 'storefront', label: 'My storefront', href: '/market/manage', icon: 'Store', section: 'Commerce', minAccess: 'host' },
+  // Community (Invite friends is fixed chrome woven in by the renderer)
   { id: 'friends', label: 'Friends', href: '/network/friends', icon: 'UserPlus', section: 'Community' },
   { id: 'codes', label: 'My code', href: '/codes', icon: 'QrCode', section: 'Community' },
   { id: 'entry-points', label: 'Entry points', href: '/entry-points', icon: 'Megaphone', section: 'Community', minAccess: 'crew' },
-  // Support
-  { id: 'support', label: 'Support tickets', href: '/support', icon: 'LifeBuoy', section: 'Support' },
+  // Support (Report a bug is fixed chrome woven in by the renderer)
   { id: 'help', label: 'Help', href: '/help', icon: 'HelpCircle', section: 'Support' },
+  { id: 'support', label: 'Support tickets', href: '/support', icon: 'LifeBuoy', section: 'Support' },
 ] as const
 
 function profileNodes(): NavNode[] {
@@ -507,15 +517,19 @@ export function paletteDestinations(viewer: NavViewer, query = ''): PaletteDesti
   return [...starts, ...contains].map(toDest)
 }
 
-// ── Calm mobile spine (§5a: the four thumb-zone worlds + Zap center) ─────────────────
-// The mobile tab bar is the four TOP-LEVEL calm worlds (Home · Community · The Quest ·
-// Messages), flanking the raised Zap center button (an ACTION, declared in the shell, not
-// a registry node). Each spine slot is an EXISTING calm registry node — its href, gate,
-// and icon key carry over verbatim (moving where the tab is declared, never what it
-// permits); only the rendered TAB label is the §5a canon world name, distinct from the
-// node's rail label (e.g. the `quest` rail reads "My Quest", the mobile tab reads "The
-// Quest"). Deriving from NAV_REGISTRY keeps the bar in lockstep with the one source — no
-// parallel hardcoded list — and gate-filters through the same canSee as every surface.
+// ── Calm mobile spine (§5a: the five thumb-zone worlds + Zap center) ─────────────────
+// The mobile tab bar is the five TOP-LEVEL calm worlds (Feed · Community · Events · The
+// Quest · Marketplace), flanking the raised Zap center button (an ACTION, declared in the
+// shell, not a registry node). The bar reads Menu · Feed · Community · [Zap] · Events · The
+// Quest · Marketplace (slots 1-2 sit left of Zap, slots 3-5 right of it). Each spine slot is
+// an EXISTING calm registry node — its href, gate, and icon key carry over verbatim (moving
+// where the tab is declared, never what it permits); only the rendered TAB label is the §5a
+// canon world name, distinct from the node's rail label (e.g. the `quest` rail reads "My
+// Quest", the mobile tab reads "The Quest"; the `market` rail reads "Classifieds", the tab
+// reads "Marketplace"). Deriving from NAV_REGISTRY keeps the bar in lockstep with the one
+// source — no parallel hardcoded list — and gate-filters through the same canSee as every
+// surface. Messages left the bar for the header (a badged top-right icon, DM convention);
+// its rail/drawer entry is unchanged.
 
 /** One mobile-bar tab: the §5a world name + the calm registry node it projects. */
 export type SpineTab = {
@@ -525,16 +539,19 @@ export type SpineTab = {
   node: NavNode
 }
 
-/** The four calm spine roots, in bar order: their registry node id → the §5a world label
- *  the tab renders. Ids are existing calm nodes (see nav-areas.ts BASE_NAV_AREAS). */
+/** The five calm spine roots, in bar order: their registry node id → the §5a world label
+ *  the tab renders. Ids are existing calm nodes (see nav-areas.ts BASE_NAV_AREAS + the
+ *  `market` vertical). `market` is the marketplace root the registry exposes (Classifieds
+ *  at /classifieds); the tab renders it as "Marketplace". */
 const CALM_SPINE_ROOTS: readonly { id: string; label: string }[] = [
-  { id: 'feed', label: 'Home' },
+  { id: 'feed', label: 'Feed' },
   { id: 'circles', label: 'Community' },
+  { id: 'events', label: 'Events' },
   { id: 'quest', label: 'The Quest' },
-  { id: 'messageBoards', label: 'Messages' },
+  { id: 'market', label: 'Marketplace' },
 ] as const
 
-/** The four calm mobile-spine tabs (§5a), in bar order, each pairing its §5a world label
+/** The five calm mobile-spine tabs (§5a), in bar order, each pairing its §5a world label
  *  with its backing calm registry node. A root whose node is missing from the registry is
  *  skipped (defensive), so the bar can never reference a destination that no longer exists.
  *  The renderer gate-filters each tab's `node` through canSee and centers the Zap action. */

@@ -17,7 +17,7 @@ import { resolveTheme } from '@/lib/theme/server/resolve'
 import { structureFor } from '@/lib/theme/structure'
 import { THEME_COOKIE, parseThemeCookie } from '@/lib/theme/cookie'
 import { loadActiveThemeCss, resolveActiveOccasionSlug } from '@/lib/theme/server/themes'
-import RightSidebar, { MobileGameStats } from '@/components/sidebar/right-sidebar'
+import RightSidebar from '@/components/sidebar/right-sidebar'
 import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
@@ -421,15 +421,6 @@ export default async function MainLayout({
     </Suspense>
   )
 
-  // Mobile stats menu body (zaps · streak · rank · journey · vault) — the same
-  // progress cockpit as the desktop dock, streamed independently so it never
-  // blocks the shell. The shell hosts it behind a right-edge, click-to-open menu.
-  const statsPanel = (
-    <Suspense fallback={null}>
-      <MobileGameStats profileId={profile.id} />
-    </Suspense>
-  )
-
   // The onboarding coach (ChoresOverlay) and its next-step chain (chores + getOnboardingStatus /
   // getFounderTasks / getActiveTraining) moved into CoachOverlaySlot below — flag-guarded
   // (nextStepsEnabled ships OFF) and streamed behind its own Suspense, so it never blocks the shell.
@@ -542,7 +533,6 @@ export default async function MainLayout({
       operatorContext={operatorContext}
       availableContexts={availableContexts}
       sidebar={sidebar}
-      statsPanel={statsPanel}
       ticker={ticker}
       unreadCount={unreadCount}
       permissions={permissions}
