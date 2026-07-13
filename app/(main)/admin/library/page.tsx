@@ -11,6 +11,7 @@ import {
   categoryFacets,
   listCollections,
   getLibraryAsset,
+  SPACES_COLLECTION_SLUG,
   type LibrarySort,
   type LibraryCollection,
   type LibraryGalleryItem,
@@ -136,6 +137,12 @@ export default async function LoomStudioPage({
         [] as LibraryCollection[],
       ]
 
+  // The master "Spaces" collection (Importer v2 #6) groups seeded Spaces' OWN images, which live under
+  // their space_id, not the root's. When it is the active folder, browse it CROSS-SPACE so those
+  // other-space assets appear (a normal collection stays scoped to the root Loom).
+  const spacesCollection = collections.find((c) => c.slug === SPACES_COLLECTION_SLUG) ?? null
+  const crossSpaceCollection = !!collectionId && collectionId === spacesCollection?.id
+
   // Main result. Three modes: "similar to X" (semantic neighbours), "most relevant" (semantic
   // ranked by the query), or the normal paginated keyword/facet browse. Semantic modes are a
   // single page and fall back to the keyword path when AI is off / nothing is embedded yet.
@@ -160,7 +167,7 @@ export default async function LoomStudioPage({
       total = assets.length
       if (assets.length === 0) {
         // AI off or nothing embedded → graceful keyword fallback.
-        const r = await searchLibraryAssets({ spaceId: scope.spaceId, q, kind: kind || undefined, category: category || undefined, collectionId: collectionId || undefined, page, pageSize: PAGE_SIZE })
+        const r = await searchLibraryAssets({ spaceId: scope.spaceId, q, kind: kind || undefined, category: category || undefined, collectionId: collectionId || undefined, crossSpace: crossSpaceCollection, page, pageSize: PAGE_SIZE })
         assets = r.items
         total = r.total
         paginated = true
@@ -172,6 +179,7 @@ export default async function LoomStudioPage({
         kind: kind || undefined,
         category: category || undefined,
         collectionId: collectionId || undefined,
+        crossSpace: crossSpaceCollection,
         sort,
         page,
         pageSize: PAGE_SIZE,

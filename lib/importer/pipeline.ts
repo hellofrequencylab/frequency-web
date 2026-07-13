@@ -21,6 +21,7 @@ import { harvest, type HarvestDeps, type HarvestResult } from './harvest'
 import { extractProfile, type ExtractRunResult } from './extract'
 import { verify, type VerifyResult } from './verify'
 import { reframe, type ReframeRunResult } from './reframe/run'
+import { analyzeDemographic } from './reframe/demographic'
 import { applyReframe } from './reframe/apply'
 import * as store from './store'
 import type { BusinessIntakeRow } from './intake'
@@ -38,6 +39,7 @@ export interface PipelineDeps {
   extractProfile?: typeof extractProfile
   verify?: typeof verify
   reframe?: typeof reframe
+  analyzeDemographic?: typeof analyzeDemographic
   harvestDeps?: HarvestDeps
 }
 
@@ -126,6 +128,7 @@ export async function runResearch(
   const doExtract = deps.extractProfile ?? extractProfile
   const doVerify = deps.verify ?? verify
   const doReframe = deps.reframe ?? reframe
+  const doAnalyzeDemographic = deps.analyzeDemographic ?? analyzeDemographic
 
   const row = await store.getIntake(intakeId)
   if (!row) return { ok: false, status: 'failed', note: 'intake not found', budgetSpent: 0 }
@@ -187,9 +190,24 @@ export async function runResearch(
     let finalDraft = verifyResult?.verifiedDraft ?? draft
     let finalLedger = verifyResult?.ledger ?? ledger
 
+    // ── Stage 4.5: Demographic + positioning pass (Importer v2 #1). A short read of WHO this business
+    // serves and HOW it is positioned, grounded ONLY on the verified subset (so it cannot surface an
+    // unverified claim). Stored on the draft as a private voice STEER that the reframe folds into its
+    // grounding. Additive + fail-safe: AI off / over budget / a null read leaves the draft unchanged and
+    // reframe behaves exactly as before. Never a commercial fact, so it is not ledgered / gated. ──
+    const demographicBudget = Math.max(0, cap - budgetSpent)
+    if (extractRan && demographicBudget > 0 && !finalDraft.demographic) {
+      const demo = await doAnalyzeDemographic({ verified: finalDraft, profileId: row.createdBy })
+      if (demo) {
+        finalDraft.demographic = demo.demographic
+        budgetSpent += demo.costUsd
+      }
+    }
+
     // ── Stage 5: Reframe (sonnet + voice primer). Grounds ONLY on the VERIFIED subset (finalDraft),
     // never the raw harvest, so it cannot launder an unverified commercial fact into prose (docs
-    // §4.4). Its output is folded back tagged kind:'generated', keeping it under the prose gate. ──
+    // §4.4). Its output is folded back tagged kind:'generated', keeping it under the prose gate. The
+    // demographic steer above sharpens the voice toward the right reader (docs/CONTENT-VOICE.md). ──
     let reframeResult: ReframeRunResult | null = null
     const reframeBudget = Math.max(0, cap - budgetSpent)
     if (extractRan && reframeBudget > 0) {

@@ -125,6 +125,13 @@ export interface BusinessProfile {
   story?: string //                            reframed narrative -> 'story' block body
   about?: string //                            -> profileData.about / 'about' block
 
+  // Demographic + positioning (Importer v2 #1, ADR-606). A short, plain summary of WHO this business
+  // serves and HOW it is positioned, produced by the reframe stage's demographic analysis pass. It never
+  // renders on the page; it is a private voice STEER fed into the reframe prompt so the Frequency-voice
+  // copy speaks to the right audience (docs/CONTENT-VOICE.md). Absent ⇒ the reframe behaves exactly as
+  // before (backwards-compatible). Not a commercial fact, so it is never gated / published.
+  demographic?: string //                      voice steer only (not persisted as a Space column)
+
   // Contact + hours -> spaces.preferences.profileData (SpaceProfileData)
   contact?: ProfileContact
 
