@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { ExternalLink } from 'lucide-react'
 import {
+  featureLayout,
+  gridColumns,
   marginBottomClass,
   marginTopClass,
   safeUrl,
@@ -8,6 +10,7 @@ import {
   textByRoleClass,
   textStyleClass,
   type BlockStyle,
+  type FeatureLayout,
 } from '@/lib/entity-blocks/block-content'
 import {
   parseEmbedUrl,
@@ -79,6 +82,249 @@ export function BlockStyleFrame({ style, children }: { style: BlockStyle | undef
   return cls ? <div className={cls}>{children}</div> : <>{children}</>
 }
 
+// ── Features (ADR-585): the flexible highlight engine, five layouts over a shared item shape ──────────────
+
+/** One resolved Features item, read from the (already sanitized / injected) content bag. An item shows an
+ *  icon OR an image, a title + text, an optional price, and an optional CTA link. */
+type FeatureItem = {
+  icon: string
+  image: string
+  title: string
+  text: string
+  price: string
+  link: string
+  cta: string
+}
+
+/** Read the block's items into the shared FeatureItem shape (values are already sanitized upstream). */
+function readFeatureItems(raw: unknown): FeatureItem[] {
+  if (!Array.isArray(raw)) return []
+  return (raw as Array<Record<string, unknown>>)
+    .map((it) => ({
+      icon: typeof it.icon === 'string' ? it.icon : '',
+      image: safeUrl(it.image),
+      title: typeof it.title === 'string' ? it.title : '',
+      text: typeof it.text === 'string' ? it.text : '',
+      price: typeof it.price === 'string' ? it.price : '',
+      link: safeUrl(it.link),
+      cta: typeof it.cta === 'string' ? it.cta : '',
+    }))
+    .filter((it) => it.title || it.text || it.image)
+}
+
+/** The responsive grid-columns utility for a 2 / 3 / 4 column count (mobile stays single-column). */
+function gridColsClass(n: 2 | 3 | 4): string {
+  return n === 2 ? 'sm:grid-cols-2' : n === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-2 lg:grid-cols-3'
+}
+
+/** An item's media: its image (when set) at the given crop, else its icon glyph. Null when it has neither. */
+function FeatureMedia({ item, variant }: { item: FeatureItem; variant: 'inline' | 'top' | 'spotlight' }): ReactNode {
+  if (item.image) {
+    const cls =
+      variant === 'top'
+        ? 'aspect-[4/3] w-full rounded-xl object-cover'
+        : variant === 'spotlight'
+          ? 'aspect-[4/3] w-full rounded-2xl object-cover'
+          : 'h-12 w-12 shrink-0 rounded-xl object-cover'
+    // eslint-disable-next-line @next/next/no-img-element -- operator/offering image URL (safeUrl-checked)
+    return <img src={item.image} alt="" className={cls} />
+  }
+  if (item.icon) {
+    return (
+      <div className="shrink-0 text-primary-strong" aria-hidden>
+        <BlockIcon name={item.icon} size={variant === 'inline' ? 26 : 30} />
+      </div>
+    )
+  }
+  return null
+}
+
+/** An item's price line (a small accent tag). Null when there is no price. */
+function FeaturePrice({ price }: { price: string }): ReactNode {
+  return price ? <p className="text-sm font-semibold text-primary-strong">{price}</p> : null
+}
+
+/** An item's CTA button, over its link (label falls back to a plain "Learn more"). Null with no link. */
+function FeatureCta({ item }: { item: FeatureItem }): ReactNode {
+  if (!item.link) return null
+  return (
+    <a
+      href={item.link}
+      className="mt-1 inline-flex items-center gap-1 self-start rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:border-primary hover:text-primary-strong"
+    >
+      {item.cta || 'Learn more'}
+    </a>
+  )
+}
+
+/** The item's title + text + price + CTA, stacked. Shared by every layout's text column. */
+function FeatureBody({ item, titleClass }: { item: FeatureItem; titleClass: string }): ReactNode {
+  return (
+    <div className="flex flex-col gap-1">
+      {item.title && <h4 className={titleClass}>{item.title}</h4>}
+      {item.text && <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{item.text}</p>}
+      <FeaturePrice price={item.price} />
+      <FeatureCta item={item} />
+    </div>
+  )
+}
+
+/** The Features block (ADR-585). Reads the eyebrow + heading + items + layout + columns from the bag and
+ *  dispatches on the layout. FAIL-SAFE: nothing to show renders null so the row reserves no height. */
+function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode {
+  const eyebrow = s(props, 'eyebrow')
+  const title = s(props, 'title')
+  const items = readFeatureItems(props.items)
+  const layout: FeatureLayout = featureLayout(props)
+  const cols = gridColumns(props)
+  if (!eyebrow && !title && !items.length) return null
+
+  const header =
+    eyebrow || title ? (
+      <div className="space-y-1">
+        {eyebrow && (
+          <p data-text-role="eyebrow" className="text-xs font-bold uppercase tracking-[0.12em] text-primary-strong">
+            {eyebrow}
+          </p>
+        )}
+        {title && <h3 className="text-2xl font-bold text-text">{title}</h3>}
+      </div>
+    ) : null
+
+  let body: ReactNode = null
+
+  if (layout === 'list') {
+    // Today's look: an icon (or small image) beside a title + text, stacked. A whole-item link wraps the row.
+    body = (
+      <div className="flex flex-col gap-5">
+        {items.map((it, i) => {
+          const inner = (
+            <>
+              <FeatureMedia item={it} variant="inline" />
+              <FeatureBody item={it} titleClass="text-base font-bold text-text" />
+            </>
+          )
+          const rowCls = 'flex items-start gap-3'
+          return it.link ? (
+            <a key={i} href={it.link} className={`${rowCls} rounded-xl transition-colors hover:bg-surface-elevated`}>
+              {inner}
+            </a>
+          ) : (
+            <div key={i} className={rowCls}>
+              {inner}
+            </div>
+          )
+        })}
+      </div>
+    )
+  } else if (layout === 'columns') {
+    // A 2-4 up grid: media on top of a title + text + price + CTA, no card frame (that is the `cards` layout).
+    body = (
+      <div className={`grid gap-6 ${gridColsClass(cols)}`}>
+        {items.map((it, i) => (
+          <div key={i} className="flex flex-col gap-2">
+            <FeatureMedia item={it} variant="top" />
+            <FeatureBody item={it} titleClass="text-base font-bold text-text" />
+          </div>
+        ))}
+      </div>
+    )
+  } else if (layout === 'stats') {
+    // Big value + label: the price (or the title) reads as the headline number, the text (or title) as label.
+    body = (
+      <div className={`grid gap-6 ${gridColsClass(cols)}`}>
+        {items.map((it, i) => {
+          const big = it.price || it.title
+          const label = it.price ? it.title || it.text : it.text
+          const stat = (
+            <>
+              {big && <div className="text-4xl font-bold leading-none text-primary-strong">{big}</div>}
+              {label && <div className="mt-2 text-sm leading-relaxed text-muted">{label}</div>}
+            </>
+          )
+          return it.link ? (
+            <a key={i} href={it.link} className="block rounded-2xl border border-border bg-surface p-6 text-center transition-colors hover:border-primary">
+              {stat}
+            </a>
+          ) : (
+            <div key={i} className="rounded-2xl border border-border bg-surface p-6 text-center">
+              {stat}
+            </div>
+          )
+        })}
+      </div>
+    )
+  } else if (layout === 'cards') {
+    // Image cards: a framed card with the photo (or icon) on top of the body. A whole-item link wraps it.
+    body = (
+      <div className={`grid gap-6 ${gridColsClass(cols)}`}>
+        {items.map((it, i) => {
+          const card = (
+            <>
+              {it.image ? (
+                // eslint-disable-next-line @next/next/no-img-element -- operator/offering image URL (safeUrl-checked)
+                <img src={it.image} alt="" className="aspect-[4/3] w-full object-cover" />
+              ) : it.icon ? (
+                <div className="flex h-14 items-center px-5 pt-5 text-primary-strong" aria-hidden>
+                  <BlockIcon name={it.icon} size={30} />
+                </div>
+              ) : null}
+              <div className="flex flex-1 flex-col gap-1 p-5">
+                {it.title && <h4 className="text-base font-bold text-text">{it.title}</h4>}
+                {it.text && <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{it.text}</p>}
+                <FeaturePrice price={it.price} />
+                <FeatureCta item={it} />
+              </div>
+            </>
+          )
+          const cardCls = 'flex flex-col overflow-hidden rounded-2xl border border-border bg-surface'
+          return it.link ? (
+            <a key={i} href={it.link} className={`${cardCls} transition-colors hover:border-primary`}>
+              {card}
+            </a>
+          ) : (
+            <div key={i} className={cardCls}>
+              {card}
+            </div>
+          )
+        })}
+      </div>
+    )
+  } else {
+    // Spotlight: full-width rows, the media alternating left / right of the text (item media falls back to the
+    // icon on a wash when there is no photo). On mobile every row stacks media-over-text.
+    body = (
+      <div className="flex flex-col gap-10">
+        {items.map((it, i) => {
+          const media = it.image ? (
+            <FeatureMedia item={it} variant="spotlight" />
+          ) : it.icon ? (
+            <div className="flex aspect-[4/3] w-full items-center justify-center rounded-2xl bg-primary-bg text-primary-strong" aria-hidden>
+              <BlockIcon name={it.icon} size={56} />
+            </div>
+          ) : null
+          const flip = i % 2 === 1
+          return (
+            <div key={i} className={`flex flex-col gap-5 sm:items-center ${flip ? 'sm:flex-row-reverse' : 'sm:flex-row'}`}>
+              {media && <div className="sm:w-1/2">{media}</div>}
+              <div className={media ? 'sm:w-1/2' : 'w-full'}>
+                <FeatureBody item={it} titleClass="text-xl font-bold text-text" />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {header}
+      {body}
+    </div>
+  )
+}
+
 /** Render ONE authored content block by id from its sanitized props. Returns null when it has no content,
  *  so an empty block leaves no gap. */
 export function ContentBlockView({ id, props }: { id: string; props: Record<string, unknown> }): ReactNode {
@@ -129,67 +375,12 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
         </div>
       )
     }
-    case 'features': {
-      // TEXT-FORWARD features (email overhaul): an optional eyebrow, then a list (or two-up) of items, each an
-      // icon + title + text and an OPTIONAL whole-item link. No images (that is the Card grid's job), so this
-      // reads clearly apart from the visual Card grid.
-      const eyebrow = s(props, 'eyebrow')
-      const items = Array.isArray(props.items)
-        ? (props.items as Array<{ icon?: unknown; title?: unknown; text?: unknown; link?: unknown }>)
-            .map((it) => ({
-              icon: typeof it.icon === 'string' ? it.icon : '',
-              title: typeof it.title === 'string' ? it.title : '',
-              text: typeof it.text === 'string' ? it.text : '',
-              link: safeUrl(it.link),
-            }))
-            .filter((it) => it.title || it.text)
-        : []
-      if (!eyebrow && !items.length) return null
-      const twoUp = props.layout === 'twoUp'
-      const listCls = twoUp ? 'grid gap-5 sm:grid-cols-2' : 'flex flex-col gap-5'
-      return (
-        <div className="space-y-4">
-          {eyebrow && (
-            <p data-text-role="eyebrow" className="text-xs font-bold uppercase tracking-[0.12em] text-primary-strong">
-              {eyebrow}
-            </p>
-          )}
-          {items.length > 0 && (
-            <div className={listCls}>
-              {items.map((it, i) => {
-                const inner = (
-                  <>
-                    {it.icon && (
-                      <div className="shrink-0 text-primary-strong" aria-hidden>
-                        <BlockIcon name={it.icon} size={26} />
-                      </div>
-                    )}
-                    <div className="space-y-1">
-                      {it.title && <h4 className="text-base font-bold text-text">{it.title}</h4>}
-                      {it.text && <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{it.text}</p>}
-                    </div>
-                  </>
-                )
-                const rowCls = 'flex items-start gap-3'
-                return it.link ? (
-                  <a
-                    key={`${it.title}-${i}`}
-                    href={it.link}
-                    className={`${rowCls} rounded-xl transition-colors hover:bg-surface-elevated`}
-                  >
-                    {inner}
-                  </a>
-                ) : (
-                  <div key={`${it.title}-${i}`} className={rowCls}>
-                    {inner}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )
-    }
+    case 'features':
+      // The FLEXIBLE highlight engine (ADR-585): an eyebrow + heading over items that render in one of five
+      // layouts. The items are the operator's authored `items`, OR (for a data source) the offering / event /
+      // tier items resolved server-side and injected as `items` before this renders — either way this reads
+      // `props.items`, so the switch here is layout-only.
+      return <FeaturesBlock props={props} />
     case 'heading': {
       const text = s(props, 'text')
       return text ? <h2 className="text-2xl font-bold text-text">{text}</h2> : null

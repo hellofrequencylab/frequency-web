@@ -22,6 +22,10 @@ import {
   colorSwatchClass,
   safeUrl,
   PICKER_DATA_BLOCK_IDS,
+  featureSource,
+  featureLayout,
+  gridColumns,
+  isFeatureDataSource,
   type FieldDef,
 } from './block-content'
 
@@ -103,6 +107,28 @@ describe('fieldsForBlock', () => {
     expect(fieldsForBlock('offerings').map((f) => f.key)).toEqual(['eyebrow', 'title', 'items'])
     expect(fieldsForBlock('about').map((f) => f.key)).toEqual(['eyebrow', 'title', 'body'])
     expect(fieldsForBlock('nope')).toEqual([])
+  })
+
+  it('Features (ADR-585) is the flexible engine: source + heading + items + layout + columns', () => {
+    const features = fieldsForBlock('features')
+    expect(features.map((f) => f.key)).toEqual(['eyebrow', 'title', 'source', 'items', 'layout', 'columns'])
+    const source = features.find((f) => f.key === 'source')
+    expect(source?.options?.map((o) => o.value)).toEqual(['custom', 'offerings', 'events', 'memberships', 'tickets'])
+    const layout = features.find((f) => f.key === 'layout')
+    expect(layout?.options?.map((o) => o.value)).toEqual(['list', 'columns', 'stats', 'cards', 'spotlight'])
+  })
+  it('Card grid (ADR-585) is the simple block: heading + subheading + cards + shape controls only', () => {
+    expect(fieldsForBlock('cardGrid').map((f) => f.key)).toEqual([
+      'title',
+      'subtitle',
+      'cards',
+      'columns',
+      'shape',
+      'rounded',
+      'shadow',
+    ])
+    // Deliberately NO data source and NO layout modes — that flexibility is Features' job.
+    expect(fieldsForBlock('cardGrid').some((f) => f.key === 'source' || f.key === 'layout')).toBe(false)
   })
 
   it('every image-bearing block exposes the Shape control (item 2: all images selectable)', () => {
@@ -201,11 +227,13 @@ describe('sanitizeBlockContent', () => {
     expect(sanitizeBlockContent('features', { items: [{ icon: 'x' }] })).toBeUndefined()
   })
 
-  it('features (email overhaul): keeps an eyebrow, a valid layout, and an optional per-item link', () => {
+  it('features (ADR-585): keeps eyebrow/heading, a valid layout + columns, and an optional per-item link', () => {
     expect(
       sanitizeBlockContent('features', {
         eyebrow: 'Why us',
-        layout: 'twoUp',
+        title: 'What sets us apart',
+        layout: 'columns',
+        columns: '4',
         items: [
           { icon: 'star', title: 'Fast', text: 'Very fast', link: 'https://x.com' },
           { icon: '⭐', title: 'Safe', text: 'Locked down', link: 'javascript:1' }, // unsafe link dropped
@@ -213,15 +241,43 @@ describe('sanitizeBlockContent', () => {
       }),
     ).toEqual({
       eyebrow: 'Why us',
-      layout: 'twoUp',
+      title: 'What sets us apart',
+      layout: 'columns',
+      columns: '4',
       items: [
         { icon: 'star', title: 'Fast', text: 'Very fast', link: 'https://x.com' },
         { icon: '⭐', title: 'Safe', text: 'Locked down' },
       ],
     })
-    // The default layout is dropped (sparse); a legacy items-only bag round-trips with no link key.
-    expect(sanitizeBlockContent('features', { layout: 'list', items: [{ title: 'A' }] })).toEqual({
+    // The default layout / columns / source are dropped (sparse); a legacy items-only bag round-trips.
+    expect(sanitizeBlockContent('features', { layout: 'list', columns: '3', source: 'custom', items: [{ title: 'A' }] })).toEqual({
       items: [{ icon: '', title: 'A', text: '' }],
+    })
+    // A legacy `twoUp` layout is no longer an offered value, so it is dropped (renders as the `list` default).
+    expect(sanitizeBlockContent('features', { layout: 'twoUp', items: [{ title: 'A' }] })).toEqual({
+      items: [{ icon: '', title: 'A', text: '' }],
+    })
+  })
+
+  it('features (ADR-585): a data source + a rich item (image / price / cta) survive', () => {
+    expect(
+      sanitizeBlockContent('features', {
+        source: 'offerings',
+        items: [
+          { image: 'https://x/a.jpg', title: 'Session', text: 'One hour', price: 'from $80', link: 'https://x/book', cta: 'Book' },
+          { image: 'javascript:1', title: 'Bad img', text: '' }, // unsafe image dropped, title keeps the item
+        ],
+      }),
+    ).toEqual({
+      source: 'offerings',
+      items: [
+        { icon: '', title: 'Session', text: 'One hour', image: 'https://x/a.jpg', price: 'from $80', link: 'https://x/book', cta: 'Book' },
+        { icon: '', title: 'Bad img', text: '' },
+      ],
+    })
+    // An image-only item (no title / text) now survives, since Features items can be photo-forward.
+    expect(sanitizeBlockContent('features', { items: [{ image: 'https://x/p.jpg' }] })).toEqual({
+      items: [{ icon: '', title: '', text: '', image: 'https://x/p.jpg' }],
     })
   })
 })
@@ -411,9 +467,12 @@ describe('control audit: blockSupportsAlign / blockSupportsBackground (item 5)',
 
 describe('blockTextRoles (per-element text roles)', () => {
   it('design blocks expose eyebrow + heading + body', () => {
-    for (const id of ['photoHero', 'editorial', 'cardGrid', 'zigzag', 'accentBeat']) {
+    for (const id of ['photoHero', 'editorial', 'zigzag', 'accentBeat']) {
       expect(blockTextRoles(id)).toEqual(['eyebrow', 'heading', 'body'])
     }
+  })
+  it('the simplified Card grid (ADR-585) styles just its heading + subheading', () => {
+    expect(blockTextRoles('cardGrid')).toEqual(['heading', 'body'])
   })
   it('Callout exposes heading + body; Features leads with an eyebrow too (email overhaul)', () => {
     expect(blockTextRoles('callout')).toEqual(['heading', 'body'])
@@ -509,5 +568,33 @@ describe('resolvePickedIds (items 5 + 7)', () => {
   })
   it('falls back to every live id when the whole selection is stale', () => {
     expect(resolvePickedIds(['x', 'y'], ['a', 'b'])).toEqual(['a', 'b'])
+  })
+})
+
+describe('Features source / layout / columns helpers (ADR-585)', () => {
+  it('featureSource defaults to custom and validates the value', () => {
+    expect(featureSource(undefined)).toBe('custom')
+    expect(featureSource({})).toBe('custom')
+    expect(featureSource({ source: 'offerings' })).toBe('offerings')
+    expect(featureSource({ source: 'events' })).toBe('events')
+    expect(featureSource({ source: 'nope' })).toBe('custom')
+  })
+  it('isFeatureDataSource is true only for a non-custom source', () => {
+    expect(isFeatureDataSource({ source: 'custom' })).toBe(false)
+    expect(isFeatureDataSource(undefined)).toBe(false)
+    expect(isFeatureDataSource({ source: 'memberships' })).toBe(true)
+  })
+  it('featureLayout defaults to list, validates, and folds the legacy twoUp to columns', () => {
+    expect(featureLayout(undefined)).toBe('list')
+    expect(featureLayout({ layout: 'stats' })).toBe('stats')
+    expect(featureLayout({ layout: 'spotlight' })).toBe('spotlight')
+    expect(featureLayout({ layout: 'twoUp' })).toBe('columns')
+    expect(featureLayout({ layout: 'bogus' })).toBe('list')
+  })
+  it('gridColumns clamps to {2,3,4} and defaults to 3', () => {
+    expect(gridColumns(undefined)).toBe(3)
+    expect(gridColumns({ columns: '2' })).toBe(2)
+    expect(gridColumns({ columns: '4' })).toBe(4)
+    expect(gridColumns({ columns: '9' })).toBe(3)
   })
 })

@@ -354,7 +354,7 @@ export function FieldEditor({
     return <ImagesEditor label={field.label} value={value} uploadImage={field.upload ? uploadImage : undefined} onChange={onChange} />
   }
   if (field.type === 'features') {
-    return <FeaturesEditor label={field.label} value={value} textOnCanvas={textOnCanvas} onChange={onChange} />
+    return <FeaturesEditor label={field.label} value={value} uploadImage={uploadImage} textOnCanvas={textOnCanvas} onChange={onChange} />
   }
   if (field.type === 'cards') {
     return (
@@ -643,8 +643,9 @@ function ImagesEditor({
   )
 }
 
-/** One Features item as edited in the rail. `link` is an optional whole-item link (email overhaul). */
-type FeatureRow = { icon: string; title: string; text: string; link: string }
+/** One Features item as edited in the rail (ADR-585): an icon OR an image, a title + text, an optional price,
+ *  a whole-item link, and an optional CTA label (the CTA renders over `link`). */
+type FeatureRow = { icon: string; image: string; title: string; text: string; price: string; link: string; cta: string }
 
 /** Reorder buttons + a remove button for a repeater row. Shared by the Features + Cards editors. */
 function RowControls({
@@ -700,20 +701,25 @@ function RowControls({
 function FeaturesEditor({
   label,
   value,
+  uploadImage,
   textOnCanvas = false,
   onChange,
 }: {
   label: string
   value: unknown
+  uploadImage?: UploadImage
   textOnCanvas?: boolean
   onChange: (v: unknown) => void
 }) {
   const items: FeatureRow[] = Array.isArray(value)
     ? (value as Array<Record<string, unknown>>).map((it) => ({
         icon: typeof it.icon === 'string' ? it.icon : '',
+        image: typeof it.image === 'string' ? it.image : '',
         title: typeof it.title === 'string' ? it.title : '',
         text: typeof it.text === 'string' ? it.text : '',
+        price: typeof it.price === 'string' ? it.price : '',
         link: typeof it.link === 'string' ? it.link : '',
+        cta: typeof it.cta === 'string' ? it.cta : '',
       }))
     : []
   // Do NOT prune here: pruning empty rows swallowed the freshly-added blank row (bug). Keep every row while
@@ -756,10 +762,33 @@ function FeaturesEditor({
               className={inputCls}
             />
           )}
+          {/* An image (ADR-585): use INSTEAD of the icon for a photo-forward item (cards / spotlight layouts). */}
+          <label className="block space-y-1">
+            <span className={labelCls}>Image</span>
+            <input
+              value={it.image}
+              placeholder="https:// (leave blank to use the icon)"
+              onChange={(e) => patch(i, { image: e.target.value })}
+              className={inputCls}
+            />
+            {uploadImage && <UploadButton uploadImage={uploadImage} onUploaded={(urls) => patch(i, { image: urls[urls.length - 1] })} />}
+          </label>
+          <input
+            value={it.price}
+            placeholder="Price (optional), e.g. from $80"
+            onChange={(e) => patch(i, { price: e.target.value })}
+            className={inputCls}
+          />
           <input
             value={it.link}
             placeholder="Link (optional), https://"
             onChange={(e) => patch(i, { link: e.target.value })}
+            className={inputCls}
+          />
+          <input
+            value={it.cta}
+            placeholder="Button label (optional), e.g. Learn more"
+            onChange={(e) => patch(i, { cta: e.target.value })}
             className={inputCls}
           />
           <RowControls index={i} count={items.length} noun="feature" onMove={(d) => move(i, d)} onRemove={() => update(items.filter((_, j) => j !== i))} />
@@ -767,7 +796,7 @@ function FeaturesEditor({
       ))}
       <button
         type="button"
-        onClick={() => update([...items, { icon: '', title: '', text: '', link: '' }])}
+        onClick={() => update([...items, { icon: '', image: '', title: '', text: '', price: '', link: '', cta: '' }])}
         className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline"
       >
         <Plus className="h-3.5 w-3.5" aria-hidden /> Add feature

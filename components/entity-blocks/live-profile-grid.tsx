@@ -2,7 +2,7 @@
 
 import { useEffect, type ReactNode } from 'react'
 import type { RowDef } from '@/lib/entity-blocks/layout'
-import type { BlockStyle } from '@/lib/entity-blocks/block-content'
+import { isFeatureDataSource, type BlockStyle } from '@/lib/entity-blocks/block-content'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { EntityGrid } from './entity-grid'
 import { BlockStyleFrame, ContentBlockView, hasContent } from './content-block-view'
@@ -74,7 +74,14 @@ export function LiveProfileGrid({
       node = <DesignBlockView id={id} props={content[id] ?? {}} />
     } else if (block?.category === 'content') {
       const props = content[id]
-      node = hasContent(id, props) ? <ContentBlockView id={id} props={props ?? {}} /> : nodes[id]
+      // A Features block sourced from live Space data (ADR-585) cannot resolve its items on the client, so it
+      // keeps its SERVER node (which awaited the resolver) — mirroring how DATA blocks keep theirs. An authored
+      // Features / any other content block still repaints instantly from the store.
+      if (id === 'features' && isFeatureDataSource(props)) {
+        node = nodes[id]
+      } else {
+        node = hasContent(id, props) ? <ContentBlockView id={id} props={props ?? {}} /> : nodes[id]
+      }
     } else {
       node = nodes[id]
     }

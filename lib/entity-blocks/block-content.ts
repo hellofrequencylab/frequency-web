@@ -282,6 +282,69 @@ const IMAGE_ASPECT_FIELD: FieldDef = {
   ],
 }
 
+// ── Features + Card grid shared vocabulary (ADR-585) ──────────────────────────────────────────────────
+
+/** A COLUMN count a grid-style block accepts (Features `columns` / `stats` / `cards` layouts + Card grid).
+ *  Stored as a string so it rides the `segmented` primitive sink; the render maps it to a grid utility. */
+export const COLUMN_VALUES = ['2', '3', '4'] as const
+/** The `columns` segmented options, reused by Features + Card grid so the two never drift. */
+export const COLUMN_OPTIONS: readonly FieldOption[] = [
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+  { value: '4', label: '4' },
+]
+
+/** Where a Features block gets its items (ADR-585). `custom` = the operator authors them; every other value
+ *  names a Space DATA source the items auto-populate from (title + blurb + price + link resolved server-side
+ *  by lib/entity-blocks/block-data-sources.ts). The value doubles as the data-source block id for the
+ *  offering sources, so the resolver needs no second map. */
+export const FEATURE_SOURCE_VALUES = ['custom', 'offerings', 'events', 'memberships', 'tickets'] as const
+export type FeatureSource = (typeof FEATURE_SOURCE_VALUES)[number]
+/** The `source` segmented options for the Features block. */
+export const FEATURE_SOURCE_OPTIONS: readonly FieldOption[] = [
+  { value: 'custom', label: 'Custom' },
+  { value: 'offerings', label: 'Offerings' },
+  { value: 'events', label: 'Events' },
+  { value: 'memberships', label: 'Memberships' },
+  { value: 'tickets', label: 'Tickets' },
+]
+
+/** The Features block's five layouts (ADR-585). The renderer dispatches on this; `twoUp` is a legacy alias
+ *  for `columns` (kept only for read-time back-compat, never offered). */
+export const FEATURE_LAYOUT_VALUES = ['list', 'columns', 'stats', 'cards', 'spotlight'] as const
+export type FeatureLayout = (typeof FEATURE_LAYOUT_VALUES)[number]
+
+/** The Features `source` of a content bag, defaulting to `custom` and validated to the known set. Pure; used
+ *  by the render path (to decide whether to auto-populate) and the server resolver. */
+export function featureSource(props: Record<string, unknown> | undefined): FeatureSource {
+  const v = props?.source
+  return typeof v === 'string' && (FEATURE_SOURCE_VALUES as readonly string[]).includes(v)
+    ? (v as FeatureSource)
+    : 'custom'
+}
+
+/** Whether a Features block pulls its items from a Space DATA source (any `source` other than `custom`).
+ *  When true the render path resolves the items server-side rather than reading the authored `items`. Pure. */
+export function isFeatureDataSource(props: Record<string, unknown> | undefined): boolean {
+  return featureSource(props) !== 'custom'
+}
+
+/** The Features `layout` of a content bag, defaulting to `list`, validated, with the legacy `twoUp` alias
+ *  folded to `columns`. Pure; the renderer switches on the result. */
+export function featureLayout(props: Record<string, unknown> | undefined): FeatureLayout {
+  const v = props?.layout
+  if (v === 'twoUp') return 'columns'
+  return typeof v === 'string' && (FEATURE_LAYOUT_VALUES as readonly string[]).includes(v)
+    ? (v as FeatureLayout)
+    : 'list'
+}
+
+/** The column count of a grid-style bag, defaulting to 3, clamped to the {2,3,4} set. Pure. */
+export function gridColumns(props: Record<string, unknown> | undefined): 2 | 3 | 4 {
+  const v = props?.columns
+  return v === '2' ? 2 : v === '4' ? 4 : 3
+}
+
 /** The CONTENT-block field schemas (the operator authors these). */
 const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   // The SPACE free-form blocks (ADR-542).
@@ -296,11 +359,28 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'image', label: 'Image', type: 'url', placeholder: 'https://', upload: true },
     IMAGE_ASPECT_FIELD,
   ],
-  // FEATURES (email overhaul, 2026): a TEXT-FORWARD list. An eyebrow leads it; each item is an icon + title
-  // + text (+ an optional whole-item link, authored in the rail). A Layout segmented reads it as a stacked
-  // list or a two-up grid. NO images here (that is the Card grid's job) so the two blocks stay distinct.
+  // FEATURES (2026 redesign — the FLEXIBLE highlight engine, ADR-585). Deliberately the RICH, distinct sibling
+  // of the simple Card grid. Three things make it flexible:
+  //   • SOURCE — "Custom" (author the items) OR pull them from the Space's own live data (offerings / events /
+  //     memberships / tickets): title + blurb + price + link auto-fill server-side (reuses the block-data
+  //     source pattern; see lib/entity-blocks/block-data-sources.ts resolveFeatureSourceItems).
+  //   • LAYOUT — one segmented switch over FIVE presentations the renderer dispatches on: list (today's icon +
+  //     title + text stack), columns (2-4 up), stats (big value + label), cards (image cards), spotlight
+  //     (alternating image-left / image-right rows).
+  //   • PER ITEM — an icon OR an image, a title, text, an optional price, and an optional CTA link.
+  // Backward compatible: an existing Features block carries none of the new keys, so it defaults to source
+  // `custom` + layout `list` and renders exactly as it did (icon + title + text). The legacy `twoUp` layout
+  // value maps to `columns` in the renderer.
   features: [
     { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the features' },
+    { key: 'title', label: 'Heading', type: 'text', placeholder: 'What makes this place different' },
+    {
+      key: 'source',
+      label: 'Content',
+      type: 'segmented',
+      defaultValue: 'custom',
+      options: FEATURE_SOURCE_OPTIONS,
+    },
     { key: 'items', label: 'Features', type: 'features' },
     {
       key: 'layout',
@@ -309,9 +389,13 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
       defaultValue: 'list',
       options: [
         { value: 'list', label: 'List' },
-        { value: 'twoUp', label: 'Two up' },
+        { value: 'columns', label: 'Columns' },
+        { value: 'stats', label: 'Stats' },
+        { value: 'cards', label: 'Cards' },
+        { value: 'spotlight', label: 'Spotlight' },
       ],
     },
+    { key: 'columns', label: 'Columns', type: 'segmented', defaultValue: '3', options: COLUMN_OPTIONS },
   ],
   heading: [{ key: 'text', label: 'Heading', type: 'text', placeholder: 'Your heading goes here' }],
   // A first-class CALL-TO-ACTION button (Email Studio, 2026): a label, a link, and an alignment. The `align`
@@ -424,13 +508,29 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'title', label: 'Heading', type: 'textarea', placeholder: 'Section heading' },
     { key: 'body', label: 'Body', type: 'textarea', placeholder: 'Write a paragraph or two' },
   ],
+  // CARD GRID (2026 redesign — the SIMPLE block, ADR-585). Deliberately plain + manual, the opposite of the
+  // Features highlight engine: a heading + subheading over a hand-authored row of image cards, with three
+  // presentation controls (how many columns, whether the photo sits on top or to the left, and whether the
+  // cards are rounded / shadowed). NO data source, NO layout modes — that flexibility is Features' job, so the
+  // two blocks read + behave clearly apart. Backward compatible: an existing Card grid keeps its `title` +
+  // `cards`; its legacy eyebrow / browse-link keys are simply ignored by the simple renderer.
   cardGrid: [
-    { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the heading' },
     { key: 'title', label: 'Heading', type: 'textarea', placeholder: 'What you offer' },
+    { key: 'subtitle', label: 'Subheading', type: 'textarea', placeholder: 'A line under the heading' },
     { key: 'cards', label: 'Cards', type: 'cards' },
-    { key: 'buttonOn', label: 'Show browse link', type: 'toggle', default: true },
-    { key: 'browseLabel', label: 'Browse link label', type: 'text', placeholder: 'See everything' },
-    { key: 'browseUrl', label: 'Browse link', type: 'url', placeholder: 'https://' },
+    { key: 'columns', label: 'Columns', type: 'segmented', defaultValue: '3', options: COLUMN_OPTIONS },
+    {
+      key: 'shape',
+      label: 'Card shape',
+      type: 'segmented',
+      defaultValue: 'top',
+      options: [
+        { value: 'top', label: 'Image top' },
+        { value: 'left', label: 'Image left' },
+      ],
+    },
+    { key: 'rounded', label: 'Rounded corners', type: 'toggle', default: true },
+    { key: 'shadow', label: 'Shadow', type: 'toggle', default: true },
   ],
   zigzag: [
     { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the heading' },
@@ -605,7 +705,8 @@ const BLOCK_TEXT_ROLES: Readonly<Record<string, readonly TextRole[]>> = {
   // The design blocks carry an eyebrow, a heading, and body copy.
   photoHero: ['eyebrow', 'heading', 'body'],
   editorial: ['eyebrow', 'heading', 'body'],
-  cardGrid: ['eyebrow', 'heading', 'body'],
+  // Card grid (ADR-585) simplified to a heading + subheading, so it styles just those two roles.
+  cardGrid: ['heading', 'body'],
   zigzag: ['eyebrow', 'heading', 'body'],
   accentBeat: ['eyebrow', 'heading', 'body'],
   // The two multi-element content blocks. Callout is a heading + body (no eyebrow). Features now leads with an
@@ -816,14 +917,19 @@ function sanitizeLink(raw: unknown): { label: string; url: string } | null {
   return { label: str(o.label, MAX_LABEL) || url, url }
 }
 
-/** A sanitized Features item: an icon token + a title + text, plus an OPTIONAL whole-item link (email
- *  overhaul, 2026). `link` is only present when a safe url survives, so the stored blob stays sparse and old
- *  rows (which never carried one) round-trip unchanged. */
+/** A sanitized Features item (ADR-585): an icon token OR an image, a title + text, plus OPTIONAL price, a
+ *  whole-item link, and a CTA label (the CTA renders as a button over `link`). Every optional sub-field is
+ *  present only when it survives sanitize, so the stored blob stays sparse and legacy rows (icon + title +
+ *  text [+ link]) round-trip unchanged. `price` + `link` are auto-filled when the item is sourced from an
+ *  offering / event / tier (resolveFeatureSourceItems). */
 export interface SanitizedFeature {
   icon: string
+  image?: string
   title: string
   text: string
+  price?: string
   link?: string
+  cta?: string
 }
 
 /** A sanitized Card-grid card (email overhaul, 2026): a PHOTO card (image) OR a STAT box ({ value, label }),
@@ -840,18 +946,26 @@ export interface SanitizedCard {
   button?: { label: string; href: string }
 }
 
-/** Sanitize one Features item to `{ icon, title, text, link? }` (ADR-542 → email overhaul), dropping it
- *  (null) when it carries no title and no text. `icon` is a short free-text token (a Lucide icon name or an
- *  emoji); it is bounded and never used as an object key. `link` is kept only when it is a safe url. */
+/** Sanitize one Features item to a `SanitizedFeature` (ADR-542 → ADR-585), dropping it (null) when it carries
+ *  nothing to show (no title, text, or image). `icon` is a short free-text token (a Lucide icon name or an
+ *  emoji); it is bounded and never used as an object key. `image`/`link` are kept only when they are safe
+ *  urls; `price` + `cta` are bounded free text. Additive + fail-safe: a legacy row ({ icon, title, text
+ *  [, link] }) round-trips unchanged. */
 function sanitizeFeature(raw: unknown): SanitizedFeature | null {
   if (!raw || typeof raw !== 'object') return null
   const o = raw as Record<string, unknown>
   const title = str(o.title, MAX_LABEL)
   const text = str(o.text, MAX_TEXT)
-  if (!title && !text) return null
+  const image = safeUrl(o.image)
+  if (!title && !text && !image) return null
   const out: SanitizedFeature = { icon: str(o.icon, 40), title, text }
+  if (image) out.image = image
+  const price = str(o.price, MAX_LABEL)
+  if (price) out.price = price
   const link = safeUrl(o.link)
   if (link) out.link = link
+  const cta = str(o.cta, MAX_LABEL)
+  if (cta) out.cta = cta
   return out
 }
 
