@@ -58,7 +58,6 @@ import { BlockPicker } from './block-picker'
 import { BlockEditPanel, type UploadImage } from './block-edit-panel'
 import type { BlockPickerData } from './controls/field-controls'
 import { uploadSpaceBlockImage } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
-import { reseedSpaceBlockCopy } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
 
 // THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space; ADR-526 split the
 // two kinds). An OUTLINE editor, not a mini-canvas: the live profile/space page behind this same-route
@@ -104,7 +103,6 @@ export function EntityPageBuilder({
   seed,
   editHrefFor,
   uploadImage,
-  onReseedBlock,
 }: {
   /** The page this builder edits (member handle / space slug); guarded against the seed's matchId. */
   pageId: string
@@ -120,9 +118,6 @@ export function EntityPageBuilder({
   editHrefFor?: (blockId: string) => string | null
   /** Gated image upload for the block editor's image fields (SPACE only; ADR-542). */
   uploadImage?: UploadImage
-  /** Per-block copy RE-SEED (task #17, SPACE only): given a block id + its current content, regenerate its
-   *  text from the master profile. Passed straight to each block's edit panel; absent ⇒ no Re-seed button. */
-  onReseedBlock?: (blockId: string, current: Record<string, unknown>) => Promise<{ content?: Record<string, string>; error?: string }>
 }) {
   const store = useProfileLayout()
   const router = useRouter()
@@ -142,6 +137,12 @@ export function EntityPageBuilder({
 
   const dragBlock = useRef<string | null>(null)
   const dragRow = useRef<string | null>(null)
+
+  // The active block's open settings panel — scrolled into view when the SELECTION changes on a Space (the
+  // owner clicked a block on the live page), so the rail shows the settings for what they clicked. Kept in a
+  // ref that only the currently-open panel wrapper claims (see editPanelFor's wrappers below).
+  const activePanelRef = useRef<HTMLDivElement | null>(null)
+  const prevSelected = useRef<string | null>(null)
 
   // A DATA block's header/body is server-rendered from the space's LIVE data (offerings, events, team...),
   // so an authored eyebrow/title/body edit to one cannot repaint purely client-side — it needs a server
@@ -204,6 +205,19 @@ export function EntityPageBuilder({
     setSpaceEditMode(builderActive)
     return () => setSpaceEditMode(false)
   }, [kind, builderActive])
+
+  // RAIL FOLLOWS THE SELECTED BLOCK (Space): when the owner clicks a block on the live page, the shared
+  // store's selectedId changes and this scrolls that block's open settings panel into view, so the settings
+  // box lines up with the edit area. Only fires when the selection actually CHANGES to a block (not on the
+  // initial mount, and not on a deselect), and uses `nearest` so it never fights the owner's own scroll.
+  const selectedId = kind === 'space' ? (store?.selectedId ?? null) : null
+  useEffect(() => {
+    if (kind !== 'space') return
+    if (selectedId && selectedId !== prevSelected.current) {
+      activePanelRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+    prevSelected.current = selectedId
+  }, [kind, selectedId])
 
   const say = useCallback((msg: string) => setAnnounce(msg), [])
   const mutate = useCallback(
@@ -550,7 +564,6 @@ export function EntityPageBuilder({
         // A Space's page is the live editing canvas, so its rail is SETTINGS-ONLY: the block's text + single
         // photos are edited on the page, not here (the isCoreField split). The member rail keeps text inline.
         contentOnCanvas={kind === 'space'}
-        onReseed={onReseedBlock ? (current) => onReseedBlock(id, current) : undefined}
         onContent={(props) => onEditContent(id, props)}
         onStyle={(s) => onEditStyle(id, s)}
         onToggleHide={() => onToggleHide(id)}
@@ -875,7 +888,7 @@ export function EntityPageBuilder({
                       onDrop={(e) => dropOnSlot(e, row.id, col)}
                     >
                       {stack.map((id) => (
-                        <div key={id}>
+                        <div key={id} ref={activeEditId === id ? activePanelRef : undefined}>
                           <BlockPill
                             id={id}
                             hidden={layout.hidden.includes(id)}
@@ -995,12 +1008,6 @@ export function SpacePageBuilder({
     },
     [slug],
   )
-  // Per-block copy re-seed (task #17): the edit panel's "Re-seed copy" button calls this, which regenerates
-  // the block's text from the Space's master profile and returns the rewritten fields for the store to merge.
-  const onReseedBlock = useCallback(
-    (blockId: string, current: Record<string, unknown>) => reseedSpaceBlockCopy(slug, blockId, current),
-    [slug],
-  )
   return (
     <EntityPageBuilder
       pageId={slug}
@@ -1008,7 +1015,6 @@ export function SpacePageBuilder({
       loadRailData={load}
       seed={seed}
       uploadImage={uploadImage}
-      onReseedBlock={onReseedBlock}
       // A DATA block's "Manage" link points at that FEATURE's own admin area (ADR-529 item 4) — its content
       // + settings live there. Unmapped data blocks fall back to the Space console; content blocks get none.
       editHrefFor={(blockId) => spaceBlockAdminHref(slug, blockId)}

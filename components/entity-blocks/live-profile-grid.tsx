@@ -10,6 +10,7 @@ import { DesignBlockView, isDesignBlock } from './design-block-view'
 import { useProfileLayout } from './profile-layout-context'
 import { useSpaceEditMode } from './space-edit-mode'
 import { SpaceCanvasBlock } from './space-canvas/space-canvas-block'
+import { SpaceEditNotice } from './space-edit-notice'
 
 // THE LIVE PROFILE GRID (ADR-516 Phase C). The live-preview surface the in-rail builder edits. Every
 // candidate block is rendered ONCE, server-side, into a keyed node map (`nodes`); this client wrapper places
@@ -95,8 +96,9 @@ export function LiveProfileGrid({
     // EDIT MODE: render the block through the on-canvas editor (SpaceCanvasBlock) IN PLACE — its TEXT fields
     // become inline-editable slots and its Features / Cards item copy edits inline; a single photo shows its
     // preview here and is set in the rail (its URL / upload is a structural setting, matching the /manage/layout
-    // canvas). Clicking the block focuses its settings in the rail (shared selection). No BlockStyleFrame here:
-    // the edit surface shows the raw editable block; the styled render returns the instant the rail closes.
+    // canvas). Clicking the block focuses its settings in the rail (shared selection). The editable block is
+    // WRAPPED in its BlockStyleFrame (style[id]) so the operator's chosen background / spacing / alignment AND
+    // the page theme show while editing — the edit surface looks like the published page, not a raw stack.
     if (editable) {
       const selected = store?.selectedId === id
       return (
@@ -108,7 +110,9 @@ export function LiveProfileGrid({
             selected ? 'bg-primary-bg/30 ring-1 ring-primary' : 'hover:bg-surface-elevated/40'
           }`}
         >
-          <SpaceCanvasBlock id={id} props={content[id] ?? {}} onField={(k, v) => setField(id, k, v)} />
+          <BlockStyleFrame style={style[id]}>
+            <SpaceCanvasBlock id={id} props={content[id] ?? {}} onField={(k, v) => setField(id, k, v)} />
+          </BlockStyleFrame>
         </div>
       )
     }
@@ -136,5 +140,12 @@ export function LiveProfileGrid({
     return <BlockStyleFrame style={style[id]}>{node}</BlockStyleFrame>
   }
 
-  return <EntityGrid rows={displayRows} renderBlock={renderBlock} />
+  return (
+    <>
+      {/* A friendly instruction banner while the owner is editing (edit mode only) — names what the page click
+          and the right-hand panel each do, so a first-time owner is never lost. */}
+      {editable && <SpaceEditNotice />}
+      <EntityGrid rows={displayRows} renderBlock={renderBlock} />
+    </>
+  )
 }

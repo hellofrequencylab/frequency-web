@@ -63,6 +63,12 @@ interface EntityLayoutContextValue {
    *  settings panel for it (the email-editor click-to-select pattern). Null when nothing is selected. */
   selectedId: string | null
   select: (id: string | null) => void
+  /** Within a multi-item block (Features / Card Grid), the index of the ONE item whose settings the rail
+   *  shows and the canvas highlights — the card-level analogue of `selectedId`. Null = the whole block (no
+   *  single item focused). Cleared automatically whenever `selectedId` changes (a new block starts unfocused).
+   *  The live canvas sets it when the owner clicks a card; the rail reads it to render only that card's fields. */
+  selectedItemIndex: number | null
+  selectItem: (index: number | null) => void
   /** The derived "not shown" tray for the kind (palette − placed − hidden). */
   bench: string[]
   /** Apply a new working layout: repaint now, persist debounced. */
@@ -102,6 +108,9 @@ export function EntityLayoutProvider({
   // Shared selection (live-page edit mode): the block whose settings the rail should focus. Set by the live
   // grid on a block click and read by the in-rail builder; a plain piece of client state, persisted nowhere.
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Card-level selection (Features / Card Grid): which single item is focused in the rail + canvas. Reset to
+  // null whenever the selected BLOCK changes, so opening a new block never carries a stale card focus.
+  const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null)
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // The latest layout to persist, so a flush on unmount always writes the most recent edit.
@@ -188,13 +197,19 @@ export function EntityLayoutProvider({
     }
   }, [flush])
 
-  const select = useCallback((id: string | null) => setSelectedId(id), [])
+  // Selecting a block clears any card-level focus (a fresh block starts on the whole-block settings). Selecting
+  // a card just sets the index (the block is already selected). Both are plain client state, persisted nowhere.
+  const select = useCallback((id: string | null) => {
+    setSelectedId(id)
+    setSelectedItemIndex(null)
+  }, [])
+  const selectItem = useCallback((index: number | null) => setSelectedItemIndex(index), [])
 
   const bench = deriveBench({ rows, hidden }, kind)
 
   return (
     <EntityLayoutCtx.Provider
-      value={{ kind, seeded, rows, hidden, content, style, selectedId, select, bench, apply, applyContent, applyStyle, seed, saving, error }}
+      value={{ kind, seeded, rows, hidden, content, style, selectedId, select, selectedItemIndex, selectItem, bench, apply, applyContent, applyStyle, seed, saving, error }}
     >
       {children}
     </EntityLayoutCtx.Provider>

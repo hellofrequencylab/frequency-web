@@ -35,7 +35,27 @@ import {
   headerFontStyle,
 } from '@/lib/page-editor/fields'
 import { richParagraphs, safeHref } from '@/lib/page-editor/richtext'
+import { sanitizeInlineHtml } from '@/lib/entity-blocks/block-content'
 import { SiteImage } from '@/components/marketing/site-image'
+
+// A body / lead / subtitle string, rendered as sanitized inline HTML (Bold / Italic / Link + <br>) via the
+// SAME allowlist the Space canvas editor writes and ContentBlockView renders — so formatting typed in the
+// WYSIWYG editor shows on the page instead of literal tags. Plain text round-trips unchanged; the value is
+// re-sanitised here on read (a stored blob is user-originated, never trusted). Null when nothing survives.
+function InlineRich({
+  as: Tag = 'div',
+  value,
+  className,
+}: {
+  as?: 'div' | 'p' | 'blockquote'
+  value?: string
+  className?: string
+}) {
+  if (!value) return null
+  const html = sanitizeInlineHtml(value)
+  if (!html) return null
+  return <Tag className={className} dangerouslySetInnerHTML={{ __html: html }} />
+}
 
 // ── Shared header-font select ───────────────────────────────────────────────
 // Every design block's heading offers the same per-header font choice, defaulting to the Anton
@@ -178,9 +198,11 @@ export function PhotoHeroBlock({
         as="h1"
         className={headingCls}
       />
-      {subtitle && (
-        <p className={`mt-5 max-w-xl text-lg ${centered ? 'mx-auto' : ''} ${subtitleCls}`}>{subtitle}</p>
-      )}
+      <InlineRich
+        as="p"
+        value={subtitle}
+        className={`mt-5 max-w-xl text-lg ${centered ? 'mx-auto' : ''} ${subtitleCls}`}
+      />
       {actions}
     </>
   )
@@ -318,7 +340,7 @@ export function EditorialSectionBlock({
     // lead + prose share the paragraph renderer; prose caps the reading measure to ~62 characters.
     const measure = body === 'prose' ? 'max-w-[62ch]' : 'max-w-2xl'
     content = lead ? (
-      <div className={`${measure} space-y-4 text-lg leading-relaxed text-muted`}>{richParagraphs(lead)}</div>
+      <InlineRich value={lead} className={`${measure} text-lg leading-relaxed text-muted`} />
     ) : (
       // Never a blank block: an empty body shows a quiet writing prompt (editor guidance).
       <p className="text-base italic text-subtle">Add your words here. Tell the story in plain sentences.</p>
@@ -547,9 +569,11 @@ export function ZigzagBlock({
       <div className="mt-5">
         {body === 'quote' ? (
           <figure>
-            <blockquote className="border-l-2 border-primary pl-5 text-xl font-medium italic text-text">
-              {lead}
-            </blockquote>
+            <InlineRich
+              as="blockquote"
+              value={lead}
+              className="border-l-2 border-primary pl-5 text-xl font-medium italic text-text"
+            />
             {quoteBy && <figcaption className="mt-3 text-sm font-semibold text-muted">{quoteBy}</figcaption>}
           </figure>
         ) : body === 'list' ? (
@@ -562,7 +586,7 @@ export function ZigzagBlock({
             ))}
           </ul>
         ) : (
-          <div className="space-y-4 text-lg leading-relaxed text-muted">{richParagraphs(lead)}</div>
+          <InlineRich value={lead} className="text-lg leading-relaxed text-muted" />
         )}
       </div>
       {/* Link shows once labelled; a missing link falls back to '#' until the operator sets one. */}
@@ -649,7 +673,7 @@ export function AccentBeatBlock({
       ) : (
         <DesignHeading title={title} accentWord={accentWord} headerFont={headerFont} />
       )}
-      {body && <p className="mx-auto mt-5 max-w-xl text-lg text-muted">{body}</p>}
+      <InlineRich as="p" value={body} className="mx-auto mt-5 max-w-xl text-lg text-muted" />
       {/* Buttons always show once labelled (a no-link button falls back to '#' until the operator sets a
           link); only a blank label hides the CTA. */}
       {mode === 'cta' && ctaLabel && (
@@ -712,10 +736,7 @@ export function DisplayHeadingBlock({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function ProseBlock({ text }: { text?: string }) {
-  if (!text) return null
-  return (
-    <div className="max-w-[62ch] space-y-4 text-lg leading-relaxed text-muted">{richParagraphs(text)}</div>
-  )
+  return <InlineRich value={text} className="max-w-[62ch] text-lg leading-relaxed text-muted" />
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
