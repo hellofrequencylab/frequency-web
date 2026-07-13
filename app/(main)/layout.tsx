@@ -8,6 +8,7 @@ import { VERTICALS } from '@/lib/verticals'
 import AppShell from '@/components/layout/app-shell'
 import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
 import { BetaCountdownBanner } from '@/components/layout/beta-countdown-banner'
+import { SiteAlertBar } from '@/components/layout/site-alert-bar'
 import type { Metadata } from 'next'
 import { loadChromeOverrides, isSafeRoute, adminScopeFor } from '@/lib/layout/page-chrome'
 import { loadAppOverrides, scopeKeyFor, type AppOverrides } from '@/lib/apps/overrides'
@@ -168,6 +169,9 @@ export default async function MainLayout({
         {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
             (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
         <main className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
+          {/* Site-wide announcement strip, directly below the fixed header (full width, above the
+              centered content column). */}
+          <SiteAlertBar />
           {/* A public page rides in the SAME centered CONTENT COLUMN as the signed-in shell: the member
               three-column grid (empty left/right rail gutters flanking a flex-1 center column inside
               max-w-[105rem]), so a public Space profile is the exact width it is signed in. The public
