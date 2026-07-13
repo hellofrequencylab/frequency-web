@@ -38,11 +38,14 @@ import {
 export type HeroHeight = 'short' | 'medium' | 'tall'
 
 /** The Tailwind height utility (responsive) for each hero height. Token-driven spacing scale, no hardcoded
- *  pixels beyond the rem steps the existing cover used. `medium` matches the shipped `h-72 sm:h-[22rem]`. */
+ *  pixels beyond the rem steps the existing cover used. `medium` matches the shipped `h-72 sm:h-[22rem]`.
+ *  The three tiers are deliberately WELL SPACED (desktop 224 / 352 / 576px) so Short, Medium, and Tall read
+ *  as obviously different bands on the live page AND in the rail's shape-accurate preview — a close ladder
+ *  (the old 288/352/512) made Short and Medium look identical. */
 const HERO_HEIGHT_CLASS: Record<HeroHeight, string> = {
-  short: 'h-56 sm:h-72',
+  short: 'h-48 sm:h-56',
   medium: 'h-72 sm:h-[22rem]',
-  tall: 'h-[24rem] sm:h-[32rem]',
+  tall: 'h-[24rem] sm:h-[36rem]',
 }
 
 /** The responsive height utility for a resolved hero height. Pure + total. */
@@ -56,12 +59,12 @@ export function heroHeightClass(height: HeroHeight): string {
 // the narrow rail, because the same `h-72` box is short beside a 1344px hero but nearly square beside a ~320px
 // rail. Previewing at the WIDTH:HEIGHT ratio instead makes the focus-picker box the same SHAPE as the live
 // header at the chosen height (wide + short for Short, taller for Tall), so "this preview matches your header
-// height" is literally true whatever the rail width. Desktop band heights: short sm:h-72 (18rem/288px), medium
-// sm:h-[22rem] (352px), tall sm:h-[32rem] (512px).
+// height" is literally true whatever the rail width. Desktop band heights: short sm:h-56 (14rem/224px), medium
+// sm:h-[22rem] (352px), tall sm:h-[36rem] (576px). The gaps are wide on purpose so the preview visibly steps.
 const HERO_ASPECT: Record<HeroHeight, number> = {
-  short: 1344 / 288,
+  short: 1344 / 224,
   medium: 1344 / 352,
-  tall: 1344 / 512,
+  tall: 1344 / 576,
 }
 
 /** The width:height aspect ratio of the Hero cover at a resolved height, for a shape-accurate crop preview
