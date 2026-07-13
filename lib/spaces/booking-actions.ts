@@ -18,11 +18,13 @@
 import {
   setSpaceAvailability as setSpaceAvailabilityImpl,
   setSpaceServiceTypes as setSpaceServiceTypesImpl,
+  setSpaceSchedule as setSpaceScheduleImpl,
   listOpenSlots as listOpenSlotsImpl,
   createBooking as createBookingImpl,
   cancelBooking as cancelBookingImpl,
   type AvailabilityWindow,
   type ServiceTypeInput,
+  type ScheduleInput,
   type OpenSlot,
 } from '@/lib/spaces/booking'
 import { type ActionResult } from '@/lib/action-result'
@@ -41,6 +43,14 @@ export async function setSpaceServiceTypes(
   services: ServiceTypeInput[],
 ): Promise<ActionResult> {
   return setSpaceServiceTypesImpl(spaceId, services)
+}
+
+/** Save a Space's scheduling rules + date overrides (buffers / notice / window, P2). canEditProfile. */
+export async function setSpaceSchedule(
+  spaceId: string,
+  input: ScheduleInput,
+): Promise<ActionResult> {
+  return setSpaceScheduleImpl(spaceId, input)
 }
 
 /** The open slots for a chosen service (P1), so the client service picker can load times per service

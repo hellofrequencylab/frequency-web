@@ -4,7 +4,6 @@ import {
   listBookableServices,
   getSpaceBookingTimezone,
 } from '@/lib/spaces/booking'
-import { groupSlotsByDay, sessionLengthLabel, timezoneLabel } from '@/lib/spaces/booking-format'
 import { viewerManagesSpace } from '@/lib/spaces/operator'
 import { EmptyState } from '@/components/ui/empty-state'
 import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
@@ -45,14 +44,7 @@ export async function BookingMember({
   // P1: service-first flow when the Space has any active service type. Operators and members share it.
   if (services.length > 0) {
     const timezone = await getSpaceBookingTimezone(spaceId)
-    return (
-      <BookingServiceMember
-        spaceId={spaceId}
-        services={services}
-        timezone={timezone}
-        tzLabel={timezoneLabel(timezone)}
-      />
-    )
+    return <BookingServiceMember spaceId={spaceId} services={services} timezone={timezone} />
   }
 
   // No services. The legacy flat path, plus operator guidance on the empty / unconfigured states.
@@ -101,17 +93,8 @@ export async function BookingMember({
     )
   }
 
-  // v1 is one timezone per Space: resolve it once and label every slot.
+  // Resolve the Space timezone for labeling; the picker shows every slot in the viewer's own tz (P2).
   const timezone = await getSpaceBookingTimezone(spaceId)
-  const days = groupSlotsByDay(slots, timezone)
 
-  return (
-    <BookingPicker
-      spaceId={spaceId}
-      days={days}
-      timezone={timezone}
-      tzLabel={timezoneLabel(timezone)}
-      sessionLabel={sessionLengthLabel(slots)}
-    />
-  )
+  return <BookingPicker spaceId={spaceId} slots={slots} spaceTimezone={timezone} />
 }

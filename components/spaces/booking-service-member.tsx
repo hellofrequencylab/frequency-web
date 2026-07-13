@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { ArrowLeft, Clock, Loader2 } from 'lucide-react'
 import { listOpenSlotsForService } from '@/lib/spaces/booking-actions'
 import type { OpenSlot, ServiceType } from '@/lib/spaces/booking'
-import { groupSlotsByDay, sessionLengthLabel, durationLabel } from '@/lib/spaces/booking-format'
+import { durationLabel } from '@/lib/spaces/booking-format'
 import { BookingPicker } from '@/components/spaces/booking-picker'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CalendarDays } from 'lucide-react'
@@ -22,14 +22,11 @@ export function BookingServiceMember({
   spaceId,
   services,
   timezone,
-  tzLabel,
 }: {
   spaceId: string
   services: ServiceType[]
-  /** The Space's configured IANA timezone (every slot is shown in it, labeled). */
+  /** The Space's configured IANA timezone (labeled; the picker shows times in the viewer's own tz). */
   timezone: string
-  /** A short label for that timezone, e.g. "EDT". */
-  tzLabel: string
 }) {
   const [selected, setSelected] = useState<ServiceType | null>(null)
   const [slots, setSlots] = useState<OpenSlot[] | null>(null)
@@ -51,7 +48,6 @@ export function BookingServiceMember({
 
   // Step 2: a service is chosen. Show its times (or a calm empty state), plus a way back.
   if (selected) {
-    const days = slots ? groupSlotsByDay(slots, timezone) : []
     return (
       <div className="space-y-5">
         <button
@@ -75,7 +71,7 @@ export function BookingServiceMember({
           <div className="flex items-center gap-2 px-1 text-sm text-muted">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading times
           </div>
-        ) : days.length === 0 ? (
+        ) : slots.length === 0 ? (
           <EmptyState
             icon={CalendarDays}
             title="No open times for this service yet."
@@ -84,10 +80,8 @@ export function BookingServiceMember({
         ) : (
           <BookingPicker
             spaceId={spaceId}
-            days={days}
-            timezone={timezone}
-            tzLabel={tzLabel}
-            sessionLabel={sessionLengthLabel(slots)}
+            slots={slots}
+            spaceTimezone={timezone}
             serviceTypeId={selected.id}
           />
         )}

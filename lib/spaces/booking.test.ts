@@ -729,6 +729,103 @@ describe('windowsForService (pure)', () => {
   })
 })
 
+// ── P2 (ADR-605): buffers, minimum notice, booking window, date overrides (pure) ────────────────
+describe('generateOpenSlots minimum notice (P2, pure)', () => {
+  it('drops slots starting sooner than minNoticeMinutes from now', () => {
+    // now 09:00Z, window 10:00-12:00 @30. A 120-min notice makes 11:00 the earliest bookable start.
+    const slots = generateOpenSlots([utcWindow()], new Set(), NOW, undefined, {
+      minNoticeMinutes: 120,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(slots.map((s) => s.startsAt)).toEqual([
+      '2026-06-23T11:00:00.000Z',
+      '2026-06-23T11:30:00.000Z',
+    ])
+  })
+})
+
+describe('generateOpenSlots buffer-aware conflict (P2, pure)', () => {
+  it('blocks slots within the before/after buffers of an existing booking', () => {
+    // A 30-min booking 10:30-11:00. With 30-min buffers both sides, 10:00 (before) and 11:00 (after)
+    // are blocked; 10:30 is the exact booked instant; only 11:30 survives today.
+    const bookedRanges = [
+      { startMs: new Date('2026-06-23T10:30:00Z').getTime(), endMs: new Date('2026-06-23T11:00:00Z').getTime() },
+    ]
+    const bookedExact = new Set([new Date('2026-06-23T10:30:00Z').getTime()])
+    const slots = generateOpenSlots([utcWindow()], bookedExact, NOW, undefined, {
+      bufferBeforeMinutes: 30,
+      bufferAfterMinutes: 30,
+      bookedRanges,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(slots.map((s) => s.startsAt)).toEqual(['2026-06-23T11:30:00.000Z'])
+  })
+
+  it('allows back-to-back slots when buffers are zero (no false block)', () => {
+    const bookedRanges = [
+      { startMs: new Date('2026-06-23T10:30:00Z').getTime(), endMs: new Date('2026-06-23T11:00:00Z').getTime() },
+    ]
+    const slots = generateOpenSlots([utcWindow()], new Set(), NOW, undefined, {
+      bufferBeforeMinutes: 0,
+      bufferAfterMinutes: 0,
+      bookedRanges,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    // 11:00 (immediately after the booking) is allowed with no buffer.
+    expect(slots.map((s) => s.startsAt)).toContain('2026-06-23T11:00:00.000Z')
+  })
+})
+
+describe('generateOpenSlots booking window horizon (P2, pure)', () => {
+  it('a shorter horizon drops the far Tuesday', () => {
+    const wide = generateOpenSlots([utcWindow()], new Set(), NOW, 14)
+    expect(wide.some((s) => s.startsAt.startsWith('2026-06-30'))).toBe(true)
+    const narrow = generateOpenSlots([utcWindow()], new Set(), NOW, 3)
+    expect(narrow.some((s) => s.startsAt.startsWith('2026-06-30'))).toBe(false)
+    // The near Tuesday (today) is still offered within the short window.
+    expect(narrow.some((s) => s.startsAt.startsWith('2026-06-23'))).toBe(true)
+  })
+})
+
+describe('generateOpenSlots date overrides (P2, pure)', () => {
+  it('a blackout removes that local date but keeps other days', () => {
+    const slots = generateOpenSlots([utcWindow()], new Set(), NOW, 14, {
+      overrides: [{ date: '2026-06-23', isBlackout: true }],
+    })
+    expect(slots.some((s) => s.startsAt.startsWith('2026-06-23'))).toBe(false)
+    expect(slots.some((s) => s.startsAt.startsWith('2026-06-30'))).toBe(true)
+  })
+
+  it('an open-block override replaces that day hours with its own block', () => {
+    // Override 2026-06-23 to 14:00-15:00 UTC. The weekly 10:00-12:00 window is skipped that date;
+    // the override injects 14:00 + 14:30 (default 30-min step).
+    const slots = generateOpenSlots([utcWindow()], new Set(), NOW, 14, {
+      overrides: [{ date: '2026-06-23', isBlackout: false, startMinute: 840, endMinute: 900 }],
+      overrideTimezone: 'UTC',
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(slots.map((s) => s.startsAt)).toEqual([
+      '2026-06-23T14:00:00.000Z',
+      '2026-06-23T14:30:00.000Z',
+    ])
+  })
+})
+
+describe('slotLengthAt honors notice + overrides (P2, pure)', () => {
+  it('rejects a slot inside the minimum notice', () => {
+    const windows = [utcWindow()]
+    // 10:00 is a real boundary but inside a 120-min notice from 09:00 => rejected.
+    expect(slotLengthAt(windows, new Date('2026-06-23T10:00:00Z').getTime(), NOW, 14, { minNoticeMinutes: 120 })).toBeNull()
+    // 11:00 is outside the notice => valid.
+    expect(slotLengthAt(windows, new Date('2026-06-23T11:00:00Z').getTime(), NOW, 14, { minNoticeMinutes: 120 })).toBe(30)
+  })
+
+  it('rejects a slot on a blacked-out date', () => {
+    const windows = [utcWindow()]
+    expect(
+      slotLengthAt(windows, new Date('2026-06-23T10:30:00Z').getTime(), NOW, 14, {
+        overrides: [{ date: '2026-06-23', isBlackout: true }],
+      }),
+    ).toBeNull()
+  })
+})
+
 // ── summarizeAvailability (pure, the owner-console at-a-glance read) ─────────────────────────────
 describe('summarizeAvailability', () => {
   const w = (

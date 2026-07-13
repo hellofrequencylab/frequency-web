@@ -78,6 +78,33 @@ export interface SlotGenOptions {
   /** P1 service duration: when set, slice each window by this length (and stamp it on each slot),
    *  overriding the window's own slot_minutes. When absent, the window's slot_minutes is used. */
   durationMinutes?: number
+  /** P2 minimum scheduling notice: drop any slot starting sooner than this many minutes from `now`. */
+  minNoticeMinutes?: number
+  /** P2 buffer before an existing booking: a candidate is blocked if it ends within this many minutes
+   *  of a booked interval's start. Reads `bookedRanges` (buffers alone do nothing without them). */
+  bufferBeforeMinutes?: number
+  /** P2 buffer after an existing booking: a candidate is blocked if it starts within this many minutes
+   *  of a booked interval's end. */
+  bufferAfterMinutes?: number
+  /** P2 buffer-aware conflict input: the [startMs, endMs) of existing bookings (confirmed + pending),
+   *  so a slot too close to one is blocked. The exact-instant set + the DB unique index remain the
+   *  final race guard; this only WIDENS the check by the buffers. */
+  bookedRanges?: ReadonlyArray<{ startMs: number; endMs: number }>
+  /** P2 date overrides (blackouts + one-off open blocks). A date present here is REMOVED from the
+   *  normal weekly windows; a non-blackout override with start/end injects its own block for that date. */
+  overrides?: readonly SlotOverride[]
+  /** P2 timezone the override dates are local to (the schedule tz). Defaults to the first window's tz. */
+  overrideTimezone?: string
+}
+
+/** One date-specific override on a schedule (P2). `date` is a local YYYY-MM-DD in the schedule tz.
+ *  isBlackout removes that day entirely; otherwise start/end (minutes from local midnight) replace
+ *  the day's regular hours with a one-off open block (e.g. a holiday's short hours). */
+export interface SlotOverride {
+  date: string
+  isBlackout: boolean
+  startMinute?: number | null
+  endMinute?: number | null
 }
 
 /** The effective slot length for a window under `opts` (the service duration overrides the window's
@@ -210,39 +237,111 @@ export function normalizeWindow(raw: {
   return { weekday, startMinute, endMinute, slotMinutes, timezone, serviceTypeId }
 }
 
-/** The candidate slot start-instants (as UTC Dates) a window produces across the next `horizonDays`
- *  days from `now`. Pure helper, used by generateOpenSlots. For each day in range whose local
- *  weekday matches the window, slice [startMinute, endMinute) by slotMinutes; a slot is emitted only
- *  if it fully fits before endMinute (a trailing partial slot is dropped). */
-function windowSlotInstants(
-  window: AvailabilityWindow,
+/** The local YYYY-MM-DD (in `timezone`) of a UTC instant, matching the override date format. */
+function localDateKey(date: Date, timezone: string): string | null {
+  const parts = wallPartsInZone(date, timezone)
+  if (!parts) return null
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`
+}
+
+/** Index the date overrides by their date key, and the set of ALL override dates (blackout + block),
+ *  which are removed from the normal weekly windows (an override governs its date). */
+function indexOverrides(overrides: readonly SlotOverride[] | undefined): {
+  dates: Set<string>
+  byDate: Map<string, SlotOverride>
+} {
+  const dates = new Set<string>()
+  const byDate = new Map<string, SlotOverride>()
+  for (const o of overrides ?? []) {
+    if (typeof o?.date !== 'string' || !o.date) continue
+    dates.add(o.date)
+    byDate.set(o.date, o)
+  }
+  return { dates, byDate }
+}
+
+/**
+ * ALL boundary candidate slots (ms -> length) a schedule produces over the horizon, BEFORE any
+ * past / notice / booked filtering. Pure + shared by generateOpenSlots (which filters) and slotLengthAt
+ * (which validates one instant), so the two can never disagree on what a real boundary is. Applies:
+ *   • P1 service-duration slicing (effectiveSlotMinutes), trailing partial dropped;
+ *   • P2 date overrides: a day with an override is removed from the weekly windows, and a non-blackout
+ *     override injects its own [start, end) block for that date (sliced by the same step).
+ */
+function candidateSlots(
+  windows: AvailabilityWindow[],
   now: Date,
   horizonDays: number,
   opts?: SlotGenOptions,
-): Date[] {
-  const out: Date[] = []
-  // P1: slice by the service duration when supplied, else the window's own slot length. A duration
-  // wider than the window simply yields no slots for that window (nothing fully fits).
-  const step = effectiveSlotMinutes(window, opts)
-  for (let dayOffset = 0; dayOffset <= horizonDays; dayOffset++) {
-    // The calendar date `dayOffset` days from now, read in the window's timezone (so "today" is
-    // today THERE, not in UTC).
-    const anchor = new Date(now.getTime() + dayOffset * 86400000)
-    const parts = wallPartsInZone(anchor, window.timezone)
-    if (!parts) continue
-    // The weekday of that local date (Y/M/D at UTC midnight gives the calendar weekday).
-    const localWeekday = new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay()
-    if (localWeekday !== window.weekday) continue
-    for (
-      let minute = window.startMinute;
-      minute + step <= window.endMinute;
-      minute += step
-    ) {
-      out.push(zonedTimeToUtc(parts.year, parts.month, parts.day, minute, window.timezone))
-      if (out.length > MAX_SLOTS) return out
+): Map<number, number> {
+  const byInstant = new Map<number, number>()
+  const { dates: overrideDates, byDate } = indexOverrides(opts?.overrides)
+  const overrideTz = opts?.overrideTimezone ?? windows[0]?.timezone ?? 'UTC'
+
+  const push = (ms: number, len: number) => {
+    byInstant.set(ms, len)
+  }
+
+  // Normal weekly windows, skipping any date an override governs.
+  for (const window of windows.slice(0, MAX_WINDOWS)) {
+    const step = effectiveSlotMinutes(window, opts)
+    for (let dayOffset = 0; dayOffset <= horizonDays; dayOffset++) {
+      const anchor = new Date(now.getTime() + dayOffset * 86400000)
+      const parts = wallPartsInZone(anchor, window.timezone)
+      if (!parts) continue
+      const localWeekday = new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay()
+      if (localWeekday !== window.weekday) continue
+      if (overrideDates.size > 0) {
+        const key = localDateKey(anchor, window.timezone)
+        if (key && overrideDates.has(key)) continue // an override governs this date; skip the weekly hours
+      }
+      for (let minute = window.startMinute; minute + step <= window.endMinute; minute += step) {
+        push(zonedTimeToUtc(parts.year, parts.month, parts.day, minute, window.timezone).getTime(), step)
+        if (byInstant.size > MAX_SLOTS) return byInstant
+      }
     }
   }
-  return out
+
+  // Override OPEN blocks: inject each non-blackout override's own [start, end) block on its date.
+  if (byDate.size > 0) {
+    const step = opts?.durationMinutes && opts.durationMinutes >= 5 ? opts.durationMinutes : 30
+    const horizonMs = now.getTime() + (horizonDays + 1) * 86400000
+    for (const o of byDate.values()) {
+      if (o.isBlackout) continue
+      const start = Number(o.startMinute)
+      const end = Number(o.endMinute)
+      if (!Number.isInteger(start) || !Number.isInteger(end) || end <= start) continue
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(o.date)
+      if (!m) continue
+      const year = Number(m[1])
+      const month = Number(m[2])
+      const day = Number(m[3])
+      for (let minute = start; minute + step <= end; minute += step) {
+        const ms = zonedTimeToUtc(year, month, day, minute, overrideTz).getTime()
+        if (ms > horizonMs) continue
+        push(ms, step)
+        if (byInstant.size > MAX_SLOTS) return byInstant
+      }
+    }
+  }
+
+  return byInstant
+}
+
+/** Whether a candidate [startMs, endMs) is blocked by a buffered booking (P2). Reserves each booked
+ *  interval widened by the buffers and blocks the candidate if it overlaps any. No-op with no ranges. */
+function bufferConflict(startMs: number, endMs: number, opts?: SlotGenOptions): boolean {
+  const ranges = opts?.bookedRanges
+  if (!ranges || ranges.length === 0) return false
+  const before = Math.max(0, opts?.bufferBeforeMinutes ?? 0) * 60000
+  const after = Math.max(0, opts?.bufferAfterMinutes ?? 0) * 60000
+  for (const r of ranges) {
+    const reservedStart = r.startMs - before
+    const reservedEnd = r.endMs + after
+    if (startMs < reservedEnd && endMs > reservedStart) return true
+  }
+  return false
 }
 
 /**
@@ -253,6 +352,9 @@ function windowSlotInstants(
  *   NOT already booked (its start instant is not in `bookedStartsAtMs`).
  * Overlapping windows that produce the same start instant collapse to one slot. Returns at most
  * MAX_SLOTS. No IO: the caller supplies booked times plus now, so this is deterministic + testable.
+ *
+ * P2 (via opts): also drops slots inside `minNoticeMinutes` of now, and blocks a slot that falls within
+ * the buffers of a booked interval (`bookedRanges` + buffers). Date overrides are applied in candidateSlots.
  */
 export function generateOpenSlots(
   windows: AvailabilityWindow[],
@@ -262,27 +364,26 @@ export function generateOpenSlots(
   opts?: SlotGenOptions,
 ): OpenSlot[] {
   const nowMs = now.getTime()
-  // Map start-instant ms to slotMinutes, so duplicate instants from overlapping windows collapse
-  // (last write wins on the length, which is fine: the start uniquely identifies a slot).
-  const byInstant = new Map<number, number>()
-  for (const window of windows.slice(0, MAX_WINDOWS)) {
-    const step = effectiveSlotMinutes(window, opts)
-    for (const instant of windowSlotInstants(window, now, horizonDays, opts)) {
-      const ms = instant.getTime()
-      if (ms <= nowMs) continue // strictly future only: drop past + in-progress slots
-      if (bookedStartsAtMs.has(ms)) continue // already taken
-      byInstant.set(ms, step)
-      if (byInstant.size > MAX_SLOTS) break
-    }
+  const noticeMs = Math.max(0, opts?.minNoticeMinutes ?? 0) * 60000
+  const earliestMs = nowMs + noticeMs
+  const byInstant = candidateSlots(windows, now, horizonDays, opts)
+
+  const out: { startsAt: string; slotMinutes: number }[] = []
+  for (const [ms, slotMinutes] of byInstant) {
+    if (ms <= nowMs) continue // strictly future only: drop past + in-progress slots
+    if (ms < earliestMs) continue // P2: inside minimum scheduling notice
+    if (bookedStartsAtMs.has(ms)) continue // already taken (exact instant)
+    if (bufferConflict(ms, ms + slotMinutes * 60000, opts)) continue // P2: too close to a booking
+    out.push({ startsAt: new Date(ms).toISOString(), slotMinutes })
   }
-  return [...byInstant.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([ms, slotMinutes]) => ({ startsAt: new Date(ms).toISOString(), slotMinutes }))
+  return out.sort((a, b) => (a.startsAt < b.startsAt ? -1 : a.startsAt > b.startsAt ? 1 : 0))
 }
 
 /** Whether `startsAtMs` is the start of a real, fully-fitting slot in `windows` (used server-side by
  *  createBooking to confirm a posted instant actually lands on a published slot boundary, not just
- *  any timestamp). Returns the slot length when valid, or null. Pure. */
+ *  any timestamp). Returns the slot length when valid, or null. Honors the same P1/P2 opts as the
+ *  generator (service duration, date overrides, minimum notice) so the server matches the member view.
+ *  Buffer-aware conflict with live bookings is checked separately in createBooking. Pure. */
 export function slotLengthAt(
   windows: AvailabilityWindow[],
   startsAtMs: number,
@@ -290,13 +391,13 @@ export function slotLengthAt(
   horizonDays: number = HORIZON_DAYS,
   opts?: SlotGenOptions,
 ): number | null {
-  for (const window of windows.slice(0, MAX_WINDOWS)) {
-    const step = effectiveSlotMinutes(window, opts)
-    for (const instant of windowSlotInstants(window, now, horizonDays, opts)) {
-      if (instant.getTime() === startsAtMs) return step
-    }
-  }
-  return null
+  const len = candidateSlots(windows, now, horizonDays, opts).get(startsAtMs)
+  if (len == null) return null
+  const nowMs = now.getTime()
+  if (startsAtMs <= nowMs) return null // a past / in-progress boundary is not bookable
+  const noticeMs = Math.max(0, opts?.minNoticeMinutes ?? 0) * 60000
+  if (startsAtMs < nowMs + noticeMs) return null // inside minimum notice
+  return len
 }
 
 /** A plain-language read of what a Space currently publishes, derived purely from its windows (no
@@ -419,6 +520,50 @@ function serviceTypesTable(): ServiceTypeQuery {
   return db.from('space_service_types')
 }
 
+type ScheduleRow = {
+  id: string
+  space_id: string
+  timezone: string
+  buffer_before_minutes: number
+  buffer_after_minutes: number
+  min_notice_minutes: number
+  booking_window_days: number
+  active: boolean
+}
+type OverrideRow = {
+  id: string
+  schedule_id: string
+  on_date: string
+  is_blackout: boolean
+  start_minute: number | null
+  end_minute: number | null
+}
+type ScheduleQuery = {
+  select: (cols: string) => ScheduleQuery
+  eq: (col: string, val: unknown) => ScheduleQuery
+  order: (col: string, opts: { ascending: boolean }) => ScheduleQuery
+  limit: (n: number) => ScheduleQuery
+  update: (patch: Record<string, unknown>) => ScheduleQuery
+  insert: (rows: Record<string, unknown>[]) => ScheduleQuery
+  maybeSingle: () => Promise<{ data: ScheduleRow | null; error: unknown }>
+  then: (resolve: (r: { data: ScheduleRow[] | null; error: unknown }) => unknown) => Promise<unknown>
+}
+type OverrideQuery = {
+  select: (cols: string) => OverrideQuery
+  eq: (col: string, val: string) => OverrideQuery
+  delete: () => OverrideQuery
+  insert: (rows: Record<string, unknown>[]) => Promise<{ error: unknown }>
+  then: (resolve: (r: { data: OverrideRow[] | null; error: unknown }) => unknown) => Promise<unknown>
+}
+function schedulesTable(): ScheduleQuery {
+  const db = createAdminClient() as unknown as { from: (t: string) => ScheduleQuery }
+  return db.from('space_availability_schedules')
+}
+function overridesTable(): OverrideQuery {
+  const db = createAdminClient() as unknown as { from: (t: string) => OverrideQuery }
+  return db.from('space_availability_overrides')
+}
+
 const AVAILABILITY_COLS = 'id, space_id, weekday, start_minute, end_minute, slot_minutes, timezone'
 const AVAILABILITY_COLS_P1 = `${AVAILABILITY_COLS}, service_type_id`
 const BOOKING_COLS = 'id, space_id, member_profile_id, starts_at, ends_at, status, note'
@@ -516,6 +661,120 @@ async function resolveServiceDuration(
   const services = await readServiceTypes(spaceId, { activeOnly: true })
   const svc = services.find((s) => s.id === serviceTypeId)
   return svc ? svc.durationMinutes : null
+}
+
+// ── P2: availability schedules (buffers / notice / window / overrides / timezone) ────────────────
+
+/** A Space's scheduling rules (P2). The DEFAULTS reproduce booking v1 exactly (no buffers, no notice,
+ *  a 14-day window), so a Space with no schedule row behaves as before. */
+export interface ScheduleSettings {
+  id: string | null
+  timezone: string | null
+  bufferBeforeMinutes: number
+  bufferAfterMinutes: number
+  minNoticeMinutes: number
+  bookingWindowDays: number
+}
+
+/** The neutral defaults used when a Space has no schedule row (or the P2 table is absent). */
+export const DEFAULT_SCHEDULE: ScheduleSettings = {
+  id: null,
+  timezone: null,
+  bufferBeforeMinutes: 0,
+  bufferAfterMinutes: 0,
+  minNoticeMinutes: 0,
+  bookingWindowDays: HORIZON_DAYS,
+}
+
+function clampInt(v: unknown, min: number, max: number, fallback: number): number {
+  const n = Number(v)
+  if (!Number.isFinite(n)) return fallback
+  return Math.min(max, Math.max(min, Math.round(n)))
+}
+
+function mapScheduleRow(r: ScheduleRow): ScheduleSettings {
+  return {
+    id: r.id,
+    timezone: typeof r.timezone === 'string' && r.timezone.trim() ? r.timezone.trim() : null,
+    bufferBeforeMinutes: clampInt(r.buffer_before_minutes, 0, 480, 0),
+    bufferAfterMinutes: clampInt(r.buffer_after_minutes, 0, 480, 0),
+    minNoticeMinutes: clampInt(r.min_notice_minutes, 0, 43200, 0),
+    bookingWindowDays: clampInt(r.booking_window_days, 1, 365, HORIZON_DAYS),
+  }
+}
+
+/** The Space's single active schedule (service-role; FAIL-SAFE to the neutral DEFAULT_SCHEDULE, so a
+ *  missing table pre-migration or an unconfigured Space simply uses booking v1 behavior). */
+async function readSchedule(spaceId: string): Promise<ScheduleSettings> {
+  try {
+    const { data, error } = await schedulesTable()
+      .select('id, space_id, timezone, buffer_before_minutes, buffer_after_minutes, min_notice_minutes, booking_window_days, active')
+      .eq('space_id', spaceId)
+      .eq('active', true)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    if (error || !data) return DEFAULT_SCHEDULE
+    return mapScheduleRow(data)
+  } catch {
+    return DEFAULT_SCHEDULE
+  }
+}
+
+/** A schedule's date overrides as generator input (service-role; FAIL-SAFE to []). */
+async function readOverrides(scheduleId: string | null): Promise<SlotOverride[]> {
+  if (!scheduleId) return []
+  try {
+    const { data, error } = await overridesTable()
+      .select('id, schedule_id, on_date, is_blackout, start_minute, end_minute')
+      .eq('schedule_id', scheduleId)
+    if (error || !data) return []
+    return data.map((r) => ({
+      // on_date is a DATE, serialized 'YYYY-MM-DD' (Postgres) — take the leading 10 chars defensively.
+      date: typeof r.on_date === 'string' ? r.on_date.slice(0, 10) : '',
+      isBlackout: r.is_blackout === true,
+      startMinute: r.start_minute ?? null,
+      endMinute: r.end_minute ?? null,
+    })).filter((o) => o.date)
+  } catch {
+    return []
+  }
+}
+
+/** Resolve the full generator context for a Space in one place: the schedule rules + its overrides.
+ *  FAIL-SAFE to defaults + []. */
+async function readScheduleContext(
+  spaceId: string,
+): Promise<{ schedule: ScheduleSettings; overrides: SlotOverride[] }> {
+  const schedule = await readSchedule(spaceId)
+  const overrides = await readOverrides(schedule.id)
+  return { schedule, overrides }
+}
+
+/** Build the pure SlotGenOptions for a Space from its schedule + service duration (P1) + booked ranges
+ *  (P2 buffer conflict). Also returns the effective windows (their timezone overridden by the schedule
+ *  tz when the schedule sets one, since P2 moves the tz onto the schedule) and the booking-window days. */
+function buildSlotContext(
+  windows: AvailabilityWindow[],
+  schedule: ScheduleSettings,
+  overrides: SlotOverride[],
+  duration: number | null,
+  bookedRanges: ReadonlyArray<{ startMs: number; endMs: number }>,
+): { windows: AvailabilityWindow[]; horizonDays: number; opts: SlotGenOptions; timezone: string } {
+  const tz = schedule.timezone ?? windows[0]?.timezone ?? 'UTC'
+  // When the schedule sets a timezone, it is authoritative (P2 moves tz off the window), so slice every
+  // window in it. Otherwise keep each window's own tz (booking v1).
+  const effWindows = schedule.timezone ? windows.map((w) => ({ ...w, timezone: tz })) : windows
+  const opts: SlotGenOptions = {
+    ...(duration != null ? { durationMinutes: duration } : {}),
+    minNoticeMinutes: schedule.minNoticeMinutes,
+    bufferBeforeMinutes: schedule.bufferBeforeMinutes,
+    bufferAfterMinutes: schedule.bufferAfterMinutes,
+    bookedRanges,
+    overrides,
+    overrideTimezone: tz,
+  }
+  return { windows: effWindows, horizonDays: schedule.bookingWindowDays, opts, timezone: tz }
 }
 
 /** The confirmed bookings of a Space at/after `fromISO` (service-role; FAIL-SAFE to []). */
@@ -678,12 +937,14 @@ export async function listOpenSlots(
     // waterfalling one after the other. Both readers are fail-safe to [], so Promise.all never rejects.
     // The early-return short-circuit is preserved: with no published windows there are no slots, so we
     // return [] without running the (already-overlapped, cheap) generator.
-    const [windows, booked, duration] = await Promise.all([
+    const [windows, booked, duration, context] = await Promise.all([
       readWindows(spaceId),
       // Exclude confirmed AND pending holds, so a held-but-unpaid slot is not offered (matches the index).
       readBlockingBookings(spaceId, now.toISOString()),
       // P1: resolve the chosen service's duration (null = legacy flat booking on window slot_minutes).
       resolveServiceDuration(spaceId, serviceTypeId),
+      // P2: schedule rules (buffers / notice / window / tz) + date overrides.
+      readScheduleContext(spaceId),
     ])
     if (windows.length === 0) return []
     // A service was chosen but did not resolve (inactive / bad id): offer nothing rather than the
@@ -692,13 +953,12 @@ export async function listOpenSlots(
     const scoped = windowsForService(windows, serviceTypeId ?? null)
     if (scoped.length === 0) return []
     const bookedMs = new Set(booked.map((b) => new Date(b.starts_at).getTime()))
-    return generateOpenSlots(
-      scoped,
-      bookedMs,
-      now,
-      undefined,
-      duration != null ? { durationMinutes: duration } : undefined,
-    )
+    const bookedRanges = booked.map((b) => ({
+      startMs: new Date(b.starts_at).getTime(),
+      endMs: new Date(b.ends_at).getTime(),
+    }))
+    const ctx = buildSlotContext(scoped, context.schedule, context.overrides, duration, bookedRanges)
+    return generateOpenSlots(ctx.windows, bookedMs, now, ctx.horizonDays, ctx.opts)
   } catch {
     return []
   }
@@ -712,8 +972,9 @@ export async function getSpaceBookingTimezone(spaceId: string): Promise<string> 
   const profileId = await getMyProfileId()
   if (!profileId) return 'UTC'
   try {
-    const windows = await readWindows(spaceId)
-    return windows[0]?.timezone ?? 'UTC'
+    // P2: the schedule owns the timezone when configured; else fall back to the first window's tz.
+    const [schedule, windows] = await Promise.all([readSchedule(spaceId), readWindows(spaceId)])
+    return schedule.timezone ?? windows[0]?.timezone ?? 'UTC'
   } catch {
     return 'UTC'
   }
@@ -870,6 +1131,126 @@ export async function setSpaceServiceTypes(
   return ok()
 }
 
+// ── P2: schedule settings (buffers / notice / window / overrides) ───────────────────────────────
+
+/** The owner-editable schedule settings + date overrides, read back for the editor. */
+export interface ScheduleForEditor {
+  settings: ScheduleSettings
+  overrides: SlotOverride[]
+}
+
+/** A Space's schedule + overrides as the OWNER editor reads them (canEditProfile OR janitor preview).
+ *  FAIL-SAFE to the neutral defaults + [] (so a pre-migration Space shows editable defaults). */
+export async function getSpaceSchedule(spaceId: string): Promise<ScheduleForEditor> {
+  const caller = await getCallerProfile()
+  const space = await getSpaceById(spaceId)
+  if (!space) return { settings: DEFAULT_SCHEDULE, overrides: [] }
+  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
+  if (!caps.canEditProfile && !isJanitor(caller?.webRole))
+    return { settings: DEFAULT_SCHEDULE, overrides: [] }
+  const { schedule, overrides } = await readScheduleContext(spaceId)
+  return { settings: schedule, overrides }
+}
+
+/** The schedule settings + overrides as the owner submits them. */
+export interface ScheduleInput {
+  timezone?: string | null
+  bufferBeforeMinutes?: number
+  bufferAfterMinutes?: number
+  minNoticeMinutes?: number
+  bookingWindowDays?: number
+  overrides?: SlotOverride[]
+}
+
+/** Coerce raw overrides to clean rows (drop malformed; a non-blackout needs start < end). Fail-closed. */
+function cleanOverrides(raw: SlotOverride[] | undefined): {
+  on_date: string
+  is_blackout: boolean
+  start_minute: number | null
+  end_minute: number | null
+}[] {
+  const out: { on_date: string; is_blackout: boolean; start_minute: number | null; end_minute: number | null }[] = []
+  const seen = new Set<string>()
+  for (const o of raw ?? []) {
+    if (typeof o?.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(o.date)) continue
+    if (seen.has(o.date)) continue // one override per date (matches the unique index)
+    const isBlackout = o.isBlackout === true
+    if (isBlackout) {
+      out.push({ on_date: o.date, is_blackout: true, start_minute: null, end_minute: null })
+      seen.add(o.date)
+      continue
+    }
+    const start = Number(o.startMinute)
+    const end = Number(o.endMinute)
+    if (!Number.isInteger(start) || start < 0 || start > 1439) continue
+    if (!Number.isInteger(end) || end < 1 || end > 1440 || end <= start) continue
+    out.push({ on_date: o.date, is_blackout: false, start_minute: start, end_minute: end })
+    seen.add(o.date)
+  }
+  return out.slice(0, 200)
+}
+
+/**
+ * Save a Space's schedule settings + date overrides (owner / admin / editor, gated on canEditProfile).
+ * Upserts the Space's single active schedule row and REPLACES its overrides. Returns ActionResult;
+ * fail-closed on permission, fail-soft when the P2 tables are absent (a friendly message, no crash).
+ */
+export async function setSpaceSchedule(spaceId: string, input: ScheduleInput): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to set your scheduling rules.')
+
+  const space = await getSpaceById(spaceId)
+  if (!space) return fail('Space not found.')
+
+  const caps = await getSpaceCapabilities(space, profileId)
+  if (!caps.canEditProfile)
+    return fail('You do not have permission to set scheduling rules for this space.')
+  if (!spaceFunctionAccess(space, 'availability', caps.role))
+    return fail('Availability is not turned on for this space, or your role cannot use it.')
+
+  const timezone =
+    typeof input.timezone === 'string' && input.timezone.trim() ? input.timezone.trim() : null
+  const patch: Record<string, unknown> = {
+    buffer_before_minutes: clampInt(input.bufferBeforeMinutes, 0, 480, 0),
+    buffer_after_minutes: clampInt(input.bufferAfterMinutes, 0, 480, 0),
+    min_notice_minutes: clampInt(input.minNoticeMinutes, 0, 43200, 0),
+    booking_window_days: clampInt(input.bookingWindowDays, 1, 365, HORIZON_DAYS),
+    active: true,
+  }
+  if (timezone) patch.timezone = timezone
+
+  try {
+    const existing = await readSchedule(spaceId)
+    let scheduleId = existing.id
+    if (scheduleId) {
+      const { error } = (await schedulesTable().update(patch).eq('id', scheduleId)) as unknown as {
+        error?: unknown
+      }
+      if (error) return fail('Could not save your scheduling rules. Try again.')
+    } else {
+      const ins = await schedulesTable().insert([{ space_id: spaceId, ...patch }])
+      if ((ins as unknown as { error?: unknown }).error)
+        return fail('Could not save your scheduling rules. Try again.')
+      scheduleId = (await readSchedule(spaceId)).id
+    }
+    if (!scheduleId) return fail('Could not save your scheduling rules. Try again.')
+
+    // Replace the overrides: clear then insert the clean set.
+    const del = (await overridesTable().delete().eq('schedule_id', scheduleId)) as unknown as {
+      error?: unknown
+    }
+    if (del.error) return fail('Could not save your scheduling rules. Try again.')
+    const rows = cleanOverrides(input.overrides).map((o) => ({ schedule_id: scheduleId, ...o }))
+    if (rows.length > 0) {
+      const { error } = await overridesTable().insert(rows)
+      if (error) return fail('Could not save your scheduling rules. Try again.')
+    }
+  } catch {
+    return fail('Could not save your scheduling rules. Try again.')
+  }
+  return ok()
+}
+
 /**
  * Book an open slot. Any authenticated member (resolved via getMyProfileId). The server is the
  * authority: it re-validates that `startsAtISO` is a real, still-future slot WITHIN the Space's
@@ -902,23 +1283,29 @@ export async function createBooking(
 
   const duration = await resolveServiceDuration(spaceId, serviceTypeId)
   if (serviceTypeId && duration == null) return fail('That service is no longer available. Pick another.')
-  const windows = windowsForService(allWindows, serviceTypeId ?? null)
-  if (windows.length === 0) return fail('That time is no longer available. Pick another.')
+  const scoped = windowsForService(allWindows, serviceTypeId ?? null)
+  if (scoped.length === 0) return fail('That time is no longer available. Pick another.')
 
-  const slotMinutes = slotLengthAt(
-    windows,
-    startsAt.getTime(),
-    now,
-    undefined,
-    duration != null ? { durationMinutes: duration } : undefined,
-  )
+  // P2: re-validate against the SAME schedule context the member saw (notice, overrides, window, tz),
+  // and read the blocking bookings up front so we can enforce buffer-aware conflict server-side too.
+  const context = await readScheduleContext(spaceId)
+  const booked = await readBlockingBookings(spaceId, now.toISOString())
+  const bookedRanges = booked.map((b) => ({
+    startMs: new Date(b.starts_at).getTime(),
+    endMs: new Date(b.ends_at).getTime(),
+  }))
+  const ctx = buildSlotContext(scoped, context.schedule, context.overrides, duration, bookedRanges)
+
+  const slotMinutes = slotLengthAt(ctx.windows, startsAt.getTime(), now, ctx.horizonDays, ctx.opts)
   if (slotMinutes == null) return fail('That time is no longer available. Pick another.')
 
   // Already taken (confirmed or held pending)? A fast pre-check for a friendly message; the unique index
-  // is the real guard.
-  const booked = await readBlockingBookings(spaceId, now.toISOString())
+  // is the real guard. P2: also block a slot that falls within the buffers of an existing booking.
   if (booked.some((b) => new Date(b.starts_at).getTime() === startsAt.getTime())) {
     return fail('That time was just taken. Pick another.')
+  }
+  if (bufferConflict(startsAt.getTime(), startsAt.getTime() + slotMinutes * 60000, ctx.opts)) {
+    return fail('That time is too close to another booking. Pick another.')
   }
 
   const endsAt = new Date(startsAt.getTime() + slotMinutes * 60000)

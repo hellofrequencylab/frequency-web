@@ -1,10 +1,11 @@
 import { Suspense } from 'react'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
-import { listSpaceAvailability, listSpaceServiceTypes } from '@/lib/spaces/booking'
+import { listSpaceAvailability, listSpaceServiceTypes, getSpaceSchedule } from '@/lib/spaces/booking'
 import { BookingAvailabilityForm } from '@/components/spaces/booking-availability-form'
 import { BookingAvailabilitySummary } from '@/components/spaces/booking-availability-summary'
 import { BookingServiceTypesForm } from '@/components/spaces/booking-service-types-form'
+import { BookingScheduleForm } from '@/components/spaces/booking-schedule-form'
 import { BookingOwnerList } from '@/components/spaces/booking-owner-list'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -48,12 +49,13 @@ export async function AvailabilitySection({
     )
   }
 
-  const [windows, services] = await Promise.all([
+  const [windows, services, schedule] = await Promise.all([
     listSpaceAvailability(space.id),
     listSpaceServiceTypes(space.id),
+    getSpaceSchedule(space.id),
   ])
-  // Seed the timezone from the saved windows, else a sensible default the owner can change.
-  const initialTimezone = windows[0]?.timezone ?? 'UTC'
+  // Seed the timezone from the schedule (P2) or the saved windows, else a sensible default.
+  const initialTimezone = schedule.settings.timezone ?? windows[0]?.timezone ?? 'UTC'
 
   return (
     <div className="space-y-8">
@@ -83,6 +85,24 @@ export async function AvailabilitySection({
           initialTimezone={initialTimezone}
         />
       </fieldset>
+
+      {/* SCHEDULING RULES (P2, ADR-605): buffers, minimum notice, booking window, and date overrides.
+          The pure slot generator reads these as additive options. Staff preview stays read-only. */}
+      <section>
+        <SectionHeader title="Scheduling rules" />
+        <p className="-mt-2 mb-4 text-sm text-muted">
+          Add buffers between sessions, a minimum notice, how far ahead members can book, and any days
+          off or one-off hours.
+        </p>
+        <fieldset disabled={staffViewing} className="contents">
+          <BookingScheduleForm
+            spaceId={space.id}
+            timezone={initialTimezone}
+            initialSettings={schedule.settings}
+            initialOverrides={schedule.overrides}
+          />
+        </fieldset>
+      </section>
 
       <section>
         <SectionHeader title="Upcoming bookings" />

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useSyncExternalStore, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { CalendarCheck, Check, Clock, Loader2 } from 'lucide-react'
 import { Button, buttonClasses } from '@/components/ui/button'
@@ -8,31 +8,49 @@ import { Textarea } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
 import { createBooking } from '@/lib/spaces/booking-actions'
 import type { OpenSlot } from '@/lib/spaces/booking'
-import type { SlotDay } from '@/lib/spaces/booking-format'
+import { groupSlotsByDay, sessionLengthLabel, timezoneLabel } from '@/lib/spaces/booking-format'
 import { cn } from '@/lib/utils'
 
-// MEMBER BOOKING PICKER (client). The interactive half of the Practitioner Book tab: open slots are
-// grouped by day (in the Space's timezone, labeled), a member taps a time, optionally adds a note,
-// and confirms via the createBooking server action. The server re-validates the slot, so the picker
-// is convenience, not the gate. On success it shows a calm confirmation and refreshes the surface so
-// the booked time drops out of the open list. No narrated feelings, no em/en dashes (CONTENT-VOICE).
+// MEMBER BOOKING PICKER (client). The interactive half of the Practitioner Book tab: a member taps a
+// time, optionally adds a note, and confirms via the createBooking server action. The server
+// re-validates the slot, so the picker is convenience, not the gate. On success it shows a calm
+// confirmation and refreshes the surface so the booked time drops out of the open list.
+//
+// P2 INVITEE TIMEZONE (ADR-605): times are shown in the VIEWER's own browser timezone, with the Space
+// timezone still labeled ("shown in your time"). The stored instant is absolute UTC, unchanged. To
+// avoid a hydration mismatch, the server + first client render use the Space timezone (useViewerTimezone's
+// server snapshot), then the browser timezone takes over. No narrated feelings, no em/en dashes.
+
+const NO_OP_SUBSCRIBE = () => () => {}
+
+/** The viewer's own IANA timezone (P2 invitee tz), read via useSyncExternalStore so the server + first
+ *  client render both use `fallback` (the Space tz, no hydration mismatch) before the browser tz takes
+ *  over. Returns a stable string, so React never loops. */
+function useViewerTimezone(fallback: string): string {
+  return useSyncExternalStore(
+    NO_OP_SUBSCRIBE,
+    () => {
+      try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || fallback
+      } catch {
+        return fallback
+      }
+    },
+    () => fallback,
+  )
+}
 
 export function BookingPicker({
   spaceId,
-  days,
-  timezone,
-  tzLabel,
-  sessionLabel,
+  slots,
+  spaceTimezone,
   serviceTypeId = null,
 }: {
   spaceId: string
-  days: SlotDay[]
-  /** The Space's configured IANA timezone (every slot is shown in it). */
-  timezone: string
-  /** A short label for that timezone, e.g. "EDT". */
-  tzLabel: string
-  /** A plain-language session-length line, e.g. "30 minute sessions", or null when unknown. */
-  sessionLabel: string | null
+  /** The open slots (absolute UTC instants), grouped by day in the viewer's timezone at render. */
+  slots: OpenSlot[]
+  /** The Space's configured IANA timezone (labeled so the member knows the practitioner's zone). */
+  spaceTimezone: string
   /** P1: the chosen service, threaded into createBooking so the server validates against its duration. */
   serviceTypeId?: string | null
 }) {
@@ -43,10 +61,25 @@ export function BookingPicker({
   const [booked, setBooked] = useState<string | null>(null)
   const [pending, startBooking] = useTransition()
 
+  // The viewer's own timezone (falls back to the Space tz on the server + first client render).
+  const viewerTz = useViewerTimezone(spaceTimezone)
+
+  const days = useMemo(() => groupSlotsByDay(slots, viewerTz), [slots, viewerTz])
+  const sessionLabel = useMemo(() => sessionLengthLabel(slots), [slots])
+  const viewerTzLabel = timezoneLabel(viewerTz)
+  const spaceTzLabel = timezoneLabel(spaceTimezone)
+  const sameZone = viewerTz === spaceTimezone
+
   const timeFmt = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
+    timeZone: viewerTz,
     hour: 'numeric',
     minute: '2-digit',
+  })
+  const dayFmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: viewerTz,
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
   })
 
   function confirm() {
@@ -73,7 +106,7 @@ export function BookingPicker({
 
   if (booked) {
     const when = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
+      timeZone: viewerTz,
       weekday: 'long',
       month: 'long',
       day: 'numeric',
@@ -85,7 +118,7 @@ export function BookingPicker({
         <CalendarCheck className="mx-auto mb-3 h-8 w-8 text-success" aria-hidden />
         <p className="text-sm font-semibold text-text">You are booked.</p>
         <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
-          {when} ({tzLabel}). You can manage this from your bookings.
+          {when} ({viewerTzLabel}). You can manage this from your bookings.
         </p>
         <button
           type="button"
@@ -102,8 +135,11 @@ export function BookingPicker({
     <div className="space-y-5">
       <p className="flex items-center gap-1.5 text-sm text-muted">
         <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        {sessionLabel ? `${sessionLabel}. ` : ''}Times shown in {tzLabel}. Pick a slot to book a 1:1
-        session.
+        {sessionLabel ? `${sessionLabel}. ` : ''}
+        {sameZone
+          ? `Times shown in ${spaceTzLabel}.`
+          : `Times shown in your time (${viewerTzLabel}). This space runs on ${spaceTzLabel}.`}{' '}
+        Pick a slot to book a 1:1 session.
       </p>
 
       <div className="space-y-5">
@@ -142,13 +178,7 @@ export function BookingPicker({
         <div className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
           <p className="text-sm font-semibold text-text">
             Confirm {timeFmt.format(new Date(selected.startsAt))} on{' '}
-            {new Intl.DateTimeFormat('en-US', {
-              timeZone: timezone,
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-            }).format(new Date(selected.startsAt))}{' '}
-            ({tzLabel})
+            {dayFmt.format(new Date(selected.startsAt))} ({viewerTzLabel})
           </p>
           <p className="flex items-center gap-1.5 text-xs text-muted">
             <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
