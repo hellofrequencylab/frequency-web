@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Loader2, Plus, Settings2, Trash2 } from 'lucide-react'
 import { emailPalette, entityBlockById } from '@/lib/entity-blocks/registry'
 import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
@@ -56,9 +56,16 @@ const label = (id: string) => entityBlockById(id)?.label ?? id
 export function EmailCanvasEditor() {
   const store = useProfileLayout()
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  // Scroll the selected tile into view when the selection is driven from the canvas (issue #2), so the tile
-  // that just opened its settings is actually visible in the rail.
+  // Horizontal alignment: when a block is selected (usually by clicking it on the canvas), the LEFT block
+  // rail translates vertically so the selected tile sits on the SAME horizontal line as the block on the
+  // canvas. `tileRefs` marks each left tile, `blockRefs` each canvas block, and `railOffset` is the
+  // translateY applied to the tile list to line the two up. Measured from layout (not viewport), so it is
+  // stable across page scroll; recomputed on selection change, on a tile expanding, and on resize.
   const tileRefs = useRef<Record<string, HTMLLIElement | null>>({})
+  const blockRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const gridRef = useRef<HTMLDivElement | null>(null)
+  const listRef = useRef<HTMLOListElement | null>(null)
+  const [railOffset, setRailOffset] = useState(0)
 
   // The single-column email block list, in reading order (each row is one block).
   const blocks = useMemo(() => {
@@ -73,10 +80,35 @@ export function EmailCanvasEditor() {
     return emailPalette().filter((b) => !placed.has(b.id))
   }, [blocks])
 
-  useEffect(() => {
-    if (!selectedId) return
-    tileRefs.current[selectedId]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, [selectedId])
+  // Align the selected tile's top to the selected canvas block's top. Both positions are measured
+  // relative to the shared grid (layout coordinates, so page scroll never disturbs them). The result is
+  // clamped to the grid's vertical bounds so the rail can never float out of its column, and applied as a
+  // translateY on the tile list. Runs in a layout effect (after the selected tile has expanded), so the
+  // measurement already reflects its open height.
+  useLayoutEffect(() => {
+    const align = () => {
+      const grid = gridRef.current
+      const list = listRef.current
+      const tile = selectedId ? tileRefs.current[selectedId] : null
+      const block = selectedId ? blockRefs.current[selectedId] : null
+      if (!selectedId || !grid || !list || !tile || !block) {
+        setRailOffset(0)
+        return
+      }
+      const gridTop = grid.getBoundingClientRect().top
+      // Block top in grid-layout space (the canvas is not transformed, so its rect is layout-true).
+      const blockTopInGrid = block.getBoundingClientRect().top - gridTop
+      // Tile top within the list content, independent of the list's current transform (offsetTop is
+      // measured against the list, which is position: relative).
+      const tileTopInList = tile.offsetTop
+      const maxOffset = Math.max(0, grid.offsetHeight - list.offsetHeight)
+      const next = Math.max(0, Math.min(blockTopInGrid - tileTopInList, maxOffset))
+      setRailOffset(next)
+    }
+    align()
+    window.addEventListener('resize', align)
+    return () => window.removeEventListener('resize', align)
+  }, [selectedId, store?.rows, store?.content])
 
   if (!store || !store.seeded) {
     return (
@@ -119,7 +151,7 @@ export function EmailCanvasEditor() {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(220px,25%)_minmax(0,1fr)]">
+    <div ref={gridRef} className="grid items-start gap-4 lg:grid-cols-[minmax(220px,25%)_minmax(0,1fr)]">
       {/* LEFT — block list (each tile expands to its own settings) + the add-block palette. */}
       <aside className="min-w-0 space-y-3" aria-label="Blocks and settings">
         <div className="flex items-center justify-between">
@@ -134,7 +166,11 @@ export function EmailCanvasEditor() {
             This email has no blocks yet. Add one below.
           </p>
         ) : (
-          <ol className="space-y-1.5">
+          <ol
+            ref={listRef}
+            className="relative space-y-1.5 transition-transform duration-200 ease-out will-change-transform"
+            style={{ transform: railOffset ? `translateY(${railOffset}px)` : undefined }}
+          >
             {blocks.map((id, i) => {
               const active = id === selectedId
               const fields = fieldsForBlock(id).filter(isCoreField)
@@ -262,6 +298,9 @@ export function EmailCanvasEditor() {
                 // draw an amber box around the field (owner directive), so the block wrapper stays outline-free.
                 <div
                   key={id}
+                  ref={(el) => {
+                    blockRefs.current[id] = el
+                  }}
                   role="group"
                   onMouseDown={() => setSelectedId(id)}
                   className="rounded-lg p-2"
