@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input, Label, Textarea, fieldClasses } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
 import { setSpaceServiceTypes } from '@/lib/spaces/booking-actions'
-import type { ServiceType, ServiceTypeInput } from '@/lib/spaces/booking'
+import type { ServiceType, ServiceTypeInput, BookingQuestion } from '@/lib/spaces/booking'
 import { cn } from '@/lib/utils'
 
 // OWNER SERVICE TYPES EDITOR (client, P1, ADR-605). The Practitioner defines the reusable bookable
@@ -25,6 +25,7 @@ interface ServiceDraft {
   name: string
   description: string
   durationMinutes: number
+  questions: BookingQuestion[]
 }
 
 function toDrafts(services: ServiceType[]): ServiceDraft[] {
@@ -33,7 +34,14 @@ function toDrafts(services: ServiceType[]): ServiceDraft[] {
     name: s.name,
     description: s.description ?? '',
     durationMinutes: s.durationMinutes,
+    questions: s.questions,
   }))
+}
+
+let questionSeq = 0
+function newQuestionId(): string {
+  questionSeq += 1
+  return `q_${Date.now().toString(36)}_${questionSeq}`
 }
 
 export function BookingServiceTypesForm({
@@ -55,12 +63,41 @@ export function BookingServiceTypesForm({
   }
 
   function addRow() {
-    setRows((prev) => [...prev, { id: null, name: '', description: '', durationMinutes: 30 }])
+    setRows((prev) => [...prev, { id: null, name: '', description: '', durationMinutes: 30, questions: [] }])
     setSaved(false)
   }
 
   function removeRow(index: number) {
     setRows((prev) => prev.filter((_, i) => i !== index))
+    setSaved(false)
+  }
+
+  function addQuestion(serviceIndex: number) {
+    setRows((prev) =>
+      prev.map((r, i) =>
+        i === serviceIndex
+          ? { ...r, questions: [...r.questions, { id: newQuestionId(), label: '', type: 'short', required: false }] }
+          : r,
+      ),
+    )
+    setSaved(false)
+  }
+  function updateQuestion(serviceIndex: number, qIndex: number, patch: Partial<BookingQuestion>) {
+    setRows((prev) =>
+      prev.map((r, i) =>
+        i === serviceIndex
+          ? { ...r, questions: r.questions.map((q, j) => (j === qIndex ? { ...q, ...patch } : q)) }
+          : r,
+      ),
+    )
+    setSaved(false)
+  }
+  function removeQuestion(serviceIndex: number, qIndex: number) {
+    setRows((prev) =>
+      prev.map((r, i) =>
+        i === serviceIndex ? { ...r, questions: r.questions.filter((_, j) => j !== qIndex) } : r,
+      ),
+    )
     setSaved(false)
   }
 
@@ -81,6 +118,9 @@ export function BookingServiceTypesForm({
         durationMinutes: r.durationMinutes,
         active: true,
         sortOrder: services.length,
+        questions: r.questions
+          .map((q) => ({ ...q, label: q.label.trim() }))
+          .filter((q) => q.label),
       })
     }
 
@@ -158,6 +198,53 @@ export function BookingServiceTypesForm({
                 maxLength={1000}
               />
             </label>
+
+            {/* Booking questions (P3): asked when a member books this service. */}
+            <div className="space-y-2 rounded-lg border border-dashed border-border p-3">
+              <span className="text-xs font-semibold text-muted">Booking questions (optional)</span>
+              {r.questions.map((q, j) => (
+                <div key={q.id} className="flex flex-wrap items-center gap-2">
+                  <Input
+                    value={q.label}
+                    onChange={(e) => updateQuestion(i, j, { label: e.target.value })}
+                    placeholder="What would you like to focus on?"
+                    maxLength={200}
+                    className="min-w-40 flex-1"
+                  />
+                  <select
+                    value={q.type}
+                    onChange={(e) => updateQuestion(i, j, { type: e.target.value === 'long' ? 'long' : 'short' })}
+                    className={cn(fieldClasses, 'w-28')}
+                  >
+                    <option value="short">Short</option>
+                    <option value="long">Long</option>
+                  </select>
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <input
+                      type="checkbox"
+                      checked={q.required}
+                      onChange={(e) => updateQuestion(i, j, { required: e.target.checked })}
+                    />
+                    Required
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => removeQuestion(i, j)}
+                    aria-label="Remove this question"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addQuestion(i)}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-strong transition-colors hover:text-primary"
+              >
+                <Plus className="h-3.5 w-3.5" aria-hidden /> Add a question
+              </button>
+            </div>
           </div>
         ))}
         <button

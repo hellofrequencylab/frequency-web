@@ -45,6 +45,22 @@ export interface AvailabilityWindow {
   serviceTypeId?: string | null
 }
 
+/** One booking question (P3): asked when a member books this service; the answer lands in the booking's
+ *  `answers` map keyed by `id`. `type` is a plain input kind. */
+export interface BookingQuestion {
+  id: string
+  label: string
+  type: 'short' | 'long'
+  required: boolean
+}
+
+/** A stored booking answer, LABELED so the owner reads it without re-resolving the service (P3). */
+export interface BookingAnswer {
+  id: string
+  label: string
+  value: string
+}
+
 /** A Space's reusable bookable offering (the Calendly "event type", P1). The free path uses only
  *  name + description + durationMinutes; priceCents is display-only until P4 payments. */
 export interface ServiceType {
@@ -56,6 +72,8 @@ export interface ServiceType {
   priceCents: number | null
   active: boolean
   sortOrder: number
+  /** P3 booking questions asked at booking (ordered). Empty when none. */
+  questions: BookingQuestion[]
 }
 
 /** One open slot offered to a member: the absolute UTC instant it starts, plus its length so the
@@ -127,6 +145,8 @@ export interface SpaceBooking {
   startsAt: string
   endsAt: string
   note: string | null
+  /** P3: the member's answers to the service's booking questions (labeled), for the owner calendar. */
+  answers: BookingAnswer[]
 }
 
 // How far ahead a member may book. v1 offers a rolling two-week window of open slots.
@@ -460,6 +480,7 @@ type ServiceTypeRow = {
   price_cents: number | null
   active: boolean
   sort_order: number
+  questions?: unknown
 }
 type BookingRow = {
   id: string
@@ -469,6 +490,8 @@ type BookingRow = {
   ends_at: string
   status: string
   note: string | null
+  answers?: unknown
+  service_type_id?: string | null
 }
 
 type AvailabilityQuery = {
@@ -567,7 +590,9 @@ function overridesTable(): OverrideQuery {
 const AVAILABILITY_COLS = 'id, space_id, weekday, start_minute, end_minute, slot_minutes, timezone'
 const AVAILABILITY_COLS_P1 = `${AVAILABILITY_COLS}, service_type_id`
 const BOOKING_COLS = 'id, space_id, member_profile_id, starts_at, ends_at, status, note'
+const BOOKING_COLS_P3 = `${BOOKING_COLS}, answers, service_type_id`
 const SERVICE_TYPE_COLS = 'id, space_id, name, description, duration_minutes, price_cents, active, sort_order'
+const SERVICE_TYPE_COLS_P3 = `${SERVICE_TYPE_COLS}, questions`
 
 /** Map a raw availability row to a clean window (drops malformed rows, fail-closed). */
 function mapAvailabilityRow(r: AvailabilityRow): AvailabilityWindow | null {
@@ -616,6 +641,23 @@ export function windowsForService(
   return windows.filter((w) => !w.serviceTypeId || w.serviceTypeId === serviceTypeId)
 }
 
+/** Parse a service's questions jsonb (fail-closed: drop malformed entries; cap the count). */
+export function parseQuestions(raw: unknown): BookingQuestion[] {
+  if (!Array.isArray(raw)) return []
+  const out: BookingQuestion[] = []
+  for (const q of raw) {
+    if (!q || typeof q !== 'object') continue
+    const o = q as Record<string, unknown>
+    const id = typeof o.id === 'string' && o.id.trim() ? o.id.trim() : null
+    const label = typeof o.label === 'string' ? o.label.trim().slice(0, 200) : ''
+    if (!id || !label) continue
+    const type = o.type === 'long' ? 'long' : 'short'
+    out.push({ id, label, type, required: o.required === true })
+    if (out.length >= 20) break
+  }
+  return out
+}
+
 function mapServiceTypeRow(r: ServiceTypeRow): ServiceType {
   return {
     id: r.id,
@@ -628,23 +670,37 @@ function mapServiceTypeRow(r: ServiceTypeRow): ServiceType {
     priceCents: typeof r.price_cents === 'number' && r.price_cents >= 0 ? r.price_cents : null,
     active: r.active !== false,
     sortOrder: Number.isInteger(r.sort_order) ? r.sort_order : 0,
+    questions: parseQuestions(r.questions),
   }
 }
 
 /** Read a Space's service types (service-role; FAIL-SAFE to [], so a missing table pre-migration is
- *  silent). `activeOnly` filters to bookable ones for the member picker. Sorted by sort_order. */
+ *  silent). Tries the P3 read (with questions); falls back to base columns when that column is absent.
+ *  `activeOnly` filters to bookable ones for the member picker. Sorted by sort_order. */
 async function readServiceTypes(
   spaceId: string,
   opts: { activeOnly: boolean },
 ): Promise<ServiceType[]> {
+  const finish = (data: ServiceTypeRow[]) => {
+    const mapped = data.map(mapServiceTypeRow)
+    return opts.activeOnly ? mapped.filter((s) => s.active) : mapped
+  }
+  try {
+    const ext = await serviceTypesTable()
+      .select(SERVICE_TYPE_COLS_P3)
+      .eq('space_id', spaceId)
+      .order('sort_order', { ascending: true })
+    if (!ext.error && ext.data) return finish(ext.data)
+  } catch {
+    /* pre-P3 column missing: fall through */
+  }
   try {
     const { data, error } = await serviceTypesTable()
       .select(SERVICE_TYPE_COLS)
       .eq('space_id', spaceId)
       .order('sort_order', { ascending: true })
     if (error || !data) return []
-    const mapped = data.map(mapServiceTypeRow)
-    return opts.activeOnly ? mapped.filter((s) => s.active) : mapped
+    return finish(data)
   } catch {
     return []
   }
@@ -658,9 +714,18 @@ async function resolveServiceDuration(
   serviceTypeId: string | null | undefined,
 ): Promise<number | null> {
   if (!serviceTypeId) return null
-  const services = await readServiceTypes(spaceId, { activeOnly: true })
-  const svc = services.find((s) => s.id === serviceTypeId)
+  const svc = await resolveService(spaceId, serviceTypeId)
   return svc ? svc.durationMinutes : null
+}
+
+/** Resolve the full active service (name + duration + questions) for a chosen id, or null. FAIL-SAFE. */
+async function resolveService(
+  spaceId: string,
+  serviceTypeId: string | null | undefined,
+): Promise<ServiceType | null> {
+  if (!serviceTypeId) return null
+  const services = await readServiceTypes(spaceId, { activeOnly: true })
+  return services.find((s) => s.id === serviceTypeId) ?? null
 }
 
 // ── P2: availability schedules (buffers / notice / window / overrides / timezone) ────────────────
@@ -777,8 +842,20 @@ function buildSlotContext(
   return { windows: effWindows, horizonDays: schedule.bookingWindowDays, opts, timezone: tz }
 }
 
-/** The confirmed bookings of a Space at/after `fromISO` (service-role; FAIL-SAFE to []). */
+/** The confirmed bookings of a Space at/after `fromISO` (service-role; FAIL-SAFE to []). Tries the P3
+ *  read (with answers, for the owner calendar); falls back to base columns when that column is absent. */
 async function readConfirmedBookings(spaceId: string, fromISO: string): Promise<BookingRow[]> {
+  try {
+    const ext = await bookingsTable()
+      .select(BOOKING_COLS_P3)
+      .eq('space_id', spaceId)
+      .eq('status', 'confirmed')
+      .gte('starts_at', fromISO)
+      .order('starts_at', { ascending: true })
+    if (!ext.error && ext.data) return ext.data
+  } catch {
+    /* pre-P3 answers column missing: fall through */
+  }
   try {
     const { data, error } = await bookingsTable()
       .select(BOOKING_COLS)
@@ -1012,6 +1089,22 @@ export interface ServiceTypeInput {
   priceCents?: number | null
   active?: boolean
   sortOrder?: number
+  /** P3 booking questions asked at booking (ordered). */
+  questions?: BookingQuestion[]
+}
+
+/** Coerce raw booking questions to a clean, stable list (each gets an id; blank labels dropped). */
+function cleanQuestions(raw: BookingQuestion[] | undefined): BookingQuestion[] {
+  if (!Array.isArray(raw)) return []
+  const out: BookingQuestion[] = []
+  for (const q of raw) {
+    const label = typeof q?.label === 'string' ? q.label.trim().slice(0, 200) : ''
+    if (!label) continue
+    const id = typeof q?.id === 'string' && q.id.trim() ? q.id.trim() : `q${out.length + 1}`
+    out.push({ id, label, type: q?.type === 'long' ? 'long' : 'short', required: q?.required === true })
+    if (out.length >= 20) break
+  }
+  return out
 }
 
 /** Coerce a raw service-type input to a clean, safe row, or null if it cannot be made valid (a blank
@@ -1024,6 +1117,7 @@ function cleanServiceInput(raw: ServiceTypeInput, index: number): {
   price_cents: number | null
   active: boolean
   sort_order: number
+  questions: BookingQuestion[]
 } | null {
   const name = typeof raw.name === 'string' ? raw.name.trim().slice(0, 120) : ''
   if (!name) return null
@@ -1046,6 +1140,7 @@ function cleanServiceInput(raw: ServiceTypeInput, index: number): {
     price_cents: price,
     active: raw.active !== false,
     sort_order: Number.isInteger(raw.sortOrder) ? (raw.sortOrder as number) : index,
+    questions: cleanQuestions(raw.questions),
   }
 }
 
@@ -1088,32 +1183,34 @@ export async function setSpaceServiceTypes(
     const keptIds = new Set<string>()
 
     for (const row of clean) {
+      const base = {
+        name: row.name,
+        description: row.description,
+        duration_minutes: row.duration_minutes,
+        price_cents: row.price_cents,
+        active: row.active,
+        sort_order: row.sort_order,
+      }
+      // Include the P3 questions column when possible; if it is absent pre-migration the write errors,
+      // so retry without questions (fail-soft: the service saves, just without its questions).
+      const withQuestions = { ...base, questions: row.questions }
       if (row.id && existingIds.has(row.id)) {
         keptIds.add(row.id)
-        const { error } = (await serviceTypesTable()
-          .update({
-            name: row.name,
-            description: row.description,
-            duration_minutes: row.duration_minutes,
-            price_cents: row.price_cents,
-            active: row.active,
-            sort_order: row.sort_order,
-          })
-          .eq('id', row.id)) as unknown as { error?: unknown }
-        if (error) return fail('Could not save your services. Try again.')
+        const first = (await serviceTypesTable().update(withQuestions).eq('id', row.id)) as unknown as {
+          error?: unknown
+        }
+        if (first.error) {
+          const retry = (await serviceTypesTable().update(base).eq('id', row.id)) as unknown as {
+            error?: unknown
+          }
+          if (retry.error) return fail('Could not save your services. Try again.')
+        }
       } else {
-        const { error } = await serviceTypesTable().insert([
-          {
-            space_id: spaceId,
-            name: row.name,
-            description: row.description,
-            duration_minutes: row.duration_minutes,
-            price_cents: row.price_cents,
-            active: row.active,
-            sort_order: row.sort_order,
-          },
-        ])
-        if (error) return fail('Could not save your services. Try again.')
+        const first = await serviceTypesTable().insert([{ space_id: spaceId, ...withQuestions }])
+        if (first.error) {
+          const retry = await serviceTypesTable().insert([{ space_id: spaceId, ...base }])
+          if (retry.error) return fail('Could not save your services. Try again.')
+        }
       }
     }
 
@@ -1263,6 +1360,7 @@ export async function createBooking(
   startsAtISO: string,
   note?: string,
   serviceTypeId?: string | null,
+  answers?: Record<string, string> | null,
 ): Promise<ActionResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to book a time.')
@@ -1270,24 +1368,68 @@ export async function createBooking(
   const space = await getSpaceById(spaceId)
   if (!space) return fail('Space not found.')
 
+  const placed = await validateAndPlaceBooking({
+    space,
+    profileId,
+    startsAtISO,
+    note: note ?? null,
+    serviceTypeId: serviceTypeId ?? null,
+    answers: answers ?? null,
+    rescheduledFrom: null,
+  })
+  if (!placed.ok) return fail(placed.error)
+
+  // Best-effort side effects: never block or roll back the booking on a mail hiccup.
+  await afterBookingPlaced(space, placed)
+  return ok()
+}
+
+/** The result of a successful placement (used by the confirmation + reminder side effects). */
+interface PlacedBooking {
+  ok: true
+  bookingId: string
+  profileId: string
+  startsAt: string
+  endsAt: string
+  serviceName: string | null
+}
+
+/**
+ * The shared validate-then-insert core for createBooking AND rescheduleBooking. Re-derives the Space's
+ * published slots under the full P1/P2 context (service duration, buffers, notice, overrides, window),
+ * enforces the exact-instant + buffer conflict, then inserts a CONFIRMED booking. The partial unique
+ * index is the final race guard. Captures the service's booking questions into `answers` (required ones
+ * must be filled). Fail-soft on the P3 columns (answers / rescheduled_from) when unapplied.
+ */
+async function validateAndPlaceBooking(params: {
+  space: { id: string; slug: string }
+  profileId: string
+  startsAtISO: string
+  note: string | null
+  serviceTypeId: string | null
+  answers: Record<string, string> | null
+  rescheduledFrom: string | null
+}): Promise<PlacedBooking | { ok: false; error: string }> {
+  const { space, profileId, startsAtISO, serviceTypeId, rescheduledFrom } = params
+  const spaceId = space.id
+
   const startsAt = new Date(startsAtISO)
-  if (Number.isNaN(startsAt.getTime())) return fail('Pick a valid time.')
-
+  if (Number.isNaN(startsAt.getTime())) return { ok: false, error: 'Pick a valid time.' }
   const now = new Date()
-  if (startsAt.getTime() <= now.getTime()) return fail('That time has already passed. Pick another.')
+  if (startsAt.getTime() <= now.getTime())
+    return { ok: false, error: 'That time has already passed. Pick another.' }
 
-  // Re-derive the published slots and confirm the requested instant is a real, open one. P1: when a
-  // service was chosen, validate against ITS duration and only the windows that offer it.
   const allWindows = await readWindows(spaceId)
-  if (allWindows.length === 0) return fail('This space is not taking bookings right now.')
+  if (allWindows.length === 0)
+    return { ok: false, error: 'This space is not taking bookings right now.' }
 
-  const duration = await resolveServiceDuration(spaceId, serviceTypeId)
-  if (serviceTypeId && duration == null) return fail('That service is no longer available. Pick another.')
-  const scoped = windowsForService(allWindows, serviceTypeId ?? null)
-  if (scoped.length === 0) return fail('That time is no longer available. Pick another.')
+  const service = await resolveService(spaceId, serviceTypeId)
+  if (serviceTypeId && !service)
+    return { ok: false, error: 'That service is no longer available. Pick another.' }
+  const duration = service ? service.durationMinutes : null
+  const scoped = windowsForService(allWindows, serviceTypeId)
+  if (scoped.length === 0) return { ok: false, error: 'That time is no longer available. Pick another.' }
 
-  // P2: re-validate against the SAME schedule context the member saw (notice, overrides, window, tz),
-  // and read the blocking bookings up front so we can enforce buffer-aware conflict server-side too.
   const context = await readScheduleContext(spaceId)
   const booked = await readBlockingBookings(spaceId, now.toISOString())
   const bookedRanges = booked.map((b) => ({
@@ -1297,43 +1439,205 @@ export async function createBooking(
   const ctx = buildSlotContext(scoped, context.schedule, context.overrides, duration, bookedRanges)
 
   const slotMinutes = slotLengthAt(ctx.windows, startsAt.getTime(), now, ctx.horizonDays, ctx.opts)
-  if (slotMinutes == null) return fail('That time is no longer available. Pick another.')
+  if (slotMinutes == null) return { ok: false, error: 'That time is no longer available. Pick another.' }
 
-  // Already taken (confirmed or held pending)? A fast pre-check for a friendly message; the unique index
-  // is the real guard. P2: also block a slot that falls within the buffers of an existing booking.
-  if (booked.some((b) => new Date(b.starts_at).getTime() === startsAt.getTime())) {
-    return fail('That time was just taken. Pick another.')
-  }
-  if (bufferConflict(startsAt.getTime(), startsAt.getTime() + slotMinutes * 60000, ctx.opts)) {
-    return fail('That time is too close to another booking. Pick another.')
-  }
+  if (booked.some((b) => new Date(b.starts_at).getTime() === startsAt.getTime()))
+    return { ok: false, error: 'That time was just taken. Pick another.' }
+  if (bufferConflict(startsAt.getTime(), startsAt.getTime() + slotMinutes * 60000, ctx.opts))
+    return { ok: false, error: 'That time is too close to another booking. Pick another.' }
+
+  // P3: validate answers against the service's questions (required ones must be filled).
+  const cleanAnswers = cleanAnswers_(service?.questions ?? [], params.answers)
+  if (cleanAnswers === null) return { ok: false, error: 'Answer the required questions to book.' }
 
   const endsAt = new Date(startsAt.getTime() + slotMinutes * 60000)
-  const cleanNote = typeof note === 'string' ? note.trim().slice(0, 500) : ''
+  const cleanNote = typeof params.note === 'string' ? params.note.trim().slice(0, 500) : ''
+
+  const baseRow: Record<string, unknown> = {
+    space_id: spaceId,
+    member_profile_id: profileId,
+    starts_at: startsAt.toISOString(),
+    ends_at: endsAt.toISOString(),
+    status: 'confirmed',
+    note: cleanNote ? cleanNote : null,
+  }
+  // Include the P3 columns only when they carry a value, so a pre-migration insert (no such column)
+  // is not attempted for the common case; if a bound insert errors on the missing column, retry base.
+  const optional: Record<string, unknown> = {}
+  if (cleanAnswers && cleanAnswers.length > 0) optional.answers = cleanAnswers
+  if (rescheduledFrom) optional.rescheduled_from = rescheduledFrom
+  if (serviceTypeId) optional.service_type_id = serviceTypeId
+  const hasOptional = Object.keys(optional).length > 0
 
   try {
-    const { error } = await bookingsTable()
-      .insert([
-        {
-          space_id: spaceId,
-          member_profile_id: profileId,
-          starts_at: startsAt.toISOString(),
-          ends_at: endsAt.toISOString(),
-          status: 'confirmed',
-          note: cleanNote ? cleanNote : null,
-        },
-      ])
+    let res = await bookingsTable()
+      .insert([{ ...baseRow, ...optional }])
       .select(BOOKING_COLS)
       .maybeSingle()
-    if (error) {
-      // The partial unique index rejects a second confirmed row for the same slot: translate the
-      // race into the friendly message rather than a raw DB error.
-      return fail('That time was just taken. Pick another.')
+    if (res.error && hasOptional) {
+      // Likely a missing P3 column (or a duplicate; a duplicate retry fails again -> friendly message).
+      res = await bookingsTable().insert([baseRow]).select(BOOKING_COLS).maybeSingle()
+    }
+    if (res.error || !res.data) {
+      return { ok: false, error: 'That time was just taken. Pick another.' }
+    }
+    return {
+      ok: true,
+      bookingId: res.data.id,
+      profileId,
+      startsAt: res.data.starts_at,
+      endsAt: res.data.ends_at,
+      serviceName: service?.name ?? null,
     }
   } catch {
-    return fail('Could not book that time. Try again.')
+    return { ok: false, error: 'Could not book that time. Try again.' }
   }
+}
+
+/** Validate + shape the member's answers against a service's questions. Returns an ordered, LABELED
+ *  array (so the owner can read it without re-resolving the service), or null when a required question
+ *  is unanswered. Empty questions -> empty array. */
+function cleanAnswers_(
+  questions: BookingQuestion[],
+  raw: Record<string, string> | null | undefined,
+): BookingAnswer[] | null {
+  const out: BookingAnswer[] = []
+  for (const q of questions) {
+    const val = raw && typeof raw[q.id] === 'string' ? raw[q.id]!.trim().slice(0, 2000) : ''
+    if (q.required && !val) return null
+    if (val) out.push({ id: q.id, label: q.label, value: val })
+  }
+  return out
+}
+
+/** Parse a booking's stored answers jsonb into the labeled array (fail-closed). */
+export function parseAnswers(raw: unknown): BookingAnswer[] {
+  if (!Array.isArray(raw)) return []
+  const out: BookingAnswer[] = []
+  for (const a of raw) {
+    if (!a || typeof a !== 'object') continue
+    const o = a as Record<string, unknown>
+    const label = typeof o.label === 'string' ? o.label : ''
+    const value = typeof o.value === 'string' ? o.value : ''
+    if (!label || !value) continue
+    out.push({ id: typeof o.id === 'string' ? o.id : label, label, value })
+    if (out.length >= 20) break
+  }
+  return out
+}
+
+/** Fire the confirmation email (member + owner, with .ics) and schedule the reminder. Best-effort. */
+async function afterBookingPlaced(
+  space: { id: string; slug: string; name: string; brandName: string | null; ownerProfileId: string | null },
+  placed: PlacedBooking,
+): Promise<void> {
+  const { notifyBookingConfirmed, scheduleBookingReminder } = await import('@/lib/spaces/booking-notify')
+  await notifyBookingConfirmed({
+    bookingId: placed.bookingId,
+    spaceId: space.id,
+    spaceSlug: space.slug,
+    spaceName: space.brandName?.trim() || space.name,
+    ownerProfileId: space.ownerProfileId,
+    memberProfileId: placed.profileId,
+    memberName: null,
+    startsAt: placed.startsAt,
+    endsAt: placed.endsAt,
+    serviceName: placed.serviceName,
+  })
+  await scheduleBookingReminder(placed.bookingId, placed.startsAt)
+}
+
+/**
+ * Reschedule a member's own booking to a new time (ADR-605 P3). ATOMIC in effect: it acquires the NEW
+ * slot FIRST (through the same validateAndPlaceBooking re-validation + unique-index guard), and only
+ * then cancels the old one, so a race can never free-then-lose the slot. Gated to the booker (or an
+ * admin) and the cancellation policy window. Carries the service forward. Fires confirmation + reminder
+ * for the new booking and a cancellation notice for the old is skipped (it is a move, not a loss).
+ */
+export async function rescheduleBooking(
+  bookingId: string,
+  newStartsAtISO: string,
+  serviceTypeId?: string | null,
+): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to reschedule.')
+
+  const old = await readBookingById(bookingId)
+  if (!old) return fail('Booking not found.')
+  if (old.status !== 'confirmed') return fail('That booking cannot be rescheduled.')
+
+  const space = await getSpaceById(old.space_id)
+  if (!space) return fail('Space not found.')
+
+  // The booker may reschedule their own; otherwise an admin.
+  const caps = await getSpaceCapabilities(space, profileId)
+  const isBooker = old.member_profile_id === profileId
+  if (!isBooker && !caps.isAdmin)
+    return fail('You do not have permission to reschedule this booking.')
+
+  // Policy window: a booker may not move a booking inside the minimum notice; an admin always may.
+  if (isBooker && !caps.isAdmin) {
+    const schedule = await readSchedule(old.space_id)
+    if (!withinModifyWindow(old.starts_at, schedule.minNoticeMinutes)) {
+      return fail('This booking is too close to its start time to reschedule.')
+    }
+  }
+
+  // Acquire the NEW slot first (as the original booker), re-validated + guarded by the unique index.
+  // Carry the original service forward unless the caller overrides it.
+  const carryService = serviceTypeId ?? old.service_type_id ?? null
+  const placed = await validateAndPlaceBooking({
+    space,
+    profileId: old.member_profile_id,
+    startsAtISO: newStartsAtISO,
+    note: old.note,
+    serviceTypeId: carryService,
+    answers: null,
+    rescheduledFrom: old.id,
+  })
+  if (!placed.ok) return fail(placed.error)
+
+  // New slot held: release the old one (fail-soft; the new booking already stands).
+  try {
+    await bookingsTable()
+      .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+      .eq('id', old.id)
+  } catch {
+    try {
+      await bookingsTable().update({ status: 'cancelled' }).eq('id', old.id)
+    } catch {
+      /* fail-soft: the old row stays confirmed only if both updates fail; rare, self-heals on retry */
+    }
+  }
+
+  await afterBookingPlaced(space, placed)
   return ok()
+}
+
+/** Whether a booking at `startsAt` is far enough out to still be modified under `minNoticeMinutes`
+ *  (the cancellation / reschedule policy window; 0 = always allowed). Pure. */
+export function withinModifyWindow(startsAt: string | Date, minNoticeMinutes: number): boolean {
+  const startMs = typeof startsAt === 'string' ? new Date(startsAt).getTime() : startsAt.getTime()
+  if (!Number.isFinite(startMs)) return false
+  const notice = Math.max(0, minNoticeMinutes) * 60000
+  return startMs - Date.now() >= notice
+}
+
+/** Read one booking row by id (service-role; FAIL-SAFE to null). Tries the P3 columns (service_type_id
+ *  / answers) and falls back to base when absent. */
+async function readBookingById(bookingId: string): Promise<BookingRow | null> {
+  try {
+    const ext = await bookingsTable().select(BOOKING_COLS_P3).eq('id', bookingId).maybeSingle()
+    if (!ext.error && ext.data) return ext.data
+  } catch {
+    /* pre-P3 columns missing: fall through */
+  }
+  try {
+    const { data } = await bookingsTable().select(BOOKING_COLS).eq('id', bookingId).maybeSingle()
+    return data
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -1341,37 +1645,114 @@ export async function createBooking(
  * (admin client), checks ownership / admin, then flips status to 'cancelled' (which releases the
  * slot via the partial unique index, so it can be re-booked). Fail-closed on permission.
  */
-export async function cancelBooking(bookingId: string): Promise<ActionResult> {
+export async function cancelBooking(bookingId: string, reason?: string): Promise<ActionResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to cancel a booking.')
 
-  let row: BookingRow | null = null
-  try {
-    const { data } = await bookingsTable().select(BOOKING_COLS).eq('id', bookingId).maybeSingle()
-    row = data
-  } catch {
-    row = null
-  }
+  const row = await readBookingById(bookingId)
   if (!row) return fail('Booking not found.')
+  if (row.status !== 'confirmed') return ok() // already cancelled: idempotent no-op
 
-  // The booker may always cancel their own; otherwise the caller must be a space admin.
-  let allowed = row.member_profile_id === profileId
-  if (!allowed) {
-    const space = await getSpaceById(row.space_id)
-    if (space) {
-      const caps = await getSpaceCapabilities(space, profileId)
-      allowed = caps.isAdmin
+  // The booker may cancel their own (within the policy window); an admin always may.
+  const space = await getSpaceById(row.space_id)
+  const isBooker = row.member_profile_id === profileId
+  let isAdmin = false
+  if (space) {
+    const caps = await getSpaceCapabilities(space, profileId)
+    isAdmin = caps.isAdmin
+  }
+  if (!isBooker && !isAdmin) return fail('You do not have permission to cancel this booking.')
+  if (isBooker && !isAdmin) {
+    const schedule = await readSchedule(row.space_id)
+    if (!withinModifyWindow(row.starts_at, schedule.minNoticeMinutes)) {
+      return fail('This booking is too close to its start time to cancel.')
     }
   }
-  if (!allowed) return fail('You do not have permission to cancel this booking.')
+
+  const cleanReason = typeof reason === 'string' && reason.trim() ? reason.trim().slice(0, 500) : null
 
   try {
-    const { error } = await bookingsTable().update({ status: 'cancelled' }).eq('id', bookingId)
-    if (error) return fail('Could not cancel the booking. Try again.')
+    // Stamp cancelled_at + cancel_reason (P3); fall back to a plain status flip when those columns are
+    // absent pre-migration (fail-soft).
+    let res = (await bookingsTable()
+      .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancel_reason: cleanReason })
+      .eq('id', bookingId)) as unknown as { error?: unknown }
+    if (res.error) {
+      res = (await bookingsTable().update({ status: 'cancelled' }).eq('id', bookingId)) as unknown as {
+        error?: unknown
+      }
+      if (res.error) return fail('Could not cancel the booking. Try again.')
+    }
   } catch {
     return fail('Could not cancel the booking. Try again.')
   }
+
+  // Best-effort cancellation notice (never blocks the cancel).
+  if (space) {
+    try {
+      const { notifyBookingCancelled } = await import('@/lib/spaces/booking-notify')
+      await notifyBookingCancelled(
+        {
+          spaceId: space.id,
+          spaceSlug: space.slug,
+          spaceName: space.brandName?.trim() || space.name,
+          ownerProfileId: space.ownerProfileId,
+          memberProfileId: row.member_profile_id,
+          memberName: null,
+          startsAt: row.starts_at,
+          serviceName: null,
+        },
+        cleanReason,
+      )
+    } catch {
+      /* fail-soft */
+    }
+  }
   return ok()
+}
+
+/** One of the member's OWN upcoming bookings, for the self-serve list (P3). */
+export interface MyBooking {
+  id: string
+  startsAt: string
+  endsAt: string
+  note: string | null
+  /** The service this was booked for, carried into a reschedule (null = legacy flat booking). */
+  serviceTypeId: string | null
+  serviceName: string | null
+  /** Whether it is still far enough out to cancel / reschedule under the policy window. */
+  canModify: boolean
+}
+
+/** The current member's upcoming confirmed bookings with a Space (P3 self-serve). Any authenticated
+ *  caller sees only THEIR OWN. FAIL-SAFE to []. */
+export async function listMyBookings(spaceId: string): Promise<MyBooking[]> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return []
+  try {
+    const rows = await readConfirmedBookings(spaceId, new Date().toISOString())
+    const mine = rows.filter((r) => r.member_profile_id === profileId)
+    if (mine.length === 0) return []
+    const [schedule, services] = await Promise.all([
+      readSchedule(spaceId),
+      readServiceTypes(spaceId, { activeOnly: false }),
+    ])
+    const nameById = new Map(services.map((s) => [s.id, s.name]))
+    return mine.map((r) => {
+      const serviceTypeId = r.service_type_id ?? null
+      return {
+        id: r.id,
+        startsAt: r.starts_at,
+        endsAt: r.ends_at,
+        note: r.note,
+        serviceTypeId,
+        serviceName: serviceTypeId ? (nameById.get(serviceTypeId) ?? null) : null,
+        canModify: withinModifyWindow(r.starts_at, schedule.minNoticeMinutes),
+      }
+    })
+  } catch {
+    return []
+  }
 }
 
 // ── Bookable services (Phase 4, ADR-596): HOLD-FIRST booking tied to a commerce deposit ─────────
@@ -1483,6 +1864,7 @@ export async function listSpaceBookings(spaceId: string): Promise<SpaceBooking[]
       startsAt: r.starts_at,
       endsAt: r.ends_at,
       note: r.note,
+      answers: parseAnswers(r.answers),
     }))
   } catch {
     return []

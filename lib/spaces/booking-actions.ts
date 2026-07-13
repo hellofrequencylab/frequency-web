@@ -21,6 +21,7 @@ import {
   setSpaceSchedule as setSpaceScheduleImpl,
   listOpenSlots as listOpenSlotsImpl,
   createBooking as createBookingImpl,
+  rescheduleBooking as rescheduleBookingImpl,
   cancelBooking as cancelBookingImpl,
   type AvailabilityWindow,
   type ServiceTypeInput,
@@ -63,17 +64,29 @@ export async function listOpenSlotsForService(
 }
 
 /** Book an open slot. Any authenticated member; the slot is re-validated server-side. `serviceTypeId`
- *  (P1) validates the instant against the chosen service's duration + windows. */
+ *  (P1) validates the instant against the chosen service's duration + windows. `answers` (P3) captures
+ *  the service's booking questions. */
 export async function createBooking(
   spaceId: string,
   startsAtISO: string,
   note?: string,
   serviceTypeId?: string | null,
+  answers?: Record<string, string> | null,
 ): Promise<ActionResult> {
-  return createBookingImpl(spaceId, startsAtISO, note, serviceTypeId)
+  return createBookingImpl(spaceId, startsAtISO, note, serviceTypeId, answers)
 }
 
-/** Cancel a booking. The booker or a space admin only (gated in the implementation). */
-export async function cancelBooking(bookingId: string): Promise<ActionResult> {
-  return cancelBookingImpl(bookingId)
+/** Reschedule the member's own booking to a new time (P3). Atomic new-then-cancel, re-validated. */
+export async function rescheduleBooking(
+  bookingId: string,
+  newStartsAtISO: string,
+  serviceTypeId?: string | null,
+): Promise<ActionResult> {
+  return rescheduleBookingImpl(bookingId, newStartsAtISO, serviceTypeId)
+}
+
+/** Cancel a booking. The booker (within the policy window) or a space admin (gated in the
+ *  implementation). `reason` (P3) is an optional member/owner-facing note. */
+export async function cancelBooking(bookingId: string, reason?: string): Promise<ActionResult> {
+  return cancelBookingImpl(bookingId, reason)
 }

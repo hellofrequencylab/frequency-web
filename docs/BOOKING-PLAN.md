@@ -21,7 +21,7 @@
 | P0.5 | Unconfigured-CTA operator setup prompts (the reported dead end) | ✅ Shipped (this branch) |
 | P1 | Service types + durations (reusable bookable offerings) | ✅ Shipped (migration `20261146000000_space_service_types.sql`, not yet applied) |
 | P2 | Availability schedules: weekly hours + overrides, buffers, min notice, booking window, invitee timezone | ✅ Shipped (migration `20261147000000_space_availability_schedules.sql`, not yet applied) |
-| P3 | Reschedule / cancel + reminders + booking questions | ⏳ Planned |
+| P3 | Reschedule / cancel + reminders + booking questions | ✅ Shipped (migration `20261148000000_space_booking_lifecycle.sql`, not yet applied) |
 | P4 | Payments / deposits (Business-gated, commerce spine, dark) | ⏳ Planned (migration written, not applied) |
 
 ## Calendly parity checklist (which phase delivers each pillar)

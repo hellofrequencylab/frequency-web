@@ -215,7 +215,11 @@ import {
   listOpenSlots,
   createBooking,
   cancelBooking,
+  rescheduleBooking,
   listSpaceBookings,
+  withinModifyWindow,
+  parseQuestions,
+  parseAnswers,
   type AvailabilityWindow,
 } from './booking'
 
@@ -823,6 +827,81 @@ describe('slotLengthAt honors notice + overrides (P2, pure)', () => {
         overrides: [{ date: '2026-06-23', isBlackout: true }],
       }),
     ).toBeNull()
+  })
+})
+
+// ── P3 (ADR-605): lifecycle policy window + questions/answers parsing (pure) ─────────────────────
+describe('withinModifyWindow (P3, pure)', () => {
+  it('allows a booking far enough out and blocks one inside the notice window', () => {
+    const inThreeHours = new Date(Date.now() + 3 * 3600_000).toISOString()
+    const inThirtyMin = new Date(Date.now() + 30 * 60_000).toISOString()
+    expect(withinModifyWindow(inThreeHours, 60)).toBe(true) // 3h out, 1h notice
+    expect(withinModifyWindow(inThirtyMin, 60)).toBe(false) // 30m out, 1h notice
+  })
+  it('a zero notice always allows a future booking; a past one is never modifiable', () => {
+    expect(withinModifyWindow(new Date(Date.now() + 60_000).toISOString(), 0)).toBe(true)
+    expect(withinModifyWindow(new Date(Date.now() - 60_000).toISOString(), 0)).toBe(false)
+  })
+})
+
+describe('parseQuestions / parseAnswers (P3, pure, fail-closed)', () => {
+  it('parses well-formed questions and drops malformed ones', () => {
+    const qs = parseQuestions([
+      { id: 'q1', label: 'Focus?', type: 'long', required: true },
+      { id: '', label: 'no id' },
+      { id: 'q2', label: '', type: 'short' },
+      { id: 'q3', label: 'Goal?', type: 'weird', required: false },
+    ])
+    expect(qs).toEqual([
+      { id: 'q1', label: 'Focus?', type: 'long', required: true },
+      { id: 'q3', label: 'Goal?', type: 'short', required: false }, // unknown type -> short
+    ])
+  })
+  it('parses labeled answers and drops entries missing a label or value', () => {
+    const a = parseAnswers([
+      { id: 'q1', label: 'Focus?', value: 'shoulders' },
+      { id: 'q2', label: 'Goal?', value: '' },
+      { label: '', value: 'x' },
+    ])
+    expect(a).toEqual([{ id: 'q1', label: 'Focus?', value: 'shoulders' }])
+  })
+  it('non-array input yields empty', () => {
+    expect(parseQuestions(null)).toEqual([])
+    expect(parseAnswers('nope')).toEqual([])
+  })
+})
+
+describe('rescheduleBooking (action) — atomic new-then-cancel', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-29T08:00:00.000Z')) // Monday; next Tue is 2026-06-30
+    db.availability.push({ id: 'a0', space_id: 'space-1', weekday: 2, start_minute: 600, end_minute: 720, slot_minutes: 30, timezone: 'UTC' })
+    db.bookings.push({
+      id: 'b1',
+      space_id: 'space-1',
+      member_profile_id: 'member-0000-4000-a000-0000000membr',
+      starts_at: '2026-06-30T10:00:00.000Z',
+      ends_at: '2026-06-30T10:30:00.000Z',
+      status: 'confirmed',
+      note: null,
+    })
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('books the new slot and cancels the old (no free-then-lose)', async () => {
+    const r = await rescheduleBooking('b1', '2026-06-30T10:30:00.000Z')
+    expect('error' in r).toBe(false)
+    // Old booking released.
+    expect(db.bookings.find((b) => b.id === 'b1')!.status).toBe('cancelled')
+    // A new confirmed booking exists at the new time.
+    const fresh = db.bookings.find((b) => b.status === 'confirmed' && b.starts_at === '2026-06-30T10:30:00.000Z')
+    expect(fresh).toBeTruthy()
+  })
+
+  it('keeps the old booking when the new slot is invalid', async () => {
+    const r = await rescheduleBooking('b1', '2026-06-30T10:15:00.000Z') // not a slot boundary
+    expect('error' in r).toBe(true)
+    expect(db.bookings.find((b) => b.id === 'b1')!.status).toBe('confirmed') // unchanged
   })
 })
 

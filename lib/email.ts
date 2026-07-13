@@ -57,6 +57,9 @@ export interface EmailPayload {
    *  value:<id> }` here so the webhook can write email_events.campaign_id (exact per-campaign
    *  analytics). Names/values may only contain ASCII letters, numbers, underscores, or dashes. */
   tags?: { name: string; value: string }[]
+  /** File attachments (e.g. a booking .ics). `content` is base64. Survives the JSON outbox, so an
+   *  attachment can be enqueued like any other email field. No external hosting / auth needed. */
+  attachments?: { filename: string; content: string }[]
 }
 
 // Low-level send, called by the queue's `email` handler. Throws on provider error
@@ -410,6 +413,163 @@ Unsubscribe from event emails: ${unsubscribeUrl}
 `
 }
 
+
+// ── Booking emails (1:1 booking lifecycle, ADR-605 P3) ─────────────────────────
+// Confirmation (to the member + the owner, with an .ics attachment), reminder, and
+// cancellation. Same enqueueEmail outbox + suppression guard as every other send.
+// Voice: plain, camp-counselor, no em/en dashes. whenAbsolute is pre-formatted in
+// the Space timezone by the caller (labeled), so these builders stay tz-agnostic.
+
+export async function sendBookingConfirmationEmail(params: {
+  to: string
+  recipientName: string
+  audience: 'member' | 'owner'
+  spaceName: string
+  serviceName: string | null
+  whenAbsolute: string
+  durationMinutes: number
+  otherPartyName: string | null
+  manageUrl: string
+  icsBase64: string | null
+}) {
+  const { to, serviceName, spaceName, audience } = params
+  const subject =
+    audience === 'owner'
+      ? `New booking: ${serviceName ?? 'a session'}${params.otherPartyName ? ` with ${params.otherPartyName}` : ''}`
+      : `You're booked: ${serviceName ?? spaceName}`
+  await enqueueEmail({
+    to,
+    subject,
+    html: bookingConfirmationHtml(params),
+    text: bookingConfirmationText(params),
+    ...(params.icsBase64
+      ? { attachments: [{ filename: 'booking.ics', content: params.icsBase64 }] }
+      : {}),
+  })
+}
+
+function bookingConfirmationHtml(p: {
+  recipientName: string
+  audience: 'member' | 'owner'
+  spaceName: string
+  serviceName: string | null
+  whenAbsolute: string
+  durationMinutes: number
+  otherPartyName: string | null
+  manageUrl: string
+}): string {
+  const eyebrow = p.audience === 'owner' ? 'New booking' : "You're booked"
+  const title = p.serviceName ?? `Session with ${escapeHtml(p.spaceName)}`
+  const intro =
+    p.audience === 'owner'
+      ? `Hi ${escapeHtml(p.recipientName)}, ${escapeHtml(p.otherPartyName ?? 'a member')} just booked a time with you.`
+      : `Hi ${escapeHtml(p.recipientName)}, your time with ${escapeHtml(p.spaceName)} is set. We added a calendar file to this email.`
+  return emailShell(`
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+      ${eyebrow}
+    </p>
+    <h1 style="${h1Style}">${escapeHtml(String(title))}</h1>
+    <p style="${pStyle}">${intro}</p>
+    <p style="${pStyle}">
+      <strong>${escapeHtml(p.whenAbsolute)}</strong><br>
+      <span style="color:#777;">${p.durationMinutes} minute session</span>
+    </p>
+    <a href="${p.manageUrl}" style="${btnStyle}">View booking &rarr;</a>
+  `)
+}
+
+function bookingConfirmationText(p: {
+  recipientName: string
+  audience: 'member' | 'owner'
+  spaceName: string
+  serviceName: string | null
+  whenAbsolute: string
+  durationMinutes: number
+  otherPartyName: string | null
+  manageUrl: string
+}): string {
+  const intro =
+    p.audience === 'owner'
+      ? `Hi ${p.recipientName}, ${p.otherPartyName ?? 'a member'} just booked a time with you.`
+      : `Hi ${p.recipientName}, your time with ${p.spaceName} is set.`
+  return `${p.audience === 'owner' ? 'New booking' : "You're booked"}: ${p.serviceName ?? p.spaceName}
+
+${intro}
+
+When: ${p.whenAbsolute}
+Length: ${p.durationMinutes} minute session
+
+View booking: ${p.manageUrl}
+`
+}
+
+export async function sendBookingReminderEmail(params: {
+  to: string
+  recipientName: string
+  spaceName: string
+  serviceName: string | null
+  whenAbsolute: string
+  manageUrl: string
+}) {
+  await enqueueEmail({
+    to: params.to,
+    subject: `Reminder: ${params.serviceName ?? params.spaceName}`,
+    html: emailShell(`
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+        Reminder
+      </p>
+      <h1 style="${h1Style}">${escapeHtml(params.serviceName ?? params.spaceName)}</h1>
+      <p style="${pStyle}">Hi ${escapeHtml(params.recipientName)}, this is a reminder of your upcoming session.</p>
+      <p style="${pStyle}"><strong>${escapeHtml(params.whenAbsolute)}</strong></p>
+      <a href="${params.manageUrl}" style="${btnStyle}">View booking &rarr;</a>
+    `),
+    text: `Reminder: ${params.serviceName ?? params.spaceName}
+
+Hi ${params.recipientName}, this is a reminder of your upcoming session.
+
+When: ${params.whenAbsolute}
+
+View booking: ${params.manageUrl}
+`,
+  })
+}
+
+export async function sendBookingCancelledEmail(params: {
+  to: string
+  recipientName: string
+  audience: 'member' | 'owner'
+  spaceName: string
+  serviceName: string | null
+  whenAbsolute: string
+  reason: string | null
+  bookUrl: string
+}) {
+  const reasonLine = params.reason
+    ? `<p style="${pStyle}">Reason given: ${escapeHtml(params.reason)}</p>`
+    : ''
+  await enqueueEmail({
+    to: params.to,
+    subject: `Cancelled: ${params.serviceName ?? params.spaceName}`,
+    html: emailShell(`
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#b91c1c;margin:28px 0 8px;">
+        Booking cancelled
+      </p>
+      <h1 style="${h1Style}">${escapeHtml(params.serviceName ?? params.spaceName)}</h1>
+      <p style="${pStyle}">Hi ${escapeHtml(params.recipientName)}, this booking has been cancelled.</p>
+      <p style="${pStyle}"><strong>${escapeHtml(params.whenAbsolute)}</strong></p>
+      ${reasonLine}
+      <a href="${params.bookUrl}" style="${btnStyle}">Book another time &rarr;</a>
+    `),
+    text: `Booking cancelled: ${params.serviceName ?? params.spaceName}
+
+Hi ${params.recipientName}, this booking has been cancelled.
+
+When: ${params.whenAbsolute}
+${params.reason ? `Reason given: ${params.reason}\n` : ''}
+Book another time: ${params.bookUrl}
+`,
+  })
+}
 
 // ── Dispatch notification email ────────────────────────────────────────────────
 

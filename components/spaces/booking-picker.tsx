@@ -4,10 +4,10 @@ import { useMemo, useState, useSyncExternalStore, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { CalendarCheck, Check, Clock, Loader2 } from 'lucide-react'
 import { Button, buttonClasses } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/field'
+import { Input, Textarea } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
-import { createBooking } from '@/lib/spaces/booking-actions'
-import type { OpenSlot } from '@/lib/spaces/booking'
+import { createBooking, rescheduleBooking } from '@/lib/spaces/booking-actions'
+import type { OpenSlot, BookingQuestion } from '@/lib/spaces/booking'
 import { groupSlotsByDay, sessionLengthLabel, timezoneLabel } from '@/lib/spaces/booking-format'
 import { cn } from '@/lib/utils'
 
@@ -45,6 +45,8 @@ export function BookingPicker({
   slots,
   spaceTimezone,
   serviceTypeId = null,
+  questions = [],
+  rescheduleBookingId = null,
 }: {
   spaceId: string
   /** The open slots (absolute UTC instants), grouped by day in the viewer's timezone at render. */
@@ -53,13 +55,19 @@ export function BookingPicker({
   spaceTimezone: string
   /** P1: the chosen service, threaded into createBooking so the server validates against its duration. */
   serviceTypeId?: string | null
+  /** P3: the chosen service's booking questions, captured at confirm. Empty when none. */
+  questions?: BookingQuestion[]
+  /** P3: when set, confirming RESCHEDULES this booking (atomic) instead of creating a new one. */
+  rescheduleBookingId?: string | null
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState<OpenSlot | null>(null)
   const [note, setNote] = useState('')
+  const [answers, setAnswers] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [booked, setBooked] = useState<string | null>(null)
   const [pending, startBooking] = useTransition()
+  const isReschedule = !!rescheduleBookingId
 
   // The viewer's own timezone (falls back to the Space tz on the server + first client render).
   const viewerTz = useViewerTimezone(spaceTimezone)
@@ -84,15 +92,19 @@ export function BookingPicker({
 
   function confirm() {
     if (!selected) return
+    // Guard required questions client-side (the server re-validates too).
+    for (const q of questions) {
+      if (q.required && !(answers[q.id] ?? '').trim()) {
+        setError('Answer the required questions to book.')
+        return
+      }
+    }
     setError(null)
     const target = selected
     startBooking(async () => {
-      const result = await createBooking(
-        spaceId,
-        target.startsAt,
-        note.trim() || undefined,
-        serviceTypeId,
-      )
+      const result = isReschedule
+        ? await rescheduleBooking(rescheduleBookingId!, target.startsAt, serviceTypeId)
+        : await createBooking(spaceId, target.startsAt, note.trim() || undefined, serviceTypeId, answers)
       if (isError(result)) {
         setError(result.error)
         return
@@ -100,6 +112,7 @@ export function BookingPicker({
       setBooked(target.startsAt)
       setSelected(null)
       setNote('')
+      setAnswers({})
       router.refresh()
     })
   }
@@ -116,7 +129,9 @@ export function BookingPicker({
     return (
       <div className="rounded-2xl border border-success/30 bg-success-bg px-6 py-8 text-center">
         <CalendarCheck className="mx-auto mb-3 h-8 w-8 text-success" aria-hidden />
-        <p className="text-sm font-semibold text-text">You are booked.</p>
+        <p className="text-sm font-semibold text-text">
+          {isReschedule ? 'You are rescheduled.' : 'You are booked.'}
+        </p>
         <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
           {when} ({viewerTzLabel}). You can manage this from your bookings.
         </p>
@@ -184,20 +199,50 @@ export function BookingPicker({
             <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
             {selected.slotMinutes} minute session
           </p>
-          <div>
-            <label htmlFor="booking-note" className="text-xs font-medium text-muted">
-              Add a note (optional)
-            </label>
-            <Textarea
-              id="booking-note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Anything the practitioner should know before your session."
-              rows={3}
-              maxLength={500}
-              className="mt-1"
-            />
-          </div>
+          {!isReschedule && (
+            <>
+              {questions.map((q) => (
+                <div key={q.id}>
+                  <label htmlFor={`bq-${q.id}`} className="text-xs font-medium text-muted">
+                    {q.label}
+                    {q.required ? ' *' : ''}
+                  </label>
+                  {q.type === 'long' ? (
+                    <Textarea
+                      id={`bq-${q.id}`}
+                      value={answers[q.id] ?? ''}
+                      onChange={(e) => setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                      rows={2}
+                      maxLength={2000}
+                      className="mt-1"
+                    />
+                  ) : (
+                    <Input
+                      id={`bq-${q.id}`}
+                      value={answers[q.id] ?? ''}
+                      onChange={(e) => setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                      maxLength={2000}
+                      className="mt-1"
+                    />
+                  )}
+                </div>
+              ))}
+              <div>
+                <label htmlFor="booking-note" className="text-xs font-medium text-muted">
+                  Add a note (optional)
+                </label>
+                <Textarea
+                  id="booking-note"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Anything the practitioner should know before your session."
+                  rows={3}
+                  maxLength={500}
+                  className="mt-1"
+                />
+              </div>
+            </>
+          )}
           {error && (
             <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
               {error}
@@ -207,11 +252,13 @@ export function BookingPicker({
             <Button type="button" onClick={confirm} disabled={pending}>
               {pending ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Booking
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />{' '}
+                  {isReschedule ? 'Rescheduling' : 'Booking'}
                 </>
               ) : (
                 <>
-                  <Check className="h-4 w-4" aria-hidden /> Confirm booking
+                  <Check className="h-4 w-4" aria-hidden />{' '}
+                  {isReschedule ? 'Confirm reschedule' : 'Confirm booking'}
                 </>
               )}
             </Button>

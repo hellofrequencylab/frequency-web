@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
 import { BookingPicker } from '@/components/spaces/booking-picker'
 import { BookingServiceMember } from '@/components/spaces/booking-service-member'
+import { BookingMine } from '@/components/spaces/booking-mine'
 
 // MEMBER BOOKING SURFACE (ENTITY-SPACES-SYSTEM §2.4 booking v1; ADR-605 booking ladder P1). The
 // self-fetching server half of the Practitioner's Book tab.
@@ -44,7 +45,12 @@ export async function BookingMember({
   // P1: service-first flow when the Space has any active service type. Operators and members share it.
   if (services.length > 0) {
     const timezone = await getSpaceBookingTimezone(spaceId)
-    return <BookingServiceMember spaceId={spaceId} services={services} timezone={timezone} />
+    return (
+      <>
+        <BookingMine spaceId={spaceId} />
+        <BookingServiceMember spaceId={spaceId} services={services} timezone={timezone} />
+      </>
+    )
   }
 
   // No services. The legacy flat path, plus operator guidance on the empty / unconfigured states.
@@ -96,5 +102,10 @@ export async function BookingMember({
   // Resolve the Space timezone for labeling; the picker shows every slot in the viewer's own tz (P2).
   const timezone = await getSpaceBookingTimezone(spaceId)
 
-  return <BookingPicker spaceId={spaceId} slots={slots} spaceTimezone={timezone} />
+  return (
+    <>
+      <BookingMine spaceId={spaceId} />
+      <BookingPicker spaceId={spaceId} slots={slots} spaceTimezone={timezone} />
+    </>
+  )
 }

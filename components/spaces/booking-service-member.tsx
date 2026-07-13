@@ -83,6 +83,7 @@ export function BookingServiceMember({
             slots={slots}
             spaceTimezone={timezone}
             serviceTypeId={selected.id}
+            questions={selected.questions}
           />
         )}
       </div>

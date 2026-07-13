@@ -57,6 +57,16 @@ export async function BookingOwnerList({ spaceId }: { spaceId: string }) {
               {whenFmt.format(new Date(b.startsAt))} ({tzLabel})
             </p>
             {b.note && <p className="mt-1 line-clamp-2 text-xs text-subtle">{b.note}</p>}
+            {b.answers.length > 0 && (
+              <dl className="mt-1.5 space-y-0.5">
+                {b.answers.map((a) => (
+                  <div key={a.id} className="text-xs">
+                    <dt className="inline font-semibold text-muted">{a.label}: </dt>
+                    <dd className="inline text-subtle">{a.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
           </div>
           <BookingCancelButton bookingId={b.id} />
         </li>
