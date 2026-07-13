@@ -54,6 +54,7 @@ nurture_sequences
 nurture_steps
 outreach_sends
 pages
+podcast_shows
 platform_flag_events
 platform_settings
 playbook_runs
@@ -64,6 +65,8 @@ pricing_settings
 pricing_stripe_prices
 program_adoptions
 qr_scans
+recording_attachments
+recordings
 resonance_consent
 resonance_density_cells
 resonance_edges

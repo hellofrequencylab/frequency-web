@@ -18,6 +18,8 @@ export const LIBRARY_KINDS = [
   'token', // a design-token set / skin (config = { tokens, mode })
   'copy', // a member-facing content string (config = { body, variables, voice })
   'sequence', // a managed onboarding/wizard flow (config = a SequenceDef; see lib/onboarding/sequence-schema.ts)
+  'audio', // an Airwaves audio Recording file (file-backed; referenced by recordings.loom_asset_id)
+  'video', // an Airwaves video Recording file (file-backed; referenced by recordings.loom_asset_id)
 ] as const
 export type LibraryKind = (typeof LIBRARY_KINDS)[number]
 
