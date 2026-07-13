@@ -21,6 +21,8 @@ import RightSidebar from '@/components/sidebar/right-sidebar'
 import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
+import { getMessagesUnreadCount } from '@/app/(main)/messages/popover-actions'
+import { canReceivePayouts } from '@/lib/billing/connect'
 import { getAreaPermissions } from '@/lib/permissions'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import type { Capability } from '@/lib/core/capabilities'
@@ -259,6 +261,8 @@ export default async function MainLayout({
     effectiveRole,
     previewVisitor,
     unreadCount,
+    messagesUnread,
+    payoutsEligibleRaw,
     permissions,
     globalCaps,
     realHats,
@@ -280,6 +284,13 @@ export default async function MainLayout({
     applyViewAs(realRole),
     viewingAsVisitor(realRole),
     getUnreadCount().catch(() => 0),
+    // Live Messages unread total for the header badge (surfaced on mobile too). One grouped RPC,
+    // fail-safe to 0 (no badge) on any error or pre-migration.
+    getMessagesUnreadCount().catch(() => 0),
+    // Real payouts eligibility for the account menu's "Receive payments" item — a host+ OR anyone
+    // holding a live partner persona (lib/billing/connect). Replaces the host-tier proxy gate.
+    // Fetched with the REAL role; suppressed below under a downgrade/visitor preview. Fail-safe false.
+    canReceivePayouts(profile.id, realRole).catch(() => false),
     getAreaPermissions(),
     // Global-scope capabilities for the standardized admin bar (docs/ADMIN-RAIL.md Phase 1), threaded
     // through PageAdminProvider. Per-entity caps ride the open event from each entity page; this is the
@@ -334,6 +345,12 @@ export default async function MainLayout({
   // once here and threaded into the shell (never per-item). Suppressed under a downgrade / visitor
   // preview so a steward's "view as" faithfully drops the operator entry too, matching staffRole.
   const operatesSpaces = previewingDown ? false : operatesSpacesRaw
+
+  // Payouts eligibility for the account menu's "Receive payments" item. Suppressed under a
+  // downgrade / visitor preview so a steward's "view as" faithfully drops the earner item too,
+  // exactly like operatesSpaces + staffRole above (view-as is downgrade-only, so realRole is the
+  // ceiling and the raw value already reflects this person's true eligibility).
+  const canReceivePayoutsGate = previewingDown ? false : payoutsEligibleRaw
 
   // Staff web_role axis (ADR-208) — gates the staff-only on-page "Page" settings group
   // (admin+, the EMBEDDED-ADMIN inline layer). Suppressed under a downgrade preview so a
@@ -535,6 +552,8 @@ export default async function MainLayout({
       sidebar={sidebar}
       ticker={ticker}
       unreadCount={unreadCount}
+      messagesUnread={messagesUnread}
+      canReceivePayouts={canReceivePayoutsGate}
       permissions={permissions}
       leftMenu={leftMenu}
       navAccess={navAccess}

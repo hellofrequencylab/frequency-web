@@ -20,6 +20,26 @@ export interface MessagesSummary {
   }>
 }
 
+/** The caller's TOTAL unread message count (1:1 DMs + rooms) in ONE grouped read, for the
+ *  header Messages badge (surfaced on mobile + desktop). Backed by the my_unread_message_count
+ *  RPC (migration 20261154000000), which scopes to the caller's own memberships via auth.uid().
+ *  FAIL-SAFE: any error — including the RPC not yet existing pre-migration — returns 0, so the
+ *  badge simply stays hidden rather than breaking the shell. Cheap enough to fetch on every load. */
+export async function getMessagesUnreadCount(): Promise<number> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return 0
+    const { data, error } = await (supabase.rpc as unknown as (
+      fn: string,
+    ) => Promise<{ data: number | null; error: unknown }>)('my_unread_message_count')
+    if (error) return 0
+    return typeof data === 'number' ? data : 0
+  } catch {
+    return 0
+  }
+}
+
 export async function fetchMessagesSummary(): Promise<MessagesSummary> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
