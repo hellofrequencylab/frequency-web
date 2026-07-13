@@ -47,6 +47,12 @@ export function SpaceImagePopup({
   onSelect: (url: string, alt: string) => void
 }) {
   const [url, setUrl] = useState(currentUrl)
+  // The image PREVIEW renders only from TRUSTED sources: the already-saved image (the currentUrl prop) or a
+  // freshly uploaded file's server URL (res.url). It is deliberately NEVER fed from the raw text-input value,
+  // so no DOM-typed string is ever echoed into an img src. A pasted URL is validated + committed on Use, but
+  // is not live-previewed. This severs the input -> img dataflow entirely (both for real safety and so the
+  // static analyzer has no source-to-sink path to flag).
+  const [previewSrc, setPreviewSrc] = useState(currentUrl)
   const [alt, setAlt] = useState(currentAlt)
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -59,6 +65,7 @@ export function SpaceImagePopup({
     setPrevOpen(open)
     if (open) {
       setUrl(currentUrl)
+      setPreviewSrc(currentUrl)
       setAlt(currentAlt)
       setError(null)
     }
@@ -79,7 +86,10 @@ export function SpaceImagePopup({
     try {
       const res = await uploadImage(file)
       if ('error' in res) setError(res.error)
-      else setUrl(res.url)
+      else {
+        setUrl(res.url)
+        setPreviewSrc(res.url) // a server-returned URL is trusted, so it may preview
+      }
     } catch {
       setError('That upload did not go through. Try again.')
     } finally {
@@ -121,14 +131,13 @@ export function SpaceImagePopup({
         <div className="space-y-4 p-5">
           {/* Preview */}
           <div className="overflow-hidden rounded-xl border border-border bg-surface-elevated/30">
-            {/* Inline allowlist guard (a CodeQL-recognized ad-hoc whitelist sanitizer): the same value that
-                is tested is the one rendered, and the regexp both allowlists the scheme and forbids HTML
-                metacharacters, so a pasted javascript:/data:text/html value can never reach the src. */}
-            {SAFE_IMAGE_URL.test(url.trim()) ? (
+            {/* Renders only a TRUSTED previewSrc (saved image or uploaded server URL), never the raw typed
+                value. The allowlist guard stays as defense in depth. */}
+            {SAFE_IMAGE_URL.test(previewSrc.trim()) ? (
               // eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset
-              <img src={url.trim()} alt={alt} className="max-h-52 w-full object-contain" />
+              <img src={previewSrc.trim()} alt={alt} className="max-h-52 w-full object-contain" />
             ) : (
-              <p className="px-3 py-10 text-center text-xs text-muted">Upload or paste a photo to preview it here.</p>
+              <p className="px-3 py-10 text-center text-xs text-muted">Upload a photo, or paste a link and press Use, to preview it here.</p>
             )}
           </div>
 
