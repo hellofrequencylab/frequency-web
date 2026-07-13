@@ -684,6 +684,9 @@ function HeaderImageField({
     <div className="space-y-1.5">
       <div className="relative">
         <ImageFocalPicker
+          // Key the preview by its aspect so a Short/Medium/Tall switch REMOUNTS the crop box: it can never
+          // render at a stale height, whatever the reconciler does with the changed inline style.
+          key={`hero-${aspect}`}
           imageUrl={coverUrl}
           value={focus}
           onChange={onFocusChange}

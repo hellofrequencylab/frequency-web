@@ -158,7 +158,13 @@ export function ImageFocalPicker({
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
         onKeyDown={onKeyDown}
-        style={heightClassName ? undefined : { aspectRatio: String(aspect) }}
+        // The crop box is sized by the PADDING-BOTTOM percentage trick, not the CSS `aspect-ratio` property:
+        // padding-bottom is a % of the element's WIDTH, so the box height = width / aspect at any width, in
+        // every browser and inside any flex / grid / slide-over panel (aspect-ratio was silently not resizing
+        // the preview in the admin rail). The img + marker are absolutely positioned, so they fill the padded
+        // box and the pointer math (getBoundingClientRect height) stays correct. When an explicit
+        // `heightClassName` is given it drives the height instead (the padding is dropped).
+        style={heightClassName ? undefined : { paddingBottom: `${100 / aspect}%`, height: 0 }}
         className={cn(
           'relative w-full touch-none select-none overflow-hidden rounded-xl border border-border bg-surface-elevated outline-none',
           'focus-visible:ring-2 focus-visible:ring-border-strong/40',
