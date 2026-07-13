@@ -275,6 +275,12 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'keystone-density', href: '/admin/keystone/density', label: 'Density by city', desc: 'The cold-start read: where the community has a real pulse, and where a corner is still cold enough to want a founder seeded.', icon: 'Telescope', min: 'admin', staffDomain: 'insights', staffLevel: 'read',
     adminGroups: [{ domain: 'acquisition', section: 'Expansion' }] },
   // ── Campaigns / Marketing ──
+  // The unified Messaging console (EMAIL-CAMPAIGNS-FUNNELS-PLAN P1): one home for Campaigns
+  // (one-time sends) + Funnels (triggered journeys). It leads the Marketing section; the
+  // per-object surfaces below still exist and are linked from it.
+  { id: 'marketing-messaging', href: '/admin/marketing/messaging', label: 'Messaging', desc: 'One home for campaigns and funnels: send an email now or build a triggered journey.', icon: 'Send', min: 'host', staffDomain: 'marketing',
+    world: 'growth', worldLabel: 'Messaging', worldOrder: 4,
+    adminGroups: [{ domain: 'marketing', section: 'Campaigns' }], adminNav: { section: 'growth', heading: 'Marketing' } },
   { id: 'marketing-campaigns', href: '/admin/marketing/campaigns', label: 'Campaigns', desc: 'Compose and send email and push broadcasts.', icon: 'Megaphone', min: 'host', staffDomain: 'marketing',
     world: 'growth', worldLabel: 'Campaigns', worldOrder: 5,
     adminGroups: [{ domain: 'marketing', section: 'Campaigns' }], adminNav: { section: 'growth', heading: 'Marketing' } },
