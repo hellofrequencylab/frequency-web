@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Monitor, Smartphone } from 'lucide-react'
 import { compileEmailDoc } from '@/lib/email-studio/shell'
-import { applyMergeTags } from '@/lib/email-studio/render'
+import { applyMergeTags, type EmailColors } from '@/lib/email-studio/render'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
@@ -33,17 +33,24 @@ export function EmailPreview({
   layout,
   subject,
   preheader,
+  colors,
 }: {
   layout: EntityLayout
   subject: string
   preheader: string
+  /** Palette override so the preview paints the same brand palette the email will send in. A per-Space editor
+   *  passes its brand-seeded palette (spaceEmailColors); admin omits it and the default DAWN palette stands. */
+  colors?: EmailColors
 }) {
   const [width, setWidth] = useState<PreviewWidth>('desktop')
 
   const html = useMemo(() => {
-    const { html: compiled } = compileEmailDoc({ layout, subject, preheader })
+    const { html: compiled } = compileEmailDoc(
+      { layout, subject, preheader },
+      colors ? { colors, brand: { colors } } : {},
+    )
     return applyMergeTags(compiled, EXAMPLE_VARS, { fallbacks: MERGE_TAG_DEFAULT_FALLBACKS })
-  }, [layout, subject, preheader])
+  }, [layout, subject, preheader, colors])
 
   const frameW = WIDTH_PX[width]
   const wrapRef = useRef<HTMLDivElement>(null)

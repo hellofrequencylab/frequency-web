@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { Eye, EyeOff, Loader2, Send } from 'lucide-react'
 import { MergeTagPicker } from './merge-tag-picker'
 import { sendTestEmail } from '@/app/(main)/admin/email-studio/actions'
-import { isError } from '@/lib/action-result'
+import { isError, type ActionResult } from '@/lib/action-result'
 
 // COMPOSE TOOLBAR. The header controls above the block arranger: the subject + preheader fields, a "Send test
 // to me" button (delivers ONE copy to the operator's own address, never a list), the merge-tag picker, and
@@ -20,6 +20,7 @@ export function ComposeToolbar({
   previewOpen,
   onTogglePreview,
   showPreviewToggle = true,
+  sendTest = sendTestEmail,
 }: {
   campaignId: string
   subject: string
@@ -30,6 +31,9 @@ export function ComposeToolbar({
   onTogglePreview: () => void
   /** The trio layout shows the preview permanently on the right, so it hides this toggle. */
   showPreviewToggle?: boolean
+  /** The test-send action ("Send test to me"). Defaults to the admin Email Studio's sendTestEmail; a per-Space
+   *  editor injects its own space-scoped, brand-compiling test-send (sendSpaceTestEmail). */
+  sendTest?: (campaignId: string) => Promise<ActionResult<{ to: string }>>
 }) {
   const [pending, startTransition] = useTransition()
   const [note, setNote] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
@@ -37,7 +41,7 @@ export function ComposeToolbar({
   function onSendTest() {
     setNote(null)
     startTransition(async () => {
-      const res = await sendTestEmail(campaignId)
+      const res = await sendTest(campaignId)
       if (isError(res)) setNote({ kind: 'error', text: res.error })
       else setNote({ kind: 'ok', text: `Test sent to ${res.data.to}.` })
     })

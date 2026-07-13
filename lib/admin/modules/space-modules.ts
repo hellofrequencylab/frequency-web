@@ -16,6 +16,8 @@ import {
   Store,
   QrCode,
   Mail,
+  Megaphone,
+  Paintbrush,
   Workflow,
   BarChart3,
   CreditCard,
@@ -127,6 +129,15 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // ── Reach & comms ────────────────────────────────────────────────────────────────────────────────────
   { id: 'space.reach', label: 'QR codes', desc: 'Create codes for this space and the pages they open.', Icon: QrCode, family: 'reach', slot: 'reach', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'panel', deepLink: (s) => `${base(s)}/settings/qr`, order: 75, tier: 'primary', priority: 50, placement: 'bank' },
   { id: 'space.comms', label: 'Email', desc: 'Write a campaign, pick who gets it, and send or schedule it.', Icon: Mail, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'panel', deepLink: (s) => `${base(s)}/settings/email`, order: 80, tier: 'primary', priority: 55, placement: 'bank' },
+  // Marketing (Email in the Business CRM, P1): the FULL on-canvas email editor embedded in the CRM. Reuses the
+  // one Email Studio engine (EmailCanvasEditor) pointed at this Space's own drafts, seeded from the Space brand
+  // (spaceEmailColors). A `link` row out to its own wide editor route; gated on the `email` function (plan-gated,
+  // so free Spaces see the upgrade nudge). Distinct from `space.comms` (the plain-text quick composer + send).
+  { id: 'space.marketing', label: 'Marketing', desc: 'Design a branded email on the canvas, block by block.', Icon: Megaphone, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'link', deepLink: (s) => `${base(s)}/marketing`, order: 81, tier: 'primary', priority: 56 },
+  // Email style (Email in the Business CRM, P1): tune the brand-derived palette a Space's emails default to
+  // (spaces.preferences.emailStyle, seeded from the brand accent). A `link` row out to its own Focus surface;
+  // gated on the `email` function like its siblings.
+  { id: 'space.emailstyle', label: 'Email style', desc: 'Set the brand colors your emails use by default.', Icon: Paintbrush, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'link', deepLink: (s) => `${base(s)}/settings/email-style`, order: 82, tier: 'extra', priority: 57 },
 
   // ── Growth & billing ─────────────────────────────────────────────────────────────────────────────────
   { id: 'space.insights', label: 'Insights', desc: 'Scans, growth, and how your space is doing.', Icon: BarChart3, family: 'growth', slot: 'insights', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'link', deepLink: (s) => `${base(s)}/settings/qr#scans`, order: 85, tier: 'extra', priority: 20, placement: 'bank' },
