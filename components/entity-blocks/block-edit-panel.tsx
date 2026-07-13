@@ -1,9 +1,9 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, type DragEvent } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowUpRight, ChevronDown, ChevronUp, Loader2, Plus, Sparkles, Upload, X } from 'lucide-react'
+import { ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, GripVertical, Loader2, Plus, Upload, X } from 'lucide-react'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import {
   blockBearsText,
@@ -44,6 +44,7 @@ import {
   type ShadowValue,
 } from './controls/field-controls'
 import { RecordingPickerControl } from '@/components/airwaves/recording-picker-control'
+import { useProfileLayout } from './profile-layout-context'
 
 /** A gated server upload: returns the uploaded image's public URL, or a plain error. Injected by the
  *  SPACE builder (wired to the space-scoped upload action); absent on surfaces without an upload path. */
@@ -103,7 +104,6 @@ export function BlockEditPanel({
   editHref,
   pickerData,
   uploadImage,
-  onReseed,
   onContent,
   onStyle,
   onToggleHide,
@@ -126,10 +126,6 @@ export function BlockEditPanel({
   pickerData?: BlockPickerData
   /** Gated image upload (SPACE only); when present, image fields show an Upload control (ADR-542). */
   uploadImage?: UploadImage
-  /** Per-block copy RE-SEED (task #17, SPACE only): regenerate this block's text from the master profile.
-   *  Given the block's current content, returns the rewritten fields (to merge) or a plain error. Absent
-   *  on surfaces with no master profile (member profiles); the button only shows when present. */
-  onReseed?: (current: Record<string, unknown>) => Promise<{ content?: Record<string, string>; error?: string }>
   onContent: (next: Record<string, unknown>) => void
   onStyle: (next: BlockStyle) => void
   onToggleHide: () => void
@@ -141,12 +137,6 @@ export function BlockEditPanel({
   // the page (the isCoreField split). Off edit mode, every field shows inline here as before.
   const fields = contentOnCanvas ? allFields.filter(isStructuralField) : allFields
   const bearsText = blockBearsText(id)
-  // Per-block copy re-seed (task #17): offered only when the surface injects onReseed (Space with a master
-  // profile) AND the block has text to rewrite. Reads the UNFILTERED fields so the AI re-seed stays available
-  // in edit mode (it regenerates copy the owner then sees on the page — it is not manual editing in the rail).
-  const canReseed = !!onReseed && allFields.some((f) => f.type === 'text' || f.type === 'textarea')
-  const [reseeding, setReseeding] = useState(false)
-  const [reseedError, setReseedError] = useState<string | null>(null)
   // Per-element text roles (item 4): a block with more than one text element (design blocks, Callout,
   // Features) styles each role independently; every other text-bearing block styles its text as one.
   const textRoles = blockTextRoles(id)
@@ -164,45 +154,10 @@ export function BlockEditPanel({
     onContent(next)
   }
 
-  // Re-seed this block's copy from the master profile (task #17): call the injected action with the current
-  // content, then MERGE the rewritten fields over it through the normal onContent path (so the edit persists
-  // via the editor's own debounced save — no separate write). Fail-safe: a plain inline message on error.
-  const reseed = async () => {
-    if (!onReseed || reseeding) return
-    setReseeding(true)
-    setReseedError(null)
-    try {
-      const res = await onReseed(content)
-      if (res.error) setReseedError(res.error)
-      else if (res.content && Object.keys(res.content).length) onContent({ ...content, ...res.content })
-    } catch {
-      setReseedError('That did not go through. Try again in a moment.')
-    } finally {
-      setReseeding(false)
-    }
-  }
-
   return (
     <div className="mt-1 space-y-3 rounded-lg border border-border bg-surface-elevated/50 p-3">
       {/* DATA block: a minimal on/off switch (redesigned from the verbose checkbox). */}
       {isData && <ToggleRow label="Show on page" checked={!hidden} onChange={onToggleHide} />}
-
-      {/* Per-block copy re-seed (task #17): regenerate just this block's text from the Space's master
-          profile. Shown only on a Space with a master profile, for a block that has text to rewrite. */}
-      {canReseed && (
-        <div className="space-y-1">
-          <button
-            type="button"
-            onClick={reseed}
-            disabled={reseeding}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
-          >
-            {reseeding ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Sparkles className="h-3.5 w-3.5 text-primary-strong" aria-hidden />}
-            {reseeding ? 'Re-seeding' : 'Re-seed copy'}
-          </button>
-          {reseedError && <p className="text-2xs text-danger">{reseedError}</p>}
-        </div>
-      )}
 
       {/* Fields (content + any declared primitive controls). In edit mode `fields` is already filtered to the
           structural settings, and `textOnCanvas` moves any Features / Cards item text to the on-page slots. */}
@@ -671,50 +626,99 @@ function ImagesEditor({
  *  a whole-item link, and an optional CTA label (the CTA renders over `link`). */
 type FeatureRow = { icon: string; image: string; title: string; text: string; price: string; link: string; cta: string }
 
-/** Reorder buttons + a remove button for a repeater row. Shared by the Features + Cards editors. */
-function RowControls({
+/** One row in a repeater's COMPACT list (ADR-585 → per-item settings): a drag handle, the item's title (with
+ *  a positional fallback), and a remove button. The whole row opens that item's full settings (selectItem), so
+ *  only the card being edited shows its fields. Reorder is by DRAG — the container is draggable and the handle
+ *  reads as the grab affordance; the arrows are gone (they misfired on the Card grid). Shared by Features +
+ *  Cards. */
+function CompactItemRow({
   index,
-  count,
+  title,
   noun,
-  onMove,
+  dragging,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  onOpen,
   onRemove,
 }: {
   index: number
-  count: number
+  title: string
   noun: string
-  onMove: (delta: -1 | 1) => void
+  dragging: boolean
+  onDragStart: () => void
+  onDragOver: (e: DragEvent) => void
+  onDrop: () => void
+  onDragEnd: () => void
+  onOpen: () => void
   onRemove: () => void
 }) {
   return (
-    <div className="flex items-center gap-1">
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      className={`flex items-center gap-1.5 rounded-lg border bg-surface px-1.5 py-1.5 ${dragging ? 'border-primary opacity-60' : 'border-border'}`}
+    >
+      <span className="shrink-0 cursor-grab text-subtle" aria-hidden>
+        <GripVertical className="h-4 w-4" />
+      </span>
       <button
         type="button"
-        aria-label={`Move ${noun} ${index + 1} up`}
-        disabled={index === 0}
-        onClick={() => onMove(-1)}
-        className="rounded p-1 text-subtle hover:text-text disabled:opacity-30"
+        onClick={onOpen}
+        aria-label={`Edit ${noun} ${index + 1}`}
+        className="min-w-0 flex-1 truncate text-left text-xs font-semibold text-text transition-colors hover:text-primary-strong"
       >
-        <ChevronUp className="h-3.5 w-3.5" aria-hidden />
-      </button>
-      <button
-        type="button"
-        aria-label={`Move ${noun} ${index + 1} down`}
-        disabled={index === count - 1}
-        onClick={() => onMove(1)}
-        className="rounded p-1 text-subtle hover:text-text disabled:opacity-30"
-      >
-        <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+        {title}
       </button>
       <button
         type="button"
         aria-label={`Remove ${noun} ${index + 1}`}
         onClick={onRemove}
-        className="ml-auto rounded p-1 text-subtle hover:bg-danger-bg hover:text-danger"
+        className="shrink-0 rounded p-1 text-subtle hover:bg-danger-bg hover:text-danger"
       >
         <X className="h-3.5 w-3.5" aria-hidden />
       </button>
+      <button
+        type="button"
+        aria-label={`Edit ${noun} ${index + 1}`}
+        onClick={onOpen}
+        className="shrink-0 rounded p-1 text-subtle hover:text-text"
+      >
+        <ChevronRight className="h-4 w-4" aria-hidden />
+      </button>
     </div>
   )
+}
+
+/** The "back to the list" control shown atop a single item's full settings (per-item editing). Calls
+ *  selectItem(null) so the repeater returns to its compact list. Shared by Features + Cards. */
+function ItemSettingsHeader({ label, onBack }: { label: string; onBack: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className={labelCls}>{label}</span>
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex items-center gap-0.5 rounded p-1 text-2xs font-semibold text-primary-strong hover:underline"
+      >
+        <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Done
+      </button>
+    </div>
+  )
+}
+
+/** Reorder an item array by moving `from` to `to` (drag-drop). Pure; returns a new array (or the same one
+ *  for a no-op move). Shared by the Features + Cards drag handlers. */
+function reorderItems<T>(items: T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return items
+  const next = [...items]
+  const [moved] = next.splice(from, 1)
+  next.splice(to, 0, moved)
+  return next
 }
 
 /** The Features editor (ADR-542 → email overhaul): a repeater of {icon, title, text, link} items. The icon is
@@ -746,28 +750,42 @@ function FeaturesEditor({
         cta: typeof it.cta === 'string' ? it.cta : '',
       }))
     : []
+  // Per-item settings (ADR-585): only the ONE focused feature shows its full fields; the rest read as a
+  // compact list. The focus index is the shared store's `selectedItemIndex` (set by the live canvas on a
+  // card click), with a local fallback for surfaces mounted outside the store (the /manage builder tests).
+  const store = useProfileLayout()
+  const [localItem, setLocalItem] = useState<number | null>(null)
+  const selectedIndex = store ? store.selectedItemIndex : localItem
+  const selectItem = store ? store.selectItem : setLocalItem
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+
   // Do NOT prune here: pruning empty rows swallowed the freshly-added blank row (bug). Keep every row while
   // the operator types; sanitizeFeature drops the still-blank ones on save.
   const update = (next: FeatureRow[]) => onChange(next)
   const patch = (i: number, p: Partial<FeatureRow>) => update(items.map((x, j) => (j === i ? { ...x, ...p } : x)))
-  const move = (i: number, delta: -1 | 1) => {
-    const j = i + delta
-    if (j < 0 || j >= items.length) return
-    const next = [...items]
-    ;[next[i], next[j]] = [next[j], next[i]]
-    update(next)
+  const remove = (i: number) => {
+    update(items.filter((_, j) => j !== i))
+    selectItem(null)
   }
-  return (
-    <div className="space-y-1.5">
-      <span className={labelCls}>{label}</span>
-      {items.map((it, i) => (
-        <div key={i} className="space-y-1.5 rounded-lg border border-border bg-surface p-2">
+  const drop = (target: number) => {
+    if (dragIndex !== null) update(reorderItems(items, dragIndex, target))
+    setDragIndex(null)
+  }
+
+  // ── FOCUSED: only the selected feature's structural fields (icon / image / price / link / button). Its
+  //    title + text are edited on the canvas (textOnCanvas), so they are not here. ──
+  const focused = selectedIndex !== null && selectedIndex >= 0 && selectedIndex < items.length
+  if (focused) {
+    const i = selectedIndex as number
+    const it = items[i]
+    return (
+      <div className="space-y-1.5">
+        <ItemSettingsHeader label={it.title || `Feature ${i + 1}`} onBack={() => selectItem(null)} />
+        <div className="space-y-1.5 rounded-lg border border-border bg-surface p-2">
           <div className="flex items-start gap-1.5">
             <IconPicker value={it.icon} onChange={(token) => patch(i, { icon: token })} />
             {textOnCanvas ? (
-              <p className="flex-1 pt-1 text-2xs leading-snug text-subtle">
-                {it.title || it.text ? it.title || it.text : 'Edit the title and text on the canvas.'}
-              </p>
+              <p className="flex-1 pt-1 text-2xs leading-snug text-subtle">Edit the title and text on the canvas.</p>
             ) : (
               <input
                 value={it.title}
@@ -815,12 +833,36 @@ function FeaturesEditor({
             onChange={(e) => patch(i, { cta: e.target.value })}
             className={inputCls}
           />
-          <RowControls index={i} count={items.length} noun="feature" onMove={(d) => move(i, d)} onRemove={() => update(items.filter((_, j) => j !== i))} />
         </div>
+      </div>
+    )
+  }
+
+  // ── COMPACT: one draggable row per feature (drag to reorder), a click opens that feature's settings. ──
+  return (
+    <div className="space-y-1.5">
+      <span className={labelCls}>{label}</span>
+      {items.map((it, i) => (
+        <CompactItemRow
+          key={i}
+          index={i}
+          noun="feature"
+          title={it.title || `Feature ${i + 1}`}
+          dragging={dragIndex === i}
+          onDragStart={() => setDragIndex(i)}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={() => drop(i)}
+          onDragEnd={() => setDragIndex(null)}
+          onOpen={() => selectItem(i)}
+          onRemove={() => remove(i)}
+        />
       ))}
       <button
         type="button"
-        onClick={() => update([...items, { icon: '', image: '', title: '', text: '', price: '', link: '', cta: '' }])}
+        onClick={() => {
+          update([...items, { icon: '', image: '', title: '', text: '', price: '', link: '', cta: '' }])
+          selectItem(items.length)
+        }}
         className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline"
       >
         <Plus className="h-3.5 w-3.5" aria-hidden /> Add feature
@@ -891,20 +933,36 @@ function CardsEditor({
   onChange: (v: unknown) => void
 }) {
   const rows: CardRow[] = Array.isArray(value) ? (value as unknown[]).map(toCardRow) : []
+  // Per-item settings (ADR-585): only the ONE focused card shows its full fields; the rest read as a compact
+  // list. The focus index is the shared store's `selectedItemIndex` (set by the live canvas on a card click),
+  // with a local fallback for surfaces mounted outside the store.
+  const store = useProfileLayout()
+  const [localItem, setLocalItem] = useState<number | null>(null)
+  const selectedIndex = store ? store.selectedItemIndex : localItem
+  const selectItem = store ? store.selectItem : setLocalItem
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+
   const update = (next: CardRow[]) => onChange(next.map(fromCardRow))
   const patch = (i: number, p: Partial<CardRow>) => update(rows.map((x, j) => (j === i ? { ...x, ...p } : x)))
-  const move = (i: number, delta: -1 | 1) => {
-    const j = i + delta
-    if (j < 0 || j >= rows.length) return
-    const next = [...rows]
-    ;[next[i], next[j]] = [next[j], next[i]]
-    update(next)
+  const remove = (i: number) => {
+    update(rows.filter((_, j) => j !== i))
+    selectItem(null)
   }
-  return (
-    <div className="space-y-1.5">
-      <span className={labelCls}>{label}</span>
-      {rows.map((c, i) => (
-        <div key={i} className="space-y-1.5 rounded-lg border border-border bg-surface p-2">
+  const drop = (target: number) => {
+    if (dragIndex !== null) update(reorderItems(rows, dragIndex, target))
+    setDragIndex(null)
+  }
+
+  // ── FOCUSED: only the selected card's structural fields (photo / stat / link / button). Its title + text
+  //    are edited on the canvas (textOnCanvas), so they are not here. ──
+  const focused = selectedIndex !== null && selectedIndex >= 0 && selectedIndex < rows.length
+  if (focused) {
+    const i = selectedIndex as number
+    const c = rows[i]
+    return (
+      <div className="space-y-1.5">
+        <ItemSettingsHeader label={c.title || `Card ${i + 1}`} onBack={() => selectItem(null)} />
+        <div className="space-y-1.5 rounded-lg border border-border bg-surface p-2">
           {!textOnCanvas && (
             <input
               value={c.title}
@@ -975,15 +1033,36 @@ function CardsEditor({
               className={inputCls}
             />
           </div>
-
-          <RowControls index={i} count={rows.length} noun="card" onMove={(d) => move(i, d)} onRemove={() => update(rows.filter((_, j) => j !== i))} />
         </div>
+      </div>
+    )
+  }
+
+  // ── COMPACT: one draggable row per card (drag to reorder), a click opens that card's settings. ──
+  return (
+    <div className="space-y-1.5">
+      <span className={labelCls}>{label}</span>
+      {rows.map((c, i) => (
+        <CompactItemRow
+          key={i}
+          index={i}
+          noun="card"
+          title={c.title || `Card ${i + 1}`}
+          dragging={dragIndex === i}
+          onDragStart={() => setDragIndex(i)}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={() => drop(i)}
+          onDragEnd={() => setDragIndex(null)}
+          onOpen={() => selectItem(i)}
+          onRemove={() => remove(i)}
+        />
       ))}
       <button
         type="button"
-        onClick={() =>
+        onClick={() => {
           update([...rows, { icon: '', image: '', statValue: '', statLabel: '', title: '', text: '', link: '', buttonLabel: '', buttonHref: '' }])
-        }
+          selectItem(rows.length)
+        }}
         className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline"
       >
         <Plus className="h-3.5 w-3.5" aria-hidden /> Add card
