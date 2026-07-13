@@ -7,6 +7,7 @@ import { DetailTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
+import { getSpaceClaimToken } from '@/lib/spaces/claim'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { usableSpaceFunctions, type SpaceFunctionKey } from '@/lib/spaces/functions'
 import { getActiveSpace } from '@/lib/spaces/active-space'
@@ -134,6 +135,14 @@ export default async function SpaceProfileChromeLayout({
   const manage = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole ?? null)
   const canSeeAsOwner = manage.canManage || manage.staffViewing
   const isNetwork = visibility !== 'private'
+
+  // Operator (admin/janitor) claim link: for a seeded, still-unclaimed Space, surface the shareable
+  // claim link inside the QR & Share dialog so an operator can send it to the real owner. Only platform
+  // staff see it (the token read is gated here); it disappears once claimed (getSpaceClaimToken returns
+  // null). The claimer opens /spaces/claim/<token> and ownership transfers to them.
+  const isPlatformStaffViewer = caller?.webRole === 'admin' || caller?.webRole === 'janitor'
+  const spaceClaimToken = isPlatformStaffViewer ? await getSpaceClaimToken(space.id) : null
+  const claimUrl = spaceClaimToken ? `/spaces/claim/${spaceClaimToken}` : undefined
 
   // Review stars for the profile's structured data (AggregateRating): only a NETWORK Space emits schema,
   // so only then do we pay the reviews read. Passed to spaceSchema, which emits the node ONLY when there
@@ -271,6 +280,7 @@ export default async function SpaceProfileChromeLayout({
       brandLogoUrl={space.brandLogoUrl}
       sharerProfileId={viewerProfileId}
       hasContactCard
+      claimUrl={claimUrl}
       className={cn(
         onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'sm'),
         'inline-flex items-center h-9 shrink-0 gap-1.5',
@@ -317,6 +327,7 @@ export default async function SpaceProfileChromeLayout({
         brandLogoUrl={space.brandLogoUrl}
         sharerProfileId={viewerProfileId}
         hasContactCard
+        claimUrl={claimUrl}
         iconOnly
         className={ghostIconClasses}
       />
