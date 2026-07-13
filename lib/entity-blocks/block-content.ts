@@ -1011,15 +1011,30 @@ export function sanitizeBlockContent(id: string, raw: unknown): Record<string, u
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
   const o = raw as Record<string, unknown>
   const out: Record<string, unknown> = {}
+  // A CONTENT block's textarea (Text / Callout / Quote AND the design blocks) is authored on the WYSIWYG
+  // canvas and rendered as inline rich HTML (ContentBlockView / DesignBlockView run sanitizeInlineHtml on
+  // read), so its stored value is sanitized to the SAME allowlist on SAVE — defence in depth, and so bold /
+  // italic / link typed on the canvas survives. A DATA block's body (About / Story) renders as plain text,
+  // so it keeps the plain-text projection (storing <br> / marks there would show literally).
+  const block = entityBlockById(id)
+  const richText = block ? isContentBlock(block) : false
   for (const field of fieldsForBlock(id)) {
     const v = o[field.key]
     switch (field.type) {
       case 'text':
         if (str(v, MAX_LABEL)) out[field.key] = str(v, MAX_LABEL)
         break
-      case 'textarea':
-        if (str(v, MAX_TEXT)) out[field.key] = str(v, MAX_TEXT)
+      case 'textarea': {
+        // Content / design blocks store allowlisted inline HTML; data blocks store bounded plain text.
+        if (richText) {
+          const html = sanitizeInlineHtml(v)
+          if (html) out[field.key] = html
+        } else {
+          const t = str(v, MAX_TEXT)
+          if (t) out[field.key] = t
+        }
         break
+      }
       case 'url': {
         const u = safeUrl(v)
         if (u) out[field.key] = u
