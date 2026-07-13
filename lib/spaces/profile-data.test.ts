@@ -8,6 +8,8 @@ import {
   formatServiceDeposit,
   formatServicePackage,
   isServiceListed,
+  spaceCategoryPillLabel,
+  SPACE_SOCIAL_PLATFORMS,
 } from './profile-data'
 
 describe('readProfileData', () => {
@@ -123,6 +125,49 @@ describe('readProfileData', () => {
       },
     })
     expect(data.socials).toEqual([{ platform: 'linkedin', url: 'https://linkedin.com/x' }])
+  })
+
+  it('normalizes socials to the ONE canonical order regardless of saved order', () => {
+    const data = readProfileData({
+      profileData: {
+        socials: [
+          { platform: 'spotify', url: 'https://open.spotify.com/x' },
+          { platform: 'instagram', url: 'https://instagram.com/x' },
+          { platform: 'substack', url: 'https://x.substack.com' },
+          { platform: 'x', url: 'https://x.com/x' },
+        ],
+      },
+    })
+    // Instagram → Substack → X → Spotify, per SPACE_SOCIAL_PLATFORMS.
+    expect((data.socials ?? []).map((s) => s.platform)).toEqual(['instagram', 'substack', 'x', 'spotify'])
+  })
+
+  it('accepts the added platforms (substack, threads) as known', () => {
+    const keys = SPACE_SOCIAL_PLATFORMS.map((p) => p.key)
+    expect(keys).toEqual([
+      'instagram', 'tiktok', 'substack', 'threads', 'facebook', 'youtube',
+      'x', 'linkedin', 'google', 'yelp', 'insighttimer', 'spotify',
+    ])
+    const data = readProfileData({ profileData: { socials: [{ platform: 'threads', url: 'https://threads.net/x' }] } })
+    expect(data.socials).toEqual([{ platform: 'threads', url: 'https://threads.net/x' }])
+  })
+
+  it('reads + trims the custom category pill-name override, dropping blanks', () => {
+    expect(readProfileData({ profileData: { categoryLabel: '  Nadia’s Corner  ' } }).categoryLabel).toBe('Nadia’s Corner')
+    expect(readProfileData({ profileData: { categoryLabel: '   ' } }).categoryLabel).toBeUndefined()
+  })
+})
+
+describe('spaceCategoryPillLabel (item: custom pill-name override)', () => {
+  it('shows the override when set, else the category label', () => {
+    // Override present → the custom name, category kept for taxonomy.
+    expect(spaceCategoryPillLabel({ preferences: { profileData: { category: 'maker', categoryLabel: 'Nadia’s Corner' } } }))
+      .toBe('Nadia’s Corner')
+    // No override → the category's own label.
+    expect(spaceCategoryPillLabel({ preferences: { profileData: { category: 'studio' } } })).toBe('Studios')
+    // Unset everything → the default category label.
+    expect(spaceCategoryPillLabel({ preferences: {} })).toBe('Business')
+    expect(spaceCategoryPillLabel(null)).toBe('Business')
   })
 })
 

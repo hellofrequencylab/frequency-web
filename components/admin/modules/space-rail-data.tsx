@@ -114,3 +114,16 @@ export function useSpaceRailSlice<T>(
   }
   return self
 }
+
+/** Read ONE rail summary card's count from the shared bundle (its `summaries[surfaceId]` slice), with the
+ *  card's own getter as the isolation fallback. This is what stops the summary-card fan-out: inside the rail
+ *  the count comes from the one bundle fetch instead of a per-card 'use server' round-trip that re-ran the
+ *  whole resolve chain; mounted outside the rail (or on a bundle error) the card self-fetches exactly as
+ *  before. `fallback` MUST be a stable reference (a module-level server action, e.g. getSpaceMembersSummary). */
+export function useSpaceRailSummary(
+  slug: string | null,
+  surfaceId: string,
+  fallback: (slug: string) => Promise<{ count: number; tier?: string } | null>,
+): { data: { count: number; tier?: string } | null; loading: boolean } {
+  return useSpaceRailSlice(slug, (bundle) => bundle.summaries[surfaceId] ?? null, fallback)
+}

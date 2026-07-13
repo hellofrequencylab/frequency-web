@@ -17,12 +17,40 @@
 // PURE + total: no server/Next imports, tolerant of malformed blobs.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { isSpaceCategory, normalizeSpaceCategory, type SpaceCategory } from './categories'
+import { isSpaceCategory, normalizeSpaceCategory, spaceCategoryLabel, type SpaceCategory } from './categories'
 
 /** One social / business-presence link (branded chip). `platform` keys the icon + label. */
 export interface SpaceSocialLink {
   platform: string
   url: string
+}
+
+/** The CANONICAL social / business-presence platforms, in the ONE order they render + edit everywhere
+ *  (owner directive, 2026-07). `website` is NOT here — it has its own dedicated field above the social
+ *  block. This is the single source of truth: the edit form maps it for its inputs, and `readProfileData`
+ *  sorts stored links by it, so every surface (the public "Find us online" strip, JSON-LD `sameAs`, the
+ *  form) shows the same order. Add a platform by inserting it here in its correct place, then adding its
+ *  key to KNOWN_PLATFORMS below. Labels are proper nouns (docs/NAMING.md), no em dashes. */
+export const SPACE_SOCIAL_PLATFORMS: readonly { key: string; label: string }[] = [
+  { key: 'instagram', label: 'Instagram' },
+  { key: 'tiktok', label: 'TikTok' },
+  { key: 'substack', label: 'Substack' },
+  { key: 'threads', label: 'Threads' },
+  { key: 'facebook', label: 'Facebook' },
+  { key: 'youtube', label: 'YouTube' },
+  { key: 'x', label: 'X' },
+  { key: 'linkedin', label: 'LinkedIn' },
+  { key: 'google', label: 'Google' },
+  { key: 'yelp', label: 'Yelp' },
+  { key: 'insighttimer', label: 'Insight Timer' },
+  { key: 'spotify', label: 'Spotify' },
+] as const
+
+/** The canonical render/edit position of a platform key (unknown keys, e.g. a legacy `website` social,
+ *  sort last so the known set always leads in the fixed order). PURE. */
+function socialOrderIndex(platform: string): number {
+  const i = SPACE_SOCIAL_PLATFORMS.findIndex((p) => p.key === platform)
+  return i === -1 ? SPACE_SOCIAL_PLATFORMS.length : i
 }
 
 /** How a service is priced. `fixed` = one set price; `from` = a starting price ("from $80"); `free`
@@ -73,6 +101,10 @@ export interface SpaceProfileData {
    *  reads as the default 'business'. Distinct from the profile TYPE chip and the internal mode_variant
    *  Focus. */
   category?: SpaceCategory
+  /** An OPTIONAL custom name for the public category pill. Keeps `category` for taxonomy + directory
+   *  filtering, but overrides only the DISPLAYED label (e.g. category 'maker' but the pill reads "Nadia's
+   *  Corner"). Blank / unset falls back to the category's own label. */
+  categoryLabel?: string
   /** Street address (also powers the map link on the Contact card). */
   address?: string
   /** Opening hours, free text (one per line). */
@@ -103,6 +135,8 @@ const KNOWN_PLATFORMS = new Set([
   'x',
   'youtube',
   'tiktok',
+  'substack',
+  'threads',
   'yelp',
   'google',
   'insighttimer',
@@ -153,6 +187,9 @@ export function readProfileData(preferences: unknown): SpaceProfileData {
       return platform && url && KNOWN_PLATFORMS.has(platform) ? { platform, url } : null
     })
     .filter((s): s is SpaceSocialLink => s !== null)
+    // Normalize to the ONE canonical order (owner directive) so every reader — the public strip, JSON-LD,
+    // the form — shows the same sequence regardless of the order the links were saved in.
+    .sort((a, b) => socialOrderIndex(a.platform) - socialOrderIndex(b.platform))
   const offeringsRaw = Array.isArray(p.offerings) ? (p.offerings as unknown[]) : []
   const offerings: SpaceOffering[] = offeringsRaw
     .map((o) => {
@@ -191,6 +228,10 @@ export function readProfileData(preferences: unknown): SpaceProfileData {
   // The directory category: kept only when it is a KNOWN key (an unknown / absent value is dropped, so
   // the reader default of 'business' applies rather than persisting a junk value).
   if (isSpaceCategory(p.category)) out.category = p.category
+  // The custom pill-name override: a plain, bounded string; blank / absent drops out so the resolver falls
+  // back to the category label.
+  const categoryLabel = str(p.categoryLabel)?.slice(0, 60)
+  if (categoryLabel) out.categoryLabel = categoryLabel
   const address = str(p.address)
   const hours = str(p.hours)
   const phone = str(p.phone)
@@ -218,6 +259,14 @@ export function readProfileData(preferences: unknown): SpaceProfileData {
  *  by this. */
 export function spaceCategory(space: { preferences?: unknown } | null | undefined): SpaceCategory {
   return normalizeSpaceCategory(readProfileData(space?.preferences).category)
+}
+
+/** The label the PUBLIC category pill shows for a Space: the operator's custom pill-name override when set,
+ *  else the category's own label. The category itself is unchanged (taxonomy + directory filtering still key
+ *  on it) — only the displayed word differs. PURE + total (fail-safe on any malformed blob). */
+export function spaceCategoryPillLabel(space: { preferences?: unknown } | null | undefined): string {
+  const data = readProfileData(space?.preferences)
+  return data.categoryLabel ?? spaceCategoryLabel(data.category)
 }
 
 /** The fields a Business Info form can submit (the writable central data). Same shape as the read

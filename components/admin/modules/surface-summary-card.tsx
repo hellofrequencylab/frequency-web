@@ -1,20 +1,21 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ArrowRight } from 'lucide-react'
 import type { App } from '@/lib/apps/types'
 import { SurfaceLinkRow } from './surface-link-row'
 import type { SurfaceSummaryEntry } from './surface-summaries'
+import { useSpaceRailSummary } from './space-rail-data'
 import { allowanceAt, featureMeter, USAGE_UPGRADE_THRESHOLD } from '@/lib/pricing/feature-meters'
 
-// SURFACE SUMMARY CARD — the Phase 2 "keep it in the rail" affordance (ADR-514). A generic, self-fetching
-// card for a `render: 'link'` Space surface that has a glanceable stat (SURFACE_SUMMARIES[id]). It keeps
-// the SIGNAL in the rail (an inline count) while the deep workflow still opens its own page ("View more").
-// Mirrors space-basics-module: read the slug from the live path, call the read-gated getter in an effect,
-// skeleton while loading. FAIL-SAFE: a null/failed getter, or no slug, degrades to a plain SurfaceLinkRow
-// (never a broken card, never a weakened gate — the getter re-gates server-side). Tokens only, no hex.
+// SURFACE SUMMARY CARD — the Phase 2 "keep it in the rail" affordance (ADR-514). A generic card for a
+// `render: 'link'` Space surface that has a glanceable stat (SURFACE_SUMMARIES[id]). It keeps the SIGNAL in
+// the rail (an inline count) while the deep workflow still opens its own page ("View more"). The count comes
+// from the ONE shared rail bundle (useSpaceRailSummary) instead of a per-card 'use server' round-trip that
+// re-ran the whole resolve chain — the slow-rail fix (ADR-550 follow-up). Mounted outside the rail (or on a
+// bundle error) it self-fetches through the card's own getter, unchanged. FAIL-SAFE: a null/failed count, or
+// no slug, degrades to a plain SurfaceLinkRow (never a broken card, never a weakened gate). Tokens only.
 
 function slugFromPath(pathname: string): string | null {
   return pathname.match(/^\/spaces\/([^/]+)/)?.[1] ?? null
@@ -24,36 +25,20 @@ export function SurfaceSummaryCard({
   app,
   href,
   entry,
+  surfaceId,
 }: {
   app: App
   href: string
   entry: SurfaceSummaryEntry
+  /** The registry surface id (e.g. 'space.people') — the key this card's count sits under in the shared
+   *  rail bundle. The card reads its slice from the provider by this id, falling back to `entry.getter`. */
+  surfaceId: string
 }) {
   const pathname = usePathname()
   const slug = slugFromPath(pathname)
 
-  const [data, setData] = useState<{ count: number; tier?: string } | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!slug) return
-    let active = true
-    entry
-      .getter(slug)
-      .then((d) => {
-        if (active) {
-          setData(d)
-          setLoading(false)
-        }
-      })
-      .catch(() => {
-        // A failed read must never leave a broken card — drop to the plain link-row (data stays null).
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [slug, entry])
+  // Read the count from the one shared rail bundle (isolation fallback = the card's own getter).
+  const { data, loading } = useSpaceRailSummary(slug, surfaceId, entry.getter)
 
   // Loading: a stable-height skeleton matching the SurfaceLinkRow chrome (no CLS while resolving).
   if (loading && slug) {

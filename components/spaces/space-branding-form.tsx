@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, Loader2 } from 'lucide-react'
+import { Check, ChevronDown, Loader2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -30,7 +30,7 @@ import {
   type HeaderCtaFunction,
   type HeaderCtaPreference,
 } from '@/lib/spaces/header-cta'
-import type { HeroHeight, HeroButtonOrientation } from '@/lib/spaces/hero-config'
+import { heroHeightClass, type HeroHeight, type HeroButtonOrientation } from '@/lib/spaces/hero-config'
 
 // The hero LOOK controls that moved into Identity & Branding (item 5): Short/Medium/Tall height + the
 // button orientation. Compact segmented buttons, matching Cover style / Page style. Each saves the moment
@@ -257,39 +257,26 @@ export function SpaceBrandingForm({
         </div>
       </section>
 
-      {/* IMAGES — the header banner (full width) + the logo beneath at a square size. */}
-      <section className="space-y-3">
+      {/* IMAGES — the header banner as ONE control (upload + reposition, previewed at the hero's set
+          height) + the logo beneath at a square size. */}
+      <section className="space-y-4">
         <SectionHeader title="Pictures" />
-        <ImageUpload
-          value={coverUrl}
-          onChange={(v) => {
-            setCoverUrl(v)
-            run(() => setSpaceImages(slug, { coverImageUrl: v }))
-          }}
-          label="Header image"
-          hint="Wide banner across the top of your page. About 1600 by 500."
-          folder="space-covers"
+        <HeaderImageField
+          coverUrl={coverUrl}
+          heightClassName={heroHeightClass(hHeight)}
+          focus={focus}
+          onFocusChange={onFocusChange}
           disabled={readOnly}
           uploadFn={(file) => {
             const fd = new FormData()
             fd.append('file', file)
             return uploadSpaceImage(slug, 'cover', fd)
           }}
+          onChange={(v) => {
+            setCoverUrl(v)
+            run(() => setSpaceImages(slug, { coverImageUrl: v }))
+          }}
         />
-        {/* HEADER FOCUS — reposition the header photo inside its cropped hero, using the SAME reusable
-            control as the admin event rail. Only shows once there is a header photo to reposition. The
-            marker (plus arrow-key nudging) is the control; the sliders are hidden to keep the panel tidy. */}
-        {coverUrl && (
-          <ImageFocalPicker
-            imageUrl={coverUrl}
-            value={focus}
-            onChange={onFocusChange}
-            disabled={readOnly}
-            label="Header focus"
-            hint="Drag to choose which part of your header photo stays in frame. Vertical matters most."
-            showSliders={false}
-          />
-        )}
         <div className="max-w-[12rem]">
           <ImageUpload
             value={logoUrl}
@@ -297,7 +284,7 @@ export function SpaceBrandingForm({
               setLogoUrl(v)
               run(() => setSpaceImages(slug, { brandLogoUrl: v }))
             }}
-            label="Logo"
+            label="Logo or Profile Image"
             hint="Your profile image. A square reads best."
             folder="space-logos"
             disabled={readOnly}
@@ -555,42 +542,48 @@ export function SpaceBrandingForm({
         </div>
       </details>
 
-      {/* PAGE STYLE — the typography + shape identity the whole page renders in. Five presets; the accent
-          colour is set separately below. Optimistic buttons, each saves the moment it is picked. */}
-      <section className="space-y-2">
-        <SectionHeader title="Page style" />
-        <p className="text-xs text-muted">
-          The fonts and shapes for your whole page. Your colours stay the same. Pick the feel that fits.
-        </p>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {SPACE_THEMES.map((t) => {
-            const active = theme === t.id
-            return (
-              <button
-                key={t.id}
-                type="button"
-                disabled={readOnly || pending || active}
-                onClick={() => {
-                  setTheme(t.id) // optimistic: flip the active card now, not after the refresh
-                  run(() => updateSpaceProfile(spaceId, { theme: t.id }))
-                }}
-                aria-pressed={active}
-                title={t.description}
-                className={cn(
-                  'rounded-lg border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
-                  active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
-                )}
-              >
-                <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
-                  {t.label}
-                  {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
-                </span>
-                <span className="mt-0.5 block text-xs text-muted">{t.description}</span>
-              </button>
-            )
-          })}
+      {/* PAGE STYLE — the typography + shape identity the whole page renders in. A clear button + dropdown
+          (closed by default, matching Header): the presets stay tucked away until the operator opens it. The
+          accent colour is set separately below. Optimistic buttons, each saves the moment it is picked. */}
+      <details className="group">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 text-sm font-bold text-text [&::-webkit-details-marker]:hidden">
+          Page style
+          <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
+        </summary>
+        <div className="space-y-2 pt-3">
+          <p className="text-xs text-muted">
+            The fonts and shapes for your whole page. Your colours stay the same. Pick the feel that fits.
+          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {SPACE_THEMES.map((t) => {
+              const active = theme === t.id
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  disabled={readOnly || pending || active}
+                  onClick={() => {
+                    setTheme(t.id) // optimistic: flip the active card now, not after the refresh
+                    run(() => updateSpaceProfile(spaceId, { theme: t.id }))
+                  }}
+                  aria-pressed={active}
+                  title={t.description}
+                  className={cn(
+                    'rounded-lg border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
+                    active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
+                  )}
+                >
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
+                    {t.label}
+                    {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-muted">{t.description}</span>
+                </button>
+              )
+            })}
+          </div>
         </div>
-      </section>
+      </details>
 
       {/* THEME ACCENT — the brand colour that paints buttons, the active tab, and highlights. */}
       <section className="space-y-2">
@@ -603,6 +596,124 @@ export function SpaceBrandingForm({
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Saving…
         </p>
       )}
+    </div>
+  )
+}
+
+// THE COMBINED HEADER IMAGE CONTROL — one control for the header/hero photo (upload + reposition), so the
+// image, its crop, and the focus all live together instead of a separate upload box and focus card. When a
+// photo is set, the preview renders IN THE RAIL at the HERO'S SET HEIGHT (heightClassName) with the drag-to-
+// focus marker on it (the same reusable ImageFocalPicker the event rail uses) plus Replace / Remove. Empty,
+// it falls back to the shared ImageUpload dropzone (upload or paste a URL). Server-side upload (uploadFn),
+// so it never depends on a live browser Storage token. Copy runs CONTENT-VOICE: plain, no em dashes.
+function HeaderImageField({
+  coverUrl,
+  heightClassName,
+  focus,
+  onFocusChange,
+  disabled = false,
+  uploadFn,
+  onChange,
+}: {
+  coverUrl: string | null
+  /** The Tailwind height class of the hero at its current height, so the preview matches the live crop. */
+  heightClassName: string
+  /** The saved cover focal point ("x% y%") and its debounced setter (owned by the parent form). */
+  focus: string
+  onFocusChange: (v: string) => void
+  disabled?: boolean
+  uploadFn: (file: File) => Promise<{ url: string } | { error: string }>
+  /** Called with the new public URL (cache-busted) after an upload, or null when the photo is removed. */
+  onChange: (v: string | null) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function doUpload(file: File) {
+    setError(null)
+    if (!file.type.startsWith('image/')) {
+      setError('Choose an image file.')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError(`Image is ${(file.size / 1024 / 1024).toFixed(1)} MB. The limit is 10 MB.`)
+      return
+    }
+    setBusy(true)
+    const res = await uploadFn(file)
+    setBusy(false)
+    if ('error' in res) {
+      setError(`Upload failed: ${res.error}`)
+      return
+    }
+    // Cache-bust so a replace shows immediately.
+    onChange(`${res.url}?t=${Date.now()}`)
+  }
+
+  // Empty: the shared dropzone (upload + paste-a-URL), labelled as the header image.
+  if (!coverUrl) {
+    return (
+      <ImageUpload
+        value={null}
+        onChange={onChange}
+        label="Header image"
+        hint="Wide banner across the top of your page. About 1600 by 500."
+        folder="space-covers"
+        disabled={disabled}
+        uploadFn={uploadFn}
+      />
+    )
+  }
+
+  // Set: ONE control — the preview at the hero's set height, the drag-to-focus selector on it, and Replace /
+  // Remove overlaid. Repositioning never changes the header height; it only picks what stays in frame.
+  return (
+    <div className="space-y-1.5">
+      <div className="relative">
+        <ImageFocalPicker
+          imageUrl={coverUrl}
+          value={focus}
+          onChange={onFocusChange}
+          disabled={disabled || busy}
+          label="Header image"
+          hint="Drag to choose which part of your header photo stays in frame. This preview matches your header height."
+          showSliders={false}
+          heightClassName={heightClassName}
+        />
+        {/* Replace / Remove sit top-right over the preview; the focal marker owns the rest of the frame. */}
+        <div className="absolute right-2 top-9 flex gap-1.5">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={disabled || busy}
+            className="rounded-lg bg-canvas/90 px-2.5 py-1 text-xs font-medium text-text shadow-sm backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60 motion-reduce:transition-none"
+          >
+            {busy ? 'Uploading…' : 'Replace'}
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            disabled={disabled || busy}
+            aria-label="Remove header image"
+            className="rounded-lg bg-canvas/90 p-1 text-subtle shadow-sm backdrop-blur transition-colors hover:text-danger disabled:opacity-60 motion-reduce:transition-none"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) void doUpload(f)
+          e.target.value = ''
+        }}
+      />
+      {error && <p className="text-2xs text-danger">{error}</p>}
     </div>
   )
 }

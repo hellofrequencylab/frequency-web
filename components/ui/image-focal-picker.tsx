@@ -32,6 +32,7 @@ export function ImageFocalPicker({
   hint = 'Drag the marker to keep the important part of the photo in frame when it is cropped.',
   showSliders = true,
   className,
+  heightClassName,
 }: {
   /** The image to preview. Required — the picker is meaningless without it. */
   imageUrl: string
@@ -39,7 +40,8 @@ export function ImageFocalPicker({
   value?: string
   /** Notified with the next `object-position` string on every change. */
   onChange: (value: string) => void
-  /** Crop-preview aspect ratio (width / height). Defaults to ~16:9, the common hero crop. */
+  /** Crop-preview aspect ratio (width / height). Defaults to ~16:9, the common hero crop. Ignored when
+   *  `heightClassName` is set (an explicit height then drives the frame instead of the aspect). */
   aspect?: number
   /** Alt text for the preview image (usually empty — this is a control, not content). */
   alt?: string
@@ -53,6 +55,10 @@ export function ImageFocalPicker({
    *  enough and the sliders would crowd the panel (the event cover-focus control). */
   showSliders?: boolean
   className?: string
+  /** An explicit Tailwind HEIGHT class (e.g. the hero's set height) for the crop frame. When set it drives
+   *  the frame height and the `aspect` ratio is ignored, so the preview matches exactly what the render site
+   *  paints (used by the Space header control to preview at the hero's chosen height). */
+  heightClassName?: string
 }) {
   const { x, y } = objectPositionToXY(value)
   const frameRef = useRef<HTMLDivElement>(null)
@@ -152,11 +158,12 @@ export function ImageFocalPicker({
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
         onKeyDown={onKeyDown}
-        style={{ aspectRatio: String(aspect) }}
+        style={heightClassName ? undefined : { aspectRatio: String(aspect) }}
         className={cn(
           'relative w-full touch-none select-none overflow-hidden rounded-xl border border-border bg-surface-elevated outline-none',
           'focus-visible:ring-2 focus-visible:ring-border-strong/40',
           disabled ? 'cursor-not-allowed opacity-60' : 'cursor-crosshair',
+          heightClassName,
         )}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
