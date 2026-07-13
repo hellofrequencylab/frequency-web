@@ -22,11 +22,14 @@ export function BookingServiceMember({
   spaceId,
   services,
   timezone,
+  depositsLive = false,
 }: {
   spaceId: string
   services: ServiceType[]
   /** The Space's configured IANA timezone (labeled; the picker shows times in the viewer's own tz). */
   timezone: string
+  /** P4 (dark): when deposits are live, a service with a linked product opens deposit checkout. */
+  depositsLive?: boolean
 }) {
   const [selected, setSelected] = useState<ServiceType | null>(null)
   const [slots, setSlots] = useState<OpenSlot[] | null>(null)
@@ -84,6 +87,7 @@ export function BookingServiceMember({
             spaceTimezone={timezone}
             serviceTypeId={selected.id}
             questions={selected.questions}
+            depositProductId={depositsLive && selected.productId ? selected.productId : null}
           />
         )}
       </div>

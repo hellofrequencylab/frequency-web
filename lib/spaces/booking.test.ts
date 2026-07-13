@@ -220,6 +220,8 @@ import {
   withinModifyWindow,
   parseQuestions,
   parseAnswers,
+  bookingDepositsLive,
+  startServiceDeposit,
   type AvailabilityWindow,
 } from './booking'
 
@@ -902,6 +904,19 @@ describe('rescheduleBooking (action) — atomic new-then-cancel', () => {
     const r = await rescheduleBooking('b1', '2026-06-30T10:15:00.000Z') // not a slot boundary
     expect('error' in r).toBe(true)
     expect(db.bookings.find((b) => b.id === 'b1')!.status).toBe('confirmed') // unchanged
+  })
+})
+
+// ── P4 (ADR-605): deposits are DARK (double-gated off) ───────────────────────────────────────────
+describe('deposits stay dark (P4)', () => {
+  it('bookingDepositsLive is false with payments off', async () => {
+    expect(await bookingDepositsLive()).toBe(false)
+  })
+  it('startServiceDeposit no-ops with a "payments not on" message and writes no booking', async () => {
+    const r = await startServiceDeposit('space-1', 'svc-1', new Date('2099-06-30T10:00:00Z').toISOString())
+    expect(r.url).toBeUndefined()
+    expect(r.error).toMatch(/not turned on/i)
+    expect(db.bookings).toHaveLength(0) // no hold placed
   })
 })
 

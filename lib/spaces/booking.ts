@@ -28,6 +28,8 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
+import { canTakePayments } from '@/lib/commerce/selling'
+import { payoutsLive } from '@/lib/billing/connect'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
@@ -74,6 +76,9 @@ export interface ServiceType {
   sortOrder: number
   /** P3 booking questions asked at booking (ordered). Empty when none. */
   questions: BookingQuestion[]
+  /** P4 (dark): linked commerce service product. When set AND deposits are live, booking this service
+   *  opens deposit checkout; otherwise the free P0 confirm-only path is used. Null = free. */
+  productId: string | null
 }
 
 /** One open slot offered to a member: the absolute UTC instant it starts, plus its length so the
@@ -480,6 +485,7 @@ type ServiceTypeRow = {
   price_cents: number | null
   active: boolean
   sort_order: number
+  product_id?: string | null
   questions?: unknown
 }
 type BookingRow = {
@@ -591,7 +597,7 @@ const AVAILABILITY_COLS = 'id, space_id, weekday, start_minute, end_minute, slot
 const AVAILABILITY_COLS_P1 = `${AVAILABILITY_COLS}, service_type_id`
 const BOOKING_COLS = 'id, space_id, member_profile_id, starts_at, ends_at, status, note'
 const BOOKING_COLS_P3 = `${BOOKING_COLS}, answers, service_type_id`
-const SERVICE_TYPE_COLS = 'id, space_id, name, description, duration_minutes, price_cents, active, sort_order'
+const SERVICE_TYPE_COLS = 'id, space_id, name, description, duration_minutes, price_cents, active, sort_order, product_id'
 const SERVICE_TYPE_COLS_P3 = `${SERVICE_TYPE_COLS}, questions`
 
 /** Map a raw availability row to a clean window (drops malformed rows, fail-closed). */
@@ -671,6 +677,7 @@ function mapServiceTypeRow(r: ServiceTypeRow): ServiceType {
     active: r.active !== false,
     sortOrder: Number.isInteger(r.sort_order) ? r.sort_order : 0,
     questions: parseQuestions(r.questions),
+    productId: typeof r.product_id === 'string' && r.product_id ? r.product_id : null,
   }
 }
 
@@ -1752,6 +1759,65 @@ export async function listMyBookings(spaceId: string): Promise<MyBooking[]> {
     })
   } catch {
     return []
+  }
+}
+
+// ── P4 (ADR-605, DARK): deposit-at-booking for a Space service type, on the commerce spine ──────
+// A Space service type carries an optional link to a commerce service product (space_service_types.
+// product_id, P1). When that link is set AND deposits are live, booking the service opens deposit
+// checkout (HOLD-FIRST, below); a free service (no product_id) keeps the untouched P0 confirm-only
+// path. The whole path is DOUBLE-GATED OFF: a Business account may take payments (canTakePayments)
+// AND payouts must be live (payoutsLive(), ADR-178) — both must hold, so it NO-OPS until an owner
+// turns payments on. Everything is additive + fail-soft; nothing new is written until then.
+
+/** Whether the deposit-at-booking path is live for a Space (DOUBLE-GATED, dark by default). A Space is
+ *  a 'space' owner-kind for commerce, so this reduces to "payouts are live". Server-only. */
+export async function bookingDepositsLive(): Promise<boolean> {
+  return canTakePayments('space') && (await payoutsLive())
+}
+
+/**
+ * Open deposit checkout for a PAID Space service type (P4, dark). HOLD-FIRST: place a 'pending' hold on
+ * the slot, then the deposit rides the SAME commerce checkout; the settle webhook (confirmBookingByOrder)
+ * flips the hold to confirmed and a refund (cancelBookingByOrder) releases it. NO-OPS unless deposits are
+ * live and the service links a product, so the free confirm-only path is never affected. Returns the
+ * checkout URL to redirect to, or an error. Fail-soft.
+ */
+export async function startServiceDeposit(
+  spaceId: string,
+  serviceTypeId: string,
+  startsAtISO: string,
+): Promise<{ url?: string; error?: string }> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return { error: 'Sign in to book.' }
+
+  // DOUBLE GATE (dark): both must hold or this no-ops back to the free path.
+  if (!(await bookingDepositsLive())) return { error: 'Payments are not turned on yet.' }
+
+  const service = await resolveService(spaceId, serviceTypeId)
+  if (!service || !service.productId) return { error: 'This service is not set up for paid booking.' }
+
+  // HOLD-FIRST: reserve the slot (a 'pending' booking), then take the deposit via commerce checkout.
+  const hold = await holdSlotForBooking(spaceId, profileId, startsAtISO, service.productId)
+  if (!hold) return { error: 'That time is no longer available. Pick another.' }
+
+  try {
+    // Dynamic import to avoid a static import cycle (checkout imports confirm/cancelBookingByOrder here).
+    const { createCommerceCheckout } = await import('@/lib/commerce/checkout')
+    const checkout = await createCommerceCheckout({
+      buyerProfileId: profileId,
+      items: [{ productId: service.productId, qty: 1 }],
+    })
+    if (checkout.error || !checkout.url || !checkout.orderId) {
+      // Without an order the settle webhook can never confirm the hold; release it and stop.
+      await cancelBooking(hold.bookingId)
+      return { error: checkout.error ?? 'Could not start checkout.' }
+    }
+    await linkBookingToOrder(hold.bookingId, checkout.orderId)
+    return { url: checkout.url }
+  } catch {
+    await cancelBooking(hold.bookingId)
+    return { error: 'Could not start checkout.' }
   }
 }
 

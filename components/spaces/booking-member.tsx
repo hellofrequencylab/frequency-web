@@ -3,6 +3,7 @@ import {
   listOpenSlots,
   listBookableServices,
   getSpaceBookingTimezone,
+  bookingDepositsLive,
 } from '@/lib/spaces/booking'
 import { viewerManagesSpace } from '@/lib/spaces/operator'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -44,11 +45,21 @@ export async function BookingMember({
 
   // P1: service-first flow when the Space has any active service type. Operators and members share it.
   if (services.length > 0) {
-    const timezone = await getSpaceBookingTimezone(spaceId)
+    // P4 (dark): deposits are double-gated off (canTakePayments AND payoutsLive), so this resolves
+    // false until an owner turns payments on; the picker then keeps the free confirm-only path.
+    const [timezone, depositsLive] = await Promise.all([
+      getSpaceBookingTimezone(spaceId),
+      bookingDepositsLive(),
+    ])
     return (
       <>
         <BookingMine spaceId={spaceId} />
-        <BookingServiceMember spaceId={spaceId} services={services} timezone={timezone} />
+        <BookingServiceMember
+          spaceId={spaceId}
+          services={services}
+          timezone={timezone}
+          depositsLive={depositsLive}
+        />
       </>
     )
   }

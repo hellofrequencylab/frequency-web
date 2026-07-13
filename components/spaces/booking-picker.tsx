@@ -6,7 +6,7 @@ import { CalendarCheck, Check, Clock, Loader2 } from 'lucide-react'
 import { Button, buttonClasses } from '@/components/ui/button'
 import { Input, Textarea } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
-import { createBooking, rescheduleBooking } from '@/lib/spaces/booking-actions'
+import { createBooking, rescheduleBooking, startServiceDeposit } from '@/lib/spaces/booking-actions'
 import type { OpenSlot, BookingQuestion } from '@/lib/spaces/booking'
 import { groupSlotsByDay, sessionLengthLabel, timezoneLabel } from '@/lib/spaces/booking-format'
 import { cn } from '@/lib/utils'
@@ -47,6 +47,7 @@ export function BookingPicker({
   serviceTypeId = null,
   questions = [],
   rescheduleBookingId = null,
+  depositProductId = null,
 }: {
   spaceId: string
   /** The open slots (absolute UTC instants), grouped by day in the viewer's timezone at render. */
@@ -59,6 +60,9 @@ export function BookingPicker({
   questions?: BookingQuestion[]
   /** P3: when set, confirming RESCHEDULES this booking (atomic) instead of creating a new one. */
   rescheduleBookingId?: string | null
+  /** P4 (dark): when set (deposits live + a paid service), confirming opens deposit checkout instead of
+   *  the free confirm. Null keeps the free P0 path. Always null until payments are turned on. */
+  depositProductId?: string | null
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState<OpenSlot | null>(null)
@@ -102,6 +106,17 @@ export function BookingPicker({
     setError(null)
     const target = selected
     startBooking(async () => {
+      // P4 (dark): a paid service with deposits live opens deposit checkout (redirect on success);
+      // otherwise the free confirm-only / reschedule path. depositProductId is null until payments are on.
+      if (depositProductId && !isReschedule) {
+        const dep = await startServiceDeposit(spaceId, serviceTypeId!, target.startsAt)
+        if (dep.error || !dep.url) {
+          setError(dep.error ?? 'Could not start checkout.')
+          return
+        }
+        window.location.href = dep.url
+        return
+      }
       const result = isReschedule
         ? await rescheduleBooking(rescheduleBookingId!, target.startsAt, serviceTypeId)
         : await createBooking(spaceId, target.startsAt, note.trim() || undefined, serviceTypeId, answers)

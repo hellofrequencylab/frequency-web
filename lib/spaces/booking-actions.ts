@@ -23,6 +23,7 @@ import {
   createBooking as createBookingImpl,
   rescheduleBooking as rescheduleBookingImpl,
   cancelBooking as cancelBookingImpl,
+  startServiceDeposit as startServiceDepositImpl,
   type AvailabilityWindow,
   type ServiceTypeInput,
   type ScheduleInput,
@@ -89,4 +90,14 @@ export async function rescheduleBooking(
  *  implementation). `reason` (P3) is an optional member/owner-facing note. */
 export async function cancelBooking(bookingId: string, reason?: string): Promise<ActionResult> {
   return cancelBookingImpl(bookingId, reason)
+}
+
+/** Open deposit checkout for a paid Space service type (P4, DARK: double-gated off, no-ops until
+ *  payments are turned on). Returns a checkout URL to redirect to, or an error. */
+export async function startServiceDeposit(
+  spaceId: string,
+  serviceTypeId: string,
+  startsAtISO: string,
+): Promise<{ url?: string; error?: string }> {
+  return startServiceDepositImpl(spaceId, serviceTypeId, startsAtISO)
 }
