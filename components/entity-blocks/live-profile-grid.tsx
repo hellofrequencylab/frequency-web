@@ -8,6 +8,8 @@ import { EntityGrid } from './entity-grid'
 import { BlockStyleFrame, ContentBlockView, hasContent } from './content-block-view'
 import { DesignBlockView, isDesignBlock } from './design-block-view'
 import { useProfileLayout } from './profile-layout-context'
+import { useSpaceEditMode } from './space-edit-mode'
+import { SpaceCanvasBlock } from './space-canvas/space-canvas-block'
 
 // THE LIVE PROFILE GRID (ADR-516 Phase C). The live-preview surface the in-rail builder edits. Every
 // candidate block is rendered ONCE, server-side, into a keyed node map (`nodes`); this client wrapper places
@@ -18,9 +20,13 @@ import { useProfileLayout } from './profile-layout-context'
 // `initialRows`, visually identical to a plain server render. Fail-safe: an unknown / hidden id renders
 // nothing, and with no provider it falls straight back to the server layout.
 //
-// ADR-542 (revised): the page is the LIVE RESULT only — no editing chrome is ever overlaid here. The owner
-// arranges the page in the sidebar (SpacePageBuilder) and watches this preview update; the visitor sees the
-// identical render. Direct-manipulation-on-the-page was tried and removed at the owner's request.
+// LIVE-PAGE EDIT MODE (Edit Space, owner directive): when the Space owner opens the rail, the page STOPS
+// being read-only and every block becomes editable IN PLACE — text through the SpaceEditableSlot bubble,
+// single photos through the SpaceImagePopup (both via SpaceCanvasBlock, the same on-canvas primitives the
+// /manage/layout editor uses). Clicking a block focuses its settings in the rail (shared selection through
+// the store). Off edit mode (and for a member grid, and for a visitor / no provider) the render is exactly
+// as before — the read-only ContentBlockView / server node. The rail holds SETTINGS + the row arranger
+// only; no content text is edited there (the isCoreField split lives in the builder + BlockEditPanel).
 
 export function LiveProfileGrid({
   nodes,
@@ -28,6 +34,7 @@ export function LiveProfileGrid({
   initialHidden = [],
   initialContent = {},
   initialStyle = {},
+  spaceSlug,
 }: {
   /** Every candidate block, pre-rendered server-side (UNSTYLED) and keyed by block id. */
   nodes: Record<string, ReactNode>
@@ -39,8 +46,12 @@ export function LiveProfileGrid({
   initialContent?: Record<string, Record<string, unknown>>
   /** The persisted per-block style (ADR-528/529) — applied CLIENT-side so a style edit shows instantly. */
   initialStyle?: Record<string, BlockStyle>
+  /** The Space slug — present ONLY on the Space owner preview. Its presence (with a seeded space store, in
+   *  edit mode) is what turns on the on-page inline editors; absent on the member grid / visitor render. */
+  spaceSlug?: string
 }) {
   const store = useProfileLayout()
+  const editMode = useSpaceEditMode()
 
   // Seed the shared store from the persisted layout on mount (idempotent — the first mounter wins).
   useEffect(() => {
@@ -59,6 +70,21 @@ export function LiveProfileGrid({
     cells: row.cells.map((stack) => stack.filter((id) => !hidden.has(id))),
   }))
 
+  // On-page inline editing is live ONLY for the Space owner (a seeded space store + a slug) while the rail is
+  // open (edit mode). Off any of those, this is the plain read-only render, byte-for-byte as before.
+  const editable = editMode && !!spaceSlug && !!store?.seeded && store.kind === 'space'
+
+  // Merge one content field into the shared store (sparse: an empty value clears the key). Repaints the page
+  // instantly and debounce-saves through the same action the rail arranger uses — persistence is unchanged.
+  const setField = (blockId: string, key: string, value: unknown) => {
+    if (!store) return
+    const props = { ...(store.content[blockId] ?? {}) }
+    const empty = value === undefined || value === '' || (Array.isArray(value) && value.length === 0)
+    if (empty) delete props[key]
+    else props[key] = value
+    store.applyContent(blockId, Object.keys(props).length ? props : undefined)
+  }
+
   // Render each block, applying its STYLE frame here (client-side) so a background / spacing / alignment
   // edit shows instantly (the server nodes are rendered unstyled). A CONTENT block's body is ALSO drawn
   // client-side from the shared store (ContentBlockView) so a content edit — a Callout title, a gallery
@@ -66,6 +92,27 @@ export function LiveProfileGrid({
   // A DATA block keeps its server node (its live-data body cannot be reproduced on the client); its authored
   // header/body reconcile through the debounced save (the builder refreshes just those).
   const renderBlock = (id: string): ReactNode => {
+    // EDIT MODE: render the block through the on-canvas editor (SpaceCanvasBlock) IN PLACE — its TEXT fields
+    // become inline-editable slots and its Features / Cards item copy edits inline; a single photo shows its
+    // preview here and is set in the rail (its URL / upload is a structural setting, matching the /manage/layout
+    // canvas). Clicking the block focuses its settings in the rail (shared selection). No BlockStyleFrame here:
+    // the edit surface shows the raw editable block; the styled render returns the instant the rail closes.
+    if (editable) {
+      const selected = store?.selectedId === id
+      return (
+        <div
+          key={id}
+          role="group"
+          onMouseDown={() => store?.select(id)}
+          className={`rounded-lg p-2 transition-colors ${
+            selected ? 'bg-primary-bg/30 ring-1 ring-primary' : 'hover:bg-surface-elevated/40'
+          }`}
+        >
+          <SpaceCanvasBlock id={id} props={content[id] ?? {}} onField={(k, v) => setField(id, k, v)} />
+        </div>
+      )
+    }
+
     const block = entityBlockById(id)
     let node: ReactNode
     if (isDesignBlock(id)) {

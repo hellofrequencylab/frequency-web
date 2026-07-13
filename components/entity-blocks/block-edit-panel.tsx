@@ -70,6 +70,16 @@ const inputCls =
   'w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-subtle outline-none focus:border-primary'
 const labelCls = 'block text-2xs font-semibold uppercase tracking-wide text-subtle'
 
+/** Whether a field stays in the SETTINGS-ONLY rail when block content is edited on the live page (the
+ *  isCoreField split). Mirrors the space canvas `isRailField` (space-canvas-editor) EXACTLY: the block's TEXT
+ *  copy (text / textarea, including a photo's alt) moves to the on-page inline slots, while everything else
+ *  — single photos + their upload, the gallery, links, toggles, the enum primitives, the picker, the embed,
+ *  and the Features / Cards item STRUCTURE — stays here. Defined locally (not imported) to avoid a client
+ *  import cycle with space-canvas-block. */
+function isStructuralField(f: FieldDef): boolean {
+  return f.type !== 'text' && f.type !== 'textarea'
+}
+
 /** The value keys a `text` control targets on the style.text bag (kept off the content bag so the render
  *  frame owns them). Everything else on a field schema is a content-bag key. */
 const TEXT_STYLE_SIZE_OPTIONS = [
@@ -97,6 +107,7 @@ export function BlockEditPanel({
   onContent,
   onStyle,
   onToggleHide,
+  contentOnCanvas = false,
 }: {
   id: string
   content: Record<string, unknown>
@@ -104,6 +115,12 @@ export function BlockEditPanel({
   hidden: boolean
   /** For a DATA block: the href of that feature's own manager ("Manage Offerings"), or null. */
   editHref: string | null
+  /** Live-page edit mode (Edit Space): the block's CONTENT is edited on the page, not here (the isCoreField
+   *  split). When true the panel drops every text / single-photo / alt field — those are on-canvas slots — and
+   *  keeps only the STRUCTURAL settings (links / toggle / enum primitives / picker / gallery / embed + the
+   *  repeater STRUCTURE) plus the style controls. False (the /manage/layout builder + member rail) keeps the
+   *  content fields inline here, as before. */
+  contentOnCanvas?: boolean
   /** For a function-backed block: the picker payload (ADR-573 item 5) — the Space's live items + create
    *  link. Feeds any `picker` field; absent for a block with no data source. */
   pickerData?: BlockPickerData
@@ -119,11 +136,15 @@ export function BlockEditPanel({
 }) {
   const block = entityBlockById(id)
   const isData = block?.category === 'data'
-  const fields = fieldsForBlock(id)
+  const allFields = fieldsForBlock(id)
+  // Live-page edit mode: keep only the STRUCTURAL settings here; the text + single-photo fields are edited on
+  // the page (the isCoreField split). Off edit mode, every field shows inline here as before.
+  const fields = contentOnCanvas ? allFields.filter(isStructuralField) : allFields
   const bearsText = blockBearsText(id)
   // Per-block copy re-seed (task #17): offered only when the surface injects onReseed (Space with a master
-  // profile) AND the block has text fields to rewrite.
-  const canReseed = !!onReseed && fields.some((f) => f.type === 'text' || f.type === 'textarea')
+  // profile) AND the block has text to rewrite. Reads the UNFILTERED fields so the AI re-seed stays available
+  // in edit mode (it regenerates copy the owner then sees on the page — it is not manual editing in the rail).
+  const canReseed = !!onReseed && allFields.some((f) => f.type === 'text' || f.type === 'textarea')
   const [reseeding, setReseeding] = useState(false)
   const [reseedError, setReseedError] = useState<string | null>(null)
   // Per-element text roles (item 4): a block with more than one text element (design blocks, Callout,
@@ -183,7 +204,8 @@ export function BlockEditPanel({
         </div>
       )}
 
-      {/* Fields (content + any declared primitive controls) */}
+      {/* Fields (content + any declared primitive controls). In edit mode `fields` is already filtered to the
+          structural settings, and `textOnCanvas` moves any Features / Cards item text to the on-page slots. */}
       {fields.map((field) => (
         <FieldEditor
           key={field.key}
@@ -191,12 +213,14 @@ export function BlockEditPanel({
           value={content[field.key]}
           uploadImage={uploadImage}
           pickerData={pickerData}
+          textOnCanvas={contentOnCanvas}
           onChange={(v) => setField(field.key, v)}
         />
       ))}
 
-      {/* About + Story: the text above is the space's shared story. Editing it here updates it everywhere. */}
-      {sharesStory && (
+      {/* About + Story: the text above is the space's shared story. Editing it here updates it everywhere.
+          Suppressed in edit mode — the story text is edited on the page there, not in this rail. */}
+      {sharesStory && !contentOnCanvas && (
         <p className="text-2xs leading-relaxed text-subtle">
           This is your space&rsquo;s story. Edit it here and it updates everywhere it shows.
         </p>

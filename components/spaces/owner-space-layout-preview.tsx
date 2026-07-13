@@ -82,6 +82,7 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
         initialHidden={hidden}
         initialContent={seedContent}
         initialStyle={saved?.style ?? {}}
+        spaceSlug={context.slug}
       />
     </div>
   )
