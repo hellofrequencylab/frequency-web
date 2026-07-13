@@ -13,10 +13,11 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 import type { ListingCommentTargetKind } from '@/lib/listings-shared/detail-view'
 
 const MAX_BODY = 2000
-const TARGET_KINDS: ListingCommentTargetKind[] = ['market_listing', 'listing', 'product']
+const TARGET_KINDS: ListingCommentTargetKind[] = ['market_listing', 'listing', 'product', 'recording']
 
-// The listing table + owner column each target_kind resolves to (for the delete authz gate).
-const OWNER_LOOKUP: Record<ListingCommentTargetKind, { table: string; ownerCol: string }> = {
+// The listing table + owner column each single-table target_kind resolves to (for the delete authz gate).
+// 'recording' is resolved separately below (two hops: recordings.space_id -> spaces.owner_profile_id).
+const OWNER_LOOKUP: Record<Exclude<ListingCommentTargetKind, 'recording'>, { table: string; ownerCol: string }> = {
   market_listing: { table: 'market_listings', ownerCol: 'author_id' },
   listing: { table: 'listings', ownerCol: 'owner_profile_id' },
   product: { table: 'commerce_products', ownerCol: 'owner_profile_id' },
@@ -26,13 +27,21 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
-/** True when this profile owns the listing the comment hangs off (so they can moderate its thread). */
+/** True when this profile owns the listing the comment hangs off (so they can moderate its thread). For a
+ *  Recording (Airwaves P2), ownership is the owning Space's owner: recordings.space_id -> spaces.owner_profile_id. */
 async function isListingOwner(
   admin: SupabaseClient,
   targetKind: ListingCommentTargetKind,
   targetId: string,
   profileId: string,
 ): Promise<boolean> {
+  if (targetKind === 'recording') {
+    const { data: rec } = await admin.from('recordings').select('space_id').eq('id', targetId).maybeSingle()
+    const spaceId = (rec as { space_id: string | null } | null)?.space_id
+    if (!spaceId) return false
+    const { data: sp } = await admin.from('spaces').select('owner_profile_id').eq('id', spaceId).maybeSingle()
+    return (sp as { owner_profile_id: string | null } | null)?.owner_profile_id === profileId
+  }
   const { table, ownerCol } = OWNER_LOOKUP[targetKind]
   const { data } = await admin.from(table).select(ownerCol).eq('id', targetId).maybeSingle()
   return !!data && (data as unknown as Record<string, unknown>)[ownerCol] === profileId

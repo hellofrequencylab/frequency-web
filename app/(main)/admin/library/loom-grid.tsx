@@ -24,6 +24,7 @@ import {
   BadgeCheck,
   RefreshCw,
   Palette,
+  Music,
   Sparkles as SparklesIcon,
 } from 'lucide-react'
 import type { LibraryGalleryItem, LibraryCollection } from '@/lib/library/store'
@@ -39,6 +40,7 @@ import {
 import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from './actions'
 import { editLoomSvg, saveElementSvg, reviewLoomSvg, type LoomEditMode } from './vera-actions'
 import { RecraftEditRow, AssetVersions } from './recraft-studio'
+import { AssetAvPanel } from './asset-av-panel'
 import { createBrandStyle } from './recraft-actions'
 import {
   addAssetsToCollection,
@@ -88,6 +90,18 @@ function Thumb({ asset, fit }: { asset: LibraryGalleryItem; fit: 'cover' | 'cont
     if (drawn) {
       return <div className="flex h-full w-full items-center justify-center p-4">{drawn}</div>
     }
+  }
+  // Airwaves A/V (ADR-608 §7e): audio/video assets preview with a real scrub player, not a broken <img>.
+  if (asset.url && asset.kind === 'video') {
+    return <video src={asset.url} controls preload="metadata" className="h-full w-full bg-black object-contain" />
+  }
+  if (asset.url && asset.kind === 'audio') {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-4">
+        <Music className="h-10 w-10 text-subtle" aria-hidden />
+        <audio src={asset.url} controls preload="metadata" className="w-full max-w-xs" />
+      </div>
+    )
   }
   if (asset.url) {
     return (
@@ -840,6 +854,9 @@ function DetailDrawer({
               a key is configured; edit ops need a file-backed image. */}
           <RecraftEditRow assetId={asset.id} hasFile={!!asset.url} enabled={recraftEnabled} chipCls={chipCls} />
           {recraftEnabled && <AssetVersions assetId={asset.id} />}
+
+          {/* Media manager (Airwaves P2): replace-file for any file-backed asset + a usage map for A/V. */}
+          <AssetAvPanel assetId={asset.id} kind={asset.kind} hasFile={!!asset.url} />
 
           <label className="block">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-subtle">Title</span>

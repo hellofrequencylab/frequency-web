@@ -6,7 +6,7 @@
 // visible to them with the real player. All writes go through the gated slug-scoped actions; the client only
 // reflects their results.
 
-import { useRef, useState, useTransition } from 'react'
+import { useRef, useState, useTransition, type ReactNode } from 'react'
 import { Upload, Trash2, Music, Video } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -33,12 +33,16 @@ export function AirwavesConsole({
   recordings: initial,
   spaceAttachments,
   canEdit,
+  engagementByRecordingId,
 }: {
   slug: string
   spaceId: string
   recordings: Recording[]
   spaceAttachments: AttachedRecordingRow[]
   canEdit: boolean
+  /** Server-rendered ratings + discussion per Recording (Airwaves P2). Keyed by recording id; a
+   *  recording added client-side in this session simply has none until the next refresh. */
+  engagementByRecordingId?: Record<string, ReactNode>
 }) {
   const [recordings, setRecordings] = useState<Recording[]>(initial)
   const [error, setError] = useState<string | null>(null)
@@ -179,6 +183,7 @@ export function AirwavesConsole({
                   )}
                 </div>
                 <RecordingBlockEmbed recordingId={r.id} display="full" />
+                {engagementByRecordingId?.[r.id]}
               </li>
             ))}
           </ul>

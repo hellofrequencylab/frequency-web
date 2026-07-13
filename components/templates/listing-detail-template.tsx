@@ -27,6 +27,7 @@ import type { ListingDetailView } from '@/lib/listings-shared/detail-view'
 import { listingCanonicalPath } from '@/lib/listings-shared/listing-seo'
 import { listingJsonLd } from '@/lib/listings-shared/listing-seo'
 import type { ListingComment } from '@/lib/marketplace/listing-comments'
+import type { OfferTargetKind } from '@/lib/marketplace/listing-offers'
 import { relativeTime } from '@/lib/utils'
 
 /** The larger info line directly under the hero: price/terms . location . relative time. */
@@ -199,7 +200,9 @@ export function ListingDetailTemplate({
             <section className="rounded-2xl border border-border bg-surface p-4">
               <h2 className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Contact the seller</h2>
               <ListingContactDialog
-                targetKind={view.commentTargetKind}
+                // A ListingDetailView is always a marketplace listing (never a Recording), so its
+                // comment kind is always an offer target; narrow the wider comment union here.
+                targetKind={view.commentTargetKind as OfferTargetKind}
                 targetId={view.id}
                 sellerName={sellerFirst}
                 triggerLabel={`Contact ${sellerFirst}`}

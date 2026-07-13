@@ -2,7 +2,7 @@ import Link from 'next/link'
 import {
   ArrowUpRight, QrCode, Share2, GraduationCap, ToggleRight, Contact, PieChart,
   Megaphone, Activity, SlidersHorizontal, Layers, Rocket, Telescope, Bot, Link2,
-  ClipboardList, type LucideIcon,
+  ClipboardList, Send, type LucideIcon,
 } from 'lucide-react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { AdminSection } from '@/components/templates'
@@ -95,6 +95,7 @@ export async function GrowthManage() {
   ]
 
   const marketing: ManageCard[] = [
+    { label: 'Messaging', desc: 'One home for campaigns and funnels: send an email now or build a triggered journey.', stat: `${c.campaigns + c.funnels}`, statLabel: 'in flight', href: '/admin/marketing/messaging', Icon: Send },
     { label: 'Campaigns', desc: 'Compose and send email and push broadcasts.', stat: `${c.campaigns}`, statLabel: 'campaigns', href: '/admin/marketing/campaigns', Icon: Megaphone },
     { label: 'Funnels', desc: 'Build a funnel as one object: entry, wedge, capture, and the goal it converts on.', stat: `${c.funnels}`, statLabel: 'funnels', href: '/admin/growth/funnels', Icon: Activity },
     { label: 'Campaign builder', desc: 'Group entry points into campaigns, generate flyers and QR, and track scans.', stat: '', statLabel: 'Manage', href: '/admin/marketing/funnels', Icon: QrCode },

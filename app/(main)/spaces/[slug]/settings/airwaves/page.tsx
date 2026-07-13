@@ -13,6 +13,7 @@ import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/ent
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listRecordingsForSpace } from '@/lib/airwaves/recordings'
 import { listAttachedRecordings } from '@/lib/airwaves/attach-actions'
+import { RecordingEngagement } from '@/components/airwaves/recording-engagement'
 import { AirwavesConsole } from './airwaves-console'
 
 export const metadata = { title: 'Airwaves' }
@@ -59,6 +60,24 @@ export default async function AirwavesConsolePage({
   const canEdit = caps.canEditProfile
   const spaceAttachments = canEdit ? await listAttachedRecordings('space', space.id) : []
 
+  // Airwaves P2 — ratings + discussion under each Recording, rendered server-side so the reused
+  // ListingQna spine revalidates correctly. A walled private Recording renders nothing (canViewRecording).
+  const revalidatePath = `/spaces/${slug}/settings/airwaves`
+  const engagementByRecordingId = Object.fromEntries(
+    recordings.map((r) => [
+      r.id,
+      <RecordingEngagement
+        key={r.id}
+        recording={r}
+        viewerProfileId={viewerProfileId}
+        isMember={isMember}
+        canEdit={canEdit}
+        isStaff={staffViewing}
+        revalidatePath={revalidatePath}
+      />,
+    ]),
+  )
+
   return (
     <FocusTemplate
       eyebrow={brandName}
@@ -77,6 +96,7 @@ export default async function AirwavesConsolePage({
         recordings={recordings}
         spaceAttachments={spaceAttachments}
         canEdit={canEdit}
+        engagementByRecordingId={engagementByRecordingId}
       />
     </FocusTemplate>
   )

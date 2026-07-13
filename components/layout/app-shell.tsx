@@ -302,6 +302,24 @@ interface Profile extends ProfileIdentity {
   meta?: unknown
 }
 
+// The account menu's "Receive payments" item (lib/nav/registry payouts seed) is gated in the menu
+// DATA by the `host` trust tier as an EARNER PROXY. The shell now threads the REAL payouts
+// capability (canReceivePayouts — a host+ OR anyone holding a live partner persona, resolved
+// server-side in the layout) and gates that ONE item on it instead of the proxy. Identified by its
+// destination + the `host` access floor the seed carries: Billing shares the href but sits at the
+// visitor floor, so this never catches it. A custom DB menu that re-gated the item off `host` falls
+// through to the normal canSeeMenuItem path (fail-safe: no worse than the old proxy).
+function isPayoutsMenuItem(it: ResolvedItem): boolean {
+  return it.href === '/settings/billing' && it.minAccess === 'host'
+}
+
+// Visibility for one account-menu (profile surface) link: the payouts item rides the real payouts
+// capability; every other link rides the shared two-axis gate (canSeeMenuItem).
+function canSeeAccountItem(it: ResolvedItem, viewer: MenuViewer, canReceivePayouts: boolean): boolean {
+  if (isPayoutsMenuItem(it)) return canReceivePayouts
+  return canSeeMenuItem(it, viewer)
+}
+
 // ── Theme hook ────────────────────────────────────────────────────────────────
 
 type Theme = 'light' | 'dark' | 'system'
@@ -369,6 +387,7 @@ function ProfileCard({
   menu,
   viewerRole = 'visitor',
   staffRole = null,
+  canReceivePayouts = false,
 }: {
   profile: Profile
   role: CommunityRole
@@ -389,6 +408,9 @@ function ProfileCard({
   viewerRole?: MenuAccess
   /** Fine-grained staff role — the second axis canSeeMenuItem unions in. */
   staffRole?: StaffRole | null
+  /** Real payouts eligibility (host+ OR live partner persona) — gates the "Receive payments"
+   *  account link on the true capability instead of the host-tier proxy. */
+  canReceivePayouts?: boolean
 }) {
   // The effective context for the chip's framing — personal when none was resolved.
   const context: OperatorContext = operatorContext ?? { kind: 'personal' }
@@ -397,9 +419,9 @@ function ProfileCard({
   const profileResolved = menu ?? defaultMenu('profile')
   const profileViewer: MenuViewer = { viewerRole, staffRole }
   const profileSectionsResolved = profileResolved.categories
-    .map((cat) => ({ label: cat.label, items: cat.items.filter((it) => canSeeMenuItem(it, profileViewer)) }))
+    .map((cat) => ({ label: cat.label, items: cat.items.filter((it) => canSeeAccountItem(it, profileViewer, canReceivePayouts)) }))
     .filter((s) => s.items.length > 0)
-  const profileLooseLinks = profileResolved.rootItems.filter((it) => canSeeMenuItem(it, profileViewer))
+  const profileLooseLinks = profileResolved.rootItems.filter((it) => canSeeAccountItem(it, profileViewer, canReceivePayouts))
   const renderCardLink = (it: ResolvedItem) => {
     const Icon = railIconFor(it.icon)
     return (
@@ -540,6 +562,7 @@ function AccountDropdown({
   menu,
   viewerRole,
   staffRole = null,
+  canReceivePayouts = false,
 }: {
   profile: Profile
   profileHref: string
@@ -554,6 +577,9 @@ function AccountDropdown({
   viewerRole: MenuAccess
   /** Fine-grained staff role — the second axis canSeeMenuItem unions in. */
   staffRole?: StaffRole | null
+  /** Real payouts eligibility (host+ OR live partner persona) — gates the "Receive payments"
+   *  account link on the true capability instead of the host-tier proxy. */
+  canReceivePayouts?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -572,9 +598,9 @@ function AccountDropdown({
   // leftover ungrouped rootItems still render (safety). canSeeMenuItem is the shared
   // two-axis union gate — no permission gate changes, only where the list is grouped.
   const accountSections = resolvedMenu.categories
-    .map((cat) => ({ label: cat.label, items: cat.items.filter((it) => canSeeMenuItem(it, menuViewer)) }))
+    .map((cat) => ({ label: cat.label, items: cat.items.filter((it) => canSeeAccountItem(it, menuViewer, canReceivePayouts)) }))
     .filter((s) => s.items.length > 0)
-  const looseAccountLinks = resolvedMenu.rootItems.filter((it) => canSeeMenuItem(it, menuViewer))
+  const looseAccountLinks = resolvedMenu.rootItems.filter((it) => canSeeAccountItem(it, menuViewer, canReceivePayouts))
   const renderAccountLink = (it: ResolvedItem) => {
     const Icon = railIconFor(it.icon)
     return (
@@ -1391,6 +1417,8 @@ export default function AppShell({
   sidebar,
   ticker,
   unreadCount = 0,
+  messagesUnread = 0,
+  canReceivePayouts = false,
   extraSections,
   hideAppNav = false,
   permissions,
@@ -1436,6 +1464,13 @@ export default function AppShell({
   /** Community news ticker pinned above the page content (streamed via Suspense). */
   ticker?: React.ReactNode
   unreadCount?: number
+  /** Live total of unread messages (1:1 DMs + rooms), resolved server-side. Seeds the header
+   *  Messages icon's badge so it shows on first paint (mobile + desktop) without opening the
+   *  popover. Fail-safe: 0 ⇒ no badge. */
+  messagesUnread?: number
+  /** Real payouts eligibility (host+ OR a live partner persona) for the account menu's "Receive
+   *  payments" item — replaces the host-tier proxy gate. Suppressed under a view-as downgrade. */
+  canReceivePayouts?: boolean
   extraSections?: NavSection[]
   hideAppNav?: boolean
   /** Per-area access overrides (janitor-set); merged over code defaults. */
@@ -1801,7 +1836,7 @@ export default function AppShell({
                 header top-right by convention; the popover fetches + carries its own unread
                 badge, exactly as on desktop. */}
             <HoverTip label="Messages" className="inline-flex">
-              <MessagesPopover />
+              <MessagesPopover initialUnread={messagesUnread} />
             </HoverTip>
             {/* Notifications — sits before the streak (swapped per request); shown on
                 all sizes, tooltip on hover. */}
@@ -1833,6 +1868,7 @@ export default function AppShell({
                 menu={profileMenu}
                 viewerRole={menuViewerRole}
                 staffRole={staffRole}
+                canReceivePayouts={canReceivePayouts}
               />
             </div>
           </div>
@@ -1905,7 +1941,7 @@ export default function AppShell({
                     stats dock. Mirrors components/admin/admin-profile-card.tsx's wrapper. */}
                 <div className="sticky bottom-0 z-10 rounded-t-2xl border-x border-t border-border/70 bg-[var(--color-canvas)]/95 px-1.5 pt-1 backdrop-blur-sm">
                   {!hideAppNav && role === 'member' && <UpgradeCrew />}
-                  <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} operatorContext={operatorContext} availableContexts={availableContexts} menu={profileMenu} viewerRole={menuViewerRole} staffRole={staffRole} />
+                  <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} operatorContext={operatorContext} availableContexts={availableContexts} menu={profileMenu} viewerRole={menuViewerRole} staffRole={staffRole} canReceivePayouts={canReceivePayouts} />
                 </div>
               </aside>
             )}

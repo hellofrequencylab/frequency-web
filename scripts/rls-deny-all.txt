@@ -66,6 +66,7 @@ pricing_stripe_prices
 program_adoptions
 qr_scans
 recording_attachments
+recording_reviews
 recordings
 resonance_consent
 resonance_density_cells
