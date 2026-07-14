@@ -43,6 +43,11 @@ function apply(base: BetaSequence, o: SequenceOverride): BetaSequence {
     vera: mergeVera(base.vera, o.vera),
     oaths: o.oaths ?? base.oaths,
     heardAbout: o.heardAbout ?? base.heardAbout,
+    // Niche-funnel config: a non-empty override REPLACES the base (a niche funnel's 4 features / 3 core
+    // features are a whole set, not a field merge). Absent / empty keeps the base (General funnel) behaviour.
+    slide2Features: o.slide2Features?.length ? o.slide2Features : base.slide2Features,
+    slide3Core: o.slide3Core?.length ? o.slide3Core : base.slide3Core,
+    destination: o.destination ?? base.destination,
   }
 }
 
