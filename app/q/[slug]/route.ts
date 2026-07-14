@@ -18,6 +18,13 @@ import { referralsEnabled } from '@/lib/platform-flags'
 import { normalizeSplash, primarySplashLink } from '@/lib/qr/splash'
 import { renderSplashPage } from '@/lib/qr/splash-render'
 import { captureQrContact } from '@/lib/connections/qr-capture'
+import {
+  LEAD_GRAB_COOKIE,
+  LEAD_GRAB_MAX_AGE,
+  encodeLeadGrab,
+  linkMemberToSpaceLead,
+  type PendingLeadGrab,
+} from '@/lib/crm/lead-capture'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,6 +60,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     purpose: string | null
     owner_profile_id: string | null
     source_tag: string | null
+    space_id: string | null
     splash: unknown
   }
   type UntypedQuery = {
@@ -63,7 +71,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   const untypedQr = (admin as unknown as { from: (t: string) => UntypedQuery }).from('qr_codes')
   const { data: code } = await untypedQr
     .select(
-      'id, active, valid_from, valid_until, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, purpose, owner_profile_id, source_tag, splash',
+      'id, active, valid_from, valid_until, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, purpose, owner_profile_id, source_tag, space_id, splash',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -137,6 +145,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   // credit accrues (existing rewards untouched). Defaults on; off cleanly stops attribution.
   const creditOwner = !profileId && !!code.owner_profile_id && (await referralsEnabled())
   const hasFirstTouch = (request.headers.get('cookie') ?? '').includes(`${FIRST_TOUCH_COOKIE}=`)
+  // SPACE LEAD-GRAB (CRM Phase 3): an anonymous scan of a Space lead-grab code carries a pending grab
+  // so the eventual signup redeems the sealed lead into the Space CRM (app/onboarding/actions.ts →
+  // claimPendingLeadGrab). Computed in the space-lead branch below; withReferral drops the cookie.
+  let pendingLeadGrab: string | null = null
   const withReferral = (res: NextResponse) => {
     // Mark the channel for any anonymous scan (ADR-095) — attribution at signup.
     if (!profileId) {
@@ -175,6 +187,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
         maxAge: 60 * 60 * 24 * 30,
       })
     }
+    // Space lead-grab: an anonymous scanner's pending grab, redeemed at signup (down-spill on join).
+    if (!profileId && pendingLeadGrab) {
+      res.cookies.set(LEAD_GRAB_COOKIE, pendingLeadGrab, {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: LEAD_GRAB_MAX_AGE,
+      })
+    }
     return res
   }
 
@@ -203,6 +224,47 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       return to(`/connections/${contactId}`)
     }
     // null → fall through to the existing signed-in routing (owner profile view, etc.).
+  }
+
+  // SPACE QR LEAD-GRAB (CRM-MASTER-BUILD-PLAN §Phase 3, front door #1). A Space-owned code with
+  // purpose 'lead' turns a scan into a sealed Space lead with the door auto-stamped. This is a pure
+  // side-effect: it NEVER changes where the code redirects (splash / url / etc. below stay intact) and
+  // is FAIL-SAFE — any error is swallowed so the scan never breaks. Two paths:
+  //   • SIGNED-IN member (non-owner) → link immediately into the Space CRM (down-spill).
+  //   • ANONYMOUS scanner → stash a pending grab so the eventual signup redeems the lead (claim-on-join).
+  // The `source_tag === 'offer'` marker (set by createSpaceCode when the owner enables an offer-unlock)
+  // makes the capture consent-native (mailable); otherwise the sealed lead stays consent 'unknown'.
+  const isSpaceLead = !!code.space_id && code.purpose === 'lead'
+  if (isSpaceLead && code.space_id) {
+    const offerUnlock = code.source_tag === 'offer'
+    // Met-context: the event the code carries, else the coarse IP-geo city (same source as personal capture).
+    let where: string | null = code.event_id ? await eventTitle(admin, code.event_id) : null
+    if (!where && city) where = decodeURIComponent(city)
+    if (profileId && profileId !== code.owner_profile_id) {
+      // Down-spill: a signed-in member is linked into the Space CRM straight away, door stamped once.
+      await linkMemberToSpaceLead({
+        spaceId: code.space_id,
+        profileId,
+        door: 'space_qr',
+        where,
+        codeId: code.id,
+        capturedByProfileId: code.owner_profile_id,
+        offerUnlocked: offerUnlock,
+      }).catch(() => {})
+    } else if (!profileId) {
+      // Anonymous: remember the grab; withReferral drops the cookie, signup redeems it.
+      const grab: PendingLeadGrab = {
+        s: code.space_id,
+        d: 'space_qr',
+        c: code.id,
+        ...(where ? { w: where } : {}),
+        ...(code.owner_profile_id ? { by: code.owner_profile_id } : {}),
+        ...(offerUnlock ? { o: true } : {}),
+        ...(code.source_tag && code.source_tag !== 'offer' ? { l: code.source_tag } : {}),
+      }
+      pendingLeadGrab = encodeLeadGrab(grab) || null
+    }
+    // Fall through to the code's normal destination (splash / url / node / …) unchanged.
   }
 
   // SPLASH (ENTITY-SPACES-BUILD §C, Phase 2): when a code carries a valid splash, a scan sees the
