@@ -948,8 +948,10 @@ export function EntityPageBuilder({
                       key={`${row.id}-${col}`}
                       className={`space-y-1.5 rounded-lg transition-colors ${
                         // While a block is dragged, every column reads as a clear "drop here" zone (item 7), so
-                        // the operator drops a block without hunting for a target.
-                        dragKind === 'block' ? 'bg-primary/5 p-1 ring-1 ring-inset ring-primary/40' : ''
+                        // the operator drops a block without hunting for a target. Ring + tint ONLY (never a
+                        // padding / size change): mutating a drop zone's box mid-drag makes the browser abort
+                        // the drag, which is exactly what broke drop. ring-inset draws inside the box, no reflow.
+                        dragKind === 'block' ? 'bg-primary/5 ring-1 ring-inset ring-primary/40' : ''
                       }`}
                       onDragOver={(e) => dragBlock.current && e.preventDefault()}
                       onDrop={(e) => dropOnSlot(e, row.id, col)}
@@ -1193,9 +1195,12 @@ function BlockPill({
 }) {
   return (
     <div
-      className={`flex items-center gap-1 rounded-lg border bg-surface-elevated/60 px-1.5 py-1.5 ${
-        grabbed ? 'border-primary ring-1 ring-primary' : 'border-border'
-      } ${hidden ? 'opacity-60' : ''}`}
+      className={`flex items-center gap-1 border bg-surface-elevated/60 px-1.5 py-1.5 ${
+        // While its settings panel is open the pill fuses to it: keep the top corners rounded but square the
+        // bottom and drop the bottom border so the header + settings read as ONE surface, no seam (item 3). The
+        // panel below pulls up (-mt-px) with no top border, so the left / right borders run straight through.
+        editing ? 'rounded-t-lg rounded-b-none border-b-0' : 'rounded-lg'
+      } ${grabbed ? 'border-primary ring-1 ring-primary' : 'border-border'} ${hidden ? 'opacity-60' : ''}`}
     >
       <button
         type="button"

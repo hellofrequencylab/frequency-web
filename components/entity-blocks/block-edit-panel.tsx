@@ -154,7 +154,10 @@ export function BlockEditPanel({
   }
 
   return (
-    <div className="mt-1 space-y-3 rounded-lg border border-border bg-surface-elevated/50 p-3">
+    // The panel sits DIRECTLY under its block pill, so it fuses to it: no top gap, a flat top edge, and no
+    // doubled top border. The pill drops its own bottom rounding + border while editing (see BlockPill), so the
+    // pill header and this settings body read as ONE connected surface (matching bg tint), not two stacked chips.
+    <div className="-mt-px space-y-3 rounded-b-lg rounded-t-none border border-t-0 border-border bg-surface-elevated/60 p-3">
       {/* DATA block: a minimal on/off switch (redesigned from the verbose checkbox). */}
       {isData && <ToggleRow label="Show on page" checked={!hidden} onChange={onToggleHide} />}
 

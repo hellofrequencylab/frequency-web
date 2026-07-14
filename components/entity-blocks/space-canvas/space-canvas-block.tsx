@@ -112,8 +112,16 @@ function ImageSlot({
       >
         {url ? (
           <>
+            {/* When the slot carries a sizing class (an aspect crop or a fixed height) the button IS the crop
+                box, so the photo must FILL it (object-cover) to match the published shape — that is why a
+                vertical zigzag looked 4/3 in the editor. With no sizing class (a generic slot) fall back to the
+                photo's own height, capped, so it never runs away. */}
             {/* eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset */}
-            <img src={url} alt={alt} className={fill ? 'h-full w-full object-cover' : 'max-h-72 w-full object-cover'} />
+            <img
+              src={url}
+              alt={alt}
+              className={fill || className ? 'h-full w-full object-cover' : 'max-h-72 w-full object-cover'}
+            />
             <span className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-surface px-2 py-1 text-xs font-semibold text-text opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
               <Pencil className="h-3.5 w-3.5" aria-hidden /> Change
             </span>
@@ -688,6 +696,19 @@ export function SpaceCanvasBlock({
   return <div className="space-y-3">{nodes}</div>
 }
 
+/** Map the Shape control's value to the SAME aspect ratio the published block uses (design-block-view's
+ *  `aspectRatio`), as a Tailwind class so the on-canvas photo crops to the shape the operator picked
+ *  (horizontal / vertical / square) rather than always reading 4/3. `original` / unset keeps the 4/3 default. */
+function canvasAspect(v: unknown): string {
+  return v === 'horizontal'
+    ? 'aspect-[16/9]'
+    : v === 'vertical'
+      ? 'aspect-[4/5]'
+      : v === 'square'
+        ? 'aspect-square'
+        : 'aspect-[4/3]'
+}
+
 /** The layout-aware canvas for one design block: its editable slots woven into the block's REAL published
  *  layout, so editing looks like the page. Two-column blocks stack at the mobile (`sm:`) breakpoint. Returns
  *  null for a design id with no bespoke layout (the caller falls back to the generic stack). */
@@ -699,11 +720,13 @@ function designCanvas(
 ): ReactNode {
   switch (id) {
     case 'zigzag': {
-      // A framed photo beside a text column; `mediaSide: 'right'` puts the image second (order classes).
+      // A framed photo beside a text column; `mediaSide: 'right'` puts the image second (order classes). The
+      // photo honours the Shape control on the canvas, the SAME way the published block does (design-block-view
+      // maps `aspect` → a crop ratio) so the editor preview matches the live page instead of always reading 4/3.
       const mediaRight = props.mediaSide === 'right'
       return (
         <div className="grid items-center gap-8 sm:grid-cols-2">
-          <div className={mediaRight ? 'sm:order-2' : ''}>{imageSlot('image', { className: 'aspect-[4/3]' })}</div>
+          <div className={mediaRight ? 'sm:order-2' : ''}>{imageSlot('image', { className: canvasAspect(props.aspect) })}</div>
           <div className={`space-y-3 ${mediaRight ? 'sm:order-1' : ''}`}>
             {textSlot('eyebrow', EYEBROW_CLS)}
             {textSlot('title', HEADING_CLS)}
