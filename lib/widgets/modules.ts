@@ -431,6 +431,24 @@ const CRM_GRAPH_MODULE_IDS = ['crm-graph-metrics', 'crm-graph-connections'] as c
 // keeps its own janitor gate (and its idempotent seedPlaybooks sync); the modules render only through it.
 const CRM_PLAYBOOKS_MODULE_IDS = ['crm-playbooks-stats', 'crm-playbooks-registry', 'crm-playbooks-runs'] as const
 
+// The Intelligence page (/admin/crm/intelligence) — the unified Resonance CRM surface that merges Vera
+// Today, Playbooks, and the Resonance Graph into one operator page (owner merge). Default arrangement
+// order: the two stat rows (Playbooks headline, then the Graph metric row) lead the full-width stats
+// band, then Vera Today (MAIN) beside the saved plays + strongest-connections (SIDE). Each block is an
+// existing self-fetching, fail-safe RSC, REUSED unchanged. This set documents the page's blocks; the
+// page COMPOSES them directly (app/(main)/admin/crm/intelligence/page.tsx) rather than through
+// <PageModules>, because the two Resonance Graph blocks carry an ADDITIONAL staff 'insights' gate the
+// per-route engine can't express per block — so the page is intentionally NOT in module-routes.ts (no
+// Layout editor) and every id here is already reachable via its own former route set.
+const CRM_INTELLIGENCE_MODULE_IDS = [
+  'crm-playbooks-stats',
+  'crm-graph-metrics',
+  'crm-today',
+  'crm-playbooks-registry',
+  'crm-playbooks-runs',
+  'crm-graph-connections',
+] as const
+
 // The Community dashboard (/admin/community), in default render order — the Structure & people band,
 // the live Trust & safety queue, the Feed reach switch, the Manage grid, then the Related areas strip.
 // Each block self-fetches (fail-safe); the page keeps its host + community-staff gate, and every linked
@@ -659,6 +677,7 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/admin/growth': GROWTH_MODULE_IDS,
   '/admin/crm': CRM_COCKPIT_MODULE_IDS,
   '/admin/crm/today': CRM_TODAY_MODULE_IDS,
+  '/admin/crm/intelligence': CRM_INTELLIGENCE_MODULE_IDS,
   '/admin/crm/members': CRM_MEMBERS_MODULE_IDS,
   '/admin/gamification': GAMIFICATION_MODULE_IDS,
   '/admin/audit': AUDIT_MODULE_IDS,

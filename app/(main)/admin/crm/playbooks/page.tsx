@@ -1,57 +1,9 @@
-import { Suspense } from 'react'
-import { Workflow } from 'lucide-react'
-import { requireAdmin } from '@/lib/admin/guard'
-import { AdminTemplate } from '@/components/templates'
-import { PageModules } from '@/components/widgets/page-modules'
-import { seedPlaybooks } from '@/lib/playbooks/seed'
+import { redirect } from 'next/navigation'
 
-// PLAYBOOKS, the registry of saved Vera plays + their run history (Resonance Engine · ADR-389 ·
-// docs/ADMIN-BUILD-PLAN.md Phase 3a · docs/NEXT-GEN-CRM.md "prediction -> playbook -> action").
-// Module-driven (ADR-270/294): the page composes the AdminTemplate header + keeps the idempotent
-// seed sync, then renders <PageModules>, which lays out the stat band, the code-registry table, and
-// the recent run history in the operator-chosen order. Each block is a self-fetching RSC in
-// components/widgets/crm/* isolated in its own <Suspense>, so a slow read never blocks the shell and
-// staff arrange them from the on-page Settings → Layout panel.
-//
-// STAFF-GATED (requireAdmin('janitor')) like the rest of the Resonance CRM domain: a playbook governs
-// member-facing actions, so the registry is a sensitive operator view. The modules render only through
-// this gated route, so they never re-gate. The /admin/* group mounts its own info rail (page-chrome
-// returns 'none' for /admin/*), so no rail registration is needed here.
-//
-// READ-ONLY for v1: the catalog + history are shown; running a play and toggling autonomy live behind
-// the existing governed execute path + the per-Space slider (not exposed on this page). The autonomy
-// engine defaults to SUGGEST ONLY platform-wide. Every read is fail-safe (zeros / empty) so the page
-// degrades to a calm empty state, never a crash. Semantic tokens only; copy in voice (no em or en dashes).
-export const dynamic = 'force-dynamic'
-
-// The table-sync seam, isolated in its own async component so it runs OFF the shell's render path.
-// Awaiting it inline (before the returned JSX) blocked first paint and every module <Suspense> on a
-// DB read-then-write on every request (PAGE-FRAMEWORK §5: never block the shell on slow work). Rendered
-// inside its own <Suspense fallback={null}> below, the seed resolves concurrently and renders nothing;
-// the module blocks read `playbooks` fail-safe, so they never need the seed to have finished first.
-async function PlaybooksSeed() {
-  // Keep the durable `playbooks` table in sync with the CODE registry (the source of truth). Idempotent
-  // + fail-safe: a re-run is a no-op, and a missing table / write error degrades silently (the code
-  // registry still drives everything). This is the seam that populates the formerly-empty prod table.
-  await seedPlaybooks()
-  return null
-}
-
-export default async function PlaybooksPage() {
-  await requireAdmin('janitor')
-
-  return (
-    <AdminTemplate
-      title="Playbooks"
-      eyebrow="CRM"
-      icon={Workflow}
-      description="The saved Vera plays: each binds one prediction to one governed, reversible action. Vera drafts, you approve. Nothing member-facing ever fires on its own."
-      width="wide"
-    >
-      <Suspense fallback={null}>
-        <PlaybooksSeed />
-      </Suspense>
-      <PageModules route="/admin/crm/playbooks" />
-    </AdminTemplate>
-  )
+// MERGED into the unified Intelligence page (/admin/crm/intelligence): the Playbooks registry, recent
+// runs, and headline stats now live on the combined Resonance CRM surface (owner merge of Today +
+// Playbooks + the Resonance Graph). This thin redirect keeps old links and bookmarks working. The
+// Intelligence page keeps the janitor gate and the idempotent seedPlaybooks table sync this page had.
+export default function PlaybooksPage() {
+  redirect('/admin/crm/intelligence')
 }
