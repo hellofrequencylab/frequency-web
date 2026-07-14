@@ -24,7 +24,6 @@ import {
   renameSpacePage,
   reorderSpacePages,
   deleteSpacePage,
-  setWebsitePublished,
 } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 
 // THE PAGE quick-edit panel (the compact Manage surface, NO Puck runtime). A compact panel in Manage
@@ -41,7 +40,6 @@ export function SpacePagePanel({
   pages,
   activePageSlug,
   maxPages,
-  websitePublished = false,
   canManagePages = false,
   readOnly = false,
 }: {
@@ -65,8 +63,9 @@ export function SpacePagePanel({
   const pathname = usePathname()
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
-  // The external website publish state, optimistic on the prop so the button flips the instant it saves.
-  const [published, setPublished] = useState(websitePublished)
+  // Item 5: publishing a standalone website is not live yet — the button reveals a Coming soon notice
+  // instead of publishing.
+  const [comingSoon, setComingSoon] = useState(false)
 
   function run<T = void>(fn: () => Promise<ActionResult<T>>, onSuccess?: (data: T) => void) {
     setError(null)
@@ -163,60 +162,28 @@ export function SpacePagePanel({
               ))}
           </section>
 
-          {/* EXTERNAL WEBSITE — publish your Home page as a standalone public site at /sites/<slug>. The
-              route is fail-closed on this flag (network-visible AND published, else 404), so the toggle here
-              is what turns the public link on. When live it shows the shareable link + an Unpublish control. */}
+          {/* EXTERNAL WEBSITE — publishing your Home page as a standalone public site is COMING SOON
+              (item 5): the button reveals a notice instead of publishing. */}
           {!readOnly && (
             <section>
               <SectionHeader title="External website" />
               <p className="-mt-2 mb-3 text-sm text-muted">
-                Publish your Home page as a standalone website with its own link. It shows the same content as
-                your profile, so you edit once and it stays in sync.
+                Publish your Home page as a standalone website with its own link. It will show the same
+                content as your profile, so you edit once and it stays in sync.
               </p>
-              {published ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 rounded-xl border border-border bg-surface p-3">
-                    <Globe className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">
-                      Your website is live at{' '}
-                      <Link href={`/sites/${slug}`} className="font-semibold text-primary-strong hover:underline">
-                        /sites/{slug}
-                      </Link>
-                    </span>
-                    <span className="shrink-0 rounded-full bg-success-bg px-2 py-0.5 text-2xs font-semibold text-success">
-                      Live
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Link href={`/sites/${slug}`} className={cn(buttonClasses('primary', 'sm'))} target="_blank">
-                      <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-                      View your website
-                    </Link>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      disabled={pending}
-                      onClick={() => run(() => setWebsitePublished(slug, false), () => setPublished(false))}
-                    >
-                      {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
-                      Unpublish
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    disabled={pending}
-                    onClick={() => run(() => setWebsitePublished(slug, true), () => setPublished(true))}
-                  >
-                    {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Globe className="h-4 w-4" aria-hidden />}
-                    Publish website
-                  </Button>
-                </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button type="button" variant="primary" size="sm" onClick={() => setComingSoon(true)}>
+                  <Globe className="h-4 w-4" aria-hidden />
+                  Publish website
+                </Button>
+              </div>
+              {comingSoon && (
+                <p
+                  className="mt-3 rounded-xl border border-border bg-surface-elevated/60 px-3 py-2 text-sm font-medium text-text"
+                  role="status"
+                >
+                  Coming soon. Standalone websites are on the way. For now your profile is your public page.
+                </p>
               )}
             </section>
           )}

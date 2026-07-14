@@ -43,7 +43,11 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
 
   const pages = readProfilePages(space.preferences)
   const homeDoc = resolveSpacePageDoc(space.preferences, brandName, HOME_SLUG)
-  const sections = deriveSectionNav(homeDoc, presence)
+  // Community and Reviews are their OWN dedicated tabs / pages now (added below), so an in-page section
+  // anchor for either is a DUPLICATE nav link (the "two Reviews" bug: a stray #reviews anchor beside the
+  // real /reviews tab, scrolling to nothing). Drop those anchors here so the dedicated tab is the only one.
+  const DEDICATED_TAB_ANCHORS = new Set(['community', 'reviews'])
+  const sections = deriveSectionNav(homeDoc, presence).filter((s) => !DEDICATED_TAB_ANCHORS.has(s.anchor))
   // The public Shop tab (ADR-596): shown only when the owner has published their storefront, with the
   // owner's chosen (renameable) label. The catalog is gated status='active' and the route double-gates on
   // `published`, so this surfaces only a real, opted-in storefront. Shop is now a gateable function, so the

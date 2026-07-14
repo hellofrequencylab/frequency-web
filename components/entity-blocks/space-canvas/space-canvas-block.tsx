@@ -299,7 +299,34 @@ export function SpaceCanvasBlock({
         />
       )
     }
-    // Every other field (links / toggle / enum primitives / picker / gallery / embed) is rail-only.
+    // A photo GALLERY (`images` list) — a read-only thumbnail grid on the canvas so the block never VANISHES
+    // while editing (the disappearing-content bug); the photos are added / reordered in the rail. An empty
+    // gallery shows an add-in-settings hint so the block still has a visible footprint.
+    if (f.type === 'images') {
+      const imgs = Array.isArray(props[f.key])
+        ? (props[f.key] as unknown[]).filter((x): x is string => typeof x === 'string' && x.length > 0)
+        : []
+      return (
+        <div key={f.key} className="space-y-2">
+          {imgs.length > 0 ? (
+            <div className="grid grid-cols-3 gap-2">
+              {imgs.map((src, i) => (
+                <div key={`${src}-${i}`} className="overflow-hidden rounded-lg border border-border">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset */}
+                  <img src={src} alt="" className="aspect-square w-full object-cover" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-subtle">
+              Add photos to this gallery in its settings.
+            </p>
+          )}
+          <p className="text-2xs text-subtle">Add, remove, and reorder these photos in this block&rsquo;s settings.</p>
+        </div>
+      )
+    }
+    // Every other field (links / toggle / enum primitives / picker / embed) is rail-only.
     return null
   })
 
@@ -393,12 +420,17 @@ function designCanvas(
         </div>
       )
     case 'accentBeat':
-      // The accent beat centers its copy on the page; mirror that on the canvas so it reads true.
+      // The accent beat is a centered CTA on an accent-wash card; mirror the card + button on the canvas so a
+      // styled block reads TRUE while editing (not as plain text). The button label edits inline like the copy.
       return (
-        <div className="space-y-3 text-center">
+        <div className="space-y-4 rounded-2xl bg-primary-bg px-6 py-10 text-center">
           {textSlot('eyebrow', EYEBROW_CLS)}
           {textSlot('title', HEADING_CLS)}
           {textSlot('body', BODY_CLS)}
+          {textSlot(
+            'buttonLabel',
+            'mt-2 inline-flex rounded-lg bg-primary px-6 py-3 text-sm font-bold text-on-primary',
+          )}
         </div>
       )
     case 'prose':
