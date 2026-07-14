@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Users, MapPin, Settings } from 'lucide-react'
+import { Users, MapPin, Settings, EyeOff } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle } from '../actions'
@@ -173,6 +173,12 @@ export default async function CirclePage({
     members.some((m) => m.profile.id === myProfileId && m.joined_at >= weekAgo)
 
   const canManage = caps.has('circle.editSettings')
+  // Draft circles are private to their managers (ADR starter-circles draft status): a draft is a
+  // not-yet-published circle only its host/stewards (and staff) may see, so it can be built up
+  // before it goes live. Anyone else gets a 404 by direct link, exactly as if it did not exist —
+  // and it is already excluded from every discovery surface (index, /discover, sitemap RPC).
+  const isDraft = circle.status === 'draft'
+  if (isDraft && !canManage) notFound()
   // The health rail below lights for managers (capability) OR in-scope Insight.
   const insight = insightAffordance(insightAccess)
   const showsHealth = canManage || insight.visible
@@ -222,8 +228,10 @@ export default async function CirclePage({
   const nearCap = circle.member_count >= circle.member_cap * 0.9
   const full = circle.member_count >= circle.member_cap
 
-  // Header status pill: forming → green, active → blue, full/closed → red.
-  const statusPill = full
+  // Header status pill: draft → muted, forming → green, active → blue, full/closed → red.
+  const statusPill = isDraft
+    ? { label: 'Draft', cls: 'bg-surface-elevated text-subtle' }
+    : full
     ? { label: 'Full', cls: 'bg-danger-bg text-danger' }
     : circle.status === 'forming'
       ? { label: 'Forming', cls: 'bg-success-bg text-success' }
@@ -276,6 +284,21 @@ export default async function CirclePage({
 
   return (
     <div>
+      {/* Draft notice: only a manager ever reaches this page while the circle is a draft (everyone
+          else 404s above), so this line reassures the owner it is private until they publish. */}
+      {isDraft && (
+        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-warning/40 bg-warning-bg/50 px-4 py-3">
+          <EyeOff className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
+          <div className="text-sm">
+            <p className="font-semibold text-text">This circle is in draft</p>
+            <p className="mt-0.5 text-muted">
+              Only you can see it. It stays off the Circles directory, map, and search until you set the
+              status to Active in the settings panel.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Demo circles invite a real member to claim + host them in place. */}
       {circle.is_demo && user && (
         <ClaimCircle

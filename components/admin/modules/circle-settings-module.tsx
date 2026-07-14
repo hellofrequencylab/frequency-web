@@ -115,6 +115,7 @@ export function CircleSettingsModule() {
           <label className="block space-y-1.5">
             <span className={fieldLabel}>Status</span>
             <select name="status" defaultValue={data.status} className={input}>
+              <option value="draft">Draft (only you can see it)</option>
               <option value="forming">Forming</option>
               <option value="active">Active</option>
               <option value="paused">Paused</option>

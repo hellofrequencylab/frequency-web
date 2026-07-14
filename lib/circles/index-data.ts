@@ -203,7 +203,9 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
              nexus:nexuses!nexus_id ( id, name, slug, outpost:outposts!outpost_id ( name ) )
            )`,
         )
-        .neq('status', 'archived')
+        // Archived circles are closed; draft circles are private to their managers (owner-only until
+        // published) — neither belongs in the public discovery set, the map, or the browse rails.
+        .not('status', 'in', '("archived","draft")')
         .order('name', { ascending: true })
         .limit(CIRCLES_FETCH_LIMIT)
       // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
