@@ -575,18 +575,29 @@ export function SpaceCanvasBlock({
     )
   }
 
-  // ── CALLOUT: the published card (optional photo on top, title, rich body, button). ──
+  // ── CALLOUT: the published card (optional photo on top, title, rich body, button). The photo honours the
+  // Shape control and the button honours its on/off toggle, the SAME way the published card does, so the
+  // canvas preview matches the page (an empty h-48 default when Shape is Original / unset). ──
   if (id === 'callout') {
+    const calloutImg =
+      props.aspect === 'horizontal'
+        ? 'aspect-[16/9]'
+        : props.aspect === 'vertical'
+          ? 'aspect-[4/5]'
+          : props.aspect === 'square'
+            ? 'aspect-square'
+            : 'h-48'
     return (
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-        {imageSlot('image', { className: 'h-48' })}
+        {imageSlot('image', { className: calloutImg })}
         <div className="space-y-3 p-6">
           {textSlot('title', 'text-xl font-bold text-text')}
           {textSlot('body', 'text-base leading-relaxed text-muted')}
-          {textSlot(
-            'buttonLabel',
-            'mt-1 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary',
-          )}
+          {props.buttonOn !== false &&
+            textSlot(
+              'buttonLabel',
+              'mt-1 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary',
+            )}
         </div>
       </div>
     )
@@ -632,9 +643,21 @@ export function SpaceCanvasBlock({
 
   // ── Generic field-stack path (Image, Gallery, Card grid): slots + a photo / thumbnail grid. ──
   const nodes = fields.map((f) => {
-    // A single photo — a clickable slot that opens the on-canvas photo popup (its URL / alt live there).
+    // A single photo — a clickable slot that opens the on-canvas photo popup (its URL / alt live there). For
+    // the Image block, crop to the selected Shape (matching the published render); Original / unset keeps the
+    // photo's natural height.
     if (isCanvasImageField(f)) {
-      return imageSlot(f.key)
+      const imgAspect =
+        id === 'image'
+          ? props.aspect === 'horizontal'
+            ? 'aspect-[16/9]'
+            : props.aspect === 'vertical'
+              ? 'aspect-[4/5]'
+              : props.aspect === 'square'
+                ? 'aspect-square'
+                : undefined
+          : undefined
+      return imageSlot(f.key, imgAspect ? { className: imgAspect } : undefined)
     }
     // Text copy — inline-editable slots (the WYSIWYG win). Alt is excluded (set in the photo popup).
     if (isCanvasTextField(f)) {
@@ -737,8 +760,15 @@ function designCanvas(
     }
     case 'photoHero': {
       // Honour the `display` control: below (photo over stacked copy), beside (2-col), overlay (copy over the
-      // photo on a dark scrim). Overlay reads on-ink; the others read in the warm theme tokens.
+      // photo on a dark scrim). Overlay reads on-ink; the others read in the warm theme tokens. The CTA button
+      // is edited ON THE CANVAS (it is a text field, filtered from the rail), gated by the `buttonOn` toggle —
+      // without a slot here the "Show button" + "Button link" rail controls have nowhere to set the label, so
+      // the published button could never appear. Placeholder shows where it goes until the operator types.
       const display = props.display === 'beside' || props.display === 'below' ? props.display : 'overlay'
+      const buttonSlot =
+        props.buttonOn !== false
+          ? textSlot('buttonLabel', 'mt-1 inline-flex rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-on-primary')
+          : null
       if (display === 'beside') {
         return (
           <div className="grid items-center gap-8 sm:grid-cols-2">
@@ -747,6 +777,7 @@ function designCanvas(
               {textSlot('eyebrow', EYEBROW_CLS)}
               {textSlot('title', HEADING_CLS)}
               {textSlot('subtitle', BODY_CLS)}
+              {buttonSlot}
             </div>
           </div>
         )
@@ -759,6 +790,7 @@ function designCanvas(
               {textSlot('eyebrow', EYEBROW_CLS)}
               {textSlot('title', HEADING_CLS)}
               {textSlot('subtitle', BODY_CLS)}
+              {buttonSlot}
             </div>
           </div>
         )
@@ -775,6 +807,7 @@ function designCanvas(
             {textSlot('eyebrow', EYEBROW_INK_CLS)}
             {textSlot('title', HEADING_INK_CLS)}
             {textSlot('subtitle', BODY_INK_CLS)}
+            {buttonSlot}
           </div>
         </div>
       )

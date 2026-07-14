@@ -558,6 +558,11 @@ function ImagesEditor({
 }) {
   const urls: string[] = Array.isArray(value) ? (value as unknown[]).filter((v): v is string => typeof v === 'string') : []
   const [dragIndex, setDragIndex] = useState<number | null>(null)
+  // The by-URL textarea keeps a LOCAL draft string while focused, parsed to the URL list only on blur. Parsing
+  // (trim + drop blank lines) on every keystroke made it impossible to type a space or start a new line — the
+  // blank line was deleted the instant Enter was pressed. `null` = not editing, so an upload elsewhere still
+  // shows through.
+  const [urlDraft, setUrlDraft] = useState<string | null>(null)
 
   const move = (i: number, delta: -1 | 1) => {
     const j = i + delta
@@ -646,9 +651,14 @@ function ImagesEditor({
         <summary className="cursor-pointer select-none">Add or edit by URL</summary>
         <textarea
           rows={3}
-          value={urls.join('\n')}
+          value={urlDraft ?? urls.join('\n')}
           placeholder="One image URL per line"
-          onChange={(e) => onChange(e.target.value.split('\n').map((s) => s.trim()).filter(Boolean))}
+          onChange={(e) => setUrlDraft(e.target.value)}
+          onBlur={() => {
+            if (urlDraft === null) return
+            onChange(urlDraft.split('\n').map((s) => s.trim()).filter(Boolean))
+            setUrlDraft(null)
+          }}
           className={`${inputCls} mt-1`}
         />
       </details>
