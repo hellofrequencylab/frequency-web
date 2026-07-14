@@ -386,6 +386,42 @@ function cardGrid(props: Record<string, unknown>, style: BlockStyle | undefined,
   return { html, text }
 }
 
+/** The data-bound PRODUCT CARD (Email Studio Phase 4). Reads the resolved product fields off the block bag
+ *  (title / price / image / url / ctaLabel), which the compile path refreshes from the LIVE catalog at send
+ *  time (lib/email-studio/product-block.ts) — so an email always ships the current photo / price / link, and a
+ *  deleted product still shows its last-known snapshot rather than a blank or a crash. Emits an email-safe
+ *  inline-table card (photo on top, title, price, CTA button), mirroring the cardGrid card look. Fail-safe: an
+ *  empty bag renders nothing. */
+function productCard(props: Record<string, unknown>, style: BlockStyle | undefined, colors: EmailColors): Rendered {
+  const title = s(props, 'title')
+  const price = s(props, 'price')
+  const img = safeUrl(props.image)
+  const url = safeUrl(props.url)
+  const cta = s(props, 'ctaLabel') || 'View product'
+  if (!title && !price && !img) return { html: '', text: '' }
+  const media = img ? `${image(img, title, 8)}<div style="height:14px;line-height:14px;font-size:0;">&nbsp;</div>` : ''
+  const titleInner = escapeHtml(title)
+  const titleNode = url
+    ? `<a href="${escapeHtml(url)}"${styleAttr([`color:${colors.text}`, `text-decoration:none`])}>${titleInner}</a>`
+    : titleInner
+  const h = title
+    ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${FONT_STACK}`, `font-size:17px`, `font-weight:700`, `color:${colors.text}`])}>${titleNode}</p>`
+    : ''
+  const p = price
+    ? `<p${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:15px`, `font-weight:700`, `color:${colors.primaryStrong}`])}>${escapeHtml(price)}</p>`
+    : ''
+  // The CTA links to the product; when no link is known yet it falls back to '#', matching ctaButton.
+  const btn = title || img
+    ? `<div style="height:14px;line-height:14px;font-size:0;">&nbsp;</div>${ctaButton(cta, url, 'left', colors)}`
+    : ''
+  const inner = `${media}${h}${p}${btn}`
+  const wrapped = style?.background === false
+    ? inner
+    : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr><td${styleAttr([`padding:16px`, `background:${colors.surface}`, `border:1px solid ${colors.border}`, `border-radius:16px`])}>${inner}</td></tr></table>`
+  const text = [title, price, url && `${cta}: ${url}`].filter(Boolean).join('\n')
+  return { html: wrapped, text }
+}
+
 function callout(props: Record<string, unknown>, style: BlockStyle | undefined, colors: EmailColors): Rendered {
   const title = s(props, 'title')
   const body = s(props, 'body')
@@ -488,6 +524,8 @@ function renderBlockInner(id: string, props: Record<string, unknown>, style: Blo
       return features(props, style, colors)
     case 'cardGrid':
       return cardGrid(props, style, colors)
+    case 'productCard':
+      return productCard(props, style, colors)
     case 'callout':
       return callout(props, style, colors)
     case 'photoHero':

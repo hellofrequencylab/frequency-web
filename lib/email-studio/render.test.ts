@@ -71,6 +71,40 @@ describe('renderEmailLayout', () => {
     expect(text).toContain('"Be here now" - Ram Dass')
   })
 
+  it('renders a data-bound productCard from its resolved snapshot fields', () => {
+    const layout: EntityLayout = {
+      rows: [{ id: 'r0', columns: 1, cells: [['productCard']] }],
+      content: {
+        productCard: {
+          product: { id: 'p1' },
+          title: 'Cedar candle',
+          price: '$24',
+          image: 'https://img.example.com/candle.jpg',
+          url: 'https://frequencylocal.com/market/p1',
+          ctaLabel: 'Shop this',
+        },
+      },
+    }
+    const { html, text } = renderEmailLayout(layout)
+    expect(html).toContain('Cedar candle')
+    expect(html).toContain('$24')
+    expect(html).toContain('href="https://frequencylocal.com/market/p1"')
+    expect(html).toContain('Shop this')
+    expect(html).toContain('<table')
+    expect(html).not.toContain('class=')
+    expect(text).toContain('Cedar candle')
+    expect(text).toContain('$24')
+  })
+
+  it('renders nothing for an empty productCard (missing product, graceful fallback)', () => {
+    const layout: EntityLayout = {
+      rows: [{ id: 'r0', columns: 1, cells: [['productCard']] }],
+      content: { productCard: { product: { id: 'gone' } } },
+    }
+    // No snapshot + no resolved fields → the card renders nothing rather than a broken shell.
+    expect(renderEmailLayout(layout).html).toBe('')
+  })
+
   it('drops non-palette blocks (a data block renders nothing)', () => {
     const layout: EntityLayout = {
       rows: [{ id: 'r0', columns: 1, cells: [['offerings', 'text']] }],
@@ -157,5 +191,7 @@ describe('email palette contract', () => {
     expect(ids).not.toContain('offerings')
     // The new Button is present.
     expect(ids).toContain('button')
+    // The data-bound Product card is the sanctioned email product block (Phase 4).
+    expect(ids).toContain('productCard')
   })
 })

@@ -179,6 +179,12 @@ export type FieldType =
   // whole-card link, and an optional separate button. Validated by sanitizeCard. Deliberately DISTINCT from
   // `features` (which is text-forward, icon + title + text, no images) so the two blocks read + behave apart.
   | 'cards'
+  // The PRODUCT reference (Email Studio Phase 4): a single data-bound product picked from a maker / Space
+  // catalog. Stores a small ref object `{ id, ownerKind?, ownerId? }` (validated by sanitizeProductRef); the
+  // editor sets it with the search-by-owner product picker, and the email compile path
+  // (lib/email-studio/product-block.ts) resolves the live image / title / price / link from that id at send
+  // time so the card never goes stale. Distinct from `picker` (a multi-select of a Space's own live items).
+  | 'product'
   | 'toggle'
   // ADR-569 C6 primitives (attached to a block by a feature agent; validated against `options` / enum):
   | 'segmented'
@@ -531,6 +537,20 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     },
     { key: 'rounded', label: 'Rounded corners', type: 'toggle', default: true },
     { key: 'shadow', label: 'Shadow', type: 'toggle', default: true },
+  ],
+  // PRODUCT CARD (Email Studio, Phase 4): a single data-bound product / offering. The `product` ref is set by
+  // the search-by-owner picker (components/admin/email-studio/product-picker); the title / price / image / url
+  // hold a SNAPSHOT taken when the product is picked, so a preview reads immediately AND a deleted product
+  // still renders a graceful fallback. The compile path (lib/email-studio/product-block.ts) REFRESHES those
+  // four from the live catalog at send time (the card is data-bound, so it never goes stale). `ctaLabel` is the
+  // button text.
+  productCard: [
+    { key: 'product', label: 'Product', type: 'product' },
+    { key: 'title', label: 'Title', type: 'text', placeholder: 'Pick a product to fill this in' },
+    { key: 'price', label: 'Price', type: 'text', placeholder: 'Pulled from the product' },
+    { key: 'image', label: 'Image', type: 'url', placeholder: 'https://', upload: true },
+    { key: 'url', label: 'Link', type: 'url', placeholder: 'https://' },
+    { key: 'ctaLabel', label: 'Button label', type: 'text', placeholder: 'View product' },
   ],
   zigzag: [
     { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the heading' },
@@ -1066,6 +1086,31 @@ function sanitizeCard(raw: unknown): SanitizedCard | null {
   return out
 }
 
+/** A sanitized product reference (Email Studio Phase 4): the picked product's id plus an optional owner hint
+ *  (which catalog it came from), used by the compile path to refresh the card from the live catalog. Every
+ *  field is bounded; `id` is never used as an object key. */
+export interface SanitizedProductRef {
+  id: string
+  ownerKind?: 'profile' | 'space' | 'platform'
+  ownerId?: string
+}
+
+/** Sanitize a product reference to `{ id, ownerKind?, ownerId? }`, dropping it (null) when there is no id.
+ *  `ownerKind` is kept only when it is one of the known catalog owners; ids are bounded free text (never used
+ *  as a key). Pure + total. */
+function sanitizeProductRef(raw: unknown): SanitizedProductRef | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const o = raw as Record<string, unknown>
+  const id = str(o.id, MAX_LABEL)
+  if (!id) return null
+  const out: SanitizedProductRef = { id }
+  const ownerKind = str(o.ownerKind, 40)
+  if (ownerKind === 'profile' || ownerKind === 'space' || ownerKind === 'platform') out.ownerKind = ownerKind
+  const ownerId = str(o.ownerId, MAX_LABEL)
+  if (ownerId) out.ownerId = ownerId
+  return out
+}
+
 /**
  * Validate a block's authored content bag against its field schema (unknown keys dropped, values coerced +
  * bounded, urls made safe). Returns undefined when nothing usable survives, so the stored blob stays sparse.
@@ -1189,6 +1234,12 @@ export function sanitizeBlockContent(id: string, raw: unknown): Record<string, u
           ? v.slice(0, MAX_ITEMS).map(sanitizeCard).filter((x): x is SanitizedCard => x !== null)
           : []
         if (items.length) out[field.key] = items
+        break
+      }
+      case 'product': {
+        // A single data-bound product reference (Email Studio Phase 4). Kept only when it carries an id.
+        const ref = sanitizeProductRef(v)
+        if (ref) out[field.key] = ref
         break
       }
     }

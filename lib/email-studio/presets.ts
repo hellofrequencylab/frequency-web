@@ -27,6 +27,10 @@ export interface EmailPreset {
   subject: string
   preheader: string
   blockJson: EntityLayout
+  /** Set on a TRANSACTIONAL preset (Email Studio Phase 4): the stable key a hardcoded transactional sender
+   *  (lib/email.ts) looks up to render from this editable template when an operator has seeded + edited it.
+   *  Absent on the marketing presets. See lib/email-studio/product-block.ts renderTransactionalTemplate. */
+  key?: string
 }
 
 /** One authored block: its palette id, its content bag, and an optional per-block style bag. */
@@ -400,8 +404,68 @@ const SIMPLE_UPDATE: EmailPreset = {
   ]),
 }
 
-/** Every pre-written email preset, in gallery order. The templates lib seeds any of these not already saved
- *  (matched by name), and the gallery renders them as "Use this" cards. */
+// ── Transactional presets (Email Studio Phase 4) ─────────────────────────────────────────────────────────
+// The in-house TRANSACTIONAL emails (lib/email.ts) are hardcoded `emailShell` strings. These presets mirror
+// them as editable block trees so all in-house email becomes WYSIWYG-editable: seeding them (the same by-name
+// seeder) creates an `email_templates` row an operator can open + edit, and the matching sender renders from
+// that row when it exists (renderTransactionalTemplate), falling back to the hardcoded string otherwise. Each
+// carries a stable `key` the sender looks up. The dynamic bits are merge tags; bare `{{ token }}` form (NO
+// inline "fallback" quotes — those would be entity-escaped by the rich-text sanitizer), with fallbacks passed
+// at render time. Voice canon: no em dashes.
+
+/** Welcome email (key `welcome`) — the editable mirror of sendWelcomeEmail's hardcoded string. */
+const WELCOME_TRANSACTIONAL: EmailPreset = {
+  name: 'Welcome email',
+  description: 'The in-house welcome a new member gets. Editable here, so the first email is yours. Falls back to the built-in copy until you edit it.',
+  category: 'Transactional',
+  subject: 'Welcome to Frequency',
+  preheader: 'You are in. Here is where to start.',
+  key: 'welcome',
+  blockJson: emailLayout([
+    { id: 'displayHeading', content: { text: 'Welcome in, {{ contact.first_name }}', font: 'display' } },
+    {
+      id: 'prose',
+      content: {
+        text: 'You are in. Your profile is live, you are connected to your community, and the whole place is yours to explore. Here is where to start.',
+      },
+    },
+    {
+      id: 'button',
+      content: { label: 'Open your feed', url: 'https://frequencylocal.com/feed', align: 'center' },
+    },
+  ]),
+}
+
+/** Circle invite (key `invite`) — the editable mirror of sendInviteEmail. The Circle name + link are merge
+ *  tags the sender supplies; both fall back gracefully when absent. */
+const INVITE_TRANSACTIONAL: EmailPreset = {
+  name: 'Circle invite',
+  description: 'The in-house invite email when someone is asked to join a Circle. Editable here; falls back to the built-in copy until you edit it.',
+  category: 'Transactional',
+  subject: 'You are invited to a Circle on Frequency',
+  preheader: 'Someone wants you in their Circle. Take a look.',
+  key: 'invite',
+  blockJson: emailLayout([
+    { id: 'heading', content: { text: 'You are invited' } },
+    {
+      id: 'prose',
+      content: {
+        text: '{{ invite.inviter }} invited you to join {{ invite.circle }} on Frequency. A Circle is a few people doing life on purpose. Come see what it is about.',
+      },
+    },
+    {
+      id: 'button',
+      content: { label: 'See the invite', url: 'https://frequencylocal.com/home', align: 'center' },
+    },
+  ]),
+}
+
+/** The transactional presets, keyed for the sender lookup (renderTransactionalTemplate). */
+export const TRANSACTIONAL_PRESETS: readonly EmailPreset[] = [WELCOME_TRANSACTIONAL, INVITE_TRANSACTIONAL]
+
+/** Every pre-written email preset, in gallery order (marketing first, then the editable transactional set).
+ *  The templates lib seeds any of these not already saved (matched by name), and the gallery renders them as
+ *  "Use this" cards. */
 export const EMAIL_PRESETS: readonly EmailPreset[] = [
   ANNOUNCEMENT,
   NEWSLETTER,
@@ -410,7 +474,13 @@ export const EMAIL_PRESETS: readonly EmailPreset[] = [
   FOUNDING_BUSINESS_INVITE,
   RE_ENGAGEMENT,
   SIMPLE_UPDATE,
+  ...TRANSACTIONAL_PRESETS,
 ]
+
+/** A transactional preset by its stable key (`welcome` / `invite`), or null. Pure. */
+export function transactionalPresetByKey(key: string): EmailPreset | null {
+  return TRANSACTIONAL_PRESETS.find((p) => p.key === key) ?? null
+}
 
 /** A preset by its (unique) name, or null. */
 export function emailPresetByName(name: string): EmailPreset | null {

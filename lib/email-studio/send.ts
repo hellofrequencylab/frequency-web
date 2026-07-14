@@ -27,6 +27,7 @@ import { assertApproved } from '@/lib/beta/approvals'
 import { SITE_URL } from '@/lib/site'
 import { compileEmailDoc } from './shell'
 import { applyMergeTags } from './render'
+import { resolveProductRefs, productVarsFromLayout } from './product-block'
 import { MERGE_TAG_DEFAULT_FALLBACKS, type EmailDoc } from './types'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
@@ -184,7 +185,10 @@ export async function compileCampaign(campaignId: string): Promise<ActionResult<
   if (!row) return fail('That campaign no longer exists.')
 
   const doc = docFromRow(row)
-  const compiled = compileEmailDoc(doc)
+  // Refresh any data-bound Product card from the live catalog before compiling, so the saved preview HTML
+  // carries the current photo / price / link (Phase 4).
+  const resolvedDoc: EmailDoc = { ...doc, layout: await resolveProductRefs(doc.layout) }
+  const compiled = compileEmailDoc(resolvedDoc)
   const bytes = emailHtmlByteLength(compiled.html)
   const warning = bytes > EMAIL_SIZE_WARN_BYTES ? emailSizeWarning(bytes) : null
 
@@ -302,9 +306,14 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
     }
   }
 
-  const doc: EmailDoc = { ...docFromRow(row), subject: row.subject }
-  const subjectTemplate = doc.subject.trim()
+  const rawDoc: EmailDoc = { ...docFromRow(row), subject: row.subject }
+  const subjectTemplate = rawDoc.subject.trim()
   if (!subjectTemplate) return fail('The campaign has no subject to send.')
+
+  // Resolve the data-bound Product card ONCE (before the recipient loop) so every recipient's email ships the
+  // current catalog data, and expose its `{{product.*}}` tokens as merge fallbacks (Phase 4).
+  const doc: EmailDoc = { ...rawDoc, layout: await resolveProductRefs(rawDoc.layout) }
+  const productVars = productVarsFromLayout(doc.layout)
 
   const db = createAdminClient()
 
@@ -324,14 +333,17 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
 
       const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: r.profileId, category: 'lifecycle' })
       const { firstName, lastName } = splitName(names.get(r.contactId) ?? null)
+      // Per-recipient contact vars, plus the shared product vars resolved above (a product is the same for
+      // every recipient, so it rides the fallbacks bag).
       const vars = mergeVars({ firstName, lastName, email: r.email })
+      const fallbacks = { ...MERGE_TAG_DEFAULT_FALLBACKS, ...productVars }
 
       // Compile per recipient so the footer carries THIS recipient's unsubscribe link, then
       // resolve merge tags: HTML gets escaped values (default), text + subject stay raw.
       const compiled = compileEmailDoc(doc, { unsubscribeUrl })
-      const html = applyMergeTags(compiled.html, vars, { fallbacks: MERGE_TAG_DEFAULT_FALLBACKS })
-      const text = applyMergeTags(compiled.text, vars, { fallbacks: MERGE_TAG_DEFAULT_FALLBACKS, escape: false })
-      const subject = applyMergeTags(subjectTemplate, vars, { fallbacks: MERGE_TAG_DEFAULT_FALLBACKS, escape: false })
+      const html = applyMergeTags(compiled.html, vars, { fallbacks })
+      const text = applyMergeTags(compiled.text, vars, { fallbacks, escape: false })
+      const subject = applyMergeTags(subjectTemplate, vars, { fallbacks, escape: false })
 
       // Tag the campaign id so its delivery/engagement events attribute EXACTLY (not by the old
       // segment+window heuristic). It rides two channels Resend echoes back on the webhook: a
