@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { ImagePlus, Pencil } from 'lucide-react'
+import { ArrowRight, ImagePlus, Pencil } from 'lucide-react'
 import { entityBlockById, DESIGN_ENTITY_BLOCK_IDS } from '@/lib/entity-blocks/registry'
+import { headerFontStyle } from '@/lib/page-editor/fields'
 import {
   fieldsForBlock,
   fieldRendersInlineHtml,
@@ -54,13 +55,29 @@ const STRUCTURAL_PREVIEW_IDS: ReadonlySet<string> = new Set(['links', 'embed', '
 // ── Canvas typography, matched to the published design components so the page style shows while editing. ──
 const EYEBROW_CLS = 'text-sm font-bold uppercase tracking-[0.25em] text-primary-strong'
 const EYEBROW_INK_CLS = 'text-sm font-bold uppercase tracking-[0.25em] text-primary'
-/** A design-block heading: the Anton display face (font-display), matching DesignHeading. */
-const HEADING_CLS = 'font-display text-2xl uppercase leading-[1.05] text-text sm:text-3xl'
-const HEADING_INK_CLS = 'font-display text-2xl uppercase leading-[1.05] text-on-ink sm:text-3xl'
-/** The big standalone Display heading block, at a bolder clamp than an in-block heading. */
-const DISPLAY_CLS = 'font-display text-3xl uppercase leading-[0.95] text-text sm:text-4xl'
+/** A design-block heading (DesignHeading default): the Anton display face at the published FLUID CLAMP, so the
+ *  canvas heading is not dramatically smaller than the page (parity fix 5). */
+const HEADING_CLS = 'font-display text-[clamp(1.875rem,5.5vw,3rem)] uppercase leading-[1.05] text-text'
+/** The LARGE (DesignHeading size="lg") heading the Banner / photoHero uses — a much bigger clamp (parity fix 5). */
+const HEADING_LG_CLS = 'font-display text-[clamp(2rem,7vw,4.5rem)] uppercase leading-[0.95] text-text'
+const HEADING_LG_INK_CLS = 'font-display text-[clamp(2rem,7vw,4.5rem)] uppercase leading-[0.95] text-on-ink'
+/** The big standalone Display heading block, at the published display clamp (parity fix 6). */
+const DISPLAY_CLS = 'font-display text-[clamp(2rem,6vw,3.75rem)] uppercase leading-[0.95] text-balance text-text'
 const BODY_CLS = 'text-lg leading-relaxed text-muted'
 const BODY_INK_CLS = 'text-lg leading-relaxed text-on-ink-muted'
+
+// The Banner OVERLAY height + scrim, copied verbatim from the published PhotoHero (design.tsx) so the canvas
+// overlay sizes by the `height` control and veils on the `scrim` step instead of a hardcoded 16/9 + fixed scrim
+// (parity fix 1). Token-only (ink), never a hardcoded hex.
+const BANNER_HEIGHT_CLASS: Record<'short' | 'medium' | 'tall', string> = {
+  short: 'min-h-[40vh] py-16 sm:min-h-[45vh] sm:py-20',
+  medium: 'min-h-[55vh] py-20 sm:min-h-[60vh] sm:py-28',
+  tall: 'min-h-[70vh] py-24 sm:min-h-[80vh] sm:py-32',
+}
+const BANNER_SCRIM_CLASS: Record<'light' | 'medium', string> = {
+  light: 'from-ink/75 via-ink/35 to-ink/20',
+  medium: 'from-ink/90 via-ink/55 to-ink/30',
+}
 
 /** A field that is edited INLINE on the canvas (text copy) vs one that belongs in the LEFT rail. Alt text is
  *  NOT a canvas text slot — it is set inside the photo popup (as a sibling of the photo), so it never renders
@@ -183,12 +200,20 @@ function ItemBody({
   titleClass,
   onTitle,
   onText,
+  price,
+  link,
+  cta,
 }: {
   title: string
   text: string
   titleClass: string
   onTitle: (v: string) => void
   onText: (v: string) => void
+  /** Parity fix 2: a per-item PRICE line + CTA, mirroring published FeatureBody. Both are rail-set (read-only
+   *  on the canvas), so they render only when passed (Features items). Absent for a plain cards item. */
+  price?: string
+  link?: string
+  cta?: string
 }): ReactNode {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -198,6 +223,14 @@ function ItemBody({
       <div className="text-sm leading-relaxed text-muted">
         <SpaceEditableSlot value={decodeLegacyEntities(text)} placeholder="Description" multiline onChange={onText} />
       </div>
+      {/* Published FeatureBody renders a price line (accent tag) + a CTA button when the item carries a
+          price / link. They are rail-set, so on the canvas they show READ-ONLY (a span, not a live link). */}
+      {price ? <p className="text-sm font-semibold text-primary-strong">{price}</p> : null}
+      {link ? (
+        <span className="mt-1 inline-flex items-center gap-1 self-start rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text">
+          {cta || 'Learn more'}
+        </span>
+      ) : null}
     </div>
   )
 }
@@ -294,9 +327,91 @@ function ItemsTextCanvas({
   )
 }
 
-/** The responsive grid-columns utility for a 2 / 3 / 4 column count — matches content-block-view's Features. */
+/** The responsive grid-columns utility for a 2 / 3 / 4 column count — matches content-block-view's Features
+ *  and design-block-view's cardColsClass. */
 function featureGridCols(n: 2 | 3 | 4): string {
   return n === 2 ? 'sm:grid-cols-2' : n === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-2 lg:grid-cols-3'
+}
+
+/** Parity fix 4: the cardGrid cards on the canvas, mirroring the published SimpleCardGrid (design-block-view)
+ *  instead of the generic text stack — it honours the COLUMN count, the `shape:'left'` image-left layout, the
+ *  aspect-[4/3] card image crop, the BlockIcon fallback when a card has an icon and no image, and the rounded /
+ *  shadow frame toggles. Each card's title + text stays inline-editable; its media / link / frame are rail-set.
+ *  Keyed by a structural signature so a rail add / remove / reorder remounts the slots while a plain keystroke
+ *  keeps the key stable (no caret jump). Each card is selectable. */
+function CardGridItemsCanvas({
+  value,
+  cols,
+  imageLeft,
+  frame,
+  selectedIndex,
+  onSelectItem,
+  onChange,
+}: {
+  value: unknown
+  cols: 2 | 3 | 4
+  imageLeft: boolean
+  /** The card frame classes (border + rounded + shadow), resolved from the block's toggles. */
+  frame: string
+  selectedIndex: number | null
+  onSelectItem: (index: number) => void
+  onChange: (v: unknown) => void
+}) {
+  const items: Array<Record<string, unknown>> = Array.isArray(value)
+    ? (value as Array<Record<string, unknown>>)
+    : []
+  if (items.length === 0) {
+    return <p className="text-sm italic text-subtle">Add cards in this block&rsquo;s settings.</p>
+  }
+  const sig = items
+    .map((it) => `${typeof it.icon === 'string' ? it.icon : ''}~${typeof it.image === 'string' ? it.image : ''}`)
+    .join('|')
+  const patch = (i: number, key: 'title' | 'text', next: string) => {
+    onChange(items.map((it, j) => (j === i ? { ...it, [key]: next } : it)))
+  }
+  return (
+    <div className={`grid gap-6 ${featureGridCols(cols)}`}>
+      {items.map((raw, i) => {
+        const image = typeof raw.image === 'string' ? raw.image : ''
+        const icon = typeof raw.icon === 'string' ? raw.icon : ''
+        const title = typeof raw.title === 'string' ? raw.title : ''
+        const text = typeof raw.text === 'string' ? raw.text : ''
+        // Published SimpleCardGrid: an image at the shape's crop (left → a 1/3 side strip, top → aspect-[4/3]),
+        // else the icon glyph, else nothing.
+        const media = image ? (
+          // eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset
+          <img
+            src={image}
+            alt=""
+            className={imageLeft ? 'h-full w-1/3 shrink-0 object-cover' : 'aspect-[4/3] w-full object-cover'}
+          />
+        ) : icon ? (
+          <div className="flex items-center px-5 pt-5 text-primary-strong" aria-hidden>
+            <BlockIcon name={icon} size={28} />
+          </div>
+        ) : null
+        return (
+          <ItemFrame
+            key={`${sig}-${i}`}
+            selected={selectedIndex === i}
+            onSelect={() => onSelectItem(i)}
+            className={`flex ${imageLeft ? 'flex-row items-stretch' : 'flex-col'} ${frame}`}
+          >
+            {media}
+            <div className="flex flex-1 flex-col gap-1 p-5">
+              <ItemBody
+                title={title}
+                text={text}
+                titleClass="text-base font-bold text-text"
+                onTitle={(v) => patch(i, 'title', v)}
+                onText={(v) => patch(i, 'text', v)}
+              />
+            </div>
+          </ItemFrame>
+        )
+      })}
+    </div>
+  )
 }
 
 /** The Features items on the canvas, rendered in the SELECTED layout + column count so the edit surface
@@ -343,6 +458,10 @@ function FeaturesItemsCanvas({
     icon: typeof it.icon === 'string' ? it.icon : '',
     title: typeof it.title === 'string' ? it.title : '',
     text: typeof it.text === 'string' ? it.text : '',
+    // Parity fix 2: the per-item price + CTA published FeatureBody renders (rail-set, read-only on the canvas).
+    price: typeof it.price === 'string' ? it.price : '',
+    link: typeof it.link === 'string' ? it.link : '',
+    cta: typeof it.cta === 'string' ? it.cta : '',
   })
   const body = (i: number, it: ReturnType<typeof read>, titleClass: string) => (
     <ItemBody
@@ -351,6 +470,9 @@ function FeaturesItemsCanvas({
       titleClass={titleClass}
       onTitle={(v) => patch(i, 'title', v)}
       onText={(v) => patch(i, 'text', v)}
+      price={it.price}
+      link={it.link}
+      cta={it.cta}
     />
   )
   const frame = (i: number, className: string, children: ReactNode) => (
@@ -394,14 +516,37 @@ function FeaturesItemsCanvas({
     )
   }
   if (layout === 'stats') {
+    // Parity fix 3: published stats render the headline value as `price || title` at text-4xl (not text-2xl). A
+    // set price is the read-only big number and the editable title drops to the label; with no price the
+    // editable title IS the big number. Text stays an editable secondary label. Both fields stay authorable.
     return (
       <div className={`grid gap-6 ${featureGridCols(cols)}`}>
         {items.map((raw, i) => {
           const it = read(raw)
+          const titleBig = !it.price
           return frame(
             i,
             'rounded-2xl border border-border bg-surface p-6 text-center',
-            body(i, it, 'text-2xl font-bold leading-none text-primary-strong'),
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              {it.price ? (
+                <div className="text-4xl font-bold leading-none text-primary-strong">{it.price}</div>
+              ) : null}
+              <div className={titleBig ? 'text-4xl font-bold leading-none text-primary-strong' : 'text-base font-bold text-text'}>
+                <SpaceEditableSlot
+                  value={decodeLegacyEntities(it.title)}
+                  placeholder="Title"
+                  onChange={(v) => patch(i, 'title', v)}
+                />
+              </div>
+              <div className="mt-2 text-sm leading-relaxed text-muted">
+                <SpaceEditableSlot
+                  value={decodeLegacyEntities(it.text)}
+                  placeholder="Description"
+                  multiline
+                  onChange={(v) => patch(i, 'text', v)}
+                />
+              </div>
+            </div>,
           )
         })}
       </div>
@@ -547,10 +692,42 @@ export function SpaceCanvasBlock({
     )
   }
 
-  // ── LAYOUT-AWARE design blocks: render in the block's REAL published shape (stacks at `sm:`). ──
+  // ── LAYOUT-AWARE design blocks: render in the block's REAL published shape. ──
   if (DESIGN_IDS.has(id)) {
     const design = designCanvas(id, props, textSlot, imageSlot)
     if (design) return design
+  }
+
+  // ── CARD GRID (parity fix 4): the published SimpleCardGrid (design-block-view) — a heading + subheading over
+  // a column-aware grid of image cards that honours the card SHAPE (image top / left), the 4/3 crop, the icon
+  // fallback, and the rounded / shadow toggles, instead of the generic text stack that ignored them. Each
+  // card's copy is inline-editable and each card is selectable in the rail. ──
+  if (id === 'cardGrid') {
+    const cols = gridColumns(props)
+    const imageLeft = props.shape === 'left'
+    const round = props.rounded !== false ? 'rounded-2xl' : ''
+    const shade = props.shadow !== false ? 'shadow-pop' : ''
+    const frame = ['overflow-hidden border border-border bg-surface', round, shade].filter(Boolean).join(' ')
+    return (
+      <div className="space-y-6">
+        <div className="space-y-1">
+          {textSlot('title', 'text-2xl font-bold text-text')}
+          {textSlot('subtitle', 'text-base leading-relaxed text-muted')}
+        </div>
+        <CardGridItemsCanvas
+          value={props.cards}
+          cols={cols}
+          imageLeft={imageLeft}
+          frame={frame}
+          selectedIndex={store?.selectedItemIndex ?? null}
+          onSelectItem={(i) => {
+            store?.select(id)
+            store?.selectItem(i)
+          }}
+          onChange={(v) => onField('cards', v)}
+        />
+      </div>
+    )
   }
 
   // ── FEATURES: the header slots over the items in the SELECTED layout + columns (matches published). ──
@@ -747,10 +924,17 @@ function designCanvas(
       // photo honours the Shape control on the canvas, the SAME way the published block does (design-block-view
       // maps `aspect` → a crop ratio) so the editor preview matches the live page instead of always reading 4/3.
       const mediaRight = props.mediaSide === 'right'
+      // Parity fix 8: published Zigzag stacks at `md:` (not `sm:`) with a gap-12 gutter, and frames the media in
+      // a rounded-[1.25rem] border with a shadow-pop. Match the breakpoint + the framed shadow (the aspect crop
+      // parity via canvasAspect is already correct — leave it).
       return (
-        <div className="grid items-center gap-8 sm:grid-cols-2">
-          <div className={mediaRight ? 'sm:order-2' : ''}>{imageSlot('image', { className: canvasAspect(props.aspect) })}</div>
-          <div className={`space-y-3 ${mediaRight ? 'sm:order-1' : ''}`}>
+        <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2 md:gap-12">
+          <div className={mediaRight ? 'md:order-2' : ''}>
+            <div className="overflow-hidden rounded-[1.25rem] border border-border shadow-pop">
+              {imageSlot('image', { className: canvasAspect(props.aspect) })}
+            </div>
+          </div>
+          <div className={`space-y-3 ${mediaRight ? 'md:order-1' : ''}`}>
             {textSlot('eyebrow', EYEBROW_CLS)}
             {textSlot('title', HEADING_CLS)}
             {textSlot('body', BODY_CLS)}
@@ -769,13 +953,14 @@ function designCanvas(
         props.buttonOn !== false
           ? textSlot('buttonLabel', 'mt-1 inline-flex rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-on-primary')
           : null
+      // The Banner headline is the published DesignHeading size="lg" (a much larger clamp) across every layout.
       if (display === 'beside') {
         return (
           <div className="grid items-center gap-8 sm:grid-cols-2">
             {imageSlot('image', { className: 'aspect-[4/3]' })}
             <div className="space-y-3">
               {textSlot('eyebrow', EYEBROW_CLS)}
-              {textSlot('title', HEADING_CLS)}
+              {textSlot('title', HEADING_LG_CLS)}
               {textSlot('subtitle', BODY_CLS)}
               {buttonSlot}
             </div>
@@ -783,29 +968,33 @@ function designCanvas(
         )
       }
       if (display === 'below') {
+        // Parity fix 1: published `below` frames the photo at 4/3 (not 16/9).
         return (
           <div className="space-y-4">
-            {imageSlot('image', { className: 'aspect-[16/9]' })}
+            {imageSlot('image', { className: 'aspect-[4/3]' })}
             <div className="space-y-3">
               {textSlot('eyebrow', EYEBROW_CLS)}
-              {textSlot('title', HEADING_CLS)}
+              {textSlot('title', HEADING_LG_CLS)}
               {textSlot('subtitle', BODY_CLS)}
               {buttonSlot}
             </div>
           </div>
         )
       }
-      // overlay: the photo fills a relative frame, the copy sits over it on a dark scrim (bottom-anchored).
+      // overlay (parity fix 1): the photo fills the section, sized by the `height` control (BANNER_HEIGHT_CLASS)
+      // rather than a hardcoded 16/9, veiled on the `scrim` step, with the copy CENTER-anchored (not bottom) —
+      // matching published PhotoHeroBlock. The photo stays editable (clicking it opens the popup).
+      const height = props.height === 'short' || props.height === 'medium' ? props.height : 'tall'
+      const scrim = props.scrim === 'medium' ? BANNER_SCRIM_CLASS.medium : BANNER_SCRIM_CLASS.light
       return (
-        <div className="relative overflow-hidden rounded-xl">
-          <div className="aspect-[16/9] w-full">{imageSlot('image', { className: 'aspect-[16/9]', fill: true })}</div>
+        <div className="relative overflow-hidden rounded-2xl">
+          <div className="absolute inset-0">{imageSlot('image', { className: 'h-full', fill: true })}</div>
+          <div className={`pointer-events-none absolute inset-0 bg-gradient-to-t ${scrim}`} aria-hidden />
           <div
-            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/30 to-transparent"
-            aria-hidden
-          />
-          <div className="absolute inset-x-0 bottom-0 space-y-2 p-6">
+            className={`relative z-10 mx-auto flex max-w-3xl flex-col items-center justify-center px-6 text-center ${BANNER_HEIGHT_CLASS[height]}`}
+          >
             {textSlot('eyebrow', EYEBROW_INK_CLS)}
-            {textSlot('title', HEADING_INK_CLS)}
+            {textSlot('title', HEADING_LG_INK_CLS)}
             {textSlot('subtitle', BODY_INK_CLS)}
             {buttonSlot}
           </div>
@@ -813,33 +1002,49 @@ function designCanvas(
       )
     }
     case 'editorial':
+      // Parity fix 9: published EditorialSection separates the heading lockup from the body with an mb-8 gap and
+      // constrains the lead measure to max-w-2xl.
       return (
-        <div className="space-y-3">
-          {textSlot('eyebrow', EYEBROW_CLS)}
-          {textSlot('title', HEADING_CLS)}
-          {textSlot('body', BODY_CLS)}
+        <div>
+          <div className="mb-8 space-y-1">
+            {textSlot('eyebrow', EYEBROW_CLS)}
+            {textSlot('title', HEADING_CLS)}
+          </div>
+          {textSlot('body', `max-w-2xl ${BODY_CLS}`)}
         </div>
       )
     case 'accentBeat':
       // The accent beat is a centered CTA on an accent-wash card; mirror the card + button on the canvas so a
-      // styled block reads TRUE while editing (not as plain text). The button label edits inline like the copy.
+      // styled block reads TRUE while editing (not as plain text). Parity fix 7: published wraps the copy in
+      // max-w-2xl with generous vertical padding (py-16 sm:py-20) and uses the kit CtaButton (rounded-2xl px-8
+      // py-3.5 text-base font-bold shadow-pop + a trailing arrow). Match the button style + padding; the button
+      // label edits inline like the copy.
       return (
-        <div className="space-y-4 rounded-2xl bg-primary-bg px-6 py-10 text-center">
-          {textSlot('eyebrow', EYEBROW_CLS)}
-          {textSlot('title', HEADING_CLS)}
-          {textSlot('body', BODY_CLS)}
-          {textSlot(
-            'buttonLabel',
-            'mt-2 inline-flex rounded-lg bg-primary px-6 py-3 text-sm font-bold text-on-primary',
-          )}
+        <div className="rounded-2xl bg-primary-bg px-6 py-16 text-center sm:py-20">
+          <div className="mx-auto max-w-2xl space-y-4">
+            {textSlot('eyebrow', EYEBROW_CLS)}
+            {textSlot('title', HEADING_CLS)}
+            {textSlot('body', BODY_CLS)}
+            <div className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-primary px-8 py-3.5 text-base font-bold text-on-primary shadow-pop">
+              {textSlot('buttonLabel', '')}
+              <ArrowRight className="h-5 w-5" aria-hidden />
+            </div>
+          </div>
         </div>
       )
     case 'prose':
       return <div>{textSlot('text', `max-w-[62ch] ${BODY_CLS}`)}</div>
     case 'displayHeading':
-      return <div>{textSlot('text', DISPLAY_CLS)}</div>
+      // Parity fix 6: published DisplayHeading applies the chosen `font` (headerFontStyle → an inline family off
+      // the validated CSS-variable stacks) at a large display clamp. Honour the font + size (DISPLAY_CLS carries
+      // the clamp; the inline style overrides the base font-display face for serif / grotesk).
+      return (
+        <div style={headerFontStyle(typeof props.font === 'string' ? props.font : undefined)}>
+          {textSlot('text', DISPLAY_CLS)}
+        </div>
+      )
     default:
-      // cardGrid (a heading + subheading over the `cards` repeater) reads fine in the generic stack.
+      // cardGrid has its own dedicated canvas branch (parity fix 4); nothing else needs a bespoke layout here.
       return null
   }
 }
