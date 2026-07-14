@@ -50,12 +50,19 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
   })
   const authored = resolveSpaceAuthoredContent(context.preferences, context.brandName)
 
+  // DRAFT / PUBLISH SPLIT: the owner's live-page EDITOR seeds from the DRAFT node when one exists, else the
+  // PUBLISHED node (`profileLayoutDraft ?? profileLayout`) — so the owner resumes an in-progress draft while
+  // editing, and autosave writes only the draft. The PUBLIC visitor render (the non-owner branch of
+  // (profile)/page.tsx) still reads `profileLayout`, so what the network sees does not change until publish.
   const prefs = space.preferences
-  const rawLayout =
-    prefs && typeof prefs === 'object' && !Array.isArray(prefs)
-      ? (prefs as Record<string, unknown>).profileLayout
-      : null
+  const prefsObj =
+    prefs && typeof prefs === 'object' && !Array.isArray(prefs) ? (prefs as Record<string, unknown>) : null
+  const rawLayout = prefsObj ? (prefsObj.profileLayoutDraft ?? prefsObj.profileLayout) : null
   const saved = parseEntityLayout(rawLayout)
+
+  // The draft/published VISIBILITY flag (preferences.profilePublished) seeds the publish bar's "Visible on
+  // network" toggle. Defaults TRUE when absent, so a Space that predates the flag is never shown as hidden.
+  const profilePublished = !prefsObj || prefsObj.profilePublished !== false
 
   const nodes = renderSpaceBlockNodes(context, data, authored, saved)
   const rows = resolveRows(saved, 'space')
@@ -97,6 +104,7 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
         initialContent={seedContent}
         initialStyle={saved?.style ?? {}}
         spaceSlug={context.slug}
+        profilePublished={profilePublished}
         uploadImage={uploadImage}
       />
     </div>

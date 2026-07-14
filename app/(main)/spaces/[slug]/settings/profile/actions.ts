@@ -70,6 +70,10 @@ async function updateSpacePreferences(spaceId: string, preferences: Record<strin
 export async function saveSpaceProfileLayout(
   spaceId: string,
   layout: EntityLayout,
+  // WHICH node to write (ADR draft/publish split). Defaults to the PUBLISHED node `profileLayout`
+  // (unchanged for the flat S3 editor + any direct caller); the in-rail / live-page autosave passes
+  // `profileLayoutDraft`, so editing never touches what the public page renders until an explicit publish.
+  target: 'profileLayout' | 'profileLayoutDraft' = 'profileLayout',
 ): Promise<ActionResult> {
   const caller = await getCallerProfile()
 
@@ -101,8 +105,8 @@ export async function saveSpaceProfileLayout(
     space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
       ? { ...(space.preferences as Record<string, unknown>) }
       : {}
-  if (node) current.profileLayout = node
-  else delete current.profileLayout
+  if (node) current[target] = node
+  else delete current[target]
 
   if (!(await updateSpacePreferences(space.id, current))) {
     return fail('Could not save your layout. Try again.')
@@ -122,6 +126,11 @@ export async function saveSpaceProfileLayout(
  * mounts on the Space profile ROOT (which knows the slug, not the DB id), so this thin wrapper resolves the
  * Space by slug and delegates to saveSpaceProfileLayout, which OWNER-gates (resolveSpaceManageAccess) and
  * SANITIZES the rows server-side. Returns the `{ error? }` shape the store's debounced flush expects.
+ *
+ * DRAFT / PUBLISH SPLIT: autosave writes ONLY to the DRAFT node (`profileLayoutDraft`), NEVER the published
+ * `profileLayout`. So while the owner edits (the live-page editor + the rail builder both flush through here)
+ * the public space page keeps rendering the previously PUBLISHED layout. Going live is an explicit act
+ * (publishSpaceProfileLayout below), which promotes the draft onto the published node.
  */
 export async function saveSpaceGridLayout(
   slug: string,
@@ -130,8 +139,54 @@ export async function saveSpaceGridLayout(
   const caller = await getCallerProfile()
   const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
   if (!space) return { error: 'Space not found.' }
-  const res = await saveSpaceProfileLayout(space.id, layout as EntityLayout)
+  const res = await saveSpaceProfileLayout(space.id, layout as EntityLayout, 'profileLayoutDraft')
   return isError(res) ? { error: res.error } : {}
+}
+
+/**
+ * PUBLISH the Space page: promote the DRAFT layout onto the PUBLISHED node ("go live now"). Owner/admin/
+ * editor-gated server-side via resolveSpaceManageAccess (FAIL-CLOSED, re-checked here — a staff previewer
+ * cannot publish) and NON-DESTRUCTIVE to unrelated preferences keys (ADR-246 merge):
+ *   1. Re-resolve the Space by slug + re-gate the caller (never trust the client).
+ *   2. Copy `preferences.profileLayoutDraft` → `preferences.profileLayout`, then CLEAR the draft (it is now
+ *      live, so the editor resumes from the freshly published state; `draft ?? published` falls back to it).
+ *   3. Set `preferences.profilePublished = true` (going live implies visible on the network).
+ * NEVER LOSES the published content: with no draft present the published node is left exactly as-is and only
+ * the visible flag is set. Revalidates the profile root + staff preview so the new live page shows at once.
+ * Returns the plain `{ error? }` shape the publish bar expects.
+ */
+export async function publishSpaceProfileLayout(slug: string): Promise<{ error?: string }> {
+  const caller = await getCallerProfile()
+  const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
+  if (!space) return { error: 'Space not found.' }
+
+  // FAIL-CLOSED: only a manager (owner / admin / editor) may publish. A staff previewer cannot.
+  const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
+  if (!canManage) return { error: 'You do not have permission to edit this space.' }
+
+  // Merge into the existing preferences blob, preserving every other key (non-destructive, ADR-246).
+  const current =
+    space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
+      ? { ...(space.preferences as Record<string, unknown>) }
+      : {}
+
+  // Promote the draft onto the published node, then drop the draft. When no draft exists, KEEP the current
+  // published layout untouched (never lose it) and just mark the page live.
+  if (Object.prototype.hasOwnProperty.call(current, 'profileLayoutDraft')) {
+    const draft = current.profileLayoutDraft
+    if (draft == null) delete current.profileLayout
+    else current.profileLayout = draft
+    delete current.profileLayoutDraft
+  }
+  current.profilePublished = true
+
+  if (!(await updateSpacePreferences(space.id, current))) {
+    return { error: 'Could not publish your page. Try again.' }
+  }
+
+  revalidatePath(`/spaces/${space.slug}`)
+  revalidatePath(`/spaces/${space.slug}/profile-preview`)
+  return {}
 }
 
 /**

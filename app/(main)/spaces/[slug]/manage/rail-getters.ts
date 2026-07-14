@@ -421,11 +421,14 @@ function buildHero(space: ResolvedSpaceRow): HeroEditorValues {
 async function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): Promise<SpaceLayoutRailData | null> {
   if (!canManage) return null
 
+  // DRAFT / PUBLISH SPLIT: the EDITOR seeds from the DRAFT node when one exists, else the PUBLISHED node
+  // (`profileLayoutDraft ?? profileLayout`) — so an in-progress draft is resumed, while a Space that has
+  // never drafted falls back to what is live. Autosave writes only the draft; publish promotes it. The
+  // PUBLIC visitor render (spaces/[slug]/(profile)/page.tsx) keeps reading `profileLayout` unchanged.
   const prefs = space.preferences
-  const rawLayout =
-    prefs && typeof prefs === 'object' && !Array.isArray(prefs)
-      ? (prefs as Record<string, unknown>).profileLayout
-      : null
+  const prefsObj =
+    prefs && typeof prefs === 'object' && !Array.isArray(prefs) ? (prefs as Record<string, unknown>) : null
+  const rawLayout = prefsObj ? (prefsObj.profileLayoutDraft ?? prefsObj.profileLayout) : null
   const saved = parseEntityLayout(rawLayout)
 
   // item 6 (existing-function gate) + item 5 (picker data) resolve independently — one parallel pass on the

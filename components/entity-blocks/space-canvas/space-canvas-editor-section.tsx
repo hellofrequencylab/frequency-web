@@ -25,11 +25,14 @@ export async function SpaceCanvasEditorSection({ slug }: { slug: string }) {
   // render gate is UX. A non-manager, non-staff viewer gets nothing.
   if (!canManage && !staffViewing) return null
 
+  // DRAFT / PUBLISH SPLIT: this on-canvas editor seeds from the DRAFT node when one exists, else the
+  // PUBLISHED node (`profileLayoutDraft ?? profileLayout`), so it resumes an in-progress draft and its
+  // autosave (saveSpaceGridLayout → the draft node) stays in lockstep with the live-page editor. The public
+  // visitor render keeps reading `profileLayout` unchanged.
   const prefs = space.preferences
-  const rawLayout =
-    prefs && typeof prefs === 'object' && !Array.isArray(prefs)
-      ? (prefs as Record<string, unknown>).profileLayout
-      : null
+  const prefsObj =
+    prefs && typeof prefs === 'object' && !Array.isArray(prefs) ? (prefs as Record<string, unknown>) : null
+  const rawLayout = prefsObj ? (prefsObj.profileLayoutDraft ?? prefsObj.profileLayout) : null
   const saved = parseEntityLayout(rawLayout)
 
   const rows = resolveRows(saved, 'space')

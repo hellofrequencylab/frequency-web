@@ -11,6 +11,7 @@ import { useProfileLayout } from './profile-layout-context'
 import { useSpaceEditMode } from './space-edit-mode'
 import { SpaceCanvasBlock } from './space-canvas/space-canvas-block'
 import { SpaceEditNotice } from './space-edit-notice'
+import { SpacePublishFab } from './space-publish-fab'
 import type { UploadImage } from './block-edit-panel'
 
 // THE LIVE PROFILE GRID (ADR-516 Phase C). The live-preview surface the in-rail builder edits. Every
@@ -37,6 +38,7 @@ export function LiveProfileGrid({
   initialContent = {},
   initialStyle = {},
   spaceSlug,
+  profilePublished = true,
   uploadImage,
 }: {
   /** Every candidate block, pre-rendered server-side (UNSTYLED) and keyed by block id. */
@@ -52,6 +54,9 @@ export function LiveProfileGrid({
   /** The Space slug — present ONLY on the Space owner preview. Its presence (with a seeded space store, in
    *  edit mode) is what turns on the on-page inline editors; absent on the member grid / visitor render. */
   spaceSlug?: string
+  /** The persisted preferences.profilePublished (SPACE owner preview only) — seeds the publish bar's
+   *  "Visible on network" toggle. Defaults true; ignored on the member grid / visitor render. */
+  profilePublished?: boolean
   /** Gated image upload for the on-page photo popup (SPACE owner preview only; ADR-542). Threaded down to
    *  SpaceCanvasBlock so the popup can UPLOAD a file, not just PASTE a URL — the SAME owner-gated,
    *  service-role action the /manage/layout rail editor uses. Optional + fail-safe: when it is absent (a
@@ -183,6 +188,13 @@ export function LiveProfileGrid({
           and the right-hand panel each do, so a first-time owner is never lost. */}
       {editable && <SpaceEditNotice />}
       <EntityGrid rows={displayRows} renderBlock={renderBlock} />
+      {/* THE PUBLISH BAR renders HERE (the page body), not in the admin rail: the rail slides in on a
+          `transform`, which would trap this `position: fixed` bar inside the rail's box and clip it out of
+          view. Shown only for the Space owner in live-page edit mode (`editable`); it reads the shared store
+          for autosave state + undo and calls the owner-gated publish / visibility actions by slug. */}
+      {editable && spaceSlug && (
+        <SpacePublishFab slug={spaceSlug} initialPublished={profilePublished} />
+      )}
     </>
   )
 }

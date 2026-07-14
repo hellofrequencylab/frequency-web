@@ -82,7 +82,7 @@ describe('saveSpaceProfileLayout - rows sanitize', () => {
 })
 
 describe('saveSpaceGridLayout - slug-keyed store flush', () => {
-  it('resolves the space by slug and persists the sanitized rows', async () => {
+  it('resolves the space by slug and persists the sanitized rows to the DRAFT node', async () => {
     const res = await saveSpaceGridLayout('calm', {
       rows: [{ id: 'r0', columns: 1, cells: [['about']] }],
       hidden: [],
@@ -90,8 +90,13 @@ describe('saveSpaceGridLayout - slug-keyed store flush', () => {
     expect(res).toEqual({})
     expect(getVisibleSpaceBySlug).toHaveBeenCalledWith('calm', 'caller-1')
     expect(update).toHaveBeenCalledTimes(1)
-    const patch = update.mock.calls[0][0] as { preferences: { profileLayout: { rows: unknown[] } } }
-    expect(patch.preferences.profileLayout.rows).toEqual([{ id: 'r0', columns: 1, cells: [['about']] }])
+    // Autosave writes ONLY to the draft node, never the published `profileLayout` — the public page keeps
+    // rendering the previously published layout until an explicit publish.
+    const patch = update.mock.calls[0][0] as {
+      preferences: { profileLayoutDraft: { rows: unknown[] }; profileLayout?: unknown }
+    }
+    expect(patch.preferences.profileLayoutDraft.rows).toEqual([{ id: 'r0', columns: 1, cells: [['about']] }])
+    expect(patch.preferences.profileLayout).toBeUndefined()
   })
 
   it('returns an error when the slug does not resolve', async () => {
