@@ -156,6 +156,10 @@ export function EntityPageBuilder({
   // refs below) so the rows editor can light up its drop targets while a drag is live — a column shows as a
   // clear "drop here" zone for a block, a row band for a row. Cleared on drop / drag end.
   const [dragKind, setDragKind] = useState<null | 'row' | 'block'>(null)
+  // The id of the row being dragged, in STATE (not the ref) so the render can style the OTHER rows as drop
+  // targets without reading a ref during render (react-hooks/refs). The `dragRow` ref stays for the drag
+  // event handlers, which may read it outside render.
+  const [dragRowId, setDragRowId] = useState<string | null>(null)
 
   const dragBlock = useRef<string | null>(null)
   const dragRow = useRef<string | null>(null)
@@ -532,6 +536,7 @@ export function EntityPageBuilder({
     e.preventDefault()
     const rowId = dragRow.current
     dragRow.current = null
+    setDragRowId(null)
     setDragKind(null)
     if (rowId) {
       const from = layout.rows.findIndex((r) => r.id === rowId)
@@ -800,7 +805,7 @@ export function EntityPageBuilder({
                 grabbed
                   ? 'border-primary ring-1 ring-primary'
                   : // While a DIFFERENT row is dragged, every other row reads as a reorder drop target (item 7).
-                    dragKind === 'row' && dragRow.current !== row.id
+                    dragKind === 'row' && dragRowId !== row.id
                     ? 'border-dashed border-primary/40'
                     : 'border-border'
               }`}
@@ -813,10 +818,12 @@ export function EntityPageBuilder({
                   draggable
                   onDragStart={() => {
                     dragRow.current = row.id
+                    setDragRowId(row.id)
                     setDragKind('row')
                   }}
                   onDragEnd={() => {
                     dragRow.current = null
+                    setDragRowId(null)
                     setDragKind(null)
                   }}
                   onKeyDown={(e) => rowHandleKey(e, row.id, index)}
