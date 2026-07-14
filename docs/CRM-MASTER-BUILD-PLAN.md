@@ -85,6 +85,10 @@ person → many sealed overlays. Resolution unifies the *graph*; it never widens
 
 Grouped into eleven subsystems. Status is the honest current state from the code scan.
 
+> ✅ **Shipped update (2026-07-14):** the 🔴/⏳ items below that belong to Phases 1–7 are now built
+> (see the phase table + ADR-610…616). The per-element glyphs record the pre-build scan; the phase
+> table in §3 is the authoritative shipped status. Only Phase 8 (SMS/A2P) remains.
+
 ### A. Identity & scope
 ✅ Three identity tables stitched by email · ✅ `resolvePerson` read model · ✅ `space_id` scoping ·
 ✅ graduation (personal → Space). ⏳ Viewer-relative assembly is implicit, not a named primitive.
@@ -172,22 +176,27 @@ write), and rides the one send-gate. Migration head is `20261157000000`; new mig
 `20261158000000`. Effort is rough engineer-weeks. Every member-facing string and AI-generated word
 passes [NAMING.md](NAMING.md) + [CONTENT-VOICE.md](CONTENT-VOICE.md).
 
-| Phase | Goal | Owner ask | Nature | Effort | Depends on |
+| Phase | Goal | Owner ask | Nature | Status | Depends on |
 |---|---|---|---|---|---|
-| **0** | Harden the spine (membrane made explicit) | the modular model | Hardening + guards | 1–1.5 wk | — |
-| **1** | Complete the contact card (timeline + toggle + stats) | 1, 2, 3, 7 | Wiring + 1 migration | 2–3 wk | 0 |
-| **2** | CSV import & data onboarding | import | New | 3–4 wk | 0 |
-| **3** | QR lead-grabs & attribution | lead grabs | Wiring + new | 2–3 wk | 0, (1) |
-| **4** | Email engine completion (product blocks + transactional) | 5, 6, 9 | New block + wiring | 2–3 wk | — |
-| **5** | Unified segments + messaging control panel | 8, 10 | Wiring + new UI | 2–3 wk | 1 |
-| **6** | Subscription preference center | 11 | New UI + migration | 2 wk | 0 |
-| **7** | Vera intelligence (owner brief + send graduation) | 4 | Wiring + cron | 2 wk | 1, 5 |
-| **8** | SMS activation | text tracking | External + wiring | 1 wk + clock | 1, A2P |
+| **0** | Harden the spine (membrane made explicit) | the modular model | Hardening + guards | ✅ shipped | — |
+| **1** | Complete the contact card (timeline + toggle + stats) | 1, 2, 3, 7 | Wiring + 1 migration | ✅ shipped (ADR-610) | 0 |
+| **2** | CSV import & data onboarding | import | New | ✅ shipped (ADR-611) | 0 |
+| **3** | QR lead-grabs & attribution | lead grabs | Wiring + new | ✅ shipped (ADR-612) | 0, (1) |
+| **4** | Email engine completion (product blocks + transactional) | 5, 6, 9 | New block + wiring | ✅ shipped (ADR-613; transactional seam deferred) | — |
+| **5** | Unified segments + messaging control panel | 8, 10 | Wiring + new UI | ✅ shipped (ADR-614) | 1 |
+| **6** | Subscription preference center | 11 | New UI + migration | ✅ shipped (ADR-615) | 0 |
+| **7** | Vera intelligence (owner brief + send graduation) | 4 | Wiring + cron | ✅ shipped (ADR-616) | 1, 5 |
+| **8** | SMS activation | text tracking | External + wiring | 🔴 deferred (A2P clock) | 1, A2P |
+
+Phases 1–7 shipped on branch `claude/crm-interaction-tracking-scan-y9xsx8` (2026-07-14); Phase 8
+(SMS/A2P 10DLC) is the remaining deferred item, gated on the external registration clock.
 
 Phase 0 → 1 are sequential (the spine, then the card over it). Phases 2, 3, 4, 6 can run in
 parallel after 0. Phases 5 and 7 follow 1. Phase 8 is gated on the external A2P clock (start it now).
 
-### Phase 0 — Harden the spine
+### Phase 0 — Harden the spine ✅ shipped
+> ✅ Shipped: membrane laws documented as invariants; scoped-table RLS guards in place.
+
 **Deliverables:** a CI guard asserting every scoped table has `FORCE ROW LEVEL SECURITY` + a
 `space_id`/owner policy; audit policies for `TO authenticated` + `WITH CHECK` + `(select …)`
 initplans; name **viewer-relative card assembly** as a single read helper (global person + the
@@ -195,7 +204,10 @@ viewer's scope overlay); confirm the consent model is keyed per `(person × scop
 channel)`; document the three membrane laws as enforced invariants. **Nature:** mostly hardening
 what already exists. **ADR:** membrane invariants + RLS guard.
 
-### Phase 1 — Complete the contact card
+### Phase 1 — Complete the contact card ✅ shipped
+> ✅ Shipped (ADR-610, migration `20261158000000`): `in_app` channel + DM adapter, manual "log a
+> touch", the system/human toggle, and the per-contact `contact_engagement_stats` rollup.
+
 **Deliverables:** widen `contact_interactions.channel` to add `in_app` (migration `20261158…`);
 **Adapter A** in-app messages/DMs → timeline (fire-safe, idempotent on message id); **Adapter B**
 inbound email; **Adapter C** manual "log a call/meeting/note" writing `contact_interactions`
@@ -206,7 +218,11 @@ projection. **Delivers:** full interaction tracking + activity/engagement stats 
 **Reuses:** `recordContactInteraction`, `buildTimeline`, `email_events`, the trait cron. **ADR:**
 timeline channel widening + engagement rollup.
 
-### Phase 2 — CSV import & data onboarding
+### Phase 2 — CSV import & data onboarding ✅ shipped
+> ✅ Shipped (ADR-611, migration `20261159000000`): the staged parse → map → validate → preview →
+> commit pipeline, smart auto-map + AI-assist, custom-field registry, dedupe, and the scoped target.
+> Surfaces: `/admin/marketing/import` (Space) + `/connections/import` (member).
+
 **Deliverables:** a `contact_import` staging record (jsonb, mirrors `business_intake`); the
 **pipeline** `parse → map → validate → preview → commit`; **smart auto-map** (`lib/crm/import/map.ts`:
 header-normalize → synonym dict → fuzzy → value/type inference → confidence gate); **AI-assist**
@@ -220,7 +236,11 @@ target** (member → `network_contacts`; Space → `contacts(space_id)` sealed b
 ANY CSV, map or auto-create fields, preview the formatted list before commit. **ADR:** import
 pipeline + custom-field registry.
 
-### Phase 3 — QR lead-grabs & attribution
+### Phase 3 — QR lead-grabs & attribution ✅ shipped
+> ✅ Shipped (ADR-612, migration `20261160000000`): the capture-now-claim-on-join engine, the
+> immutable entry point (`lead_entry_points`, DB-enforced), the Space QR lead-grab (full) with the
+> other four doors as engine hooks, and the Space CRM leads surface.
+
 **Deliverables:** the **capture-now-claim-on-join** engine — a scan/capture writes a sealed Space
 lead + an **immutable entry-point** (`attribution` first-touch + a `contact_interaction` with
 `metadata.entry_point` + `contacts.meta.acquisition`; set once, never overwritten) + an append-only
@@ -234,7 +254,12 @@ capture ≠ marketing consent; only offer/magnet/accepted-intro grabs make a lea
 `/q/<slug>`, `captureQrContact`, `lib/attribution/*`, deferred-auth signup. **ADR:** lead-grab engine
 + entry-point immutability.
 
-### Phase 4 — Email engine completion
+### Phase 4 — Email engine completion ✅ shipped (transactional seam deferred)
+> ✅ Shipped (ADR-613, no migration): the data-bound `productCard` email block, the search-by-owner
+> product picker, and product merge variables. ⏳ The transactional-template seam is deferred on
+> purpose for a client-boundary reason (`lib/email.ts` must not reach the `server-only` product-block);
+> the marketing/transactional subdomain split (GE6-5) stays separately deferred.
+
 **Deliverables:** a data-bound **`productCard` email block** (add to `EMAIL_PALETTE_BLOCK_IDS`;
 renderer in `lib/email-studio/render.ts`; resolves image/title/price/CTA at send time so it never
 goes stale); a **search-by-owner product picker** in the editor over the existing-but-unused commerce
@@ -247,7 +272,12 @@ every in-house email editable. **Builds on:** [EMAIL-EDITOR-PLAN.md](EMAIL-EDITO
 work (the product card is its data-bound sibling). **ADR:** product email block + transactional
 templating.
 
-### Phase 5 — Unified segments + messaging control panel
+### Phase 5 — Unified segments + messaging control panel ✅ shipped
+> ✅ Shipped (ADR-614, migration `20261162000000`): unified segments (place-tree `circle:`/`hub:`/
+> `nexus:` ∪ trait/contact), activated advanced facets, the control panel at
+> `/admin/marketing/messaging/control-panel`, and the broadcast recipient log (`dispatch_recipients`).
+> Bug fix: Dispatch email fan-out now routes through `resolveSendGate` (suppression + consent).
+
 **Deliverables:** extend the audience resolver (`lib/spaces/audiences.ts`, `resolveSegment`) to accept
 **place-tree selectors** (`circle:/hub:/nexus:` → memberships → profiles → contacts) unioned with the
 trait-segment grammar — **one audience type, both worlds**; activate the **stubbed advanced facets**
@@ -259,7 +289,11 @@ today) so Dispatches appear too; fold in the guided funnel console
 hub/nexus/segment + a control panel of who-gets-what. Every recipient still routes through
 `resolveSendGate`. **ADR:** unified audience + dispatch recipient log.
 
-### Phase 6 — Subscription preference center
+### Phase 6 — Subscription preference center ✅ shipped
+> ✅ Shipped (ADR-615, migration `20261161000000`): topics (comments + marketing) + frequency,
+> per-circle/per-Space mutes, the consent-scope UI, contact-keyed preferences, and the
+> preference-center landing on the per-Space unsubscribe token. Transactional stays carved out.
+
 **Deliverables:** expand the model from the fixed 4×3 grid to **topic + frequency** (add `comments`,
 `marketing`; real-time / daily-digest / weekly-digest selector); **per-circle / per-Space topic
 toggles** modeled as `(subject, topic, channel, state)`; surface the existing **consent scopes**
@@ -269,7 +303,11 @@ a topic instead of hard-unsubscribing; keep **transactional carved out** in code
 members and contacts choose exactly what they receive. **ADR:** granular preference model + contact
 preferences.
 
-### Phase 7 — Vera intelligence layer
+### Phase 7 — Vera intelligence layer ✅ shipped
+> ✅ Shipped (ADR-616, no migration): the daily owner-brief cron (`vera-owner-brief`, read + compose
+> only, gated + frequency-capped) and human-approved (non-autonomous) send graduation. The
+> defaults-off invariant holds: every send-capable path ships OFF and needs a human one-tap.
+
 **Deliverables:** a **daily owner-brief cron** (`vera-owner-brief`, after `refresh-traits`) that runs
 `buildTodayCards()` per operator/Space and sends the 5 moves via the gate + outbox (frequency-capped,
 `withVoice`-drafted, never auto-acts) — turning Today from pull-only into the push the owner asked
@@ -278,7 +316,11 @@ through the send-gate; next-best-action on the contact card; per-scope engagemen
 the smart CRM that scans daily and keeps the owner updated. **Gate:** the ADR-028 spine/consent/
 suppression test harness before any autonomy graduation. **ADR:** owner brief + send graduation.
 
-### Phase 8 — SMS activation
+### Phase 8 — SMS activation 🔴 deferred (remaining item)
+> 🔴 Deferred: the only remaining phase. Gated on the external Twilio A2P 10DLC registration clock
+> (10–15 days) and a live Terms-of-Service page. The SMS send path is built + gated; nothing ships
+> until A2P clears.
+
 **Deliverables:** complete **Twilio A2P 10DLC** registration (external clock — **start now**; a live
 Terms-of-Service page is a prerequisite and does not exist yet); set provisioning env; light the SMS
 send path (already built + gated); confirm SMS touches write to the timeline (Adapter already exists

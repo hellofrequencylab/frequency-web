@@ -12,6 +12,18 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Import your contacts from a spreadsheet**: bring a CSV of people into **My Contacts** in
+  four steps. Open **Import** from My Contacts, upload the file, and Frequency matches your
+  columns to the right fields, suggests a match with Vera when it isn't sure, and shows a
+  preview of what will be created, merged, or skipped before anything saves. Anyone you
+  already have is skipped, so it's safe to run again. Your imported contacts stay private to
+  you. Business owners can bring a list into their Space CRM the same way.
+- **Choose exactly what Frequency sends you**: **Settings → Notifications** now lets you pick
+  each topic on its own (broadcasts, events, mentions, replies and comments on your posts, and
+  the occasional note about Frequency), pick how often (real-time, a daily digest, or a weekly
+  digest), and mute a single circle or Space without leaving it. Account and security emails
+  always send. Not a member but getting email from a business here? Every email now links to a
+  small preferences page where you can turn down one topic instead of unsubscribing from all.
 - **Gift Gems to another member**: send some of your spendable Gems to anyone in the
   community. Open **Gift Gems** in the Vault Store, search for a member, choose an
   amount, and it lands in their wallet right away. They get a notification that you

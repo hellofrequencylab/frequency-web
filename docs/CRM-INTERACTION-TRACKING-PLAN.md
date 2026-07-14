@@ -11,6 +11,11 @@
 
 ## The answer up front
 
+> ✅ **Shipped (2026-07-14, branch `claude/crm-interaction-tracking-scan-y9xsx8`).** All five gaps
+> below are now closed. Moves 1–6 shipped as CRM Master Build Plan Phases 1–7 (ADR-610…616). The
+> ask-by-ask table and the moves keep their original scan text for the record; each move carries a
+> ✅ shipped note. Only SMS/A2P (Phase 8) remains deferred.
+
 **You have already built roughly 70% of the system you described.** The spine that most
 platforms never get right is done: one append-only timeline (`contact_interactions`), a
 unified person resolver, a real WYSIWYG block email editor, a durable send queue with a
@@ -89,7 +94,9 @@ the read-time fold as the migration bridge. This is the keystone of everything b
 Highest-leverage, lowest-risk first. Each move is independently shippable and reuses the spine.
 Migration head is `20261157000000`; new migrations start `20261158000000`.
 
-### Move 1 — Complete the timeline + the system/human toggle (asks 1, 3)
+### Move 1 — Complete the timeline + the system/human toggle (asks 1, 3) ✅ shipped
+> ✅ Shipped as Phase 1 (ADR-610, migration `20261158000000`): `in_app` channel + DM adapter, the
+> manual "log a touch", and the system/human toggle (read-time filter, never deletes).
 
 **Why first.** It is the contact card. Until in-house messages and the toggle land, the card
 under-delivers the core promise.
@@ -116,7 +123,9 @@ under-delivers the core promise.
 first-class source dimension is exactly how Customer.io separates "things people did" from
 message-lifecycle metadata.
 
-### Move 2 — Per-contact + per-segment engagement stats (asks 2, 7)
+### Move 2 — Per-contact + per-segment engagement stats (asks 2, 7) ✅ shipped
+> ✅ Shipped as part of Phase 1 (ADR-610): the `contact_engagement_stats` rollup and the wired
+> `engagement_score` projection.
 
 **Build:**
 - A `contact_engagement_stats` rollup (table or matview) keyed `(owner_profile_id, subject_kind,
@@ -131,7 +140,10 @@ message-lifecycle metadata.
 **Best practice honored:** separate the immutable event log from denormalized read models;
 engagement scoring that feeds at-risk segments is the 2026 CRM standard.
 
-### Move 3 — Products/offerings in email + search-by-owner (ask 6)
+### Move 3 — Products/offerings in email + search-by-owner (ask 6) ✅ shipped
+> ✅ Shipped as Phase 4 (ADR-613, no migration): the data-bound `productCard` block, the
+> search-by-owner picker, and product merge variables. The transactional-template seam is deferred
+> for a client-boundary reason (see ADR-613).
 
 **This is the most contained net-new feature and a clear owner priority.**
 
@@ -151,7 +163,10 @@ engagement scoring that feeds at-risk segments is the 2026 CRM standard.
 **Note:** the block builds on the [EMAIL-EDITOR-PLAN.md](EMAIL-EDITOR-PLAN.md) Card-grid work
 (images + stat boxes) — the product card is a data-bound sibling of that block, not a parallel path.
 
-### Move 4 — One segment audience across the place-tree + contacts (ask 8)
+### Move 4 — One segment audience across the place-tree + contacts (ask 8) ✅ shipped
+> ✅ Shipped as Phase 5 (ADR-614, migration `20261162000000`): `resolveSegment` now unions place-tree
+> selectors with the trait grammar, and the advanced facets are activated. Every recipient still
+> routes through the one `resolveSendGate`.
 
 **The unlock for "message any segmented category."** Today place-tree (circle/hub/nexus) and
 contact-segments are separate targeting worlds; you cannot email a circle.
@@ -170,7 +185,10 @@ contact-segments are separate targeting worlds; you cannot email a circle.
 **Best practice honored:** dynamic, rule-based segments that combine behavioral + lifecycle +
 membership dimensions, over static lists.
 
-### Move 5 — The owner daily brief + the "who-got-what" control panel (asks 4, 10)
+### Move 5 — The owner daily brief + the "who-got-what" control panel (asks 4, 10) ✅ shipped
+> ✅ Shipped: the `vera-owner-brief` cron as Phase 7 (ADR-616) and the control panel + broadcast
+> recipient log as Phase 5 (ADR-614, `/admin/marketing/messaging/control-panel`). The brief is
+> read + compose only; the Dispatch fan-out bug fix routes through `resolveSendGate`.
 
 **Build:**
 - **Daily owner brief:** a new cron (`vera-owner-brief`, daily after `refresh-traits`) that runs
@@ -187,7 +205,10 @@ membership dimensions, over static lists.
 **Best practice honored:** scheduled owner digests require a real scheduled trigger (an LLM chat
 cannot self-schedule) — the cron is the correct mechanism; draft-and-approve, never auto-send.
 
-### Move 6 (parallel track) — The subscription preference center (ask 11)
+### Move 6 (parallel track) — The subscription preference center (ask 11) ✅ shipped
+> ✅ Shipped as Phase 6 (ADR-615, migration `20261161000000`): topics (comments + marketing) +
+> frequency, per-circle/per-Space mutes, the consent-scope UI, contact-keyed preferences, and the
+> preference-center landing. Transactional stays carved out and always-on.
 
 Can run alongside Moves 1–5; touches the consent layer, not the timeline.
 
