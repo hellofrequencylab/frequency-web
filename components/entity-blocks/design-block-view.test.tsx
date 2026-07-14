@@ -55,10 +55,30 @@ describe('DesignBlockView — an empty slot renders nothing on the live page (no
 
   it('decodes an escaped-entity title to real characters (no literal &#39;)', () => {
     const html = renderToStaticMarkup(<DesignBlockView id="cardGrid" props={{ title: 'What&#39;s here' }} />)
-    // Decoded to a real apostrophe, which React re-escapes to `&#x27;` (a browser renders that AS `'`). The bug
-    // shape was the LITERAL entity surviving to the page: raw `&#39;`, i.e. `&amp;#39;` in the served HTML.
-    expect(html).toContain('What&#x27;s here')
+    // The cardGrid heading now paints through the inline-rich allowlist, which decodes the legacy entity to a
+    // real apostrophe and re-escapes it once as `&#39;` (a browser renders that AS `'`). The bug shape was the
+    // LITERAL entity surviving to the page: `&amp;#39;` in the served HTML.
+    expect(html).toContain("What&#39;s here")
     expect(html).not.toContain('&amp;#39;')
+  })
+
+  it('renders a <br> in a cardGrid heading as a real line break (matches the editor canvas)', () => {
+    const html = renderToStaticMarkup(<DesignBlockView id="cardGrid" props={{ title: 'Line one<br>Line two' }} />)
+    expect(html).toContain('Line one<br>Line two')
+    // The literal escaped tag must NOT reach the page (the regression).
+    expect(html).not.toContain('&lt;br&gt;')
+  })
+
+  it('renders a <br> in a Banner (photoHero) headline as a real line break', () => {
+    const html = renderToStaticMarkup(<DesignBlockView id="photoHero" props={{ title: 'Top<br>Bottom' }} />)
+    expect(html).toContain('Top<br>Bottom')
+    expect(html).not.toContain('&lt;br&gt;')
+  })
+
+  it('renders a <br> in a displayHeading as a real line break', () => {
+    const html = renderToStaticMarkup(<DesignBlockView id="displayHeading" props={{ text: 'Big<br>Heading' }} />)
+    expect(html).toContain('Big<br>Heading')
+    expect(html).not.toContain('&lt;br&gt;')
   })
 })
 

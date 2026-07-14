@@ -83,7 +83,7 @@ function DesignHeading({
   className?: string
 }) {
   if (!title) return null
-  // The heading renders as PLAIN text, so heal a legacy entity double-escape before it hits the page.
+  // Heal a legacy entity double-escape before it hits the page.
   const clean = decodeLegacyEntities(title)
   // Fluid scale mirrors the kit DisplayHeading so a design block sits in the same type rhythm.
   const scale =
@@ -92,11 +92,22 @@ function DesignHeading({
       : 'text-[clamp(1.875rem,5.5vw,3rem)]'
   // The color token defaults to warm text; a caller can swap it (on-ink over a photo) via `className`.
   const color = className ?? 'text-text'
-  return (
-    <Tag className={`font-display uppercase text-balance ${color} ${scale}`} style={headerFontStyle(headerFont)}>
-      {accentWord ? accentize(clean, accentWord) : clean}
-    </Tag>
-  )
+  const cls = `font-display uppercase text-balance ${color} ${scale}`
+  const style = headerFontStyle(headerFont)
+  // An accent word (the marketing / Puck path) highlights one word as a React node, which escapes <br>; the
+  // entity-block (Space) path never sets one, so the headline renders through the shared inline-rich allowlist
+  // and a title authored with a <br> line break (or a Bold / Italic / Link mark) shows EXACTLY as the editor
+  // canvas does, instead of a literal `<BR>`. Re-sanitised on read (a stored blob is never trusted).
+  if (accentWord && clean.includes(accentWord)) {
+    return (
+      <Tag className={cls} style={style}>
+        {accentize(clean, accentWord)}
+      </Tag>
+    )
+  }
+  const html = sanitizeInlineHtml(clean)
+  if (!html) return null
+  return <Tag className={cls} style={style} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
 // ── The header-font field group, shared by every design block. ──
@@ -725,16 +736,23 @@ export function DisplayHeadingBlock({
   font?: string
 }) {
   if (!text) return null
-  // Plain-text display title: heal a legacy entity double-escape before render.
+  // Heal a legacy entity double-escape before render.
   const clean = decodeLegacyEntities(text)
-  return (
-    <h2
-      className="font-display text-[clamp(2rem,6vw,3.75rem)] uppercase leading-[0.95] text-balance text-text"
-      style={headerFontStyle(font)}
-    >
-      {accentWord ? accentize(clean, accentWord) : clean}
-    </h2>
-  )
+  const cls = 'font-display text-[clamp(2rem,6vw,3.75rem)] uppercase leading-[0.95] text-balance text-text'
+  const style = headerFontStyle(font)
+  // Same split as DesignHeading: the accent-word path stays a React node (marketing); with no accent word (the
+  // Space entity-block path) the title renders through the inline-rich allowlist so a <br> / mark shows as the
+  // editor canvas does, not a literal `<BR>`.
+  if (accentWord && clean.includes(accentWord)) {
+    return (
+      <h2 className={cls} style={style}>
+        {accentize(clean, accentWord)}
+      </h2>
+    )
+  }
+  const html = sanitizeInlineHtml(clean)
+  if (!html) return null
+  return <h2 className={cls} style={style} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

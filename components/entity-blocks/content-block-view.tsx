@@ -35,24 +35,31 @@ function s(props: Record<string, unknown>, key: string): string {
   return typeof v === 'string' ? v : ''
 }
 
-/** Render an operator's inline-rich TEXT value (a `textarea` slot authored on the WYSIWYG canvas) as
- *  sanitized inline HTML: Bold / Italic / Link marks and <br> survive, EVERYTHING else is escaped as text.
- *  The value is re-sanitised HERE on read (defence in depth — a stored blob is user-originated and never
- *  trusted, mirroring the email renderer), so a plain-text value round-trips unchanged and no unsafe markup
- *  can reach the page. Returns null when nothing survives. */
-function InlineRichText({
+/** The safe inline-HTML string for an operator-authored value: heal a legacy double-escape FIRST (a value
+ *  stored as entities but no real markup renders its true characters once here instead of literal `&quot;`),
+ *  then sanitize to the allowlist (Bold / Italic / Link marks + <br> survive; a real newline becomes a <br>;
+ *  EVERYTHING else is escaped as inert text). A plain-text value round-trips unchanged. '' when nothing
+ *  survives. Exposed so a bespoke element that must keep its own attributes (an eyebrow's `data-text-role`)
+ *  paints the same rich HTML without re-declaring the pipeline. */
+export function inlineRichHtml(value: string): string {
+  return sanitizeInlineHtml(decodeLegacyEntities(value))
+}
+
+/** Render an operator's inline-rich TEXT value (a slot authored on the WYSIWYG canvas) through the safe
+ *  allowlist above, in the given tag — so a heading / title / body renders its <br> line breaks and inline
+ *  marks EXACTLY as the editor canvas shows them, instead of escaping `<br>` to a literal `<BR>`. The value is
+ *  re-sanitised HERE on read (defence in depth — a stored blob is user-originated and never trusted, mirroring
+ *  the email renderer), so no unsafe markup can reach the page. Returns null when nothing survives. */
+export function InlineRichText({
   as: Tag = 'p',
   value,
   className,
 }: {
-  as?: 'p' | 'blockquote'
+  as?: 'p' | 'blockquote' | 'h1' | 'h2' | 'h3' | 'h4' | 'span' | 'div' | 'figcaption'
   value: string
   className?: string
 }) {
-  // Heal a legacy double-escape (a value stored as entities but no real markup) BEFORE sanitizing, so an
-  // already-corrupted body renders its true characters once here instead of showing literal `&quot;` on the
-  // page. A value with real marks (or none) is untouched, so live formatting still round-trips.
-  const html = sanitizeInlineHtml(decodeLegacyEntities(value))
+  const html = inlineRichHtml(value)
   if (!html) return null
   return <Tag className={className} dangerouslySetInnerHTML={{ __html: html }} />
 }
@@ -107,7 +114,8 @@ function readFeatureItems(raw: unknown): FeatureItem[] {
     .map((it) => ({
       icon: typeof it.icon === 'string' ? it.icon : '',
       image: safeUrl(it.image),
-      // Item title + text render as PLAIN text below, so heal any legacy entity double-escape on read.
+      // Item title + text render through InlineRichText below (so their <br> + marks match the editor); the
+      // pre-decode heals any legacy entity double-escape and InlineRichText re-sanitises idempotently on read.
       title: typeof it.title === 'string' ? decodeLegacyEntities(it.title) : '',
       text: typeof it.text === 'string' ? decodeLegacyEntities(it.text) : '',
       price: typeof it.price === 'string' ? it.price : '',
@@ -166,8 +174,10 @@ function FeatureCta({ item }: { item: FeatureItem }): ReactNode {
 function FeatureBody({ item, titleClass }: { item: FeatureItem; titleClass: string }): ReactNode {
   return (
     <div className="flex flex-col gap-1">
-      {item.title && <h4 className={titleClass}>{item.title}</h4>}
-      {item.text && <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{item.text}</p>}
+      {item.title && <InlineRichText as="h4" value={item.title} className={titleClass} />}
+      {item.text && (
+        <InlineRichText value={item.text} className="whitespace-pre-wrap text-sm leading-relaxed text-muted" />
+      )}
       <FeaturePrice price={item.price} />
       <FeatureCta item={item} />
     </div>
@@ -184,15 +194,20 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
   const cols = gridColumns(props)
   if (!eyebrow && !title && !items.length) return null
 
+  // The eyebrow keeps its `data-text-role` marker (per-element text styling targets it), so it paints the
+  // shared rich HTML on its own <p> rather than through InlineRichText — otherwise identical (br + marks).
+  const eyebrowHtml = eyebrow ? inlineRichHtml(eyebrow) : ''
   const header =
     eyebrow || title ? (
       <div className="space-y-1">
-        {eyebrow && (
-          <p data-text-role="eyebrow" className="text-xs font-bold uppercase tracking-[0.12em] text-primary-strong">
-            {eyebrow}
-          </p>
+        {eyebrowHtml && (
+          <p
+            data-text-role="eyebrow"
+            className="text-xs font-bold uppercase tracking-[0.12em] text-primary-strong"
+            dangerouslySetInnerHTML={{ __html: eyebrowHtml }}
+          />
         )}
-        {title && <h3 className="text-2xl font-bold text-text">{title}</h3>}
+        {title && <InlineRichText as="h3" value={title} className="text-2xl font-bold text-text" />}
       </div>
     ) : null
 
@@ -243,8 +258,8 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
           const label = it.price ? it.title || it.text : it.text
           const stat = (
             <>
-              {big && <div className="text-4xl font-bold leading-none text-primary-strong">{big}</div>}
-              {label && <div className="mt-2 text-sm leading-relaxed text-muted">{label}</div>}
+              {big && <InlineRichText as="div" value={big} className="text-4xl font-bold leading-none text-primary-strong" />}
+              {label && <InlineRichText as="div" value={label} className="mt-2 text-sm leading-relaxed text-muted" />}
             </>
           )
           return it.link ? (
@@ -275,8 +290,10 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
                 </div>
               ) : null}
               <div className="flex flex-1 flex-col gap-1 p-5">
-                {it.title && <h4 className="text-base font-bold text-text">{it.title}</h4>}
-                {it.text && <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{it.text}</p>}
+                {it.title && <InlineRichText as="h4" value={it.title} className="text-base font-bold text-text" />}
+                {it.text && (
+                  <InlineRichText value={it.text} className="whitespace-pre-wrap text-sm leading-relaxed text-muted" />
+                )}
                 <FeaturePrice price={it.price} />
                 <FeatureCta item={it} />
               </div>
@@ -366,14 +383,14 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
             <img src={image} alt="" className={`w-full object-cover ${calloutAspect}`} />
           )}
           <div className="space-y-3 p-6">
-            {title && <h3 className="text-xl font-bold text-text">{title}</h3>}
+            {title && <InlineRichText as="h3" value={title} className="text-xl font-bold text-text" />}
             {body && <InlineRichText value={body} className="whitespace-pre-wrap text-base leading-relaxed text-muted" />}
             {hasButton && (
               <a
                 href={buttonUrl || '#'}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
-                {buttonLabel}
+                <InlineRichText as="span" value={buttonLabel} />
               </a>
             )}
           </div>
@@ -388,7 +405,9 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       return <FeaturesBlock props={props} />
     case 'heading': {
       const text = s(props, 'text')
-      return text ? <h2 className="text-2xl font-bold text-text">{text}</h2> : null
+      // Render through the inline-rich path so a heading authored with a <br> (or a Bold / Italic / Link mark)
+      // shows a real line break / mark on the page, EXACTLY as the editor canvas does — not a literal `<BR>`.
+      return text ? <InlineRichText as="h2" value={text} className="text-2xl font-bold text-text" /> : null
     }
     case 'button': {
       // A labeled call-to-action link (shared with Email Studio). A no-link button falls back to '#' until
@@ -403,7 +422,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
             href={url || '#'}
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
-            {label}
+            <InlineRichText as="span" value={label} />
           </a>
         </div>
       )
@@ -512,7 +531,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       return (
         <figure className="max-w-prose border-l-2 border-primary pl-4">
           <InlineRichText as="blockquote" value={text} className="text-lg font-medium italic text-text" />
-          {by && <figcaption className="mt-2 text-sm text-muted">{by}</figcaption>}
+          {by && <InlineRichText as="figcaption" value={by} className="mt-2 text-sm text-muted" />}
         </figure>
       )
     }
