@@ -10,7 +10,11 @@
 //   GET /api/qr?code=<id>&format=svg
 //   GET /api/qr?text=/n/<id>&format=png&size=1024&download=table-tent
 
-import { getMyProfileId } from '@/lib/auth'
+import { getCallerProfile } from '@/lib/auth'
+import { getStaffMember } from '@/lib/staff'
+import { staffCan } from '@/lib/core/staff-roles'
+import { atLeastRole } from '@/lib/core/roles'
+import { getCapabilityOverrides } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isSiteLink, toAbsoluteSiteUrl, shortLinkUrl, nodeUrl } from '@/lib/qr/links'
 import { renderQrPng, renderQrSvg } from '@/lib/qr/render'
@@ -21,8 +25,9 @@ import { parseStyle, withMemberAvatar, type QrStyle } from '@/lib/qr/style'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
-  const profileId = await getMyProfileId()
-  if (!profileId) return new Response('Sign in to generate a code.', { status: 401 })
+  const caller = await getCallerProfile()
+  if (!caller) return new Response('Sign in to generate a code.', { status: 401 })
+  const profileId = caller.id
 
   const url = new URL(request.url)
   const format = url.searchParams.get('format') === 'png' ? 'png' : 'svg'
@@ -56,7 +61,18 @@ export async function GET(request: Request) {
       style = withMemberAvatar(style, owner?.avatar_url ?? null)
     }
   } else if (nodeId) {
-    // A check-in code (nodes): encodes /n/<id>, styled like a dynamic link.
+    // A check-in code (nodes): encodes /n/<id>, styled like a dynamic link. The encoded url carries
+    // the node's `secret` (the anti-forgery gate in lib/engagement/verify.ts), so this branch hands
+    // out a credential — it must be gated to whoever may MANAGE nodes, exactly like /admin/qr's
+    // createNode/updateNode (requireAdmin('host', { staff: 'qr' })). Without this any signed-in user
+    // could read the secret out of the returned SVG and forge check-ins (IDOR). The `code`/`text`
+    // branches encode only public short links, so they stay open to any signed-in caller.
+    const staff = await getStaffMember().catch(() => null)
+    const overrides = await getCapabilityOverrides().catch(() => undefined)
+    const canManageNodes =
+      atLeastRole(caller.community_role, 'host') || staffCan(staff?.role ?? null, 'qr', 'write', overrides)
+    if (!canManageNodes) return new Response('Not allowed.', { status: 403 })
+
     const admin = createAdminClient()
     const { data } = await admin.from('nodes').select('style, secret').eq('id', nodeId).maybeSingle()
     if (!data) return new Response('Unknown code.', { status: 404 })
