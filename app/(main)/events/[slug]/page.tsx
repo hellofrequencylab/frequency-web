@@ -313,19 +313,39 @@ export default async function EventDetailPage({
   const posterDetails: EventDetailsWithMedia =
     extra?.details && typeof extra.details === 'object' ? extra.details : {}
   const [postedByResolved, posterCropEntries] = await Promise.all([
-    postedById && postedById !== (event.host?.id ?? null)
+    // The public "Posted by" credit. A SEEDED, still-unclaimed event (isUnclaimedPosted) reads as the
+    // @frequency brand account, NOT the human operator who ran the seeder — seeded content stays
+    // attributed to Frequency until its real host claims it. This overrides only the DISPLAY: the
+    // underlying posted_by_profile_id (postedById) is untouched, so the send-to-host + claim flows below
+    // still key off it. @frequency is resolved by its handle so the byline stays correct if the brand
+    // profile changes; a missing row falls back to the stable Frequency name/handle.
+    isUnclaimedPosted
       ? admin
           .from('profiles')
           .select('display_name, handle')
-          .eq('id', postedById)
+          .eq('handle', 'frequency')
           .maybeSingle()
-          .then(({ data }) => (data as { display_name: string; handle: string } | null) ?? null)
-      : Promise.resolve(null),
+          .then(
+            ({ data }) =>
+              (data as { display_name: string; handle: string } | null) ?? {
+                display_name: 'Frequency',
+                handle: 'frequency',
+              },
+          )
+      : postedById && postedById !== (event.host?.id ?? null)
+        ? admin
+            .from('profiles')
+            .select('display_name, handle')
+            .eq('id', postedById)
+            .maybeSingle()
+            .then(({ data }) => (data as { display_name: string; handle: string } | null) ?? null)
+        : Promise.resolve(null),
     posterSignedUrlMap(
       [...detailsMediaPaths(posterDetails), extra?.poster_path].filter((p): p is string => !!p),
     ),
   ])
-  // The credit: whoever put the event on the map, when they aren't the host.
+  // The credit: @frequency for a seeded/unclaimed event, else whoever put the event on the map when they
+  // aren't the host.
   const postedBy: { display_name: string; handle: string } | null = postedByResolved
   const posterCropUrls = Object.fromEntries(posterCropEntries)
 
