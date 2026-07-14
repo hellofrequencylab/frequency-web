@@ -5,13 +5,23 @@ import { useRouter } from 'next/navigation'
 import { Check, ChevronDown, Loader2, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SectionHeader } from '@/components/ui/section-header'
-import { Input, Label } from '@/components/ui/field'
+import { Input, Label, fieldClasses } from '@/components/ui/field'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { TextareaField, FormError } from '@/components/spaces/space-form'
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
 import { setSpaceBusinessInfo } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { draftSpaceBioAction } from '@/app/(main)/spaces/copilot-actions'
-import { SPACE_SOCIAL_PLATFORMS, type SpaceProfileData, type SpaceSocialLink } from '@/lib/spaces/profile-data'
+import { SPACE_SOCIAL_PLATFORMS, type SpacePriceRange, type SpaceProfileData, type SpaceSocialLink } from '@/lib/spaces/profile-data'
+
+// The relative price-indicator options for the profile's structured data (schema.org priceRange). Plain,
+// no em dashes (CONTENT-VOICE §10). The blank value leaves it unset.
+const PRICE_RANGE_OPTIONS: readonly { value: '' | SpacePriceRange; label: string }[] = [
+  { value: '', label: 'Not set' },
+  { value: '$', label: '$ Easy on the wallet' },
+  { value: '$$', label: '$$ Mid-range' },
+  { value: '$$$', label: '$$$ Premium' },
+  { value: '$$$$', label: '$$$$ High-end' },
+]
 import { SPACE_CATEGORIES, normalizeSpaceCategory, spaceCategoryLabel, type SpaceCategory } from '@/lib/spaces/categories'
 
 // THE INFO & CONNECT FORM (Space rail Section 2 — the standardized rail, ADR-535). The ONE place an
@@ -57,6 +67,7 @@ export function SpaceInfoConnectForm({
     phone: business.phone ?? '',
     email: business.email ?? '',
     website: business.website ?? '',
+    priceRange: business.priceRange ?? '',
     socials: socialMap,
   })
   const setBizField = (key: Exclude<keyof typeof biz, 'category' | 'socials'>, value: string) =>
@@ -113,6 +124,7 @@ export function SpaceInfoConnectForm({
           phone: biz.phone.trim(),
           email: biz.email.trim(),
           website: biz.website.trim(),
+          priceRange: (biz.priceRange || undefined) as SpacePriceRange | undefined,
           socials,
         }),
       ])
@@ -257,6 +269,31 @@ export function SpaceInfoConnectForm({
             <BizInput id="biz-email" label="Email" type="email" value={biz.email} onChange={(v) => setBizField('email', v)} />
           </div>
           <BizInput id="biz-website" label="Website" value={biz.website} onChange={(v) => setBizField('website', v)} placeholder="https://" />
+          {/* PRICE RANGE — a relative $ indicator (schema.org priceRange) for local SEO / answer engines. */}
+          <div>
+            <Label htmlFor="biz-price-range" className="mb-1 block font-semibold">
+              Price range
+            </Label>
+            <select
+              id="biz-price-range"
+              value={biz.priceRange}
+              onChange={(e) => {
+                setBiz((f) => ({ ...f, priceRange: e.target.value as '' | SpacePriceRange }))
+                // A select fires no blur to autosave on, so commit on the next frame (matches the category picker).
+                requestAnimationFrame(() => saveRef.current())
+              }}
+              className={fieldClasses}
+            >
+              {PRICE_RANGE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-subtle">
+              A rough guide to how pricey you are, shown to search engines. Leave it unset if it does not fit.
+            </p>
+          </div>
           <TextareaField
             id="biz-hours"
             label="Hours"

@@ -10,6 +10,9 @@ import {
   faqSchema,
   personSchema,
   spaceSchema,
+  productSchema,
+  spaceOfferingsSchema,
+  parseOpeningHours,
 } from './jsonld'
 import { SITE_URL, SITE_NAME } from './site'
 import type { PublicEvent, PublicCircle } from './discover'
@@ -455,5 +458,84 @@ describe('spaceSchema enrichment (@id + optional LocalBusiness fields)', () => {
     expect(r).not.toHaveProperty('address')
     expect(r).not.toHaveProperty('sameAs')
     expect(spaceSchema({ ...base, address: { streetAddress: '', addressLocality: null } })).not.toHaveProperty('address')
+  })
+})
+
+// ── productSchema (optional price) ──────────────────────────────────────────────
+
+describe('productSchema', () => {
+  it('emits an Offer with a price when priceCents is given', () => {
+    const r = productSchema({ title: 'Tote', priceCents: 2500, path: '/store/tote' }) as Record<string, unknown>
+    expect(r['@type']).toBe('Product')
+    expect(r.offers).toMatchObject({ '@type': 'Offer', price: '25.00', priceCurrency: 'USD' })
+  })
+
+  it('omits the Offer entirely when there is no price (never a bogus $0)', () => {
+    const r = productSchema({ title: 'Consult', path: '/store/consult' }) as Record<string, unknown>
+    expect(r['@type']).toBe('Product')
+    expect(r).not.toHaveProperty('offers')
+  })
+})
+
+// ── spaceOfferingsSchema (ItemList of Products) ─────────────────────────────────
+
+describe('spaceOfferingsSchema', () => {
+  const listName = 'River Yoga offerings'
+
+  it('builds an ItemList of Product nodes deep-linking to the offerings anchor', () => {
+    const r = spaceOfferingsSchema(
+      [{ title: 'Drop-in class', price: 20, currency: 'USD', priceModel: 'fixed' }],
+      { slug: 'river-yoga', sellerName: 'River Yoga', listName },
+    ) as Record<string, unknown>
+    expect(r['@type']).toBe('ItemList')
+    expect(r.numberOfItems).toBe(1)
+    const first = (r.itemListElement as Record<string, unknown>[])[0]
+    expect(first['@type']).toBe('ListItem')
+    expect(first.position).toBe(1)
+    const product = first.item as Record<string, unknown>
+    expect(product['@type']).toBe('Product')
+    expect(product.name).toBe('Drop-in class')
+    // Nested Product carries no redundant @context (the parent ItemList holds it).
+    expect(product).not.toHaveProperty('@context')
+    expect(product.url).toBe(`${SITE_URL}/spaces/river-yoga#offerings`)
+    expect((product.offers as Record<string, unknown>).price).toBe('20.00')
+  })
+
+  it("emits a 'free' offering as a $0 Offer and a 'contact' / priceless offering with no Offer", () => {
+    const items = spaceOfferingsSchema(
+      [
+        { title: 'Community class', priceModel: 'free' },
+        { title: 'Private coaching', priceModel: 'contact' },
+        { title: 'Workshop' },
+      ],
+      { slug: 's', listName },
+    ).itemListElement as Record<string, unknown>[]
+    const free = items[0].item as Record<string, unknown>
+    expect((free.offers as Record<string, unknown>).price).toBe('0.00')
+    expect(items[1].item).not.toHaveProperty('offers')
+    expect(items[2].item).not.toHaveProperty('offers')
+  })
+})
+
+// ── parseOpeningHours (free text → schema.org) ──────────────────────────────────
+
+describe('parseOpeningHours', () => {
+  it('parses a bare-number weekday range as business hours', () => {
+    expect(parseOpeningHours('Mon-Fri 9-5')).toEqual(['Mo-Fr 09:00-17:00'])
+  })
+
+  it('parses meridiem and "to" formats', () => {
+    expect(parseOpeningHours('Monday 9:00 AM - 5:00 PM')).toEqual(['Mo 09:00-17:00'])
+    expect(parseOpeningHours('Sat 10am to 2pm')).toEqual(['Sa 10:00-14:00'])
+  })
+
+  it('handles day-group shorthands and multi-line input', () => {
+    expect(parseOpeningHours('Weekdays 8-6\nSaturday 9-1')).toEqual(['Mo-Fr 08:00-18:00', 'Sa 09:00-13:00'])
+  })
+
+  it('drops lines it cannot parse rather than emit invalid schema', () => {
+    expect(parseOpeningHours('Mon-Fri 9-5\nClosed Sundays\nBy appointment')).toEqual(['Mo-Fr 09:00-17:00'])
+    expect(parseOpeningHours('')).toEqual([])
+    expect(parseOpeningHours(null)).toEqual([])
   })
 })

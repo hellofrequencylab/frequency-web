@@ -66,6 +66,11 @@ const PRICE_MODELS: readonly ServicePriceModel[] = ['fixed', 'from', 'free', 'co
 const RECURRING: readonly ServiceRecurring[] = ['once', 'weekly', 'monthly']
 const VISIBILITY: readonly ServiceVisibility[] = ['private', 'listed']
 
+/** A relative price indicator for the whole business, least to most expensive (schema.org `priceRange`).
+ *  A qualitative signal ("how pricey is this place"), distinct from a single offering's `price`. */
+export type SpacePriceRange = '$' | '$$' | '$$$' | '$$$$'
+const PRICE_RANGES: readonly SpacePriceRange[] = ['$', '$$', '$$$', '$$$$']
+
 /** One service / offering the Space provides (the single-source services catalog, doubling as the
  *  storefront's store items). `title` is required; everything else is OPTIONAL + fail-safe so a legacy
  *  `{ title, blurb }` row still parses. Prices are stored in MAJOR currency units (dollars), never cents. */
@@ -115,6 +120,8 @@ export interface SpaceProfileData {
   email?: string
   /** Primary website URL. */
   website?: string
+  /** A relative price indicator for the business ('$' cheapest to '$$$$' priciest), schema.org `priceRange`. */
+  priceRange?: SpacePriceRange
   /** Social / business-presence links (LinkedIn, Facebook, Instagram, Yelp, Google, ...). */
   socials?: SpaceSocialLink[]
   /** Operator-entered star rating, e.g. "4.8" (Yelp/Google style). Never invented. */
@@ -237,6 +244,7 @@ export function readProfileData(preferences: unknown): SpaceProfileData {
   const phone = str(p.phone)
   const email = str(p.email)
   const website = str(p.website)
+  const priceRange = enumOf(p.priceRange, PRICE_RANGES)
   const rating = str(p.rating)
   const ratingCount = str(p.ratingCount)
   const about = str(p.about)
@@ -245,6 +253,7 @@ export function readProfileData(preferences: unknown): SpaceProfileData {
   if (phone) out.phone = phone
   if (email) out.email = email
   if (website) out.website = website
+  if (priceRange) out.priceRange = priceRange
   if (socials.length > 0) out.socials = socials
   if (rating) out.rating = rating
   if (ratingCount) out.ratingCount = ratingCount

@@ -450,6 +450,94 @@ export function spaceSchema(space: SpaceSchemaInput) {
   }
 }
 
+// ── Opening hours (free text → schema.org openingHours) ─────────────────────────
+// A Space stores hours as free text (one line per day, e.g. "Mon-Fri 9-5"). schema.org wants a strict
+// `openingHours` string ("Mo-Fr 09:00-17:00"). This is a BEST-EFFORT parser: it converts the common
+// formats operators actually type and DROPS any line it can't confidently parse (never emit invalid
+// schema — answer engines silently discard a malformed node, which would negate the whole SEO node).
+// The free-text field stays the source for display; this only feeds the structured data. PURE + total.
+
+const DAY_CODE: Record<string, string> = {
+  mon: 'Mo', monday: 'Mo',
+  tue: 'Tu', tues: 'Tu', tuesday: 'Tu',
+  wed: 'We', weds: 'We', wednesday: 'We',
+  thu: 'Th', thur: 'Th', thurs: 'Th', thursday: 'Th',
+  fri: 'Fr', friday: 'Fr',
+  sat: 'Sa', saturday: 'Sa',
+  sun: 'Su', sunday: 'Su',
+}
+// Whole-week shorthands operators type ("Weekdays 9-5", "Daily 8-8").
+const DAY_GROUP: Record<string, string> = {
+  weekday: 'Mo-Fr', weekdays: 'Mo-Fr',
+  weekend: 'Sa-Su', weekends: 'Sa-Su',
+  daily: 'Mo-Su', everyday: 'Mo-Su',
+}
+
+/** Parse one clock token ("9", "9:30", "9am", "5:00 PM") to minutes-since-midnight, or null. PURE. */
+function parseClock(raw: string): { minutes: number; hadMeridiem: boolean } | null {
+  const m = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i.exec(raw.trim())
+  if (!m) return null
+  let hour = Number(m[1])
+  const min = m[2] ? Number(m[2]) : 0
+  const mer = m[3]?.toLowerCase()
+  if (hour > 23 || min > 59) return null
+  if (mer === 'pm' && hour < 12) hour += 12
+  else if (mer === 'am' && hour === 12) hour = 0
+  return { minutes: hour * 60 + min, hadMeridiem: !!mer }
+}
+
+const pad2 = (n: number) => String(n).padStart(2, '0')
+const fmtClock = (minutes: number) => `${pad2(Math.floor(minutes / 60))}:${pad2(minutes % 60)}`
+
+/** Resolve the day part of a line ("Mon", "Mon-Fri", "Mon to Fri", "Weekdays") to a schema.org day
+ *  token, or null when it isn't a recognizable day/range. PURE. */
+function parseDays(raw: string): string | null {
+  const t = raw.trim().toLowerCase().replace(/\.+$/, '')
+  const group = DAY_GROUP[t.replace(/\s+/g, '')]
+  if (group) return group
+  // A range: "mon-fri", "mon to fri", "monday through friday".
+  const range = /^([a-z]+)\s*(?:-|–|to|through|thru)\s*([a-z]+)$/i.exec(t)
+  if (range) {
+    const from = DAY_CODE[range[1]]
+    const to = DAY_CODE[range[2]]
+    return from && to ? `${from}-${to}` : null
+  }
+  const single = DAY_CODE[t]
+  return single ?? null
+}
+
+/** Convert free-text hours (one entry per line) into schema.org `openingHours` strings, dropping any
+ *  line that can't be parsed. Returns [] when nothing parses. PURE + total. */
+export function parseOpeningHours(hours: string | null | undefined): string[] {
+  if (!hours) return []
+  const out: string[] = []
+  for (const line of hours.split(/[\n;]+/)) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    // A day part, then a time RANGE. Split on the FIRST comma-or-space gap between the two, tolerating
+    // "Mon-Fri: 9-5" / "Mon-Fri, 9 to 5" / "Monday 9:00 AM - 5:00 PM".
+    const m = /^(.+?)[,:\s]+(\d.*)$/.exec(trimmed)
+    if (!m) continue
+    const days = parseDays(m[1])
+    if (!days) continue
+    // The time range: two clocks split by "-", "–", "to", or "till".
+    const times = /^(.+?)\s*(?:-|–|to|till|until|thru)\s*(.+)$/i.exec(m[2].trim())
+    if (!times) continue
+    const start = parseClock(times[1])
+    const end = parseClock(times[2])
+    if (!start || !end) continue
+    let endMinutes = end.minutes
+    // "9-5" with no am/pm reads as 9:00-17:00: if the end lands at or before the start and neither side
+    // named a meridiem, treat the end as PM (best-effort for the common bare-number range).
+    if (endMinutes <= start.minutes && !start.hadMeridiem && !end.hadMeridiem && endMinutes + 720 <= 1440) {
+      endMinutes += 720
+    }
+    if (endMinutes <= start.minutes) continue
+    out.push(`${days} ${fmtClock(start.minutes)}-${fmtClock(endMinutes)}`)
+  }
+  return out
+}
+
 export function partnerListSchema(
   partners: { slug: string; name: string }[],
   listName: string,
@@ -638,7 +726,9 @@ export function productSchema(p: {
   title: string
   description?: string | null
   image?: string | null
-  priceCents: number
+  /** Price in MINOR units (cents). Omit / null for an item with no set price (e.g. "contact for pricing"):
+   *  the Product node is still emitted, just without an Offer, so answer engines never see a bogus $0. */
+  priceCents?: number | null
   currency?: string | null
   inStock?: boolean
   sellerName?: string | null
@@ -646,6 +736,7 @@ export function productSchema(p: {
   path: string
 }) {
   const url = abs(p.path)
+  const hasPrice = typeof p.priceCents === 'number' && Number.isFinite(p.priceCents)
   return {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -654,14 +745,68 @@ export function productSchema(p: {
     image: [...(p.image ? [p.image] : []), abs('/opengraph-image')],
     url,
     ...(p.sellerName ? { brand: { '@type': 'Brand', name: p.sellerName } } : {}),
-    offers: {
-      '@type': 'Offer',
-      price: (p.priceCents / 100).toFixed(2),
-      priceCurrency: (p.currency ?? 'usd').toUpperCase(),
-      availability: p.inStock === false ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
-      url,
-      ...(p.sellerName ? { seller: { '@type': 'Organization', name: p.sellerName } } : {}),
-    },
+    ...(hasPrice
+      ? {
+          offers: {
+            '@type': 'Offer',
+            price: ((p.priceCents as number) / 100).toFixed(2),
+            priceCurrency: (p.currency ?? 'usd').toUpperCase(),
+            availability: p.inStock === false ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+            url,
+            ...(p.sellerName ? { seller: { '@type': 'Organization', name: p.sellerName } } : {}),
+          },
+        }
+      : {}),
+  }
+}
+
+// ── Space offerings (ItemList of Products) ──────────────────────────────────────
+// The services a Space lists on its profile, as an ItemList of Product nodes — the AEO signal an answer
+// engine cites for "what does <space> offer / cost". Composed from the shared productSchema builder so
+// the Offer shape can't drift. Spaces have no per-offering page, so every Product deep-links to the
+// profile's Offerings section anchor. Structurally typed (a subset of SpaceOffering) so lib/jsonld stays
+// dependency-light. An offering with no set price ('contact', or none) still emits a Product (name +
+// blurb) with no Offer; a 'free' offering is a $0 Offer.
+type OfferingSchemaInput = {
+  title: string
+  blurb?: string
+  price?: number
+  currency?: string
+  priceModel?: 'fixed' | 'from' | 'free' | 'contact'
+}
+
+export function spaceOfferingsSchema(
+  offerings: readonly OfferingSchemaInput[],
+  opts: { slug: string; sellerName?: string | null; listName: string },
+) {
+  const path = `/spaces/${opts.slug}#offerings`
+  const itemListElement = offerings.map((o, i) => {
+    // A set price → cents. 'free' is $0; 'contact' or a missing price carries NO price (undefined), so
+    // productSchema omits the Offer rather than emit a misleading $0.
+    const priceCents =
+      o.priceModel === 'free'
+        ? 0
+        : o.priceModel === 'contact' || typeof o.price !== 'number'
+          ? undefined
+          : Math.round(o.price * 100)
+    // Nest the Product WITHOUT its own @context (the parent ItemList carries it; a nested @context is
+    // redundant in JSON-LD).
+    const { '@context': _context, ...product } = productSchema({
+      title: o.title,
+      description: o.blurb ?? null,
+      priceCents,
+      currency: o.currency ?? null,
+      sellerName: opts.sellerName ?? null,
+      path,
+    })
+    return { '@type': 'ListItem', position: i + 1, item: product }
+  })
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: opts.listName,
+    numberOfItems: itemListElement.length,
+    itemListElement,
   }
 }
 
