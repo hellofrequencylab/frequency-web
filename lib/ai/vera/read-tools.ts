@@ -15,6 +15,8 @@ async function suggestCircle(interest?: unknown): Promise<string> {
     .from('circles')
     .select('name, slug, neighborhood, member_count, about')
     .eq('is_demo', false)
+    // Never suggest a closed or still-private circle: archived is closed, draft is owner-only.
+    .not('status', 'in', '("archived","draft")')
     .order('member_count', { ascending: false })
     .limit(3)
   const term = typeof interest === 'string' ? interest.trim() : ''
@@ -35,6 +37,8 @@ async function findHost(topic?: unknown): Promise<string> {
     .select('name, host_id, profiles:host_id (display_name)')
     .eq('is_demo', false)
     .not('host_id', 'is', null)
+    // Never surface a host of a closed (archived) or still-private (draft) circle.
+    .not('status', 'in', '("archived","draft")')
     .limit(1)
   if (term) q = q.ilike('name', `%${term}%`)
 
