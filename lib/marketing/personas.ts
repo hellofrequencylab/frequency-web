@@ -18,6 +18,7 @@
 
 import { resolveMode, type ModeProfile } from '@/lib/spaces/modes'
 import type { SpaceType } from '@/lib/spaces/types'
+import { spaceCreatePath, type FunnelDestination } from '@/lib/onboarding/beta-sequences'
 import {
   PERSONA_LOADOUTS,
   PRICING_ADDONS,
@@ -126,6 +127,14 @@ export function getPersona(slug: string): Persona | undefined {
 /** Every persona slug, drives generateStaticParams + the sitemap. PURE. */
 export function personaSlugs(): string[] {
   return PERSONAS.map((p) => p.slug)
+}
+
+/** Where a finished operator from THIS persona door is admitted: Create-a-Space pre-seeded in the persona's
+ *  Mode (OPERATOR-FUNNELS §5 Start-free bridge), NOT the general Beta list. Config-driven off the row's own
+ *  (type, variant), so it is one data edit per door and can never drift from the persona's Space Mode.
+ *  Re-validated at redirect time by isSafeInAppPath / funnelLanding. PURE. */
+export function personaFunnelDestination(persona: Persona): FunnelDestination {
+  return { mode: 'direct', url: spaceCreatePath({ type: persona.type, variant: persona.variant }) }
 }
 
 /** The shared loadout row (recommended add-ons + computed founding price) for a persona, matched by

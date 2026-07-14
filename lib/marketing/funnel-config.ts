@@ -13,6 +13,7 @@
 // "QR Studio". The free tier is the WHOLE toolset on starter caps (Contacts up to 250), not a subset.
 
 import type { SpaceType } from '@/lib/spaces/types'
+import { spaceCreatePath, type FunnelDestination } from '@/lib/onboarding/beta-sequences'
 
 // ── The small, consistent feature-icon set (drawn once, house tokens) ─────────────────────────────
 export type FunnelIconName = 'calendar' | 'contact' | 'qr' | 'envelope' | 'spark'
@@ -243,4 +244,13 @@ export function funnelSlugs(): string[] {
 /** The assurance-bar items for a config (the nonprofit swap, else the base four). PURE. */
 export function assuranceItems(config: FunnelConfig): readonly string[] {
   return config.assuranceBar ?? (config.nonprofit ? ASSURANCE_NONPROFIT : ASSURANCE_BASE)
+}
+
+/** Where a finished operator from THIS niche funnel is admitted: Create-a-Space pre-seeded in the niche's
+ *  Mode (OPERATOR-FUNNELS §5 Start-free bridge), NOT the general Beta list. Derived from the config's own
+ *  `mode`, so it is one data edit per niche and can never drift from the niche's Space Mode. The onboarding
+ *  side (NICHE_FUNNEL_DESTINATIONS in beta-sequences) points at the SAME spaceCreatePath. Re-validated at
+ *  redirect time by isSafeInAppPath / funnelLanding. PURE. */
+export function funnelStartDestination(config: FunnelConfig): FunnelDestination {
+  return { mode: 'direct', url: spaceCreatePath(config.mode) }
 }
