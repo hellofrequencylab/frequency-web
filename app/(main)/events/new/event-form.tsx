@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createEvent, updateEvent } from '@/app/(main)/events/actions'
@@ -8,7 +9,17 @@ import { isError } from '@/lib/action-result'
 import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
-import { EventLocationMap } from '@/components/events/event-location-map'
+import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
+import type { PlaceResult } from '@/lib/geocode'
+
+// The draggable-pin location picker runs MapLibre, which must never touch the server, so it
+// lazy-mounts client-only (ssr:false) — the same dynamic-import pattern as EventLocationMap.
+const EventLocationPicker = dynamic(() => import('@/components/events/event-location-picker'), {
+  ssr: false,
+  loading: () => (
+    <div className="aspect-video w-full animate-pulse rounded-xl border border-border bg-surface-elevated" />
+  ),
+})
 
 // Today in the VIEWER's local timezone, as the `YYYY-MM-DD` a date/datetime-local
 // input seeds with. Built from local parts (never `toISOString().slice`, which is
@@ -113,9 +124,11 @@ export interface EventFormInitial {
   galleryImagePaths: string[]
   /** Ticket price in whole cents. 0 or absent = a free RSVP event. */
   priceCents?: number
-  /** The event's stored venue point (edit mode) — renders a map preview when present. */
+  /** The event's stored venue point (edit mode) — seeds the map pin when present. */
   venueLat?: number
   venueLng?: number
+  /** Host-only practical notes (parking, what to bring, door code, accessibility). */
+  specialInstructions?: string
 }
 
 // A grouped, tokenized section wrapper so the form reads as five clear steps instead of a
@@ -217,20 +230,34 @@ export function EventForm({
   const [priceAmount, setPriceAmount] = useState(
     initial?.priceCents && initial.priceCents > 0 ? (initial.priceCents / 100).toString() : '',
   )
+  // The manually-placed map pin. Seeds from the stored venue point on edit; a drag or an
+  // autocomplete pick updates it, and a set pin OVERRIDES the address geocode on save.
+  const [venueLat, setVenueLat] = useState<number | null>(
+    typeof initial?.venueLat === 'number' ? initial.venueLat : null,
+  )
+  const [venueLng, setVenueLng] = useState<number | null>(
+    typeof initial?.venueLng === 'number' ? initial.venueLng : null,
+  )
+  // Practical host notes (parking, what to bring, door code, accessibility). Optional.
+  const [specialInstructions, setSpecialInstructions] = useState(initial?.specialInstructions ?? '')
 
   // Split the scope options into their two optgroups (circles you host / spaces you run).
   const circleOptions = useMemo(() => groups.filter((g) => g.kind !== 'space'), [groups])
   const spaceOptions = useMemo(() => groups.filter((g) => g.kind === 'space'), [groups])
 
-  // The saved venue point (edit mode only) drives the map preview. On create there is no
-  // geocoded point yet, so we show a short note instead (the pin lands after save).
-  const venuePoint =
-    typeof initial?.venueLat === 'number' && typeof initial?.venueLng === 'number'
-      ? { lat: initial.venueLat, lng: initial.venueLng }
-      : null
-  const hasAddressInput =
-    attendanceMode !== 'online' &&
-    [venueName, street, city, region, postalCode, country, location].some((v) => v.trim().length > 0)
+  // A venue/address autocomplete pick fills the structured fields AND drops the map pin at the
+  // resolved point, which recenters the picker — the "map recenters when the address is
+  // geocoded" path. The host can still drag the pin afterwards to fine-tune the exact spot.
+  const onPickVenue = (p: PlaceResult) => {
+    if (p.name) setVenueName(p.name)
+    if (p.street) setStreet(p.street)
+    if (p.city) setCity(p.city)
+    if (p.region) setRegion(p.region)
+    if (p.postalCode) setPostalCode(p.postalCode)
+    if (p.country) setCountry(p.country)
+    setVenueLat(p.lat)
+    setVenueLng(p.lng)
+  }
 
   // Client guard for the repeat-end date: when a cadence is set and an end is given,
   // it must be after the start day (the server re-validates the same rule). The until
@@ -307,7 +334,17 @@ export function EventForm({
       if (region.trim()) fd.set('region', region.trim())
       if (postalCode.trim()) fd.set('postalCode', postalCode.trim())
       if (country.trim()) fd.set('country', country.trim())
+      // The dragged/picked pin. When set, the server persists THIS exact point (via the
+      // explicitPoint path in geocode.ts) instead of geocoding the address, so a manual pin wins.
+      if (venueLat != null && venueLng != null) {
+        fd.set('venueLat', String(venueLat))
+        fd.set('venueLng', String(venueLng))
+      }
     }
+
+    // Special instructions (optional). Only sent when non-empty, so a blank edit never wipes a
+    // stored note — mirrors the price field's "a blank never clears a set value" contract.
+    if (specialInstructions.trim()) fd.set('specialInstructions', specialInstructions.trim())
 
     startTransition(async () => {
       setSubmitError(null)
@@ -337,34 +374,37 @@ export function EventForm({
 
       {/* ── Basics ─────────────────────────────────────────────────────────── */}
       <FormSection title="Basics" hint="What it is, and the photo people see first.">
-        <div className="space-y-1.5">
-          <Label className="text-sm text-text">
-            Event title <span className="text-danger">*</span>
-          </Label>
-          <Input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Wednesday Morning Ride"
-            required
-            disabled={isPending}
-          />
-        </div>
+        {/* Title + kind sit side by side on desktop, single column on mobile. */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label className="text-sm text-text">
+              Event title <span className="text-danger">*</span>
+            </Label>
+            <Input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Wednesday Morning Ride"
+              required
+              disabled={isPending}
+            />
+          </div>
 
-        <div className="space-y-1.5">
-          <Label className="text-sm text-text">What kind of gathering is this?</Label>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            disabled={isPending}
-            className={fieldClasses}
-          >
-            {CATEGORY_OPTIONS.map(({ value, label }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <div className="space-y-1.5">
+            <Label className="text-sm text-text">What kind of gathering is this?</Label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              disabled={isPending}
+              className={fieldClasses}
+            >
+              {CATEGORY_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Cover image — the poster / main image (hero + first item in the gallery). */}
@@ -378,109 +418,128 @@ export function EventForm({
           disabled={isPending}
         />
 
-        {/* Gallery — additional photos. The cover above leads the gallery on the event page. */}
-        <MultiImageUpload
-          label="More photos"
-          value={galleryImagePaths}
-          onChange={setGalleryImagePaths}
-          folder="event-gallery"
-          hint="Optional. Extra photos shown in a gallery below the poster."
-          disabled={isPending}
-        />
-
-        <div className="space-y-1.5">
-          <Label className="text-sm text-text">
-            Description <span className="text-2xs font-normal text-subtle">(optional)</span>
-          </Label>
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Details, what to bring, meetup point…"
-            rows={4}
-            disabled={isPending}
-            className="resize-none leading-relaxed"
-          />
-        </div>
+        {/* Gallery — tucked inside a disclosure so it stays out of the way until wanted. */}
+        <details className="group rounded-xl border border-border bg-surface-elevated/40">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium text-text [&::-webkit-details-marker]:hidden">
+            <span>
+              More photos{' '}
+              {galleryImagePaths.length > 0 && (
+                <span className="text-2xs font-normal text-subtle">({galleryImagePaths.length} added)</span>
+              )}
+            </span>
+            <span aria-hidden className="text-subtle transition-transform group-open:rotate-180">
+              ⌄
+            </span>
+          </summary>
+          <div className="border-t border-border px-4 py-3">
+            <MultiImageUpload
+              label="More photos"
+              value={galleryImagePaths}
+              onChange={setGalleryImagePaths}
+              folder="event-gallery"
+              hint="Optional. Extra photos shown in a gallery below the poster."
+              disabled={isPending}
+            />
+          </div>
+        </details>
       </FormSection>
 
-      {/* ── When ──────────────────────────────────────────────────────────── */}
-      <FormSection title="When" hint="The start time is the one thing people plan around.">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
+      {/* ── Details & timing ──────────────────────────────────────────────── */}
+      <FormSection title="Details and timing" hint="The write-up on the left; when it happens in the rail beside it.">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* Description — the wide left column (~2/3). */}
+          <div className="space-y-1.5 lg:col-span-2">
             <Label className="text-sm text-text">
-              Starts at <span className="text-danger">*</span>
+              Description <span className="text-2xs font-normal text-subtle">(optional)</span>
             </Label>
-            <Input
-              type="datetime-local"
-              value={startsAt}
-              onChange={(e) => setStartsAt(e.target.value)}
-              required
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Details, what to bring, meetup point…"
+              rows={12}
               disabled={isPending}
+              className="h-full min-h-48 resize-none leading-relaxed"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-sm text-text">
-              Ends at <span className="text-2xs font-normal text-subtle">(optional)</span>
-            </Label>
-            <Input
-              type="datetime-local"
-              value={endsAt}
-              onChange={(e) => setEndsAt(e.target.value)}
-              // Seed the empty picker on the start day (today on create), never a past default.
-              min={startsAt || `${localToday()}T00:00`}
-              disabled={isPending}
-            />
-          </div>
-        </div>
 
-        {/* Recurrence — set the cadence on create, change it on edit. */}
-        <div className="space-y-1.5">
-          <Label className="text-sm text-text">Repeats</Label>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {RECURRENCE_OPTIONS.map(({ value, label, helper }) => {
-              const active = recurrenceType === value
-              return (
-                <button
-                  type="button"
-                  key={value}
-                  onClick={() => setRecurrenceType(value)}
-                  disabled={isPending}
-                  className={`rounded-lg border px-3 py-2 text-left transition-colors ${
-                    active
-                      ? 'border-primary bg-primary-bg ring-2 ring-primary/30'
-                      : 'border-border bg-surface hover:border-border-strong'
-                  } disabled:opacity-60`}
-                >
-                  <p className={`text-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
-                    {label}
-                  </p>
-                  <p className="mt-0.5 text-2xs text-muted">{helper}</p>
-                </button>
-              )
-            })}
-          </div>
-          {recurrenceType !== 'none' && (
-            <div className="mt-3 space-y-1.5">
-              <Label className="text-text">
-                Ends on <span className="text-subtle">(optional, leave blank for indefinite)</span>
+          {/* Time rail — the narrow right column (~1/3): Starts, Ends, Repeats stacked. */}
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-sm text-text">
+                Starts at <span className="text-danger">*</span>
               </Label>
               <Input
-                type="date"
-                value={recurrenceUntil}
-                onChange={(e) => setRecurrenceUntil(e.target.value)}
-                // Empty picker opens on the start day / today, never a past month.
-                min={startsAt.slice(0, 10) || localToday()}
+                type="datetime-local"
+                value={startsAt}
+                onChange={(e) => setStartsAt(e.target.value)}
+                required
                 disabled={isPending}
               />
-              {recurrenceError ? (
-                <p className="mt-1.5 text-2xs text-danger">{recurrenceError}</p>
-              ) : (
-                <p className="mt-1.5 text-2xs text-muted">
-                  The next 60 days of dates show right away. A daily job rolls the window forward.
-                </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm text-text">
+                Ends at <span className="text-2xs font-normal text-subtle">(optional)</span>
+              </Label>
+              <Input
+                type="datetime-local"
+                value={endsAt}
+                onChange={(e) => setEndsAt(e.target.value)}
+                // Seed the empty picker on the start day (today on create), never a past default.
+                min={startsAt || `${localToday()}T00:00`}
+                disabled={isPending}
+              />
+            </div>
+
+            {/* Recurrence — set the cadence on create, change it on edit. */}
+            <div className="space-y-1.5">
+              <Label className="text-sm text-text">Repeats</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {RECURRENCE_OPTIONS.map(({ value, label, helper }) => {
+                  const active = recurrenceType === value
+                  return (
+                    <button
+                      type="button"
+                      key={value}
+                      onClick={() => setRecurrenceType(value)}
+                      disabled={isPending}
+                      className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                        active
+                          ? 'border-primary bg-primary-bg ring-2 ring-primary/30'
+                          : 'border-border bg-surface hover:border-border-strong'
+                      } disabled:opacity-60`}
+                    >
+                      <p className={`text-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
+                        {label}
+                      </p>
+                      <p className="mt-0.5 text-2xs text-muted">{helper}</p>
+                    </button>
+                  )
+                })}
+              </div>
+              {recurrenceType !== 'none' && (
+                <div className="mt-3 space-y-1.5">
+                  <Label className="text-text">
+                    Ends on <span className="text-subtle">(optional, leave blank for indefinite)</span>
+                  </Label>
+                  <Input
+                    type="date"
+                    value={recurrenceUntil}
+                    onChange={(e) => setRecurrenceUntil(e.target.value)}
+                    // Empty picker opens on the start day / today, never a past month.
+                    min={startsAt.slice(0, 10) || localToday()}
+                    disabled={isPending}
+                  />
+                  {recurrenceError ? (
+                    <p className="mt-1.5 text-2xs text-danger">{recurrenceError}</p>
+                  ) : (
+                    <p className="mt-1.5 text-2xs text-muted">
+                      The next 60 days of dates show right away. A daily job rolls the window forward.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
-          )}
+          </div>
         </div>
       </FormSection>
 
@@ -544,74 +603,87 @@ export function EventForm({
         </div>
 
         {/* Structured address (in person / hybrid). Used to place the event on the map. Leave
-            blank to skip the map; the event still saves. */}
+            blank to skip the map; the event still saves. Address block is ROW ONE; the live,
+            draggable map sits in ROW TWO beneath it (stacked, full width). */}
         {attendanceMode !== 'online' && (
-          <div className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-4">
-            <div className="space-y-1">
-              <Label className="text-sm text-text">
-                Address <span className="text-2xs font-normal text-subtle">(optional, for the map)</span>
-              </Label>
-              <p className="text-2xs text-muted">
-                Fill in what you have. We place the event on the map so people nearby can find it.
-              </p>
-            </div>
-            <Input
-              type="text"
-              value={venueName}
-              onChange={(e) => setVenueName(e.target.value)}
-              placeholder="Venue name"
-              disabled={isPending}
-            />
-            <Input
-              type="text"
-              value={street}
-              onChange={(e) => setStreet(e.target.value)}
-              placeholder="Street address"
-              disabled={isPending}
-            />
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Input
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="City"
+          <div className="space-y-4">
+            {/* Row one — the structured address. */}
+            <div className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-4">
+              <div className="space-y-1">
+                <Label className="text-sm text-text">
+                  Address <span className="text-2xs font-normal text-subtle">(optional, for the map)</span>
+                </Label>
+                <p className="text-2xs text-muted">
+                  Start typing a venue or address and pick it to fill the rest and drop the pin. Then
+                  drag the pin below to set the exact spot.
+                </p>
+              </div>
+              {/* Typeahead: a pick fills the address fields and recenters the map pin. */}
+              <VenueAutocomplete
+                value={venueName}
+                onPick={onPickVenue}
+                placeholder="Search a venue or address"
                 disabled={isPending}
+                bias={venueLat != null && venueLng != null ? { lat: venueLat, lng: venueLng } : null}
               />
               <Input
                 type="text"
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-                placeholder="State or province"
+                value={street}
+                onChange={(e) => setStreet(e.target.value)}
+                placeholder="Street address"
                 disabled={isPending}
               />
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Input
-                type="text"
-                value={postalCode}
-                onChange={(e) => setPostalCode(e.target.value)}
-                placeholder="Postal code"
-                disabled={isPending}
-              />
-              <Input
-                type="text"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                placeholder="Country"
-                disabled={isPending}
-              />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Input
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="City"
+                  disabled={isPending}
+                />
+                <Input
+                  type="text"
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                  placeholder="State or province"
+                  disabled={isPending}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Input
+                  type="text"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  placeholder="Postal code"
+                  disabled={isPending}
+                />
+                <Input
+                  type="text"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  placeholder="Country"
+                  disabled={isPending}
+                />
+              </div>
             </div>
 
-            {/* Map: the saved venue point (edit mode) renders a live preview; on create there is
-                no geocoded point yet, so show a short note once an address has been typed. */}
-            {venuePoint ? (
-              <EventLocationMap venuePoint={venuePoint} />
-            ) : hasAddressInput ? (
-              <p className="rounded-lg border border-border bg-surface px-3 py-2 text-2xs text-muted">
-                We drop a pin from this address once you save, so it shows on the map for people
-                nearby.
+            {/* Row two — the live map with a DRAGGABLE pin. Dragging (or tapping) it sets the
+                exact lat/lng we save; picking an address above recenters it. Full width, stacked. */}
+            <div className="space-y-1.5">
+              <EventLocationPicker
+                lat={venueLat}
+                lng={venueLng}
+                onChange={(lat, lng) => {
+                  setVenueLat(lat)
+                  setVenueLng(lng)
+                }}
+              />
+              <p className="text-2xs text-muted">
+                {venueLat != null && venueLng != null
+                  ? 'Drag the pin to set the exact spot. This point is what shows on the map.'
+                  : 'Drag or tap the map to drop a pin on the exact spot, or pick an address above.'}
               </p>
-            ) : null}
+            </div>
           </div>
         )}
       </FormSection>
@@ -687,59 +759,61 @@ export function EventForm({
       </FormSection>
 
       {/* ── Extras ────────────────────────────────────────────────────────── */}
-      <FormSection title="Extras" hint="Price, size, and the vibe. All optional.">
-        {/* Price — free RSVP or a set ticket price (events.price_cents). */}
-        <div className="space-y-1.5">
-          <Label className="text-sm text-text">Price</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {([
-              { value: 'free' as const, label: 'Free' },
-              { value: 'paid' as const, label: 'Set a price' },
-            ]).map(({ value, label }) => {
-              const active = priceMode === value
-              return (
-                <button
-                  type="button"
-                  key={value}
-                  onClick={() => setPriceMode(value)}
-                  disabled={isPending}
-                  className={`rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors ${
-                    active
-                      ? 'border-primary bg-primary-bg text-primary-strong ring-2 ring-primary/30'
-                      : 'border-border bg-surface text-text hover:border-border-strong'
-                  } disabled:opacity-60`}
-                >
-                  {label}
-                </button>
-              )
-            })}
-          </div>
-          {priceMode === 'paid' && (
-            <div className="relative mt-2">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted">
-                $
-              </span>
-              <Input
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step="0.01"
-                value={priceAmount}
-                onChange={(e) => setPriceAmount(e.target.value)}
-                placeholder="0.00"
-                disabled={isPending}
-                className="pl-7"
-              />
+      <FormSection title="Extras" hint="Price, size, vibe, and the practical notes. All optional.">
+        {/* A tidy two-column function layout: price, group size, energy, and the special
+            instructions box arranged across two columns (single column on mobile). */}
+        <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
+          {/* Price — free RSVP or a set ticket price (events.price_cents). */}
+          <div className="space-y-1.5">
+            <Label className="text-sm text-text">Price</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { value: 'free' as const, label: 'Free' },
+                { value: 'paid' as const, label: 'Set a price' },
+              ]).map(({ value, label }) => {
+                const active = priceMode === value
+                return (
+                  <button
+                    type="button"
+                    key={value}
+                    onClick={() => setPriceMode(value)}
+                    disabled={isPending}
+                    className={`rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors ${
+                      active
+                        ? 'border-primary bg-primary-bg text-primary-strong ring-2 ring-primary/30'
+                        : 'border-border bg-surface text-text hover:border-border-strong'
+                    } disabled:opacity-60`}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
             </div>
-          )}
-          <p className="mt-1.5 text-2xs text-muted">
-            {priceMode === 'paid'
-              ? 'Sets a ticket price. Guests can buy a seat once you turn on payouts.'
-              : 'A free event people RSVP to. Switch to a price to sell tickets.'}
-          </p>
-        </div>
+            {priceMode === 'paid' && (
+              <div className="relative mt-2">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted">
+                  $
+                </span>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.01"
+                  value={priceAmount}
+                  onChange={(e) => setPriceAmount(e.target.value)}
+                  placeholder="0.00"
+                  disabled={isPending}
+                  className="pl-7"
+                />
+              </div>
+            )}
+            <p className="mt-1.5 text-2xs text-muted">
+              {priceMode === 'paid'
+                ? 'Sets a ticket price. Guests can buy a seat once you turn on payouts.'
+                : 'A free event people RSVP to. Switch to a price to sell tickets.'}
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label className="text-sm text-text">
               Group size <span className="text-2xs font-normal text-subtle">(optional)</span>
@@ -774,6 +848,24 @@ export function EventForm({
             </select>
             <p className="mt-1.5 text-2xs text-muted">
               Whether it calms people down or fires them up. Helps us suggest it to the right people.
+            </p>
+          </div>
+
+          {/* Special instructions — practical notes for attendees. */}
+          <div className="space-y-1.5">
+            <Label className="text-sm text-text">
+              Special instructions <span className="text-2xs font-normal text-subtle">(optional)</span>
+            </Label>
+            <Textarea
+              value={specialInstructions}
+              onChange={(e) => setSpecialInstructions(e.target.value)}
+              placeholder="Parking, what to bring, door code, accessibility notes…"
+              rows={3}
+              disabled={isPending}
+              className="resize-none leading-relaxed"
+            />
+            <p className="mt-1.5 text-2xs text-muted">
+              The practical details attendees need on the day.
             </p>
           </div>
         </div>

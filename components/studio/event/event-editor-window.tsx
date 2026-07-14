@@ -12,7 +12,25 @@ export function EventEditorWindow({ backHref, children }: { backHref: string; ch
 
   return (
     <StudioWindow open onClose={() => router.push(backHref)} eyebrow="Studio · Event">
-      {children}
+      {/* Bleed past the StudioWindow body padding so the header + footer read as full-width
+          Canvas bands, and the editing area sits on a clearly contrasting Surface panel. */}
+      <div className="-mx-4 -my-5 sm:-mx-6">
+        {/* Header band (Canvas): the Frequency brandmark beside a warm one-line invitation. */}
+        <header className="flex items-center gap-3 bg-canvas px-4 py-4 sm:px-6">
+          <span className="brandmark h-5 shrink-0 aspect-[963/170]" aria-hidden />
+          <p className="text-sm font-semibold text-text">Share an Event with the community!</p>
+        </header>
+
+        {/* Editing area (Surface): the scrollable form body, set off from the Canvas chrome. */}
+        <div className="border-y border-border bg-surface px-4 py-5 sm:px-6">{children}</div>
+
+        {/* Skinny footer band (Canvas): one in-voice line, no em dashes. */}
+        <footer className="bg-canvas px-4 py-3 text-center sm:px-6">
+          <p className="text-2xs leading-relaxed text-muted">
+            The best gatherings start with someone deciding to host one.
+          </p>
+        </footer>
+      </div>
     </StudioWindow>
   )
 }

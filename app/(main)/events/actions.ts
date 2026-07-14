@@ -78,6 +78,18 @@ async function geocodeEventOnCreate(eventId: string, fd: FormData): Promise<void
     ? (modeRaw as AttendanceMode)
     : 'in_person'
 
+  // Explicit pin from the editor's draggable marker. When the host has placed it themselves,
+  // that point is the truth: saveEventLocation persists it via the explicitPoint path and skips
+  // the geocoder entirely. A missing/invalid pin (null) falls back to the address geocode below.
+  const latRaw = fd.get('venueLat')
+  const lngRaw = fd.get('venueLng')
+  const lat = typeof latRaw === 'string' ? Number(latRaw) : NaN
+  const lng = typeof lngRaw === 'string' ? Number(lngRaw) : NaN
+  const point =
+    Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180
+      ? { lat, lng }
+      : null
+
   try {
     await saveEventLocation(eventId, {
       address: {
@@ -94,6 +106,8 @@ async function geocodeEventOnCreate(eventId: string, fd: FormData): Promise<void
       attendanceMode,
       onlineUrl: str('onlineUrl'),
       geocoder: nominatimGeocoder,
+      // A dragged/picked pin wins over the address geocode (geocode.ts explicitPoint path).
+      point,
     })
   } catch (e) {
     // saveEventLocation already swallows a geocode miss; this guards the
@@ -165,6 +179,11 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   const headerCover = galleryWithCover[0] ?? null
   // Ticket price in cents (blank = a free RSVP event).
   const priceCents = parsePriceCents(formData.get('priceCents') as string | null)
+
+  // Special instructions (parking, what to bring, door code, accessibility). Stored in the
+  // events.details JSONB under `specialInstructions` — no new column/migration. A fresh manual
+  // event has no other details, so this is the only key we set here. Blank = leave details as-is.
+  const specialInstructions = (formData.get('specialInstructions') as string | null)?.trim() || null
 
   // Event time zone (lib/time/zone): the venue's coordinates aren't known at insert (geocoding
   // runs async below), so seed the column with the creator's submitted zone when the form sends
@@ -264,6 +283,8 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
       // Event's IANA zone (newer than the generated DB types → cast). Refined from the geocoded
       // venue point in geocodeEventOnCreate; this seed keeps it non-null for online events too.
       time_zone: timeZone,
+      // Practical host notes, folded into the details JSONB (only when provided).
+      ...(specialInstructions ? { details: { specialInstructions } } : {}),
       // space_id is newer than the generated DB types — cast the payload to reach the column
       // (ADR-246); omit when the root row is missing (the backfill sweeps the NULL to root).
       ...(spaceId ? { space_id: spaceId } : {}),
@@ -385,17 +406,31 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   const priceFieldSent = formData.get('priceCents') !== null
   const priceCents = priceFieldSent ? parsePriceCents(formData.get('priceCents') as string | null) : null
 
+  // Special instructions: only sent when non-empty (a blank edit never wipes a stored note,
+  // mirroring the price field). When present, MERGE into the existing details JSONB so Vera's
+  // structured harvest (lineup / schedule / tickets / links) survives an edit untouched.
+  const siRaw = formData.get('specialInstructions')
+  const specialInstructions = typeof siRaw === 'string' ? siRaw.trim() : null
+
   const admin = createAdminClient()
   const { data: ev } = await admin
     .from('events')
-    .select('slug, parent_event_id')
+    .select('slug, parent_event_id, details')
     .eq('id', eventId)
     .maybeSingle()
-  const evRow = ev as { slug: string; parent_event_id: string | null } | null
+  const evRow = ev as { slug: string; parent_event_id: string | null; details: unknown } | null
   const slug = evRow?.slug
   if (!slug) return fail('This event could not be found.')
   // Recurrence is an anchor-only concern (a child occurrence cannot itself recur).
   const isAnchor = !evRow?.parent_event_id
+
+  // Merge the note into whatever details the event already carries (object only; anything else
+  // resets to a fresh object). Only computed when a note was actually submitted.
+  const existingDetails =
+    evRow?.details && typeof evRow.details === 'object' && !Array.isArray(evRow.details)
+      ? (evRow.details as Record<string, unknown>)
+      : {}
+  const mergedDetails = { ...existingDetails, specialInstructions }
 
   const { error } = await admin
     .from('events')
@@ -414,6 +449,8 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
       // Only overwrite the ticket price when the form actually sent one (see priceFieldSent above),
       // so a free-mode edit never clears a price the editor did not surface.
       ...(priceFieldSent ? { price_cents: priceCents } : {}),
+      // Only touch details when a note was submitted, merging so nothing else in the blob is lost.
+      ...(specialInstructions ? { details: mergedDetails } : {}),
       // Only stamp recurrence on an anchor row; a child occurrence keeps recurrence_type 'none'.
       ...(isAnchor
         ? { recurrence_type: recurrenceTypeEdit, recurrence_until: recurrenceUntilEdit }
