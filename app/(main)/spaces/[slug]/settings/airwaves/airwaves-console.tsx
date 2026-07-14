@@ -13,8 +13,9 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { RecordingBlockEmbed } from '@/components/airwaves/recording-block-embed'
 import { RecordingAttachManager } from '@/components/airwaves/recording-attach-manager'
 import type { AttachedRecordingRow } from '@/lib/airwaves/attach-actions'
-import type { Recording, RecordingVisibility } from '@/lib/airwaves/types'
+import type { Recording, RecordingVisibility, Show } from '@/lib/airwaves/types'
 import { RECORDING_VISIBILITIES } from '@/lib/airwaves/types'
+import { ShowManager } from './show-manager'
 import {
   uploadRecordingAction,
   setRecordingVisibilityAction,
@@ -34,6 +35,9 @@ export function AirwavesConsole({
   spaceAttachments,
   canEdit,
   engagementByRecordingId,
+  shows = [],
+  coverUrlByShowId = {},
+  feedBaseUrl = '',
 }: {
   slug: string
   spaceId: string
@@ -43,12 +47,21 @@ export function AirwavesConsole({
   /** Server-rendered ratings + discussion per Recording (Airwaves P2). Keyed by recording id; a
    *  recording added client-side in this session simply has none until the next refresh. */
   engagementByRecordingId?: Record<string, ReactNode>
+  /** Airwaves P3 — the space's Shows (podcast feeds), for the owner-only Shows tab. */
+  shows?: Show[]
+  /** Resolved cover-art URL per Show id, for the Shows tab thumbnails. */
+  coverUrlByShowId?: Record<string, string>
+  /** Public podcast base for this space (`${SITE_URL}/podcasts/${slug}`); a feed is `${base}/${showSlug}/rss.xml`. */
+  feedBaseUrl?: string
 }) {
   const [recordings, setRecordings] = useState<Recording[]>(initial)
   const [error, setError] = useState<string | null>(null)
   const [title, setTitle] = useState('')
   const [pending, startTransition] = useTransition()
   const fileRef = useRef<HTMLInputElement>(null)
+  // Airwaves P3 — Recordings vs Shows. Only owners (canEdit) get the Shows tab; a browse-only member
+  // stays on the flat Recordings view with no tab chrome.
+  const [tab, setTab] = useState<'recordings' | 'shows'>('recordings')
 
   const upload = (file: File) => {
     setError(null)
@@ -87,6 +100,28 @@ export function AirwavesConsole({
 
   return (
     <div className="space-y-8">
+      {canEdit && (
+        <nav className="flex gap-1 rounded-xl border border-border bg-surface p-1" role="tablist" aria-label="Airwaves sections">
+          {(['recordings', 'shows'] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              role="tab"
+              aria-selected={tab === t}
+              onClick={() => setTab(t)}
+              className={
+                tab === t
+                  ? 'flex-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary'
+                  : 'flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-muted transition-colors hover:text-text'
+              }
+            >
+              {t === 'recordings' ? 'Recordings' : 'Shows'}
+            </button>
+          ))}
+        </nav>
+      )}
+
+      <div className={canEdit && tab !== 'recordings' ? 'hidden' : 'space-y-8'}>
       {canEdit && (
         <section className="space-y-3 rounded-2xl border border-border bg-surface p-5">
           <SectionHeader title="Add a recording" />
@@ -205,6 +240,19 @@ export function AirwavesConsole({
             heading="Recordings on this space"
           />
         </section>
+      )}
+      </div>
+
+      {canEdit && (
+        <div className={tab === 'shows' ? '' : 'hidden'}>
+          <ShowManager
+            slug={slug}
+            shows={shows}
+            recordings={recordings}
+            coverUrlByShowId={coverUrlByShowId}
+            feedBaseUrl={feedBaseUrl}
+          />
+        </div>
       )}
     </div>
   )

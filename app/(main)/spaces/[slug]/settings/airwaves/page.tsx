@@ -12,8 +12,10 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listRecordingsForSpace } from '@/lib/airwaves/recordings'
+import { listShowsForSpace, getAssetMeta } from '@/lib/airwaves/shows'
 import { listAttachedRecordings } from '@/lib/airwaves/attach-actions'
 import { RecordingEngagement } from '@/components/airwaves/recording-engagement'
+import { SITE_URL } from '@/lib/site'
 import { AirwavesConsole } from './airwaves-console'
 
 export const metadata = { title: 'Airwaves' }
@@ -60,6 +62,20 @@ export default async function AirwavesConsolePage({
   const canEdit = caps.canEditProfile
   const spaceAttachments = canEdit ? await listAttachedRecordings('space', space.id) : []
 
+  // Airwaves P3 — the space's Shows (podcast feeds) for the owner-only Shows tab, plus each Show's
+  // resolved cover-art URL (for the list + edit thumbnails) and the public podcast base for feed links.
+  const shows = canEdit ? await listShowsForSpace(space.id) : []
+  const coverEntries = await Promise.all(
+    shows
+      .filter((s) => s.coverAssetId)
+      .map(async (s) => {
+        const meta = await getAssetMeta(s.coverAssetId)
+        return meta?.url ? ([s.id, meta.url] as const) : null
+      }),
+  )
+  const coverUrlByShowId = Object.fromEntries(coverEntries.filter((e): e is readonly [string, string] => e !== null))
+  const feedBaseUrl = `${SITE_URL}/podcasts/${slug}`
+
   // Airwaves P2 — ratings + discussion under each Recording, rendered server-side so the reused
   // ListingQna spine revalidates correctly. A walled private Recording renders nothing (canViewRecording).
   const revalidatePath = `/spaces/${slug}/settings/airwaves`
@@ -97,6 +113,9 @@ export default async function AirwavesConsolePage({
         spaceAttachments={spaceAttachments}
         canEdit={canEdit}
         engagementByRecordingId={engagementByRecordingId}
+        shows={shows}
+        coverUrlByShowId={coverUrlByShowId}
+        feedBaseUrl={feedBaseUrl}
       />
     </FocusTemplate>
   )
