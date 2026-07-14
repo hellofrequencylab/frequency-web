@@ -21,6 +21,7 @@ import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { getInitials, cn } from '@/lib/utils'
 import { readCoverSize, readCoverScrim, readCoverFocus } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { readTagline } from '@/lib/spaces/tagline'
+import { readProfileData } from '@/lib/spaces/profile-data'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
@@ -153,6 +154,10 @@ export default async function SpaceProfileChromeLayout({
     reviews && reviews.average != null && reviews.count > 0
       ? { ratingValue: reviews.average, reviewCount: reviews.count }
       : undefined
+  // The Space's public business facts (address / phone / website / socials), read from the SAME preferences
+  // source the Contact + Business blocks render, so the LocalBusiness JSON-LD below carries real NAP + sameAs.
+  // Pure sync read; only needed for the network schema.
+  const spaceProfile = isNetwork ? readProfileData(space.preferences) : {}
 
   // The per-Space FUNCTIONS this viewer may use — resolved by the SHARED helper the /manage console also
   // feeds (usableSpaceFunctions: spaceFunctionAccess over the viewer's space role; a staff previewer sees
@@ -543,6 +548,14 @@ export default async function SpaceProfileChromeLayout({
               tagline,
               logoUrl: space.brandLogoUrl,
               aggregateRating,
+              // NAP + sameAs for a LocalBusiness node (the "<category> near you" / AIO local signal). All
+              // already rendered on this page by the Contact / Business blocks; read the same source here so
+              // the schema carries the address, phone, website + socials instead of a name-only stub. hours is
+              // free text, so it is deliberately not mapped to schema.org openingHours (would emit invalid,
+              // silently-dropped data); geo / priceRange aren't captured on a Space yet.
+              telephone: spaceProfile.phone,
+              address: spaceProfile.address ? { streetAddress: spaceProfile.address } : null,
+              sameAs: [spaceProfile.website, ...(spaceProfile.socials ?? []).map((s) => s.url)],
             }),
             breadcrumbSchema([
               { name: 'Spaces', path: '/spaces' },
