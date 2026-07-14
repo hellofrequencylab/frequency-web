@@ -310,6 +310,10 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
     adminGroups: [{ domain: 'marketing', section: 'Analytics' }] },
   { id: 'marketing-market-read', href: '/admin/marketing/market-read', label: 'Market read', desc: 'Demand, geography, and content performance.', icon: 'Telescope', min: 'host', staffDomain: 'marketing',
     adminGroups: [{ domain: 'marketing', section: 'Analytics' }], adminNav: { section: 'vera-ai' } },
+  { id: 'marketing-import', href: '/admin/marketing/import', label: 'Import contacts', desc: 'Upload any CSV, map or auto-create fields, and preview the list before it lands in a Space.', icon: 'Upload', min: 'host', staffDomain: 'marketing',
+    adminGroups: [{ domain: 'marketing', section: 'Audience' }], adminNav: { section: 'growth', heading: 'Marketing' } },
+  { id: 'marketing-control-panel', href: '/admin/marketing/messaging/control-panel', label: 'Control panel', desc: 'Who got what: every campaign email and broadcast Dispatch, per recipient, with where it landed.', icon: 'Send', min: 'host', staffDomain: 'marketing',
+    adminGroups: [{ domain: 'marketing', section: 'Analytics' }], adminNav: { section: 'growth', heading: 'Marketing' } },
   { id: 'marketing-agent', href: '/admin/marketing/agent', label: 'Marketing agent', desc: 'Ask the AI operator to draft, segment, and run the busywork.', icon: 'Bot', min: 'host', staffDomain: 'marketing',
     adminGroups: [{ domain: 'marketing', section: 'AI operator' }], adminNav: { section: 'vera-ai' } },
   // ── CRM (§5b: Cockpit · Contacts · Deals · Segments · Graph) ──
@@ -554,8 +558,8 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     links: [
       { leaf: 'marketing-campaigns' }, { leaf: 'growth-funnels' }, { leaf: 'marketing-funnels' }, { leaf: 'marketing-automations' }, { leaf: 'marketing-nurture' },
       { leaf: 'beta-command' }, { leaf: 'marketing-beta' },
-      { leaf: 'marketing-analytics' }, { leaf: 'marketing-deliverability' }, { leaf: 'marketing-market-read' },
-      { leaf: 'marketing-agent' },
+      { leaf: 'marketing-analytics' }, { leaf: 'marketing-deliverability' }, { leaf: 'marketing-control-panel' }, { leaf: 'marketing-market-read' },
+      { leaf: 'marketing-import' }, { leaf: 'marketing-agent' },
     ],
   },
   {
