@@ -15,6 +15,7 @@ import { markVerifiedByAttendance } from '@/lib/verification/attendance'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 import { validateRecurrenceUntil } from '@/lib/events/recurrence'
 import { resolveRegionScopeId } from '@/lib/events/event-drafts'
+import { listCircleStewardIds, listSpaceStewardIds } from '@/lib/events/placement'
 import { cancelAudit } from '@/lib/events/event-lifecycle'
 import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
@@ -50,11 +51,11 @@ function parseGalleryPaths(raw: string | null): string[] {
   }
 }
 
-// Venmo handle (shown next to the price until payments turn on): strip a leading @,
-// keep Venmo's own charset, cap the length. Empty → null (clears the column on edit).
-function parseVenmoHandle(raw: string | null): string | null {
-  const cleaned = (raw ?? '').trim().replace(/^@/, '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 30)
-  return cleaned || null
+// Ticket price from the form: whole cents as a string. Blank / non-positive / garbage → null
+// (a free RSVP event). Kept as cents end-to-end so no float rounding creeps into the column.
+function parsePriceCents(raw: string | null): number | null {
+  const n = raw ? parseInt(raw.trim(), 10) : NaN
+  return Number.isFinite(n) && n > 0 ? n : null
 }
 
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
@@ -109,11 +110,18 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   const title = (formData.get('title') as string | null)?.trim()
   const description = (formData.get('description') as string | null)?.trim() || null
   const location = (formData.get('location') as string | null)?.trim() || null
-  // Scope: a circle event belongs to one of the creator's circles; a PUBLIC event
-  // (any Crew member, with or without a circle) is a standalone local event placed in
-  // the creator's region (resolved below, like the poster-scan flow).
-  const scopeType = (formData.get('scopeType') as string | null) === 'public' ? 'public' : 'circle'
-  const isPublic = scopeType === 'public'
+  // WHERE DOES IT LIVE. Three shapes:
+  //   • 'public' — a standalone local event placed in the creator's region (resolved below).
+  //   • 'circle' — belongs to a circle the creator HOSTS (scope_id = circle, scope_type='circle').
+  //   • 'space'  — lives under a space the creator RUNS: region-scoped like a public event, plus
+  //                events.space_id = the space (that column is the "lives under this Space" placement,
+  //                and 'space' is not a valid scope_type, so the base scope_type stays 'public').
+  const scopeRaw = (formData.get('scopeType') as string | null) ?? 'public'
+  const scopeChoice: 'public' | 'circle' | 'space' =
+    scopeRaw === 'circle' ? 'circle' : scopeRaw === 'space' ? 'space' : 'public'
+  const isPublic = scopeChoice === 'public'
+  // The scope_type COLUMN only ever holds 'circle' or 'public' (a space event is 'public' + space_id).
+  const scopeType = scopeChoice === 'circle' ? 'circle' : 'public'
   const formScopeId = formData.get('scopeId') as string | null
   const startsAt = formData.get('startsAt') as string | null
   const endsAt = (formData.get('endsAt') as string | null) || null
@@ -135,9 +143,9 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
 
   const visibilityRaw = (formData.get('visibility') as string | null) || 'circle_only'
   let visibility = VALID_VISIBILITY.includes(visibilityRaw) ? visibilityRaw : 'circle_only'
-  // A public (circle-less) event can't be circle_only — there is no circle to scope it to —
-  // so fall it back to public.
-  if (isPublic && visibility === 'circle_only') visibility = 'public'
+  // Only a circle event has a circle to scope to — a public OR space event can't be circle_only,
+  // so fall those back to public.
+  if (scopeChoice !== 'circle' && visibility === 'circle_only') visibility = 'public'
 
   const category = (formData.get('category') as string | null)?.trim() || 'gathering'
 
@@ -155,8 +163,8 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
       ? [coverImagePath, ...galleryImagePaths]
       : galleryImagePaths
   const headerCover = galleryWithCover[0] ?? null
-  // Host's Venmo handle, shown next to the price while ticket sales are off.
-  const venmoHandle = parseVenmoHandle(formData.get('venmoHandle') as string | null)
+  // Ticket price in cents (blank = a free RSVP event).
+  const priceCents = parsePriceCents(formData.get('priceCents') as string | null)
 
   // Event time zone (lib/time/zone): the venue's coordinates aren't known at insert (geocoding
   // runs async below), so seed the column with the creator's submitted zone when the form sends
@@ -166,7 +174,7 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   const timeZone = isValidTimeZone(submittedTz) ? submittedTz : HOME_TZ
 
   if (!title || !startsAt) return fail('Give the event a title and a start time.')
-  // A circle event must name a circle; a public event resolves its scope below.
+  // A circle or space event must name its target; a public event resolves its scope below.
   if (!isPublic && !formScopeId) return fail('Pick where this event lives.')
   // An end before the start is never valid — reject the bad write rather than store a
   // negative-duration event (the form should also block it, this is the server guard).
@@ -186,9 +194,28 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return fail('Sign in to create an event.')
 
-  // Resolve the scope: a circle event uses the chosen circle; a public event is placed in
-  // the creator's region (the same resolver the poster-scan flow uses).
-  const scopeId = isPublic ? await resolveRegionScopeId(myProfileId) : formScopeId
+  // AUTHZ RE-VALIDATION — the single most important guard here. The form only OFFERS circles the
+  // caller hosts and spaces they run, but an attacker can POST any id. Because an owned target
+  // places INSTANTLY (no steward approval step), the server must be the authority: re-derive the
+  // steward set for the chosen target and FAIL CLOSED unless the caller is in it. Never trust the
+  // client's scope list. `space_id` for a space event is set below (that column = instant placement).
+  let spaceIdForPlacement: string | null = null
+  if (scopeChoice === 'circle') {
+    const stewards = await listCircleStewardIds(formScopeId as string)
+    if (!stewards.includes(myProfileId)) {
+      return fail('You can only add an event to a circle you host.')
+    }
+  } else if (scopeChoice === 'space') {
+    const stewards = await listSpaceStewardIds(formScopeId as string)
+    if (!stewards.includes(myProfileId)) {
+      return fail('You can only add an event to a space you run.')
+    }
+    spaceIdForPlacement = formScopeId
+  }
+
+  // Resolve the base scope_id column: a circle event uses the chosen circle; a public OR space
+  // event is region-scoped (a space event additionally carries space_id, set at insert below).
+  const scopeId = scopeChoice === 'circle' ? formScopeId : await resolveRegionScopeId(myProfileId)
   if (!scopeId) return fail('We could not place this event in your area. Please try again.')
 
   const admin = createAdminClient()
@@ -206,9 +233,10 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   }
 
   const supabase = await createClient()
-  // Stamp the owning Space (defaults to the root space, so this single-tenant flow keeps
-  // behaving exactly as today).
-  const spaceId = await stampEventSpaceId()
+  // Stamp the owning Space. A 'space' scope stamps the CHOSEN space (already ownership-checked
+  // above, so it goes live there instantly); every other flow defaults to the root space, so the
+  // single-tenant path keeps behaving exactly as today.
+  const spaceId = await stampEventSpaceId(spaceIdForPlacement)
   // Cast: capacity/visibility/category/energy_tag/space_id are newer than the generated
   // DB types (lib/database.types.ts) — repo convention for not-yet-regenerated
   // columns (see lib/billing/*).
@@ -231,8 +259,8 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
       energy_tag: energyTag,
       cover_image_path: headerCover,
       gallery_image_paths: galleryWithCover,
-      // venmo_handle is newer than the generated DB types → rides the payload cast below.
-      venmo_handle: venmoHandle,
+      // Ticket price (null = free RSVP event). Setting it turns the event into a paid-ticket event.
+      price_cents: priceCents,
       // Event's IANA zone (newer than the generated DB types → cast). Refined from the geocoded
       // venue point in geocodeEventOnCreate; this seed keeps it non-null for online events too.
       time_zone: timeZone,
@@ -351,7 +379,11 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
       ? [coverImagePath, ...galleryImagePaths]
       : galleryImagePaths
   const headerCover = galleryWithCover[0] ?? null
-  const venmoHandle = parseVenmoHandle(formData.get('venmoHandle') as string | null)
+  // Price is OPTIONAL on edit: the form only sends `priceCents` when a paid price is set, so a
+  // missing field leaves price_cents untouched. That matters because the member edit page does
+  // not round-trip the current price, so a blank must never silently wipe a set ticket price.
+  const priceFieldSent = formData.get('priceCents') !== null
+  const priceCents = priceFieldSent ? parsePriceCents(formData.get('priceCents') as string | null) : null
 
   const admin = createAdminClient()
   const { data: ev } = await admin
@@ -379,8 +411,9 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
       energy_tag: energyTag,
       cover_image_path: headerCover,
       gallery_image_paths: galleryWithCover,
-      // venmo_handle is newer than the generated DB types → rides the payload cast below.
-      venmo_handle: venmoHandle,
+      // Only overwrite the ticket price when the form actually sent one (see priceFieldSent above),
+      // so a free-mode edit never clears a price the editor did not surface.
+      ...(priceFieldSent ? { price_cents: priceCents } : {}),
       // Only stamp recurrence on an anchor row; a child occurrence keeps recurrence_type 'none'.
       ...(isAnchor
         ? { recurrence_type: recurrenceTypeEdit, recurrence_until: recurrenceUntilEdit }

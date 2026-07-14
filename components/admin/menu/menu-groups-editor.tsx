@@ -358,7 +358,21 @@ export function MenuGroupsEditor({
       },
       onDragOver: (e: React.DragEvent) => {
         e.preventDefault()
-        moveOverItem(bucket, itemId)
+        // Insert relative to the pointer's position over this row: the TOP half drops the dragged item
+        // BEFORE this one, the BOTTOM half AFTER it. Without this, hovering a row always inserted before it,
+        // so the LAST slot was unreachable (and the old end-append-on-drop is what sent every move to the
+        // bottom). Bottom-half over the last row appends to the end of the bucket.
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+        const after = e.clientY > rect.top + rect.height / 2
+        if (!after) {
+          moveOverItem(bucket, itemId)
+          return
+        }
+        const list = itemsInBucket(bucket)
+        const idx = list.findIndex((it) => it.id === itemId)
+        const nextId = idx >= 0 && idx + 1 < list.length ? list[idx + 1].id : null
+        if (nextId) moveOverItem(bucket, nextId)
+        else moveIntoBucket(bucket)
       },
       onDragEnd: () => commitDrag(),
     }
@@ -562,7 +576,11 @@ function Bucket({
       }}
       onDrop={(e) => {
         e.preventDefault()
-        onDropInto()
+        // Only PLACE the item here on drop when the bucket is EMPTY (there was no item to hover, so no
+        // position was set). When the bucket has items, the live onDragOver reorder (moveOverItem) already
+        // put the dragged item in its correct slot — calling onDropInto() here would re-insert it at the END
+        // (overItemId=null → push), which is the bug where every moved item jumped to the bottom.
+        if (items.length === 0) onDropInto()
       }}
       className="mt-3"
     >

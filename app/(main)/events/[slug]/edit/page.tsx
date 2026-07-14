@@ -4,6 +4,7 @@ import { Copy } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { EventForm, type EventFormInitial } from '../../new/event-form'
+import { pointFromGeog } from '@/lib/events/geo'
 import { CancelEventButton } from './cancel-event-button'
 import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
 
@@ -38,7 +39,9 @@ interface EventEditRow {
   gallery_image_paths: string[] | null
   recurrence_type: string | null
   recurrence_until: string | null
-  venmo_handle: string | null
+  price_cents: number | null
+  /** PostGIS geog (EWKB hex or GeoJSON) — decoded to a point for the map prefill. */
+  geog: unknown
 }
 
 // A stored recurrence_until ISO -> the `YYYY-MM-DD` the date input wants (UTC date part).
@@ -68,12 +71,12 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
     .from('events')
     .select(
       'id, title, description, location, scope_id, starts_at, ends_at, capacity, visibility, category, ' +
-        'energy_tag, attendance_mode, online_url, venue_name, street, city, region, postal_code, country, is_cancelled, cover_image_path, gallery_image_paths, recurrence_type, recurrence_until, venmo_handle',
+        'energy_tag, attendance_mode, online_url, venue_name, street, city, region, postal_code, country, is_cancelled, cover_image_path, gallery_image_paths, recurrence_type, recurrence_until, price_cents, geog',
     )
     .eq('slug', slug)
     .maybeSingle()
-  // venmo_handle is newer than the generated DB types, so the typed select narrows to a
-  // query error — read through unknown (repo convention for not-yet-regenerated columns).
+  // The typed select can narrow to a query-error union; read through unknown (repo
+  // convention) so EventEditRow is applied to the resolved row.
   const ev = data as unknown as EventEditRow | null
   if (!ev) notFound()
 
@@ -88,6 +91,8 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
   }
 
   const attendanceMode = (['in_person', 'online', 'hybrid'] as const).find((m) => m === ev.attendance_mode) ?? 'in_person'
+  // Decode the stored geog to a {lat,lng} so the form's map preview shows the saved point in edit mode.
+  const venuePoint = pointFromGeog(ev.geog)
 
   const initial: Partial<EventFormInitial> = {
     title: ev.title ?? '',
@@ -112,7 +117,10 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
     country: ev.country ?? '',
     coverImagePath: ev.cover_image_path ?? '',
     galleryImagePaths: ev.gallery_image_paths ?? [],
-    venmoHandle: ev.venmo_handle ?? '',
+    // Price + venue point round-trip so edit mode mirrors create (map preview + price prefill).
+    priceCents: ev.price_cents ?? undefined,
+    venueLat: venuePoint?.lat,
+    venueLng: venuePoint?.lng,
   }
 
   return (
