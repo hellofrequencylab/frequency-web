@@ -805,7 +805,13 @@ function extractHref(attrs: string): string {
  */
 export function sanitizeInlineHtml(raw: unknown): string {
   if (typeof raw !== 'string') return ''
-  const input = raw.slice(0, MAX_TEXT)
+  // DECODE-FIRST (idempotency + self-heal): escapeHtmlText below escapes `&` `<` `>` `"` `'`, so running
+  // sanitize on save AND on render used to COMPOUND — `"` -> `&quot;` -> `&amp;quot;` -> ... a new layer
+  // every round-trip (the entity corruption bug). Decoding any existing entity artifacts back to their
+  // characters FIRST, then re-escaping once, makes sanitize idempotent (`sanitize(sanitize(x)) == sanitize(x)`)
+  // AND heals values already double/triple-escaped in storage. Security is unchanged: a decoded `<script>`
+  // still hits the tag allowlist below and is dropped, its text escaped.
+  const input = decodeEntitiesDeep(raw).slice(0, MAX_TEXT)
   const tagRe = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?:"[^"]*"|'[^']*'|[^"'>])*)>/g
   const open: string[] = []
   let out = ''
@@ -874,6 +880,19 @@ function decodeInlineEntities(s: string): string {
     .replace(/&amp;/g, '&')
 }
 
+/** Decode entity artifacts REPEATEDLY until the string stabilises, so a value that was escaped N times
+ *  (`&amp;amp;quot;` etc.) fully heals back to its characters, not just one layer. Bounded so a pathological
+ *  input can never loop. This is what makes sanitizeInlineHtml idempotent under save+render. Pure + total. */
+function decodeEntitiesDeep(s: string): string {
+  let prev = s
+  for (let i = 0; i < 6; i++) {
+    const next = decodeInlineEntities(prev)
+    if (next === prev) break
+    prev = next
+  }
+  return prev
+}
+
 /** The entity artifacts escapeHtmlText emits, as a detector (any one present). */
 const ENTITY_ARTIFACT_RE = /&(?:quot|#39|amp|lt|gt);/
 /** The inline marks a rich value legitimately carries — if a stored value has one of these it is REAL markup,
@@ -889,7 +908,8 @@ const REAL_INLINE_TAG_RE = /<\/?(?:b|strong|i|em|a|br)\b/i
 export function decodeLegacyEntities(raw: unknown): string {
   const v = typeof raw === 'string' ? raw : ''
   if (!v || REAL_INLINE_TAG_RE.test(v) || !ENTITY_ARTIFACT_RE.test(v)) return v
-  return decodeInlineEntities(v)
+  // Deep-decode so a value escaped N times (`&amp;amp;quot;`) fully heals, not just one layer.
+  return decodeEntitiesDeep(v)
 }
 
 /** The (blockId → field keys) whose PUBLISHED render honours inline HTML (rendered through

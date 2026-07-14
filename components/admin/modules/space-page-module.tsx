@@ -56,6 +56,8 @@ export function SpacePageModule() {
             customized: layout.customized,
             lockedIds: layout.lockedIds,
             pickerData: layout.pickerData,
+            // The draft/published status for the persistent publish bar (defaults true upstream).
+            profilePublished: data.profilePublished,
           }
         : null
       : undefined
