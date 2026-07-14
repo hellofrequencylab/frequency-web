@@ -3,7 +3,7 @@ import { buildBriefContext } from './brief'
 import type { TimelineEntry } from './timeline'
 
 function entry(over: Partial<TimelineEntry>): TimelineEntry {
-  return { id: 'i', channel: 'system', direction: 'internal', title: 'Followed up', detail: null, at: '2026-05-01T00:00:00.000Z', origin: 'interaction', ...over }
+  return { id: 'i', channel: 'system', direction: 'internal', title: 'Followed up', detail: null, at: '2026-05-01T00:00:00.000Z', origin: 'interaction', source: 'manual', ...over }
 }
 
 describe('buildBriefContext', () => {

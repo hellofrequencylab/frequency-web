@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import {
   User, UserCheck, Mail, QrCode, Activity, MapPin, Building2,
   Tag, StickyNote, Briefcase, Clock, ScanLine, Sparkles, Users,
-  MessageSquare, Phone, CalendarDays, HeartPulse, TrendingUp,
+  HeartPulse, TrendingUp, Send, MailOpen, MousePointerClick, Reply,
 } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
@@ -14,11 +14,13 @@ import { resolvePerson } from '@/lib/crm/person'
 import { getMemberScores } from '@/lib/dashboard/scores'
 import { draftContextLine, explainMemberScores } from '@/lib/dashboard/person-band'
 import { tierLabel, healthTone } from '@/lib/dashboard/verdict'
-import { listInteractionsForPerson, type InteractionChannel } from '@/lib/crm/interactions'
+import { listInteractionsForPerson } from '@/lib/crm/interactions'
 import { buildTimeline } from '@/lib/crm/timeline'
+import { getContactEngagementStats } from '@/lib/crm/engagement-stats'
 import { buildJourney, groupByPhase, type JourneyKind } from '@/lib/crm/journey'
 import { InviteButton } from './invite-button'
-import { ConsentToggle, AddNote, EditContactFields } from './contact-actions'
+import { ConsentToggle, EditContactFields } from './contact-actions'
+import { TimelinePanel } from './timeline-panel'
 import { ResonanceSection } from './resonance-section'
 import { Suspense } from 'react'
 
@@ -42,19 +44,18 @@ const KIND_ICON: Record<JourneyKind, typeof User> = {
   deal: Briefcase,
 }
 
-const CHANNEL_ICON: Record<InteractionChannel, typeof User> = {
-  email: Mail,
-  sms: MessageSquare,
-  call: Phone,
-  in_person: Users,
-  event: CalendarDays,
-  note: StickyNote,
-  system: Activity,
-}
-
 function fmtDate(iso: string | null): string {
   if (!iso) return '–'
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+/** A short plain recency qualifier for the "Last touch" stat (no em dashes). */
+function recencyLabel(days: number): string {
+  if (days <= 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return `${days} days ago`
+  if (days < 30) return 'This month'
+  return 'Over a month ago'
 }
 
 function Chip({ children }: { children: React.ReactNode }) {
@@ -91,11 +92,16 @@ export default async function ContactStatsPage({ params }: { params: Promise<{ i
   // profile + capture subjects. Legacy capture notes + QR scans are folded in until the write adapters
   // backfill them into contact_interactions.
   const subjectIds = [contact.id, contact.profileId, ...captures.map((c) => c.id)]
+  // The FULL timeline (automated events included); the client TimelinePanel re-filters with the toggle.
   const timeline = buildTimeline({
     interactions: await listInteractionsForPerson(subjectIds),
     notes: captures.flatMap((c) => c.notes.map((n) => ({ id: n.id, body: n.body, createdAt: n.createdAt }))),
     scans: person.scans.map((s) => ({ id: s.id, codeTitle: s.codeTitle, scannedAt: s.scannedAt })),
   })
+
+  // Per-contact engagement rollup (ADR-372 Phase 1): sent / opened / clicked / replied + recency,
+  // computed on read off contact_interactions + email_events. Fail-safe to an all-zero block.
+  const engagement = await getContactEngagementStats(subjectIds, contact.email)
 
   const name = contact.displayName || member?.displayName || contact.email
   const channel = member?.acquisition?.channel ?? contact.acquisition?.channel ?? contact.source ?? '–'
@@ -224,6 +230,29 @@ export default async function ContactStatsPage({ params }: { params: Promise<{ i
         <StatCard label="First seen" value={fmtDate(contact.firstSeenAt ?? contact.createdAt)} icon={Clock} />
       </div>
 
+      {/* Engagement rollup (ADR-372 Phase 1): how much this person has been reached and how they have
+          responded, off the interaction log + email events. A calm zero row reads "nothing yet". */}
+      <section className="mt-8">
+        <SectionHeader title="Engagement" />
+        <p className="mb-3 text-xs text-subtle">
+          How often this person has been reached and how they have responded. Counts every logged email
+          and in-house message, plus email opens and clicks. Log a call, meeting, or note below to keep
+          it complete.
+        </p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <StatCard label="Sent" value={engagement.sent} icon={Send} />
+          <StatCard label="Opened" value={engagement.opened} icon={MailOpen} />
+          <StatCard label="Clicked" value={engagement.clicked} icon={MousePointerClick} />
+          <StatCard label="Replied" value={engagement.replied} icon={Reply} />
+          <StatCard
+            label="Last touch"
+            value={fmtDate(engagement.lastTouchAt)}
+            icon={Clock}
+            detail={engagement.recencyDays == null ? 'No touches yet' : recencyLabel(engagement.recencyDays)}
+          />
+        </div>
+      </section>
+
       {/* Grouped records — the "everything about this person, together" panel. */}
       <section className="mt-8">
         <SectionHeader title="Grouped records" />
@@ -313,37 +342,9 @@ export default async function ContactStatsPage({ params }: { params: Promise<{ i
         )}
       </section>
 
-      {/* Interaction timeline — the raw chronological record (ADR-372) + the staff note composer. */}
-      <section className="mt-8">
-        <SectionHeader title="Timeline" count={timeline.length} />
-        <AddNote contactId={contact.id} />
-        {timeline.length === 0 ? (
-          <EmptyState
-            icon={Activity}
-            title="No interactions yet"
-            description="Notes, emails, calls, and in-person touches will show here, newest first."
-          />
-        ) : (
-          <ol className="relative mt-3 space-y-3 border-l border-border pl-5">
-            {timeline.map((e) => {
-              const Icon = CHANNEL_ICON[e.channel] ?? Activity
-              return (
-                <li key={e.id} className="relative">
-                  <span className="absolute -left-[27px] flex h-5 w-5 items-center justify-center rounded-full bg-surface-elevated text-primary-strong">
-                    <Icon className="h-3 w-3" />
-                  </span>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <span className="text-sm font-medium text-text">{e.title}</span>
-                    <Chip>{e.channel.replace('_', ' ')}</Chip>
-                    <span className="text-xs text-subtle">{fmtDate(e.at)}</span>
-                  </div>
-                  {e.detail && <p className="mt-0.5 text-sm text-muted">{e.detail}</p>}
-                </li>
-              )
-            })}
-          </ol>
-        )}
-      </section>
+      {/* Interaction timeline (ADR-372) — the system/human toggle + the manual "log a touch" composer
+          live in the client panel; it receives the full timeline and filters on the client. */}
+      <TimelinePanel contactId={contact.id} entries={timeline} />
 
       {/* The path through the system */}
       <section className="mt-8">
