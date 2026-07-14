@@ -26,6 +26,9 @@ const PENDING_AVATAR_KEY = 'fq_pending_avatar'
 import { FeedRender } from '@/components/onboarding/renders/feed-render'
 import { CirclesRender } from '@/components/onboarding/renders/circles-render'
 import { EventsRender } from '@/components/onboarding/renders/events-render'
+import { BookingRender } from '@/components/onboarding/renders/booking-render'
+import { CheckinRender } from '@/components/onboarding/renders/checkin-render'
+import { DonateRender } from '@/components/onboarding/renders/donate-render'
 import { WizardProgress, wizardPrimaryClass } from '@/components/templates'
 
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
@@ -74,7 +77,7 @@ type Props = {
 }
 
 const HANDLE_RE = /^[a-z0-9_]+$/
-const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender }
+const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender, booking: BookingRender, checkin: CheckinRender, donate: DonateRender }
 const BEAT_COUNT = 5 // 0 oath · 1 intro · 2 reel · 3 identity+place · 4 enter
 // Accessible name for each beat — drives the progress bar's label and the polite
 // live announcement so assistive tech tracks "where am I" through the sequence.
@@ -422,8 +425,9 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       // eslint-disable-next-line @next/next/no-img-element
       return <img src={art.src} alt="" className="h-full w-full rounded-2xl border border-border object-cover" />
     }
-    // TODO(P4): dedicated <booking|checkin|donate> render — reuse `events` until they exist.
-    const C = (RENDERS as Record<string, typeof FeedRender>)[art.render] ?? EventsRender
+    // Every render kind (feed / circles / events / booking / checkin / donate) has a
+    // dedicated mockup in RENDERS, so the kind resolves directly to its component.
+    const C = RENDERS[art.render]
     return <C animate={active} />
   }
 
