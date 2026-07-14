@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { QrCode, Link2, Check, ExternalLink, Share2 } from 'lucide-react'
+import { QrCode, Link2, Check, ExternalLink, Share2, Send } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { DEFAULT_STYLE } from '@/lib/qr/style'
@@ -23,6 +23,7 @@ export function EventShareButton({
   slug,
   title,
   sharerProfileId,
+  hostClaimUrl,
   className,
 }: {
   slug: string
@@ -30,10 +31,15 @@ export function EventShareButton({
   /** The viewer's profile id — rides the share url as `?ref=` so a signup is credited to the sharer.
    *  Null for a signed-out viewer (no ref attached). */
   sharerProfileId: string | null
+  /** The one-time host CLAIM link (`/events/claim/<token>`), passed ONLY when the viewer is the person
+   *  who SEEDED this event and it is not yet claimed. Surfaces a "Send to host" block in the popup so the
+   *  seeder can hand the event off to its real organizer. Absent for everyone else. */
+  hostClaimUrl?: string | null
   className?: string
 }) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [hostCopied, setHostCopied] = useState(false)
   // Feature-detect the native share sheet once, lazily. The share panel lives inside a Dialog that
   // renders nothing until it is opened by a click, so this is only ever read on the client (never in
   // the server HTML) — no hydration mismatch — and the button appears only where the OS provides one.
@@ -55,6 +61,14 @@ export function EventShareButton({
 
   function nativeShare() {
     navigator.share?.({ title, url }).catch(() => {})
+  }
+
+  function copyHost() {
+    if (!hostClaimUrl) return
+    navigator.clipboard?.writeText(hostClaimUrl).then(() => {
+      setHostCopied(true)
+      setTimeout(() => setHostCopied(false), 1500)
+    })
   }
 
   return (
@@ -129,6 +143,35 @@ export function EventShareButton({
               <p className="text-2xs text-subtle">Anyone with the link or the code lands on this event.</p>
             </div>
           </div>
+
+          {/* Send to host: only the person who SEEDED this event sees this, and only until it is claimed.
+              The claim link hands the event off to its real organizer so they can take it over. */}
+          {hostClaimUrl && (
+            <div className="mt-4 space-y-2 rounded-xl border border-primary/30 bg-primary-bg/40 p-3">
+              <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
+                <Send className="h-3.5 w-3.5" /> Send to host
+              </p>
+              <p className="text-2xs text-muted">
+                You posted this for its host. Send them this link so they can claim the event and make it their own.
+              </p>
+              <div className="flex items-center gap-2">
+                <code
+                  className="block flex-1 truncate rounded-lg border border-border bg-surface px-2.5 py-1.5 font-mono text-2xs text-muted"
+                  title={hostClaimUrl}
+                >
+                  {hostClaimUrl}
+                </code>
+                <button
+                  type="button"
+                  onClick={copyHost}
+                  className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-2xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                >
+                  {hostCopied ? <Check className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
+                  {hostCopied ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </Dialog>
     </>

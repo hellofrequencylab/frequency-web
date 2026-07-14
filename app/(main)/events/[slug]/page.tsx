@@ -30,7 +30,6 @@ import { type RecapPhoto } from '@/components/events/recap-album'
 import { EventGallery } from '@/components/events/event-gallery'
 import { HostHovercard } from '@/components/events/host-hovercard'
 import { EventShareButton } from '@/components/events/event-share-button'
-import { ClaimEventBanner } from '@/components/events/claim-event-banner'
 import { type CohostView } from '@/components/events/cohost-manager'
 import { CohostInviteBanner } from '@/components/events/cohost-invite-banner'
 import { listCohosts, listCohostInvites, getMyCohostInvite } from '@/lib/events/cohosts'
@@ -237,6 +236,8 @@ export default async function EventDetailPage({
   type ExtraMeta = {
     posted_by_profile_id: string | null
     claimed_at: string | null
+    /** One-time host claim token (seeded events). Drives the seeder's "Send to host" link. */
+    claim_token: string | null
     organizer_name: string | null
     details: EventDetailsWithMedia | null
     poster_path: string | null
@@ -267,7 +268,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, theme, geog',
+        'posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, theme, geog',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -587,6 +588,13 @@ export default async function EventDetailPage({
       .order('succeeded_at', { ascending: false })
     soldTickets = (rawSold ?? []) as unknown as SoldTicketRow[]
   }
+
+  // Total tickets sold — folded onto the RSVP ticket card, replacing the retired rail Pricing/Sales
+  // boxes. Tiers carry a public `sold` count (the same column that drives spotsLeft/sold-out), so
+  // every viewer sees a real tally; a flat-price event falls back to the host-visible ticket rows.
+  const ticketsSold = hasTiers
+    ? tierRows.reduce((sum, t) => sum + Math.max(0, t.sold ?? 0), 0)
+    : soldTickets.length
 
   // Resolve the event's real instant through its own zone — never compare the raw
   // wall-clock to now (that flipped a 7pm PT event "past" at noon, hiding RSVP and
@@ -916,6 +924,10 @@ export default async function EventDetailPage({
               )}
             </div>
           )}
+          {/* Tickets sold, folded onto the ticket card from the retired rail Sales box. Quiet, factual. */}
+          <p className="mt-3 text-xs text-subtle">
+            {ticketsSold > 0 ? `${ticketsSold} sold` : 'No tickets sold yet'}
+          </p>
         </div>
       )}
       {ticketingActive ? null : !event.is_cancelled && myProfileId && !isPast ? (
@@ -1144,15 +1156,9 @@ export default async function EventDetailPage({
         <CohostInviteBanner eventId={event.id} slug={event.slug} eventTitle={event.title} />
       )}
 
-      {/* "This is not my event" — for an unclaimed posted event, name the poster +
-          organizer and give the organizer a path to claim it. Hidden for managers. */}
-      {isUnclaimedPosted && !canManage && (
-        <ClaimEventBanner
-          eventId={event.id}
-          organizerName={extra?.organizer_name ?? null}
-          postedByName={postedBy?.display_name ?? null}
-        />
-      )}
+      {/* The public "Is this your event? Claim it" banner is retired (owner directive): the person who
+          SEEDED the event now hands it off privately via the "Send to host" link in the QR and Share popup,
+          so the claim path is no longer surfaced to every visitor. */}
 
       <DetailTemplate
         // [A1] header image — the one big visual win. Uploaded cover, else the scanned
@@ -1207,7 +1213,18 @@ export default async function EventDetailPage({
         // additionally get Edit (Settings drawer) then Manage (dashboard), stacked beneath it.
         actions={
           <div className="flex flex-col items-stretch gap-2 sm:items-end">
-            <EventShareButton slug={event.slug} title={event.title} sharerProfileId={myProfileId} />
+            <EventShareButton
+              slug={event.slug}
+              title={event.title}
+              sharerProfileId={myProfileId}
+              // "Send to host": only the SEEDER (the poster) of an unclaimed event gets the claim link, so
+              // they can hand it to its real organizer. Everyone else gets null (no block shown).
+              hostClaimUrl={
+                isUnclaimedPosted && myProfileId && myProfileId === postedById && extra?.claim_token
+                  ? `${SITE_URL}/events/claim/${extra.claim_token}`
+                  : null
+              }
+            />
             {canManage && (
               <>
                 <OpenAdminBarButton

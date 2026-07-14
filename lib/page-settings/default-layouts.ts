@@ -41,12 +41,15 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
   // every event shares unless an operator deliberately rearranges it (per-event saved layouts were
   // cleared so every event reads the same — same boxes, same order). MAIN carries the content the
   // host wrote + the conversation (description → activity → the Host profile box → poster sections →
-  // recap); SIDE is the at-a-glance + action column: RSVP first, then when/where facts, and cohosts.
-  // The address (with its Maps deep-link) is in the page header and the venue map is the bottom-of-main
-  // block, so the old side `event-location` card is dropped here to avoid a second map (re-addable in Layout). The host "Post an update" composer is folded into activity
-  // (one role-based composer); the poster "Details" block stays re-addable from Settings → Layout.
-  // Ticketing lives in the RSVP/Join box (event-join), so the poster 'event-pricing' box and the
-  // host 'event-sales' box are OUT of the default layout (both stay re-addable from Settings → Layout).
+  // recap), then the ONE canonical venue block (event-location: the address line + its map) pinned
+  // at the bottom; SIDE is the at-a-glance + action column: RSVP first, then when/where facts, and
+  // cohosts. The header still shows the address (with its Maps deep-link); the bottom-of-main
+  // event-location is the single map on the page (the redundant bare `event-venue-map` and the
+  // duplicate `event-gallery` were dropped from the event module set). The host "Post an update"
+  // composer is folded into activity (one role-based composer); the poster "Details" block stays
+  // re-addable from Settings → Layout. Ticketing lives in the RSVP/Join box (event-join) — the sold
+  // count is folded onto the ticket card — so the poster 'event-pricing' box and the host
+  // 'event-sales' box are gone from the event set.
   '/events/*': {
     template: 'main-side',
     slots: {
@@ -59,8 +62,9 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
           'event-links',
           'event-sponsors',
           'event-recap',
-          // The venue map, pinned at the bottom of the main column (self-hides when there's no geo).
-          'event-venue-map',
+          // The ONE canonical venue block — the address line + its map — pinned at the bottom of the
+          // main column (self-hides for an online event or when there's no address/geo).
+          'event-location',
         ],
         hidden: [],
         roles: {},

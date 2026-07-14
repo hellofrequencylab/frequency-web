@@ -21,6 +21,7 @@ export function StudioWindow({
   children,
   footer,
   closeLabel = 'Close',
+  hideChrome = false,
 }: {
   open: boolean
   onClose: () => void
@@ -30,6 +31,9 @@ export function StudioWindow({
   /** Sticky bottom action bar (save state · primary actions). */
   footer?: ReactNode
   closeLabel?: string
+  /** Hide the top chrome bar (eyebrow + close X) entirely. Used when the entity owns its own header
+   *  (e.g. the Event window's logo bar carries the close button), so there is no separate top line. */
+  hideChrome?: boolean
 }) {
   // Trap + restore focus while open (the "focus-trap-lite" the header promised but never
   // implemented). Esc + scroll-lock stay in the effect below; the hook adds only focus.
@@ -69,18 +73,20 @@ export function StudioWindow({
         tabIndex={-1}
         className="flex h-full w-full flex-col overflow-hidden bg-canvas shadow-2xl outline-none sm:h-auto sm:max-h-[86vh] sm:max-w-3xl sm:rounded-3xl sm:border sm:border-border"
       >
-        {/* Chrome bar */}
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-widest text-primary-strong">{eyebrow}</p>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={closeLabel}
-            className="rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+        {/* Chrome bar — skipped when the entity owns its own header (hideChrome). Esc still closes. */}
+        {!hideChrome && (
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary-strong">{eyebrow}</p>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={closeLabel}
+              className="rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
         {/* Body — the entity's tools */}
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">{children}</div>
