@@ -19,6 +19,7 @@ interface CircleSettingsRow {
   city: string | null
   neighborhood: string | null
   resonance_public: boolean | null
+  unlisted: boolean | null
 }
 
 export default async function CircleSettingsPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -27,7 +28,7 @@ export default async function CircleSettingsPage({ params }: { params: Promise<{
 
   const { data } = await admin
     .from('circles')
-    .select('id, name, about, type, member_cap, image_url, city, neighborhood, resonance_public')
+    .select('id, name, about, type, member_cap, image_url, city, neighborhood, resonance_public, unlisted')
     .eq('slug', slug)
     .maybeSingle()
   const circle = data as CircleSettingsRow | null
@@ -45,6 +46,7 @@ export default async function CircleSettingsPage({ params }: { params: Promise<{
     city: circle.city ?? '',
     neighborhood: circle.neighborhood ?? '',
     resonancePublic: circle.resonance_public ?? false,
+    unlisted: circle.unlisted ?? false,
   }
 
   return (

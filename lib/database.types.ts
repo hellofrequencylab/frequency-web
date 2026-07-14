@@ -1469,6 +1469,7 @@ export type Database = {
           timezone: string | null
           topical_channel_id: string | null
           type: Database["public"]["Enums"]["circle_type"]
+          unlisted: boolean
         }
         Insert: {
           about?: string | null
@@ -1497,6 +1498,7 @@ export type Database = {
           timezone?: string | null
           topical_channel_id?: string | null
           type?: Database["public"]["Enums"]["circle_type"]
+          unlisted?: boolean
         }
         Update: {
           about?: string | null
@@ -1525,6 +1527,7 @@ export type Database = {
           timezone?: string | null
           topical_channel_id?: string | null
           type?: Database["public"]["Enums"]["circle_type"]
+          unlisted?: boolean
         }
         Relationships: [
           {

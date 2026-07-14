@@ -288,11 +288,11 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
       // personalization is a nicety, never a blocker
     }
     // Welcome the new member from Vera — one quiet join line in the feed plus a
-    // personal notification (ADR-231) — once, only on first completion (`meta` was
-    // read pre-update, so it reflects the prior state). Best-effort.
-    if (!(meta as { onboarding_completed?: boolean }).onboarding_completed) {
-      postWelcomeForMember(prof.id, displayName, handle).catch(() => {})
-    }
+    // personal notification (ADR-231). Called unconditionally now: postWelcomeForMember
+    // is idempotent (a reward_grants lock posts at most once per member), so dropping the
+    // old `!onboarding_completed` gate is what lets a member who was flagged onboarded by
+    // an earlier path (but never got a line) finally receive one, without any double-post.
+    postWelcomeForMember(prof.id, displayName, handle).catch(() => {})
   }
 
   if (user.email) {
@@ -390,7 +390,7 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, meta')
+    .select('id, meta, handle, display_name')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!profile) return
@@ -452,6 +452,14 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
   }).catch(() => {})
 
   for (const p of allPersonas) await tagPersona(profile.id as string, p)
+
+  // Safety net for the deferred/merge path: a returning member who reaches /complete may have
+  // been flagged onboarded by an earlier path that NEVER posted their join line. Idempotency
+  // (reward_grants lock) means this posts the line only if it was never posted — so a member
+  // who was silently skipped finally gets their notice, and one who already has it is untouched.
+  const mergeHandle = (profile.handle as string | null) ?? ''
+  const mergeName = newDisplayName || (profile.display_name as string | null) || mergeHandle
+  if (mergeHandle) postWelcomeForMember(profile.id as string, mergeName, mergeHandle).catch(() => {})
 
   // Beta: a returning member who was still on the Member tier comes up to Crew.
   await grantBetaCrew(user.id)

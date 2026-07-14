@@ -305,6 +305,7 @@ export async function updateCircle(id: string, fd: FormData) {
   if (fd.has('city')) opt.city = (fd.get('city') as string)?.trim() || null
   if (fd.has('neighborhood')) opt.neighborhood = (fd.get('neighborhood') as string)?.trim() || null
   if (fd.has('resonance_public')) opt.resonance_public = fd.get('resonance_public') === 'on'
+  if (fd.has('unlisted')) opt.unlisted = fd.get('unlisted') === 'on'
 
   const { error } = await admin.from('circles').update({
     name:       (fd.get('name') as string).trim(),
@@ -342,6 +343,9 @@ export async function updateCircleSettings(id: string, fd: FormData) {
       city: (fd.get('city') as string)?.trim() || null,
       neighborhood: (fd.get('neighborhood') as string)?.trim() || null,
       resonance_public: fd.get('resonance_public') === 'on',
+      // Unlisted hides the circle from discovery (index/map/directory/sitemap) while keeping it
+      // reachable by direct link and visible to its members. Only written when the form sends it.
+      ...(fd.has('unlisted') ? { unlisted: fd.get('unlisted') === 'on' } : {}),
     })
     .eq('id', id)
   if (error) throw new Error(error.message)

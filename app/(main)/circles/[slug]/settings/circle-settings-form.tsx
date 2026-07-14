@@ -18,6 +18,7 @@ export interface CircleSettingsInitial {
   city: string
   neighborhood: string
   resonancePublic: boolean
+  unlisted: boolean
 }
 
 const input =
@@ -43,6 +44,7 @@ export function CircleSettingsForm({
   const [city, setCity] = useState(initial.city)
   const [neighborhood, setNeighborhood] = useState(initial.neighborhood)
   const [resonancePublic, setResonancePublic] = useState(initial.resonancePublic)
+  const [unlisted, setUnlisted] = useState(initial.unlisted)
   const [pending, start] = useTransition()
   const [confirmArchive, setConfirmArchive] = useState(false)
   const [archiving, startArchive] = useTransition()
@@ -72,6 +74,7 @@ export function CircleSettingsForm({
     fd.set('city', city)
     fd.set('neighborhood', neighborhood)
     fd.set('resonance_public', resonancePublic ? 'on' : 'off')
+    fd.set('unlisted', unlisted ? 'on' : 'off')
     start(async () => {
       await updateCircleSettings(circleId, fd)
       router.push(`/circles/${slug}`)
@@ -128,6 +131,19 @@ export function CircleSettingsForm({
       <div>
         <label className={lbl}>Neighborhood <span className="font-normal text-subtle">(optional)</span></label>
         <input type="text" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} placeholder="e.g. Leucadia" disabled={pending} className={input} />
+      </div>
+
+      <div className="rounded-lg border border-border bg-surface-elevated/40 p-3 sm:col-span-2">
+        <label className="flex items-start gap-2.5 text-sm text-text">
+          <input type="checkbox" checked={unlisted} onChange={(e) => setUnlisted(e.target.checked)} disabled={pending} className="mt-0.5 h-4 w-4 rounded border-border-strong text-primary focus:ring-2 focus:ring-primary/40" />
+          <span>
+            <span className="font-medium">Unlisted</span>
+            <span className="mt-0.5 block text-2xs text-muted">
+              Keep this circle off the Circles directory, map, and search. Anyone with the link can still open it,
+              and your members always see it. Great for a private group you invite by hand.
+            </span>
+          </span>
+        </label>
       </div>
 
       <div className="sm:col-span-2">
