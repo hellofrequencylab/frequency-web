@@ -9,6 +9,10 @@
       "schedule": "0 13 * * *"
     },
     {
+      "path": "/api/cron/vera-owner-brief",
+      "schedule": "0 13 * * *"
+    },
+    {
       "path": "/api/cron/nurture",
       "schedule": "*/15 * * * *"
     },
