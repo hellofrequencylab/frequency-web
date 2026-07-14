@@ -27,7 +27,6 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: Request) {
   const caller = await getCallerProfile()
   if (!caller) return new Response('Sign in to generate a code.', { status: 401 })
-  const profileId = caller.id
 
   const url = new URL(request.url)
   const format = url.searchParams.get('format') === 'png' ? 'png' : 'svg'
