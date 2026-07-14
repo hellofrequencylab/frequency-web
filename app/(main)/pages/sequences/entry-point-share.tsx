@@ -27,7 +27,7 @@ export function EntryPointShare({
   /** Omit for sequences without a public splash page (DB-built versions). */
   splashPath?: string
   inductionPath: string
-  /** Pre-rendered inline QR SVGs (server-side renderQrSvg). */
+  /** Pre-rendered inline QR SVGs (server-side, branded site style via renderStyledQrSvg). */
   splashQr?: string
   inductionQr: string
   /** Canonical site origin (lib/site.ts SITE_URL) — what the QR also encodes. */

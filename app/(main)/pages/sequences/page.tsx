@@ -16,7 +16,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { listAllSequences, resolveSequence } from '@/lib/onboarding/resolve-sequence'
 import { createSequenceVersion, createFromTemplateAction } from './builder-actions'
 import { getTrait } from '@/lib/traits/registry'
-import { renderQrSvg } from '@/lib/qr/render'
+import { renderStyledQrSvg } from '@/lib/qr/render-styled'
+import { styleWithInlinedLogo } from '@/lib/qr/raster'
+import { DEFAULT_STYLE } from '@/lib/qr/style'
 import { toAbsoluteSiteUrl } from '@/lib/qr/links'
 import { SITE_URL } from '@/lib/site'
 import { EntryPointShare } from './entry-point-share'
@@ -51,13 +53,19 @@ export default async function SplashFunnelsPage() {
     .filter((s) => s.source === 'custom')
     .slice(0, MAX_FUNNELS)
 
+  // The branded site QR style: the default style (connected modules, rounded eyes) with
+  // the Frequency logo centered. Fetch + inline the logo ONCE server-side so every funnel
+  // QR below is a self-contained SVG (no remote <image href>); a failed fetch drops the
+  // logo (null) and the code still renders. Matches the QR Studio / flyer default look.
+  const brandedStyle = await styleWithInlinedLogo(DEFAULT_STYLE)
+
   // Resolve each funnel (copy + tag, preview so drafts show their real content) and
-  // pre-render its induction QR server-side (same renderer as every other QR surface).
+  // pre-render its induction QR server-side in the branded site style.
   const cards = await Promise.all(
     funnels.map(async (f) => {
       const seq = await resolveSequence(f.slug, { preview: true })
       const inductionPath = `/onboarding/beta?seq=${f.slug}`
-      const inductionQr = await renderQrSvg(toAbsoluteSiteUrl(inductionPath), 160)
+      const inductionQr = renderStyledQrSvg(toAbsoluteSiteUrl(inductionPath), brandedStyle, 160)
       return {
         slug: f.slug,
         status: f.status,
@@ -203,7 +211,7 @@ export default async function SplashFunnelsPage() {
                 {/* Actions: edit + preview, then the lifecycle controls. */}
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Link href={`/pages/sequences/${slug}/build`} className={EDIT_BTN}>
+                    <Link href={`/pages/sequences/${slug}/edit`} className={EDIT_BTN}>
                       <Pencil className="h-3.5 w-3.5" /> Edit
                     </Link>
                     <a
