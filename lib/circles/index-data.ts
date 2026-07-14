@@ -235,7 +235,9 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
   // detail page always resolves by direct link. So drop unlisted circles up front unless the viewer
   // belongs to one; everything downstream (facets, map, rollups) then reads the already-filtered set.
   const all = rawCircles.filter((c) => !c.unlisted || myCircleIds.includes(c.id))
-  const hitFetchCap = all.length === CIRCLES_FETCH_LIMIT
+  // Cap check reads the RAW fetch, not the post-filter set: dropping unlisted circles must not make
+  // a truncated 500-row fetch look complete (else the "refine to see more" notice would hide).
+  const hitFetchCap = rawCircles.length === CIRCLES_FETCH_LIMIT
   const domainCount = new Map<string, number>()
   for (const c of all) {
     const d = c.channel?.pillar_id

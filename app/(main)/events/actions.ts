@@ -400,9 +400,9 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
       ? [coverImagePath, ...galleryImagePaths]
       : galleryImagePaths
   const headerCover = galleryWithCover[0] ?? null
-  // Price is OPTIONAL on edit: the form only sends `priceCents` when a paid price is set, so a
-  // missing field leaves price_cents untouched. That matters because the member edit page does
-  // not round-trip the current price, so a blank must never silently wipe a set ticket price.
+  // Price: the edit form always sends `priceCents` (the cents for a paid event, or '0' for Free,
+  // which parsePriceCents turns into null so the price is cleared). We still guard on the field
+  // being present so any other caller that omits it leaves price_cents untouched rather than wiping it.
   const priceFieldSent = formData.get('priceCents') !== null
   const priceCents = priceFieldSent ? parsePriceCents(formData.get('priceCents') as string | null) : null
 

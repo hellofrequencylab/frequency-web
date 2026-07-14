@@ -313,12 +313,17 @@ export function EventForm({
     if (capacity.trim()) fd.set('capacity', capacity.trim())
     if (energyTag) fd.set('energyTag', energyTag)
 
-    // Price. A free event sends NO price field: createEvent reads that as null, and updateEvent
-    // leaves price_cents untouched (so a blank never wipes a price the read-only-scope edit page
-    // does not round-trip). A set price sends whole cents.
-    if (priceMode === 'paid') {
-      const cents = Math.round(parseFloat(priceAmount.replace(/[^0-9.]/g, '')) * 100)
-      if (Number.isFinite(cents) && cents > 0) fd.set('priceCents', String(cents))
+    // Price. In EDIT mode the editor round-trips the current price, so we always send an explicit
+    // signal: a paid price sends its cents, and Free sends '0' (parsePriceCents('0') → null) so
+    // updateEvent actually clears the price. Without this, flipping a paid event to Free sent
+    // nothing and the old price silently persisted (attendees kept getting charged). In CREATE mode
+    // a free event sends NO field, which createEvent reads as null.
+    const cents = Math.round(parseFloat(priceAmount.replace(/[^0-9.]/g, '')) * 100)
+    const paidCents = priceMode === 'paid' && Number.isFinite(cents) && cents > 0 ? cents : 0
+    if (isEdit) {
+      fd.set('priceCents', String(paidCents))
+    } else if (paidCents > 0) {
+      fd.set('priceCents', String(paidCents))
     }
 
     // Geolocation (EVENTS-REWORK B1). Attendance mode drives whether the address

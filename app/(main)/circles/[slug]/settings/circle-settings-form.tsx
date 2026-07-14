@@ -48,16 +48,19 @@ export function CircleSettingsForm({
   const [pending, start] = useTransition()
   const [confirmArchive, setConfirmArchive] = useState(false)
   const [archiving, startArchive] = useTransition()
+  const [archiveError, setArchiveError] = useState<string | null>(null)
   const router = useRouter()
 
   function archive() {
+    setArchiveError(null)
     startArchive(async () => {
       try {
         await archiveCircle(circleId)
         router.push('/circles')
-      } catch {
-        // archiveCircle is host-or-admin gated and throws on failure; keep the
-        // form open so the host can retry rather than leaving a dead state.
+      } catch (err) {
+        // archiveCircle is host-or-admin gated and throws on failure. Surface it so the host
+        // knows it didn't archive (a silent no-op reads as "nothing happened") and can retry.
+        setArchiveError(err instanceof Error ? err.message : 'Could not archive this circle. Try again.')
       }
     })
   }
@@ -177,6 +180,7 @@ export function CircleSettingsForm({
           <Archive className="h-4 w-4" /> Archive this circle
         </button>
         <p className="mt-1.5 text-2xs text-muted">Hides the circle from discovery. An admin can restore it later.</p>
+        {archiveError && <p className="mt-1.5 text-2xs font-medium text-danger">{archiveError}</p>}
       </div>
 
       <DangerModal
