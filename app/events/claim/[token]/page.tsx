@@ -124,14 +124,23 @@ export default async function ClaimEventPage({ params }: { params: Promise<{ tok
           <ClaimButton token={token} />
         ) : (
           <div className="space-y-2">
+            {/* New here: the sign-up runs the beta induction, which admits them to the site
+                (onboarding_completed) and lands them right back here to finish claiming, so a
+                claimer is never left stuck at the beta gate. Existing members sign in below. */}
             <Link
-              href={`/sign-in?next=/events/claim/${token}`}
+              href={`/onboarding/beta?next=/events/claim/${token}`}
               className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
-              Sign in to claim it
+              Sign up to claim it
+            </Link>
+            <Link
+              href={`/sign-in?next=/events/claim/${token}`}
+              className="inline-flex w-full items-center justify-center rounded-xl border border-border px-5 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-surface"
+            >
+              Already a member? Sign in
             </Link>
             <p className="text-center text-xs text-subtle">
-              New here? Signing in creates your account in a minute.
+              Signing up takes a minute and gets you into Frequency, then the event is yours.
             </p>
           </div>
         )}

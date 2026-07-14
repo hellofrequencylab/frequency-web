@@ -7,12 +7,14 @@ import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
 import { isPersonaId, type PersonaId } from '@/lib/onboarding/personas'
 import { getReferrer } from '@/lib/qr/referral'
 import { hasEffectivelyOnboarded } from '@/lib/onboarding/onboarded'
+import { isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
+import type { FunnelDestination } from '@/lib/onboarding/beta-sequences'
 import BetaInduction from './induction'
 
 export default async function BetaInductionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ seq?: string; persona?: string }>
+  searchParams: Promise<{ seq?: string; persona?: string; next?: string }>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -21,8 +23,13 @@ export default async function BetaInductionPage({
   // flow, fully merged with the owner's edits: resolveSequence layers the coded
   // copy, the legacy /admin/vera induction tweaks, and the `beta-default` override
   // saved by the /pages/splash editor. DB-built versions resolve the same way.
-  const { seq: seqSlug, persona: personaSlug } = await searchParams
+  const { seq: seqSlug, persona: personaSlug, next: nextParam } = await searchParams
   const seq = await resolveSequence(seqSlug)
+  // A `?next=` in-app path (e.g. an event-claim landing) overrides the sequence destination so
+  // completion admits the new member (onboarding_completed) and lands them right back where they
+  // came from. Validated as a safe same-origin path; anything else falls through to the sequence.
+  const nextDestination: Extract<FunnelDestination, { mode: 'direct' }> | undefined =
+    isSafeInAppPath(nextParam) ? { mode: 'direct', url: nextParam } : undefined
   // Who they said they are in the lead flow (ADR-125) — pre-selects the Welcome-beat
   // picker, branches the tour reel, and is stamped on the member at completion.
   const persona: PersonaId | undefined = isPersonaId(personaSlug) ? personaSlug : undefined
@@ -42,7 +49,8 @@ export default async function BetaInductionPage({
   const funnel = {
     slide2Features: seq.slide2Features,
     slide3Core: seq.slide3Core,
-    destination: seq.destination,
+    // `?next=` (a claim landing, etc.) wins over the sequence's own destination.
+    destination: nextDestination ?? seq.destination,
   }
 
   if (!user) {
@@ -61,7 +69,7 @@ export default async function BetaInductionPage({
     meta: profile?.meta,
     currentSeasonZaps: profile?.current_season_zaps,
     lifetimeGems: profile?.lifetime_gems,
-  })) redirect('/feed')
+  })) redirect(nextDestination ? nextDestination.url : '/feed')
 
   const { data: regions } = await supabase
     .from('nexus_regions')
