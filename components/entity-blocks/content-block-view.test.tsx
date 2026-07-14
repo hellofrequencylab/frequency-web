@@ -87,3 +87,51 @@ describe('ContentBlockView inline rich text', () => {
     expect(html).toContain('just plain words')
   })
 })
+
+// The <br> regression: a Heading / title / label authored with a line break used to render the LITERAL text
+// `<BR>` on the published page (a plain `{text}` child escapes it) while the editor canvas showed a real break.
+// Every operator-authored text field now paints through the inline-rich allowlist so published == editor: a
+// <br> is a real line break, marks survive, and a genuinely-plain value round-trips unchanged (XSS-safe — only
+// Bold / Italic / Link / <br> ever survive, everything else is escaped).
+describe('ContentBlockView heading + inline fields honour <br> (published == editor canvas)', () => {
+  it('renders a <br> in a Heading block as a real line break, not a literal <BR>', () => {
+    const html = renderToStaticMarkup(<ContentBlockView id="heading" props={{ text: 'Line one<br>Line two' }} />)
+    expect(html).toContain('<h2')
+    expect(html).toContain('Line one<br>Line two')
+    // The bug shape: the escaped tag surviving to the page.
+    expect(html).not.toContain('&lt;br&gt;')
+  })
+
+  it('renders a Bold mark in a Heading block', () => {
+    const html = renderToStaticMarkup(<ContentBlockView id="heading" props={{ text: 'Hello <strong>world</strong>' }} />)
+    expect(html).toContain('<strong>world</strong>')
+  })
+
+  it('round-trips a plain Heading value unchanged (no stray markup)', () => {
+    const html = renderToStaticMarkup(<ContentBlockView id="heading" props={{ text: 'Just a plain heading' }} />)
+    expect(html).toContain('Just a plain heading')
+    expect(html).not.toContain('<br>')
+    expect(html).not.toContain('<strong>')
+  })
+
+  it('returns null for an empty Heading (row collapses, no hollow box)', () => {
+    expect(ContentBlockView({ id: 'heading', props: {} })).toBeNull()
+    expect(ContentBlockView({ id: 'heading', props: { text: '' } })).toBeNull()
+  })
+
+  it('renders a <br> in a Callout title and keeps a script inert', () => {
+    const html = renderToStaticMarkup(
+      <ContentBlockView id="callout" props={{ title: 'A<br>B <script>alert(1)</script>' }} />,
+    )
+    expect(html).toContain('A<br>B')
+    expect(html).not.toContain('<script')
+  })
+
+  it('renders a <br> in a Features item title (rich, not escaped)', () => {
+    const html = renderToStaticMarkup(
+      <ContentBlockView id="features" props={{ items: [{ title: 'One<br>Two', text: 'body' }] }} />,
+    )
+    expect(html).toContain('One<br>Two')
+    expect(html).not.toContain('&lt;br&gt;')
+  })
+})

@@ -54,7 +54,8 @@ export default async function SpaceCrmBoardPage({
   // LIST-FIRST: the People roster is the default front door. The cockpit + pipeline are secondary
   // views behind ?view=, never the landing. An unknown value falls back to People.
   const rawView = Array.isArray(view) ? (view[0] ?? null) : (view ?? null)
-  const activeView: CrmView = rawView === 'pipeline' ? 'pipeline' : rawView === 'cockpit' ? 'cockpit' : 'people'
+  const activeView: CrmView =
+    rawView === 'pipeline' ? 'pipeline' : rawView === 'cockpit' ? 'cockpit' : rawView === 'import' ? 'import' : 'people'
 
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
@@ -166,6 +167,10 @@ export default async function SpaceCrmBoardPage({
     cockpit: {
       title: 'Cockpit',
       description: 'The health read for your space: who needs you, where members stall, and the matches worth making.',
+    },
+    import: {
+      title: 'Import',
+      description: 'Bring a CSV of contacts into your space CRM. We match your columns, skip anyone you already have, and show a preview first.',
     },
   }
 

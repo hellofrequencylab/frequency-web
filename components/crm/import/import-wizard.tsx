@@ -55,16 +55,21 @@ type Banner = { kind: 'ok' | 'warn' | 'err'; text: string } | null
 export function ImportWizard({
   targetKind,
   spaces = [],
+  lockedSpace,
 }: {
   targetKind: 'member' | 'space'
   spaces?: ManagedSpace[]
+  /** When set (with targetKind='space'), the target is SEALED to this one Space: no picker,
+   *  a static line naming it. Used by a per-Space CRM importer where the membrane fixes the
+   *  destination. When omitted, the `spaces` picker is shown (the platform operator path). */
+  lockedSpace?: { id: string; name: string }
 }) {
   const [step, setStep] = useState<Step>('upload')
   const [source, setSource] = useState<ParsedSource | null>(null)
   const [filename, setFilename] = useState<string>('')
   const [importId, setImportId] = useState<string | null>(null)
   const [mapping, setMapping] = useState<ColumnMapping[]>([])
-  const [spaceId, setSpaceId] = useState<string>(spaces[0]?.id ?? '')
+  const [spaceId, setSpaceId] = useState<string>(lockedSpace?.id ?? spaces[0]?.id ?? '')
   const [mergeStrategy, setMergeStrategy] = useState<MergeStrategy>('fill_empty')
   const [validation, setValidation] = useState<ValidationResult | null>(null)
   const [result, setResult] = useState<CommitResult | null>(null)
@@ -202,7 +207,9 @@ export function ImportWizard({
           {targetKind === 'space' && (
             <div>
               <label className="mb-1 block text-xs font-medium text-muted">Import into</label>
-              {spaces.length ? (
+              {lockedSpace ? (
+                <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-sm font-medium text-text">{lockedSpace.name}</p>
+              ) : spaces.length ? (
                 <select className={input} value={spaceId} onChange={(e) => setSpaceId(e.target.value)}>
                   {spaces.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>

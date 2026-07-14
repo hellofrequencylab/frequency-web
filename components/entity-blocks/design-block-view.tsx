@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { decodeLegacyEntities, gridColumns, safeUrl } from '@/lib/entity-blocks/block-content'
 import { DESIGN_ENTITY_BLOCK_IDS } from '@/lib/entity-blocks/registry'
 import { BlockIcon } from './block-icon'
+import { InlineRichText } from './content-block-view'
 import {
   PhotoHeroBlock,
   EditorialSectionBlock,
@@ -260,8 +261,10 @@ function SimpleCardGrid({ props }: { props: Record<string, unknown> }): ReactNod
     <div className="space-y-6">
       {(title || subtitle) && (
         <div className="space-y-1">
-          {title && <h3 className="text-2xl font-bold text-text">{title}</h3>}
-          {subtitle && <p className="whitespace-pre-wrap text-base leading-relaxed text-muted">{subtitle}</p>}
+          {title && <InlineRichText as="h3" value={title} className="text-2xl font-bold text-text" />}
+          {subtitle && (
+            <InlineRichText value={subtitle} className="whitespace-pre-wrap text-base leading-relaxed text-muted" />
+          )}
         </div>
       )}
       {cards.length > 0 && (
@@ -283,8 +286,10 @@ function SimpleCardGrid({ props }: { props: Record<string, unknown> }): ReactNod
               <>
                 {media}
                 <div className="flex flex-1 flex-col gap-1 p-5">
-                  {c.title && <h4 className="text-base font-bold text-text">{c.title}</h4>}
-                  {c.text && <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{c.text}</p>}
+                  {c.title && <InlineRichText as="h4" value={c.title} className="text-base font-bold text-text" />}
+                  {c.text && (
+                    <InlineRichText value={c.text} className="whitespace-pre-wrap text-sm leading-relaxed text-muted" />
+                  )}
                 </div>
               </>
             )

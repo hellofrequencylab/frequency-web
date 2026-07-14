@@ -1,6 +1,6 @@
 'use client'
 
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Loader2, Plus, Settings2, Trash2 } from 'lucide-react'
 import { entityBlockById, profilePaletteForKind } from '@/lib/entity-blocks/registry'
 import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
@@ -77,6 +77,20 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
   const listRef = useRef<HTMLOListElement | null>(null)
   const [railOffset, setRailOffset] = useState(0)
 
+  // Every explicit selection bumps this so the align effect RE-FIRES even when the same block is
+  // re-clicked. Selecting an already-selected id leaves `selectedId` unchanged, which alone would not
+  // re-run the effect, so re-clicking a block (or clicking one after the canvas reflowed) would never
+  // re-snap. Keying the effect on this tick makes every click re-align.
+  const [alignTick, setAlignTick] = useState(0)
+  const selectBlock = useCallback((id: string) => {
+    setSelectedId(id)
+    setAlignTick((t) => t + 1)
+  }, [])
+  const toggleTile = useCallback((id: string) => {
+    setSelectedId((cur) => (cur === id ? null : id))
+    setAlignTick((t) => t + 1)
+  }, [])
+
   // The blocks not yet on the page: the curated space palette minus what is already placed.
   const placed = useMemo(() => placedIds(store?.rows ?? []), [store?.rows])
   const addable = useMemo(
@@ -85,9 +99,9 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
   )
 
   useLayoutEffect(() => {
+    const grid = gridRef.current
+    const list = listRef.current
     const align = () => {
-      const grid = gridRef.current
-      const list = listRef.current
       const tile = selectedId ? tileRefs.current[selectedId] : null
       const block = selectedId ? blockRefs.current[selectedId] : null
       if (!selectedId || !grid || !list || !tile || !block) {
@@ -102,9 +116,20 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
       setRailOffset(next)
     }
     align()
+    // Re-align on ANY reflow of the canvas or the rail (an image/font settling, a tile expanding to its
+    // settings, a section added/removed, the viewport resizing). Measuring once at selection time is why the
+    // snap looked like it "stopped after the first click": the cached offset went stale the moment the layout
+    // shifted and nothing recomputed it. A ResizeObserver keeps the selected tile locked to its block. A
+    // transform-only translate never changes box size, so this cannot feed back into a loop.
+    const ro = new ResizeObserver(() => align())
+    if (grid) ro.observe(grid)
+    if (list) ro.observe(list)
     window.addEventListener('resize', align)
-    return () => window.removeEventListener('resize', align)
-  }, [selectedId, store?.rows, store?.content])
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', align)
+    }
+  }, [selectedId, alignTick, store?.rows, store?.content])
 
   if (!store || !store.seeded) {
     return (
@@ -185,7 +210,7 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
         ) : (
           <ol
             ref={listRef}
-            className="relative space-y-2 transition-transform duration-200 ease-out will-change-transform"
+            className="relative space-y-2 transition-transform duration-200 ease-out will-change-transform motion-reduce:transition-none"
             style={{ transform: railOffset ? `translateY(${railOffset}px)` : undefined }}
           >
             {store.rows.map((row, ri) => (
@@ -252,7 +277,7 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
                           }}
                           uploadImage={uploadImage}
                           content={store.content[id] ?? {}}
-                          onSelect={() => setSelectedId(id === selectedId ? null : id)}
+                          onSelect={() => toggleTile(id)}
                           onUp={() => onNudge(id, -1)}
                           onDown={() => onNudge(id, 1)}
                           onField={(k, v) => setField(id, k, v)}
@@ -314,7 +339,7 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
                             blockRefs.current[id] = el
                           }}
                           role="group"
-                          onMouseDown={() => setSelectedId(id)}
+                          onMouseDown={() => selectBlock(id)}
                           className={`rounded-lg p-2 transition-colors ${
                             id === selectedId ? 'bg-primary-bg/30' : 'hover:bg-surface-elevated/40'
                           }`}
