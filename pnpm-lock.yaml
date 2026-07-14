@@ -47,6 +47,9 @@ importers:
       '@tiptap/starter-kit':
         specifier: ^3.27.4
         version: 3.27.4
+      '@types/papaparse':
+        specifier: ^5.5.2
+        version: 5.5.2
       '@upstash/ratelimit':
         specifier: ^2.0.8
         version: 2.0.8(@upstash/redis@1.38.0)
@@ -68,6 +71,9 @@ importers:
       next:
         specifier: 16.2.10
         version: 16.2.10(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      papaparse:
+        specifier: ^5.5.4
+        version: 5.5.4
       pdf-parse:
         specifier: ^2.4.5
         version: 2.4.5
@@ -1627,6 +1633,9 @@ packages:
 
   '@types/node@26.1.1':
     resolution: {integrity: sha512-nxAkRSVkN1Y0JC1W8ky/fTfkGsMmcrRsbx+3XoZE+rMOX71kLYTV7fLXpqud1GpbpP5TuffXFqfX7fH2GgZREw==}
+
+  '@types/papaparse@5.5.2':
+    resolution: {integrity: sha512-gFnFp/JMzLHCwRf7tQHrNnfhN4eYBVYYI897CGX4MY1tzY9l2aLkVyx2IlKZ/SAqDbB3I1AOZW5gTMGGsqWliA==}
 
   '@types/qrcode@1.5.6':
     resolution: {integrity: sha512-te7NQcV2BOvdj2b1hCAHzAoMNuj65kNBMz0KBaxM6c3VGBOhU0dURQKOtH8CFNI/dsKkwlv32p26qYQTWoB5bw==}
@@ -3453,6 +3462,9 @@ packages:
 
   pako@1.0.11:
     resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
+
+  papaparse@5.5.4:
+    resolution: {integrity: sha512-SwzWD9gl/ElwYLCI0nUja1mFJzjq2D8ziShfNBa7zCHzkOozeOGDwHWQ+tvCzEZcewecWZ5U7kUopDnG+DFYEQ==}
 
   parent-module@1.0.1:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
@@ -5649,6 +5661,10 @@ snapshots:
     dependencies:
       undici-types: 8.3.0
 
+  '@types/papaparse@5.5.2':
+    dependencies:
+      '@types/node': 26.1.1
+
   '@types/qrcode@1.5.6':
     dependencies:
       '@types/node': 26.1.1
@@ -7742,6 +7758,8 @@ snapshots:
   package-manager-detector@1.7.0: {}
 
   pako@1.0.11: {}
+
+  papaparse@5.5.4: {}
 
   parent-module@1.0.1:
     dependencies:

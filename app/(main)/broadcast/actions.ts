@@ -4,9 +4,11 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { sendDispatchNotificationEmail } from '@/lib/email'
-import { shouldSend } from '@/lib/notification-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 import { sendPushToProfile } from '@/lib/push'
 import { atLeastRole } from '@/lib/core/roles'
+import { resolvePlaceTreeProfileIds, type PlaceType } from '@/lib/messaging/place-tree'
+import { logDispatchRecipients, type DispatchRecipientRow } from '@/lib/messaging/dispatch-log'
 
 // Role-ladder comparison — single source in lib/core/roles.
 const hasRole = atLeastRole
@@ -105,53 +107,57 @@ export async function createAndPublishDispatch(fd: FormData) {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
       const dispatchUrl = `${appUrl}/broadcast/${dispatch.id}`
 
+      // Resolve WHO to reach. Global is every active member; a place scope resolves through the
+      // shared place-tree walker (the same path a campaign to `circle:/hub:/nexus:<id>` uses), so the
+      // Dispatch and a campaign to the same scope agree on the recipient set.
       let profileIds: string[] = []
       if (isGlobal) {
         const { data } = await admin.from('profiles').select('id').eq('is_active', true).eq('is_demo', false)
         profileIds = (data ?? []).map((p) => p.id)
-      } else if (audience_scope === 'circle') {
-        const { data } = await admin.from('memberships').select('profile_id').eq('circle_id', audience_id).eq('status', 'active')
-        profileIds = (data ?? []).map((m) => m.profile_id)
-      } else if (audience_scope === 'hub') {
-        const { data: circles } = await admin.from('circles').select('id').eq('hub_id', audience_id)
-        const cids = (circles ?? []).map((c) => c.id)
-        if (cids.length > 0) {
-          const { data } = await admin.from('memberships').select('profile_id').in('circle_id', cids).eq('status', 'active')
-          profileIds = (data ?? []).map((m) => m.profile_id)
-        }
-      } else if (audience_scope === 'nexus') {
-        const { data: hubs } = await admin.from('hubs').select('id').eq('nexus_id', audience_id)
-        const hids = (hubs ?? []).map((h) => h.id)
-        if (hids.length > 0) {
-          const { data: circles } = await admin.from('circles').select('id').in('hub_id', hids)
-          const cids = (circles ?? []).map((c) => c.id)
-          if (cids.length > 0) {
-            const { data } = await admin.from('memberships').select('profile_id').in('circle_id', cids).eq('status', 'active')
-            profileIds = (data ?? []).map((m) => m.profile_id)
-          }
-        }
+      } else if (audience_scope === 'circle' || audience_scope === 'hub' || audience_scope === 'nexus') {
+        profileIds = await resolvePlaceTreeProfileIds({ type: audience_scope as PlaceType, id: audience_id })
       }
       profileIds = [...new Set(profileIds)]
       if (!profileIds.length) return
       const { data: profiles } = await admin.from('profiles').select('id, display_name, auth_user_id').in('id', profileIds)
       if (!profiles?.length) return
+
+      // Per-recipient ledger (CRM Phase 5): record the send-gate outcome for each channel so the
+      // Dispatch appears in the messaging control panel. Writing it is fire-safe (never breaks a send).
+      const recipientRows: DispatchRecipientRow[] = []
+
       for (const profile of profiles) {
         if (!profile.auth_user_id) continue
 
-        if (await shouldSend(profile.id, 'email', 'dispatches')) {
-          const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
-          if (user?.email) {
-            await sendDispatchNotificationEmail({ to: user.email, recipientName: profile.display_name, recipientProfileId: profile.id, authorName, dispatchTitle: title, excerpt, dispatchUrl })
+        // EMAIL — route through the unified send-gate (suppression + consent + preference), the one
+        // seam every outbound send passes. It replaces the ad-hoc shouldSend check so a suppressed or
+        // consent-revoked address is honored here too.
+        const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
+        const email = user?.email ?? null
+        const gate = await resolveSendGate(profile.id, 'email', 'dispatches', { email })
+        if (gate.allowed && email) {
+          try {
+            await sendDispatchNotificationEmail({ to: email, recipientName: profile.display_name, recipientProfileId: profile.id, authorName, dispatchTitle: title, excerpt, dispatchUrl })
+            recipientRows.push({ dispatch_id: dispatch.id, profile_id: profile.id, channel: 'email', status: 'sent', reason: null, email })
+          } catch (sendErr) {
+            recipientRows.push({ dispatch_id: dispatch.id, profile_id: profile.id, channel: 'email', status: 'failed', reason: sendErr instanceof Error ? sendErr.message.slice(0, 200) : 'send failed', email })
           }
+        } else if (email) {
+          // Denied by the gate: record WHY (suppressed vs pref/consent off) without sending.
+          recipientRows.push({ dispatch_id: dispatch.id, profile_id: profile.id, channel: 'email', status: gate.reason === 'suppressed' ? 'suppressed' : 'skipped', reason: gate.reason, email })
         }
 
-        await sendPushToProfile(profile.id, {
+        // PUSH — sendPushToProfile runs the same gate internally and returns how many were delivered.
+        const pushed = await sendPushToProfile(profile.id, {
           title: `📡 ${title}`,
           body:  excerpt || `New dispatch from ${authorName}`,
           url:   `/broadcast/${dispatch.id}`,
           tag:   `dispatch-${dispatch.id}`,
         }, 'dispatches')
+        recipientRows.push({ dispatch_id: dispatch.id, profile_id: profile.id, channel: 'push', status: pushed > 0 ? 'sent' : 'skipped', reason: pushed > 0 ? null : 'no delivery (gate off or no subscription)', email: null })
       }
+
+      await logDispatchRecipients(recipientRows)
     } catch (err) {
       console.error('[createAndPublishDispatch] email fan-out failed:', err)
     }

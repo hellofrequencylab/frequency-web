@@ -83,4 +83,17 @@ describe('buildInteractionInsert — normalization (fail-closed)', () => {
     expect(row!.idempotency_key).toBe('resend:msg-1:opened')
     expect(row!.space_id).toBe('space-1')
   })
+
+  it('accepts the in_app channel (in-house DM adapter, Phase 1)', () => {
+    const row = buildInteractionInsert({ ...base, channel: 'in_app', direction: 'outbound', source: 'system' })
+    expect(row).not.toBeNull()
+    expect(row!.channel).toBe('in_app')
+    expect(row!.direction).toBe('outbound')
+    expect(row!.source).toBe('system')
+  })
+
+  it('accepts the import source (import pipeline, Phase 1)', () => {
+    const row = buildInteractionInsert({ ...base, source: 'import' })
+    expect(row!.source).toBe('import')
+  })
 })

@@ -5,8 +5,13 @@
 
 import Link from 'next/link'
 import { FocusTemplate } from '@/components/templates'
-import { processUnsubscribe, processSpaceUnsubscribe } from './actions'
+import { processUnsubscribe } from './actions'
 import { isError } from '@/lib/action-result'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { verifySpaceUnsubscribeToken } from '@/lib/unsubscribe-tokens'
+import { getContactPreferences, CONTACT_TOPICS } from '@/lib/comms/contact-preferences'
+import type { NotificationTopic } from '@/lib/notification-preferences'
+import { PreferenceCenter, type ContactTopicState } from './preference-center'
 
 const CATEGORY_LABELS: Record<string, string> = {
   dispatches: 'broadcasts',
@@ -27,22 +32,27 @@ export default async function UnsubscribePage({
 }) {
   const { p, c, s, e, t } = await searchParams
 
-  // Per-Space unsubscribe: a single Space's outreach, recorded as a space-scoped suppression. The
-  // global member preferences are untouched, so this never quiets Frequency itself.
+  // Per-Space preference center: instead of a one-shot hard unsubscribe, the token opens a
+  // preference center where a contact can opt DOWN individual topics or unsubscribe from
+  // everything. The global member preferences are untouched, so this never quiets Frequency
+  // itself. (The RFC 8058 one-click POST at /api/unsubscribe still records the full space
+  // suppression for the inbox "unsubscribe" button.)
   if (s || e) {
-    if (!s || !e || !t) {
-      return <Layout title="Missing unsubscribe details." description="This link looks incomplete. If you got here from an email, please reply to it and we'll help.">
+    if (!s || !e || !t || !verifySpaceUnsubscribeToken(s, e, t)) {
+      return <Layout title="This link is invalid or expired." description="If you got here from an email, please reply to it and we'll help.">
         <ManageLink />
       </Layout>
     }
-    const spaceResult = await processSpaceUnsubscribe({ spaceId: s, email: e, token: t })
-    if (isError(spaceResult)) {
-      return <Layout title="Couldn't process unsubscribe" description={spaceResult.error}>
-        <ManageLink />
-      </Layout>
-    }
-    return <Layout title="You're unsubscribed." description="You'll no longer get email from this space. This only stops this one sender, not Frequency itself.">
-      <Body>Changed your mind? Reply to one of their emails and they can add you back.</Body>
+
+    const spaceName = await loadSpaceName(s)
+    const stored = await getContactPreferences(e, s)
+    const initial: ContactTopicState[] = (CONTACT_TOPICS as readonly NotificationTopic[]).map((topic) => {
+      const row = stored.find((r) => r.topic === topic && r.channel === 'email')
+      return { topic, subscribed: row ? row.state === 'subscribed' : true }
+    })
+
+    return <Layout title={`Email from ${spaceName}`} description="Choose what you'd like to keep. This only affects this one sender, not Frequency itself.">
+      <PreferenceCenter spaceId={s} email={e} token={t} spaceName={spaceName} initial={initial} />
       <ManageLink />
     </Layout>
   }
@@ -67,6 +77,19 @@ export default async function UnsubscribePage({
     <Body>You can re-enable this any time, and adjust other notification types, from your settings.</Body>
     <ManageLink />
   </Layout>
+}
+
+// Best-effort Space name for the preference-center copy. Falls back to a neutral label
+// so a missing/renamed Space never breaks the page. Admin client: this page has no login.
+async function loadSpaceName(spaceId: string): Promise<string> {
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin.from('spaces').select('name').eq('id', spaceId).maybeSingle()
+    const name = (data as { name?: string } | null)?.name
+    return name && name.trim().length ? name.trim() : 'this space'
+  } catch {
+    return 'this space'
+  }
 }
 
 // ── Layout helpers ─────────────────────────────────────────────────────

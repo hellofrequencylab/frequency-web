@@ -13581,3 +13581,93 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 **Alternatives.** Overloading the `funnels` object with email-journey semantics / a new `wait`/`branch` stage kind (rejected for this slice: it needs a migration + the condition engine; the four canonical kinds render as a clean linear flow now, and email cadence stays in the drip runner). Re-homing the working editors under the console (rejected: the plan is explicit — unify the LISTING over them, do not delete them). Wiring a real Vera generation tool now (deferred to P5: the bounded Vera tool catalog has no campaign/sequence generator yet; the seam is one branch in `startBuild`). A URL-segment tab strip for the console's two lists (rejected: client tab state is enough and keeps one route + one server fetch).
 
 **Consequences.** Additive only: NO migration, `tsc --noEmit` clean, lint clean on changed files, `pnpm check:menu` green, `pnpm build` green (only the local Supabase page-data error). New pure logic is unit-tested (`lib/messaging/status.test.ts`, `lib/messaging/goals.test.ts`). Shared-file edits: one `marketing-messaging` row in `lib/nav/studio.ts`, a `Send` icon added to the `app/(main)/admin/sections.ts` icon map, and a Messaging card in `components/widgets/growth/manage.tsx`. The reorder action + flow view reuse the existing funnel reads/mutations; the growth builder (`/admin/growth/funnels/[id]`) stays the advanced surface. Vera generation (P5) and persisted per-step timing/branches (deeper P4) are the documented follow-ups.
+
+## ADR-610: CRM Phase 1 — complete the contact-card timeline (`in_app` channel + DM adapter, manual log, system/human toggle, per-contact engagement stats)
+
+**Status:** Accepted (2026-07-14) · Phase 1 of `docs/CRM-MASTER-BUILD-PLAN.md` + Move 1/2 of `docs/CRM-INTERACTION-TRACKING-PLAN.md` · builds on the `contact_interactions` timeline (ADR-372) and the `engagement_events` backbone · migration `20261158000000_crm_timeline_inapp_engagement.sql` · `lib/crm/*`.
+
+**Context.** The contact card's promise is a complete, trustworthy history, but the one channel that makes it feel complete — in-house messages — had no adapter, `contact_interactions.channel` had no `in_app` value, there was no way to log a touch by hand, and the row's `source` field (`manual`/`engagement`/`system`/…) had no UI switch to hide automated noise. `contacts.engagement_score` was a dark scalar with no per-contact sent/opened/replied rollup.
+
+**Decision.**
+1. **Widen the vocabulary, never fork the log.** One small migration adds `in_app` to the `channel` CHECK; a **DM adapter** fires a fire-safe, idempotent (keyed on message id) `recordContactInteraction({ channel: 'in_app' })` on DM/room send. A **manual "log a touch"** affordance writes `contact_interactions` natively (`source: 'manual'`), superseding the read-time `crm_activities` fold over time.
+2. **The system/human toggle filters, never deletes.** A persistent "show automated events" switch on every timeline narrows on `source` (`engagement`/`system` hidden, human/manual shown). Default: automated hidden on the member's personal card, shown in the staff console — the owner's "focus on email and text" control as one boolean over a field we already store.
+3. **Denormalized read model off the immutable log.** A `contact_engagement_stats` rollup (sent/opened/clicked/replied, last-touch, recency) refreshed on the nightly cron beside `refresh-traits`, and the documented `engagement_score` projection is finally wired.
+
+**Consequences.** Additive + RLS-consistent (owner/Space read, service-role write). Reversibility/guardrail: the log stays append-only and the toggle is a read-time filter, so no touch is ever destroyed and the toggle is fully reversible; every adapter is fail-safe (a capture can never break a message send). `contact_interactions` remains a projection, not a parallel log, keeping COMMS-CRM-ARCHITECTURE §1's "one backbone, many subscribers" intact. Inbound-email capture (Adapter B) remains the documented follow-up.
+
+## ADR-611: CRM Phase 2 — staged CSV contact import (parse → map → validate → preview → commit) + custom-field registry
+
+**Status:** Accepted (2026-07-14) · Phase 2 of `docs/CRM-MASTER-BUILD-PLAN.md` · builds on the business-importer staging+status pattern (`lib/importer/intake.ts`) and the `coerceExtraction` AI-structured-then-validated doctrine · migration `20261159000000_contact_import.sql` · `lib/crm/import/*`, member surface `/connections/import`, admin surface `/admin/marketing/import`.
+
+**Context.** There was no CSV contact import. Operators and members could only add contacts by scan, Google import, or by hand. Best practice is a staged pipeline with layered auto-map and a human-approved AI fallback, not a one-shot upload that rejects the whole file on a bad row.
+
+**Decision.**
+1. **A `contact_import` staging row** (jsonb, mirrors `business_intake`) drives a guarded status machine `uploaded → mapping → preview → committed` (+ recoverable `failed`); `canTransition` is pure and prevents a stale job marching a row backward.
+2. **Smart auto-map** (`map.ts`: header-normalize → synonym dict → fuzzy → value/type inference → confidence gate) constrained to a **closed `TARGET_FIELDS` enum**; anything else becomes a **custom field** in a per-owner/Space registry. **AI-assist** (`ai.ts`) samples rows only, is constrained to the schema (never invents a field), and a human approves.
+3. **Row-level partial import** never rejects the file: bad rows are flagged and counted, valid rows still commit. **Dedupe** on normalized email → last-10 phone with skip/overwrite/fill-empty and a dry-run diff. **Scoped target** honours the membrane (Law 2): member → `network_contacts`; Space → sealed `contacts(space_id)`, never both.
+
+**Consequences.** Additive + RLS-scoped. Reversibility/guardrail: commit is an idempotent upsert previewed by a dry-run diff, so a bad mapping is caught before any write and re-runs create no duplicates; the AI path is advisory (constrained to the schema, human-approved), never authoritative. `contact_import` is not in `database.types` yet (ADR-246): the persistence layer uses the untyped-admin idiom; regenerate after apply.
+
+## ADR-612: CRM Phase 3 — QR lead-grabs: capture-now-claim-on-join + the immutable entry point
+
+**Status:** Accepted (2026-07-14) · Phase 3 of `docs/CRM-MASTER-BUILD-PLAN.md` · builds on `/q/<slug>` codes (ADR-091), `captureQrContact`, and the attribution layer · migration `20261160000000_lead_entry_points.sql` · `lib/crm/lead-capture.ts`, `lib/connections/qr-capture.ts`.
+
+**Context.** QR codes captured connections but not Space leads, and there was no immutable first-touch record of the door someone came through, nor a redemption path linking a captured lead to the profile they later create. The owner asked for a Space CRM leads surface fed by scans, without breaking the privacy membrane.
+
+**Decision.**
+1. **One engine behind five front doors** (`space_qr`, `warm_intro`, `event`, `lead_magnet`, `share_back`), with the Space QR lead-grab built full and the other four as engine hooks.
+2. **Capture writes a sealed Space lead** (`contacts.space_id` set, `profile_id` null, `consent_state='unknown'`) plus an **immutable entry point** (`lead_entry_points`, one per contact, `unique(contact_id)` + a DB trigger — set once, never overwritten) and an append-only touchpoint log. **Join is the only bridge:** on signup the email match links the sealed lead to the new profile (never copies the overlay), logs a `claim`, and retro-attributes, surfacing them in the Space CRM with the original door intact.
+3. **Capture ≠ marketing consent.** A sealed lead stays `unknown`; only a consent-native door, an unlocked offer, or an accepted warm intro flips it to mailable, and only from `unknown` — an `unsubscribed` lead is never re-subscribed (`consentStateForDoor`).
+
+**Consequences.** Additive + Space-sealed. Reversibility/guardrail: the entry point's immutability is DB-enforced (unique + trigger), so first-touch attribution can never be silently rewritten; consent never transfers upward or sideways (the three membrane laws hold); every IO path is fail-safe so a capture can never break a scan or a signup. Tables are untyped (ADR-246) until regen.
+
+## ADR-613: CRM Phase 4 — data-bound `productCard` email block + search-by-owner picker; transactional-template seam deferred at the client boundary
+
+**Status:** Accepted (2026-07-14) · Phase 4 of `docs/CRM-MASTER-BUILD-PLAN.md` + Move 3 of `docs/CRM-INTERACTION-TRACKING-PLAN.md` · builds on the Email Studio block registry + renderer and the unused commerce queries · NO migration · `lib/email-studio/*`, `lib/entity-blocks/*`.
+
+**Context.** Products/offerings could not be put in an email — the `offerings` block was excluded from the palette and dropped at render — and there was no search-by-owner picker. The plan also wanted transactional/system email migrated onto the editable block-tree, but `lib/email.ts` is transitively pulled into a client bundle.
+
+**Decision.**
+1. **A data-bound `productCard` block** (`kinds: ['email']`, added to the registry + `render.ts`) carries a product *reference* and resolves image/title/price/CTA from the live catalog **at send time** (`lib/email-studio/product-block.ts`, a `server-only` path), so the card never goes stale. A **search-by-owner picker** lists a person's or Space's products via the existing-but-unused commerce queries, plus product **merge variables** with fallbacks.
+2. **The transactional-template seam is deferred on purpose, for a client-boundary reason.** `lib/email.ts` is transitively imported into the client graph (automations → engagement → practices → journey-settings), so it must **not** reach the `server-only` product-block module — even a dynamic import taints the Turbopack client graph and fails the build. Making a transactional email editable is done by resolving the template in the **server-side caller** and passing rendered subject/html/text in, never by importing product-block from `email.ts`.
+
+**Consequences.** Additive, no migration; the `productCard` picker + send-time binding are unaffected by the deferral (they live on the server path). Reversibility/guardrail: the client/server boundary is the load-bearing invariant — `email.ts` stays free of any `server-only` reach, enforced by the build itself; the deferred transactional-editable work is tracked in `docs/EMAIL-EDITOR-PLAN.md`. The marketing/transactional subdomain split (GE6-5) remains separately deferred.
+
+## ADR-614: CRM Phase 5 — unified segment audience (place-tree ∪ trait/contact) + messaging control panel + broadcast recipient log
+
+**Status:** Accepted (2026-07-14) · Phase 5 of `docs/CRM-MASTER-BUILD-PLAN.md` + Move 4/5 of `docs/CRM-INTERACTION-TRACKING-PLAN.md` · builds on the audience resolver, `resolveSegment`, and the four existing ledgers · migration `20261162000000_dispatch_recipients.sql` · `lib/spaces/audiences.ts`, `lib/studio/campaigns.ts`, `lib/messaging/*`.
+
+**Context.** Place-tree targeting (circle/hub/nexus, which drives Dispatches) and contact-segment targeting (which drives Email) were separate worlds — you could not email "a circle" — the advanced facets were stored but inert, there was no single "who-got-what" view, and broadcast fan-out persisted no recipient log.
+
+**Decision.**
+1. **One audience, both worlds.** `resolveSegment` accepts place-tree selectors (`circle:`/`hub:`/`nexus:` → memberships → profiles → contacts) unioned with the trait-segment grammar, and the stubbed advanced facets (engagementDepth/resonanceTier/churnRisk/consent) are activated by joining `member_traits`.
+2. **A messaging control panel** (`/admin/marketing/messaging/control-panel`) composes `contact_interactions` + `outreach_sends` + `email_events` + `notification_queue` + the new `dispatch_recipients` into one "what's going / went to whom" view, each raw status normalized onto one `TouchStatus`.
+3. **A broadcast recipient log.** `dispatch_recipients` records the per-recipient send-gate outcome for each Dispatch (a fire-safe writer), so Dispatches finally appear in the panel.
+4. **Bug fix: Dispatch email fan-out now routes through `resolveSendGate`** (suppression + consent), closing a path that previously bypassed the one gate.
+
+**Consequences.** Additive + RLS-consistent; every resolved recipient still routes through the single `resolveSendGate` (suppression → consent → preference → frequency cap) — no new send path. Reversibility/guardrail: the fan-out gate fix means broadcast email can no longer skip suppression/consent, and the recipient ledger makes every send auditable. The `dispatch_recipients` table is untyped (ADR-246) until regen.
+
+## ADR-615: CRM Phase 6 — granular subscription preference center (topics + frequency + per-circle/Space mutes + contact-keyed prefs), transactional always-on
+
+**Status:** Accepted (2026-07-14) · Phase 6 of `docs/CRM-MASTER-BUILD-PLAN.md` + Move 6 of `docs/CRM-INTERACTION-TRACKING-PLAN.md` · builds on the fixed 4×3 preference grid, the consent ledger, and the per-Space unsubscribe token · migration `20261161000000_subscription_preferences.sql` · `lib/notification-preferences.ts`, `lib/comms/*`, `settings/notifications/*`, `app/unsubscribe/*`.
+
+**Context.** The preference center was a fixed 4×3 grid (dispatches/events/mentions/lifecycle × email/inapp/push): no topics like comments or marketing, no frequency choice, no per-circle/per-Space mute, the consent scopes had no UI, and non-member contacts had no preference row — so a contact could only hard-unsubscribe.
+
+**Decision.**
+1. **Topics + frequency.** Add `comments` (replies + mentions on your own posts) to the per-category grid; keep `marketing` governed by the **consent ledger** (`email_marketing` scope), not a toggle, so the two consent surfaces stay distinct. A per-category **frequency** selector (`realtime`/`daily_digest`/`weekly_digest`) defers the realtime send for the digest cron to batch.
+2. **Per-circle/Space mutes** modeled as `(subject, topic, channel, state)`, so a member can mute one circle without leaving. **Consent scopes** (marketing/ai_memory/analytics) get a settings UI. **Contact-keyed preferences** (`lib/comms/contact-preferences.ts`) plus a preference-center landing on the per-Space unsubscribe token let a non-member opt down a topic instead of hard-unsubscribing.
+3. **Transactional is carved out, always-on.** Account/security mail never honours a marketing or topic opt-out; the carve-out lives in code and UI.
+
+**Consequences.** Additive; the send gate is checked at send time so preference changes take effect in real time. Reversibility/guardrail: transactional email is structurally exempt from every topic/frequency choice (a member can never accidentally silence a password reset), and marketing stays on the append-only consent ledger, never a mutable boolean. Topic-level opt-down sits beside the global unsubscribe (research: robust centers see materially fewer unsubscribes).
+
+## ADR-616: CRM Phase 7 — Vera daily owner-brief cron + human-approved (non-autonomous) send graduation, defaults-off
+
+**Status:** Accepted (2026-07-14) · Phase 7 of `docs/CRM-MASTER-BUILD-PLAN.md` + Move 5 of `docs/CRM-INTERACTION-TRACKING-PLAN.md` · builds on `buildTodayCards()`, the send gate + outbox, and the `withVoice` primer · gated behind the ADR-028 spine/consent/suppression harness · NO migration · `lib/ai/vera/owner-brief.ts`, `lib/ai/vera/execute.ts`, `app/api/cron/vera-owner-brief`.
+
+**Context.** Vera Today was pull-only: nightly predictions existed but nothing pushed the owner a daily brief, and `send_playbook_email`/`send_intro_email` were draft-only ("a later phase"). The owner asked for a smart CRM that scans daily and keeps them updated — which requires a real scheduled trigger (an LLM chat cannot self-schedule) and a careful autonomy graduation.
+
+**Decision.**
+1. **A daily owner-brief cron** (`vera-owner-brief`, after `refresh-traits`) reuses `buildTodayCards()` to compose the top moves into a short brief and emails it to the operator and each Space owner. It is **read + compose only** — it never acts on a card; every move stays a human one-tap in Today. Sends go through `resolveSendGate` + the outbox (never inline), frequency-capped to once per recipient per day (a 20h window guards a double cron fire), skipping anyone not opted in to lifecycle email or suppressed. The run is fail-safe: one bad recipient never aborts it and the cron never throws.
+2. **Send graduation is human-approved, defaults-off.** `send_playbook_email`/`send_intro_email` graduate from draft-only to real send **only through the send gate and only on explicit human approval**. This is a draft-and-approve step, never autonomous auto-send.
+
+**Consequences.** Additive, no migration. Reversibility/guardrail — **the defaults-off invariant:** every send-capable Vera path ships OFF and requires a human one-tap to fire; nothing auto-acts, and the graduation is gated behind the ADR-028 spine/consent/suppression test harness. The brief only reads and points at Today, so the worst case of a bad run is an empty or skipped email, never an unwanted send. Frequency caps + the gate remain structural (Vera cannot bypass them). Inbound-reply capture and per-scope next-best-action remain follow-ups.

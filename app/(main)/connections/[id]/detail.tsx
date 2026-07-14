@@ -13,7 +13,7 @@ import { DetailsEditor, DetailsView } from '@/components/connections/contact-det
 import { UpsellTease } from '@/components/upsell/upsell-tease'
 import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 import type { ContactDetail } from '@/lib/connections/store'
-import type { TimelineEntry } from '@/lib/crm/timeline'
+import { filterTimeline, type TimelineEntry } from '@/lib/crm/timeline'
 import type { ContactDetails, ContactReminder, ContactStatus, Visibility } from '@/lib/connections/types'
 import {
   updateProfile, setStatus, setVisibility, deleteProfile, addNote, deleteNote, addTag, removeTag,
@@ -75,6 +75,12 @@ export function Detail({
   const [brief, setBrief] = useState<string | null>(null)
   const [briefBusy, setBriefBusy] = useState(false)
   const [briefError, setBriefError] = useState<string | null>(null)
+  // The system/human toggle (ADR-372 Phase 1). On the member-facing personal card, automated events
+  // are hidden by DEFAULT — this is your own history, so it leads with the touches you made, never
+  // deleting the rest. Flip it on to see auto-captured messages, email opens, and system updates.
+  const [showAutomated, setShowAutomated] = useState(false)
+  const visibleTimeline = filterTimeline(timelineEntries, showAutomated)
+  const hiddenTimelineCount = timelineEntries.length - visibleTimeline.length
 
   async function onBrief() {
     setBriefBusy(true)
@@ -299,18 +305,38 @@ export function Detail({
           email / sms / calls. Hidden until there is something to show. */}
       {timelineEntries.length > 0 && (
         <Section title="Timeline">
-          <ul className="space-y-3">
-            {timelineEntries.map((e) => (
-              <li key={e.id} className="flex items-start gap-2">
-                <History className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-text">{e.title}</p>
-                  {e.detail && <p className="whitespace-pre-wrap text-xs text-muted">{e.detail}</p>}
-                  <p className="text-xs text-subtle">{fmtDate(e.at)}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <label className="mb-3 inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-muted">
+            <input
+              type="checkbox"
+              checked={showAutomated}
+              onChange={(e) => setShowAutomated(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-border-strong text-primary focus:ring-primary/40"
+            />
+            Show automated events
+          </label>
+          {visibleTimeline.length === 0 ? (
+            <p className="text-sm text-subtle">
+              Only automated events so far. Turn on &ldquo;Show automated events&rdquo; to see them.
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {visibleTimeline.map((e) => (
+                <li key={e.id} className="flex items-start gap-2">
+                  <History className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-text">{e.title}</p>
+                    {e.detail && <p className="whitespace-pre-wrap text-xs text-muted">{e.detail}</p>}
+                    <p className="text-xs text-subtle">{fmtDate(e.at)}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          {!showAutomated && hiddenTimelineCount > 0 && visibleTimeline.length > 0 && (
+            <p className="mt-3 text-xs text-subtle">
+              {hiddenTimelineCount} automated {hiddenTimelineCount === 1 ? 'event is' : 'events are'} hidden.
+            </p>
+          )}
         </Section>
       )}
 

@@ -16,6 +16,8 @@ import { Resend } from 'resend'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { enqueue } from '@/lib/queue/outbox'
 import { isSuppressed } from '@/lib/suppression'
+// Email Studio (Phase 4) transactional seam: renders an in-house email from its EDITABLE template when an
+// operator has seeded + edited one, else returns null so the hardcoded copy below stands. Additive + fail-safe.
 
 const apiKey  = process.env.RESEND_API_KEY
 const FROM    = process.env.EMAIL_FROM ?? 'Frequency <noreply@send.frequencylocal.com>'
@@ -106,6 +108,13 @@ export async function sendWelcomeEmail(params: {
 }) {
   const { to, displayName, inviterName } = params
 
+  // Editable-template seam (Email Studio Phase 4) is DEFERRED here on purpose. lib/email.ts is transitively
+  // pulled into a client bundle (automations -> engagement -> practices -> journey-settings), so it must not
+  // reach the `server-only` product-block module (renderTransactionalTemplate) — even a dynamic import taints
+  // the Turbopack client graph and fails the build. The productCard block + picker + send-time data binding
+  // (lib/email-studio/send.ts, a server-only path) are unaffected. To make a transactional email editable,
+  // resolve the template in the SERVER-side caller and pass the rendered subject/html/text in, rather than
+  // importing product-block from here. Tracked in docs/EMAIL-EDITOR-PLAN.md.
   await enqueueEmail({
     to,
     subject: `Welcome to Frequency, ${displayName}`,

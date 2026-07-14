@@ -53,10 +53,20 @@ export const MERGE_TAG_VARIABLES: readonly MergeTagVar[] = [
   { token: 'contact.last_name', label: 'Last name', example: 'Rivera' },
   { token: 'contact.email', label: 'Email address', example: 'alex@example.com' },
   { token: 'space.name', label: 'Space name', example: 'Riverside Studio' },
+  // Product tokens (Email Studio Phase 4). Resolved from the FIRST Product card in the email at send time
+  // (lib/email-studio/product-block.ts buildProductVars), so an operator can name a product in the subject
+  // or body copy. Each carries a plain fallback below so a blank / missing product still reads naturally.
+  { token: 'product.title', label: 'Product name', example: 'Cedar candle' },
+  { token: 'product.price', label: 'Product price', example: '$24' },
+  { token: 'product.url', label: 'Product link', example: 'https://frequencylocal.com/shop/cedar-candle' },
 ]
 
 /** The default fallback for the primary merge tag, so a nameless recipient still reads naturally
  *  ("Hi there,"). Used when a `{{contact.first_name}}` carries no inline `| "..."` fallback. */
 export const MERGE_TAG_DEFAULT_FALLBACKS: Readonly<Record<string, string>> = {
   'contact.first_name': 'there',
+  // Product tokens read naturally even before a product resolves (or when none is placed).
+  'product.title': 'our latest',
+  'product.price': '',
+  'product.url': '',
 }

@@ -1,6 +1,12 @@
 # CRM Overhaul: one spine, the full Studio
 
-> **Status:** Approved, Phase 0 in progress (2026-06-23).
+> **Status:** Approved · spine + Studio consolidation live. **The CRM · Messaging · Email · QR build
+> (Phases 1–7) shipped 2026-07-14** on branch `claude/crm-interaction-tracking-scan-y9xsx8` (ADR-610…616):
+> the full `contact_interactions` timeline (`in_app` + DM adapter, manual log, system/human toggle,
+> engagement rollup), staged CSV import, the QR lead-grab engine, the `productCard` email block,
+> unified segments + the messaging control panel, the subscription preference center, and Vera's
+> owner-brief cron. Sequencing + shipped detail live in
+> [CRM-MASTER-BUILD-PLAN.md](CRM-MASTER-BUILD-PLAN.md). SMS/A2P (Phase 8) remains deferred.
 > **Source of truth (code):** code + `supabase/migrations/`.
 >
 > This is the unifying plan for Frequency's contact engine. It does **not** restate the

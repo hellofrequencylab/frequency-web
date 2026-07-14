@@ -5,8 +5,14 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveSegmentProfileIds, listSegmentChoices } from '@/lib/traits/segments'
+import {
+  parsePlaceSelector,
+  resolvePlaceTreeProfileIds,
+  type PlaceType,
+} from '@/lib/messaging/place-tree'
 
-/** A built-in audience or a trait segment (`seg:<slug>`, ADR-069 Phase 4). */
+/** A built-in audience, a trait segment (`seg:<slug>`), or a place-tree selector
+ *  (`circle:<id>` / `hub:<id>` / `nexus:<id>`, CRM Phase 5). */
 export type SegmentKey = string
 
 /** Trait-segment keys are namespaced so they can't collide with built-ins. */
@@ -21,8 +27,18 @@ export const BUILTIN_SEGMENTS: { key: SegmentKey; label: string }[] = [
   { key: 'beta_waitlist', label: 'Beta waitlist (confirmed, has account)' },
 ]
 
-/** Pure: classify an audience key. Unit-tested. */
-export function parseSegmentKey(key: string): { kind: 'builtin' | 'trait'; slug: string } {
+/** A classified audience key. A place selector is one audience type that spans the place tree
+ *  (circles/hubs/nexuses) the same way a trait segment spans the Member Data Platform. */
+export type ParsedSegmentKey =
+  | { kind: 'builtin'; slug: string }
+  | { kind: 'trait'; slug: string }
+  | { kind: 'place'; place: PlaceType; id: string }
+
+/** Pure: classify an audience key. A `circle:/hub:/nexus:<id>` string is a place selector; a
+ *  `seg:<slug>` string is a trait segment; anything else is a built-in audience. Unit-tested. */
+export function parseSegmentKey(key: string): ParsedSegmentKey {
+  const place = parsePlaceSelector(key)
+  if (place) return { kind: 'place', place: place.type, id: place.id }
   return key.startsWith(TRAIT_SEGMENT_PREFIX)
     ? { kind: 'trait', slug: key.slice(TRAIT_SEGMENT_PREFIX.length) }
     : { kind: 'builtin', slug: key }
@@ -49,6 +65,23 @@ export interface Recipient {
 export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> {
   const db = createAdminClient()
   const parsed = parseSegmentKey(segment)
+
+  // Place-tree selector (CRM Phase 5): a Circle / Hub / Nexus resolves through its memberships to
+  // the profile ids of its active members, then maps onto member contacts EXACTLY like a trait
+  // segment (same not-unsubscribed rule, same profile-based unsubscribe). One audience type, both
+  // worlds. FAIL-SAFE: an empty / unresolvable place is nobody, never everybody.
+  if (parsed.kind === 'place') {
+    const profileIds = await resolvePlaceTreeProfileIds({ type: parsed.place, id: parsed.id })
+    if (!profileIds.length) return []
+    const { data } = await db
+      .from('contacts')
+      .select('id, email, profile_id, consent_state')
+      .in('profile_id', profileIds)
+      .neq('consent_state', 'unsubscribed')
+    return (data ?? [])
+      .filter((c) => c.profile_id && c.email)
+      .map((c) => ({ contactId: c.id, email: c.email as string, profileId: c.profile_id as string }))
+  }
 
   if (parsed.kind === 'trait') {
     const profileIds = await resolveSegmentProfileIds(parsed.slug)

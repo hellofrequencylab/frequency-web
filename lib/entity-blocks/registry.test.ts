@@ -52,9 +52,18 @@ describe('unified entity-block registry', () => {
       'displayHeading',
       'prose',
     ])
+    // Email-only content blocks (Phase 4): the data-bound `productCard` resolves live commerce data at send
+    // time, so it belongs only to the email kind (a Space already shows its catalog via the `offerings` data
+    // block on the web).
+    const emailOnly = new Set(['productCard'])
     for (const b of ENTITY_BLOCKS.filter((x) => x.category === 'content')) {
-      expect(b.kinds).toContain('space')
-      if (!spaceOnly.has(b.id)) expect(b.kinds).toContain('member')
+      expect(b.kinds.length).toBeGreaterThan(0)
+      if (emailOnly.has(b.id)) {
+        expect(b.kinds).toContain('email')
+      } else {
+        expect(b.kinds).toContain('space')
+        if (!spaceOnly.has(b.id)) expect(b.kinds).toContain('member')
+      }
       expect(b.requiresFunction).toBeUndefined()
     }
   })

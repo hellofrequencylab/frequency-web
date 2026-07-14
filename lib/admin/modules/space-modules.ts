@@ -5,6 +5,7 @@ import {
   SlidersHorizontal,
   LayoutTemplate,
   Users,
+  UserPlus,
   Star,
   Briefcase,
   CalendarClock,
@@ -114,6 +115,10 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Reviews is a gateable feature keyed on the `reviews` function: the member rating and review wall on the
   // public profile. Default ON (only an explicit `false` hides it); we recommend keeping it on to build trust.
   { id: 'space.reviews', label: 'Reviews', desc: 'The member rating and review wall on your profile.', Icon: Star, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'reviews' }, featureKey: 'reviews', render: 'link', deepLink: (s) => `${base(s)}/reviews`, order: 37, tier: 'primary', priority: 17 },
+  // Lead capture (CRM Phase 3): contacts captured from Space QR scans, events, and referrals, with the
+  // immutable entry point each arrived through. Same `crm` feature gate as the CRM board; the surface
+  // self-gates on ownership. Links out to the Space CRM's leads view.
+  { id: 'space.leads', label: 'Lead capture', desc: 'Contacts captured from QR scans, events, and referrals, and how each one arrived.', Icon: UserPlus, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/leads`, order: 38, tier: 'primary', priority: 18 },
 
   // ── Offerings & money (independent modules) ──────────────────────────────────────────────────────────
   { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#availability`, order: 40, tier: 'primary', priority: 30 },

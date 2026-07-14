@@ -95,6 +95,11 @@ const CONTENT_BLOCKS: readonly EntityBlockDef[] = [
   { id: 'photoHero', label: 'Banner', description: 'A bold in-page banner with a headline and an optional photo.', category: 'content', kinds: ['space', 'email'], order: 280 },
   { id: 'editorial', label: 'Editorial section', description: 'A heading over a paragraph of your words.', category: 'content', kinds: ['space', 'email'], order: 282 },
   { id: 'cardGrid', label: 'Card grid', description: 'A heading over a simple row of image cards you write.', category: 'content', kinds: ['space', 'email'], order: 284 },
+  // The data-bound PRODUCT CARD (Email Studio, Phase 4): search a maker / Space owner, pick one of their
+  // products, and drop it into an email. Email-only, because the card resolves its image / title / price /
+  // link from the LIVE commerce catalog at send time (lib/email-studio/product-block.ts), so it never goes
+  // stale. On the web a Space already shows its catalog through the connected `offerings` data block.
+  { id: 'productCard', label: 'Product', description: 'A product or offering, pulled live from a maker or Space catalog.', category: 'content', kinds: ['email'], order: 285 },
   { id: 'zigzag', label: 'Zigzag', description: 'A photo beside a column of text.', category: 'content', kinds: ['space'], order: 286 },
   { id: 'accentBeat', label: 'Accent beat', description: 'A splash of color with a headline and a button.', category: 'content', kinds: ['space'], order: 288 },
   // Two focused TEXT design blocks (ADR-571): a big Display heading and a Prose paragraph, each with its own
@@ -207,8 +212,8 @@ const KIND_PALETTE_EXCLUSIONS: Record<EntityKind, ReadonlySet<string>> = {
 
 /** The curated EMAIL palette (Email Studio, 2026): the CONTENT + DESIGN blocks that port cleanly to an
  *  inline-styled email document. Headings + text (Display heading / Heading, Text block / Text), a single
- *  Image, the Banner (photoHero), Editorial, Card grid, Callout, Quote, Divider, Features, and the dedicated
- *  Button. It deliberately EXCLUDES every `data` block (they bind to live web data), the web-only `embed`
+ *  Image, the Banner (photoHero), Editorial, Card grid, the data-bound Product card, Callout, Quote, Divider,
+ *  Features, and the dedicated Button. It deliberately EXCLUDES every `data` block (they bind to live web data), the web-only `embed`
  *  iframe, the scroll / masonry `gallery`, and the layout-heavy `zigzag` / `accentBeat` design blocks (which
  *  lean on side-by-side columns email cannot lay out safely). The email renderer (lib/email-studio/render.ts)
  *  covers exactly these ids. A block here MUST also declare `email` in its `kinds` so the renderer keeps it. */
@@ -221,6 +226,7 @@ export const EMAIL_PALETTE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'text',
   'image',
   'cardGrid',
+  'productCard',
   'features',
   'callout',
   'button',

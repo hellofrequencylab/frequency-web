@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { buildTimeline, interactionTitle, relativeTime, summarizeTimeline, type TimelineEntry } from './timeline'
+import {
+  buildTimeline,
+  filterTimeline,
+  interactionTitle,
+  isAutomatedEntry,
+  relativeTime,
+  summarizeTimeline,
+  type TimelineEntry,
+} from './timeline'
 import type { ContactInteraction } from './interactions'
 
 function interaction(over: Partial<ContactInteraction>): ContactInteraction {
@@ -28,6 +36,8 @@ describe('interactionTitle', () => {
     expect(interactionTitle('sms', 'outbound')).toBe('Texted')
     expect(interactionTitle('in_person', 'inbound')).toBe('Met in person')
     expect(interactionTitle('note', 'internal')).toBe('Note')
+    expect(interactionTitle('in_app', 'outbound')).toBe('Messaged')
+    expect(interactionTitle('in_app', 'inbound')).toBe('Message received')
   })
 })
 
@@ -84,6 +94,76 @@ describe('buildTimeline', () => {
     const entry = out[0] as TimelineEntry
     expect(entry.detail).toBe('full notes')
   })
+
+  it('carries the interaction source onto the entry, and folded notes/scans are manual', () => {
+    const out = buildTimeline({
+      interactions: [interaction({ id: 'a', source: 'resend' })],
+      notes: [{ id: 'n1', body: 'note', createdAt: '2026-02-01T00:00:00.000Z' }],
+      scans: [{ id: 's1', codeTitle: 'Booth', scannedAt: '2026-03-01T00:00:00.000Z' }],
+    })
+    const byId = Object.fromEntries(out.map((e) => [e.id, e]))
+    expect(byId['interaction:a'].source).toBe('resend')
+    expect(byId['note:n1'].source).toBe('manual')
+    expect(byId['scan:s1'].source).toBe('manual')
+  })
+
+  it('drops automated events when includeAutomated is false, keeping human touches', () => {
+    const out = buildTimeline(
+      {
+        interactions: [
+          interaction({ id: 'open', channel: 'email', source: 'resend' }),
+          interaction({ id: 'sys', channel: 'system', source: 'system' }),
+          interaction({ id: 'dm', channel: 'in_app', source: 'system' }),
+          interaction({ id: 'call', channel: 'call', source: 'manual' }),
+        ],
+      },
+      100,
+      { includeAutomated: false },
+    )
+    const ids = out.map((e) => e.id)
+    expect(ids).toContain('interaction:dm') // in-app message always kept
+    expect(ids).toContain('interaction:call') // manual always kept
+    expect(ids).not.toContain('interaction:open') // resend noise hidden
+    expect(ids).not.toContain('interaction:sys') // system update hidden
+  })
+})
+
+describe('isAutomatedEntry / filterTimeline', () => {
+  function entry(over: Partial<TimelineEntry>): TimelineEntry {
+    return {
+      id: 'e',
+      channel: 'email',
+      direction: 'outbound',
+      title: 'x',
+      detail: null,
+      at: '2026-01-01T00:00:00.000Z',
+      origin: 'interaction',
+      source: 'manual',
+      ...over,
+    }
+  }
+
+  it('never flags a manual touch or an in-app message as automated', () => {
+    expect(isAutomatedEntry(entry({ source: 'manual' }))).toBe(false)
+    expect(isAutomatedEntry(entry({ channel: 'in_app', source: 'system' }))).toBe(false)
+  })
+
+  it('flags engagement/resend/system/twilio/ai/playbook sources on non-conversation channels', () => {
+    expect(isAutomatedEntry(entry({ channel: 'email', source: 'resend' }))).toBe(true)
+    expect(isAutomatedEntry(entry({ channel: 'system', source: 'system' }))).toBe(true)
+    expect(isAutomatedEntry(entry({ channel: 'email', source: 'engagement' }))).toBe(true)
+  })
+
+  it('keeps crm_activity and import (human-logged) visible', () => {
+    expect(isAutomatedEntry(entry({ source: 'crm_activity' }))).toBe(false)
+    expect(isAutomatedEntry(entry({ source: 'import' }))).toBe(false)
+  })
+
+  it('filterTimeline is a no-op when automated are included', () => {
+    const list = [entry({ id: 'a', source: 'resend' }), entry({ id: 'b', source: 'manual' })]
+    expect(filterTimeline(list, true)).toHaveLength(2)
+    expect(filterTimeline(list, false).map((e) => e.id)).toEqual(['b'])
+  })
 })
 
 describe('relativeTime', () => {
@@ -128,8 +208,8 @@ describe('summarizeTimeline', () => {
 
   it('skips a blank-stamped head when finding the last touch', () => {
     const entries: TimelineEntry[] = [
-      { id: 'a', channel: 'note', direction: 'internal', title: 'Note', detail: 'x', at: '', origin: 'note' },
-      { id: 'b', channel: 'email', direction: 'outbound', title: 'Emailed', detail: null, at: '2026-05-01T00:00:00.000Z', origin: 'interaction' },
+      { id: 'a', channel: 'note', direction: 'internal', title: 'Note', detail: 'x', at: '', origin: 'note', source: 'manual' },
+      { id: 'b', channel: 'email', direction: 'outbound', title: 'Emailed', detail: null, at: '2026-05-01T00:00:00.000Z', origin: 'interaction', source: 'manual' },
     ]
     expect(summarizeTimeline(entries)).toEqual({ count: 2, lastTouchAt: '2026-05-01T00:00:00.000Z' })
   })

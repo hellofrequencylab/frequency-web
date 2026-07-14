@@ -121,7 +121,11 @@ export function TemplateGallery({ templates, onUse, useHref }: TemplateGalleryPr
             <LayoutTemplate className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
             Templates
           </h2>
-          <p className="text-xs text-muted">Start from a pre-written email, then make it yours.</p>
+          <p className="text-xs text-muted">
+            Start from a pre-written email, then make it yours. Loading the starters also adds the in-house
+            Transactional emails (like the welcome), so you can edit those too. Add a Product block to any email
+            to pull a maker or Space product live from the catalog.
+          </p>
         </div>
         <Button variant="secondary" size="sm" onClick={handleSeed} disabled={isPending}>
           <Sparkles className="h-3.5 w-3.5" aria-hidden />

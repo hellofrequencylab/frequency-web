@@ -5,6 +5,33 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireProfileId as getMyProfileId } from '@/lib/auth'
 import { isBlockedBetween } from '@/lib/blocking'
+import { recordContactInteraction } from '@/lib/crm/interactions'
+
+// ── In-app message → CRM timeline adapter (ADR-372 Phase 1) ────────────────────────────────────────
+// Fold a sent 1:1 DM onto the ONE interaction timeline (contact_interactions) so the contact card shows
+// every in-house message, not just email/SMS. FIRE-SAFE by contract: recordContactInteraction never
+// throws, but we still wrap so a timeline write can NEVER break the send hot path (a failed fold just
+// means the touch is missing from the card, never a failed message). Idempotent on the message id, so a
+// retry/revalidation replay is a no-op. Recorded from the SENDER's book (owner) about the OTHER party
+// (subject = their profile), direction outbound, source 'system' (auto-captured, not hand-logged).
+async function recordDmTouch(senderProfileId: string, recipientProfileId: string, messageId: string, body: string) {
+  try {
+    await recordContactInteraction({
+      ownerProfileId: senderProfileId,
+      subjectKind: 'profile',
+      subjectId: recipientProfileId,
+      channel: 'in_app',
+      direction: 'outbound',
+      summary: 'Messaged',
+      body,
+      source: 'system',
+      idempotencyKey: `in_app:${messageId}`,
+      metadata: { messageId, kind: 'dm' },
+    })
+  } catch {
+    // Never surface a timeline-write failure into the send path.
+  }
+}
 
 // ── startConversation ─────────────────────────────────────────────────
 // Finds an existing 1:1 thread with otherProfileId, or creates one.
@@ -111,11 +138,22 @@ export async function sendMessage(conversationId: string, formData: FormData) {
     throw new Error('You cannot message this member')
   }
 
-  await admin.from('messages').insert({
-    conversation_id: conversationId,
-    sender_id: myProfileId,
-    body,
-  })
+  const { data: inserted } = await admin
+    .from('messages')
+    .insert({
+      conversation_id: conversationId,
+      sender_id: myProfileId,
+      body,
+    })
+    .select('id')
+    .single()
+
+  // Fold the DM onto the CRM timeline (fire-safe, idempotent). 1:1 only — `conversations` is
+  // 1:1-only, so there is exactly one counterpart; a room (group) send is a separate path and is
+  // intentionally not folded here (prioritize the 1:1 DM path per the Phase 1 plan).
+  if (inserted?.id && others.length === 1) {
+    await recordDmTouch(myProfileId, others[0], inserted.id as string, body)
+  }
 
   // Mark the sender as having read up to now
   await admin

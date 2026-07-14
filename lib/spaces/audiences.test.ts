@@ -12,7 +12,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 //   4. De-dupe by lowercased email; junk emails dropped; fail-safe to [] on error.
 
 // ── A chainable admin-client mock backed by an in-memory store ──────────────────────────────────
-type ContactRow = { id: string; email: string | null; space_id: string }
+type ContactRow = {
+  id: string
+  email: string | null
+  space_id: string
+  profile_id?: string | null
+  consent_state?: string | null
+}
 // network_contact_tags joined to its parent network_contact (PostgREST embed shape).
 type TagRow = {
   tag: string
@@ -22,10 +28,19 @@ type TagRow = {
 // space_segments: a saved AudienceFilter-shaped definition, scoped to a space (ADR-380).
 type SegmentRow = { id: string; definition: unknown; space_id: string }
 
+// member_traits: one enum band per (profile, trait_key) — the advanced-facet feature store (Phase 5).
+type TraitRow = { profile_id: string; trait_key: string; value_text: string | null }
+// place-tree membership (for the circle: selector) — profile in a circle, active.
+type MembershipRow = { circle_id: string; profile_id: string; status: string }
+
 const db = {
   contacts: [] as ContactRow[],
   tags: [] as TagRow[],
   segments: [] as SegmentRow[],
+  traits: [] as TraitRow[],
+  memberships: [] as MembershipRow[],
+  circles: [] as { id: string; hub_id: string | null }[],
+  hubs: [] as { id: string; nexus_id: string | null }[],
 }
 
 // space_segments builder: .select('definition').eq('id', v).eq('space_id', v).maybeSingle().
@@ -65,7 +80,89 @@ function contactsBuilder() {
       const data = db.contacts
         .filter((c) => c.space_id === filters.space_id)
         .slice(0, n)
-      return { data: data.map((c) => ({ id: c.id, email: c.email })), error: null }
+      return {
+        data: data.map((c) => ({
+          id: c.id,
+          email: c.email,
+          profile_id: c.profile_id ?? null,
+          consent_state: c.consent_state ?? null,
+        })),
+        error: null,
+      }
+    },
+  }
+  return api
+}
+
+// member_traits builder: .select(cols).in('profile_id', ids).in('trait_key', keys) then awaited.
+// The chain returns a thenable so `await ...in().in()` resolves the matching rows.
+function memberTraitsBuilder() {
+  const f: { profileIds: string[]; traitKeys: string[] } = { profileIds: [], traitKeys: [] }
+  const result = () => ({
+    data: db.traits.filter(
+      (t) => f.profileIds.includes(t.profile_id) && f.traitKeys.includes(t.trait_key),
+    ),
+    error: null,
+  })
+  const api = {
+    select() {
+      return api
+    },
+    in(col: string, vals: string[]) {
+      if (col === 'profile_id') f.profileIds = vals
+      if (col === 'trait_key') f.traitKeys = vals
+      return api
+    },
+    then(resolve: (v: ReturnType<typeof result>) => void) {
+      resolve(result())
+    },
+  }
+  return api
+}
+
+// memberships builder (place-tree circle: selector): .select('profile_id').in('circle_id', ids).eq('status', v)
+function membershipsBuilder() {
+  const f: { circleIds: string[] } = { circleIds: [] }
+  const api = {
+    select() {
+      return api
+    },
+    in(col: string, vals: string[]) {
+      if (col === 'circle_id') f.circleIds = vals
+      return api
+    },
+    eq(col: string, val: string) {
+      const data = db.memberships
+        .filter((m) => f.circleIds.includes(m.circle_id) && m.status === val)
+        .map((m) => ({ profile_id: m.profile_id }))
+      return Promise.resolve({ data, error: null })
+    },
+  }
+  return api
+}
+
+// circles / hubs builders (place-tree hub:/nexus: walk) — return the tree rows for the given parent.
+function circlesBuilder() {
+  const api = {
+    select() {
+      return api
+    },
+    eq(_col: string, val: string) {
+      return Promise.resolve({ data: db.circles.filter((c) => c.hub_id === val).map((c) => ({ id: c.id })), error: null })
+    },
+    in(_col: string, vals: string[]) {
+      return Promise.resolve({ data: db.circles.filter((c) => c.hub_id && vals.includes(c.hub_id)).map((c) => ({ id: c.id })), error: null })
+    },
+  }
+  return api
+}
+function hubsBuilder() {
+  const api = {
+    select() {
+      return api
+    },
+    eq(_col: string, val: string) {
+      return Promise.resolve({ data: db.hubs.filter((h) => h.nexus_id === val).map((h) => ({ id: h.id })), error: null })
     },
   }
   return api
@@ -111,6 +208,10 @@ vi.mock('@/lib/supabase/admin', () => ({
       if (table === 'contacts') return contactsBuilder()
       if (table === 'network_contact_tags') return tagsBuilder()
       if (table === 'space_segments') return segmentsBuilder()
+      if (table === 'member_traits') return memberTraitsBuilder()
+      if (table === 'memberships') return membershipsBuilder()
+      if (table === 'circles') return circlesBuilder()
+      if (table === 'hubs') return hubsBuilder()
       throw new Error(`unexpected table ${table}`)
     },
   }),
@@ -131,16 +232,37 @@ beforeEach(() => {
   db.contacts = []
   db.tags = []
   db.segments = []
+  db.traits = []
+  db.memberships = []
+  db.circles = []
+  db.hubs = []
 })
 
-function seedContact(id: string, email: string | null, spaceId = 'space-A') {
-  db.contacts.push({ id, email, space_id: spaceId })
+function seedContact(
+  id: string,
+  email: string | null,
+  spaceId = 'space-A',
+  opts: { profileId?: string | null; consentState?: string | null } = {},
+) {
+  db.contacts.push({
+    id,
+    email,
+    space_id: spaceId,
+    profile_id: opts.profileId ?? null,
+    consent_state: opts.consentState ?? null,
+  })
 }
 function seedTag(tag: string, linkedContactId: string | null, spaceId = 'space-A') {
   db.tags.push({ tag, network_contacts: { space_id: spaceId, linked_contact_id: linkedContactId } })
 }
 function seedSegment(id: string, definition: unknown, spaceId = 'space-A') {
   db.segments.push({ id, definition, space_id: spaceId })
+}
+function seedTrait(profileId: string, traitKey: string, band: string) {
+  db.traits.push({ profile_id: profileId, trait_key: traitKey, value_text: band })
+}
+function seedMembership(circleId: string, profileId: string, status = 'active') {
+  db.memberships.push({ circle_id: circleId, profile_id: profileId, status })
 }
 
 describe('normalizeTag (pure)', () => {
@@ -203,14 +325,80 @@ describe('advanced resonance / engagement-depth facets (Phase 6 · ADR-387)', ()
     expect(definitionToFilter({ tag: 'vip', consent: 'all' })).toEqual({ tag: 'vip', consent: 'all' })
   })
 
-  it('the advanced facets do NOT yet narrow resolveAudience (reserved for the trait join, like consent)', async () => {
-    // Mirrors the consent-facet precedent: the facet is accepted + stored but the v1 contacts read has
-    // no member_traits join yet, so the audience is unchanged. This keeps the grammar extension purely
-    // additive and never breaks an existing caller.
+  it('no facet requested = member_traits is never consulted (additive: existing callers unchanged)', async () => {
+    // A contact with no profile / no traits row is untouched when no facet is requested.
     seedContact('c1', 'a@x.com')
     seedContact('c2', 'b@x.com')
-    const out = await resolveAudience('space-A', { churnRisk: 'high', resonanceTier: 'at_risk' })
+    const out = await resolveAudience('space-A')
     expect(out.map((r) => r.contactId).sort()).toEqual(['c1', 'c2'])
+  })
+})
+
+describe('resolveAudience — advanced facets ACTIVATED (Phase 5, member_traits join)', () => {
+  it('narrows to contacts whose linked profile holds the requested churn-risk band', async () => {
+    seedContact('c1', 'a@x.com', 'space-A', { profileId: 'p1' })
+    seedContact('c2', 'b@x.com', 'space-A', { profileId: 'p2' })
+    seedContact('c3', 'c@x.com', 'space-A', { profileId: 'p3' })
+    seedTrait('p1', 'churn_risk', 'high')
+    seedTrait('p2', 'churn_risk', 'low')
+    // p3 has no churn_risk trait row -> cannot match a demanded facet.
+    const out = await resolveAudience('space-A', { churnRisk: 'high' })
+    expect(out.map((r) => r.contactId)).toEqual(['c1'])
+  })
+
+  it('AND semantics across facets: a contact must hold EVERY requested band', async () => {
+    seedContact('c1', 'a@x.com', 'space-A', { profileId: 'p1' })
+    seedContact('c2', 'b@x.com', 'space-A', { profileId: 'p2' })
+    seedTrait('p1', 'churn_risk', 'high')
+    seedTrait('p1', 'resonance_tier', 'at_risk')
+    seedTrait('p2', 'churn_risk', 'high') // but no at_risk resonance_tier
+    const out = await resolveAudience('space-A', { churnRisk: 'high', resonanceTier: 'at_risk' })
+    expect(out.map((r) => r.contactId)).toEqual(['c1'])
+  })
+
+  it('a sealed lead (no profile_id) never matches a demanded facet', async () => {
+    seedContact('lead', 'lead@x.com', 'space-A', { profileId: null })
+    const out = await resolveAudience('space-A', { engagementDepth: 'deep' })
+    expect(out).toEqual([])
+  })
+})
+
+describe('resolveAudience — consent facet ACTIVATED (Phase 5)', () => {
+  it("'subscribed' narrows to contacts whose consent_state is subscribed", async () => {
+    seedContact('c1', 'a@x.com', 'space-A', { consentState: 'subscribed' })
+    seedContact('c2', 'b@x.com', 'space-A', { consentState: 'unknown' })
+    const out = await resolveAudience('space-A', { consent: 'subscribed' })
+    expect(out.map((r) => r.contactId)).toEqual(['c1'])
+  })
+
+  it("'all' / omitted keeps every matching contact (additive default)", async () => {
+    seedContact('c1', 'a@x.com', 'space-A', { consentState: 'subscribed' })
+    seedContact('c2', 'b@x.com', 'space-A', { consentState: 'unknown' })
+    expect((await resolveAudience('space-A', { consent: 'all' })).length).toBe(2)
+    expect((await resolveAudience('space-A')).length).toBe(2)
+  })
+})
+
+describe('resolveAudience — place-tree selector ACTIVATED (Phase 5)', () => {
+  it('circle:<id> narrows to Space contacts whose profile is an active member of that circle', async () => {
+    seedContact('c1', 'a@x.com', 'space-A', { profileId: 'p1' })
+    seedContact('c2', 'b@x.com', 'space-A', { profileId: 'p2' })
+    seedContact('c3', 'c@x.com', 'space-A', { profileId: 'p3' })
+    seedMembership('circle-1', 'p1')
+    seedMembership('circle-1', 'p3')
+    seedMembership('circle-1', 'p2', 'inactive') // not active -> excluded
+    const out = await resolveAudience('space-A', { place: 'circle:circle-1' })
+    expect(out.map((r) => r.contactId).sort()).toEqual(['c1', 'c3'])
+  })
+
+  it('a malformed place selector narrows to nobody (fail-safe, never everybody)', async () => {
+    seedContact('c1', 'a@x.com', 'space-A', { profileId: 'p1' })
+    // `circle:` with no id -> parses to null -> the place branch is skipped, so NO narrowing applies.
+    const skipped = await resolveAudience('space-A', { place: 'circle:' })
+    expect(skipped.map((r) => r.contactId)).toEqual(['c1'])
+    // A well-formed selector for an empty circle -> nobody.
+    const empty = await resolveAudience('space-A', { place: 'circle:nope' })
+    expect(empty).toEqual([])
   })
 })
 

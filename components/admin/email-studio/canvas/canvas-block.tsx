@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ImagePlus, Pencil } from 'lucide-react'
+import { ImagePlus, Package, Pencil } from 'lucide-react'
 import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
 import { DEFAULT_EMAIL_COLORS as C } from '@/lib/email-studio/render'
 import { BlockIcon } from '@/components/entity-blocks/block-icon'
@@ -216,6 +216,45 @@ function CardsCanvas({ label, value, onChange }: { label: string; value: unknown
   )
 }
 
+/** The data-bound PRODUCT CARD preview (Email Studio Phase 4). Read-only on the canvas: its photo / title /
+ *  price / link come from the picked product (set in the LEFT rail via the search-by-owner picker) and refresh
+ *  from the live catalog at send time, so there is nothing to type here. Shows an empty-state prompt until a
+ *  product is chosen. */
+function ProductCardCanvas({ props }: { props: Record<string, unknown> }) {
+  const title = str(props, 'title')
+  const price = str(props, 'price')
+  const image = str(props, 'image')
+  const cta = str(props, 'ctaLabel') || 'View product'
+  const hasProduct = !!(props.product && typeof props.product === 'object')
+  if (!hasProduct && !title && !image) {
+    return (
+      <div
+        className="flex flex-col items-center gap-1 rounded-xl border border-dashed px-4 py-8 text-center"
+        style={{ borderColor: C.border, color: C.subtle }}
+      >
+        <Package className="h-5 w-5" aria-hidden />
+        <p className="text-sm font-medium">Pick a product in this block&rsquo;s settings.</p>
+        <p className="text-xs">Search a maker or Space, then choose one of their products.</p>
+      </div>
+    )
+  }
+  return (
+    <div style={{ border: `1px solid ${C.border}`, borderRadius: 16, overflow: 'hidden', background: C.surface }}>
+      {image && (
+        // eslint-disable-next-line @next/next/no-img-element -- operator catalog asset URL, not a build asset
+        <img src={image} alt={title} style={{ display: 'block', width: '100%', maxHeight: 240, objectFit: 'cover' }} />
+      )}
+      <div style={{ padding: 16 }}>
+        <div className="text-lg font-bold" style={{ color: C.text }}>{title || 'Product title'}</div>
+        {price && <div className="mt-0.5 text-base font-bold" style={{ color: C.primaryStrong }}>{price}</div>}
+        <span className="mt-3 inline-flex rounded-lg px-5 py-2.5 text-sm font-bold" style={{ background: C.primary, color: C.onPrimary }}>
+          {cta}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export function CanvasBlock({
   id,
   props,
@@ -229,6 +268,11 @@ export function CanvasBlock({
 }) {
   if (id === 'divider') {
     return <hr style={{ border: 0, borderTop: `1px solid ${C.border}`, margin: '4px 0' }} />
+  }
+
+  // The Product card is DATA-BOUND: it renders a read-only preview here and is edited entirely in the rail.
+  if (id === 'productCard') {
+    return <ProductCardCanvas props={props} />
   }
 
   const fields = fieldsForBlock(id)

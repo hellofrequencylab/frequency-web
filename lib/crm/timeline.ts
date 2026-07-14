@@ -9,7 +9,7 @@
 // person.ts / the page; this just shapes + merges + sorts, so it is trivially unit-testable. All copy
 // is plain and in voice (docs/CONTENT-VOICE.md): short verbs, sentence case, no em dashes.
 
-import type { ContactInteraction, InteractionChannel, InteractionDirection } from './interactions'
+import type { ContactInteraction, InteractionChannel, InteractionDirection, InteractionSource } from './interactions'
 
 /** One entry the contact-detail timeline renders. */
 export interface TimelineEntry {
@@ -25,6 +25,9 @@ export interface TimelineEntry {
   at: string
   /** The producing source (audit / icon hint): 'interaction' | 'note' | 'scan'. */
   origin: 'interaction' | 'note' | 'scan'
+  /** The interaction source (drives the system/human toggle). Folded legacy notes + QR scans are
+   *  human touches, so they carry 'manual' and are never hidden by the automated filter. */
+  source: InteractionSource
 }
 
 /** The default verb for a channel + direction, used when an interaction carries no summary. Plain
@@ -43,6 +46,8 @@ export function interactionTitle(channel: InteractionChannel, direction: Interac
       return 'At an event'
     case 'note':
       return 'Note'
+    case 'in_app':
+      return direction === 'inbound' ? 'Message received' : 'Messaged'
     case 'system':
       return 'Update'
     default:
@@ -60,6 +65,7 @@ function toEntry(i: ContactInteraction): TimelineEntry {
     detail: i.body?.trim() || null,
     at: i.occurredAt,
     origin: 'interaction',
+    source: i.source,
   }
 }
 
@@ -82,12 +88,59 @@ export interface BuildTimelineInput {
   scans?: LegacyScan[]
 }
 
+/** Options for buildTimeline. */
+export interface BuildTimelineOptions {
+  /** When false, automated (system-generated) events are filtered OUT of the result — the
+   *  "Show automated events" toggle OFF (see filterTimeline). Defaults to true (show everything). */
+  includeAutomated?: boolean
+}
+
+// ── The system/human toggle (ADR-372 Phase 1) ─────────────────────────────────────────────────────
+// One append-only log, read-time filtering — NEVER destructive (Customer.io / Activity Schema doctrine:
+// separate "things people did" from message-lifecycle metadata via a first-class source dimension).
+
+/** Sources that are machine-generated engagement / lifecycle noise (email opens, clicks, delivery,
+ *  Resonance Engine plays, generic system updates). Hidden when the "Show automated events" toggle is
+ *  off. `manual`, `crm_activity`, and `import` are human-logged and always shown. */
+export const AUTOMATED_SOURCES: readonly InteractionSource[] = [
+  'engagement',
+  'resend',
+  'twilio',
+  'ai',
+  'playbook',
+  'system',
+]
+
+/**
+ * Whether an entry is an automated, system-generated event (so the toggle can hide it). Pure.
+ * ALWAYS shown (returns false) when the touch is human-logged (`manual`) or is a real in-house
+ * conversation (`in_app` direct message), so the owner never loses a genuine message. Everything else
+ * from an automated source (an email open, a lifecycle update) is automated noise.
+ */
+export function isAutomatedEntry(entry: Pick<TimelineEntry, 'source' | 'channel'>): boolean {
+  if (entry.source === 'manual') return false
+  if (entry.channel === 'in_app') return false // a real direct message is always a human touch
+  return AUTOMATED_SOURCES.includes(entry.source)
+}
+
+/**
+ * Filter a built timeline by the system/human toggle. Pure and non-destructive: `includeAutomated`
+ * true returns the list unchanged; false drops only the automated-noise entries (isAutomatedEntry),
+ * keeping every human-logged touch and every in-house message. The caller decides the default per
+ * surface (hidden on the member-facing personal card, shown in the staff/admin console).
+ */
+export function filterTimeline(entries: TimelineEntry[], includeAutomated: boolean): TimelineEntry[] {
+  if (includeAutomated) return entries ?? []
+  return (entries ?? []).filter((e) => !isAutomatedEntry(e))
+}
+
 /**
  * Merge every source into one timeline, newest first, capped. Pure and deterministic: an empty/blank
  * input yields []. Sort is by `at` descending with a stable id tiebreak so equal timestamps keep a
- * deterministic order. Blank-bodied notes are dropped (a note must have text).
+ * deterministic order. Blank-bodied notes are dropped (a note must have text). `options.includeAutomated`
+ * (default true) applies the system/human toggle at build time; the client can re-filter with filterTimeline.
  */
-export function buildTimeline(input: BuildTimelineInput, limit = 100): TimelineEntry[] {
+export function buildTimeline(input: BuildTimelineInput, limit = 100, options?: BuildTimelineOptions): TimelineEntry[] {
   const entries: TimelineEntry[] = []
 
   for (const i of input.interactions ?? []) entries.push(toEntry(i))
@@ -103,6 +156,7 @@ export function buildTimeline(input: BuildTimelineInput, limit = 100): TimelineE
       detail: body,
       at: n.createdAt ?? '',
       origin: 'note',
+      source: 'manual',
     })
   }
 
@@ -115,6 +169,7 @@ export function buildTimeline(input: BuildTimelineInput, limit = 100): TimelineE
       detail: null,
       at: s.scannedAt,
       origin: 'scan',
+      source: 'manual',
     })
   }
 
@@ -125,8 +180,9 @@ export function buildTimeline(input: BuildTimelineInput, limit = 100): TimelineE
     return a.id < b.id ? 1 : a.id > b.id ? -1 : 0
   })
 
+  const filtered = filterTimeline(entries, options?.includeAutomated ?? true)
   const capped = Math.min(Math.max(limit, 1), 500)
-  return entries.slice(0, capped)
+  return filtered.slice(0, capped)
 }
 
 // ── DERIVED at READ time (pure, testable) — small shapers the owner-facing detail uses to surface the

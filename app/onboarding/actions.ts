@@ -1,5 +1,6 @@
 'use server'
 
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { Database } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase/server'
@@ -9,6 +10,12 @@ import { applyReferralAttribution, applyEntryPointConversion } from '@/lib/qr/re
 import { postWelcomeForMember } from '@/lib/onboarding/welcome'
 import { ensureMemberCodes } from '@/lib/qr/member-codes'
 import { persistAcquisition } from '@/lib/attribution/acquisition'
+import {
+  LEAD_GRAB_COOKIE,
+  parseLeadGrab,
+  claimPendingLeadGrab,
+  claimLeadOnSignup,
+} from '@/lib/crm/lead-capture'
 
 export async function completeOnboarding(data: {
   displayName: string
@@ -73,6 +80,21 @@ export async function completeOnboarding(data: {
     await applyReferralAttribution(updated.id)
     await applyEntryPointConversion(updated.id).catch(() => {})
     await persistAcquisition(updated.id).catch(() => {})
+    // CLAIM-ON-JOIN (CRM Phase 3): redeem any Space lead-grab this new member came through. Two
+    // fail-safe, never-blocking paths — an anonymous Space-QR scan carried a pending grab (fq_lead
+    // cookie → link into the Space CRM with the original door), and any sealed lead already sharing this
+    // email gets its 'claim' touchpoint logged (the profiles_sync_contact trigger linked profile_id).
+    try {
+      const jar = await cookies()
+      const grab = parseLeadGrab(jar.get(LEAD_GRAB_COOKIE)?.value)
+      if (grab) {
+        await claimPendingLeadGrab(updated.id, grab).catch(() => {})
+        jar.delete(LEAD_GRAB_COOKIE)
+      }
+    } catch {
+      /* claim is a bonus, never a blocker on signup */
+    }
+    await claimLeadOnSignup(updated.id, user.email).catch(() => {})
     // Welcome the new member (ADR-231): grants the join Zaps AND drops the one quiet
     // "@handle joined 👋" line into the feed + the personal notification. This is the
     // classic path — it previously only granted Zaps and never posted the feed line,

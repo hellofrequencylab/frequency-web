@@ -9,6 +9,7 @@ import { DEFAULT_EMAIL_COLORS, type EmailColors } from '@/lib/email-studio/rende
 import { useProfileLayout } from '@/components/entity-blocks/profile-layout-context'
 import { FieldEditor } from '@/components/entity-blocks/block-edit-panel'
 import { CanvasBlock } from './canvas/canvas-block'
+import { ProductCardEditor } from './product-picker'
 
 // THE ON-CANVAS WYSIWYG EMAIL EDITOR (Email Studio, now the DEFAULT campaign editor). A two-pane surface that
 // reuses the SHARED entity-layout store (same provider, seed, debounced save, compile + preview + test-send as
@@ -281,7 +282,14 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
                       which is edited on the canvas). Issue #1 + #2: the same `selectedId` a canvas click sets. */}
                   {active && (
                     <div className="space-y-3 border-t border-border px-2.5 pb-3 pt-2">
-                      {fields.length === 0 ? (
+                      {id === 'productCard' ? (
+                        // The data-bound Product card has its own search-by-owner picker (Phase 4), not the
+                        // generic field list.
+                        <ProductCardEditor
+                          content={store.content[id] ?? {}}
+                          onField={(k, v) => setField(id, k, v)}
+                        />
+                      ) : fields.length === 0 ? (
                         <p className="text-2xs text-muted">
                           This block has no structural settings. Edit its text on the canvas.
                         </p>

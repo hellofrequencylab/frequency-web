@@ -86,6 +86,14 @@ export interface CreateSpaceCodeInput {
   targetUrl: string
   /** An optional custom slug (normalized + uniqueness-checked); blank = a generated short slug. */
   slug?: string
+  /** LEAD-GRAB (CRM Phase 3, front door #1): mark this a Space lead-grab code (purpose 'lead'). A scan
+   *  then captures the scanner as a sealed Space lead with the door auto-stamped, without changing where
+   *  the code redirects. See app/q/[slug]/route.ts + lib/crm/lead-capture.ts. */
+  leadGrab?: boolean
+  /** OFFER-UNLOCK: when the lead-grab code's destination is an offer/reward, the capture is
+   *  consent-native (the sealed lead becomes mailable). Stored as source_tag='offer'. Ignored unless
+   *  leadGrab is set. */
+  offer?: boolean
 }
 
 // Hard caps so a malformed/hostile input can never store an unbounded value.
@@ -309,7 +317,12 @@ export async function createSpaceCode(
           // owner_profile_id so a scan of this Space code credits their Zaps at signup — the /q resolver
           // drops fq_ref = owner_profile_id for an anonymous scanner and applyReferralAttribution pays out
           // on activation (lib/qr/referral.ts). Without it a Space code logged the scan but credited no one.
-          // purpose stays null, so this is NOT a personal connect code (no QR contact capture in /q).
+          // purpose stays null for a plain marketing code (no QR contact capture in /q). A LEAD-GRAB code
+          // sets purpose='lead' so the resolver captures the scanner as a sealed Space lead (down-spill for
+          // a member, pending-grab cookie for an anonymous scanner) — the door is stamped once and
+          // immutable (lib/crm/lead-capture.ts). An offer-unlock rides source_tag='offer' (consent-native).
+          purpose: input.leadGrab ? 'lead' : null,
+          ...(input.leadGrab && input.offer ? { source_tag: 'offer' } : {}),
           owner_profile_id: caller.id,
         },
       ])

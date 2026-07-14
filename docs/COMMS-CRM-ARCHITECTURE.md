@@ -170,9 +170,23 @@ it — a quick win).
 - **DLQ hardening** (`/admin/marketing/deliverability`): pending backlog + dead-letters by
   kind + one-tap requeue.
 
-**Deferred (Engine 6, follow-on):** GE6-4 Vera agent autonomy graduation + circuit breaker
-(rules still operator-authored; the autonomy grade/approval-flag gate is unbuilt), and GE6-5
-React-Email component templates + the marketing/transactional sending-subdomain split.
+**CRM · Messaging · Email · QR build (Phases 1–7, shipped 2026-07-14, ADR-610…616):** the contact
+timeline is now complete — `in_app` channel + DM adapter, manual "log a touch", the system/human
+toggle (read-time filter), and a per-contact `contact_engagement_stats` rollup (Phase 1). Staged CSV
+import (Phase 2), the QR capture-now-claim-on-join lead engine with an immutable entry point
+(Phase 3), the data-bound `productCard` email block + search-by-owner picker (Phase 4), unified
+segments (place-tree ∪ trait/contact) + the `/admin/marketing/messaging/control-panel` +
+`dispatch_recipients` log (Phase 5), the granular subscription preference center (Phase 6), and
+Vera's daily owner-brief cron + human-approved send graduation (Phase 7) all ship. The Dispatch email
+fan-out now routes through `resolveSendGate` (suppression + consent) — closing a path that bypassed
+the one gate. **Send graduation is defaults-off:** every send-capable Vera path ships OFF and needs a
+human one-tap. This partly discharges the GE6-4 autonomy work below (human-approved, non-autonomous).
+
+**Deferred (Engine 6, follow-on):** GE6-4 Vera agent *autonomous* graduation + circuit breaker
+(send graduation shipped human-approved per ADR-616; per-type auto-send is still unbuilt), and GE6-5
+React-Email component templates + the marketing/transactional sending-subdomain split. The
+transactional-template editable seam is also deferred at the `lib/email.ts` client boundary (ADR-613).
+SMS/A2P (Phase 8) is the remaining deferred CRM item.
 
 **Design-only (this doc):** `practice.verified` + WAM instrumentation, the
 notification router/registry, email-on-the-queue, Resend webhooks + `email_events` +

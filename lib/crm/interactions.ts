@@ -17,17 +17,20 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 // ── Vocabulary (kept in lock-step with the CHECK constraints in 20260728000000) ──────────────────
 
-export type InteractionChannel = 'email' | 'sms' | 'call' | 'in_person' | 'event' | 'note' | 'system'
+// `in_app` (ADR Phase 1): an in-house direct message or room message, folded onto the timeline by the
+// messaging adapter (app/(main)/messages/actions.ts) so the contact card shows every in-house touch.
+export type InteractionChannel = 'email' | 'sms' | 'call' | 'in_person' | 'event' | 'note' | 'system' | 'in_app'
 export type InteractionDirection = 'inbound' | 'outbound' | 'internal'
 export type InteractionSubjectKind = 'contact' | 'network_contact' | 'profile'
 // `playbook` (ADR-382): a touch a Resonance Engine playbook recorded through the governed
 // Vera allow-list (a streak save, a tag, a stage move, a drafted email). Additive.
-export type InteractionSource = 'manual' | 'engagement' | 'resend' | 'twilio' | 'crm_activity' | 'ai' | 'playbook' | 'system'
+// `import` (Phase 1): a touch reconstructed from a CSV / data import (used by the import pipeline).
+export type InteractionSource = 'manual' | 'engagement' | 'resend' | 'twilio' | 'crm_activity' | 'ai' | 'playbook' | 'system' | 'import'
 
-const CHANNELS: readonly InteractionChannel[] = ['email', 'sms', 'call', 'in_person', 'event', 'note', 'system']
+const CHANNELS: readonly InteractionChannel[] = ['email', 'sms', 'call', 'in_person', 'event', 'note', 'system', 'in_app']
 const DIRECTIONS: readonly InteractionDirection[] = ['inbound', 'outbound', 'internal']
 const SUBJECT_KINDS: readonly InteractionSubjectKind[] = ['contact', 'network_contact', 'profile']
-const SOURCES: readonly InteractionSource[] = ['manual', 'engagement', 'resend', 'twilio', 'crm_activity', 'ai', 'playbook', 'system']
+const SOURCES: readonly InteractionSource[] = ['manual', 'engagement', 'resend', 'twilio', 'crm_activity', 'ai', 'playbook', 'system', 'import']
 
 // Generous caps so a hostile/automated write can never store an unbounded blob.
 const MAX_SUMMARY_LEN = 280
