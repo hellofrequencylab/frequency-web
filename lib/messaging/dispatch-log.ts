@@ -6,6 +6,11 @@
 //
 // The table is not in the generated DB types yet, so the insert goes through the untyped admin
 // client (ADR-246, the repo convention for not-yet-typed tables).
+//
+// authz-delegated: this is an append-only delivery ledger (ADR-274). The gate lives at the call
+// site — the only caller, createAndPublishDispatch (app/(main)/broadcast/actions.ts), already
+// authorizes the broadcast to a scope the author leads before any row is written, and every row is
+// scoped by dispatch_id. It is a platform ledger write, not a caller-supplied unscoped mutation.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 
