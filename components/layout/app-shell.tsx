@@ -1585,6 +1585,14 @@ export default function AppShell({
   // match. It never spills past the content's right column (it is its own pushing column).
   const [settings, setSettings] = useState<AdminBarState>({ open: false, width: 288, resizing: false })
 
+  // Expose the reserved admin-rail width as a CSS variable on the document root, so a viewport-fixed
+  // overlay (the Space page's floating Publish button) can sit in the CONTENT area, clear of the rail,
+  // and follow it as the operator resizes / opens / closes the panel. 0 when the rail is closed.
+  useEffect(() => {
+    const w = settings.open ? settings.width : 0
+    document.documentElement.style.setProperty('--admin-rail-w', `${w}px`)
+  }, [settings.open, settings.width])
+
   // Close the mobile nav drawer when the route changes (covers back/forward). The old
   // right-edge stats drawer is retired (stats moved into the left drawer).
   if (lastPath !== pathname) {

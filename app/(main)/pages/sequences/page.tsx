@@ -16,7 +16,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { listAllSequences, resolveSequence } from '@/lib/onboarding/resolve-sequence'
 import { createSequenceVersion, createFromTemplateAction } from './builder-actions'
 import { getTrait } from '@/lib/traits/registry'
-import { renderQrSvg } from '@/lib/qr/render'
+import { renderStyledQrSvg } from '@/lib/qr/render-styled'
+import { styleWithInlinedLogo } from '@/lib/qr/raster'
+import { DEFAULT_STYLE } from '@/lib/qr/style'
 import { toAbsoluteSiteUrl } from '@/lib/qr/links'
 import { SITE_URL } from '@/lib/site'
 import { EntryPointShare } from './entry-point-share'
@@ -26,12 +28,13 @@ import { allRolePromotionWalkthroughs } from '@/lib/walkthroughs/role-promotion'
 import { RolePromotionPreview } from './role-promotion-preview'
 
 // Splash Funnels (ADR-068 → ADR-162, Phase 4): the one library for the whole onboarding
-// front door. The FIRST entry is the default "Splash Funnel" template (slug beta-default)
-// — what /onboarding/beta runs with no ?seq, edited at /pages/splash, and the thing every
-// custom funnel is cloned from. Each custom funnel runs the full induction in its own voice
-// at /onboarding/beta?seq=<slug>, stamps a marketing tag so the cohort stays segmentable,
-// and carries its own lifecycle (draft → published, duplicate, delete). Role promotion tours
-// are a separate, always-on category, listed below.
+// front door. The FIRST entry is Funnel 1 — the current LIVE onboarding (slug beta-default),
+// what /onboarding/beta runs with no ?seq, edited at /pages/splash. It is never cloned or
+// touched when you build a new funnel. Every NEW funnel is seeded from a separate prompts
+// TEMPLATE (templateSeed() — the live flow's structure with fill-in copy), runs the full
+// induction in its own voice at /onboarding/beta?seq=<slug>, stamps a marketing tag so the
+// cohort stays segmentable, and carries its own lifecycle (draft → published, duplicate,
+// delete). Role promotion tours are a separate, always-on category, listed below.
 
 export const dynamic = 'force-dynamic'
 
@@ -51,13 +54,19 @@ export default async function SplashFunnelsPage() {
     .filter((s) => s.source === 'custom')
     .slice(0, MAX_FUNNELS)
 
+  // The branded site QR style: the default style (connected modules, rounded eyes) with
+  // the Frequency logo centered. Fetch + inline the logo ONCE server-side so every funnel
+  // QR below is a self-contained SVG (no remote <image href>); a failed fetch drops the
+  // logo (null) and the code still renders. Matches the QR Studio / flyer default look.
+  const brandedStyle = await styleWithInlinedLogo(DEFAULT_STYLE)
+
   // Resolve each funnel (copy + tag, preview so drafts show their real content) and
-  // pre-render its induction QR server-side (same renderer as every other QR surface).
+  // pre-render its induction QR server-side in the branded site style.
   const cards = await Promise.all(
     funnels.map(async (f) => {
       const seq = await resolveSequence(f.slug, { preview: true })
       const inductionPath = `/onboarding/beta?seq=${f.slug}`
-      const inductionQr = await renderQrSvg(toAbsoluteSiteUrl(inductionPath), 160)
+      const inductionQr = renderStyledQrSvg(toAbsoluteSiteUrl(inductionPath), brandedStyle, 160)
       return {
         slug: f.slug,
         status: f.status,
@@ -94,23 +103,25 @@ export default async function SplashFunnelsPage() {
         </div>
       }
     >
-      {/* ── The template — the first funnel, always live, what every other one clones. ── */}
+      {/* ── Funnel 1 — the current live onboarding flow. Shown first, edited at /pages/splash.
+              New funnels start from a separate prompts template, so they never disturb this one. ── */}
       <section>
-        <SectionHeader title="The template" />
+        <SectionHeader title="Funnel 1 — your live onboarding" />
         <div className="flex max-w-3xl flex-col gap-4 rounded-2xl border border-primary/40 bg-primary-bg/60 p-5 shadow-sm sm:flex-row sm:items-center">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-on-primary">
             <Sparkles className="h-5 w-5" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-text">Splash Funnel template</h3>
+              <h3 className="text-base font-bold text-text">Your live onboarding funnel</h3>
               <span className="shrink-0 rounded-full bg-success-bg px-2 py-0.5 text-xs font-medium text-success">
                 Always live
               </span>
             </div>
             <p className="mt-1 text-sm leading-relaxed text-muted">
-              The default funnel every new member walks through, and the starting point for
-              every custom funnel. Edit it once and every new funnel inherits the change.
+              The onboarding every new member walks through right now. Editing it here changes
+              what they see. New funnels below start from a fresh template with fill-in prompts,
+              so building one never touches this flow.
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -203,7 +214,7 @@ export default async function SplashFunnelsPage() {
                 {/* Actions: edit + preview, then the lifecycle controls. */}
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Link href={`/pages/sequences/${slug}/build`} className={EDIT_BTN}>
+                    <Link href={`/pages/sequences/${slug}/edit`} className={EDIT_BTN}>
                       <Pencil className="h-3.5 w-3.5" /> Edit
                     </Link>
                     <a
@@ -232,12 +243,12 @@ export default async function SplashFunnelsPage() {
         )}
       </section>
 
-      {/* ── Secondary: a blank funnel from just an audience name. ── */}
+      {/* ── Secondary: name the audience up front, then start from the same prompts template. ── */}
       <section>
-        <SectionHeader title="Start from scratch" />
+        <SectionHeader title="Name it first" />
         <p className="-mt-1 mb-4 max-w-2xl text-sm text-muted">
-          Prefer a blank slate? Name an audience and build every beat yourself, instead of
-          cloning the template.
+          Same fill-in template as the button above, but name the audience up front so the funnel
+          and its marketing tag are labelled from the start.
         </p>
         <div className="max-w-3xl rounded-2xl border border-border bg-surface p-5 shadow-sm">
           <form action={createSequenceVersion} className="flex flex-wrap items-end gap-2">
@@ -254,7 +265,7 @@ export default async function SplashFunnelsPage() {
               type="submit"
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
             >
-              <Plus className="h-4 w-4" /> Create blank funnel
+              <Plus className="h-4 w-4" /> Create funnel
             </button>
           </form>
         </div>
@@ -279,7 +290,7 @@ export default async function SplashFunnelsPage() {
             link carries the audience into the induction (
             <code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">?seq=</code>
             ), which speaks in that funnel&rsquo;s voice. A cookie keeps it through sign-in. A
-            draft falls back to the template until you publish.
+            draft falls back to your live funnel (Funnel 1) until you publish.
           </li>
           <li>
             <span className="font-semibold text-text">3. The cohort is tagged.</span> On
@@ -299,9 +310,9 @@ export default async function SplashFunnelsPage() {
           <Link href="/admin/qr" className="text-primary-strong hover:underline">
             QR Studio
           </Link>{' '}
-          instead. The template&rsquo;s copy is edited in{' '}
+          instead. Funnel 1&rsquo;s copy is edited in{' '}
           <Link href="/pages/splash" className="text-primary-strong hover:underline">
-            the Splash Funnel template
+            the Splash editor
           </Link>
           ; a tag only stamps if it&rsquo;s registered in{' '}
           <code className="font-mono">lib/traits/registry.ts</code>.

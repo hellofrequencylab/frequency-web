@@ -21,11 +21,15 @@ export type OathId = 'unfinished' | 'report' | 'build'
 
 /** The gate. All three must be checked to enter. Single source of truth.
  *  Three plain commitments a new member makes about how they'll show up. The
- *  ids are wired/registered, so only the labels change. */
+ *  ids are wired/registered, so only the labels change.
+ *
+ *  These ship as WRITING PROMPTS, not finished copy. The default flow is the
+ *  Splash Funnel template every custom funnel clones, so a fresh funnel opens with
+ *  fill-in guidance the operator replaces in the editor. Plain, no em dashes. */
 export const BETA_OATHS: { id: OathId; label: string }[] = [
-  { id: 'unfinished', label: "I'll show up in person" },
-  { id: 'report', label: "I'll say hi to someone new" },
-  { id: 'build', label: "I'm here to be part of it" },
+  { id: 'unfinished', label: 'Write the first commitment you ask for' },
+  { id: 'report', label: 'Write the second commitment you ask for' },
+  { id: 'build', label: 'Write the third commitment you ask for' },
 ]
 
 /** "How did you hear about us?" — captured on the intake into meta.beta.heard_about. */
@@ -70,43 +74,48 @@ export const REEL: ReelSlide[] = [
   },
 ]
 
-/** All voiced copy, in one place. */
+/** All voiced copy, in one place.
+ *
+ *  Ships as WRITING PROMPTS, not finished copy (see BETA_OATHS above): this is the
+ *  default Splash Funnel template every custom funnel clones, so each beat carries
+ *  fill-in guidance the operator replaces in the /pages/splash + funnel editors.
+ *  Keep the beat structure; the copy stays plain prompts, no em dashes. */
 export const VERA = {
   oath: {
-    eyebrow: 'Before you come in',
-    heading: "This isn't a product. It's a promise.",
-    body: 'A promise that the people near you are worth finding, and that gathering can feel good again. Here’s how we ask you to show up.',
-    cta: "I'm in",
+    eyebrow: 'Write the kicker above the promise',
+    heading: 'Write the promise new members make before entering',
+    body: 'Write the short paragraph that explains the promise',
+    cta: 'Write the button label that accepts the promise',
   },
   intro: {
-    eyebrow: 'Welcome in',
+    eyebrow: 'Write the welcome kicker',
     // Headings support a light accent markup in the induction: a word wrapped in
     // *asterisks* renders in the brand accent (same convention as splash statements).
-    heading: "You're not a user. You're a *member.*",
-    body: 'Frequency is people meeting in person, near you. Show up, find a Circle, do the practice. That’s the whole thing.',
-    cta: "Let's go",
+    heading: 'Write the welcome line new members see first',
+    body: 'Write the two lines that say what Frequency is',
+    cta: 'Write the button label that moves them on',
   },
   identity: {
-    heading: 'So, who are you?',
-    body: 'Put a name and a face to it. This is how your people will know you in here.',
+    heading: 'Write the prompt that asks for their name and face',
+    body: 'Write the line that explains why you ask',
   },
   place: {
-    heading: 'Where are you?',
-    body: 'We’ll connect you with the people closest to you, and learn what you’re hoping to find.',
-    intentLabel: 'What are you hoping to find here?',
-    intentPlaceholder: 'Say it plainly. It helps us point you at your people.',
+    heading: 'Write the prompt that asks where they are',
+    body: 'Write the line that explains why location helps',
+    intentLabel: 'Write the question that asks what they want here',
+    intentPlaceholder: 'Write the hint text for their answer',
   },
   tour: {
-    eyebrow: "Here's the place",
-    heading: 'Three rooms. One real community.',
-    body: 'Everything else is detail. Get these and you get Frequency.',
-    cta: 'Love it',
+    eyebrow: 'Write the tour kicker',
+    heading: 'Write the headline for the three-room tour',
+    body: 'Write the line under the tour headline',
+    cta: 'Write the button label after the tour',
   },
   enter: {
-    eyebrow: 'Last step',
-    heading: 'Welcome in!',
-    body: 'One thing before you explore: let’s find your people. Vera, your guide, already knows what you’re into. She’ll point you to a Circle worth joining, then step aside.',
-    cta: 'Meet Vera',
+    eyebrow: 'Write the final-step kicker',
+    heading: 'Write the last line before the feed',
+    body: 'Write the short send-off that points them to Vera',
+    cta: 'Write the final button label',
   },
 } as const
 

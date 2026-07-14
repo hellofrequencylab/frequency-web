@@ -14,8 +14,39 @@ import { FrequencySignature } from '@/components/profile/frequency-signature'
 import { getMemberActivity } from '@/lib/practice-activity'
 import { ActivityChart } from '@/components/widgets/practices/activity-chart'
 import { ReportButton } from '@/components/support/report-button'
+import { InviteFriendButton } from '@/components/sidebar/invite-friend-button'
+import { ensureMemberCodes } from '@/lib/qr/member-codes'
+import { renderStyledQrSvg } from '@/lib/qr/render-styled'
+import { parseStyle } from '@/lib/qr/style'
+import { shortLinkUrl } from '@/lib/qr/links'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
+
+// Invite a friend — the member's PERSONAL connect code framed as an invite (a scan/open drops their referral
+// cookie, and they earn Zaps when the friend joins + gets started). Its own async server component behind a
+// <Suspense> so provisioning the code + rendering the branded QR never blocks the rest of the rail. Renders
+// nothing if the member has no handle or the code can't be provisioned (fail-safe, never an error).
+async function InvitePanel({ profileId }: { profileId: string }) {
+  // Build the invite data defensively (code provisioning touches the DB); any failure degrades to no
+  // panel, never an error in the rail. JSX render stays OUTSIDE the try/catch (a render error belongs to
+  // an error boundary, not this catch — react-hooks/error-boundaries).
+  let data: { svg: string; link: string; codeId: string } | null = null
+  try {
+    const { data: p } = await createAdminClient().from('profiles').select('handle').eq('id', profileId).maybeSingle()
+    const handle = (p as { handle: string | null } | null)?.handle
+    if (handle) {
+      const connect = (await ensureMemberCodes(profileId, handle))[0]
+      if (connect) {
+        const link = shortLinkUrl(connect.slug)
+        data = { svg: renderStyledQrSvg(link, parseStyle(connect.style), 320), link, codeId: connect.id }
+      }
+    }
+  } catch {
+    data = null
+  }
+  if (!data) return null
+  return <InviteFriendButton svg={data.svg} link={data.link} codeId={data.codeId} />
+}
 
 interface RightSidebarProps {
   profileId: string
@@ -204,6 +235,12 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
           variant="ghost"
           className="w-full justify-start border border-border bg-surface hover:bg-surface-elevated"
         />
+        {/* Invite a friend — right under Report a bug. A small warm CTA that opens the member's invite
+            link + branded QR (earn Zaps when a friend joins). Its own Suspense so provisioning the code
+            never blocks the rail. */}
+        <Suspense fallback={null}>
+          <InvitePanel profileId={profileId} />
+        </Suspense>
         {/* Site-wide demo notice — pinned ABOVE the Quest box when demo content is
             present (it self-hides otherwise). */}
         <DemoNotice />

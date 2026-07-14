@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { gridColumns, safeUrl } from '@/lib/entity-blocks/block-content'
+import { decodeLegacyEntities, gridColumns, safeUrl } from '@/lib/entity-blocks/block-content'
 import { DESIGN_ENTITY_BLOCK_IDS } from '@/lib/entity-blocks/registry'
 import { BlockIcon } from './block-icon'
 import {
@@ -102,7 +102,11 @@ export function withDesignDemo(id: string, props: Record<string, unknown>): Reco
 
 function s(props: Record<string, unknown>, key: string): string | undefined {
   const v = props[key]
-  return typeof v === 'string' && v.trim() ? v : undefined
+  // Plain-text design fields (eyebrow / title / subtitle / ...) render as React text children, so a value the
+  // rich editor stored with escaped entities (`What&#39;s here`) would show the entity VERBATIM. Decode it back
+  // to real characters first (safe: decodeLegacyEntities leaves genuine <b>/<a> markup alone, and the rich
+  // fields that go through InlineRich re-sanitize anyway), so the live page shows the apostrophe, not `&#39;`.
+  return typeof v === 'string' && v.trim() ? decodeLegacyEntities(v) : undefined
 }
 
 /** Return `v` when it is one of `allowed`, else the `fallback`. Keeps an enum primitive (height / display /
@@ -124,10 +128,12 @@ function aspectRatio(v: unknown): string {
   return v === 'horizontal' ? '16/9' : v === 'vertical' ? '4/5' : v === 'square' ? '1/1' : '4/3'
 }
 
-/** Render ONE design block by id from its authored bag, or null for a non-design id. The bag is first
- *  merged with the block's demo prompt (Fix 7) so an empty slot shows what it is for. */
-export function DesignBlockView({ id, props: rawProps }: { id: string; props: Record<string, unknown> }): ReactNode {
-  const props = withDesignDemo(id, rawProps)
+/** Render ONE design block by id from its authored bag, or null for a non-design id. Renders the AUTHORED bag
+ *  verbatim: an empty slot renders NOTHING (no demo placeholder). The demo prompts leaked onto the live page
+ *  ("SECTION LABEL" under an empty eyebrow), and the owner directive is "if an eyebrow or heading is empty,
+ *  show nothing." The editing surface still shows what each slot is for through its own field-label
+ *  placeholders (SpaceEditableSlot), so the operator never loses the hint, and preview == published. */
+export function DesignBlockView({ id, props }: { id: string; props: Record<string, unknown> }): ReactNode {
   switch (id) {
     case 'photoHero': {
       const image = safeUrl(props.image) || undefined
@@ -220,8 +226,9 @@ function readSimpleCards(raw: unknown): SimpleCard[] {
     .map((it) => ({
       icon: typeof it.icon === 'string' ? it.icon : '',
       image: safeUrl(it.image),
-      title: typeof it.title === 'string' ? it.title : '',
-      text: typeof it.text === 'string' ? it.text : '',
+      // Decode the card's plain-text title / text so an escaped apostrophe renders as a character, not `&#39;`.
+      title: typeof it.title === 'string' ? decodeLegacyEntities(it.title) : '',
+      text: typeof it.text === 'string' ? decodeLegacyEntities(it.text) : '',
       link: safeUrl(it.link),
     }))
     .filter((c) => c.title || c.text || c.image)

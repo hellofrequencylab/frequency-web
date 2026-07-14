@@ -199,7 +199,10 @@ export function PhotoHeroBlock({
         accentWord={accentWord}
         headerFont={headerFont}
         size="lg"
-        as="h1"
+        // A Banner is a SECTION hero inside a page whose h1 is the entity name (the profile shell / page
+        // lockup already emits it), so its headline is an h2. Emitting h1 here put a SECOND h1 on any space
+        // that placed a Photo Hero, splitting the topical signal. One h1 per page = the entity name.
+        as="h2"
         className={headingCls}
       />
       <InlineRich

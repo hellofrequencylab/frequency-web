@@ -21,6 +21,7 @@ import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { getInitials, cn } from '@/lib/utils'
 import { readCoverSize, readCoverScrim, readCoverFocus } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { readTagline } from '@/lib/spaces/tagline'
+import { readProfileData } from '@/lib/spaces/profile-data'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
@@ -32,7 +33,8 @@ import { AccentScope } from '@/components/spaces/accent-scope'
 import { SpaceShareButton } from '@/components/spaces/space-share-button'
 import { SpacePrivateNotice } from '@/components/spaces/space-private-notice'
 import { JsonLd } from '@/components/json-ld'
-import { spaceSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { spaceSchema, breadcrumbSchema, parseOpeningHours, spaceOfferingsSchema } from '@/lib/jsonld'
+import { isServiceListed } from '@/lib/spaces/profile-data'
 import { getSpaceReviews } from '@/lib/spaces/content-data'
 
 // ── THE NETWORKED ENTITY PROFILE CHROME (ENTITY-SPACES-BUILD §A.4 / §B.1) ────────────────────────
@@ -153,6 +155,13 @@ export default async function SpaceProfileChromeLayout({
     reviews && reviews.average != null && reviews.count > 0
       ? { ratingValue: reviews.average, reviewCount: reviews.count }
       : undefined
+  // The Space's public business facts (address / phone / website / socials), read from the SAME preferences
+  // source the Contact + Business blocks render, so the LocalBusiness JSON-LD below carries real NAP + sameAs.
+  // Pure sync read; only needed for the network schema.
+  const spaceProfile = isNetwork ? readProfileData(space.preferences) : {}
+  // The PUBLIC (listed) offerings only — a private service never renders publicly, so it must never leak
+  // into the structured data either. Fed to the Product/Offer ItemList below (network schema only).
+  const listedOfferings = (spaceProfile.offerings ?? []).filter(isServiceListed)
 
   // The per-Space FUNCTIONS this viewer may use — resolved by the SHARED helper the /manage console also
   // feeds (usableSpaceFunctions: spaceFunctionAccess over the viewer's space role; a staff previewer sees
@@ -543,7 +552,23 @@ export default async function SpaceProfileChromeLayout({
               tagline,
               logoUrl: space.brandLogoUrl,
               aggregateRating,
+              // NAP + sameAs for a LocalBusiness node (the "<category> near you" / AIO local signal). All
+              // already rendered on this page by the Contact / Business blocks; read the same source here so
+              // the schema carries the address, phone, website + socials instead of a name-only stub.
+              telephone: spaceProfile.phone,
+              address: spaceProfile.address ? { streetAddress: spaceProfile.address } : null,
+              sameAs: [spaceProfile.website, ...(spaceProfile.socials ?? []).map((s) => s.url)],
+              // The operator's relative price indicator ('$'..'$$$$'), captured on the Business Info form.
+              priceRange: spaceProfile.priceRange,
+              // Free-text hours parsed best-effort into schema.org openingHours; unparseable lines drop out,
+              // so the node stays valid (the free-text field remains the source for display).
+              openingHours: parseOpeningHours(spaceProfile.hours),
             }),
+            // The listed offerings as an ItemList of Product/Offer nodes (what the Space offers + what it
+            // costs), so answer engines can cite the services. Omitted entirely when there are none.
+            ...(listedOfferings.length
+              ? [spaceOfferingsSchema(listedOfferings, { slug: space.slug, sellerName: brandName, listName: `${brandName} offerings` })]
+              : []),
             breadcrumbSchema([
               { name: 'Spaces', path: '/spaces' },
               { name: brandName, path: `/spaces/${space.slug}` },

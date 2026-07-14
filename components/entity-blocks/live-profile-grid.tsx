@@ -11,6 +11,7 @@ import { useProfileLayout } from './profile-layout-context'
 import { useSpaceEditMode } from './space-edit-mode'
 import { SpaceCanvasBlock } from './space-canvas/space-canvas-block'
 import { SpaceEditNotice } from './space-edit-notice'
+import type { UploadImage } from './block-edit-panel'
 
 // THE LIVE PROFILE GRID (ADR-516 Phase C). The live-preview surface the in-rail builder edits. Every
 // candidate block is rendered ONCE, server-side, into a keyed node map (`nodes`); this client wrapper places
@@ -36,6 +37,7 @@ export function LiveProfileGrid({
   initialContent = {},
   initialStyle = {},
   spaceSlug,
+  uploadImage,
 }: {
   /** Every candidate block, pre-rendered server-side (UNSTYLED) and keyed by block id. */
   nodes: Record<string, ReactNode>
@@ -50,6 +52,11 @@ export function LiveProfileGrid({
   /** The Space slug — present ONLY on the Space owner preview. Its presence (with a seeded space store, in
    *  edit mode) is what turns on the on-page inline editors; absent on the member grid / visitor render. */
   spaceSlug?: string
+  /** Gated image upload for the on-page photo popup (SPACE owner preview only; ADR-542). Threaded down to
+   *  SpaceCanvasBlock so the popup can UPLOAD a file, not just PASTE a URL — the SAME owner-gated,
+   *  service-role action the /manage/layout rail editor uses. Optional + fail-safe: when it is absent (a
+   *  non-owner / no-upload surface) the popup still works for URL paste exactly as before. */
+  uploadImage?: UploadImage
 }) {
   const store = useProfileLayout()
   const editMode = useSpaceEditMode()
@@ -137,6 +144,9 @@ export function LiveProfileGrid({
               id={id}
               props={content[id] ?? {}}
               node={nodes[id]}
+              // Thread the space upload action to the on-page photo popup so it can UPLOAD a file (not only
+              // paste a URL). Undefined on a non-owner surface, where the popup falls back to URL paste.
+              uploadImage={uploadImage}
               onField={(k, v) => setField(id, k, v)}
             />
           </BlockStyleFrame>

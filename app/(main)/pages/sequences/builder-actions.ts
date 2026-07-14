@@ -14,11 +14,12 @@ import {
   type SequenceOverride,
   type SequenceStatus,
 } from '@/lib/onboarding/sequence-overrides'
-import { listSequences, DEFAULT_SEQUENCE } from '@/lib/onboarding/beta-sequences'
+import { listSequences, templateSeed, DEFAULT_SEQUENCE } from '@/lib/onboarding/beta-sequences'
 
-// The full-induction sequence builder (ADR-162). Janitor-gated, like the rest of the
-// sequences surface. Saves the whole sequence override (every voiced beat), creates
-// brand-new versions, and deletes custom ones.
+// Splash Funnel lifecycle actions (ADR-162 → splash-editor refactor). Janitor-gated,
+// like the rest of the sequences surface. Saves a funnel's copy override (every voiced
+// beat + title), creates brand-new funnels, duplicates, publishes, and deletes them.
+// Editing happens in the shared splash-style copy editor at /pages/sequences/<slug>/edit.
 
 function slugify(s: string): string {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48)
@@ -43,14 +44,19 @@ async function uniqueSlug(base: string): Promise<string> {
 export async function saveSequenceVersion(slug: string, override: SequenceOverride): Promise<{ ok: boolean }> {
   if (!(await getJanitor())) return { ok: false }
   const me = await getCallerProfile()
-  // The wizard edits content, not publish state — carry the funnel's current status
-  // forward so a save never silently publishes a draft (or unpublishes a live funnel).
+  // The copy editor edits content, not lifecycle — merge over the funnel's current
+  // override so a save never silently publishes a draft (or unpublishes a live funnel)
+  // and never drops fields the editor doesn't touch (splash, marketing tag).
   const current = await getSequenceOverride(slug)
-  const merged: SequenceOverride = { ...override, status: override.status ?? current?.status }
+  const merged: SequenceOverride = {
+    ...current,
+    ...override,
+    status: override.status ?? current?.status,
+  }
   await saveSequenceOverride(slug, merged, me?.id ?? null)
   revalidatePath('/onboarding/beta')
   revalidatePath('/pages/sequences')
-  revalidatePath(`/pages/sequences/${slug}/build`)
+  revalidatePath(`/pages/sequences/${slug}/edit`)
   return { ok: true }
 }
 
@@ -59,26 +65,34 @@ export async function createSequenceVersion(formData: FormData): Promise<void> {
   const audience = String(formData.get('audience') ?? '').trim() || 'New funnel'
   const slug = await uniqueSlug(audience)
   const me = await getCallerProfile()
-  // New funnels start as drafts: nothing goes live until an operator publishes it.
+  // New funnels start from the PROMPTS TEMPLATE (structure of the live flow, fill-in copy)
+  // as a DRAFT: nothing goes live until an operator publishes it. Seeded from `templateSeed()`,
+  // never from the live `beta-default` override, so creating a funnel can't touch funnel #1.
   await saveSequenceOverride(
     slug,
-    { audience, marketingTag: `beta_${slug.replace(/-/g, '_')}`, status: 'draft' },
+    { ...templateSeed(), audience, marketingTag: `beta_${slug.replace(/-/g, '_')}`, status: 'draft' },
     me?.id ?? null,
   )
-  redirect(`/pages/sequences/${slug}/build`)
+  redirect(`/pages/sequences/${slug}/edit`)
 }
 
-/** Create a brand-new draft funnel cloned from the default "Splash Funnel" template,
- *  then open it in the builder. Powers the "Create from Template" button. */
+/** Create a brand-new draft funnel from the prompts TEMPLATE (the live flow's structure with
+ *  fill-in prompts for every field), then open it in the copy editor. Powers the "Create from
+ *  template" button. Seeds from `templateSeed()` — NOT a clone of the current live default —
+ *  so a new funnel never inherits (or risks disturbing) funnel #1's real copy. */
 export async function createFromTemplateAction(): Promise<void> {
   if (!(await getJanitor())) return
   const slug = await uniqueSlug('funnel')
   const me = await getCallerProfile()
-  await duplicateSequence(DEFAULT_SEQUENCE, slug, 'New funnel', me?.id ?? null)
-  redirect(`/pages/sequences/${slug}/build`)
+  await saveSequenceOverride(
+    slug,
+    { ...templateSeed(), audience: 'New funnel', marketingTag: `beta_${slug.replace(/-/g, '_')}`, status: 'draft' },
+    me?.id ?? null,
+  )
+  redirect(`/pages/sequences/${slug}/edit`)
 }
 
-/** Duplicate an existing custom funnel into a new draft, then open it in the builder. */
+/** Duplicate an existing custom funnel into a new draft, then open it in the copy editor. */
 export async function duplicateSequenceAction(slug: string): Promise<void> {
   if (!(await getJanitor())) return
   if (slug === DEFAULT_SEQUENCE || listSequences().some((s) => s.slug === slug)) return
@@ -88,7 +102,7 @@ export async function duplicateSequenceAction(slug: string): Promise<void> {
   const newSlug = await uniqueSlug(label)
   const me = await getCallerProfile()
   await duplicateSequence(slug, newSlug, label, me?.id ?? null)
-  redirect(`/pages/sequences/${newSlug}/build`)
+  redirect(`/pages/sequences/${newSlug}/edit`)
 }
 
 /** Publish or unpublish a custom funnel. A draft falls back to the default flow for

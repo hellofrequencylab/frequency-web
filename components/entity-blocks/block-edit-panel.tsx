@@ -154,7 +154,10 @@ export function BlockEditPanel({
   }
 
   return (
-    <div className="mt-1 space-y-3 rounded-lg border border-border bg-surface-elevated/50 p-3">
+    // The panel sits DIRECTLY under its block pill, so it fuses to it: no top gap, a flat top edge, and no
+    // doubled top border. The pill drops its own bottom rounding + border while editing (see BlockPill), so the
+    // pill header and this settings body read as ONE connected surface (matching bg tint), not two stacked chips.
+    <div className="-mt-px space-y-3 rounded-b-lg rounded-t-none border border-t-0 border-border bg-surface-elevated/60 p-3">
       {/* DATA block: a minimal on/off switch (redesigned from the verbose checkbox). */}
       {isData && <ToggleRow label="Show on page" checked={!hidden} onChange={onToggleHide} />}
 
@@ -555,6 +558,11 @@ function ImagesEditor({
 }) {
   const urls: string[] = Array.isArray(value) ? (value as unknown[]).filter((v): v is string => typeof v === 'string') : []
   const [dragIndex, setDragIndex] = useState<number | null>(null)
+  // The by-URL textarea keeps a LOCAL draft string while focused, parsed to the URL list only on blur. Parsing
+  // (trim + drop blank lines) on every keystroke made it impossible to type a space or start a new line — the
+  // blank line was deleted the instant Enter was pressed. `null` = not editing, so an upload elsewhere still
+  // shows through.
+  const [urlDraft, setUrlDraft] = useState<string | null>(null)
 
   const move = (i: number, delta: -1 | 1) => {
     const j = i + delta
@@ -643,9 +651,14 @@ function ImagesEditor({
         <summary className="cursor-pointer select-none">Add or edit by URL</summary>
         <textarea
           rows={3}
-          value={urls.join('\n')}
+          value={urlDraft ?? urls.join('\n')}
           placeholder="One image URL per line"
-          onChange={(e) => onChange(e.target.value.split('\n').map((s) => s.trim()).filter(Boolean))}
+          onChange={(e) => setUrlDraft(e.target.value)}
+          onBlur={() => {
+            if (urlDraft === null) return
+            onChange(urlDraft.split('\n').map((s) => s.trim()).filter(Boolean))
+            setUrlDraft(null)
+          }}
           className={`${inputCls} mt-1`}
         />
       </details>

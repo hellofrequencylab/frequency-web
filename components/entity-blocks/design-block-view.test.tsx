@@ -2,12 +2,13 @@ import { describe, it, expect } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { DesignBlockView, withDesignDemo, isDesignBlock } from './design-block-view'
 
-// Fix 6/7/8 render gate for the shared design blocks as rendered in the RAIL arranger + the live space page
-// (through DesignBlockView). Proves: an empty bag shows the explanatory DEMO prompt (Fix 7); a button shows
-// once labelled even without a link and can be toggled off (Fix 8). The blocks are server-safe, so they run
-// under renderToStaticMarkup in the node test env.
+// Render gate for the shared design blocks as rendered in the RAIL arranger + the live space page (through
+// DesignBlockView). Proves: an EMPTY slot renders NOTHING on the live page (owner directive — no placeholder
+// leaks like "SECTION LABEL"); an escaped-entity title decodes to real characters (no `&#39;`); a button shows
+// once labelled even without a link and can be toggled off (Fix 8). Server-safe, so they run under
+// renderToStaticMarkup in the node test env.
 
-describe('withDesignDemo (Fix 7)', () => {
+describe('withDesignDemo (the pure prompt helper — no longer wired into the live render)', () => {
   it('fills empty slots with the block prompt and keeps authored values', () => {
     const merged = withDesignDemo('photoHero', { title: 'My real headline' })
     expect(merged.title).toBe('My real headline') // authored wins
@@ -29,16 +30,35 @@ describe('isDesignBlock', () => {
   })
 })
 
-describe('DesignBlockView demo content (Fix 7)', () => {
-  it('an EMPTY photoHero bag renders the explanatory prompt, not a blank block', () => {
+describe('DesignBlockView — an empty slot renders nothing on the live page (no placeholder leak)', () => {
+  it('an EMPTY photoHero bag does NOT leak the demo prompt onto the page', () => {
     const html = renderToStaticMarkup(<DesignBlockView id="photoHero" props={{}} />)
-    expect(html).toContain('Your headline goes here')
-    expect(html).toContain('Section label')
+    expect(html).not.toContain('Your headline goes here')
+    expect(html).not.toContain('Section label')
   })
 
-  it('an EMPTY editorial bag renders its writing prompt', () => {
+  it('an EMPTY editorial bag does NOT leak its writing prompt', () => {
     const html = renderToStaticMarkup(<DesignBlockView id="editorial" props={{}} />)
-    expect(html).toContain('Your heading goes here')
+    expect(html).not.toContain('Your heading goes here')
+    expect(html).not.toContain('Section label')
+  })
+
+  it('an authored eyebrow renders, an empty one does not', () => {
+    const withEyebrow = renderToStaticMarkup(
+      <DesignBlockView id="accentBeat" props={{ eyebrow: 'Reserve', title: 'Book now' }} />,
+    )
+    expect(withEyebrow).toContain('Reserve')
+    const noEyebrow = renderToStaticMarkup(<DesignBlockView id="accentBeat" props={{ title: 'Book now' }} />)
+    expect(noEyebrow).toContain('Book now')
+    expect(noEyebrow).not.toContain('Section label')
+  })
+
+  it('decodes an escaped-entity title to real characters (no literal &#39;)', () => {
+    const html = renderToStaticMarkup(<DesignBlockView id="cardGrid" props={{ title: 'What&#39;s here' }} />)
+    // Decoded to a real apostrophe, which React re-escapes to `&#x27;` (a browser renders that AS `'`). The bug
+    // shape was the LITERAL entity surviving to the page: raw `&#39;`, i.e. `&amp;#39;` in the served HTML.
+    expect(html).toContain('What&#x27;s here')
+    expect(html).not.toContain('&amp;#39;')
   })
 })
 
@@ -100,14 +120,14 @@ describe('Banner height + content layout (ADR-571 tasks 2 + 3)', () => {
 })
 
 describe('the two text design blocks (ADR-571 task 7)', () => {
-  it('an empty displayHeading renders its demo prompt', () => {
+  it('an empty displayHeading renders nothing (no demo prompt leaks to the page)', () => {
     const html = renderToStaticMarkup(<DesignBlockView id="displayHeading" props={{}} />)
-    expect(html).toContain('Your big heading')
+    expect(html).toBe('')
   })
 
-  it('an empty prose renders its demo prompt', () => {
+  it('an empty prose renders nothing (no demo prompt leaks to the page)', () => {
     const html = renderToStaticMarkup(<DesignBlockView id="prose" props={{}} />)
-    expect(html).toContain('Write a paragraph of body text here.')
+    expect(html).toBe('')
   })
 
   it('an authored displayHeading renders the operator title, not the prompt', () => {

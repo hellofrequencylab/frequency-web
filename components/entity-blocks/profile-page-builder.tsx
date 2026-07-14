@@ -55,7 +55,7 @@ import { getSpaceLayoutRailData } from '@/app/(main)/spaces/[slug]/manage/rail-g
 import { useProfileLayout } from './profile-layout-context'
 import { setSpaceEditMode } from './space-edit-mode'
 import { BlockPicker } from './block-picker'
-import { PublishBar } from './publish-bar'
+import { SpacePublishFab } from './space-publish-fab'
 import { BlockEditPanel, type UploadImage } from './block-edit-panel'
 import type { BlockPickerData } from './controls/field-controls'
 import { uploadSpaceBlockImage } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
@@ -948,8 +948,10 @@ export function EntityPageBuilder({
                       key={`${row.id}-${col}`}
                       className={`space-y-1.5 rounded-lg transition-colors ${
                         // While a block is dragged, every column reads as a clear "drop here" zone (item 7), so
-                        // the operator drops a block without hunting for a target.
-                        dragKind === 'block' ? 'bg-primary/5 p-1 ring-1 ring-inset ring-primary/40' : ''
+                        // the operator drops a block without hunting for a target. Ring + tint ONLY (never a
+                        // padding / size change): mutating a drop zone's box mid-drag makes the browser abort
+                        // the drag, which is exactly what broke drop. ring-inset draws inside the box, no reflow.
+                        dragKind === 'block' ? 'bg-primary/5 ring-1 ring-inset ring-primary/40' : ''
                       }`}
                       onDragOver={(e) => dragBlock.current && e.preventDefault()}
                       onDrop={(e) => dropOnSlot(e, row.id, col)}
@@ -1038,10 +1040,12 @@ export function EntityPageBuilder({
         onPlace={(id, t) => onPlace(id, t.rowId, t.ci)}
       />
 
-      {/* The persistent Draft / Publish bar, pinned at the foot of the rail (SPACE only). Surfaces the store's
-          autosave state and the profilePublished status; it never gates who can SEE the page (that stays with
-          the Space's visibility). Only reached past the owner + kind gate above, so it shows for the editor. */}
-      <PublishBar
+      {/* The persistent Draft / Publish button, pinned to the bottom-right of the PAGE (SPACE only) and
+          always in view on scroll while editing, so publishing is one obvious click away. It is `fixed`, so
+          its position is viewport-relative regardless of being rendered here inside the rail; it offsets
+          itself clear of the rail via the --admin-rail-w variable. Never gates who can SEE the page (that
+          stays with the Space's visibility); only reached past the owner + kind gate above. */}
+      <SpacePublishFab
         saving={!!store.saving || reconciling}
         published={published}
         busy={publishBusy}
@@ -1191,9 +1195,12 @@ function BlockPill({
 }) {
   return (
     <div
-      className={`flex items-center gap-1 rounded-lg border bg-surface-elevated/60 px-1.5 py-1.5 ${
-        grabbed ? 'border-primary ring-1 ring-primary' : 'border-border'
-      } ${hidden ? 'opacity-60' : ''}`}
+      className={`flex items-center gap-1 border bg-surface-elevated/60 px-1.5 py-1.5 ${
+        // While its settings panel is open the pill fuses to it: keep the top corners rounded but square the
+        // bottom and drop the bottom border so the header + settings read as ONE surface, no seam (item 3). The
+        // panel below pulls up (-mt-px) with no top border, so the left / right borders run straight through.
+        editing ? 'rounded-t-lg rounded-b-none border-b-0' : 'rounded-lg'
+      } ${grabbed ? 'border-primary ring-1 ring-primary' : 'border-border'} ${hidden ? 'opacity-60' : ''}`}
     >
       <button
         type="button"

@@ -4,15 +4,24 @@ import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Eye, RotateCcw } from 'lucide-react'
 import type { VeraCopy } from '@/lib/onboarding/beta-script'
-import type { BetaSequence } from '@/lib/onboarding/beta-sequences'
+import { DEFAULT_SEQUENCE, type BetaSequence } from '@/lib/onboarding/beta-sequences'
+import type { SequenceOverride } from '@/lib/onboarding/sequence-overrides'
 import BetaInduction from '@/app/onboarding/beta/induction'
 import { saveDefaultBetaCopy, resetDefaultBetaCopy } from './actions'
+import { saveSequenceVersion } from '@/app/(main)/pages/sequences/builder-actions'
 
-// Live-preview editor for the DEFAULT beta flow. Left: one section per beat with
-// an input for every voiced string (plus the three oath checkbox labels). Right:
-// the REAL <BetaInduction> component rendered in preview mode at half scale, fed
-// the edited copy, so the preview can't drift from what members see. Focusing a
-// section (or using the tabs) switches the previewed beat.
+// Live-preview copy editor for a Splash Funnel. Left: one section per beat with an
+// input for every voiced string (plus the three oath checkbox labels). Right: the
+// REAL <BetaInduction> component rendered in preview mode at half scale, fed the
+// edited copy, so the preview can't drift from what members see. Focusing a section
+// (or using the tabs) switches the previewed beat.
+//
+// Reused for TWO surfaces (ADR-162 → splash-editor refactor):
+//   • The DEFAULT template (slug `beta-default`, /pages/splash) — saves the
+//     `beta-default` override via saveDefaultBetaCopy, with a reset-to-script button.
+//   • Any CUSTOM funnel (slug = its own value, /pages/sequences/<slug>/edit) — saves
+//     that slug's override via saveSequenceVersion, and exposes an editable title
+//     (the funnel's `audience`). Publish state + splash/tag are carried forward.
 
 type Oaths = BetaSequence['oaths']
 type BeatKey = keyof VeraCopy
@@ -93,28 +102,38 @@ const BEATS: {
 ]
 
 export function SplashCopyEditor({
+  slug = DEFAULT_SEQUENCE,
+  initialAudience = '',
   initialVera,
   initialOaths,
   heardAbout,
   initialHasOverride,
 }: {
+  /** The funnel this editor writes. Defaults to the reserved default template. */
+  slug?: string
+  /** The custom funnel's title (audience). Editable for custom funnels only. */
+  initialAudience?: string
   initialVera: VeraCopy
   initialOaths: Oaths
   /** "How did you hear?" options, passed through so the place beat previews true. */
   heardAbout: string[]
   initialHasOverride: boolean
 }) {
+  const isDefault = slug === DEFAULT_SEQUENCE
   const router = useRouter()
+  const [audience, setAudience] = useState(initialAudience)
   const [vera, setVera] = useState<VeraCopy>(initialVera)
   const [oaths, setOaths] = useState<Oaths>(initialOaths)
-  const [snapshot, setSnapshot] = useState(() => JSON.stringify({ vera: initialVera, oaths: initialOaths }))
+  const [snapshot, setSnapshot] = useState(() =>
+    JSON.stringify({ audience: initialAudience, vera: initialVera, oaths: initialOaths }),
+  )
   const [hasOverride, setHasOverride] = useState(initialHasOverride)
   const [previewBeat, setPreviewBeat] = useState(0)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
-  const dirty = JSON.stringify({ vera, oaths }) !== snapshot
+  const dirty = JSON.stringify({ audience, vera, oaths }) !== snapshot
 
   // Warn before a full navigation / tab close with unsaved edits.
   useEffect(() => {
@@ -138,9 +157,18 @@ export function SplashCopyEditor({
     if (pending) return
     setError(null)
     start(async () => {
-      const r = await saveDefaultBetaCopy({ vera, oaths })
-      if (!r.ok) { setError('Could not save. Are you still signed in?'); return }
-      setSnapshot(JSON.stringify({ vera, oaths }))
+      // Default template → its dedicated action (unchanged behaviour). Custom funnel
+      // → write that slug's override; saveSequenceVersion carries the funnel's publish
+      // state, splash, and tag forward, so a copy edit never disturbs the lifecycle.
+      if (isDefault) {
+        const r = await saveDefaultBetaCopy({ vera, oaths })
+        if (!r.ok) { setError('Could not save. Are you still signed in?'); return }
+      } else {
+        const override: SequenceOverride = { audience: audience.trim() || 'New funnel', vera, oaths }
+        const r = await saveSequenceVersion(slug, override)
+        if (!r.ok) { setError('Could not save. Are you still signed in?'); return }
+      }
+      setSnapshot(JSON.stringify({ audience, vera, oaths }))
       setHasOverride(true)
       setSaved(true)
       router.refresh()
@@ -148,7 +176,7 @@ export function SplashCopyEditor({
   }
 
   function reset() {
-    if (pending) return
+    if (pending || !isDefault) return
     if (!confirm('Reset to the built-in script? Your saved edits are removed.')) return
     setError(null)
     start(async () => {
@@ -156,7 +184,7 @@ export function SplashCopyEditor({
       if (!r.ok) { setError('Could not reset. Are you still signed in?'); return }
       setVera(r.vera)
       setOaths(r.oaths)
-      setSnapshot(JSON.stringify({ vera: r.vera, oaths: r.oaths }))
+      setSnapshot(JSON.stringify({ audience, vera: r.vera, oaths: r.oaths }))
       setHasOverride(false)
       setSaved(false)
       router.refresh()
@@ -169,6 +197,23 @@ export function SplashCopyEditor({
     <div className="grid gap-5 lg:grid-cols-2">
       {/* ── Editor: one section per beat ── */}
       <div className="space-y-4">
+        {/* Custom funnels carry their own title (the audience). The default template's
+            title is fixed, so this only shows for a custom slug. */}
+        {!isDefault && (
+          <section className="space-y-2 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+            <label className={LABEL} htmlFor="splash-audience">
+              Funnel title
+              <span className="ml-1.5 font-normal text-subtle/70">· the audience this funnel is for</span>
+            </label>
+            <input
+              id="splash-audience"
+              className={FIELD}
+              value={audience}
+              placeholder="e.g. Local business owners"
+              onChange={(e) => { setAudience(e.target.value); setSaved(false) }}
+            />
+          </section>
+        )}
         {BEATS.map((b) => (
           <section
             key={b.id}
@@ -235,18 +280,21 @@ export function SplashCopyEditor({
           {dirty && !error && <span className="text-xs font-medium text-warning">Unsaved changes</span>}
           {saved && !dirty && (
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-success">
-              <Check className="h-3.5 w-3.5" /> Saved and live
+              <Check className="h-3.5 w-3.5" /> {isDefault ? 'Saved and live' : 'Saved'}
             </span>
           )}
-          <button
-            type="button"
-            onClick={reset}
-            disabled={pending || !hasOverride}
-            title={hasOverride ? 'Remove your saved edits and return to the built-in script' : 'No saved edits to remove'}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <RotateCcw className="h-3.5 w-3.5" /> Reset to script
-          </button>
+          {/* Reset-to-script only applies to the default template's override. */}
+          {isDefault && (
+            <button
+              type="button"
+              onClick={reset}
+              disabled={pending || !hasOverride}
+              title={hasOverride ? 'Remove your saved edits and return to the built-in script' : 'No saved edits to remove'}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Reset to script
+            </button>
+          )}
           <button
             type="button"
             onClick={save}
@@ -299,7 +347,10 @@ export function SplashCopyEditor({
           </div>
         </div>
         <p className="mt-2 text-2xs text-subtle">
-          Previewing <span className="font-semibold text-muted">{active.title}</span>. This is the real flow, rendered with your edits. Saving publishes straight to /onboarding/beta.
+          Previewing <span className="font-semibold text-muted">{active.title}</span>. This is the real flow, rendered with your edits.{' '}
+          {isDefault
+            ? 'Saving publishes straight to /onboarding/beta.'
+            : `Saving updates this funnel at /onboarding/beta?seq=${slug}. Publish it from the funnels list to take it live.`}
         </p>
       </div>
     </div>
