@@ -21,12 +21,10 @@ async function buildDuplicateInitial(sourceId: string): Promise<Partial<EventFor
     .select(
       'title, description, location, scope_id, scope_type, capacity, visibility, category, energy_tag, ' +
         'attendance_mode, online_url, venue_name, street, city, region, postal_code, country, ' +
-        'recurrence_type, recurrence_until, venmo_handle',
+        'recurrence_type, recurrence_until, price_cents',
     )
     .eq('id', sourceId)
     .maybeSingle()
-  // venmo_handle is newer than the generated DB types, so the typed select narrows to a
-  // query error — read through unknown (repo convention for not-yet-regenerated columns).
   const src = data as unknown as Record<string, unknown> | null
   if (!src) return null
 
@@ -62,7 +60,8 @@ async function buildDuplicateInitial(sourceId: string): Promise<Partial<EventFor
     country: str(src.country),
     recurrenceType,
     recurrenceUntil,
-    venmoHandle: str(src.venmo_handle),
+    // Carry the ticket price forward (0/absent = a free RSVP event).
+    priceCents: typeof src.price_cents === 'number' ? src.price_cents : undefined,
     // Date is intentionally omitted so the copy defaults to the active day.
   }
 }
@@ -94,28 +93,62 @@ export default async function NewEventPage({
   const steward = ['host', 'guide', 'mentor', 'admin', 'janitor'].includes(profile.community_role ?? '')
   if (!paid && !steward) notFound()
 
-  // Fetch circles the user is a member of (scope for events)
-  const { data: memberships } = await admin
-    .from('memberships')
-    .select('circle_id')
-    .eq('profile_id', profile.id)
-    .eq('status', 'active')
+  // WHERE DOES IT LIVE — only the targets the caller actually OWNS/stewards (an owned target
+  // places instantly, so it must be one they control; never "circles I'm merely a member of").
+  // The server re-validates ownership again in createEvent, so this list is a convenience only.
 
-  const circleIds = (memberships ?? []).map((m) => m.circle_id as string)
+  // Circles the caller HOSTS (host_id = them).
+  const { data: hostedCircles } = await admin
+    .from('circles')
+    .select('id, name')
+    .eq('host_id', profile.id)
+    .neq('status', 'archived')
+    .order('name', { ascending: true })
+  const circles = (hostedCircles ?? []) as { id: string; name: string }[]
 
-  let circles: { id: string; name: string }[] = []
-  if (circleIds.length > 0) {
-    const { data: circleRows } = await admin
-      .from('circles')
-      .select('id, name')
-      .in('id', circleIds)
-      .neq('status', 'archived')
-      .order('name', { ascending: true })
-    circles = (circleRows ?? []) as { id: string; name: string }[]
+  // Spaces the caller RUNS: the owner, plus any space where they are an ACTIVE admin member.
+  const { data: ownedSpaces } = await admin
+    .from('spaces')
+    .select('id, name, brand_name')
+    .eq('owner_profile_id', profile.id)
+  const spaceName = (s: { name: string | null; brand_name: string | null }) =>
+    s.brand_name ?? s.name ?? 'Space'
+  const spaceById = new Map<string, string>()
+  for (const s of (ownedSpaces ?? []) as { id: string; name: string | null; brand_name: string | null }[]) {
+    spaceById.set(s.id, spaceName(s))
   }
 
+  const { data: adminMemberships } = await admin
+    .from('space_members')
+    .select('space_id')
+    .eq('profile_id', profile.id)
+    .eq('role', 'admin')
+    .eq('status', 'active')
+  const adminSpaceIds = ((adminMemberships ?? []) as { space_id: string }[])
+    .map((m) => m.space_id)
+    .filter((id) => !spaceById.has(id))
+  if (adminSpaceIds.length > 0) {
+    const { data: adminSpaces } = await admin
+      .from('spaces')
+      .select('id, name, brand_name')
+      .in('id', adminSpaceIds)
+    for (const s of (adminSpaces ?? []) as { id: string; name: string | null; brand_name: string | null }[]) {
+      spaceById.set(s.id, spaceName(s))
+    }
+  }
+  const spaces = [...spaceById.entries()]
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+  // Grouped, labeled scope options for the form: circles you host, then spaces you run. `kind`
+  // lets the form encode each option's target type without a second lookup on submit.
+  const scopeOptions = [
+    ...circles.map((c) => ({ id: c.id, name: c.name, kind: 'circle' as const, label: `In ${c.name} (circle you host)` })),
+    ...spaces.map((s) => ({ id: s.id, name: s.name, kind: 'space' as const, label: `In ${s.name} (space you run)` })),
+  ]
+
   // Honor the `?circle=` deep link (the circle-host "New event" affordance), but only when it
-  // names a circle the caller actually belongs to — never let the param scope to someone else's.
+  // names a circle the caller actually HOSTS — never let the param scope to someone else's.
   const defaultGroupId = circles.some((c) => c.id === circleParam) ? circleParam : undefined
 
   // Duplicate flow (`?duplicate=<id>`): clone a source event into a prefilled manual form,
@@ -124,7 +157,7 @@ export default async function NewEventPage({
   // create rather than leaking anything.
   let duplicateInitial = duplicateParam ? await buildDuplicateInitial(duplicateParam) : null
   // Only keep the cloned circle scope when the viewer can actually pick it in this form
-  // (it's one of their listed circles); otherwise drop it so the form falls back to its
+  // (it's one of the circles they host); otherwise drop it so the form falls back to its
   // default rather than holding a circle the select can't show.
   if (duplicateInitial?.scopeId && !circles.some((c) => c.id === duplicateInitial!.scopeId)) {
     duplicateInitial = { ...duplicateInitial, scopeId: undefined }
@@ -133,7 +166,7 @@ export default async function NewEventPage({
   return (
     <EventEditorWindow backHref="/events">
       <EventSpark
-        groups={circles}
+        groups={scopeOptions}
         defaultGroupId={defaultGroupId}
         initial={duplicateInitial ?? undefined}
         startInManual={!!duplicateInitial}

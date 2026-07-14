@@ -119,7 +119,7 @@ function firstName(displayName: string | null | undefined): string {
 
 // ── Classifieds (market_listings) ────────────────────────────────────────────
 // price_note is already the free-text "price/terms" blob a seller wrote (e.g.
-// "$299, open to reasonable offers. Cash or Venmo."), so it becomes priceLabel verbatim.
+// "$299, open to reasonable offers. Cash only."), so it becomes priceLabel verbatim.
 
 export function listingDetailFromMarket(
   listing: MarketListingWithAuthor,

@@ -4,8 +4,7 @@
 // + Stripe keys → payoutsLive()), so the event page renders the full checkout
 // cascade (TicketButton and the "Ticket sales have closed." / "Sold out." / "Sign
 // in to get your ticket" states), the paid mobile CTA shows, and startTicket opens
-// a Stripe checkout. The Venmo-handle fallback (events.venmo_handle) is hidden
-// while this is on. RSVP still works alongside paid tickets.
+// a Stripe checkout. RSVP still works alongside paid tickets.
 //
 // This constant is the code-level master switch; the actual charge still also
 // requires payoutsLive() (host_payouts_enabled flag AND a configured Stripe key),
