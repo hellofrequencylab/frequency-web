@@ -1,4 +1,4 @@
-import { getSequence, listSequences, DEFAULT_SEQUENCE, type BetaSequence } from './beta-sequences'
+import { getSequence, listSequences, nicheFunnelDestination, DEFAULT_SEQUENCE, type BetaSequence } from './beta-sequences'
 import {
   getSequenceOverride,
   listSequenceVersions,
@@ -91,7 +91,18 @@ export async function resolveSequence(
   if (!opts?.preview && sequenceStatus(o) === 'draft') return resolveDefaultSequence()
   const codeExists = listSequences().some((x) => x.slug === s)
   const base = codeExists ? getSequence(s) : blankSequence(s)
-  return o ? apply(base, o) : base
+  return withNicheDefaultDestination(o ? apply(base, o) : base)
+}
+
+/** A NICHE funnel (its slug is one of the operator niches) inherits its code-default Space-create
+ *  destination when neither the base flow nor the DB override set an explicit `direct` target. This is
+ *  what keeps ONLY the general beta splash on the waitlist/Beta-list landing: every niche funnel routes to
+ *  its own section by default, while an explicit `direct` destination authored in the builder still wins.
+ *  The general default flow never reaches here (resolveDefaultSequence returns first). PURE. */
+function withNicheDefaultDestination(seq: BetaSequence): BetaSequence {
+  if (seq.destination?.mode === 'direct') return seq
+  const dest = nicheFunnelDestination(seq.slug)
+  return dest ? { ...seq, destination: dest } : seq
 }
 
 export interface SequenceSummary {

@@ -85,6 +85,42 @@ export interface BetaSequence {
  *  owner's edits from the /pages/splash editor. */
 export const DEFAULT_SEQUENCE = 'beta-default'
 
+// ── Funnel routing (ADR-funnels): where finishing a funnel lands the new member ──────────────────────
+// Owner directive: "The general beta splash funnel should be the only one that goes to the Beta list.
+// All other funnels should take them to the section the funnel is targeted at." So the GENERAL splash
+// keeps the waitlist/Beta-list landing; each NICHE funnel admits the finished member straight into its
+// targeted section. This is the ONE code source for those targets — one row per niche, a pure data edit,
+// re-validated at redirect time by isSafeInAppPath / funnelLanding (lib/onboarding/funnel-destination).
+
+/** The GENERAL beta splash landing: the Beta list (waitlist == the default post-induction feed path). */
+export const GENERAL_FUNNEL_DESTINATION: FunnelDestination = { mode: 'waitlist' }
+
+/** The Space-create path for a Space Mode (OPERATOR-FUNNELS §5 Start-free bridge). The finished operator
+ *  lands in Create-a-Space pre-seeded in the niche's Mode. `/spaces/new` is the real route today; the
+ *  `?mode=<type>:<variant>` hint matches the Mode key (lib/spaces/modes) and is forward-compatible with
+ *  the pre-seed bridge. PURE. */
+export function spaceCreatePath(mode: { type: string; variant: string }): string {
+  return `/spaces/new?mode=${mode.type}:${mode.variant}`
+}
+
+/** Space-create destination per operator niche funnel (OPERATOR-FUNNELS §5): coaches -> business:packages,
+ *  studios -> business:membership, hosts -> business:ticketed, communities -> business:cohort,
+ *  nonprofits -> nonprofit:donations. Keyed by the niche funnel slug (the short /for/<niche> slugs,
+ *  ADR-591). One row per niche = one data edit; add a niche here and its funnel routes to its section. */
+export const NICHE_FUNNEL_DESTINATIONS: Record<string, FunnelDestination> = {
+  coaches: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'packages' }) },
+  studios: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'membership' }) },
+  hosts: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'ticketed' }) },
+  communities: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'cohort' }) },
+  nonprofits: { mode: 'direct', url: spaceCreatePath({ type: 'nonprofit', variant: 'donations' }) },
+}
+
+/** The funnel destination for a sequence slug: a known niche funnel's Space-create section, else
+ *  undefined (the caller keeps the general waitlist/Beta-list landing). PURE. */
+export function nicheFunnelDestination(slug: string | null | undefined): FunnelDestination | undefined {
+  return (slug && NICHE_FUNNEL_DESTINATIONS[slug]) || undefined
+}
+
 // The base flow: Vera's scripted copy verbatim. The splash block seeds brand-new
 // versions cloned in the builder (the default flow itself has no public splash
 // page — visitors enter at /onboarding/beta). The marketing tag stays
@@ -106,6 +142,9 @@ const BASE_SEQUENCE: BetaSequence = {
   vera: VERA,
   oaths: BETA_OATHS,
   heardAbout: [...HEARD_ABOUT],
+  // The GENERAL beta splash is the ONE funnel that keeps the Beta-list landing (waitlist == the
+  // default post-induction feed/Beta path). Every NICHE funnel overrides this with a direct section.
+  destination: GENERAL_FUNNEL_DESTINATION,
 }
 
 // The SPLASH prompts for a brand-new funnel. VERA (induction beats) + BETA_OATHS already

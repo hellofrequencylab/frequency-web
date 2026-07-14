@@ -20,7 +20,9 @@ import { BETA_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW, type OathId } from '@/li
 import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
 import { funnelLanding, isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
 import type { FunnelDestination } from '@/lib/onboarding/beta-sequences'
-import { personaTag, isPersonaId } from '@/lib/onboarding/personas'
+import { personaTag, isPersonaId, DEFAULT_PERSONA } from '@/lib/onboarding/personas'
+import { enrollInNurture } from '@/lib/nurture/enroll'
+import { getSequenceByPersona } from '@/lib/nurture/store'
 import { assignTag } from '@/lib/traits/tags'
 import { resolveAcquisition, stampAcquisitionTag } from '@/lib/attribution/server'
 import { applyReferralAttribution, applyEntryPointConversion } from '@/lib/qr/referral'
@@ -79,6 +81,52 @@ async function tagPersona(profileId: string, personaSlug: string | null): Promis
     await assignTag(profileId, key)
   } catch {
     /* tagging is best-effort */
+  }
+}
+
+/**
+ * Cue future onboarding (owner directive): enroll the finished member into the nurture / onboarding
+ * sequence for their PRIMARY persona (ADR-131), in addition to the persona tags. Best-effort, idempotent
+ * (the enrollment has a unique (sequence_id, contact_id) constraint), and NEVER blocks onboarding.
+ *
+ * When the primary persona has no enabled sequence yet, it falls back to the DEFAULT persona's sequence
+ * so a member still gets a sensible onboarding series; when neither exists it is a clean no-op. The
+ * nurture runner sends to a CRM contact row, so this resolves (or creates) the member's contact first.
+ */
+async function enrollPersonaOnboarding(profileId: string, email: string, primaryPersona: string): Promise<void> {
+  try {
+    // Choose the persona whose sequence exists + is enabled; fall back to the default persona's series.
+    let persona = primaryPersona
+    const primarySeq = await getSequenceByPersona(primaryPersona)
+    if (!primarySeq || !primarySeq.sequence.enabled) {
+      if (primaryPersona === DEFAULT_PERSONA) return // already the default; nothing enabled to enroll into
+      const fallback = await getSequenceByPersona(DEFAULT_PERSONA)
+      if (!fallback || !fallback.sequence.enabled) return
+      persona = DEFAULT_PERSONA
+    }
+
+    // Resolve the member's CRM contact (the nurture cron sends to a contact row). Prefer the row already
+    // linked to this profile, then the one matching their email, and only create one when none exists.
+    const admin = createAdminClient()
+    const { data: byProfile } = await admin.from('contacts').select('id').eq('profile_id', profileId).maybeSingle()
+    let contactId = (byProfile as { id: string } | null)?.id ?? null
+    if (!contactId) {
+      const { data: byEmail } = await admin.from('contacts').select('id').ilike('email', email).maybeSingle()
+      contactId = (byEmail as { id: string } | null)?.id ?? null
+    }
+    if (!contactId) {
+      const { data: inserted } = await admin
+        .from('contacts')
+        .insert({ email, profile_id: profileId, consent_state: 'unknown', source: 'onboarding_beta', last_seen_at: new Date().toISOString() })
+        .select('id')
+        .maybeSingle()
+      contactId = (inserted as { id: string } | null)?.id ?? null
+    }
+    if (!contactId) return
+
+    await enrollInNurture({ contactId, email, persona })
+  } catch {
+    /* enrollment is best-effort; a failure must never block onboarding */
   }
 }
 
@@ -258,6 +306,10 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     await tagBetaCohort(prof.id, seqSlug)
     // Tag every persona they selected (multi-select); each tag is registered + idempotent.
     for (const p of allPersonas) await tagPersona(prof.id as string, p)
+    // Cue future onboarding: enroll the member into their PRIMARY persona's nurture / onboarding sequence
+    // (ADR-131), on top of the tags. Best-effort + idempotent; never blocks onboarding. Uses the member's
+    // email (required for the nurture send); no-op when they somehow have none.
+    if (user.email) await enrollPersonaOnboarding(prof.id as string, user.email, allPersonas[0] ?? DEFAULT_PERSONA)
     await stampAcquisitionTag(prof.id, acquisition)
     // Referral attribution (ADR-095) — apply the `fq_ref` cookie the /q resolver
     // drops when someone scans a member's personal code: set referred_by_profile_id,

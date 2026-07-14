@@ -17,6 +17,7 @@ import type { FunnelFeature, FunnelCoreFeature, FunnelDestination } from '@/lib/
 import { funnelIcon } from '@/lib/onboarding/funnel-icons'
 import { isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
 import { acceptBetaOath, completeBetaInduction, stashPendingInduction } from './actions'
+import { logPersonaSelection } from './persona-log'
 import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
 import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
 
@@ -148,6 +149,24 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     document.cookie = `fq_persona=${encodeURIComponent(primaryPersona)}; path=/; max-age=2592000; samesite=lax`
     document.cookie = `fq_personas=${encodeURIComponent(personas.join(','))}; path=/; max-age=2592000; samesite=lax`
   }, [preview, personas, primaryPersona])
+
+  // Log the persona pick at SELECTION time (owner directive), so intent is captured server-side even if
+  // this (often anonymous) visitor never finishes. Debounced ~600ms so rapid multi-select toggles collapse
+  // into one write; best-effort + fire-and-forget so it never blocks the UI. Skips preview and the empty
+  // pre-pick state; the first real toggle from the General funnel's picker is the first thing logged.
+  const personaLogPrimed = useRef(false)
+  useEffect(() => {
+    if (preview) return
+    if (!personaLogPrimed.current) {
+      personaLogPrimed.current = true
+      return
+    }
+    if (personas.length === 0) return
+    const t = setTimeout(() => {
+      logPersonaSelection({ persona: primaryPersona, personas, sequence }).catch(() => {})
+    }, 600)
+    return () => clearTimeout(t)
+  }, [preview, personas, primaryPersona, sequence])
 
   const [beat, setBeat] = useState(() => Math.min(Math.max(initialBeat, 0), BEAT_COUNT - 1))
   const [previewDone, setPreviewDone] = useState(false)
