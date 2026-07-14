@@ -155,31 +155,30 @@ export function SpacePublishFab({
           </span>
         )}
 
-        {/* Actions push right; both carry a small subtitle so their intent is unmistakable. */}
-        <div className="ml-auto flex items-center gap-2">
+        {/* Actions sit at the FAR RIGHT, off the edge (a right margin), each on ONE row at a legible size.
+            The old two-line label + sublabel is gone; the intent rides along as a title tooltip. */}
+        <div className="ml-auto mr-1 flex items-center gap-2 sm:mr-3">
           <button
             type="button"
             onClick={onSaveDraft}
-            className="flex flex-col items-center rounded-lg border border-border px-3 py-1 text-center transition-colors hover:bg-surface-elevated"
+            title="Come back later"
+            className="inline-flex items-center rounded-lg border border-border px-4 py-2 text-sm font-bold text-text transition-colors hover:bg-surface-elevated"
           >
-            <span className="text-xs font-bold text-text">Save draft</span>
-            <span className="text-3xs text-subtle">Come back later</span>
+            Save draft
           </button>
           <button
             type="button"
             onClick={() => void onPublish()}
             disabled={publishBusy}
-            className="flex flex-col items-center rounded-lg bg-primary px-4 py-1 text-center text-on-primary shadow-sm transition-colors hover:bg-primary-strong disabled:opacity-60"
+            title="Go live now"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-on-primary shadow-sm transition-colors hover:bg-primary-strong disabled:opacity-60"
           >
-            <span className="flex items-center gap-1.5 text-xs font-bold">
-              {publishBusy ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-              ) : (
-                <Globe className="h-3.5 w-3.5" aria-hidden />
-              )}
-              Publish
-            </span>
-            <span className="text-3xs text-on-primary/80">Go live now</span>
+            {publishBusy ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Globe className="h-4 w-4" aria-hidden />
+            )}
+            Publish
           </button>
         </div>
       </div>
