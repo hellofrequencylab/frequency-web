@@ -36,8 +36,17 @@ export default async function BetaInductionPage({
   // (ADR-082): "Join the Beta" opens the sequence immediately. Sign-in is
   // collected at the final "step in" beat; the answers are stashed and written at
   // /onboarding/beta/complete after auth.
+  // Niche-funnel config (ADR-funnels): the Slide-2 feature cards, the Slide-3 core
+  // features, and the completion destination. Absent on the General funnel, so the
+  // induction keeps its persona fork / reel / default landing exactly as today.
+  const funnel = {
+    slide2Features: seq.slide2Features,
+    slide3Core: seq.slide3Core,
+    destination: seq.destination,
+  }
+
   if (!user) {
-    return <BetaInduction deferred copy={copy} sequence={seq.slug} persona={persona} inviter={inviter} />
+    return <BetaInduction deferred copy={copy} sequence={seq.slug} persona={persona} inviter={inviter} {...funnel} />
   }
 
   const { data: profile } = await supabase
@@ -70,6 +79,7 @@ export default async function BetaInductionPage({
       sequence={seq.slug}
       persona={persona}
       inviter={inviter}
+      {...funnel}
     />
   )
 }

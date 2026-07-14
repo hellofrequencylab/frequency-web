@@ -30,6 +30,33 @@ export interface SequenceSplash {
   statement: string
 }
 
+/** One "what are you into" feature card (Slide 2 of a NICHE funnel). A niche funnel replaces the
+ *  generic persona fork with 4 of these, tuned to the niche. Icon is a NAME resolved to a lucide
+ *  icon in the induction (lib/onboarding/funnel-icons), so this stays client-safe + serialisable. */
+export interface FunnelFeature {
+  title: string
+  blurb: string
+  /** Lucide icon name (see FUNNEL_ICONS). Unknown / absent falls back to a neutral default. */
+  icon: string
+}
+
+/** One core-feature the visitor can pick on Slide 3 of a NICHE funnel, with its ART. The art reuses
+ *  the induction's existing product renders (feed / circles / events) or an image, so most niches
+ *  need no new drawing (owner directive: reuse art, only draw the few that are missing). */
+export interface FunnelCoreFeature {
+  title: string
+  blurb: string
+  art:
+    | { kind: 'render'; render: 'feed' | 'circles' | 'events' | 'booking' | 'checkin' | 'donate' }
+    | { kind: 'image'; src: string }
+}
+
+/** Where finishing a funnel sends the new member. The GENERAL funnel goes to the Beta waitlist; each
+ *  NICHE funnel admits directly to a niche-relevant section (an editable in-app link). */
+export type FunnelDestination =
+  | { mode: 'waitlist' }
+  | { mode: 'direct'; url: string }
+
 export interface BetaSequence {
   slug: string
   /** Human label for the audience (admin + analytics). */
@@ -42,6 +69,15 @@ export interface BetaSequence {
   vera: VeraCopy
   oaths: { id: OathId; label: string }[]
   heardAbout: string[]
+  /** NICHE funnels: the 4 "what are you into" feature cards shown on Slide 2 in place of the generic
+   *  persona fork. Absent / empty = keep the persona fork (the General funnel's behaviour). */
+  slide2Features?: FunnelFeature[]
+  /** NICHE funnels: the 3 core features + art shown on Slide 3 in place of the auto-playing tour reel.
+   *  Absent / empty = keep the reel (the General funnel's behaviour). */
+  slide3Core?: FunnelCoreFeature[]
+  /** Where completion sends the member: the Beta waitlist (default, the General funnel) or a direct
+   *  in-app link (the niche funnels). Absent = waitlist. */
+  destination?: FunnelDestination
 }
 
 /** Reserved slug for the base VERA flow — what /onboarding/beta runs with no ?seq.

@@ -38,11 +38,17 @@ export function BetaCompleteFinalizer() {
         // Ignore — finish without the photo.
       }
 
-      const res = await finalizePendingInduction(avatarUrl)
+      // A NICHE funnel carries its post-completion destination here as `?to=` (set on the
+      // deferred sign-in `next`). Read it client-side; the server action re-validates it as a
+      // safe in-app path before returning the landing target, so this raw value is never
+      // trusted for the redirect on its own.
+      const to = new URLSearchParams(window.location.search).get('to') ?? undefined
+      const res = await finalizePendingInduction(avatarUrl, to)
       if (res.ok) {
-        // Returning member (merged into an existing profile) → straight to the
-        // feed; a brand-new Founder → the feed with Vera's welcome.
-        router.replace(res.merged ? '/feed' : '/feed?welcome=vera')
+        // Where to land: the funnel destination the action validated (target), else the
+        // default — a returning member (merged) → the bare feed; a brand-new Founder →
+        // the feed with Vera's welcome.
+        router.replace(res.target ?? (res.merged ? '/feed' : '/feed?welcome=vera'))
       } else {
         // No stash (e.g. expired / direct nav) — send them back to start the run.
         setMode('error')

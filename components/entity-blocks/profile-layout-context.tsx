@@ -73,6 +73,11 @@ interface EntityLayoutContextValue {
   bench: string[]
   /** Apply a new working layout: repaint now, persist debounced. */
   apply: (next: BuilderLayout) => void
+  /** Revert the last change (Ctrl+Z / the Undo button). Pops the history stack and re-applies the previous
+   *  working layout, then saves it like any other edit. A no-op when there is nothing to undo. */
+  undo: () => void
+  /** Whether there is a prior state to undo (drives the Undo button's enabled state). */
+  canUndo: boolean
   /** Merge one block's authored content against the FRESHEST store state (ADR-542 fix for the stale-
    *  closure drop: rapid field edits each merge over the latest bag, so no earlier field is clobbered).
    *  Passing an empty/undefined bag clears the block's content. */
@@ -122,6 +127,18 @@ export function EntityLayoutProvider({
   // the latest bag — the fix for "only the title saved" (a stale captured layout clobbering earlier writes).
   const latest = useRef<BuilderLayout>({ rows: [], hidden: [], content: {}, style: {} })
 
+  // ── Undo (Ctrl+Z) ──────────────────────────────────────────────────────────────────────────────────
+  // A stack of PRIOR working layouts. Every `apply` pushes the state it is about to replace (so the most
+  // recent snapshot is the top); undo pops it back. Rapid edits within a short window COALESCE into one
+  // entry, so undo reverts a whole burst of typing (or one structural change like a deleted row) at a time,
+  // not one keystroke. Bounded so a long session can't grow it without limit.
+  const history = useRef<BuilderLayout[]>([])
+  const lastPushAt = useRef(0)
+  const applyingUndo = useRef(false)
+  const [canUndo, setCanUndo] = useState(false)
+  const HISTORY_MAX = 100
+  const COALESCE_MS = 500
+
   const flush = useCallback(async () => {
     const next = pending.current
     if (!next) return
@@ -140,6 +157,18 @@ export function EntityLayoutProvider({
 
   const apply = useCallback(
     (next: BuilderLayout) => {
+      // Record the state we are about to replace onto the undo stack — unless this apply IS an undo, or it is
+      // the very first seed (nothing meaningful to go back to). Coalesce edits landing within COALESCE_MS so a
+      // burst of typing collapses into one undo step; a change after a pause starts a new one.
+      if (!applyingUndo.current && seededRef.current && latest.current.rows.length) {
+        const now = Date.now()
+        if (now - lastPushAt.current > COALESCE_MS) {
+          history.current.push(latest.current)
+          if (history.current.length > HISTORY_MAX) history.current.shift()
+          if (!canUndo) setCanUndo(true)
+        }
+        lastPushAt.current = now
+      }
       seededRef.current = true
       latest.current = { rows: next.rows, hidden: next.hidden, content: next.content ?? {}, style: next.style ?? {} }
       setRows(next.rows)
@@ -169,6 +198,18 @@ export function EntityLayoutProvider({
     },
     [apply],
   )
+
+  const undo = useCallback(() => {
+    const prev = history.current.pop()
+    if (!prev) return
+    // Re-apply the popped state WITHOUT pushing it back onto the stack (applyingUndo guards the push in
+    // `apply`), and reset the coalesce clock so the next real edit starts a fresh undo step.
+    applyingUndo.current = true
+    apply(prev)
+    applyingUndo.current = false
+    lastPushAt.current = 0
+    setCanUndo(history.current.length > 0)
+  }, [apply])
 
   const seed = useCallback(
     (
@@ -209,7 +250,7 @@ export function EntityLayoutProvider({
 
   return (
     <EntityLayoutCtx.Provider
-      value={{ kind, seeded, rows, hidden, content, style, selectedId, select, selectedItemIndex, selectItem, bench, apply, applyContent, applyStyle, seed, saving, error }}
+      value={{ kind, seeded, rows, hidden, content, style, selectedId, select, selectedItemIndex, selectItem, bench, apply, undo, canUndo, applyContent, applyStyle, seed, saving, error }}
     >
       {children}
     </EntityLayoutCtx.Provider>

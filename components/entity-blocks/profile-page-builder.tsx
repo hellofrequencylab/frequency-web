@@ -55,11 +55,9 @@ import { getSpaceLayoutRailData } from '@/app/(main)/spaces/[slug]/manage/rail-g
 import { useProfileLayout } from './profile-layout-context'
 import { setSpaceEditMode } from './space-edit-mode'
 import { BlockPicker } from './block-picker'
-import { SpacePublishFab } from './space-publish-fab'
 import { BlockEditPanel, type UploadImage } from './block-edit-panel'
 import type { BlockPickerData } from './controls/field-controls'
 import { uploadSpaceBlockImage } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
-import { setProfilePublished } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
 
 // THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space; ADR-526 split the
 // two kinds). An OUTLINE editor, not a mini-canvas: the live profile/space page behind this same-route
@@ -93,10 +91,6 @@ export interface BuilderRailData {
   hidden: string[]
   customized: boolean
   lockedIds?: string[]
-  /** The Space page's DRAFT / PUBLISHED status flag (preferences.profilePublished, SPACE only). NON-BREAKING:
-   *  ABSENT defaults to `true` in the builder, so every Space that predates the flag reads as published and is
-   *  never surfaced as a draft. A status marker for the publish bar, NOT a visibility gate. */
-  profilePublished?: boolean
   /** The edit-panel PICKER payload per function-backed block (ADR-573 item 5): the Space's live items + the
    *  create link. Absent on the member builder (no function-backed blocks). */
   pickerData?: Record<string, BlockPickerData>
@@ -109,7 +103,6 @@ export function EntityPageBuilder({
   seed,
   editHrefFor,
   uploadImage,
-  onSetPublished,
 }: {
   /** The page this builder edits (member handle / space slug); guarded against the seed's matchId. */
   pageId: string
@@ -125,9 +118,6 @@ export function EntityPageBuilder({
   editHrefFor?: (blockId: string) => string | null
   /** Gated image upload for the block editor's image fields (SPACE only; ADR-542). */
   uploadImage?: UploadImage
-  /** Persist the DRAFT / PUBLISHED flag (SPACE only). Injected by the space wrapper (wired to
-   *  setProfilePublished); absent on the member rail, which has no publish bar. */
-  onSetPublished?: (published: boolean) => Promise<{ error?: string }>
 }) {
   const store = useProfileLayout()
   const router = useRouter()
@@ -144,13 +134,6 @@ export function EntityPageBuilder({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [grab, setGrab] = useState<Grab>(null)
   const [announce, setAnnounce] = useState('')
-
-  // Draft / published status for the persistent publish bar (SPACE only). DEFAULT TRUE so a Space that
-  // predates the flag (an absent seed value) reads as published — existing live pages are never re-drafted.
-  // A local, optimistic mirror: the flip handler writes through onSetPublished and updates this on success.
-  const [published, setPublished] = useState(true)
-  const [publishBusy, setPublishBusy] = useState(false)
-  const [publishError, setPublishError] = useState<string | null>(null)
 
   // DRAG SURFACE (item 7): whether a row or a block is being dragged right now, kept in STATE (not just the
   // refs below) so the rows editor can light up its drop targets while a drag is live — a column shows as a
@@ -205,8 +188,6 @@ export function EntityPageBuilder({
       setLockedIds(d?.lockedIds ?? [])
       setPickerData(d?.pickerData ?? {})
       setCustomized(!!d?.customized)
-      // DEFAULT TRUE when the flag is absent (non-breaking): a pre-flag Space seed reads as published.
-      setPublished(d?.profilePublished ?? true)
       if (d && store?.kind === kind) store.seed(d.rows, d.hidden)
       setLoading(false)
     }
@@ -233,6 +214,25 @@ export function EntityPageBuilder({
     setSpaceEditMode(builderActive)
     return () => setSpaceEditMode(false)
   }, [kind, builderActive])
+
+  // CTRL/CMD+Z UNDO (SPACE live-page edit mode): a window keydown that pops the shared store's history stack
+  // (the store owns the stack — this only calls `undo`). Active only while the builder is live-editing the
+  // page. IGNORED when focus is in a text field (input / textarea / contentEditable) so it never fights the
+  // browser's native text undo. Shift+Z (redo) is left to the browser. Listener is torn down on unmount /
+  // when edit mode ends.
+  useEffect(() => {
+    if (kind !== 'space' || !builderActive || !store) return
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z' || e.shiftKey) return
+      const el = e.target as HTMLElement | null
+      const tag = el?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || el?.isContentEditable) return
+      e.preventDefault()
+      store.undo()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [kind, builderActive, store])
 
   // RAIL FOLLOWS THE SELECTED BLOCK (Space): when the owner clicks a block on the live page, the shared
   // store's selectedId changes and this scrolls that block's open settings panel into view, so the settings
@@ -265,22 +265,6 @@ export function EntityPageBuilder({
     } else {
       setEditingId((m) => (m === id ? null : id))
     }
-  }
-
-  // Flip the DRAFT / PUBLISHED flag through the injected server action (SPACE only). Optimism is deferred to
-  // the response: it writes first, then mirrors local state on success (so a refused write never shows a false
-  // "live"). Absent the action (member rail / no wiring), it just flips the local marker so the bar still works.
-  async function onSetPublishedClick(next: boolean) {
-    setPublishError(null)
-    if (!onSetPublished) {
-      setPublished(next)
-      return
-    }
-    setPublishBusy(true)
-    const res = await onSetPublished(next)
-    setPublishBusy(false)
-    if (res?.error) setPublishError(res.error)
-    else setPublished(next)
   }
 
   if (loading) {
@@ -1040,19 +1024,10 @@ export function EntityPageBuilder({
         onPlace={(id, t) => onPlace(id, t.rowId, t.ci)}
       />
 
-      {/* The persistent Draft / Publish button, pinned to the bottom-right of the PAGE (SPACE only) and
-          always in view on scroll while editing, so publishing is one obvious click away. It is `fixed`, so
-          its position is viewport-relative regardless of being rendered here inside the rail; it offsets
-          itself clear of the rail via the --admin-rail-w variable. Never gates who can SEE the page (that
-          stays with the Space's visibility); only reached past the owner + kind gate above. */}
-      <SpacePublishFab
-        saving={!!store.saving || reconciling}
-        published={published}
-        busy={publishBusy}
-        error={publishError}
-        onPublish={() => void onSetPublishedClick(true)}
-        onUnpublish={() => void onSetPublishedClick(false)}
-      />
+      {/* NOTE: the persistent publish bar is rendered by the LiveProfileGrid (the page body), NOT here. This
+          builder lives inside the admin rail, which slides in on a `transform` that traps a `position: fixed`
+          child inside its box (clipping the bar out of view). Rendering it in the page body pins it to the
+          viewport correctly. This builder still drives edit mode (setSpaceEditMode) + Ctrl+Z undo above. */}
         </>
       )}
     </section>
@@ -1114,8 +1089,6 @@ export function SpacePageBuilder({
       loadRailData={load}
       seed={seed}
       uploadImage={uploadImage}
-      // The publish bar's flip, wired to the owner-gated server action (writes only preferences.profilePublished).
-      onSetPublished={(next) => setProfilePublished(slug, next)}
       // A DATA block's "Manage" link points at that FEATURE's own admin area (ADR-529 item 4) — its content
       // + settings live there. Unmapped data blocks fall back to the Space console; content blocks get none.
       editHrefFor={(blockId) => spaceBlockAdminHref(slug, blockId)}

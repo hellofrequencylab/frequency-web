@@ -18,6 +18,8 @@ import { ensureMemberCodes } from '@/lib/qr/member-codes'
 import { track } from '@/lib/analytics/track'
 import { BETA_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW, type OathId } from '@/lib/onboarding/beta-script'
 import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
+import { funnelLanding, isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
+import type { FunnelDestination } from '@/lib/onboarding/beta-sequences'
 import { personaTag, isPersonaId } from '@/lib/onboarding/personas'
 import { assignTag } from '@/lib/traits/tags'
 import { resolveAcquisition, stampAcquisitionTag } from '@/lib/attribution/server'
@@ -305,13 +307,18 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
  * Authed path: a signed-in, not-yet-completed member who lands on the induction.
  * Writes, then hands off to Vera's onboarding lightbox over the feed.
  */
-export async function completeBetaInduction(data: InductionData) {
+export async function completeBetaInduction(data: InductionData, destination?: FunnelDestination) {
   await writeBetaInduction(data)
   // Hand off to Vera (ADR-066 Phase D): drop them straight into the feed (the real
   // product) with her onboarding lightbox over it. She already has their
   // interests/intent in memory + meta.beta, so the lightbox continues the thread
   // instead of opening cold. One-tap escape to /circles always remains.
-  redirect('/feed?welcome=vera')
+  //
+  // NICHE funnels (ADR-funnels) admit the new member to a niche-relevant section instead.
+  // funnelLanding re-validates the destination HERE (where the redirect actually fires) and
+  // fails closed to the Vera welcome for a waitlist / absent / unsafe url, so the General
+  // funnel is unchanged and no attacker-influenced value can open-redirect off-site.
+  redirect(funnelLanding(destination, '/feed?welcome=vera'))
 }
 
 /**
@@ -479,7 +486,10 @@ export async function uploadPendingAvatar(dataUrl: string): Promise<string | nul
  * returning member's answers are MERGED into their existing profile (new info
  * harvested, blanks ignored). Then clear the cookie.
  */
-export async function finalizePendingInduction(avatarUrl: string | null): Promise<{ ok: boolean; error?: string; merged?: boolean }> {
+export async function finalizePendingInduction(
+  avatarUrl: string | null,
+  destinationUrl?: string,
+): Promise<{ ok: boolean; error?: string; merged?: boolean; target?: string }> {
   const store = await cookies()
   const raw = store.get(PENDING_INDUCTION_COOKIE)?.value
   if (!raw) return { ok: false, error: 'No pending induction.' }
@@ -494,17 +504,24 @@ export async function finalizePendingInduction(avatarUrl: string | null): Promis
 
   const payload: InductionData = { ...data, avatarUrl: avatarUrl ?? '' }
 
+  let merged = false
   try {
     if (await callerAlreadyOnboarded()) {
       await mergeBetaInduction(payload)
-      store.delete(PENDING_INDUCTION_COOKIE)
-      return { ok: true, merged: true }
+      merged = true
+    } else {
+      await writeBetaInduction(payload)
     }
-    await writeBetaInduction(payload)
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Something went wrong.' }
   }
 
   store.delete(PENDING_INDUCTION_COOKIE)
-  return { ok: true }
+  // Default landing: a returning member (merged) → the bare feed; a brand-new Founder → the
+  // feed with Vera's welcome. A NICHE funnel's destination overrides it, but ONLY when the
+  // url (carried as the `?to=` on the completion path) re-validates here as a safe in-app
+  // path. Fails closed to the default for a waitlist / absent / unsafe url.
+  const fallback = merged ? '/feed' : '/feed?welcome=vera'
+  const target = destinationUrl && isSafeInAppPath(destinationUrl) ? destinationUrl : fallback
+  return { ok: true, merged, target }
 }

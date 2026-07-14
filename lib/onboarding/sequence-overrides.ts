@@ -1,6 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SequenceSplash, BetaSequence } from './beta-sequences'
+import type {
+  SequenceSplash,
+  BetaSequence,
+  FunnelFeature,
+  FunnelCoreFeature,
+  FunnelDestination,
+} from './beta-sequences'
 
 // DB override layer for the code-first onboarding sequences (build §9.1 → ADR-162).
 // `data` holds a FULL sequence override (any subset of a BetaSequence); a row with a
@@ -29,6 +35,11 @@ export interface SequenceOverride {
   vera?: Partial<BetaSequence['vera']>
   oaths?: BetaSequence['oaths']
   heardAbout?: BetaSequence['heardAbout']
+  /** Niche-funnel config (ADR-funnels): Slide 2 features, Slide 3 core features + art, and the
+   *  completion destination (waitlist vs a direct in-app link). Absent = the General funnel behaviour. */
+  slide2Features?: FunnelFeature[]
+  slide3Core?: FunnelCoreFeature[]
+  destination?: FunnelDestination
 }
 
 /** A funnel's publish state, defaulting a missing/legacy value to 'published'. */

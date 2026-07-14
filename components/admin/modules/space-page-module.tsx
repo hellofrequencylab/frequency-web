@@ -56,8 +56,9 @@ export function SpacePageModule() {
             customized: layout.customized,
             lockedIds: layout.lockedIds,
             pickerData: layout.pickerData,
-            // The draft/published status for the persistent publish bar (defaults true upstream).
-            profilePublished: data.profilePublished,
+            // NOTE: the publish bar (Draft / Publish / Undo / Visible) is no longer part of this in-rail
+            // builder — it renders on the live page body (LiveProfileGrid), which reads profilePublished from
+            // the owner preview and the shared store directly, so nothing about publish state is threaded here.
           }
         : null
       : undefined

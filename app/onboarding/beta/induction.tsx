@@ -13,6 +13,9 @@ import { downscaleImageFile } from '@/lib/images/downscale-image'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
 import { BETA_OATHS as DEFAULT_OATHS, VERA as DEFAULT_VERA, type OathId, type VeraCopy } from '@/lib/onboarding/beta-script'
 import { getPersona, listPersonas, isPersonaId, DEFAULT_PERSONA, type PersonaId } from '@/lib/onboarding/personas'
+import type { FunnelFeature, FunnelCoreFeature, FunnelDestination } from '@/lib/onboarding/beta-sequences'
+import { funnelIcon } from '@/lib/onboarding/funnel-icons'
+import { isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
 import { acceptBetaOath, completeBetaInduction, stashPendingInduction } from './actions'
 import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
 import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
@@ -23,6 +26,9 @@ const PENDING_AVATAR_KEY = 'fq_pending_avatar'
 import { FeedRender } from '@/components/onboarding/renders/feed-render'
 import { CirclesRender } from '@/components/onboarding/renders/circles-render'
 import { EventsRender } from '@/components/onboarding/renders/events-render'
+import { BookingRender } from '@/components/onboarding/renders/booking-render'
+import { CheckinRender } from '@/components/onboarding/renders/checkin-render'
+import { DonateRender } from '@/components/onboarding/renders/donate-render'
 import { WizardProgress, wizardPrimaryClass } from '@/components/templates'
 
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
@@ -59,10 +65,19 @@ type Props = {
   /** Set when the visitor scanned a member's QR code (the fq_ref referrer). Shows an
    *  "Invited by {name}" chip atop the flow so the welcome reads personal. */
   inviter?: { displayName: string; handle: string; avatarUrl: string | null } | null
+  /** NICHE funnel (ADR-funnels): the 4 "what are you into" cards shown on Beat 1 in place of
+   *  the persona fork. Absent / empty = keep the persona fork (the General funnel). */
+  slide2Features?: FunnelFeature[]
+  /** NICHE funnel: the 3 pick-one core features (with art) shown on Beat 2 in place of the
+   *  auto-playing tour reel. Absent / empty = keep the reel (the General funnel). */
+  slide3Core?: FunnelCoreFeature[]
+  /** NICHE funnel: where completion sends the member. A safe in-app `direct` url overrides the
+   *  default post-induction landing; waitlist / absent keeps today's behaviour (the General funnel). */
+  destination?: FunnelDestination
 }
 
 const HANDLE_RE = /^[a-z0-9_]+$/
-const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender }
+const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender, booking: BookingRender, checkin: CheckinRender, donate: DonateRender }
 const BEAT_COUNT = 5 // 0 oath · 1 intro · 2 reel · 3 identity+place · 4 enter
 // Accessible name for each beat — drives the progress bar's label and the polite
 // live announcement so assistive tech tracks "where am I" through the sequence.
@@ -97,7 +112,11 @@ function accent(text: string): React.ReactNode {
   )
 }
 
-export default function BetaInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona, initialBeat = 0, inviter = null }: Props) {
+export default function BetaInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona, initialBeat = 0, inviter = null, slide2Features, slide3Core, destination }: Props) {
+  // NICHE-funnel forks (ADR-funnels). A non-empty set flips one beat over to the niche
+  // layout; both absent keeps the whole flow identical to the General funnel.
+  const hasNicheFeatures = (slide2Features?.length ?? 0) > 0 // Beat 1: cards vs persona fork
+  const hasCoreFeatures = (slide3Core?.length ?? 0) > 0 // Beat 2: pick-3 vs auto-reel
   // Operator-tunable copy (defaults to the beta-script copy) — shadows the imports so
   // every existing VERA./BETA_OATHS reference picks up the overrides.
   const VERA = copy?.vera ?? DEFAULT_VERA
@@ -171,6 +190,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
   // Reel
   const [reelIndex, setReelIndex] = useState(0)
+  // Niche Beat 2: which core feature is selected (defaults to the first); its art fills the mockup.
+  const [coreIndex, setCoreIndex] = useState(0)
 
   // Submit
   const [submitting, setSubmitting] = useState(false)
@@ -211,13 +232,22 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     }
   }
 
+  // The deferred flow signs in, then /onboarding/beta/complete writes the profile and
+  // redirects. A NICHE funnel carries its destination through the round-trip as a `?to=`
+  // query on that `next` path; the finalizer re-validates it server-side before redirecting,
+  // so an unsafe / absent url falls closed to the default. Waitlist / General = the bare path.
+  const completeNext =
+    destination?.mode === 'direct' && isSafeInAppPath(destination.url)
+      ? `/onboarding/beta/complete?to=${encodeURIComponent(destination.url)}`
+      : '/onboarding/beta/complete'
+
   async function deferredMagicLink() {
     if (!email.trim() || signingIn) return
     setSigningIn(true)
     await persistForAuth()
     const fd = new FormData()
     fd.set('email', email.trim())
-    fd.set('next', '/onboarding/beta/complete')
+    fd.set('next', completeNext)
     await signInWithMagicLink(fd) // redirects to /sign-in/confirm
   }
 
@@ -226,7 +256,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     setSigningIn(true)
     await persistForAuth()
     const fd = new FormData()
-    fd.set('next', '/onboarding/beta/complete')
+    fd.set('next', completeNext)
     await signInWithGoogle(fd) // redirects to the provider
   }
 
@@ -272,13 +302,14 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     }
   }, [locQuery, location])
 
-  // Auto-advance the reel one slide at a time; settle on the last (no loop).
+  // Auto-advance the reel one slide at a time; settle on the last (no loop). Niche funnels
+  // replace the reel with the pick-3 core cards, so there's nothing to auto-play there.
   useEffect(() => {
-    if (beat !== 2 || reelIndex >= reel.length - 1) return
+    if (beat !== 2 || hasCoreFeatures || reelIndex >= reel.length - 1) return
     if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
     const t = setTimeout(() => setReelIndex((i) => Math.min(i + 1, reel.length - 1)), 3800)
     return () => clearTimeout(t)
-  }, [beat, reelIndex, reel.length])
+  }, [beat, reelIndex, reel.length, hasCoreFeatures])
 
   const formatOk = handle.length >= 3 && HANDLE_RE.test(handle)
   const handleStatus: HandleStatus = !formatOk
@@ -361,24 +392,43 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     if (avatarFile && !avatarUrl) finalAvatarUrl = await uploadAvatar()
     const accepted = BETA_OATHS.filter((o) => oaths[o.id]).map((o) => o.id)
     try {
-      await completeBetaInduction({
-        displayName: displayName.trim(),
-        handle,
-        bio: '',
-        avatarUrl: finalAvatarUrl,
-        location,
-        lat: coords?.lat ?? null,
-        lng: coords?.lng ?? null,
-        intent: '',
-        interests: '',
-        heardAbout: '',
-        oaths: accepted,
-      })
-      // Redirects to /feed?intro=1 on success; execution stops here.
+      await completeBetaInduction(
+        {
+          displayName: displayName.trim(),
+          handle,
+          bio: '',
+          avatarUrl: finalAvatarUrl,
+          location,
+          lat: coords?.lat ?? null,
+          lng: coords?.lng ?? null,
+          intent: '',
+          interests: '',
+          heardAbout: '',
+          oaths: accepted,
+        },
+        // NICHE funnels admit to a niche section; the action re-validates it server-side and
+        // falls closed to the default Vera welcome. Absent = the General funnel's default.
+        destination,
+      )
+      // Redirects on success (the funnel destination, else /feed?welcome=vera); stops here.
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Something went wrong.')
       setSubmitting(false)
     }
+  }
+
+  // Resolve a core feature's art (Beat 2, niche funnel). A `render` reuses the induction's
+  // existing product mockups; the render kinds a niche can request but we haven't drawn yet
+  // (booking / checkin / donate) fall back to the events mockup. An `image` renders directly.
+  function renderCoreArt(art: FunnelCoreFeature['art'], active: boolean) {
+    if (art.kind === 'image') {
+      // eslint-disable-next-line @next/next/no-img-element
+      return <img src={art.src} alt="" className="h-full w-full rounded-2xl border border-border object-cover" />
+    }
+    // Every render kind (feed / circles / events / booking / checkin / donate) has a
+    // dedicated mockup in RENDERS, so the kind resolves directly to its component.
+    const C = RENDERS[art.render]
+    return <C animate={active} />
   }
 
   function renderAvatar() {
@@ -523,39 +573,70 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 </h1>
                 <p className="mx-auto mt-4 max-w-2xl text-xl leading-relaxed text-muted">{VERA.intro.body}</p>
 
-                {/* Persona fork — first, who are you? Pre-selected if they came in
-                    through a lead flow; changeable here. Branches the tour reel and
-                    is stamped on the member so the site + Vera can tailor later. */}
-                <p className="mt-9 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">First, who are you?</p>
-                <p className="mt-1.5 text-sm text-muted">Pick all that fit.</p>
-                <div className="mx-auto mt-4 grid max-w-2xl gap-3 sm:grid-cols-2">
-                  {listPersonas().map((p) => {
-                    const active = personas.includes(p.id)
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => togglePersona(p.id)}
-                        aria-pressed={active}
-                        className={`relative flex items-start gap-3 rounded-2xl border px-4 py-4 text-left transition-colors ${active ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
-                      >
-                        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active ? 'bg-primary text-on-primary' : 'bg-primary-bg text-primary-strong'}`} aria-hidden>
-                          <p.Icon className="h-5 w-5" />
-                        </span>
-                        <span>
-                          <span className="block text-base font-bold text-text">{p.label}</span>
-                          <span className="mt-0.5 block text-sm text-muted">{p.pitch}</span>
-                        </span>
-                        {/* Multi-select checkmark — reads clearly as "more than one is fine". */}
-                        {active && (
-                          <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary" aria-hidden>
-                            <svg viewBox="0 0 20 20" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3"><path d="M4 10l4 4 8-9" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                          </span>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
+                {/* Beat-1 fork. NICHE funnel: 4 informational "what are you into" cards tuned to
+                    the niche, in place of the persona picker (the reel is replaced on Beat 2 too,
+                    so the persona stays the default — persona tagging is untouched for the General
+                    funnel). GENERAL funnel: the multi-select persona fork, exactly as before. */}
+                {hasNicheFeatures ? (
+                  <>
+                    <p className="mt-9 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">First off, what are you into?</p>
+                    <div className="mx-auto mt-4 grid max-w-2xl gap-3 sm:grid-cols-2">
+                      {slide2Features!.map((f, i) => {
+                        const Icon = funnelIcon(f.icon)
+                        return (
+                          <div
+                            key={i}
+                            className="flex items-start gap-3 rounded-2xl border border-border bg-surface px-4 py-4 text-left"
+                          >
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong" aria-hidden>
+                              <Icon className="h-5 w-5" />
+                            </span>
+                            <span>
+                              <span className="block text-base font-bold text-text">{f.title}</span>
+                              <span className="mt-0.5 block text-sm text-muted">{f.blurb}</span>
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Persona fork — first, who are you? Pre-selected if they came in
+                        through a lead flow; changeable here. Branches the tour reel and
+                        is stamped on the member so the site + Vera can tailor later. */}
+                    <p className="mt-9 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">First, who are you?</p>
+                    <p className="mt-1.5 text-sm text-muted">Pick all that fit.</p>
+                    <div className="mx-auto mt-4 grid max-w-2xl gap-3 sm:grid-cols-2">
+                      {listPersonas().map((p) => {
+                        const active = personas.includes(p.id)
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => togglePersona(p.id)}
+                            aria-pressed={active}
+                            className={`relative flex items-start gap-3 rounded-2xl border px-4 py-4 text-left transition-colors ${active ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
+                          >
+                            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active ? 'bg-primary text-on-primary' : 'bg-primary-bg text-primary-strong'}`} aria-hidden>
+                              <p.Icon className="h-5 w-5" />
+                            </span>
+                            <span>
+                              <span className="block text-base font-bold text-text">{p.label}</span>
+                              <span className="mt-0.5 block text-sm text-muted">{p.pitch}</span>
+                            </span>
+                            {/* Multi-select checkmark — reads clearly as "more than one is fine". */}
+                            {active && (
+                              <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary" aria-hidden>
+                                <svg viewBox="0 0 20 20" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3"><path d="M4 10l4 4 8-9" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </>
+                )}
 
                 <div className="mt-8 flex flex-col items-center gap-3">
                   <button onClick={() => setBeat(2)} className={btnPrimary}>{VERA.intro.cta}<ArrowRight /></button>
@@ -570,43 +651,86 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 <p className={eyebrow}>{VERA.tour.eyebrow}</p>
                 <h1 className={`mt-3 text-balance text-4xl sm:text-5xl ${heading}`}>{accent(VERA.tour.heading)}</h1>
 
-                <div className="mt-6 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-12">
-                  {/* desktop mockup, left */}
-                  <div className="relative w-full max-w-xl shrink-0" style={{ aspectRatio: '540 / 348' }}>
-                    {reel.map((s, i) => {
-                      const active = i === reelIndex
-                      const C = s.kind === 'render' ? RENDERS[s.render] : null
-                      return (
-                        <div key={i} className={`absolute inset-0 transition-opacity duration-700 ${active ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                          {C && <C animate={active} />}
-                        </div>
-                      )
-                    })}
-                  </div>
+                {/* Beat-2 fork. NICHE funnel: pick one of 3 core features; the mockup shows the
+                    SELECTED card's art. GENERAL funnel: the auto-playing tour reel, unchanged. */}
+                {hasCoreFeatures ? (
+                  <div className="mt-6 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-12">
+                    {/* mockup shows the selected core feature's art, left */}
+                    <div className="relative w-full max-w-xl shrink-0" style={{ aspectRatio: '540 / 348' }}>
+                      {slide3Core!.map((c, i) => {
+                        const active = i === coreIndex
+                        return (
+                          <div key={i} className={`absolute inset-0 transition-opacity duration-700 ${active ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                            {renderCoreArt(c.art, active)}
+                          </div>
+                        )
+                      })}
+                    </div>
 
-                  {/* caption + dots + action, right */}
-                  <div className="max-w-xs text-center md:text-left">
-                    <p className="text-3xl font-bold text-text">{slide.title}</p>
-                    <p className="mt-2 text-lg leading-relaxed text-muted">{slide.line}</p>
-                    <div className="mt-5 flex items-center justify-center gap-2 md:justify-start">
-                      {reel.map((s, i) => (
-                        <button
-                          key={i}
-                          aria-label={`Show ${s.title}`}
-                          onClick={() => setReelIndex(i)}
-                          className={`h-2 rounded-full transition-all ${i === reelIndex ? 'w-6 bg-primary' : 'w-2 bg-border-strong hover:bg-primary/60'}`}
-                        />
-                      ))}
-                    </div>
-                    <div className="mt-7 flex flex-col items-center gap-3 md:items-start">
-                      <button onClick={() => (isLastSlide ? setBeat(3) : setReelIndex(reelIndex + 1))} className={btnPrimary}>
-                        {isLastSlide ? VERA.tour.cta : 'Next'}
-                        <ArrowRight />
-                      </button>
-                      <button onClick={() => setBeat(1)} className={backLink}>Back</button>
+                    {/* selectable core-feature cards + action, right */}
+                    <div className="w-full max-w-xs text-left">
+                      <div className="flex flex-col gap-3">
+                        {slide3Core!.map((c, i) => {
+                          const active = i === coreIndex
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => setCoreIndex(i)}
+                              aria-pressed={active}
+                              className={`rounded-2xl border px-4 py-3 text-left transition-colors ${active ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
+                            >
+                              <span className="block text-base font-bold text-text">{c.title}</span>
+                              <span className="mt-0.5 block text-sm text-muted">{c.blurb}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                      <div className="mt-7 flex flex-col items-center gap-3 md:items-start">
+                        <button onClick={() => setBeat(3)} className={btnPrimary}>{VERA.tour.cta}<ArrowRight /></button>
+                        <button onClick={() => setBeat(1)} className={backLink}>Back</button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="mt-6 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-12">
+                    {/* desktop mockup, left */}
+                    <div className="relative w-full max-w-xl shrink-0" style={{ aspectRatio: '540 / 348' }}>
+                      {reel.map((s, i) => {
+                        const active = i === reelIndex
+                        const C = s.kind === 'render' ? RENDERS[s.render] : null
+                        return (
+                          <div key={i} className={`absolute inset-0 transition-opacity duration-700 ${active ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                            {C && <C animate={active} />}
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* caption + dots + action, right */}
+                    <div className="max-w-xs text-center md:text-left">
+                      <p className="text-3xl font-bold text-text">{slide.title}</p>
+                      <p className="mt-2 text-lg leading-relaxed text-muted">{slide.line}</p>
+                      <div className="mt-5 flex items-center justify-center gap-2 md:justify-start">
+                        {reel.map((s, i) => (
+                          <button
+                            key={i}
+                            aria-label={`Show ${s.title}`}
+                            onClick={() => setReelIndex(i)}
+                            className={`h-2 rounded-full transition-all ${i === reelIndex ? 'w-6 bg-primary' : 'w-2 bg-border-strong hover:bg-primary/60'}`}
+                          />
+                        ))}
+                      </div>
+                      <div className="mt-7 flex flex-col items-center gap-3 md:items-start">
+                        <button onClick={() => (isLastSlide ? setBeat(3) : setReelIndex(reelIndex + 1))} className={btnPrimary}>
+                          {isLastSlide ? VERA.tour.cta : 'Next'}
+                          <ArrowRight />
+                        </button>
+                        <button onClick={() => setBeat(1)} className={backLink}>Back</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
