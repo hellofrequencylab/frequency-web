@@ -21,7 +21,6 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getProduct } from '@/lib/commerce/products'
 import { formatPriceCents } from '@/lib/commerce/types'
-import { SITE_URL } from '@/lib/site'
 import { sanitizeEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
 import { compileEmailDoc } from './shell'
 import { applyMergeTags } from './render'
@@ -29,6 +28,11 @@ import { transactionalPresetByKey } from './presets'
 import { MERGE_TAG_DEFAULT_FALLBACKS, type EmailDoc } from './types'
 
 // ── 1. Product card resolution ─────────────────────────────────────────────────────────────────────────────
+
+// Canonical site URL, inlined from the env rather than imported from @/lib/site — that module
+// pulls the nav registry (lib/nav/registry -> nav-areas) into this send-path module's graph, which
+// needlessly drags the whole navigation tree into every email compile. Same value, no heavy edge.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://frequencylocal.com'
 
 /** The public app link for a commerce product (routes to the Market detail page). */
 export function productUrl(id: string): string {
