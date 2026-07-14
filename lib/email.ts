@@ -18,7 +18,6 @@ import { enqueue } from '@/lib/queue/outbox'
 import { isSuppressed } from '@/lib/suppression'
 // Email Studio (Phase 4) transactional seam: renders an in-house email from its EDITABLE template when an
 // operator has seeded + edited one, else returns null so the hardcoded copy below stands. Additive + fail-safe.
-import { renderTransactionalTemplate } from '@/lib/email-studio/product-block'
 
 const apiKey  = process.env.RESEND_API_KEY
 const FROM    = process.env.EMAIL_FROM ?? 'Frequency <noreply@send.frequencylocal.com>'
@@ -109,18 +108,18 @@ export async function sendWelcomeEmail(params: {
 }) {
   const { to, displayName, inviterName } = params
 
-  // Editable-template seam (Email Studio Phase 4): render from the "Welcome email" transactional template when
-  // an operator has seeded + edited it; otherwise fall back to the hardcoded copy. To make another
-  // transactional email editable, add its preset to TRANSACTIONAL_PRESETS (lib/email-studio/presets.ts) and
-  // wire its sender the same way with the matching key.
-  const firstName = (displayName || '').trim().split(/\s+/)[0] || ''
-  const editable = await renderTransactionalTemplate('welcome', { 'contact.first_name': firstName })
-
+  // Editable-template seam (Email Studio Phase 4) is DEFERRED here on purpose. lib/email.ts is transitively
+  // pulled into a client bundle (automations -> engagement -> practices -> journey-settings), so it must not
+  // reach the `server-only` product-block module (renderTransactionalTemplate) — even a dynamic import taints
+  // the Turbopack client graph and fails the build. The productCard block + picker + send-time data binding
+  // (lib/email-studio/send.ts, a server-only path) are unaffected. To make a transactional email editable,
+  // resolve the template in the SERVER-side caller and pass the rendered subject/html/text in, rather than
+  // importing product-block from here. Tracked in docs/EMAIL-EDITOR-PLAN.md.
   await enqueueEmail({
     to,
-    subject: editable?.subject || `Welcome to Frequency, ${displayName}`,
-    html:    editable?.html ?? welcomeHtml({ displayName, inviterName: inviterName ?? null }),
-    text:    editable?.text ?? welcomeText({ displayName, inviterName: inviterName ?? null }),
+    subject: `Welcome to Frequency, ${displayName}`,
+    html:    welcomeHtml({ displayName, inviterName: inviterName ?? null }),
+    text:    welcomeText({ displayName, inviterName: inviterName ?? null }),
   })
 }
 

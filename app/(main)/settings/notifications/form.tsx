@@ -1,8 +1,13 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Mail, Bell, Smartphone, Check } from 'lucide-react'
-import type { NotificationPreferences, NotificationCategory } from '@/lib/notification-preferences'
+import { Mail, Bell, Smartphone, Check, ShieldCheck } from 'lucide-react'
+import type {
+  NotificationSettings,
+  NotificationCategory,
+  NotificationFrequency,
+} from '@/lib/notification-preferences'
+import { NOTIFICATION_FREQUENCIES } from '@/lib/notification-preferences'
 import { saveNotificationPreferences } from './actions'
 import { isError } from '@/lib/action-result'
 
@@ -18,9 +23,14 @@ const CATEGORIES: { key: NotificationCategory; label: string; description: strin
     description: 'RSVP changes and reminders before an event starts.',
   },
   {
+    key:         'comments',
+    label:       'Replies',
+    description: 'Replies and mentions on posts and comments you wrote.',
+  },
+  {
     key:         'mentions',
     label:       'Mentions',
-    description: 'When someone @mentions you in a post or comment.',
+    description: 'When someone @mentions you anywhere else.',
   },
   {
     key:         'lifecycle',
@@ -35,25 +45,26 @@ const CHANNELS = [
   { key: 'push',  label: 'Push',   Icon: Smartphone, disabled: false },
 ] as const
 
-export function NotificationsForm({ initial }: { initial: NotificationPreferences }) {
-  const [prefs, setPrefs] = useState(initial)
+const FREQUENCY_LABELS: Record<NotificationFrequency, string> = {
+  realtime:      'Realtime',
+  daily_digest:  'Daily digest',
+  weekly_digest: 'Weekly digest',
+}
+
+export function NotificationsForm({ initial }: { initial: NotificationSettings }) {
+  const [settings, setSettings] = useState(initial)
   const [isPending, startTransition] = useTransition()
   const [savedAt, setSavedAt] = useState<number | null>(null)
-
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  function toggle(channel: string, category: NotificationCategory) {
-    const key = `${channel}_${category}` as keyof NotificationPreferences
-    const prev = prefs
-    const next = { ...prefs, [key]: !prefs[key] }
-    setPrefs(next)
+  // Persist a whole next-state, reverting on failure so the UI never shows a wrong value.
+  function persist(next: NotificationSettings, prev: NotificationSettings) {
+    setSettings(next)
     setSaveError(null)
     startTransition(async () => {
       const res = await saveNotificationPreferences(next)
       if (isError(res)) {
-        // The save failed — revert the optimistic flip so the switch reflects what's
-        // actually stored, and tell the member instead of leaving a silent wrong state.
-        setPrefs(prev)
+        setSettings(prev)
         setSaveError(res.error || 'Could not save. Try again.')
       } else {
         setSavedAt(Date.now())
@@ -61,12 +72,32 @@ export function NotificationsForm({ initial }: { initial: NotificationPreference
     })
   }
 
+  function toggle(channel: string, category: NotificationCategory) {
+    const key = `${channel}_${category}` as keyof NotificationSettings
+    persist({ ...settings, [key]: !settings[key] }, settings)
+  }
+
+  function setFrequency(category: NotificationCategory, freq: NotificationFrequency) {
+    const key = `freq_${category}` as keyof NotificationSettings
+    persist({ ...settings, [key]: freq }, settings)
+  }
+
   return (
     <div className="space-y-3">
-      {/* Channel header */}
+      {/* Guidance: topics vs frequency, in plain terms. */}
+      <div className="rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-muted">
+        <p className="text-text font-medium">Choose what you hear about, and how often.</p>
+        <p className="mt-1">
+          Each row is a topic. The switches pick the channels. Frequency sets the pace: realtime
+          sends each one as it happens, a digest holds them and sends one roundup. Digests apply to
+          email.
+        </p>
+      </div>
+
+      {/* Channel header + rows */}
       <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 px-4 py-3 border-b border-border bg-surface-elevated">
-          <span className="text-xs font-semibold text-muted uppercase tracking-wide">Category</span>
+        <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-3 px-4 py-3 border-b border-border bg-surface-elevated">
+          <span className="text-xs font-semibold text-muted uppercase tracking-wide">Topic</span>
           {CHANNELS.map(({ key, label, Icon, disabled }) => (
             <div key={key} className="flex items-center gap-1.5 w-16 justify-center">
               <Icon className={`w-3.5 h-3.5 ${disabled ? 'text-subtle' : 'text-muted'}`} />
@@ -75,25 +106,29 @@ export function NotificationsForm({ initial }: { initial: NotificationPreference
               </span>
             </div>
           ))}
+          <span className="text-xs font-semibold text-muted uppercase tracking-wide w-28 text-center">
+            Frequency
+          </span>
         </div>
 
-        {/* Rows */}
         <div className="divide-y divide-border">
           {CATEGORIES.map(({ key, label, description }) => (
-            <div key={key} className="grid grid-cols-[1fr_auto_auto_auto] gap-3 items-center px-4 py-3.5">
+            <div key={key} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-3 items-center px-4 py-3.5">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-text">{label}</p>
                 <p className="text-xs text-muted mt-0.5">{description}</p>
               </div>
               {CHANNELS.map(({ key: channel, disabled }) => {
-                const prefKey = `${channel}_${key}` as keyof NotificationPreferences
-                const checked = prefs[prefKey]
+                const prefKey = `${channel}_${key}` as keyof NotificationSettings
+                const checked = settings[prefKey] === true
                 return (
                   <div key={channel} className="w-16 flex justify-center">
                     <button
                       type="button"
                       onClick={() => !disabled && toggle(channel, key)}
                       disabled={disabled}
+                      role="switch"
+                      aria-checked={checked}
                       aria-label={`${channel} ${key}`}
                       title={disabled ? 'Not yet available' : undefined}
                       className={`
@@ -116,9 +151,31 @@ export function NotificationsForm({ initial }: { initial: NotificationPreference
                   </div>
                 )
               })}
+              {/* Per-category frequency */}
+              <div className="w-28 flex justify-center">
+                <select
+                  value={(settings[`freq_${key}` as keyof NotificationSettings] as NotificationFrequency) ?? 'realtime'}
+                  onChange={(e) => setFrequency(key, e.target.value as NotificationFrequency)}
+                  aria-label={`${key} frequency`}
+                  className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-xs text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+                >
+                  {NOTIFICATION_FREQUENCIES.map((f) => (
+                    <option key={f} value={f}>{FREQUENCY_LABELS[f]}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Transactional carve-out: always-on, stated plainly. */}
+      <div className="flex items-start gap-2.5 rounded-2xl border border-border bg-surface px-4 py-3 text-xs text-muted">
+        <ShieldCheck className="w-4 h-4 mt-0.5 text-success shrink-0" />
+        <p>
+          Account and security email always sends: sign-in codes, receipts, password resets, and
+          legal notices. You can&apos;t switch those off here, and we never use them for marketing.
+        </p>
       </div>
 
       {/* Footer status */}

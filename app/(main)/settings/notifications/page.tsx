@@ -1,10 +1,15 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { isSmsProvisioned } from '@/lib/comms/sms'
-import { DEFAULT_PREFERENCES, type NotificationPreferences } from '@/lib/notification-preferences'
+import {
+  DEFAULT_SETTINGS,
+  type NotificationSettings,
+} from '@/lib/notification-preferences'
+import { hasConsent } from '@/lib/consent/consent'
 import { FocusTemplate } from '@/components/templates'
 import { NotificationsForm } from './form'
 import { SmsForm, type SmsFormState } from './sms-form'
+import { ConsentScopesForm, type ConsentScopeState } from '@/components/settings/consent-scopes-form'
 import type { SmsPreferences } from './sms-actions'
 
 // The sms_* columns + sms_consent are not in the generated DB types yet (migration
@@ -38,9 +43,25 @@ export default async function NotificationsPage() {
     .eq('profile_id', profile.id)
     .maybeSingle()
 
-  const initial: NotificationPreferences = prefsRow
-    ? (prefsRow as unknown as NotificationPreferences)
-    : DEFAULT_PREFERENCES
+  // Merge over defaults so a row written before the Phase 6 columns shipped (no
+  // *_comments / freq_* keys) still resolves every field to its canonical default.
+  const initial: NotificationSettings = prefsRow
+    ? { ...DEFAULT_SETTINGS, ...(prefsRow as unknown as Partial<NotificationSettings>) }
+    : DEFAULT_SETTINGS
+
+  // Current consent state for the member-controllable scopes. hasConsent falls back to
+  // each scope's default when the member has never recorded a choice.
+  const [marketing, aiMemory, analytics] = await Promise.all([
+    hasConsent(profile.id, 'email_marketing'),
+    hasConsent(profile.id, 'ai_memory'),
+    hasConsent(profile.id, 'analytics'),
+  ])
+  const consentInitial: ConsentScopeState = {
+    email_lifecycle: true, // governed by per-category unsubscribe, not shown as a toggle
+    email_marketing: marketing,
+    ai_memory: aiMemory,
+    analytics: analytics,
+  }
 
   // SMS preferences live on the same row but in columns not yet in the generated types.
   const smsRow = prefsRow as unknown as Partial<SmsPreferences> | null
@@ -90,6 +111,8 @@ export default async function NotificationsPage() {
       {/* isSmsProvisioned() is a server-only env check; pass the boolean to the client
           form so it renders a "Coming soon" state until the owner turns SMS on. */}
       <SmsForm initial={smsInitial} smsProvisioned={isSmsProvisioned()} />
+      <div className="pt-2" />
+      <ConsentScopesForm initial={consentInitial} />
     </FocusTemplate>
   )
 }

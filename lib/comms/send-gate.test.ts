@@ -63,6 +63,50 @@ describe('evaluateSendGate — each guardrail denies independently', () => {
   })
 })
 
+describe('evaluateSendGate — Phase 6 gates', () => {
+  it('transactional bypasses consent + preference + frequency (only suppression stops it)', () => {
+    expect(
+      evaluateSendGate({
+        ...allClear,
+        category: 'transactional',
+        transactional: true,
+        consentGranted: false,
+        prefEnabled: false,
+        subjectMuted: true,
+        frequencyDeferred: true,
+        sentInWindow: 99,
+        cap: 1,
+      }),
+    ).toEqual({ allowed: true, reason: 'ok' })
+  })
+
+  it('a suppressed address still blocks even a transactional send', () => {
+    expect(
+      evaluateSendGate({ ...allClear, transactional: true, suppressed: true }),
+    ).toEqual({ allowed: false, reason: 'suppressed' })
+  })
+
+  it('a per-subject mute blocks (global pref still on)', () => {
+    expect(evaluateSendGate({ ...allClear, subjectMuted: true })).toEqual({
+      allowed: false,
+      reason: 'subject_muted',
+    })
+  })
+
+  it('a digest choice defers the realtime send', () => {
+    expect(evaluateSendGate({ ...allClear, frequencyDeferred: true })).toEqual({
+      allowed: false,
+      reason: 'frequency_deferred',
+    })
+  })
+
+  it('subject mute outranks frequency deferral', () => {
+    expect(
+      evaluateSendGate({ ...allClear, subjectMuted: true, frequencyDeferred: true }).reason,
+    ).toBe('subject_muted')
+  })
+})
+
 describe('evaluateSendGate — precedence (the most fundamental block wins)', () => {
   // When several guardrails fail at once, the reason reported is the highest-precedence
   // one: suppression > consent > preference > frequency. This matters for audit clarity.
@@ -116,10 +160,17 @@ const mocks = vi.hoisted(() => ({
   shouldSend: vi.fn(),
   hasConsent: vi.fn(),
   isSuppressed: vi.fn(),
+  getFrequency: vi.fn(),
+  isSubjectTopicMuted: vi.fn(),
 }))
 
 vi.mock('@/lib/notification-preferences', () => ({
   shouldSend: mocks.shouldSend,
+  getFrequency: mocks.getFrequency,
+  isSubjectTopicMuted: mocks.isSubjectTopicMuted,
+  // Pure helper — keep the real logic so the resolver's frequency wiring is exercised.
+  isFrequencyDeferred: (channel: string, frequency: string) =>
+    channel === 'email' && frequency !== 'realtime',
 }))
 vi.mock('@/lib/consent/consent', () => ({
   hasConsent: mocks.hasConsent,
@@ -133,6 +184,8 @@ describe('resolveSendGate — composes the live guardrails', () => {
     mocks.shouldSend.mockResolvedValue(true)
     mocks.hasConsent.mockResolvedValue(true)
     mocks.isSuppressed.mockResolvedValue(false)
+    mocks.getFrequency.mockResolvedValue('realtime')
+    mocks.isSubjectTopicMuted.mockResolvedValue(false)
   })
   afterEach(() => vi.clearAllMocks())
 
@@ -184,5 +237,50 @@ describe('resolveSendGate — composes the live guardrails', () => {
     mocks.hasConsent.mockRejectedValue(new Error('db down'))
     const d = await resolveSendGate('p1', 'email', 'lifecycle', { email: 'a@b.com' })
     expect(d.allowed).toBe(false)
+  })
+
+  it('transactional always sends past suppression, without reading prefs/consent', async () => {
+    const d = await resolveSendGate('p1', 'email', 'transactional', { email: 'a@b.com' })
+    expect(d).toEqual({ allowed: true, reason: 'ok' })
+    expect(mocks.shouldSend).not.toHaveBeenCalled()
+    expect(mocks.hasConsent).not.toHaveBeenCalled()
+  })
+
+  it('a suppressed address still blocks a transactional send', async () => {
+    mocks.isSuppressed.mockResolvedValue(true)
+    const d = await resolveSendGate('p1', 'email', 'transactional', { email: 'a@b.com' })
+    expect(d).toEqual({ allowed: false, reason: 'suppressed' })
+  })
+
+  it('defers an email realtime send when the member chose a digest for the category', async () => {
+    mocks.getFrequency.mockResolvedValue('daily_digest')
+    const d = await resolveSendGate('p1', 'email', 'dispatches', { email: 'a@b.com' })
+    expect(d).toEqual({ allowed: false, reason: 'frequency_deferred' })
+  })
+
+  it('does not defer in-app even on a digest choice', async () => {
+    mocks.getFrequency.mockResolvedValue('daily_digest')
+    const d = await resolveSendGate('p1', 'inapp', 'dispatches')
+    expect(d.allowed).toBe(true)
+  })
+
+  it('honours a per-subject mute when a subject is in context', async () => {
+    mocks.isSubjectTopicMuted.mockResolvedValue(true)
+    const d = await resolveSendGate('p1', 'email', 'dispatches', {
+      email: 'a@b.com',
+      subject: { subjectType: 'space', subjectId: 'space-1' },
+    })
+    expect(d).toEqual({ allowed: false, reason: 'subject_muted' })
+    expect(mocks.isSubjectTopicMuted).toHaveBeenCalledWith(
+      'p1',
+      { subjectType: 'space', subjectId: 'space-1' },
+      'dispatches',
+      'email',
+    )
+  })
+
+  it('ignores subject mutes when no subject is passed', async () => {
+    await resolveSendGate('p1', 'email', 'dispatches', { email: 'a@b.com' })
+    expect(mocks.isSubjectTopicMuted).not.toHaveBeenCalled()
   })
 })

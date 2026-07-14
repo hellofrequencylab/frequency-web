@@ -19,6 +19,7 @@
 // (filter omitted or { tag: null }) = every contact in the Space that has an email.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { parsePlaceSelector, resolvePlaceTreeProfileIds } from '@/lib/messaging/place-tree'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -72,9 +73,24 @@ export interface AudienceFilter {
    *  from the Resonance Health roll-up. Null / omitted = no resonance filter. Reserved for the join. */
   resonanceTier?: ResonanceTier | null
   /** ADVANCED FACET (Phase 6 · ADR-387): the member's predicted churn-risk band. Null / omitted = no
-   *  churn-risk filter. The literal "members about to go quiet" target. Reserved for the join. */
+   *  churn-risk filter. The literal "members about to go quiet" target. Activated in Phase 5 by the
+   *  member_traits join below. */
   churnRisk?: ChurnRiskBand | null
+  /** PLACE-TREE SELECTOR (CRM Phase 5): a `circle:<id>` / `hub:<id>` / `nexus:<id>` string. When set,
+   *  narrows to the Space's contacts whose linked member profile belongs to that circle / hub / nexus
+   *  (memberships -> profiles -> contacts). One audience type, both worlds. Null / omitted = no place
+   *  narrowing. Fail-safe: a malformed selector narrows to nobody, never everybody. */
+  place?: string | null
 }
+
+/** The member_traits `trait_key` each advanced facet reads. The enum bands are stored in `value_text`
+ *  (lib/traits/registry.ts). Kept in lock-step with the registry so a facet can never reference an
+ *  unknown trait. */
+const FACET_TRAIT_KEY = {
+  engagementDepth: 'engagement_depth',
+  resonanceTier: 'resonance_tier',
+  churnRisk: 'churn_risk',
+} as const
 
 // Hard cap so a malformed/hostile Space can never resolve an unbounded recipient list in one pass.
 const MAX_RECIPIENTS = 5000
@@ -139,6 +155,9 @@ export function definitionToFilter(raw: unknown): AudienceFilter {
   if (resonanceTier) filter.resonanceTier = resonanceTier
   const churnRisk = normalizeChurnRisk(d.churnRisk ?? d.churn_risk)
   if (churnRisk) filter.churnRisk = churnRisk
+  // Place-tree selector (Phase 5): kept only when it parses to a real circle/hub/nexus selector.
+  const place = parsePlaceSelector(d.place)
+  if (place) filter.place = `${place.type}:${place.id}`
   // Intentionally NO segmentId: a segment definition never nests another segment.
   return filter
 }
@@ -182,9 +201,19 @@ async function contactIdsWithTag(spaceId: string, tag: string): Promise<Set<stri
   return ids
 }
 
-/** A Space's contacts (id + email), service-role, FAIL-SAFE to []. Filters `space_id = spaceId` so a
- *  caller never reaches another Space's contacts. Drops rows with no usable email. */
-async function readSpaceContacts(spaceId: string): Promise<{ id: string; email: string }[]> {
+/** One of a Space's contacts, in the shape the resolver narrows over: id + email plus the linked
+ *  member `profileId` (null for a sealed lead) and the `consentState` (for the consent facet). */
+interface SpaceContact {
+  id: string
+  email: string
+  profileId: string | null
+  consentState: string | null
+}
+
+/** A Space's contacts, service-role, FAIL-SAFE to []. Filters `space_id = spaceId` so a caller never
+ *  reaches another Space's contacts. Drops rows with no usable email. Carries `profile_id` (for the
+ *  place-tree + advanced-facet member joins) and `consent_state` (for the consent facet). */
+async function readSpaceContacts(spaceId: string): Promise<SpaceContact[]> {
   try {
     const db = createAdminClient() as unknown as {
       from: (t: string) => {
@@ -192,24 +221,105 @@ async function readSpaceContacts(spaceId: string): Promise<{ id: string; email: 
           eq: (col: string, val: string) => {
             limit: (
               n: number,
-            ) => Promise<{ data: { id: string; email: string | null }[] | null; error: unknown }>
+            ) => Promise<{
+              data:
+                | { id: string; email: string | null; profile_id?: string | null; consent_state?: string | null }[]
+                | null
+              error: unknown
+            }>
           }
         }
       }
     }
     const { data, error } = await db
       .from('contacts')
-      .select('id, email')
+      .select('id, email, profile_id, consent_state')
       .eq('space_id', spaceId)
       .limit(MAX_RECIPIENTS)
     if (error || !data) return []
-    const out: { id: string; email: string }[] = []
+    const out: SpaceContact[] = []
     for (const c of data) {
-      if (c.id && looksLikeEmail(c.email)) out.push({ id: c.id, email: (c.email as string).trim() })
+      if (c.id && looksLikeEmail(c.email)) {
+        out.push({
+          id: c.id,
+          email: (c.email as string).trim(),
+          profileId: typeof c.profile_id === 'string' && c.profile_id ? c.profile_id : null,
+          consentState: typeof c.consent_state === 'string' ? c.consent_state : null,
+        })
+      }
     }
     return out
   } catch {
     return []
+  }
+}
+
+/**
+ * The subset of `profileIds` whose member_traits match EVERY requested advanced facet. Reads the
+ * `member_traits` feature store (enum bands stored in `value_text`) for the given facets in one query
+ * and keeps only the profiles that carry the exact band for each requested facet. A profile with a
+ * MISSING traits row simply does not match a demanded facet (it is not in the returned set), which is
+ * the fail-safe posture: a requested facet narrows, a missing trait never accidentally over-sends.
+ * FAIL-SAFE to an EMPTY set on any error (a demanded facet with no readable traits reaches nobody,
+ * never everybody). Returns the input set unchanged when no facet is requested.
+ */
+async function profileIdsMatchingFacets(
+  profileIds: string[],
+  facets: { engagementDepth?: EngagementDepth | null; resonanceTier?: ResonanceTier | null; churnRisk?: ChurnRiskBand | null },
+): Promise<Set<string>> {
+  const wanted: { key: string; band: string }[] = []
+  if (facets.engagementDepth) wanted.push({ key: FACET_TRAIT_KEY.engagementDepth, band: facets.engagementDepth })
+  if (facets.resonanceTier) wanted.push({ key: FACET_TRAIT_KEY.resonanceTier, band: facets.resonanceTier })
+  if (facets.churnRisk) wanted.push({ key: FACET_TRAIT_KEY.churnRisk, band: facets.churnRisk })
+
+  // No advanced facet requested -> the member_traits store is never consulted (additive: an existing
+  // caller is byte-for-byte unchanged, and a missing trait excludes nobody).
+  if (wanted.length === 0) return new Set(profileIds)
+  if (profileIds.length === 0) return new Set()
+
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          in: (
+            col: string,
+            vals: string[],
+          ) => {
+            in: (
+              col: string,
+              vals: string[],
+            ) => Promise<{ data: { profile_id: string; trait_key: string; value_text: string | null }[] | null; error: unknown }>
+          }
+        }
+      }
+    }
+    const { data, error } = await db
+      .from('member_traits')
+      .select('profile_id, trait_key, value_text')
+      .in('profile_id', profileIds)
+      .in('trait_key', wanted.map((w) => w.key))
+    if (error || !data) return new Set()
+
+    // Index the band each profile holds for each requested trait key.
+    const held = new Map<string, Map<string, string>>() // profileId -> (traitKey -> band)
+    for (const row of data) {
+      if (!row.profile_id || !row.trait_key) continue
+      const band = typeof row.value_text === 'string' ? row.value_text : ''
+      let m = held.get(row.profile_id)
+      if (!m) { m = new Map(); held.set(row.profile_id, m) }
+      m.set(row.trait_key, band)
+    }
+
+    // A profile matches only if it holds the exact band for EVERY requested facet (AND semantics).
+    const out = new Set<string>()
+    for (const pid of profileIds) {
+      const m = held.get(pid)
+      if (!m) continue
+      if (wanted.every((w) => m.get(w.key) === w.band)) out.add(pid)
+    }
+    return out
+  } catch {
+    return new Set()
   }
 }
 
@@ -284,6 +394,38 @@ export async function resolveAudience(
   if (tag) {
     const tagged = await contactIdsWithTag(spaceId, tag)
     chosen = contacts.filter((c) => tagged.has(c.id))
+  }
+
+  // CONSENT FACET (activated Phase 5): 'subscribed' narrows to contacts whose consent_state is
+  // 'subscribed'. 'all' / omitted keeps every matching contact (the additive default).
+  if (effective.consent === 'subscribed') {
+    chosen = chosen.filter((c) => c.consentState === 'subscribed')
+  }
+
+  // PLACE-TREE SELECTOR (Phase 5): narrow to the contacts whose linked member profile belongs to the
+  // selected circle / hub / nexus. A sealed lead (no profile_id) can never match a place. Fail-safe:
+  // a malformed selector -> parse null -> no narrowing skipped below; an unresolvable place -> nobody.
+  const place = parsePlaceSelector(effective.place)
+  if (place) {
+    const placeProfileIds = new Set(await resolvePlaceTreeProfileIds(place))
+    chosen = chosen.filter((c) => c.profileId != null && placeProfileIds.has(c.profileId))
+  }
+
+  // ADVANCED FACETS (activated Phase 5): engagement-depth / resonance-tier / churn-risk join to the
+  // member_traits feature store. Only consulted when a facet is requested; a contact matches only if
+  // its linked profile holds the requested band for every requested facet (a sealed lead with no
+  // profile, or a member with no traits row, never matches a demanded facet). Fail-safe.
+  const wantsFacet = Boolean(effective.engagementDepth || effective.resonanceTier || effective.churnRisk)
+  if (wantsFacet) {
+    const candidateProfileIds = chosen
+      .map((c) => c.profileId)
+      .filter((p): p is string => typeof p === 'string' && p.length > 0)
+    const matching = await profileIdsMatchingFacets(candidateProfileIds, {
+      engagementDepth: effective.engagementDepth,
+      resonanceTier: effective.resonanceTier,
+      churnRisk: effective.churnRisk,
+    })
+    chosen = chosen.filter((c) => c.profileId != null && matching.has(c.profileId))
   }
 
   // De-dupe by lowercased email (a Space can hold two contact rows for one address); first wins.

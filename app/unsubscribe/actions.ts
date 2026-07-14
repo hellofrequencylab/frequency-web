@@ -7,7 +7,12 @@ import {
   DEFAULT_PREFERENCES,
   type NotificationCategory,
   type NotificationPreferences,
+  type NotificationTopic,
 } from '@/lib/notification-preferences'
+import {
+  setContactChannelPreference,
+  CONTACT_TOPICS,
+} from '@/lib/comms/contact-preferences'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 const VALID_CATEGORIES: NotificationCategory[] = [
@@ -50,7 +55,10 @@ export async function processUnsubscribe(params: {
     ? { ...(existing as unknown as NotificationPreferences), [key]: false }
     : { ...DEFAULT_PREFERENCES, [key]: false }
 
-  const { error } = await admin
+  // DEFAULT_PREFERENCES now carries the Phase 6 *_comments columns, which aren't in the
+  // generated DB types yet (ADR-246); route the write through the untyped cast.
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  const { error } = await (admin as any)
     .from('notification_preferences')
     .upsert({ profile_id: profileId, ...next }, { onConflict: 'profile_id' })
 
@@ -88,4 +96,40 @@ export async function processSpaceUnsubscribe(params: {
   }
 
   return ok({ scope: 'space' })
+}
+
+// Preference-center opt-down (Phase 6). Reachable from the SAME per-Space unsubscribe
+// token: instead of hard-unsubscribing from a Space entirely, a contact can opt DOWN a
+// single topic (e.g. keep event reminders, drop broadcasts). Verifies the (spaceId,
+// email) HMAC token first — the token IS the authorisation (no login). Idempotent.
+// Only the contact-facing topics (CONTACT_TOPICS) are settable here.
+export async function setContactTopicPreference(params: {
+  spaceId: string
+  email: string
+  token: string
+  topic: string
+  subscribed: boolean
+}): Promise<ActionResult> {
+  const { spaceId, email, token, topic, subscribed } = params
+
+  if (!spaceId || !email) {
+    return fail('This link is invalid or expired.')
+  }
+  if (!verifySpaceUnsubscribeToken(spaceId, email, token)) {
+    return fail('This link is invalid or expired.')
+  }
+  if (!(CONTACT_TOPICS as readonly string[]).includes(topic)) {
+    return fail('Unknown topic.')
+  }
+
+  const okWrite = await setContactChannelPreference({
+    email,
+    spaceId,
+    topic: topic as NotificationTopic,
+    channel: 'email',
+    state: subscribed ? 'subscribed' : 'unsubscribed',
+  })
+  if (!okWrite) return fail('Could not save your preference. Please try again.')
+
+  return ok()
 }
