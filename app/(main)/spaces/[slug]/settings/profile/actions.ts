@@ -135,6 +135,44 @@ export async function saveSpaceGridLayout(
 }
 
 /**
+ * Flip a Space page's DRAFT / PUBLISHED status flag (the in-rail publish bar). Owner/admin/editor-gated
+ * server-side via resolveSpaceManageAccess (fail-closed, mirroring saveSpaceProfileLayout) and NON-
+ * DESTRUCTIVE: it writes only `preferences.profilePublished`, preserving every other preferences key.
+ *
+ * This is a STATUS flag + an explicit publish affordance, NOT a visibility gate: who can see the page stays
+ * governed by the Space's own visibility (network / private). The reader that consumes this defaults ABSENT
+ * to `true`, so every Space that predates the flag stays treated as published — flipping to draft is an
+ * explicit, opt-in act, never something a missing key does. Revalidates the profile root so a later visit
+ * reconciles. Returns the plain `{ error? }` shape the rail's bar expects.
+ */
+export async function setProfilePublished(
+  slug: string,
+  published: boolean,
+): Promise<{ error?: string }> {
+  const caller = await getCallerProfile()
+  const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
+  if (!space) return { error: 'Space not found.' }
+
+  // FAIL-CLOSED: only a manager (owner / admin / editor) may change the flag. A staff previewer cannot.
+  const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
+  if (!canManage) return { error: 'You do not have permission to edit this space.' }
+
+  // Merge into the existing preferences blob, preserving every other key (non-destructive, ADR-246).
+  const current =
+    space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
+      ? { ...(space.preferences as Record<string, unknown>) }
+      : {}
+  current.profilePublished = published
+
+  if (!(await updateSpacePreferences(space.id, current))) {
+    return { error: 'Could not update your page. Try again.' }
+  }
+
+  revalidatePath(`/spaces/${space.slug}`)
+  return {}
+}
+
+/**
  * Re-seed ONE block's copy from the Space's master profile (task #17). Owner/admin/editor-gated
  * (resolveSpaceManageAccess.canManage — a staff preview cannot). Grounds a focused model call in the
  * verified BusinessProfile the Space was seeded from (getIntakeBySpaceId), rewrites only this block's text

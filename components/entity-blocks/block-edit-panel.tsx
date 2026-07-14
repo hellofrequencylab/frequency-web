@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, type DragEvent } from 'react'
+import { useRef, useState, type DragEvent, type ReactNode } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, GripVertical, Loader2, Plus, Upload, X } from 'lucide-react'
@@ -27,7 +27,6 @@ import {
   AlignControl,
   ButtonOrientationControl,
   ColorControl,
-  ControlGroup,
   ControlRow,
   ControlStack,
   HeightControl,
@@ -438,6 +437,38 @@ function setRoleText(style: BlockStyle, role: TextRole, next: TextStyle | undefi
   return updated
 }
 
+/** A collapsible SETTINGS group (ADR item 8 seam fix). The OLD ControlGroup was a top-bordered summary with a
+ *  pt-2/mt-2 GAP between the fold button and its revealed controls, floating on the panel's own background — so
+ *  an open group read as a disconnected label + a separate tray. This is one seamless SURFACE: a single
+ *  bg-surface card whose summary IS the header (same background as the body, connected, no gap), so closed it
+ *  reads as a button and open it reads as the panel's own header over its controls. The disclosure chevron
+ *  leads (so the label stays the summary's last child — the render tests match on `Label</summary>`); it turns
+ *  to point down when open. Mirrors the Identity & Branding "Header style" fold. */
+function SettingsGroup({
+  label,
+  defaultOpen = false,
+  children,
+}: {
+  label: string
+  defaultOpen?: boolean
+  children: ReactNode
+}) {
+  return (
+    <details open={defaultOpen} className="group overflow-hidden rounded-lg border border-border bg-surface">
+      <summary className="flex cursor-pointer list-none select-none items-center gap-1.5 px-2.5 py-2 text-2xs font-semibold uppercase tracking-wide text-subtle outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40 [&::-webkit-details-marker]:hidden">
+        <ChevronRight
+          className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none"
+          aria-hidden
+        />
+        {label}
+      </summary>
+      {/* Connected body: same bg-surface as the summary, no top margin — the fold button and its controls are
+          one panel. Only inner padding separates them, so there is no gap on a different background. */}
+      <div className="space-y-2 px-2.5 pb-2.5">{children}</div>
+    </details>
+  )
+}
+
 /** The C1 TEXT-STYLE group: size · weight · color · shadow, in a collapsible section. CONTROLLED — it holds
  *  a single TextStyle bag (a whole-block bag, or one role's bag for per-element styling) and reports the next
  *  bag (or undefined when it empties) so the caller writes it wherever it belongs. Each control drops its key
@@ -461,7 +492,7 @@ function TextStyleGroup({
     onChange(Object.keys(nextText).length ? nextText : undefined)
   }
   return (
-    <ControlGroup label={label}>
+    <SettingsGroup label={label}>
       <ControlRow label="Size">
         <Segmented
           ariaLabel="Text size"
@@ -484,7 +515,7 @@ function TextStyleGroup({
       <ControlRow label="Shadow">
         <ShadowControl value={(text.shadow ?? 'none') as ShadowValue} onSelect={(v) => setText({ shadow: v as TextShadowStep })} />
       </ControlRow>
-    </ControlGroup>
+    </SettingsGroup>
   )
 }
 
@@ -496,14 +527,14 @@ function MarginGroup({ style, onChange }: { style: BlockStyle; onChange: (next: 
     onChange(next)
   }
   return (
-    <ControlGroup label="Spacing">
+    <SettingsGroup label="Spacing">
       <MarginControl
         top={style.mt ?? 'md'}
         bottom={style.mb ?? 'md'}
         onTop={(v) => set({ mt: v })}
         onBottom={(v) => set({ mb: v })}
       />
-    </ControlGroup>
+    </SettingsGroup>
   )
 }
 
@@ -1263,9 +1294,9 @@ function StyleControls({
         </ControlRow>
       )}
       {showBackground && (
-        <ControlGroup label="Style">
+        <SettingsGroup label="Style">
           <ToggleRow label="Background" checked={bgChecked} onChange={setBg} />
-        </ControlGroup>
+        </SettingsGroup>
       )}
     </>
   )
