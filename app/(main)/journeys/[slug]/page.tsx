@@ -63,6 +63,9 @@ export async function generateMetadata({
   return {
     title,
     description,
+    // This app-shell page twins the canonical /discover/journeys/<slug>; point the canonical
+    // there so ranking signals consolidate on the discover surface rather than compete with it.
+    alternates: { canonical: `/discover/journeys/${slug}` },
     openGraph: {
       title: plan.title,
       description,

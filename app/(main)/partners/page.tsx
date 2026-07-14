@@ -12,8 +12,18 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 import { RowCard } from '@/components/cards/row-card'
+import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
+
+// The canonical partner directory lives at /discover/partners; this app-shell index twins it, so
+// point the canonical there to consolidate ranking signals rather than compete with the discover surface.
+export const metadata: Metadata = {
+  title: 'Partners',
+  description:
+    'Local businesses that back the community. Walk in, tap their plaque or scan a code to claim a members-only offer.',
+  alternates: { canonical: '/discover/partners' },
+}
 
 // Partner directory (Phase 3 partners module) + the offers-first surface behind
 // the Zap menu's Partners tile (ADR-236): live offers lead, each carrying the

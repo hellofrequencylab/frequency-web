@@ -21,12 +21,15 @@ const CONTENT_FALLBACK = {
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2);
-// the fallback strings are the page's previous static metadata, unchanged.
-export function generateMetadata() {
-  return pageContentMetadata('/journeys', {
+// the fallback strings are the page's previous static metadata, unchanged. The canonical
+// discover twin is /discover/journeys, so we override the helper's self-canonical to point
+// there and consolidate ranking signals on the discover surface.
+export async function generateMetadata() {
+  const meta = await pageContentMetadata('/journeys', {
     title: 'Journeys',
     description: 'Build a journey from the practices you love and share it with the community.',
   })
+  return { ...meta, alternates: { ...meta.alternates, canonical: '/discover/journeys' } }
 }
 
 export default async function JourneysPage() {

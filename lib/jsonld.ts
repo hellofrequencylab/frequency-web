@@ -99,7 +99,10 @@ const ATTENDANCE_MODE_URL: Record<'in_person' | 'online' | 'hybrid', string> = {
 
 export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
   const mode: 'in_person' | 'online' | 'hybrid' = event.attendance_mode ?? 'in_person'
-  const url = abs(`/discover/events/${event.slug}`)
+  // Canonical public event URL is /events/<slug> (both the /events page's
+  // alternates.canonical and the sitemap point there; /discover/events/<slug>
+  // canonicalizes to it), so the schema url/image/offers all consolidate there.
+  const url = abs(`/events/${event.slug}`)
 
   // City-level Place: addressLocality + optional city-level region/country. We
   // never include streetAddress, venue name, or coordinates.
@@ -137,9 +140,9 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
       : 'https://schema.org/EventScheduled',
     eventAttendanceMode: ATTENDANCE_MODE_URL[mode],
     // Google lists `image` as required for Event rich results — the per-event
-    // dynamic OG image (app/discover/events/[slug]/opengraph-image.tsx), with
-    // the site image as a secondary.
-    image: [abs(`/discover/events/${event.slug}/opengraph-image`), abs('/opengraph-image')],
+    // dynamic OG image on the canonical page (app/(main)/events/[slug]/opengraph-image.tsx),
+    // with the site image as a secondary.
+    image: [abs(`/events/${event.slug}/opengraph-image`), abs('/opengraph-image')],
     ...(event.description ? { description: event.description } : {}),
     location,
     url,

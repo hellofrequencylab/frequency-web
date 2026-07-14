@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
+import { eventSchema } from '@/lib/jsonld'
 import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
 import { TicketButton, type TicketTierView } from './ticket-button'
@@ -1110,41 +1111,25 @@ export default async function EventDetailPage({
     },
   })
 
-  // Event structured data (schema.org) for SEO + AI answer engines. Canonical URL is this
-  // public /events/<slug> page; the dynamic OG card is the required `image`. Location is the
-  // event's own (public) venue line for an in-person event, a VirtualLocation when online.
-  const eventJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Event',
-    name: event.title,
-    startDate: event.starts_at,
-    ...(event.ends_at ? { endDate: event.ends_at } : {}),
-    eventStatus: event.is_cancelled
-      ? 'https://schema.org/EventCancelled'
-      : 'https://schema.org/EventScheduled',
-    eventAttendanceMode:
-      attendanceMode === 'online'
-        ? 'https://schema.org/OnlineEventAttendanceMode'
-        : attendanceMode === 'hybrid'
-          ? 'https://schema.org/MixedEventAttendanceMode'
-          : 'https://schema.org/OfflineEventAttendanceMode',
-    image: [`${SITE_URL}/events/${event.slug}/opengraph-image`, `${SITE_URL}/opengraph-image`],
-    ...(event.description ? { description: event.description } : {}),
-    url: `${SITE_URL}/events/${event.slug}`,
-    location: isOnline
-      ? { '@type': 'VirtualLocation', url: `${SITE_URL}/events/${event.slug}` }
-      : {
-          '@type': 'Place',
-          name: event.location || scopeName || 'In person',
-          ...(event.location ? { address: event.location } : {}),
-        },
-    ...(scopeName
-      ? { organizer: { '@type': 'Organization', name: scopeName } }
-      : event.host
-        ? { organizer: { '@type': 'Person', name: event.host.display_name } }
-        : {}),
-    isAccessibleForFree: !isPaidEvent,
-  }
+  // Event structured data (schema.org) for SEO + AI answer engines, built from the shared
+  // eventSchema helper so the canonical /events/<slug> page emits the same richer, city-level
+  // schema as /discover (offers/validFrom/availability included; the exact venue is NEVER
+  // leaked — city-level only, matching this page's own city-only meta description per ADR-186).
+  const eventJsonLd = eventSchema({
+    id: event.id,
+    slug: event.slug,
+    title: event.title,
+    description: event.description,
+    starts_at: event.starts_at,
+    ends_at: event.ends_at,
+    city: extra?.city ?? null,
+    circle_id: event.scope_id ?? null,
+    circle_name: scopeName,
+    price_cents: event.price_cents,
+    attendance_mode: attendanceMode,
+    is_cancelled: event.is_cancelled,
+    region: extra?.region ?? null,
+  })
 
   return (
     <div className="pb-24 lg:pb-0">
