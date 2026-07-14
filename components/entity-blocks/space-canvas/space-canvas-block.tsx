@@ -1,37 +1,55 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ImagePlus, Pencil } from 'lucide-react'
 import { entityBlockById, DESIGN_ENTITY_BLOCK_IDS } from '@/lib/entity-blocks/registry'
-import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
+import {
+  fieldsForBlock,
+  fieldRendersInlineHtml,
+  decodeLegacyEntities,
+  featureLayout,
+  gridColumns,
+  isFeatureDataSource,
+  type FieldDef,
+} from '@/lib/entity-blocks/block-content'
 import type { UploadImage } from '@/components/entity-blocks/block-edit-panel'
+import { ContentBlockView, hasContent } from '../content-block-view'
+import { BlockIcon } from '../block-icon'
 import { useProfileLayout } from '../profile-layout-context'
 import { SpaceEditableSlot } from './space-editable-slot'
 import { SpaceImagePopup } from './space-image-popup'
 
-// ONE SPACE BLOCK, RENDERED TO THE LIVE WYSIWYG CANVAS. A DAWN-token React approximation of the block whose
-// TEXT fields (text / textarea, plus each Features / Cards item's title + text) are inline-editable slots and
-// whose PHOTO slots open the on-canvas photo popup — click the copy or the photo on the page and edit it right
-// there (feature-for-feature with the Email Studio canvas). Structural fields (links / toggle / the enum
-// primitives / picker) are NOT here; they live in the settings-only LEFT rail (the isCoreField split).
+// ONE SPACE BLOCK, RENDERED TO THE LIVE WYSIWYG CANVAS so the EDIT surface MATCHES the published page. Each
+// block's authored TEXT (text / textarea, plus each Features / Cards item's title + text) is an inline-editable
+// slot and each single PHOTO opens the on-canvas photo popup — click the copy or the photo on the page and
+// edit it right there. Everything NOT inline-authored is drawn from the REAL published render so edit ==
+// published by construction:
+//   • DATA blocks (About, Offerings, Events, Team, Reviews, Contact, ...) render the actual server node
+//     read-only — identical to the live page. Their eyebrow / title are edited in the rail (folded into the
+//     node's own header), their live list can never be inline-authored.
+//   • STRUCTURAL content blocks (Links, Music and video, Recording) render a faithful read-only ContentBlockView
+//     preview, not a bare field stack — they carry no inline-authorable copy.
+//   • CONTENT + DESIGN blocks render in their real published shape (a Callout is a card, a Features block honours
+//     its Layout + Columns, a Zigzag is image-beside-text, an Accent beat is the accent card) with the copy woven
+//     in as editable slots.
 //
-// LAYOUT-AWARE (2026 fix): a DESIGN block renders in its REAL published layout with the editable slots woven
-// in — a Zigzag is a two-column image-beside-text grid, a Banner honours its over / beside / below display —
-// so editing looks like the page and only stacks at the mobile (`sm:`) breakpoint, instead of flattening
-// every block to one generic field stack. Titles use the published `font-display` face so the selected page
-// style renders in edit mode. The plain content + data blocks keep the generic stack (they read fine stacked).
-//
-// EVERY `textarea` slot gets the rich Bold / Italic / Link bubble (matching the email canvas): the design +
-// content blocks now render their body as sanitized inline HTML, so the formatting shows on the published
-// page. A DATA block (Offerings, Events, Team...) shows its editable eyebrow / title and a muted note that its
-// live list renders on the published page. Semantic DAWN tokens throughout (no hex), voice canon (no em dashes).
+// RICH vs PLAIN (the entity-escape fix): a slot is RICH (Bold / Italic / Link bubble + getHTML) ONLY for a field
+// whose PUBLISHED render honours inline HTML (fieldRendersInlineHtml). Every OTHER field — a data block body, a
+// design heading, a card subheading — is PLAIN (getText), so its text is never stored as HTML entities the plain
+// render would show literally. Seeded values are decoded once (decodeLegacyEntities) so an already-corrupted
+// value edits + displays as its true characters. Semantic DAWN tokens throughout (no hex), voice canon (no em
+// dashes).
 
 const IMAGE_KEYS = new Set(['image', 'src'])
 /** The design blocks (framework-free ids from the registry). Each gets a layout-aware canvas (below) so it
- *  edits in its real shape; the text-only ones (prose / displayHeading) still render as slots but in the
- *  block's own typography. Sourced from the registry so this client module stays free of the server-side
+ *  edits in its real shape. Sourced from the registry so this client module stays free of the server-side
  *  design components. */
 const DESIGN_IDS: ReadonlySet<string> = new Set(DESIGN_ENTITY_BLOCK_IDS)
+
+/** Structural content blocks that carry NO inline-authorable copy: they render a faithful READ-ONLY preview of
+ *  the real published block (ContentBlockView) so the canvas matches the page, instead of a bare field stack.
+ *  Their content is set in the rail (a link row, a pasted media URL, a picked Recording). */
+const STRUCTURAL_PREVIEW_IDS: ReadonlySet<string> = new Set(['links', 'embed', 'recording'])
 
 // ── Canvas typography, matched to the published design components so the page style shows while editing. ──
 const EYEBROW_CLS = 'text-sm font-bold uppercase tracking-[0.25em] text-primary-strong'
@@ -118,22 +136,103 @@ function ImageSlot({
   )
 }
 
-/** Editable per-item title + text for a Features / Cards repeater (the item's structural fields — icon /
- *  image / stat / link / reorder — stay in the rail). Persists the WHOLE items array through onChange,
- *  preserving every non-text field. Keyed by a structural signature so a rail add / remove / reorder
- *  remounts the slots while a plain keystroke keeps the key stable (no caret jump). Each card is CLICKABLE to
- *  focus it in the rail (card-level selection): an onMouseDown on the frame selects the block AND this card's
- *  index and stops the click bubbling to the block wrapper (whose handler would clear the card focus); it
- *  never preventDefaults, so a click inside a slot still lands the caret. The selected card wears a ring. */
+/** An item's READ-ONLY media on the canvas: its photo (when set) at the layout's crop, else its icon glyph.
+ *  Mirrors the published FeatureMedia so an item card reads the same while editing. Null when it has neither. */
+function ItemMedia({
+  image,
+  icon,
+  variant,
+}: {
+  image: string
+  icon: string
+  variant: 'inline' | 'top' | 'spotlight'
+}): ReactNode {
+  if (image) {
+    const cls =
+      variant === 'top'
+        ? 'aspect-[4/3] w-full rounded-xl object-cover'
+        : variant === 'spotlight'
+          ? 'aspect-[4/3] w-full rounded-2xl object-cover'
+          : 'h-12 w-12 shrink-0 rounded-xl object-cover'
+    // eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset
+    return <img src={image} alt="" className={cls} />
+  }
+  if (icon) {
+    return (
+      <div className="shrink-0 text-primary-strong" aria-hidden>
+        <BlockIcon name={icon} size={variant === 'inline' ? 26 : 30} />
+      </div>
+    )
+  }
+  return null
+}
+
+/** Editable per-item title + text for a repeater item (its structural fields — icon / image / stat / link /
+ *  reorder — stay in the rail). Seeds are decoded so a legacy double-escape edits cleanly. */
+function ItemBody({
+  title,
+  text,
+  titleClass,
+  onTitle,
+  onText,
+}: {
+  title: string
+  text: string
+  titleClass: string
+  onTitle: (v: string) => void
+  onText: (v: string) => void
+}): ReactNode {
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <div className={titleClass}>
+        <SpaceEditableSlot value={decodeLegacyEntities(title)} placeholder="Title" onChange={onTitle} />
+      </div>
+      <div className="text-sm leading-relaxed text-muted">
+        <SpaceEditableSlot value={decodeLegacyEntities(text)} placeholder="Description" multiline onChange={onText} />
+      </div>
+    </div>
+  )
+}
+
+/** A selectable repeater-item frame: click to focus it in the rail (card-level selection) without stealing the
+ *  caret — stop the bubble to the block wrapper (which would clear the focus) but never preventDefault, so a
+ *  click inside a slot still lands. The selected item wears a ring. */
+function ItemFrame({
+  selected,
+  onSelect,
+  className,
+  children,
+}: {
+  selected: boolean
+  onSelect: () => void
+  className: string
+  children: ReactNode
+}): ReactNode {
+  return (
+    <div
+      onMouseDown={(e) => {
+        e.stopPropagation()
+        onSelect()
+      }}
+      className={`cursor-pointer transition-colors ${
+        selected ? 'border-primary ring-1 ring-primary' : ''
+      } ${className}`}
+    >
+      {children}
+    </div>
+  )
+}
+
+/** Editable per-item title + text for a Cards repeater (cardGrid). Persists the WHOLE items array through
+ *  onChange, preserving every non-text field. Keyed by a structural signature so a rail add / remove / reorder
+ *  remounts the slots while a plain keystroke keeps the key stable (no caret jump). Each card is selectable. */
 function ItemsTextCanvas({
   value,
-  titleKey,
   selectedIndex,
   onSelectItem,
   onChange,
 }: {
   value: unknown
-  titleKey: 'title'
   /** The store's currently-focused item index (drives the selected ring), or null for none. */
   selectedIndex: number | null
   /** Focus this card in the rail + canvas (selects the block, then this item's index). */
@@ -156,21 +255,14 @@ function ItemsTextCanvas({
     <div className="grid gap-4 sm:grid-cols-2">
       {items.map((it, i) => {
         const image = typeof it.image === 'string' ? it.image : ''
-        const title = typeof it[titleKey] === 'string' ? (it[titleKey] as string) : ''
+        const title = typeof it.title === 'string' ? it.title : ''
         const text = typeof it.text === 'string' ? it.text : ''
-        const selected = selectedIndex === i
         return (
-          <div
+          <ItemFrame
             key={`${sig}-${i}`}
-            // Select this card without stealing the caret: stop the bubble to the block wrapper (which would
-            // clear the card focus) but never preventDefault, so a click inside a slot still focuses it.
-            onMouseDown={(e) => {
-              e.stopPropagation()
-              onSelectItem(i)
-            }}
-            className={`cursor-pointer rounded-xl border p-3 transition-colors ${
-              selected ? 'border-primary ring-1 ring-primary' : 'border-border hover:border-border-strong'
-            }`}
+            selected={selectedIndex === i}
+            onSelect={() => onSelectItem(i)}
+            className="rounded-xl border border-border p-3 hover:border-border-strong"
           >
             {image && (
               <div className="overflow-hidden rounded-lg border border-border">
@@ -178,13 +270,179 @@ function ItemsTextCanvas({
                 <img src={image} alt="" className="max-h-40 w-full object-cover" />
               </div>
             )}
-            <div className="mt-2 text-base font-bold text-text">
-              <SpaceEditableSlot value={title} placeholder="Title" onChange={(v) => patch(i, titleKey, v)} />
+            <div className="mt-2">
+              <ItemBody
+                title={title}
+                text={text}
+                titleClass="text-base font-bold text-text"
+                onTitle={(v) => patch(i, 'title', v)}
+                onText={(v) => patch(i, 'text', v)}
+              />
             </div>
-            <div className="mt-0.5 text-sm leading-relaxed text-muted">
-              <SpaceEditableSlot value={text} placeholder="Description" multiline onChange={(v) => patch(i, 'text', v)} />
-            </div>
+          </ItemFrame>
+        )
+      })}
+    </div>
+  )
+}
+
+/** The responsive grid-columns utility for a 2 / 3 / 4 column count — matches content-block-view's Features. */
+function featureGridCols(n: 2 | 3 | 4): string {
+  return n === 2 ? 'sm:grid-cols-2' : n === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-2 lg:grid-cols-3'
+}
+
+/** The Features items on the canvas, rendered in the SELECTED layout + column count so the edit surface
+ *  matches the published Features block (content-block-view FeaturesBlock). Each item's title + text is
+ *  inline-editable and each item is selectable in the rail; its media (photo / icon) is read-only. A
+ *  data-sourced Features (Offerings / Events / ...) can't resolve its live items on the client, so it shows a
+ *  read-only note (matching how the published data-sourced Features awaits the resolver server-side). */
+function FeaturesItemsCanvas({
+  props,
+  label,
+  selectedIndex,
+  onSelectItem,
+  onChange,
+}: {
+  props: Record<string, unknown>
+  label: string
+  selectedIndex: number | null
+  onSelectItem: (index: number) => void
+  onChange: (v: unknown) => void
+}) {
+  if (isFeatureDataSource(props)) {
+    return (
+      <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-subtle">
+        Your live {label} show on the published page. Choose which items appear in this block&rsquo;s settings.
+      </p>
+    )
+  }
+  const items: Array<Record<string, unknown>> = Array.isArray(props.items)
+    ? (props.items as Array<Record<string, unknown>>)
+    : []
+  if (items.length === 0) {
+    return <p className="text-sm italic text-subtle">Add features in this block&rsquo;s settings.</p>
+  }
+  const layout = featureLayout(props)
+  const cols = gridColumns(props)
+  const sig = items
+    .map((it) => `${typeof it.icon === 'string' ? it.icon : ''}~${typeof it.image === 'string' ? it.image : ''}`)
+    .join('|')
+  const patch = (i: number, key: 'title' | 'text', next: string) => {
+    onChange(items.map((it, j) => (j === i ? { ...it, [key]: next } : it)))
+  }
+  const read = (it: Record<string, unknown>) => ({
+    image: typeof it.image === 'string' ? it.image : '',
+    icon: typeof it.icon === 'string' ? it.icon : '',
+    title: typeof it.title === 'string' ? it.title : '',
+    text: typeof it.text === 'string' ? it.text : '',
+  })
+  const body = (i: number, it: ReturnType<typeof read>, titleClass: string) => (
+    <ItemBody
+      title={it.title}
+      text={it.text}
+      titleClass={titleClass}
+      onTitle={(v) => patch(i, 'title', v)}
+      onText={(v) => patch(i, 'text', v)}
+    />
+  )
+  const frame = (i: number, className: string, children: ReactNode) => (
+    <ItemFrame key={`${sig}-${i}`} selected={selectedIndex === i} onSelect={() => onSelectItem(i)} className={className}>
+      {children}
+    </ItemFrame>
+  )
+
+  if (layout === 'list') {
+    return (
+      <div className="flex flex-col gap-5">
+        {items.map((raw, i) => {
+          const it = read(raw)
+          return frame(
+            i,
+            'flex items-start gap-3 rounded-xl',
+            <>
+              <ItemMedia image={it.image} icon={it.icon} variant="inline" />
+              {body(i, it, 'text-base font-bold text-text')}
+            </>,
+          )
+        })}
+      </div>
+    )
+  }
+  if (layout === 'columns') {
+    return (
+      <div className={`grid gap-6 ${featureGridCols(cols)}`}>
+        {items.map((raw, i) => {
+          const it = read(raw)
+          return frame(
+            i,
+            'flex flex-col gap-2 rounded-xl',
+            <>
+              <ItemMedia image={it.image} icon={it.icon} variant="top" />
+              {body(i, it, 'text-base font-bold text-text')}
+            </>,
+          )
+        })}
+      </div>
+    )
+  }
+  if (layout === 'stats') {
+    return (
+      <div className={`grid gap-6 ${featureGridCols(cols)}`}>
+        {items.map((raw, i) => {
+          const it = read(raw)
+          return frame(
+            i,
+            'rounded-2xl border border-border bg-surface p-6 text-center',
+            body(i, it, 'text-2xl font-bold leading-none text-primary-strong'),
+          )
+        })}
+      </div>
+    )
+  }
+  if (layout === 'cards') {
+    return (
+      <div className={`grid gap-6 ${featureGridCols(cols)}`}>
+        {items.map((raw, i) => {
+          const it = read(raw)
+          return frame(
+            i,
+            'flex flex-col overflow-hidden rounded-2xl border border-border bg-surface',
+            <>
+              {it.image ? (
+                // eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset
+                <img src={it.image} alt="" className="aspect-[4/3] w-full object-cover" />
+              ) : it.icon ? (
+                <div className="flex h-14 items-center px-5 pt-5 text-primary-strong" aria-hidden>
+                  <BlockIcon name={it.icon} size={30} />
+                </div>
+              ) : null}
+              <div className="flex flex-1 flex-col p-5">{body(i, it, 'text-base font-bold text-text')}</div>
+            </>,
+          )
+        })}
+      </div>
+    )
+  }
+  // spotlight: full-width rows, the media alternating left / right of the text (mobile stacks).
+  return (
+    <div className="flex flex-col gap-10">
+      {items.map((raw, i) => {
+        const it = read(raw)
+        const media = it.image ? (
+          <ItemMedia image={it.image} icon="" variant="spotlight" />
+        ) : it.icon ? (
+          <div className="flex aspect-[4/3] w-full items-center justify-center rounded-2xl bg-primary-bg text-primary-strong" aria-hidden>
+            <BlockIcon name={it.icon} size={56} />
           </div>
+        ) : null
+        const flip = i % 2 === 1
+        return frame(
+          i,
+          `flex flex-col gap-5 rounded-2xl sm:items-center ${flip ? 'sm:flex-row-reverse' : 'sm:flex-row'}`,
+          <>
+            {media && <div className="sm:w-1/2">{media}</div>}
+            <div className={media ? 'sm:w-1/2' : 'w-full'}>{body(i, it, 'text-xl font-bold text-text')}</div>
+          </>,
         )
       })}
     </div>
@@ -194,11 +452,16 @@ function ItemsTextCanvas({
 export function SpaceCanvasBlock({
   id,
   props,
+  node,
   uploadImage,
   onField,
 }: {
   id: string
   props: Record<string, unknown>
+  /** The REAL published server node for this block (threaded by LiveProfileGrid). A DATA block renders THIS
+   *  read-only so the edit surface is identical to the live page; absent (the /manage/layout editor) it falls
+   *  back to a note. */
+  node?: ReactNode
   /** The Space-scoped gated upload, threaded to each on-canvas photo popup. */
   uploadImage?: UploadImage
   /** Persist one content field; an empty value clears it. */
@@ -211,7 +474,21 @@ export function SpaceCanvasBlock({
     return <hr className="border-0 border-t border-border" />
   }
 
-  const isData = block.category === 'data'
+  // A DATA block renders the REAL published node read-only (identical to the live page); its live list can't be
+  // inline-authored and its eyebrow / title fold into the node's header (edited in the rail). Without a node
+  // (the /manage/layout editor), a clean note stands in so the block keeps a visible footprint.
+  if (block.category === 'data') {
+    if (node != null) {
+      return <div className="pointer-events-none">{node}</div>
+    }
+    return (
+      <p className="rounded-lg border border-dashed border-border px-3 py-2 text-xs text-subtle">
+        Your live {block.label.toLowerCase()} shows on the published page. Edit which items appear in this
+        section&rsquo;s settings.
+      </p>
+    )
+  }
+
   const fields = fieldsForBlock(id)
   const fieldByKey = new Map(fields.map((f) => [f.key, f]))
   const altKey = fields.find((f) => f.key === 'alt')?.key
@@ -221,18 +498,20 @@ export function SpaceCanvasBlock({
   }
 
   // An inline TEXT slot for a field key (or null when the block has no such field). `className` carries the
-  // published typography so the selected page style renders in edit mode. EVERY `textarea` gets the rich
-  // Bold / Italic / Link bubble (email-canvas parity): the content + design blocks now render inline HTML, so
-  // the formatting shows on the page. A single-line `text` field stays plain.
+  // published typography so the selected page style renders in edit mode. A slot is RICH (Bold / Italic / Link
+  // + getHTML) ONLY when the field's published render honours inline HTML (fieldRendersInlineHtml); every other
+  // field is PLAIN (getText), so its text never lands as literal entities on the page. The seed is decoded once
+  // so an already-corrupted value edits + shows as its true characters.
   const textSlot = (key: string, className: string) => {
     const f = fieldByKey.get(key)
     if (!f || !isCanvasTextField(f)) return null
+    const rich = fieldRendersInlineHtml(id, key)
     return (
       <div key={key} className={className}>
         <SpaceEditableSlot
-          value={str(props, key)}
+          value={decodeLegacyEntities(str(props, key))}
           placeholder={f.label}
-          rich={f.type === 'textarea'}
+          rich={rich}
           multiline={f.type === 'textarea'}
           onChange={setText(key)}
         />
@@ -266,7 +545,84 @@ export function SpaceCanvasBlock({
     if (design) return design
   }
 
-  // ── Generic field-stack path (plain content + data blocks): a vertical stack of slots. ──
+  // ── FEATURES: the header slots over the items in the SELECTED layout + columns (matches published). ──
+  if (id === 'features') {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-1">
+          {textSlot('eyebrow', 'text-xs font-bold uppercase tracking-[0.12em] text-primary-strong')}
+          {textSlot('title', 'text-2xl font-bold text-text')}
+        </div>
+        <FeaturesItemsCanvas
+          props={props}
+          label={block.label.toLowerCase()}
+          selectedIndex={store?.selectedItemIndex ?? null}
+          onSelectItem={(i) => {
+            store?.select(id)
+            store?.selectItem(i)
+          }}
+          onChange={(v) => onField('items', v)}
+        />
+      </div>
+    )
+  }
+
+  // ── CALLOUT: the published card (optional photo on top, title, rich body, button). ──
+  if (id === 'callout') {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+        {imageSlot('image', { className: 'h-48' })}
+        <div className="space-y-3 p-6">
+          {textSlot('title', 'text-xl font-bold text-text')}
+          {textSlot('body', 'text-base leading-relaxed text-muted')}
+          {textSlot(
+            'buttonLabel',
+            'mt-1 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary',
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ── QUOTE: the published pull-quote (accent rule, italic body, attribution). ──
+  if (id === 'quote') {
+    return (
+      <figure className="max-w-prose border-l-2 border-primary pl-4">
+        {textSlot('text', 'text-lg font-medium italic text-text')}
+        {textSlot('by', 'mt-2 text-sm text-muted')}
+      </figure>
+    )
+  }
+
+  // ── HEADING / TEXT / BUTTON: the plain member content blocks, in their published type. ──
+  if (id === 'heading') {
+    return <div>{textSlot('text', 'text-2xl font-bold text-text')}</div>
+  }
+  if (id === 'text') {
+    return <div>{textSlot('text', 'max-w-prose text-base leading-relaxed text-muted')}</div>
+  }
+  if (id === 'button') {
+    return (
+      <div className="inline-flex rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary">
+        {textSlot('label', '')}
+      </div>
+    )
+  }
+
+  // ── STRUCTURAL blocks (Links, Music and video, Recording): a faithful READ-ONLY preview of the real block. ──
+  if (STRUCTURAL_PREVIEW_IDS.has(id)) {
+    return hasContent(id, props) ? (
+      <div className="pointer-events-none">
+        <ContentBlockView id={id} props={props} />
+      </div>
+    ) : (
+      <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-subtle">
+        Add your {block.label.toLowerCase()} in this block&rsquo;s settings.
+      </p>
+    )
+  }
+
+  // ── Generic field-stack path (Image, Gallery, Card grid): slots + a photo / thumbnail grid. ──
   const nodes = fields.map((f) => {
     // A single photo — a clickable slot that opens the on-canvas photo popup (its URL / alt live there).
     if (isCanvasImageField(f)) {
@@ -279,17 +635,16 @@ export function SpaceCanvasBlock({
       const cls = isEyebrow
         ? 'text-xs font-bold uppercase tracking-[0.12em] text-subtle'
         : isTitle
-          ? 'text-xl font-bold text-text'
+          ? 'text-2xl font-bold text-text'
           : 'text-base leading-relaxed text-muted'
       return textSlot(f.key, cls)
     }
-    // Features / Cards item copy — editable on the canvas (structure stays in the rail), each card selectable.
+    // Cards item copy — editable on the canvas (structure stays in the rail), each card selectable.
     if (f.type === 'features' || f.type === 'cards') {
       return (
         <ItemsTextCanvas
           key={f.key}
           value={props[f.key]}
-          titleKey="title"
           selectedIndex={store?.selectedItemIndex ?? null}
           onSelectItem={(i) => {
             store?.select(id)
@@ -300,8 +655,8 @@ export function SpaceCanvasBlock({
       )
     }
     // A photo GALLERY (`images` list) — a read-only thumbnail grid on the canvas so the block never VANISHES
-    // while editing (the disappearing-content bug); the photos are added / reordered in the rail. An empty
-    // gallery shows an add-in-settings hint so the block still has a visible footprint.
+    // while editing; the photos are added / reordered in the rail. An empty gallery shows an add-in-settings
+    // hint so the block still has a visible footprint.
     if (f.type === 'images') {
       const imgs = Array.isArray(props[f.key])
         ? (props[f.key] as unknown[]).filter((x): x is string => typeof x === 'string' && x.length > 0)
@@ -326,21 +681,11 @@ export function SpaceCanvasBlock({
         </div>
       )
     }
-    // Every other field (links / toggle / enum primitives / picker / embed) is rail-only.
+    // Every other field (toggle / enum primitives / picker / embed) is rail-only.
     return null
   })
 
-  return (
-    <div className="space-y-3">
-      {nodes}
-      {isData && (
-        <p className="rounded-lg border border-dashed border-border px-3 py-2 text-xs text-subtle">
-          Your live {block.label.toLowerCase()} show here on the published page. Edit which items appear in
-          this section&rsquo;s settings.
-        </p>
-      )}
-    </div>
-  )
+  return <div className="space-y-3">{nodes}</div>
 }
 
 /** The layout-aware canvas for one design block: its editable slots woven into the block's REAL published
@@ -349,9 +694,9 @@ export function SpaceCanvasBlock({
 function designCanvas(
   id: string,
   props: Record<string, unknown>,
-  textSlot: (key: string, className: string) => React.ReactNode,
-  imageSlot: (key: string, opts?: { className?: string; fill?: boolean }) => React.ReactNode,
-): React.ReactNode {
+  textSlot: (key: string, className: string) => ReactNode,
+  imageSlot: (key: string, opts?: { className?: string; fill?: boolean }) => ReactNode,
+): ReactNode {
   switch (id) {
     case 'zigzag': {
       // A framed photo beside a text column; `mediaSide: 'right'` puts the image second (order classes).

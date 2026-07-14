@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import type { RowDef } from '@/lib/entity-blocks/layout'
 import { isFeatureDataSource, type BlockStyle } from '@/lib/entity-blocks/block-content'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
@@ -54,6 +54,13 @@ export function LiveProfileGrid({
   const store = useProfileLayout()
   const editMode = useSpaceEditMode()
 
+  // The on-page wrapper of each editable block, so a rail block-pill click can scroll the matching block into
+  // view (the page half of the two-way scroll sync).
+  const blockRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  // The last selection we scrolled to, so the effect fires ONLY on an actual change to a non-null id and never
+  // fights the owner's manual scroll (a null selection, or the same id, is a no-op).
+  const lastScrolledId = useRef<string | null>(null)
+
   // Seed the shared store from the persisted layout on mount (idempotent — the first mounter wins).
   useEffect(() => {
     store?.seed(initialRows, initialHidden, initialContent, initialStyle)
@@ -74,6 +81,16 @@ export function LiveProfileGrid({
   // On-page inline editing is live ONLY for the Space owner (a seeded space store + a slug) while the rail is
   // open (edit mode). Off any of those, this is the plain read-only render, byte-for-byte as before.
   const editable = editMode && !!spaceSlug && !!store?.seeded && store.kind === 'space'
+
+  // PAGE-side scroll sync: when the owner clicks a block pill in the rail (store.selectedId changes), scroll
+  // THAT block's on-page wrapper into view. Guarded so it fires ONLY on an actual change to a non-null id, so it
+  // never fights manual scroll or re-fires on an unrelated repaint. (The rail-side scroll is handled elsewhere.)
+  const selectedId = store?.selectedId ?? null
+  useEffect(() => {
+    if (!editable || !selectedId || selectedId === lastScrolledId.current) return
+    lastScrolledId.current = selectedId
+    blockRefs.current[selectedId]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [editable, selectedId])
 
   // Merge one content field into the shared store (sparse: an empty value clears the key). Repaints the page
   // instantly and debounce-saves through the same action the rail arranger uses — persistence is unchanged.
@@ -104,6 +121,9 @@ export function LiveProfileGrid({
       return (
         <div
           key={id}
+          ref={(el) => {
+            blockRefs.current[id] = el
+          }}
           role="group"
           onMouseDown={() => store?.select(id)}
           className={`rounded-lg p-2 transition-colors ${
@@ -111,7 +131,14 @@ export function LiveProfileGrid({
           }`}
         >
           <BlockStyleFrame style={style[id]}>
-            <SpaceCanvasBlock id={id} props={content[id] ?? {}} onField={(k, v) => setField(id, k, v)} />
+            {/* The DATA blocks (and any block not inline-authored) render their REAL server node read-only, so
+                the edit surface is identical to the published page. */}
+            <SpaceCanvasBlock
+              id={id}
+              props={content[id] ?? {}}
+              node={nodes[id]}
+              onField={(k, v) => setField(id, k, v)}
+            />
           </BlockStyleFrame>
         </div>
       )

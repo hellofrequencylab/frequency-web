@@ -874,6 +874,50 @@ function decodeInlineEntities(s: string): string {
     .replace(/&amp;/g, '&')
 }
 
+/** The entity artifacts escapeHtmlText emits, as a detector (any one present). */
+const ENTITY_ARTIFACT_RE = /&(?:quot|#39|amp|lt|gt);/
+/** The inline marks a rich value legitimately carries — if a stored value has one of these it is REAL markup,
+ *  not a double-escape artifact, so it is left alone. */
+const REAL_INLINE_TAG_RE = /<\/?(?:b|strong|i|em|a|br)\b/i
+
+/** Heal a value that was DOUBLE-ESCAPED once (the regression where a plain-rendered field was authored through
+ *  a rich editor and its text stored as HTML entities). When the value carries entity artifacts (`&quot;`
+ *  `&#39;` `&amp;` `&lt;` `&gt;`) but NO real inline tag, the entities are literal text that should display as
+ *  their characters, so decode them ONCE. A value with real markup (or none / no artifacts) is returned
+ *  untouched, so this is safe to run before EITHER the plain render OR sanitizeInlineHtml on the rich render
+ *  (it never strips a legitimate mark). Pure + total; a non-string yields ''. */
+export function decodeLegacyEntities(raw: unknown): string {
+  const v = typeof raw === 'string' ? raw : ''
+  if (!v || REAL_INLINE_TAG_RE.test(v) || !ENTITY_ARTIFACT_RE.test(v)) return v
+  return decodeInlineEntities(v)
+}
+
+/** The (blockId → field keys) whose PUBLISHED render honours inline HTML (rendered through
+ *  dangerouslySetInnerHTML of sanitized inline HTML: ContentBlockView's InlineRichText and design.tsx's
+ *  InlineRich). ONLY these fields may be authored in the canvas RICH mode (Bold / Italic / Link + getHTML);
+ *  every OTHER textarea renders as PLAIN text (a data block's body, a design heading, a card subheading), so
+ *  authoring it rich would store literal entities the plain render shows verbatim. A Map (not an object) so a
+ *  block id is only ever a lookup key, never a write property (no remote-property-injection). */
+const INLINE_HTML_FIELDS: ReadonlyMap<string, ReadonlySet<string>> = new Map<string, ReadonlySet<string>>([
+  // Content blocks rendered by ContentBlockView's InlineRichText.
+  ['text', new Set(['text'])],
+  ['callout', new Set(['body'])],
+  ['quote', new Set(['text'])],
+  // Design blocks rendered by design.tsx's InlineRich (subtitle / lead / body / prose text).
+  ['photoHero', new Set(['subtitle'])],
+  ['editorial', new Set(['body'])],
+  ['zigzag', new Set(['body'])],
+  ['accentBeat', new Set(['body'])],
+  ['prose', new Set(['text'])],
+])
+
+/** Whether a block's field renders through the inline-HTML path (so the canvas may edit it RICH). Every field
+ *  not listed renders as PLAIN text and must be edited in the canvas plain mode, so bold / link / entities are
+ *  never stored where the page would show them literally. Pure. */
+export function fieldRendersInlineHtml(blockId: string, key: string): boolean {
+  return INLINE_HTML_FIELDS.get(blockId)?.has(key) ?? false
+}
+
 /**
  * The PLAIN-TEXT projection of an inline rich value (the text/plain alternative for the email). Uses the SAME
  * tag TOKENIZER as sanitizeInlineHtml and emits ONLY the text nodes: every tag is dropped, `<br>` becomes a
