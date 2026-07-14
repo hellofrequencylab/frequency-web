@@ -298,6 +298,9 @@ interface SpacePageData {
   coverImageUrl: string | null
   brandLogoUrl: string | null
   websitePublished: boolean
+  /** The profile page's DRAFT/PUBLISHED status (preferences.profilePublished). Defaults TRUE when absent
+   *  so every Space that predates the flag reads as published (non-breaking). Drives the rail publish bar. */
+  profilePublished: boolean
   canManagePages: boolean
   readOnly: boolean
 }
@@ -332,6 +335,11 @@ function buildPageData(
     coverImageUrl: space.coverImageUrl ?? null,
     brandLogoUrl: space.brandLogoUrl ?? null,
     websitePublished: readWebsitePublished(space.preferences),
+    // Default TRUE when the flag is absent, so a pre-flag Space is never shown as an unpublished draft.
+    profilePublished:
+      !space.preferences ||
+      typeof space.preferences !== 'object' ||
+      (space.preferences as Record<string, unknown>).profilePublished !== false,
     canManagePages: spaceCanUseFullWebsite(space),
     readOnly: staffViewing && !canManage,
   }

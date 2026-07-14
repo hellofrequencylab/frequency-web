@@ -55,9 +55,11 @@ import { getSpaceLayoutRailData } from '@/app/(main)/spaces/[slug]/manage/rail-g
 import { useProfileLayout } from './profile-layout-context'
 import { setSpaceEditMode } from './space-edit-mode'
 import { BlockPicker } from './block-picker'
+import { PublishBar } from './publish-bar'
 import { BlockEditPanel, type UploadImage } from './block-edit-panel'
 import type { BlockPickerData } from './controls/field-controls'
 import { uploadSpaceBlockImage } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import { setProfilePublished } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
 
 // THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space; ADR-526 split the
 // two kinds). An OUTLINE editor, not a mini-canvas: the live profile/space page behind this same-route
@@ -91,6 +93,10 @@ export interface BuilderRailData {
   hidden: string[]
   customized: boolean
   lockedIds?: string[]
+  /** The Space page's DRAFT / PUBLISHED status flag (preferences.profilePublished, SPACE only). NON-BREAKING:
+   *  ABSENT defaults to `true` in the builder, so every Space that predates the flag reads as published and is
+   *  never surfaced as a draft. A status marker for the publish bar, NOT a visibility gate. */
+  profilePublished?: boolean
   /** The edit-panel PICKER payload per function-backed block (ADR-573 item 5): the Space's live items + the
    *  create link. Absent on the member builder (no function-backed blocks). */
   pickerData?: Record<string, BlockPickerData>
@@ -103,6 +109,7 @@ export function EntityPageBuilder({
   seed,
   editHrefFor,
   uploadImage,
+  onSetPublished,
 }: {
   /** The page this builder edits (member handle / space slug); guarded against the seed's matchId. */
   pageId: string
@@ -118,6 +125,9 @@ export function EntityPageBuilder({
   editHrefFor?: (blockId: string) => string | null
   /** Gated image upload for the block editor's image fields (SPACE only; ADR-542). */
   uploadImage?: UploadImage
+  /** Persist the DRAFT / PUBLISHED flag (SPACE only). Injected by the space wrapper (wired to
+   *  setProfilePublished); absent on the member rail, which has no publish bar. */
+  onSetPublished?: (published: boolean) => Promise<{ error?: string }>
 }) {
   const store = useProfileLayout()
   const router = useRouter()
@@ -134,6 +144,22 @@ export function EntityPageBuilder({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [grab, setGrab] = useState<Grab>(null)
   const [announce, setAnnounce] = useState('')
+
+  // Draft / published status for the persistent publish bar (SPACE only). DEFAULT TRUE so a Space that
+  // predates the flag (an absent seed value) reads as published — existing live pages are never re-drafted.
+  // A local, optimistic mirror: the flip handler writes through onSetPublished and updates this on success.
+  const [published, setPublished] = useState(true)
+  const [publishBusy, setPublishBusy] = useState(false)
+  const [publishError, setPublishError] = useState<string | null>(null)
+
+  // DRAG SURFACE (item 7): whether a row or a block is being dragged right now, kept in STATE (not just the
+  // refs below) so the rows editor can light up its drop targets while a drag is live — a column shows as a
+  // clear "drop here" zone for a block, a row band for a row. Cleared on drop / drag end.
+  const [dragKind, setDragKind] = useState<null | 'row' | 'block'>(null)
+  // The id of the row being dragged, in STATE (not the ref) so the render can style the OTHER rows as drop
+  // targets without reading a ref during render (react-hooks/refs). The `dragRow` ref stays for the drag
+  // event handlers, which may read it outside render.
+  const [dragRowId, setDragRowId] = useState<string | null>(null)
 
   const dragBlock = useRef<string | null>(null)
   const dragRow = useRef<string | null>(null)
@@ -179,6 +205,8 @@ export function EntityPageBuilder({
       setLockedIds(d?.lockedIds ?? [])
       setPickerData(d?.pickerData ?? {})
       setCustomized(!!d?.customized)
+      // DEFAULT TRUE when the flag is absent (non-breaking): a pre-flag Space seed reads as published.
+      setPublished(d?.profilePublished ?? true)
       if (d && store?.kind === kind) store.seed(d.rows, d.hidden)
       setLoading(false)
     }
@@ -237,6 +265,22 @@ export function EntityPageBuilder({
     } else {
       setEditingId((m) => (m === id ? null : id))
     }
+  }
+
+  // Flip the DRAFT / PUBLISHED flag through the injected server action (SPACE only). Optimism is deferred to
+  // the response: it writes first, then mirrors local state on success (so a refused write never shows a false
+  // "live"). Absent the action (member rail / no wiring), it just flips the local marker so the bar still works.
+  async function onSetPublishedClick(next: boolean) {
+    setPublishError(null)
+    if (!onSetPublished) {
+      setPublished(next)
+      return
+    }
+    setPublishBusy(true)
+    const res = await onSetPublished(next)
+    setPublishBusy(false)
+    if (res?.error) setPublishError(res.error)
+    else setPublished(next)
   }
 
   if (loading) {
@@ -485,12 +529,15 @@ export function EntityPageBuilder({
     e.stopPropagation()
     const id = dragBlock.current
     dragBlock.current = null
+    setDragKind(null)
     if (id) onPlace(id, rowId, col)
   }
   function dropOnRow(e: DragEvent, toIndex: number) {
     e.preventDefault()
     const rowId = dragRow.current
     dragRow.current = null
+    setDragRowId(null)
+    setDragKind(null)
     if (rowId) {
       const from = layout.rows.findIndex((r) => r.id === rowId)
       if (from >= 0) onMoveRow(from, toIndex)
@@ -754,19 +801,35 @@ export function EntityPageBuilder({
               key={row.id}
               onDragOver={(e) => dragRow.current && e.preventDefault()}
               onDrop={(e) => dropOnRow(e, index)}
-              className={`rounded-2xl border bg-surface ${grabbed ? 'border-primary ring-1 ring-primary' : 'border-border'}`}
+              className={`rounded-2xl border bg-surface transition-colors ${
+                grabbed
+                  ? 'border-primary ring-1 ring-primary'
+                  : // While a DIFFERENT row is dragged, every other row reads as a reorder drop target (item 7).
+                    dragKind === 'row' && dragRowId !== row.id
+                    ? 'border-dashed border-primary/40'
+                    : 'border-border'
+              }`}
             >
-              {/* Row strip */}
+              {/* Row strip. The grip leads as the clear grab affordance (item 7): a bordered handle chip, so it
+                  reads as draggable at a glance rather than a bare icon. */}
               <div className="flex items-center gap-1 px-2 py-1.5">
                 <button
                   type="button"
                   draggable
-                  onDragStart={() => (dragRow.current = row.id)}
-                  onDragEnd={() => (dragRow.current = null)}
+                  onDragStart={() => {
+                    dragRow.current = row.id
+                    setDragRowId(row.id)
+                    setDragKind('row')
+                  }}
+                  onDragEnd={() => {
+                    dragRow.current = null
+                    setDragRowId(null)
+                    setDragKind(null)
+                  }}
                   onKeyDown={(e) => rowHandleKey(e, row.id, index)}
                   aria-label={`Reorder row ${index + 1}. Press Enter to grab, then use the arrow keys.`}
                   aria-pressed={grabbed}
-                  className="shrink-0 cursor-grab rounded p-1 text-subtle hover:bg-surface-elevated hover:text-text"
+                  className="shrink-0 cursor-grab rounded-md border border-border p-1 text-subtle transition-colors hover:border-border-strong hover:bg-surface-elevated hover:text-text active:cursor-grabbing"
                 >
                   <GripVertical className="h-4 w-4" aria-hidden />
                 </button>
@@ -883,7 +946,11 @@ export function EntityPageBuilder({
                   {row.cells.map((stack, col) => (
                     <div
                       key={`${row.id}-${col}`}
-                      className="space-y-1.5"
+                      className={`space-y-1.5 rounded-lg transition-colors ${
+                        // While a block is dragged, every column reads as a clear "drop here" zone (item 7), so
+                        // the operator drops a block without hunting for a target.
+                        dragKind === 'block' ? 'bg-primary/5 p-1 ring-1 ring-inset ring-primary/40' : ''
+                      }`}
                       onDragOver={(e) => dragBlock.current && e.preventDefault()}
                       onDrop={(e) => dropOnSlot(e, row.id, col)}
                     >
@@ -900,8 +967,14 @@ export function EntityPageBuilder({
                             sections={moveTargets}
                             currentRowId={row.id}
                             confirmDelete={confirmDelete === id}
-                            onDragStart={() => (dragBlock.current = id)}
-                            onDragEnd={() => (dragBlock.current = null)}
+                            onDragStart={() => {
+                              dragBlock.current = id
+                              setDragKind('block')
+                            }}
+                            onDragEnd={() => {
+                              dragBlock.current = null
+                              setDragKind(null)
+                            }}
                             onHandleKey={(e) => blockHandleKey(e, id)}
                             onEdit={() => onEditBlock(id)}
                             onUp={() => moveBlockBy(id, -1)}
@@ -929,9 +1002,13 @@ export function EntityPageBuilder({
                         <button
                           type="button"
                           onClick={() => setAddingAt({ rowId: row.id, col })}
-                          className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-border px-2 py-3 text-xs font-medium text-muted transition-colors hover:border-primary hover:text-text"
+                          className={`flex w-full items-center justify-center gap-1 rounded-lg border border-dashed px-2 py-3 text-xs font-medium transition-colors hover:border-primary hover:text-text ${
+                            // A dragged block turns every add slot into an obvious drop hint (item 7).
+                            dragKind === 'block' ? 'border-primary text-primary-strong' : 'border-border text-muted'
+                          }`}
                         >
-                          <Plus className="h-3.5 w-3.5" aria-hidden /> Add block
+                          <Plus className="h-3.5 w-3.5" aria-hidden />{' '}
+                          {dragKind === 'block' ? 'Drop here' : 'Add block'}
                         </button>
                       )}
                     </div>
@@ -950,9 +1027,27 @@ export function EntityPageBuilder({
         emptySlots={emptySlots}
         openMenu={openMenu}
         onToggleMenu={(id) => setOpenMenu((m) => (m === `bench:${id}` ? null : `bench:${id}`))}
-        onDragStart={(id) => (dragBlock.current = id)}
-        onDragEnd={() => (dragBlock.current = null)}
+        onDragStart={(id) => {
+          dragBlock.current = id
+          setDragKind('block')
+        }}
+        onDragEnd={() => {
+          dragBlock.current = null
+          setDragKind(null)
+        }}
         onPlace={(id, t) => onPlace(id, t.rowId, t.ci)}
+      />
+
+      {/* The persistent Draft / Publish bar, pinned at the foot of the rail (SPACE only). Surfaces the store's
+          autosave state and the profilePublished status; it never gates who can SEE the page (that stays with
+          the Space's visibility). Only reached past the owner + kind gate above, so it shows for the editor. */}
+      <PublishBar
+        saving={!!store.saving || reconciling}
+        published={published}
+        busy={publishBusy}
+        error={publishError}
+        onPublish={() => void onSetPublishedClick(true)}
+        onUnpublish={() => void onSetPublishedClick(false)}
       />
         </>
       )}
@@ -1015,6 +1110,8 @@ export function SpacePageBuilder({
       loadRailData={load}
       seed={seed}
       uploadImage={uploadImage}
+      // The publish bar's flip, wired to the owner-gated server action (writes only preferences.profilePublished).
+      onSetPublished={(next) => setProfilePublished(slug, next)}
       // A DATA block's "Manage" link points at that FEATURE's own admin area (ADR-529 item 4) — its content
       // + settings live there. Unmapped data blocks fall back to the Space console; content blocks get none.
       editHrefFor={(blockId) => spaceBlockAdminHref(slug, blockId)}

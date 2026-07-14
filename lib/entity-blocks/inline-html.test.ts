@@ -74,6 +74,34 @@ describe('sanitizeInlineHtml — the dangerous parts are stripped', () => {
   })
 })
 
+describe('sanitizeInlineHtml — idempotent + self-heals multi-escaped entities (the quote regression)', () => {
+  it('is idempotent: sanitize(sanitize(x)) === sanitize(x)', () => {
+    for (const s of ['no "whoever\'s" here', 'a <b>bold "q"</b> & <i>x</i>', 'plain 2 < 3 & 4 > 1', 'AT&T']) {
+      const once = sanitizeInlineHtml(s)
+      expect(sanitizeInlineHtml(once)).toBe(once)
+    }
+  })
+
+  it('quotes + apostrophes survive a save then a render without compounding', () => {
+    const authored = 'She said "yes" to Shanna\'s plan'
+    const saved = sanitizeInlineHtml(authored) // the SAVE pass
+    const rendered = sanitizeInlineHtml(saved) // the RENDER re-sanitizes (defence in depth)
+    expect(rendered).toBe(saved) // no extra layer of escaping
+    expect(inlineHtmlToText(rendered)).toBe(authored) // and decodes back to the exact words
+  })
+
+  it('heals a value already double-escaped in storage back to its real characters', () => {
+    // The exact corruption shape found in the DB: `"` stored as `&amp;quot;` (escaped twice).
+    const healed = sanitizeInlineHtml('no &amp;quot;whoever&amp;#39;s available.&amp;quot;')
+    expect(healed).toBe('no &quot;whoever&#39;s available.&quot;')
+    expect(inlineHtmlToText(healed)).toBe('no "whoever\'s available."')
+  })
+
+  it('heals a triple-escaped value too (deep decode, not just one layer)', () => {
+    expect(inlineHtmlToText(sanitizeInlineHtml('a &amp;amp;quot;b&amp;amp;quot;'))).toBe('a "b"')
+  })
+})
+
 describe('inlineHtmlToText — the plain-text projection never leaks a tag', () => {
   it('drops inline marks and keeps the text', () => {
     expect(inlineHtmlToText('a <b>b</b> <i>c</i>')).toBe('a b c')

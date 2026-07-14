@@ -54,17 +54,29 @@ export function heroHeightClass(height: HeroHeight): string {
 }
 
 // ── The hero ASPECT RATIO (width / height) at each height ──────────────────────────────────────────────────
-// The Space header banner paints full-bleed at ~1344px on desktop (the `sizes` the profile cover requests)
-// over its band height. A rail preview that used a FIXED pixel height (heroHeightClass) read far too TALL in
-// the narrow rail, because the same `h-72` box is short beside a 1344px hero but nearly square beside a ~320px
-// rail. Previewing at the WIDTH:HEIGHT ratio instead makes the focus-picker box the same SHAPE as the live
-// header at the chosen height (wide + short for Short, taller for Tall), so "this preview matches your header
-// height" is literally true whatever the rail width. Desktop band heights: short sm:h-56 (14rem/224px), medium
-// sm:h-[22rem] (352px), tall sm:h-[36rem] (576px). The gaps are wide on purpose so the preview visibly steps.
+// The rail's crop preview must be the same SHAPE (width / height) as the LIVE header at the chosen height, so
+// "this preview matches your header height" is literally true whatever the rail width. Previewing at a FIXED
+// pixel height read far too TALL in the narrow rail (an `h-72` box is short beside a wide hero but nearly
+// square beside a ~320px rail), so we drive the preview by the ratio instead.
+//
+// THE REAL HEADER WIDTH (the bug this had ~5 times): the live header does NOT paint at 1344px. The `sizes`
+// hint on the cover <Image> ("… , 1344px") is only a resolution hint for the browser's image picker — it is
+// NOT the layout width. The header (DetailTemplate `hero`, a `w-full` band) renders INSIDE the profile's
+// CENTER COLUMN, wedged between the global left nav and the community right rail. At the shell's widest
+// (app-shell.tsx: `max-w-[105rem]` = 1680px container, `px-8` = 32px gutters, `gap-10` = 40px, left rail
+// `w-48` = 192px, right rail `w-72` = 288px + `lg:ml-3` = 12px), the center column — and thus the header —
+// tops out at 1680 - 64 - 192 - 288 - 12 - (2 * 40) = 1044px. Earlier "fixes" measured against 1344, so every
+// preview was ~29% too WIDE (too short), which is exactly why the owner kept seeing a mismatch. We compute the
+// ratio against the REAL 1044px maximum instead.
+//
+// Desktop band heights (heroHeightClass at `sm` and up, unchanged): short sm:h-56 = 14rem = 224px, medium
+// sm:h-[22rem] = 352px, tall sm:h-[36rem] = 576px. The three ratios stay well separated so Short / Medium /
+// Tall visibly step in the preview when you switch tiers.
+const HERO_HEADER_MAX_WIDTH = 1044 // px — real center-column max (see derivation above), NOT the 1344 sizes hint
 const HERO_ASPECT: Record<HeroHeight, number> = {
-  short: 1344 / 224,
-  medium: 1344 / 352,
-  tall: 1344 / 576,
+  short: HERO_HEADER_MAX_WIDTH / 224, // ≈ 4.66
+  medium: HERO_HEADER_MAX_WIDTH / 352, // ≈ 2.97
+  tall: HERO_HEADER_MAX_WIDTH / 576, // ≈ 1.81
 }
 
 /** The width:height aspect ratio of the Hero cover at a resolved height, for a shape-accurate crop preview

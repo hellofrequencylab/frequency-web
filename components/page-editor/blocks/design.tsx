@@ -35,7 +35,7 @@ import {
   headerFontStyle,
 } from '@/lib/page-editor/fields'
 import { richParagraphs, safeHref } from '@/lib/page-editor/richtext'
-import { sanitizeInlineHtml } from '@/lib/entity-blocks/block-content'
+import { decodeLegacyEntities, sanitizeInlineHtml } from '@/lib/entity-blocks/block-content'
 import { SiteImage } from '@/components/marketing/site-image'
 
 // A body / lead / subtitle string, rendered as sanitized inline HTML (Bold / Italic / Link + <br>) via the
@@ -52,7 +52,9 @@ function InlineRich({
   className?: string
 }) {
   if (!value) return null
-  const html = sanitizeInlineHtml(value)
+  // Heal a legacy double-escape (entities but no real markup) before sanitizing, so a corrupted subtitle /
+  // lead / body renders its true characters once here instead of literal `&quot;` on the page.
+  const html = sanitizeInlineHtml(decodeLegacyEntities(value))
   if (!html) return null
   return <Tag className={className} dangerouslySetInnerHTML={{ __html: html }} />
 }
@@ -81,6 +83,8 @@ function DesignHeading({
   className?: string
 }) {
   if (!title) return null
+  // The heading renders as PLAIN text, so heal a legacy entity double-escape before it hits the page.
+  const clean = decodeLegacyEntities(title)
   // Fluid scale mirrors the kit DisplayHeading so a design block sits in the same type rhythm.
   const scale =
     size === 'lg'
@@ -90,7 +94,7 @@ function DesignHeading({
   const color = className ?? 'text-text'
   return (
     <Tag className={`font-display uppercase text-balance ${color} ${scale}`} style={headerFontStyle(headerFont)}>
-      {accentWord ? accentize(title, accentWord) : title}
+      {accentWord ? accentize(clean, accentWord) : clean}
     </Tag>
   )
 }
@@ -718,12 +722,14 @@ export function DisplayHeadingBlock({
   font?: string
 }) {
   if (!text) return null
+  // Plain-text display title: heal a legacy entity double-escape before render.
+  const clean = decodeLegacyEntities(text)
   return (
     <h2
       className="font-display text-[clamp(2rem,6vw,3.75rem)] uppercase leading-[0.95] text-balance text-text"
       style={headerFontStyle(font)}
     >
-      {accentWord ? accentize(text, accentWord) : text}
+      {accentWord ? accentize(clean, accentWord) : clean}
     </h2>
   )
 }

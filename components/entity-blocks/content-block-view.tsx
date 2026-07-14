@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { ExternalLink } from 'lucide-react'
 import {
+  decodeLegacyEntities,
   featureLayout,
   gridColumns,
   marginBottomClass,
@@ -48,7 +49,10 @@ function InlineRichText({
   value: string
   className?: string
 }) {
-  const html = sanitizeInlineHtml(value)
+  // Heal a legacy double-escape (a value stored as entities but no real markup) BEFORE sanitizing, so an
+  // already-corrupted body renders its true characters once here instead of showing literal `&quot;` on the
+  // page. A value with real marks (or none) is untouched, so live formatting still round-trips.
+  const html = sanitizeInlineHtml(decodeLegacyEntities(value))
   if (!html) return null
   return <Tag className={className} dangerouslySetInnerHTML={{ __html: html }} />
 }
@@ -103,8 +107,9 @@ function readFeatureItems(raw: unknown): FeatureItem[] {
     .map((it) => ({
       icon: typeof it.icon === 'string' ? it.icon : '',
       image: safeUrl(it.image),
-      title: typeof it.title === 'string' ? it.title : '',
-      text: typeof it.text === 'string' ? it.text : '',
+      // Item title + text render as PLAIN text below, so heal any legacy entity double-escape on read.
+      title: typeof it.title === 'string' ? decodeLegacyEntities(it.title) : '',
+      text: typeof it.text === 'string' ? decodeLegacyEntities(it.text) : '',
       price: typeof it.price === 'string' ? it.price : '',
       link: safeUrl(it.link),
       cta: typeof it.cta === 'string' ? it.cta : '',

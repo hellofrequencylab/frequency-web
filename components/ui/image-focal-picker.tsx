@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useId, useRef } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { labelClasses } from '@/components/ui/field'
 import {
@@ -66,6 +66,29 @@ export function ImageFocalPicker({
   const vId = useId()
   const hId = useId()
   const objectPosition = xyToObjectPosition(x, y)
+
+  // DETERMINISTIC SIZING (belt-and-suspenders, aspect path only) — the padding-bottom trick below sizes the
+  // box to width / aspect purely in CSS, which is correct in every normal case. But it has silently failed
+  // inside the admin rail before (an ancestor's layout stopped the % padding from resolving), leaving the
+  // preview at the wrong height. So when we are on the `aspect` path (no explicit `heightClassName`) we ALSO
+  // measure the box's real rendered WIDTH with a ResizeObserver and pin an explicit pixel height of
+  // Math.round(width / aspect). This guarantees the frame is exactly width / aspect regardless of any ancestor
+  // CSS. It re-measures whenever `aspect` changes (a Short/Medium/Tall switch) and on any resize. On the
+  // explicit-height path (the event cover-focus control) it is skipped entirely, so that surface is untouched.
+  const [measuredHeight, setMeasuredHeight] = useState<number | null>(null)
+  useEffect(() => {
+    if (heightClassName) return // explicit height drives the frame — leave it alone
+    const el = frameRef.current
+    if (!el) return
+    const measure = () => {
+      const w = el.getBoundingClientRect().width
+      if (w > 0) setMeasuredHeight(Math.round(w / aspect))
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [aspect, heightClassName])
 
   // Emit a next value; clamping to 0–100 happens in xyToObjectPosition.
   const emit = useCallback(
@@ -161,10 +184,20 @@ export function ImageFocalPicker({
         // The crop box is sized by the PADDING-BOTTOM percentage trick, not the CSS `aspect-ratio` property:
         // padding-bottom is a % of the element's WIDTH, so the box height = width / aspect at any width, in
         // every browser and inside any flex / grid / slide-over panel (aspect-ratio was silently not resizing
-        // the preview in the admin rail). The img + marker are absolutely positioned, so they fill the padded
-        // box and the pointer math (getBoundingClientRect height) stays correct. When an explicit
-        // `heightClassName` is given it drives the height instead (the padding is dropped).
-        style={heightClassName ? undefined : { paddingBottom: `${100 / aspect}%`, height: 0 }}
+        // the preview in the admin rail). Once the ResizeObserver above has measured the real width we switch
+        // to an EXPLICIT pixel height (width / aspect) so the box can never be left at a wrong height by an
+        // ancestor that swallows the % padding — the padding trick is the pre-measure fallback (identical
+        // shape, so there is no visible jump). The img + marker are absolutely positioned, so they fill the
+        // box either way and the pointer math (getBoundingClientRect) stays correct. When an explicit
+        // `heightClassName` is given it drives the height instead (both the padding and the measured height
+        // are dropped).
+        style={
+          heightClassName
+            ? undefined
+            : measuredHeight != null
+              ? { height: measuredHeight }
+              : { paddingBottom: `${100 / aspect}%`, height: 0 }
+        }
         className={cn(
           'relative w-full touch-none select-none overflow-hidden rounded-xl border border-border bg-surface-elevated outline-none',
           'focus-visible:ring-2 focus-visible:ring-border-strong/40',
