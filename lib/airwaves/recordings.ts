@@ -97,6 +97,12 @@ function toChapters(raw: unknown): Chapter[] | null {
   return out.length ? out : null
 }
 
+/** Map a raw `recordings` row (snake_case jsonb) to the canonical camelCase Recording. Exported as
+ *  `mapRecordingRow` for the Shows layer so the Episode mapper never drifts from the Recording one. */
+export function mapRecordingRow(r: Record<string, unknown>): Recording {
+  return mapRecording(r)
+}
+
 function mapRecording(r: Record<string, unknown>): Recording {
   return {
     id: String(r.id),
@@ -133,7 +139,7 @@ function mapAttachment(r: Record<string, unknown>): RecordingAttachment {
   }
 }
 
-const RECORDING_SELECT =
+export const RECORDING_SELECT =
   'id, space_id, show_id, loom_asset_id, media_kind, title, slug, description, transcript, chapters, duration_seconds, price, required_entitlement, visibility, published_at, sort_order, created_at, updated_at'
 const ATTACHMENT_SELECT =
   'id, recording_id, host_kind, host_id, price, required_entitlement, sort_order, created_at'
