@@ -1,24 +1,11 @@
 import { redirect } from 'next/navigation'
-import { contactsOwnerId } from '@/lib/connections/access'
-import { FocusTemplate } from '@/components/templates'
-import { ImportWizard } from '@/components/crm/import/import-wizard'
 
+// The standalone member CSV importer was retired (contact import now lives inside the CRM
+// surfaces the operator actually uses: the platform Resonance CRM at /admin/crm?view=import and
+// each Space CRM's Import tab). This route stays only as a redirect so any bookmarked link lands
+// members in their contacts area, where the card scan, Google import, and manual add live.
 export const dynamic = 'force-dynamic'
 
-// Member surface for CSV contact import (CRM Master Build Plan Phase 2). Any member owns
-// a personal contact book, so the tool is open to any authenticated member; imported
-// contacts land in their private network_contacts (owner-scoped RLS), never shared.
-export default async function ImportContactsPage() {
-  const ownerId = await contactsOwnerId()
-  if (!ownerId) redirect('/feed')
-
-  return (
-    <FocusTemplate
-      title="Import contacts"
-      description="Bring a CSV of people into your contacts. We match your columns to the right fields, show you a preview, and skip anyone you already have. Saved privately to you."
-      back={{ href: '/network/contacts', label: 'Contacts' }}
-    >
-      <ImportWizard targetKind="member" />
-    </FocusTemplate>
-  )
+export default function ImportContactsRedirect() {
+  redirect('/network/contacts')
 }

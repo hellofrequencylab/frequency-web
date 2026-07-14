@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Users, Briefcase, HeartPulse } from 'lucide-react'
+import { Users, Briefcase, HeartPulse, Upload } from 'lucide-react'
 
 // SPACE CRM VIEW TABS (list-first principle, docs/NEXT-GEN-CRM.md). The persistent, always-visible
 // affordance that keeps the member list one tap away from anywhere in the CRM. The board lands on
@@ -8,7 +8,7 @@ import { Users, Briefcase, HeartPulse } from 'lucide-react'
 // to the familiar list in one tap. URL-driven (server Links, no client state); composes kit tokens
 // only; copy in voice (no em or en dashes).
 
-export type CrmView = 'people' | 'pipeline' | 'cockpit'
+export type CrmView = 'people' | 'pipeline' | 'cockpit' | 'import'
 
 interface Tab {
   view: CrmView
@@ -16,11 +16,13 @@ interface Tab {
   icon: typeof Users
 }
 
-// People leads: it is the front door. Pipeline and Cockpit follow.
+// People leads: it is the front door. Pipeline and Cockpit follow. Import is the CSV bring-in,
+// sealed to this Space, and sits last (a setup action, not a daily view).
 const TABS: Tab[] = [
   { view: 'people', label: 'People', icon: Users },
   { view: 'pipeline', label: 'Pipeline', icon: Briefcase },
   { view: 'cockpit', label: 'Cockpit', icon: HeartPulse },
+  { view: 'import', label: 'Import', icon: Upload },
 ]
 
 export function CrmViewTabs({ boardHref, active }: { boardHref: string; active: CrmView }) {
