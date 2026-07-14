@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { MapPin, Globe, Ticket, ScanLine } from 'lucide-react'
@@ -8,6 +9,27 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { RowCard } from '@/components/cards/row-card'
 
 export const dynamic = 'force-dynamic'
+
+// This app-shell page is a twin of the canonical /discover/partners/<slug> profile, so it points
+// its canonical there to consolidate ranking signals rather than compete with the discover surface.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const partner = await getPartnerView(slug)
+  if (!partner) return { title: 'Partner not found', robots: { index: false, follow: false } }
+  const where = partner.city ? ` in ${partner.city}` : ''
+  const full =
+    partner.description ?? `${partner.name}${where}: a Frequency partner with member offers.`
+  const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
+  return {
+    title: partner.name,
+    description,
+    alternates: { canonical: `/discover/partners/${slug}` },
+  }
+}
 
 // Partner detail (Phase 3 partners module): a business + its live member offers.
 export default async function PartnerPage({

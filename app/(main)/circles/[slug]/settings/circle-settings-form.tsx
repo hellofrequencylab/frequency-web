@@ -18,6 +18,7 @@ export interface CircleSettingsInitial {
   city: string
   neighborhood: string
   resonancePublic: boolean
+  unlisted: boolean
 }
 
 const input =
@@ -43,19 +44,23 @@ export function CircleSettingsForm({
   const [city, setCity] = useState(initial.city)
   const [neighborhood, setNeighborhood] = useState(initial.neighborhood)
   const [resonancePublic, setResonancePublic] = useState(initial.resonancePublic)
+  const [unlisted, setUnlisted] = useState(initial.unlisted)
   const [pending, start] = useTransition()
   const [confirmArchive, setConfirmArchive] = useState(false)
   const [archiving, startArchive] = useTransition()
+  const [archiveError, setArchiveError] = useState<string | null>(null)
   const router = useRouter()
 
   function archive() {
+    setArchiveError(null)
     startArchive(async () => {
       try {
         await archiveCircle(circleId)
         router.push('/circles')
-      } catch {
-        // archiveCircle is host-or-admin gated and throws on failure; keep the
-        // form open so the host can retry rather than leaving a dead state.
+      } catch (err) {
+        // archiveCircle is host-or-admin gated and throws on failure. Surface it so the host
+        // knows it didn't archive (a silent no-op reads as "nothing happened") and can retry.
+        setArchiveError(err instanceof Error ? err.message : 'Could not archive this circle. Try again.')
       }
     })
   }
@@ -72,6 +77,7 @@ export function CircleSettingsForm({
     fd.set('city', city)
     fd.set('neighborhood', neighborhood)
     fd.set('resonance_public', resonancePublic ? 'on' : 'off')
+    fd.set('unlisted', unlisted ? 'on' : 'off')
     start(async () => {
       await updateCircleSettings(circleId, fd)
       router.push(`/circles/${slug}`)
@@ -130,6 +136,19 @@ export function CircleSettingsForm({
         <input type="text" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} placeholder="e.g. Leucadia" disabled={pending} className={input} />
       </div>
 
+      <div className="rounded-lg border border-border bg-surface-elevated/40 p-3 sm:col-span-2">
+        <label className="flex items-start gap-2.5 text-sm text-text">
+          <input type="checkbox" checked={unlisted} onChange={(e) => setUnlisted(e.target.checked)} disabled={pending} className="mt-0.5 h-4 w-4 rounded border-border-strong text-primary focus:ring-2 focus:ring-primary/40" />
+          <span>
+            <span className="font-medium">Unlisted</span>
+            <span className="mt-0.5 block text-2xs text-muted">
+              Keep this circle off the Circles directory, map, and search. Anyone with the link can still open it,
+              and your members always see it. Great for a private group you invite by hand.
+            </span>
+          </span>
+        </label>
+      </div>
+
       <div className="sm:col-span-2">
         <label className="flex items-center gap-2 text-sm text-text">
           <input type="checkbox" checked={resonancePublic} onChange={(e) => setResonancePublic(e.target.checked)} disabled={pending} className="h-4 w-4 rounded border-border-strong text-primary focus:ring-2 focus:ring-primary/40" />
@@ -161,6 +180,7 @@ export function CircleSettingsForm({
           <Archive className="h-4 w-4" /> Archive this circle
         </button>
         <p className="mt-1.5 text-2xs text-muted">Hides the circle from discovery. An admin can restore it later.</p>
+        {archiveError && <p className="mt-1.5 text-2xs font-medium text-danger">{archiveError}</p>}
       </div>
 
       <DangerModal

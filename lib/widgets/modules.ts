@@ -591,8 +591,19 @@ const CIRCLE_DETAIL_MODULE_IDS = [
 // module-driven, so an operator can move ANY block from the on-page Layout editor.
 //
 // The default interior layout (lib/page-settings/default-layouts.ts) places these in a Main + side
-// grid: the post area (description → poster → cohosts → sales → activity → recap) leads MAIN, while
-// the Join box, facts, and warm proof fill the SIDE column.
+// grid: the post area (description → poster → activity → recap → location) leads MAIN, while the
+// Join box, facts, and warm proof fill the SIDE column.
+//
+// CLEANUP (event page trim): four blocks were pulled from this set so they no longer render (a set
+// member with no explicit placement is auto-appended to MAIN, so the ONLY way to stop a block is to
+// drop it from the set — that also strips it from any saved layout, since the resolver filters a
+// saved slot's order by this set):
+//   • 'event-venue-map' — a bare second venue map; the ONE canonical venue block is 'event-location'
+//     (address line + map), kept below.
+//   • 'event-gallery'   — a duplicate photo strip; the primary hero gallery renders in the page.
+//   • 'event-pricing'   — the poster "Pricing" box, and 'event-sales' — the host ticket-sales box.
+//     Ticketing lives in the Join box; the sold count is folded onto the RSVP ticket card.
+// Those four DEFINITIONS stay in LAYOUT_MODULES (and PARKED in modules.test.ts) so they compile.
 //
 // The 'event-dispatch' composer is NO LONGER a default block: the host "Post an update" composer is
 // now folded INTO the activity module (event-activity renders it for hosts/cohosts, the say-hi
@@ -603,25 +614,20 @@ const CIRCLE_DETAIL_MODULE_IDS = [
 const EVENT_DETAIL_MODULE_IDS = [
   // Post area (defaults to MAIN) — every poster section is its own movable block (no lumping).
   'event-description',
-  // Photo gallery — offered as an arrangeable content box (an operator places it from the Layout
-  // editor). Self-hides under two photos.
-  'event-gallery',
   'event-lineup',
   'event-schedule',
   'event-good-to-know',
-  'event-pricing',
   'event-links',
   'event-sponsors',
   'event-cohosts',
-  'event-sales',
   'event-activity',
   'event-recap',
   // Former Join aside (defaults to SIDE).
   'event-join',
   'event-facts',
+  // The ONE canonical venue block — the address line + its map — pinned at the bottom of MAIN by
+  // the default layout (self-hides for an online event or with no address/geo).
   'event-location',
-  // The venue map block — pinned at the bottom of MAIN by default (self-hides with no geo).
-  'event-venue-map',
   // Spine-paired blocks (LP-EVENT): Place & Time → when/where; People → waitlist; Engage →
   // check-in. Each self-hides when it has nothing, so they cost one query and render nothing off
   // their window.

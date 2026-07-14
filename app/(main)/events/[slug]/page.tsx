@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
+import { eventSchema } from '@/lib/jsonld'
 import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
 import { TicketButton, type TicketTierView } from './ticket-button'
@@ -30,7 +31,6 @@ import { type RecapPhoto } from '@/components/events/recap-album'
 import { EventGallery } from '@/components/events/event-gallery'
 import { HostHovercard } from '@/components/events/host-hovercard'
 import { EventShareButton } from '@/components/events/event-share-button'
-import { ClaimEventBanner } from '@/components/events/claim-event-banner'
 import { type CohostView } from '@/components/events/cohost-manager'
 import { CohostInviteBanner } from '@/components/events/cohost-invite-banner'
 import { listCohosts, listCohostInvites, getMyCohostInvite } from '@/lib/events/cohosts'
@@ -237,6 +237,8 @@ export default async function EventDetailPage({
   type ExtraMeta = {
     posted_by_profile_id: string | null
     claimed_at: string | null
+    /** One-time host claim token (seeded events). Drives the seeder's "Send to host" link. */
+    claim_token: string | null
     organizer_name: string | null
     details: EventDetailsWithMedia | null
     poster_path: string | null
@@ -267,7 +269,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, theme, geog',
+        'posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, theme, geog',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -312,19 +314,39 @@ export default async function EventDetailPage({
   const posterDetails: EventDetailsWithMedia =
     extra?.details && typeof extra.details === 'object' ? extra.details : {}
   const [postedByResolved, posterCropEntries] = await Promise.all([
-    postedById && postedById !== (event.host?.id ?? null)
+    // The public "Posted by" credit. A SEEDED, still-unclaimed event (isUnclaimedPosted) reads as the
+    // @frequency brand account, NOT the human operator who ran the seeder — seeded content stays
+    // attributed to Frequency until its real host claims it. This overrides only the DISPLAY: the
+    // underlying posted_by_profile_id (postedById) is untouched, so the send-to-host + claim flows below
+    // still key off it. @frequency is resolved by its handle so the byline stays correct if the brand
+    // profile changes; a missing row falls back to the stable Frequency name/handle.
+    isUnclaimedPosted
       ? admin
           .from('profiles')
           .select('display_name, handle')
-          .eq('id', postedById)
+          .eq('handle', 'frequency')
           .maybeSingle()
-          .then(({ data }) => (data as { display_name: string; handle: string } | null) ?? null)
-      : Promise.resolve(null),
+          .then(
+            ({ data }) =>
+              (data as { display_name: string; handle: string } | null) ?? {
+                display_name: 'Frequency',
+                handle: 'frequency',
+              },
+          )
+      : postedById && postedById !== (event.host?.id ?? null)
+        ? admin
+            .from('profiles')
+            .select('display_name, handle')
+            .eq('id', postedById)
+            .maybeSingle()
+            .then(({ data }) => (data as { display_name: string; handle: string } | null) ?? null)
+        : Promise.resolve(null),
     posterSignedUrlMap(
       [...detailsMediaPaths(posterDetails), extra?.poster_path].filter((p): p is string => !!p),
     ),
   ])
-  // The credit: whoever put the event on the map, when they aren't the host.
+  // The credit: @frequency for a seeded/unclaimed event, else whoever put the event on the map when they
+  // aren't the host.
   const postedBy: { display_name: string; handle: string } | null = postedByResolved
   const posterCropUrls = Object.fromEntries(posterCropEntries)
 
@@ -587,6 +609,13 @@ export default async function EventDetailPage({
       .order('succeeded_at', { ascending: false })
     soldTickets = (rawSold ?? []) as unknown as SoldTicketRow[]
   }
+
+  // Total tickets sold — folded onto the RSVP ticket card, replacing the retired rail Pricing/Sales
+  // boxes. Tiers carry a public `sold` count (the same column that drives spotsLeft/sold-out), so
+  // every viewer sees a real tally; a flat-price event falls back to the host-visible ticket rows.
+  const ticketsSold = hasTiers
+    ? tierRows.reduce((sum, t) => sum + Math.max(0, t.sold ?? 0), 0)
+    : soldTickets.length
 
   // Resolve the event's real instant through its own zone — never compare the raw
   // wall-clock to now (that flipped a 7pm PT event "past" at noon, hiding RSVP and
@@ -916,6 +945,10 @@ export default async function EventDetailPage({
               )}
             </div>
           )}
+          {/* Tickets sold, folded onto the ticket card from the retired rail Sales box. Quiet, factual. */}
+          <p className="mt-3 text-xs text-subtle">
+            {ticketsSold > 0 ? `${ticketsSold} sold` : 'No tickets sold yet'}
+          </p>
         </div>
       )}
       {ticketingActive ? null : !event.is_cancelled && myProfileId && !isPast ? (
@@ -1078,41 +1111,25 @@ export default async function EventDetailPage({
     },
   })
 
-  // Event structured data (schema.org) for SEO + AI answer engines. Canonical URL is this
-  // public /events/<slug> page; the dynamic OG card is the required `image`. Location is the
-  // event's own (public) venue line for an in-person event, a VirtualLocation when online.
-  const eventJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Event',
-    name: event.title,
-    startDate: event.starts_at,
-    ...(event.ends_at ? { endDate: event.ends_at } : {}),
-    eventStatus: event.is_cancelled
-      ? 'https://schema.org/EventCancelled'
-      : 'https://schema.org/EventScheduled',
-    eventAttendanceMode:
-      attendanceMode === 'online'
-        ? 'https://schema.org/OnlineEventAttendanceMode'
-        : attendanceMode === 'hybrid'
-          ? 'https://schema.org/MixedEventAttendanceMode'
-          : 'https://schema.org/OfflineEventAttendanceMode',
-    image: [`${SITE_URL}/events/${event.slug}/opengraph-image`, `${SITE_URL}/opengraph-image`],
-    ...(event.description ? { description: event.description } : {}),
-    url: `${SITE_URL}/events/${event.slug}`,
-    location: isOnline
-      ? { '@type': 'VirtualLocation', url: `${SITE_URL}/events/${event.slug}` }
-      : {
-          '@type': 'Place',
-          name: event.location || scopeName || 'In person',
-          ...(event.location ? { address: event.location } : {}),
-        },
-    ...(scopeName
-      ? { organizer: { '@type': 'Organization', name: scopeName } }
-      : event.host
-        ? { organizer: { '@type': 'Person', name: event.host.display_name } }
-        : {}),
-    isAccessibleForFree: !isPaidEvent,
-  }
+  // Event structured data (schema.org) for SEO + AI answer engines, built from the shared
+  // eventSchema helper so the canonical /events/<slug> page emits the same richer, city-level
+  // schema as /discover (offers/validFrom/availability included; the exact venue is NEVER
+  // leaked — city-level only, matching this page's own city-only meta description per ADR-186).
+  const eventJsonLd = eventSchema({
+    id: event.id,
+    slug: event.slug,
+    title: event.title,
+    description: event.description,
+    starts_at: event.starts_at,
+    ends_at: event.ends_at,
+    city: extra?.city ?? null,
+    circle_id: event.scope_id ?? null,
+    circle_name: scopeName,
+    price_cents: event.price_cents,
+    attendance_mode: attendanceMode,
+    is_cancelled: event.is_cancelled,
+    region: extra?.region ?? null,
+  })
 
   return (
     <div className="pb-24 lg:pb-0">
@@ -1144,15 +1161,9 @@ export default async function EventDetailPage({
         <CohostInviteBanner eventId={event.id} slug={event.slug} eventTitle={event.title} />
       )}
 
-      {/* "This is not my event" — for an unclaimed posted event, name the poster +
-          organizer and give the organizer a path to claim it. Hidden for managers. */}
-      {isUnclaimedPosted && !canManage && (
-        <ClaimEventBanner
-          eventId={event.id}
-          organizerName={extra?.organizer_name ?? null}
-          postedByName={postedBy?.display_name ?? null}
-        />
-      )}
+      {/* The public "Is this your event? Claim it" banner is retired (owner directive): the person who
+          SEEDED the event now hands it off privately via the "Send to host" link in the QR and Share popup,
+          so the claim path is no longer surfaced to every visitor. */}
 
       <DetailTemplate
         // [A1] header image — the one big visual win. Uploaded cover, else the scanned
@@ -1207,7 +1218,18 @@ export default async function EventDetailPage({
         // additionally get Edit (Settings drawer) then Manage (dashboard), stacked beneath it.
         actions={
           <div className="flex flex-col items-stretch gap-2 sm:items-end">
-            <EventShareButton slug={event.slug} title={event.title} sharerProfileId={myProfileId} />
+            <EventShareButton
+              slug={event.slug}
+              title={event.title}
+              sharerProfileId={myProfileId}
+              // "Send to host": only the SEEDER (the poster) of an unclaimed event gets the claim link, so
+              // they can hand it to its real organizer. Everyone else gets null (no block shown).
+              hostClaimUrl={
+                isUnclaimedPosted && myProfileId && myProfileId === postedById && extra?.claim_token
+                  ? `${SITE_URL}/events/claim/${extra.claim_token}`
+                  : null
+              }
+            />
             {canManage && (
               <>
                 <OpenAdminBarButton

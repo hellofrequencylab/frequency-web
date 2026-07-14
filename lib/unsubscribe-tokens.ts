@@ -18,16 +18,18 @@ import type { NotificationCategory } from '@/lib/notification-preferences'
 function getSecret(): string {
   const explicit = process.env.UNSUBSCRIBE_SECRET
   if (explicit) return explicit
+  // In production a missing secret is a deploy error, not a soft-degrade: falling back to the
+  // service-role key couples every issued unsubscribe link to that key (rotating it silently
+  // invalidates them all) and widens the key's blast radius. Fail closed so the misconfig is caught.
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      '[unsubscribe-tokens] UNSUBSCRIBE_SECRET must be set in production. Refusing to sign with the service-role key.',
+    )
+  }
   const fallback = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 32)
   if (!fallback) {
     throw new Error(
       '[unsubscribe-tokens] No UNSUBSCRIBE_SECRET and no SUPABASE_SERVICE_ROLE_KEY — cannot sign.',
-    )
-  }
-  if (process.env.NODE_ENV === 'production') {
-    console.warn(
-      '[unsubscribe-tokens] UNSUBSCRIBE_SECRET not set in production. ' +
-      'Tokens will rotate if the service-role key rotates. Set an explicit secret.',
     )
   }
   return fallback

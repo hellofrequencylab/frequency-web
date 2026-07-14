@@ -265,7 +265,20 @@ describe('moduleMeta', () => {
 // defined for a future surface, by owner decision). Adding a binding without wiring a route fails here.
 describe('module reachability', () => {
   // Intentionally defined-but-unoffered, documented in modules.ts (Phase 0.5.11 + event defaults).
-  const PARKED = new Set(['quest-tasks', 'event-details', 'event-dispatch'])
+  // The event trim (redundant-module cleanup) pulled four more from the event set so they no longer
+  // render: the bare second venue map (event-venue-map — event-location is the canonical venue block),
+  // the duplicate photo strip (event-gallery — the hero gallery renders in the page), and the poster
+  // Pricing + host Sales boxes (event-pricing / event-sales — ticketing lives in the Join box and the
+  // sold count is folded onto the ticket card). Their components stay bound so they compile.
+  const PARKED = new Set([
+    'quest-tasks',
+    'event-details',
+    'event-dispatch',
+    'event-venue-map',
+    'event-gallery',
+    'event-pricing',
+    'event-sales',
+  ])
 
   it('every bound component is route-reachable or explicitly parked', () => {
     const reachable = new Set<string>()

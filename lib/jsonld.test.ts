@@ -164,7 +164,7 @@ describe('eventSchema', () => {
     const loc = result.location as Record<string, unknown>
     expect(loc['@type']).toBe('VirtualLocation')
     // The VirtualLocation url is the PUBLIC event page, never the members-only join link.
-    expect(loc.url).toBe(`${SITE_URL}/discover/events/live-sit`)
+    expect(loc.url).toBe(`${SITE_URL}/events/live-sit`)
   })
 
   it('maps a hybrid event to both a Place and a VirtualLocation + MixedEventAttendanceMode', () => {
@@ -202,7 +202,7 @@ describe('eventSchema', () => {
 
   it('generates the canonical event URL from slug', () => {
     const result = eventSchema(makeEvent({ slug: 'summer-meetup' }))
-    expect(result.url).toBe(`${SITE_URL}/discover/events/summer-meetup`)
+    expect(result.url).toBe(`${SITE_URL}/events/summer-meetup`)
   })
 
   it('includes organizer when circle_name is provided', () => {

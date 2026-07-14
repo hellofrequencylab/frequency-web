@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
 import { applyReferralAttribution, applyEntryPointConversion } from '@/lib/qr/referral'
-import { grantJoinZaps } from '@/lib/onboarding/welcome'
+import { postWelcomeForMember } from '@/lib/onboarding/welcome'
 import { ensureMemberCodes } from '@/lib/qr/member-codes'
 import { persistAcquisition } from '@/lib/attribution/acquisition'
 
@@ -73,14 +73,17 @@ export async function completeOnboarding(data: {
     await applyReferralAttribution(updated.id)
     await applyEntryPointConversion(updated.id).catch(() => {})
     await persistAcquisition(updated.id).catch(() => {})
-    // Joining pays (ADR-232) — after attribution, so the referred bonus lands too.
-    // Idempotent (reward_grants), so the beta-induction path can also call it.
-    await grantJoinZaps(updated.id)
+    // Welcome the new member (ADR-231): grants the join Zaps AND drops the one quiet
+    // "@handle joined 👋" line into the feed + the personal notification. This is the
+    // classic path — it previously only granted Zaps and never posted the feed line,
+    // so many members joined with no notice. postWelcomeForMember is idempotent
+    // (reward_grants lock), so a repeat pass or the beta path never double-announces.
     // Every account gets its QR code the moment it has a handle (owner directive).
     // First pass writes the new handle; a repeat pass keeps the existing one.
+    const memberHandle = onboarded ? (cur?.handle ?? handle) : handle
+    await postWelcomeForMember(updated.id, displayName, memberHandle).catch(() => {})
     // Fire-and-forget: a provisioning hiccup never blocks onboarding — the invite
     // and /codes surfaces lazily re-provision as the fallback.
-    const memberHandle = onboarded ? (cur?.handle ?? handle) : handle
     if (memberHandle) {
       ensureMemberCodes(updated.id, memberHandle).catch((e) => console.error('[member-codes]', e))
     }

@@ -111,15 +111,28 @@ export function CircleSettingsModule() {
           </label>
         </div>
 
-        <label className="block space-y-1.5">
-          <span className={fieldLabel}>Status</span>
-          <select name="status" defaultValue={data.status} className={input}>
-            <option value="forming">Forming</option>
-            <option value="active">Active</option>
-            <option value="paused">Paused</option>
-            <option value="archived">Archived</option>
-          </select>
-        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block space-y-1.5">
+            <span className={fieldLabel}>Status</span>
+            <select name="status" defaultValue={data.status} className={input}>
+              <option value="forming">Forming</option>
+              <option value="active">Active</option>
+              <option value="paused">Paused</option>
+              <option value="archived">Archived</option>
+            </select>
+          </label>
+
+          {/* Visibility — a select (not a checkbox) so the native autosave form always submits a value,
+              which lets a host switch it back to Listed. Unlisted hides the circle from discovery. */}
+          <label className="block space-y-1.5">
+            <span className={fieldLabel}>Visibility</span>
+            <select name="unlisted" defaultValue={data.unlisted ? 'on' : 'off'} className={input}>
+              <option value="off">Listed</option>
+              <option value="on">Unlisted</option>
+            </select>
+          </label>
+        </div>
+        <p className="text-2xs text-muted">Unlisted keeps this circle off the directory, map, and search. The link still works and members always see it.</p>
       </RailAutosaveForm>
 
       {/* Permalink — its own action: a rename redirects the page to the new URL. */}

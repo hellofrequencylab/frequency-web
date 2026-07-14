@@ -123,7 +123,7 @@ export async function getCircleAdminData(slug: string) {
   const admin = createAdminClient()
   const { data: circle } = await admin
     .from('circles')
-    .select('id, slug, name, about, type, member_cap, status, image_url')
+    .select('id, slug, name, about, type, member_cap, status, image_url, unlisted')
     .eq('slug', slug)
     .maybeSingle()
   if (!circle) return null
@@ -150,6 +150,7 @@ export async function getCircleAdminData(slug: string) {
     member_cap: circle.member_cap,
     status: circle.status,
     image_url: circle.image_url,
+    unlisted: circle.unlisted ?? false,
     practice_library: practice_library.map((p) => ({ id: p.id, title: p.title })),
     active_practice_id: activePractice?.id ?? null,
     adoptedJourneys: adoptions.journeys,
@@ -232,6 +233,9 @@ export async function updateCircleSettings(id: string, slug: string, fd: FormDat
       type: fd.get('type') as Database['public']['Enums']['circle_type'],
       member_cap: parseInt(fd.get('member_cap') as string, 10) || 12,
       status: fd.get('status') as Database['public']['Enums']['group_status'],
+      // Unlisted keeps the circle off discovery (index/map/directory/sitemap) while it stays reachable
+      // by direct link and visible to members. Only written when the rail form includes the field.
+      ...(fd.has('unlisted') ? { unlisted: fd.get('unlisted') === 'on' } : {}),
     })
     .eq('id', id)
   if (error) throw new Error(error.message)

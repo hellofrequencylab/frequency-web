@@ -46,6 +46,14 @@ export async function grantJoinZaps(memberId: string): Promise<void> {
 //   2. sends the newcomer a personal welcome notification.
 // The join grant (above) runs FIRST so the line's live count includes it.
 // Best-effort; never blocks onboarding. No-op if there's no system account.
+//
+// IDEMPOTENT (ADR-231 fix): a single member reaches completion through several paths
+// (classic onboarding, beta induction, the deferred /complete hop, and re-runs of any
+// of them). Each of those now calls this, and a `reward_grants` claim (UNIQUE rule_key +
+// profile_id) guarantees the feed line + notification fire AT MOST ONCE per member — so
+// every path is safe to call and no member is announced twice. The claim is taken only
+// AFTER the system account resolves, so a transient "no system account" never burns the
+// lock and leaves a member permanently un-welcomed.
 export async function postWelcomeForMember(
   memberId: string,
   displayName: string,
@@ -64,6 +72,17 @@ export async function postWelcomeForMember(
     .limit(1)
     .maybeSingle()
   if (!system) return
+
+  // Claim the one-per-member welcome lock. If the row already exists (any earlier path
+  // welcomed them), stop here — the line + notification were already posted.
+  const { error: claimErr } = await admin.from('reward_grants').insert({
+    rule_key: 'welcome.line',
+    profile_id: memberId,
+    reward_kind: 'zaps',
+    amount: 0, // a marker row, not a payout — the join Zaps ride grantJoinZaps above
+    detail: 'Welcome line posted',
+  })
+  if (claimErr) return
 
   // The line the whole feed sees — naming the inviter when attribution exists
   // (profiles.referred_by_profile_id, set by the fq_ref scan flow). The renderer

@@ -45,6 +45,7 @@ type CircleRow = CircleBase & {
   image_url: string | null
   featured_at: string | null
   is_demo: boolean
+  unlisted: boolean
   topical_channel_id: string | null
   channel: { name: string; pillar_id: string | null } | null
   hub: {
@@ -195,7 +196,7 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
         .from('circles')
         .select(
           `id, name, slug, about, type, member_count, member_cap, status, created_at,
-           latitude, longitude, neighborhood, image_url, is_demo, featured_at, topical_channel_id,
+           latitude, longitude, neighborhood, image_url, is_demo, unlisted, featured_at, topical_channel_id,
            channel:topical_channels!topical_channel_id ( name, pillar_id ),
            hub:hubs!hub_id (
              id, name, slug,
@@ -229,8 +230,14 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
       (await templatesEnabled()) ? getActiveTemplates() : [])(),
   ])
 
-  const all = rawCircles
-  const hitFetchCap = all.length === CIRCLES_FETCH_LIMIT
+  // Unlisted circles are hidden from every discovery surface below (cards, map, browse rails,
+  // counts) — but a member still sees their OWN unlisted circle in the "my circles" band, and the
+  // detail page always resolves by direct link. So drop unlisted circles up front unless the viewer
+  // belongs to one; everything downstream (facets, map, rollups) then reads the already-filtered set.
+  const all = rawCircles.filter((c) => !c.unlisted || myCircleIds.includes(c.id))
+  // Cap check reads the RAW fetch, not the post-filter set: dropping unlisted circles must not make
+  // a truncated 500-row fetch look complete (else the "refine to see more" notice would hide).
+  const hitFetchCap = rawCircles.length === CIRCLES_FETCH_LIMIT
   const domainCount = new Map<string, number>()
   for (const c of all) {
     const d = c.channel?.pillar_id

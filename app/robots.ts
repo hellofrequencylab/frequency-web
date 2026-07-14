@@ -16,6 +16,13 @@ const DISALLOW = [
   // index. Host manage sub-routes are proxy-protected (anon gets redirected), so a crawler
   // never indexes them even though they aren't listed here.
   "/events/new",
+  // App-shell TWINS of canonical /discover surfaces — these pages canonical to
+  // /discover/partners|journeys, so keep crawlers off the twins to stop them cannibalizing
+  // the canonicals. (/discover/* is NOT disallowed.) NOTE: /store is deliberately NOT listed —
+  // its /store/<id> product pages are self-canonical + indexable (Product schema), so a blanket
+  // /store rule would deindex them; the /store index carries its own noindex instead.
+  "/partners",
+  "/journeys",
   "/messages",
   "/people",
   "/search",
