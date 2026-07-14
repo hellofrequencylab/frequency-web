@@ -110,6 +110,51 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     systemManaged: true,
   },
 
+  // ── Tags · marketing · beta niche funnels ──────────────────────────────────
+  // Which niche onboarding funnel a member arrived through (sequence_overrides,
+  // lib/onboarding/sequence-overrides.ts). Stamped automatically at induction so each
+  // audience stays segmentable by entry path forever, even after the beta flow retires.
+  {
+    key: 'beta_coaches_healers',
+    label: 'Beta · Coaches & Healers',
+    description: 'Arrived through the Coaches & Healers funnel — a solo practitioner selling their time, here for booking, packages, and reminders.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'beta_studios_teachers',
+    label: 'Beta · Studios & Teachers',
+    description: 'Arrived through the Studios & Teachers funnel — a studio or teacher running class schedules, memberships, and check-in.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'beta_event_hosts',
+    label: 'Beta · Event & Experience Hosts',
+    description: 'Arrived through the Event & Experience Hosts funnel — a host running ticketing, promotion, and check-in for a dated gathering.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'beta_community_builders',
+    label: 'Beta · Community Builders',
+    description: 'Arrived through the Community Builders funnel — building an ongoing community with memberships, The Quest, and real-world return.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'beta_nonprofits',
+    label: 'Beta · Nonprofits & Foundations',
+    description: 'Arrived through the Nonprofits & Foundations funnel — a verified 501(c)(3) running donations, programs, and volunteers on flat pricing.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+
   // ── Tags · marketing · persona (ADR-125) ───────────────────────────────────
   // WHO the member said they were at intake (lib/onboarding/personas.ts) — the
   // self-identified fork that routes the lead-flow marketing track and branches the
