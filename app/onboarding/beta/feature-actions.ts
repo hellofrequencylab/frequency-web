@@ -54,6 +54,8 @@ export async function beginFeatureFunnelSignup(input: {
   name: string
   email: string
   seq: string
+  /** The @username the visitor picked (feature funnel step 2). Falls back to a name-derived handle. */
+  handle?: string
 }): Promise<{ ok: true }> {
   const name = (input.name ?? '').trim().slice(0, 120) || 'Member'
   const seq = (input.seq ?? '').trim().slice(0, 80)
@@ -68,11 +70,16 @@ export async function beginFeatureFunnelSignup(input: {
     })
   }
 
-  // Park a minimal profile (name + a unique handle; everything else blank) in the pending-induction
+  // Prefer the @username they picked (feature funnel step 2) when it is a valid, free handle; else
+  // derive a unique one from their name. Never dies on a collision the visitor can't see.
+  const picked = (input.handle ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
+  const handle = picked.length >= 3 ? await uniqueHandle(picked) : await uniqueHandle(name)
+
+  // Park a minimal profile (name + the handle; everything else blank) in the pending-induction
   // cookie. The finalizer writes it through the tested writeBetaInduction path after sign-in.
   await stashPendingInduction({
     displayName: name,
-    handle: await uniqueHandle(name),
+    handle,
     bio: '',
     location: '',
     lat: null,

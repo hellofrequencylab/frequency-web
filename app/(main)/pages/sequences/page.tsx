@@ -73,8 +73,11 @@ async function loadSignupCounts(tags: string[]): Promise<Record<string, number>>
 
 export default async function SplashFunnelsPage() {
   await requireAdmin('janitor')
+  // Both sources: custom (DB versions built in the wizard) AND code (e.g. the breathwork feature
+  // funnel, ADR-619). Code funnels are managed in the repo, so their row shows a "code" chip instead
+  // of the DB lifecycle controls.
   const funnels = (await listAllSequences())
-    .filter((s) => s.source === 'custom')
+    .filter((s) => s.source === 'custom' || s.source === 'code')
     .slice(0, MAX_FUNNELS)
 
   // The branded site QR style: the default style (connected modules, rounded eyes) with
@@ -93,6 +96,7 @@ export default async function SplashFunnelsPage() {
       return {
         slug: f.slug,
         status: f.status,
+        source: f.source,
         seq,
         inductionPath,
         inductionQr,
@@ -324,7 +328,7 @@ export default async function SplashFunnelsPage() {
             <p className="-mt-1 mb-4 max-w-2xl text-sm text-muted">{s.blurb}</p>
             {s.status === 'live' && styleCards.length > 0 ? (
               <div className="space-y-3">
-                {styleCards.map(({ slug, status, seq, inductionPath }) => (
+                {styleCards.map(({ slug, status, source, seq, inductionPath }) => (
                   <article
                     key={slug}
                     className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm"
@@ -356,7 +360,16 @@ export default async function SplashFunnelsPage() {
                       <a href={inductionPath} target="_blank" rel="noreferrer" className={VIEW_LINK}>
                         <ExternalLink className="h-3.5 w-3.5" /> Preview
                       </a>
-                      <FunnelRowActions slug={slug} status={status} />
+                      {source === 'code' ? (
+                        <span
+                          className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-subtle"
+                          title="This funnel is defined in the repo (a code sequence), so it is managed in code, not here."
+                        >
+                          <Lock className="h-3 w-3" /> Managed in code
+                        </span>
+                      ) : (
+                        <FunnelRowActions slug={slug} status={status} />
+                      )}
                     </div>
                   </article>
                 ))}

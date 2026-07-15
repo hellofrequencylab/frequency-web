@@ -1,14 +1,25 @@
 'use client'
 
 // FEATURE FUNNEL — the playable front door (ADR-619, docs/SPLASH-FUNNELS.md Phase 3).
-// A visitor USES one stripped feature before they ever sign up. Five cards, but unlike the cinematic
-// induction the demo IS the hero: card 2 runs the real box-breath visualizer, and at the first hold
-// a "keep your streak, free" panel breathes in while the ring keeps going. The reward beat shows the
-// true first-log outcome (a Day 1 streak + Zaps landing) so the signup ask reads as "claim what you
-// just started", not "give us your email". Completion reuses the tested deferred-induction pipeline.
+//
+// FRAMING (owner directive): this is a LEAD INTO THE BETA LAUNCH. It is an INVITATION, not a plain
+// signup. The free breathwork timer is the hook; the frame throughout is "you are invited into the
+// Frequency beta". Keep the invitation language front and center in any copy edit here.
+//
+// A visitor USES one stripped feature before they ever sign up. Styled to match the cinematic beta
+// induction (warm light, brandmark on top, big font-display headings, progress at the bottom) so it
+// reads as a real page, not a mobile app in a box. Three beats:
+//   1. Demo — a phone mockup runs the real box-breath timer (a 5s countdown, then the ring), with the
+//      coaching beside it. At the first hold a "Keep going" nudge + "Get a Free Timer" reveals name +
+//      email (auto-saved). A quiet Skip sits under it.
+//   2. Reward — the true first-log outcome (Day 1 streak + the 25-Zap welcome), and "claim your
+//      @username" (a live-checked handle). Skip under it.
+//   3. Join — create the account with everything they gave us pre-filled + a photo, "Join now, get 25
+//      Zaps". Loss aversion: they are keeping the streak they already started.
+// Back steps between beats. Completion reuses the tested deferred-induction pipeline.
 //
 // Voice canon (docs/CONTENT-VOICE.md): plain sentences, proper nouns carry the magic, never narrate
-// the reader's feelings, no em dashes. The reward is SHOWN as stats (chips), never pitched as "earn N".
+// the reader's feelings, no em dashes. The reward is SHOWN as stat chips, never pitched as "earn N".
 
 import { useEffect, useRef, useState } from 'react'
 import { BreathVisualizer } from '@/components/on-air/visualizer'
@@ -17,17 +28,31 @@ import type { FeatureFunnelConfig, FunnelDestination } from '@/lib/onboarding/be
 import { isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
 import { WizardProgress } from '@/components/templates'
 import { trackClient } from '@/components/analytics/track-provider'
+import { downscaleImageFile } from '@/lib/images/downscale-image'
 import { beginFeatureFunnelSignup } from './feature-actions'
 import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
 
+// Avatar is too big for a cookie, so the deferred flow parks it in localStorage and
+// /onboarding/beta/complete uploads it. Same key the finalizer reads.
+const PENDING_AVATAR_KEY = 'fq_pending_avatar'
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const HANDLE_RE = /^[a-z0-9_]{3,30}$/
 
-// The box cycle is 16s (In-4 / Hold-4 / Out-4 / Hold-4). The capture panel arrives at the first hold
-// (~8s in), and the reward chips light once a full round completes (~16s).
-const CAPTURE_AT_SEC = 8
-const REWARD_AT_SEC = 16
+const COUNTDOWN_SEC = 5
+// The box cycle is In-4 / Hold-4 / Out-4 / Hold-4. The "Keep going" nudge lands at the first hold, so
+// after the inhale: 4s of breath elapsed.
+const HOLD_AT_SEC = 4
 
-type Lead = { name: string; email: string }
+type Lead = { name: string; email: string; handle: string }
+
+// Shared warm-light field style (matches the induction's inputs).
+const FIELD =
+  'w-full rounded-xl border border-border bg-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none'
+const PRIMARY_BTN =
+  'inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50'
+const GHOST_BTN =
+  'inline-flex items-center justify-center rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-50'
 
 export default function FeatureFunnel({
   sequence,
@@ -35,8 +60,6 @@ export default function FeatureFunnel({
   destination,
   deferred = false,
   userEmail = '',
-  headline,
-  intro,
 }: {
   sequence: string
   feature: FeatureFunnelConfig
@@ -44,346 +67,429 @@ export default function FeatureFunnel({
   /** Signed-out visitor: the whole point of a feature funnel. Signed-in = just plays the demo. */
   deferred?: boolean
   userEmail?: string
-  /** Card-1 hero copy (from the sequence splash), with sensible breathwork defaults. */
-  headline?: string
-  intro?: string
 }) {
   const [step, setStep] = useState(1)
-  const [lead, setLead] = useState<Lead>({ name: '', email: userEmail })
+  const [lead, setLead] = useState<Lead>({ name: '', email: userEmail, handle: '' })
   const pattern = patternBySlug(feature.pattern ?? 'box')
-  const zaps = feature.zapsReward ?? 12
+  const zaps = feature.zapsReward ?? 25
 
-  // Fire the funnel-entered event once per session (Phase 1 stats: entered -> captured -> signed-up).
+  // Auto-save: hydrate the lead from localStorage on mount, then persist every change, so a refresh
+  // or a step back never loses what they typed.
+  const storeKey = `fq_ff_lead_${sequence}`
+  const hydrated = useRef(false)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storeKey)
+      if (raw) {
+        const saved = JSON.parse(raw) as Partial<Lead>
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setLead((l) => ({ ...l, ...saved, email: saved.email || l.email }))
+      }
+    } catch {
+      // ignore a malformed cache
+    }
+    hydrated.current = true
+  }, [storeKey])
+  useEffect(() => {
+    if (!hydrated.current) return
+    try {
+      localStorage.setItem(storeKey, JSON.stringify(lead))
+    } catch {
+      // storage full / disabled — the flow still works in-memory
+    }
+  }, [lead, storeKey])
+
+  // Fire funnel-entered once per session (Phase 1 stats: entered -> captured -> signed-up).
   const entered = useRef(false)
   useEffect(() => {
     if (entered.current) return
     entered.current = true
     try {
       const key = `fq_funnel_entered_${sequence}`
-      if (!sessionStorage.getItem(key)) {
-        trackClient('onboarding.funnel_entered', { seq: sequence, style: 'feature' })
-        sessionStorage.setItem(key, '1')
-      }
+      if (sessionStorage.getItem(key)) return
+      sessionStorage.setItem(key, '1')
     } catch {
-      trackClient('onboarding.funnel_entered', { seq: sequence, style: 'feature' })
+      // fall through and still record it
     }
+    trackClient('onboarding.funnel_entered', { seq: sequence, style: 'feature' })
   }, [sequence])
 
-  const total = 5
-  const labels = ['Meet the breath', 'Try a round', 'Log it', 'Keep it', 'Step in']
+  const total = 3
+  const labels = ['Try the timer', 'Your streak', 'Join']
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-canvas px-6 py-10">
-      <span className="brandmark mb-8 block h-8 aspect-[963/170]" aria-hidden />
+    <main className="relative min-h-screen overflow-hidden bg-canvas">
+      <div className="amber-glow pointer-events-none absolute inset-0" aria-hidden />
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12">
+        <span className="brandmark mb-8 block h-10 aspect-[963/170]" aria-hidden />
 
-      <div className="relative z-10 w-full max-w-md">
-        {step === 1 && (
-          <IntroCard
-            headline={headline ?? 'Box breathing, in one round.'}
-            intro={
-              intro ??
-              'Four counts in, hold four, four out, hold four. Follow the ring with your eyes half closed. That is the whole practice.'
-            }
-            onStart={() => setStep(2)}
-          />
-        )}
+        <div className="w-full max-w-4xl">
+          {step === 1 && (
+            <DemoStep
+              pattern={pattern}
+              lead={lead}
+              resumed={!!lead.email}
+              onLead={setLead}
+              onCaptured={() => trackClient('onboarding.funnel_captured', { seq: sequence, style: 'feature' })}
+              onNext={() => setStep(2)}
+            />
+          )}
+          {step === 2 && (
+            <RewardStep
+              zaps={zaps}
+              lead={lead}
+              onLead={setLead}
+              onBack={() => setStep(1)}
+              onNext={() => setStep(3)}
+            />
+          )}
+          {step === 3 && (
+            <JoinStep
+              sequence={sequence}
+              destination={destination}
+              deferred={deferred}
+              lead={lead}
+              onLead={setLead}
+              zaps={zaps}
+              onBack={() => setStep(2)}
+            />
+          )}
+        </div>
 
-        {step === 2 && (
-          <DemoCard
-            pattern={pattern}
-            zaps={zaps}
-            initialLead={lead}
-            onCapture={(l) => {
-              setLead(l)
-              trackClient('onboarding.funnel_captured', { seq: sequence, style: 'feature' })
-              setStep(3)
-            }}
-            onSkip={() => setStep(3)}
-          />
-        )}
-
-        {step === 3 && (
-          <ValueCard
-            eyebrow="Every round counts"
-            title="It logs itself."
-            body="Each round you take gets logged the moment you finish. No form, no fuss. Your streak counts the days you show up."
-            visual={<StreakStrip active={1} />}
-            onNext={() => setStep(4)}
-            onBack={() => setStep(2)}
-          />
-        )}
-
-        {step === 4 && (
-          <ValueCard
-            eyebrow="All in one place"
-            title="Your practice, kept."
-            body="Rounds, minutes, patterns tried, Zaps banked. It stays yours, so a good streak is something you can see grow."
-            visual={<VaultStrip zaps={zaps} />}
-            onNext={() => setStep(5)}
-            onBack={() => setStep(3)}
-          />
-        )}
-
-        {step === 5 && (
-          <StepInCard
-            sequence={sequence}
-            destination={destination}
-            deferred={deferred}
-            lead={lead}
-            zaps={zaps}
-          />
-        )}
-      </div>
-
-      <div className="relative z-10 mt-10 w-full max-w-md">
-        <WizardProgress current={step} total={total} label={labels[step - 1]} variant="dots" />
+        <div className="mt-10 w-full max-w-xs">
+          <WizardProgress current={step} total={total} label={labels[step - 1]} variant="dots" />
+        </div>
       </div>
     </main>
   )
 }
 
-// ── Card 1: intro ────────────────────────────────────────────────────────────────────────────────
-function IntroCard({ headline, intro, onStart }: { headline: string; intro: string; onStart: () => void }) {
+// ── The phone mockup ───────────────────────────────────────────────────────────────────────────────
+function PhoneFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-center">
-      <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-primary">Breathwork</p>
-      <h1 className="font-display text-3xl uppercase leading-[0.95] text-balance text-text sm:text-4xl">{headline}</h1>
-      <p className="mx-auto mt-5 max-w-sm text-base leading-relaxed text-muted">{intro}</p>
-      <button
-        type="button"
-        onClick={onStart}
-        className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-      >
-        Try a round
+    <div className="relative mx-auto aspect-[9/19] w-56 rounded-[2.75rem] border-[10px] border-text bg-text shadow-2xl sm:w-64">
+      {/* notch */}
+      <div className="absolute left-1/2 top-0 z-20 h-5 w-24 -translate-x-1/2 rounded-b-2xl bg-text" aria-hidden />
+      {/* screen */}
+      <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[2rem] bg-gradient-to-b from-primary-bg/60 to-canvas">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+// ── Beat 1: the playable demo ───────────────────────────────────────────────────────────────────────
+function DemoStep({
+  pattern,
+  lead,
+  resumed,
+  onLead,
+  onCaptured,
+  onNext,
+}: {
+  pattern: ReturnType<typeof patternBySlug>
+  lead: Lead
+  /** They have already played once (came back a step) — skip the countdown, open the fields. */
+  resumed: boolean
+  onLead: (next: Lead) => void
+  onCaptured: () => void
+  onNext: () => void
+}) {
+  // resumed => countdown already at 0, so the countdown effect starts the breath clock on mount
+  // (keeps Date.now() out of render, per the purity rule).
+  const [countdown, setCountdown] = useState(resumed ? 0 : COUNTDOWN_SEC)
+  const [breathStart, setBreathStart] = useState<number | null>(null)
+  const [breathElapsed, setBreathElapsed] = useState(0)
+  const [showFields, setShowFields] = useState(resumed)
+
+  // The 5s countdown, then start the breath clock.
+  useEffect(() => {
+    if (breathStart !== null) return
+    if (countdown <= 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setBreathStart(Date.now())
+      return
+    }
+    const id = setTimeout(() => setCountdown((n) => n - 1), 1000)
+    return () => clearTimeout(id)
+  }, [countdown, breathStart])
+
+  // The breath clock (drives the "keep going" nudge at the first hold).
+  useEffect(() => {
+    if (breathStart === null) return
+    const id = setInterval(() => setBreathElapsed((Date.now() - breathStart) / 1000), 250)
+    return () => clearInterval(id)
+  }, [breathStart])
+
+  const breathing = breathStart !== null
+  const nudge = breathing && breathElapsed >= HOLD_AT_SEC
+  const emailOk = EMAIL_RE.test(lead.email.trim())
+
+  function getFreeTimer() {
+    setShowFields(true)
+  }
+  function proceed() {
+    if (emailOk) onCaptured()
+    onNext()
+  }
+
+  return (
+    <div className="grid items-center gap-10 md:grid-cols-2">
+      {/* Phone */}
+      <div className="order-1 md:order-none">
+        <PhoneFrame>
+          {!breathing ? (
+            <div className="flex flex-col items-center">
+              <span className="text-6xl font-bold tabular-nums text-primary-strong">{Math.max(1, countdown)}</span>
+              <span className="mt-2 text-sm font-medium text-muted">Get ready</span>
+            </div>
+          ) : (
+            <div className="scale-[0.6]">
+              <BreathVisualizer pattern={pattern} startedAt={breathStart} />
+            </div>
+          )}
+        </PhoneFrame>
+      </div>
+
+      {/* Coaching */}
+      <div className="text-center md:text-left">
+        <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">Free breathwork timer</p>
+        <h1 className="font-display text-4xl uppercase leading-[0.95] text-balance text-text sm:text-5xl">
+          Breathe with the ring.
+        </h1>
+
+        {!nudge && (
+          <p className="mt-5 max-w-md text-lg leading-relaxed text-muted">
+            {breathing
+              ? 'In as it grows. Hold at the top. Out as it settles. Let your shoulders drop.'
+              : 'Box breathing, one round. Follow the ring with your eyes half closed. That is the whole practice.'}
+          </p>
+        )}
+
+        {nudge && !showFields && (
+          <div className="mt-5">
+            <p className="text-lg font-semibold text-text">Keep going. You are doing it.</p>
+            <p className="mt-1 max-w-md text-base text-muted">
+              This timer is your invitation into the Frequency beta. Grab it and your streak starts today.
+            </p>
+            <button type="button" onClick={getFreeTimer} className={`${PRIMARY_BTN} mt-5 sm:w-auto sm:px-6`}>
+              Get a Free Timer
+            </button>
+          </div>
+        )}
+
+        {showFields && (
+          <div className="mt-5 max-w-sm">
+            <p className="text-base font-semibold text-text">Where should we send your invitation?</p>
+            <div className="mt-3 space-y-2 text-left">
+              <input
+                type="text"
+                value={lead.name}
+                onChange={(e) => onLead({ ...lead, name: e.target.value })}
+                placeholder="Your name"
+                autoComplete="name"
+                className={FIELD}
+              />
+              <input
+                type="email"
+                value={lead.email}
+                onChange={(e) => onLead({ ...lead, email: e.target.value })}
+                placeholder="you@email.com"
+                autoComplete="email"
+                inputMode="email"
+                className={FIELD}
+              />
+            </div>
+            <button type="button" onClick={proceed} disabled={!emailOk} className={`${PRIMARY_BTN} mt-3`}>
+              Keep my timer
+            </button>
+            <button type="button" onClick={onNext} className="mt-2 block w-full text-center text-xs text-subtle hover:underline">
+              Skip for now
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Beat 2: the reward + username ────────────────────────────────────────────────────────────────────
+function RewardStep({
+  zaps,
+  lead,
+  onLead,
+  onBack,
+  onNext,
+}: {
+  zaps: number
+  lead: Lead
+  onLead: (next: Lead) => void
+  onBack: () => void
+  onNext: () => void
+}) {
+  const [handle, setHandle] = useState(lead.handle)
+  const [check, setCheck] = useState<{ handle: string; status: 'idle' | 'checking' | 'available' | 'taken' }>({
+    handle: '',
+    status: 'idle',
+  })
+
+  // Debounced availability check (the public /api/check-handle RPC works signed-out).
+  useEffect(() => {
+    const h = handle.trim().toLowerCase()
+    if (!HANDLE_RE.test(h)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCheck({ handle: h, status: 'idle' })
+      return
+    }
+    setCheck({ handle: h, status: 'checking' })
+    let cancelled = false
+    const id = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/check-handle?handle=${encodeURIComponent(h)}`)
+        const { available } = (await res.json()) as { available: boolean }
+        if (!cancelled) setCheck({ handle: h, status: available ? 'available' : 'taken' })
+      } catch {
+        if (!cancelled) setCheck({ handle: h, status: 'idle' })
+      }
+    }, 400)
+    return () => {
+      cancelled = true
+      clearTimeout(id)
+    }
+  }, [handle])
+
+  function proceed() {
+    onLead({ ...lead, handle: handle.trim().toLowerCase() })
+    onNext()
+  }
+
+  return (
+    <div className="mx-auto max-w-lg text-center">
+      <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">Nice work</p>
+      <h1 className="font-display text-4xl uppercase leading-[0.95] text-balance text-text sm:text-5xl">
+        You started a streak.
+      </h1>
+
+      {/* The true first-log outcome, shown as stats. */}
+      <div className="mx-auto mt-7 grid max-w-md grid-cols-3 gap-3">
+        <Stat big="🔥 1" small="day streak" />
+        <Stat big={`⚡ ${zaps}`} small="Zaps waiting" />
+        <Stat big="1" small="round logged" />
+      </div>
+
+      <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-muted">
+        You are on the list for the Frequency beta, where this becomes a whole practice with real
+        people. Keep showing up and the streak grows. First, claim your name so it is yours.
+      </p>
+
+      {/* Claim the @username. */}
+      <div className="mx-auto mt-5 max-w-sm text-left">
+        <label className="mb-1 block text-xs font-semibold text-subtle">Your @username</label>
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-canvas px-3 focus-within:border-border-strong">
+          <span className="text-base text-subtle">@</span>
+          <input
+            type="text"
+            value={handle}
+            onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+            placeholder="yourname"
+            autoComplete="off"
+            className="w-full bg-transparent py-3 text-base text-text placeholder:text-subtle focus:outline-none"
+          />
+          {check.status === 'available' && check.handle === handle.trim().toLowerCase() && (
+            <span className="text-xs font-semibold text-success">free</span>
+          )}
+          {check.status === 'taken' && check.handle === handle.trim().toLowerCase() && (
+            <span className="text-xs font-semibold text-warning">taken</span>
+          )}
+        </div>
+      </div>
+
+      <div className="mx-auto mt-6 flex max-w-sm items-center gap-3">
+        <button type="button" onClick={onBack} className={`${GHOST_BTN} flex-1`}>
+          Back
+        </button>
+        <button type="button" onClick={proceed} className={`${PRIMARY_BTN} flex-[2]`}>
+          Continue
+        </button>
+      </div>
+      <button type="button" onClick={onNext} className="mt-2 block w-full text-center text-xs text-subtle hover:underline">
+        Skip for now
       </button>
     </div>
   )
 }
 
-// ── Card 2: live demo + capture ────────────────────────────────────────────────────────────────────
-function DemoCard({
-  pattern,
-  zaps,
-  initialLead,
-  onCapture,
-  onSkip,
-}: {
-  pattern: ReturnType<typeof patternBySlug>
-  zaps: number
-  initialLead: Lead
-  onCapture: (l: Lead) => void
-  onSkip: () => void
-}) {
-  // One shared clock for the visualizer and the beat timing.
-  const [startedAt] = useState(() => Date.now())
-  const [elapsed, setElapsed] = useState(0)
-  const [name, setName] = useState(initialLead.name)
-  const [email, setEmail] = useState(initialLead.email)
-
-  useEffect(() => {
-    const id = setInterval(() => setElapsed((Date.now() - startedAt) / 1000), 250)
-    return () => clearInterval(id)
-  }, [startedAt])
-
-  const showCapture = elapsed >= CAPTURE_AT_SEC
-  const rewarded = elapsed >= REWARD_AT_SEC
-  const emailOk = EMAIL_RE.test(email.trim())
-
+function Stat({ big, small }: { big: string; small: string }) {
   return (
-    <div className="text-center">
-      <div className="mx-auto flex h-64 w-64 items-center justify-center">
-        <BreathVisualizer pattern={pattern} startedAt={startedAt} />
-      </div>
-
-      {!showCapture && (
-        <p className="mt-4 text-sm text-muted" aria-live="polite">
-          Follow the ring. In as it grows, out as it settles.
-        </p>
-      )}
-
-      {showCapture && (
-        <div className="mt-5 rounded-2xl border border-border bg-surface-elevated p-5 text-left shadow-sm">
-          {rewarded ? (
-            <>
-              <div className="mb-3 flex items-center justify-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-3 py-1 text-sm font-semibold text-primary-strong">
-                  <span aria-hidden>🔥</span> Day 1
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-broadcast-bg px-3 py-1 text-sm font-semibold text-broadcast-strong">
-                  <span aria-hidden>⚡</span> {zaps} Zaps
-                </span>
-              </div>
-              <p className="text-center text-base font-semibold text-text">You started a streak.</p>
-              <p className="mt-1 text-center text-sm text-muted">Create your account to keep it going. Free.</p>
-            </>
-          ) : (
-            <>
-              <p className="text-center text-base font-semibold text-text">You are starting a streak.</p>
-              <p className="mt-1 text-center text-sm text-muted">
-                Finish the round and it is yours. Create your account to keep it, free.
-              </p>
-            </>
-          )}
-
-          <div className="mt-4 space-y-2">
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
-              autoComplete="name"
-              className="w-full rounded-lg border border-border bg-canvas px-3 py-2.5 text-sm text-text outline-none placeholder:text-subtle focus:border-primary"
-            />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@email.com"
-              autoComplete="email"
-              inputMode="email"
-              className="w-full rounded-lg border border-border bg-canvas px-3 py-2.5 text-sm text-text outline-none placeholder:text-subtle focus:border-primary"
-            />
-          </div>
-
-          <button
-            type="button"
-            disabled={!emailOk}
-            onClick={() => onCapture({ name: name.trim(), email: email.trim() })}
-            className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Keep my streak
-          </button>
-          <button
-            type="button"
-            onClick={onSkip}
-            className="mt-2 block w-full text-center text-xs text-subtle underline-offset-2 hover:underline"
-          >
-            Just keep breathing
-          </button>
-        </div>
-      )}
+    <div className="rounded-2xl border border-border bg-surface px-3 py-4 shadow-sm">
+      <p className="text-2xl font-bold text-text">{big}</p>
+      <p className="mt-0.5 text-xs text-muted">{small}</p>
     </div>
   )
 }
 
-// ── Cards 3 + 4: value ─────────────────────────────────────────────────────────────────────────────
-function ValueCard({
-  eyebrow,
-  title,
-  body,
-  visual,
-  onNext,
-  onBack,
-}: {
-  eyebrow: string
-  title: string
-  body: string
-  visual: React.ReactNode
-  onNext: () => void
-  onBack: () => void
-}) {
-  return (
-    <div className="text-center">
-      <div className="mb-6">{visual}</div>
-      <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-primary">{eyebrow}</p>
-      <h2 className="font-display text-2xl uppercase leading-tight text-text sm:text-3xl">{title}</h2>
-      <p className="mx-auto mt-4 max-w-sm text-base leading-relaxed text-muted">{body}</p>
-      <div className="mt-8 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex flex-1 items-center justify-center rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={onNext}
-          className="inline-flex flex-[2] items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-        >
-          Next
-        </button>
-      </div>
-    </div>
-  )
-}
-
-/** A seven-day streak strip, the first day lit — the "it logs itself" visual. */
-function StreakStrip({ active }: { active: number }) {
-  return (
-    <div className="flex items-center justify-center gap-2">
-      {Array.from({ length: 7 }).map((_, i) => (
-        <div
-          key={i}
-          className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm font-semibold ${
-            i < active ? 'bg-primary text-on-primary' : 'border border-border text-subtle'
-          }`}
-        >
-          {i < active ? '🔥' : i + 1}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-/** A tiny "vault" of what a first round banks — the "kept in one place" visual. */
-function VaultStrip({ zaps }: { zaps: number }) {
-  return (
-    <div className="mx-auto flex max-w-xs items-center justify-center gap-3">
-      <div className="flex-1 rounded-xl border border-border bg-surface-elevated px-3 py-3 text-center">
-        <p className="text-lg font-bold text-text">🔥 1</p>
-        <p className="text-xs text-muted">day streak</p>
-      </div>
-      <div className="flex-1 rounded-xl border border-border bg-surface-elevated px-3 py-3 text-center">
-        <p className="text-lg font-bold text-text">⚡ {zaps}</p>
-        <p className="text-xs text-muted">Zaps</p>
-      </div>
-      <div className="flex-1 rounded-xl border border-border bg-surface-elevated px-3 py-3 text-center">
-        <p className="text-lg font-bold text-text">1</p>
-        <p className="text-xs text-muted">round</p>
-      </div>
-    </div>
-  )
-}
-
-// ── Card 5: step in (create the account) ──────────────────────────────────────────────────────────
-function StepInCard({
+// ── Beat 3: join ──────────────────────────────────────────────────────────────────────────────────
+function JoinStep({
   sequence,
   destination,
   deferred,
   lead,
+  onLead,
   zaps,
+  onBack,
 }: {
   sequence: string
   destination?: FunnelDestination
   deferred: boolean
   lead: Lead
+  onLead: (next: Lead) => void
   zaps: number
+  onBack: () => void
 }) {
-  const [name, setName] = useState(lead.name)
-  const [email, setEmail] = useState(lead.email)
   const [signingIn, setSigningIn] = useState(false)
-  const emailOk = EMAIL_RE.test(email.trim())
+  const [avatar, setAvatar] = useState<string | null>(null)
+  const emailOk = EMAIL_RE.test(lead.email.trim())
 
   const completeNext =
     destination?.mode === 'direct' && isSafeInAppPath(destination.url)
       ? `/onboarding/beta/complete?to=${encodeURIComponent(destination.url)}`
       : '/onboarding/beta/complete'
 
-  async function withStash(): Promise<void> {
-    await beginFeatureFunnelSignup({ name: name.trim(), email: email.trim(), seq: sequence })
+  async function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      const compressed = await downscaleImageFile(file)
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader()
+        r.onload = () => resolve(String(r.result))
+        r.onerror = reject
+        r.readAsDataURL(compressed)
+      })
+      setAvatar(dataUrl)
+      localStorage.setItem(PENDING_AVATAR_KEY, dataUrl) // the finalizer uploads it after sign-in
+    } catch {
+      // best-effort — they can add a photo later from their profile
+    }
   }
 
+  async function withStash() {
+    await beginFeatureFunnelSignup({
+      name: lead.name.trim(),
+      email: lead.email.trim(),
+      seq: sequence,
+      handle: lead.handle.trim(),
+    })
+  }
   async function magicLink() {
     if (!emailOk || signingIn) return
     setSigningIn(true)
     await withStash()
     const fd = new FormData()
-    fd.set('email', email.trim())
+    fd.set('email', lead.email.trim())
     fd.set('next', completeNext)
     await signInWithMagicLink(fd)
   }
-
   async function google() {
     if (signingIn) return
     setSigningIn(true)
@@ -393,28 +499,24 @@ function StepInCard({
     await signInWithGoogle(fd)
   }
 
-  // A signed-in visitor already has an account — just point them at the real practice.
+  // Signed-in visitor already has an account — send them to breathe for real.
   if (!deferred) {
     const to = destination?.mode === 'direct' && isSafeInAppPath(destination.url) ? destination.url : '/feed'
     return (
-      <div className="text-center">
+      <div className="mx-auto max-w-lg text-center">
         <span className="mx-auto mb-4 block text-4xl" aria-hidden>🔥</span>
-        <h2 className="font-display text-2xl uppercase leading-tight text-text sm:text-3xl">You are in.</h2>
-        <p className="mx-auto mt-4 max-w-sm text-base leading-relaxed text-muted">
+        <h1 className="font-display text-4xl uppercase leading-[0.95] text-text sm:text-5xl">You are in.</h1>
+        <p className="mx-auto mt-4 max-w-md text-base leading-relaxed text-muted">
           Take your first real round and your streak starts for keeps.
         </p>
-        <a
-          href={to}
-          className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-        >
-          Start breathing
-        </a>
+        <a href={to} className={`${PRIMARY_BTN} mx-auto mt-8 max-w-xs`}>Start breathing</a>
       </div>
     )
   }
 
   return (
-    <div className="text-center">
+    <div className="mx-auto max-w-lg text-center">
+      <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">You are invited</p>
       <div className="mb-4 flex items-center justify-center gap-2">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-3 py-1 text-sm font-semibold text-primary-strong">
           <span aria-hidden>🔥</span> Day 1
@@ -423,47 +525,60 @@ function StepInCard({
           <span aria-hidden>⚡</span> {zaps} Zaps
         </span>
       </div>
-      <h2 className="font-display text-2xl uppercase leading-tight text-text sm:text-3xl">Claim your streak.</h2>
-      <p className="mx-auto mt-3 max-w-sm text-base leading-relaxed text-muted">
-        Your first round is saved. Create your account to keep it and log every one after.
+      <h1 className="font-display text-4xl uppercase leading-[0.95] text-balance text-text sm:text-5xl">
+        Join the Frequency beta.
+      </h1>
+      <p className="mx-auto mt-3 max-w-md text-base leading-relaxed text-muted">
+        Accept your invitation to keep the Day 1 streak and {zaps} Zaps you just started, and step into the
+        beta with real people and real practice.
       </p>
 
-      <div className="mt-6 space-y-2 text-left">
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Your name"
-          autoComplete="name"
-          className="w-full rounded-lg border border-border bg-canvas px-3 py-2.5 text-sm text-text outline-none placeholder:text-subtle focus:border-primary"
-        />
+      {/* Photo + prefilled details */}
+      <div className="mx-auto mt-6 max-w-sm text-left">
+        <div className="mb-3 flex items-center gap-3">
+          <label className="group relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-border bg-primary-bg text-primary-strong">
+            {avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatar} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-xs font-semibold">Photo</span>
+            )}
+            <input type="file" accept="image/*" onChange={onPickPhoto} className="sr-only" />
+          </label>
+          <div className="min-w-0 flex-1">
+            <input
+              type="text"
+              value={lead.name}
+              onChange={(e) => onLead({ ...lead, name: e.target.value })}
+              placeholder="Your name"
+              autoComplete="name"
+              className={FIELD}
+            />
+          </div>
+        </div>
+        {lead.handle && <p className="mb-3 text-sm text-muted">You are <span className="font-semibold text-text">@{lead.handle}</span></p>}
         <input
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={lead.email}
+          onChange={(e) => onLead({ ...lead, email: e.target.value })}
           placeholder="you@email.com"
           autoComplete="email"
           inputMode="email"
-          className="w-full rounded-lg border border-border bg-canvas px-3 py-2.5 text-sm text-text outline-none placeholder:text-subtle focus:border-primary"
+          className={FIELD}
         />
       </div>
 
-      <button
-        type="button"
-        onClick={google}
-        disabled={signingIn}
-        className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
-      >
-        Continue with Google
-      </button>
-      <button
-        type="button"
-        onClick={magicLink}
-        disabled={!emailOk || signingIn}
-        className="mt-2 inline-flex w-full items-center justify-center rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        Email me a sign-in link
-      </button>
+      <div className="mx-auto mt-5 max-w-sm">
+        <button type="button" onClick={google} disabled={signingIn} className={PRIMARY_BTN}>
+          Join now, get {zaps} Zaps
+        </button>
+        <button type="button" onClick={magicLink} disabled={!emailOk || signingIn} className={`${GHOST_BTN} mt-2 w-full`}>
+          Email me a sign-in link
+        </button>
+        <button type="button" onClick={onBack} className="mt-3 block w-full text-center text-xs text-subtle hover:underline">
+          Back
+        </button>
+      </div>
     </div>
   )
 }

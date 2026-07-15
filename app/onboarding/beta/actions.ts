@@ -20,6 +20,7 @@ import { BETA_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW, type OathId } from '@/li
 import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
 import { sequenceGrant } from '@/lib/onboarding/beta-sequences'
 import { grantFoundingStatus } from '@/lib/founding/status'
+import { awardZaps } from '@/lib/zaps'
 import { funnelLanding, isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
 import type { FunnelDestination } from '@/lib/onboarding/beta-sequences'
 import { personaTag, isPersonaId, DEFAULT_PERSONA } from '@/lib/onboarding/personas'
@@ -217,6 +218,22 @@ async function applySequenceGrants(seqSlug: string | null, authUserId: string, p
       // which lights the gold Founder badge beside their Member badge. No charge (reserve-now,
       // charge-at-graduation invariant in lib/founding/status).
       await grantFoundingStatus({ profileId, kind: 'member' })
+    }
+    if (grant.zaps && grant.zaps > 0) {
+      // A one-time welcome bonus (the Feature funnel's "join now, get N Zaps"). Idempotent per
+      // (profile, seq): applySequenceGrants runs on both the new-member and returning-member paths,
+      // so guard on an existing funnel_bonus ledger row before awarding again.
+      const admin = createAdminClient()
+      const { data: existing } = await admin
+        .from('zap_transactions')
+        .select('id')
+        .eq('profile_id', profileId)
+        .eq('action_type', 'funnel_bonus')
+        .eq('metadata->>seq', seqSlug ?? '')
+        .maybeSingle()
+      if (!existing) {
+        await awardZaps(profileId, grant.zaps, { actionType: 'funnel_bonus', metadata: { seq: seqSlug } })
+      }
     }
   } catch (err) {
     console.error('[beta] sequence grant failed:', err)
