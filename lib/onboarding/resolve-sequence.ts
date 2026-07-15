@@ -48,6 +48,9 @@ function apply(base: BetaSequence, o: SequenceOverride): BetaSequence {
     slide2Features: o.slide2Features?.length ? o.slide2Features : base.slide2Features,
     slide3Core: o.slide3Core?.length ? o.slide3Core : base.slide3Core,
     destination: o.destination ?? base.destination,
+    // Funnel STYLE (ADR-617): the override picks the renderer. Absent keeps the base (onboarding).
+    style: o.style ?? base.style,
+    feature: o.feature ?? base.feature,
   }
 }
 

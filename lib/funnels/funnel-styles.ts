@@ -45,7 +45,7 @@ export const FUNNEL_STYLES: readonly FunnelStyle[] = [
     icon: Play,
     blurb:
       'Let a visitor play with one stripped-down feature (Breathwork Visualizer, Meditation Timer, QR Studio, CRM preview) before they ever sign up.',
-    status: 'planned',
+    status: 'live',
     accent: {
       chip: 'bg-broadcast-bg text-broadcast-strong',
       ring: 'border-broadcast/40',
