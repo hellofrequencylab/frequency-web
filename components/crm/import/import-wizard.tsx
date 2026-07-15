@@ -517,7 +517,7 @@ export function ImportWizard({
           action={
             <button
               type="button"
-              onClick={() => { setStep('upload'); setSource(null); setImportId(null); setMapping([]); setValidation(null); setResult(null); setBanner(null); setFilename(''); setPasted(''); setShowPaste(false) }}
+              onClick={() => { setStep('upload'); setSource(null); setImportId(null); setMapping([]); setValidation(null); setResult(null); setBanner(null); setFilename(''); setPasted(''); setShowPaste(false); }}
               className="inline-flex items-center gap-2 rounded-xl border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
               <UploadCloud className="h-4 w-4" /> Import another file
