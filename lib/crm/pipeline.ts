@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 
 // CRM pipeline data layer (ADR-102). The crm_* tables aren't in the generated DB
 // types yet, so every read/write goes through an untyped client cast (the same
@@ -482,7 +483,10 @@ function sameMonth(iso: string | null, now: Date): boolean {
   if (!iso) return false
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return false
-  return d.getUTCFullYear() === now.getUTCFullYear() && d.getUTCMonth() === now.getUTCMonth()
+  // Key the month to the community HOME zone, as the rest of the platform does (index-data.ts,
+  // event-reminders). A deal won late on the last home-zone evening of a month must land in THAT
+  // month, not the next UTC one. dayInZone -> 'YYYY-MM-DD'; compare the 'YYYY-MM' prefix.
+  return dayInZone(d, HOME_TZ).slice(0, 7) === dayInZone(now, HOME_TZ).slice(0, 7)
 }
 
 export function computeMetrics(deals: MetricDeal[], tasksDue: number, now: Date = new Date()): PipelineMetrics {

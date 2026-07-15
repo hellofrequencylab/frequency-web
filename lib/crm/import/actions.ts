@@ -10,7 +10,7 @@
 import { revalidatePath } from 'next/cache'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
-import { listManagedSpaces, type ManagedSpace } from '@/lib/spaces/managed'
+import { listManagedSpaces } from '@/lib/spaces/managed'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { autoMapColumns, headerFingerprint } from './map'
 import { proposeMapping, extractContactsFromText, type AiSuggestion, type ExtractedContact } from './ai'
@@ -25,11 +25,6 @@ import type {
   ValidationResult,
   CommitResult,
 } from './types'
-
-/** The Spaces the caller may import into (owned / editor+), for the target picker. */
-export async function listImportSpaces(): Promise<ManagedSpace[]> {
-  return listManagedSpaces()
-}
 
 async function requireProfile(): Promise<string> {
   const id = await getMyProfileId()

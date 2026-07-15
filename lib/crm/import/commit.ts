@@ -114,7 +114,14 @@ async function commitToMember(ownerId: string, row: ContactImportRow): Promise<C
         failed++
       }
     } else if (p.action === 'merge') {
-      const target = p.matchedKey ? byKey.get(p.matchedKey) : undefined
+      // Resolve the existing row by email first, then phone (planCommit's matchedKey prefers the
+      // email key even when the match was on phone, so a row that matches an existing contact by
+      // phone under a NEW email would otherwise miss byKey and be miscounted as failed — while the
+      // dry-run counted it merged, breaking preview/commit parity). Mirrors commitToSpace.
+      const ek = emailKey(c.email)
+      const pk = phoneKey(c.phone)
+      const key = ek && byKey.has(ek) ? ek : pk && byKey.has(pk) ? pk : p.matchedKey
+      const target = key ? byKey.get(key) : undefined
       if (!target) {
         failed++
         continue

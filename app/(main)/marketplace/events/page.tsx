@@ -7,10 +7,14 @@ import { getEventsIndexData } from '@/app/(main)/events/index-data'
 // (getEventsIndexData + EventCard), reframed in the marketplace chrome. This is the commerce TAB,
 // so it passes NO member actions (Add Event / Manage / My drafts belong to the member's own /events
 // home). Both paid and free events list here. No business logic is duplicated. No em or en dashes.
-
+//
+// CANONICAL: this tab serves the same event list as the /events home. To avoid a duplicate-content
+// split, its canonical points at /events (the owner's primary, profile-linked events URL) so all
+// ranking + AIO signals consolidate there while the commerce tab stays reachable in the marketplace.
 export const metadata = {
   title: 'Events',
   description: 'Find paid and free events near you, from community circles and hosts.',
+  alternates: { canonical: '/events' },
 }
 
 export default async function MarketplaceEventsPage({

@@ -180,7 +180,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
 
   // ── Growth dashboard blocks (/admin/growth) — the growth engine as one operator home ──
   { id: 'growth-funnel', label: 'Funnel & activation', description: 'New members joining, and how many reach the North-Star moment (a verified practice) within their first week, over the activation funnel.' },
-  { id: 'growth-pipeline', label: 'Pipeline', description: 'Open deals, their value, and the follow-ups due so nothing stalls.' },
+  { id: 'growth-pipeline', label: 'Pipeline', description: 'Open prospects in the pipeline, their value, and the follow-ups due so nothing stalls.' },
   { id: 'growth-expansion', label: 'Expansion', description: 'Where local member density is crossing the threshold that justifies opening the next Lab.' },
   { id: 'growth-manage', label: 'Manage', description: 'One card per working surface across Acquisition, CRM, and Marketing, each with a live stat and a link to edit it.' },
   { id: 'growth-related', label: 'Related areas', description: 'A cross-link strip to the neighboring workspaces the viewer can enter from here.' },
