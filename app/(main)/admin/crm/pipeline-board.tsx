@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type ReactNode } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -8,9 +8,12 @@ import { Loader2, Plus, ChevronLeft, ChevronRight, CalendarClock, Pencil } from 
 import { createDeal, moveDeal } from './actions'
 import { isError } from '@/lib/action-result'
 import { formatMoney, type CrmStage, type CrmDeal, type PersonLite } from '@/lib/crm/pipeline'
+import { PIPELINE_LANES, laneMeta, type PipelineLane } from '@/lib/crm/stage-templates'
 import { getInitials } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Banner } from '@/components/admin/status'
+
+type LaneFilter = PipelineLane | 'all'
 
 export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmDeal[] }) {
   const router = useRouter()
@@ -18,12 +21,17 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
   const [error, setError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
 
-  // new-deal form
+  // Which lane the board is showing. 'all' shows both motions; a lane id (a crm_deals.source value)
+  // narrows to that motion's cards. The stage columns are shared, so the filter only hides cards.
+  const [lane, setLane] = useState<LaneFilter>('all')
+
+  // new-card form. `newLane` pre-tags the card's source so it lands in the right lane on create.
   const [title, setTitle] = useState('')
   const [contact, setContact] = useState('')
   const [value, setValue] = useState('')
   const [stageId, setStageId] = useState(stages[0]?.id ?? '')
   const [close, setClose] = useState('')
+  const [newLane, setNewLane] = useState<PipelineLane>('upsell_business')
 
   function run(fn: () => Promise<string | null>, after?: () => void) {
     setError(null)
@@ -40,7 +48,7 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
 
   function submitNew() {
     if (!title.trim()) {
-      setError('A deal needs a title.')
+      setError('A card needs a title.')
       return
     }
     run(
@@ -51,6 +59,7 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
           value: value ? Number(value) : 0,
           stageId,
           expectedCloseDate: close || null,
+          source: newLane,
         })
         return isError(res) ? res.error : null
       },
@@ -64,7 +73,9 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
     )
   }
 
-  const byStage = (id: string) => deals.filter((d) => d.stage_id === id)
+  // Cards for the current lane view: 'all' shows everything, a lane id narrows by crm_deals.source.
+  const shown = lane === 'all' ? deals : deals.filter((d) => d.source === lane)
+  const byStage = (id: string) => shown.filter((d) => d.stage_id === id)
   const stageValue = (id: string) => byStage(id).reduce((s, d) => s + (d.value || 0), 0)
   const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none'
 
@@ -76,18 +87,43 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
         </Banner>
       )}
 
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-muted">
-          {deals.length} deal{deals.length === 1 ? '' : 's'} across {stages.length} stages
-        </p>
-        <Button type="button" size="sm" onClick={() => setAdding((v) => !v)}>
-          <Plus className="h-4 w-4" /> Quick add
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {/* Lane filter: All / Business upsell / Donations. Narrows the board to one motion. */}
+        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by lane">
+          <LaneTab active={lane === 'all'} onClick={() => setLane('all')}>
+            All
+          </LaneTab>
+          {PIPELINE_LANES.map((l) => (
+            <LaneTab key={l.id} active={lane === l.id} onClick={() => setLane(l.id)}>
+              {l.label}
+            </LaneTab>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-muted">
+            {shown.length} card{shown.length === 1 ? '' : 's'} across {stages.length} stages
+          </p>
+          <Button type="button" size="sm" onClick={() => setAdding((v) => !v)}>
+            <Plus className="h-4 w-4" /> Quick add
+          </Button>
+        </div>
       </div>
 
       {adding && (
         <div className="grid gap-2 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-6">
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Deal title" className={`lg:col-span-2 ${field}`} />
+          <select
+            value={newLane}
+            onChange={(e) => setNewLane(e.target.value as PipelineLane)}
+            className={field}
+            aria-label="Lane"
+          >
+            {PIPELINE_LANES.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.cta}
+              </option>
+            ))}
+          </select>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Who, in a few words" className={`lg:col-span-2 ${field}`} />
           <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Contact (optional)" className={field} />
           <input
             type="number"
@@ -104,7 +140,7 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
               </option>
             ))}
           </select>
-          <div className="flex gap-2">
+          <div className="flex gap-2 sm:col-span-2 lg:col-span-6">
             <input type="date" value={close} onChange={(e) => setClose(e.target.value)} className={`min-w-0 flex-1 ${field}`} title="Expected close" />
             <Button type="button" size="sm" disabled={pending} onClick={submitNew} className="shrink-0">
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add
@@ -135,7 +171,7 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
                   })} />
                 ))}
                 {items.length === 0 && (
-                  <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-xs text-subtle">No deals</p>
+                  <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-xs text-subtle">Nothing here yet</p>
                 )}
               </div>
             </div>
@@ -143,6 +179,21 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
         })}
       </div>
     </div>
+  )
+}
+
+function LaneTab({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+        active ? 'border-primary bg-primary-bg text-primary-strong' : 'border-border text-muted hover:text-text'
+      }`}
+    >
+      {children}
+    </button>
   )
 }
 
@@ -171,21 +222,27 @@ function DealCard({
   const prev = idx > 0 ? stages[idx - 1] : null
   const next = idx >= 0 && idx < stages.length - 1 ? stages[idx + 1] : null
   const who = deal.member?.display_name ?? deal.contact_name
+  const lane = laneMeta(deal.source)
 
   return (
     <div className="rounded-xl border border-border bg-surface p-3 shadow-sm">
       <div className="flex items-start justify-between gap-1">
-        <Link href={`/admin/crm/deals/${deal.id}`} className="block min-w-0 flex-1">
+        <Link href={`/admin/crm/pipeline/${deal.id}`} className="block min-w-0 flex-1">
           <p className="line-clamp-2 text-sm font-semibold text-text hover:underline">{deal.title}</p>
         </Link>
         <Link
-          href={`/admin/crm/deals/${deal.id}/edit`}
-          aria-label="Edit deal"
+          href={`/admin/crm/pipeline/${deal.id}/edit`}
+          aria-label="Edit card"
           className="shrink-0 rounded p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
         >
           <Pencil className="h-3.5 w-3.5" />
         </Link>
       </div>
+      {lane && (
+        <span className="mt-1 inline-block rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+          {lane.label}
+        </span>
+      )}
       {who && <p className="mt-0.5 truncate text-xs text-muted">{who}</p>}
       <div className="mt-2 flex items-center justify-between gap-2">
         <span className="text-sm font-bold tabular-nums text-text">{formatMoney(deal.value, deal.currency)}</span>

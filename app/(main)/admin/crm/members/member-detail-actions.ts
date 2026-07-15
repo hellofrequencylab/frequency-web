@@ -6,10 +6,16 @@ import { getProfileSummaries } from '@/lib/connections/matching'
 import { getMemberScores } from '@/lib/dashboard/scores'
 import { listInteractionsForPerson } from '@/lib/crm/interactions'
 import { buildTimeline, relativeTime, interactionTitle } from '@/lib/crm/timeline'
+import { getContactEngagementStats } from '@/lib/crm/engagement-stats'
+import { getMemberNetwork, filterMajorMilestones, type Milestone } from '@/lib/crm/member-network'
+import { resolvePerson, type Person } from '@/lib/crm/person'
+import { buildJourney } from '@/lib/crm/journey'
 import { tierLabel } from '@/lib/dashboard/verdict'
 import { ROLE_LABEL } from '@/lib/community-roles'
 import type {
-  MemberDetail,
+  CrmMemberDetail,
+  CrmScores,
+  CrmEngagement,
   MemberFunnel,
   MemberInteraction,
   MemberPipeline,
@@ -188,11 +194,59 @@ async function pipelineForProfile(profileId: string): Promise<MemberPipeline | n
   }
 }
 
+/** A short, plain date (no em dashes). '' for a blank / unparseable timestamp. */
+function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const t = Date.parse(iso)
+  if (Number.isNaN(t)) return ''
+  return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+/** Resolve the unified person for a contact id, fail-safe to null (never throws). */
+async function safePerson(contactId: string | null): Promise<Person | null> {
+  if (!contactId) return null
+  try {
+    return await resolvePerson(contactId)
+  } catch {
+    return null
+  }
+}
+
+/** The MAJOR-milestone "Path" rail from a resolved person: build the full journey, then keep only the
+ *  handful of major life events (joined, started a circle, hosted an event, created a space, invited a
+ *  friend). [] when there is no person. Never throws. */
+function milestonesFromPerson(person: Person | null): Milestone[] {
+  if (!person) return []
+  try {
+    const { contact, member, captures } = person
+    const journey = buildJourney({
+      contact: {
+        source: contact.source,
+        firstSeenAt: contact.firstSeenAt,
+        createdAt: contact.createdAt,
+        acquisition: member?.acquisition ?? contact.acquisition,
+      },
+      member: member ? { createdAt: member.createdAt, referred: member.referred } : null,
+      captures: captures.map((c) => ({ source: c.source, ownerName: c.ownerName, invitedAt: c.invitedAt, createdAt: c.createdAt })),
+      scans: person.scans.map((s) => ({ codeTitle: s.codeTitle, scannedAt: s.scannedAt })),
+      events: person.events.map((e) => ({ eventType: e.eventType, source: e.source, createdAt: e.createdAt })),
+      activities: person.activities.map((a) => ({ kind: a.kind, body: a.body, createdAt: a.createdAt })),
+      deals: person.deals.map((d) => ({ title: d.title, status: d.status, createdAt: contact.createdAt ?? '' })),
+    })
+    return filterMajorMilestones(journey, 8)
+  } catch {
+    return []
+  }
+}
+
 /**
- * Assemble the MemberDetail for a profile id. Staff-gated; reads only existing sources; never throws
- * (returns a minimal identity detail on any failure). Omits any field it cannot source cleanly.
+ * Assemble the CrmMemberDetail for a profile id — everything the cockpit's master-detail pane shows on
+ * ONE page, in a SINGLE fetch: identity + all contact info + roles, the shared scores, the engagement
+ * rollup, what they manage + are part of (the network), the MAJOR-milestone Path, and steward notes.
+ * Staff-gated; reads only existing sources; never throws (returns a minimal identity detail on any
+ * failure). Omits any field it cannot source cleanly, so the pane renders only what is real.
  */
-export async function loadMemberDetail(profileId: string): Promise<MemberDetail> {
+export async function loadMemberDetail(profileId: string): Promise<CrmMemberDetail> {
   await requireAdmin('janitor')
 
   // Identity is the floor — resolve it first so we can always return something.
@@ -201,7 +255,8 @@ export async function loadMemberDetail(profileId: string): Promise<MemberDetail>
   const handle = summary?.handle ?? profileId
   const displayName = summary?.displayName ?? handle
   const profileHref = summary?.handle ? `/people/${summary.handle}` : undefined
-  const base: MemberDetail = {
+  const base: CrmMemberDetail = {
+    profileId,
     displayName,
     handle,
     avatarUrl: summary?.avatarUrl ?? null,
@@ -211,23 +266,29 @@ export async function loadMemberDetail(profileId: string): Promise<MemberDetail>
   try {
     const { contactId, email } = await contactForProfile(profileId)
 
+    // The unified person (captures / journey / notes / phone) — one fail-safe read used by several of
+    // the assembled fields below; resolved first so the engagement rollup can span every subject id.
+    const person = await safePerson(contactId)
+    const captureIds = person?.captures.map((c) => c.id) ?? []
+    const subjectIds = [profileId, contactId, ...captureIds].filter((s): s is string => !!s)
+
     // Batch the rich reads for the ONE selected member. Each source is independently fail-safe, so a
     // single failing read leaves the others intact rather than collapsing to the identity floor.
-    const [scores, interactions, roles, funnels, pipeline] = await Promise.all([
+    const [scores, interactions, roles, funnels, pipeline, network, engagement] = await Promise.all([
       getMemberScores(profileId),
-      // A person is stitched from several subject rows; pass the profile id + contact id.
       listInteractionsForPerson([profileId, contactId], 24),
       rolesForProfile(profileId),
       funnelsForProfile(profileId),
       pipelineForProfile(profileId),
+      getMemberNetwork(profileId),
+      getContactEngagementStats(subjectIds, email),
     ])
 
-    // The full member / timeline page: the staff contact timeline when stitched, else the public
-    // profile. This is the View member button + the "view all interactions" target.
-    const viewAllHref = contactId ? `/admin/marketing/contacts/${contactId}` : profileHref
+    // Everything is inline now, so "view all" points back at this member on the CRM home (no separate
+    // member page). Kept for the generic card's "view all interactions" affordance on other surfaces.
+    const viewAllHref = `/admin/crm?member=${profileId}`
 
-    // The truncated interaction list (the card caps the render at ~5; we hand it a few more so the
-    // "view all" affordance has a real overflow count). Newest first out of the timeline reader.
+    // The truncated interaction list (the generic card caps the render at ~5). Newest first.
     const timeline = buildTimeline({ interactions }, 12)
     const memberInteractions: MemberInteraction[] = timeline.map((t) => ({
       kind: interactionTitle(t.channel, t.direction),
@@ -235,33 +296,57 @@ export async function loadMemberDetail(profileId: string): Promise<MemberDetail>
       when: relativeTime(t.at) || 'Recently',
     }))
 
-    // Engagement stats from the shared scores — only the ones present (never fabricated).
-    const engagementStats: NonNullable<MemberDetail['engagementStats']> = []
-    if (scores.resonanceHealth != null) {
-      engagementStats.push({ label: 'Health', value: String(Math.round(scores.resonanceHealth)) })
+    // Engagement stats from the shared scores — for the generic card's compact grid.
+    const engagementStats: NonNullable<CrmMemberDetail['engagementStats']> = []
+    if (scores.resonanceHealth != null) engagementStats.push({ label: 'Health', value: String(Math.round(scores.resonanceHealth)) })
+    if (scores.resonanceTier) engagementStats.push({ label: 'Tier', value: tierLabel(scores.resonanceTier) })
+    if (scores.activationPropensity != null) engagementStats.push({ label: 'Activation', value: String(Math.round(scores.activationPropensity)) })
+    if (scores.lifecycleStage) engagementStats.push({ label: 'Stage', value: LIFECYCLE_LABELS[scores.lifecycleStage] ?? scores.lifecycleStage })
+
+    // ── The CRM master-detail fields (the inline "everything about them" pane) ──
+    const crmScores: CrmScores = {
+      health: scores.resonanceHealth,
+      tier: scores.resonanceTier ? tierLabel(scores.resonanceTier) : null,
+      churn: scores.churnRisk ? titleCase(scores.churnRisk) : null,
+      activation: scores.activationPropensity,
+      lifecycle: scores.lifecycleStage ? LIFECYCLE_LABELS[scores.lifecycleStage] ?? scores.lifecycleStage : null,
     }
-    if (scores.resonanceTier) {
-      engagementStats.push({ label: 'Tier', value: tierLabel(scores.resonanceTier) })
+    const hasScores = crmScores.health != null || crmScores.tier || crmScores.churn || crmScores.activation != null || crmScores.lifecycle
+
+    const crmEngagement: CrmEngagement = {
+      sent: engagement.sent,
+      opened: engagement.opened,
+      clicked: engagement.clicked,
+      replied: engagement.replied,
+      lastTouch: engagement.lastTouchAt ? fmtDate(engagement.lastTouchAt) : null,
     }
-    if (scores.activationPropensity != null) {
-      engagementStats.push({
-        label: 'Activation',
-        value: String(Math.round(scores.activationPropensity)),
-      })
-    }
-    if (scores.lifecycleStage) {
-      engagementStats.push({ label: 'Stage', value: LIFECYCLE_LABELS[scores.lifecycleStage] ?? scores.lifecycleStage })
-    }
+
+    const phone = person?.captures.find((c) => c.phone)?.phone ?? null
+    const notes = (person?.captures ?? [])
+      .flatMap((c) => c.notes.map((n) => ({ id: n.id, body: n.body })))
+      .filter((n) => n.body.trim().length > 0)
+      .slice(0, 6)
+    const milestones = milestonesFromPerson(person)
+
+    const contact =
+      email || phone ? { email: email ?? undefined, phone: phone ?? undefined } : undefined
 
     return {
       ...base,
-      contact: email ? { email } : undefined,
+      email,
+      contact,
       roles: roles.length ? roles : undefined,
       funnels: funnels.length ? funnels : undefined,
       pipeline: pipeline ?? undefined,
       interactions: memberInteractions.length ? memberInteractions : undefined,
       engagementStats: engagementStats.length ? engagementStats : undefined,
       viewAllHref,
+      // CRM master-detail:
+      scores: hasScores ? crmScores : undefined,
+      engagement: crmEngagement,
+      network,
+      milestones: milestones.length ? milestones : undefined,
+      notes: notes.length ? notes : undefined,
     }
   } catch {
     return base

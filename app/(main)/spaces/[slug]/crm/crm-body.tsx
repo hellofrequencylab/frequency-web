@@ -13,7 +13,7 @@ import { SpaceContacts } from '@/components/spaces/crm/space-contacts'
 import { CrmViewTabs, type CrmView } from '@/components/spaces/crm/crm-view-tabs'
 import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
 import { ImportContactsForm } from '@/components/spaces/crm/import-contacts-form'
-import { ImportWizard } from '@/components/crm/import/import-wizard'
+import { ImportContactsButton } from '@/components/crm/import/import-contacts-button'
 import { SpaceCockpitBand } from './space-cockpit-band'
 import { AutonomyControl } from './autonomy-control'
 import { AiDepthUpsell } from './ai-depth-upsell'
@@ -161,23 +161,22 @@ export async function CrmBody({
         </>
       )}
 
-      {/* ── IMPORT: bring a CSV into THIS Space's sealed contact list ─────────────────────────────── */}
+      {/* ── IMPORT: bring contacts into THIS Space's sealed list, via the popup wizard ─────────────── */}
       {activeView === 'import' && (
         <section className="space-y-3">
           <SectionHeader title="Import contacts" />
           <p className="max-w-2xl text-sm text-muted">
-            Upload a CSV to bring people into this space&rsquo;s contact list. We match your columns, dedupe
-            against what the space already has, and show a preview before anything is saved. Everyone lands as
-            a lead, never auto-subscribed, and stays sealed to this space.
+            Bring people into this space&rsquo;s contact list from a file or a pasted list. We match your
+            columns, dedupe against what the space already has, and show a preview before anything is saved.
+            Everyone lands as a lead, never auto-subscribed, and stays sealed to this space.
           </p>
-          <div className="max-w-2xl">
-            {/* Sealed to THIS Space by lockedSpace (the membrane fixes the destination — no picker). The
-                board already gated canUseCrm above, and the commit action re-checks the Space CRM gate. */}
-            <ImportWizard
-              targetKind="space"
-              lockedSpace={{ id: space.id, name: space.brandName ?? space.name }}
-            />
-          </div>
+          {/* The launcher opens the popup wizard, sealed to THIS Space (the membrane fixes the destination,
+              no picker). The board already gated canUseCrm above, and the commit action re-checks the Space
+              CRM gate server-side. */}
+          <ImportContactsButton
+            target={{ kind: 'space', spaceId: space.id }}
+            spaceName={space.brandName ?? space.name}
+          />
         </section>
       )}
     </>

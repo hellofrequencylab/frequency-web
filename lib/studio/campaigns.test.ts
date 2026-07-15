@@ -19,4 +19,28 @@ describe('parseSegmentKey', () => {
     // A bare prefix is NOT a place selector — it falls through to a built-in (never an unbounded place).
     expect(parseSegmentKey('circle:')).toEqual({ kind: 'builtin', slug: 'circle:' })
   })
+
+  it('classifies a single member / contact selector (Resonance CRM composer)', () => {
+    expect(parseSegmentKey('profile:p1')).toEqual({ kind: 'profiles', ids: ['p1'] })
+    expect(parseSegmentKey('contact:k1')).toEqual({ kind: 'contacts', ids: ['k1'] })
+  })
+
+  it('classifies an ad-hoc member / contact set, trimming, de-duplicating, dropping empties', () => {
+    expect(parseSegmentKey('profiles:p1,p2,p3')).toEqual({ kind: 'profiles', ids: ['p1', 'p2', 'p3'] })
+    expect(parseSegmentKey('profiles: p1 , p2 ,, p1 ')).toEqual({ kind: 'profiles', ids: ['p1', 'p2'] })
+    expect(parseSegmentKey('contacts:k1,k2')).toEqual({ kind: 'contacts', ids: ['k1', 'k2'] })
+    // The plural form never collides with the singular (the `s` precedes the colon).
+    expect(parseSegmentKey('profiles:p1')).toEqual({ kind: 'profiles', ids: ['p1'] })
+  })
+
+  it('classifies an event RSVP audience', () => {
+    expect(parseSegmentKey('event:ev1')).toEqual({ kind: 'event', id: 'ev1' })
+  })
+
+  it('reads a bare CRM prefix as an EMPTY audience of that kind, never a built-in (fail-safe: nobody)', () => {
+    expect(parseSegmentKey('profile:')).toEqual({ kind: 'profiles', ids: [] })
+    expect(parseSegmentKey('profiles:')).toEqual({ kind: 'profiles', ids: [] })
+    expect(parseSegmentKey('contact:')).toEqual({ kind: 'contacts', ids: [] })
+    expect(parseSegmentKey('event:')).toEqual({ kind: 'event', id: '' })
+  })
 })

@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { seedStagesForSpace, genericStages } from './stage-templates'
+import {
+  seedStagesForSpace,
+  genericStages,
+  platformPipelineStages,
+  PIPELINE_LANES,
+  isPipelineLane,
+  laneMeta,
+} from './stage-templates'
 import { resolveMode } from '@/lib/spaces/modes'
 import type { SpaceType } from '@/lib/spaces/types'
 
@@ -63,5 +70,56 @@ describe('genericStages', () => {
     const a = genericStages()
     a[0]!.name = 'Changed'
     expect(genericStages()[0]!.name).toBe('New')
+  })
+})
+
+describe('platformPipelineStages (the global Pipeline board funnel)', () => {
+  it('is a non-empty, ordered funnel: open start, exactly one won and one lost', () => {
+    const stages = platformPipelineStages()
+    expect(stages.length).toBeGreaterThan(0)
+    expect(stages[0]!.kind).toBe('open')
+    expect(stages.filter((s) => s.kind === 'won')).toHaveLength(1)
+    expect(stages.filter((s) => s.kind === 'lost')).toHaveLength(1)
+  })
+
+  it('carries no em or en dashes in any column label (CONTENT-VOICE)', () => {
+    for (const s of platformPipelineStages()) {
+      expect(s.name).not.toMatch(/[—–]/)
+    }
+  })
+
+  it('returns a fresh array each call (a caller can number/mutate it without poisoning the source)', () => {
+    const a = platformPipelineStages()
+    a.push({ name: 'Tampered', kind: 'open' })
+    expect(platformPipelineStages().some((s) => s.name === 'Tampered')).toBe(false)
+  })
+})
+
+describe('pipeline lanes (deal source tags)', () => {
+  it('registers exactly the two rescoped lanes, upsell + donation', () => {
+    expect(PIPELINE_LANES.map((l) => l.id)).toEqual(['upsell_business', 'donation'])
+  })
+
+  it('isPipelineLane recognizes only registered lane ids', () => {
+    expect(isPipelineLane('upsell_business')).toBe(true)
+    expect(isPipelineLane('donation')).toBe(true)
+    expect(isPipelineLane('referral')).toBe(false)
+    expect(isPipelineLane(null)).toBe(false)
+    expect(isPipelineLane(undefined)).toBe(false)
+  })
+
+  it('laneMeta resolves a lane for a source, null for anything untagged', () => {
+    expect(laneMeta('upsell_business')?.label).toBe('Business upsell')
+    expect(laneMeta('donation')?.label).toBe('Donations')
+    expect(laneMeta('referral')).toBeNull()
+    expect(laneMeta(null)).toBeNull()
+  })
+
+  it('every lane label and CTA is plain, non-empty, and dash-free (CONTENT-VOICE)', () => {
+    for (const l of PIPELINE_LANES) {
+      expect(l.label.trim().length).toBeGreaterThan(0)
+      expect(l.cta.trim().length).toBeGreaterThan(0)
+      expect(`${l.label} ${l.cta} ${l.blurb}`).not.toMatch(/[—–]/)
+    }
   })
 })

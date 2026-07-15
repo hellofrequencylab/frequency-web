@@ -5,9 +5,14 @@
 
 export { MemberViewer } from './member-viewer'
 export { MemberDetailCard } from './member-detail-card'
+export { CrmMemberDetailPane } from './crm-member-detail'
 export type {
   MemberViewerProps,
   DetailMode,
+  DetailVariant,
+  CrmMemberDetail,
+  CrmScores,
+  CrmEngagement,
   ListView,
   Facet,
   MemberSummary,

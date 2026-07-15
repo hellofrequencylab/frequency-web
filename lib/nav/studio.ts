@@ -314,25 +314,19 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
     adminGroups: [{ domain: 'marketing', section: 'Analytics' }], adminNav: { section: 'growth', heading: 'Marketing' } },
   { id: 'marketing-agent', href: '/admin/marketing/agent', label: 'Marketing agent', desc: 'Ask the AI operator to draft, segment, and run the busywork.', icon: 'Bot', min: 'host', staffDomain: 'marketing',
     adminGroups: [{ domain: 'marketing', section: 'AI operator' }], adminNav: { section: 'vera-ai' } },
-  // ── CRM (§5b: Cockpit · Contacts · Deals · Segments · Graph) ──
-  { id: 'crm', href: '/admin/crm', label: 'Cockpit', desc: 'The dashboard: resonance health, the funnel, and who needs attention now.', icon: 'LayoutDashboard', min: 'janitor', exact: true,
-    world: 'growth', worldLabel: 'CRM: Cockpit', worldOrder: 8,
+  // ── CRM (§5b: Resonance CRM · Intelligence · Pipeline · Segments). The master-detail
+  //    Resonance home (a searchable scored roster + the full member profile, contact info,
+  //    network, and message tools in one view) absorbed the old Cockpit, Contacts, All
+  //    Contacts, and Member Intelligence tabs; Deals became the rescoped Pipeline. ──
+  { id: 'crm', href: '/admin/crm', label: 'Roster', desc: 'The searchable scored roster: pick a member to see their full profile, contact info, network, notes, and message tools in one view.', icon: 'Users', min: 'janitor', exact: true,
+    world: 'growth', worldLabel: 'Resonance CRM', worldOrder: 8,
     adminGroups: [{ domain: 'crm', section: 'Resonance' }], adminNav: { section: 'crm', heading: 'Engine' } },
   { id: 'crm-intelligence', href: '/admin/crm/intelligence', label: 'Intelligence', desc: "Vera's daily queue, the saved plays, and the resonance graph in one view.", icon: 'ClipboardList', min: 'janitor',
     world: 'overview', worldLabel: 'Intelligence', worldOrder: 1,
     adminGroups: [{ domain: 'crm', section: 'Resonance' }], adminNav: { section: 'crm', heading: 'Engine' } },
-  { id: 'crm-members', href: '/admin/crm/members', label: 'Member Intelligence', desc: 'Health-scored drill-down: resonance, churn risk, and the why, by tier and lifecycle.', icon: 'Users', min: 'janitor',
-    adminGroups: [{ domain: 'crm', section: 'Resonance' }], adminNav: { section: 'crm', heading: 'Engine' } },
-  { id: 'crm-deals', href: '/admin/crm/deals', label: 'Deals', desc: 'The pipeline board: every deal by stage, with quick add and one-tap stage moves.', icon: 'Briefcase', min: 'host', staffDomain: 'marketing',
-    world: 'growth', worldLabel: 'CRM: Deals', worldOrder: 10,
-    adminGroups: [{ domain: 'crm', section: 'Pipeline' }] },
-  { id: 'crm-deals-new', href: '/admin/crm/deals/new', label: 'New deal', desc: 'Add a deal to the pipeline.', icon: 'Briefcase', min: 'host', staffDomain: 'marketing',
-    adminGroups: [{ domain: 'crm', section: 'Pipeline' }] },
-  { id: 'crm-contacts', href: '/admin/crm/contacts', label: 'Contacts', desc: 'The scoped roster: your people, the launch point for a message, profile, or deal.', icon: 'Contact', min: 'host', staffDomain: 'marketing',
-    world: 'growth', worldLabel: 'CRM: Contacts', worldOrder: 9,
-    adminGroups: [{ domain: 'crm', section: 'Contacts' }] },
-  { id: 'marketing-contacts', href: '/admin/marketing/contacts', label: 'All Contacts', desc: 'The full contact database.', icon: 'Contact', min: 'janitor',
-    adminNav: { section: 'crm', heading: 'Records' } },
+  { id: 'crm-pipeline', href: '/admin/crm/pipeline', label: 'Pipeline', desc: 'Upsell members into Business Spaces and grow donations: every prospect by stage, split by lane, with quick add and one-tap stage moves.', icon: 'Briefcase', min: 'host', staffDomain: 'marketing',
+    world: 'growth', worldLabel: 'CRM: Pipeline', worldOrder: 9,
+    adminGroups: [{ domain: 'crm', section: 'Pipeline' }], adminNav: { section: 'crm', heading: 'Engine' } },
   { id: 'segments', href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', icon: 'PieChart', min: 'janitor', staffDomain: 'insights', staffLevel: 'read',
     world: 'growth', worldLabel: 'CRM: Segments', worldOrder: 11,
     adminGroups: [{ domain: 'crm', section: 'Audiences' }] },
@@ -533,13 +527,11 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
   },
   {
     key: 'crm', label: 'Resonance CRM',
-    blurb: 'The Vera-driven CRM. The cockpit, the daily action queue, member intelligence, contacts, and the pipeline.',
+    blurb: "The Vera-driven CRM. A searchable scored roster with each member's full profile, contact info, network, and message tools; the daily action queue and resonance graph; and the upsell/donation pipeline.",
     href: '/admin/crm', icon: 'Contact', min: 'janitor', staffDomain: 'marketing',
     related: ['acquisition', 'marketing', 'vera-ai'],
     links: [
-      { leaf: 'crm' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-members' },
-      { leaf: 'crm-deals' }, { leaf: 'crm-deals-new' },
-      { leaf: 'crm-contacts' },
+      { leaf: 'crm' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' },
       { leaf: 'segments', section: 'Audiences' },
     ],
   },
@@ -625,8 +617,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
     // Resonance CRM — gated janitor (per-member predictions are sensitive).
     href: '/admin/crm', label: 'Resonance CRM', min: 'janitor',
     groups: [
-      { heading: 'Engine', leaves: [{ leaf: 'crm' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-members' }] },
-      { heading: 'Records', leaves: [{ leaf: 'crm-contacts' }, { leaf: 'crm-deals' }, { leaf: 'marketing-contacts' }] },
+      { heading: 'Engine', leaves: [{ leaf: 'crm' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }] },
     ],
   },
   {

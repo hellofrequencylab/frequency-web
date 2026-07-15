@@ -124,24 +124,16 @@ function resolveActions(detail: MemberDetail, mode: DetailMode): MemberAction[] 
   if (mode === 'quick-stats') {
     return [openProfile, ...host]
   }
-  // full mode: a prominent View member button (to the full member page) leads when the host gave a
-  // viewAllHref, then Connect + Message defaults (unless the host already supplies them).
+  // full mode: Connect + Message defaults (unless the host already supplies them). The old "View
+  // member" button (which linked to the now-retired standalone member page) is gone: the CRM cockpit
+  // shows everything inline, so there is nowhere separate to view.
   const defaults: MemberAction[] = []
-  if (detail.viewAllHref && !host.some((a) => a.key === 'view-member')) {
-    defaults.push({
-      key: 'view-member',
-      label: 'View member',
-      icon: 'member',
-      href: detail.viewAllHref,
-      variant: 'primary',
-    })
-  }
   if (!host.some((a) => a.key === 'connect')) {
     defaults.push({
       key: 'connect',
       label: 'Connect',
       icon: 'connect',
-      variant: detail.viewAllHref ? 'secondary' : 'primary',
+      variant: 'primary',
     })
   }
   if (!host.some((a) => a.key === 'message')) {

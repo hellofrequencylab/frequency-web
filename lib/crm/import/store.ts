@@ -40,6 +40,25 @@ function importsTable() {
   }).from('contact_import')
 }
 
+/** The platform ROOT space id — where a `platform` import lands (Frequency's own contact
+ *  hub, CRM-MASTER-BUILD-PLAN §1.2). Cached for the process. Fail-safe to null; a null
+ *  result makes the platform commit refuse rather than write to the wrong scope. */
+let rootSpaceIdCache: string | null | undefined
+export async function getRootSpaceId(): Promise<string | null> {
+  if (rootSpaceIdCache !== undefined) return rootSpaceIdCache
+  try {
+    const { data } = (await createAdminClient()
+      .from('spaces')
+      .select('id')
+      .eq('type', 'root')
+      .maybeSingle()) as { data: { id?: string } | null }
+    rootSpaceIdCache = data?.id ?? null
+  } catch {
+    rootSpaceIdCache = null
+  }
+  return rootSpaceIdCache
+}
+
 /** The custom_field_registry table via an untyped admin handle. */
 function registryTable() {
   return (createAdminClient() as unknown as {
