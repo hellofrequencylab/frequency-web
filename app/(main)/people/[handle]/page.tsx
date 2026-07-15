@@ -17,7 +17,7 @@ import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
 import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight, Sparkles, UserCog } from 'lucide-react'
 import { parseVcard } from '@/lib/vcard'
-import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
+import { type CommunityRole, RoleBadge, FoundingBadge } from '@/lib/community-roles'
 import { getProfileCapabilities, getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { getRealCallerWebRole } from '@/lib/auth'
 import { actAsMember } from '@/app/(main)/impersonate-actions'
@@ -81,6 +81,7 @@ export default async function ProfilePage({
       avatar_url,
       community_role,
       membership_tier,
+      is_founding_member,
       created_at,
       current_streak,
       lifetime_gems,
@@ -269,6 +270,8 @@ export default async function ProfilePage({
     <span className="flex items-center gap-2 flex-wrap">
       {/* The system voice (Vera, ADR-231) shows "Moderator" — never the web role. */}
       <RoleBadge role={profile.is_system ? 'moderator' : role} className="text-xs leading-tight" />
+      {/* A Founding Member wears the gold Founder chip beside their Member badge. */}
+      <FoundingBadge founding={profile.is_founding_member} className="text-xs leading-tight" />
       {isSupporter && <SupporterBadge />}
       {rankEndorsed && (
         <span className="rank-badge text-xs font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
