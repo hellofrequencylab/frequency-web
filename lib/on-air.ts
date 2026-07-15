@@ -445,13 +445,20 @@ export function resolveWarmupSec(
   return Math.max(0, memberSec)
 }
 
+// The owner-set default sit (a new member with no saved On-Air prefs): Meditate, 10 min, a 5s
+// warm-up, sound + vibration on, the Amber bell at medium, interval bell OFF, end bell ON, and the
+// Forest ambient loop.
 export const DEFAULT_PREFS: OnAirPrefs = {
-  mode: 'breath',
+  mode: 'timer',
   pattern: 'box',
-  minutes: 5,
+  minutes: 10,
+  bell: true,
+  bellTone: 'amber',
   bellVolume: 'medium',
+  bellEveryMin: 0,
   endBell: true,
-  bellEveryMin: 1,
+  haptics: true,
+  ambientTrack: 'forest',
   warmupSec: 5,
 }
 

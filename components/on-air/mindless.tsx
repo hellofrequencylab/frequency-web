@@ -43,16 +43,6 @@ export type TimerMode = 'still' | 'move'
 /** localStorage key for the member's last chosen mode (a generic open re-opens to it). */
 const LAST_MODE_KEY = 'fq_timer_mode'
 
-function readLastMode(): TimerMode | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const v = window.localStorage.getItem(LAST_MODE_KEY)
-    return v === 'still' || v === 'move' ? v : null
-  } catch {
-    return null
-  }
-}
-
 function writeLastMode(mode: TimerMode): void {
   if (typeof window === 'undefined') return
   try {
@@ -168,8 +158,9 @@ function routeInitialMode(
   if (requestedPracticeId && practice) {
     return practice.timerKind === 'movement' ? 'move' : 'still'
   }
-  // Generic open: remember where the member last was.
-  return readLastMode() ?? 'still'
+  // Generic open: default to Be Still (owner directive) — the sit is the primary practice, so a plain
+  // open never lands on Get Moving even if that was the last mode used.
+  return 'still'
 }
 
 export function MindlessProvider({ children }: { children: React.ReactNode }) {
