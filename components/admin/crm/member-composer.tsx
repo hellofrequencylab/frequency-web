@@ -59,6 +59,9 @@ export interface MemberComposerProps {
   /** Fired with the draft's campaign id once it is created or resumed, so the parent can remember it
    *  (and reopen into the same draft after a close). */
   onDraftReady?: (campaignId: string) => void
+  /** Fired after a successful send, so the parent can drop the remembered draft id and reopening starts a
+   *  fresh message instead of resuming the already-sent campaign. */
+  onSent?: () => void
 }
 
 const inputClass =
@@ -71,6 +74,7 @@ export function MemberComposer({
   manages,
   initialCampaignId,
   onDraftReady,
+  onSent,
 }: MemberComposerProps) {
   // The Studio draft this composer edits. Created once on open, then edited in place by EmailEditorPane.
   const [campaign, setCampaign] = useState<LoadedEmailCampaign | null>(null)
@@ -215,6 +219,7 @@ export function MemberComposer({
         return
       }
       setSentTo(res.data.recipientCount)
+      onSent?.()
     })
   }
 

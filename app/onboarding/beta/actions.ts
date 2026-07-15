@@ -40,6 +40,20 @@ async function readBetaSequenceSlug(): Promise<string | null> {
   }
 }
 
+/** Consume-and-clear the sequence cookie once induction has completed. The cohort tag and any funnel
+ *  GRANTS have already read it by this point, so clearing it prevents a stale 30-day cookie from
+ *  re-applying a durable grant (Founding Member + Crew) to a LATER, unrelated signup in the same browser
+ *  (e.g. a shared/kiosk device), or retroactively to a returning member who re-runs the default induction.
+ *  Best-effort: matches the fq_pending_induction consume-and-clear lifecycle. Path '/' matches how the
+ *  induction set it client-side. */
+async function clearBetaSequenceCookie(): Promise<void> {
+  try {
+    ;(await cookies()).set('fq_beta_seq', '', { path: '/', maxAge: 0 })
+  } catch {
+    /* clearing is best-effort; a failure never blocks completion */
+  }
+}
+
 /** Stamp the cohort's marketing tag on the member (best-effort; never blocks).
  *  Resolves through the DB layer so versions built in the wizard stamp THEIR tag,
  *  not the default's. */
@@ -342,6 +356,9 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     // Apply any grants the arriving funnel confers (SEQUENCE_GRANTS, keyed on seqSlug): the
     // `randy` donor funnel makes the finisher a Founding Member + comps Crew. Best-effort.
     await applySequenceGrants(seqSlug, user.id, prof.id as string)
+    // Consume-and-clear the sequence cookie now that its tag + grants are applied, so it cannot leak a
+    // durable grant onto a later signup on this browser.
+    await clearBetaSequenceCookie()
     // Tag every persona they selected (multi-select); each tag is registered + idempotent.
     for (const p of allPersonas) await tagPersona(prof.id as string, p)
     // Cue future onboarding: enroll the member into their PRIMARY persona's nurture / onboarding sequence
@@ -557,6 +574,9 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
   // Apply the arriving funnel's grants too, so a returning member who re-runs the `randy`
   // funnel is still honored as a Founding Member + comped Crew (idempotent, best-effort).
   await applySequenceGrants(seqSlug, user.id, profile.id as string)
+  // Consume-and-clear the sequence cookie (see writeBetaInduction) so a stale slug can't retroactively
+  // re-grant Founding Member + Crew to a returning member re-running the default induction.
+  await clearBetaSequenceCookie()
 }
 
 /**

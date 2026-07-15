@@ -29,6 +29,7 @@ import { getInitials, cn } from '@/lib/utils'
 // Type-only import: never pull the server-only network reader into the client bundle.
 import type { MemberNetwork, NetworkItem } from '@/lib/crm/member-network'
 import { MemberComposer } from '@/components/admin/crm/member-composer'
+import { discardDraftIfEmpty } from '@/app/(main)/admin/email-studio/actions'
 import type { CrmMemberDetail } from './types'
 import type { MemberRole } from '@/lib/people/member-viewer'
 
@@ -210,6 +211,14 @@ export function CrmMemberDetailPane({ detail }: { detail: CrmMemberDetail }) {
   // the saved draft. It never needs a manual reset: the viewer keys this pane by profileId, so selecting
   // a different member remounts it and every piece of state (draftId, composeOpen) starts fresh.
   const [draftId, setDraftId] = useState<string | null>(null)
+  // Close the compose popup, and discard the draft it minted IF it was never edited or sent — the popup
+  // creates a draft on open, so abandoning it (open then close) would otherwise leak an empty campaign
+  // into the Email Studio list. discardDraftIfEmpty is a no-op for a resumable (edited) or sent draft.
+  const closeCompose = () => {
+    setComposeOpen(false)
+    const id = draftId
+    if (id) void discardDraftIfEmpty(id)
+  }
   const contact = detail.contact
   const hasContact = !!(contact && (contact.email || contact.phone || contact.links?.length))
   const composerManages = detail.network
@@ -285,7 +294,7 @@ export function CrmMemberDetailPane({ detail }: { detail: CrmMemberDetail }) {
           </button>
           <Dialog
             open={composeOpen}
-            onClose={() => setComposeOpen(false)}
+            onClose={closeCompose}
             ariaLabel={`Message ${detail.displayName}`}
             className="max-w-6xl !mt-0"
           >
@@ -301,7 +310,7 @@ export function CrmMemberDetailPane({ detail }: { detail: CrmMemberDetail }) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setComposeOpen(false)}
+                  onClick={closeCompose}
                   aria-label="Close"
                   className="shrink-0 rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
                 >
@@ -318,6 +327,7 @@ export function CrmMemberDetailPane({ detail }: { detail: CrmMemberDetail }) {
                     manages={composerManages}
                     initialCampaignId={draftId ?? undefined}
                     onDraftReady={setDraftId}
+                    onSent={() => setDraftId(null)}
                   />
                 </div>
                 {/* RIGHT — editorial stats + threaded communications. */}

@@ -34,7 +34,10 @@ import {
 export const metadata = {
   title: 'Business Spaces',
   description:
-    'Browse every practitioner, business, organization, coaching academy, and event space in the Frequency network. Find one, see what they offer, and connect.',
+    'Browse the businesses and nonprofits in the Frequency network. See what each one offers, from classes to services to events, then follow or reach out.',
+  // The indexable SEO twin is /discover/spaces; this in-app shell page canonicals there (and is kept out
+  // of the crawl in robots.ts) so faceted URLs never index as duplicate content.
+  alternates: { canonical: '/discover/spaces' },
 }
 
 const DIRECTORY_BASE = '/spaces/directory'
@@ -77,7 +80,7 @@ export default async function SpacesDirectoryPage({
         image="/images/site/business-directory-hero.jpg"
         eyebrow="Directory"
         title="Business Spaces"
-        subtitle="Every practitioner, business, and organization in the Frequency network. Find one, see what they offer, and connect."
+        subtitle="Find a business or nonprofit near you. See what they offer, from classes to services to events, then follow or reach out."
         search={<DirectorySearch placeholder="Search Spaces by name" />}
         action={
           viewerProfileId ? (

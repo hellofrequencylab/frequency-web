@@ -23,6 +23,10 @@ const DISALLOW = [
   // /store rule would deindex them; the /store index carries its own noindex instead.
   "/partners",
   "/journeys",
+  // /spaces/directory is the app-shell twin of the canonical /discover/spaces (it canonicals there),
+  // so keep crawlers off it. NOT a blanket "/spaces" rule: the /spaces/<slug> Space profile pages are
+  // self-canonical + indexable (LocalBusiness/Organization schema), which a "/spaces" rule would deindex.
+  "/spaces/directory",
   "/messages",
   "/people",
   "/search",
