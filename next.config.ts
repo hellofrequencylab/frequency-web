@@ -32,7 +32,7 @@ const csp = [
   // connect-src is the exfiltration gate — every runtime fetch/XHR/WS target is listed:
   // Supabase (REST + realtime), GA (incl. GA4's region-routed /g/collect endpoint), Vercel
   // insights/live, OpenFreeMap tiles (maplibre), Photon (address geocoding), ipapi (IP geo).
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://region1.google-analytics.com https://vitals.vercel-insights.com https://*.vercel.live https://tiles.openfreemap.org https://photon.komoot.io https://ipapi.co",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://vitals.vercel-insights.com https://*.vercel.live https://tiles.openfreemap.org https://photon.komoot.io https://ipapi.co",
   // frame-src — the only hosts we may embed. Spotlight media embeds (lib/spotlight/embeds.ts)
   // reconstruct iframe srcs ONLY for these allowlisted players; keep the two lists in sync.
   "frame-src 'self' https://*.vercel.live https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com",
@@ -127,6 +127,14 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "**.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+      // Supabase custom domain (branded API/storage host). Storage public URLs move
+      // here once NEXT_PUBLIC_SUPABASE_URL points at the custom domain; the wildcard
+      // above does not cover a non-supabase.co host, so it needs its own entry.
+      {
+        protocol: "https",
+        hostname: "api.frequencylocal.com",
         pathname: "/storage/v1/object/public/**",
       },
       // Demo/seed placeholder imagery (circle covers + member avatars). Harmless
