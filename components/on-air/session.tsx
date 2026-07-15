@@ -51,6 +51,7 @@ import {
   modeForMindless,
   modeHasNote,
   patternBySlug,
+  resolveWarmupSec,
   type BellVolume,
   type BreathPattern,
   type BreathPhase,
@@ -413,6 +414,11 @@ export function OnAirSession({
   const lastPhase = useRef<BreathPhase | null>(null)
   const lastMinute = useRef(0)
   const endCued = useRef(false)
+  // Once-only guard for the warm-up -> live handoff. begin() can be reached two ways in the same
+  // instant (the countdown effect hitting zero AND the Start tap), and each would shift startedAt by
+  // the armed span, starting the clock a whole warm-up behind. This latches on the first begin() and
+  // is re-armed by start(), so the arm->begin transition fires exactly once per run.
+  const begunRef = useRef(false)
   // Seconds already banked on a resumed partial sit. The clock runs the remaining time, then
   // finishWith reports resumeBanked + this session's elapsed so the server tops the log up to full.
   const resumeBanked = useRef(resumeBankedSec)
@@ -834,7 +840,18 @@ export function OnAirSession({
   // starts on ITS preset (mode + duration_min) the same tick it's selected, without
   // waiting for selectPractice's state writes to land. No override = the current
   // setup state (the footer button's path).
-  async function start(override?: { practiceId: string; mode: SessionMode; minutes: number }) {
+  async function start(override?: {
+    practiceId: string
+    mode: SessionMode
+    minutes: number
+    /** Explicit pre-roll length (seconds). A top-up leg passes 0 so "finish the rest" resumes
+     *  straight into the sit instead of running a SECOND warm-up. Omitted = resolve normally. */
+    warmup?: number
+  }) {
+    // Single-owner guard: a run is already live on this instance. Never arm a second warm-up /
+    // clock on top of a running one (the double-warm-up family). Legit starts come from setup or
+    // the reveal (finishTheRest), never from 'live'.
+    if (stage === 'live') return
     const activeId = override?.practiceId ?? practiceId
     const activeMode = override?.mode ?? mode
     const activeMinutes = override?.minutes ?? minutes
@@ -870,24 +887,31 @@ export function OnAirSession({
     // zero, a "Starting in N" pre-roll ticks down, then begin() unpauses automatically. The Start
     // button overrides the countdown to begin now. Arming is a pause from the first millisecond, so
     // the existing Start <-> Pause machinery (and the airtime math) needs nothing new.
+    // The pre-roll length: an explicit override (a top-up passing 0) wins, else the creator's
+    // authored warm-up (read off the RESOLVED activePractice, so a same-tick override id gets its
+    // own warm-up, not the stale `practice` state), else the member's pre-roll pref (ADR-592).
+    const warm = resolveWarmupSec(activePractice?.warmupSec, warmupSec, override?.warmup)
+    // arming = there's a warm-up to run. warm === 0 (a top-up resuming) opens straight into the
+    // live clock: no armed pause, no pre-roll, no second countdown.
+    const arming = warm > 0
+    begunRef.current = false
     const now = Date.now()
     setStartedAt(now)
-    setPausedAt(now)
+    setPausedAt(arming ? now : null)
     setRemaining(activeMinutes * 60)
     setOvertime(0)
     setFlash(false)
     setNeedRestore(false)
-    // The pre-roll length: the creator's authored warm-up (practice.warmupSec) when set, else the
-    // member's own pre-roll pref (ADR-592). An authored warm-up gives its message time to land.
-    setPreroll(practice?.warmupSec && practice.warmupSec > 0 ? practice.warmupSec : warmupSec)
+    setPreroll(arming ? warm : null)
     setStage('live')
-    // Open the server-authoritative active session immediately (armed/paused through warm-up), so a
-    // reset even during warm-up recovers, cross-device (ADR-521). resumeTarget mirrors a top-up.
+    // Open the server-authoritative active session immediately (armed/paused through warm-up, or
+    // already running when there's no warm-up), so a reset even during warm-up recovers,
+    // cross-device (ADR-521). resumeTarget mirrors a top-up.
     pushActiveSession({
       kind: 'mindless',
       practiceId: activeLogId,
       startedAt: now,
-      pausedAt: now,
+      pausedAt: arming ? now : null,
       resumeFromSec: resumeBanked.current,
       secondsTarget: resumeTarget.current > 0 ? resumeTarget.current : null,
       setup: buildMindlessSetup(activeMinutes),
@@ -912,6 +936,10 @@ export function OnAirSession({
   // Begin the sit now: end the pre-roll and unpause from the armed state (shift startedAt by the
   // armed span so elapsed starts at zero). Called by the 5s countdown reaching 0 or the Start button.
   function begin() {
+    // Fire the arm->begin handoff exactly once. Without this, the countdown reaching zero and a
+    // Start tap in the same instant would each shift startedAt, starting the clock a warm-up behind.
+    if (begunRef.current) return
+    begunRef.current = true
     setPreroll(null)
     if (pausedAt !== null) {
       const shifted = startedAt + (Date.now() - pausedAt)
@@ -1082,7 +1110,9 @@ export function OnAirSession({
     // Seed the clock STATE too: the live clock + finish() both read `minutes`, not the start
     // override, so the resumed sit must run the remaining minutes, not the original target.
     setMinutes(remainingMin)
-    void start({ practiceId, mode: 'timer', minutes: remainingMin })
+    // warmup: 0 — the member was just breathing; resume straight into the remaining time instead of
+    // running a SECOND warm-up (the reported "double warm-up").
+    void start({ practiceId, mode: 'timer', minutes: remainingMin, warmup: 0 })
   }
 
   if (stage === 'reveal' && payload) {

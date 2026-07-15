@@ -428,6 +428,23 @@ export function cleanWarmupMessage(v: string | null | undefined): string | null 
   return t.length ? t : null
 }
 
+/** Resolve the pre-roll length (seconds) for a run. Precedence:
+ *   1. an explicit `override` (a caller that knows the length, e.g. a top-up leg passing 0
+ *      to skip the second warm-up) always wins, clamped to >= 0;
+ *   2. else the creator-authored warm-up (`authoredSec`) when set and positive;
+ *   3. else the member's own pre-roll pref (`memberSec`).
+ *  Extracted from the engines so both the sit and Get Moving resolve it identically and it can
+ *  be unit-tested without rendering the timer. Returns 0 for "no warm-up, start immediately". */
+export function resolveWarmupSec(
+  authoredSec: number | null | undefined,
+  memberSec: number,
+  override?: number,
+): number {
+  if (typeof override === 'number' && Number.isFinite(override)) return Math.max(0, Math.round(override))
+  if (authoredSec && authoredSec > 0) return authoredSec
+  return Math.max(0, memberSec)
+}
+
 export const DEFAULT_PREFS: OnAirPrefs = {
   mode: 'breath',
   pattern: 'box',

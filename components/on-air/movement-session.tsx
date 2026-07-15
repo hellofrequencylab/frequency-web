@@ -47,7 +47,7 @@ import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { chime, endChime, countBeep } from '@/lib/timer-audio'
-import { bellToneBySlug, clampWarmupSec } from '@/lib/on-air'
+import { bellToneBySlug, clampWarmupSec, resolveWarmupSec } from '@/lib/on-air'
 import type { OnAirPractice } from './session'
 import {
   MOVEMENT_MODES,
@@ -384,6 +384,10 @@ export function MovementSession({
   const lastBeep = useRef(-1)
   const lastWalkMinute = useRef(0)
   const endCued = useRef(false)
+  // Once-only guard for the warm-up -> live handoff (the countdown hitting zero AND a Start tap can
+  // both reach begin() in the same instant, each shifting startedAt a warm-up behind). Re-armed by
+  // start(); latched by the first begin(). Mirrors the sit engine.
+  const begunRef = useRef(false)
 
   // --- takeover plumbing (shared shape with the Mindless sit) ---------------
   async function acquireQuiet() {
@@ -663,6 +667,8 @@ export function MovementSession({
 
   // --- transitions ----------------------------------------------------------
   async function start() {
+    // Single-owner guard: never arm a second warm-up/clock over a run already live on this instance.
+    if (stage === 'live') return
     if (!practiceId) return
     // Unlock audio on the tap (autoplay policy only opens the context in a gesture).
     try {
@@ -677,6 +683,7 @@ export function MovementSession({
     endCued.current = false
     setFlash(false)
     setNeedRestore(false)
+    begunRef.current = false
     const now = Date.now()
     setStartedAt(now)
     setElapsed(0)
@@ -685,7 +692,7 @@ export function MovementSession({
     setPausedAt(now)
     // The pre-roll length: the creator's authored warm-up (practice.warmupSec) when set, else the
     // member's own pre-roll pref (ADR-592), so an authored message has time to land.
-    setPreroll(practice?.warmupSec && practice.warmupSec > 0 ? practice.warmupSec : warmupSec)
+    setPreroll(resolveWarmupSec(practice?.warmupSec, warmupSec))
     setStage('live')
     // Open the server-authoritative active session immediately (ADR-521), even through warm-up.
     pushActiveSession({
@@ -703,6 +710,10 @@ export function MovementSession({
   // Begin the run now: end the pre-roll and unpause from the armed state (shift startedAt so elapsed
   // starts at zero). Called by the warm-up reaching 0.
   function begin() {
+    // Fire the arm->begin handoff exactly once (see begunRef): the countdown reaching zero and a
+    // Start tap in the same instant would otherwise each shift startedAt, starting a warm-up behind.
+    if (begunRef.current) return
+    begunRef.current = true
     setPreroll(null)
     if (pausedAt !== null) {
       const shifted = startedAt + (Date.now() - pausedAt)
