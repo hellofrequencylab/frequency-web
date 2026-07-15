@@ -22,6 +22,10 @@ import { getProfileCapabilities, getGlobalCapabilities } from '@/lib/core/load-c
 import { getRealCallerWebRole } from '@/lib/auth'
 import { actAsMember } from '@/app/(main)/impersonate-actions'
 import { readSpotlightPublished, readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
+import { getMemberProfileModules } from '@/lib/spotlight/data'
+import { SpotlightShell } from '@/components/spotlight/spotlight-shell'
+import { MemberProfileModules } from '@/components/widgets/member-profile/member-profile-modules'
+import { SpotlightOverlay } from '@/components/spotlight/spotlight-overlay'
 import { atLeastRole } from '@/lib/core/roles'
 import { MemberSupportPanel } from '@/components/support/member-support-panel'
 import { ConnectionPanel } from '@/components/people/connection-panel'
@@ -124,6 +128,11 @@ export default async function ProfilePage({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const isOwner = !!user && profile.auth_user_id === user.id
+
+  // The owner opens their Spotlight as a full-page overlay (linktree centered + a pinned Edit / QR
+  // tab) straight from their profile, so fetch their (non-publish-gated) mini-site data once here.
+  const ownerSpotlightData =
+    isOwner && spotlightEnabled ? await getMemberProfileModules(profile.handle as string) : null
 
   const role = (profile.community_role ?? 'member') as CommunityRole
   const isDemo = (profile as { is_demo?: boolean }).is_demo ?? false
@@ -299,14 +308,17 @@ export default async function ProfilePage({
   // The OWNER gets a Spotlight entry whenever it's enabled, so they can always reach it
   // from their own profile header: the live page once published, otherwise the builder
   // (where they design + publish it). Falls back to nothing until it's turned on.
-  const ownerSpotlightLink = spotlightEnabled ? (
-    <Link
-      href={spotlightPublished ? `/spotlight/${profile.handle}` : `/people/${profile.handle}`}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+  const ownerSpotlightLink = spotlightEnabled && ownerSpotlightData ? (
+    <SpotlightOverlay
+      handle={profile.handle as string}
+      profileId={profileId}
+      label={spotlightPublished ? 'Spotlight' : 'Build Spotlight'}
+      avatarUrl={profile.avatar_url}
     >
-      <Sparkles className="h-3.5 w-3.5" />
-      {spotlightPublished ? 'Spotlight' : 'Build Spotlight'}
-    </Link>
+      <SpotlightShell data={ownerSpotlightData} showBio={false}>
+        <MemberProfileModules member={ownerSpotlightData} grid={ownerSpotlightData.grid} />
+      </SpotlightShell>
+    </SpotlightOverlay>
   ) : null
 
   const ownerActions = (

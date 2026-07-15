@@ -1351,7 +1351,7 @@ export function OnAirSession({
   // the grid collapses to the original single column, so mobile is unchanged.
   return (
     <div className="fixed inset-0 z-50 h-[100dvh] max-h-[100dvh] overflow-y-auto bg-canvas">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6 py-5 lg:max-w-3xl lg:px-10 lg:py-8">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6 py-5">
       {/* The masthead (logo + subtitle) sits at the TOP OF THE CONTENT container, not
           pushed down from the viewport top (B.1): no extra top padding above it. */}
       <div className="flex flex-1 flex-col px-2 lg:px-0">
@@ -1385,7 +1385,7 @@ export function OnAirSession({
       <div className="flex flex-1 flex-col justify-center">
       {/* Two columns on desktop: chooser (practice, mode, pattern, minutes) on
           the left; cues + the Dispatches link on the right. One column on mobile. */}
-      <div className="space-y-5 lg:grid lg:grid-cols-2 lg:gap-x-8 lg:gap-y-6 lg:space-y-0">
+      <div className="space-y-5">
         <div className="space-y-5 lg:space-y-6">
         <div>
           <Label>Mode</Label>
@@ -1566,21 +1566,18 @@ export function OnAirSession({
         <div className="space-y-5 lg:space-y-6">
         {mode !== 'log' && (
           <div>
-            {/* Mobile: a tap-to-expand header keeps the cue settings from pushing Tune out below
-                the fold. Desktop: a plain label, always expanded. */}
+            {/* A tap-to-expand header keeps the cue settings from pushing Tune out below the fold, on
+                web and mobile alike (owner: web matches the mobile layout). */}
             <button
               type="button"
               onClick={() => setCuesOpen((v) => !v)}
               aria-expanded={cuesOpen}
-              className="flex w-full items-center justify-between lg:hidden"
+              className="flex w-full items-center justify-between"
             >
               <Label>Sounds &amp; Settings</Label>
               <ChevronDown className={`h-4 w-4 text-subtle transition-transform ${cuesOpen ? 'rotate-180' : ''}`} aria-hidden />
             </button>
-            <div className="hidden lg:block">
-              <Label>Sounds &amp; Settings</Label>
-            </div>
-            <div className={`${cuesOpen ? 'block' : 'hidden'} lg:block`}>
+            <div className={cuesOpen ? 'block' : 'hidden'}>
             <div className="mt-2 grid grid-cols-2 gap-2">
               <ToggleChip
                 active={bell}
@@ -1624,8 +1621,41 @@ export function OnAirSession({
               </div>
               <p className="mt-1.5 text-2xs text-subtle">The lead-in before the session starts. The same timer counts this down, then runs your session.</p>
             </div>
-            {bell && (
-              <div className="mt-3 space-y-3 rounded-xl border border-border px-3.5 py-3">
+            <div className="mt-3 space-y-3 rounded-xl border border-border px-3.5 py-3">
+                {/* Ambient — a soft background loop, independent of the bell; sits at the TOP of the
+                    settings box, above Voice (owner). A tap auditions it; the choice loops for the sit. */}
+                <div>
+                  <SubLabel>Ambient</SubLabel>
+                  <div className="mt-1.5 grid grid-cols-4 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => selectAmbient(null)}
+                      className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
+                        ambientSlug === null
+                          ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                          : 'border-border text-muted hover:bg-surface-elevated'
+                      }`}
+                    >
+                      Off
+                    </button>
+                    {AMBIENT_TRACKS.map((t) => (
+                      <button
+                        key={t.slug}
+                        type="button"
+                        onClick={() => selectAmbient(t.slug)}
+                        className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
+                          ambientSlug === t.slug
+                            ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                            : 'border-border text-muted hover:bg-surface-elevated'
+                        }`}
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {bell && (
+                  <>
                 {/* Voice */}
                 <div>
                   <SubLabel>Voice</SubLabel>
@@ -1728,40 +1758,9 @@ export function OnAirSession({
                     {endBell ? 'on' : 'off'}
                   </span>
                 </button>
+                  </>
+                )}
               </div>
-            )}
-            {/* Ambient: a soft background loop, independent of the bell. A tap
-                auditions it; the choice plays, seamlessly looped, for the sit. */}
-            <div className="mt-3">
-              <SubLabel>Ambient</SubLabel>
-              <div className="mt-1.5 grid grid-cols-4 gap-2">
-                <button
-                  type="button"
-                  onClick={() => selectAmbient(null)}
-                  className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
-                    ambientSlug === null
-                      ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                      : 'border-border text-muted hover:bg-surface-elevated'
-                  }`}
-                >
-                  Off
-                </button>
-                {AMBIENT_TRACKS.map((t) => (
-                  <button
-                    key={t.slug}
-                    type="button"
-                    onClick={() => selectAmbient(t.slug)}
-                    className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
-                      ambientSlug === t.slug
-                        ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                        : 'border-border text-muted hover:bg-surface-elevated'
-                    }`}
-                  >
-                    {t.name}
-                  </button>
-                ))}
-              </div>
-            </div>
             </div>
           </div>
         )}
