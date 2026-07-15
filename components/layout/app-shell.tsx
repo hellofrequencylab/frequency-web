@@ -1094,11 +1094,6 @@ function MobileLeftDrawer({
   /** Sections are DB-driven (mode-per-item); forwarded to NavLinkList. */
   menuDriven?: boolean
 }) {
-  // Daily check-in streak (same source as the header streak pill) — a small visualizer
-  // under the identity card. Shown only once the member has a streak going.
-  const streak = Number(
-    (profile.meta as { daily_checkin_streak?: number } | null)?.daily_checkin_streak ?? 0,
-  )
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -1171,34 +1166,18 @@ function MobileLeftDrawer({
             </div>
           </Link>
 
-          {/* Operator hat-switching — both self-gate to null for viewers without them, so
-              a regular member sees nothing extra here. */}
+          {/* Space switcher only (owner: no View-as-role, no streak in the mobile drawer). Self-gates
+              to null for members with a single context, so a regular member sees nothing extra. */}
           <div className="mt-2 space-y-0.5">
-            <ViewAsControl realRole={realRole} currentRole={identityRole} asVisitor={previewVisitor} />
             <ContextSwitcher context={operatorContext ?? { kind: 'personal' }} available={availableContexts} />
           </div>
-
-          {/* Daily streak visualizer — a flame + count that links to your Quest dashboard. */}
-          {streak >= 1 && (
-            <Link
-              href="/crew"
-              onClick={onClose}
-              aria-label={`Daily streak: ${streak} ${streak === 1 ? 'day' : 'days'}. Open your Quest dashboard`}
-              className="mt-2.5 flex items-center gap-2 rounded-lg bg-primary-bg px-3 py-1.5 text-primary-strong transition-colors hover:bg-primary-bg/70"
-            >
-              <Flame className="h-4 w-4 shrink-0" strokeWidth={2.5} />
-              <span className="text-sm font-bold tabular-nums">{streak}</span>
-              <span className="text-xs font-medium">day streak</span>
-            </Link>
-          )}
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
           <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={sections} menuDriven={menuDriven} />
         </nav>
 
-        {/* Bottom cluster — About/legal, then the stats section (Zaps · Gems + View stats),
-            then a thumb-zone Close. Stats sits directly above Close per the plan. */}
+        {/* Bottom cluster — About/legal, then a thumb-zone Close (owner: no stats section). */}
         <div className="shrink-0 border-t border-border pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           {/* About / What is Frequency / Terms / Privacy — the site pages that were desktop
               mega-menu only, so nothing is desktop-reachable-only. */}
@@ -1207,32 +1186,6 @@ function MobileLeftDrawer({
             <Link href="/what-is-frequency" onClick={onClose} className="hover:text-text transition-colors">What is Frequency</Link>
             <Link href="/terms" onClick={onClose} className="hover:text-text transition-colors">Terms</Link>
             <Link href="/privacy" onClick={onClose} className="hover:text-text transition-colors">Privacy</Link>
-          </div>
-
-          {/* Stats — the Zaps · Gems pill that used to sit up top, now with a View stats link
-              to the full progress dashboard at /crew. */}
-          <div className="px-3 pt-3">
-            <div className="flex items-center gap-3 rounded-lg bg-surface-elevated px-3 py-2">
-              <span className="flex items-center gap-1.5" title="Zaps (this season)">
-                <Zap className="w-4 h-4 text-primary" strokeWidth={2.5} />
-                <span className="text-sm font-bold text-text tabular-nums">
-                  {(profile.current_season_zaps ?? 0).toLocaleString()}
-                </span>
-              </span>
-              <span className="flex items-center gap-1.5" title="Gems">
-                <Gem className="w-4 h-4 text-signal" strokeWidth={2.5} />
-                <span className="text-sm font-bold text-text tabular-nums">
-                  {(profile.lifetime_gems ?? 0).toLocaleString()}
-                </span>
-              </span>
-              <Link
-                href="/crew"
-                onClick={onClose}
-                className="ml-auto text-xs font-semibold text-primary-strong hover:underline"
-              >
-                View stats
-              </Link>
-            </div>
           </div>
 
           {/* Bottom close. Sits in the thumb zone */}

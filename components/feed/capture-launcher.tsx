@@ -125,7 +125,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             role="dialog"
             aria-modal="true"
             aria-label="Capture a moment"
-            className="relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 shadow-2xl motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[90vh] sm:max-w-md sm:rounded-3xl sm:border"
+            className="relative flex max-h-[100dvh] w-full flex-col overflow-y-auto border-border bg-canvas p-4 shadow-2xl motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[90vh] sm:max-w-md sm:rounded-3xl sm:border"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
             {/* Header — the Zap menu: where the interactive energy starts.
@@ -154,12 +154,29 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               </button>
             </div>
 
-            {/* Mindless — the daily ritual leads, right under the headline, filling the space
-                above the composer. Be Still + Get Moving in one overlay. */}
+            {showIntro && (
+              <p className="mb-3 shrink-0 rounded-xl bg-primary-bg/50 px-3 py-2 text-xs leading-relaxed text-primary-strong">
+                First time? Everything in this menu earns. Tap a tile, do the real
+                thing, and the Zaps follow.
+              </p>
+            )}
+
+            {/* The prompt box — sharing stays the zero-tap action. */}
+            <CaptureBox
+              key={mode}
+              scopeId={scopeId}
+              visibility="public"
+              defaultMode={mode}
+              compactTools
+              placeholder="Share something real from your day…"
+            />
+
+            {/* Mindless — the daily ritual sits just BELOW the post box (owner). Be Still + Get
+                Moving in one overlay. */}
             <button
               type="button"
               onClick={openMindless}
-              className="group mb-3 flex w-full shrink-0 items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-br from-primary-bg/80 to-primary-bg/25 p-3.5 text-left shadow-sm transition-all hover:border-primary hover:shadow-md active:scale-[0.99]"
+              className="group mt-3 flex w-full shrink-0 items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-br from-primary-bg/80 to-primary-bg/25 p-3.5 text-left shadow-sm transition-all hover:border-primary hover:shadow-md active:scale-[0.99]"
             >
               <MindlessArt className="block h-12 shrink-0" />
               <span className="min-w-0 flex-1">
@@ -179,25 +196,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               </span>
             </button>
 
-            {showIntro && (
-              <p className="mb-3 shrink-0 rounded-xl bg-primary-bg/50 px-3 py-2 text-xs leading-relaxed text-primary-strong">
-                First time? Everything in this menu earns. Tap a tile, do the real
-                thing, and the Zaps follow.
-              </p>
-            )}
-
-            {/* The prompt box — sharing stays the zero-tap action. */}
-            <CaptureBox
-              key={mode}
-              scopeId={scopeId}
-              visibility="public"
-              defaultMode={mode}
-              compactTools
-              placeholder="Share something real from your day…"
-            />
-
-            {/* The tools — the live capture rows (every tile earns, ADR-236). The Mindless
-                daily ritual now leads above, right under the headline. */}
+            {/* The tools — the live capture rows (every tile earns, ADR-236). */}
             <div className="mt-5 grid shrink-0 grid-cols-3 gap-2.5">
               <ZapTile href="/events/scan" onClick={tapTile('event')} label="Event" zaps="+20" art={<EventArt className="block h-12" />} sub="Snap a poster" />
               <ZapTile href="/connections/new" onClick={tapTile('contact')} label="Contact" art={<ContactArt className="block h-12" />} sub="Snap a card" />

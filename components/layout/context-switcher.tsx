@@ -58,17 +58,23 @@ export function ContextSwitcher({
   available: AvailableContext[]
 }) {
   const [open, setOpen] = useState(false)
-  const [anchor, setAnchor] = useState<{ left: number; bottom: number; width: number } | null>(null)
+  const [anchor, setAnchor] = useState<{ left: number; width: number; top?: number; bottom?: number } | null>(null)
   const [isPending, startTransition] = useTransition()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  // Position the portal menu just above the trigger; keep it there on resize (mirrors ViewAsControl).
+  // Position the portal menu, and pick the direction by where the trigger sits: open DOWNWARD when the
+  // trigger is in the top half of the viewport (the mobile drawer, where opening up runs off the top),
+  // else upward (a bottom-anchored rail). Keeps it in view on resize.
   function place() {
     const el = triggerRef.current
     if (!el) return
     const r = el.getBoundingClientRect()
-    setAnchor({ left: r.left, bottom: window.innerHeight - r.top + 6, width: r.width })
+    if (r.top < window.innerHeight / 2) {
+      setAnchor({ left: r.left, top: r.bottom + 6, width: r.width })
+    } else {
+      setAnchor({ left: r.left, bottom: window.innerHeight - r.top + 6, width: r.width })
+    }
   }
 
   useEffect(() => {
@@ -131,7 +137,7 @@ export function ContextSwitcher({
             style={{
               position: 'fixed',
               left: anchor.left,
-              bottom: anchor.bottom,
+              ...(anchor.top != null ? { top: anchor.top } : { bottom: anchor.bottom }),
               width: Math.max(anchor.width, 208),
             }}
             className="z-[60] rounded-xl border border-border bg-surface-elevated py-1 shadow-xl shadow-black/10"

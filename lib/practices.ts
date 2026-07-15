@@ -1949,7 +1949,13 @@ export async function logPractice(input: {
   // streak + "Finish Practice" top-up). The personal target only seeds the timer — it no
   // longer gates the reward. A one-tap / quick-log (non-timed) stays a full recommended log.
   const achieved = isTimed ? achievedTier(done) : null
-  const isFullSit = !isTimed || achieved !== 'partial'
+  // `completed` requires actually REACHING the target (~95%, a beat-early tolerance), matching this
+  // function's documented contract above ("PARTIAL ... >= 50% but < 95% of target"). A shorter timed
+  // sit is a PARTIAL (completed=false): it clears the day + pays 1 Zap, and the "Finish Practice"
+  // top-up later flips it complete + pays the rest. (Previously this used the tier floor, so ANY sit
+  // >= 3 min counted as complete regardless of target — an early-ended sit logged as done. ADR-443
+  // still decouples the tier REWARD from the target; only completion is target-gated.)
+  const isFullSit = !isTimed || done >= Math.round(tgt * 0.95)
   const PARTIAL_ZAPS = 1
 
   // The "finish a partial" top-up (and the "already logged today" no-op) must be decided
