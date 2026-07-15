@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sparkles, Search, BookOpen, Mail, X, MessageCircle, LifeBuoy, Bug, Ticket } from 'lucide-react'
+import { Sparkles, Search, BookOpen, Mail, X, MessageCircle, MessageSquare, LifeBuoy, Bug, Ticket } from 'lucide-react'
 import type { HelpSearchEntry } from '@/lib/help/content'
 import { searchHelp } from '@/lib/help/search'
 import { CONTACT_EMAIL } from '@/lib/site'
@@ -92,7 +92,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           side="right"
           glow="orange"
           label="Vera"
-          icon={<Sparkles className="h-5 w-5" aria-hidden />}
+          icon={<MessageSquare className="h-5 w-5" aria-hidden />}
           waiting={pulse}
           onOpen={openPanel}
           ariaLabel="Open Vera"

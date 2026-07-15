@@ -28,7 +28,6 @@ import {
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
 import { HoverTip } from '@/components/ui/hover-tip'
-import { MessagesPopover } from '@/components/messages/messages-popover'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { ViewAsControl } from '@/components/layout/view-as-control'
 import { ContextSwitcher } from '@/components/layout/context-switcher'
@@ -1417,7 +1416,10 @@ export default function AppShell({
   sidebar,
   ticker,
   unreadCount = 0,
-  messagesUnread = 0,
+  // Reserved for the persistent chat dock's unread badge (Phase 1). The header
+  // popover that consumed it has moved into the dock; kept on the shell API so the
+  // count keeps flowing without re-threading the prop.
+  messagesUnread: _messagesUnread = 0,
   canReceivePayouts = false,
   extraSections,
   hideAppNav = false,
@@ -1864,12 +1866,8 @@ export default function AppShell({
                 </Link>
               </HoverTip>
             )}
-            {/* Messages — all sizes now (its bottom tab moved to Events). DMs live in the
-                header top-right by convention; the popover fetches + carries its own unread
-                badge, exactly as on desktop. */}
-            <HoverTip label="Messages" className="inline-flex">
-              <MessagesPopover initialUnread={messagesUnread} />
-            </HoverTip>
+            {/* Messages moved out of the header into the persistent chat dock (the
+                right-edge launcher). The dock now owns DMs, rooms, and the unread badge. */}
             {/* Notifications — sits before the streak (swapped per request); shown on
                 all sizes, tooltip on hover. */}
             <HoverTip label="Notifications">
