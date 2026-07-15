@@ -160,6 +160,7 @@ export function EventForm({
   currentScopeName,
   backHref,
   defaultGroupId,
+  home,
 }: {
   groups: Group[]
   /** When set (with `eventId`), the form prefills and edits the event. */
@@ -173,6 +174,9 @@ export function EventForm({
   /** Pre-selected scope on create (from the `?circle=` deep link, already validated to one
    *  of the caller's own hosted circles by the page). */
   defaultGroupId?: string
+  /** The viewer's saved home {lat,lng}, used to bias the venue autocomplete before a pin
+   *  exists so the FIRST, local-bounded pass has an anchor. Null when the viewer has no home. */
+  home?: { lat: number; lng: number } | null
 }) {
   const isEdit = !!eventId
   // Sentinel scope for a standalone PUBLIC event (any nearby member — no circle/space needed).
@@ -629,7 +633,14 @@ export function EventForm({
                 onPick={onPickVenue}
                 placeholder="Search a venue or address"
                 disabled={isPending}
-                bias={venueLat != null && venueLng != null ? { lat: venueLat, lng: venueLng } : null}
+                // The current pin is the best bias; before one exists, fall back to the viewer's
+                // home so the search is NEVER unbiased (the device's own geolocation still wins
+                // over both inside VenueAutocomplete when the browser grants it).
+                bias={
+                  venueLat != null && venueLng != null
+                    ? { lat: venueLat, lng: venueLng }
+                    : home ?? null
+                }
               />
               <Input
                 type="text"

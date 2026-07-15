@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { EventSpark } from '../event-spark'
+import { getViewerHome } from '../admin-actions'
 import type { EventFormInitial } from './event-form'
 import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
 
@@ -163,6 +164,11 @@ export default async function NewEventPage({
     duplicateInitial = { ...duplicateInitial, scopeId: undefined }
   }
 
+  // The viewer's saved home, to DEFAULT the venue autocomplete's location bias before any
+  // pin exists (local-first address search — people almost always post events near home).
+  // Null for a viewer with no saved home; the device's own geolocation still wins when granted.
+  const viewerHome = await getViewerHome()
+
   return (
     <EventEditorWindow backHref="/events">
       <EventSpark
@@ -170,6 +176,7 @@ export default async function NewEventPage({
         defaultGroupId={defaultGroupId}
         initial={duplicateInitial ?? undefined}
         startInManual={!!duplicateInitial}
+        home={viewerHome}
       />
     </EventEditorWindow>
   )

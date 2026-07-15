@@ -35,6 +35,7 @@ export function EventSpark({
   defaultGroupId,
   initial,
   startInManual,
+  home,
 }: {
   groups: Group[]
   defaultGroupId?: string
@@ -42,6 +43,8 @@ export function EventSpark({
   initial?: Partial<EventFormInitial>
   /** Skip Vera's wizard and open the manual form straight away (Duplicate event). */
   startInManual?: boolean
+  /** The viewer's saved home, to default the venue autocomplete's location bias. */
+  home?: { lat: number; lng: number } | null
 }) {
   const router = useRouter()
   const [mode, setMode] = useState<'wizard' | 'manual'>(startInManual ? 'manual' : 'wizard')
@@ -71,7 +74,7 @@ export function EventSpark({
   const [description, setDescription] = useState('')
 
   if (mode === 'manual')
-    return <EventForm groups={groups} defaultGroupId={defaultGroupId} initial={initial} />
+    return <EventForm groups={groups} defaultGroupId={defaultGroupId} initial={initial} home={home} />
 
   const onReview = step === 5
   const total = usingFlyer ? 2 : 5
