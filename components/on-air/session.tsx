@@ -331,14 +331,14 @@ export function OnAirSession({
   // A Free sit (mindless + open length) opens the plain timer, never Just Log.
   const modeForPractice = (id: string): SessionMode => {
     const p = practices.find((x) => x.id === id)
-    if (!p) return saved?.mode ?? prefs.mode
-    if (p.timerKind === 'none') return 'log'
-    // The practice's authored flavour wins; null falls back to the member's saved/prefs mode,
-    // then Meditate. A Free sit (mindlessMode null, no length) lands on the plain timer.
-    const fallback = (saved?.mode ?? prefs.mode) as SessionMode
-    const resolved = modeForMindless(p.mindlessMode, fallback)
-    // Just Log is only the opening mode for a 'none' practice; a mindless practice that stored
-    // 'log' as its flavour still gets a real timer here (the sit is the point).
+    // Default sit tab is Meditate (owner directive): a generic open, a Free sit, or a practice
+    // with no authored flavour opens Meditate — never Just Log, and no longer the sticky
+    // saved/prefs mode. The member can still switch tabs.
+    if (!p) return 'timer'
+    if (p.timerKind === 'none') return 'log' // a log-only practice has no timer to run
+    // The practice's authored flavour still wins; the fallback for an unflavoured/Free sit is
+    // Meditate. Just Log is only ever the opener for a 'none' practice.
+    const resolved = modeForMindless(p.mindlessMode, 'timer')
     return resolved === 'log' ? 'timer' : resolved
   }
   const [practiceId, setPracticeId] = useState(initialId)

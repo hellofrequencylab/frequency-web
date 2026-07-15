@@ -48,20 +48,20 @@ export function MarketHero({
       <div className="amber-glow pointer-events-none absolute inset-0" aria-hidden />
       {/* Fixed min-height + centered content = every hero is the same height (matches the Frequency
           Store hero) no matter how much copy or how many controls it carries. */}
-      <div className="relative z-10 mx-auto flex min-h-[24rem] max-w-3xl flex-col items-center justify-center px-6 py-12 text-center">
+      <div className="relative z-10 mx-auto flex min-h-[15rem] max-w-3xl flex-col items-center justify-center px-6 py-8 text-center sm:min-h-[24rem] sm:py-12">
         {eyebrow && (
-          <p className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-primary">{eyebrow}</p>
+          <p className="mb-3 text-sm font-bold uppercase tracking-[0.25em] text-primary sm:mb-4">{eyebrow}</p>
         )}
-        <h1 className="font-display uppercase leading-[0.95] text-balance text-white text-[clamp(2rem,6vw,3.75rem)]">
+        <h1 className="font-display uppercase leading-[0.95] text-balance text-white text-[clamp(1.75rem,6vw,3.75rem)]">
           {title}
         </h1>
         {subtitle && (
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg">
+          <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-white/80 sm:mt-5 sm:text-lg">
             {subtitle}
           </p>
         )}
-        {search && <div className="mt-6 w-full max-w-lg">{search}</div>}
-        {action && <div className="mt-6 flex flex-wrap items-center justify-center gap-3">{action}</div>}
+        {search && <div className="mt-4 w-full max-w-lg sm:mt-6">{search}</div>}
+        {action && <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:mt-6 sm:gap-3">{action}</div>}
       </div>
       <div className="light-strip absolute inset-x-0 bottom-0 z-10" aria-hidden />
     </section>
