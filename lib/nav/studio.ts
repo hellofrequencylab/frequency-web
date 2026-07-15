@@ -588,6 +588,14 @@ export type AdminNavSectionSpec = {
   groups?: readonly AdminNavGroupSpec[]
 }
 
+// ⚠️ DB OVERRIDES CODE — read before you expect an edit here to move the live admin tab bar.
+// The admin sub-nav renders from getMenu('admin_header') (lib/menus/read.ts). If the `admin_header`
+// menu has ANY rows in the DB (menus/menu_categories/menu_items — materialized the moment an operator
+// opens the Menu Manager for it), those rows WIN and this catalog is ignored on the live site. So a
+// change here only shows up when admin_header has NO DB rows (the code-default fallback). If the live
+// tabs don't reflect a change you made here, the DB copy is stale: reset it (delete the admin_header
+// menu rows so it falls back to this code) or edit it in the Menu Manager. (ADR-390; the 2026-07 CRM
+// tab consolidation was invisible for exactly this reason.)
 export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
   { href: '/admin', label: 'Dashboard', min: 'admin' },
   {

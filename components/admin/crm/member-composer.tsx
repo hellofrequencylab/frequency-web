@@ -63,6 +63,8 @@ export function MemberComposer({ profileId, email, displayName, manages }: Membe
   const [campaign, setCampaign] = useState<LoadedEmailCampaign | null>(null)
   const [initError, setInitError] = useState<string | null>(null)
   const initStarted = useRef(false)
+  // Bumped by the retry button to re-run the init effect after a failure (a transient action fault).
+  const [initNonce, setInitNonce] = useState(0)
 
   // The composed audience. Defaults to just this member (removable).
   const [chips, setChips] = useState<Chip[]>(() => [
@@ -88,25 +90,39 @@ export function MemberComposer({ profileId, email, displayName, manages }: Membe
     setChips((prev) => prev.filter((c) => c.key !== key))
     setCount(null)
   }, [])
+  // Re-arm the draft init after a failure: clear the error, drop any half-state, and bump the nonce so
+  // the effect runs again (a fresh createEmailDraft). Turns a dead editor into a one-tap retry.
+  const retryInit = useCallback(() => {
+    initStarted.current = false
+    setInitError(null)
+    setCampaign(null)
+    setInitNonce((n) => n + 1)
+  }, [])
 
-  // Create the draft once on open.
+  // Create the draft once on open (re-run on a retry via initNonce). A THROWN action — an auth
+  // redirect, a transport/deploy-skew fault, an unexpected server error — must NOT leave the editor
+  // spinning forever with no signal: the try/catch surfaces a retryable error instead of a dead spinner.
   useEffect(() => {
     if (initStarted.current) return
     initStarted.current = true
     void (async () => {
-      const created = await createEmailDraft()
-      if (isError(created)) {
-        setInitError(created.error)
-        return
+      try {
+        const created = await createEmailDraft()
+        if (isError(created)) {
+          setInitError(created.error)
+          return
+        }
+        const loaded = await loadEmailCampaign(created.data.id)
+        if (!loaded) {
+          setInitError('Could not open a new message. Try again.')
+          return
+        }
+        setCampaign(loaded)
+      } catch {
+        setInitError('The message editor could not load. Check your connection and try again.')
       }
-      const loaded = await loadEmailCampaign(created.data.id)
-      if (!loaded) {
-        setInitError('Could not open a new message. Try again.')
-        return
-      }
-      setCampaign(loaded)
     })()
-  }, [])
+  }, [initNonce])
 
   // Debounced member search. All state updates happen inside the async timer (never synchronously in the
   // effect body), so typing does not trigger a cascading render per keystroke.
@@ -186,10 +202,13 @@ export function MemberComposer({ profileId, email, displayName, manages }: Membe
 
   if (initError) {
     return (
-      <div className="rounded-2xl border border-border bg-surface p-4">
+      <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
         <Banner tone="critical" title="Could not start a message">
           {initError}
         </Banner>
+        <Button size="sm" variant="secondary" onClick={retryInit}>
+          <Mail className="h-3.5 w-3.5" /> Try again
+        </Button>
       </div>
     )
   }
