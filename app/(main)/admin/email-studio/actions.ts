@@ -118,9 +118,13 @@ function scheduleLabel(scheduledFor: string | null, status: string): string {
   return 'Not scheduled'
 }
 
-/** A fresh EMAIL layout (kind 'email') seeded from the `basic` starter — the shape a new draft is born with. */
-function starterEmailLayout(): EntityLayout {
-  return { rows: starterRows('email', 'basic') }
+/** A fresh EMAIL layout (kind 'email'). The `campaign` shape is the full `basic` starter (heading + text +
+ *  call-to-action button) a marketing broadcast is born with. The `message` shape is the lean `minimal`
+ *  content box (a heading + a paragraph, no CTA) the CRM 1:1 member composer opens with — the branded
+ *  Frequency header and the CAN-SPAM footer come from the email shell at compile/preview time, so this
+ *  body stays a clean "standard template: simple header, content box, footer" without a stray button. */
+function starterEmailLayout(template: EmailDraftTemplate = 'campaign'): EntityLayout {
+  return { rows: starterRows('email', template === 'message' ? 'minimal' : 'basic') }
 }
 
 /** Read + parse a campaign's stored block_json into an EntityLayout, falling back to the basic starter when
@@ -157,15 +161,21 @@ export async function listEmailCampaigns(): Promise<EmailCampaignCard[]> {
   }))
 }
 
+/** Which starter body a new draft is born with. `campaign` (default) = the full marketing starter; `message`
+ *  = the lean content box the CRM 1:1 member composer uses (header + footer come from the shell). */
+export type EmailDraftTemplate = 'campaign' | 'message'
+
 /**
- * Create a new email DRAFT: a campaigns row seeded with the basic email starter layout in block_json, an
+ * Create a new email DRAFT: a campaigns row seeded with the chosen email starter layout in block_json, an
  * empty subject/body, and status 'draft'. Writer-gated. Returns the new id (the workspace selects it).
  */
-export async function createEmailDraft(): Promise<ActionResult<{ id: string }>> {
+export async function createEmailDraft(
+  template: EmailDraftTemplate = 'campaign',
+): Promise<ActionResult<{ id: string }>> {
   const gate = await writerGate()
   if (!gate.ok) return fail(gate.error)
 
-  const layout = starterEmailLayout()
+  const layout = starterEmailLayout(template)
   const db = createAdminClient()
   const { data, error } = await db
     .from('campaigns')

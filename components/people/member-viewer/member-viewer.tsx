@@ -149,15 +149,27 @@ export function MemberViewer({
   // drives `fetchState`; the rendered pane prefers an embedded detail, then the fetch, then identity.
   const [fetchState, setFetchState] = useState<DetailState>({ status: 'idle' })
 
+  // PIN the loader in a ref so the fetch effect depends ONLY on the selected member id, never on the
+  // loader's identity. `loadDetail` is usually a Server Action passed down through an async Server
+  // Component; a route refresh (e.g. one the detail pane's own composer triggers when it creates a
+  // draft) hands the client a FRESH action reference every render. If the effect keyed on that, it
+  // would re-fetch on every refresh, flip the pane back to its skeleton, unmount + remount the detail
+  // (and the composer), whose mount fires another draft-create action, which refreshes again: an
+  // endless load loop. Keying on the id alone breaks that cycle. (bug: CRM email box glitch loop)
+  const loadDetailRef = useRef(loadDetail)
+  useEffect(() => {
+    loadDetailRef.current = loadDetail
+  }, [loadDetail])
+
   const needsFetch = !!selectedMember && !selectedMember.detail && !!loadDetail
   const fetchKey = needsFetch ? selectedMember!.id : null
 
   useEffect(() => {
-    if (!fetchKey || !loadDetail) return
+    const loader = loadDetailRef.current
+    if (!fetchKey || !loader) return
     let cancelled = false
     // Enter the loading state as the fetch (an external system) starts — the legitimate
     // subscribe-to-external pattern, not a derived-state cascade.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFetchState({ status: 'loading' })
     // A hard timeout so a server read that never settles (a hung query, a transport stall) can NEVER
     // leave the pane spinning on the skeleton forever: after DETAIL_TIMEOUT_MS we surface the
@@ -166,7 +178,7 @@ export function MemberViewer({
     const timer = setTimeout(() => {
       if (!cancelled) setFetchState({ status: 'error' })
     }, DETAIL_TIMEOUT_MS)
-    loadDetail(fetchKey)
+    loader(fetchKey)
       .then((detail) => {
         if (!cancelled) setFetchState({ status: 'ready', detail })
       })
@@ -178,7 +190,9 @@ export function MemberViewer({
       cancelled = true
       clearTimeout(timer)
     }
-  }, [fetchKey, loadDetail])
+    // Intentionally keyed on fetchKey ALONE (the selected member id). loadDetail is read from a ref so a
+    // new action reference on a route refresh cannot re-run this effect and remount the pane (see above).
+  }, [fetchKey])
 
   // ── Infinite scroll: a sentinel at the foot of the list grows the batch as it comes into view. ──
   const listRef = useRef<HTMLDivElement>(null)
@@ -382,8 +396,9 @@ export function MemberViewer({
       {/* Two-pane (desktop) / list-primary (mobile). Each column scrolls within ITSELF (self-contained,
           no host overflow): the left list caps its height and scrolls; the right pane scrolls too. */}
       <div className="flex min-w-0 items-start gap-5">
-        {/* LEFT: the list, a skinny column that scrolls within itself. */}
-        <div className="min-w-0 flex-1 lg:w-80 lg:flex-none">
+        {/* LEFT: the list, a skinny column that scrolls within itself. Kept narrow (w-64) so the detail
+            pane + its composer get the most room on desktop. */}
+        <div className="min-w-0 flex-1 lg:w-64 lg:flex-none">
           {visible.length === 0 ? (
             empty
           ) : (
