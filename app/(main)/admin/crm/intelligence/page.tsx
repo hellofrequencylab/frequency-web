@@ -14,6 +14,9 @@ import { CrmPlaybooksRegistry } from '@/components/widgets/crm/playbooks-registr
 import { CrmPlaybooksRuns } from '@/components/widgets/crm/playbooks-runs'
 import { CrmGraphMetrics } from '@/components/widgets/crm/graph-metrics'
 import { CrmGraphConnections } from '@/components/widgets/crm/graph-connections'
+import { CrmCockpitStats } from '@/components/widgets/crm/cockpit-stats'
+import { CrmRising } from '@/components/widgets/crm/rising'
+import { CrmTrust } from '@/components/widgets/crm/trust'
 
 // INTELLIGENCE — the unified Resonance CRM operator surface (owner merge of Vera Today + Playbooks +
 // the Resonance Graph into one well-organized page). Resonance Engine · docs/NEXT-GEN-CRM.md.
@@ -124,6 +127,25 @@ export default async function IntelligencePage() {
           </Suspense>
           <Suspense fallback={null}>
             <GraphConnectionsGated />
+          </Suspense>
+        </div>
+      </div>
+
+      {/* Platform health (re-homed here when the master-detail CRM home was condensed to the roster +
+          the compact stat row): the resonance verdict + live stat row + who-needs-attention worklist +
+          lifecycle funnel, the overlooked rising-members reach-out pool, and the score-trustworthiness
+          backtest. All at the janitor page floor (no extra insights gate), each its own fail-safe
+          Suspense block so a slow read never blocks the shell. */}
+      <div className="@container space-y-6">
+        <Suspense fallback={null}>
+          <CrmCockpitStats />
+        </Suspense>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Suspense fallback={null}>
+            <CrmRising />
+          </Suspense>
+          <Suspense fallback={null}>
+            <CrmTrust />
           </Suspense>
         </div>
       </div>

@@ -443,13 +443,15 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     : Promise.resolve([])
 
   // Has the viewer ADDED any event? A single head-count over events they HOST *or* POSTED, at ANY
-  // status/time (so a past event, a far-future one, or an unpublished poster draft all count) — this
-  // is what gates the Manage + My drafts actions on their own /events home. Runs in this same wave so
-  // it adds no serial round-trip; fail-safe (a null count reads as "none" → the actions stay hidden).
+  // status/time (so a past event, a far-future one, or an unpublished poster draft all count) EXCEPT
+  // ones they have removed (a deleted event is not manageable, so it must not keep the Manage + My
+  // drafts actions on their /events home lit up). Runs in this same wave so it adds no serial
+  // round-trip; fail-safe (a null count reads as "none" → the actions stay hidden).
   const userEventCountP: PromiseLike<number | null> = myProfileId
     ? admin
         .from('events')
         .select('id', { count: 'exact', head: true })
+        .is('removed_at', null)
         .or(`host_id.eq.${myProfileId},posted_by_profile_id.eq.${myProfileId}`)
         .then(({ count }) => count ?? null, () => null)
     : Promise.resolve(0)

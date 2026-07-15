@@ -523,18 +523,6 @@ const GROWTH_MODULE_IDS = [
   'growth-related',
 ] as const
 
-// The Resonance CRM cockpit (/admin/crm), in default render order (ADR-459) — the VIEWER-FIRST member
-// block leads, then the health cockpit (verdict + live stat row + worklist + funnel, one shared fetch),
-// the rising-members pool, and the score-trustworthiness backtest. Each block self-fetches (fail-safe);
-// the page keeps its janitor gate, so the modules render only through the gated route and never re-gate.
-// The member drilldowns live on /admin/crm/members (its own route, out of this set).
-const CRM_COCKPIT_MODULE_IDS = [
-  'crm-members',
-  'crm-cockpit-stats',
-  'crm-rising',
-  'crm-trust',
-] as const
-
 // The Vera Today page (/admin/crm/today). The whole interior is one self-fetching, janitor-gated block
 // (the five person-plus-action cards + the you-are-at-zero empty), keyed only on the model's scores with
 // no searchParams facet, so it converts wholesale to one module. The page keeps its janitor gate.
@@ -675,7 +663,10 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/admin/community': COMMUNITY_ADMIN_MODULE_IDS,
   '/admin/operations': OPERATIONS_MODULE_IDS,
   '/admin/growth': GROWTH_MODULE_IDS,
-  '/admin/crm': CRM_COCKPIT_MODULE_IDS,
+  // NOTE: '/admin/crm' (the master-detail Resonance home) is intentionally NOT a module route — it
+  // composes its own kit directly (the roster + the compact stat row), and its former cockpit blocks
+  // (verdict/worklist/funnel, rising-members, trust-backtest) were re-homed to /admin/crm/intelligence.
+  // Registering it would make the on-page Layout editor offer blocks the page does not render.
   '/admin/crm/today': CRM_TODAY_MODULE_IDS,
   '/admin/crm/intelligence': CRM_INTELLIGENCE_MODULE_IDS,
   '/admin/crm/members': CRM_MEMBERS_MODULE_IDS,

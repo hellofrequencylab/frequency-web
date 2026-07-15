@@ -161,14 +161,17 @@ describe('moduleIdsForScope', () => {
     expect(g).not.toContain('community-pulse')
   })
 
-  it('the Resonance CRM cockpit (/admin/crm) resolves its blocks, in order, distinct from Today', () => {
+  it('the master-detail CRM home (/admin/crm) is NOT a module route — it composes its kit directly', () => {
+    // The Resonance home was rebuilt as a master-detail surface (roster + compact stat row) that
+    // composes the kit directly, so it declares no module set; its former cockpit blocks were re-homed
+    // to /admin/crm/intelligence. moduleIdsForScope falls through to the global default (never the old
+    // cockpit set), and it is absent from MODULE_ROUTES so the on-page Layout editor never appears.
+    expect(ROUTE_MODULE_IDS['/admin/crm']).toBeUndefined()
+    expect(MODULE_ROUTES).not.toContain('/admin/crm')
     const c = moduleIdsForScope('/admin/crm')
-    expect(c).toBe(ROUTE_MODULE_IDS['/admin/crm'])
-    // VIEWER-FIRST (ADR-459): the member block leads, then the health cockpit, rising pool, backtest.
-    expect(c).toEqual(['crm-members', 'crm-cockpit-stats', 'crm-rising', 'crm-trust'])
-    // The index and Vera Today are DISTINCT exact routes — neither leaks into the other.
-    expect(c).not.toContain('crm-today')
-    expect(c).not.toContain('community-pulse')
+    expect(c).not.toContain('crm-cockpit-stats')
+    expect(c).not.toContain('crm-rising')
+    expect(c).not.toContain('crm-trust')
   })
 
   it('the Vera Today page (/admin/crm/today) resolves its one block via the exact route, not the CRM index set', () => {
@@ -230,7 +233,6 @@ describe('module route registration (LP7 admin dashboards)', () => {
   const LP7_ROUTES = [
     '/admin/operations',
     '/admin/growth',
-    '/admin/crm',
     '/admin/crm/today',
     '/admin/crm/members',
   ] as const
@@ -278,6 +280,14 @@ describe('module reachability', () => {
     'event-gallery',
     'event-pricing',
     'event-sales',
+    // Former /admin/crm cockpit blocks. The master-detail Resonance home no longer renders modules,
+    // so these are no longer offered by the module engine: crm-cockpit-stats / crm-rising / crm-trust
+    // are now composed DIRECTLY on /admin/crm/intelligence (they stay bound so they compile), and
+    // crm-members (the cockpit's inline roster) is fully superseded by the master-detail roster.
+    'crm-members',
+    'crm-cockpit-stats',
+    'crm-rising',
+    'crm-trust',
   ])
 
   it('every bound component is route-reachable or explicitly parked', () => {
