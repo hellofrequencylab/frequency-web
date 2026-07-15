@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
+import { ClaimButton } from '@/app/events/claim/[token]/claim-button'
 import { CalendarDays, MapPin, Users, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -208,12 +209,12 @@ export default async function EventDetailPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ ticket?: string; session_id?: string; claimed?: string }>
+  searchParams: Promise<{ ticket?: string; session_id?: string; claimed?: string; claim?: string }>
 }) {
   // params, searchParams, and the auth client are mutually independent — resolve
   // them concurrently instead of one-after-another. (createAdminClient is sync.)
   const admin = createAdminClient()
-  const [{ slug }, { ticket, session_id, claimed }, supabase] = await Promise.all([
+  const [{ slug }, { ticket, session_id, claimed, claim }, supabase] = await Promise.all([
     params,
     searchParams,
     createClient(),
@@ -1390,6 +1391,34 @@ export default async function EventDetailPage({
           </div>
         }
       >
+        {/* Claim banner — shown only when an UNCLAIMED posted event is opened via its claim
+            link (?claim=<token>, matching the event's one-time token). The claim landing now
+            redirects here, so the real public listing IS the claim page: opening it never
+            claims (the accidental-claim fix), and claiming is a deliberate button. Signed-in →
+            one-tap claim; signed-out → the host setup funnel, which returns here to finish. */}
+        {claim && isUnclaimedPosted && extra?.claim_token && claim === extra.claim_token && (
+          <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-primary/40 bg-primary-bg/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-base font-bold text-text">Is this your event?</p>
+              <p className="mt-0.5 text-sm text-muted">
+                Claim it to manage RSVPs, edit the details, and run it from your own account.
+              </p>
+            </div>
+            {myProfileId ? (
+              <div className="shrink-0">
+                <ClaimButton token={extra.claim_token} />
+              </div>
+            ) : (
+              <Link
+                href={`/onboarding/beta?seq=event-experience-hosts-copy&next=${encodeURIComponent(`/events/${event.slug}?claim=${extra.claim_token}`)}`}
+                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              >
+                Claim This Event
+              </Link>
+            )}
+          </div>
+        )}
+
         {/* Photo gallery (item 5) — the FIRST gallery image is the header/cover, already rendered
             full-width above at its host-picked hero height (the DetailTemplate `hero` band). So the
             gallery below shows only the REST of the photos as thumbnails (no duplicate of the
