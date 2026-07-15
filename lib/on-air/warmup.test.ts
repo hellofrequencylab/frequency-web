@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   clampWarmupSec, WARMUP_PRESETS, DEFAULT_PREFS,
   clampAuthoredWarmupSec, cleanWarmupMessage, WARMUP_MESSAGE_MAX, WARMUP_SEC_MAX, AUTHORED_WARMUP_PRESETS,
+  resolveWarmupSec,
 } from '@/lib/on-air'
 
 // The selectable warm-up countdown (item #6): 3 / 5 / 10 seconds, defaulting to 5. This is the
@@ -46,6 +47,32 @@ describe('clampAuthoredWarmupSec — the author warm-up length', () => {
     expect(clampAuthoredWarmupSec(-5)).toBe(0)
     expect(clampAuthoredWarmupSec(9999)).toBe(WARMUP_SEC_MAX)
     expect(clampAuthoredWarmupSec(12.6)).toBe(13)
+  })
+})
+
+// The engines resolve the actual pre-roll length through resolveWarmupSec. Both the sit and Get
+// Moving call it so a run's warm-up is decided one way, and the top-up leg ("finish the rest")
+// passes an explicit 0 to skip the SECOND warm-up (the fix for the reported double-warm-up).
+describe('resolveWarmupSec — the engine pre-roll length', () => {
+  it('falls back to the member pre-roll when nothing is authored', () => {
+    expect(resolveWarmupSec(null, 5)).toBe(5)
+    expect(resolveWarmupSec(undefined, 3)).toBe(3)
+    expect(resolveWarmupSec(0, 10)).toBe(10) // authored 0 = "use the member default"
+  })
+  it('prefers a positive authored warm-up over the member pref', () => {
+    expect(resolveWarmupSec(15, 5)).toBe(15)
+    expect(resolveWarmupSec(30, 3)).toBe(30)
+  })
+  it('lets an explicit override win over everything — 0 skips the warm-up entirely', () => {
+    expect(resolveWarmupSec(30, 5, 0)).toBe(0) // top-up leg: authored 30s ignored, resume straight in
+    expect(resolveWarmupSec(0, 5, 0)).toBe(0)
+    expect(resolveWarmupSec(15, 5, 8)).toBe(8) // a feature funnel could arm its own length
+  })
+  it('never returns a negative or fractional length', () => {
+    expect(resolveWarmupSec(null, -5)).toBe(0)
+    expect(resolveWarmupSec(null, 5, -3)).toBe(0)
+    expect(resolveWarmupSec(null, 5, 8.6)).toBe(9)
+    expect(resolveWarmupSec(null, 5, NaN)).toBe(5) // non-finite override is ignored, fall through
   })
 })
 
