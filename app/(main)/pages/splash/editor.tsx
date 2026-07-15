@@ -15,7 +15,7 @@ import { FUNNEL_ICON_NAMES } from '@/lib/onboarding/funnel-icons'
 import type { SequenceOverride } from '@/lib/onboarding/sequence-overrides'
 import BetaInduction from '@/app/onboarding/beta/induction'
 import { saveDefaultBetaCopy, resetDefaultBetaCopy } from './actions'
-import { saveSequenceVersion } from '@/app/(main)/pages/sequences/builder-actions'
+import { saveSequenceVersion, renameSequenceSlug } from '@/app/(main)/pages/sequences/builder-actions'
 
 // Live-preview copy editor for a Splash Funnel. Left: one section per beat with an
 // input for every voiced string (plus the three oath checkbox labels). Right: the
@@ -41,7 +41,7 @@ const LABEL = 'mb-1 block text-xs font-semibold text-subtle'
 // for 4 Slide-2 feature cards and the auto-playing reel for 3 Slide-3 core features + art,
 // and admits members straight into the app instead of the Beta waitlist. All optional: an
 // all-empty section stays unset so the induction falls back to the General funnel behaviour.
-const SLIDE3_RENDER_KINDS = ['feed', 'circles', 'events', 'booking', 'checkin', 'donate'] as const
+const SLIDE3_RENDER_KINDS = ['feed', 'circles', 'events', 'booking', 'checkin', 'donate', 'tickets', 'crm'] as const
 type Slide3Render = (typeof SLIDE3_RENDER_KINDS)[number]
 
 /** Always render a fixed 4 Slide-2 rows, seeded from the funnel's saved features. */
@@ -153,6 +153,10 @@ export function SplashCopyEditor({
   const isDefault = slug === DEFAULT_SEQUENCE
   const router = useRouter()
   const [audience, setAudience] = useState(initialAudience)
+  // Permalink (the funnel's slug). Editable for custom funnels; renaming re-keys the override row.
+  const [permalink, setPermalink] = useState(slug)
+  const [renaming, startRename] = useTransition()
+  const [renameError, setRenameError] = useState<string | null>(null)
   const [vera, setVera] = useState<VeraCopy>(initialVera)
   const [oaths, setOaths] = useState<Oaths>(initialOaths)
   // Niche-funnel config. Fixed-length rows so the editor always shows all slots; an
@@ -327,6 +331,51 @@ export function SplashCopyEditor({
               placeholder="e.g. Local business owners"
               onChange={(e) => { setAudience(e.target.value); setSaved(false) }}
             />
+          </section>
+        )}
+        {/* Permalink (the funnel's slug): the ?seq= value + the link you share. Renaming re-keys the
+            funnel; existing links to the old permalink stop resolving. Custom funnels only. */}
+        {!isDefault && (
+          <section className="space-y-2 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+            <label className={LABEL} htmlFor="splash-permalink">
+              Permalink
+              <span className="ml-1.5 font-normal text-subtle/70">· the /onboarding/beta?seq= slug and the link you share</span>
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2">
+                <span className="shrink-0 text-xs text-subtle">?seq=</span>
+                <input
+                  id="splash-permalink"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-text outline-none"
+                  value={permalink}
+                  placeholder="event-experience-hosts"
+                  onChange={(e) => { setPermalink(e.target.value); setRenameError(null) }}
+                />
+              </div>
+              <button
+                type="button"
+                disabled={renaming || !permalink.trim() || permalink.trim() === slug}
+                onClick={() => {
+                  setRenameError(null)
+                  startRename(async () => {
+                    const res = await renameSequenceSlug(slug, permalink)
+                    if (!res.ok || !res.slug) {
+                      setRenameError(res.error ?? 'Could not change the permalink.')
+                      return
+                    }
+                    router.push(`/pages/sequences/${res.slug}/edit`)
+                    router.refresh()
+                  })
+                }}
+                className="shrink-0 rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+              >
+                {renaming ? 'Updating…' : 'Update permalink'}
+              </button>
+            </div>
+            <p className="text-2xs text-subtle">
+              Changing this updates the funnel&apos;s link everywhere. Existing links to the old permalink will stop working.
+            </p>
+            {renameError && <p className="text-2xs font-semibold text-danger">{renameError}</p>}
           </section>
         )}
         {BEATS.map((b) => (
@@ -588,7 +637,9 @@ export function SplashCopyEditor({
       </div>
 
       {/* ── Live preview: the real induction, one beat at a time ── */}
-      <div className="lg:sticky lg:top-4 lg:self-start">
+      {/* top-20 (not top-4) so the sticky preview clears the fixed site header instead of riding up
+          under it and hiding the previewed CTA buttons. */}
+      <div className="lg:sticky lg:top-20 lg:self-start">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <p className="flex items-center gap-1.5 text-xs font-semibold text-subtle">
             <Eye className="h-3.5 w-3.5" /> Live preview
@@ -623,6 +674,13 @@ export function SplashCopyEditor({
                 preview
                 initialBeat={previewBeat}
                 copy={{ vera, oaths, heardAbout }}
+                // Feed the SAME niche config the operator is editing into the preview, so the Welcome
+                // beat shows THIS sequence's Slide-2 feature cards (not the general persona fork) and
+                // the tour beat shows its Slide-3 core features + art. Without these the preview always
+                // fell back to the General funnel regardless of what was typed here.
+                slide2Features={buildSlide2()}
+                slide3Core={buildSlide3()}
+                destination={buildDestination()}
               />
             </div>
           </div>

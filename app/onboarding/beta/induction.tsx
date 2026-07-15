@@ -30,6 +30,8 @@ import { EventsRender } from '@/components/onboarding/renders/events-render'
 import { BookingRender } from '@/components/onboarding/renders/booking-render'
 import { CheckinRender } from '@/components/onboarding/renders/checkin-render'
 import { DonateRender } from '@/components/onboarding/renders/donate-render'
+import { TicketsRender } from '@/components/onboarding/renders/tickets-render'
+import { CrmRender } from '@/components/onboarding/renders/crm-render'
 import { WizardProgress, wizardPrimaryClass } from '@/components/templates'
 
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
@@ -78,7 +80,7 @@ type Props = {
 }
 
 const HANDLE_RE = /^[a-z0-9_]+$/
-const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender, booking: BookingRender, checkin: CheckinRender, donate: DonateRender }
+const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender, booking: BookingRender, checkin: CheckinRender, donate: DonateRender, tickets: TicketsRender, crm: CrmRender }
 const BEAT_COUNT = 5 // 0 oath · 1 intro · 2 reel · 3 identity+place · 4 enter
 // Accessible name for each beat — drives the progress bar's label and the polite
 // live announcement so assistive tech tracks "where am I" through the sequence.
@@ -180,8 +182,11 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       firstPaint.current = false
       return
     }
-    stageRef.current?.focus()
-  }, [beat])
+    // preventScroll: a plain focus() runs scrollIntoView, which — inside the editor's scaled/clipped
+    // preview — yanks the whole page up and hides the CTA under the header. In preview we skip the
+    // focus move entirely (the flow is inert there); in the real flow we keep focus but never scroll.
+    if (!preview) stageRef.current?.focus({ preventScroll: true })
+  }, [beat, preview])
 
   // Oath
   const [oaths, setOaths] = useState<Record<OathId, boolean>>({ unfinished: false, report: false, build: false })
@@ -436,17 +441,16 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     }
   }
 
-  // Resolve a core feature's art (Beat 2, niche funnel). A `render` reuses the induction's
-  // existing product mockups; the render kinds a niche can request but we haven't drawn yet
-  // (booking / checkin / donate) fall back to the events mockup. An `image` renders directly.
+  // Resolve a core feature's art (Beat 2, niche funnel). A `render` reuses the induction's product
+  // mockups (feed / circles / events / booking / checkin / donate / tickets / crm); an `image`
+  // renders directly. FAIL-SAFE: an unknown render key stored in the DB (e.g. one from a newer build)
+  // falls back to the events mockup rather than mounting an undefined component and crashing the flow.
   function renderCoreArt(art: FunnelCoreFeature['art'], active: boolean) {
     if (art.kind === 'image') {
       // eslint-disable-next-line @next/next/no-img-element
       return <img src={art.src} alt="" className="h-full w-full rounded-2xl border border-border object-cover" />
     }
-    // Every render kind (feed / circles / events / booking / checkin / donate) has a
-    // dedicated mockup in RENDERS, so the kind resolves directly to its component.
-    const C = RENDERS[art.render]
+    const C = RENDERS[art.render] ?? EventsRender
     return <C animate={active} />
   }
 
@@ -773,7 +777,9 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                           if (!handleTouched) setHandle(suggestHandle(v))
                         }}
                         placeholder="Your name"
-                        autoFocus
+                        // Not in preview: autoFocus runs scrollIntoView, which inside the editor's
+                        // scaled preview scrolls the page and hides the buttons under the header.
+                        autoFocus={!preview}
                         className={inputInset}
                       />
                     </div>
