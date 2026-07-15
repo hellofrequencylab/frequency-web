@@ -24,14 +24,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { BreathVisualizer } from '@/components/on-air/visualizer'
 import { LotusIcon } from '@/components/on-air/icons'
-import { patternBySlug } from '@/lib/on-air'
+import { patternBySlug, breathPositionAt, bellToneBySlug } from '@/lib/on-air'
+import { chime } from '@/lib/timer-audio'
 import type { FeatureFunnelConfig, FunnelDestination } from '@/lib/onboarding/beta-sequences'
 import { isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
 import { WizardProgress } from '@/components/templates'
 import { trackClient } from '@/components/analytics/track-provider'
 import { downscaleImageFile } from '@/lib/images/downscale-image'
 import { beginFeatureFunnelSignup } from './feature-actions'
-import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
+import { signInWithMagicLink } from '@/app/sign-in/actions'
 
 // Avatar is too big for a cookie, so the deferred flow parks it in localStorage and
 // /onboarding/beta/complete uploads it. Same key the finalizer reads.
@@ -125,9 +126,11 @@ export default function FeatureFunnel({
   const labels = ['Try the timer', 'Your streak', 'Join']
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-canvas">
+    // theme-light-lock: hold the warm cream palette even when the visitor's device is in dark mode
+    // (owner: mobile must match the web scheme). Same lock the cinematic induction uses.
+    <main className="theme-light-lock relative min-h-screen overflow-hidden bg-canvas">
       <div className="amber-glow pointer-events-none absolute inset-0" aria-hidden />
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12">
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-10">
         <span className="brandmark mb-8 block h-10 aspect-[963/170]" aria-hidden />
 
         <div className="w-full max-w-4xl">
@@ -171,43 +174,45 @@ export default function FeatureFunnel({
   )
 }
 
-// ── The phone mockup ───────────────────────────────────────────────────────────────────────────────
-function PhoneFrame({ children }: { children: React.ReactNode }) {
+// ── The phone shell ────────────────────────────────────────────────────────────────────────────────
+// ONE instance, responsive: the phone bezel only renders at md+ (desktop). On mobile the timer shows
+// bare on the page (owner: "mobile ... doesn't render a phone mockup"). Rendering it once (not a
+// desktop + a mobile copy) keeps the breath clock + the cue sounds from firing twice.
+function PhoneShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative mx-auto aspect-[9/19] w-56 rounded-[2.75rem] border-[10px] border-text bg-text shadow-2xl sm:w-64">
-      {/* notch */}
-      <div className="absolute left-1/2 top-0 z-20 h-5 w-24 -translate-x-1/2 rounded-b-2xl bg-text" aria-hidden />
-      {/* screen — kept light + subtle, like the real Mindless timer on canvas (owner: no dark overlay) */}
-      <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[2rem] bg-canvas">
-        <div className="amber-glow pointer-events-none absolute inset-0 opacity-60" aria-hidden />
-        <div className="relative z-10 flex w-full items-center justify-center px-3">{children}</div>
+    <div className="relative mx-auto w-64 md:aspect-[9/19] md:rounded-[2.75rem] md:border-[10px] md:border-text md:bg-text md:shadow-2xl">
+      {/* notch (desktop phone only) */}
+      <div className="pointer-events-none absolute left-1/2 top-0 z-20 hidden h-5 w-24 -translate-x-1/2 rounded-b-2xl bg-text md:block" aria-hidden />
+      {/* screen — light + subtle, like the real Mindless timer on canvas (owner: no dark overlay) */}
+      <div className="relative flex w-full items-center justify-center overflow-hidden md:h-full md:rounded-[2rem] md:bg-canvas">
+        <div className="amber-glow pointer-events-none absolute inset-0 hidden opacity-60 md:block" aria-hidden />
+        <div className="relative z-10 flex w-full items-center justify-center px-3 py-2">{children}</div>
       </div>
     </div>
   )
 }
 
 // The Mindless timer screen, replicated (owner: "look exactly the same as the Mindless timer"). The
-// lotus + MINDLESS wordmark, the breath ring, and a mm:ss read-out counting down from 5:00.
+// lotus + MINDLESS wordmark, the breath ring, and a mm:ss read-out counting down from 5:00. The ring
+// is larger + tighter on mobile (owner) and sized to the phone on desktop.
 function TimerScreen({
   pattern,
   startedAt,
   remaining,
-  compact = false,
 }: {
   pattern: ReturnType<typeof patternBySlug>
   startedAt: number
   remaining: number
-  compact?: boolean
 }) {
   return (
-    <div className="flex flex-col items-center gap-2 text-center">
+    <div className="flex flex-col items-center gap-1 text-center md:gap-2">
       <p className="flex animate-pulse items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-primary-strong [animation-duration:3s]">
-        <LotusIcon className={compact ? 'h-4 w-4' : 'h-[18px] w-[18px]'} /> Mindless
+        <LotusIcon className="h-[18px] w-[18px]" /> Mindless
       </p>
-      <div className={compact ? 'scale-[0.5]' : 'scale-[0.62]'}>
+      <div className="-my-4 scale-[0.85] md:my-0 md:scale-[0.6]">
         <BreathVisualizer pattern={pattern} startedAt={startedAt} />
       </div>
-      <p className={`${compact ? '-mt-6 text-lg' : '-mt-8 text-2xl'} font-semibold tabular-nums text-text/70`}>
+      <p className="text-2xl font-semibold tabular-nums text-text/70">
         {mmss(remaining)} <span className="text-xs font-normal text-subtle">left</span>
       </p>
       <p className="text-xs tabular-nums text-subtle">5 min session</p>
@@ -237,6 +242,8 @@ function DemoStep({
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [showFields, setShowFields] = useState(resumed)
+  const audioRef = useRef<AudioContext | null>(null)
+  const lastPhaseRef = useRef('')
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -248,6 +255,38 @@ function DemoStep({
     return () => clearInterval(id)
   }, [startedAt])
 
+  // Breath cue sounds (owner: add sounds). Autoplay is blocked until a gesture, so unlock the
+  // AudioContext on the first pointerdown; a soft chime then marks each breath, like the real timer.
+  useEffect(() => {
+    const unlock = () => {
+      try {
+        audioRef.current = audioRef.current ?? new AudioContext()
+        void audioRef.current.resume()
+      } catch {
+        // no audio — the demo stays silent, never broken
+      }
+    }
+    window.addEventListener('pointerdown', unlock)
+    return () => window.removeEventListener('pointerdown', unlock)
+  }, [])
+  useEffect(() => {
+    if (startedAt === null) return
+    const tone = bellToneBySlug('soft')
+    let raf = 0
+    const tick = () => {
+      const pos = breathPositionAt(pattern, (Date.now() - startedAt) / 1000)
+      if (pos.phase.label !== lastPhaseRef.current) {
+        const first = lastPhaseRef.current === ''
+        lastPhaseRef.current = pos.phase.label
+        // A soft chime on the inhale + exhale starts (not the holds); never on the first assignment.
+        if (!first && audioRef.current && pos.phase.kind !== 'hold') chime(audioRef.current, tone, 0.35)
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [startedAt, pattern])
+
   const remaining = SESSION_SEC - elapsed
   const nudge = resumed || elapsed >= HOLD_AT_SEC
   const emailOk = EMAIL_RE.test(lead.email.trim())
@@ -256,11 +295,6 @@ function DemoStep({
     if (emailOk) onCaptured()
     onNext()
   }
-
-  const timer = startedAt !== null && <TimerScreen pattern={pattern} startedAt={startedAt} remaining={remaining} />
-  const timerCompact = startedAt !== null && (
-    <TimerScreen pattern={pattern} startedAt={startedAt} remaining={remaining} compact />
-  )
 
   const coaching = (
     <div className="text-center md:text-left">
@@ -323,21 +357,19 @@ function DemoStep({
     </div>
   )
 
+  // ONE timer instance, placed responsively: bare on mobile (above the coaching), inside the phone on
+  // desktop. Centered as a pair and nudged slightly right (owner).
   return (
-    <>
-      {/* Mobile: no phone mockup. The page IS the timer — a compact ring up top, then the coaching +
-          fields, kept tight so name/email sit above the fold. Scrolls only if it has to. */}
-      <div className="md:hidden">
-        <div className="mb-5 flex justify-center">{timerCompact}</div>
-        {coaching}
+    <div className="md:flex md:items-center md:justify-center md:gap-10 md:pl-8 lg:gap-14 lg:pl-16">
+      <div className="mb-6 flex justify-center md:mb-0 md:shrink-0">
+        {startedAt !== null && (
+          <PhoneShell>
+            <TimerScreen pattern={pattern} startedAt={startedAt} remaining={remaining} />
+          </PhoneShell>
+        )}
       </div>
-
-      {/* Desktop: the phone mockup, sitting close to the coaching on the right. */}
-      <div className="hidden items-center gap-6 md:grid md:grid-cols-[auto_minmax(0,1fr)] lg:gap-10">
-        <PhoneFrame>{timer}</PhoneFrame>
-        {coaching}
-      </div>
-    </>
+      <div className="md:max-w-md">{coaching}</div>
+    </div>
   )
 }
 
@@ -509,7 +541,10 @@ function JoinStep({
       handle: lead.handle.trim(),
     })
   }
-  async function magicLink() {
+  // ONE join action (owner): "Join now, get N Zaps" emails a sign-in link to the address they gave.
+  // Clicking that link is what confirms the account (no unconfirmed accounts), then the finalizer
+  // writes the profile, pays the Zaps, and lands them.
+  async function joinNow() {
     if (!emailOk || signingIn) return
     setSigningIn(true)
     await withStash()
@@ -517,14 +552,6 @@ function JoinStep({
     fd.set('email', lead.email.trim())
     fd.set('next', completeNext)
     await signInWithMagicLink(fd)
-  }
-  async function google() {
-    if (signingIn) return
-    setSigningIn(true)
-    await withStash()
-    const fd = new FormData()
-    fd.set('next', completeNext)
-    await signInWithGoogle(fd)
   }
 
   // Signed-in visitor already has an account — send them to breathe for real.
@@ -597,12 +624,12 @@ function JoinStep({
       </div>
 
       <div className="mx-auto mt-5 max-w-sm">
-        <button type="button" onClick={google} disabled={signingIn} className={PRIMARY_BTN}>
-          Join now, get {zaps} Zaps
+        <button type="button" onClick={joinNow} disabled={!emailOk || signingIn} className={PRIMARY_BTN}>
+          {signingIn ? 'Sending your link...' : `Join now, get ${zaps} Zaps`}
         </button>
-        <button type="button" onClick={magicLink} disabled={!emailOk || signingIn} className={`${GHOST_BTN} mt-2 w-full`}>
-          Email me a sign-in link
-        </button>
+        <p className="mt-2 text-xs text-subtle">
+          We email a sign-in link to confirm it is you. Click it and your {zaps} Zaps are yours.
+        </p>
         <button type="button" onClick={onBack} className="mt-3 block w-full text-center text-xs text-subtle hover:underline">
           Back
         </button>
