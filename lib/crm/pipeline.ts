@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 
 // CRM pipeline data layer (ADR-102). The crm_* tables aren't in the generated DB
 // types yet, so every read/write goes through an untyped client cast (the same
@@ -235,7 +236,7 @@ function hydrateDeal(d: Record<string, unknown>, people: Map<string, PersonLite>
 // the lib/crm/pipeline.ts read posture.
 
 import type { SpaceType } from '@/lib/spaces/types'
-import { seedStagesForSpace } from './stage-templates'
+import { seedStagesForSpace, platformPipelineStages, isPipelineLane, type PipelineLane } from './stage-templates'
 
 /** Idempotently seed the Mode-preset starting stages for a Space, scoped by space_id. Pass the Space's
  *  `type` and (optionally) its `mode_variant` so the seed matches the exact Mode preview the operator
@@ -258,6 +259,36 @@ export async function ensureSpaceStages(
     if ((count ?? 0) > 0) return false
 
     const rows = seedStagesForSpace(type, variant).map((stage, i) => ({
+      space_id: spaceId,
+      name: stage.name,
+      kind: stage.kind,
+      sort_order: i,
+    }))
+    if (rows.length === 0) return false
+    const { error } = await db().from('crm_stages').insert(rows)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+/** Idempotently seed the PLATFORM pipeline (lib/crm/stage-templates.ts platformPipelineStages) for the
+ *  platform's own Space, scoped by space_id. This is the global /admin/crm/pipeline board's funnel: the
+ *  upsell + donation lanes share these columns and are told apart by `crm_deals.source`. A NO-OP when the
+ *  Space already has any stage, so a customized platform pipeline is never overwritten and a second board
+ *  open never re-seeds (the SAME never-clobber contract as ensureSpaceStages; existing installs keep their
+ *  columns until an operator resets). FAIL-SAFE: returns false and writes nothing on any error / missing
+ *  column, so opening the board never throws. Returns true when it seeded a fresh set. */
+export async function ensurePlatformPipeline(spaceId: string): Promise<boolean> {
+  if (!spaceId) return false
+  try {
+    const { count } = await db()
+      .from('crm_stages')
+      .select('id', { count: 'exact', head: true })
+      .eq('space_id', spaceId)
+    if ((count ?? 0) > 0) return false
+
+    const rows = platformPipelineStages().map((stage, i) => ({
       space_id: spaceId,
       name: stage.name,
       kind: stage.kind,
@@ -432,25 +463,68 @@ export type PipelineMetrics = {
   wonValue: number
   winRatePct: number | null
   tasksDue: number
+  // ── Lane-aware reads for the platform Pipeline board (upsell + donation). Additive: existing
+  // consumers (growth widget, per-space snapshot) read only the fields above. ─────────────────────
+  /** Open deals tagged to the Business-upsell lane (source='upsell_business'). */
+  businessOpen: number
+  /** Open deals tagged to the Donations lane (source='donation'). */
+  donationOpen: number
+  /** Upsell deals WON with closed_at in the current month (members upgraded to Business this month). */
+  upgradesThisMonth: number
+  /** Donation deals WON all-time (members giving on a rhythm). */
+  recurringDonors: number
 }
 
-export function computeMetrics(deals: Pick<CrmDeal, 'status' | 'value'>[], tasksDue: number): PipelineMetrics {
+/** A deal, plus the two fields the platform lanes read: its `source` (the lane tag) and `closed_at`
+ *  (for "this month" reads). CrmDeal already carries both, so callers pass CrmDeal[] unchanged. */
+type MetricDeal = Pick<CrmDeal, 'status' | 'value' | 'source' | 'closed_at'>
+
+function sameMonth(iso: string | null, now: Date): boolean {
+  if (!iso) return false
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return false
+  // Key the month to the community HOME zone, as the rest of the platform does (index-data.ts,
+  // event-reminders). A deal won late on the last home-zone evening of a month must land in THAT
+  // month, not the next UTC one. dayInZone -> 'YYYY-MM-DD'; compare the 'YYYY-MM' prefix.
+  return dayInZone(d, HOME_TZ).slice(0, 7) === dayInZone(now, HOME_TZ).slice(0, 7)
+}
+
+export function computeMetrics(deals: MetricDeal[], tasksDue: number, now: Date = new Date()): PipelineMetrics {
   let openCount = 0
   let openValue = 0
   let wonValue = 0
   let won = 0
   let lost = 0
+  let businessOpen = 0
+  let donationOpen = 0
+  let upgradesThisMonth = 0
+  let recurringDonors = 0
   for (const d of deals) {
+    const lane: PipelineLane | null = isPipelineLane(d.source) ? d.source : null
     if (d.status === 'open') {
       openCount++
       openValue += Number(d.value) || 0
+      if (lane === 'upsell_business') businessOpen++
+      else if (lane === 'donation') donationOpen++
     } else if (d.status === 'won') {
       won++
       wonValue += Number(d.value) || 0
+      if (lane === 'upsell_business' && sameMonth(d.closed_at, now)) upgradesThisMonth++
+      else if (lane === 'donation') recurringDonors++
     } else if (d.status === 'lost') {
       lost++
     }
   }
   const decided = won + lost
-  return { openCount, openValue, wonValue, winRatePct: decided ? Math.round((won / decided) * 100) : null, tasksDue }
+  return {
+    openCount,
+    openValue,
+    wonValue,
+    winRatePct: decided ? Math.round((won / decided) * 100) : null,
+    tasksDue,
+    businessOpen,
+    donationOpen,
+    upgradesThisMonth,
+    recurringDonors,
+  }
 }

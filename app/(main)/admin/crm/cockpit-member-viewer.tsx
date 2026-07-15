@@ -10,7 +10,7 @@ import { loadMemberDetail } from './members/member-detail-actions'
 // standalone members surface, so the cockpit and the drill read identically. FAIL-SAFE: a calm empty
 // state when nobody is scored yet. Server Component shell over the one client island. No em dashes.
 
-export async function CockpitMemberViewer() {
+export async function CockpitMemberViewer({ initialSelectedId }: { initialSelectedId?: string } = {}) {
   const members = await loadMemberSummaries({ kind: 'all' })
   if (members.length === 0) {
     return (
@@ -26,9 +26,10 @@ export async function CockpitMemberViewer() {
     <MemberViewer
       members={members}
       loadDetail={loadMemberDetail}
-      detailMode="full"
+      detailVariant="crm"
       defaultView="list"
-      pageSize={10}
+      pageSize={24}
+      initialSelectedId={initialSelectedId}
       sortOptions={MEMBER_SORT_OPTIONS}
       search={{ placeholder: 'Search members', facets: [TIER_FACET, LIFECYCLE_FACET] }}
       emptyState={

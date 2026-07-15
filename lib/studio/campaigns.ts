@@ -10,10 +10,26 @@ import {
   resolvePlaceTreeProfileIds,
   type PlaceType,
 } from '@/lib/messaging/place-tree'
+import { resolveEventDispatchAudience } from '@/lib/events/dispatch-audience'
 
-/** A built-in audience, a trait segment (`seg:<slug>`), or a place-tree selector
- *  (`circle:<id>` / `hub:<id>` / `nexus:<id>`, CRM Phase 5). */
+/** A built-in audience, a trait segment (`seg:<slug>`), a place-tree selector
+ *  (`circle:<id>` / `hub:<id>` / `nexus:<id>`, CRM Phase 5), an event RSVP audience
+ *  (`event:<id>`), or a direct member/contact selector the Resonance CRM composer uses:
+ *  `profile:<id>` / `contact:<id>` (one member) and `profiles:<id,...>` / `contacts:<id,...>`
+ *  (an ad-hoc set). */
 export type SegmentKey = string
+
+// A hard cap so a malformed / hostile ad-hoc key can never resolve an unbounded id list in one pass.
+const MAX_ADHOC_IDS = 5_000
+
+/** Pure: split a comma-separated id list (`a, b, ,c`) into a trimmed, de-duplicated, capped array. */
+function parseIdList(raw: string): string[] {
+  const ids = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  return [...new Set(ids)].slice(0, MAX_ADHOC_IDS)
+}
 
 /** Trait-segment keys are namespaced so they can't collide with built-ins. */
 export const TRAIT_SEGMENT_PREFIX = 'seg:'
@@ -33,12 +49,30 @@ export type ParsedSegmentKey =
   | { kind: 'builtin'; slug: string }
   | { kind: 'trait'; slug: string }
   | { kind: 'place'; place: PlaceType; id: string }
+  | { kind: 'event'; id: string }
+  | { kind: 'profiles'; ids: string[] }
+  | { kind: 'contacts'; ids: string[] }
 
-/** Pure: classify an audience key. A `circle:/hub:/nexus:<id>` string is a place selector; a
- *  `seg:<slug>` string is a trait segment; anything else is a built-in audience. Unit-tested. */
+/** Pure: classify an audience key. A `circle:/hub:/nexus:<id>` string is a place selector; an
+ *  `event:<id>` string is an event RSVP audience; `profile:<id>` / `profiles:<id,...>` and
+ *  `contact:<id>` / `contacts:<id,...>` are the CRM composer's direct member / contact selectors;
+ *  a `seg:<slug>` string is a trait segment; anything else is a built-in audience. Unit-tested.
+ *  FAIL-SAFE: a bare prefix (no ids) reads as an EMPTY audience of that kind, never a fall-through
+ *  to a built-in, so a malformed selector resolves to nobody rather than everybody. */
 export function parseSegmentKey(key: string): ParsedSegmentKey {
   const place = parsePlaceSelector(key)
   if (place) return { kind: 'place', place: place.type, id: place.id }
+
+  const trimmed = key.trim()
+
+  // Direct member / contact selectors (Resonance CRM composer). The plural (ad-hoc set) forms are
+  // checked first; `profiles:` never matches `profile:` and vice versa (the 's' precedes the colon).
+  if (trimmed.startsWith('profiles:')) return { kind: 'profiles', ids: parseIdList(trimmed.slice('profiles:'.length)) }
+  if (trimmed.startsWith('profile:')) return { kind: 'profiles', ids: parseIdList(trimmed.slice('profile:'.length)) }
+  if (trimmed.startsWith('contacts:')) return { kind: 'contacts', ids: parseIdList(trimmed.slice('contacts:'.length)) }
+  if (trimmed.startsWith('contact:')) return { kind: 'contacts', ids: parseIdList(trimmed.slice('contact:'.length)) }
+  if (trimmed.startsWith('event:')) return { kind: 'event', id: trimmed.slice('event:'.length).trim() }
+
   return key.startsWith(TRAIT_SEGMENT_PREFIX)
     ? { kind: 'trait', slug: key.slice(TRAIT_SEGMENT_PREFIX.length) }
     : { kind: 'builtin', slug: key }
@@ -59,6 +93,24 @@ export interface Recipient {
   profileId: string
 }
 
+/** Map a set of profile ids onto their member contacts (the send-seam shape), excluding
+ *  unsubscribed contacts. The SAME query the trait / place / event / ad-hoc-profile paths all
+ *  share: a contact must carry both a profile id and an email to be reachable. Fail-safe to []. */
+async function recipientsForProfileIds(
+  db: ReturnType<typeof createAdminClient>,
+  profileIds: string[],
+): Promise<Recipient[]> {
+  if (!profileIds.length) return []
+  const { data } = await db
+    .from('contacts')
+    .select('id, email, profile_id, consent_state')
+    .in('profile_id', profileIds)
+    .neq('consent_state', 'unsubscribed')
+  return (data ?? [])
+    .filter((c) => c.profile_id && c.email)
+    .map((c) => ({ contactId: c.id, email: c.email as string, profileId: c.profile_id as string }))
+}
+
 /** Member contacts in a segment, excluding unsubscribed (suppression is enforced at
  *  send). Trait segments (`seg:<slug>`) resolve via the Member Data Platform, then map
  *  to member contacts; built-ins query contacts directly. */
@@ -72,11 +124,32 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
   // worlds. FAIL-SAFE: an empty / unresolvable place is nobody, never everybody.
   if (parsed.kind === 'place') {
     const profileIds = await resolvePlaceTreeProfileIds({ type: parsed.place, id: parsed.id })
-    if (!profileIds.length) return []
+    return recipientsForProfileIds(db, profileIds)
+  }
+
+  // Event RSVP audience (Resonance CRM composer): the event's non-muted guests + its hosting Circle,
+  // resolved through the SAME fan-out an Event Dispatch push uses (lib/events/dispatch-audience), then
+  // mapped onto member contacts exactly like a place / trait segment. The downstream send-gate still
+  // applies each member's consent + preferences. FAIL-SAFE: a missing event is nobody, never everybody.
+  if (parsed.kind === 'event') {
+    if (!parsed.id) return []
+    const profileIds = await resolveEventDispatchAudience(parsed.id)
+    return recipientsForProfileIds(db, profileIds)
+  }
+
+  // Direct member set (`profile:<id>` / `profiles:<id,...>`): map the given profile ids onto contacts.
+  if (parsed.kind === 'profiles') {
+    return recipientsForProfileIds(db, parsed.ids)
+  }
+
+  // Direct contact set (`contact:<id>` / `contacts:<id,...>`): resolve the contacts by id. A contact
+  // must still carry a profile id + email to be reachable (the profile drives the unsubscribe link).
+  if (parsed.kind === 'contacts') {
+    if (!parsed.ids.length) return []
     const { data } = await db
       .from('contacts')
       .select('id, email, profile_id, consent_state')
-      .in('profile_id', profileIds)
+      .in('id', parsed.ids)
       .neq('consent_state', 'unsubscribed')
     return (data ?? [])
       .filter((c) => c.profile_id && c.email)
@@ -85,15 +158,7 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
 
   if (parsed.kind === 'trait') {
     const profileIds = await resolveSegmentProfileIds(parsed.slug)
-    if (!profileIds.length) return []
-    const { data } = await db
-      .from('contacts')
-      .select('id, email, profile_id, consent_state')
-      .in('profile_id', profileIds)
-      .neq('consent_state', 'unsubscribed')
-    return (data ?? [])
-      .filter((c) => c.profile_id && c.email)
-      .map((c) => ({ contactId: c.id, email: c.email as string, profileId: c.profile_id as string }))
+    return recipientsForProfileIds(db, profileIds)
   }
 
   let q = db

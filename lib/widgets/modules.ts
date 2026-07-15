@@ -180,7 +180,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
 
   // ── Growth dashboard blocks (/admin/growth) — the growth engine as one operator home ──
   { id: 'growth-funnel', label: 'Funnel & activation', description: 'New members joining, and how many reach the North-Star moment (a verified practice) within their first week, over the activation funnel.' },
-  { id: 'growth-pipeline', label: 'Pipeline', description: 'Open deals, their value, and the follow-ups due so nothing stalls.' },
+  { id: 'growth-pipeline', label: 'Pipeline', description: 'Open prospects in the pipeline, their value, and the follow-ups due so nothing stalls.' },
   { id: 'growth-expansion', label: 'Expansion', description: 'Where local member density is crossing the threshold that justifies opening the next Lab.' },
   { id: 'growth-manage', label: 'Manage', description: 'One card per working surface across Acquisition, CRM, and Marketing, each with a live stat and a link to edit it.' },
   { id: 'growth-related', label: 'Related areas', description: 'A cross-link strip to the neighboring workspaces the viewer can enter from here.' },
@@ -431,6 +431,24 @@ const CRM_GRAPH_MODULE_IDS = ['crm-graph-metrics', 'crm-graph-connections'] as c
 // keeps its own janitor gate (and its idempotent seedPlaybooks sync); the modules render only through it.
 const CRM_PLAYBOOKS_MODULE_IDS = ['crm-playbooks-stats', 'crm-playbooks-registry', 'crm-playbooks-runs'] as const
 
+// The Intelligence page (/admin/crm/intelligence) — the unified Resonance CRM surface that merges Vera
+// Today, Playbooks, and the Resonance Graph into one operator page (owner merge). Default arrangement
+// order: the two stat rows (Playbooks headline, then the Graph metric row) lead the full-width stats
+// band, then Vera Today (MAIN) beside the saved plays + strongest-connections (SIDE). Each block is an
+// existing self-fetching, fail-safe RSC, REUSED unchanged. This set documents the page's blocks; the
+// page COMPOSES them directly (app/(main)/admin/crm/intelligence/page.tsx) rather than through
+// <PageModules>, because the two Resonance Graph blocks carry an ADDITIONAL staff 'insights' gate the
+// per-route engine can't express per block — so the page is intentionally NOT in module-routes.ts (no
+// Layout editor) and every id here is already reachable via its own former route set.
+const CRM_INTELLIGENCE_MODULE_IDS = [
+  'crm-playbooks-stats',
+  'crm-graph-metrics',
+  'crm-today',
+  'crm-playbooks-registry',
+  'crm-playbooks-runs',
+  'crm-graph-connections',
+] as const
+
 // The Community dashboard (/admin/community), in default render order — the Structure & people band,
 // the live Trust & safety queue, the Feed reach switch, the Manage grid, then the Related areas strip.
 // Each block self-fetches (fail-safe); the page keeps its host + community-staff gate, and every linked
@@ -503,18 +521,6 @@ const GROWTH_MODULE_IDS = [
   'growth-expansion',
   'growth-manage',
   'growth-related',
-] as const
-
-// The Resonance CRM cockpit (/admin/crm), in default render order (ADR-459) — the VIEWER-FIRST member
-// block leads, then the health cockpit (verdict + live stat row + worklist + funnel, one shared fetch),
-// the rising-members pool, and the score-trustworthiness backtest. Each block self-fetches (fail-safe);
-// the page keeps its janitor gate, so the modules render only through the gated route and never re-gate.
-// The member drilldowns live on /admin/crm/members (its own route, out of this set).
-const CRM_COCKPIT_MODULE_IDS = [
-  'crm-members',
-  'crm-cockpit-stats',
-  'crm-rising',
-  'crm-trust',
 ] as const
 
 // The Vera Today page (/admin/crm/today). The whole interior is one self-fetching, janitor-gated block
@@ -657,8 +663,12 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/admin/community': COMMUNITY_ADMIN_MODULE_IDS,
   '/admin/operations': OPERATIONS_MODULE_IDS,
   '/admin/growth': GROWTH_MODULE_IDS,
-  '/admin/crm': CRM_COCKPIT_MODULE_IDS,
+  // NOTE: '/admin/crm' (the master-detail Resonance home) is intentionally NOT a module route — it
+  // composes its own kit directly (the roster + the compact stat row), and its former cockpit blocks
+  // (verdict/worklist/funnel, rising-members, trust-backtest) were re-homed to /admin/crm/intelligence.
+  // Registering it would make the on-page Layout editor offer blocks the page does not render.
   '/admin/crm/today': CRM_TODAY_MODULE_IDS,
+  '/admin/crm/intelligence': CRM_INTELLIGENCE_MODULE_IDS,
   '/admin/crm/members': CRM_MEMBERS_MODULE_IDS,
   '/admin/gamification': GAMIFICATION_MODULE_IDS,
   '/admin/audit': AUDIT_MODULE_IDS,

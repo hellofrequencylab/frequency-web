@@ -22,8 +22,8 @@ export function RisingMembers({ members }: { members: RisingMember[] }) {
   return (
     <ul className="grid gap-2 @2xl:grid-cols-2">
       {members.map((m) => {
-        // Drill to the person timeline when stitched to a contact; otherwise the row is inert.
-        const href = m.contactId ? `/admin/marketing/contacts/${m.contactId}` : null
+        // Drill to the member inline on the CRM home (the one front door; no separate member page).
+        const href = `/admin/crm?member=${m.profileId}`
         const inner = (
           <>
             <div className="min-w-0 flex-1">

@@ -7,18 +7,19 @@
 // tokens (no hex). Copy passes NAMING + CONTENT-VOICE (no em dashes).
 
 import { useState, useRef } from 'react'
-import { UploadCloud, Sparkles, Loader2, Check, ArrowRight, ArrowLeft, FileSpreadsheet, AlertTriangle } from 'lucide-react'
+import { UploadCloud, Sparkles, Loader2, Check, ArrowRight, ArrowLeft, FileSpreadsheet, AlertTriangle, ClipboardType } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
-import { parseCsvFile } from '@/lib/crm/import/parse'
+import { parseCsvFile, sourceFromContacts, mergeSources, looksLikeTable } from '@/lib/crm/import/parse'
 import {
   stageImport,
   saveMapping,
   suggestMapping,
   previewImport,
   commitAction,
+  extractContactsAction,
 } from '@/lib/crm/import/actions'
 import { isError } from '@/lib/action-result'
-import { TARGET_FIELDS, type ColumnMapping, type MappingChoice, type MergeStrategy, type ParsedSource, type ValidationResult, type CommitResult } from '@/lib/crm/import/types'
+import { TARGET_FIELDS, type ColumnMapping, type MappingChoice, type MergeStrategy, type ParsedSource, type ValidationResult, type CommitResult, type ImportTargetKind } from '@/lib/crm/import/types'
 import type { ManagedSpace } from '@/lib/spaces/managed'
 
 const input =
@@ -57,7 +58,9 @@ export function ImportWizard({
   spaces = [],
   lockedSpace,
 }: {
-  targetKind: 'member' | 'space'
+  /** member = personal book · space = a tenant Space's sealed list · platform = Frequency's
+   *  own ROOT contact hub (staff only, no Space picker). */
+  targetKind: ImportTargetKind
   spaces?: ManagedSpace[]
   /** When set (with targetKind='space'), the target is SEALED to this one Space: no picker,
    *  a static line naming it. Used by a per-Space CRM importer where the membrane fixes the
@@ -75,7 +78,11 @@ export function ImportWizard({
   const [result, setResult] = useState<CommitResult | null>(null)
   const [busy, setBusy] = useState(false)
   const [banner, setBanner] = useState<Banner>(null)
+  const [showPaste, setShowPaste] = useState(false)
+  const [pasted, setPasted] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const scopeSpaceId = targetKind === 'space' ? spaceId : null
 
   const bannerClass = banner
     ? banner.kind === 'ok'
@@ -85,33 +92,106 @@ export function ImportWizard({
         : 'border-danger/40 bg-danger-bg text-danger'
     : ''
 
-  async function handleFile(file: File) {
+  /**
+   * Ingest ANY mix of files plus pasted text into ONE staged set. A delimited file
+   * (CSV/TSV) is parsed in the browser; anything the parser cannot read as a table, plus
+   * any pasted text, is handed to Vera to lift contacts out of (a server action; only a
+   * capped sample reaches the model). Every source is merged into one column set. A file
+   * that cannot be read is skipped with a noted reason, never fatal (fail-safe).
+   */
+  async function ingest(files: File[], text: string) {
     setBusy(true)
     setBanner(null)
+    const sources: ParsedSource[] = []
+    const notes: string[] = []
+    let firstLabel = ''
     try {
-      const parsed = await parseCsvFile(file)
-      if (!parsed.headers.length || !parsed.rows.length) {
-        setBanner({ kind: 'warn', text: 'That file has no rows we can read. Check it has a header row, then try again.' })
+      for (const file of files) {
+        try {
+          const parsed = await parseCsvFile(file)
+          if (looksLikeTable(parsed)) {
+            sources.push(parsed)
+            if (!firstLabel) firstLabel = file.name
+            continue
+          }
+          // Not a table Vera can read deterministically -> AI extraction from its text.
+          const raw = await file.text()
+          const res = await extractContactsAction(raw, { spaceId: scopeSpaceId })
+          if (isError(res)) {
+            notes.push(`${file.name}: ${res.error}`)
+            continue
+          }
+          const src = sourceFromContacts(res.data.contacts)
+          if (!src.rows.length) {
+            notes.push(`${file.name}: we could not find any contacts in it.`)
+            continue
+          }
+          if (res.data.truncated) notes.push(`${file.name}: it is long, so we read the first part.`)
+          sources.push(src)
+          if (!firstLabel) firstLabel = file.name
+        } catch {
+          notes.push(`${file.name}: we could not read it, so we skipped it.`)
+        }
+      }
+
+      if (text.trim()) {
+        const res = await extractContactsAction(text, { spaceId: scopeSpaceId })
+        if (isError(res)) {
+          notes.push(`Pasted text: ${res.error}`)
+        } else {
+          const src = sourceFromContacts(res.data.contacts)
+          if (src.rows.length) {
+            sources.push(src)
+            if (!firstLabel) firstLabel = 'pasted text'
+          } else {
+            notes.push('Pasted text: we could not find any contacts in it.')
+          }
+        }
+      }
+
+      if (!sources.length) {
+        setBanner({
+          kind: 'warn',
+          text: notes.length
+            ? notes.join(' ')
+            : 'We could not find any contacts to bring in. A file with a header row (Name, Email, Phone) works best, or paste a list.',
+        })
         return
       }
-      setFilename(file.name)
+
+      const merged = mergeSources(sources)
+      if (!merged.rows.length) {
+        setBanner({ kind: 'warn', text: 'We read your files but found no contacts in them.' })
+        return
+      }
+
+      const label = files.length + (text.trim() ? 1 : 0) > 1 ? `${firstLabel} and more` : firstLabel
+      setFilename(label)
       const res = await stageImport({
         targetKind,
-        spaceId: targetKind === 'space' ? spaceId : null,
-        filename: file.name,
-        source: parsed,
+        spaceId: scopeSpaceId,
+        filename: label,
+        source: merged,
       })
       if (isError(res)) {
         setBanner({ kind: 'err', text: res.error })
         return
       }
-      setSource(parsed)
+      setSource(merged)
       setImportId(res.data.id)
       setMapping(res.data.mapping)
+      setPasted('')
+      setShowPaste(false)
       setStep('map')
-      if (res.data.remembered) setBanner({ kind: 'ok', text: 'We matched your columns the way you did last time. Review and adjust below.' })
+
+      const skipLine = notes.length ? ` A few items needed a second look: ${notes.join(' ')}` : ''
+      if (res.data.remembered) {
+        setBanner({ kind: 'ok', text: `We matched your columns the way you did last time. Review and adjust below.${skipLine}` })
+      } else if (notes.length) {
+        setBanner({ kind: 'warn', text: `Your contacts are staged.${skipLine}` })
+      }
     } catch {
-      setBanner({ kind: 'err', text: 'We could not read that file. A plain .csv works best.' })
+      setBanner({ kind: 'err', text: 'We could not read that. A plain .csv, or a pasted list, works best.' })
     } finally {
       setBusy(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -222,11 +302,17 @@ export function ImportWizard({
             </div>
           )}
 
+          {targetKind === 'platform' && (
+            <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-xs text-subtle">
+              These contacts land in Frequency’s own list. Everyone comes in as a lead, never auto-subscribed. No Space is involved.
+            </p>
+          )}
+
           <EmptyState
             variant="first-use"
             icon={FileSpreadsheet}
-            title="Bring in a contacts CSV"
-            description="Export from your phone, another CRM, or a spreadsheet. Keep a header row (Name, Email, Phone). We match the columns for you on the next step, so any layout works."
+            title="Bring in your contacts"
+            description="Drop in a spreadsheet, an export from another CRM, or even a plain note. CSV, TSV, and text all work, and you can choose more than one file at once. Vera reads whatever you give it and matches the columns on the next step."
             action={
               <button
                 type="button"
@@ -235,11 +321,53 @@ export function ImportWizard({
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-                {busy ? 'Reading…' : 'Choose a CSV file'}
+                {busy ? 'Reading…' : 'Choose files'}
               </button>
             }
           />
-          <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleFile(f) }} />
+          <input
+            ref={fileRef}
+            type="file"
+            multiple
+            accept=".csv,.tsv,.tab,.txt,text/csv,text/tab-separated-values,text/plain"
+            className="hidden"
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? [])
+              if (files.length) void ingest(files, '')
+            }}
+          />
+
+          <div className="rounded-xl border border-border bg-surface-elevated/40 p-4">
+            <button
+              type="button"
+              onClick={() => setShowPaste((v) => !v)}
+              disabled={busy || (targetKind === 'space' && !spaceId)}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-text hover:text-primary-strong disabled:opacity-40"
+            >
+              <ClipboardType className="h-3.5 w-3.5 text-primary-strong" />
+              {showPaste ? 'Hide paste box' : 'Or paste a list of people'}
+            </button>
+            {showPaste && (
+              <div className="mt-3 space-y-2">
+                <textarea
+                  value={pasted}
+                  onChange={(e) => setPasted(e.target.value)}
+                  rows={5}
+                  placeholder={'Paste names, emails, phone numbers, or a few signature blocks. Vera pulls the contacts out.'}
+                  className={`${input} resize-y`}
+                />
+                <button
+                  type="button"
+                  onClick={() => void ingest([], pasted)}
+                  disabled={busy || !pasted.trim()}
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                >
+                  {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  {busy ? 'Reading…' : 'Pull out the contacts'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -389,7 +517,7 @@ export function ImportWizard({
           action={
             <button
               type="button"
-              onClick={() => { setStep('upload'); setSource(null); setImportId(null); setMapping([]); setValidation(null); setResult(null); setBanner(null); setFilename('') }}
+              onClick={() => { setStep('upload'); setSource(null); setImportId(null); setMapping([]); setValidation(null); setResult(null); setBanner(null); setFilename(''); setPasted(''); setShowPaste(false); }}
               className="inline-flex items-center gap-2 rounded-xl border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
               <UploadCloud className="h-4 w-4" /> Import another file

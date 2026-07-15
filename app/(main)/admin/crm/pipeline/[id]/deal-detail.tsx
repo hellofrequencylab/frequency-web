@@ -14,6 +14,7 @@ import { DangerModal } from '@/components/admin/danger-modal'
 import { updateDeal, moveDeal, deleteDeal, addActivity, toggleTask, deleteActivity } from '../../actions'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { formatMoney, type CrmStage, type CrmDeal, type CrmActivity } from '@/lib/crm/pipeline'
+import { PIPELINE_LANES, laneMeta, type PipelineLane } from '@/lib/crm/stage-templates'
 import { getInitials, relativeTime } from '@/lib/utils'
 
 const ACTIVITY_META: Record<CrmActivity['kind'], { Icon: typeof StickyNote; label: string }> = {
@@ -43,7 +44,9 @@ export function DealDetail({
   const [contact, setContact] = useState(deal.contact_name ?? '')
   const [value, setValue] = useState(String(deal.value ?? 0))
   const [close, setClose] = useState(deal.expected_close_date ?? '')
-  const [source, setSource] = useState(deal.source ?? '')
+  // A card's lane rides `source`. Default an untagged card to the Business-upsell lane so a saved card is
+  // always in one lane (the board can then filter it).
+  const [source, setSource] = useState(laneMeta(deal.source)?.id ?? PIPELINE_LANES[0]!.id)
 
   // add-activity
   const [actKind, setActKind] = useState<CrmActivity['kind']>('note')
@@ -71,7 +74,7 @@ export function DealDetail({
     contact !== (deal.contact_name ?? '') ||
     value !== String(deal.value ?? 0) ||
     close !== (deal.expected_close_date ?? '') ||
-    source !== (deal.source ?? '')
+    source !== (laneMeta(deal.source)?.id ?? PIPELINE_LANES[0]!.id)
 
   const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none'
   const statusTone: StatusTone = deal.status === 'won' ? 'success' : deal.status === 'lost' ? 'danger' : 'info'
@@ -79,13 +82,13 @@ export function DealDetail({
   return (
     <div className="mx-auto w-full max-w-3xl">
       <DetailTemplate
-        back={{ href: '/admin/growth?tab=crm', label: 'Pipeline' }}
+        back={{ href: '/admin/crm/pipeline', label: 'Pipeline' }}
         title={
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full min-w-0 bg-transparent text-xl font-bold text-text focus:outline-none sm:text-2xl"
-            aria-label="Deal title"
+            aria-label="Card title"
           />
         }
         badges={
@@ -175,8 +178,14 @@ export function DealDetail({
             <input type="date" value={close} onChange={(e) => setClose(e.target.value)} className={field} />
           </label>
           <label className="flex flex-col gap-1 text-xs text-muted">
-            Source
-            <input value={source} onChange={(e) => setSource(e.target.value)} placeholder="e.g. referral, event" className={field} />
+            Lane
+            <select value={source} onChange={(e) => setSource(e.target.value as PipelineLane)} className={field}>
+              {PIPELINE_LANES.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
 
@@ -307,7 +316,7 @@ export function DealDetail({
           onClick={() => setConfirmingDelete(true)}
           className="inline-flex items-center gap-1.5 rounded-lg border border-danger px-3 py-1.5 text-sm font-semibold text-danger transition-colors hover:bg-danger-bg/30 disabled:opacity-50"
         >
-          <Trash2 className="h-4 w-4" /> Delete deal
+          <Trash2 className="h-4 w-4" /> Delete card
         </button>
       </div>
       </div>
@@ -316,10 +325,10 @@ export function DealDetail({
       <DangerModal
         open={confirmingDelete}
         onClose={() => setConfirmingDelete(false)}
-        title="Delete deal"
-        body="This removes the deal and its activity timeline. This cannot be undone."
-        confirmLabel="Delete deal"
-        onConfirm={() => run(() => deleteDeal(deal.id), () => router.push('/admin/growth?tab=crm'))}
+        title="Delete card"
+        body="This removes the card and its activity timeline. This cannot be undone."
+        confirmLabel="Delete card"
+        onConfirm={() => run(() => deleteDeal(deal.id), () => router.push('/admin/crm/pipeline'))}
       />
     </div>
   )

@@ -15,7 +15,8 @@ import {
   type SortSpec,
 } from '@/lib/people/member-viewer'
 import { MemberDetailCard } from './member-detail-card'
-import type { ListView, MemberViewerProps, SortOption } from './types'
+import { CrmMemberDetailPane } from './crm-member-detail'
+import type { CrmMemberDetail, ListView, MemberViewerProps, SortOption } from './types'
 
 // THE MEMBER-VIEWER BLOCK: a reusable master-detail member browser (list left, viewer right).
 // One presentation-neutral client island (ADR-017/018) reused/reconfigured by many surfaces, not a
@@ -51,8 +52,10 @@ export function MemberViewer({
   members,
   loadDetail,
   detailMode = 'full',
+  detailVariant = 'card',
   defaultView = 'list',
   pageSize,
+  initialSelectedId,
   search,
   sortOptions,
   sort,
@@ -62,6 +65,10 @@ export function MemberViewer({
   emptyState,
 }: MemberViewerProps) {
   const options = useMemo(() => sortOptions ?? [], [sortOptions])
+
+  // The batch size: how many rows show up front and grow by each time the infinite-scroll sentinel
+  // comes into view (default 12). Positive `pageSize` overrides it (the cockpit passes 24).
+  const batch = pageSize && pageSize > 0 ? Math.floor(pageSize) : 12
 
   const [view, setView] = useState<ListView>(defaultView)
   const [text, setText] = useState('')
@@ -73,9 +80,9 @@ export function MemberViewer({
   // `sort` prop (a host with no visible control still sorts).
   const [sortKey, setSortKey] = useState<string | null>(() => initialSortKey(options, sort))
 
-  // Selection: controlled when the host passes selectedId, else internal.
+  // Selection: controlled when the host passes selectedId, else internal (seeded from a deep link).
   const isControlled = controlledSelectedId !== undefined
-  const [internalSelected, setInternalSelected] = useState<string | null>(null)
+  const [internalSelected, setInternalSelected] = useState<string | null>(initialSelectedId ?? null)
   const selectedId = isControlled ? controlledSelectedId : internalSelected
 
   const activeSort: SortSpec | undefined =
@@ -101,10 +108,12 @@ export function MemberViewer({
     setPage(1)
   }, [])
 
-  const { visible, total, hasMore } = useMemo(
-    () => applyQuery(members, query, page, pageSize ?? 10),
-    [members, query, page, pageSize],
-  )
+  // Filter + sort via the pure core (we take its full `filtered` set and do our own batch/cap so the
+  // list can grow past the core's 10..20 page clamp via infinite scroll).
+  const { filtered } = useMemo(() => applyQuery(members, query, 1, 20), [members, query])
+  const visible = useMemo(() => filtered.slice(0, page * batch), [filtered, page, batch])
+  const total = filtered.length
+  const hasMore = total > visible.length
 
   // Server-driven hosts get every query change (debounced text is fine raw here; the host throttles).
   useEffect(() => {
@@ -158,8 +167,24 @@ export function MemberViewer({
     }
   }, [fetchKey, loadDetail])
 
-  // ── Keyboard navigation on the list ─────────────────────────────────────────
+  // ── Infinite scroll: a sentinel at the foot of the list grows the batch as it comes into view. ──
   const listRef = useRef<HTMLDivElement>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const node = sentinelRef.current
+    if (!node || !hasMore) return
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setPage((p) => p + 1)
+      },
+      // Observe within the list's own scroll column; a little rootMargin so it prefetches just before.
+      { root: listRef.current ?? null, rootMargin: '200px' },
+    )
+    io.observe(node)
+    return () => io.disconnect()
+  }, [hasMore, visible.length])
+
+  // ── Keyboard navigation on the list ─────────────────────────────────────────
   const onListKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (visible.length === 0) return
@@ -196,6 +221,14 @@ export function MemberViewer({
 
   const facets = search?.facets ?? []
 
+  // The right-pane body for a loaded detail: the CRM master-detail pane, or the generic card.
+  const detailBody = (detail: MemberDetail) =>
+    detailVariant === 'crm' ? (
+      <CrmMemberDetailPane detail={detail as CrmMemberDetail} />
+    ) : (
+      <MemberDetailCard detail={detail} mode={detailMode} />
+    )
+
   // ── The detail pane (shared by desktop pane + mobile overlay) ────────────────
   const detailPane = (() => {
     if (!selectedMember) {
@@ -207,7 +240,7 @@ export function MemberViewer({
     }
     // Embedded detail wins (no fetch).
     if (selectedMember.detail) {
-      return <MemberDetailCard detail={selectedMember.detail} mode={detailMode} />
+      return detailBody(selectedMember.detail)
     }
     // A real lazy fetch is in flight / done / failed.
     if (needsFetch) {
@@ -222,21 +255,16 @@ export function MemberViewer({
         )
       }
       if (fetchState.status === 'ready') {
-        return <MemberDetailCard detail={fetchState.detail} mode={detailMode} />
+        return detailBody(fetchState.detail)
       }
       return <DetailSkeleton />
     }
     // No detail source: show the minimal identity we already have.
-    return (
-      <MemberDetailCard
-        detail={{
-          displayName: selectedMember.displayName,
-          handle: selectedMember.handle,
-          avatarUrl: selectedMember.avatarUrl,
-        }}
-        mode={detailMode}
-      />
-    )
+    return detailBody({
+      displayName: selectedMember.displayName,
+      handle: selectedMember.handle,
+      avatarUrl: selectedMember.avatarUrl,
+    })
   })()
 
   return (
@@ -341,8 +369,8 @@ export function MemberViewer({
       {/* Two-pane (desktop) / list-primary (mobile). Each column scrolls within ITSELF (self-contained,
           no host overflow): the left list caps its height and scrolls; the right pane scrolls too. */}
       <div className="flex min-w-0 items-start gap-5">
-        {/* LEFT: the list, scrolling within its own column. */}
-        <div className="min-w-0 flex-1 lg:flex-[2]">
+        {/* LEFT: the list, a skinny column that scrolls within itself. */}
+        <div className="min-w-0 flex-1 lg:w-80 lg:flex-none">
           {visible.length === 0 ? (
             empty
           ) : (
@@ -400,19 +428,22 @@ export function MemberViewer({
                     ))}
                   </ul>
                 )}
+
+                {/* Infinite-scroll sentinel: sits inside the scroll column so the observer roots to it.
+                    A no-JS / motion-reduce fallback button is kept for keyboard + non-observer paths. */}
+                {hasMore && (
+                  <div ref={sentinelRef} className="mt-3 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => p + 1)}
+                      className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                    >
+                      Load more members
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {hasMore && (
-                <div className="mt-3 flex justify-center">
-                  <button
-                    type="button"
-                    onClick={() => setPage((p) => p + 1)}
-                    className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
-                  >
-                    Show more
-                  </button>
-                </div>
-              )}
               <p className="mt-2 text-center text-2xs text-subtle">
                 Showing {visible.length} of {total}
               </p>
@@ -420,8 +451,8 @@ export function MemberViewer({
           )}
         </div>
 
-        {/* RIGHT: the detail pane (desktop only; mobile uses the overlay) */}
-        <div className="hidden min-w-0 lg:block lg:flex-[3]">
+        {/* RIGHT: the wide detail pane (desktop only; mobile uses the overlay) */}
+        <div className="hidden min-w-0 flex-1 lg:block">
           <div className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl border border-border bg-surface p-5 shadow-sm">
             {detailPane}
           </div>

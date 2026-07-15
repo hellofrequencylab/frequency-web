@@ -6,26 +6,46 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { existingContactKeys } from '@/lib/connections/store'
-import { planCommit, emailKey, toValidationResult, type ExistingKeys } from './dedupe'
+import { planCommit, emailKey, phoneKey, toValidationResult, type ExistingKeys } from './dedupe'
+import { getRootSpaceId } from './store'
 import type { ContactImportRow, ValidationResult } from './types'
 
-/** Read the existing contact keys for a staged import's target (member book or Space list). */
-async function readExistingKeys(row: ContactImportRow): Promise<ExistingKeys> {
-  if (row.targetKind === 'space' && row.targetSpaceId) {
-    const emails = new Set<string>()
-    try {
-      const { data } = await createAdminClient()
-        .from('contacts')
-        .select('email')
-        .eq('space_id', row.targetSpaceId)
-      for (const r of (data ?? []) as { email: string | null }[]) {
-        const ek = emailKey(r.email)
-        if (ek) emails.add(ek)
+/** Read the existing keys for a `contacts(space_id)` scope (a tenant Space, or the ROOT
+ *  platform hub). For the platform hub we also key on the last-10 phone stashed in
+ *  meta.phone so the preview's dedupe matches the commit's email-AND-phone dedupe. */
+async function readContactsKeys(spaceId: string, dedupePhone: boolean): Promise<ExistingKeys> {
+  const emails = new Set<string>()
+  const phones = new Set<string>()
+  try {
+    const { data } = await createAdminClient()
+      .from('contacts')
+      .select('email, meta')
+      .eq('space_id', spaceId)
+    for (const r of (data ?? []) as { email: string | null; meta: Record<string, unknown> | null }[]) {
+      const ek = emailKey(r.email)
+      if (ek) emails.add(ek)
+      if (dedupePhone) {
+        const raw = r.meta && typeof r.meta.phone === 'string' ? r.meta.phone : null
+        const pk = phoneKey(raw)
+        if (pk) phones.add(pk)
       }
-    } catch {
-      /* read failure -> empty index (preview shows all as new; commit is the same) */
     }
-    return { emails, phones: new Set() }
+  } catch {
+    /* read failure -> empty index (preview shows all as new; commit is the same) */
+  }
+  return { emails, phones: dedupePhone ? phones : new Set() }
+}
+
+/** Read the existing contact keys for a staged import's target (member book, Space list,
+ *  or the platform ROOT hub). */
+async function readExistingKeys(row: ContactImportRow): Promise<ExistingKeys> {
+  if (row.targetKind === 'platform') {
+    const rootId = await getRootSpaceId()
+    if (!rootId) return { emails: new Set(), phones: new Set() }
+    return readContactsKeys(rootId, true)
+  }
+  if (row.targetKind === 'space' && row.targetSpaceId) {
+    return readContactsKeys(row.targetSpaceId, false)
   }
   // member target
   try {

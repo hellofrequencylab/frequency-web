@@ -19,8 +19,9 @@ import { createContact, updateContact, existingContactKeys, listContacts } from 
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
+import { isPlatformStaff } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { getImport, updateImport, rememberCustomFields } from './store'
+import { getImport, updateImport, rememberCustomFields, getRootSpaceId } from './store'
 import { headerFingerprint } from './map'
 import { planCommit, emailKey, phoneKey, type ProjectedContact, type ExistingKeys } from './dedupe'
 import type { ContactImportRow, CommitResult, ValueType } from './types'
@@ -113,7 +114,14 @@ async function commitToMember(ownerId: string, row: ContactImportRow): Promise<C
         failed++
       }
     } else if (p.action === 'merge') {
-      const target = p.matchedKey ? byKey.get(p.matchedKey) : undefined
+      // Resolve the existing row by email first, then phone (planCommit's matchedKey prefers the
+      // email key even when the match was on phone, so a row that matches an existing contact by
+      // phone under a NEW email would otherwise miss byKey and be miscounted as failed — while the
+      // dry-run counted it merged, breaking preview/commit parity). Mirrors commitToSpace.
+      const ek = emailKey(c.email)
+      const pk = phoneKey(c.phone)
+      const key = ek && byKey.has(ek) ? ek : pk && byKey.has(pk) ? pk : p.matchedKey
+      const target = key ? byKey.get(key) : undefined
       if (!target) {
         failed++
         continue
@@ -173,29 +181,55 @@ function spaceMeta(c: ProjectedContact, defs: { key: string; label: string }[]):
   return meta
 }
 
-async function commitToSpace(row: ContactImportRow, spaceId: string): Promise<CommitResult> {
+/**
+ * Commit into a `contacts(space_id)` list. Serves BOTH scoped targets that live in the
+ * shared `contacts` table:
+ *   • `space`    — a tenant Space's sealed list (dedupe by email only; unchanged).
+ *   • `platform` — Frequency's own ROOT-space hub (dedupe by email AND phone: the platform
+ *     list mixes sources, so a phone match is a real duplicate worth catching).
+ * A sealed `contacts` row requires an email (contacts.email is NOT NULL), so a phone-only
+ * row is still skipped; phone dedupe only ever prevents a DIFFERENT-email duplicate of an
+ * existing contact whose number we already hold in `meta.phone`.
+ */
+async function commitToSpace(
+  row: ContactImportRow,
+  spaceId: string,
+  opts: { dedupePhone?: boolean } = {},
+): Promise<CommitResult> {
   const db = createAdminClient()
   const defs = customFieldDefs(row)
+  const dedupePhone = opts.dedupePhone ?? false
 
-  // Existing keys WITHIN the Space. A Space contact requires an email (contacts.email is
-  // NOT NULL), so we dedupe by email only for this target.
+  // Existing keys WITHIN this contacts scope. We key by email and (for the platform hub)
+  // by the last-10 phone stashed in meta.phone, so a merge can resolve on either.
   const emails = new Set<string>()
-  const idByEmail = new Map<string, string>()
-  const metaByEmail = new Map<string, Record<string, unknown>>()
+  const phones = new Set<string>()
+  const idByKey = new Map<string, string>()
+  const metaByKey = new Map<string, Record<string, unknown>>()
   try {
     const { data } = await db.from('contacts').select('id, email, meta').eq('space_id', spaceId)
     for (const r of (data ?? []) as { id: string; email: string | null; meta: Record<string, unknown> | null }[]) {
+      const meta = r.meta ?? {}
       const ek = emailKey(r.email)
-      if (!ek) continue
-      emails.add(ek)
-      idByEmail.set(ek, r.id)
-      metaByEmail.set(ek, r.meta ?? {})
+      if (ek) {
+        emails.add(ek)
+        idByKey.set(ek, r.id)
+        metaByKey.set(ek, meta)
+      }
+      if (dedupePhone) {
+        const pk = phoneKey(typeof meta.phone === 'string' ? meta.phone : null)
+        if (pk) {
+          phones.add(pk)
+          if (!idByKey.has(pk)) idByKey.set(pk, r.id)
+          if (!metaByKey.has(pk)) metaByKey.set(pk, meta)
+        }
+      }
     }
   } catch {
     /* read failure -> empty index (import proceeds; dedupe degrades, never loses data) */
   }
 
-  const existing: ExistingKeys = { emails, phones: new Set() }
+  const existing: ExistingKeys = { emails, phones: dedupePhone ? phones : new Set() }
   const plan = planCommit(row.source.rows, row.mapping, existing, row.mergeStrategy)
   const now = new Date().toISOString()
   let created = 0
@@ -210,7 +244,7 @@ async function commitToSpace(row: ContactImportRow, spaceId: string): Promise<Co
     }
     const c = p.contact
     const ek = emailKey(c.email)
-    // A sealed Space contact must have an email to key on; skip rows without one.
+    // A sealed contacts row must have an email to key on; skip rows without one.
     if (!ek) {
       skipped++
       continue
@@ -236,12 +270,17 @@ async function commitToSpace(row: ContactImportRow, spaceId: string): Promise<Co
       }
     } else if (p.action === 'merge') {
       try {
-        const id = idByEmail.get(ek)
+        // Resolve the existing row by email first, then phone (planCommit's matchedKey prefers
+        // the email key even when the match was on phone, so we cannot trust it alone here).
+        const pk = phoneKey(c.phone)
+        const key =
+          ek && idByKey.has(ek) ? ek : pk && idByKey.has(pk) ? pk : (p.matchedKey ?? ek)
+        const id = idByKey.get(key)
         if (!id) {
           failed++
           continue
         }
-        const nextMeta = mergeMeta(metaByEmail.get(ek) ?? {}, spaceMeta(c, defs), row.mergeStrategy)
+        const nextMeta = mergeMeta(metaByKey.get(key) ?? {}, spaceMeta(c, defs), row.mergeStrategy)
         const patch: Record<string, unknown> = { last_seen_at: now, updated_at: now, meta: nextMeta }
         // Only fill the display name when overwriting, or when it is currently blank.
         if (c.displayName && row.mergeStrategy === 'overwrite') patch.display_name = c.displayName
@@ -298,7 +337,16 @@ export async function commitImport(id: string, createdBy: string): Promise<Actio
   if (!row.source.rows.length) return fail('That file has no rows to import.')
 
   let result: CommitResult
-  if (row.targetKind === 'space') {
+  if (row.targetKind === 'platform') {
+    // Frequency's OWN list (the ROOT-space contacts hub). No Space, no picker. Staff only:
+    // this is the platform contact hub (crm.root.allContacts), never a tenant list.
+    if (!(await isPlatformStaff())) {
+      return fail('Only Frequency staff can bring contacts into the platform list.')
+    }
+    const rootId = await getRootSpaceId()
+    if (!rootId) return fail('We could not reach the platform contact list right now.')
+    result = await commitToSpace(row, rootId, { dedupePhone: true })
+  } else if (row.targetKind === 'space') {
     const spaceId = row.targetSpaceId
     if (!spaceId) return fail('That import has no Space selected.')
     // Gate: mirror graduation. Only a Space team member with CRM access may import into it.

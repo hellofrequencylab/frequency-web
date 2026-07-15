@@ -95,7 +95,7 @@ export async function createDealForProfile(profileId: string, name: string): Pro
   if (error) throw new Error(error.message)
   revalidatePath('/admin/growth')
   const id = (data as { id: string } | null)?.id
-  if (id) redirect(`/admin/crm/deals/${id}`)
+  if (id) redirect(`/admin/crm/pipeline/${id}`)
   redirect('/admin/growth?tab=crm')
 }
 
@@ -113,7 +113,7 @@ export async function moveDeal(dealId: string, stageId: string): Promise<ActionR
     .eq('id', dealId)
   if (error) return fail(error.message)
   revalidatePath('/admin/growth')
-  revalidatePath(`/admin/crm/deals/${dealId}`)
+  revalidatePath(`/admin/crm/pipeline/${dealId}`)
   return ok()
 }
 
@@ -141,7 +141,7 @@ export async function updateDeal(
   const { error } = await db().from('crm_deals').update(row as Database['public']['Tables']['crm_deals']['Update']).eq('id', dealId)
   if (error) return fail(error.message)
   revalidatePath('/admin/growth')
-  revalidatePath(`/admin/crm/deals/${dealId}`)
+  revalidatePath(`/admin/crm/pipeline/${dealId}`)
   return ok()
 }
 
@@ -172,7 +172,7 @@ export async function addActivity(input: {
     created_by: me,
   })
   if (error) return fail(error.message)
-  revalidatePath(`/admin/crm/deals/${input.dealId}`)
+  revalidatePath(`/admin/crm/pipeline/${input.dealId}`)
   revalidatePath('/admin/growth')
   return ok()
 }
@@ -184,7 +184,7 @@ export async function toggleTask(activityId: string, dealId: string, done: boole
     .update({ completed_at: done ? new Date().toISOString() : null })
     .eq('id', activityId)
   if (error) return fail(error.message)
-  revalidatePath(`/admin/crm/deals/${dealId}`)
+  revalidatePath(`/admin/crm/pipeline/${dealId}`)
   revalidatePath('/admin/growth')
   return ok()
 }
@@ -193,6 +193,6 @@ export async function deleteActivity(activityId: string, dealId: string): Promis
   await requireCrm()
   const { error } = await db().from('crm_activities').delete().eq('id', activityId)
   if (error) return fail(error.message)
-  revalidatePath(`/admin/crm/deals/${dealId}`)
+  revalidatePath(`/admin/crm/pipeline/${dealId}`)
   return ok()
 }

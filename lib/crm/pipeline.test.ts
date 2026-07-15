@@ -85,7 +85,9 @@ import {
   getContact,
   getSpaceTasks,
   partitionTasks,
+  computeMetrics,
   type SpaceTask,
+  type CrmDeal,
 } from './pipeline'
 
 function hasSpaceFilter(table: string): boolean {
@@ -222,6 +224,63 @@ describe('getSpaceTasks', () => {
 
   it('FAIL-SAFE: returns [] for an empty spaceId', async () => {
     expect(await getSpaceTasks('')).toEqual([])
+  })
+})
+
+describe('computeMetrics (pure, lane-aware)', () => {
+  type MDeal = Pick<CrmDeal, 'status' | 'value' | 'source' | 'closed_at'>
+  const now = new Date('2026-07-15T00:00:00.000Z')
+  function deal(over: Partial<MDeal>): MDeal {
+    return { status: 'open', value: 0, source: null, closed_at: null, ...over }
+  }
+
+  it('keeps the legacy fields intact (openCount / openValue / wonValue / winRate)', () => {
+    const m = computeMetrics(
+      [
+        deal({ status: 'open', value: 100 }),
+        deal({ status: 'won', value: 50 }),
+        deal({ status: 'lost' }),
+      ],
+      3,
+      now,
+    )
+    expect(m.openCount).toBe(1)
+    expect(m.openValue).toBe(100)
+    expect(m.wonValue).toBe(50)
+    expect(m.winRatePct).toBe(50) // 1 won of 2 decided
+    expect(m.tasksDue).toBe(3)
+  })
+
+  it('splits open deals by lane (source)', () => {
+    const m = computeMetrics(
+      [
+        deal({ status: 'open', source: 'upsell_business' }),
+        deal({ status: 'open', source: 'upsell_business' }),
+        deal({ status: 'open', source: 'donation' }),
+        deal({ status: 'open', source: 'referral' }), // untagged, counts in openCount only
+      ],
+      0,
+      now,
+    )
+    expect(m.openCount).toBe(4)
+    expect(m.businessOpen).toBe(2)
+    expect(m.donationOpen).toBe(1)
+  })
+
+  it('counts upgrades only for upsell wins closed THIS month, and recurring donors for all donation wins', () => {
+    const m = computeMetrics(
+      [
+        deal({ status: 'won', source: 'upsell_business', closed_at: '2026-07-03T12:00:00.000Z' }), // this month
+        deal({ status: 'won', source: 'upsell_business', closed_at: '2026-06-30T12:00:00.000Z' }), // last month
+        deal({ status: 'won', source: 'upsell_business', closed_at: null }), // no close date -> not counted
+        deal({ status: 'won', source: 'donation', closed_at: '2026-01-01T00:00:00.000Z' }),
+        deal({ status: 'won', source: 'donation', closed_at: null }),
+      ],
+      0,
+      now,
+    )
+    expect(m.upgradesThisMonth).toBe(1)
+    expect(m.recurringDonors).toBe(2)
   })
 })
 

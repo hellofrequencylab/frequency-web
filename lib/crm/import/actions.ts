@@ -8,12 +8,12 @@
 // only a SMALL sample ever reaches the model.
 
 import { revalidatePath } from 'next/cache'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
-import { listManagedSpaces, type ManagedSpace } from '@/lib/spaces/managed'
+import { listManagedSpaces } from '@/lib/spaces/managed'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { autoMapColumns, headerFingerprint } from './map'
-import { proposeMapping, type AiSuggestion } from './ai'
+import { proposeMapping, extractContactsFromText, type AiSuggestion, type ExtractedContact } from './ai'
 import { computeValidation } from './preview'
 import { commitImport } from './commit'
 import { createImport, getImport, updateImport, findRememberedMapping, listCustomFields } from './store'
@@ -25,11 +25,6 @@ import type {
   ValidationResult,
   CommitResult,
 } from './types'
-
-/** The Spaces the caller may import into (owned / editor+), for the target picker. */
-export async function listImportSpaces(): Promise<ManagedSpace[]> {
-  return listManagedSpaces()
-}
 
 async function requireProfile(): Promise<string> {
   const id = await getMyProfileId()
@@ -70,13 +65,18 @@ export async function stageImport(input: StageImportInput): Promise<ActionResult
   if (!source?.headers?.length) return fail('That file has no columns we can read.')
   if (!source.rows?.length) return fail('That file has no rows to import.')
 
-  const targetKind: ImportTargetKind = input.targetKind === 'space' ? 'space' : 'member'
+  const targetKind: ImportTargetKind =
+    input.targetKind === 'space' ? 'space' : input.targetKind === 'platform' ? 'platform' : 'member'
   const spaceId = targetKind === 'space' ? (input.spaceId ?? '').trim() : ''
   if (targetKind === 'space') {
     if (!spaceId) return fail('Pick a Space to import into.')
     if (!(await assertCanTargetSpace(spaceId))) {
       return fail('You can only import into a Space you manage.')
     }
+  }
+  // Platform target = Frequency's own list (the ROOT contact hub). Staff only, no Space.
+  if (targetKind === 'platform' && !(await isPlatformStaff())) {
+    return fail('Only Frequency staff can import into the platform list.')
   }
 
   const sample = source.rows.slice(0, 8)
@@ -106,6 +106,29 @@ export async function stageImport(input: StageImportInput): Promise<ActionResult
   if (!row) return fail('We could not stage that import. Try again.')
 
   return ok({ id: row.id, mapping: row.mapping, remembered })
+}
+
+/** Pull contacts out of unstructured text (a pasted block, a .txt file the delimited parser
+ *  could not read). Gated on the kill switch + budget cap, mirroring suggestMapping. The
+ *  client sends the raw text; only a capped sample reaches the model (privacy). FAIL-SOFT:
+ *  an unavailable model returns a calm reason so the file is skipped, never fatal. */
+export async function extractContactsAction(
+  text: string,
+  opts?: { spaceId?: string | null },
+): Promise<ActionResult<{ contacts: ExtractedContact[]; truncated: boolean }>> {
+  let profileId: string
+  try {
+    profileId = await requireProfile()
+  } catch {
+    return fail('Sign in to import contacts.')
+  }
+  const clean = (text ?? '').trim()
+  if (!clean) return ok({ contacts: [], truncated: false })
+  if (!(await aiAvailable()) || (await featureOverBudget('crm-import-extract'))) {
+    return fail('Vera cannot read free text right now. A file with a header row still imports.')
+  }
+  const res = await extractContactsFromText({ text: clean, profileId, spaceId: opts?.spaceId ?? null })
+  return ok(res)
 }
 
 /** Save the operator's edited column mapping. */
@@ -179,6 +202,7 @@ export async function commitAction(id: string): Promise<ActionResult<CommitResul
   const res = await commitImport(id, profileId)
   revalidatePath('/network/contacts')
   revalidatePath('/admin/marketing/contacts')
+  revalidatePath('/admin/crm')
   return res
 }
 

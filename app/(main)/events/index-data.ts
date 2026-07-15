@@ -236,6 +236,15 @@ export const CONTENT_FALLBACK = {
     'Group rides, gatherings, and meetups your circles are running near you. RSVP to see who’s coming, show up, and earn Zaps for every one you make.',
 }
 
+/** Whether the viewer has ADDED any event — hosts/owns a published one OR has a poster draft.
+ *  Drives the Manage + My drafts actions on the member's own /events home (owner rule: they appear
+ *  only once the user has added an event; Add Event always shows to an eligible signed-in member).
+ *  Pure so it unit-tests cleanly. FAIL-SAFE: a null count (an out/read error) reads as "none", so the
+ *  actions stay hidden rather than falsely shown. */
+export function computeUserHasEvents(hostedOrPostedCount: number | null): boolean {
+  return (hostedOrPostedCount ?? 0) > 0
+}
+
 export interface EventsIndexParams {
   q?: string
   category?: string
@@ -276,6 +285,9 @@ export interface EventsIndexData {
   /** Empty-state branching: any active facet, and whether the viewer has any scope. */
   filtering: boolean
   hasAnyScope: boolean
+  /** Whether the viewer has added any event (hosts/owns one OR has a draft) — gates the Manage +
+   *  My drafts actions on their own /events home (they appear only once they have added one). */
+  userHasEvents: boolean
   /** Whether the streamed "For you" lane could have content (gates the Suspense). */
   showForYou: boolean
   /** Toolbar inputs. */
@@ -430,12 +442,28 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
       })()
     : Promise.resolve([])
 
-  const [circleEvents, rawPublic, distanceById, hostedEvents] = await Promise.all([
+  // Has the viewer ADDED any event? A single head-count over events they HOST *or* POSTED, at ANY
+  // status/time (so a past event, a far-future one, or an unpublished poster draft all count) EXCEPT
+  // ones they have removed (a deleted event is not manageable, so it must not keep the Manage + My
+  // drafts actions on their /events home lit up). Runs in this same wave so it adds no serial
+  // round-trip; fail-safe (a null count reads as "none" → the actions stay hidden).
+  const userEventCountP: PromiseLike<number | null> = myProfileId
+    ? admin
+        .from('events')
+        .select('id', { count: 'exact', head: true })
+        .is('removed_at', null)
+        .or(`host_id.eq.${myProfileId},posted_by_profile_id.eq.${myProfileId}`)
+        .then(({ count }) => count ?? null, () => null)
+    : Promise.resolve(0)
+
+  const [circleEvents, rawPublic, distanceById, hostedEvents, userEventCount] = await Promise.all([
     circleEventsP,
     rawPublicP,
     distanceByIdP,
     hostedEventsP,
+    userEventCountP,
   ])
+  const userHasEvents = computeUserHasEvents(userEventCount)
 
   // Distance enriches but never filters; the circleIdSet keeps a circle event from
   // reappearing as a standalone public row.
@@ -695,6 +723,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     myRsvps,
     filtering,
     hasAnyScope,
+    userHasEvents,
     showForYou,
     facets,
     sortOptions,

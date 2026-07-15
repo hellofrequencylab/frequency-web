@@ -113,11 +113,19 @@ export const MERGE_STRATEGIES: readonly MergeStrategy[] = ['skip', 'overwrite', 
 
 // ── Target ───────────────────────────────────────────────────────────────────────
 
-/** Where the import lands (the membrane): a member's personal book, or a Space's sealed
- *  list. Never both. Resolved + gated server-side before any write. */
+/** Where the import lands (the membrane): a member's personal book, a Space's sealed
+ *  list, or Frequency's OWN platform list (the ROOT-space contacts hub). Never more than
+ *  one. Resolved + gated server-side before any write.
+ *
+ *  - `member`   -> the creator's personal `network_contacts` book.
+ *  - `space`    -> one Space's sealed `contacts(space_id)`, gated to that Space's team.
+ *  - `platform` -> Frequency's own list: `contacts` under the ROOT space, gated to staff.
+ *    No Space picker (the fix for "the importer must not force a Space"). The membrane
+ *    still holds: these are Frequency's unclaimed leads, not any tenant Space's list. */
 export type ImportTarget =
   | { kind: 'member' }
   | { kind: 'space'; spaceId: string }
+  | { kind: 'platform' }
 
 export type ImportTargetKind = ImportTarget['kind']
 

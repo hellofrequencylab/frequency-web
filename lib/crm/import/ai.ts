@@ -102,6 +102,145 @@ function coerceSuggestions(raw: unknown): AiSuggestion[] {
   return out
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// UNSTRUCTURED-TEXT EXTRACTION — pull contacts out of arbitrary text (a pasted
+// signature block, a note, an email dump, a .txt file that is not a table). The
+// deterministic parser only understands delimited files; anything else routes here.
+// Same kernel doctrine as proposeMapping: forced structured output constrained to a
+// CLOSED contact schema (the model can only fill name/email/phone/company/notes), a
+// SAMPLE only (the text is capped before it reaches the model), usage on the ledger,
+// FAIL-SAFE to [] so a file the model cannot read is skipped, never fatal.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** One contact the model lifted out of free text. Every field optional; the caller
+ *  keeps any row with at least a name, an email, or a phone. */
+export interface ExtractedContact {
+  name?: string
+  email?: string
+  phone?: string
+  company?: string
+  notes?: string
+}
+
+const EXTRACT_TOOL_NAME = 'extract_contacts'
+
+/** Cap the text that reaches the model (privacy + cost). ~12k chars is a generous page. */
+const MAX_EXTRACT_CHARS = 12000
+
+const EXTRACT_TOOL: Anthropic.Tool = {
+  name: EXTRACT_TOOL_NAME,
+  description:
+    'Return every distinct person you can find in the text as a contact. Only fill fields you actually see. If the text holds no people, return an empty list.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      contacts: {
+        type: 'array',
+        description: 'One entry per distinct person found. Empty if none.',
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'The person’s full name, if present.' },
+            email: { type: 'string', description: 'Their email address, if present.' },
+            phone: { type: 'string', description: 'Their phone number, if present.' },
+            company: { type: 'string', description: 'Their company or organization, if present.' },
+            notes: { type: 'string', description: 'A short plain note of any other detail. No em dashes.' },
+          },
+        },
+      },
+    },
+    required: ['contacts'],
+  },
+}
+
+const EXTRACT_SYSTEM = `You are Vera, Frequency's assistant. An operator pasted or uploaded some text and wants the PEOPLE in it turned into contacts.
+
+Read the text and call ${EXTRACT_TOOL_NAME} with one entry per distinct person. Rules:
+- Only include fields you can actually see in the text. Never guess or invent an email, a phone, or a name.
+- Do not duplicate a person. If the same person appears twice, return them once.
+- Keep notes short and plain. No em dashes, no emojis.
+- If the text has no people (it is a receipt, a login, random noise), return an empty contacts list.`
+
+/** Coerce the model's extraction into safe contacts. Drops empty rows; trims + caps fields.
+ *  Exported for the unit tests (the AI kernel itself is never called in a test). */
+export function coerceExtracted(raw: unknown): ExtractedContact[] {
+  const list = (raw as { contacts?: unknown })?.contacts
+  if (!Array.isArray(list)) return []
+  const out: ExtractedContact[] = []
+  const str = (v: unknown, max: number): string => (typeof v === 'string' ? v.trim().slice(0, max) : '')
+  for (const c of list) {
+    if (!c || typeof c !== 'object') continue
+    const o = c as Record<string, unknown>
+    const contact: ExtractedContact = {}
+    const name = str(o.name, 200)
+    const email = str(o.email, 200).toLowerCase()
+    const phone = str(o.phone, 60)
+    const company = str(o.company, 200)
+    const notes = str(o.notes, 500)
+    if (name) contact.name = name
+    if (email) contact.email = email
+    if (phone) contact.phone = phone
+    if (company) contact.company = company
+    if (notes) contact.notes = notes
+    // Keep only a row with some identity (a name, an email, or a phone).
+    if (contact.name || contact.email || contact.phone) out.push(contact)
+  }
+  return out
+}
+
+/**
+ * Extract contacts from arbitrary text. Bounded: Haiku, the text capped to a sample, a
+ * forced structured tool call constrained to the contact schema. Records usage on the
+ * ledger. FAIL-SAFE: returns [] on any failure (an unreadable file is simply skipped).
+ * The kill switch + budget cap are checked by the caller (the server action) before this
+ * runs, mirroring proposeMapping.
+ */
+export async function extractContactsFromText(input: {
+  text: string
+  profileId?: string | null
+  spaceId?: string | null
+}): Promise<{ contacts: ExtractedContact[]; truncated: boolean }> {
+  const full = (input.text ?? '').trim()
+  if (!full) return { contacts: [], truncated: false }
+  const truncated = full.length > MAX_EXTRACT_CHARS
+  const text = truncated ? full.slice(0, MAX_EXTRACT_CHARS) : full
+
+  const tier: ModelTier = 'haiku'
+  try {
+    const res = await completeRaw({
+      tier,
+      maxTokens: 2048,
+      thinking: { type: 'disabled' },
+      system: withVoice(EXTRACT_SYSTEM),
+      tools: [EXTRACT_TOOL],
+      toolChoice: { type: 'tool', name: EXTRACT_TOOL_NAME },
+      messages: [
+        {
+          role: 'user',
+          content: `Text:\n"""\n${text}\n"""\n\nExtract every person. Call ${EXTRACT_TOOL_NAME}.`,
+        },
+      ],
+    })
+
+    void recordAiUsage({
+      feature: 'crm-import-extract',
+      model: MODELS[tier],
+      usage: res.usage,
+      costUsd: estimateCostUsd(tier, res.usage),
+      profileId: input.profileId ?? null,
+      spaceId: input.spaceId ?? null,
+    })
+
+    const block = res.content.find(
+      (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === EXTRACT_TOOL_NAME,
+    )
+    if (!block) return { contacts: [], truncated }
+    return { contacts: coerceExtracted(block.input), truncated }
+  } catch {
+    return { contacts: [], truncated }
+  }
+}
+
 /**
  * Ask Vera to propose a mapping for the given headers + sample rows. Bounded: Haiku,
  * a small sample only, a forced structured tool call. Records usage on the ledger.

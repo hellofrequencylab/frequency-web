@@ -15,6 +15,46 @@ import { ToneStat } from '@/app/(main)/admin/crm/tone-stat'
 
 const MEMBERS_DRILL = '/admin/crm/members'
 
+/** The COMPACT platform stat row for the Resonance CRM home header (ADR-459): Members / Active this
+ *  week / At risk / Resonance Health, read from getPlatformHealth. Self-fetching + fail-safe (zeros),
+ *  so it never blocks the shell — mount it behind its own <Suspense>. Semantic tokens only. */
+export async function CrmHealthStatRow() {
+  const { summary } = await getPlatformHealth()
+  return (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <StatCard
+        label="Members"
+        value={summary.members}
+        icon={Users}
+        href={MEMBERS_DRILL}
+        detail={summary.members === 1 ? 'scored member' : 'scored members'}
+      />
+      <ToneStat
+        label="Active this week"
+        value={summary.weeklyActive}
+        icon={TrendingUp}
+        tone="success"
+        detail={summary.members === 0 ? 'no members scored yet' : `of ${summary.members} scored`}
+      />
+      <ToneStat
+        label="At risk"
+        value={summary.atRisk}
+        icon={Activity}
+        tone={summary.atRisk > 0 ? 'danger' : 'success'}
+        href={`${MEMBERS_DRILL}?tier=at_risk`}
+        detail="in the red tier"
+      />
+      <ToneStat
+        label="Resonance Health"
+        value={summary.members === 0 ? '–' : Math.round(summary.meanHealth)}
+        icon={HeartPulse}
+        tone={summary.members === 0 ? 'flat' : healthTone(summary.meanHealth)}
+        detail={`across ${summary.members} scored`}
+      />
+    </div>
+  )
+}
+
 export async function CrmCockpitStats() {
   // The verdict + worklist read together up front: they are the answer-first part of the cockpit.
   // Both are fail-safe (zeros / empty list), so this await never throws.
