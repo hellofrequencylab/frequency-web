@@ -233,7 +233,21 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
 
   // What this viewer can administer: page MANAGERS (host+ / staff — each module re-gates
   // server-side) and platform OPERATORS (web_role admin/janitor, who get the page-level group).
-  const manager = meetsAccess('host', role) || staffRole != null
+  //
+  // A claimed event host (or any per-entity editor) may be a plain community member: claiming grants
+  // the per-event `event.editSettings` capability but does NOT raise their community role. The page
+  // resolved that REAL authorization into `detail.caps` (it's what gates the manage page + the "Edit
+  // details" button), and every module below re-gates on the capability server-side. So honor those
+  // per-scope caps as management authority on a non-personal ENTITY scope — exactly as a Space owner
+  // bypasses this community gate. Without it, a claimed host clears the page gate, the Edit button
+  // renders, but the rail re-gates on the role ladder, finds a plain member, resolves no apps, and
+  // AdminBar returns null (hasContent === false) — the button opens nothing. (bug: "edit button broke")
+  const scopeCapAuthority =
+    scope != null &&
+    scope.kind !== 'global' &&
+    scope.kind !== 'profile' &&
+    (detail?.caps?.length ?? 0) > 0
+  const manager = meetsAccess('host', role) || staffRole != null || scopeCapAuthority
   const isOperator = isStaff(webRole)
 
   // The viewer for catalog selection. Precedence (docs/ADMIN-RAIL.md Phase 1):

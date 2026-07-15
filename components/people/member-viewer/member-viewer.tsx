@@ -38,6 +38,10 @@ type DetailState =
   | { status: 'ready'; detail: MemberDetail }
   | { status: 'error' }
 
+/** How long the lazy detail fetch may run before the pane gives up and shows the retryable error
+ *  instead of an endless skeleton (guards a hung server read / stalled transport). */
+const DETAIL_TIMEOUT_MS = 20_000
+
 /** Pick the initial sort option key: the one whose spec deep-equals `sort`, else the first option. */
 function initialSortKey(options: SortOption[], sort: SortSpec | undefined): string | null {
   if (options.length === 0) return null
@@ -155,6 +159,13 @@ export function MemberViewer({
     // subscribe-to-external pattern, not a derived-state cascade.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFetchState({ status: 'loading' })
+    // A hard timeout so a server read that never settles (a hung query, a transport stall) can NEVER
+    // leave the pane spinning on the skeleton forever: after DETAIL_TIMEOUT_MS we surface the
+    // retryable error state (re-selecting the member re-runs the fetch). The .catch already covers a
+    // thrown/rejected action; this covers a PENDING one.
+    const timer = setTimeout(() => {
+      if (!cancelled) setFetchState({ status: 'error' })
+    }, DETAIL_TIMEOUT_MS)
     loadDetail(fetchKey)
       .then((detail) => {
         if (!cancelled) setFetchState({ status: 'ready', detail })
@@ -162,8 +173,10 @@ export function MemberViewer({
       .catch(() => {
         if (!cancelled) setFetchState({ status: 'error' })
       })
+      .finally(() => clearTimeout(timer))
     return () => {
       cancelled = true
+      clearTimeout(timer)
     }
   }, [fetchKey, loadDetail])
 
@@ -523,7 +536,7 @@ function ListRow({
         aria-selected={selected}
         onClick={onSelect}
         className={cn(
-          'flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-elevated/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50',
+          'flex w-full items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-surface-elevated/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50',
           selected && 'bg-primary-bg/40',
         )}
       >
@@ -532,12 +545,12 @@ function ListRow({
             <Image
               src={member.avatarUrl}
               alt={member.displayName}
-              width={36}
-              height={36}
-              className="h-9 w-9 rounded-full object-cover"
+              width={32}
+              height={32}
+              className="h-8 w-8 rounded-full object-cover"
             />
           ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong select-none">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong select-none">
               {getInitials(member.displayName)}
             </div>
           )}

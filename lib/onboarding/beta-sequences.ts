@@ -47,7 +47,7 @@ export interface FunnelCoreFeature {
   title: string
   blurb: string
   art:
-    | { kind: 'render'; render: 'feed' | 'circles' | 'events' | 'booking' | 'checkin' | 'donate' }
+    | { kind: 'render'; render: 'feed' | 'circles' | 'events' | 'booking' | 'checkin' | 'donate' | 'tickets' | 'crm' }
     | { kind: 'image'; src: string }
 }
 

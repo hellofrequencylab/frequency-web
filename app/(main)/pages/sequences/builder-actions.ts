@@ -60,6 +60,42 @@ export async function saveSequenceVersion(slug: string, override: SequenceOverri
   return { ok: true }
 }
 
+/** Change a custom funnel's PERMALINK (its slug — the `?seq=` value + the /edit path). The slug is the
+ *  primary key of the override row, so a rename is: write the row under the new slug, drop the old. The
+ *  marketing tag on the row is KEPT as-is so members already tagged by this funnel stay consistent.
+ *  Rejects a collision / a reserved-or-code slug. NOTE: existing links to the OLD ?seq= slug stop
+ *  resolving (they fall back to the default flow) — the caller warns the operator before renaming. */
+export async function renameSequenceSlug(
+  oldSlug: string,
+  desiredSlug: string,
+): Promise<{ ok: boolean; slug?: string; error?: string }> {
+  if (!(await getJanitor())) return { ok: false, error: 'Not allowed.' }
+  // The default flow + code sequences own fixed slugs and cannot be renamed here.
+  if (oldSlug === DEFAULT_SEQUENCE || listSequences().some((s) => s.slug === oldSlug)) {
+    return { ok: false, error: 'This funnel’s permalink is fixed and cannot be changed.' }
+  }
+  const next = slugify(desiredSlug)
+  if (!next) return { ok: false, error: 'Enter a permalink using letters, numbers, and dashes.' }
+  if (next === oldSlug) return { ok: true, slug: oldSlug }
+  const taken = new Set<string>([
+    ...listSequences().map((s) => s.slug),
+    DEFAULT_SEQUENCE,
+    ...(await listSequenceVersions()).map((v) => v.slug),
+  ])
+  if (taken.has(next)) return { ok: false, error: 'That permalink is already in use. Pick another.' }
+  const current = await getSequenceOverride(oldSlug)
+  if (!current) return { ok: false, error: 'This funnel could not be found.' }
+  const me = await getCallerProfile()
+  // Re-key the row: save under the new slug (keeping status + tag + all copy), then delete the old.
+  await saveSequenceOverride(next, current, me?.id ?? null)
+  await deleteSequenceVersion(oldSlug)
+  revalidatePath('/pages/sequences')
+  revalidatePath('/onboarding/beta')
+  revalidatePath(`/pages/sequences/${oldSlug}/edit`)
+  revalidatePath(`/pages/sequences/${next}/edit`)
+  return { ok: true, slug: next }
+}
+
 export async function createSequenceVersion(formData: FormData): Promise<void> {
   if (!(await getJanitor())) return
   const audience = String(formData.get('audience') ?? '').trim() || 'New funnel'

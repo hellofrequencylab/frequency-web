@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { EventCompose } from './event-compose'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { EventsSurface } from '@/components/marketplace/events-surface'
+import { JsonLd } from '@/components/json-ld'
+import { breadcrumbSchema, eventsListingSchema } from '@/lib/jsonld'
 import { pageContentMetadata } from '@/lib/page-content'
 import { getEventsIndexData, CONTENT_FALLBACK } from './index-data'
 
@@ -70,7 +72,30 @@ export default async function EventsPage({
     </>
   ) : undefined
 
+  // JSON-LD for the self-canonical /events home only (the /marketplace/events twin canonicals here, so
+  // it emits none — the structured data must live on the canonical URL). A BreadcrumbList (Home ->
+  // Events) plus an ItemList of the upcoming events, each a nested Event node pointing at its canonical
+  // /events/<slug> page. PRIVACY (ADR-186): no venue location is emitted — name + startDate + url +
+  // status only. The public events query in getEventsIndexData runs unconditionally, so a signed-out
+  // crawler still receives the full public event list here.
+  const jsonLd = [
+    breadcrumbSchema([
+      { name: 'Home', path: '/' },
+      { name: 'Events', path: '/events' },
+    ]),
+    eventsListingSchema(data.sortedEvents, 'Upcoming events near you'),
+  ]
+
   return (
-    <EventsSurface data={data} basePath="/events" activeCategory={sp.category} actions={actions} />
+    <>
+      <JsonLd data={jsonLd} />
+      <EventsSurface
+        data={data}
+        basePath="/events"
+        activeCategory={sp.category}
+        actions={actions}
+        heroTitle="Events near you"
+      />
+    </>
   )
 }

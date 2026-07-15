@@ -19,6 +19,7 @@ import { getCapacityInfo } from '@/lib/events/capacity'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
+import { isStaff, asWebRole } from '@/lib/core/roles'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { updateEventField } from '../admin-actions'
 import { RsvpControls } from '@/components/events/rsvp-controls'
@@ -313,41 +314,51 @@ export default async function EventDetailPage({
   // so a scanned poster can serve as the header + gallery below.
   const posterDetails: EventDetailsWithMedia =
     extra?.details && typeof extra.details === 'object' ? extra.details : {}
-  const [postedByResolved, posterCropEntries] = await Promise.all([
-    // The public "Posted by" credit. A SEEDED, still-unclaimed event (isUnclaimedPosted) reads as the
-    // @frequency brand account, NOT the human operator who ran the seeder — seeded content stays
-    // attributed to Frequency until its real host claims it. This overrides only the DISPLAY: the
-    // underlying posted_by_profile_id (postedById) is untouched, so the send-to-host + claim flows below
-    // still key off it. @frequency is resolved by its handle so the byline stays correct if the brand
-    // profile changes; a missing row falls back to the stable Frequency name/handle.
-    isUnclaimedPosted
+  // Resolve the poster's own profile (with web_role, to tell an operator from a member) and the
+  // @frequency brand profile in parallel; we pick the credit between them below. The brand row is
+  // only needed for a posted event, so it's skipped otherwise. @frequency is resolved by its handle
+  // so the byline stays correct if the brand profile changes; a missing row falls back to the stable
+  // Frequency name/handle.
+  const BRAND_CREDIT = { display_name: 'Frequency', handle: 'frequency' }
+  const [posterRow, brandRow, posterCropEntries] = await Promise.all([
+    postedById && postedById !== (event.host?.id ?? null)
+      ? admin
+          .from('profiles')
+          .select('display_name, handle, web_role')
+          .eq('id', postedById)
+          .maybeSingle()
+          .then(
+            ({ data }) =>
+              data as { display_name: string; handle: string; web_role: string | null } | null,
+          )
+      : Promise.resolve(null),
+    isPostedEvent
       ? admin
           .from('profiles')
           .select('display_name, handle')
           .eq('handle', 'frequency')
           .maybeSingle()
-          .then(
-            ({ data }) =>
-              (data as { display_name: string; handle: string } | null) ?? {
-                display_name: 'Frequency',
-                handle: 'frequency',
-              },
-          )
-      : postedById && postedById !== (event.host?.id ?? null)
-        ? admin
-            .from('profiles')
-            .select('display_name, handle')
-            .eq('id', postedById)
-            .maybeSingle()
-            .then(({ data }) => (data as { display_name: string; handle: string } | null) ?? null)
-        : Promise.resolve(null),
+          .then(({ data }) => (data as { display_name: string; handle: string } | null) ?? BRAND_CREDIT)
+      : Promise.resolve(null),
     posterSignedUrlMap(
       [...detailsMediaPaths(posterDetails), extra?.poster_path].filter((p): p is string => !!p),
     ),
   ])
-  // The credit: @frequency for a seeded/unclaimed event, else whoever put the event on the map when they
-  // aren't the host.
-  const postedBy: { display_name: string; handle: string } | null = postedByResolved
+  // The public "Posted by" credit. It reads as the @frequency BRAND account, not the human, in two
+  // cases: (a) a SEEDED, still-unclaimed listing (isUnclaimedPosted) — seeded content stays attributed
+  // to Frequency until its real host claims it; and (b) whenever the poster is a Frequency OPERATOR
+  // (staff), in BOTH the unclaimed and claimed states — an event an operator posts on an organizer's
+  // behalf is Frequency putting it on the map, so it never carries the individual operator's name.
+  // This overrides only the DISPLAY: the underlying posted_by_profile_id (postedById) is untouched, so
+  // the send-to-host + claim + reward flows below still key off it. A regular member who posts a town
+  // event keeps their own byline (and their Zaps credit).
+  const posterIsOperator = isStaff(asWebRole(posterRow?.web_role))
+  const postedBy: { display_name: string; handle: string } | null =
+    isUnclaimedPosted || posterIsOperator
+      ? brandRow
+      : posterRow
+        ? { display_name: posterRow.display_name, handle: posterRow.handle }
+        : null
   const posterCropUrls = Object.fromEntries(posterCropEntries)
 
   // Header image: the ORIGINAL poster leads for a scanned event. Priority: uploaded
@@ -1338,17 +1349,32 @@ export default async function EventDetailPage({
               </p>
             ) : null}
 
-            {postedBy && (
-              <p className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-primary shrink-0" />
-                <span>
+            {postedBy &&
+              (isUnclaimedPosted ? (
+                // Still unclaimed: the poster credit IS the attribution, so it stays prominent
+                // (Zap icon + accent link) next to the claim/organizer lines.
+                <p className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-primary shrink-0" />
+                  <span>
+                    Posted by{' '}
+                    <Link href={`/people/${postedBy.handle}`} className="text-primary-strong hover:underline">
+                      {postedBy.display_name}
+                    </Link>
+                  </span>
+                </p>
+              ) : (
+                // Once a host has claimed the event, the original poster is just a small, unobtrusive
+                // credit under the host line — no accent, no icon.
+                <p className="text-2xs text-subtle">
                   Posted by{' '}
-                  <Link href={`/people/${postedBy.handle}`} className="text-primary-strong hover:underline">
+                  <Link
+                    href={`/people/${postedBy.handle}`}
+                    className="underline-offset-2 hover:text-text hover:underline"
+                  >
                     {postedBy.display_name}
                   </Link>
-                </span>
-              </p>
-            )}
+                </p>
+              ))}
 
             {/* [A3] The calm reward line reads as HEADER content — it sits with the
                 date/location/host lines, not floating above the grid with a divider. The

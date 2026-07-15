@@ -62,7 +62,8 @@ import { getProfileChores } from '@/lib/onboarding/profile-chores'
 import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
 import { FOUNDER_COACH } from '@/lib/onboarding/founder-config'
 import { getActiveTraining } from '@/lib/onboarding/training'
-import { atLeastRole, asWebRole, isStaff } from '@/lib/core/roles'
+import { atLeastRole, asWebRole, isStaff, isJanitor } from '@/lib/core/roles'
+import { openTicketCount } from '@/lib/support/store'
 import { staffCan } from '@/lib/core/staff-roles'
 import {
   marketplaceVisibility,
@@ -357,6 +358,12 @@ export default async function MainLayout({
   // steward's "view as" faithfully hides operator chrome, matching staffRole above.
   const pageWebRole = previewingDown ? 'none' : asWebRole(profile.web_role)
 
+  // Janitor Bug Alert (support): the janitor (Executive Admin) gets a prominent header alert the
+  // moment a support ticket is open, so a bug report never sits unseen. One cheap head-count, run
+  // ONLY for a janitor (skipped for everyone else and under a view-as downgrade, since pageWebRole
+  // is 'none' there) and fail-safe to 0 — the header chrome never blocks on the support table.
+  const openSupportTickets = isJanitor(pageWebRole) ? await openTicketCount().catch(() => 0) : 0
+
   // The operator-identity context (FRAMING ONLY — lib/context/operator-context.ts). Re-derived from
   // REAL authority (owned/admin Spaces + the staff axis) and re-validates the cookie, so the chip +
   // switcher only ever offer contexts the caller genuinely has. It is purely presentational: the
@@ -543,6 +550,7 @@ export default async function MainLayout({
       chromeOverrides={chromeOverrides}
       appOverrides={appOverrides}
       webRole={pageWebRole}
+      openSupportTickets={openSupportTickets}
       caps={previewingDown ? [] : Array.from(globalCaps)}
       profile={{ ...profile, community_role: effectiveRole }}
       realRole={realRole}

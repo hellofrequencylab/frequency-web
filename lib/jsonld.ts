@@ -227,6 +227,48 @@ export function eventListSchema(events: PublicEvent[], listName: string) {
   }
 }
 
+// ── ItemList of upcoming events (the /events listing) ───────────────────────────
+// The AEO signal for the member's own events home + the marketplace Events tab's
+// canonical target (/events). Unlike eventListSchema (which points at the /discover
+// mirror), each entry here is a nested Event node pointing at the CANONICAL public
+// event page /events/<slug>, so the listing consolidates ranking there.
+//
+// PRIVACY (ADR-186): this listing is built from the free-text venue `location` on the
+// browse row, which is NOT a city-redacted field, so we deliberately emit NO location
+// at all — only name + startDate + url + eventStatus. The precise, privacy-safe Place
+// lives on the per-event canonical page (eventSchema), which reads the redacted city.
+// Structurally typed (a subset of EventRow) so lib/jsonld stays dependency-light.
+type EventListingInput = {
+  slug: string
+  title: string
+  starts_at: string
+  is_cancelled?: boolean | null
+}
+
+export function eventsListingSchema(events: readonly EventListingInput[], listName: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: listName,
+    numberOfItems: events.length,
+    itemListElement: events.map((e, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      // A nested Event node WITHOUT its own @context (the parent ItemList carries it).
+      // Name + startDate + canonical url + status only — never the free-text venue.
+      item: {
+        '@type': 'Event',
+        name: e.title,
+        startDate: e.starts_at,
+        url: abs(`/events/${e.slug}`),
+        eventStatus: e.is_cancelled
+          ? 'https://schema.org/EventCancelled'
+          : 'https://schema.org/EventScheduled',
+      },
+    })),
+  }
+}
+
 export function topicListSchema(channels: TopicalChannel[], listName: string) {
   return {
     '@context': 'https://schema.org',

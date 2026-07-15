@@ -233,7 +233,7 @@ export function eventPriceLabel(flatCents: number | null, tiers: TierPriceRow[])
 export const CONTENT_FALLBACK = {
   title: 'Events',
   description:
-    'Group rides, gatherings, and meetups your circles are running near you. RSVP to see who’s coming, show up, and earn Zaps for every one you make.',
+    'Find events near you, paid and free, hosted by local circles and community hosts. Browse by category, then RSVP or grab a ticket to what is coming up.',
 }
 
 /** Whether the viewer has ADDED any event — hosts/owns a published one OR has a poster draft.

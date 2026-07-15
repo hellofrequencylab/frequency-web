@@ -7,6 +7,7 @@ import {
   circleListSchema,
   circleSchema,
   eventListSchema,
+  eventsListingSchema,
   faqSchema,
   personSchema,
   spaceSchema,
@@ -340,6 +341,67 @@ describe('eventListSchema', () => {
     expect(result.numberOfItems).toBe(2)
     expect(result.itemListElement[0].url).toBe(`${SITE_URL}/discover/events/evt-a`)
     expect(result.itemListElement[1].name).toBe('B')
+  })
+})
+
+// ── eventsListingSchema ─────────────────────────────────────────────────────────
+
+describe('eventsListingSchema', () => {
+  const rows = [
+    { slug: 'evt-a', title: 'Sunrise Sit', starts_at: '2026-08-01T15:00:00Z', is_cancelled: false },
+    { slug: 'evt-b', title: 'Beach Cleanup', starts_at: '2026-08-02T16:00:00Z', is_cancelled: true },
+  ]
+
+  it('returns an ItemList with numberOfItems and positioned entries', () => {
+    const result = eventsListingSchema(rows, 'Upcoming events')
+    expect(result['@context']).toBe('https://schema.org')
+    expect(result['@type']).toBe('ItemList')
+    expect(result.name).toBe('Upcoming events')
+    expect(result.numberOfItems).toBe(2)
+    expect(result.itemListElement[0].position).toBe(1)
+    expect(result.itemListElement[1].position).toBe(2)
+  })
+
+  it('nests an Event node pointing at the canonical /events/<slug> url', () => {
+    const first = eventsListingSchema(rows, 'x').itemListElement[0]
+    expect(first['@type']).toBe('ListItem')
+    const event = first.item as Record<string, unknown>
+    expect(event['@type']).toBe('Event')
+    expect(event.name).toBe('Sunrise Sit')
+    expect(event.startDate).toBe('2026-08-01T15:00:00Z')
+    expect(event.url).toBe(`${SITE_URL}/events/evt-a`)
+    // Nested Event carries no redundant @context (the parent ItemList holds it).
+    expect(event).not.toHaveProperty('@context')
+  })
+
+  it('maps eventStatus from is_cancelled', () => {
+    const items = eventsListingSchema(rows, 'x').itemListElement
+    expect((items[0].item as Record<string, unknown>).eventStatus).toBe(
+      'https://schema.org/EventScheduled',
+    )
+    expect((items[1].item as Record<string, unknown>).eventStatus).toBe(
+      'https://schema.org/EventCancelled',
+    )
+  })
+
+  it('never emits a venue location (ADR-186 privacy: name + startDate + url + status only)', () => {
+    const event = eventsListingSchema(rows, 'x').itemListElement[0].item as Record<string, unknown>
+    expect(event).not.toHaveProperty('location')
+    expect(event).not.toHaveProperty('address')
+    expect(Object.keys(event).sort()).toEqual(['@type', 'eventStatus', 'name', 'startDate', 'url'])
+  })
+
+  it('treats a missing is_cancelled as scheduled', () => {
+    const result = eventsListingSchema([{ slug: 's', title: 'T', starts_at: '2026-08-01T15:00:00Z' }], 'x')
+    expect((result.itemListElement[0].item as Record<string, unknown>).eventStatus).toBe(
+      'https://schema.org/EventScheduled',
+    )
+  })
+
+  it('handles an empty list', () => {
+    const result = eventsListingSchema([], 'x')
+    expect(result.numberOfItems).toBe(0)
+    expect(result.itemListElement).toHaveLength(0)
   })
 })
 

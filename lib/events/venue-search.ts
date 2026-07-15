@@ -49,9 +49,10 @@ type NominatimPlace = {
 const RESULT_LIMIT = 8
 
 /** Half-width, in degrees, of the LOCAL viewbox drawn around the bias for pass 1.
- *  ~0.65° ≈ 45 mi at mid-latitudes — a metro-sized window, wide enough for a suburb's
- *  venues, tight enough to keep a far-flung same-named street out of the local pass. */
-const LOCAL_BOX_HALF_DEG = 0.65
+ *  ~0.25° ≈ 17 mi at mid-latitudes — a same-metro window, tight enough that a
+ *  wrong-city street with the same name (a "Fuerte Drive" one town over) can't crowd
+ *  out the local one. The NATIONAL fallback (pass 2) still covers anything wider. */
+const LOCAL_BOX_HALF_DEG = 0.25
 
 /** Defense-in-depth distance guards (km). Pass 1 is already viewbox+bounded, but we
  *  still drop anything absurdly far so a stray match can NEVER lead. Pass 2 is
@@ -109,12 +110,21 @@ function toPlaceResult(p: NominatimPlace): PlaceResult | null {
   }
 }
 
+/** A street line that leads with a digit carries a house number (toStreet puts the
+ *  house_number first), so this is our proxy for "this result has a house number". */
+function hasHouseNumber(r: PlaceResult): boolean {
+  return /^\d/.test(r.street ?? '')
+}
+
 /** Map a raw Nominatim array → PlaceResult[], deduped by label, distance-guarded when a
- *  bias + max is given, and sorted closest-first when a bias is present. */
+ *  bias + max is given, sorted closest-first when a bias is present. When the query led
+ *  with a house number, results that actually carry a house number sort ahead of
+ *  street-only matches (so "7302 El Fuerte St" beats a bare "El Fuerte Street"). */
 function mapResults(
   raw: unknown[],
   bias: VenueBias | null,
   maxKm: number | null,
+  preferHouseNumber = false,
 ): PlaceResult[] {
   const seen = new Set<string>()
   const out: PlaceResult[] = []
@@ -128,12 +138,15 @@ function mapResults(
     seen.add(r.label)
     out.push(r)
   }
-  if (bias) {
-    out.sort(
-      (a, b) =>
-        distanceKm(bias.lat, bias.lng, a.lat, a.lng) -
-        distanceKm(bias.lat, bias.lng, b.lat, b.lng),
-    )
+  const dist = (r: PlaceResult) => (bias ? distanceKm(bias.lat, bias.lng, r.lat, r.lng) : 0)
+  if (bias || preferHouseNumber) {
+    out.sort((a, b) => {
+      if (preferHouseNumber) {
+        const rank = Number(hasHouseNumber(b)) - Number(hasHouseNumber(a))
+        if (rank !== 0) return rank
+      }
+      return dist(a) - dist(b)
+    })
   }
   return out
 }
@@ -159,14 +172,106 @@ const BASE_PARAMS = {
   limit: String(RESULT_LIMIT),
 }
 
+/** Trailing street-type tokens we treat as interchangeable. People routinely type the
+ *  wrong one ("El Fuerte dr" when the street is "El Fuerte St"), so when the query-as-typed
+ *  finds nothing we retry with this token stripped (see `stripStreetSuffix`). */
+const STREET_SUFFIXES = new Set([
+  'st', 'street',
+  'dr', 'drive',
+  'ave', 'avenue', 'av',
+  'rd', 'road',
+  'blvd', 'boulevard',
+  'ln', 'lane',
+  'ct', 'court',
+  'way',
+  'pl', 'place',
+  'ter', 'terrace',
+])
+
+/** Does the query lead with a house number ("7302 El Fuerte…")? Such queries get the
+ *  Nominatim STRUCTURED `street` param (much better US house-number hits) and prefer
+ *  results that actually carry a house number. */
+function hasLeadingHouseNumber(q: string): boolean {
+  return /^\s*\d+\s+\S/.test(q)
+}
+
+/** The query with a trailing street-type token removed ("7302 El Fuerte dr" →
+ *  "7302 El Fuerte"), or null when the last token isn't a street type. Lets a
+ *  suffix-agnostic retry match a street stored under a different type token. */
+function stripStreetSuffix(q: string): string | null {
+  const tokens = q.trim().split(/\s+/)
+  if (tokens.length < 2) return null
+  const last = tokens[tokens.length - 1].toLowerCase().replace(/\.$/, '')
+  if (!STREET_SUFFIXES.has(last)) return null
+  const rest = tokens.slice(0, -1).join(' ').trim()
+  return rest.length >= 2 ? rest : null
+}
+
+/**
+ * Run the local-first cascade for ONE query string and return the first non-empty pass.
+ *
+ *   Pass 1 — LOCAL (hard): viewbox+bounded around the bias.
+ *   Pass 2 — NATIONAL: countrycodes for the bias's country.
+ *   Pass 3 — WORLDWIDE: unbounded last resort (still bias-sorted).
+ *
+ * When the query leads with a house number and the country resolves to the US, each
+ * bounded pass FIRST tries Nominatim's STRUCTURED `street` param (far stronger US
+ * house-number matching than free-text `q`) before falling back to the free-text query.
+ */
+async function runCascade(
+  q: string,
+  b: VenueBias | null,
+  signal?: AbortSignal,
+): Promise<PlaceResult[]> {
+  const cc = countryCodeForBias(b)
+  const houseNum = hasLeadingHouseNumber(q)
+  const structuredUs = houseNum && cc === 'us'
+
+  // Pass 1 — LOCAL (hard viewbox + bounded=1).
+  if (b) {
+    const west = clampLng(b.lng - LOCAL_BOX_HALF_DEG)
+    const east = clampLng(b.lng + LOCAL_BOX_HALF_DEG)
+    const south = clampLat(b.lat - LOCAL_BOX_HALF_DEG)
+    const north = clampLat(b.lat + LOCAL_BOX_HALF_DEG)
+    const viewbox = `${west},${south},${east},${north}`
+    if (structuredUs) {
+      const rawS = await nominatimSearch(
+        { ...BASE_PARAMS, street: q, countrycodes: 'us', viewbox, bounded: '1' },
+        signal,
+      )
+      const localS = mapResults(rawS ?? [], b, LOCAL_MAX_KM, true)
+      if (localS.length > 0) return localS
+    }
+    const raw = await nominatimSearch({ ...BASE_PARAMS, q, viewbox, bounded: '1' }, signal)
+    const local = mapResults(raw ?? [], b, LOCAL_MAX_KM, houseNum)
+    if (local.length > 0) return local
+  }
+
+  // Pass 2 — NATIONAL (country-scoped fallback).
+  if (cc) {
+    if (structuredUs) {
+      const rawS = await nominatimSearch({ ...BASE_PARAMS, street: q, countrycodes: 'us' }, signal)
+      const natS = mapResults(rawS ?? [], b, NATIONAL_MAX_KM, true)
+      if (natS.length > 0) return natS
+    }
+    const raw = await nominatimSearch({ ...BASE_PARAMS, q, countrycodes: cc }, signal)
+    const national = mapResults(raw ?? [], b, NATIONAL_MAX_KM, houseNum)
+    if (national.length > 0) return national
+  }
+
+  // Pass 3 — WORLDWIDE (unbounded last resort; still bias-sorted when we have one).
+  const raw = await nominatimSearch({ ...BASE_PARAMS, q }, signal)
+  return mapResults(raw ?? [], b, null, houseNum)
+}
+
 /**
  * Venue / address autocomplete. Nominatim free-text `q` matches BUSINESSES/POIs AND
- * street addresses in one query. Runs the local-first cascade described at the top of
- * this file and returns PlaceResult[] closest-first (when biased). Fail-safe to `[]`.
+ * street addresses in one query. Runs the local-first cascade (see `runCascade`) and
+ * returns PlaceResult[] closest-first (when biased). Fail-safe to `[]`.
  *
- *   Pass 1 — LOCAL (hard): viewbox+bounded around the bias. If it returns, use it.
- *   Pass 2 — NATIONAL: countrycodes for the bias's country. If it returns, use it.
- *   Pass 3 — WORLDWIDE: unbounded last resort (still bias-sorted).
+ * SUFFIX-AGNOSTIC RETRY: if the query-as-typed finds nothing and it ends in a street-type
+ * token (st/dr/ave/…), it retries once with that token stripped, so "7302 El Fuerte dr"
+ * still surfaces the street stored as "El Fuerte St".
  */
 export async function searchVenues(
   query: string,
@@ -181,29 +286,16 @@ export async function searchVenues(
       ? { lat: bias.lat, lng: bias.lng }
       : null
 
-  // Pass 1 — LOCAL (hard viewbox + bounded=1).
-  if (b) {
-    const west = clampLng(b.lng - LOCAL_BOX_HALF_DEG)
-    const east = clampLng(b.lng + LOCAL_BOX_HALF_DEG)
-    const south = clampLat(b.lat - LOCAL_BOX_HALF_DEG)
-    const north = clampLat(b.lat + LOCAL_BOX_HALF_DEG)
-    const raw = await nominatimSearch(
-      { ...BASE_PARAMS, q, viewbox: `${west},${south},${east},${north}`, bounded: '1' },
-      signal,
-    )
-    const local = mapResults(raw ?? [], b, LOCAL_MAX_KM)
-    if (local.length > 0) return local
+  // Attempt 1 — the query exactly as typed.
+  const primary = await runCascade(q, b, signal)
+  if (primary.length > 0) return primary
+
+  // Attempt 2 — suffix-agnostic retry (only when the last token is a street type).
+  const stripped = stripStreetSuffix(q)
+  if (stripped) {
+    const retry = await runCascade(stripped, b, signal)
+    if (retry.length > 0) return retry
   }
 
-  // Pass 2 — NATIONAL (country-scoped fallback).
-  const cc = countryCodeForBias(b)
-  if (cc) {
-    const raw = await nominatimSearch({ ...BASE_PARAMS, q, countrycodes: cc }, signal)
-    const national = mapResults(raw ?? [], b, NATIONAL_MAX_KM)
-    if (national.length > 0) return national
-  }
-
-  // Pass 3 — WORLDWIDE (unbounded last resort; still bias-sorted when we have one).
-  const raw = await nominatimSearch({ ...BASE_PARAMS, q }, signal)
-  return mapResults(raw ?? [], b, null)
+  return []
 }

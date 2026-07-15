@@ -16,6 +16,7 @@ import {
   type TicketPriority,
   type SupportContext,
   isOpenStatus,
+  OPEN_STATUSES,
 } from './types'
 
 const SCREENSHOT_BUCKET = 'support'
@@ -248,6 +249,17 @@ export async function ticketStatusCounts(): Promise<Record<string, number>> {
   const out: Record<string, number> = {}
   for (const r of (data as { status: string }[] | null) ?? []) out[r.status] = (out[r.status] ?? 0) + 1
   return out
+}
+
+/** How many tickets are still OPEN (open / in_progress / waiting). One cheap head-count for the
+ *  janitor Bug Alert in the app header — never throws (returns 0 on any error), so the shell chrome
+ *  is never blocked by a support-table read. */
+export async function openTicketCount(): Promise<number> {
+  const { count } = await db()
+    .from('support_tickets')
+    .select('id', { count: 'exact', head: true })
+    .in('status', OPEN_STATUSES)
+  return count ?? 0
 }
 
 /** Full ticket + thread INCLUDING internal notes — staff view. */

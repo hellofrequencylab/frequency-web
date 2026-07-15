@@ -24,8 +24,10 @@ import {
 // Host Manage Dashboard (EVENTS-REWORK A2). The metric-led operator surface for
 // one event: the RSVP roster, the approval queue, the questionnaire (authoring +
 // responses + CSV export), sent Event Dispatches, and headline analytics. Built on
-// the Dashboard template (page-chrome registers it as Focus → no rail). Gated to
-// the host/cohost; anyone else gets a 404 (we never confirm a private event exists).
+// the Dashboard template; page-chrome registers this route with the global rail
+// (railFor → 'global') so the "Edit details" button below can slide out the event
+// settings editor in place. Gated to the host/cohost; anyone else gets a 404 (we
+// never confirm a private event exists).
 //
 // Speed is structural (PAGE-FRAMEWORK §5): the page resolves only the cheap roster
 // for the StatCard row, then streams each heavy section behind its own <Suspense>.

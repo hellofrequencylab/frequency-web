@@ -19,6 +19,7 @@ import { estimateCostUsd } from './budget'
 import { recordAiUsage, featureOverBudget } from './usage'
 import { withVoice } from './voice'
 import { coerceEventExtraction } from '@/lib/events/normalize'
+import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import type { ExtractedEvent, EventSparkAnswers } from '@/lib/events/types'
 
 type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/webp'
@@ -256,11 +257,17 @@ async function runExtraction(opts: {
   if (!aiEnabled()) return null
   if (await featureOverBudget(opts.feature)) return null
   try {
+    // Anchor the model to TODAY. Without this, a poster that prints only a month + day (no year) makes
+    // the model resolve "the next future occurrence" against its training-cutoff year (2025) instead of
+    // the real current year, so every scanned event landed a year in the past. dayInZone() is the
+    // community HOME zone (America/Los_Angeles), matching how event wall-clock is stored.
+    const today = dayInZone(undefined, HOME_TZ)
+    const datedSystem = `Today's date is ${today} (${HOME_TZ}). When a date gives only a month and day with no year, resolve it to the next occurrence of that date that is ON OR AFTER today; never choose a year in the past.\n\n${opts.system}`
     const res = await completeRaw({
       tier: opts.tier,
       maxTokens: 1024,
       thinking: { type: 'disabled' },
-      system: withVoice(opts.system),
+      system: withVoice(datedSystem),
       tools: [EXTRACTION_TOOL],
       toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: opts.content }],

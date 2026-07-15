@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic'
 
 const FILTERS = [
   { key: 'all', label: 'All' },
+  { key: 'leads', label: 'Leads' },
   { key: 'subscribed', label: 'Subscribers' },
   { key: 'beta', label: 'Beta' },
   { key: 'members', label: 'Members' },
@@ -19,6 +20,9 @@ type FilterKey = (typeof FILTERS)[number]['key']
 
 function applyFilter(rows: ContactCore[], filter: FilterKey): ContactCore[] {
   switch (filter) {
+    // A LEAD is a contact who has not signed up yet (no linked member profile) — the people an import
+    // brings in. They auto-link to a profile on signup, at which point they read as a Member.
+    case 'leads': return rows.filter((c) => !c.profileId)
     case 'subscribed': return rows.filter((c) => c.consentState === 'subscribed')
     case 'beta': return rows.filter((c) => c.source === 'beta_waitlist')
     case 'members': return rows.filter((c) => !!c.profileId)

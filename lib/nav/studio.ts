@@ -327,6 +327,13 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'crm-pipeline', href: '/admin/crm/pipeline', label: 'Pipeline', desc: 'Upsell members into Business Spaces and grow donations: every prospect by stage, split by lane, with quick add and one-tap stage moves.', icon: 'Briefcase', min: 'host', staffDomain: 'marketing',
     world: 'growth', worldLabel: 'CRM: Pipeline', worldOrder: 9,
     adminGroups: [{ domain: 'crm', section: 'Pipeline' }], adminNav: { section: 'crm', heading: 'Engine' } },
+  // The full contact RECORD (leads + customers + members), where imported platform contacts land. The
+  // scored Roster shows MEMBERS only; this is the home for a lead who has not signed up yet. Email is
+  // the join key; a lead auto-links to their profile on signup. A "Leads" filter isolates the not-yet-
+  // members. (This is the surface the platform importer writes into via the ROOT-space contacts.)
+  { id: 'crm-contacts', href: '/admin/marketing/contacts', label: 'Contacts', desc: 'The full contact record: every lead, customer, and member, with imported contacts landing here. Filter to Leads for the people who have not signed up yet.', icon: 'Contact', min: 'janitor',
+    world: 'growth', worldLabel: 'CRM: Contacts', worldOrder: 10,
+    adminGroups: [{ domain: 'crm', section: 'Records' }], adminNav: { section: 'crm', heading: 'Engine' } },
   { id: 'segments', href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', icon: 'PieChart', min: 'janitor', staffDomain: 'insights', staffLevel: 'read',
     world: 'growth', worldLabel: 'CRM: Segments', worldOrder: 11,
     adminGroups: [{ domain: 'crm', section: 'Audiences' }] },
@@ -625,7 +632,11 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
     // Resonance CRM — gated janitor (per-member predictions are sensitive).
     href: '/admin/crm', label: 'Resonance CRM', min: 'janitor',
     groups: [
-      { heading: 'Engine', leaves: [{ leaf: 'crm' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }] },
+      // NOTE: the `crm` (Roster) leaf is deliberately NOT listed here. The admin sub-nav already
+      // renders the section's own landing link ("Resonance CRM" -> /admin/crm, the roster home), so
+      // adding the crm leaf too would paint TWO tabs on the same URL (the "Resonance CRM" + "Roster"
+      // duplicate). The section link IS the roster tab.
+      { heading: 'Engine', leaves: [{ leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }, { leaf: 'crm-contacts' }] },
     ],
   },
   {

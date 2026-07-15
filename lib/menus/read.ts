@@ -30,7 +30,11 @@ function toStaffLevel(v: string | null | undefined): Access | undefined {
   return v && (ACCESS_LEVELS as readonly string[]).includes(v) ? (v as Access) : undefined
 }
 
-/** The four standardized containers with human labels; drives the editor's surface picker. */
+/** The four standardized containers with human labels; drives the editor's surface picker. The admin
+ *  sub-nav (admin_header) is manageable here too: it defaults to the code catalog (ADMIN_NAV_SPECS in
+ *  lib/nav/studio.ts) when it has no DB rows, and an operator can arrange it in the Menu Manager.
+ *  (NOTE: a stale DB copy overrides the code — if a nav-code change does not show live, reset the
+ *  admin_header DB menu so it falls back to code, or re-arrange it in the Menu Manager.) */
 export const MENU_SURFACES: { key: MenuSurfaceKey; label: string }[] = [
   { key: 'header', label: 'Header menu (mega)' },
   { key: 'left', label: 'Left menu (in-app rail)' },
