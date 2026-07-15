@@ -174,17 +174,19 @@ export function RsvpControls({
 
   return (
     <div className="space-y-3">
+      {/* Segmented RSVP control: three equal columns, each an icon stacked OVER its label so
+          the longest word ("Can't go") never wraps and the three read as one tidy switch. */}
       <div
         role="group"
         aria-label="RSVP"
-        className="inline-flex items-center gap-1 rounded-xl border border-border bg-surface p-1"
+        className="grid w-full max-w-sm grid-cols-3 gap-1 rounded-xl border border-border bg-surface p-1"
       >
         <button
           type="button"
           onClick={onGoing}
           disabled={pending}
           aria-pressed={isGoing || isWaitlisted}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-60 ${
+          className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
             isGoing
               ? 'bg-success-bg text-success'
               : isWaitlisted
@@ -192,8 +194,8 @@ export function RsvpControls({
                 : 'text-muted hover:bg-surface-elevated hover:text-text'
           }`}
         >
-          <GoingIcon className="h-4 w-4" />
-          {goingLabel}
+          <GoingIcon className="h-5 w-5" />
+          <span className="text-center leading-tight">{goingLabel}</span>
         </button>
 
         <button
@@ -201,14 +203,14 @@ export function RsvpControls({
           onClick={onMaybe}
           disabled={pending}
           aria-pressed={isMaybe}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-60 ${
+          className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
             isMaybe
               ? 'bg-primary-bg text-primary-strong'
               : 'text-muted hover:bg-surface-elevated hover:text-text'
           }`}
         >
-          <Star className="h-4 w-4" />
-          Maybe
+          <Star className="h-5 w-5" />
+          <span className="text-center leading-tight">Maybe</span>
         </button>
 
         <button
@@ -216,14 +218,14 @@ export function RsvpControls({
           onClick={onCantGo}
           disabled={pending}
           aria-pressed={isNotGoing}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-60 ${
+          className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
             isNotGoing
               ? 'bg-surface-elevated text-text'
               : 'text-muted hover:bg-surface-elevated hover:text-text'
           }`}
         >
-          <X className="h-4 w-4" />
-          Can&rsquo;t go
+          <X className="h-5 w-5" />
+          <span className="text-center leading-tight">Can&rsquo;t go</span>
         </button>
       </div>
 
