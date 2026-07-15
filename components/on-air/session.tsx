@@ -182,7 +182,7 @@ function readSavedSetup(): Partial<SavedSetup> | null {
  *  manifest `display: standalone`.) */
 function Overlay({ children, flash = false }: { children: React.ReactNode; flash?: boolean }) {
   return (
-    <div className="fixed inset-x-0 top-0 z-50 h-[100dvh] overflow-y-auto bg-canvas">
+    <div className="fixed inset-0 z-50 h-[100dvh] max-h-[100dvh] overflow-y-auto bg-canvas">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6 py-5">{children}</div>
       {/* The warm-up "one" flash: a full-screen wash as the sit begins. Semantic tokens
           only (no hex); hidden entirely under prefers-reduced-motion (motion-reduce). */}
@@ -336,7 +336,10 @@ export function OnAirSession({
     // with no authored flavour opens Meditate — never Just Log, and no longer the sticky
     // saved/prefs mode. The member can still switch tabs.
     if (!p) return 'timer'
-    if (p.timerKind === 'none') return 'log' // a log-only practice has no timer to run
+    // A log-only practice normally opens Just Log — but the owner wants a generic/daily open to land
+    // on Meditate, not defer to a due log-only practice's Just Log. When a Free sit exists, open
+    // Meditate (it runs a Free Practice sit); fall back to Just Log only if there is no sit to run.
+    if (p.timerKind === 'none') return findFreeSit(practices) ? 'timer' : 'log'
     // The practice's authored flavour still wins; the fallback for an unflavoured/Free sit is
     // Meditate. Just Log is only ever the opener for a 'none' practice.
     const resolved = modeForMindless(p.mindlessMode, 'timer')
@@ -1347,7 +1350,7 @@ export function OnAirSession({
   // saving / reveal stages keep the narrow centered Overlay untouched. Below lg
   // the grid collapses to the original single column, so mobile is unchanged.
   return (
-    <div className="fixed inset-x-0 top-0 z-50 h-[100dvh] overflow-y-auto bg-canvas">
+    <div className="fixed inset-0 z-50 h-[100dvh] max-h-[100dvh] overflow-y-auto bg-canvas">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6 py-5 lg:max-w-3xl lg:px-10 lg:py-8">
       {/* The masthead (logo + subtitle) sits at the TOP OF THE CONTENT container, not
           pushed down from the viewport top (B.1): no extra top padding above it. */}
@@ -1767,8 +1770,9 @@ export function OnAirSession({
 
       {/* Practice read-out (which log this banks), on ONE line with an inline "Change" link. Shown
           it pairs with the Start / Continue button so the member sees exactly which log this
-          banks. No picker: the door already resolved what to run. */}
-      {runPractice && (
+          banks. No picker: the door already resolved what to run. Only shown for a real, named
+          practice — never for the Free Practice fallback (which carries a logsAs mapping). */}
+      {runPractice && !runPractice.logsAs && (
         <div className="mt-5 lg:mt-6">
           <p className="flex min-w-0 items-center gap-1.5 text-sm text-text">
             <span className="shrink-0 text-subtle">Logs as</span>
@@ -1787,7 +1791,7 @@ export function OnAirSession({
 
       {/* Docked: the primary action is pinned to the bottom and ALWAYS visible, even when the
           centered content above scrolls on a short screen (item #5). */}
-      <div className="sticky bottom-0 -mx-8 mt-auto bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-8 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-6 lg:-mx-10 lg:px-10">
+      <div className="sticky bottom-0 -mx-6 mt-auto bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 lg:-mx-10 lg:px-10">
         {runPractice?.loggedToday && mode !== 'log' && (
           <p className="pb-1.5 text-center text-2xs text-subtle">
             {runPractice.title} is already counted today. The sit still banks airtime.
