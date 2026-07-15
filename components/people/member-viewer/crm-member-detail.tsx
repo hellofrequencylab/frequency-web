@@ -7,7 +7,6 @@ import {
   Mail,
   Phone,
   ExternalLink,
-  ChevronDown,
   HeartPulse,
   Activity,
   TrendingUp,
@@ -206,7 +205,6 @@ function FullProfile({ detail }: { detail: CrmMemberDetail }) {
 
 /** The CRM master-detail pane. `detail` carries the compact profile fields plus the rich CRM fields. */
 export function CrmMemberDetailPane({ detail }: { detail: CrmMemberDetail }) {
-  const [open, setOpen] = useState(false)
   const [composeOpen, setComposeOpen] = useState(false)
   // The draft the popup is editing. Remembered across a close so reopening for the SAME member resumes
   // the saved draft. It never needs a manual reset: the viewer keys this pane by profileId, so selecting
@@ -289,7 +287,7 @@ export function CrmMemberDetailPane({ detail }: { detail: CrmMemberDetail }) {
             open={composeOpen}
             onClose={() => setComposeOpen(false)}
             ariaLabel={`Message ${detail.displayName}`}
-            className="max-w-none !mt-0"
+            className="max-w-6xl !mt-0"
           >
             {/* Near-fullscreen compose overlay: the email editor fills the CENTER at full size, with an
                 editorial context rail (communication stats + threaded past communications) on the RIGHT. */}
@@ -330,19 +328,9 @@ export function CrmMemberDetailPane({ detail }: { detail: CrmMemberDetail }) {
         </>
       )}
 
-      {/* (c) The expandable FULL profile. */}
-      <div>
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className="inline-flex w-full items-center justify-between gap-2 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
-        >
-          <span>Full profile</span>
-          <ChevronDown className={cn('h-4 w-4 shrink-0 text-subtle transition-transform', open && 'rotate-180')} aria-hidden />
-        </button>
-        {open && <FullProfile detail={detail} />}
-      </div>
+      {/* (c) The FULL profile, always open. Selecting a member opens everything about them inline
+          (scores, engagement, network, path) with no dropdown to expand. */}
+      <FullProfile detail={detail} />
     </div>
   )
 }

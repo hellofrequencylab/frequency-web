@@ -194,6 +194,20 @@ export function MemberViewer({
     // new action reference on a route refresh cannot re-run this effect and remount the pane (see above).
   }, [fetchKey])
 
+  // ── Snap the detail into full view when the operator picks a DIFFERENT member ──
+  // The whole page scrolls (the pane has no inner scroll), so aligning the pane's top to the viewport
+  // brings the selected member's full profile into view at once. Skip the first mount so a deep-linked
+  // selection never yanks the page on load.
+  const detailPaneRef = useRef<HTMLDivElement>(null)
+  const selectionMountedRef = useRef(false)
+  useEffect(() => {
+    if (!selectionMountedRef.current) {
+      selectionMountedRef.current = true
+      return
+    }
+    detailPaneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [effectiveSelectedId])
+
   // ── Infinite scroll: a sentinel at the foot of the list grows the batch as it comes into view. ──
   const listRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -479,7 +493,7 @@ export function MemberViewer({
         {/* RIGHT: the wide detail pane (desktop only; mobile uses the overlay). Opens FULLY — no inner
             scroll or sticky cap, so the member's stats stretch to their natural height and the page
             (not this panel) scrolls. The email editor opens in a popup, so this pane never has to hold it. */}
-        <div className="hidden min-w-0 flex-1 lg:block">
+        <div ref={detailPaneRef} className="hidden min-w-0 flex-1 scroll-mt-4 lg:block">
           <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
             {detailPane}
           </div>

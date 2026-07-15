@@ -1,6 +1,6 @@
 'use client'
 
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ChevronDown, ChevronUp, GripVertical, Loader2, Plus, Settings2, Trash2 } from 'lucide-react'
 import { emailPalette, entityBlockById } from '@/lib/entity-blocks/registry'
 import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
@@ -62,21 +62,12 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
   const C = colors ?? DEFAULT_EMAIL_COLORS
   const store = useProfileLayout()
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  // Horizontal alignment: when a block is selected (usually by clicking it on the canvas), the LEFT block
-  // rail translates vertically so the selected tile sits on the SAME horizontal line as the block on the
-  // canvas. `tileRefs` marks each left tile, `blockRefs` each canvas block, and `railOffset` is the
-  // translateY applied to the tile list to line the two up. Measured from layout (not viewport), so it is
-  // stable across page scroll; recomputed on selection change, on a tile expanding, and on resize.
+  // The LEFT block list stays STATIONARY (no translate-to-canvas alignment): the tiles are a plain stacked
+  // list, so an expanding tile can never shift the list over the palette below it.
   // Native HTML5 drag-reorder of the LEFT block list (mirrors components/spaces/crm/stage-editor.tsx, no new
   // library). `dragId` is the block being dragged; `overId` the tile currently hovered as the drop target.
-  // Drag is INDEPENDENT of `selectedId`, so it never disturbs click-to-select or the railOffset alignment.
   const [dragId, setDragId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)
-  const tileRefs = useRef<Record<string, HTMLLIElement | null>>({})
-  const blockRefs = useRef<Record<string, HTMLDivElement | null>>({})
-  const gridRef = useRef<HTMLDivElement | null>(null)
-  const listRef = useRef<HTMLOListElement | null>(null)
-  const [railOffset, setRailOffset] = useState(0)
 
   // The single-column email block list, in reading order (each row is one block).
   const blocks = useMemo(() => {
@@ -91,35 +82,6 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
     return emailPalette().filter((b) => !placed.has(b.id))
   }, [blocks])
 
-  // Align the selected tile's top to the selected canvas block's top. Both positions are measured
-  // relative to the shared grid (layout coordinates, so page scroll never disturbs them). The result is
-  // clamped to the grid's vertical bounds so the rail can never float out of its column, and applied as a
-  // translateY on the tile list. Runs in a layout effect (after the selected tile has expanded), so the
-  // measurement already reflects its open height.
-  useLayoutEffect(() => {
-    const align = () => {
-      const grid = gridRef.current
-      const list = listRef.current
-      const tile = selectedId ? tileRefs.current[selectedId] : null
-      const block = selectedId ? blockRefs.current[selectedId] : null
-      if (!selectedId || !grid || !list || !tile || !block) {
-        setRailOffset(0)
-        return
-      }
-      const gridTop = grid.getBoundingClientRect().top
-      // Block top in grid-layout space (the canvas is not transformed, so its rect is layout-true).
-      const blockTopInGrid = block.getBoundingClientRect().top - gridTop
-      // Tile top within the list content, independent of the list's current transform (offsetTop is
-      // measured against the list, which is position: relative).
-      const tileTopInList = tile.offsetTop
-      const maxOffset = Math.max(0, grid.offsetHeight - list.offsetHeight)
-      const next = Math.max(0, Math.min(blockTopInGrid - tileTopInList, maxOffset))
-      setRailOffset(next)
-    }
-    align()
-    window.addEventListener('resize', align)
-    return () => window.removeEventListener('resize', align)
-  }, [selectedId, store?.rows, store?.content])
 
   if (!store || !store.seeded) {
     return (
@@ -176,7 +138,7 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
   }
 
   return (
-    <div ref={gridRef} className="grid items-start gap-4 lg:grid-cols-[minmax(220px,25%)_minmax(0,1fr)]">
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(220px,25%)_minmax(0,1fr)]">
       {/* LEFT — block list (each tile expands to its own settings) + the add-block palette. */}
       <aside className="min-w-0 space-y-3" aria-label="Blocks and settings">
         <div className="flex items-center justify-between">
@@ -191,20 +153,14 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
             This email has no blocks yet. Add one below.
           </p>
         ) : (
-          <ol
-            ref={listRef}
-            className="relative space-y-1.5 transition-transform duration-200 ease-out will-change-transform"
-            style={{ transform: railOffset ? `translateY(${railOffset}px)` : undefined }}
-          >
+          <ol className="space-y-1.5">
+
             {blocks.map((id, i) => {
               const active = id === selectedId
               const fields = fieldsForBlock(id).filter(isCoreField)
               return (
                 <li
                   key={id}
-                  ref={(el) => {
-                    tileRefs.current[id] = el
-                  }}
                   onDragOver={(e) => {
                     if (!dragId || dragId === id) return
                     e.preventDefault()
@@ -319,31 +275,13 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
           </ol>
         )}
 
-        {/* ADD-BLOCK palette (issue #3): every EMAIL block type not already placed, so the whole registry is
-            reachable. Clicking adds the block and opens its settings tile. */}
-        {addable.length > 0 && (
-          <div className="space-y-1.5 rounded-2xl border border-border bg-surface-elevated/40 p-3">
-            <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Add a block</p>
-            <div className="flex flex-wrap gap-1.5">
-              {addable.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => addBlock(b.id)}
-                  title={b.description}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2 py-1 text-2xs font-semibold text-muted transition-colors hover:border-primary hover:text-text"
-                >
-                  <Plus className="h-3 w-3" aria-hidden /> {b.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </aside>
 
-      {/* RIGHT — the live, clickable email canvas (mirrors the email palette). */}
+      {/* RIGHT — the live, clickable email canvas (mirrors the email palette), with the ADD-BLOCK palette
+          BELOW the email body so adding a block reads as "append to the email" rather than a left-rail control. */}
+      <div className="min-w-0 space-y-3">
       <div
-        className="min-w-0 overflow-x-auto rounded-2xl p-4 sm:p-6"
+        className="overflow-x-auto rounded-2xl p-4 sm:p-6"
         style={{ background: C.canvas }}
         aria-label="Email canvas"
       >
@@ -367,9 +305,6 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
                 // draw an amber box around the field (owner directive), so the block wrapper stays outline-free.
                 <div
                   key={id}
-                  ref={(el) => {
-                    blockRefs.current[id] = el
-                  }}
                   role="group"
                   onMouseDown={() => setSelectedId(id)}
                   className="rounded-lg p-2"
@@ -380,6 +315,28 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
             </div>
           )}
         </div>
+      </div>
+
+      {/* ADD-BLOCK palette — BELOW the email body: every EMAIL block type not already placed, so the whole
+          registry is reachable. Clicking appends the block and opens its settings tile in the left rail. */}
+      {addable.length > 0 && (
+        <div className="space-y-1.5 rounded-2xl border border-border bg-surface-elevated/40 p-3">
+          <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Add a block</p>
+          <div className="flex flex-wrap gap-1.5">
+            {addable.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => addBlock(b.id)}
+                title={b.description}
+                className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2 py-1 text-2xs font-semibold text-muted transition-colors hover:border-primary hover:text-text"
+              >
+                <Plus className="h-3 w-3" aria-hidden /> {b.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       </div>
     </div>
   )
