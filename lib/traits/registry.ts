@@ -202,6 +202,44 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     systemManaged: true,
   },
 
+  // ── Tags · marketing · event-host interests ─────────────────────────────────
+  // What an organizer said they came for on the event / claim funnel's Beat-1
+  // "what are you into?" multi-select. One boolean tag per interest so each is
+  // segmentable forever (send ticketing-curious hosts the payments walkthrough,
+  // promotion-curious hosts the sharing tools, and so on). Self-selected at intake.
+  {
+    key: 'interest_ticketing',
+    label: 'Interest · Ticketing',
+    description: 'Picked ticketing at intake: wants tiers, selling out, and getting paid for events.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'interest_promotion',
+    label: 'Interest · Promotion',
+    description: 'Picked promotion at intake: wants a clean event page and to push it out to their list.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'interest_checkin',
+    label: 'Interest · Check-in',
+    description: 'Picked check-in at intake: wants door scanning and to capture attendee info for follow-up.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'interest_followup',
+    label: 'Interest · Follow-up',
+    description: 'Picked follow-up at intake: wants a post-event email that thanks guests and points at the next date.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+
   // ── Tags · marketing · acquisition source (ADR-095) ─────────────────────────
   // The FIRST channel a member arrived through (first-touch), stamped once at
   // signup from lib/attribution. One boolean tag per channel so cohorts are

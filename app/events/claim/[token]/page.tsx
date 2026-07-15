@@ -1,22 +1,16 @@
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { CalendarDays, MapPin, Zap } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
-import { posterSignedUrl } from '@/lib/events/poster-media'
-import type { EventDetailsWithMedia } from '@/lib/events/details-media'
-import { FocusTemplate } from '@/components/templates'
-import { ClaimButton } from './claim-button'
 
 export const dynamic = 'force-dynamic'
 
-// The claim landing an organizer reaches from the outreach message — PUBLIC
-// (outside the (main) shell, like /join/[token]) so a signed-out organizer can
-// see what they are claiming. Resolves the published, UNCLAIMED event by its
-// one-time token; 404 when the token is unknown, already used, or the event was
-// removed, so a guessed token learns nothing. Signed-out → a sign-in CTA that
-// returns here; signed-in → one-tap claim (the engine's claimEvent does the
-// checks and the ownership transfer).
+// The claim landing an organizer reaches from the outreach message. It no longer
+// renders its own card: it resolves the one-time token and sends the visitor to the
+// REAL public event listing with a `?claim=` flag, where a prominent "Claim This
+// Event" banner offers the ownership transfer. Kept PUBLIC (outside the (main) shell,
+// like /join/[token]) so a signed-out organizer can resolve the link; the event page
+// itself renders anon viewers in public chrome. 404 when the token is unknown, already
+// used, or the event was removed, so a guessed token learns nothing.
 export default async function ClaimEventPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
   if (!token || token.length < 8) notFound()
@@ -24,128 +18,28 @@ export default async function ClaimEventPage({ params }: { params: Promise<{ tok
   const admin = createAdminClient()
   const { data } = await admin
     .from('events')
-    .select(
-      'id, title, description, location, starts_at, slug, status, host_id, claimed_at, removed_at, poster_path, details, posted_by_profile_id, organizer_name',
-    )
+    .select('slug, host_id, claimed_at, removed_at')
     .eq('claim_token', token)
     .eq('status', 'published')
     .maybeSingle()
 
   const ev = data as {
-    id: string
-    title: string | null
-    description: string | null
-    location: string | null
-    starts_at: string | null
     slug: string | null
     host_id: string | null
     claimed_at: string | null
     removed_at: string | null
-    poster_path: string | null
-    details: EventDetailsWithMedia | null
-    posted_by_profile_id: string | null
-    organizer_name: string | null
   } | null
 
-  const myProfileId = await getMyProfileId()
-  if (!ev || ev.removed_at) notFound()
+  if (!ev || ev.removed_at || !ev.slug) notFound()
 
-  // Already claimed: send the host who re-opens their used link straight to their event (they asked why a
-  // second click 404s), and reveal nothing to anyone else. (Mirrors app/spaces/claim/[token]/page.tsx.)
+  // Already claimed: send the host who re-opens their used link straight to their event
+  // (they asked why a second click 404s), and reveal nothing to anyone else.
   if (ev.host_id || ev.claimed_at) {
-    if (myProfileId && ev.host_id === myProfileId) redirect(`/events/${ev.slug ?? ''}`)
+    const myProfileId = await getMyProfileId()
+    if (myProfileId && ev.host_id === myProfileId) redirect(`/events/${ev.slug}`)
     notFound()
   }
 
-  // Who put it on the map (the credit line).
-  let posterName: string | null = null
-  if (ev.posted_by_profile_id) {
-    const { data: poster } = await admin
-      .from('profiles')
-      .select('display_name')
-      .eq('id', ev.posted_by_profile_id)
-      .maybeSingle()
-    posterName = (poster as { display_name?: string | null } | null)?.display_name ?? null
-  }
-
-  const coverUrl = await posterSignedUrl(ev.details?.media?.coverPath ?? ev.poster_path)
-
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-canvas px-4 py-16">
-      <FocusTemplate
-        width="narrow"
-        divider={false}
-        title="Claim your event"
-        description={
-          posterName
-            ? `This event was posted by ${posterName}. If it is yours, claim it to manage it.`
-            : 'This event was posted by a community member. If it is yours, claim it to manage it.'
-        }
-      >
-      <div className="w-full space-y-4">
-        {/* The event preview. */}
-        <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-          {coverUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={coverUrl} alt="" className="max-h-56 w-full object-cover" />
-          )}
-          <div className="p-4">
-            <p className="text-base font-bold text-text">{ev.title ?? 'Untitled event'}</p>
-            <div className="mt-2 space-y-1 text-sm text-muted">
-              {ev.starts_at && (
-                <p className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4 shrink-0 text-subtle" />
-                  {new Date(ev.starts_at).toLocaleString('en-US', {
-                    weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit',
-                  })}
-                </p>
-              )}
-              {ev.location && (
-                <p className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 shrink-0 text-subtle" />
-                  {ev.location}
-                </p>
-              )}
-            </div>
-            {ev.description && (
-              <p className="mt-3 text-sm leading-relaxed text-text">{ev.description}</p>
-            )}
-          </div>
-        </div>
-
-        {/* What claiming does. */}
-        <p className="flex items-start gap-2 text-sm text-muted">
-          <Zap className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          Claiming makes you the host: you can edit the details, see RSVPs, and run the event
-          from your own account. It takes one tap.
-        </p>
-
-        {myProfileId ? (
-          <ClaimButton token={token} />
-        ) : (
-          <div className="space-y-2">
-            {/* New here: the sign-up runs the beta induction, which admits them to the site
-                (onboarding_completed) and lands them right back here to finish claiming, so a
-                claimer is never left stuck at the beta gate. Existing members sign in below. */}
-            <Link
-              href={`/onboarding/beta?next=/events/claim/${token}`}
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-            >
-              Sign up to claim it
-            </Link>
-            <Link
-              href={`/sign-in?next=/events/claim/${token}`}
-              className="inline-flex w-full items-center justify-center rounded-xl border border-border px-5 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-surface"
-            >
-              Already a member? Sign in
-            </Link>
-            <p className="text-center text-xs text-subtle">
-              Signing up takes a minute and gets you into Frequency, then the event is yours.
-            </p>
-          </div>
-        )}
-      </div>
-      </FocusTemplate>
-    </div>
-  )
+  // Unclaimed → the real public listing, which carries the "Claim This Event" banner.
+  redirect(`/events/${ev.slug}?claim=${token}`)
 }

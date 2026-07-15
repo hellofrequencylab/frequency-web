@@ -100,6 +100,35 @@ async function tagPersona(profileId: string, personaSlug: string | null): Promis
   }
 }
 
+/** The interest choices the member ticked on the niche funnel's Beat-1 cards
+ *  (fq_interests cookie, set by the induction — survives the deferred sign-in
+ *  round-trip). Each is a registered `interest_*` marketing tag so the picks are
+ *  segmentable. The regex fences the values so only well-formed keys are trusted. */
+async function readInterestTags(): Promise<string[]> {
+  try {
+    const v = (await cookies()).get('fq_interests')?.value ?? ''
+    return v
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => /^interest_[a-z0-9]+$/.test(s))
+      .slice(0, 8)
+  } catch {
+    return []
+  }
+}
+
+/** Stamp each selected interest tag on the member (best-effort; an unregistered or
+ *  typo'd key simply skips and never blocks onboarding). */
+async function tagInterests(profileId: string): Promise<void> {
+  for (const key of await readInterestTags()) {
+    try {
+      await assignTag(profileId, key, { source: 'onboarding', context: { question: 'interests' } })
+    } catch {
+      /* tagging is best-effort */
+    }
+  }
+}
+
 /**
  * Cue future onboarding (owner directive): enroll the finished member into the nurture / onboarding
  * sequence for their PRIMARY persona (ADR-131), in addition to the persona tags. Best-effort, idempotent
@@ -361,6 +390,8 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     await clearBetaSequenceCookie()
     // Tag every persona they selected (multi-select); each tag is registered + idempotent.
     for (const p of allPersonas) await tagPersona(prof.id as string, p)
+    // Tag the event-host interests they ticked on the niche funnel (segmentation).
+    await tagInterests(prof.id as string)
     // Cue future onboarding: enroll the member into their PRIMARY persona's nurture / onboarding sequence
     // (ADR-131), on top of the tags. Best-effort + idempotent; never blocks onboarding. Uses the member's
     // email (required for the nurture send); no-op when they somehow have none.
@@ -560,6 +591,8 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
   }).catch(() => {})
 
   for (const p of allPersonas) await tagPersona(profile.id as string, p)
+  // Tag the event-host interests they ticked on the niche funnel (segmentation).
+  await tagInterests(profile.id as string)
 
   // Safety net for the deferred/merge path: a returning member who reaches /complete may have
   // been flagged onboarded by an earlier path that NEVER posted their join line. Idempotency

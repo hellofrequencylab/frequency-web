@@ -137,6 +137,16 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     setReelIndex(0)
   }
 
+  // Niche-funnel Beat-1 interests (multi-select). Each card maps to a registered
+  // `interest_*` marketing tag so the picks are logged + segmentable at completion.
+  const [interestKeys, setInterestKeys] = useState<string[]>([])
+  function interestKeyFor(title: string) {
+    return `interest_${title.toLowerCase().replace(/[^a-z0-9]+/g, '')}`
+  }
+  function toggleInterest(key: string) {
+    setInterestKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
+  }
+
   // Remember which audience sequence this is, so completion can tag the cohort —
   // survives the deferred sign-in round-trip (a 30-day cookie). Preview never tags.
   useEffect(() => {
@@ -151,6 +161,13 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     document.cookie = `fq_persona=${encodeURIComponent(primaryPersona)}; path=/; max-age=2592000; samesite=lax`
     document.cookie = `fq_personas=${encodeURIComponent(personas.join(','))}; path=/; max-age=2592000; samesite=lax`
   }, [preview, personas, primaryPersona])
+
+  // Persist the interest picks across the deferred sign-in round-trip (30-day cookie),
+  // so completion can stamp each interest_* tag. Preview never writes.
+  useEffect(() => {
+    if (preview) return
+    document.cookie = `fq_interests=${encodeURIComponent(interestKeys.join(','))}; path=/; max-age=2592000; samesite=lax`
+  }, [preview, interestKeys])
 
   // Log the persona pick at SELECTION time (owner directive), so intent is captured server-side even if
   // this (often anonymous) visitor never finishes. Debounced ~600ms so rapid multi-select toggles collapse
@@ -603,22 +620,33 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 {hasNicheFeatures ? (
                   <>
                     <p className="mt-9 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">First off, what are you into?</p>
+                    <p className="mt-1.5 text-sm text-muted">Click all that apply.</p>
                     <div className="mx-auto mt-4 grid max-w-2xl gap-3 sm:grid-cols-2">
                       {slide2Features!.map((f, i) => {
                         const Icon = funnelIcon(f.icon)
+                        const key = interestKeyFor(f.title)
+                        const active = interestKeys.includes(key)
                         return (
-                          <div
+                          <button
                             key={i}
-                            className="flex items-start gap-3 rounded-2xl border border-border bg-surface px-4 py-4 text-left"
+                            type="button"
+                            onClick={() => toggleInterest(key)}
+                            aria-pressed={active}
+                            className={`relative flex items-start gap-3 rounded-2xl border px-4 py-4 text-left transition-colors ${active ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
                           >
-                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong" aria-hidden>
+                            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active ? 'bg-primary text-on-primary' : 'bg-primary-bg text-primary-strong'}`} aria-hidden>
                               <Icon className="h-5 w-5" />
                             </span>
                             <span>
                               <span className="block text-base font-bold text-text">{f.title}</span>
                               <span className="mt-0.5 block text-sm text-muted">{f.blurb}</span>
                             </span>
-                          </div>
+                            {active && (
+                              <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary" aria-hidden>
+                                <svg viewBox="0 0 20 20" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3"><path d="M4 10l4 4 8-9" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                              </span>
+                            )}
+                          </button>
                         )
                       })}
                     </div>
