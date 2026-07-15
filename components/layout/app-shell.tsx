@@ -64,7 +64,7 @@ import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider } from '@/components/sidebar/dock-reveal'
 import { railFor, leftRailFor, mergeChrome, railStartsCollapsed, isFullViewportEditor, isFullWidthEditor, type ChromeOverrides } from '@/lib/layout/page-chrome'
 import type { AppOverrides } from '@/lib/apps/overrides'
-import type { WebRole } from '@/lib/core/roles'
+import { isJanitor, type WebRole } from '@/lib/core/roles'
 import type { Capability } from '@/lib/core/capabilities'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
@@ -1435,6 +1435,7 @@ export default function AppShell({
   brandLogoUrl = null,
   chromeOverrides,
   webRole = 'none',
+  openSupportTickets = 0,
   caps = [],
   appOverrides,
   generation = 'balanced',
@@ -1512,6 +1513,10 @@ export default function AppShell({
   /** The viewer's STAFF web_role (ADR-208), view-as-aware ('none' under a downgrade
    *  preview). Gates the staff-only on-page "Page" settings group (admin+). */
   webRole?: WebRole
+  /** Count of OPEN support tickets, resolved janitor-only in (main)/layout.tsx (0 for everyone
+   *  else + under a view-as downgrade). Drives the header Bug Alert so a janitor sees a bug report
+   *  the moment it lands and can jump straight to /admin/support. */
+  openSupportTickets?: number
   /** The viewer's GLOBAL-scope capabilities (getGlobalCapabilities), threaded into PageAdminProvider
    *  for the standardized admin bar (docs/ADMIN-RAIL.md Phase 1). Per-entity caps ride the open event
    *  from the page that resolved them; this seam carries only the route-independent global set. */
@@ -1840,6 +1845,25 @@ export default function AppShell({
                 <Users className="w-5 h-5" />
               </Link>
             </HoverTip>
+            {/* Bug Alert — janitor-only, and only while support tickets are open. A large, hard-to-miss
+                red pill (icon + "Bug" + count) that jumps straight to the support queue, so a bug report
+                never sits unseen. The count is resolved janitor-only server-side (0 otherwise), and we
+                re-gate on the web_role here for defense-in-depth. */}
+            {isJanitor(webRole) && openSupportTickets > 0 && (
+              <HoverTip label={`${openSupportTickets} open support ${openSupportTickets === 1 ? 'ticket' : 'tickets'}`} className="inline-flex">
+                <Link
+                  href="/admin/support"
+                  aria-label={`Bug Alert: ${openSupportTickets} open support ${openSupportTickets === 1 ? 'ticket' : 'tickets'}. Open the support queue`}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-danger px-3 py-1.5 text-sm font-bold text-on-primary shadow-sm ring-1 ring-danger/40 transition-transform hover:scale-105 motion-safe:animate-pulse"
+                >
+                  <Bug className="h-4 w-4" />
+                  <span className="hidden sm:inline">Bug</span>
+                  <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-on-primary/20 px-1.5 text-xs leading-5">
+                    {openSupportTickets}
+                  </span>
+                </Link>
+              </HoverTip>
+            )}
             {/* Messages — all sizes now (its bottom tab moved to Events). DMs live in the
                 header top-right by convention; the popover fetches + carries its own unread
                 badge, exactly as on desktop. */}
