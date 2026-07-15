@@ -1338,17 +1338,32 @@ export default async function EventDetailPage({
               </p>
             ) : null}
 
-            {postedBy && (
-              <p className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-primary shrink-0" />
-                <span>
+            {postedBy &&
+              (isUnclaimedPosted ? (
+                // Still unclaimed: the poster credit IS the attribution, so it stays prominent
+                // (Zap icon + accent link) next to the claim/organizer lines.
+                <p className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-primary shrink-0" />
+                  <span>
+                    Posted by{' '}
+                    <Link href={`/people/${postedBy.handle}`} className="text-primary-strong hover:underline">
+                      {postedBy.display_name}
+                    </Link>
+                  </span>
+                </p>
+              ) : (
+                // Once a host has claimed the event, the original poster is just a small, unobtrusive
+                // credit under the host line — no accent, no icon.
+                <p className="text-2xs text-subtle">
                   Posted by{' '}
-                  <Link href={`/people/${postedBy.handle}`} className="text-primary-strong hover:underline">
+                  <Link
+                    href={`/people/${postedBy.handle}`}
+                    className="underline-offset-2 hover:text-text hover:underline"
+                  >
                     {postedBy.display_name}
                   </Link>
-                </span>
-              </p>
-            )}
+                </p>
+              ))}
 
             {/* [A3] The calm reward line reads as HEADER content — it sits with the
                 date/location/host lines, not floating above the grid with a divider. The
