@@ -30,14 +30,22 @@ function toStaffLevel(v: string | null | undefined): Access | undefined {
   return v && (ACCESS_LEVELS as readonly string[]).includes(v) ? (v as Access) : undefined
 }
 
-/** The four standardized containers with human labels; drives the editor's surface picker. */
+/** The surfaces an operator may edit in the Menu Manager (drives the editor's surface picker).
+ *  `admin_header` is intentionally ABSENT: it is CODE-ONLY (derived from ADMIN_NAV_SPECS in
+ *  lib/nav/studio.ts and served straight from the code catalog), so it can never be materialized to
+ *  the DB and can never drift from code. See CODE_ONLY_SURFACES + getMenu below. */
 export const MENU_SURFACES: { key: MenuSurfaceKey; label: string }[] = [
   { key: 'header', label: 'Header menu (mega)' },
   { key: 'left', label: 'Left menu (in-app rail)' },
   { key: 'footer', label: 'Footer menu' },
   { key: 'profile', label: 'Profile menu' },
-  { key: 'admin_header', label: 'Admin header (mega sub-nav)' },
 ]
+
+/** Surfaces served STRAIGHT from the code defaults, never the DB. The admin sub-nav is the single
+ *  source-of-truth contract (docs/MENU-CONTRACT.md, ADR-390): it derives from ADMIN_NAV_SPECS, so an
+ *  operator must not be able to freeze a stale copy into the DB (that silently overrode the 2026-07 CRM
+ *  tab consolidation). getMenu returns the code default for these before ever touching the DB. */
+export const CODE_ONLY_SURFACES: readonly MenuSurfaceKey[] = ['admin_header']
 
 // ── Raw row shapes (untyped DB) ───────────────────────────────────────────────
 type MenuRow = { id: string; surface_key: string; label: string | null; columns: number | null }
@@ -230,6 +238,10 @@ export async function getMenu(
   surfaceKey: MenuSurfaceKey,
   opts?: { spaceId?: string | null },
 ): Promise<ResolvedMenu> {
+  // CODE-ONLY surfaces (the admin sub-nav) are served straight from the code catalog and never read
+  // the DB, so a stale/materialized DB copy can never override the code (the bug that hid the CRM tab
+  // consolidation). This is the airtight half of the guard; the Menu Manager also omits them.
+  if (CODE_ONLY_SURFACES.includes(surfaceKey)) return defaultMenu(surfaceKey)
   try {
     // Query the untyped (not-yet-generated) tables via the shared menuDb handle,
     // mirroring lib/menu-config.ts for menu_config.

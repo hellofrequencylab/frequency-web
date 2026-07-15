@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, HeartPulse, Sunrise, Bot, Network, ShieldCheck, type LucideIcon } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
@@ -19,45 +19,61 @@ import { CrmRising } from '@/components/widgets/crm/rising'
 import { CrmTrust } from '@/components/widgets/crm/trust'
 
 // INTELLIGENCE — the unified Resonance CRM operator surface (owner merge of Vera Today + Playbooks +
-// the Resonance Graph into one well-organized page). Resonance Engine · docs/NEXT-GEN-CRM.md.
+// the Resonance Graph, PLUS the platform health cockpit). Resonance Engine · docs/NEXT-GEN-CRM.md.
 //
-// LAYOUT (a stats band over a Main/Side split, mirroring the module engine's own two-col + main-side
-// grids so it reads identically to every other framework page):
-//   • Stats band (full width): the Playbooks headline row (plays · runs · autonomy · circuit breaker)
-//     and the Resonance Graph metric row (consented · connections · health). The two stat rows the
-//     operator scans first.
-//   • MAIN (3/5): Vera Today — the five one-tap person-plus-action cards. The operator's primary work.
-//   • SIDE (2/5): the saved plays (the registry + recent runs) and the graph's strongest-connections
-//     list. The reference + reach-out column beside the day's work.
+// LAYOUT — one top-to-bottom NARRATIVE, five labelled phases, so the page reads in the order an
+// operator actually thinks (answer-first, then act, then the machinery):
+//   1. WHERE WE STAND  — the computed verdict + the live health row + who is sliding + the funnel.
+//   2. TODAY           — Vera's next moves (main) beside the overlooked reach-out pool (side).
+//   3. THE PLAYS       — the saved Vera plays behind the moves + how they have been landing.
+//   4. THE GRAPH       — the consent-first relationship graph (insights-gated as a whole phase).
+//   5. MODEL TRUST     — the churn-risk backtest: can you trust the scores.
+// Each block is an existing self-fetching, fail-safe RSC (components/widgets/crm/*), isolated in its
+// own <Suspense> so a slow read never blocks the shell (PAGE-FRAMEWORK §5). Composed directly (not
+// <PageModules>) because the Graph phase carries an ADDITIONAL staff 'insights' gate the per-route
+// module engine cannot express per block.
 //
-// COMPOSED, NOT <PageModules>: each interior block is an existing self-fetching, fail-safe RSC
-// (components/widgets/crm/*), REUSED here unchanged and isolated in its own <Suspense> so a slow read
-// never blocks the shell (PAGE-FRAMEWORK §5). The page composes them directly rather than through the
-// shared module engine for one reason: the two Resonance Graph blocks carry an ADDITIONAL staff
-// 'insights' gate that the per-route engine (which renders every block in a set to anyone who clears
-// the page floor) cannot express per block. Composing lets the graph blocks self-gate (below) while
-// Today + Playbooks stay at the janitor floor.
-//
-// STAFF-GATED: requireAdmin('janitor') is the page floor (the whole Resonance CRM domain is a
-// sensitive operator view). The Resonance Graph blocks additionally require the 'insights' staff read
-// floor OR platform janitor — the exact gate the standalone Graph page enforced — applied per block so
-// the graph is never over-surfaced even if the page floor is ever relaxed. The /admin/* group mounts
-// its own info rail (page-chrome returns 'none' for /admin/*), so no rail registration is needed here.
+// STAFF-GATED: requireAdmin('janitor') is the page floor. The Graph phase additionally requires the
+// 'insights' staff read floor OR platform janitor — the exact gate the standalone Graph page enforced —
+// applied to the WHOLE phase (header + blocks) so the label never shows over an empty, gated body.
 export const dynamic = 'force-dynamic'
 
-// The durable `playbooks` table sync (idempotent + fail-safe), isolated in its own async component so
-// it runs OFF the shell's render path (PAGE-FRAMEWORK §5) — awaiting it inline blocked first paint on
-// a DB read-then-write every request. It renders nothing; the Playbooks blocks read fail-safe, so they
-// never need the seed to have finished first. Carried over from the retired Playbooks page.
+// The durable `playbooks` table sync (idempotent + fail-safe), isolated so it runs OFF the shell's
+// render path (PAGE-FRAMEWORK §5). Renders nothing; the Playbooks blocks read fail-safe anyway.
 async function PlaybooksSeed() {
   await seedPlaybooks()
   return null
 }
 
-// Fail-CLOSED insights gate for the Resonance Graph blocks. Mirrors the standalone Graph page's
+// A prominent phase divider so the page reads as a narrative, not a soup of blocks. `first` drops the
+// top border for the phase that sits right under the page header.
+function Phase({
+  icon: Icon,
+  title,
+  blurb,
+  first,
+}: {
+  icon: LucideIcon
+  title: string
+  blurb: string
+  first?: boolean
+}) {
+  return (
+    <div className={`flex items-start gap-3 ${first ? '' : 'border-t border-border pt-8'}`}>
+      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+        <Icon className="h-5 w-5" aria-hidden />
+      </div>
+      <div className="min-w-0">
+        <h2 className="text-base font-bold text-text">{title}</h2>
+        <p className="text-sm text-muted">{blurb}</p>
+      </div>
+    </div>
+  )
+}
+
+// Fail-CLOSED insights gate for the Resonance Graph phase. Mirrors the standalone Graph page's
 // requireAdmin('janitor', { staff: 'insights', staffLevel: 'read' }) as a boolean (janitor OR an
-// insights read-staff role), so the per-member relationship graph keeps its own floor. Any error
-// hides the block rather than risk over-surfacing a sensitive view.
+// insights read-staff role). Any error hides the phase rather than risk over-surfacing a sensitive view.
 async function viewerHasGraphInsights(): Promise<boolean> {
   try {
     const profile = await getCallerProfile()
@@ -73,14 +89,26 @@ async function viewerHasGraphInsights(): Promise<boolean> {
   }
 }
 
-async function GraphMetricsGated() {
+// The GRAPH phase, gated as a whole: header + both blocks show together, or nothing (no orphaned label).
+async function GraphPhase() {
   if (!(await viewerHasGraphInsights())) return null
-  return <CrmGraphMetrics />
-}
-
-async function GraphConnectionsGated() {
-  if (!(await viewerHasGraphInsights())) return null
-  return <CrmGraphConnections />
+  return (
+    <section className="space-y-5">
+      <Phase
+        icon={Network}
+        title="The Resonance Graph"
+        blurb="The consent-first relationship graph: who is connected, and the strongest ties in the community."
+      />
+      <div className="@container space-y-4">
+        <Suspense fallback={null}>
+          <CrmGraphMetrics />
+        </Suspense>
+        <Suspense fallback={null}>
+          <CrmGraphConnections />
+        </Suspense>
+      </div>
+    </section>
+  )
 }
 
 export default async function IntelligencePage() {
@@ -91,63 +119,91 @@ export default async function IntelligencePage() {
       title="Intelligence"
       eyebrow="CRM"
       icon={Sparkles}
-      description="Vera's next moves, the saved plays behind them, and the consent-first Resonance Graph, in one place."
+      description="The platform's health, the moves to make today, and the engine behind them, in one read."
       width="wide"
     >
       <Suspense fallback={null}>
         <PlaybooksSeed />
       </Suspense>
 
-      {/* Stats band (full width): the Playbooks headline row + the insights-gated Graph metric row.
-          Each stat block is its own @container so its grid sizes to the full width here. */}
-      <div className="@container space-y-4">
-        <Suspense fallback={null}>
-          <CrmPlaybooksStats />
-        </Suspense>
-        <Suspense fallback={null}>
-          <GraphMetricsGated />
-        </Suspense>
-      </div>
+      <div className="space-y-8">
+        {/* 1. WHERE WE STAND — the answer-first read: verdict + live health row + who needs attention +
+            the lifecycle funnel (CrmCockpitStats renders these as its own labelled sub-sections). */}
+        <section className="space-y-5">
+          <Phase
+            icon={HeartPulse}
+            title="Where we stand"
+            blurb="The platform's health right now, who the model says is sliding, and where members stall."
+            first
+          />
+          <div className="@container">
+            <Suspense fallback={null}>
+              <CrmCockpitStats />
+            </Suspense>
+          </div>
+        </section>
 
-      {/* Main / Side (3:2), the same split the engine's main-side grid uses: MAIN is Vera's one-tap
-          Today worklist; SIDE is the saved plays and the strongest-connections list. Each column is an
-          @container so a block sizes to the column it lands in. */}
-      <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
-        <div className="@container space-y-4 lg:col-span-3">
-          <Suspense fallback={null}>
-            <CrmToday />
-          </Suspense>
-        </div>
-        <div className="@container space-y-4 lg:col-span-2">
-          <Suspense fallback={null}>
-            <CrmPlaybooksRegistry />
-          </Suspense>
-          <Suspense fallback={null}>
-            <CrmPlaybooksRuns />
-          </Suspense>
-          <Suspense fallback={null}>
-            <GraphConnectionsGated />
-          </Suspense>
-        </div>
-      </div>
+        {/* 2. TODAY — Vera's next moves (main) beside the overlooked reach-out pool (side). */}
+        <section className="space-y-5">
+          <Phase
+            icon={Sunrise}
+            title="Today"
+            blurb="Vera's next moves, and the members worth a nudge before they cool."
+          />
+          <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
+            <div className="@container lg:col-span-3">
+              <Suspense fallback={null}>
+                <CrmToday />
+              </Suspense>
+            </div>
+            <div className="@container lg:col-span-2">
+              <Suspense fallback={null}>
+                <CrmRising />
+              </Suspense>
+            </div>
+          </div>
+        </section>
 
-      {/* Platform health (re-homed here when the master-detail CRM home was condensed to the roster +
-          the compact stat row): the resonance verdict + live stat row + who-needs-attention worklist +
-          lifecycle funnel, the overlooked rising-members reach-out pool, and the score-trustworthiness
-          backtest. All at the janitor page floor (no extra insights gate), each its own fail-safe
-          Suspense block so a slow read never blocks the shell. */}
-      <div className="@container space-y-6">
+        {/* 3. THE PLAYS — the saved Vera plays behind the moves + how they have landed. */}
+        <section className="space-y-5">
+          <Phase
+            icon={Bot}
+            title="The plays"
+            blurb="The saved Vera plays behind the moves, the run history, and the autonomy the platform allows."
+          />
+          <div className="@container space-y-4">
+            <Suspense fallback={null}>
+              <CrmPlaybooksStats />
+            </Suspense>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Suspense fallback={null}>
+                <CrmPlaybooksRegistry />
+              </Suspense>
+              <Suspense fallback={null}>
+                <CrmPlaybooksRuns />
+              </Suspense>
+            </div>
+          </div>
+        </section>
+
+        {/* 4. THE GRAPH — insights-gated as a whole phase (header + blocks together, or nothing). */}
         <Suspense fallback={null}>
-          <CrmCockpitStats />
+          <GraphPhase />
         </Suspense>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Suspense fallback={null}>
-            <CrmRising />
-          </Suspense>
-          <Suspense fallback={null}>
-            <CrmTrust />
-          </Suspense>
-        </div>
+
+        {/* 5. MODEL TRUST — the churn-risk backtest: how the model's calls held up. */}
+        <section className="space-y-5">
+          <Phase
+            icon={ShieldCheck}
+            title="Can you trust the scores"
+            blurb="The backtest: how the churn-risk calls held up against what actually happened."
+          />
+          <div className="@container">
+            <Suspense fallback={null}>
+              <CrmTrust />
+            </Suspense>
+          </div>
+        </section>
       </div>
     </AdminTemplate>
   )

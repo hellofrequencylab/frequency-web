@@ -26,11 +26,21 @@ import type { EventsIndexData } from '@/app/(main)/events/index-data'
 // Coded hero fallback, matching the /events banner when no operator hero is set.
 const HERO_FALLBACK = '/images/site/community-dinner.jpg'
 
+// The default hero copy — the marketplace Events tab's framing. /events overrides the title (and
+// may override the eyebrow/subtitle) with a keyword-forward, self-canonical H1 for SEO/AIO.
+const HERO_DEFAULT_EYEBROW = 'Events'
+const HERO_DEFAULT_TITLE = 'Find your next gathering'
+const HERO_DEFAULT_SUBTITLE =
+  'Paid and free events near you, from community circles and hosts. Search, browse by category, then RSVP or grab a ticket.'
+
 export function EventsSurface({
   data,
   basePath,
   activeCategory,
   actions,
+  heroEyebrow = HERO_DEFAULT_EYEBROW,
+  heroTitle = HERO_DEFAULT_TITLE,
+  heroSubtitle = HERO_DEFAULT_SUBTITLE,
 }: {
   data: EventsIndexData
   /** Roots every category-tab href, the clear-filters link, and the empty-state links. */
@@ -40,6 +50,11 @@ export function EventsSurface({
   /** The member-actions cluster (Add Event / Manage / My drafts), rendered in the hero. Omit on the
    *  commerce tab, where these host actions do not belong. */
   actions?: React.ReactNode
+  /** Hero copy. Defaults to the marketplace framing so /marketplace/events is unchanged; /events
+   *  passes a keyword-forward, on-canon H1 (the hero title IS the page H1, MarketHero). */
+  heroEyebrow?: string
+  heroTitle?: string
+  heroSubtitle?: string
 }) {
   const {
     content,
@@ -70,9 +85,9 @@ export function EventsSurface({
   const hero = (
     <MarketHero
       image={content.heroImage ?? HERO_FALLBACK}
-      eyebrow="Events"
-      title="Find your next gathering"
-      subtitle="Paid and free events near you, from community circles and hosts. Search, browse by category, then RSVP or grab a ticket."
+      eyebrow={heroEyebrow}
+      title={heroTitle}
+      subtitle={heroSubtitle}
       search={<MarketSearchBar placeholder="Search events" />}
       action={actions}
     />
