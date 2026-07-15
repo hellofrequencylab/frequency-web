@@ -86,7 +86,9 @@ export const circlesComponents: Record<string, ComponentConfig> = {
     render: ({ puck }) => {
       const d = indexFrom(puck)
       if (!d) return <EditorStub label="Search, filter & sort bar" />
-      return <CirclesToolbar />
+      // Search now lives in the Circles index hero header; the toolbar keeps format + sort only so
+      // the two search inputs never duplicate.
+      return <CirclesToolbar showSearch={false} />
     },
   },
 

@@ -21,8 +21,10 @@ const TYPES = [
 // In person / Online), and sort — all on ONE row. The Channel category lives in the
 // pillar pills above (CirclesChannelNav) and granular Channels in the Browse rail, so the
 // bar stays tight and unduplicated. URL-driven, so a filtered view is shareable and the
-// page stays a server component.
-export function CirclesToolbar() {
+// page stays a server component. `showSearch` drops the search box when the surface carries
+// search elsewhere (the Circles index now puts it in the shared hero header), leaving just the
+// format toggle + sort so the two search inputs never duplicate.
+export function CirclesToolbar({ showSearch = true }: { showSearch?: boolean } = {}) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -42,9 +44,14 @@ export function CirclesToolbar() {
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-      <div className="min-w-0 flex-1">
-        <DirectorySearch placeholder="Search circles by name or place…" />
-      </div>
+      {showSearch ? (
+        <div className="min-w-0 flex-1">
+          <DirectorySearch placeholder="Search circles by name or place…" />
+        </div>
+      ) : (
+        // Search lives in the hero header on the Circles index; keep the controls pushed right.
+        <div className="min-w-0 flex-1" aria-hidden />
+      )}
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         {/* Format toggle — segmented, the active option lifts onto the surface. */}

@@ -1,25 +1,30 @@
+import Link from 'next/link'
+import { Settings2 } from 'lucide-react'
 import type { Data } from '@/lib/page-editor/types'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
-import { IndexTemplate } from '@/components/templates'
+import { MarketHero } from '@/components/marketplace/market-hero'
+import { HERO_PRIMARY_BTN, HERO_SECONDARY_BTN } from '@/components/marketplace/hero-buttons'
+import { DirectorySearch } from '@/components/ui/directory-search'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { pageContentMetadata } from '@/lib/page-content'
 import { getCirclesIndexData, CONTENT_FALLBACK } from '@/lib/circles/index-data'
 
-// The Circles index is now a TEMPLATE + BLOCKS surface (PAGE-FRAMEWORK): the IndexTemplate
-// shell carries the operator-editable header (title / description / CTA + the Start-a-circle
-// action), and the BODY is the standardized Circles block layout rendered through Puck. The
-// route fetches the live index data once (getCirclesIndexData) and injects it into the blocks
-// via `metadata.circlesIndex` (the LiveStats pattern), so each block renders a slice of the
-// same faceted, sorted read. Block order/content come from an operator-published doc when one
-// exists, else the coded default template — so operators rearrange and edit it in the page
-// editor (/edit/circles) exactly like the marketing pages.
+// The Circles index — a TEMPLATE + BLOCKS surface (PAGE-FRAMEWORK). It now opens on the SHARED
+// MarketHero header (the same hero band Events / Marketplace Events / Business Spaces use) so every
+// browse surface reads as one header: a centered, keyword-forward H1, the search bar IN the hero,
+// and the action buttons row (Start a Circle + Manage my Circles). The search moved out of the
+// CirclesToolbar block into the hero (the block now renders format + sort only, so the two search
+// inputs never duplicate). The BODY is the standardized, operator-rearrangeable Circles block layout
+// rendered through Puck, fed the live index data (getCirclesIndexData) via `metadata.circlesIndex`.
+// Semantic DAWN tokens only, no hex, no em dashes.
 
 const EMPTY: Data = { content: [], root: {} }
 
-// Operator-set title/description also drive <title> + og/twitter cards (PX.2).
+// Operator-set title/description also drive <title> + og/twitter cards (PX.2). The default title is
+// the keyword-forward "Circles near you" (CONTENT-VOICE §8a: the phrase people search).
 export function generateMetadata() {
   return pageContentMetadata('/circles', CONTENT_FALLBACK)
 }
@@ -36,52 +41,50 @@ export default async function CirclesPage({
   const published = await getPublishedData('circles')
   const data: Data = isRenderable(published) ? published : getTemplate('circles') ?? EMPTY
 
+  // The action cluster, matching the Events header grammar:
+  //   • Start a Circle — the full-page builder, gated behind the Crew popup (NewCircleCompose owns the
+  //     canCreate rule; non-Crew get the upgrade lightbox). Shown to any signed-in member.
+  //   • Manage my Circles — the Leadership hub (/lead), shown to the population that can run a circle
+  //     (Crew/steward, canCreate). /lead self-scopes to the caller's own circles.
+  //   • Operator CTA (PX.1) — the optional operator-set link, kept when both label + href are set.
+  const actions =
+    signedIn || (content.ctaLabel && content.ctaHref) ? (
+      <>
+        {signedIn && (
+          <NewCircleCompose
+            interests={interests}
+            buttonLabel="Start a Circle"
+            canCreate={canCreate}
+            buttonClass={HERO_PRIMARY_BTN}
+          />
+        )}
+        {canCreate && (
+          <Link href="/lead" className={HERO_SECONDARY_BTN}>
+            <Settings2 className="h-4 w-4" aria-hidden />
+            Manage my Circles
+          </Link>
+        )}
+        {content.ctaLabel && content.ctaHref && (
+          <a href={content.ctaHref} className={HERO_SECONDARY_BTN}>
+            {content.ctaLabel}
+          </a>
+        )}
+      </>
+    ) : undefined
+
   return (
-    <IndexTemplate
-      // Standardized header (PAGE-FRAMEWORK): breadcrumb -> cropped hero -> title, from the
-      // template's first-class props.
-      trail={[
-        { href: '/network', label: 'Community' },
-        { href: '/circles', label: 'Circles' },
-      ]}
-      // The uniform overlay Hero Header (the Journeys/Practices/Library grammar): operator image
-      // wins, else a calm section default so the hero band always renders.
-      heroImage={content.heroImage ?? '/images/site/group-of-friends.jpg'}
-      heroOverlay
-      title={content.title}
-      action={
-        signedIn || (content.ctaLabel && content.ctaHref) ? (
-          <div className="flex items-center gap-2">
-            {signedIn && (
-              <NewCircleCompose
-                interests={interests}
-                buttonLabel="Start a circle"
-                canCreate={canCreate}
-                buttonClass="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
-              />
-            )}
-            {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
-            {content.ctaLabel && content.ctaHref && (
-              <a
-                href={content.ctaHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
-              >
-                {content.ctaLabel}
-              </a>
-            )}
-          </div>
-        ) : undefined
-      }
-      description={
-        <>
-          {/* Mobile leads with a tight one-liner; desktop keeps the operator-editable pitch. */}
-          <span className="sm:hidden">Find a circle near you, or start your own.</span>
-          <span className="hidden sm:inline">{content.description}</span>
-        </>
-      }
-    >
+    <div className="space-y-6">
+      <MarketHero
+        image={content.heroImage ?? '/images/site/group-of-friends.jpg'}
+        eyebrow="Community"
+        title={content.title}
+        subtitle={content.description}
+        search={<DirectorySearch placeholder="Search circles by name or place" />}
+        action={actions}
+      />
+
       {/* The body: the standardized, rearrangeable Circles blocks, fed the live data. */}
       <BlockRender config={config} data={data} metadata={{ circlesIndex }} />
-    </IndexTemplate>
+    </div>
   )
 }
