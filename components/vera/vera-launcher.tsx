@@ -130,7 +130,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           side="right"
           glow="orange"
           label="Chat"
-          icon={<MessageSquare className="h-5 w-5" aria-hidden />}
+          icon={<MessageSquare className="h-[18px] w-[18px]" aria-hidden />}
           waiting={pulse || unread > 0}
           badgeCount={unread}
           onOpen={openPanel}

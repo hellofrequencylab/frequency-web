@@ -548,7 +548,7 @@ const CALM_SPINE_ROOTS: readonly { id: string; label: string }[] = [
   { id: 'circles', label: 'Community' },
   { id: 'events', label: 'Events' },
   { id: 'quest', label: 'The Quest' },
-  { id: 'market', label: 'Marketplace' },
+  { id: 'market', label: 'Market' },
 ] as const
 
 /** The five calm mobile-spine tabs (§5a), in bar order, each pairing its §5a world label

@@ -8,8 +8,12 @@ import {
   Plus,
   ExternalLink,
   Sparkles,
+  UserCheck,
+  Lock,
 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { FUNNEL_STYLES } from '@/lib/funnels/funnel-styles'
 import { DashboardTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -48,6 +52,25 @@ const EDIT_BTN =
 // hundreds; this bounds the work even if the list grows unexpectedly.
 const MAX_FUNNELS = 100
 
+// Signed-up count per funnel = members stamped with the funnel's marketing tag. Read via
+// the admin (service-role) client so it counts across ALL members (member_tags is
+// RLS-owner-scoped). Fail-safe: any error returns an empty map, so the page still renders.
+async function loadSignupCounts(tags: string[]): Promise<Record<string, number>> {
+  const unique = Array.from(new Set(tags.filter(Boolean)))
+  if (unique.length === 0) return {}
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin.from('member_tags').select('tag_key').in('tag_key', unique)
+    const counts: Record<string, number> = {}
+    for (const row of (data ?? []) as { tag_key: string }[]) {
+      counts[row.tag_key] = (counts[row.tag_key] ?? 0) + 1
+    }
+    return counts
+  } catch {
+    return {}
+  }
+}
+
 export default async function SplashFunnelsPage() {
   await requireAdmin('janitor')
   const funnels = (await listAllSequences())
@@ -77,6 +100,9 @@ export default async function SplashFunnelsPage() {
       }
     }),
   )
+
+  // Per-funnel signup counts (members tagged with each funnel's marketing tag).
+  const signupCounts = await loadSignupCounts(cards.map((c) => c.seq.marketingTag))
 
   return (
     <DashboardTemplate
@@ -140,12 +166,45 @@ export default async function SplashFunnelsPage() {
         </div>
       </section>
 
-      {/* ── Custom funnels — one row each, with full lifecycle controls. ── */}
+      {/* ── Funnel styles — the registry of styles this page manages (ADR-617). Adding a
+              style is a row in lib/funnels/funnel-styles.ts; this overview and the sections
+              below read it. Onboarding is live; Feature + Demographic are planned. ── */}
       <section>
-        <SectionHeader title="Custom funnels" count={cards.length} />
+        <SectionHeader title="Funnel styles" />
         <p className="-mt-1 mb-4 max-w-2xl text-sm text-muted">
-          A funnel for a specific audience. Each one carries its own voice, its own
-          shareable link, and a cohort tag so you can segment everyone who joins through it.
+          Each style is its own kind of front door, with its own layout, editor, and stats.
+          More styles slot in over time.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {FUNNEL_STYLES.map((s) => (
+            <div key={s.id} className={`flex flex-col rounded-2xl border bg-surface p-4 shadow-sm ${s.accent.ring}`}>
+              <div className="flex items-center justify-between">
+                <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${s.accent.icon}`}>
+                  <s.icon className="h-4 w-4" aria-hidden />
+                </span>
+                {s.status === 'live' ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 text-2xs font-semibold text-success">
+                    <CheckCircle2 className="h-3 w-3" /> Live
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+                    <Lock className="h-3 w-3" /> Planned
+                  </span>
+                )}
+              </div>
+              <h3 className="mt-2.5 text-sm font-bold capitalize text-text">{s.label}</h3>
+              <p className="mt-1 flex-1 text-xs leading-relaxed text-muted">{s.blurb}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Onboarding funnels — the live style. One row each, with full lifecycle controls. ── */}
+      <section>
+        <SectionHeader title="Onboarding funnels" count={cards.length} />
+        <p className="-mt-1 mb-4 max-w-2xl text-sm text-muted">
+          A funnel for a specific audience. Each one carries its own voice, its own shareable
+          link, a cohort tag, and its signup count so you can see what is working.
         </p>
         {cards.length === 0 ? (
           <div className="max-w-3xl">
@@ -189,6 +248,13 @@ export default async function SplashFunnelsPage() {
                     <p className="mt-1 font-mono text-xs text-subtle">{inductionPath}</p>
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full bg-success-bg px-2.5 py-1 text-xs font-semibold text-success"
+                      title="Members who signed up through this funnel (its marketing tag)"
+                    >
+                      <UserCheck className="h-3 w-3" />
+                      {signupCounts[seq.marketingTag] ?? 0} signed up
+                    </span>
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2.5 py-1 text-xs font-semibold text-primary-strong">
                       <Tag className="h-3 w-3" />
                       {seq.marketingTag}
@@ -242,6 +308,25 @@ export default async function SplashFunnelsPage() {
           </div>
         )}
       </section>
+
+      {/* ── Planned styles — space held for the funnels we will build (ADR-617). Rendered
+              from the registry, so a style flips from placeholder to real by changing its
+              status and adding its renderer + editor. ── */}
+      {FUNNEL_STYLES.filter((s) => s.status === 'planned').map((s) => (
+        <section key={s.id}>
+          <SectionHeader title={`${s.label} funnels`} />
+          <div className="max-w-3xl rounded-2xl border border-dashed border-border bg-surface/40 p-6 text-center">
+            <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-xl ${s.accent.icon}`}>
+              <s.icon className="h-5 w-5" aria-hidden />
+            </span>
+            <p className="mt-3 text-sm font-semibold text-text">Planned</p>
+            <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-muted">{s.blurb}</p>
+            <span className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-subtle">
+              <Lock className="h-3.5 w-3.5" /> Not available yet
+            </span>
+          </div>
+        </section>
+      ))}
 
       {/* ── Secondary: name the audience up front, then start from the same prompts template. ── */}
       <section>
