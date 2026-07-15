@@ -353,13 +353,20 @@ export function Composer({
     if (!ta) return
     const start = ta.selectionStart ?? body.length
     const end = ta.selectionEnd ?? body.length
-    const selected = body.slice(start, end) || placeholder
-    const next = body.slice(0, start) + prefix + selected + suffix + body.slice(end)
+    const raw = body.slice(start, end) || placeholder
+    // Keep any leading/trailing whitespace OUTSIDE the emphasis delimiters: CommonMark treats
+    // "**text **" (a space before the closing **) as a literal, non-rendering delimiter, so bolding a
+    // selection that includes a trailing space would show the asterisks instead of bolding. Move the
+    // spaces out so the ** always hugs the text.
+    const lead = raw.match(/^\s*/)?.[0] ?? ''
+    const trail = raw.match(/\s*$/)?.[0] ?? ''
+    const core = raw.slice(lead.length, raw.length - trail.length) || placeholder
+    const next = body.slice(0, start) + lead + prefix + core + suffix + trail + body.slice(end)
     setBody(next)
     requestAnimationFrame(() => {
       ta.focus()
-      const a = start + prefix.length
-      ta.setSelectionRange(a, a + selected.length)
+      const a = start + lead.length + prefix.length
+      ta.setSelectionRange(a, a + core.length)
     })
   }
 
