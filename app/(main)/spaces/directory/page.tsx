@@ -3,6 +3,11 @@ import Link from 'next/link'
 import { Plus, Settings2 } from 'lucide-react'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { HERO_PRIMARY_BTN, HERO_SECONDARY_BTN } from '@/components/marketplace/hero-buttons'
+import {
+  MarketplaceColumnsProvider,
+  MarketplaceColumns,
+} from '@/components/marketplace/column-selector'
+import { PageAdminBar } from '@/components/layout/page-admin-bar'
 import { DirectorySearch } from '@/components/ui/directory-search'
 import { getMyProfileId } from '@/lib/auth'
 import { normalizeSpaceSort } from '@/lib/spaces/discovery'
@@ -90,27 +95,36 @@ export default async function SpacesDirectoryPage({
         }
       />
 
-      {/* Search now lives in the hero, so the toolbar carries only sort + category + Following. */}
-      <SpacesToolbar showSearch={false} />
+      {/* The on-page operator Settings affordance IndexTemplate used to draw — re-added under the hero
+          as its divider rule so nothing an operator had was lost in the move to MarketHero. */}
+      <PageAdminBar asDivider />
 
-      {/* Keyed on the filters + sort + page window so a new query remounts the boundary and shows the
-          skeleton while the next result set streams in. */}
-      <Suspense
-        key={`${q ?? ''}:${category ?? ''}:${following ? '1' : ''}:${sort}:${per}:${page}`}
-        fallback={<GridSkeleton />}
-      >
-        <SpacesGrid
-          basePath={DIRECTORY_BASE}
-          q={q}
-          category={category}
-          following={following}
-          sort={sort}
-          page={page}
-          per={per}
-          viewerProfileId={viewerProfileId}
-          urlBase={urlBase}
-        />
-      </Suspense>
+      {/* Search moved into the hero; the controls that stayed on the page live here, in the polished
+          Classifieds grammar: the toolbar (sort + Following + category, with the density chooser
+          trailing right) over the grid, both inside the column-density provider that drives `.mp-grid`. */}
+      <MarketplaceColumnsProvider className="space-y-5">
+        <SpacesToolbar showSearch={false} columns={<MarketplaceColumns />} />
+
+        {/* Keyed on the filters + sort + page window so a new query remounts the boundary and shows the
+            skeleton while the next result set streams in. */}
+        <Suspense
+          key={`${q ?? ''}:${category ?? ''}:${following ? '1' : ''}:${sort}:${per}:${page}`}
+          fallback={<GridSkeleton />}
+        >
+          <SpacesGrid
+            basePath={DIRECTORY_BASE}
+            q={q}
+            category={category}
+            following={following}
+            sort={sort}
+            page={page}
+            per={per}
+            viewerProfileId={viewerProfileId}
+            urlBase={urlBase}
+            gridClassName="mp-grid gap-6"
+          />
+        </Suspense>
+      </MarketplaceColumnsProvider>
     </div>
   )
 }

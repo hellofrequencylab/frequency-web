@@ -7,6 +7,7 @@ import { getPublishedData } from '@/lib/page-editor/data'
 import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { HERO_PRIMARY_BTN, HERO_SECONDARY_BTN } from '@/components/marketplace/hero-buttons'
+import { PageAdminBar } from '@/components/layout/page-admin-bar'
 import { DirectorySearch } from '@/components/ui/directory-search'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { pageContentMetadata } from '@/lib/page-content'
@@ -82,6 +83,11 @@ export default async function CirclesPage({
         search={<DirectorySearch placeholder="Search circles by name or place" />}
         action={actions}
       />
+
+      {/* The on-page operator Settings affordance IndexTemplate used to draw — re-added under the hero
+          as its divider rule so nothing an operator had was lost in the move to MarketHero. The
+          format/sort + channel controls stay in the body blocks below (already under the hero). */}
+      <PageAdminBar asDivider />
 
       {/* The body: the standardized, rearrangeable Circles blocks, fed the live data. */}
       <BlockRender config={config} data={data} metadata={{ circlesIndex }} />

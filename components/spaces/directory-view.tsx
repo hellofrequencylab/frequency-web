@@ -79,8 +79,10 @@ export function buildDirectoryHref(
 // A dimension-matched skeleton grid — same shape/spacing as the real card grid, so the streamed grid lands
 // with no layout shift (PAGE-FRAMEWORK §5.4).
 export function GridSkeleton() {
+  // Uses the shared `.mp-grid` so, sitting inside the column-density provider, the skeleton matches the
+  // chosen 2/3/4-up density (no layout shift when the real grid streams in).
   return (
-    <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3">
+    <div className="mp-grid gap-6">
       {Array.from({ length: 6 }).map((_, i) => (
         <Skeleton key={i} className="h-80 rounded-2xl" />
       ))}
@@ -303,6 +305,7 @@ export async function SpacesGrid({
   per,
   viewerProfileId,
   urlBase,
+  gridClassName,
 }: {
   basePath: string
   q?: string
@@ -313,6 +316,9 @@ export async function SpacesGrid({
   per: number
   viewerProfileId: string | null
   urlBase: DirectoryUrlBase
+  /** The responsive grid class. Pass `mp-grid ...` to wire the shared column-density chooser; defaults
+   *  to the container-query 3-up grid when omitted. */
+  gridClassName?: string
 }) {
   const { spaces, total } = await listNetworkedSpacesPage(
     { q, category, followerProfileId: viewerProfileId, onlyFollowed: following, sort },
@@ -329,6 +335,7 @@ export async function SpacesGrid({
       page={page}
       per={per}
       urlBase={urlBase}
+      gridClassName={gridClassName}
     />
   )
 }

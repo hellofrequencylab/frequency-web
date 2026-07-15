@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { LayoutGrid, Check } from 'lucide-react'
 import { DirectorySearch } from '@/components/ui/directory-search'
@@ -19,7 +20,14 @@ import { SPACE_CATEGORIES } from '@/lib/spaces/categories'
 export function SpacesToolbar({
   showFollowing = true,
   showSearch = true,
-}: { showFollowing?: boolean; showSearch?: boolean } = {}) {
+  columns,
+}: {
+  showFollowing?: boolean
+  showSearch?: boolean
+  /** The card-density control (MarketplaceColumns), trailing right of the category row — the same
+   *  placement the Classifieds / Events surfaces use. Omit to hide it (the public directory). */
+  columns?: ReactNode
+} = {}) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -87,25 +95,29 @@ export function SpacesToolbar({
         )}
       </div>
 
-      {/* ROW 2 — the single CATEGORY filter (URL `?category=`): the SPACE_CATEGORIES plus All. Labels
-          come from the SPACE_CATEGORIES source of truth, never hardcoded. The row scrolls horizontally
-          on a narrow screen rather than wrapping. Combines with search + Following + sort. */}
-      <div className="-mx-1 flex items-center overflow-x-auto px-1">
-        <div className="flex w-max items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
-          <button type="button" onClick={() => setParam('category', null)} className={pill(!category)}>
-            <LayoutGrid className="h-3.5 w-3.5" /> All
-          </button>
-          {SPACE_CATEGORIES.map((c) => (
-            <button
-              key={c.key}
-              type="button"
-              onClick={() => setParam('category', c.key)}
-              className={pill(category === c.key)}
-            >
-              <c.Icon className="h-3.5 w-3.5" /> {c.label}
+      {/* ROW 2 — the single CATEGORY filter (URL `?category=`) on the left, with the card-density
+          `columns` control trailing right (the Classifieds / Events grammar: tabs left, density right).
+          The category strip scrolls horizontally on a narrow screen; the density control stays fixed
+          beside it. Labels come from the SPACE_CATEGORIES source of truth, never hardcoded. */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="-mx-1 flex min-w-0 items-center overflow-x-auto px-1">
+          <div className="flex w-max items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
+            <button type="button" onClick={() => setParam('category', null)} className={pill(!category)}>
+              <LayoutGrid className="h-3.5 w-3.5" /> All
             </button>
-          ))}
+            {SPACE_CATEGORIES.map((c) => (
+              <button
+                key={c.key}
+                type="button"
+                onClick={() => setParam('category', c.key)}
+                className={pill(category === c.key)}
+              >
+                <c.Icon className="h-3.5 w-3.5" /> {c.label}
+              </button>
+            ))}
+          </div>
         </div>
+        {columns && <div className="shrink-0">{columns}</div>}
       </div>
     </div>
   )
