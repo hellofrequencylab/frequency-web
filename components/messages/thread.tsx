@@ -5,6 +5,8 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { sendMessage } from '@/app/(main)/messages/actions'
 import { getInitials } from '@/lib/utils'
+import { useTypingIndicator } from '@/lib/realtime/use-typing'
+import { TypingIndicator } from '@/components/messages/typing-indicator'
 
 export type Message = {
   id: string
@@ -56,6 +58,13 @@ export function MessageThread({
 
   // Build a map for quick participant lookup
   const participantMap = Object.fromEntries(participants.map((p) => [p.id, p]))
+
+  // Live typing indicator (Broadcast — see lib/realtime/use-typing.ts)
+  const { typingNames, notifyTyping, stopTyping } = useTypingIndicator({
+    scope: `conv:${conversationId}`,
+    userId: myProfileId,
+    displayName: participantMap[myProfileId]?.display_name,
+  })
 
   // Scroll to bottom on mount and when messages change
   useEffect(() => {
@@ -117,6 +126,7 @@ export function MessageThread({
     }
     setMessages((prev) => [...prev, optimistic])
     setBody('')
+    stopTyping()
 
     const fd = new FormData()
     fd.set('body', trimmed)
@@ -246,6 +256,7 @@ export function MessageThread({
             </div>
           )
         })}
+        <TypingIndicator names={typingNames} />
         <div ref={bottomRef} />
       </div>
 
@@ -261,7 +272,10 @@ export function MessageThread({
             ref={textareaRef}
             value={body}
             aria-label="Message"
-            onChange={(e) => setBody(e.target.value)}
+            onChange={(e) => {
+              setBody(e.target.value)
+              notifyTyping()
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Message…"
             rows={1}
