@@ -154,12 +154,18 @@ export interface SequenceGrant {
   /** Award durable Founding Member status (a founding_members row + is_founding_member), which
    *  lights the gold Founding badge beside their Member badge. No charge (reserve-now). */
   founding?: boolean
+  /** A one-time Zap bonus for finishing this funnel (idempotent per profile+seq). The Feature
+   *  funnels use this as the "join now, get N Zaps" incentive. */
+  zaps?: number
 }
 
 /** Per-sequence grants, keyed by the ?seq slug. `randy` is the donor onboarding funnel: everyone who
- *  comes through it is honored as a Founding Member and comped Crew, keyed on the SEQUENCE (not email). */
+ *  comes through it is honored as a Founding Member and comped Crew, keyed on the SEQUENCE (not email).
+ *  `breathwork` is the Feature funnel: finishing it (creating the account that keeps the streak) pays
+ *  the advertised 25-Zap welcome bonus. */
 export const SEQUENCE_GRANTS: Record<string, SequenceGrant> = {
   randy: { crew: true, founding: true },
+  breathwork: { zaps: 25 },
 }
 
 /** The grant for a sequence slug, or undefined when the sequence confers nothing. PURE. */
@@ -239,7 +245,7 @@ export function templateSeed(): {
 const BREATHWORK_FEATURE_FUNNEL: BetaSequence = {
   slug: 'breathwork',
   style: 'feature',
-  feature: { feature: 'breathwork', pattern: 'box', zapsReward: 12 },
+  feature: { feature: 'breathwork', pattern: 'box', zapsReward: 25 },
   audience: 'Breathwork curious',
   marketingTag: 'beta_breathwork',
   splash: {

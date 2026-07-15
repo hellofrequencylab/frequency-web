@@ -59,14 +59,7 @@ export default async function BetaInductionPage({
   // at the end through the same stash + /complete pipeline.
   if (seq.style === 'feature' && seq.feature && !user) {
     return (
-      <FeatureFunnel
-        deferred
-        sequence={seq.slug}
-        feature={seq.feature}
-        destination={funnel.destination}
-        headline={seq.splash?.headline}
-        intro={seq.splash?.body}
-      />
+      <FeatureFunnel deferred sequence={seq.slug} feature={seq.feature} destination={funnel.destination} />
     )
   }
 
@@ -96,8 +89,6 @@ export default async function BetaInductionPage({
         feature={seq.feature}
         destination={funnel.destination}
         userEmail={user.email ?? ''}
-        headline={seq.splash?.headline}
-        intro={seq.splash?.body}
       />
     )
   }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { FUNNEL_STYLES, funnelStyle } from '@/lib/funnels/funnel-styles'
-import { getSequence, BETA_SEQUENCES } from '@/lib/onboarding/beta-sequences'
+import { getSequence, BETA_SEQUENCES, sequenceGrant } from '@/lib/onboarding/beta-sequences'
 import { patternBySlug } from '@/lib/on-air'
 import { getTrait } from '@/lib/traits/registry'
 import { isTrackedEvent } from '@/lib/analytics/events'
@@ -28,6 +28,13 @@ describe('breathwork feature funnel — the wiring contract', () => {
     const seq = getSequence('breathwork')
     expect(seq.marketingTag).toBe('beta_breathwork')
     expect(getTrait('beta_breathwork')).toBeTruthy()
+  })
+
+  it('advertises 25 Zaps and confers them as a real join grant (the invitation payoff)', () => {
+    const seq = getSequence('breathwork')
+    expect(seq.feature?.zapsReward).toBe(25)
+    // The "join now, get 25 Zaps" promise is honored server-side at completion.
+    expect(sequenceGrant('breathwork')?.zaps).toBe(25)
   })
 
   it('the funnel analytics events it fires are in the taxonomy and client-emittable', () => {
