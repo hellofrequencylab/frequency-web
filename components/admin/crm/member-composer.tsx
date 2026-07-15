@@ -344,9 +344,10 @@ export function MemberComposer({ profileId, email, displayName, manages }: Membe
         </div>
       </div>
 
-      {/* BODY — the same block editor as the Beta Campaign. */}
+      {/* BODY — the SAME on-canvas WYSIWYG editor the Beta Campaign tab uses (arrangement="canvas"),
+          not the old stacked arrangement, so composing a member message is the identical polished editor. */}
       {campaign ? (
-        <EmailEditorPane campaign={campaign} arrangement="stacked" />
+        <EmailEditorPane campaign={campaign} arrangement="canvas" />
       ) : (
         <div className="flex min-h-[200px] items-center justify-center rounded-2xl border border-border">
           <Loader2 className="h-5 w-5 animate-spin text-subtle" aria-hidden />
