@@ -1,9 +1,19 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { Building2, Users, Settings2, Crown } from 'lucide-react'
+import {
+  Building2,
+  Users,
+  Settings2,
+  Crown,
+  Plus,
+  Globe,
+  ShoppingBag,
+  CalendarCheck,
+  Ticket,
+  Contact,
+} from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EntityCard } from '@/components/cards/entity-card'
 import { getMyProfileId } from '@/lib/auth'
@@ -102,18 +112,66 @@ function OperatedSpaceCard({ space }: { space: OperatedSpace }) {
   )
 }
 
+// What a Business Space gives an operator — the concrete, benefit-led points on the no-spaces splash.
+// Plain nouns, one honest benefit each (CONTENT-VOICE §3/§5, no hype words, no em dashes).
+const SPACE_BENEFITS = [
+  { Icon: Globe, title: 'One branded page', body: 'Everything you offer on a single page your people can find and share.' },
+  { Icon: CalendarCheck, title: 'Bookings and payments', body: 'Take appointments and get paid without bolting on another tool.' },
+  { Icon: ShoppingBag, title: 'A Shop that sells', body: 'List your products and services in the network members already browse.' },
+  { Icon: Ticket, title: 'Events and tickets', body: 'Run an event and sell tickets from the same page you already keep.' },
+  { Icon: Contact, title: 'One place for your people', body: 'Every contact, lead, and member tracked in your own CRM.' },
+] as const
+
+// The no-spaces splash — the operator has nothing to manage yet, so this SELLS the Business Space
+// instead of showing a dead end. Composed from the kit (the card shell + the shared button classes),
+// benefit-led in the camp-counselor voice: concrete usage, no hype, no narrated feelings, no em dashes.
+// Primary CTA opens the same create flow as the header action; the secondary points to the directory.
+function NoSpacesSplash() {
+  return (
+    <section className="overflow-hidden rounded-2xl border border-border bg-surface p-8 sm:p-10">
+      <div className="max-w-2xl">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary-strong">Go Business</p>
+        <h2 className="text-balance text-2xl font-bold text-text sm:text-3xl">Run your whole business here</h2>
+        <p className="mt-3 text-base leading-relaxed text-muted">
+          You do not run any Spaces yet. A Business Space is one page for everything you sell, everyone
+          you serve, and every event you run. Your people find it in the same network they already
+          browse, so getting listed is getting discovered.
+        </p>
+      </div>
+
+      <ul className="mt-8 grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+        {SPACE_BENEFITS.map(({ Icon, title, body }) => (
+          <li key={title} className="flex gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+              <Icon className="h-5 w-5" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-text">{title}</p>
+              <p className="mt-0.5 text-sm leading-relaxed text-muted">{body}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-9 flex flex-wrap items-center gap-4">
+        <Link href="/spaces/new" className={buttonClasses('primary', 'md')}>
+          <Plus className="h-4 w-4" aria-hidden />
+          Create a Space
+        </Link>
+        <Link href="/spaces/directory" className={buttonClasses('secondary', 'md')}>
+          Browse the directory
+        </Link>
+        <p className="text-sm text-subtle">Free to start. One connected network, shared discovery.</p>
+      </div>
+    </section>
+  )
+}
+
 async function OperatedGrid({ profileId }: { profileId: string | null }) {
   const spaces = await listOperatedSpaces(profileId)
 
   if (spaces.length === 0) {
-    return (
-      <EmptyState
-        icon={Building2}
-        variant="first-use"
-        title="You don't run any spaces yet."
-        description="When you create a Space or are added as an admin of one, it shows up here, ready to manage."
-      />
-    )
+    return <NoSpacesSplash />
   }
 
   // The container-query grid (each card sizes to the grid, not the viewport) stays portable across

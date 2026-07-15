@@ -18,7 +18,7 @@ import type { PillarSlug } from '@/lib/pillars'
 // Coded defaults for the operator-editable content (ADR-180) — shared by the page
 // header and the SEO metadata (generateMetadata).
 export const CONTENT_FALLBACK = {
-  title: 'Circles',
+  title: 'Circles near you',
   description:
     'This is where it gets real. Find a circle near you, dive into something you love, or start your own. Showing up, week after week, is how strangers become your people.',
 }

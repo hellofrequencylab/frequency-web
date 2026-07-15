@@ -231,7 +231,7 @@ export function eventPriceLabel(flatCents: number | null, tiers: TierPriceRow[])
 // Coded defaults for the operator-editable content (ADR-180) — shared by the
 // page header and the SEO metadata below.
 export const CONTENT_FALLBACK = {
-  title: 'Events',
+  title: 'Events near you',
   description:
     'Find events near you, paid and free, hosted by local circles and community hosts. Browse by category, then RSVP or grab a ticket to what is coming up.',
 }

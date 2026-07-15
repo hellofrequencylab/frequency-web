@@ -107,7 +107,9 @@ export function MemberComposer({ profileId, email, displayName, manages }: Membe
     initStarted.current = true
     void (async () => {
       try {
-        const created = await createEmailDraft()
+        // 'message' → the lean content-box starter (heading + paragraph); the branded Frequency header and
+        // the CAN-SPAM footer are supplied by the email shell, so the operator gets the standard template.
+        const created = await createEmailDraft('message')
         if (isError(created)) {
           setInitError(created.error)
           return

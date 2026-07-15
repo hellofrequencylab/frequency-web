@@ -26,10 +26,12 @@ import type { EventsIndexData } from '@/app/(main)/events/index-data'
 // Coded hero fallback, matching the /events banner when no operator hero is set.
 const HERO_FALLBACK = '/images/site/community-dinner.jpg'
 
-// The default hero copy — the marketplace Events tab's framing. /events overrides the title (and
-// may override the eyebrow/subtitle) with a keyword-forward, self-canonical H1 for SEO/AIO.
+// The default hero copy — shared by BOTH /events and /marketplace/events so the two surfaces render
+// one identical header. "Events near you" is the keyword-forward H1 (the phrase people actually
+// search, EVENTS AIO / CONTENT-VOICE §8a): the hero title IS the page H1 (MarketHero), and /events
+// is the canonical URL both routes consolidate to.
 const HERO_DEFAULT_EYEBROW = 'Events'
-const HERO_DEFAULT_TITLE = 'Find your next gathering'
+const HERO_DEFAULT_TITLE = 'Events near you'
 const HERO_DEFAULT_SUBTITLE =
   'Paid and free events near you, from community circles and hosts. Search, browse by category, then RSVP or grab a ticket.'
 
