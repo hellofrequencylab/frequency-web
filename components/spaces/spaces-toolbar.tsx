@@ -56,68 +56,66 @@ export function SpacesToolbar({
 
   return (
     <div className="space-y-3">
-      {/* ROW 1 — search first under the hero, with Sort + Following as matched-height siblings. The
-          search grows (flex-1); Sort and Following are fixed-height boxes. `items-stretch` + `h-full`
-          on the box children equalizes their height to the search input. The Sort menu opens over the
-          grid (row 1 has no overflow clip), fixing the old clipped-dropdown case. */}
-      <div className="flex items-stretch gap-2">
-        {showSearch ? (
-          <div className="min-w-0 flex-1">
-            <DirectorySearch placeholder="Search Spaces by name…" />
-          </div>
-        ) : (
-          // Search lives elsewhere (e.g. in the hero on the public directory); keep Sort pushed right.
-          <div className="min-w-0 flex-1" aria-hidden />
-        )}
-
-        {/* Sort — the ordering control. Its inner trigger button is stretched to the row height. */}
-        <div className="shrink-0 [&>div]:h-full [&_button]:h-full">
-          <SpacesSort />
+      {/* Optional in-toolbar search — only when a mount asks for it (showSearch). The directory surfaces
+          put search in the hero instead (showSearch=false), so this stays hidden there. */}
+      {showSearch && (
+        <div>
+          <DirectorySearch placeholder="Search Spaces by name…" />
         </div>
+      )}
 
-        {/* Following — narrows to the Spaces the viewer follows (URL `?following=1`). Styled as a
-            bordered box to match the Sort control on the row. Hidden on the PUBLIC directory, where a
-            logged-out visitor follows nothing (showFollowing=false). */}
-        {showFollowing && (
-          <button
-            type="button"
-            onClick={toggleFollowing}
-            aria-pressed={following}
-            className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 text-sm font-medium transition-colors ${
-              following
-                ? 'border-primary bg-primary-bg text-primary-strong'
-                : 'border-border bg-surface text-muted hover:border-primary hover:text-text'
-            }`}
-          >
-            <Check className="h-3.5 w-3.5 shrink-0" />
-            Following
+      {/* ROW 1 — the single CATEGORY filter (URL `?category=`), sitting right under the hero. Labels
+          come from the SPACE_CATEGORIES source of truth, never hardcoded; the strip scrolls
+          horizontally on a narrow screen rather than wrapping. */}
+      <div className="-mx-1 flex items-center overflow-x-auto px-1">
+        <div className="flex w-max items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
+          <button type="button" onClick={() => setParam('category', null)} className={pill(!category)}>
+            <LayoutGrid className="h-3.5 w-3.5" /> All
           </button>
-        )}
+          {SPACE_CATEGORIES.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => setParam('category', c.key)}
+              className={pill(category === c.key)}
+            >
+              <c.Icon className="h-3.5 w-3.5" /> {c.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* ROW 2 — the single CATEGORY filter (URL `?category=`) on the left, with the card-density
-          `columns` control trailing right (the Classifieds / Events grammar: tabs left, density right).
-          The category strip scrolls horizontally on a narrow screen; the density control stays fixed
-          beside it. Labels come from the SPACE_CATEGORIES source of truth, never hardcoded. */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="-mx-1 flex min-w-0 items-center overflow-x-auto px-1">
-          <div className="flex w-max items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
-            <button type="button" onClick={() => setParam('category', null)} className={pill(!category)}>
-              <LayoutGrid className="h-3.5 w-3.5" /> All
-            </button>
-            {SPACE_CATEGORIES.map((c) => (
-              <button
-                key={c.key}
-                type="button"
-                onClick={() => setParam('category', c.key)}
-                className={pill(category === c.key)}
-              >
-                <c.Icon className="h-3.5 w-3.5" /> {c.label}
-              </button>
-            ))}
+      {/* ROW 2 — Sort + Following LEFT-aligned, with the card-density `columns` control trailing right
+          (justify-between). `items-stretch` + `h-full` on the box children equalizes their height. The
+          Sort menu opens over the grid (this row has no overflow clip), so its dropdown never clips. */}
+      <div className="flex items-stretch justify-between gap-2">
+        <div className="flex items-stretch gap-2">
+          {/* Sort — the ordering control. Its inner trigger button is stretched to the row height. */}
+          <div className="shrink-0 [&>div]:h-full [&_button]:h-full">
+            <SpacesSort />
           </div>
+
+          {/* Following — narrows to the Spaces the viewer follows (URL `?following=1`). Styled as a
+              bordered box to match the Sort control on the row. Hidden on the PUBLIC directory, where a
+              logged-out visitor follows nothing (showFollowing=false). */}
+          {showFollowing && (
+            <button
+              type="button"
+              onClick={toggleFollowing}
+              aria-pressed={following}
+              className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 text-sm font-medium transition-colors ${
+                following
+                  ? 'border-primary bg-primary-bg text-primary-strong'
+                  : 'border-border bg-surface text-muted hover:border-primary hover:text-text'
+              }`}
+            >
+              <Check className="h-3.5 w-3.5 shrink-0" />
+              Following
+            </button>
+          )}
         </div>
-        {columns && <div className="shrink-0">{columns}</div>}
+
+        {columns && <div className="flex shrink-0 items-center">{columns}</div>}
       </div>
     </div>
   )

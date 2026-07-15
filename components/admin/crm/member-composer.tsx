@@ -53,12 +53,25 @@ export interface MemberComposerProps {
     circles: { id: string; name: string }[]
     events: { id: string; title: string }[]
   }
+  /** Resume an EXISTING draft (its campaign id) instead of minting a fresh one. The parent remembers
+   *  the id via onDraftReady so reopening the popup for the same member picks up the saved draft. */
+  initialCampaignId?: string
+  /** Fired with the draft's campaign id once it is created or resumed, so the parent can remember it
+   *  (and reopen into the same draft after a close). */
+  onDraftReady?: (campaignId: string) => void
 }
 
 const inputClass =
   'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none'
 
-export function MemberComposer({ profileId, email, displayName, manages }: MemberComposerProps) {
+export function MemberComposer({
+  profileId,
+  email,
+  displayName,
+  manages,
+  initialCampaignId,
+  onDraftReady,
+}: MemberComposerProps) {
   // The Studio draft this composer edits. Created once on open, then edited in place by EmailEditorPane.
   const [campaign, setCampaign] = useState<LoadedEmailCampaign | null>(null)
   const [initError, setInitError] = useState<string | null>(null)
@@ -107,24 +120,31 @@ export function MemberComposer({ profileId, email, displayName, manages }: Membe
     initStarted.current = true
     void (async () => {
       try {
-        // 'message' → the lean content-box starter (heading + paragraph); the branded Frequency header and
-        // the CAN-SPAM footer are supplied by the email shell, so the operator gets the standard template.
-        const created = await createEmailDraft('message')
-        if (isError(created)) {
-          setInitError(created.error)
-          return
+        // Resume the parent's remembered draft when there is one (reopening the popup for the same member
+        // after a close); otherwise mint a fresh 'message' draft (the lean content-box starter; the branded
+        // Frequency header + CAN-SPAM footer come from the email shell). Everything the operator types then
+        // AUTOSAVES to this campaign row, so closing the popup never loses the draft.
+        let campaignId = initialCampaignId ?? null
+        if (!campaignId) {
+          const created = await createEmailDraft('message')
+          if (isError(created)) {
+            setInitError(created.error)
+            return
+          }
+          campaignId = created.data.id
         }
-        const loaded = await loadEmailCampaign(created.data.id)
+        const loaded = await loadEmailCampaign(campaignId)
         if (!loaded) {
           setInitError('Could not open a new message. Try again.')
           return
         }
         setCampaign(loaded)
+        onDraftReady?.(loaded.id)
       } catch {
         setInitError('The message editor could not load. Check your connection and try again.')
       }
     })()
-  }, [initNonce])
+  }, [initNonce, initialCampaignId, onDraftReady])
 
   // Debounced member search. All state updates happen inside the async timer (never synchronously in the
   // effect body), so typing does not trigger a cascading render per keystroke.
