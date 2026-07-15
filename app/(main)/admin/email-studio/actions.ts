@@ -367,6 +367,60 @@ export async function deleteEmailDraft(id: string): Promise<ActionResult> {
   return ok()
 }
 
+/**
+ * Discard a draft ONLY if it is still pristine — the abandoned-draft cleanup for the CRM member composer,
+ * which mints a draft the instant its popup opens. Called when the popup closes: a draft that has a
+ * subject/preheader/body, any authored block content, a send, a test send, a schedule, a recipient count,
+ * or a sequence phase is KEPT (the operator may resume it, per "pick up where you left off"); a pristine
+ * empty one is removed so it never clutters the Email Studio list. Writer-gated + owner-scoped +
+ * status-guarded, so it can only ever remove the caller's own untouched draft. Best-effort: a miss is
+ * harmless (opening then closing without editing just leaves nothing behind).
+ */
+export async function discardDraftIfEmpty(id: string): Promise<ActionResult> {
+  const gate = await writerGate()
+  if (!gate.ok) return fail(gate.error)
+
+  const db = createAdminClient()
+  const { data } = await db
+    .from('campaigns')
+    .select('subject, preheader, body, sent_at, test_sent_at, scheduled_for, phase_id, recipient_count, block_json')
+    .eq('id', id)
+    .eq('status', 'draft')
+    .maybeSingle()
+  const row = data as {
+    subject: string | null
+    preheader: string | null
+    body: string | null
+    sent_at: string | null
+    test_sent_at: string | null
+    scheduled_for: string | null
+    phase_id: string | null
+    recipient_count: number | null
+    block_json: unknown
+  } | null
+  if (!row) return ok()
+
+  const empty = !(row.subject ?? '').trim() && !(row.preheader ?? '').trim() && !(row.body ?? '').trim()
+  const content =
+    row.block_json && typeof row.block_json === 'object'
+      ? (row.block_json as { content?: Record<string, unknown> }).content
+      : undefined
+  const hasAuthoredContent = !!content && Object.keys(content).length > 0
+  const pristine =
+    empty &&
+    !hasAuthoredContent &&
+    !row.sent_at &&
+    !row.test_sent_at &&
+    !row.scheduled_for &&
+    !row.phase_id &&
+    !(row.recipient_count && row.recipient_count > 0)
+  if (!pristine) return ok()
+
+  await db.from('campaigns').delete().eq('id', id).eq('status', 'draft').eq('created_by', gate.profileId)
+  revalidatePath('/admin/beta')
+  return ok()
+}
+
 // ── Beta broadcast sequence (the Campaign tab) ─────────────────────────────────────────────────────────────
 //
 // The Campaign tab is JUST the beta broadcast sequence: the six launch emails in send order, plus any email

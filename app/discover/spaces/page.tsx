@@ -25,13 +25,15 @@ import {
 // contract mirrors the rest of /discover: no operator admin bar, no per-viewer state (viewerProfileId is null,
 // the "Following" filter is hidden), ISR-cached, and an ItemList + breadcrumb JSON-LD for answer engines.
 
-const TITLE = 'Business Spaces'
+// Public designators per NAMING.md (ADR-552): a Space is a "Business" or a "Non Profit". The retired
+// type words (practitioner / organization / coaching / studio / shop) never appear in public copy.
+const TITLE = 'Businesses and nonprofits near you'
 const DESCRIPTION =
-  'Every practitioner, business, and organization in the Frequency network. Find one, see what they offer, and connect.'
+  'Browse the businesses and nonprofits in the Frequency network. See what each one offers, from classes to services to events, then follow or reach out.'
 // The marketing header invitation: a plain, two-part welcome (browse what is here, or add your own), sized
 // for the on-photo hero. Voice canon: plain, no em dashes, never narrate the reader's feelings.
 const HERO_INVITE =
-  'Find a practitioner, business, studio, or shop near you. Or list your own and get discovered by everyone browsing the network.'
+  'Find a business or nonprofit near you. Or list your own and get discovered by everyone browsing the network.'
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -97,7 +99,7 @@ export default async function PublicSpacesDirectoryPage({
       <MarketHero
         image="/images/site/business-directory-hero.jpg"
         eyebrow="Business Spaces"
-        title="Find a business near you"
+        title="Find a business or nonprofit near you"
         subtitle={HERO_INVITE}
         search={<DirectorySearch placeholder="Search businesses by name" />}
         action={
