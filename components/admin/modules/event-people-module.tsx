@@ -68,16 +68,16 @@ export function EventPeopleModule() {
   return (
     <div className="@container space-y-6">
       <section>
-        {/* Counts — the roster at a glance. */}
-        <div className="grid grid-cols-2 gap-2 @sm:grid-cols-4">
+        {/* Counts — the roster at a glance, as a TIGHT tile row (matches the core-stats panel). */}
+        <div className="grid grid-cols-2 gap-1.5 @xs:grid-cols-4">
           {[
             { label: 'Going', value: analytics.going },
             { label: 'Headcount', value: analytics.headcount },
             { label: 'Maybe', value: analytics.maybe },
             { label: 'Waitlist', value: analytics.waitlist },
           ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-border bg-surface p-3">
-              <div className="text-lg font-bold text-text">{s.value}</div>
+            <div key={s.label} className="rounded-lg border border-border bg-surface px-2.5 py-1.5">
+              <div className="text-sm font-bold leading-tight text-text">{s.value}</div>
               <div className="text-2xs font-medium uppercase tracking-wide text-subtle">{s.label}</div>
             </div>
           ))}

@@ -63,10 +63,23 @@ export function EventCoreStatsCards({
   const tiles = tilesFor(stats)
 
   if (variant === 'panel') {
+    // TIGHT tile grid for the narrow admin rail — a dense stat strip, NOT the full-size StatCard (which
+    // made the rail's top section balloon). Icon + a small value over a 2xs label; the capacity detail
+    // tucks under it. Reads as a compact "at a glance" band at the top of the panel.
     return (
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-1.5">
         {tiles.map((t) => (
-          <StatCard key={t.key} bordered label={t.label} value={t.value} icon={t.Icon} detail={t.detail} />
+          <div
+            key={t.key}
+            className="flex items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5"
+          >
+            <t.Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
+            <div className="min-w-0">
+              <div className="truncate text-sm font-bold leading-tight text-text">{t.value}</div>
+              <div className="truncate text-2xs font-medium uppercase tracking-wide text-subtle">{t.label}</div>
+              {t.detail && <div className="truncate text-2xs text-subtle">{t.detail}</div>}
+            </div>
+          </div>
         ))}
       </div>
     )
