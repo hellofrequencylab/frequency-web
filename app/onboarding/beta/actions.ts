@@ -18,6 +18,8 @@ import { ensureMemberCodes } from '@/lib/qr/member-codes'
 import { track } from '@/lib/analytics/track'
 import { BETA_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW, type OathId } from '@/lib/onboarding/beta-script'
 import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
+import { sequenceGrant } from '@/lib/onboarding/beta-sequences'
+import { grantFoundingStatus } from '@/lib/founding/status'
 import { funnelLanding, isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
 import type { FunnelDestination } from '@/lib/onboarding/beta-sequences'
 import { personaTag, isPersonaId, DEFAULT_PERSONA } from '@/lib/onboarding/personas'
@@ -143,6 +145,39 @@ async function grantBetaCrew(authUserId: string) {
     .update({ membership_tier: 'crew' })
     .eq('auth_user_id', authUserId)
     .eq('membership_tier', 'free')
+}
+
+/**
+ * Apply any one-time GRANTS a funnel confers on the accounts that finish it, keyed by the
+ * ?seq slug the fq_beta_seq cookie carried through signup (SEQUENCE_GRANTS, not email — the
+ * email is unknown at authoring time). The `randy` donor funnel honors every finisher as a
+ * Founding Member and comps them Crew.
+ *
+ * Best-effort + idempotent, so it NEVER blocks onboarding: grantFoundingStatus is a no-op on
+ * an already-active founder, and the Crew comp is a guarded upsert that only lifts a free member.
+ * The Crew comp here is INDEPENDENT of BETA_MEMBERS_GET_CREW so the funnel's promise holds even
+ * after that beta-wide flag flips off at launch.
+ */
+async function applySequenceGrants(seqSlug: string | null, authUserId: string, profileId: string): Promise<void> {
+  const grant = sequenceGrant(seqSlug)
+  if (!grant) return
+  try {
+    if (grant.crew) {
+      await createAdminClient()
+        .from('profiles')
+        .update({ membership_tier: 'crew' })
+        .eq('auth_user_id', authUserId)
+        .eq('membership_tier', 'free')
+    }
+    if (grant.founding) {
+      // Durable Founding Member status: an active founding_members row + is_founding_member,
+      // which lights the gold Founder badge beside their Member badge. No charge (reserve-now,
+      // charge-at-graduation invariant in lib/founding/status).
+      await grantFoundingStatus({ profileId, kind: 'member' })
+    }
+  } catch (err) {
+    console.error('[beta] sequence grant failed:', err)
+  }
 }
 
 type Meta = Record<string, Json>
@@ -304,6 +339,9 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     await track('onboarding.induction_completed', { hasAvatar: !!avatarUrl, hasIntent: !!intent }, prof.id)
     await track('profile.completed', { hasAvatar: !!avatarUrl }, prof.id)
     await tagBetaCohort(prof.id, seqSlug)
+    // Apply any grants the arriving funnel confers (SEQUENCE_GRANTS, keyed on seqSlug): the
+    // `randy` donor funnel makes the finisher a Founding Member + comps Crew. Best-effort.
+    await applySequenceGrants(seqSlug, user.id, prof.id as string)
     // Tag every persona they selected (multi-select); each tag is registered + idempotent.
     for (const p of allPersonas) await tagPersona(prof.id as string, p)
     // Cue future onboarding: enroll the member into their PRIMARY persona's nurture / onboarding sequence
@@ -449,6 +487,7 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
 
   const meta = (profile.meta as Meta) ?? {}
   const beta = (meta.beta as Meta) ?? {}
+  const seqSlug = await readBetaSequenceSlug()
   const personaSlug = await readPersonaSlug()
   const personaSlugs = await readPersonaSlugs()
   const allPersonas = Array.from(new Set([...(personaSlug ? [personaSlug] : []), ...personaSlugs]))
@@ -515,6 +554,9 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
 
   // Beta: a returning member who was still on the Member tier comes up to Crew.
   await grantBetaCrew(user.id)
+  // Apply the arriving funnel's grants too, so a returning member who re-runs the `randy`
+  // funnel is still honored as a Founding Member + comped Crew (idempotent, best-effort).
+  await applySequenceGrants(seqSlug, user.id, profile.id as string)
 }
 
 /**

@@ -10,6 +10,7 @@
 
 import type { RankKey } from '@/lib/season-ranks'
 import { rankBadgeStyle } from '@/lib/season-ranks'
+import { Gem } from 'lucide-react'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
@@ -74,6 +75,33 @@ export function RoleBadge({
       style={roleBadgeStyle(safeRole)}
     >
       {label}
+    </span>
+  )
+}
+
+// The gold Founding chip — a PEER of the RoleBadge, shown beside "Member" for a Founding
+// Member (profiles.is_founding_member). It paints with the brand gold rank token (season
+// ranks apex on gold — the highest-energy identity mark), reusing the same .rank-badge
+// primitive as every other role chip, so it sits cleanly beside them with no hardcoded colour.
+// Render only when the member actually holds founding status (caller-resolved, like
+// CharterBadge / VerifiedBadge). The chip reads "Founder"; the durable status stays the
+// canonical "Founding Member" (the title attribute + is_founding_member flag).
+export function FoundingBadge({
+  founding,
+  className,
+}: {
+  founding?: boolean | null
+  className?: string
+}) {
+  if (!founding) return null
+  return (
+    <span
+      className={`rank-badge inline-flex items-center gap-1 ${className ?? 'text-3xs leading-tight'}`}
+      style={rankBadgeStyle('gold')}
+      title="Founding Member"
+    >
+      <Gem className="h-3 w-3" aria-hidden />
+      Founder
     </span>
   )
 }

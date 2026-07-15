@@ -121,6 +121,32 @@ export function nicheFunnelDestination(slug: string | null | undefined): FunnelD
   return (slug && NICHE_FUNNEL_DESTINATIONS[slug]) || undefined
 }
 
+// ── Per-sequence GRANTS (ADR-funnels): what finishing a funnel confers on the account ─────────────
+// A funnel can honor the people it brings in. The grant is keyed by the ?seq slug (carried to
+// signup by the fq_beta_seq cookie, exactly like the cohort tag), so honoring a funnel is a ONE-ROW
+// data edit here, never new branching logic. Applied server-side at induction completion
+// (app/onboarding/beta/actions.ts applySequenceGrants). Client-safe (pure data).
+
+/** The one-time grant a sequence confers on every account that finishes it. */
+export interface SequenceGrant {
+  /** Comp the paid Crew tier (profiles.membership_tier = 'crew'). */
+  crew?: boolean
+  /** Award durable Founding Member status (a founding_members row + is_founding_member), which
+   *  lights the gold Founding badge beside their Member badge. No charge (reserve-now). */
+  founding?: boolean
+}
+
+/** Per-sequence grants, keyed by the ?seq slug. `randy` is the donor onboarding funnel: everyone who
+ *  comes through it is honored as a Founding Member and comped Crew, keyed on the SEQUENCE (not email). */
+export const SEQUENCE_GRANTS: Record<string, SequenceGrant> = {
+  randy: { crew: true, founding: true },
+}
+
+/** The grant for a sequence slug, or undefined when the sequence confers nothing. PURE. */
+export function sequenceGrant(slug: string | null | undefined): SequenceGrant | undefined {
+  return (slug && SEQUENCE_GRANTS[slug]) || undefined
+}
+
 // The base flow: Vera's scripted copy verbatim. The splash block seeds brand-new
 // versions cloned in the builder (the default flow itself has no public splash
 // page — visitors enter at /onboarding/beta). The marketing tag stays

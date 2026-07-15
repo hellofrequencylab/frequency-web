@@ -22,7 +22,9 @@ import {
   Sparkles,
   UserCheck,
   Route as RouteIcon,
+  X,
 } from 'lucide-react'
+import { Dialog } from '@/components/ui/dialog'
 import { StatCard } from '@/components/ui/stat-card'
 import { getInitials, cn } from '@/lib/utils'
 // Type-only import: never pull the server-only network reader into the client bundle.
@@ -205,8 +207,19 @@ function FullProfile({ detail }: { detail: CrmMemberDetail }) {
 /** The CRM master-detail pane. `detail` carries the compact profile fields plus the rich CRM fields. */
 export function CrmMemberDetailPane({ detail }: { detail: CrmMemberDetail }) {
   const [open, setOpen] = useState(false)
+  const [composeOpen, setComposeOpen] = useState(false)
+  // The draft the popup is editing. Remembered across a close so reopening for the SAME member resumes
+  // the saved draft. It never needs a manual reset: the viewer keys this pane by profileId, so selecting
+  // a different member remounts it and every piece of state (draftId, composeOpen) starts fresh.
+  const [draftId, setDraftId] = useState<string | null>(null)
   const contact = detail.contact
   const hasContact = !!(contact && (contact.email || contact.phone || contact.links?.length))
+  const composerManages = detail.network
+    ? {
+        circles: detail.network.circlesHosted.map((c) => ({ id: c.id, name: c.label })),
+        events: detail.network.eventsHosted.map((e) => ({ id: e.id, title: e.label })),
+      }
+    : undefined
 
   return (
     <div className="@container flex flex-col gap-4">
@@ -260,22 +273,61 @@ export function CrmMemberDetailPane({ detail }: { detail: CrmMemberDetail }) {
         </ul>
       )}
 
-      {/* (b) The compose surface (sibling component). Mounted when the member has a reachable email;
-          the "manages" groups become one-tap "everyone in..." recipient chips. */}
+      {/* (b) Compose: a "Message Member" button opens the FULL email editor in a large popup, so the
+          editor gets the room it needs (the detail pane never has to hold it). The draft is created only
+          when the popup opens, so browsing members never mints a throwaway draft. */}
       {detail.email && (
-        <MemberComposer
-          profileId={detail.profileId}
-          email={detail.email}
-          displayName={detail.displayName}
-          manages={
-            detail.network
-              ? {
-                  circles: detail.network.circlesHosted.map((c) => ({ id: c.id, name: c.label })),
-                  events: detail.network.eventsHosted.map((e) => ({ id: e.id, title: e.label })),
-                }
-              : undefined
-          }
-        />
+        <>
+          <button
+            type="button"
+            onClick={() => setComposeOpen(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          >
+            <Mail className="h-4 w-4" aria-hidden /> Message Member
+          </button>
+          <Dialog
+            open={composeOpen}
+            onClose={() => setComposeOpen(false)}
+            ariaLabel={`Message ${detail.displayName}`}
+            className="max-w-none !mt-0"
+          >
+            {/* Near-fullscreen compose overlay: the email editor fills the CENTER at full size, with an
+                editorial context rail (communication stats + threaded past communications) on the RIGHT. */}
+            <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xl">
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-3">
+                <div className="min-w-0">
+                  <h3 className="truncate text-sm font-bold text-text">Message {detail.displayName}</h3>
+                  <p className="truncate text-2xs text-subtle">
+                    Saves automatically as you type. Close anytime and pick up where you left off.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setComposeOpen(false)}
+                  aria-label="Close"
+                  className="shrink-0 rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+                >
+                  <X className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
+              <div className="flex min-h-0 flex-1">
+                {/* CENTER — the full-size editor. */}
+                <div className="min-w-0 flex-1 overflow-y-auto p-5">
+                  <MemberComposer
+                    profileId={detail.profileId}
+                    email={detail.email}
+                    displayName={detail.displayName}
+                    manages={composerManages}
+                    initialCampaignId={draftId ?? undefined}
+                    onDraftReady={setDraftId}
+                  />
+                </div>
+                {/* RIGHT — editorial stats + threaded communications. */}
+                <ComposeContextRail detail={detail} />
+              </div>
+            </div>
+          </Dialog>
+        </>
       )}
 
       {/* (c) The expandable FULL profile. */}
@@ -292,5 +344,100 @@ export function CrmMemberDetailPane({ detail }: { detail: CrmMemberDetail }) {
         {open && <FullProfile detail={detail} />}
       </div>
     </div>
+  )
+}
+
+/** The compose-popup RIGHT rail: everything worth knowing before you write. A communication rollup
+ *  (sent / opened / clicked / replied + last touch), the resonance chips, the THREADED past
+ *  communications timeline, and steward notes. Renders only the fields the server sourced; on desktop
+ *  only (the popup stacks to editor-only on narrow screens). */
+function ComposeContextRail({ detail }: { detail: CrmMemberDetail }) {
+  const { engagement, scores, interactions, notes, contact } = detail
+  const hasHistory = !!engagement || (interactions?.length ?? 0) > 0
+
+  return (
+    <aside className="hidden w-80 shrink-0 flex-col gap-5 overflow-y-auto border-l border-border bg-canvas p-4 lg:flex">
+      <div>
+        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Reaching</p>
+        <p className="mt-1 truncate text-sm font-bold text-text">{detail.displayName}</p>
+        {contact?.email && <p className="truncate text-xs text-subtle">{contact.email}</p>}
+      </div>
+
+      {/* Resonance chips — health / tier / lifecycle at a glance. */}
+      {scores && (scores.health != null || scores.tier || scores.lifecycle) && (
+        <div className="flex flex-wrap gap-1.5">
+          {scores.health != null && (
+            <span className="inline-flex items-center rounded-full border border-border bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+              Health {Math.round(scores.health)}
+            </span>
+          )}
+          {scores.tier && (
+            <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+              {scores.tier}
+            </span>
+          )}
+          {scores.lifecycle && (
+            <span className="inline-flex items-center rounded-full border border-border bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+              {scores.lifecycle}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Communication rollup — reached vs. responded. */}
+      {engagement && (
+        <section>
+          <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Communication</h4>
+          <div className="grid grid-cols-2 gap-2">
+            <StatCard label="Sent" value={engagement.sent} icon={Send} />
+            <StatCard label="Opened" value={engagement.opened} icon={MailOpen} />
+            <StatCard label="Clicked" value={engagement.clicked} icon={MousePointerClick} />
+            <StatCard label="Replied" value={engagement.replied} icon={Reply} />
+          </div>
+          {engagement.lastTouch && (
+            <p className="mt-1.5 text-2xs text-subtle">Last touch {engagement.lastTouch}</p>
+          )}
+        </section>
+      )}
+
+      {/* Threaded past communications. */}
+      {interactions && interactions.length > 0 && (
+        <section>
+          <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Past communication</h4>
+          <ol className="space-y-3 border-l border-border pl-4">
+            {interactions.map((it, i) => (
+              <li key={`${it.kind}-${it.when}-${i}`} className="relative">
+                <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-primary" aria-hidden />
+                <p className="text-xs font-semibold text-text">
+                  {it.kind} <span className="font-normal text-subtle">· {it.when}</span>
+                </p>
+                <p className="text-xs text-muted">{it.summary}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {/* Steward notes. */}
+      {notes && notes.length > 0 && (
+        <section>
+          <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Notes</h4>
+          <ul className="space-y-1.5">
+            {notes.map((n) => (
+              <li key={n.id} className="flex items-start gap-2 text-xs text-muted">
+                <StickyNote className="mt-0.5 h-3 w-3 shrink-0 text-subtle" aria-hidden />
+                <span>{n.body}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {!hasHistory && (
+        <p className="text-xs text-subtle">
+          No communication history yet. This will be your first touch with {detail.displayName}.
+        </p>
+      )}
+    </aside>
   )
 }

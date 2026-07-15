@@ -251,7 +251,9 @@ export function MemberViewer({
   // The right-pane body for a loaded detail: the CRM master-detail pane, or the generic card.
   const detailBody = (detail: MemberDetail) =>
     detailVariant === 'crm' ? (
-      <CrmMemberDetailPane detail={detail as CrmMemberDetail} />
+      // Key by profileId so selecting a different member REMOUNTS the pane — resetting its compose
+      // popup + remembered draft cleanly, no reset effect needed.
+      <CrmMemberDetailPane key={(detail as CrmMemberDetail).profileId} detail={detail as CrmMemberDetail} />
     ) : (
       <MemberDetailCard detail={detail} mode={detailMode} />
     )
@@ -435,11 +437,6 @@ export function MemberViewer({
                           avatarUrl={m.avatarUrl}
                           online={m.online}
                           context={m.headline ? m.headline : `@${m.handle}`}
-                          meta={m.stats?.map((s) => (
-                            <span key={s.label} className="text-subtle">
-                              {s.label} {s.value}
-                            </span>
-                          ))}
                         />
                       </div>
                     ))}
@@ -479,9 +476,11 @@ export function MemberViewer({
           )}
         </div>
 
-        {/* RIGHT: the wide detail pane (desktop only; mobile uses the overlay) */}
+        {/* RIGHT: the wide detail pane (desktop only; mobile uses the overlay). Opens FULLY — no inner
+            scroll or sticky cap, so the member's stats stretch to their natural height and the page
+            (not this panel) scrolls. The email editor opens in a popup, so this pane never has to hold it. */}
         <div className="hidden min-w-0 flex-1 lg:block">
-          <div className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
             {detailPane}
           </div>
         </div>
@@ -580,11 +579,6 @@ function ListRow({
           <p className="truncate text-sm font-bold text-text">{member.displayName}</p>
           <p className="truncate text-xs text-subtle">{member.headline ?? `@${member.handle}`}</p>
         </div>
-        {member.stats && member.stats.length > 0 && (
-          <span className="shrink-0 text-xs font-medium text-subtle">
-            {member.stats[0].label} {member.stats[0].value}
-          </span>
-        )}
       </button>
     </li>
   )
