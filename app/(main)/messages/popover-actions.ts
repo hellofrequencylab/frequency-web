@@ -182,3 +182,84 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
 
   return { totalUnread, rooms, conversations }
 }
+
+// ── Inline-thread loaders for the chat dock ─────────────────────────────────
+// The dock opens a conversation IN the pop-up (not a route change), so it needs the
+// same data the thread pages load. Both are RLS-scoped on the user client, so a
+// non-member gets null (the DB gate), never someone else's messages.
+
+export type DockPeer = { id: string; display_name: string; handle: string; avatar_url: string | null }
+export type DockDmMessage = { id: string; conversation_id: string; sender_id: string; body: string; created_at: string }
+export type DockRoomMessage = {
+  id: string; room_id: string; author_id: string; body: string; created_at: string; author: DockPeer | null
+}
+
+/** Load a 1:1/group DM for inline rendering in the dock (mirrors messages/[id]/page.tsx). */
+export async function loadDockDmThread(conversationId: string): Promise<
+  { myProfileId: string; participants: DockPeer[]; messages: DockDmMessage[]; title: string } | null
+> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data: myProfile } = await supabase.from('profiles').select('id').eq('auth_user_id', user.id).maybeSingle()
+  if (!myProfile) return null
+  const myProfileId = myProfile.id as string
+
+  const [convRes, myPartRes, partRowsRes, peerRes, msgRes] = await Promise.all([
+    supabase.from('conversations').select('id, name').eq('id', conversationId).maybeSingle(),
+    supabase.from('conversation_participants').select('profile_id').eq('conversation_id', conversationId).eq('profile_id', myProfileId).maybeSingle(),
+    supabase.from('conversation_participants').select('profile_id').eq('conversation_id', conversationId),
+    (supabase).rpc('message_peer_profiles'),
+    supabase.from('messages').select('id, conversation_id, sender_id, body, created_at').eq('conversation_id', conversationId).order('created_at', { ascending: false }).limit(100),
+  ])
+  if (!convRes.data || !myPartRes.data) return null // am_participant gate
+
+  const peerMap = new Map(((peerRes.data ?? []) as DockPeer[]).map((p) => [p.id, p]))
+  const participants = ((partRowsRes.data ?? []) as { profile_id: string }[])
+    .map((p) => peerMap.get(p.profile_id))
+    .filter((p): p is DockPeer => !!p)
+  const messages = ((msgRes.data ?? []) as unknown as DockDmMessage[]).reverse()
+  const others = participants.filter((p) => p.id !== myProfileId)
+  const title = (convRes.data.name as string | null)
+    || (others.length > 1
+      ? others.slice(0, 3).map((p) => p.display_name.split(' ')[0]).join(', ')
+      : others[0]?.display_name ?? 'Conversation')
+
+  await supabase
+    .from('conversation_participants')
+    .update({ last_read_at: new Date().toISOString() })
+    .eq('conversation_id', conversationId)
+    .eq('profile_id', myProfileId)
+
+  return { myProfileId, participants, messages, title }
+}
+
+/** Load a room for inline rendering in the dock. RoomThread marks itself read on mount. */
+export async function loadDockRoomThread(roomId: string): Promise<
+  { myProfileId: string; messages: DockRoomMessage[]; canPost: boolean; name: string } | null
+> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data: myProfile } = await supabase.from('profiles').select('id').eq('auth_user_id', user.id).maybeSingle()
+  if (!myProfile) return null
+  const myProfileId = myProfile.id as string
+
+  const [roomRes, memberRes, msgRes] = await Promise.all([
+    supabase.from('rooms').select('id, name').eq('id', roomId).maybeSingle(),
+    supabase.from('room_members').select('room_id').eq('room_id', roomId).eq('profile_id', myProfileId).maybeSingle(),
+    supabase.from('room_messages').select('id, room_id, author_id, body, created_at').eq('room_id', roomId).order('created_at', { ascending: false }).limit(100),
+  ])
+  if (!roomRes.data) return null // am_room_member / open-read gate
+
+  const raw = ((msgRes.data ?? []) as Array<Omit<DockRoomMessage, 'author'>>).reverse()
+  const authorIds = Array.from(new Set(raw.map((m) => m.author_id)))
+  const authorMap = new Map<string, DockPeer>()
+  if (authorIds.length) {
+    const { data: authors } = await supabase.from('profiles').select('id, display_name, handle, avatar_url').in('id', authorIds)
+    for (const a of (authors ?? []) as DockPeer[]) authorMap.set(a.id, a)
+  }
+  const messages: DockRoomMessage[] = raw.map((m) => ({ ...m, author: authorMap.get(m.author_id) ?? null }))
+
+  return { myProfileId, messages, canPost: !!memberRes.data, name: (roomRes.data.name as string) ?? 'Room' }
+}

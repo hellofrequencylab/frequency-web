@@ -8,7 +8,7 @@ import type { HelpSearchEntry } from '@/lib/help/content'
 import { searchHelp } from '@/lib/help/search'
 import { CONTACT_EMAIL } from '@/lib/site'
 import { VeraChat, COMPANION_OPENING } from '@/components/vera/vera-chat'
-import { DockChat } from '@/components/messages/dock-chat'
+import { DockChat, prefetchDockSummary } from '@/components/messages/dock-chat'
 import { getMessagesUnreadCount } from '@/app/(main)/messages/popover-actions'
 import { openSupport } from '@/components/support/support-launcher'
 import { EdgePill } from '@/components/layout/edge-pill'
@@ -61,6 +61,10 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
     getMessagesUnreadCount().then((n) => { if (alive) setUnread(n) }).catch(() => {})
     return () => { alive = false }
   }, [open])
+
+  // Warm the messages summary once on mount so opening the Chat tab is instant
+  // (the summary is a few RPCs — this is what felt slow on first open).
+  useEffect(() => { prefetchDockSummary() }, [])
 
   useEffect(() => {
     const onActivity = () => setPulse(true)
@@ -134,17 +138,17 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
         />
       )}
 
+      {/* Non-modal floating dock: NO page overlay, so members keep navigating and using
+          the site while chatting. Bottom sheet on mobile, anchored card on desktop.
+          Persists across navigation (mounted in the (main) layout). Close via X or ESC. */}
       {open && (
-        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby="vera-launcher-title">
-          {/* Click-away overlay */}
-          <button type="button" aria-label="Close" onClick={close} className="absolute inset-0 bg-black/40" tabIndex={-1} />
-
-          {/* Panel: bottom sheet on mobile, anchored card on desktop */}
-          <div
-            ref={panelRef}
-            tabIndex={-1}
-            className="absolute inset-x-0 bottom-0 mx-auto flex h-[80vh] max-h-[640px] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-border bg-surface shadow-pop outline-none md:inset-x-auto md:bottom-6 md:right-6 md:h-[600px] md:rounded-2xl motion-safe:animate-[slideUp_0.25s_ease-out]"
-          >
+        <div
+          ref={panelRef}
+          tabIndex={-1}
+          role="dialog"
+          aria-label="Chat, Vera and help"
+          className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[68vh] max-h-[640px] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-border bg-surface shadow-pop outline-none md:inset-x-auto md:bottom-6 md:right-6 md:h-[600px] md:rounded-2xl motion-safe:animate-[slideUp_0.25s_ease-out]"
+        >
             {/* Header — reflects the active mode */}
             <div className="flex shrink-0 items-center gap-2.5 border-b border-border px-4 py-3">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
@@ -261,7 +265,6 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                 </div>
               </div>
             )}
-          </div>
         </div>
       )}
     </>

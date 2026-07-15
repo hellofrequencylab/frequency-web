@@ -6,6 +6,8 @@ import { Send, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { sendRoomMessage, markRoomRead } from '@/app/(main)/messages/rooms/actions'
 import { getInitials } from '@/lib/utils'
+import { useTypingIndicator } from '@/lib/realtime/use-typing'
+import { TypingIndicator } from '@/components/messages/typing-indicator'
 
 export type RoomMessage = {
   id: string
@@ -40,6 +42,12 @@ export function RoomThread({
   const [isPending, startTransition] = useTransition()
   const endRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
+
+  // Live typing indicator (Broadcast — see lib/realtime/use-typing.ts)
+  const { typingNames, notifyTyping, stopTyping } = useTypingIndicator({
+    scope: `room:${roomId}`,
+    userId: myProfileId,
+  })
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -91,6 +99,7 @@ export function RoomThread({
       try {
         await sendRoomMessage(roomId, trimmed)
         setBody('')
+        stopTyping()
       } catch (err) {
         console.error(err)
       }
@@ -142,6 +151,7 @@ export function RoomThread({
             )
           })
         )}
+        <TypingIndicator names={typingNames} />
         <div ref={endRef} />
       </div>
 
@@ -151,7 +161,7 @@ export function RoomThread({
           <div className="flex items-end gap-2">
             <textarea
               value={body}
-              onChange={e => setBody(e.target.value)}
+              onChange={e => { setBody(e.target.value); notifyTyping() }}
               onKeyDown={e => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault()
