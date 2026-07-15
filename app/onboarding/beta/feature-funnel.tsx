@@ -23,6 +23,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { BreathVisualizer } from '@/components/on-air/visualizer'
+import { LotusIcon } from '@/components/on-air/icons'
 import { patternBySlug } from '@/lib/on-air'
 import type { FeatureFunnelConfig, FunnelDestination } from '@/lib/onboarding/beta-sequences'
 import { isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
@@ -39,10 +40,16 @@ const PENDING_AVATAR_KEY = 'fq_pending_avatar'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const HANDLE_RE = /^[a-z0-9_]{3,30}$/
 
-const COUNTDOWN_SEC = 5
+// The demo timer runs as a real 5-minute Mindless session (the counter reads 5:00 and ticks down).
+const SESSION_SEC = 5 * 60
 // The box cycle is In-4 / Hold-4 / Out-4 / Hold-4. The "Keep going" nudge lands at the first hold, so
 // after the inhale: 4s of breath elapsed.
 const HOLD_AT_SEC = 4
+
+function mmss(total: number): string {
+  const t = Math.max(0, Math.floor(total))
+  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`
+}
 
 type Lead = { name: string; email: string; handle: string }
 
@@ -170,10 +177,40 @@ function PhoneFrame({ children }: { children: React.ReactNode }) {
     <div className="relative mx-auto aspect-[9/19] w-56 rounded-[2.75rem] border-[10px] border-text bg-text shadow-2xl sm:w-64">
       {/* notch */}
       <div className="absolute left-1/2 top-0 z-20 h-5 w-24 -translate-x-1/2 rounded-b-2xl bg-text" aria-hidden />
-      {/* screen */}
-      <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[2rem] bg-gradient-to-b from-primary-bg/60 to-canvas">
-        {children}
+      {/* screen — kept light + subtle, like the real Mindless timer on canvas (owner: no dark overlay) */}
+      <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[2rem] bg-canvas">
+        <div className="amber-glow pointer-events-none absolute inset-0 opacity-60" aria-hidden />
+        <div className="relative z-10 flex w-full items-center justify-center px-3">{children}</div>
       </div>
+    </div>
+  )
+}
+
+// The Mindless timer screen, replicated (owner: "look exactly the same as the Mindless timer"). The
+// lotus + MINDLESS wordmark, the breath ring, and a mm:ss read-out counting down from 5:00.
+function TimerScreen({
+  pattern,
+  startedAt,
+  remaining,
+  compact = false,
+}: {
+  pattern: ReturnType<typeof patternBySlug>
+  startedAt: number
+  remaining: number
+  compact?: boolean
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2 text-center">
+      <p className="flex animate-pulse items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-primary-strong [animation-duration:3s]">
+        <LotusIcon className={compact ? 'h-4 w-4' : 'h-[18px] w-[18px]'} /> Mindless
+      </p>
+      <div className={compact ? 'scale-[0.5]' : 'scale-[0.62]'}>
+        <BreathVisualizer pattern={pattern} startedAt={startedAt} />
+      </div>
+      <p className={`${compact ? '-mt-6 text-lg' : '-mt-8 text-2xl'} font-semibold tabular-nums text-text/70`}>
+        {mmss(remaining)} <span className="text-xs font-normal text-subtle">left</span>
+      </p>
+      <p className="text-xs tabular-nums text-subtle">5 min session</p>
     </div>
   )
 }
@@ -195,121 +232,112 @@ function DemoStep({
   onCaptured: () => void
   onNext: () => void
 }) {
-  // resumed => countdown already at 0, so the countdown effect starts the breath clock on mount
-  // (keeps Date.now() out of render, per the purity rule).
-  const [countdown, setCountdown] = useState(resumed ? 0 : COUNTDOWN_SEC)
-  const [breathStart, setBreathStart] = useState<number | null>(null)
-  const [breathElapsed, setBreathElapsed] = useState(0)
+  // One session clock. Set on mount (Date.now is not allowed in render). elapsed drives the breath
+  // ring, the mm:ss read-out (5:00 down), and the first-hold nudge.
+  const [startedAt, setStartedAt] = useState<number | null>(null)
+  const [elapsed, setElapsed] = useState(0)
   const [showFields, setShowFields] = useState(resumed)
 
-  // The 5s countdown, then start the breath clock.
   useEffect(() => {
-    if (breathStart !== null) return
-    if (countdown <= 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setBreathStart(Date.now())
-      return
-    }
-    const id = setTimeout(() => setCountdown((n) => n - 1), 1000)
-    return () => clearTimeout(id)
-  }, [countdown, breathStart])
-
-  // The breath clock (drives the "keep going" nudge at the first hold).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setStartedAt(Date.now())
+  }, [])
   useEffect(() => {
-    if (breathStart === null) return
-    const id = setInterval(() => setBreathElapsed((Date.now() - breathStart) / 1000), 250)
+    if (startedAt === null) return
+    const id = setInterval(() => setElapsed((Date.now() - startedAt) / 1000), 250)
     return () => clearInterval(id)
-  }, [breathStart])
+  }, [startedAt])
 
-  const breathing = breathStart !== null
-  const nudge = breathing && breathElapsed >= HOLD_AT_SEC
+  const remaining = SESSION_SEC - elapsed
+  const nudge = resumed || elapsed >= HOLD_AT_SEC
   const emailOk = EMAIL_RE.test(lead.email.trim())
 
-  function getFreeTimer() {
-    setShowFields(true)
-  }
   function proceed() {
     if (emailOk) onCaptured()
     onNext()
   }
 
-  return (
-    <div className="grid items-center gap-10 md:grid-cols-2">
-      {/* Phone */}
-      <div className="order-1 md:order-none">
-        <PhoneFrame>
-          {!breathing ? (
-            <div className="flex flex-col items-center">
-              <span className="text-6xl font-bold tabular-nums text-primary-strong">{Math.max(1, countdown)}</span>
-              <span className="mt-2 text-sm font-medium text-muted">Get ready</span>
-            </div>
-          ) : (
-            <div className="scale-[0.6]">
-              <BreathVisualizer pattern={pattern} startedAt={breathStart} />
-            </div>
-          )}
-        </PhoneFrame>
-      </div>
+  const timer = startedAt !== null && <TimerScreen pattern={pattern} startedAt={startedAt} remaining={remaining} />
+  const timerCompact = startedAt !== null && (
+    <TimerScreen pattern={pattern} startedAt={startedAt} remaining={remaining} compact />
+  )
 
-      {/* Coaching */}
-      <div className="text-center md:text-left">
-        <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">Free breathwork timer</p>
-        <h1 className="font-display text-4xl uppercase leading-[0.95] text-balance text-text sm:text-5xl">
-          Breathe with the ring.
-        </h1>
+  const coaching = (
+    <div className="text-center md:text-left">
+      <span className="mb-3 inline-block animate-wiggle rounded-full bg-primary px-3 py-1 text-2xs font-bold uppercase tracking-[0.3em] text-on-primary shadow-sm shadow-primary/25">
+        Beta Launch
+      </span>
+      <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-primary">Free breathwork timer</p>
+      <h1 className="font-display text-3xl uppercase leading-[0.95] text-balance text-text sm:text-5xl">
+        Breathe with the ring.
+      </h1>
 
-        {!nudge && (
-          <p className="mt-5 max-w-md text-lg leading-relaxed text-muted">
-            {breathing
-              ? 'In as it grows. Hold at the top. Out as it settles. Let your shoulders drop.'
-              : 'Box breathing, one round. Follow the ring with your eyes half closed. That is the whole practice.'}
+      {!nudge && (
+        <p className="mx-auto mt-4 max-w-md text-base leading-relaxed text-muted md:mx-0 md:text-lg">
+          In as it grows. Hold at the top. Out as it settles. Let your shoulders drop.
+        </p>
+      )}
+
+      {nudge && !showFields && (
+        <div className="mt-4">
+          <p className="text-lg font-semibold text-text">Keep going. You are doing it.</p>
+          <p className="mx-auto mt-1 max-w-md text-base text-muted md:mx-0">
+            This timer is your invitation into the Frequency beta. Grab it and your streak starts today.
           </p>
-        )}
+          <button type="button" onClick={() => setShowFields(true)} className={`${PRIMARY_BTN} mt-4 sm:w-auto sm:px-6`}>
+            Get a Free Timer
+          </button>
+        </div>
+      )}
 
-        {nudge && !showFields && (
-          <div className="mt-5">
-            <p className="text-lg font-semibold text-text">Keep going. You are doing it.</p>
-            <p className="mt-1 max-w-md text-base text-muted">
-              This timer is your invitation into the Frequency beta. Grab it and your streak starts today.
-            </p>
-            <button type="button" onClick={getFreeTimer} className={`${PRIMARY_BTN} mt-5 sm:w-auto sm:px-6`}>
-              Get a Free Timer
-            </button>
+      {showFields && (
+        <div className="mx-auto mt-4 max-w-sm md:mx-0">
+          <p className="text-base font-semibold text-text">Where should we send your invitation?</p>
+          <div className="mt-3 space-y-2 text-left">
+            <input
+              type="text"
+              value={lead.name}
+              onChange={(e) => onLead({ ...lead, name: e.target.value })}
+              placeholder="Your name"
+              autoComplete="name"
+              className={FIELD}
+            />
+            <input
+              type="email"
+              value={lead.email}
+              onChange={(e) => onLead({ ...lead, email: e.target.value })}
+              placeholder="you@email.com"
+              autoComplete="email"
+              inputMode="email"
+              className={FIELD}
+            />
           </div>
-        )}
-
-        {showFields && (
-          <div className="mt-5 max-w-sm">
-            <p className="text-base font-semibold text-text">Where should we send your invitation?</p>
-            <div className="mt-3 space-y-2 text-left">
-              <input
-                type="text"
-                value={lead.name}
-                onChange={(e) => onLead({ ...lead, name: e.target.value })}
-                placeholder="Your name"
-                autoComplete="name"
-                className={FIELD}
-              />
-              <input
-                type="email"
-                value={lead.email}
-                onChange={(e) => onLead({ ...lead, email: e.target.value })}
-                placeholder="you@email.com"
-                autoComplete="email"
-                inputMode="email"
-                className={FIELD}
-              />
-            </div>
-            <button type="button" onClick={proceed} disabled={!emailOk} className={`${PRIMARY_BTN} mt-3`}>
-              Keep my timer
-            </button>
-            <button type="button" onClick={onNext} className="mt-2 block w-full text-center text-xs text-subtle hover:underline">
-              Skip for now
-            </button>
-          </div>
-        )}
-      </div>
+          <button type="button" onClick={proceed} disabled={!emailOk} className={`${PRIMARY_BTN} mt-3`}>
+            Keep my timer
+          </button>
+          <button type="button" onClick={onNext} className="mt-2 block w-full text-center text-xs text-subtle hover:underline">
+            Skip for now
+          </button>
+        </div>
+      )}
     </div>
+  )
+
+  return (
+    <>
+      {/* Mobile: no phone mockup. The page IS the timer — a compact ring up top, then the coaching +
+          fields, kept tight so name/email sit above the fold. Scrolls only if it has to. */}
+      <div className="md:hidden">
+        <div className="mb-5 flex justify-center">{timerCompact}</div>
+        {coaching}
+      </div>
+
+      {/* Desktop: the phone mockup, sitting close to the coaching on the right. */}
+      <div className="hidden items-center gap-6 md:grid md:grid-cols-[auto_minmax(0,1fr)] lg:gap-10">
+        <PhoneFrame>{timer}</PhoneFrame>
+        {coaching}
+      </div>
+    </>
   )
 }
 
