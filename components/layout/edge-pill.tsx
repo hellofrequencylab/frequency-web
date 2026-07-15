@@ -15,6 +15,7 @@ export function EdgePill({
   label,
   icon,
   waiting = false,
+  badgeCount = 0,
   glow,
   glowMobile = true,
   onOpen,
@@ -25,6 +26,8 @@ export function EdgePill({
   icon: ReactNode
   /** Periodically wiggle the pill as the "something's waiting" indicator. */
   waiting?: boolean
+  /** Numeric unread count shown as a small badge over the icon (0 = hidden). */
+  badgeCount?: number
   /** Retained for caller compatibility (no longer renders a glow). */
   glow: 'blue' | 'orange'
   /** Retained for caller compatibility (no longer renders a glow). */
@@ -119,7 +122,14 @@ export function EdgePill({
           .edge-pill-wiggle { animation: none; }
         }
       `}</style>
-      <span className="relative shrink-0">{icon}</span>
+      <span className="relative shrink-0">
+        {icon}
+        {badgeCount > 0 && (
+          <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-3xs font-bold text-on-primary">
+            {badgeCount > 9 ? '9+' : badgeCount}
+          </span>
+        )}
+      </span>
       {expanded && <span className="relative whitespace-nowrap">{label}</span>}
     </button>
   )
