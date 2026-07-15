@@ -10,6 +10,7 @@ import { hasEffectivelyOnboarded } from '@/lib/onboarding/onboarded'
 import { isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
 import type { FunnelDestination } from '@/lib/onboarding/beta-sequences'
 import BetaInduction from './induction'
+import FeatureFunnel from './feature-funnel'
 
 export default async function BetaInductionPage({
   searchParams,
@@ -53,6 +54,22 @@ export default async function BetaInductionPage({
     destination: nextDestination ?? seq.destination,
   }
 
+  // FEATURE funnels (ADR-619) render the playable demo instead of the cinematic induction. The demo
+  // + signup are one client component; a signed-out visitor runs it deferred and creates the account
+  // at the end through the same stash + /complete pipeline.
+  if (seq.style === 'feature' && seq.feature && !user) {
+    return (
+      <FeatureFunnel
+        deferred
+        sequence={seq.slug}
+        feature={seq.feature}
+        destination={funnel.destination}
+        headline={seq.splash?.headline}
+        intro={seq.splash?.body}
+      />
+    )
+  }
+
   if (!user) {
     return <BetaInduction deferred copy={copy} sequence={seq.slug} persona={persona} inviter={inviter} {...funnel} />
   }
@@ -70,6 +87,20 @@ export default async function BetaInductionPage({
     currentSeasonZaps: profile?.current_season_zaps,
     lifetimeGems: profile?.lifetime_gems,
   })) redirect(nextDestination ? nextDestination.url : '/feed')
+
+  // Signed-in (not yet onboarded) visitor on a feature funnel: play the demo, then land in the app.
+  if (seq.style === 'feature' && seq.feature) {
+    return (
+      <FeatureFunnel
+        sequence={seq.slug}
+        feature={seq.feature}
+        destination={funnel.destination}
+        userEmail={user.email ?? ''}
+        headline={seq.splash?.headline}
+        intro={seq.splash?.body}
+      />
+    )
+  }
 
   const { data: regions } = await supabase
     .from('nexus_regions')

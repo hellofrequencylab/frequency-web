@@ -6,7 +6,9 @@ import type {
   FunnelFeature,
   FunnelCoreFeature,
   FunnelDestination,
+  FeatureFunnelConfig,
 } from './beta-sequences'
+import type { FunnelStyleId } from '@/lib/funnels/funnel-styles'
 
 // DB override layer for the code-first onboarding sequences (build §9.1 → ADR-162).
 // `data` holds a FULL sequence override (any subset of a BetaSequence); a row with a
@@ -29,6 +31,10 @@ export type SequenceStatus = 'draft' | 'published'
 export interface SequenceOverride {
   audience?: string
   marketingTag?: string
+  /** The funnel STYLE (ADR-617). Absent = 'onboarding'. 'feature' needs `feature` below. */
+  style?: FunnelStyleId
+  /** FEATURE-style config (the playable demo). Present only when style === 'feature'. */
+  feature?: FeatureFunnelConfig
   /** Draft funnels are not served live (see resolveSequence). Undefined = published. */
   status?: SequenceStatus
   splash?: Partial<SequenceSplash>

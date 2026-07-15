@@ -15,6 +15,20 @@
 // lib/onboarding/sequence-overrides.ts and lib/onboarding/resolve-sequence.ts.
 
 import { VERA, BETA_OATHS, HEARD_ABOUT, type OathId, type VeraCopy } from '@/lib/onboarding/beta-script'
+import type { FunnelStyleId } from '@/lib/funnels/funnel-styles'
+
+/** A FEATURE funnel's playable-demo config (ADR-619). A feature funnel lets a visitor use ONE
+ *  stripped feature before signing up; the renderer is keyed by `feature`. Today only `breathwork`
+ *  ships (the box-breath visualizer); the shape is forward-built for the timer / QR / CRM demos. */
+export interface FeatureFunnelConfig {
+  /** Which feature the demo plays. The renderer switches on this. */
+  feature: 'breathwork'
+  /** Breath pattern slug for the breathwork demo (see BREATH_PATTERNS). Defaults to 'box'. */
+  pattern?: string
+  /** The Zap count shown landing in the reward beat (a truthful stat, kept in data so it tracks
+   *  the live award without a client import of the server-only zap engine). Defaults to 12. */
+  zapsReward?: number
+}
 
 export interface SequenceSplash {
   /** Small kicker above the headline. */
@@ -59,6 +73,12 @@ export type FunnelDestination =
 
 export interface BetaSequence {
   slug: string
+  /** Which funnel STYLE renders this sequence (ADR-617). Absent = `'onboarding'` (the induction),
+   *  so every legacy funnel reads back as an Onboarding funnel with no backfill. `'feature'` routes
+   *  to the playable feature funnel (needs `feature`); `'demographic'` is planned. */
+  style?: FunnelStyleId
+  /** FEATURE-style config: the playable demo + its settings. Present only when `style === 'feature'`. */
+  feature?: FeatureFunnelConfig
   /** Human label for the audience (admin + analytics). */
   audience: string
   /** Tag stamped on members who arrive via this sequence — segment them forever. */
@@ -211,7 +231,36 @@ export function templateSeed(): {
 /** Code-shipped sequences. Empty since the three launch templates retired — every
  *  audience sequence is now a DB version (sequence_overrides) built in the wizard.
  *  The record stays so a code sequence can be reintroduced without touching callers. */
-export const BETA_SEQUENCES: Record<string, BetaSequence> = {}
+// The breathwork FEATURE funnel (ADR-619) — the first playable front door. Defined in code (not a
+// DB row) because its renderer is code: the box-breath visualizer plays on card 2, captures a lead at
+// the first hold, and shows the true first-log reward (Day 1 streak + Zaps). `vera`/`oaths`/`heardAbout`
+// are unused by the feature renderer but required by the type, so they borrow the base flow. Lands the
+// new member in the app to take their first real round. Voice canon: plain, no em dashes.
+const BREATHWORK_FEATURE_FUNNEL: BetaSequence = {
+  slug: 'breathwork',
+  style: 'feature',
+  feature: { feature: 'breathwork', pattern: 'box', zapsReward: 12 },
+  audience: 'Breathwork curious',
+  marketingTag: 'beta_breathwork',
+  splash: {
+    eyebrow: 'Breathwork',
+    headline: 'Box breathing, in one round.',
+    body: 'Four counts in, hold four, four out, hold four. Follow the ring with your eyes half closed. That is the whole practice.',
+    cta: 'Try a round',
+    image: '',
+    imageAlt: '',
+    statement: 'Take one *breath* with us.',
+  },
+  vera: VERA,
+  oaths: BETA_OATHS,
+  heardAbout: [...HEARD_ABOUT],
+  // Finish in the app, ready to breathe for real (a real round = a real streak + Zaps).
+  destination: { mode: 'direct', url: '/feed?welcome=vera' },
+}
+
+export const BETA_SEQUENCES: Record<string, BetaSequence> = {
+  breathwork: BREATHWORK_FEATURE_FUNNEL,
+}
 
 /** Resolve a CODE sequence by slug, falling back to the base VERA flow. DB overrides
  *  are merged elsewhere (resolve-sequence.ts) — this stays client-safe. */

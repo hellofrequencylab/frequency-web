@@ -104,6 +104,10 @@ export default async function SplashFunnelsPage() {
   // Per-funnel signup counts (members tagged with each funnel's marketing tag).
   const signupCounts = await loadSignupCounts(cards.map((c) => c.seq.marketingTag))
 
+  // Group funnels by STYLE (ADR-617): onboarding funnels get the full lifecycle card; other styles
+  // (feature today) list under their own section. A funnel with no style reads as onboarding.
+  const onboardingCards = cards.filter((c) => (c.seq.style ?? 'onboarding') === 'onboarding')
+
   return (
     <DashboardTemplate
       eyebrow="Pages"
@@ -201,12 +205,12 @@ export default async function SplashFunnelsPage() {
 
       {/* ── Onboarding funnels — the live style. One row each, with full lifecycle controls. ── */}
       <section>
-        <SectionHeader title="Onboarding funnels" count={cards.length} />
+        <SectionHeader title="Onboarding funnels" count={onboardingCards.length} />
         <p className="-mt-1 mb-4 max-w-2xl text-sm text-muted">
           A funnel for a specific audience. Each one carries its own voice, its own shareable
           link, a cohort tag, and its signup count so you can see what is working.
         </p>
-        {cards.length === 0 ? (
+        {onboardingCards.length === 0 ? (
           <div className="max-w-3xl">
             <EmptyState
               title="No custom funnels yet"
@@ -225,7 +229,7 @@ export default async function SplashFunnelsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {cards.map(({ slug, status, seq, inductionPath, inductionQr, tagDef }) => (
+            {onboardingCards.map(({ slug, status, seq, inductionPath, inductionQr, tagDef }) => (
               <article
                 key={slug}
                 className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm"
@@ -309,24 +313,79 @@ export default async function SplashFunnelsPage() {
         )}
       </section>
 
-      {/* ── Planned styles — space held for the funnels we will build (ADR-617). Rendered
-              from the registry, so a style flips from placeholder to real by changing its
-              status and adding its renderer + editor. ── */}
-      {FUNNEL_STYLES.filter((s) => s.status === 'planned').map((s) => (
-        <section key={s.id}>
-          <SectionHeader title={`${s.label} funnels`} />
-          <div className="max-w-3xl rounded-2xl border border-dashed border-border bg-surface/40 p-6 text-center">
-            <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-xl ${s.accent.icon}`}>
-              <s.icon className="h-5 w-5" aria-hidden />
-            </span>
-            <p className="mt-3 text-sm font-semibold text-text">Planned</p>
-            <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-muted">{s.blurb}</p>
-            <span className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-subtle">
-              <Lock className="h-3.5 w-3.5" /> Not available yet
-            </span>
-          </div>
-        </section>
-      ))}
+      {/* ── Other styles (ADR-617) — one section per non-onboarding style, rendered from the
+              registry. A LIVE style (feature) lists its real funnels compactly; a PLANNED style holds
+              space. A style flips by changing its status + adding its renderer, not this page. ── */}
+      {FUNNEL_STYLES.filter((s) => s.id !== 'onboarding').map((s) => {
+        const styleCards = cards.filter((c) => c.seq.style === s.id)
+        return (
+          <section key={s.id}>
+            <SectionHeader title={`${s.label} funnels`} count={s.status === 'live' ? styleCards.length : undefined} />
+            <p className="-mt-1 mb-4 max-w-2xl text-sm text-muted">{s.blurb}</p>
+            {s.status === 'live' && styleCards.length > 0 ? (
+              <div className="space-y-3">
+                {styleCards.map(({ slug, status, seq, inductionPath }) => (
+                  <article
+                    key={slug}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`inline-flex h-6 w-6 items-center justify-center rounded-lg ${s.accent.icon}`}>
+                          <s.icon className="h-3.5 w-3.5" aria-hidden />
+                        </span>
+                        <h3 className="text-base font-bold text-text">{seq.audience}</h3>
+                        <span
+                          className={`rounded-md px-1.5 py-0.5 text-xs font-medium ${
+                            status === 'published' ? 'bg-success-bg text-success' : 'bg-surface-elevated text-muted'
+                          }`}
+                        >
+                          {status === 'published' ? 'Published' : 'Draft'}
+                        </span>
+                      </div>
+                      <p className="mt-1 font-mono text-xs text-subtle">{inductionPath}</p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <span
+                        className="inline-flex items-center gap-1.5 rounded-full bg-success-bg px-2.5 py-1 text-xs font-semibold text-success"
+                        title="Members who signed up through this funnel (its marketing tag)"
+                      >
+                        <UserCheck className="h-3 w-3" />
+                        {signupCounts[seq.marketingTag] ?? 0} signed up
+                      </span>
+                      <a href={inductionPath} target="_blank" rel="noreferrer" className={VIEW_LINK}>
+                        <ExternalLink className="h-3.5 w-3.5" /> Preview
+                      </a>
+                      <FunnelRowActions slug={slug} status={status} />
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : s.status === 'live' ? (
+              <div className="max-w-3xl rounded-2xl border border-dashed border-border bg-surface/40 p-6 text-center">
+                <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-xl ${s.accent.icon}`}>
+                  <s.icon className="h-5 w-5" aria-hidden />
+                </span>
+                <p className="mt-3 text-sm font-semibold text-text">Ready to build</p>
+                <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-muted">
+                  The {s.label} renderer is live. No {s.noun} exists yet.
+                </p>
+              </div>
+            ) : (
+              <div className="max-w-3xl rounded-2xl border border-dashed border-border bg-surface/40 p-6 text-center">
+                <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-xl ${s.accent.icon}`}>
+                  <s.icon className="h-5 w-5" aria-hidden />
+                </span>
+                <p className="mt-3 text-sm font-semibold text-text">Planned</p>
+                <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-muted">{s.blurb}</p>
+                <span className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-subtle">
+                  <Lock className="h-3.5 w-3.5" /> Not available yet
+                </span>
+              </div>
+            )}
+          </section>
+        )
+      })}
 
       {/* ── Secondary: name the audience up front, then start from the same prompts template. ── */}
       <section>

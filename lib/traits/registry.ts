@@ -154,6 +154,16 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
     systemManaged: true,
   },
+  {
+    // The breathwork FEATURE funnel (ADR-619): played the box-breath demo and signed up to keep the
+    // streak it started. Stamped at completion via the fq_beta_seq cohort cookie, like the niche funnels.
+    key: 'beta_breathwork',
+    label: 'Beta · Breathwork',
+    description: 'Arrived through the Breathwork feature funnel — played the box-breath visualizer, then created an account to keep the streak it started.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
 
   // ── Tags · marketing · persona (ADR-125) ───────────────────────────────────
   // WHO the member said they were at intake (lib/onboarding/personas.ts) — the

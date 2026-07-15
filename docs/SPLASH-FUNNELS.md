@@ -6,7 +6,7 @@
 > signup stats onto restyled tabs+stats cards now, and stage the two new styles
 > (Feature, Demographic) as honest "planned" placeholders until built.
 
-**Status:** ⏳ Phase 0 in planning. Decision record: `docs/DECISIONS.md` ADR-617.
+**Status:** ✅ Phase 0 shipped (ADR-617). ✅ Feature style live — the breathwork feature funnel ships (ADR-619). ⏳ Phase 1 analytics partial (entered + captured events live; bounce dashboard pending). Decision records: `docs/DECISIONS.md` ADR-617, ADR-619.
 Living dev plan — update the phase table and open items as work lands.
 
 ---
@@ -54,7 +54,7 @@ Each style row declares:
 | Style | Status | What it is | Lift |
 | --- | --- | --- | --- |
 | **Onboarding** | ✅ live | The existing 5-beat beta induction (`app/onboarding/beta/induction.tsx`). All existing funnels default to this `kind`. Zero breakage. | None (already shipped) |
-| **Feature** | ⏳ planned | Visitor plays a stripped-down single feature (Breathwork Visualizer, Meditation Timer, QR Studio, CRM preview). NET-NEW interactive "feature-stage" components. The old `/demo` is retired; the feature "renders" in `components/onboarding/renders/` are static mockups, not the interactive target. | Biggest |
+| **Feature** | ✅ live | Visitor plays a stripped-down single feature before signing up. First shipped: **Breathwork** (`app/onboarding/beta/feature-funnel.tsx`, ADR-619) — the real box-breath visualizer, a first-hold "get yours free" capture, and a Day 1 streak + Zaps reward beat. Meditation Timer / QR Studio / CRM previews slot in behind the same `feature` config. | Big (first one shipped) |
 | **Demographic** | ⏳ planned | Niche teaser tuned to a persona. Spine: `lib/onboarding/personas.ts` (visitor / practitioner / partner / builder / investor); niche assets in `components/marketing/funnel/*`, `lib/marketing/funnel-config.ts`, `/for/<niche>` pages. Content = the DAWN "Teaser" infographics (see §7). | Medium |
 
 DAWN teaser set for the Demographic style: The First Win, Focus Ritual, Never Miss
@@ -118,9 +118,9 @@ from the repo's Index / Detail templates and the `StatCard` / `EntityCard` kit
 | Phase | Scope | Status |
 | --- | --- | --- |
 | **Phase 0** (this round) | Page shell + `FUNNEL_STYLES` registry (only Onboarding registered `live`; Feature + Demographic as `planned` placeholders) + the `kind` field defaulting to `onboarding` + wire signup stats (`member_tags` counts) onto the cards. Restyle to tabs + stats cards. **Nothing about the visitor-facing funnels changes.** | ⏳ |
-| **Phase 1** | Analytics instrumentation (`funnel_entered` event + `seqSlug` on completion) → real entered / bounce on cards; per-funnel detail view using `computeFunnel()`. | ⏳ |
+| **Phase 1** | Analytics instrumentation (`onboarding.funnel_entered` + `onboarding.funnel_captured` events live; signup via `beta_<slug>` tag) → entered / captured / signed-up per funnel. Remaining: surface bounce (entered − signed-up) + a per-funnel detail view using `computeFunnel()`. | ⏳ partial |
 | **Phase 2** | Demographic style renderer + editor (leverages persona / niche assets + DAWN teasers). | ⏳ |
-| **Phase 3** | Feature style renderer + editor (interactive feature-stage components; its own project). | ⏳ |
+| **Phase 3** | Feature style renderer ✅ shipped for breathwork (ADR-619). Remaining: an admin editor to author feature funnels (today they are code sequences) + more feature demos. | ⏳ partial |
 | **Phase 4+** | Additional styles = new registry rows. | ⏳ |
 
 ---
