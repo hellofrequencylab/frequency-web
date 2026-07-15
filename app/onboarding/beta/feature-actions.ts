@@ -7,6 +7,11 @@
 // The client then calls the normal signInWithGoogle / signInWithMagicLink actions with
 // next=/onboarding/beta/complete, and the existing finalizer writes the profile, tags the cohort,
 // applies grants, and lands them. Nothing about signup is forked — this only pre-fills the stash.
+//
+// authz-ok: intentionally PUBLIC + anonymous (a signed-out visitor starting signup, same as the
+// deferred induction's stashPendingInduction). There is no caller to authorize. The admin client is
+// used ONLY for a handle-existence check (equivalent to the public /api/check-handle) and the writes
+// are cookies on the caller's OWN browser — no cross-user read, no privileged write to any row.
 
 import { cookies } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
