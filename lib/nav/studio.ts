@@ -275,25 +275,12 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'keystone-density', href: '/admin/keystone/density', label: 'Density by city', desc: 'The cold-start read: where the community has a real pulse, and where a corner is still cold enough to want a founder seeded.', icon: 'Telescope', min: 'admin', staffDomain: 'insights', staffLevel: 'read',
     adminGroups: [{ domain: 'acquisition', section: 'Expansion' }] },
   // ── Campaigns / Marketing ──
-  // The unified Messaging console (EMAIL-CAMPAIGNS-FUNNELS-PLAN P1): one home for Campaigns
-  // (one-time sends) + Funnels (triggered journeys). It leads the Marketing section; the
-  // per-object surfaces below still exist and are linked from it.
-  { id: 'marketing-messaging', href: '/admin/marketing/messaging', label: 'Messaging', desc: 'One home for campaigns and funnels: send an email now or build a triggered journey.', icon: 'Send', min: 'host', staffDomain: 'marketing',
-    world: 'growth', worldLabel: 'Messaging', worldOrder: 4,
-    adminGroups: [{ domain: 'marketing', section: 'Campaigns' }], adminNav: { section: 'growth', heading: 'Marketing' } },
-  { id: 'marketing-campaigns', href: '/admin/marketing/campaigns', label: 'Campaigns', desc: 'Compose and send email and push broadcasts.', icon: 'Megaphone', min: 'host', staffDomain: 'marketing',
-    world: 'growth', worldLabel: 'Campaigns', worldOrder: 5,
-    adminGroups: [{ domain: 'marketing', section: 'Campaigns' }], adminNav: { section: 'growth', heading: 'Marketing' } },
-  { id: 'growth-funnels', href: '/admin/growth/funnels', label: 'Funnels', desc: 'Build a funnel as one object: entry, wedge, capture, and the goal it converts on.', icon: 'Activity', min: 'host', staffDomain: 'marketing',
-    world: 'growth', worldLabel: 'Funnels', worldOrder: 6,
-    adminGroups: [{ domain: 'marketing', section: 'Campaigns' }], adminNav: { section: 'growth', heading: 'Marketing' } },
-  { id: 'marketing-funnels', href: '/admin/marketing/funnels', label: 'Campaign builder', desc: 'Group entry points into campaigns, generate flyers and QR, and track scans.', icon: 'QrCode', min: 'host', staffDomain: 'marketing',
-    adminGroups: [{ domain: 'marketing', section: 'Campaigns' }], adminNav: { section: 'growth', heading: 'Marketing' } },
-  { id: 'marketing-automations', href: '/admin/marketing/automations', label: 'Automations', desc: 'Event-triggered rules and follow-ups.', icon: 'SlidersHorizontal', min: 'host', staffDomain: 'marketing',
-    world: 'growth', worldLabel: 'Automations', worldOrder: 7,
-    adminGroups: [{ domain: 'marketing', section: 'Campaigns' }], adminNav: { section: 'growth', heading: 'Marketing' } },
-  { id: 'marketing-nurture', href: '/admin/marketing/nurture', label: 'Nurture', desc: 'Sequenced nurture flows.', icon: 'Layers', min: 'host', staffDomain: 'marketing',
-    adminGroups: [{ domain: 'marketing', section: 'Campaigns' }], adminNav: { section: 'growth', heading: 'Marketing' } },
+  // RETIRED from the menus (2026-07): the legacy email/campaign composing surface — Messaging,
+  // Campaigns, Funnels (growth-funnels), Campaign builder (marketing-funnels), Automations, and
+  // Nurture — is being rolled into the Resonance CRM Marketing tab (/admin/crm/marketing), which
+  // composes in the draft-first popup over the same `campaigns` table. Their leaves are removed so they
+  // no longer appear in any admin menu; the PAGES stay reachable (deep links + the roll-in plan uses
+  // them) — see docs/DECISIONS.md ADR-623 for the plan to fold the usable functions into the CRM.
   { id: 'marketing-beta', href: '/admin/marketing/beta', label: 'Beta waitlist', desc: 'Triage the waitlist and send invites.', icon: 'Rocket', min: 'host', staffDomain: 'marketing',
     adminGroups: [{ domain: 'marketing', section: 'Audience' }], adminNav: { section: 'growth', heading: 'Marketing' } },
   // Beta Command Center. The operator home for the Beta
@@ -318,7 +305,7 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   //    Resonance home (a searchable scored roster + the full member profile, contact info,
   //    network, and message tools in one view) absorbed the old Cockpit, Contacts, All
   //    Contacts, and Member Intelligence tabs; Deals became the rescoped Pipeline. ──
-  { id: 'crm', href: '/admin/crm', label: 'Roster', desc: 'The searchable scored roster: pick a member to see their full profile, contact info, network, notes, and message tools in one view.', icon: 'Users', min: 'janitor', exact: true,
+  { id: 'crm', href: '/admin/crm', label: 'Roster', desc: 'Resonance CRM home. The searchable scored roster: pick a member to see their full profile, contact info, network, notes, and message tools in one view. Marketing, Intelligence, and Pipeline live here.', icon: 'Users', min: 'janitor', exact: true,
     world: 'growth', worldLabel: 'Resonance CRM', worldOrder: 8,
     adminGroups: [{ domain: 'crm', section: 'Resonance' }], adminNav: { section: 'crm', heading: 'Engine' } },
   { id: 'crm-intelligence', href: '/admin/crm/intelligence', label: 'Intelligence', desc: "Vera's daily queue, the saved plays, and the resonance graph in one view.", icon: 'ClipboardList', min: 'janitor',
@@ -554,7 +541,7 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     href: '/admin/growth?tab=marketing', icon: 'Megaphone', min: 'host', staffDomain: 'marketing',
     primary: false, related: ['crm', 'vera-ai', 'acquisition'],
     links: [
-      { leaf: 'marketing-campaigns' }, { leaf: 'growth-funnels' }, { leaf: 'marketing-funnels' }, { leaf: 'marketing-automations' }, { leaf: 'marketing-nurture' },
+      // Composing (Campaigns, Funnels, Automations, Nurture) retired to the Resonance CRM Marketing tab.
       { leaf: 'beta-command' }, { leaf: 'marketing-beta' },
       { leaf: 'marketing-analytics' }, { leaf: 'marketing-deliverability' }, { leaf: 'marketing-control-panel' }, { leaf: 'marketing-market-read' },
       { leaf: 'marketing-agent' },
@@ -631,7 +618,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
     href: '/admin/growth', label: 'Growth', min: 'host', staffDomain: 'marketing',
     groups: [
       { heading: 'Acquisition', leaves: [{ leaf: 'growth-applications' }, { leaf: 'referrals' }] },
-      { heading: 'Marketing', leaves: [{ leaf: 'marketing-campaigns' }, { leaf: 'marketing-funnels', label: 'Funnels' }, { leaf: 'marketing-automations' }, { leaf: 'marketing-nurture' }, { leaf: 'marketing-analytics', label: 'Analytics' }, { leaf: 'beta-command', label: 'Beta Command' }, { leaf: 'marketing-beta', label: 'Beta waitlist' }] },
+      { heading: 'Marketing', leaves: [{ leaf: 'marketing-analytics', label: 'Analytics' }, { leaf: 'beta-command', label: 'Beta Command' }, { leaf: 'marketing-beta', label: 'Beta waitlist' }] },
     ],
   },
   {

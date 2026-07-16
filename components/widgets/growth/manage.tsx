@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import {
   ArrowUpRight, QrCode, Share2, GraduationCap, ToggleRight, Contact, PieChart,
-  Megaphone, Activity, SlidersHorizontal, Layers, Rocket, Telescope, Bot, Link2,
+  Rocket, Telescope, Bot, Link2,
   ClipboardList, Send, type LucideIcon,
 } from 'lucide-react'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -95,12 +95,8 @@ export async function GrowthManage() {
   ]
 
   const marketing: ManageCard[] = [
-    { label: 'Messaging', desc: 'One home for campaigns and funnels: send an email now or build a triggered journey.', stat: `${c.campaigns + c.funnels}`, statLabel: 'in flight', href: '/admin/marketing/messaging', Icon: Send },
-    { label: 'Campaigns', desc: 'Compose and send email and push broadcasts.', stat: `${c.campaigns}`, statLabel: 'campaigns', href: '/admin/marketing/campaigns', Icon: Megaphone },
-    { label: 'Funnels', desc: 'Build a funnel as one object: entry, wedge, capture, and the goal it converts on.', stat: `${c.funnels}`, statLabel: 'funnels', href: '/admin/growth/funnels', Icon: Activity },
-    { label: 'Campaign builder', desc: 'Group entry points into campaigns, generate flyers and QR, and track scans.', stat: '', statLabel: 'Manage', href: '/admin/marketing/funnels', Icon: QrCode },
-    { label: 'Automations', desc: 'Event-triggered rules and follow-ups.', stat: `${c.automations}`, statLabel: 'rules', href: '/admin/marketing/automations', Icon: SlidersHorizontal },
-    { label: 'Nurture', desc: 'Sequenced nurture flows.', stat: `${c.sequences}`, statLabel: 'sequences', href: '/admin/marketing/nurture', Icon: Layers },
+    // Composing (campaigns, funnels, automations, nurture) now lives in the Resonance CRM Marketing tab.
+    { label: 'Marketing', desc: 'Compose and send email to the whole community or a section, with campaigns and funnels in one place. In the Resonance CRM.', stat: `${c.campaigns + c.funnels}`, statLabel: 'in flight', href: '/admin/crm/marketing', Icon: Send },
     { label: 'Beta waitlist', desc: 'Triage the waitlist and send invites.', stat: '', statLabel: 'Manage', href: '/admin/marketing/beta', Icon: Rocket },
     { label: 'Marketing analytics', desc: 'Sends, opens, clicks, and bounces by type.', stat: '', statLabel: 'Manage', href: '/admin/marketing/analytics', Icon: PieChart },
     { label: 'Market read', desc: 'Demand, geography, and content performance.', stat: '', statLabel: 'Manage', href: '/admin/marketing/market-read', Icon: Telescope },

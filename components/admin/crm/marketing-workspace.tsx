@@ -1,14 +1,14 @@
 'use client'
 
-// MARKETING WORKSPACE — the client body of the CRM Marketing tab. It reuses the existing messaging
-// console (Campaigns + Funnels, colored by status) and adds the things a CRM home needs: a SEARCH box
-// that filters both lists by name, a "New email" button that opens the draft-first composer popup, and
-// per-row DELETE for draft campaigns (the status-guarded deleteEmailDraft, so a sent/scheduled campaign
-// can never be removed). Nothing about the console or the send pipeline is forked. Voice canon: no em dashes.
+// MARKETING WORKSPACE — the client body of the CRM Marketing tab. It reuses the messaging console
+// (Campaigns + Funnels, colored by status) and makes the tab SELF-CONTAINED: composing, editing,
+// scheduling, sending, and deleting all happen here in the draft-first popup. Nothing links out to the
+// legacy /admin/marketing/* composer — "New email" and a row's "Open" both open the in-place popup, and
+// there are no quick-links back to the old system. Voice canon: no em dashes.
 
 import { useMemo, useState, useTransition } from 'react'
 import { Search, Send } from 'lucide-react'
-import { MessagingConsole, MessagingQuickLinks } from '@/components/admin/messaging/messaging-console'
+import { MessagingConsole } from '@/components/admin/messaging/messaging-console'
 import { MarketingComposePopup } from '@/components/admin/crm/marketing-compose-popup'
 import { deleteEmailDraft } from '@/app/(main)/admin/email-studio/actions'
 import { isError } from '@/lib/action-result'
@@ -26,6 +26,8 @@ export function MarketingWorkspace({
 }) {
   const [query, setQuery] = useState('')
   const [composeOpen, setComposeOpen] = useState(false)
+  // undefined = compose a NEW email; a string = open THAT existing campaign in the popup.
+  const [composeCampaignId, setComposeCampaignId] = useState<string | undefined>(undefined)
   const [campaigns, setCampaigns] = useState(initialCampaigns)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -40,6 +42,16 @@ export function MarketingWorkspace({
     () => (q ? funnels.filter((f) => f.name.toLowerCase().includes(q)) : funnels),
     [funnels, q],
   )
+
+  function openNew() {
+    setComposeCampaignId(undefined)
+    setComposeOpen(true)
+  }
+
+  function openExisting(id: string) {
+    setComposeCampaignId(id)
+    setComposeOpen(true)
+  }
 
   function handleDelete(id: string) {
     const target = campaigns.find((c) => c.id === id)
@@ -74,15 +86,11 @@ export function MarketingWorkspace({
         </label>
         <button
           type="button"
-          onClick={() => setComposeOpen(true)}
+          onClick={openNew}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           <Send className="h-4 w-4" aria-hidden /> New email
         </button>
-      </div>
-
-      <div className="flex justify-end">
-        <MessagingQuickLinks />
       </div>
 
       {error && (
@@ -94,11 +102,18 @@ export function MarketingWorkspace({
       <MessagingConsole
         campaigns={filteredCampaigns}
         funnels={filteredFunnels}
+        onOpenCampaign={openExisting}
+        onNewCampaign={openNew}
         onDeleteCampaign={handleDelete}
         deletingId={deletingId}
       />
 
-      <MarketingComposePopup open={composeOpen} onClose={() => setComposeOpen(false)} segments={segments} />
+      <MarketingComposePopup
+        open={composeOpen}
+        onClose={() => setComposeOpen(false)}
+        segments={segments}
+        campaignId={composeCampaignId}
+      />
     </div>
   )
 }
