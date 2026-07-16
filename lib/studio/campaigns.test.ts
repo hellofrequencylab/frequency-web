@@ -5,6 +5,8 @@ describe('parseSegmentKey', () => {
   it('treats unprefixed keys as built-in audiences', () => {
     expect(parseSegmentKey('members')).toEqual({ kind: 'builtin', slug: 'members' })
     expect(parseSegmentKey('subscribed_members')).toEqual({ kind: 'builtin', slug: 'subscribed_members' })
+    // Site sign-ups (organic members, imported list held out by source) is a built-in.
+    expect(parseSegmentKey('site_signups')).toEqual({ kind: 'builtin', slug: 'site_signups' })
   })
 
   it('unwraps trait-segment keys', () => {

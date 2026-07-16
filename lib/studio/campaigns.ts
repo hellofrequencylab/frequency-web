@@ -38,6 +38,13 @@ export const TRAIT_SEGMENT_PREFIX = 'seg:'
 export const BUILTIN_SEGMENTS: { key: SegmentKey; label: string }[] = [
   { key: 'members', label: 'All members (not unsubscribed)' },
   { key: 'subscribed_members', label: 'Subscribed members only' },
+  // Site sign-ups only — organic members, with the imported email list (source='import')
+  // held out. This is the audience for a blast that should reach people who joined ON the
+  // site but NOT contacts we uploaded from an outside list. The hold-out is by SOURCE, so it
+  // stays correct even after an imported contact later signs up (their contacts row keeps
+  // source='import', which no signup path overwrites). See the import commit (source='import')
+  // and the profiles_sync_contact trigger (source='signup'/'backfill').
+  { key: 'site_signups', label: 'Site sign-ups only (excludes imported list)' },
   // Beta Command Center audience (additive). Confirmed beta_waitlist contacts that
   // already hold a Frequency profile, so the profile-based unsubscribe still works.
   // Pre-account waitlist folks (no profile_id) are reached transactionally, not here.
@@ -168,6 +175,11 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
     .not('profile_id', 'is', null)
     .neq('consent_state', 'unsubscribed')
   if (parsed.slug === 'subscribed_members') q = q.eq('consent_state', 'subscribed')
+  // Site sign-ups: the same profile-bearing, not-unsubscribed rule, with the imported
+  // email list held out by SOURCE. `source <> 'import'` alone would also drop rows with a
+  // NULL source (SQL three-valued logic), so keep null-source members in with an explicit
+  // OR — an organic member without a source stamp is still a site user, never "the list".
+  if (parsed.slug === 'site_signups') q = q.or('source.is.null,source.neq.import')
   // Beta waitlist: the same profile-bearing, not-unsubscribed rule, narrowed to the
   // contacts that came in through the Beta waitlist capture (source = 'beta_waitlist').
   if (parsed.slug === 'beta_waitlist') q = q.eq('source', 'beta_waitlist')
