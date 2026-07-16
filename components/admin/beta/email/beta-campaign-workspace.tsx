@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { CalendarDays, CheckCircle2, Eye, Loader2, Mail, MousePointerClick, Plus, Send } from 'lucide-react'
+import { CalendarDays, CheckCircle2, Eye, Loader2, Mail, MousePointerClick, Plus, Send, Trash2 } from 'lucide-react'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EditorShell } from '@/components/ui/editor-shell'
@@ -10,6 +10,7 @@ import { EmailEditorPane } from '@/components/admin/email-studio/editor-pane'
 import { SendPanel, type CampaignStatus, type SegmentOption } from '@/components/admin/email-studio/send-panel'
 import {
   createBetaEmailDraft,
+  deleteEmailDraft,
   listBetaSequenceEmails,
   loadEmailCampaign,
   setCampaignSendDateAction,
@@ -138,6 +139,23 @@ export function BetaCampaignWorkspace({
     })
   }
 
+  // Delete a DRAFT email from the sequence (the server action only removes status='draft' rows, so a
+  // sent / scheduled email can never be deleted here). If the deleted email was selected, fall to the
+  // first remaining one.
+  function onDelete(id: string) {
+    if (typeof window !== 'undefined' && !window.confirm('Delete this email draft? This cannot be undone.')) return
+    setError(null)
+    startTransition(async () => {
+      const res = await deleteEmailDraft(id)
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
+      const next = await refresh()
+      if (selectedId === id) setSelectedId(next[0]?.id ?? null)
+    })
+  }
+
   // Keep the card label in sync as the operator edits the subject in the editor.
   const onSubjectChange = useCallback((id: string, subject: string) => {
     setSequence((prev) => prev.map((c) => (c.id === id ? { ...c, subject } : c)))
@@ -229,6 +247,20 @@ export function BetaCampaignWorkspace({
                           />
                         </label>
                       </div>
+                      {/* Delete — only a DRAFT can be removed (the action is status-guarded), so sent /
+                          scheduled emails show no delete affordance. */}
+                      {email.status === 'draft' && (
+                        <button
+                          type="button"
+                          onClick={() => onDelete(email.id)}
+                          disabled={pending}
+                          title="Delete this draft"
+                          aria-label={`Delete email ${email.seq}, ${email.subject.trim() || 'Untitled email'}`}
+                          className="shrink-0 self-start rounded-md p-1 text-subtle transition-colors hover:bg-danger-bg hover:text-danger disabled:opacity-50"
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden />
+                        </button>
+                      )}
                     </div>
                   </li>
                 )
