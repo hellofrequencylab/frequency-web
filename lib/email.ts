@@ -125,19 +125,30 @@ export async function sendWelcomeEmail(params: {
 
 // ── Invite email ──────────────────────────────────────────────────────────────
 
+// ONE relationship-invite email, shared by both invite flows: a Circle host inviting a
+// member (app/(main)/circles/actions.ts) and a Space owner inviting a teammate
+// (lib/spaces/invites.ts). Parameterized by inviter + context (the Circle or Space name)
+// + the accept/join link. Transactional/relationship mail: it goes on the durable outbox
+// like every send, and the ONLY gate it needs is the global suppression check inside
+// sendRawEmail at drain time (a stranger invitee has no profileId / consent to weigh, and
+// an invite is a transactional carve-out). Mirrors the other stranger-invite senders
+// (scan intro, event/listing claim, beta invite), which enqueue the same way.
 export async function sendInviteEmail(params: {
   to: string
   inviterName: string
-  circleName: string
+  /** The Circle or Space the invitee is being asked to join, by its display name. */
+  contextName: string
+  /** Which context this is, so the one descriptor line reads right. Defaults to 'circle'. */
+  contextKind?: 'circle' | 'space'
   inviteUrl: string
 }) {
-  const { to, inviterName, circleName, inviteUrl } = params
+  const { to, inviterName, contextName, inviteUrl, contextKind = 'circle' } = params
 
   await enqueueEmail({
     to,
-    subject: `${inviterName} invited you to join ${circleName} on Frequency`,
-    html:    inviteHtml({ inviterName, circleName, inviteUrl }),
-    text:    inviteText({ inviterName, circleName, inviteUrl }),
+    subject: `${inviterName} invited you to join ${contextName} on Frequency`,
+    html:    inviteHtml({ inviterName, contextName, inviteUrl, contextKind }),
+    text:    inviteText({ inviterName, contextName, inviteUrl, contextKind }),
   })
 }
 
@@ -901,14 +912,29 @@ The Frequency Team
 
 // Invite ──────────────────────────────────────────────────────────────────────
 
-function inviteHtml({ inviterName, circleName, inviteUrl }: {
-  inviterName: string; circleName: string; inviteUrl: string
+/** The one descriptor line, tuned per context. Circle: get-together framing. Space: joining
+ *  a team. Plain, no em dashes, proper nouns doing the work (CONTENT-VOICE §10). */
+function inviteDescriptor(contextName: string, kind: 'circle' | 'space'): string {
+  return kind === 'space'
+    ? `You've been added to the team for <strong>${contextName}</strong> on Frequency. Accept the invite to jump in and help run it.`
+    : `You've been invited to join <strong>${contextName}</strong> on Frequency, a place to get together and do things on purpose.`
+}
+
+function inviteDescriptorText(contextName: string, kind: 'circle' | 'space'): string {
+  return kind === 'space'
+    ? `You've been added to the team for ${contextName} on Frequency. Accept the invite to jump in and help run it.`
+    : `You've been invited to join ${contextName} on Frequency, a place to get together and do things on purpose.`
+}
+
+function inviteHtml({ inviterName, contextName, inviteUrl, contextKind }: {
+  inviterName: string; contextName: string; inviteUrl: string; contextKind: 'circle' | 'space'
 }): string {
+  const who = escapeHtml(inviterName)
+  const name = escapeHtml(contextName)
   return emailShell(`
-    <h1 style="${h1Style}">${inviterName} invited you to join ${circleName}.</h1>
+    <h1 style="${h1Style}">${who} invited you to join ${name}.</h1>
     <p style="${pStyle}">
-      You've been invited to join <strong>${circleName}</strong> on Frequency, a community platform
-      for local groups to connect, organize events, and stay in touch.
+      ${inviteDescriptor(name, contextKind)}
     </p>
     <a href="${inviteUrl}" style="${btnStyle}">Accept invite →</a>
     <hr style="${dividerStyle}">
@@ -919,15 +945,15 @@ function inviteHtml({ inviterName, circleName, inviteUrl }: {
   `)
 }
 
-function inviteText({ inviterName, circleName, inviteUrl }: {
-  inviterName: string; circleName: string; inviteUrl: string
+function inviteText({ inviterName, contextName, inviteUrl, contextKind }: {
+  inviterName: string; contextName: string; inviteUrl: string; contextKind: 'circle' | 'space'
 }): string {
-  return `${inviterName} invited you to join ${circleName} on Frequency.
+  return `${inviterName} invited you to join ${contextName} on Frequency.
 
 Accept your invite here:
 ${inviteUrl}
 
-Frequency is a community platform for local groups to connect, organize events, and stay in touch.
+${inviteDescriptorText(contextName, contextKind)}
 `
 }
 

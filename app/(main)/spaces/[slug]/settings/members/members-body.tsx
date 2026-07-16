@@ -27,8 +27,8 @@ import { SeatCounter } from '@/components/spaces/seat-counter'
 //
 // SCOPE (unchanged from the page it was lifted from): a manager (canManageMembers, owner / admin) gets the
 // full roster TABLE (role assignment, remove, suspend / reactivate, bulk ops — RosterManager, every write
-// re-checked server-side) plus the invite-by-email section. Email DELIVERY is not built yet, so the invite
-// section surfaces a copyable link to share by hand and says so plainly. The OWNER is always seated first as
+// re-checked server-side) plus the invite-by-email section. The invite now emails the accept link AND
+// surfaces a copyable link to share by hand. The OWNER is always seated first as
 // Owner. A STAFF PREVIEW (a janitor) gets a READ-ONLY roster grid; every write stays gated server-side.
 //
 // COPY: plain labels, the space-role nouns (Owner / Admin / Moderator / Editor / Member), no em/en dashes.
