@@ -25,6 +25,7 @@ beta_tasks
 business_intake
 campaigns
 challenge_qr_codes
+contact_relationships
 content_ratings
 creator_tips
 email_events
