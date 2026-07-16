@@ -113,6 +113,12 @@ export async function completeSession(
   // proof below validates only this session's slice (seconds - resumeFromSec); logPractice
   // still gets the TOTAL `seconds` so it can top the partial up to its full target.
   const resumeFromSec = Math.max(0, Math.min(seconds, Math.round(input.resumeFromSec ?? 0)))
+  // The airtime of THIS sit alone. A resume reports the CUMULATIVE (banked + this session) to the
+  // LOG so completion measures against the full target, but the banked minutes were already recorded
+  // by the earlier partial's practice_sessions row. Recording only the incremental slice here keeps
+  // the Airtime stat (todaySeconds / lifetime total, both a SUM over practice_sessions rows) from
+  // double-counting a resumed sit. A fresh sit (resumeFromSec 0) is unchanged.
+  const sessionSeconds = Math.max(0, seconds - resumeFromSec)
 
   // 1. The sit itself (history + minutes stats). Errors never block the log. A
   // Movement sit tags its mode (movement:<walk|yoga|play|workout>) into the free-text
@@ -127,7 +133,7 @@ export async function completeSession(
     practice_id: input.practiceId,
     mode: sessionMode,
     pattern: input.mode === 'breath' ? input.pattern : null,
-    seconds,
+    seconds: sessionSeconds,
     started_at: input.startedAt,
   }
   // `note` is newer than the generated types (ADR-246); the cast keeps the base fields
@@ -146,11 +152,13 @@ export async function completeSession(
   // Remember the setup so tomorrow opens ready (zero-config repeat), and keep
   // the lifetime airtime counter (hosted PostgREST has aggregates off, so the
   // running total lives in meta; the sessions table can always recompute it).
-  let totalSeconds = seconds
+  // The lifetime airtime counter adds only THIS sit's incremental airtime (sessionSeconds), never
+  // the cumulative a resume reports, so a resumed sit doesn't inflate the running total either.
+  let totalSeconds = sessionSeconds
   try {
     const { data: prof } = await admin.from('profiles').select('meta').eq('id', profileId).maybeSingle()
     const meta = ((prof as { meta: Record<string, unknown> | null } | null)?.meta ?? {}) as Record<string, unknown>
-    totalSeconds = Number((meta.onAirTotalSeconds as number | undefined) ?? 0) + seconds
+    totalSeconds = Number((meta.onAirTotalSeconds as number | undefined) ?? 0) + sessionSeconds
     // Merge over what's already stored: a timer session must not wipe the
     // member's custom-pattern sliders or cue toggles (and old prefs without
     // the P3 keys keep working untouched).

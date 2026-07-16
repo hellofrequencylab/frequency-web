@@ -1037,13 +1037,12 @@ export function OnAirSession({
     // its target earns the deeper tier. Floored at the target so a finish a beat early never
     // reads as a partial. An early Close banks exactly what was sat (may be a partial).
     const thisSession = early ? actual : Math.max(minutes * 60, actual)
-    // A resume runs the REMAINING time; report the TOTAL (banked + this session) so the server
-    // tops the partial log up to its full target. A fresh sit has resumeBanked = 0.
-    let seconds = resumeBanked.current + thisSession
-    // Resume finish cap: a resumed sit reports the total but never MORE than its full target, so a
-    // rounded-up remaining minute can't overshoot (mirrors Get Moving's finishCap). A fresh sit
-    // (resumeTarget 0) stays uncapped so auto-continue banks overtime past the target (ADR-443).
-    if (resumeTarget.current > 0) seconds = Math.min(seconds, resumeTarget.current)
+    // A resume runs the REMAINING time and then AUTO-CONTINUES (ADR-443): the member keeps sitting
+    // past the target until they stop, and the WHOLE sit is logged — banked + this session, overtime
+    // and all (e.g. 15 of 20 banked + 5 remaining + 3 extra = 23 min logged). No cap: "complete and
+    // keep going" is the intent, and logPractice still tops the partial up to complete once the sit
+    // passes the target. A fresh sit has resumeBanked = 0.
+    const seconds = resumeBanked.current + thisSession
     if (haptics && early) buzz(10)
     await finishWith(seconds, new Date(startedAt).toISOString(), undefined, activeModeRef.current)
   }
