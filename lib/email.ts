@@ -698,6 +698,98 @@ A spot just opened in the Frequency community Beta, and it's yours. Create your 
 ${signupUrl}`
 }
 
+// ── Subscribe opt-in (inbound double opt-in) ──────────────────────────────────
+// ONE transactional confirm email: a permission request, not marketing, so it sends
+// on the transactional carve-out (lib/comms/send-gate.ts). Copy is plain + honest per
+// docs/CONTENT-VOICE (no em dashes, no narrated feelings, skeptic test).
+
+export async function sendOptinConfirmEmail(params: { to: string; confirmUrl: string; firstName?: string | null }) {
+  const { to, confirmUrl, firstName } = params
+  await enqueueEmail({
+    to,
+    subject: 'Confirm your email to hear from Frequency',
+    html: optinConfirmHtml({ confirmUrl, firstName: firstName ?? null }),
+    text: optinConfirmText({ confirmUrl, firstName: firstName ?? null }),
+  })
+}
+
+function optinConfirmHtml({ confirmUrl, firstName }: { confirmUrl: string; firstName: string | null }): string {
+  const hi = firstName ? `${escapeHtml(firstName)}, one quick step.` : 'One quick step.'
+  return emailShell(`
+    <h1 style="${h1Style}">${hi}</h1>
+    <p style="${pStyle}">
+      Someone entered this email to hear from Daniel Tyack, through Frequency. If that was
+      you, confirm it below and you're on the list. Notes on Circles, practices, and events,
+      a few times a month. No spam.
+    </p>
+    <p style="margin:0 0 28px;">
+      <a href="${confirmUrl}" style="${btnStyle}">Confirm my email</a>
+    </p>
+    <p style="${pStyle}font-size:13px;color:#888;">
+      If the button doesn't work, paste this into your browser:<br>
+      <a href="${confirmUrl}" style="color:#888;">${confirmUrl}</a>
+    </p>
+    <hr style="${dividerStyle}">
+    <p style="${pStyle}font-size:13px;color:#8F8675;margin-bottom:0;">
+      Didn't do this? Ignore this email and nothing happens. You won't hear from us again.
+    </p>
+  `)
+}
+
+function optinConfirmText({ confirmUrl, firstName }: { confirmUrl: string; firstName: string | null }): string {
+  const hi = firstName ? `${firstName}, one quick step.` : 'One quick step.'
+  return `${hi}
+
+Someone entered this email to hear from Daniel Tyack, through Frequency. If that was you, confirm it here and you're on the list:
+
+${confirmUrl}
+
+Notes on Circles, practices, and events, a few times a month. No spam.
+
+Didn't do this? Ignore this email and nothing happens. You won't hear from us again.`
+}
+
+// ── Subscribe welcome ("you're in") ───────────────────────────────────────────
+// The FIRST marketing email, sent once consent is confirmed. Carries a working
+// List-Unsubscribe (the caller passes a per-contact unsubscribe URL) for CAN-SPAM.
+
+export async function sendOptinWelcomeEmail(params: { to: string; firstName?: string | null; unsubscribeUrl: string }) {
+  const { to, firstName, unsubscribeUrl } = params
+  await enqueueEmail({
+    to,
+    subject: "You're on the list",
+    headers: listUnsubscribeHeaders(unsubscribeUrl),
+    html: optinWelcomeHtml({ firstName: firstName ?? null, unsubscribeUrl }),
+    text: optinWelcomeText({ firstName: firstName ?? null, unsubscribeUrl }),
+  })
+}
+
+function optinWelcomeHtml({ firstName, unsubscribeUrl }: { firstName: string | null; unsubscribeUrl: string }): string {
+  const hi = firstName ? `You're in, ${escapeHtml(firstName)}.` : "You're in."
+  const footer = `You're getting this because you confirmed your email at Frequency. <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe</a> any time.<br>${orgContactLine()}`
+  return emailShell(`
+    <h1 style="${h1Style}">${hi}</h1>
+    <p style="${pStyle}">
+      Thanks for confirming. You'll get a note from Daniel a few times a month: what's happening
+      in the Circles, a practice worth trying, and the odd invite when something opens near you.
+    </p>
+    <p style="${pStyle}">
+      That's it. Real notes from a real person. If it ever stops being worth your inbox, the
+      unsubscribe link below always works.
+    </p>
+  `, footer)
+}
+
+function optinWelcomeText({ firstName, unsubscribeUrl }: { firstName: string | null; unsubscribeUrl: string }): string {
+  const hi = firstName ? `You're in, ${firstName}.` : "You're in."
+  return `${hi}
+
+Thanks for confirming. You'll get a note from Daniel a few times a month: what's happening in the Circles, a practice worth trying, and the odd invite when something opens near you.
+
+Real notes from a real person. Unsubscribe any time:
+${unsubscribeUrl}`
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // HTML templates
 // Inline styles only — maximum email client compatibility.
