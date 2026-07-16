@@ -1,6 +1,7 @@
 import { getProfileSummaries } from '@/lib/connections/matching'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listMembersByFilter, type MemberFilter } from '@/lib/dashboard/scores'
+import { classifyMembers } from '@/lib/crm/classification'
 import { tierLabel } from '@/lib/dashboard/verdict'
 import type { Facet, MemberSummary, SortOption } from '@/components/people/member-viewer'
 
@@ -70,13 +71,21 @@ export async function loadMemberSummaries(filter: MemberFilter): Promise<MemberS
   if (rows.length === 0) return []
 
   const profileIds = rows.map((r) => r.profileId)
-  // Two BATCHED reads for the whole list (no N+1): the handle/avatar summaries + the joined-at epoch.
-  const [summaries, joinedAt] = await Promise.all([getProfileSummaries(profileIds), joinedAtFor(profileIds)])
+  // Three BATCHED reads for the whole list (no N+1): the handle/avatar summaries, the joined-at
+  // epoch, and the Resonance CRM classification (community role, business, active-this-week, spaces
+  // owned) via the classifier's set-based batch path. classifyMembers is fail-safe to an empty map,
+  // so a classification miss simply leaves the sensible defaults below.
+  const [summaries, joinedAt, classifications] = await Promise.all([
+    getProfileSummaries(profileIds),
+    joinedAtFor(profileIds),
+    classifyMembers(profileIds),
+  ])
 
   return rows.map((r, i) => {
     const s = summaries.get(r.profileId)
     const handle = s?.handle ?? r.profileId
     const lifecycle = r.lifecycleStage ? LIFECYCLE_LABELS[r.lifecycleStage] ?? r.lifecycleStage : null
+    const cls = classifications.get(r.profileId)
     // "Recent" sorts on the joined epoch; when unknown, fall back to the reader's order (reversed so
     // earlier-listed rows still read as "more recent" than later ones under a desc sort).
     const joined = joinedAt.get(r.profileId) ?? rows.length - i
@@ -91,6 +100,12 @@ export async function loadMemberSummaries(filter: MemberFilter): Promise<MemberS
       stats: [{ label: 'Health', value: String(Math.round(r.resonanceHealth)) }],
       // The pre-computed "Recent" signal (not rendered as a stat).
       sortValues: { joined },
+      // Resonance CRM classification (ADR-625), fail-safe to sensible defaults on a miss. The single
+      // extension point R2 (card role tag + stats) and R3/R5 (sorting, upgrade signal) consume.
+      communityRole: cls?.communityRole ?? null,
+      isBusiness: cls?.isBusiness ?? false,
+      activeThisWeek: cls?.isActive ?? false,
+      spacesOwned: cls?.spacesOwned ?? 0,
     }
   })
 }

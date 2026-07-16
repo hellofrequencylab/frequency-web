@@ -37,6 +37,20 @@ export interface MemberSummary {
    *  `joined` epoch for "Recent", a `lastActive` epoch for "Active"). Lets a host sort on a
    *  signal it does not want to render as a stat. Numbers sort numerically; strings lexically. */
   sortValues?: Record<string, number | string>
+  // ── Resonance CRM classification (ADR-625) ────────────────────────────────────
+  // The classifier's derived standing, surfaced on the roster summary so the CRM roster can tag a
+  // card's role, count business operators, sort on activity, and read the upgrade signal WITHOUT a
+  // per-row lazy fetch. All optional: browse surfaces that don't classify simply omit them, and the
+  // CRM roster (app/(main)/admin/crm/member-summaries.ts loadMemberSummaries) always populates them
+  // via the classifier's BATCH path. See lib/crm/classification.ts.
+  /** The community trust rung from the profile (member/host/guide/mentor/…), null for a non-member. */
+  communityRole?: string | null
+  /** Operates a Space: owns a business-ish Space OR holds a Space admin seat. */
+  isBusiness?: boolean
+  /** Weekly-active (wam) or last-active within the active window. */
+  activeThisWeek?: boolean
+  /** How many active Spaces they own. */
+  spacesOwned?: number
   /** Optional embedded detail (skips the lazy load for this row). */
   detail?: MemberDetail
 }
