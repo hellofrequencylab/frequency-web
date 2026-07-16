@@ -11,6 +11,11 @@ import {
   parseLeadGrab,
   buildEntryPointRow,
   captureLead,
+  captureLeadMagnet,
+  captureEventLead,
+  captureShareBack,
+  captureWarmIntro,
+  acceptWarmIntro,
   type PendingLeadGrab,
 } from './lead-capture'
 
@@ -187,5 +192,79 @@ describe('findContactByEmail is space-scoped (per-space tenancy, ADR-624)', () =
     expect(eqCalls).toContainEqual(['eq', ['space_id', 'space-1']])
     // And the email match is present on the same chain (proving the scope + email dedupe are together).
     expect(lookup!.calls).toContainEqual(['ilike', ['email', 'jo@example.com']])
+  })
+})
+
+// The four front-door WRAPPERS (doors 2 to 5) each pre-set the door + consent posture, so the surface
+// on top calls one function. These lock what CONSENT each writes onto the sealed lead: capture !=
+// marketing consent, except the consent-native lead magnet. The mocked contacts row starts 'unknown'.
+describe('front-door wrappers seal the right consent (doors 2 to 5)', () => {
+  beforeEach(() => {
+    chains.length = 0
+  })
+
+  /** Any consent_state written onto a `contacts` UPDATE across the recorded chains. */
+  const consentWrites = (): string[] => {
+    const out: string[] = []
+    for (const c of chains) {
+      if (c.table !== 'contacts') continue
+      for (const [method, args] of c.calls) {
+        if (method === 'update') {
+          const patch = args[0] as Record<string, unknown>
+          if (patch && typeof patch === 'object' && 'consent_state' in patch) out.push(String(patch.consent_state))
+        }
+      }
+    }
+    return out
+  }
+
+  it('lead magnet is consent-native: it lifts the sealed lead to subscribed (mailable)', async () => {
+    const res = await captureLeadMagnet({ spaceId: 'space-1', email: 'jo@example.com', magnetLabel: 'Guide' })
+    expect(res).not.toBeNull()
+    expect(consentWrites()).toContain('subscribed')
+  })
+
+  it('event capture is NOT mailable: the sealed lead stays unknown (no consent lift)', async () => {
+    await captureEventLead({ spaceId: 'space-1', email: 'jo@example.com', eventTitle: 'Sunday Sit', tier: 'attended' })
+    expect(consentWrites()).not.toContain('subscribed')
+  })
+
+  it('share-back is NOT mailable: a swap does not subscribe anyone', async () => {
+    await captureShareBack({ spaceId: 'space-1', email: 'jo@example.com' })
+    expect(consentWrites()).not.toContain('subscribed')
+  })
+
+  it('warm intro capture is NOT mailable until accepted (double opt-in)', async () => {
+    const res = await captureWarmIntro({ spaceId: 'space-1', email: 'jo@example.com', vouchedByProfileId: 'owner-1' })
+    expect(res).not.toBeNull()
+    expect(consentWrites()).not.toContain('subscribed')
+  })
+})
+
+// The accept step IS the opt-in: acceptWarmIntro flips the sealed lead mailable and logs it.
+describe('acceptWarmIntro flips the lead mailable + logs the accept', () => {
+  beforeEach(() => {
+    chains.length = 0
+  })
+
+  it('writes consent_state subscribed and logs an intro_accepted touchpoint', async () => {
+    const ok = await acceptWarmIntro('space-1', 'c1')
+    expect(ok).toBe(true)
+
+    // The consent flip lands on a contacts update.
+    const flipped = chains.some(
+      (c) =>
+        c.table === 'contacts' &&
+        c.calls.some(([m, a]) => m === 'update' && (a[0] as Record<string, unknown>)?.consent_state === 'subscribed'),
+    )
+    expect(flipped).toBe(true)
+
+    // The accept is logged as a touchpoint on the timeline.
+    const logged = chains.some(
+      (c) =>
+        c.table === 'lead_touchpoints' &&
+        c.calls.some(([m, a]) => m === 'insert' && JSON.stringify(a[0]).includes('intro_accepted')),
+    )
+    expect(logged).toBe(true)
   })
 })
