@@ -13,30 +13,52 @@ import type { ParsedSource } from './types'
 /** Rows are capped when staged; parse a bit above that so the count stays honest. */
 const PARSE_ROW_CAP = 5000
 
-/** Parse a chosen CSV File into headers + row objects. Header row becomes the keys;
- *  every value is a trimmed string. Empty lines are skipped. Resolves even on a partial
- *  parse (bad rows are dropped by Papa, never thrown), so a messy file still onboards. */
+/** The slice of a Papa parse result we use. Declared locally because `papaparse` ships without
+ *  bundled types in this project, so `Papa` is ambient-any; annotating the callback keeps our
+ *  own code free of implicit-any. */
+type PapaResultLike = { data: unknown; meta?: { fields?: string[] } }
+
+/** Shared normalizer: Papa's fields + row data -> a clean ParsedSource (header row becomes the
+ *  keys, every cell a trimmed string, empty rows dropped, capped). Typed against `unknown` so it
+ *  never leans on Papa's ambient types. */
+function normalizeParsed(fields: readonly string[] | undefined, data: unknown): ParsedSource {
+  const headers = (fields ?? []).map((h) => h.trim()).filter(Boolean)
+  const rawRows = Array.isArray(data) ? (data as unknown[]) : []
+  const rows: Record<string, string>[] = []
+  for (const r of rawRows) {
+    if (!r || typeof r !== 'object') continue
+    const rec = r as Record<string, unknown>
+    const out: Record<string, string> = {}
+    for (const h of headers) out[h] = typeof rec[h] === 'string' ? (rec[h] as string).trim() : ''
+    if (Object.values(out).some(Boolean)) rows.push(out)
+  }
+  return { headers, rows: rows.slice(0, PARSE_ROW_CAP), rowCount: rows.length }
+}
+
+/** Parse a chosen CSV File into headers + row objects. Resolves even on a partial parse (bad
+ *  rows are dropped by Papa, never thrown), so a messy file still onboards. */
 export function parseCsvFile(file: File): Promise<ParsedSource> {
   return new Promise((resolve, reject) => {
     Papa.parse<Record<string, string>>(file, {
       header: true,
       skipEmptyLines: 'greedy',
       transformHeader: (h: string) => h.trim(),
-      complete: (results) => {
-        const headers = (results.meta.fields ?? []).map((h) => h.trim()).filter(Boolean)
-        const rows = (results.data ?? [])
-          .filter((r): r is Record<string, string> => !!r && typeof r === 'object')
-          .map((r) => {
-            const out: Record<string, string> = {}
-            for (const h of headers) out[h] = typeof r[h] === 'string' ? (r[h] as string).trim() : ''
-            return out
-          })
-          .filter((r) => Object.values(r).some(Boolean))
-        resolve({ headers, rows: rows.slice(0, PARSE_ROW_CAP), rowCount: rows.length })
-      },
+      complete: (results: PapaResultLike) => resolve(normalizeParsed(results.meta?.fields, results.data)),
       error: (err: unknown) => reject(err instanceof Error ? err : new Error('Could not read that CSV.')),
     })
   })
+}
+
+/** Parse CSV TEXT (a string) into the same ParsedSource shape. Used server-side for CSV entries
+ *  pulled out of an uploaded ZIP, where there is no browser File to stream. Papa parses a string
+ *  synchronously. */
+export function parseCsvText(text: string): ParsedSource {
+  const results = Papa.parse<Record<string, string>>(text, {
+    header: true,
+    skipEmptyLines: 'greedy',
+    transformHeader: (h: string) => h.trim(),
+  }) as PapaResultLike
+  return normalizeParsed(results.meta?.fields, results.data)
 }
 
 /** A small sample of rows for the deterministic auto-map + the AI assist. */

@@ -6,10 +6,11 @@
 // commit) is a server action. Composes the page-framework kit primitives + semantic
 // tokens (no hex). Copy passes NAMING + CONTENT-VOICE (no em dashes).
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { UploadCloud, Sparkles, Loader2, Check, ArrowRight, ArrowLeft, FileSpreadsheet, AlertTriangle, ClipboardType } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { parseCsvFile, sourceFromContacts, mergeSources, looksLikeTable } from '@/lib/crm/import/parse'
+import { customFieldKey } from '@/lib/crm/import/map'
 import {
   stageImport,
   saveMapping,
@@ -17,6 +18,8 @@ import {
   previewImport,
   commitAction,
   extractContactsAction,
+  extractZipSources,
+  listKnownCustomFields,
 } from '@/lib/crm/import/actions'
 import { isError } from '@/lib/action-result'
 import { TARGET_FIELDS, type ColumnMapping, type MappingChoice, type MergeStrategy, type ParsedSource, type ValidationResult, type CommitResult, type ImportTargetKind } from '@/lib/crm/import/types'
@@ -80,9 +83,24 @@ export function ImportWizard({
   const [banner, setBanner] = useState<Banner>(null)
   const [showPaste, setShowPaste] = useState(false)
   const [pasted, setPasted] = useState('')
+  const [knownFields, setKnownFields] = useState<{ key: string; label: string }[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
 
   const scopeSpaceId = targetKind === 'space' ? spaceId : null
+
+  // Load the custom fields this operator already has (per target scope) so the mapping step can
+  // suggest reusing an existing field instead of minting a near-duplicate.
+  useEffect(() => {
+    let live = true
+    listKnownCustomFields(scopeSpaceId)
+      .then((fields) => {
+        if (live) setKnownFields(fields)
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [scopeSpaceId])
 
   const bannerClass = banner
     ? banner.kind === 'ok'
@@ -108,6 +126,22 @@ export function ImportWizard({
     try {
       for (const file of files) {
         try {
+          // A ZIP (e.g. a Notion / CRM export) is unzipped server-side; each CSV inside becomes a
+          // source, merged with the rest. Detect by extension or MIME so a renamed archive still works.
+          const isZip = /\.zip$/i.test(file.name) || /zip/i.test(file.type)
+          if (isZip) {
+            const fd = new FormData()
+            fd.append('file', file)
+            const res = await extractZipSources(fd)
+            if (isError(res)) {
+              notes.push(`${file.name}: ${res.error}`)
+              continue
+            }
+            for (const src of res.data.sources) sources.push(src)
+            for (const s of res.data.skipped) notes.push(`${file.name} › ${s.name || 'an entry'}: skipped (${s.reason}).`)
+            if (res.data.files.length && !firstLabel) firstLabel = file.name
+            continue
+          }
           const parsed = await parseCsvFile(file)
           if (looksLikeTable(parsed)) {
             sources.push(parsed)
@@ -200,12 +234,27 @@ export function ImportWizard({
 
   function setColumnTarget(header: string, target: MappingChoice) {
     setMapping((prev) =>
-      prev.map((m) =>
-        m.header === header
-          ? { ...m, target, reason: 'manual', confidence: 1, ...(target === 'custom' && !m.customKey ? { customKey: header.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') } : {}) }
-          : m,
-      ),
+      prev.map((m) => {
+        if (m.header !== header) return m
+        const next = { ...m, target, reason: 'manual' as const, confidence: 1 }
+        if (target === 'custom') {
+          // Default the label to the source header, and derive the stable key from the label.
+          const label = m.customLabel?.trim() || m.header
+          next.customLabel = label
+          next.customKey = m.customKey || customFieldKey(label)
+        }
+        return next
+      }),
     )
+  }
+
+  /** Rename a custom field's label. The stable key is re-derived from the label, UNLESS the label
+   *  matches a field the operator already has (case-insensitive), in which case we snap to that
+   *  field's key so a re-import lands in the same field instead of forking a near-duplicate. */
+  function setColumnCustomLabel(header: string, label: string) {
+    const match = knownFields.find((f) => f.label.trim().toLowerCase() === label.trim().toLowerCase())
+    const key = match ? match.key : customFieldKey(label) || customFieldKey(header)
+    setMapping((prev) => prev.map((m) => (m.header === header ? { ...m, customLabel: label, customKey: key } : m)))
   }
 
   async function askVera() {
@@ -312,7 +361,7 @@ export function ImportWizard({
             variant="first-use"
             icon={FileSpreadsheet}
             title="Bring in your contacts"
-            description="Drop in a spreadsheet, an export from another CRM, or even a plain note. CSV, TSV, and text all work, and you can choose more than one file at once. Vera reads whatever you give it and matches the columns on the next step."
+            description="Drop in a spreadsheet, an export from another CRM, or even a plain note. CSV, TSV, text, and a .zip export all work, and you can choose more than one file at once. Vera reads whatever you give it and matches the columns on the next step."
             action={
               <button
                 type="button"
@@ -329,7 +378,7 @@ export function ImportWizard({
             ref={fileRef}
             type="file"
             multiple
-            accept=".csv,.tsv,.tab,.txt,text/csv,text/tab-separated-values,text/plain"
+            accept=".csv,.tsv,.tab,.txt,.zip,text/csv,text/tab-separated-values,text/plain,application/zip,application/x-zip-compressed"
             className="hidden"
             onChange={(e) => {
               const files = Array.from(e.target.files ?? [])
@@ -373,11 +422,18 @@ export function ImportWizard({
 
       {step === 'map' && source && (
         <div className="space-y-4">
+          {/* Known custom fields for this scope: typing a matching name in a custom field reuses it. */}
+          <datalist id="known-custom-fields">
+            {knownFields.map((f) => (
+              <option key={f.key} value={f.label} />
+            ))}
+          </datalist>
           <div className="rounded-xl border border-border bg-surface-elevated/40 p-4">
             <p className="text-sm font-semibold text-text">Match your columns to contact fields</p>
             <p className="mt-1 text-xs text-muted">
               We guessed a match for each column. A confident match is applied for you; check the rest. Anything left as a
-              custom field is kept on the contact, nothing is thrown away. Or let Vera take a pass.
+              custom field is kept on the contact, and you can rename it or reuse one you already have. Nothing is thrown away.
+              Or let Vera take a pass.
             </p>
             <button
               type="button"
@@ -419,6 +475,23 @@ export function ImportWizard({
                           <option value="custom">{FIELD_LABEL.custom}</option>
                           <option value="ignore">{FIELD_LABEL.ignore}</option>
                         </select>
+                        {m.target === 'custom' && (
+                          <div className="mt-1.5">
+                            <input
+                              type="text"
+                              list="known-custom-fields"
+                              className={`${input} py-1 text-xs`}
+                              value={m.customLabel ?? m.header}
+                              onChange={(e) => setColumnCustomLabel(m.header, e.target.value)}
+                              placeholder="Custom field name"
+                              aria-label={`Custom field name for ${m.header}`}
+                            />
+                            <p className="mt-0.5 text-2xs text-subtle">
+                              Saved as <code className="text-muted">{m.customKey || customFieldKey(m.customLabel ?? m.header)}</code>
+                              {knownFields.some((f) => f.key === m.customKey) ? ' · reuses an existing field' : ''}
+                            </p>
+                          </div>
+                        )}
                       </td>
                       <td className="px-3 py-2"><MatchBadge m={m} /></td>
                     </tr>

@@ -150,6 +150,9 @@ export type CrmContact = {
   display_name: string | null
   consent_state: string
   created_at: string | null
+  /** Imported custom fields, keyed by their stable registry key -> value (from `contacts.meta.custom`).
+   *  Only populated by the single-contact `getContact` read; the list read leaves it undefined. */
+  custom?: Record<string, string>
 }
 
 // A Space's CRM contacts (the per-space people list). Optional spaceId scopes to one Space;
@@ -181,17 +184,27 @@ export async function getContacts(spaceId?: string, limit = 200): Promise<CrmCon
 // the contact belongs to the Space before reading its notes). Absent = global lookup by id.
 export async function getContact(id: string, spaceId?: string): Promise<CrmContact | null> {
   const { data } = await scopeBySpace(
-    db().from('contacts').select('id, email, display_name, consent_state, created_at').eq('id', id),
+    db().from('contacts').select('id, email, display_name, consent_state, created_at, meta').eq('id', id),
     spaceId,
   ).maybeSingle()
   if (!data) return null
   const c = data as Record<string, unknown>
+  // Imported custom fields live in `meta.custom`, keyed by their stable registry key. Read them onto the
+  // contact so the detail surface can show them (they were write-only dead data before).
+  const meta = (c.meta as { custom?: unknown } | null) ?? {}
+  const custom: Record<string, string> = {}
+  if (meta.custom && typeof meta.custom === 'object') {
+    for (const [k, v] of Object.entries(meta.custom as Record<string, unknown>)) {
+      if (typeof v === 'string' && v.trim()) custom[k] = v
+    }
+  }
   return {
     id: c.id as string,
     email: (c.email as string) ?? '',
     display_name: (c.display_name as string) ?? null,
     consent_state: (c.consent_state as string) ?? 'unknown',
     created_at: (c.created_at as string) ?? null,
+    custom: Object.keys(custom).length ? custom : undefined,
   }
 }
 

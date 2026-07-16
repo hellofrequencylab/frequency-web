@@ -151,6 +151,22 @@ export async function SpaceContactDetail({
           <Field icon={Building2} label="Company" value={identity.company} />
           <Field icon={MapPin} label="City" value={identity.city} />
         </dl>
+
+        {/* Imported custom fields (contacts.meta.custom). Shown when the contact carries any, so imported
+            data that used to be write-only is now visible on the record. */}
+        {identity.customFields.length > 0 && (
+          <div className="mt-4 border-t border-border pt-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-subtle">Custom fields</p>
+            <dl className="grid gap-x-6 gap-y-3 @md:grid-cols-2">
+              {identity.customFields.map((f) => (
+                <div key={f.key} className="min-w-0">
+                  <dt className="text-xs font-medium text-muted">{f.label}</dt>
+                  <dd className="truncate text-sm text-text" title={f.value}>{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
       </div>
 
       {/* Where this person is (Altitude 3): the one-line standing + the shared scores, with the plain

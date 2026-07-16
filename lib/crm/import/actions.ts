@@ -13,6 +13,8 @@ import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { listManagedSpaces } from '@/lib/spaces/managed'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { autoMapColumns, headerFingerprint } from './map'
+import { parseCsvText } from './parse'
+import { readZipCsvEntries } from './zip'
 import { proposeMapping, extractContactsFromText, type AiSuggestion, type ExtractedContact } from './ai'
 import { computeValidation } from './preview'
 import { commitImport } from './commit'
@@ -106,6 +108,59 @@ export async function stageImport(input: StageImportInput): Promise<ActionResult
   if (!row) return fail('We could not stage that import. Try again.')
 
   return ok({ id: row.id, mapping: row.mapping, remembered })
+}
+
+const MAX_ZIP_BYTES = 20 * 1024 * 1024 // 20 MB archive
+
+export interface ZipSourcesData {
+  /** One parsed source per readable CSV entry (the client merges them). */
+  sources: ParsedSource[]
+  /** The CSV entry names we pulled in. */
+  files: string[]
+  /** CSV entries we skipped, with a short reason (surfaced so nothing is silently dropped). */
+  skipped: { name: string; reason: string }[]
+}
+
+/** Unzip an uploaded archive server-side and return a ParsedSource per CSV entry inside it
+ *  (e.g. a Notion / CRM export that ships one CSV per database). The client then merges these
+ *  with any other selected files and stages them like a normal import. Bounded + fail-soft: an
+ *  unreadable or non-CSV archive returns a calm reason, never throws. */
+export async function extractZipSources(formData: FormData): Promise<ActionResult<ZipSourcesData>> {
+  try {
+    await requireProfile()
+  } catch {
+    return fail('Sign in to import contacts.')
+  }
+  const file = formData.get('file')
+  if (!(file instanceof File)) return fail('No archive was uploaded.')
+  if (file.size > MAX_ZIP_BYTES) return fail('That archive is too large. Keep it under 20 MB.')
+
+  let buf: Buffer
+  try {
+    buf = Buffer.from(await file.arrayBuffer())
+  } catch {
+    return fail('We could not read that archive.')
+  }
+
+  const { entries, skipped } = readZipCsvEntries(buf)
+  if (!entries.length) {
+    const notZip = skipped.some((s) => s.reason === 'not-a-zip')
+    return fail(notZip ? 'That file is not a readable ZIP.' : 'No CSV files were found inside that archive.')
+  }
+
+  const sources: ParsedSource[] = []
+  const files: string[] = []
+  for (const e of entries) {
+    const src = parseCsvText(e.text)
+    if (src.headers.length && src.rows.length) {
+      sources.push(src)
+      files.push(e.name)
+    } else {
+      skipped.push({ name: e.name, reason: 'no-rows' })
+    }
+  }
+  if (!sources.length) return fail('The CSV files in that archive had no rows we could read.')
+  return ok({ sources, files, skipped })
 }
 
 /** Pull contacts out of unstructured text (a pasted block, a .txt file the delimited parser
