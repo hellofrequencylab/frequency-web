@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Check, X } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyBetaToken } from '@/lib/beta-tokens'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 export const metadata: Metadata = {
   title: 'Confirm your spot',
@@ -12,11 +13,12 @@ export const metadata: Metadata = {
 async function confirm(email: string): Promise<boolean> {
   const admin = createAdminClient()
   const nowIso = new Date().toISOString()
-  const { data: existing } = await admin
-    .from('contacts')
-    .select('id, meta')
-    .ilike('email', email)
-    .maybeSingle()
+  // ROOT-scoped: the beta waitlist lives on the root hub (→ root via the contacts_default_space_id
+  // trigger). Per-space tenancy (ADR-624) makes an unscoped email lookup a multi-row throw hazard.
+  const rootId = await loadRootSpaceId()
+  const { data: existing } = rootId
+    ? await admin.from('contacts').select('id, meta').eq('space_id', rootId).ilike('email', email).maybeSingle()
+    : { data: null }
 
   const meta = {
     ...(existing?.meta && typeof existing.meta === 'object' ? existing.meta : {}),

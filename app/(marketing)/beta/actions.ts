@@ -9,6 +9,7 @@ import { buildBetaConfirmUrl } from '@/lib/beta-tokens'
 import { SITE_URL } from '@/lib/site'
 import { headers } from 'next/headers'
 import { rateLimitOk } from '@/lib/rate-limit'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 export type BetaResult =
   | { ok: true; already?: boolean }
@@ -46,13 +47,18 @@ export async function requestBetaAccess(input: {
   const admin = createAdminClient()
   const nowIso = new Date().toISOString()
 
-  // Look up any existing contact (case-insensitive; email is stored lowercased
-  // on insert, and there's a unique index on lower(email)).
-  const { data: existing } = await admin
-    .from('contacts')
-    .select('id, consent_state, display_name, meta')
-    .ilike('email', email)
-    .maybeSingle()
+  // Look up any existing contact (case-insensitive). ROOT-scoped: this waitlist inserts to the root hub
+  // (→ root via the contacts_default_space_id trigger), and per-space tenancy (ADR-624) makes an unscoped
+  // email lookup a multi-row throw hazard, so scope to root so `.maybeSingle()` is safe.
+  const rootId = await loadRootSpaceId()
+  const { data: existing } = rootId
+    ? await admin
+        .from('contacts')
+        .select('id, consent_state, display_name, meta')
+        .eq('space_id', rootId)
+        .ilike('email', email)
+        .maybeSingle()
+    : { data: null }
 
   // Already confirmed — nothing to do, just reassure them.
   if (existing?.consent_state === 'subscribed') {

@@ -26,6 +26,7 @@ import type { FunnelDestination } from '@/lib/onboarding/beta-sequences'
 import { personaTag, isPersonaId, DEFAULT_PERSONA } from '@/lib/onboarding/personas'
 import { enrollInNurture } from '@/lib/nurture/enroll'
 import { getSequenceByPersona } from '@/lib/nurture/store'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 import { assignTag } from '@/lib/traits/tags'
 import { resolveAcquisition, stampAcquisitionTag } from '@/lib/attribution/server'
 import { applyReferralAttribution, applyEntryPointConversion } from '@/lib/qr/referral'
@@ -157,7 +158,13 @@ async function enrollPersonaOnboarding(profileId: string, email: string, primary
     const { data: byProfile } = await admin.from('contacts').select('id').eq('profile_id', profileId).maybeSingle()
     let contactId = (byProfile as { id: string } | null)?.id ?? null
     if (!contactId) {
-      const { data: byEmail } = await admin.from('contacts').select('id').ilike('email', email).maybeSingle()
+      // ROOT-scoped email fallback: the member's platform contact lives in the root space (the signup
+      // trigger links profile_id there). Per-space tenancy (ADR-624) makes an unscoped email lookup a
+      // multi-row throw hazard, so scope to root. byProfile above usually resolves first.
+      const rootId = await loadRootSpaceId()
+      const { data: byEmail } = rootId
+        ? await admin.from('contacts').select('id').eq('space_id', rootId).ilike('email', email).maybeSingle()
+        : { data: null }
       contactId = (byEmail as { id: string } | null)?.id ?? null
     }
     if (!contactId) {

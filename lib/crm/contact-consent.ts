@@ -19,6 +19,7 @@
 
 import { suppress, isSuppressed } from '@/lib/suppression'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 const norm = (s: string) => s.trim().toLowerCase()
 
@@ -54,13 +55,19 @@ export function evaluateContactConsent(input: {
 }
 
 /** The current marketing-consent state for an email on the `contacts` hub ('unknown' when no contact
- *  row exists). Service-role read; FAIL-SAFE to 'unknown' on error (the suppression check is the hard
+ *  row exists). Per-space tenancy (ADR-624): an address can carry a SEPARATE consent row in each Space,
+ *  so scope the read to the sending Space; with no `spaceId` (platform marketing) fall back to the ROOT
+ *  consent row. Scoped to a single (space_id, email) so `.maybeSingle()` is safe under the per-space
+ *  unique index. Service-role read; FAIL-SAFE to 'unknown' on error (the suppression check is the hard
  *  block; this only governs the opt-in requirement). */
-async function contactConsentState(email: string): Promise<ContactConsentState> {
+async function contactConsentState(email: string, spaceId?: string): Promise<ContactConsentState> {
   try {
+    const scope = spaceId ?? (await loadRootSpaceId())
+    if (!scope) return 'unknown'
     const { data } = await createAdminClient()
       .from('contacts')
       .select('consent_state')
+      .eq('space_id', scope)
       .eq('email', norm(email))
       .maybeSingle()
     const raw = (data as { consent_state?: string } | null)?.consent_state
@@ -82,7 +89,7 @@ export async function canEmailContact(
 ): Promise<ConsentDecision> {
   const [suppressed, consentState] = await Promise.all([
     isSuppressed(email, spaceId),
-    contactConsentState(email),
+    contactConsentState(email, spaceId),
   ])
   return evaluateContactConsent({ purpose, suppressed, consentState })
 }
@@ -123,6 +130,9 @@ export async function recordGlobalStop(input: GlobalStopInput): Promise<GlobalSt
     const addr = norm(input.email)
     try {
       await suppress(addr, input.reason) // global email suppression (space_id NULL)
+      // INTENTIONAL cross-space update under per-space tenancy (ADR-624): a global STOP must flip EVERY
+      // Space's row for this address to unsubscribed (root + every tenant lead), so this stays unscoped by
+      // space_id on purpose. The non-unique lower(email) index keeps the all-rows match fast.
       await createAdminClient().from('contacts').update({ consent_state: 'unsubscribed' }).eq('email', addr)
       result.emailStopped = true
     } catch {

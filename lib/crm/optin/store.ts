@@ -74,13 +74,18 @@ interface ExistingContact {
   meta: Record<string, unknown>
 }
 
-/** Look up a contact by email (case-insensitive). The `contacts(lower(email))` unique index is
- *  global, so one row per address across every Space. Returns null on miss or error. */
+/** Look up a contact by email (case-insensitive) in the ROOT space. The opt-in funnel is a
+ *  platform/root flow (it creates + confirms contacts in the root space), so the lookup is scoped
+ *  to root — under per-space tenancy (ADR-624) an email may exist as a separate row in other Spaces,
+ *  and an unscoped `.maybeSingle()` would throw on that. Returns null on miss, no-root, or error. */
 async function findContactByEmail(email: string): Promise<ExistingContact | null> {
   try {
+    const rootId = await getRootSpaceId()
+    if (!rootId) return null
     const { data } = await createAdminClient()
       .from('contacts')
       .select('id, consent_state, display_name, profile_id, meta')
+      .eq('space_id', rootId)
       .ilike('email', email)
       .maybeSingle()
     if (!data) return null

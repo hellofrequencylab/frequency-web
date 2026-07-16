@@ -534,20 +534,25 @@ export async function handleSpaceSendWebhook(
   }
 }
 
-/** Resolve a contact id for an email on the CRM hub (lowercased exact match). Service-role read,
- *  FAIL-SAFE to null on any miss/error. authz-delegated: read-only resolve at the webhook seam. */
-async function resolveContactIdByEmail(email: string): Promise<string | null> {
+/** Resolve a contact id for an email WITHIN a Space on the CRM hub (lowercased exact match). Per-space
+ *  tenancy (ADR-624): an address can be a separate contact in each Space, so scope to the sending Space
+ *  so a bounce/open attributes to that Space's contact and `.maybeSingle()` stays single-row (an unscoped
+ *  lookup would throw on a multi-row address). Service-role read, FAIL-SAFE to null on any miss/error.
+ *  authz-delegated: read-only resolve at the webhook seam. */
+async function resolveContactIdByEmail(email: string, spaceId: string): Promise<string | null> {
   const addr = normalizeEmail(email)
-  if (!addr) return null
+  if (!addr || !spaceId) return null
   try {
     const db = createAdminClient() as unknown as {
       from: (t: string) => {
         select: (c: string) => {
-          eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: { id?: string } | null }> }
+          eq: (col: string, val: string) => {
+            eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: { id?: string } | null }> }
+          }
         }
       }
     }
-    const { data } = await db.from('contacts').select('id').eq('email', addr).maybeSingle()
+    const { data } = await db.from('contacts').select('id').eq('space_id', spaceId).eq('email', addr).maybeSingle()
     return typeof data?.id === 'string' && data.id.length ? data.id : null
   } catch {
     return null
@@ -619,7 +624,7 @@ export async function handleSpaceSendEngagement(
     const contactId =
       typeof row.contact_id === 'string' && row.contact_id.length
         ? row.contact_id
-        : await resolveContactIdByEmail(row.email)
+        : await resolveContactIdByEmail(row.email, row.space_id)
     if (!contactId) return // recipient never mapped to a contacts row -> no subject to scope to.
 
     await recordContactInteraction(

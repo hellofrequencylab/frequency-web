@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   LEAD_DOORS,
   isLeadDoor,
@@ -10,8 +10,46 @@ import {
   encodeLeadGrab,
   parseLeadGrab,
   buildEntryPointRow,
+  captureLead,
   type PendingLeadGrab,
 } from './lead-capture'
+
+// A recording mock of the service-role admin client: every from() spins a fresh chainable/awaitable
+// builder that records the (method, args) sequence it received, so a test can assert HOW a query was
+// scoped. maybeSingle()/await resolve to a canned row per table (the 'contacts' row is already in
+// 'space-1', so captureLead takes the existing-row path — no inserts, no root lookup needed).
+const { chains } = vi.hoisted(() => ({ chains: [] as Array<{ table: string; calls: Array<[string, unknown[]]> }> }))
+
+vi.mock('@/lib/supabase/admin', () => {
+  const rowFor = (table: string): unknown => {
+    if (table === 'contacts')
+      return { id: 'c1', email: 'jo@example.com', space_id: 'space-1', profile_id: null, consent_state: 'unknown', display_name: null, meta: {} }
+    if (table === 'spaces') return { id: 'root-1' }
+    return { id: `${table}-1` }
+  }
+  const makeBuilder = (table: string): unknown => {
+    const chain = { table, calls: [] as Array<[string, unknown[]]> }
+    chains.push(chain)
+    const result = { data: rowFor(table), error: null }
+    const p: unknown = new Proxy(
+      {},
+      {
+        get(_t, prop: string) {
+          if (prop === 'then') return (resolve: (v: unknown) => unknown) => resolve(result)
+          if (prop === 'maybeSingle' || prop === 'single') return () => Promise.resolve(result)
+          return (...args: unknown[]) => {
+            chain.calls.push([prop, args])
+            return p
+          }
+        },
+      },
+    )
+    return p
+  }
+  return { createAdminClient: () => ({ from: (t: string) => makeBuilder(t) }) }
+})
+
+vi.mock('@/lib/crm/interactions', () => ({ recordContactInteraction: async () => {} }))
 
 // PURE-engine tests for the capture-now / claim-on-join lead-grab engine (CRM Phase 3). These lock the
 // three invariants the DB also enforces: entry-point immutability (a set-once, well-formed door row),
@@ -126,5 +164,28 @@ describe('immutable entry-point row (set-once, well-formed)', () => {
     expect(buildEntryPointRow({ spaceId: '', contactId: 'c', door: 'space_qr' })).toBeNull()
     expect(buildEntryPointRow({ spaceId: 's', contactId: '', door: 'space_qr' })).toBeNull()
     expect(buildEntryPointRow({ spaceId: 's', contactId: 'c', door: 'bogus' as unknown as never })).toBeNull()
+  })
+})
+
+// Per-space contact tenancy (ADR-624): the email lookup behind captureLead MUST be scoped to the
+// capture's space_id. Under the per-space unique index an unscoped email lookup can span Spaces and
+// throw on a multi-row address, so this locks the scope in.
+describe('findContactByEmail is space-scoped (per-space tenancy, ADR-624)', () => {
+  beforeEach(() => {
+    chains.length = 0
+  })
+
+  it('scopes the contacts email lookup to the capture space_id (never an unscoped email match)', async () => {
+    await captureLead({ spaceId: 'space-1', door: 'lead_magnet', email: 'Jo@Example.com' })
+
+    // The lookup chain is the `contacts` query that matched on email. It must ALSO have filtered space_id.
+    const lookup = chains.find(
+      (c) => c.table === 'contacts' && c.calls.some(([m, a]) => m === 'ilike' && a[0] === 'email'),
+    )
+    expect(lookup, 'expected a contacts email lookup to have run').toBeTruthy()
+    const eqCalls = lookup!.calls.filter(([m]) => m === 'eq')
+    expect(eqCalls).toContainEqual(['eq', ['space_id', 'space-1']])
+    // And the email match is present on the same chain (proving the scope + email dedupe are together).
+    expect(lookup!.calls).toContainEqual(['ilike', ['email', 'jo@example.com']])
   })
 })

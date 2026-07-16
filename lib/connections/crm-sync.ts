@@ -5,6 +5,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { fireSpaceTrigger } from '@/lib/spaces/drip-enroll'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 /** Upsert the scanned contact into `contacts` and link it to the personal card.
  *  Returns the contacts.id (or null). Existing rows keep their own source/consent —
@@ -21,11 +22,13 @@ export async function syncScanToCrm(input: {
   const db = createAdminClient()
   const now = new Date().toISOString()
 
-  const { data: existing } = await db
-    .from('contacts')
-    .select('id, display_name')
-    .ilike('email', email)
-    .maybeSingle()
+  // ROOT-scoped: this hub inserts without space_id (→ root via the contacts_default_space_id trigger), so
+  // its dedupe target is the ROOT contact. Per-space tenancy (ADR-624) makes an unscoped email lookup a
+  // multi-row throw hazard; scope to root so `.maybeSingle()` is safe and we never adopt a tenant lead.
+  const root = await loadRootSpaceId()
+  const { data: existing } = root
+    ? await db.from('contacts').select('id, display_name').eq('space_id', root).ilike('email', email).maybeSingle()
+    : { data: null }
 
   let contactId = (existing as { id?: string } | null)?.id ?? null
 
