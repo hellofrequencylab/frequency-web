@@ -327,13 +327,13 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'crm-pipeline', href: '/admin/crm/pipeline', label: 'Pipeline', desc: 'Upsell members into Business Spaces and grow donations: every prospect by stage, split by lane, with quick add and one-tap stage moves.', icon: 'Briefcase', min: 'host', staffDomain: 'marketing',
     world: 'growth', worldLabel: 'CRM: Pipeline', worldOrder: 9,
     adminGroups: [{ domain: 'crm', section: 'Pipeline' }], adminNav: { section: 'crm', heading: 'Engine' } },
-  // The full contact RECORD (leads + customers + members), where imported platform contacts land. The
-  // scored Roster shows MEMBERS only; this is the home for a lead who has not signed up yet. Email is
-  // the join key; a lead auto-links to their profile on signup. A "Leads" filter isolates the not-yet-
-  // members. (This is the surface the platform importer writes into via the ROOT-space contacts.)
-  { id: 'crm-contacts', href: '/admin/marketing/contacts', label: 'Contacts', desc: 'The full contact record: every lead, customer, and member, with imported contacts landing here. Filter to Leads for the people who have not signed up yet.', icon: 'Contact', min: 'janitor',
-    world: 'growth', worldLabel: 'CRM: Contacts', worldOrder: 10,
-    adminGroups: [{ domain: 'crm', section: 'Records' }] },
+  // RETIRED from the menu (2026-07): the admin "Contacts" tab was the original pre-Resonance CRM and is
+  // fully replaced by the Resonance CRM (Roster + Intelligence + Pipeline + Marketing). Its leaf is removed
+  // so it no longer shows in any admin menu. The PAGE at /admin/marketing/contacts stays reachable (the
+  // platform importer still lands there via the ROOT-space contacts, and deep links from widgets / the CRM
+  // graph resolve to it) — this is a MENU removal only, not a page deletion. NOTE: the member-facing "My
+  // Contacts" (the personal CRM: card scanner + in-person capture + business lead-gen over network_contacts)
+  // is a DIFFERENT surface and is intentionally untouched.
   // Marketing — compose + send email to the whole community or a section (all members, a circle, a saved
   // segment, or individuals), with campaigns / funnels / drafts / sent in one place. Reuses the messaging
   // console + the block editor + the gated send pipeline; the popup composer always saves as a draft.
@@ -642,7 +642,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
       // renders the section's own landing link ("Resonance CRM" -> /admin/crm, the roster home), so
       // adding the crm leaf too would paint TWO tabs on the same URL (the "Resonance CRM" + "Roster"
       // duplicate). The section link IS the roster tab.
-      { heading: 'Engine', leaves: [{ leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }, { leaf: 'crm-marketing' }] },
+      { heading: 'Engine', leaves: [{ leaf: 'crm-marketing' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }] },
     ],
   },
   {

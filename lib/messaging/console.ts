@@ -58,16 +58,20 @@ const CAMPAIGN_COMPOSER_HREF = '/admin/marketing/campaigns'
 export async function getMessagingConsole(): Promise<MessagingConsoleData> {
   const [rawCampaigns, funnels] = await Promise.all([listCampaigns(), listFunnels()])
 
-  const campaigns: MessagingCampaignItem[] = rawCampaigns.map((c) => ({
-    kind: 'campaign',
-    id: c.id,
-    name: c.subject,
-    segment: c.segment,
-    status: campaignStatusToMessaging(c.status),
-    recipientCount: c.recipientCount,
-    sentAt: c.sentAt,
-    href: CAMPAIGN_COMPOSER_HREF,
-  }))
+  const campaigns: MessagingCampaignItem[] = rawCampaigns
+    // Hide untitled DRAFTS: an unsent draft with no subject is a blank the composer left behind, not
+    // something to manage. A titled draft (real work in progress) and every sent/scheduled campaign stay.
+    .filter((c) => c.subject.trim() !== '' || c.status !== 'draft')
+    .map((c) => ({
+      kind: 'campaign',
+      id: c.id,
+      name: c.subject,
+      segment: c.segment,
+      status: campaignStatusToMessaging(c.status),
+      recipientCount: c.recipientCount,
+      sentAt: c.sentAt,
+      href: CAMPAIGN_COMPOSER_HREF,
+    }))
 
   const funnelItems: MessagingFunnelItem[] = funnels.map((f) => ({
     kind: 'funnel',

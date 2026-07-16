@@ -127,6 +127,42 @@ function starterEmailLayout(template: EmailDraftTemplate = 'campaign'): EntityLa
   return { rows: starterRows('email', template === 'message' ? 'minimal' : 'basic') }
 }
 
+/** The row shape the pristine-draft check reads. */
+interface DraftPristineRow {
+  subject: string | null
+  preheader: string | null
+  body: string | null
+  sent_at: string | null
+  test_sent_at: string | null
+  scheduled_for: string | null
+  phase_id: string | null
+  recipient_count: number | null
+  block_json: unknown
+}
+
+const PRISTINE_COLS = 'subject, preheader, body, sent_at, test_sent_at, scheduled_for, phase_id, recipient_count, block_json'
+
+/** Is this draft still untouched? No subject/preheader/body, no authored block content (the starter
+ *  scaffold has row slots but no `content` map), no send / test / schedule / recipients, and not part of
+ *  a sequence. Such a row is safe to reuse or silently discard, and should never clutter a list. */
+function isPristineDraft(row: DraftPristineRow): boolean {
+  const empty = !(row.subject ?? '').trim() && !(row.preheader ?? '').trim() && !(row.body ?? '').trim()
+  const content =
+    row.block_json && typeof row.block_json === 'object'
+      ? (row.block_json as { content?: Record<string, unknown> }).content
+      : undefined
+  const hasAuthoredContent = !!content && Object.keys(content).length > 0
+  return (
+    empty &&
+    !hasAuthoredContent &&
+    !row.sent_at &&
+    !row.test_sent_at &&
+    !row.scheduled_for &&
+    !row.phase_id &&
+    !(row.recipient_count && row.recipient_count > 0)
+  )
+}
+
 /** Read + parse a campaign's stored block_json into an EntityLayout, falling back to the basic starter when
  *  the row has never been arranged (or the blob is unusable). Fail-safe + total. */
 function layoutFromBlockJson(blockJson: unknown): EntityLayout {
@@ -177,6 +213,29 @@ export async function createEmailDraft(
 
   const layout = starterEmailLayout(template)
   const db = createAdminClient()
+
+  // Reuse the caller's own pristine empty draft instead of minting another. Opening a composer (or
+  // clicking New) repeatedly must never litter the list with blank drafts, so at most ONE untouched
+  // draft ever exists per operator. We reset its starter layout to the requested template and return it.
+  const { data: candidates } = await db
+    .from('campaigns')
+    .select(`id, ${PRISTINE_COLS}`)
+    .eq('created_by', gate.profileId)
+    .eq('status', 'draft')
+    .order('created_at', { ascending: false })
+    .limit(10)
+  const reusable = ((candidates ?? []) as ({ id: string } & DraftPristineRow)[]).find(isPristineDraft)
+  if (reusable) {
+    await db
+      .from('campaigns')
+      .update({ block_json: layout as unknown as never })
+      .eq('id', reusable.id)
+      .eq('status', 'draft')
+      .eq('created_by', gate.profileId)
+    revalidatePath('/admin/beta')
+    return ok({ id: reusable.id })
+  }
+
   const { data, error } = await db
     .from('campaigns')
     .insert({
@@ -383,38 +442,13 @@ export async function discardDraftIfEmpty(id: string): Promise<ActionResult> {
   const db = createAdminClient()
   const { data } = await db
     .from('campaigns')
-    .select('subject, preheader, body, sent_at, test_sent_at, scheduled_for, phase_id, recipient_count, block_json')
+    .select(PRISTINE_COLS)
     .eq('id', id)
     .eq('status', 'draft')
     .maybeSingle()
-  const row = data as {
-    subject: string | null
-    preheader: string | null
-    body: string | null
-    sent_at: string | null
-    test_sent_at: string | null
-    scheduled_for: string | null
-    phase_id: string | null
-    recipient_count: number | null
-    block_json: unknown
-  } | null
+  const row = data as DraftPristineRow | null
   if (!row) return ok()
-
-  const empty = !(row.subject ?? '').trim() && !(row.preheader ?? '').trim() && !(row.body ?? '').trim()
-  const content =
-    row.block_json && typeof row.block_json === 'object'
-      ? (row.block_json as { content?: Record<string, unknown> }).content
-      : undefined
-  const hasAuthoredContent = !!content && Object.keys(content).length > 0
-  const pristine =
-    empty &&
-    !hasAuthoredContent &&
-    !row.sent_at &&
-    !row.test_sent_at &&
-    !row.scheduled_for &&
-    !row.phase_id &&
-    !(row.recipient_count && row.recipient_count > 0)
-  if (!pristine) return ok()
+  if (!isPristineDraft(row)) return ok()
 
   await db.from('campaigns').delete().eq('id', id).eq('status', 'draft').eq('created_by', gate.profileId)
   revalidatePath('/admin/beta')
