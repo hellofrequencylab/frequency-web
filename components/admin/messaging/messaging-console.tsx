@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowUpRight, Megaphone, Activity, Mail, Trash2 } from 'lucide-react'
+import { ArrowUpRight, Activity, Trash2 } from 'lucide-react'
 import { StatusChip } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
@@ -269,26 +269,6 @@ function FunnelsPanel({ funnels }: { funnels: MessagingFunnelItem[] }) {
           </Link>
         )
       })}
-    </div>
-  )
-}
-
-// Small helper: the two "start here" links the header shows next to New.
-export function MessagingQuickLinks() {
-  return (
-    <div className="flex flex-wrap gap-2">
-      <Link
-        href="/admin/marketing/campaigns"
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:text-text"
-      >
-        <Megaphone className="h-3.5 w-3.5" aria-hidden /> Composer
-      </Link>
-      <Link
-        href="/admin/marketing/nurture"
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:text-text"
-      >
-        <Mail className="h-3.5 w-3.5" aria-hidden /> Nurture
-      </Link>
     </div>
   )
 }

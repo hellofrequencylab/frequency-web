@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { Search } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { atLeastRole, isStaff, type CommunityRole } from '@/lib/core/roles'
+import { atLeastRole, isStaff, isJanitor, type CommunityRole } from '@/lib/core/roles'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { demoModeEnabled } from '@/lib/platform-flags'
@@ -64,6 +64,11 @@ export default async function CrmContactsPage() {
   const staff = isStaff(caller.webRole)
   if (!(staff || atLeastRole(role, 'host'))) redirect('/feed')
 
+  // Only viewers who can actually WRITE a deal get the Deal action — the SAME predicate
+  // createDealForProfile enforces (actions.ts requireCrm -> authorizeAction(caller,'janitor')).
+  // Community hosts can see this page but can't start deals, so hide the dead button for them.
+  const canStartDeal = isJanitor(caller.webRole)
+
   const hideDemo = !(await demoModeEnabled()) || (await viewerHidesDemo())
 
   let profileIds: string[] | null = null
@@ -94,9 +99,19 @@ export default async function CrmContactsPage() {
   }
   const { data: rows } = await query
 
-  const { data: authList } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  // Attach emails by fetching ONLY the users the loaded profiles reference (bounded to ≤300),
+  // rather than pulling the whole auth user table — which capped at perPage and silently dropped
+  // emails past user #1000. One getUserById per distinct auth_user_id, run in parallel.
+  const authUserIds = [
+    ...new Set((rows ?? []).map((m) => m.auth_user_id as string | null).filter(Boolean) as string[]),
+  ]
   const emailById = new Map<string, string | null>(
-    (authList?.users ?? []).map((u) => [u.id, u.email ?? null]),
+    await Promise.all(
+      authUserIds.map(async (id) => {
+        const { data } = await admin.auth.admin.getUserById(id)
+        return [id, data.user?.email ?? null] as [string, string | null]
+      }),
+    ),
   )
 
   const members: CrmContactRow[] = (rows ?? []).map((m) => ({
@@ -131,7 +146,7 @@ export default async function CrmContactsPage() {
             description={`As people join ${scopeLabel(role, staff)}, they will appear here.`}
           />
         ) : (
-          <ContactsTable rows={members} />
+          <ContactsTable rows={members} canStartDeal={canStartDeal} />
         )}
       </AdminSection>
     </AdminTemplate>

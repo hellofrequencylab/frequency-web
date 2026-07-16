@@ -78,17 +78,28 @@ bounces only) · L2 Funnel/lifecycle (requires marketing consent) · L3 Social/p
 (L2); `notification_preferences` governs product notifications (L3–4); a global
 **suppressions** list overrides everything. Marketing requires double opt-in.
 
-## 3. The "Studio" — embedded CRM / Business OS
+## 3. The CRM cockpit — embedded CRM / Business OS
 
-An admin-gated cockpit reusing the nested-route-group framework with its own
-SaaS-style shell (not member chrome): route group `app/(studio)/` mounted at
-`/studio`, gated once at `(studio)/layout.tsx`.
+An admin-gated cockpit for the operator, distinct from member chrome.
 
-**12 modules:** Dashboard · Contacts (CRM) · Pipelines · Campaigns · Automations
-(drip + trigger→condition→action rules engine) · Segments · Templates (React Email +
-brand kit) · Inbox (2-way, v2) · Tasks · Agent Console · Analytics · Settings.
+**How it actually shipped (2026-07):** *not* as a standalone `app/(studio)/` route
+group mounted at `/studio` with its own SaaS-style shell. That shell was never built.
+The cockpit landed as **two admin surfaces under the existing admin chrome**, both
+gated via `requireAdmin`:
+- **Resonance CRM** at `/admin/crm` (`app/(main)/admin/crm/`) — Members/Contacts,
+  Pipeline, Deals, the Resonance Graph, Playbooks, Vera Today, and the intelligence
+  cockpit.
+- **Marketing** at `/admin/marketing` (`app/(main)/admin/marketing/`,
+  `layout.tsx` gated once) — Campaigns, Automations (drip + trigger→condition→action
+  rules engine), Segments/audiences, Nurture drips, the Messaging control panel,
+  Deliverability, Analytics, and the Agent console.
 
-**Two settled data decisions:**
+Between them these cover the originally-scoped modules (Dashboard · Contacts ·
+Pipelines · Campaigns · Automations · Segments · Templates · Agent Console · Analytics
+· Settings); Inbox (2-way) and Tasks remain unbuilt. There is **no** `/studio` shell,
+route group, or `(studio)/layout.tsx`.
+
+**Two settled data decisions (both shipped):**
 - **Separate staff/team roles** — a `team_members` table (owner/admin/marketer/
   analyst), distinct from community roles, gated via `lib/staff.ts`
   `requireStaff(role)`. A community moderator ≠ a business operator. (Modeled as a
@@ -98,7 +109,7 @@ brand kit) · Inbox (2-way, v2) · Tasks · Agent Console · Analytics · Settin
   nullable, auto-linked on signup so CRM history carries onto the member.
   `engagement_score` is a **projection** off the one event backbone + `email_events`.
 
-The Studio reuses the spine, `notification_preferences`, unsubscribe tokens, and the
+These surfaces reuse the spine, `notification_preferences`, unsubscribe tokens, and the
 community schema — a new presentation + CRM-data layer, **not a rewrite**.
 
 ## 4. The AI agent — on rails, not in charge
@@ -188,6 +199,11 @@ React-Email component templates + the marketing/transactional sending-subdomain 
 transactional-template editable seam is also deferred at the `lib/email.ts` client boundary (ADR-613).
 SMS/A2P (Phase 8) is the remaining deferred CRM item.
 
-**Design-only (this doc):** `practice.verified` + WAM instrumentation, the
-notification router/registry, email-on-the-queue, Resend webhooks + `email_events` +
-suppression, the contacts/CRM layer, the Studio, the rules engine, the AI agent.
+**Shipped since this doc's original scope:** email-on-the-queue (the durable outbox),
+Resend webhooks + `email_events` + suppression (§2), the contacts/CRM layer, the CRM
+cockpit (shipped as `/admin/crm` + `/admin/marketing`, **not** the `/studio` shell
+this doc first sketched — see §3), the automations rules engine (GE6 core), and Vera
+(the AI agent, human-approved / non-autonomous per the deferred note above).
+
+**Still design-only (this doc):** `practice.verified` + WAM instrumentation, and the
+full notification router/registry.

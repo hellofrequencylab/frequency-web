@@ -257,15 +257,19 @@ export async function createEmailDraft(
 
 /**
  * Load one campaign into the editor: subject + preheader off the row, and the block layout parsed from
- * block_json (basic starter when unset). Read-gated. Returns null when the row is gone.
+ * block_json (basic starter when unset). Read-gated, and owner-scoped for DRAFTS (created_by = the caller)
+ * so an operator only ever opens their own draft — matching discardDraftIfEmpty. A non-draft (sent /
+ * scheduled) campaign stays shared: any marketer can still load it. Returns null when the row is gone.
  */
 export async function loadEmailCampaign(id: string): Promise<LoadedEmailCampaign | null> {
-  await requireAdmin('admin', { staff: 'marketing', staffLevel: 'read' })
+  const { profileId } = await requireAdmin('admin', { staff: 'marketing', staffLevel: 'read' })
   const db = createAdminClient()
   const { data, error } = await db
     .from('campaigns')
     .select('id, subject, preheader, block_json, status, approval_status, segment, scheduled_for, phase_id')
     .eq('id', id)
+    // Owner-scope drafts, but leave shared sent/scheduled campaigns loadable by anyone.
+    .or(`created_by.eq.${profileId},status.neq.draft`)
     .maybeSingle()
   if (error || !data) return null
 
@@ -411,15 +415,21 @@ export async function sendTestEmail(id: string): Promise<ActionResult<{ to: stri
 }
 
 /**
- * Delete a DRAFT email. Writer-gated, and restricted to status 'draft' so a scheduled / sent campaign can
- * never be removed here.
+ * Delete a DRAFT email. Writer-gated, restricted to status 'draft' so a scheduled / sent campaign can never
+ * be removed here, AND owner-scoped (created_by = the caller) so an operator can only ever delete their own
+ * draft — matching discardDraftIfEmpty. A shared sent campaign is untouched (delete never reaches it).
  */
 export async function deleteEmailDraft(id: string): Promise<ActionResult> {
   const gate = await writerGate()
   if (!gate.ok) return fail(gate.error)
 
   const db = createAdminClient()
-  const { error } = await db.from('campaigns').delete().eq('id', id).eq('status', 'draft')
+  const { error } = await db
+    .from('campaigns')
+    .delete()
+    .eq('id', id)
+    .eq('status', 'draft')
+    .eq('created_by', gate.profileId)
   if (error) return fail('Could not delete this draft. Try again.')
 
   revalidatePath('/admin/beta')

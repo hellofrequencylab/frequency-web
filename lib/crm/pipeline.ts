@@ -3,8 +3,12 @@ import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 
 // CRM pipeline data layer (ADR-102). The crm_* tables aren't in the generated DB
 // types yet, so every read/write goes through an untyped client cast (the same
-// pattern used across lib/studio + lib/page-editor). Service-role only — callers
-// gate on host+ (see app/(main)/admin/crm/actions.ts requireCrm()).
+// pattern used across lib/studio + lib/page-editor). The crm_* tables now carry
+// owner/space-scoped RLS POLICIES (space_id is_space_member read + can_write_space_content
+// writes, plus a staff read arm — 20260714010000_tenancy_hardening +
+// 20260905000000_crm_rls_convergence). This layer still reads/writes through the
+// service-role admin client (RLS bypass), so callers must gate first — the global
+// CRM tool gates on staff (see app/(main)/admin/crm/actions.ts requireCrm() -> janitor).
 //
 // PER-SPACE TENANCY (ENTITY-SPACES-BUILD Phase 2). Every read here takes an OPTIONAL
 // `spaceId`. It is purely ADDITIVE and BACKWARD-COMPATIBLE:
@@ -245,8 +249,9 @@ function hydrateDeal(d: Record<string, unknown>, people: Map<string, PersonLite>
 // opened. The seed comes from the resolved MODE PRESET's pipeline (lib/crm/stage-templates.ts
 // seedStagesForSpace -> lib/spaces/modes.ts), the SAME set the Mode settings "Suggested pipeline" preview
 // shows, so the preview and the seed can never disagree. These are service-role writes (the crm_* tables
-// are RLS-enabled with no policies; the caller gates on the Space owner / admin before calling), matching
-// the lib/crm/pipeline.ts read posture.
+// now carry owner/space-scoped RLS policies — 20260905000000_crm_rls_convergence — but the service-role
+// client bypasses RLS, so the caller gates on the Space owner / admin before calling), matching the
+// lib/crm/pipeline.ts read posture.
 
 import type { SpaceType } from '@/lib/spaces/types'
 import { seedStagesForSpace, platformPipelineStages, isPipelineLane, type PipelineLane } from './stage-templates'

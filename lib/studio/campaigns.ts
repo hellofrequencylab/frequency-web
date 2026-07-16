@@ -4,6 +4,7 @@
 // works); lead/non-member segments come with a contact-based unsubscribe later.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 import { resolveSegmentProfileIds, listSegmentChoices } from '@/lib/traits/segments'
 import {
   parsePlaceSelector,
@@ -189,11 +190,20 @@ export interface CampaignRow {
 
 export async function listCampaigns(limit = 50): Promise<CampaignRow[]> {
   const db = createAdminClient()
-  const { data } = await db
+  // The GLOBAL marketing console shows only GLOBAL broadcasts. Scope out the two things that were
+  // leaking in (an unscoped select mixed them into the list + counts):
+  //   • beta-sequence rows (phase_id set) — they have their own Campaign tab, and
+  //   • per-Space campaigns (a non-root space_id) — they belong to that Space's own console.
+  // Global rows are root-owned (space_email backfilled legacy rows to the root space) or legacy-null.
+  const rootId = await loadRootSpaceId()
+  let query = db
     .from('campaigns')
     .select('id, subject, segment, status, recipient_count, sent_at, created_at')
+    .is('phase_id', null)
     .order('created_at', { ascending: false })
     .limit(limit)
+  query = rootId ? query.or(`space_id.is.null,space_id.eq.${rootId}`) : query.is('space_id', null)
+  const { data } = await query
   return (data ?? []).map((c) => ({
     id: c.id,
     subject: c.subject,
