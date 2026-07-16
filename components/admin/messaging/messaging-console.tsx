@@ -1,24 +1,29 @@
 'use client'
 
-import { useState } from 'react'
+import { forwardRef, useEffect, useMemo, useRef, useState, type Ref } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, Activity, Trash2 } from 'lucide-react'
 import { StatusChip } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import {
   MESSAGING_STATUS_LEGEND,
   messagingStatusMeta,
+  type MessagingStatus,
 } from '@/lib/messaging/status'
 import type { MessagingCampaignItem, MessagingFunnelItem } from '@/lib/messaging/console'
 
 // The unified Messaging console body (EMAIL-CAMPAIGNS-FUNNELS-PLAN P1, ask #1/#4). ONE
 // home for the two things an operator creates: Campaigns (one-time sends) and Funnels
-// (triggered journeys). A shared status legend runs across the top, then a tab switches
-// between the two lists. Every row links out to the WORKING editor it already had (the
-// composer, the flow view), so this is the listing/console layer over them, not a
-// rebuild. Client-only for the tab state; the data is server-fetched by the page. No em
-// dashes (voice).
+// (triggered journeys). A shared status legend runs across the top, then two sub-tabs.
+//
+// Layout (2026-07): the Campaigns sub-tab is the PRIMARY two-pane view — the campaign
+// table on the left, a rail of Funnel cards on the right. Clicking a funnel card SLIDES
+// (no reload, no router push) to the Funnels sub-tab and deep-selects that funnel. The
+// two sub-panes live in one horizontal track that translates on a CSS transform, so the
+// switch is a slide, not a navigation. Respects prefers-reduced-motion. Client-only for
+// the tab/selection state; the data is server-fetched by the page. No em dashes (voice).
 
 type Tab = 'campaigns' | 'funnels'
 
@@ -43,6 +48,16 @@ export function MessagingConsole({
   onNewCampaign?: () => void
 }) {
   const [tab, setTab] = useState<Tab>(campaigns.length === 0 && funnels.length > 0 ? 'funnels' : 'campaigns')
+  // The funnel a rail click (or the operator) has deep-selected in the Funnels sub-pane.
+  const [selectedFunnelId, setSelectedFunnelId] = useState<string | null>(null)
+
+  // Rail card click: slide to Funnels and highlight that funnel. Pure client state, no navigation.
+  function openFunnel(id: string) {
+    setSelectedFunnelId(id)
+    setTab('funnels')
+  }
+
+  const onCampaigns = tab === 'campaigns'
 
   return (
     <div className="space-y-5">
@@ -57,23 +72,53 @@ export function MessagingConsole({
         ))}
       </div>
 
-      {/* Tabs */}
+      {/* Sub-tabs */}
       <div className="flex items-center gap-1 border-b border-border">
-        <TabButton active={tab === 'campaigns'} onClick={() => setTab('campaigns')} label="Campaigns" count={campaigns.length} />
-        <TabButton active={tab === 'funnels'} onClick={() => setTab('funnels')} label="Funnels" count={funnels.length} />
+        <TabButton active={onCampaigns} onClick={() => setTab('campaigns')} label="Campaigns" count={campaigns.length} />
+        <TabButton active={!onCampaigns} onClick={() => setTab('funnels')} label="Funnels" count={funnels.length} />
       </div>
 
-      {tab === 'campaigns' ? (
-        <CampaignsPanel
-          campaigns={campaigns}
-          onDeleteCampaign={onDeleteCampaign}
-          deletingId={deletingId}
-          onOpenCampaign={onOpenCampaign}
-          onNewCampaign={onNewCampaign}
-        />
-      ) : (
-        <FunnelsPanel funnels={funnels} />
-      )}
+      {/* Sliding sub-pane track. The viewport clips; the track holds both panes side by side and
+          translates between them. overflow-hidden here is the carousel clip, never a page scroll. */}
+      <div className="overflow-hidden">
+        <div
+          className="flex w-full transition-transform duration-300 ease-out motion-reduce:transition-none"
+          style={{ transform: onCampaigns ? 'translateX(0)' : 'translateX(-100%)' }}
+        >
+          {/* Pane 1 — Campaigns (primary) + Funnel rail */}
+          <section
+            aria-label="Campaigns"
+            aria-hidden={!onCampaigns}
+            inert={!onCampaigns || undefined}
+            className="w-full shrink-0"
+          >
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
+              <div className="min-w-0">
+                <CampaignsPanel
+                  campaigns={campaigns}
+                  onDeleteCampaign={onDeleteCampaign}
+                  deletingId={deletingId}
+                  onOpenCampaign={onOpenCampaign}
+                  onNewCampaign={onNewCampaign}
+                />
+              </div>
+              <aside className="min-w-0">
+                <FunnelRail funnels={funnels} selectedId={selectedFunnelId} onOpenFunnel={openFunnel} />
+              </aside>
+            </div>
+          </section>
+
+          {/* Pane 2 — Funnels (full grid, deep-selectable) */}
+          <section
+            aria-label="Funnels"
+            aria-hidden={onCampaigns}
+            inert={onCampaigns || undefined}
+            className="w-full shrink-0"
+          >
+            <FunnelsPanel funnels={funnels} selectedId={onCampaigns ? null : selectedFunnelId} />
+          </section>
+        </div>
+      </div>
     </div>
   )
 }
@@ -94,7 +139,7 @@ function TabButton({
       type="button"
       onClick={onClick}
       aria-current={active ? 'true' : undefined}
-      className={`-mb-px flex items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors ${
+      className={`-mb-px flex items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors motion-reduce:transition-none ${
         active
           ? 'border-primary-strong text-text'
           : 'border-transparent text-muted hover:border-border-strong hover:text-text'
@@ -125,6 +170,20 @@ function CampaignsPanel({
   onOpenCampaign?: (id: string) => void
   onNewCampaign?: () => void
 }) {
+  // Campaigns-column status filter (client-only). Sits above the table beside the shared search.
+  const [statusFilter, setStatusFilter] = useState<MessagingStatus | 'all'>('all')
+
+  // The statuses actually present, in legend order, so the filter never offers an empty bucket.
+  const availableStatuses = useMemo(() => {
+    const present = new Set(campaigns.map((c) => c.status))
+    return MESSAGING_STATUS_LEGEND.map((m) => m.key).filter((k) => present.has(k))
+  }, [campaigns])
+
+  const shown = useMemo(
+    () => (statusFilter === 'all' ? campaigns : campaigns.filter((c) => c.status === statusFilter)),
+    [campaigns, statusFilter],
+  )
+
   if (campaigns.length === 0) {
     return (
       <EmptyState
@@ -145,72 +204,181 @@ function CampaignsPanel({
       />
     )
   }
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-border">
-      <table className="w-full text-left text-sm">
-        <thead className="bg-surface-elevated text-2xs uppercase tracking-wide text-subtle">
-          <tr>
-            <th className="px-4 py-2.5 font-semibold">Subject</th>
-            <th className="px-4 py-2.5 font-semibold">Audience</th>
-            <th className="px-4 py-2.5 font-semibold">Status</th>
-            <th className="px-4 py-2.5 text-right font-semibold">Sent</th>
-            <th className="px-4 py-2.5" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {campaigns.map((c) => {
-            const meta = messagingStatusMeta(c.status)
-            return (
-              <tr key={c.id} className="bg-surface hover:bg-surface-elevated/50">
-                <td className="px-4 py-2.5 font-medium text-text">{c.name}</td>
-                <td className="px-4 py-2.5 text-muted">{c.segment}</td>
-                <td className="px-4 py-2.5">
-                  <StatusChip tone={meta.tone} size="sm">
-                    {meta.glyph} {meta.label}
-                  </StatusChip>
-                </td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-muted">{c.recipientCount.toLocaleString()}</td>
-                <td className="px-4 py-2.5 text-right">
-                  <div className="inline-flex items-center gap-3">
-                    {onOpenCampaign ? (
-                      <button
-                        type="button"
-                        onClick={() => onOpenCampaign(c.id)}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
-                      >
-                        Open <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                      </button>
-                    ) : (
-                      <Link
-                        href={c.href}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
-                      >
-                        Open <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                      </Link>
-                    )}
-                    {onDeleteCampaign && c.status === 'draft' && (
-                      <button
-                        type="button"
-                        onClick={() => onDeleteCampaign(c.id)}
-                        disabled={deletingId === c.id}
-                        aria-label={`Delete ${c.name.trim() || 'untitled'} draft`}
-                        className="rounded p-1 text-subtle transition-colors hover:text-danger disabled:opacity-50"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                      </button>
-                    )}
-                  </div>
-                </td>
+    <div className="space-y-3">
+      {/* Status filter bar (campaigns column) */}
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter campaigns by status">
+        <FilterChip active={statusFilter === 'all'} onClick={() => setStatusFilter('all')}>
+          All
+        </FilterChip>
+        {availableStatuses.map((k) => {
+          const m = messagingStatusMeta(k)
+          return (
+            <FilterChip key={k} active={statusFilter === k} onClick={() => setStatusFilter(k)}>
+              <span aria-hidden>{m.glyph}</span> {m.label}
+            </FilterChip>
+          )
+        })}
+      </div>
+
+      {shown.length === 0 ? (
+        <EmptyState
+          variant="no-results"
+          title="No campaigns match."
+          description="No campaign has that status yet. Clear the filter to see them all."
+          action={
+            <button type="button" onClick={() => setStatusFilter('all')} className={buttonClasses('secondary', 'sm')}>
+              Show all
+            </button>
+          }
+        />
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-border">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-surface-elevated text-2xs uppercase tracking-wide text-subtle">
+              <tr>
+                <th className="px-4 py-2.5 font-semibold">Subject</th>
+                <th className="px-4 py-2.5 font-semibold">Audience</th>
+                <th className="px-4 py-2.5 font-semibold">Status</th>
+                <th className="px-4 py-2.5 text-right font-semibold">Sent</th>
+                <th className="px-4 py-2.5" />
               </tr>
-            )
-          })}
-        </tbody>
-      </table>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {shown.map((c) => {
+                const meta = messagingStatusMeta(c.status)
+                return (
+                  <tr key={c.id} className="bg-surface hover:bg-surface-elevated/50">
+                    <td className="px-4 py-2.5 font-medium text-text">{c.name}</td>
+                    <td className="px-4 py-2.5 text-muted">{c.segment}</td>
+                    <td className="px-4 py-2.5">
+                      <StatusChip tone={meta.tone} size="sm">
+                        {meta.glyph} {meta.label}
+                      </StatusChip>
+                    </td>
+                    <td className="px-4 py-2.5 text-right tabular-nums text-muted">{c.recipientCount.toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-right">
+                      <div className="inline-flex items-center gap-3">
+                        {onOpenCampaign ? (
+                          <button
+                            type="button"
+                            onClick={() => onOpenCampaign(c.id)}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
+                          >
+                            Open <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                        ) : (
+                          <Link
+                            href={c.href}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
+                          >
+                            Open <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                          </Link>
+                        )}
+                        {onDeleteCampaign && c.status === 'draft' && (
+                          <button
+                            type="button"
+                            onClick={() => onDeleteCampaign(c.id)}
+                            disabled={deletingId === c.id}
+                            aria-label={`Delete ${c.name.trim() || 'untitled'} draft`}
+                            className="rounded p-1 text-subtle transition-colors hover:text-danger disabled:opacity-50 motion-reduce:transition-none"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
 
-function FunnelsPanel({ funnels }: { funnels: MessagingFunnelItem[] }) {
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors motion-reduce:transition-none',
+        active
+          ? 'border-primary-strong bg-primary-bg text-primary-strong'
+          : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text',
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
+// The right-hand rail on the Campaigns sub-tab: a compact stack of funnel cards. Clicking one
+// slides to the Funnels sub-tab and deep-selects it (no navigation).
+function FunnelRail({
+  funnels,
+  selectedId,
+  onOpenFunnel,
+}: {
+  funnels: MessagingFunnelItem[]
+  selectedId: string | null
+  onOpenFunnel: (id: string) => void
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-2xs font-bold uppercase tracking-wide text-subtle">Funnels</h3>
+        {funnels.length > 0 && <span className="text-2xs font-bold tabular-nums text-subtle">{funnels.length}</span>}
+      </div>
+      {funnels.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border bg-surface/50 p-4 text-xs text-muted">
+          No funnels yet. A funnel is a series of emails that fires from a trigger, like joining.{' '}
+          <Link href="/admin/marketing/messaging/new" className="font-semibold text-primary-strong hover:underline">
+            Build one
+          </Link>
+          .
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {funnels.map((f) => (
+            <FunnelCard
+              key={f.id}
+              funnel={f}
+              compact
+              selected={selectedId === f.id}
+              onActivate={() => onOpenFunnel(f.id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FunnelsPanel({ funnels, selectedId }: { funnels: MessagingFunnelItem[]; selectedId: string | null }) {
+  const selectedRef = useRef<HTMLElement | null>(null)
+
+  // When a funnel is deep-selected (via a rail click), bring it into view. Honor reduced motion.
+  useEffect(() => {
+    if (!selectedId || !selectedRef.current) return
+    const reduced =
+      typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    selectedRef.current.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'nearest' })
+  }, [selectedId])
+
   if (funnels.length === 0) {
     return (
       <EmptyState
@@ -227,48 +395,91 @@ function FunnelsPanel({ funnels }: { funnels: MessagingFunnelItem[] }) {
   }
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {funnels.map((f) => {
-        const meta = messagingStatusMeta(f.status)
-        return (
-          <Link
-            key={f.id}
-            href={f.href}
-            className="group flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-border-strong"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
-                <Activity className="h-4 w-4" aria-hidden />
-              </span>
-              <StatusChip tone={meta.tone} size="sm">
-                {meta.glyph} {meta.label}
-              </StatusChip>
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-text">{f.name}</p>
-              <p className="mt-0.5 text-xs text-muted">
-                Converts on {f.goalEvent}
-                {f.persona ? ` · ${f.persona}` : ''}
-              </p>
-            </div>
-            {/* Mini flow preview: one dot per step. */}
-            <div className="flex items-center gap-1.5">
-              {f.stageKinds.map((k, i) => (
-                <span key={i} className="flex items-center gap-1.5" aria-hidden>
-                  <span className="h-2 w-2 rounded-full bg-primary/50" />
-                  {i < f.stageKinds.length - 1 && <span className="h-px w-3 bg-border" />}
-                </span>
-              ))}
-              <span className="ml-1 text-2xs text-subtle">
-                {f.stageCount} step{f.stageCount === 1 ? '' : 's'}
-                {f.linkCount > 0 && ` · ${f.linkCount} wired`}
-              </span>
-            </div>
-            <span className="mt-auto inline-flex items-center gap-1 text-xs font-semibold text-primary-strong">
-              Open flow <ArrowUpRight className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
-            </span>
-          </Link>
-        )
-      })}
+      {funnels.map((f) => (
+        <FunnelCard
+          key={f.id}
+          funnel={f}
+          selected={f.id === selectedId}
+          ref={f.id === selectedId ? selectedRef : undefined}
+        />
+      ))}
     </div>
   )
 }
+
+// One funnel card, shared by the rail and the Funnels grid. With `onActivate` it renders as a
+// button (deep-select, no navigation); without it, a link to the flow builder (`funnel.href`).
+export const FunnelCard = forwardRef<HTMLElement, {
+  funnel: MessagingFunnelItem
+  /** Deep-select handler. When set the card is a button (slide + highlight), not a builder link. */
+  onActivate?: () => void
+  /** Highlighted (the currently deep-selected funnel). */
+  selected?: boolean
+  /** Denser layout for the rail (drops the step-dot preview for a one-line stat). */
+  compact?: boolean
+}>(function FunnelCard({ funnel: f, onActivate, selected, compact }, ref) {
+  const meta = messagingStatusMeta(f.status)
+  const stepLine = `${f.stageCount} step${f.stageCount === 1 ? '' : 's'}${f.linkCount > 0 ? ` · ${f.linkCount} wired` : ''}`
+
+  const cls = cn(
+    'group flex h-full flex-col gap-3 rounded-2xl border bg-surface p-4 text-left transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+    selected ? 'border-primary-strong ring-2 ring-primary/30' : 'border-border hover:border-border-strong',
+  )
+
+  const body = (
+    <>
+      <div className="flex items-start justify-between gap-2">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+          <Activity className="h-4 w-4" aria-hidden />
+        </span>
+        <StatusChip tone={meta.tone} size="sm">
+          {meta.glyph} {meta.label}
+        </StatusChip>
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-text">{f.name}</p>
+        <p className="mt-0.5 text-xs text-muted">
+          Converts on {f.goalEvent}
+          {f.persona ? ` · ${f.persona}` : ''}
+        </p>
+      </div>
+      {compact ? (
+        <span className="text-2xs text-subtle">{stepLine}</span>
+      ) : (
+        <div className="flex items-center gap-1.5">
+          {f.stageKinds.map((_, i) => (
+            <span key={i} className="flex items-center gap-1.5" aria-hidden>
+              <span className="h-2 w-2 rounded-full bg-primary/50" />
+              {i < f.stageKinds.length - 1 && <span className="h-px w-3 bg-border" />}
+            </span>
+          ))}
+          <span className="ml-1 text-2xs text-subtle">{stepLine}</span>
+        </div>
+      )}
+      <span className="mt-auto inline-flex items-center gap-1 text-xs font-semibold text-primary-strong">
+        {onActivate ? 'Review' : 'Open flow'}
+        <ArrowUpRight
+          className={
+            onActivate
+              ? 'h-3.5 w-3.5'
+              : 'h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100 motion-reduce:transition-none'
+          }
+          aria-hidden
+        />
+      </span>
+    </>
+  )
+
+  if (onActivate) {
+    return (
+      <button ref={ref as Ref<HTMLButtonElement>} type="button" onClick={onActivate} aria-pressed={selected} className={cls}>
+        {body}
+      </button>
+    )
+  }
+  return (
+    <Link ref={ref as Ref<HTMLAnchorElement>} href={f.href} className={cls}>
+      {body}
+    </Link>
+  )
+})
