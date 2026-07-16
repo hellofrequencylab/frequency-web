@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { MessageSquare, Mail, MapPin } from 'lucide-react'
+import { UserRound, Mail, MapPin } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { RoleBadge } from '@/lib/community-roles'
 import { DemoBadge } from '@/components/ui/demo-badge'
@@ -23,9 +23,11 @@ export type CrmContactRow = {
 }
 
 // The CRM Contacts roster as the canonical operator table (ADR-233 §3 Index/Table).
-// Whole-row link opens the member's public profile; per-row Message + Deal actions
-// reveal on hover. Demo rows read a touch quieter (parity with the old card grid).
-export function ContactsTable({ rows }: { rows: CrmContactRow[] }) {
+// Whole-row link opens the member's public profile; per-row View profile + Deal actions
+// reveal on hover. The Deal action only renders for viewers who can actually start a deal
+// (`canStartDeal`), so a host never sees a button that dies on the server auth gate. Demo
+// rows read a touch quieter (parity with the old card grid).
+export function ContactsTable({ rows, canStartDeal }: { rows: CrmContactRow[]; canStartDeal: boolean }) {
   const columns: ColumnDef<CrmContactRow>[] = [
     {
       key: 'displayName',
@@ -103,12 +105,12 @@ export function ContactsTable({ rows }: { rows: CrmContactRow[] }) {
           <Link
             href={`/people/${m.handle}`}
             onClick={(e) => e.stopPropagation()}
-            aria-label={`Message ${m.displayName}`}
+            aria-label={`View ${m.displayName}'s profile`}
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
-            <MessageSquare className="h-3.5 w-3.5" aria-hidden /> Message
+            <UserRound className="h-3.5 w-3.5" aria-hidden /> View profile
           </Link>
-          <StartDealButton profileId={m.id} name={m.displayName} />
+          {canStartDeal && <StartDealButton profileId={m.id} name={m.displayName} />}
         </div>
       )}
     />

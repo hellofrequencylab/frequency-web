@@ -53,6 +53,7 @@ export type SendGateReason =
   | 'subject_muted' // member muted this topic for THIS Space/circle (global pref still on)
   | 'frequency_deferred' // member chose a digest for this category; realtime send deferred to the batch
   | 'frequency_cap' // already at the hard cap for this window
+  | 'error' // a transient read failure (fail-closed): NOT an opt-out — the caller should retry, never cancel
 
 export interface SendGateInput {
   channel: NotificationChannel
@@ -202,6 +203,9 @@ export async function resolveSendGate(
       cap: options.frequency?.cap ?? Infinity,
     })
   } catch {
-    return { allowed: false, reason: 'pref_off' }
+    // Fail closed, but as a TRANSIENT error, not a preference opt-out. A caller that ends a
+    // sequence on opt-out (the nurture runner) must be able to tell "member said no" (pref_off)
+    // from "the read blipped" (error) so a flaky query never permanently cancels the member.
+    return { allowed: false, reason: 'error' }
   }
 }

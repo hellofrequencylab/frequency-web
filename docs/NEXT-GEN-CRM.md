@@ -24,9 +24,9 @@ The PI layer is not a new service. It is a read-through composition over modules
 | AI companion + allow-list (PI.4) | ✅ | `lib/ai/vera/tools.ts`, `lib/ai/vera/execute.ts`, `lib/studio/site-actions.ts` | Governed, consent-gated, reversible, audited actions |
 | Consent spine | ✅ | `lib/comms/send-gate.ts` (`resolveSendGate`) | No outbound touch fires without category consent |
 | Voice governance | ✅ | `lib/ai/voice.ts` (`withVoice`, `VOICE_PRIMER`) | Every generated word passes the canon |
-| **Playbook Registry** | 🔴 new | `lib/playbooks/registry.ts` (new) | Binds each prediction to one reversible action sequence |
-| **Resonance Graph** | 🔴 new | `lib/resonance/*` (new), `pgvector` | Reciprocal affinity scoring + warm intros |
-| **Today orchestrator** | 🔴 new | `lib/ai/vera/today.ts` (new) | Ranks the 5 cards that matter; closes the loop |
+| **Playbook Registry** | ✅ | `lib/playbooks/registry.ts` | Binds each prediction to one reversible action sequence |
+| **Resonance Graph** | ✅ | `lib/resonance/*`, `pgvector` | Reciprocal affinity scoring + warm intros |
+| **Today orchestrator** | ✅ | `lib/ai/vera/today.ts` | Ranks the 5 cards that matter; closes the loop |
 
 **Data flow (the loop, made visible):**
 

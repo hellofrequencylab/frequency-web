@@ -317,8 +317,20 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
 
   const db = createAdminClient()
 
-  // Mark in-flight before the loop so a concurrent click cannot re-enter and double-send.
-  await db.from('campaigns').update({ status: 'sending' }).eq('id', campaignId)
+  // ATOMIC CLAIM (not a bare update): flip → 'sending' ONLY while the row is still in the status we
+  // read above, and require a row to come back. Two concurrent approver clicks both pass the
+  // read-checks at the top, but only ONE wins this conditional update — the loser sees 0 rows and
+  // bails, so the recipient loop runs exactly once. (A bare `.eq('id', …)` update, as before, let
+  // both callers proceed and double-sent the whole campaign.) Mirrors the space-campaigns cron claim.
+  const { data: claimed } = await db
+    .from('campaigns')
+    .update({ status: 'sending' })
+    .eq('id', campaignId)
+    .eq('status', row.status)
+    .select('id')
+  if (!claimed || (claimed as unknown[]).length === 0) {
+    return fail('This campaign is already sending.')
+  }
 
   let count = 0
   try {

@@ -16,6 +16,7 @@ import { ReachOutList } from '@/components/connections/reach-out-list'
 import { SpaceCrmPrompt } from '@/components/connections/space-crm-prompt'
 import { ContactSort, type ContactSortValue } from '@/components/connections/contact-sort'
 import { GoogleImportBanner, type GoogleImportOutcome } from '@/components/connections/google-import-banner'
+import { ImportContactsButton } from '@/components/crm/import/import-contacts-button'
 import { NetworkTabs } from '@/components/people/network-tabs'
 import type { NetworkContactListItem } from '@/lib/connections/types'
 
@@ -120,6 +121,9 @@ export default async function ConnectionsPage({
         }
         action={
           <div className="flex items-center gap-2">
+            {/* CSV / paste importer into THIS member's own book (owner-scoped): the wizard stages under
+                the signed-in caller and commits via commitToMember, so no destination picker is needed. */}
+            <ImportContactsButton target={{ kind: 'member' }} label="Import from file" variant="subtle" />
             {googleImportEnabled && (
               <Link
                 href="/api/integrations/google/start"

@@ -56,11 +56,26 @@ const SYNONYMS: Record<TargetField, string[]> = {
   displayName: [
     'name', 'fullname', 'contactname', 'displayname', 'person', 'contact',
     'firstname', 'lastname', 'givenname', 'surname', 'firstlast',
+    // Contacts-export dialects: Google (Given/Family Name), Outlook (First/Last Name),
+    // Apple/iCloud vCard-CSV (Formatted Name). These are name PARTS that join (see below).
+    'familyname', 'middlename', 'formattedname',
   ],
-  email: ['email', 'emailaddress', 'mail', 'emailid', 'workemail', 'primaryemail', 'contactemail'],
-  phone: ['phone', 'phonenumber', 'mobile', 'cell', 'cellphone', 'tel', 'telephone', 'mobilephone', 'contactnumber', 'number'],
+  email: [
+    'email', 'emailaddress', 'mail', 'emailid', 'workemail', 'primaryemail', 'contactemail',
+    // Google Contacts ("E-mail 1 - Value" / "E-mail 2 - Value"), Apple vCard-CSV home email.
+    'email1value', 'email2value', 'homeemail',
+  ],
+  phone: [
+    'phone', 'phonenumber', 'mobile', 'cell', 'cellphone', 'tel', 'telephone', 'mobilephone', 'contactnumber', 'number',
+    // Google Contacts ("Phone 1 - Value"), Outlook ("Home Phone").
+    'phone1value', 'homephone',
+  ],
   title: ['title', 'jobtitle', 'role', 'position', 'jobrole', 'designation'],
-  company: ['company', 'companyname', 'organization', 'organisation', 'org', 'business', 'employer', 'account'],
+  company: [
+    'company', 'companyname', 'organization', 'organisation', 'org', 'business', 'employer', 'account',
+    // Google Contacts ("Organization Name" / "Organization 1 - Name").
+    'organizationname', 'organization1name',
+  ],
   city: ['city', 'town', 'location', 'cityname', 'locality'],
   website: ['website', 'web', 'url', 'site', 'homepage', 'weburl', 'link'],
   instagram: ['instagram', 'ig', 'insta', 'instagramhandle'],
@@ -69,6 +84,13 @@ const SYNONYMS: Record<TargetField, string[]> = {
   tags: ['tags', 'tag', 'labels', 'segments', 'lists', 'groups', 'interests'],
   notes: ['notes', 'note', 'comment', 'comments', 'description', 'remarks', 'about', 'bio'],
 }
+
+/** Normalized headers that are name PARTS (first/last/given/family/middle) rather than a single
+ *  full-name column. When a file carries only these (no Name/Full Name column), they are ALL kept
+ *  as displayName so projectRow composes the full name from them (the name-join). */
+const NAME_PART_ALIASES = new Set<string>([
+  'firstname', 'givenname', 'lastname', 'familyname', 'surname', 'middlename',
+])
 
 /** Exact normalized-synonym lookup: normalized header -> field. Built once. */
 const SYNONYM_INDEX: Map<string, TargetField> = (() => {
@@ -242,21 +264,46 @@ export function autoMapColumns(headers: string[], sampleRows: Record<string, str
     }
   })
 
+  // Name-join: which displayName columns to keep. Separate first/last (or given/family) columns
+  // are ALL kept so projectRow composes the full name; a single full-name column (Name, Full Name)
+  // wins over the parts, so we never double-map when both are present.
+  const displayNameKeepers = resolveDisplayNameKeepers(initial)
+
+  const demote = (m: ColumnMapping): ColumnMapping => ({
+    ...m,
+    target: 'custom' as MappingChoice,
+    reason: 'none' as MappingReason,
+    confidence: 0,
+    customKey: customFieldKey(m.header),
+  })
+
   return initial.map((m, i) => {
     if (m.target === 'custom' || m.target === 'ignore') return m
     const field = m.target as TargetField
     // `tags`/`notes` may legitimately repeat (concatenated), so never demote those.
     if (field === 'tags' || field === 'notes') return m
+    // displayName can repeat when the columns are name parts that join (given + family, etc.).
+    if (field === 'displayName') return displayNameKeepers.has(i) ? m : demote(m)
     if (bestByField.get(field) === i) return m
     // A weaker duplicate claim -> keep the data as a custom field.
-    return {
-      ...m,
-      target: 'custom' as MappingChoice,
-      reason: 'none' as MappingReason,
-      confidence: 0,
-      customKey: customFieldKey(m.header),
-    }
+    return demote(m)
   })
+}
+
+/** Which displayName-claiming columns to keep. If any full-name column is present it alone wins
+ *  (the name parts fall back to custom fields); otherwise every name-part column is kept so
+ *  projectRow composes the full name from them (the name-join). */
+function resolveDisplayNameKeepers(initial: ColumnMapping[]): Set<number> {
+  const claims = initial.flatMap((m, i) => (m.target === 'displayName' ? [i] : []))
+  if (claims.length <= 1) return new Set(claims)
+  const fullNames = claims.filter((i) => !NAME_PART_ALIASES.has(normalizeHeader(initial[i].header)))
+  if (fullNames.length) {
+    // Keep the single most confident full-name column; the parts become custom fields.
+    const winner = fullNames.reduce((a, b) => (initial[a].confidence >= initial[b].confidence ? a : b))
+    return new Set([winner])
+  }
+  // Only name parts -> keep them all so they join into one displayName.
+  return new Set(claims)
 }
 
 // ── Header fingerprint (remembered mappings) ─────────────────────────────────────

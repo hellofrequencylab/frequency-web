@@ -12,6 +12,10 @@
 > [AI-VERA.md](AI-VERA.md) · and the interaction-tracking reconciliation in
 > [CRM-INTERACTION-TRACKING-PLAN.md](CRM-INTERACTION-TRACKING-PLAN.md).
 >
+> **Durable record.** The CRM/marketing docs overlap heavily (this is one of ~26). When they
+> disagree, the **ADRs in [DECISIONS.md](DECISIONS.md)** (ADR-382…387, ADR-610…616) plus the code +
+> `supabase/migrations/` are the source of truth; these planning docs narrate, they don't govern.
+>
 > Legend: ✅ built · ⏳ partial / wired-not-surfaced · ⚠️ needs attention · 🔴 net-new.
 
 ## 0. The answer up front
@@ -91,8 +95,11 @@ Grouped into eleven subsystems. Status is the honest current state from the code
 
 ### A. Identity & scope
 ✅ Three identity tables stitched by email · ✅ `resolvePerson` read model · ✅ `space_id` scoping ·
-✅ graduation (personal → Space). ⏳ Viewer-relative assembly is implicit, not a named primitive.
-🔴 CI guard that every scoped table has RLS forced.
+✅ graduation (personal → Space). ⏳ Viewer-relative assembly exists as a helper
+(`assembleContactCard`, `lib/crm/scope.ts`) but is **not yet wired into any read** — built, unused.
+⏳ CI guard (`scripts/check-rls.mjs`) asserts every scoped table has RLS **enabled** + a policy (or a
+reasoned deny-all), **not** `FORCE ROW LEVEL SECURITY`; the core older tables (`contacts`, `crm_deals`,
+`network_contacts`, `contact_interactions`, `member_traits`) have RLS enabled but not forced.
 
 ### B. Interaction timeline (asks 1, 3)
 ✅ `contact_interactions` (append-only, polymorphic subject, owner+Space scoped, idempotent) ·
@@ -178,31 +185,36 @@ passes [NAMING.md](NAMING.md) + [CONTENT-VOICE.md](CONTENT-VOICE.md).
 
 | Phase | Goal | Owner ask | Nature | Status | Depends on |
 |---|---|---|---|---|---|
-| **0** | Harden the spine (membrane made explicit) | the modular model | Hardening + guards | ✅ shipped | — |
+| **0** | Harden the spine (membrane made explicit) | the modular model | Hardening + guards | ⏳ partial (RLS guard is ENABLE+policy, not FORCE; `assembleContactCard` built but unused) | — |
 | **1** | Complete the contact card (timeline + toggle + stats) | 1, 2, 3, 7 | Wiring + 1 migration | ✅ shipped (ADR-610) | 0 |
 | **2** | CSV import & data onboarding | import | New | ✅ shipped (ADR-611) | 0 |
-| **3** | QR lead-grabs & attribution | lead grabs | Wiring + new | ✅ shipped (ADR-612) | 0, (1) |
+| **3** | QR lead-grabs & attribution | lead grabs | Wiring + new | ⏳ partial (ADR-612): door 1 (Space QR) full; doors 2–5 are engine hooks, surfaces TODO | 0, (1) |
 | **4** | Email engine completion (product blocks + transactional) | 5, 6, 9 | New block + wiring | ✅ shipped (ADR-613; transactional seam deferred) | — |
 | **5** | Unified segments + messaging control panel | 8, 10 | Wiring + new UI | ✅ shipped (ADR-614) | 1 |
 | **6** | Subscription preference center | 11 | New UI + migration | ✅ shipped (ADR-615) | 0 |
 | **7** | Vera intelligence (owner brief + send graduation) | 4 | Wiring + cron | ✅ shipped (ADR-616) | 1, 5 |
 | **8** | SMS activation | text tracking | External + wiring | 🔴 deferred (A2P clock) | 1, A2P |
 
-Phases 1–7 shipped on branch `claude/crm-interaction-tracking-scan-y9xsx8` (2026-07-14); Phase 8
+Phases 1, 2, 4, 5, 6, 7 shipped on branch `claude/crm-interaction-tracking-scan-y9xsx8`
+(2026-07-14); **Phase 3 shipped its engine + door 1 only** (doors 2–5 have no surface yet); Phase 8
 (SMS/A2P 10DLC) is the remaining deferred item, gated on the external registration clock.
 
 Phase 0 → 1 are sequential (the spine, then the card over it). Phases 2, 3, 4, 6 can run in
 parallel after 0. Phases 5 and 7 follow 1. Phase 8 is gated on the external A2P clock (start it now).
 
-### Phase 0 — Harden the spine ✅ shipped
-> ✅ Shipped: membrane laws documented as invariants; scoped-table RLS guards in place.
+### Phase 0 — Harden the spine ⏳ partial
+> ⏳ Partial: membrane laws documented as invariants; the RLS guard is in place but weaker than
+> written, and the viewer-relative assembly helper is built but unused.
 
-**Deliverables:** a CI guard asserting every scoped table has `FORCE ROW LEVEL SECURITY` + a
-`space_id`/owner policy; audit policies for `TO authenticated` + `WITH CHECK` + `(select …)`
-initplans; name **viewer-relative card assembly** as a single read helper (global person + the
-viewer's scope overlay); confirm the consent model is keyed per `(person × scope × purpose ×
-channel)`; document the three membrane laws as enforced invariants. **Nature:** mostly hardening
-what already exists. **ADR:** membrane invariants + RLS guard.
+**Deliverables (as-shipped vs planned):** a CI guard (`scripts/check-rls.mjs`) asserting every scoped
+table has RLS **ENABLED** + at least one policy (or a reasoned deny-all in `scripts/rls-deny-all.txt`)
+— **not** `FORCE ROW LEVEL SECURITY`, which the guard does not check and which the core older tables
+(`contacts`, `crm_deals`, `network_contacts`, `contact_interactions`, `member_traits`) do **not**
+carry; audit policies for `TO authenticated` + `WITH CHECK` + `(select …)` initplans; name
+**viewer-relative card assembly** as a single read helper (`assembleContactCard`, `lib/crm/scope.ts`)
+— **built but not yet wired into any read**; confirm the consent model is keyed per `(person × scope ×
+purpose × channel)`; document the three membrane laws as enforced invariants. **Nature:** mostly
+hardening what already exists. **ADR:** membrane invariants + RLS guard.
 
 ### Phase 1 — Complete the contact card ✅ shipped
 > ✅ Shipped (ADR-610, migration `20261158000000`): `in_app` channel + DM adapter, manual "log a
@@ -236,10 +248,12 @@ target** (member → `network_contacts`; Space → `contacts(space_id)` sealed b
 ANY CSV, map or auto-create fields, preview the formatted list before commit. **ADR:** import
 pipeline + custom-field registry.
 
-### Phase 3 — QR lead-grabs & attribution ✅ shipped
-> ✅ Shipped (ADR-612, migration `20261160000000`): the capture-now-claim-on-join engine, the
-> immutable entry point (`lead_entry_points`, DB-enforced), the Space QR lead-grab (full) with the
-> other four doors as engine hooks, and the Space CRM leads surface.
+### Phase 3 — QR lead-grabs & attribution ⏳ partial
+> ⏳ Partial (ADR-612, migration `20261160000000`): the capture-now-claim-on-join engine, the
+> immutable entry point (`lead_entry_points`, DB-enforced), the Space CRM leads surface, and **front
+> door 1 (Space QR) full**. The other four doors (warm intro, event, lead magnet, share-back) are
+> **engine-supported hooks only** in `lib/crm/lead-capture.ts` — their capture surfaces are marked
+> TODO in code and are not yet built.
 
 **Deliverables:** the **capture-now-claim-on-join** engine — a scan/capture writes a sealed Space
 lead + an **immutable entry-point** (`attribution` first-touch + a `contact_interaction` with

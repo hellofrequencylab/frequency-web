@@ -20,6 +20,8 @@ interface EnrRow {
   email: string
   persona: string
   next_step_order: number
+  /** The scheduled time we read this enrollment at — the compare-and-swap key for the send claim. */
+  next_run_at: string
 }
 interface StepRow {
   id: string; sequence_id: string; step_order: number; delay_hours: number
@@ -80,7 +82,7 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
 
   const { data: dueRows } = await db
     .from('nurture_enrollments')
-    .select('id, sequence_id, contact_id, email, persona, next_step_order')
+    .select('id, sequence_id, contact_id, email, persona, next_step_order, next_run_at')
     .eq('status', 'active')
     .lte('next_run_at', nowIso)
     .order('next_run_at', { ascending: true })
@@ -135,8 +137,31 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
       // Route the autonomous send through the unified gate (ADR-169): preference +
       // lifecycle consent + suppression in one verified decision, not an ad-hoc check.
       const gate = await resolveSendGate(contact.profile_id, 'email', 'lifecycle', { email: e.email })
-      if (!gate.allowed) { await cancel(e.id); cancelled++; continue }
+      if (!gate.allowed) {
+        // Only a DEFINITIVE opt-out ENDS the sequence. A transient read failure ('error', the
+        // gate's fail-closed result) or a temporary frequency cap must SKIP and retry next run —
+        // never permanently cancel the member's remaining steps. (Previously ANY not-allowed
+        // cancelled, so one flaky gate read silently dropped the member from steps 2..N.)
+        const optedOut =
+          gate.reason === 'suppressed' || gate.reason === 'no_consent' || gate.reason === 'pref_off'
+        if (optedOut) { await cancel(e.id); cancelled++ }
+        continue
+      }
     }
+
+    // Atomic send-claim: lock THIS enrollment for THIS run by compare-and-swapping next_run_at on
+    // the value we read. An overlapping cron (a drain exceeding the interval, or a manual trigger
+    // racing the schedule) that selected the same row loses the swap and skips it, so a step is
+    // enqueued at most once. The real cursor advance below overwrites this lock; if the enqueue
+    // throws before that, the enrollment simply retries after the short lock window.
+    const lockUntil = new Date(Date.now() + 10 * 60 * 1000).toISOString()
+    const { data: claimed } = await db
+      .from('nurture_enrollments')
+      .update({ next_run_at: lockUntil })
+      .eq('id', e.id)
+      .eq('next_run_at', e.next_run_at)
+      .select('id')
+    if (!claimed || (claimed as unknown[]).length === 0) continue
 
     const unsubscribeUrl = buildLeadUnsubUrl(e.contact_id)
     // A step with a block-editor body renders through Email Studio (themed shell + per-recipient merge tags),

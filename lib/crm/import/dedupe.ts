@@ -17,6 +17,7 @@ import type {
   RowError,
   DiffCounts,
   ValidationResult,
+  PreviewRow,
   MergeStrategy,
 } from './types'
 
@@ -248,7 +249,24 @@ export function planCommit(
   return { rows: planned, diff, errors, customKeys: [...customKeys] }
 }
 
-/** The preview-facing slice of a plan (what gets staged in `validation`). */
+/** How many planned rows the preview table carries; the rest are summarized as "+N more". */
+export const PREVIEW_ROW_CAP = 200
+
+/** The preview-facing slice of a plan (what gets staged in `validation`). Includes a CAPPED
+ *  per-row list derived from the SAME planned rows as `diff`, so the table and the totals can
+ *  never drift apart. */
 export function toValidationResult(plan: CommitPlan): ValidationResult {
-  return { diff: plan.diff, errors: plan.errors, customKeys: plan.customKeys }
+  const firstErrorByRow = new Map<number, string>()
+  for (const e of plan.errors) if (!firstErrorByRow.has(e.rowIndex)) firstErrorByRow.set(e.rowIndex, e.message)
+
+  const rows: PreviewRow[] = plan.rows.slice(0, PREVIEW_ROW_CAP).map((r) => ({
+    rowIndex: r.rowIndex,
+    action: r.action,
+    name: r.contact.displayName,
+    email: r.contact.email,
+    matchedKey: r.matchedKey,
+    error: firstErrorByRow.get(r.rowIndex) ?? null,
+  }))
+
+  return { diff: plan.diff, errors: plan.errors, customKeys: plan.customKeys, rows, rowTotal: plan.rows.length }
 }

@@ -101,12 +101,35 @@ export interface DiffCounts {
   flagged: number
 }
 
+/** One line in the row-level preview table. Derived from the SAME planCommit output as
+ *  `diff` (never a second pass), so the per-row list and the totals can never diverge.
+ *  Member-safe: name/email only, never custom-field values. */
+export interface PreviewRow {
+  /** 0-based index into the parsed rows. */
+  rowIndex: number
+  /** What committing this row would do. */
+  action: 'create' | 'merge' | 'skip'
+  /** The row's projected display name (may be empty). */
+  name: string
+  /** The row's projected email (may be empty). */
+  email: string
+  /** For a merge or a duplicate skip: the existing email/phone key this row matched. */
+  matchedKey: string | null
+  /** The first validation problem on this row, if any (drives the "needs a look" flag). */
+  error: string | null
+}
+
 /** The full dry-run result staged in `validation`. */
 export interface ValidationResult {
   diff: DiffCounts
   errors: RowError[]
   /** The custom-field keys the current mapping would create/populate. */
   customKeys: string[]
+  /** A capped per-row preview (create/merge/skip + match/error) for the review table. Optional so
+   *  older staged rows still type-check; the UI shows a "+N more" line past the cap. */
+  rows?: PreviewRow[]
+  /** Total planned rows, so the UI can show how many are beyond the capped `rows`. */
+  rowTotal?: number
 }
 
 // ── Merge strategy ───────────────────────────────────────────────────────────────

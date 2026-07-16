@@ -7,6 +7,7 @@ import {
   validateRow,
   isImportable,
   planCommit,
+  toValidationResult,
   type ExistingKeys,
 } from './dedupe'
 import type { ColumnMapping } from './types'
@@ -142,5 +143,35 @@ describe('planCommit', () => {
     expect(plan.diff.created).toBe(1)
     expect(plan.rows[0].contact.email).toBe('')
     expect(plan.diff.flagged).toBe(1)
+  })
+})
+
+describe('toValidationResult', () => {
+  it('surfaces a per-row preview from the SAME plan (create/merge + matchedKey + error)', () => {
+    const existing: ExistingKeys = { emails: new Set(['known@x.com']), phones: new Set() }
+    const rows = [
+      { Name: 'New', Email: 'new@x.com', Phone: '', Company: '', Tags: '', 'Lead Source': '' },
+      { Name: 'Known', Email: 'known@x.com', Phone: '', Company: '', Tags: '', 'Lead Source': '' },
+      { Name: '', Email: '', Phone: '', Company: 'Acme', Tags: '', 'Lead Source': '' }, // no identity -> skip + flag
+    ]
+    const plan = planCommit(rows, MAPPING, existing, 'fill_empty')
+    const v = toValidationResult(plan)
+
+    // Row list and the totals come from the same plan, so they never diverge.
+    expect(v.rowTotal).toBe(3)
+    expect(v.rows).toHaveLength(3)
+    const created = v.rows!.filter((r) => r.action === 'create').length
+    const merged = v.rows!.filter((r) => r.action === 'merge').length
+    const skipped = v.rows!.filter((r) => r.action === 'skip').length
+    expect({ created, merged, skipped }).toEqual({
+      created: v.diff.created,
+      merged: v.diff.merged,
+      skipped: v.diff.skipped,
+    })
+
+    expect(v.rows![0]).toMatchObject({ action: 'create', name: 'New', email: 'new@x.com', matchedKey: null, error: null })
+    expect(v.rows![1]).toMatchObject({ action: 'merge', matchedKey: 'known@x.com' })
+    expect(v.rows![2].action).toBe('skip')
+    expect(v.rows![2].error).toBeTruthy()
   })
 })

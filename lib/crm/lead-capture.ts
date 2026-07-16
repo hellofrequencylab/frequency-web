@@ -539,7 +539,11 @@ async function recordInteractionForCapture(
   const ch = (channel ?? channelForDoor(door)) as 'in_person' | 'event' | 'system'
   await recordContactInteraction(
     {
-      ownerProfileId: spaceId, // the Space owns this scoped timeline row (space_id carries the scope)
+      // owner_profile_id is NOT NULL, but a lead-capture has no PERSONAL owner — it belongs to the
+      // Space. The scope that matters is `space_id` (the 2nd arg), which every read of these rows
+      // filters on; the space id sitting in owner_profile_id is inert (a personal-timeline read keys
+      // on a real profile id, and UUIDs never collide), so it never mis-surfaces. Not a member owner.
+      ownerProfileId: spaceId,
       subjectKind: 'contact',
       subjectId: contactId,
       channel: ch === 'in_person' || ch === 'event' || ch === 'system' ? ch : 'system',

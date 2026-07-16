@@ -1,6 +1,12 @@
 # Email Block Editor — Settings & Blocks Plan
 
-**Status:** ⏳ Planned, not built. Owner directive captured 2026-07-12; to build next session.
+**Status:** ✅ Built. Owner directive captured 2026-07-12; shipped since. The Features block carries
+an `eyebrow` and no images, the Card grid renders images + stat boxes (a big number + label), the
+icon token resolves as a Lucide site-icon or emoji (`lib/entity-blocks/icon-tokens.ts`,
+`isLucideIconName`), and the data-bound `productCard` block ships alongside (Phase 4 / ADR-613). All
+render in `lib/email-studio/render.ts`; the block schema lives in `lib/entity-blocks/block-content.ts`
+and the on-canvas editable slots in `components/admin/email-studio/canvas/`. The work items below are
+kept for provenance; the segmented-control fit tweaks (#5–7) are the residual polish.
 **Scope:** the on-canvas WYSIWYG email editor (`blocksForKind('email')`) — Features, Card grid,
 Icon picker, and the Image / Callout / Banner setting controls.
 
