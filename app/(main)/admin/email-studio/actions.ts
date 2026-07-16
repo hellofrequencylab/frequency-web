@@ -30,6 +30,7 @@ import {
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { compileEmailDoc } from '@/lib/email-studio/shell'
 import { applyMergeTags, sanitizeEmailRichContent } from '@/lib/email-studio/render'
+import { sanitizeFromName, buildCampaignFrom, loadCampaignFromName } from '@/lib/email-studio/send'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
 import { sendRawEmail } from '@/lib/email'
 import { BETA_LAUNCH_EMAILS } from '@/lib/beta/launch-emails'
@@ -87,6 +88,10 @@ export interface LoadedEmailCampaign {
   id: string
   subject: string
   preheader: string
+  /** The friendly From display NAME (envelope address is always the verified domain). Empty / omitted =
+   *  the platform default. Optional so surfaces that do not offer a per-send name (per-Space, CRM 1:1) can
+   *  omit it; the admin Email Studio populates it. */
+  fromName?: string
   layout: EntityLayout
   context: EmailEditorContext
 }
@@ -288,10 +293,14 @@ export async function loadEmailCampaign(id: string): Promise<LoadedEmailCampaign
   // already renders any EmailSequenceStep, so no UI change is needed then.
   const step = data.phase_id ? await betaSequenceStep(db, id, scheduleLabel(data.scheduled_for, status)) : null
 
+  // The friendly From name lives on its own additive column, read fail-safe (null pre-migration → default).
+  const fromName = (await loadCampaignFromName(id)) ?? ''
+
   return {
     id: data.id,
     subject,
     preheader: data.preheader ?? '',
+    fromName,
     layout: layoutFromBlockJson(data.block_json),
     context: {
       kind: step ? 'sequence' : 'broadcast',
@@ -323,7 +332,7 @@ export async function loadEmailCampaign(id: string): Promise<LoadedEmailCampaign
  */
 export async function saveEmailCampaign(
   id: string,
-  patch: { layout?: BuilderLayout | EntityLayout; subject?: string; preheader?: string },
+  patch: { layout?: BuilderLayout | EntityLayout; subject?: string; preheader?: string; fromName?: string },
 ): Promise<{ error?: string }> {
   const gate = await writerGate()
   if (!gate.ok) return { error: gate.error }
@@ -333,6 +342,17 @@ export async function saveEmailCampaign(
 
   if (typeof patch.subject === 'string') update.subject = patch.subject.slice(0, 300)
   if (typeof patch.preheader === 'string') update.preheader = patch.preheader.slice(0, 300)
+
+  // The friendly From NAME persists on its own additive column via a BEST-EFFORT write: the column is new and
+  // may not exist pre-migration, so failing here must never block the subject / preheader / layout save (nor
+  // the fromName-only autosave). Sanitized so a stored name can never break the From header; blank clears it.
+  if (typeof patch.fromName === 'string') {
+    const clean = sanitizeFromName(patch.fromName)
+    await db
+      .from('campaigns')
+      .update({ from_name: clean || null } as unknown as Database['public']['Tables']['campaigns']['Update'])
+      .eq('id', id)
+  }
 
   if (patch.layout) {
     // Sanitize the wire layout (kind 'email'), THEN rewrite every rich `textarea` field to allowlist inline
@@ -417,7 +437,11 @@ export async function sendTestEmail(id: string): Promise<ActionResult<{ to: stri
   const html = applyMergeTags(compiled.html, vars, { fallbacks })
   const text = applyMergeTags(compiled.text, vars, { fallbacks, escape: false })
 
-  await sendRawEmail({ to, subject: `[Test] ${subject}`, html, text })
+  // Send the test from the campaign's own From name (fail-safe to the default), so the operator sees exactly
+  // what recipients will. Envelope address stays the verified domain.
+  const from = buildCampaignFrom(await loadCampaignFromName(id))
+
+  await sendRawEmail({ to, from, subject: `[Test] ${subject}`, html, text })
   await db.from('campaigns').update({ test_sent_at: new Date().toISOString() }).eq('id', id)
 
   revalidatePath('/admin/beta')

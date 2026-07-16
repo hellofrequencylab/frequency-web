@@ -4,6 +4,8 @@ import {
   exceedsEmailSizeGuard,
   emailHtmlByteLength,
   emailSizeWarning,
+  sanitizeFromName,
+  buildCampaignFrom,
   EMAIL_SIZE_WARN_BYTES,
   type CampaignStatus,
   type CampaignAction,
@@ -98,5 +100,64 @@ describe('email size guard', () => {
     expect(msg).toContain('100 KB')
     expect(msg).toContain('102 KB')
     expect(msg).not.toContain('—')
+  })
+})
+
+describe('from-name sanitize + header build', () => {
+  const BASE = 'Frequency <noreply@send.frequencylocal.com>'
+
+  it('keeps a plain display name intact', () => {
+    expect(sanitizeFromName('Riverside Studio')).toBe('Riverside Studio')
+  })
+
+  it('strips CR / LF / tabs so a name can never inject a header line', () => {
+    const out = sanitizeFromName('Riverside\r\nBcc: attacker@evil.com')
+    expect(out).not.toContain('\r')
+    expect(out).not.toContain('\n')
+    expect(out).not.toContain('\t')
+    // The injected header keyword is de-fanged (the newline and the ":" that would form a header are gone).
+    expect(out).not.toContain(':')
+  })
+
+  it('removes address delimiters and separators (" < > \\ @ , ; :)', () => {
+    const out = sanitizeFromName('Ann "The Boss" <ann@evil.com>, x')
+    for (const ch of ['"', '<', '>', '@', ',', ';', ':', '\\']) {
+      expect(out).not.toContain(ch)
+    }
+    expect(out).toContain('Ann')
+  })
+
+  it('collapses whitespace, trims, and bounds the length to 78 chars', () => {
+    expect(sanitizeFromName('  Alex   Rivera  ')).toBe('Alex Rivera')
+    expect(sanitizeFromName('x'.repeat(200)).length).toBe(78)
+  })
+
+  it('returns empty for a non-string or a name with nothing usable', () => {
+    expect(sanitizeFromName(null)).toBe('')
+    expect(sanitizeFromName(undefined)).toBe('')
+    expect(sanitizeFromName(42)).toBe('')
+    expect(sanitizeFromName('   ')).toBe('')
+    expect(sanitizeFromName('@<>"')).toBe('')
+  })
+
+  it('builds a From header that swaps only the display name, keeping the verified address', () => {
+    expect(buildCampaignFrom('Riverside Studio', BASE)).toBe('Riverside Studio <noreply@send.frequencylocal.com>')
+  })
+
+  it('falls back to the base From when the name is blank / unusable (pre-migration safe)', () => {
+    expect(buildCampaignFrom('', BASE)).toBe(BASE)
+    expect(buildCampaignFrom(null, BASE)).toBe(BASE)
+    expect(buildCampaignFrom('   ', BASE)).toBe(BASE)
+  })
+
+  it('sanitizes the name before assembling the header (no injection reaches the From)', () => {
+    const from = buildCampaignFrom('Bad\nName <evil@x.com>', BASE)
+    // The newline and the address delimiters are stripped, so the attacker address can never take over the
+    // From; the verified envelope address is preserved.
+    expect(from).not.toContain('\n')
+    expect(from).not.toContain('evil@x.com')
+    expect(from).not.toContain('<evil')
+    expect(from.startsWith('Bad Name')).toBe(true)
+    expect(from.endsWith('<noreply@send.frequencylocal.com>')).toBe(true)
   })
 })

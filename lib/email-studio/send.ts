@@ -31,6 +31,67 @@ import { resolveProductRefs, productVarsFromLayout } from './product-block'
 import { MERGE_TAG_DEFAULT_FALLBACKS, type EmailDoc } from './types'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
+// ── Sender FROM name (per-campaign display name, envelope address unchanged) ─────
+// An operator can set a friendly From NAME per campaign (e.g. "Riverside Studio"). Only the DISPLAY name is
+// customizable; the envelope ADDRESS stays the verified sending domain (noreply@send.frequencylocal.com), so
+// deliverability / DKIM are untouched. The name is sanitized before it reaches the From header, and a blank /
+// missing name falls back to the platform default (so a pre-migration row with no from_name still sends).
+
+/** The platform default From (mirrors lib/email.ts EMAIL_FROM). The address inside `< >` is the verified
+ *  sending identity; only the display name in front of it is operator-settable. */
+const DEFAULT_FROM = process.env.EMAIL_FROM ?? 'Frequency <noreply@send.frequencylocal.com>'
+
+/**
+ * Sanitize an operator-set From display name so it can never break (or inject into) an email From header.
+ * Strips CR / LF / tab (header-injection guard) and other control chars, then the address delimiters and
+ * separators (`"` `<` `>` `\` `@` `,` `;` `:`) that would let the name look like or split an address; collapses
+ * whitespace and bounds the length. Returns '' when nothing usable remains (→ the caller falls back to the
+ * default From). Pure + total.
+ */
+export function sanitizeFromName(raw: unknown): string {
+  if (typeof raw !== 'string') return ''
+  return raw
+    .replace(/[\r\n\t]+/g, ' ') // newlines / tabs → a single space (never a header break)
+    .replace(/[\x00-\x1F\x7F]/g, '') // other control chars
+    .replace(/["<>\\@,;:]/g, '') // address delimiters + separators
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 78) // keep the assembled header well within the RFC 5322 line length
+}
+
+/**
+ * Build the send From header from an optional per-campaign display name, KEEPING the verified envelope address
+ * from `base` (default EMAIL_FROM) and swapping only the friendly name. A blank / unusable name returns `base`
+ * unchanged. Pure + total.
+ */
+export function buildCampaignFrom(fromName: unknown, base: string = DEFAULT_FROM): string {
+  const name = sanitizeFromName(fromName)
+  if (!name) return base
+  const match = base.match(/<([^>]+)>/)
+  const address = match ? match[1] : base
+  return `${name} <${address}>`
+}
+
+/**
+ * Best-effort read of a campaign's per-send From NAME (the `from_name` column, added by the
+ * 20261166000000_campaign_from_name migration). FAIL-SAFE: before that migration is applied the column does
+ * not exist and PostgREST returns an error, which we swallow and treat as "no name set" (→ default From). The
+ * column is selected via a `string`-typed variable (not a literal) so the not-yet-generated type never trips
+ * the compiler. Returns the trimmed name, or null.
+ */
+export async function loadCampaignFromName(campaignId: string): Promise<string | null> {
+  try {
+    const db = createAdminClient()
+    const col: string = 'from_name'
+    const { data, error } = await db.from('campaigns').select(col).eq('id', campaignId).maybeSingle()
+    if (error || !data) return null
+    const v = (data as unknown as Record<string, unknown>)[col]
+    return typeof v === 'string' && v.trim() ? v : null
+  } catch {
+    return null
+  }
+}
+
 // ── Size guard (Gmail clips a message past ~102 KB) ─────────────────────────────
 // We warn a touch under the clip so an operator can trim before the footer / unsubscribe
 // gets cut off. Measured on the compiled HTML's UTF-8 byte length (what the mailbox sees).
@@ -315,6 +376,10 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   const doc: EmailDoc = { ...rawDoc, layout: await resolveProductRefs(rawDoc.layout) }
   const productVars = productVarsFromLayout(doc.layout)
 
+  // The friendly From NAME (display name only; the envelope address stays the verified domain). Fail-safe:
+  // pre-migration this reads null and we send from the platform default.
+  const fromHeader = buildCampaignFrom(await loadCampaignFromName(campaignId))
+
   const db = createAdminClient()
 
   // ATOMIC CLAIM (not a bare update): flip → 'sending' ONLY while the row is still in the status we
@@ -363,6 +428,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
       // it finds to email_events.campaign_id, and getCampaignMetrics counts by it.
       await enqueueEmail({
         to: r.email,
+        from: fromHeader,
         subject,
         html,
         text,

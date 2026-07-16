@@ -134,6 +134,65 @@ describe('renderEmailLayout', () => {
   })
 })
 
+describe('features block — multi-column email compilation', () => {
+  function featuresLayout(layout: string, columns: string, n: number): EntityLayout {
+    const items = Array.from({ length: n }, (_, i) => ({ title: `Feature ${i}`, text: `Blurb ${i}` }))
+    return {
+      rows: [{ id: 'r0', columns: 1, cells: [['features']] }],
+      content: { features: { layout, columns, items } },
+    }
+  }
+
+  it('renders a 3-column layout as a bulletproof table/inline-block grid (MSO ghost table + 3 columns)', () => {
+    const html = renderEmailLayout(featuresLayout('columns', '3', 3)).html
+    // An Outlook (MSO) conditional ghost table wraps the fluid inline-block columns.
+    expect(html).toContain('<!--[if mso]>')
+    expect(html).toContain('<table')
+    // Three fluid columns, each capped at floor(520/3) = 173px, and the MSO td at round(100/3) = 33%.
+    expect(html.split('max-width:173px').length - 1).toBe(3)
+    expect(html).toContain('display:inline-block')
+    expect(html).toContain('width="33%"')
+    // No CSS grid/flex/classes reach the email.
+    expect(html).not.toContain('display:grid')
+    expect(html).not.toContain('display:flex')
+    expect(html).not.toContain('class=')
+    // Every feature still renders its content.
+    expect(html).toContain('Feature 0')
+    expect(html).toContain('Feature 2')
+  })
+
+  it('renders a 4-column layout with four columns capped at floor(520/4) = 130px and 25% MSO cells', () => {
+    const html = renderEmailLayout(featuresLayout('columns', '4', 4)).html
+    expect(html.split('max-width:130px').length - 1).toBe(4)
+    expect(html).toContain('width="25%"')
+    expect(html).toContain('<!--[if mso]>')
+  })
+
+  it('chunks into rows of N (7 items at 3 columns → 3 wrapper rows)', () => {
+    const html = renderEmailLayout(featuresLayout('cards', '3', 7)).html
+    // Seven column divs total (all items placed), across ceil(7/3) = 3 chunk rows.
+    expect(html.split('max-width:173px').length - 1).toBe(7)
+    expect(html.split('font-size:0;margin:0 0 8px 0;').length - 1).toBe(3)
+  })
+
+  it('keeps a list layout single-column (no inline-block grid), ignoring the columns count', () => {
+    const html = renderEmailLayout(featuresLayout('list', '4', 3)).html
+    expect(html).not.toContain('display:inline-block')
+    expect(html).not.toContain('<!--[if mso]>')
+    expect(html).toContain('Feature 0')
+  })
+
+  it('defaults a legacy features block (no layout key) to a single stacked column', () => {
+    const layout: EntityLayout = {
+      rows: [{ id: 'r0', columns: 1, cells: [['features']] }],
+      content: { features: { items: [{ title: 'Solo', text: 'Only one' }] } },
+    }
+    const html = renderEmailLayout(layout).html
+    expect(html).toContain('Solo')
+    expect(html).not.toContain('display:inline-block')
+  })
+})
+
 describe('applyMergeTags', () => {
   it('substitutes a provided variable', () => {
     expect(applyMergeTags('Hi {{contact.first_name}}', { 'contact.first_name': 'Alex' })).toBe('Hi Alex')
