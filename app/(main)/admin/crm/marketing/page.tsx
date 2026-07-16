@@ -13,8 +13,16 @@ import { MarketingWorkspace } from '@/components/admin/crm/marketing-workspace'
 
 export const dynamic = 'force-dynamic'
 
-export default async function CrmMarketingPage() {
+export default async function CrmMarketingPage({
+  searchParams,
+}: {
+  // `open=<campaignId>` opens that draft straight into the composer (the guided generator routes here after
+  // Vera drafts a single campaign, so the operator lands on their new draft ready to review). Heavily-modified
+  // Next.js: searchParams is a Promise.
+  searchParams: Promise<{ open?: string }>
+}) {
   await requireAdmin('admin', { staff: 'marketing' })
+  const { open } = await searchParams
   const [{ campaigns, funnels, counts }, segments] = await Promise.all([
     getMessagingConsole(),
     listSegmentOptions(),
@@ -40,7 +48,7 @@ export default async function CrmMarketingPage() {
         title="Everything you send"
         description="Campaigns and funnels in one place, colored by status. Search, or start a new email."
       >
-        <MarketingWorkspace campaigns={campaigns} funnels={funnels} segments={segments} />
+        <MarketingWorkspace campaigns={campaigns} funnels={funnels} segments={segments} openCampaignId={open} />
       </AdminSection>
     </AdminTemplate>
   )

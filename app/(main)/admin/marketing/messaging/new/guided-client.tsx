@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ArrowRight, Sparkles, PencilRuler, Lightbulb, Megaphone, Activity, Check } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Sparkles, PencilRuler, Lightbulb, Megaphone, Activity, Check, Loader2 } from 'lucide-react'
 import { WizardProgress } from '@/components/templates'
 import { Button } from '@/components/ui/button'
 import { Banner } from '@/components/admin/status'
@@ -26,7 +26,9 @@ export function GuidedSetup({ segments }: { segments: SegmentOption[] }) {
   const [name, setName] = useState('')
   const [audience, setAudience] = useState(segments[0]?.key ?? '')
   const [tone, setTone] = useState(MESSAGING_TONES[0].key)
+  const [details, setDetails] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [buildMode, setBuildMode] = useState<'manual' | 'vera' | null>(null)
   const [pending, start] = useTransition()
 
   const goal = goalKey ? getMessagingGoal(goalKey) : null
@@ -41,10 +43,13 @@ export function GuidedSetup({ segments }: { segments: SegmentOption[] }) {
   function build(mode: 'manual' | 'vera') {
     if (!goal) return
     setError(null)
+    setBuildMode(mode)
+    const audienceLabel = segments.find((s) => s.key === audience)?.label
     start(async () => {
-      const res = await startBuild({ goalKey: goal.key, name, audience, tone, mode })
+      const res = await startBuild({ goalKey: goal.key, name, audience, audienceLabel, tone, details, mode })
       if (isError(res)) {
         setError(res.error)
+        setBuildMode(null)
         return
       }
       const suffix = res.data.veraPending ? `${res.data.href.includes('?') ? '&' : '?'}vera=pending` : ''
@@ -68,6 +73,8 @@ export function GuidedSetup({ segments }: { segments: SegmentOption[] }) {
             setAudience={setAudience}
             tone={tone}
             setTone={setTone}
+            details={details}
+            setDetails={setDetails}
             segments={segments}
             onBack={() => setStep(1)}
             onNext={() => setStep(3)}
@@ -79,6 +86,7 @@ export function GuidedSetup({ segments }: { segments: SegmentOption[] }) {
             goal={goal}
             name={name}
             pending={pending}
+            buildMode={buildMode}
             error={error}
             onBack={() => setStep(2)}
             onBuild={build}
@@ -136,6 +144,8 @@ function QuestionsStep({
   setAudience,
   tone,
   setTone,
+  details,
+  setDetails,
   segments,
   onBack,
   onNext,
@@ -147,6 +157,8 @@ function QuestionsStep({
   setAudience: (v: string) => void
   tone: string
   setTone: (v: string) => void
+  details: string
+  setDetails: (v: string) => void
   segments: SegmentOption[]
   onBack: () => void
   onNext: () => void
@@ -208,6 +220,20 @@ function QuestionsStep({
           </select>
         </div>
 
+        <div>
+          <label className="block text-xs font-semibold text-text" htmlFor="msg-details">
+            Anything to add? <span className="font-normal text-subtle">(optional)</span>
+          </label>
+          <textarea
+            id="msg-details"
+            value={details}
+            onChange={(e) => setDetails(e.target.value)}
+            rows={3}
+            placeholder="A detail or two for Vera to work from: the offer, a date, the one thing to say. Plain words are fine."
+            className={cn(fieldCls, 'resize-y')}
+          />
+        </div>
+
         {/* Best-practice tips ride along (ask #6). */}
         <div className="rounded-xl border border-info/30 bg-info-bg px-3 py-2.5">
           <p className="flex items-center gap-1.5 text-xs font-semibold text-info">
@@ -260,6 +286,7 @@ function BuildStep({
   goal,
   name,
   pending,
+  buildMode,
   error,
   onBack,
   onBuild,
@@ -267,15 +294,20 @@ function BuildStep({
   goal: NonNullable<ReturnType<typeof getMessagingGoal>>
   name: string
   pending: boolean
+  buildMode: 'manual' | 'vera' | null
   error: string | null
   onBack: () => void
   onBuild: (mode: 'manual' | 'vera') => void
 }) {
+  const isSequence = goal.object === 'funnel'
+  const veraBusy = pending && buildMode === 'vera'
+  const manualBusy = pending && buildMode === 'manual'
   return (
     <div>
       <h2 className="text-lg font-bold text-text">How do you want to build it?</h2>
       <p className="mt-0.5 text-sm text-muted">
-        Both start from the {goal.object === 'funnel' ? 'best-practice series' : 'template'} for {name || goal.suggestedName}.
+        Let Vera write the first draft, or start from the {isSequence ? 'best-practice series' : 'template'} for{' '}
+        {name || goal.suggestedName}. Either way you review and edit before anything sends.
       </p>
 
       {error && (
@@ -287,45 +319,50 @@ function BuildStep({
       )}
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {/* Let Vera draft it — the deferred seam (P5). Honest label: it sets up the
-            scaffold now and notes that Vera drafting is on the way. */}
+        {/* Let Vera draft it — the guided AI generator (CRM Phase 1). Lands a reviewable DRAFT in the composer;
+            nothing sends until the operator sends it. */}
         <button
           type="button"
           onClick={() => onBuild('vera')}
           disabled={pending}
-          className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4 text-left transition-colors hover:border-border-strong disabled:opacity-60"
+          className="flex flex-col gap-2 rounded-2xl border border-primary-strong bg-surface p-4 text-left ring-1 ring-primary-strong transition-colors disabled:opacity-60"
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
-            <Sparkles className="h-5 w-5" aria-hidden />
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-on-primary">
+            {veraBusy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Sparkles className="h-5 w-5" aria-hidden />}
           </span>
           <span className="text-sm font-semibold text-text">Let Vera draft it</span>
           <span className="text-xs leading-snug text-muted">
-            Vera will write the subjects and copy from your answers. Drafting lands soon. For now this sets up the
-            scaffold for you to fill in.
+            {veraBusy
+              ? isSequence
+                ? 'Vera is writing your series. This takes a few seconds.'
+                : 'Vera is writing your email. This takes a few seconds.'
+              : isSequence
+                ? 'Vera writes every email in the series from your answers. Each lands as a draft to review and edit.'
+                : 'Vera writes the subject, preheader, and body from your answers, as a draft to review and edit.'}
           </span>
-          <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-subtle">
-            Coming soon
+          <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 text-2xs font-medium text-success">
+            <Check className="h-3 w-3" aria-hidden /> Ready
           </span>
         </button>
 
-        {/* Build it manually — fully wired. */}
+        {/* Build it manually — the scaffold, unchanged. */}
         <button
           type="button"
           onClick={() => onBuild('manual')}
           disabled={pending}
-          className="flex flex-col gap-2 rounded-2xl border border-primary-strong bg-surface p-4 text-left ring-1 ring-primary-strong transition-colors disabled:opacity-60"
+          className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4 text-left transition-colors hover:border-border-strong disabled:opacity-60"
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-on-primary">
-            <PencilRuler className="h-5 w-5" aria-hidden />
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+            {manualBusy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <PencilRuler className="h-5 w-5" aria-hidden />}
           </span>
           <span className="text-sm font-semibold text-text">Build it manually</span>
           <span className="text-xs leading-snug text-muted">
-            {goal.object === 'funnel'
+            {isSequence
               ? 'Open the flow view with the series set up, ready for you to write.'
               : 'Open the composer with the audience preset, ready to write.'}
           </span>
-          <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 text-2xs font-medium text-success">
-            <Check className="h-3 w-3" aria-hidden /> Ready
+          <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-subtle">
+            Start from a template
           </span>
         </button>
       </div>
