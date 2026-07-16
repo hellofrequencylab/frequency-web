@@ -1,20 +1,22 @@
 'use client'
 
 // MARKETING WORKSPACE — the client body of the CRM Marketing tab. It reuses the existing messaging
-// console (Campaigns + Funnels, colored by status) and adds the two things the console lacked for a
-// CRM home: a SEARCH box that filters both lists by name, and a "New email" button that opens the
-// draft-first broadcast composer popup. Nothing about the console or the send pipeline is forked.
-// Voice canon: no em dashes.
+// console (Campaigns + Funnels, colored by status) and adds the things a CRM home needs: a SEARCH box
+// that filters both lists by name, a "New email" button that opens the draft-first composer popup, and
+// per-row DELETE for draft campaigns (the status-guarded deleteEmailDraft, so a sent/scheduled campaign
+// can never be removed). Nothing about the console or the send pipeline is forked. Voice canon: no em dashes.
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { Search, Send } from 'lucide-react'
 import { MessagingConsole, MessagingQuickLinks } from '@/components/admin/messaging/messaging-console'
 import { MarketingComposePopup } from '@/components/admin/crm/marketing-compose-popup'
+import { deleteEmailDraft } from '@/app/(main)/admin/email-studio/actions'
+import { isError } from '@/lib/action-result'
 import type { MessagingCampaignItem, MessagingFunnelItem } from '@/lib/messaging/console'
 import type { SegmentOption } from '@/components/admin/email-studio/send-panel'
 
 export function MarketingWorkspace({
-  campaigns,
+  campaigns: initialCampaigns,
   funnels,
   segments,
 }: {
@@ -24,6 +26,10 @@ export function MarketingWorkspace({
 }) {
   const [query, setQuery] = useState('')
   const [composeOpen, setComposeOpen] = useState(false)
+  const [campaigns, setCampaigns] = useState(initialCampaigns)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [, startTransition] = useTransition()
 
   const q = query.trim().toLowerCase()
   const filteredCampaigns = useMemo(
@@ -34,6 +40,23 @@ export function MarketingWorkspace({
     () => (q ? funnels.filter((f) => f.name.toLowerCase().includes(q)) : funnels),
     [funnels, q],
   )
+
+  function handleDelete(id: string) {
+    const target = campaigns.find((c) => c.id === id)
+    const label = target?.name.trim() || 'this untitled draft'
+    if (!window.confirm(`Delete ${label}? This cannot be undone.`)) return
+    setError(null)
+    setDeletingId(id)
+    startTransition(async () => {
+      const res = await deleteEmailDraft(id)
+      setDeletingId(null)
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
+      setCampaigns((prev) => prev.filter((c) => c.id !== id))
+    })
+  }
 
   return (
     <div className="space-y-4">
@@ -62,7 +85,18 @@ export function MarketingWorkspace({
         <MessagingQuickLinks />
       </div>
 
-      <MessagingConsole campaigns={filteredCampaigns} funnels={filteredFunnels} />
+      {error && (
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger" role="alert">
+          {error}
+        </p>
+      )}
+
+      <MessagingConsole
+        campaigns={filteredCampaigns}
+        funnels={filteredFunnels}
+        onDeleteCampaign={handleDelete}
+        deletingId={deletingId}
+      />
 
       <MarketingComposePopup open={composeOpen} onClose={() => setComposeOpen(false)} segments={segments} />
     </div>

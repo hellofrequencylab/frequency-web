@@ -15,12 +15,12 @@
 // the effect free of any reset-on-close setState (no cascading-render lint), and guarantees a clean
 // draft every open.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Loader2, Send, X } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { EmailEditorPane } from '@/components/admin/email-studio/editor-pane'
 import { SendPanel, type CampaignStatus, type SegmentOption } from '@/components/admin/email-studio/send-panel'
-import { createEmailDraft, loadEmailCampaign, type LoadedEmailCampaign } from '@/app/(main)/admin/email-studio/actions'
+import { createEmailDraft, discardDraftIfEmpty, loadEmailCampaign, type LoadedEmailCampaign } from '@/app/(main)/admin/email-studio/actions'
 import { isError } from '@/lib/action-result'
 
 export function MarketingComposePopup({
@@ -40,8 +40,11 @@ export function MarketingComposePopup({
 function ComposeBody({ onClose, segments }: { onClose: () => void; segments: SegmentOption[] }) {
   const [loaded, setLoaded] = useState<LoadedEmailCampaign | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const draftIdRef = useRef<string | null>(null)
 
-  // Mint a draft on mount (which happens once per open), then load it into the editor.
+  // Open a draft on mount (createEmailDraft reuses the operator's pristine empty one, so opening the
+  // composer never mints a new blank row), then load it into the editor. On close, discard the draft if
+  // it is still untouched, so an abandoned "New email" never leaves a blank draft behind.
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -51,6 +54,7 @@ function ComposeBody({ onClose, segments }: { onClose: () => void; segments: Seg
         setError(res.error)
         return
       }
+      draftIdRef.current = res.data.id
       try {
         const data = await loadEmailCampaign(res.data.id)
         if (!cancelled) setLoaded(data)
@@ -60,6 +64,8 @@ function ComposeBody({ onClose, segments }: { onClose: () => void; segments: Seg
     })()
     return () => {
       cancelled = true
+      const id = draftIdRef.current
+      if (id) void discardDraftIfEmpty(id)
     }
   }, [])
 

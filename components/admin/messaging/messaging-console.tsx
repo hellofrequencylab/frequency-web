@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowUpRight, Megaphone, Activity, Mail } from 'lucide-react'
+import { ArrowUpRight, Megaphone, Activity, Mail, Trash2 } from 'lucide-react'
 import { StatusChip } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
@@ -25,9 +25,15 @@ type Tab = 'campaigns' | 'funnels'
 export function MessagingConsole({
   campaigns,
   funnels,
+  onDeleteCampaign,
+  deletingId,
 }: {
   campaigns: MessagingCampaignItem[]
   funnels: MessagingFunnelItem[]
+  /** When provided, draft campaign rows gain a delete (trash) affordance that calls this. */
+  onDeleteCampaign?: (id: string) => void
+  /** The id currently being deleted (its row shows a spinner / disabled state). */
+  deletingId?: string | null
 }) {
   const [tab, setTab] = useState<Tab>(campaigns.length === 0 && funnels.length > 0 ? 'funnels' : 'campaigns')
 
@@ -51,7 +57,7 @@ export function MessagingConsole({
       </div>
 
       {tab === 'campaigns' ? (
-        <CampaignsPanel campaigns={campaigns} />
+        <CampaignsPanel campaigns={campaigns} onDeleteCampaign={onDeleteCampaign} deletingId={deletingId} />
       ) : (
         <FunnelsPanel funnels={funnels} />
       )}
@@ -93,7 +99,15 @@ function TabButton({
   )
 }
 
-function CampaignsPanel({ campaigns }: { campaigns: MessagingCampaignItem[] }) {
+function CampaignsPanel({
+  campaigns,
+  onDeleteCampaign,
+  deletingId,
+}: {
+  campaigns: MessagingCampaignItem[]
+  onDeleteCampaign?: (id: string) => void
+  deletingId?: string | null
+}) {
   if (campaigns.length === 0) {
     return (
       <EmptyState
@@ -134,12 +148,25 @@ function CampaignsPanel({ campaigns }: { campaigns: MessagingCampaignItem[] }) {
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-muted">{c.recipientCount.toLocaleString()}</td>
                 <td className="px-4 py-2.5 text-right">
-                  <Link
-                    href={c.href}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
-                  >
-                    Open <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                  </Link>
+                  <div className="inline-flex items-center gap-3">
+                    <Link
+                      href={c.href}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
+                    >
+                      Open <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                    </Link>
+                    {onDeleteCampaign && c.status === 'draft' && (
+                      <button
+                        type="button"
+                        onClick={() => onDeleteCampaign(c.id)}
+                        disabled={deletingId === c.id}
+                        aria-label={`Delete ${c.name.trim() || 'untitled'} draft`}
+                        className="rounded p-1 text-subtle transition-colors hover:text-danger disabled:opacity-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             )
