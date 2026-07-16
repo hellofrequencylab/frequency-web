@@ -127,10 +127,16 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
           setError('This audience is empty. Pick a segment with recipients before sending.')
           return
         }
+        // Two-step confirm: the count first, then an explicit final go. A mass send cannot be undone,
+        // so it takes two deliberate confirms.
         const okToSend = window.confirm(
           `Send this campaign now to ${size.toLocaleString()} recipients? This cannot be undone.`,
         )
         if (!okToSend) return
+        const reallySend = window.confirm(
+          `Really send to ${size.toLocaleString()} recipients right now? There is no undo once it goes out.`,
+        )
+        if (!reallySend) return
         run(
           () => sendNowAction(campaignId),
           (r) => {

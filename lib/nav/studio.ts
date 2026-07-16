@@ -333,7 +333,13 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   // members. (This is the surface the platform importer writes into via the ROOT-space contacts.)
   { id: 'crm-contacts', href: '/admin/marketing/contacts', label: 'Contacts', desc: 'The full contact record: every lead, customer, and member, with imported contacts landing here. Filter to Leads for the people who have not signed up yet.', icon: 'Contact', min: 'janitor',
     world: 'growth', worldLabel: 'CRM: Contacts', worldOrder: 10,
-    adminGroups: [{ domain: 'crm', section: 'Records' }], adminNav: { section: 'crm', heading: 'Engine' } },
+    adminGroups: [{ domain: 'crm', section: 'Records' }] },
+  // Marketing — compose + send email to the whole community or a section (all members, a circle, a saved
+  // segment, or individuals), with campaigns / funnels / drafts / sent in one place. Reuses the messaging
+  // console + the block editor + the gated send pipeline; the popup composer always saves as a draft.
+  { id: 'crm-marketing', href: '/admin/crm/marketing', label: 'Marketing', desc: 'Compose and send email to the whole community or a section: all members, a circle, a saved segment, or individuals. Campaigns, funnels, drafts, and sent in one place.', icon: 'Send', min: 'janitor', staffDomain: 'marketing',
+    world: 'growth', worldLabel: 'CRM: Marketing', worldOrder: 10,
+    adminGroups: [{ domain: 'crm', section: 'Marketing' }], adminNav: { section: 'crm', heading: 'Engine' } },
   { id: 'segments', href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', icon: 'PieChart', min: 'janitor', staffDomain: 'insights', staffLevel: 'read',
     world: 'growth', worldLabel: 'CRM: Segments', worldOrder: 11,
     adminGroups: [{ domain: 'crm', section: 'Audiences' }] },
@@ -636,7 +642,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
       // renders the section's own landing link ("Resonance CRM" -> /admin/crm, the roster home), so
       // adding the crm leaf too would paint TWO tabs on the same URL (the "Resonance CRM" + "Roster"
       // duplicate). The section link IS the roster tab.
-      { heading: 'Engine', leaves: [{ leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }, { leaf: 'crm-contacts' }] },
+      { heading: 'Engine', leaves: [{ leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }, { leaf: 'crm-marketing' }] },
     ],
   },
   {
