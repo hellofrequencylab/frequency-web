@@ -27,12 +27,6 @@ export interface EmailBrand {
 
 const DEFAULT_BASE_URL = 'https://frequencylocal.com'
 
-/** The Frequency wordmark LOGO used in the default (platform-branded) email header. An absolute-URL raster PNG
- *  (public/frequency-logo.png, 963×170) — email clients do NOT render SVG, and a large 2x-ish asset shown at
- *  ~168px stays crisp on retina. Built from the doc's baseUrl so it is always an absolute https URL. Only used
- *  for the DEFAULT shell (no per-brand wordmark / logo); a Space brand supplies its own logo or wordmark. */
-const frequencyLogoUrl = (baseUrl: string): string => `${baseUrl.replace(/\/$/, '')}/frequency-logo.png`
-
 /** The org's legal identity for the CAN-SPAM footer. Mirrors lib/site.ts ORG_LEGAL_NAME; kept LOCAL so the
  *  email shell stays framework-free (importing lib/site pulls the whole nav registry). */
 const ORG_LEGAL_NAME = 'Frequency Labs Holdings'
@@ -58,17 +52,15 @@ function preheaderSpan(text: string): string {
   return `<span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;max-height:0;max-width:0;overflow:hidden;mso-hide:all;">${escapeHtml(text)}${filler}</span>`
 }
 
-/** The brand HEADER: a logo IMAGE (the default Frequency wordmark PNG, or a per-brand logo), else a wordmark
- *  text lockup. The default Frequency shell (no per-brand wordmark or logo) always shows the logo image. */
+/** The brand HEADER: a wordmark TEXT lockup by default (the Frequency text logo). A per-brand logo IMAGE is
+ *  used only when a Space explicitly supplies `logoUrl` — the platform shell and text-wordmark brands stay text. */
 function header(brand: EmailBrand, colors: EmailColors, baseUrl: string): string {
-  // Default the platform shell to the Frequency logo image; a Space brand that set a wordmark but no logo keeps
-  // its wordmark text (do NOT stamp the Frequency logo on a Space email).
-  const logoUrl = brand.logoUrl ?? (brand.wordmark ? undefined : frequencyLogoUrl(baseUrl))
+  // Text wordmark is the default (the platform "Frequency" text logo). Only an explicit per-brand logoUrl swaps
+  // in an image; we never stamp a raster logo on the default shell.
+  const logoUrl = brand.logoUrl
   const inner = logoUrl
-    ? // Retina-friendly wordmark PNG shown at 168px (from a 963px asset). The inline font/color styles are the
-      // bulletproof TEXT FALLBACK: when a client blocks images, the alt text renders on-brand, not as raw grey.
-      `<a href="${escapeHtml(baseUrl)}" style="text-decoration:none;"><img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(brand.wordmark ?? 'Frequency')}" width="168" height="30" style="display:block;border:0;width:168px;height:auto;font-family:${FONT_STACK};font-size:24px;font-weight:700;letter-spacing:-0.5px;color:${colors.primaryStrong};text-decoration:none;"></a>`
-    : `<a href="${escapeHtml(baseUrl)}" style="font-family:${FONT_STACK};font-size:22px;font-weight:900;letter-spacing:-0.5px;color:${colors.primaryStrong};text-decoration:none;">${escapeHtml(brand.wordmark ?? 'frequency')}</a>`
+    ? `<a href="${escapeHtml(baseUrl)}" style="text-decoration:none;"><img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(brand.wordmark ?? 'Frequency')}" width="168" height="30" style="display:block;border:0;width:168px;height:auto;font-family:${FONT_STACK};font-size:24px;font-weight:700;letter-spacing:-0.5px;color:${colors.primaryStrong};text-decoration:none;"></a>`
+    : `<a href="${escapeHtml(baseUrl)}" style="font-family:${FONT_STACK};font-size:26px;font-weight:900;letter-spacing:-0.5px;color:${colors.primaryStrong};text-decoration:none;">${escapeHtml(brand.wordmark ?? 'Frequency')}</a>`
   const tagline = brand.tagline ?? 'A place to be human'
   const tag = tagline
     ? `<p style="font-family:${FONT_STACK};font-size:11px;color:${colors.subtle};letter-spacing:1.5px;text-transform:uppercase;margin:3px 0 0;">${escapeHtml(tagline)}</p>`
@@ -94,18 +86,21 @@ function footer(input: EmailDocumentShellInput, colors: EmailColors, baseUrl: st
     `<a href="${escapeHtml(href)}" style="color:${colors.text};text-decoration:none;font-weight:600;">${label}</a>`
   const sep = `<span style="color:${colors.subtle};">&nbsp;&middot;&nbsp;</span>`
   const links = [link(`${base}/privacy`, 'Privacy'), link(`${base}/terms`, 'Terms'), link(`${base}/help`, 'Help')].join(sep)
-  // SUBTLE fine print: the CAN-SPAM legal cluster (unsubscribe + address + copyright) in the lightest ink at the
-  // smallest size, so it recedes into the background. Unsubscribe stays underlined + working (one-click token
-  // preserved); it is quiet, not hidden, and the List-Unsubscribe header carries the conspicuous inbox control.
-  const unsub = input.unsubscribeUrl
-    ? `<a href="${escapeHtml(input.unsubscribeUrl)}" style="color:${colors.subtle};text-decoration:underline;">Unsubscribe</a>${sep}<a href="${escapeHtml(input.unsubscribeUrl)}" style="color:${colors.subtle};text-decoration:underline;">Manage emails</a><br>`
-    : ''
+  // SUBTLE fine print, but the unsubscribe is ALWAYS shown (even in the composer preview, before the send injects
+  // the token) so an operator can see it is there. Unsubscribe reads in muted ink + underline (a touch more
+  // findable than the lightest address/copyright line); it links to the real one-click token at send, and renders
+  // as plain underlined text in preview. The List-Unsubscribe header still carries the conspicuous inbox control.
+  const unsubLink = (label: string): string =>
+    input.unsubscribeUrl
+      ? `<a href="${escapeHtml(input.unsubscribeUrl)}" style="color:${colors.muted};text-decoration:underline;">${label}</a>`
+      : `<span style="color:${colors.muted};text-decoration:underline;">${label}</span>`
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
     <tr><td align="center" style="font-family:${FONT_STACK};padding:24px 16px 0;text-align:center;">
       <p style="margin:0 0 3px;font-size:15px;font-weight:700;letter-spacing:-0.2px;color:${colors.heading ?? colors.text};">${name}</p>
       ${desc ? `<p style="margin:0 0 16px;font-size:12px;color:${colors.muted};">${escapeHtml(desc)}</p>` : `<div style="height:16px;line-height:16px;font-size:0;">&nbsp;</div>`}
-      <p style="margin:0 0 18px;font-size:13px;line-height:1.6;">${links}</p>
-      <p style="margin:0;font-size:10px;color:${colors.subtle};line-height:1.7;">${unsub}&copy; ${year} ${escapeHtml(ORG_LEGAL_NAME)}${sep}${addr}</p>
+      <p style="margin:0 0 14px;font-size:13px;line-height:1.6;">${links}</p>
+      <p style="margin:0 0 4px;font-size:11px;line-height:1.6;">${unsubLink('Unsubscribe')}${sep}${unsubLink('Manage emails')}</p>
+      <p style="margin:0;font-size:10px;color:${colors.subtle};line-height:1.7;">&copy; ${year} ${escapeHtml(ORG_LEGAL_NAME)}${sep}${addr}</p>
     </td></tr>
   </table>`
 }
