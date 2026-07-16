@@ -240,13 +240,19 @@ describe('shell + compileEmailDoc', () => {
     expect(out.text).toContain('Unsubscribe: https://x/u')
   })
 
-  it('default header renders the Frequency logo IMAGE (absolute PNG, retina, alt fallback)', () => {
+  it('default header renders the Frequency TEXT wordmark (no raster logo)', () => {
     const html = emailDocumentShell({ body: '<p>hi</p>' })
-    // Absolute-URL raster PNG (no SVG — mail clients cannot render it), explicit width, alt text fallback.
-    expect(html).toContain('https://frequencylocal.com/frequency-logo.png')
-    expect(html).toContain('alt="Frequency"')
+    // The default shell is the text wordmark lockup, not an image.
+    expect(html).toContain('>Frequency</a>')
+    expect(html).toContain('font-weight:900')
+    expect(html).not.toContain('frequency-logo.png')
+    expect(html).not.toContain('<img')
+  })
+
+  it('a per-Space logoUrl brand swaps in its image logo', () => {
+    const html = emailDocumentShell({ body: '<p>hi</p>', brand: { logoUrl: 'https://cdn.example.com/acme.png' } })
+    expect(html).toContain('src="https://cdn.example.com/acme.png"')
     expect(html).toContain('width="168"')
-    expect(html).not.toContain('.svg')
   })
 
   it('a per-Space wordmark brand keeps its wordmark text (no Frequency logo stamped on it)', () => {
@@ -270,16 +276,16 @@ describe('shell + compileEmailDoc', () => {
     expect(html).toContain('href="https://frequencylocal.com/help"')
   })
 
-  it('keeps the unsubscribe SUBTLE but present and working', () => {
-    const html = emailDocumentShell({ body: '<p>hi</p>', unsubscribeUrl: 'https://x/u' })
-    // The exact one-click token URL is preserved.
-    expect(html).toContain('href="https://x/u"')
-    expect(html).toContain('Unsubscribe')
-    // Subtle: the legal fine-print cluster renders at the smallest size in the lightest ink, as an
-    // underlined TEXT link, not the old prominent pill button.
-    expect(html).toContain('font-size:10px')
-    expect(html).toContain('text-decoration:underline')
-    expect(html).not.toContain('border-radius:999px')
+  it('always shows the unsubscribe control; links the token when the send injects it', () => {
+    const withUrl = emailDocumentShell({ body: '<p>hi</p>', unsubscribeUrl: 'https://x/u' })
+    // The exact one-click token URL is preserved, underlined, not the old prominent pill.
+    expect(withUrl).toContain('href="https://x/u"')
+    expect(withUrl).toContain('Unsubscribe')
+    expect(withUrl).toContain('text-decoration:underline')
+    expect(withUrl).not.toContain('border-radius:999px')
+    // Present even in the composer preview (no unsubscribeUrl yet) so the operator can see it is there.
+    const preview = emailDocumentShell({ body: '<p>hi</p>' })
+    expect(preview).toContain('Unsubscribe')
   })
 
   it('the marketing/nav links are prominent (body ink, larger than the legal fine print)', () => {

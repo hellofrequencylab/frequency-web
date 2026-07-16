@@ -510,6 +510,35 @@ export async function listMembersByFilter(
       if (rows.length === 0) return []
     }
 
+    // COMPLETENESS: member_engagement_scores is refreshed nightly, so a member who joined today has
+    // no score row yet and would be INVISIBLE in the roster. For the full roster, union in every member
+    // still missing from the matview (stitched via their profile-linked contact) with neutral 'new'
+    // defaults, so EVERY member appears immediately. Their live role / activity / business standing is
+    // filled downstream by the classifier (which reads live tables, not the matview). Scale note: capped
+    // at the same limit; at platform member counts the union is comfortably within it.
+    if (filter.kind === 'all') {
+      const scoredIds = new Set(rows.map((r) => r.profile_id))
+      const { data: memberContacts } = await admin
+        .from('contacts')
+        .select('profile_id')
+        .not('profile_id', 'is', null)
+        .limit(1000)
+      let memberIds = ((memberContacts ?? []) as { profile_id: string | null }[])
+        .map((c) => c.profile_id)
+        .filter((p): p is string => !!p)
+      if (spaceProfileIds) memberIds = memberIds.filter((p) => spaceProfileIds!.has(p))
+      const missing = [...new Set(memberIds)].filter((p) => !scoredIds.has(p))
+      // New members first (they need onboarding attention), then the scored roster; re-cap to the limit.
+      const NEW_MEMBER_HEALTH = 60 // neutral: not flagged as needs-help, not buried
+      const synthetic: ScoreRow[] = missing.map((pid) => ({
+        profile_id: pid,
+        resonance_health: NEW_MEMBER_HEALTH,
+        resonance_tier: 'cooling',
+        lifecycle_stage: 'new',
+      }))
+      rows = [...synthetic, ...rows].slice(0, limit)
+    }
+
     // Resolve names + a contact id (the timeline subject) for the surviving members.
     const profileIds = rows.map((r) => r.profile_id)
     const { data: contactData } = await admin

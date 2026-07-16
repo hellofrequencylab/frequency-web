@@ -61,6 +61,13 @@ function contactsBuilder() {
     select() {
       return api
     },
+    // .not('profile_id','is',null) — the completeness union's member-universe read (chainable).
+    not() {
+      return api
+    },
+    limit() {
+      return Promise.resolve({ data: db.contacts.filter((c) => c.profile_id), error: null })
+    },
     in(_col: string, ids: string[]) {
       return Promise.resolve({ data: db.contacts.filter((c) => c.profile_id && ids.includes(c.profile_id)), error: null })
     },
@@ -121,6 +128,19 @@ describe('listAllScoredMembers (the list-first front door)', () => {
   it('fails safe to an empty list when the matview is absent', async () => {
     db.throwOnScores = true
     expect(await listAllScoredMembers()).toEqual([])
+  })
+
+  it('surfaces a brand-new member missing from the matview (completeness union)', async () => {
+    // p-new has a profile-linked contact but no score row yet (joined since the nightly refresh).
+    db.contacts = [
+      ...db.contacts,
+      { id: 'c-new', profile_id: 'p-new', display_name: 'New Member', email: 'new@example.com' },
+    ]
+    const rows = await listAllScoredMembers()
+    expect(rows.map((r) => r.profileId)).toContain('p-new') // appears despite no matview row
+    const nu = rows.find((r) => r.profileId === 'p-new')!
+    expect(nu.lifecycleStage).toBe('new') // labeled new, not defaulted to at_risk
+    expect(nu.name).toBe('New Member')
   })
 })
 

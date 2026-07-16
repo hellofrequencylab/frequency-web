@@ -151,7 +151,9 @@ export function readZipEntries(buf: Buffer, predicate: (name: string) => boolean
       if (method === 0) {
         out = Buffer.from(raw) // STORED — no compression
       } else if (method === 8) {
-        out = inflateRawSync(raw) // DEFLATE
+        // Cap the inflate at the per-entry limit so a deflate bomb aborts EARLY (RangeError,
+        // caught below → skip) rather than allocating the full oversized output first.
+        out = inflateRawSync(raw, { maxOutputLength: MAX_ENTRY_BYTES }) // DEFLATE
       } else {
         skipped.push({ name, reason: `unsupported-method-${method}` })
         continue

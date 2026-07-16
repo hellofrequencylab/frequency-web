@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
-import { ArrowLeft, LayoutGrid, List as ListIcon, Search, X } from 'lucide-react'
+import { ArrowLeft, Building2, LayoutGrid, List as ListIcon, Search, X } from 'lucide-react'
 import { PersonCard } from '@/components/cards/person-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
+import { ROLE_LABEL } from '@/lib/community-roles'
 import { getInitials, cn } from '@/lib/utils'
 import {
   applyQuery,
@@ -463,6 +464,7 @@ export function MemberViewer({
                         member={m}
                         selected={m.id === effectiveSelectedId}
                         onSelect={() => chooseRow(m.id)}
+                        rich={detailVariant === 'crm'}
                       />
                     ))}
                   </ul>
@@ -547,14 +549,107 @@ function ViewToggleButton({
   )
 }
 
+// ── R2 members-only roster: role / business tags + a richer at-a-glance meta line ──────────────────
+// The CRM roster (detailVariant==='crm') opts each ListRow into a taller layout that surfaces the
+// member's standing + a few classifier signals; every browse surface keeps the compact original row.
+// All fields are optional on MemberSummary, so a row degrades gracefully when a signal is absent.
+
+/** Semantic tone (never a hex) per community trust rung. Only the ladder rungs earn a tone; the
+ *  operational web rungs (admin / janitor) and unknown values get none, so their chip is skipped. */
+const ROLE_TONE: Record<string, 'neutral' | 'primary'> = {
+  member: 'neutral',
+  crew: 'primary',
+  host: 'primary',
+  guide: 'primary',
+  mentor: 'primary',
+  moderator: 'neutral',
+}
+
+/** Map a semantic tone to its DAWN token chip classes (mirrors the CRM detail pane's role chips). */
+function tagToneClass(tone: 'neutral' | 'primary'): string {
+  return tone === 'primary'
+    ? 'border-primary/30 bg-primary-bg text-primary-strong'
+    : 'border-border bg-surface-elevated text-muted'
+}
+
+/** The membership / role + Business chips for a roster row. Renders nothing when there is no standing
+ *  to show. Labels come from the canonical ROLE_LABEL; "Business" mirrors the CRM relationship
+ *  registry's derived business kind (tone primary). */
+function MemberTags({ member }: { member: MemberSummary }) {
+  const roleKey = member.communityRole ?? ''
+  const roleTone = ROLE_TONE[roleKey]
+  const roleLabel = roleTone ? ROLE_LABEL[roleKey as keyof typeof ROLE_LABEL] : undefined
+  if (!roleLabel && !member.isBusiness) return null
+  return (
+    <span className="flex shrink-0 flex-wrap items-center gap-1">
+      {roleLabel && (
+        <span
+          className={cn(
+            'inline-flex items-center rounded-full border px-1.5 py-0.5 text-3xs font-semibold leading-none',
+            tagToneClass(roleTone!),
+          )}
+        >
+          {roleLabel}
+        </span>
+      )}
+      {member.isBusiness && (
+        <span
+          className={cn(
+            'inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-3xs font-semibold leading-none',
+            tagToneClass('primary'),
+          )}
+        >
+          <Building2 className="h-2.5 w-2.5" aria-hidden />
+          Business
+        </span>
+      )}
+    </span>
+  )
+}
+
+/** The at-a-glance meta line: an active-this-week dot, the health value, and Spaces owned when any.
+ *  Each piece is optional, so the line shows only what the summary carries (and nothing at all when
+ *  it carries none of them). */
+function MemberMeta({ member }: { member: MemberSummary }) {
+  const health = member.stats?.find((s) => s.label === 'Health')?.value
+  const spaces = member.spacesOwned ?? 0
+  const items: React.ReactNode[] = []
+  if (member.activeThisWeek) {
+    items.push(
+      <span key="active" className="inline-flex items-center gap-1 font-medium text-success">
+        <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
+        Active this week
+      </span>,
+    )
+  }
+  if (health) items.push(<span key="health">Health {health}</span>)
+  if (spaces > 0) {
+    items.push(
+      <span key="spaces" className="inline-flex items-center gap-1">
+        <Building2 className="h-3 w-3" aria-hidden />
+        {spaces === 1 ? '1 Space' : `${spaces} Spaces`}
+      </span>,
+    )
+  }
+  if (items.length === 0) return null
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-2xs text-subtle">
+      {items}
+    </div>
+  )
+}
+
 function ListRow({
   member,
   selected,
   onSelect,
+  rich = false,
 }: {
   member: MemberSummary
   selected: boolean
   onSelect: () => void
+  /** The CRM members-only roster: render the taller row with role tags + a signals meta line. */
+  rich?: boolean
 }) {
   return (
     <li>
@@ -564,7 +659,8 @@ function ListRow({
         aria-selected={selected}
         onClick={onSelect}
         className={cn(
-          'flex w-full items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-surface-elevated/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50',
+          'flex w-full gap-3 px-4 text-left transition-colors hover:bg-surface-elevated/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50',
+          rich ? 'items-start py-3' : 'items-center py-2',
           selected && 'bg-primary-bg/40',
         )}
       >
@@ -573,12 +669,17 @@ function ListRow({
             <Image
               src={member.avatarUrl}
               alt={member.displayName}
-              width={32}
-              height={32}
-              className="h-8 w-8 rounded-full object-cover"
+              width={rich ? 36 : 32}
+              height={rich ? 36 : 32}
+              className={cn('rounded-full object-cover', rich ? 'h-9 w-9' : 'h-8 w-8')}
             />
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong select-none">
+            <div
+              className={cn(
+                'flex items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong select-none',
+                rich ? 'h-9 w-9' : 'h-8 w-8',
+              )}
+            >
               {getInitials(member.displayName)}
             </div>
           )}
@@ -590,8 +691,16 @@ function ListRow({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold text-text">{member.displayName}</p>
+          {rich ? (
+            <div className="flex items-center gap-2">
+              <p className="min-w-0 flex-1 truncate text-sm font-bold text-text">{member.displayName}</p>
+              <MemberTags member={member} />
+            </div>
+          ) : (
+            <p className="truncate text-sm font-bold text-text">{member.displayName}</p>
+          )}
           <p className="truncate text-xs text-subtle">{member.headline ?? `@${member.handle}`}</p>
+          {rich && <MemberMeta member={member} />}
         </div>
       </button>
     </li>

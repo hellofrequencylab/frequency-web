@@ -2,13 +2,16 @@
 
 // MARKETING WORKSPACE — the client body of the CRM Marketing tab. It reuses the messaging console
 // (Campaigns + Funnels, colored by status) and makes the tab SELF-CONTAINED: composing, editing,
-// scheduling, sending, and deleting all happen here in the draft-first popup. Nothing links out to the
-// legacy /admin/marketing/* composer — "New email" and a row's "Open" both open the in-place popup, and
-// there are no quick-links back to the old system. Voice canon: no em dashes.
+// scheduling, sending, and deleting all happen here in the draft-first popup. "New email" and a row's
+// "Open" both open the in-place popup. The one deliberate link out is "Draft with Vera", the guided
+// generator (/admin/marketing/messaging/new), kept always-visible so the wizard is reachable and not
+// buried in an empty state. Voice canon: no em dashes.
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
-import { Search, Send } from 'lucide-react'
+import Link from 'next/link'
+import { Search, Send, Sparkles } from 'lucide-react'
 import { MessagingConsole } from '@/components/admin/messaging/messaging-console'
+import { buttonClasses } from '@/components/ui/button'
 import { MarketingComposePopup } from '@/components/admin/crm/marketing-compose-popup'
 import { deleteEmailDraft } from '@/app/(main)/admin/email-studio/actions'
 import { isError } from '@/lib/action-result'
@@ -106,6 +109,14 @@ export function MarketingWorkspace({
             className="w-full rounded-lg border border-border bg-canvas py-2 pl-9 pr-3 text-sm text-text placeholder:text-subtle outline-none focus:border-primary"
           />
         </label>
+        {/* Guided generator front door — always reachable, not just from an empty state. Routes to the
+            Vera-led wizard (pick a goal, answer a few questions, let Vera draft it). */}
+        <Link
+          href="/admin/marketing/messaging/new"
+          className={buttonClasses('secondary', 'md', 'shrink-0')}
+        >
+          <Sparkles className="h-4 w-4" aria-hidden /> Draft with Vera
+        </Link>
         <button
           type="button"
           onClick={openNew}
