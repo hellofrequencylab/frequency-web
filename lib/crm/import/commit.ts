@@ -29,11 +29,12 @@ import type { NetworkContactListItem, ContactDetails, ContactOtherDetail } from 
 
 const empty = (v: string | null | undefined) => !((v ?? '').trim())
 
-/** The custom fields the mapping introduced, with their inferred value type. */
+/** The custom fields the mapping introduced, with their inferred value type. The label is the
+ *  operator's chosen name (customLabel) when set, else the source header. */
 function customFieldDefs(row: ContactImportRow): { key: string; label: string; valueType: ValueType }[] {
   return row.mapping
     .filter((m) => m.target === 'custom' && m.customKey)
-    .map((m) => ({ key: m.customKey as string, label: m.header, valueType: m.valueType }))
+    .map((m) => ({ key: m.customKey as string, label: m.customLabel?.trim() || m.header, valueType: m.valueType }))
 }
 
 /** Fold a projected row's custom fields into a ContactDetails.other list (idempotent by
@@ -164,11 +165,15 @@ function mergeMemberPatch(
 // ── Space target ───────────────────────────────────────────────────────────────
 
 /** The extras that live in the Space contact's `meta` jsonb (contacts has no phone/city
- *  columns; only email/display_name/consent/source are real columns). */
-function spaceMeta(c: ProjectedContact, defs: { key: string; label: string }[]): Record<string, unknown> {
+ *  columns; only email/display_name/consent/source are real columns).
+ *
+ *  `meta.custom` is keyed by the STABLE custom-field key (e.g. `lead_source`), NOT the human
+ *  label, so a later rename in the registry never orphans a stored value and a future
+ *  contact-scoped segment predicate can address a field by its stable key. The registry
+ *  (`custom_field_registry`) holds the key -> label/type mapping for display. */
+function spaceMeta(c: ProjectedContact): Record<string, unknown> {
   const custom: Record<string, string> = {}
-  const labelByKey = new Map(defs.map((d) => [d.key, d.label]))
-  for (const [k, v] of Object.entries(c.custom)) if (v) custom[labelByKey.get(k) ?? k] = v
+  for (const [k, v] of Object.entries(c.custom)) if (v) custom[k] = v
   const meta: Record<string, unknown> = { imported: true }
   if (c.phone) meta.phone = c.phone
   if (c.title) meta.title = c.title
@@ -197,7 +202,6 @@ async function commitToSpace(
   opts: { dedupePhone?: boolean } = {},
 ): Promise<CommitResult> {
   const db = createAdminClient()
-  const defs = customFieldDefs(row)
   const dedupePhone = opts.dedupePhone ?? false
 
   // Existing keys WITHIN this contacts scope. We key by email and (for the platform hub)
@@ -258,7 +262,7 @@ async function commitToSpace(
           display_name: c.displayName || null,
           consent_state: 'unknown', // a lead, never auto-subscribed (ADR-099)
           source: 'import',
-          meta: spaceMeta(c, defs),
+          meta: spaceMeta(c),
         } as unknown as Database['public']['Tables']['contacts']['Insert'])
         if (error) failed++
         else {
@@ -280,7 +284,7 @@ async function commitToSpace(
           failed++
           continue
         }
-        const nextMeta = mergeMeta(metaByKey.get(key) ?? {}, spaceMeta(c, defs), row.mergeStrategy)
+        const nextMeta = mergeMeta(metaByKey.get(key) ?? {}, spaceMeta(c), row.mergeStrategy)
         const patch: Record<string, unknown> = { last_seen_at: now, updated_at: now, meta: nextMeta }
         // Only fill the display name when overwriting, or when it is currently blank.
         if (c.displayName && row.mergeStrategy === 'overwrite') patch.display_name = c.displayName

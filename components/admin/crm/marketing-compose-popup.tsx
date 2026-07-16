@@ -27,37 +27,58 @@ export function MarketingComposePopup({
   open,
   onClose,
   segments,
+  campaignId,
 }: {
   open: boolean
   onClose: () => void
   /** Audience options for the send rail (all members + saved segments), from listSegmentOptions(). */
   segments: SegmentOption[]
+  /** Open an EXISTING campaign for editing. Omit to start a NEW draft. */
+  campaignId?: string
 }) {
   if (!open) return null
-  return <ComposeBody onClose={onClose} segments={segments} />
+  // Key by the campaign being edited (or 'new') so switching which one you open remounts cleanly.
+  return <ComposeBody key={campaignId ?? 'new'} onClose={onClose} segments={segments} campaignId={campaignId} />
 }
 
-function ComposeBody({ onClose, segments }: { onClose: () => void; segments: SegmentOption[] }) {
+function ComposeBody({
+  onClose,
+  segments,
+  campaignId,
+}: {
+  onClose: () => void
+  segments: SegmentOption[]
+  campaignId?: string
+}) {
   const [loaded, setLoaded] = useState<LoadedEmailCampaign | null>(null)
   const [error, setError] = useState<string | null>(null)
   const draftIdRef = useRef<string | null>(null)
 
-  // Open a draft on mount (createEmailDraft reuses the operator's pristine empty one, so opening the
-  // composer never mints a new blank row), then load it into the editor. On close, discard the draft if
-  // it is still untouched, so an abandoned "New email" never leaves a blank draft behind.
+  // Load the campaign into the editor. When a campaignId is given we open THAT existing campaign (edit /
+  // schedule / send in place). Otherwise we open a new draft — createEmailDraft reuses the operator's
+  // pristine empty one, so opening the composer never mints a blank row, and we discard it on close if it
+  // is still untouched so an abandoned "New email" never leaves a blank behind. An existing campaign is
+  // never discarded (draftIdRef stays null).
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const res = await createEmailDraft('campaign')
-      if (cancelled) return
-      if (isError(res)) {
-        setError(res.error)
-        return
+      let id = campaignId
+      if (!id) {
+        const res = await createEmailDraft('campaign')
+        if (cancelled) return
+        if (isError(res)) {
+          setError(res.error)
+          return
+        }
+        id = res.data.id
+        draftIdRef.current = id
       }
-      draftIdRef.current = res.data.id
       try {
-        const data = await loadEmailCampaign(res.data.id)
-        if (!cancelled) setLoaded(data)
+        const data = await loadEmailCampaign(id)
+        if (!cancelled) {
+          if (data) setLoaded(data)
+          else setError('That email could not be found.')
+        }
       } catch {
         if (!cancelled) setError('Could not open the composer. Try again.')
       }
@@ -67,7 +88,7 @@ function ComposeBody({ onClose, segments }: { onClose: () => void; segments: Seg
       const id = draftIdRef.current
       if (id) void discardDraftIfEmpty(id)
     }
-  }, [])
+  }, [campaignId])
 
   return (
     <Dialog open onClose={onClose} ariaLabel="New email" className="max-w-6xl !mt-0">

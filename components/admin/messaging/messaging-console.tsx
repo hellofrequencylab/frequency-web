@@ -27,6 +27,8 @@ export function MessagingConsole({
   funnels,
   onDeleteCampaign,
   deletingId,
+  onOpenCampaign,
+  onNewCampaign,
 }: {
   campaigns: MessagingCampaignItem[]
   funnels: MessagingFunnelItem[]
@@ -34,6 +36,11 @@ export function MessagingConsole({
   onDeleteCampaign?: (id: string) => void
   /** The id currently being deleted (its row shows a spinner / disabled state). */
   deletingId?: string | null
+  /** When provided, a campaign row's "Open" opens it IN PLACE (the CRM popup) instead of linking out
+   *  to the legacy composer. Omit to keep the legacy `href` link (the old messaging surface). */
+  onOpenCampaign?: (id: string) => void
+  /** When provided, the empty-state "start one" opens the in-place composer instead of the legacy wizard. */
+  onNewCampaign?: () => void
 }) {
   const [tab, setTab] = useState<Tab>(campaigns.length === 0 && funnels.length > 0 ? 'funnels' : 'campaigns')
 
@@ -57,7 +64,13 @@ export function MessagingConsole({
       </div>
 
       {tab === 'campaigns' ? (
-        <CampaignsPanel campaigns={campaigns} onDeleteCampaign={onDeleteCampaign} deletingId={deletingId} />
+        <CampaignsPanel
+          campaigns={campaigns}
+          onDeleteCampaign={onDeleteCampaign}
+          deletingId={deletingId}
+          onOpenCampaign={onOpenCampaign}
+          onNewCampaign={onNewCampaign}
+        />
       ) : (
         <FunnelsPanel funnels={funnels} />
       )}
@@ -103,21 +116,31 @@ function CampaignsPanel({
   campaigns,
   onDeleteCampaign,
   deletingId,
+  onOpenCampaign,
+  onNewCampaign,
 }: {
   campaigns: MessagingCampaignItem[]
   onDeleteCampaign?: (id: string) => void
   deletingId?: string | null
+  onOpenCampaign?: (id: string) => void
+  onNewCampaign?: () => void
 }) {
   if (campaigns.length === 0) {
     return (
       <EmptyState
         variant="first-use"
         title="No campaigns yet."
-        description="A campaign is one email sent to an audience, now or scheduled. Start one from New."
+        description="A campaign is one email sent to an audience, now or scheduled. Start one from New email."
         action={
-          <Link href="/admin/marketing/messaging/new" className={buttonClasses('primary', 'sm')}>
-            New message
-          </Link>
+          onNewCampaign ? (
+            <button type="button" onClick={onNewCampaign} className={buttonClasses('primary', 'sm')}>
+              New email
+            </button>
+          ) : (
+            <Link href="/admin/marketing/messaging/new" className={buttonClasses('primary', 'sm')}>
+              New message
+            </Link>
+          )
         }
       />
     )
@@ -149,12 +172,22 @@ function CampaignsPanel({
                 <td className="px-4 py-2.5 text-right tabular-nums text-muted">{c.recipientCount.toLocaleString()}</td>
                 <td className="px-4 py-2.5 text-right">
                   <div className="inline-flex items-center gap-3">
-                    <Link
-                      href={c.href}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
-                    >
-                      Open <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                    </Link>
+                    {onOpenCampaign ? (
+                      <button
+                        type="button"
+                        onClick={() => onOpenCampaign(c.id)}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
+                      >
+                        Open <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    ) : (
+                      <Link
+                        href={c.href}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
+                      >
+                        Open <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                      </Link>
+                    )}
                     {onDeleteCampaign && c.status === 'draft' && (
                       <button
                         type="button"

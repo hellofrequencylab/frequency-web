@@ -42,6 +42,17 @@ export interface SpaceContactIdentity {
   city: string | null
   consentState: string
   createdAt: string | null
+  /** Imported custom fields (from `contacts.meta.custom`), each with a display label humanized from its
+   *  stable key. Empty when the contact carries none. */
+  customFields: { key: string; label: string; value: string }[]
+}
+
+/** Turn a stable custom-field key into a display label: `lead_source` -> `Lead source`. (The registry
+ *  holds the operator's original label, but it is owner-scoped, so the detail surface humanizes the key
+ *  rather than doing a cross-owner registry read.) */
+function humanizeFieldKey(key: string): string {
+  const spaced = key.replace(/_/g, ' ').trim()
+  return spaced ? spaced.charAt(0).toUpperCase() + spaced.slice(1) : key
 }
 
 /** The Altitude 3 "where this person is" band + shared scores for the detail header. All fail-safe:
@@ -146,6 +157,11 @@ export async function getSpaceContactDetail(
     city: enrichment.city,
     consentState: contact.consent_state,
     createdAt: contact.created_at,
+    customFields: Object.entries(contact.custom ?? {}).map(([key, value]) => ({
+      key,
+      label: humanizeFieldKey(key),
+      value,
+    })),
   }
 
   // The Space's effective autonomy allowance sets the picker's EFFECTIVE tier (fail-closed to

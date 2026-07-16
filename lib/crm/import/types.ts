@@ -56,8 +56,13 @@ export interface ColumnMapping {
   reason: MappingReason
   /** The inferred value type from the column's sample values. */
   valueType: ValueType
-  /** When target='custom': the normalized custom-field key (e.g. 'lead_source'). */
+  /** When target='custom': the normalized custom-field key (e.g. 'lead_source'). This is the
+   *  STABLE handle values are stored + segmented under; it never changes when the label is edited. */
   customKey?: string
+  /** When target='custom': the human label the operator chose (e.g. 'Lead Source'). Defaults to
+   *  the source header. Drives the registry label + the contact-detail display; the key is derived
+   *  from it but pinned once chosen so a rename does not orphan stored values. */
+  customLabel?: string
 }
 
 // ── Parsed source ───────────────────────────────────────────────────────────────
