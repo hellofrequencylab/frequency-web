@@ -19,16 +19,24 @@ import { resolveMemberDay } from '@/lib/member-day'
 import { getMemberPractices, type TimerKind, type MindlessMode, type PartialToday } from '@/lib/practices'
 import type { MovementConfig } from '@/lib/movement'
 import { getCurrentLegPracticeIds } from '@/lib/journeys/current-leg'
-import { DEFAULT_PREFS, type OnAirPrefs } from '@/lib/on-air'
+import { DEFAULT_PREFS, coerceBellVolume, coerceAmbientVolume, type OnAirPrefs } from '@/lib/on-air'
 import type { OnAirPractice } from '@/components/on-air/session'
 
 /** The synthetic "Free sit" chip id. Selecting it runs the open timer; on completion it logs the
  *  default sit practice (so the one economy path, logPractice, is unchanged). Never a real id. */
 export const FREE_SIT_ID = '__free_sit__'
 
+/** The synthetic "Free Practice" chip id for the Get Moving side. Mirrors FREE_SIT_ID but logs the
+ *  default MOVEMENT practice, so a generic Get Moving run banks a movement practice, never a sit. */
+export const FREE_MOVE_ID = '__free_move__'
+
 /** The practice a Free sit logs (the canonical short Mind sit). Resolved by slug so swapping it is
  *  data, not code. */
 const DEFAULT_SIT_SLUG = 'morning-stillness'
+
+/** The practice a Get Moving Free Practice logs (the canonical daily walk). Resolved by slug so a
+ *  generic Get Moving session banks a MOVEMENT practice instead of the Be Still sit (item #1). */
+const DEFAULT_MOVE_SLUG = 'daily-walk'
 
 /** Everything OnAirSession needs to render the setup screen for a member. */
 export interface OnAirSessionData {
@@ -69,8 +77,15 @@ export async function loadOnAirSessionData(
   // midnight (~5pm Pacific), so an evening partial logged earlier the same local day stopped
   // matching and the timer opened fresh instead of resuming. resolveMemberDay fixes the boundary.
   const today = await resolveMemberDay(profileId)
-  const [legIds, mine, { data: prof }, { data: todayLogs }, { data: presenceRows }, { data: sitRow }] =
-    await Promise.all([
+  const [
+    legIds,
+    mine,
+    { data: prof },
+    { data: todayLogs },
+    { data: presenceRows },
+    { data: sitRow },
+    { data: moveRow },
+  ] = await Promise.all([
       getCurrentLegPracticeIds(profileId),
       getMemberPractices(profileId),
       admin.from('profiles').select('meta').eq('id', profileId).maybeSingle(),
@@ -88,6 +103,8 @@ export async function loadOnAirSessionData(
       admin.from('practice_logs').select('profile_id').eq('logged_for', today).limit(10000),
       // The Free sit's target practice (the canonical short sit).
       admin.from('practices').select('id, title').eq('slug', DEFAULT_SIT_SLUG).maybeSingle(),
+      // The Get Moving Free Practice's target practice (the canonical daily walk).
+      admin.from('practices').select('id, title').eq('slug', DEFAULT_MOVE_SLUG).maybeSingle(),
     ])
 
   type TodayLogRow = {
@@ -190,6 +207,27 @@ export async function loadOnAirSessionData(
     })
   }
 
+  // Free Practice (Get Moving) — the movement counterpart of the Free sit, so a generic Get Moving
+  // run banks a MOVEMENT practice (the daily walk) instead of the Be Still sit (item #1). timerKind
+  // 'movement' so the Get Moving engine resolves it as its default; open-length (no partial resume).
+  const move = moveRow as { id: string; title: string } | null
+  if (move) {
+    practices.push({
+      id: FREE_MOVE_ID,
+      title: 'Free Practice',
+      loggedToday: false,
+      partialToday: null,
+      durationMin: null,
+      logsAs: move.id,
+      timerKind: 'movement',
+      mindlessMode: null,
+      movementConfig: { mode: 'walk' } as MovementConfig,
+      durationLocked: false,
+      warmupMessage: null,
+      warmupSec: null,
+    })
+  }
+
   const practicedToday = new Set(
     ((presenceRows ?? []) as { profile_id: string | null }[])
       .map((l) => l.profile_id)
@@ -207,11 +245,13 @@ export async function loadOnAirSessionData(
     customOut: stored.customOut,
     bell: stored.bell,
     bellTone: stored.bellTone,
-    bellVolume: stored.bellVolume ?? DEFAULT_PREFS.bellVolume,
+    // Coerce migrates a legacy quiet/medium/loud string pref to the 0..1 slider scale.
+    bellVolume: coerceBellVolume(stored.bellVolume),
     endBell: stored.endBell ?? DEFAULT_PREFS.endBell,
     bellEveryMin: stored.bellEveryMin ?? DEFAULT_PREFS.bellEveryMin,
     haptics: stored.haptics,
     ambientTrack: stored.ambientTrack,
+    ambientVolume: coerceAmbientVolume(stored.ambientVolume),
     warmupSec: stored.warmupSec ?? DEFAULT_PREFS.warmupSec,
   }
 
@@ -227,11 +267,21 @@ export async function loadOnAirSessionData(
   //     practice with correct duration / type / logging, no picking.
   //  3. Once every adopted practice is done for the day (or there are none), the door defaults to
   //     Free Practice so the member can keep practicing beyond their daily requirement.
-  const dueTodayId = practices.find((p) => p.id !== FREE_SIT_ID && !p.loggedToday)?.id ?? null
+  // A practice with a banked-but-unfinished sit today is the FIRST thing the door resolves to —
+  // it counts as "still to do" even though it has a log row (loggedToday is true for a partial), so
+  // opening the timer picks up this morning's unfinished practice and resumes the remaining time.
+  // Then a practice not yet logged at all; Free Practice is the last resort.
+  // The shared default targets the Be Still side (a generic open lands there); exclude BOTH synthetic
+  // Free Practice chips so it is always a real practice, else the Free sit. The Get Moving engine
+  // resolves its own movement default (including the Free Move chip) from the same list.
+  const isReal = (p: OnAirPractice) => p.id !== FREE_SIT_ID && p.id !== FREE_MOVE_ID
+  const resumableId = practices.find((p) => isReal(p) && p.partialToday)?.id ?? null
+  const notLoggedId = practices.find((p) => isReal(p) && !p.loggedToday)?.id ?? null
+  const dueTodayId = resumableId ?? notLoggedId
   const defaultPracticeId =
     requestedPracticeId && practices.some((p) => p.id === requestedPracticeId)
       ? requestedPracticeId
-      : dueTodayId ?? (sit ? FREE_SIT_ID : practices.find((p) => p.id !== FREE_SIT_ID)?.id ?? null)
+      : dueTodayId ?? (sit ? FREE_SIT_ID : practices.find((p) => isReal(p))?.id ?? null)
 
   return { practices, defaultPracticeId, prefs, practicedToday }
 }

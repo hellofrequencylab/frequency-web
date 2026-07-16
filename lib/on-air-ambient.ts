@@ -18,7 +18,16 @@ const FADE_OUT_SEC = 1.5 // the close, and the duck floor on pause
 const DUCK_SEC = 0.4 // pause: how fast it falls quiet
 const LIFT_SEC = 0.6 // resume: how fast it comes back
 const XFADE_SEC = 6 // the seam blend (clamped to 40% of the track for short clips)
-const TARGET_GAIN = 0.4 // a soft background level, well under the bell and a voice
+
+/** The ambient gain at 100% volume. Raised well above the old fixed 0.4 so a member who wants
+ *  the background louder can actually get there, while the top of the slider still sits under
+ *  the bell + a speaking voice. The member's 0..1 volume scales this. */
+export const AMBIENT_MAX_GAIN = 0.9
+
+/** Fallback volume when a caller passes none (0..1). Mirrors lib/on-air DEFAULT_AMBIENT_VOLUME. */
+const DEFAULT_VOLUME = 0.7
+
+const clamp01 = (v: number) => (Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : DEFAULT_VOLUME)
 
 // Keep only the most recently decoded loop in memory — a decoded ambient track
 // is large (tens of MB), and only one ever plays. The common path (audition a
@@ -65,6 +74,9 @@ export interface AmbientHandle {
   pause(): void
   /** Lift back to the soft background level (resume). */
   resume(): void
+  /** Live-set the loudness (0..1) while playing — the setup volume slider rides this so a
+   *  member hears the change on the audition without restarting the loop. */
+  setVolume(volume: number): void
   /** Fade out and stop for good. */
   stop(): void
 }
@@ -75,6 +87,8 @@ export interface AmbientOptions {
   /** If set, auto fade-out and stop this many seconds after playback begins.
    *  Used for the setup audition so nothing lingers into the sit. */
   autoStopAfterSec?: number
+  /** Loudness as a 0..1 fraction of AMBIENT_MAX_GAIN. Defaults to DEFAULT_VOLUME. */
+  volume?: number
 }
 
 /** Start an ambient loop on the given (already gesture-unlocked) context. Returns
@@ -86,6 +100,11 @@ export function createAmbient(ctx: AudioContext, url: string, opts: AmbientOptio
 
   let source: AudioBufferSourceNode | null = null
   let stopped = false
+  // The member's chosen loudness → the effective playing gain. Held mutably so setVolume can
+  // move it live, and so pause/resume know the level to fall from and lift back to. `paused`
+  // keeps a live volume change from lifting a ducked (paused) loop back up.
+  let target = clamp01(opts.volume ?? DEFAULT_VOLUME) * AMBIENT_MAX_GAIN
+  let paused = false
 
   void loadLoopBuffer(ctx, url)
     .then((buffer) => {
@@ -101,11 +120,11 @@ export function createAmbient(ctx: AudioContext, url: string, opts: AmbientOptio
       const g = gain.gain
       g.cancelScheduledValues(t0)
       g.setValueAtTime(0.0001, t0)
-      g.linearRampToValueAtTime(TARGET_GAIN, t0 + fadeIn)
+      g.linearRampToValueAtTime(target, t0 + fadeIn)
 
       if (opts.autoStopAfterSec != null) {
         const stopAt = t0 + Math.max(opts.autoStopAfterSec, fadeIn)
-        g.setValueAtTime(TARGET_GAIN, stopAt)
+        g.setValueAtTime(target, stopAt)
         g.linearRampToValueAtTime(0.0001, stopAt + FADE_OUT_SEC)
         try {
           source.stop(stopAt + FADE_OUT_SEC + 0.05)
@@ -132,10 +151,18 @@ export function createAmbient(ctx: AudioContext, url: string, opts: AmbientOptio
 
   return {
     pause() {
+      paused = true
       rampTo(0.0001, DUCK_SEC)
     },
     resume() {
-      rampTo(TARGET_GAIN, LIFT_SEC)
+      paused = false
+      rampTo(target, LIFT_SEC)
+    },
+    setVolume(volume: number) {
+      target = clamp01(volume) * AMBIENT_MAX_GAIN
+      // Only move the audible level when actually playing — a paused loop stays ducked and
+      // lifts to the NEW target on resume. A short ramp so a slider drag reads as smooth.
+      if (!paused && !stopped) rampTo(target, 0.15)
     },
     stop() {
       stopped = true

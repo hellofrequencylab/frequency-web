@@ -46,9 +46,11 @@ export function useMovement(): MovementApi {
     (opts) =>
       mindless.open({
         practiceId: opts?.practiceId,
-        // A bare Get Moving open with no sub-mode still routes to Get Moving: the door treats a
-        // `mode` of undefined-but-movement-intent via 'play' so the neutral Free Practice opens.
-        mode: opts?.mode ?? 'play',
+        // A bare Get Moving open (no practice) forces 'play' so the neutral Free Practice opens in
+        // Get Moving. But when a PRACTICE is named, leave the sub-mode undefined so the door reads
+        // the practice's authored movement_config (resolveDefaultMode) instead of forcing Play over
+        // an authored Strength/Tabata preset.
+        mode: opts?.mode ?? (opts?.practiceId ? undefined : 'play'),
         resumeFromSec: opts?.resumeFromSec,
         secondsTarget: opts?.secondsTarget,
         autoStart: opts?.autoStart,

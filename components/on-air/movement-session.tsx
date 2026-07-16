@@ -171,6 +171,7 @@ export function MovementSession({
   onCompleted,
   resumeRecord,
   onExit,
+  onLeaveViaLink,
   mode: doorMode,
   onModeChange,
 }: {
@@ -207,6 +208,9 @@ export function MovementSession({
   resumeRecord?: LiveSessionRecord | null
   /** Overlay mode: leaving CLOSES the overlay via this callback instead of navigating. */
   onExit?: () => void
+  /** A reveal DEEP-LINK exit (the member tapped Vera's dispatch link and is navigating away):
+   *  close the overlay WITHOUT advancing a sequenced run over the new page. Falls back to onExit. */
+  onLeaveViaLink?: () => void
   /** The unified-door mode this session is showing ('move'). Only meaningful with onModeChange. */
   mode?: TimerMode
   /** When provided (the unified Mindless door), the setup masthead renders the Be Still | Get
@@ -218,8 +222,22 @@ export function MovementSession({
   const [stage, setStage] = useState<Stage>('setup')
 
   // --- setup state ----------------------------------------------------------
+  // Get Moving must resolve a MOVEMENT practice, never a Be Still one: the shared loader default
+  // (defaultPracticeId) is mode-agnostic and can be a Mind sit / log-only practice (e.g. "One Small
+  // Reach"), which a walk must not log against (item #1). Prefer, in order: the shared default when
+  // it IS a movement practice, a movement practice with a partial today, a movement practice not yet
+  // logged, then any movement practice (the loader's movement Free Practice is one). Only if there is
+  // no movement practice at all do we fall back to the old resolution.
+  const isMove = (p: OnAirPractice) => p.timerKind === 'movement'
   const initialId =
-    defaultPracticeId ?? practices.find((p) => !p.loggedToday)?.id ?? practices[0]?.id ?? ''
+    (defaultPracticeId && practices.find((p) => p.id === defaultPracticeId && isMove(p))?.id) ||
+    practices.find((p) => isMove(p) && p.partialToday)?.id ||
+    practices.find((p) => isMove(p) && !p.loggedToday)?.id ||
+    practices.find((p) => isMove(p))?.id ||
+    defaultPracticeId ||
+    practices.find((p) => !p.loggedToday)?.id ||
+    practices[0]?.id ||
+    ''
 
   // The resume point for a practice, in { bankedSec, targetSec }. The SELECTED practice's
   // `partialToday` is now the PRIMARY source (so a Zap-menu / chooser / auto-select all resume),
@@ -424,9 +442,12 @@ export function MovementSession({
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [stage])
 
-  // Let the audio context go when the surface unmounts.
+  // Release everything the takeover holds when the surface unmounts. finish()/leave() already run
+  // releaseQuiet() on the normal exits; this is the backstop for an UNEXPECTED unmount (e.g. the
+  // provider closing the overlay mid-run) so the screen wake lock + fullscreen never leak.
   useEffect(() => {
     const ctx = audio
+    const lock = wakeLock
     return () => {
       try {
         void ctx.current?.close()
@@ -434,6 +455,13 @@ export function MovementSession({
         // already closed
       }
       ctx.current = null
+      try {
+        void lock.current?.release()
+      } catch {
+        // already released
+      }
+      lock.current = null
+      void exitAppFullscreen()
     }
   }, [])
 
@@ -738,8 +766,15 @@ export function MovementSession({
 
   async function finish() {
     if (finishing.current) return
-    finishing.current = true
     const e = pausedAt !== null ? (pausedAt - startedAt) / 1000 : (Date.now() - startedAt) / 1000
+    // Warm-up / no-op guard: an end before ANY real airtime this session (still in the pre-roll, or
+    // paused at zero) banks nothing — leave instead of writing a 0-second junk log or re-banking a
+    // resume's already-counted time. A run that actually elapsed always has e > 0 here.
+    if (Math.round(e) <= 0) {
+      leave()
+      return
+    }
+    finishing.current = true
     // The total banked = what an earlier partial already banked (resumeOffset, 0 for a
     // fresh sit) + this session's own elapsed. Capped so we never log more than the
     // whole practice: on a "Finish Practice" resume the cap is the authored target
@@ -828,7 +863,7 @@ export function MovementSession({
             You finished it. The rest of the Zaps just landed.
           </div>
         )}
-        <Reveal payload={payload} onClose={closeReveal} onAction={onExit} />
+        <Reveal payload={payload} onClose={closeReveal} onAction={onLeaveViaLink ?? onExit} />
       </Overlay>
     )
   }
@@ -1002,6 +1037,15 @@ export function MovementSession({
             className="rounded-full px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
           >
             Stop &amp; Log
+          </button>
+          {/* Cancel: leave the run WITHOUT logging (item #3) — drops it, banks nothing. Subordinate
+              to Stop & Log so the default stays "log it". */}
+          <button
+            type="button"
+            onClick={leave}
+            className="rounded-full px-4 py-1 text-2xs font-medium text-subtle transition-colors hover:text-danger"
+          >
+            Cancel · don&rsquo;t log
           </button>
         </div>
       </Overlay>
@@ -1222,8 +1266,10 @@ export function MovementSession({
         )}
 
         {/* Practice read-out (which log this banks). No picker: the door already resolved what to
-            run, so this just shows the member which log the Start button banks. */}
-        {practice && (
+            run. NEVER shown for the Free Practice fallback (a `logsAs` chip that maps to the Be
+            Still meditation sit) — a Get Moving run must not advertise "Logs as One Small Reach"
+            (item #1). Mirrors the Be Still guard in session.tsx. */}
+        {practice && !practice.logsAs && (
           <p className="flex min-w-0 items-center justify-center gap-1.5 text-sm text-text">
             <span className="shrink-0 text-subtle">Logs as</span>
             <span className="truncate font-semibold">{practice.title}</span>

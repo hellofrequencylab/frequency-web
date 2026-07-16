@@ -48,10 +48,13 @@
 | Mode labels | `lib/on-air.ts` (Mindless), `lib/movement.ts` (Movement) | Source of truth for member-facing labels. |
 | Achieved-tier helpers | `lib/practices/tiers.ts` (ADR-442) | `TIER_ZAPS`, floors, `coerceTierZaps`; reused here. |
 
-**Known mode-accuracy bugs to fix (your explicit concern):**
-- 🔴 `reveal.tsx` Stats row hardcodes **"This sit"** even for a walk/yoga/run session.
-- 🔴 Stats uses the **retired word "Deep"** ("10 to 25 Deep") — NAMING.md violation.
-- 🔴 The **Vera AI fallback** dispatch never receives the activity, so on the fallback path it can't name what they did (and could read generic/wrong).
+**Known mode-accuracy bugs (your explicit concern):**
+- ✅ `reveal.tsx` Stats row now reads `stats.sessionLabel` (`reveal.tsx:431`), named after what was
+  actually done ("This walk" / "This sit") via `statSessionLabel` (`lib/on-air.ts`). Fixed (ADR-443).
+- ✅ The retired word "Deep" is gone from the Stats row; depth marks use the neutral copy. Fixed.
+- ⚠️ The **primary** Dispatch path now receives the activity (`dispatchKind` → `buildSessionDispatch`,
+  `actions.ts`), so it names what was done. The **cached Vera AI fallback** (`getOrCreateDispatch`, only
+  when both state reads throw) still does not carry the kind — a rare last-resort line stays generic.
 
 ---
 

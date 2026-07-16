@@ -344,12 +344,42 @@ export function ambientTrackBySlug(slug: string | null | undefined): AmbientTrac
   return AMBIENT_TRACKS.find((t) => t.slug === slug) ?? null
 }
 
-/** Bell loudness: scales the synth peak. Quiet/Loud sit either side of the
- *  default. Kept well under earbud-hostile levels even at Loud. */
-export type BellVolume = 'quiet' | 'medium' | 'loud'
+/** Bell loudness as a 0..1 fraction of the bell's max gain — a continuous volume slider.
+ *  (Was the three presets quiet/medium/loud; those legacy strings still coerce, below, so a
+ *  member's stored pref keeps the exact loudness it always had.) */
+export type BellVolume = number
 
-export function bellVolumeScale(v: BellVolume | null | undefined): number {
-  return v === 'quiet' ? 0.6 : v === 'loud' ? 1.5 : 1
+/** The bell synth-peak multiplier at 100% volume. A touch above the old "loud" preset (1.5)
+ *  so the top of the slider is clearly loud, while the soft-attack synth stays clip-free. */
+export const BELL_MAX_GAIN = 1.6
+
+/** Default bell volume for a fresh member (0..1). Lands just above the old "medium". */
+export const DEFAULT_BELL_VOLUME = 0.7
+
+// Old string presets → the 0..1 scale, chosen so quiet/medium/loud migrate to the SAME gain
+// they always had (0.6 / 1.0 / 1.5 once multiplied by BELL_MAX_GAIN = 1.6).
+const LEGACY_BELL_VOLUME: Record<string, number> = { quiet: 0.375, medium: 0.625, loud: 0.9375 }
+
+/** Clamp any bell-volume input (a 0..1 number, or a legacy quiet/medium/loud string) to 0..1. */
+export function coerceBellVolume(v: number | string | null | undefined): number {
+  if (typeof v === 'number' && Number.isFinite(v)) return Math.min(1, Math.max(0, v))
+  if (typeof v === 'string' && v in LEGACY_BELL_VOLUME) return LEGACY_BELL_VOLUME[v]
+  return DEFAULT_BELL_VOLUME
+}
+
+/** The synth-peak multiplier for a bell volume: 0..1 → 0..BELL_MAX_GAIN. Accepts the legacy
+ *  string presets too, so an un-migrated stored pref still rings at its old loudness. */
+export function bellVolumeScale(v: number | string | null | undefined): number {
+  return coerceBellVolume(v) * BELL_MAX_GAIN
+}
+
+/** Default ambient background volume for a fresh member (0..1). Above the old fixed level so a
+ *  default sit is a little more present; the ambient module scales it by its own max gain. */
+export const DEFAULT_AMBIENT_VOLUME = 0.7
+
+/** Clamp an ambient-volume input to the 0..1 slider scale, defaulting when absent/invalid. */
+export function coerceAmbientVolume(v: number | null | undefined): number {
+  return typeof v === 'number' && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : DEFAULT_AMBIENT_VOLUME
 }
 
 /** Interval-bell choices for Meditate mode (minutes between strikes). 0 = off. */
@@ -389,6 +419,8 @@ export interface OnAirPrefs {
   haptics?: boolean
   /** Ambient background loop slug (AMBIENT_TRACKS), or null/absent for none. */
   ambientTrack?: string | null
+  /** Ambient loop loudness as a 0..1 fraction of the ambient max gain. Default DEFAULT_AMBIENT_VOLUME. */
+  ambientVolume?: number
   /** The warm-up countdown before a sit begins, in seconds: 3 | 5 | 10. Default 5
    *  (the original pre-roll). Drives the armed pre-roll on the live screen. */
   warmupSec?: number
@@ -454,11 +486,12 @@ export const DEFAULT_PREFS: OnAirPrefs = {
   minutes: 10,
   bell: true,
   bellTone: 'amber',
-  bellVolume: 'medium',
+  bellVolume: DEFAULT_BELL_VOLUME,
   bellEveryMin: 0,
   endBell: true,
   haptics: true,
   ambientTrack: 'forest',
+  ambientVolume: DEFAULT_AMBIENT_VOLUME,
   warmupSec: 5,
 }
 

@@ -14,7 +14,7 @@ import { getPracticeStreak } from '@/lib/practice-streak'
 import { amplitudeLevel } from '@/lib/amplitude'
 import { getOrCreateDispatch } from '@/lib/vera-dispatch'
 import { getNextGathering } from '@/lib/quest/next-gathering'
-import { buildSessionDispatch, statSessionLabel } from '@/lib/on-air'
+import { buildSessionDispatch, modeHasNote, statSessionLabel } from '@/lib/on-air'
 import { loadOnAirSessionData, type OnAirSessionData } from '@/lib/on-air/session-data'
 import type { DispatchKind, OnAirPrefs, RevealPayload, SessionMode } from '@/lib/on-air'
 
@@ -75,14 +75,30 @@ export interface CompleteSessionInput {
   customOut?: number
   bell?: boolean
   bellTone?: string
-  bellVolume?: 'quiet' | 'medium' | 'loud'
+  /** Bell loudness as a 0..1 slider fraction (was the quiet/medium/loud presets). */
+  bellVolume?: number
   endBell?: boolean
   bellEveryMin?: number
   haptics?: boolean
   /** Ambient loop slug, null = none. */
   ambientTrack?: string | null
+  /** Ambient loop loudness as a 0..1 slider fraction. */
+  ambientVolume?: number
   /** The warm-up countdown length (3 | 5 | 10s), remembered with the rest of the setup. */
   warmupSec?: number
+  /** The optional free-text reflection from a Journal / Just Log session. Trimmed + capped
+   *  server-side; empty becomes null. Stored on the session history row, never the economy. */
+  note?: string | null
+}
+
+/** The longest a stored session note may be (characters). Trimmed + capped server-side so a
+ *  crafted request can't write an unbounded blob into history. */
+const SESSION_NOTE_MAX = 2000
+
+/** Trim + cap a session note; an empty string (or whitespace) becomes null. */
+function cleanSessionNote(v: string | null | undefined): string | null {
+  const t = (v ?? '').trim().slice(0, SESSION_NOTE_MAX)
+  return t.length ? t : null
 }
 
 export async function completeSession(
@@ -103,14 +119,20 @@ export async function completeSession(
   // `mode` column so it reads back distinct from a Mindless sit; everything else
   // (economy, timer-proof) treats it as the timed sit it is.
   const sessionMode = input.movementMode ? `movement:${input.movementMode}` : input.mode
-  await admin.from('practice_sessions').insert({
+  // The Journal / Just Log reflection rides on the history row (nullable, trimmed + capped).
+  // Only these note-bearing modes can carry one; anything else stores null.
+  const note = modeHasNote(input.mode) ? cleanSessionNote(input.note) : null
+  const sessionRow = {
     profile_id: profileId,
     practice_id: input.practiceId,
     mode: sessionMode,
     pattern: input.mode === 'breath' ? input.pattern : null,
     seconds,
     started_at: input.startedAt,
-  })
+  }
+  // `note` is newer than the generated types (ADR-246); the cast keeps the base fields
+  // type-checked while still sending the column. Regenerate lib/database.types.ts to drop it.
+  await admin.from('practice_sessions').insert({ ...sessionRow, note } as typeof sessionRow)
 
   // Logging ENDS the run: drop the server-authoritative active timer session (ADR-521)
   // so it never resumes after the sit is banked. Self-scoped (profile_id), best-effort
@@ -147,8 +169,8 @@ export async function completeSession(
       bell: typeof input.bell === 'boolean' ? input.bell : prior.bell,
       bellTone: typeof input.bellTone === 'string' ? input.bellTone : prior.bellTone,
       bellVolume:
-        input.bellVolume === 'quiet' || input.bellVolume === 'medium' || input.bellVolume === 'loud'
-          ? input.bellVolume
+        typeof input.bellVolume === 'number' && Number.isFinite(input.bellVolume)
+          ? Math.min(1, Math.max(0, input.bellVolume))
           : prior.bellVolume,
       endBell: typeof input.endBell === 'boolean' ? input.endBell : prior.endBell,
       bellEveryMin:
@@ -158,6 +180,10 @@ export async function completeSession(
       haptics: typeof input.haptics === 'boolean' ? input.haptics : prior.haptics,
       // null = the member turned it off (persist that); undefined = keep prior.
       ambientTrack: input.ambientTrack === undefined ? prior.ambientTrack : input.ambientTrack,
+      ambientVolume:
+        typeof input.ambientVolume === 'number' && Number.isFinite(input.ambientVolume)
+          ? Math.min(1, Math.max(0, input.ambientVolume))
+          : prior.ambientVolume,
       // The warm-up length (3 | 5 | 10s), clamped to a valid preset; keep prior otherwise.
       warmupSec:
         input.warmupSec === 3 || input.warmupSec === 5 || input.warmupSec === 10
