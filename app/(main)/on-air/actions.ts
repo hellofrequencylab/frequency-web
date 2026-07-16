@@ -14,7 +14,7 @@ import { getPracticeStreak } from '@/lib/practice-streak'
 import { amplitudeLevel } from '@/lib/amplitude'
 import { getOrCreateDispatch } from '@/lib/vera-dispatch'
 import { getNextGathering } from '@/lib/quest/next-gathering'
-import { buildSessionDispatch, statSessionLabel } from '@/lib/on-air'
+import { buildSessionDispatch, modeHasNote, statSessionLabel } from '@/lib/on-air'
 import { loadOnAirSessionData, type OnAirSessionData } from '@/lib/on-air/session-data'
 import type { DispatchKind, OnAirPrefs, RevealPayload, SessionMode } from '@/lib/on-air'
 
@@ -83,6 +83,19 @@ export interface CompleteSessionInput {
   ambientTrack?: string | null
   /** The warm-up countdown length (3 | 5 | 10s), remembered with the rest of the setup. */
   warmupSec?: number
+  /** The optional free-text reflection from a Journal / Just Log session. Trimmed + capped
+   *  server-side; empty becomes null. Stored on the session history row, never the economy. */
+  note?: string | null
+}
+
+/** The longest a stored session note may be (characters). Trimmed + capped server-side so a
+ *  crafted request can't write an unbounded blob into history. */
+const SESSION_NOTE_MAX = 2000
+
+/** Trim + cap a session note; an empty string (or whitespace) becomes null. */
+function cleanSessionNote(v: string | null | undefined): string | null {
+  const t = (v ?? '').trim().slice(0, SESSION_NOTE_MAX)
+  return t.length ? t : null
 }
 
 export async function completeSession(
@@ -103,14 +116,20 @@ export async function completeSession(
   // `mode` column so it reads back distinct from a Mindless sit; everything else
   // (economy, timer-proof) treats it as the timed sit it is.
   const sessionMode = input.movementMode ? `movement:${input.movementMode}` : input.mode
-  await admin.from('practice_sessions').insert({
+  // The Journal / Just Log reflection rides on the history row (nullable, trimmed + capped).
+  // Only these note-bearing modes can carry one; anything else stores null.
+  const note = modeHasNote(input.mode) ? cleanSessionNote(input.note) : null
+  const sessionRow = {
     profile_id: profileId,
     practice_id: input.practiceId,
     mode: sessionMode,
     pattern: input.mode === 'breath' ? input.pattern : null,
     seconds,
     started_at: input.startedAt,
-  })
+  }
+  // `note` is newer than the generated types (ADR-246); the cast keeps the base fields
+  // type-checked while still sending the column. Regenerate lib/database.types.ts to drop it.
+  await admin.from('practice_sessions').insert({ ...sessionRow, note } as typeof sessionRow)
 
   // Logging ENDS the run: drop the server-authoritative active timer session (ADR-521)
   // so it never resumes after the sit is banked. Self-scoped (profile_id), best-effort

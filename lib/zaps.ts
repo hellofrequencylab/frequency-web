@@ -212,3 +212,26 @@ export async function awardZapsForAction(
   const amount = overrideAmount ?? cfg?.zaps_amount ?? ZAP_AMOUNTS[action]
   return awardZaps(profileId, amount, { actionType: action })
 }
+
+/**
+ * READ (never award) the LIVE per-action Zap amount from the tunable `zap_config`
+ * table, falling back to the static ZAP_AMOUNTS default. This is the read-only sibling
+ * of `awardZapsForAction`, so a caller that needs to SIZE a payout (e.g. the practice
+ * finish top-up computing the remaining delta) reads the same live number the award
+ * path would pay, instead of the static default. An inactive action reads 0. Best-effort:
+ * any read failure falls back to the static default.
+ */
+export async function zapAmountForAction(action: ZapAction): Promise<number> {
+  try {
+    const admin = createAdminClient()
+    const { data: cfg } = await admin
+      .from('zap_config')
+      .select('zaps_amount, is_active')
+      .eq('action_type', action)
+      .maybeSingle()
+    if (cfg && !cfg.is_active) return 0
+    return cfg?.zaps_amount ?? ZAP_AMOUNTS[action]
+  } catch {
+    return ZAP_AMOUNTS[action]
+  }
+}

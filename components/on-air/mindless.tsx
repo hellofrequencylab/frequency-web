@@ -203,6 +203,15 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
     close()
   }, [close])
 
+  // A reveal DEEP-LINK exit (the member tapped Vera's "See your practices" / "View event" and is
+  // navigating away): close the overlay WITHOUT advancing a sequenced run onto the page they just
+  // opened. Distinct from advanceOrClose (the reveal's normal close/swipe, which may roll to the
+  // next leg). Clearing legDone first guarantees no auto-advance rides over the navigation.
+  const leaveViaLink = useCallback(() => {
+    legDoneRef.current = false
+    close()
+  }, [close])
+
   // The open implementation. `forceMode` is the crash-recovery override (open Get Moving so the
   // Movement engine, which owns the saved 'movement' record, mounts and re-prompts).
   const openInternal = useCallback((opts?: MindlessOpenOpts, forceMode?: TimerMode) => {
@@ -411,6 +420,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             // Cross-device resume (ADR-521): the server active run, if it is a movement run.
             resumeRecord={serverResume?.kind === 'movement' ? serverResume : null}
             onExit={advanceOrClose}
+            // A reveal deep-link closes the overlay without advancing the sequence over the new page.
+            onLeaveViaLink={leaveViaLink}
             // The Be Still | Get Moving toggle: passing onModeChange tells the session it's inside
             // the unified door (the standalone /on-air route omits it, so no toggle there).
             mode={state.mode}
@@ -434,6 +445,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             // Cross-device resume (ADR-521): the server active run, if it is a sit.
             resumeRecord={serverResume?.kind === 'mindless' ? serverResume : null}
             onExit={advanceOrClose}
+            // A reveal deep-link closes the overlay without advancing the sequence over the new page.
+            onLeaveViaLink={leaveViaLink}
             mode={state.mode}
             onModeChange={setMode}
           />

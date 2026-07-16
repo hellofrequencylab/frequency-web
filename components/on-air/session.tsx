@@ -246,6 +246,7 @@ export function OnAirSession({
   queuePosition,
   onCompleted,
   onExit,
+  onLeaveViaLink,
   mode: doorMode,
   onModeChange,
 }: {
@@ -282,6 +283,9 @@ export function OnAirSession({
    *  CLOSES the overlay via this callback instead of navigating the router. The
    *  route page (/on-air) omits it, keeping its back/replace exit unchanged. */
   onExit?: () => void
+  /** A reveal DEEP-LINK exit (the member tapped Vera's dispatch link and is navigating away):
+   *  close the overlay WITHOUT advancing a sequenced run over the new page. Falls back to onExit. */
+  onLeaveViaLink?: () => void
   /** The unified-door mode this session is showing ('still'). Only meaningful with onModeChange. */
   mode?: TimerMode
   /** When provided (the unified Mindless door), the setup masthead renders the Be Still | Get
@@ -579,10 +583,13 @@ export function OnAirSession({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, startedAt, minutes, pausedAt])
 
-  // Let the audio context go when the surface unmounts.
+  // Release everything the takeover holds when the surface unmounts. finish()/leave() already run
+  // releaseQuiet() on the normal exits; this is the backstop for an UNEXPECTED unmount (e.g. the
+  // provider closing the overlay mid-sit) so the screen wake lock + fullscreen never leak.
   useEffect(() => {
     const ctx = audio
     const amb = ambient
+    const lock = wakeLock
     return () => {
       try {
         amb.current?.stop()
@@ -596,6 +603,13 @@ export function OnAirSession({
         // already closed
       }
       ctx.current = null
+      try {
+        void lock.current?.release()
+      } catch {
+        // already released
+      }
+      lock.current = null
+      void exitAppFullscreen()
     }
   }, [])
 
@@ -725,7 +739,20 @@ export function OnAirSession({
     if (loadLiveSession<MindlessSetup>('mindless') || resumeRecord) return
     if (!initialId) return
     if (mode === 'log') return // a Just Log practice has no countdown to auto-run
-    void start({ practiceId: initialId, mode, minutes })
+    // Mirror the footer button's Free Practice remap: when the resolved practice is log-only and the
+    // routed mode is timed, run + log the Free Practice fallback (not the log-only id). Without this,
+    // an auto-started 'none' practice logged the timed sit against the wrong practice.
+    if (runningFree) {
+      // Commit Free Practice as the selected id so a later finish() (which reads practiceId state,
+      // not an override) logs against it. Runs once on mount, like the other autoStart state writes.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPracticeId(runPracticeId)
+      resumeBanked.current = 0
+      resumeTarget.current = 0
+      void start({ practiceId: runPracticeId, mode, minutes })
+    } else {
+      void start({ practiceId: initialId, mode, minutes })
+    }
     // Run once on mount; the initial mode/minutes are the seeded state for the launched practice.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -979,18 +1006,29 @@ export function OnAirSession({
 
   async function finish(early: boolean) {
     if (finishing.current) return
-    finishing.current = true
     // The end bell already rang when the clock hit zero; an early Close Session
     // gets a small ack tap only. Paused time never counts as airtime.
     const elapsedMs = (pausedAt ?? Date.now()) - startedAt
     const actual = Math.max(0, Math.round(elapsedMs / 1000))
+    // Warm-up / no-op guard: an early close before ANY real airtime this session (still in the
+    // pre-roll, or paused at zero) banks nothing — leave instead of writing a 0-second junk log or
+    // re-banking a resume's already-counted time. A full finish (the clock ran out) is never here.
+    if (early && actual <= 0) {
+      leave()
+      return
+    }
+    finishing.current = true
     // Auto-continue (ADR-443): a full Finish banks the ACTUAL time, so a sit that ran past
     // its target earns the deeper tier. Floored at the target so a finish a beat early never
     // reads as a partial. An early Close banks exactly what was sat (may be a partial).
     const thisSession = early ? actual : Math.max(minutes * 60, actual)
     // A resume runs the REMAINING time; report the TOTAL (banked + this session) so the server
     // tops the partial log up to its full target. A fresh sit has resumeBanked = 0.
-    const seconds = resumeBanked.current + thisSession
+    let seconds = resumeBanked.current + thisSession
+    // Resume finish cap: a resumed sit reports the total but never MORE than its full target, so a
+    // rounded-up remaining minute can't overshoot (mirrors Get Moving's finishCap). A fresh sit
+    // (resumeTarget 0) stays uncapped so auto-continue banks overtime past the target (ADR-443).
+    if (resumeTarget.current > 0) seconds = Math.min(seconds, resumeTarget.current)
     if (haptics && early) buzz(10)
     await finishWith(seconds, new Date(startedAt).toISOString(), undefined, activeModeRef.current)
   }
@@ -1040,6 +1078,9 @@ export function OnAirSession({
       haptics,
       ambientTrack: ambientSlug,
       warmupSec,
+      // The Journal / Just Log reflection (server trims + caps it, and only stores it for a
+      // note-bearing mode). Empty stays empty; the server maps it to null.
+      note: modeHasNote(sentMode) ? note : null,
     })
     finishing.current = false
     if (isError(result)) {
@@ -1168,7 +1209,7 @@ export function OnAirSession({
             <p className="mt-1 text-xs text-muted">Full sit, full reward. Nice work.</p>
           </div>
         )}
-        <Reveal payload={payload} onClose={closeReveal} onAction={onExit} />
+        <Reveal payload={payload} onClose={closeReveal} onAction={onLeaveViaLink ?? onExit} />
       </Overlay>
     )
   }

@@ -1858,10 +1858,14 @@ async function practiceFullReward(practiceId: string, tier?: PracticeTier | null
       .eq('id', practiceId)
       .maybeSingle()
     const row = data as { weight_class: string | null; reward_zaps: number | null } | null
-    const { practiceZapValue } = await import('@/lib/zaps')
-    // ADR-443: a timed sit values by the tier its real time REACHED (`tier`), not the
-    // creator's weight class; reward_zaps (the staff/cadence override) still wins when set.
-    return practiceZapValue({ reward_zaps: row?.reward_zaps ?? null, weight_class: tier ?? row?.weight_class ?? null })
+    // reward_zaps (the staff/cadence override) still wins exactly when set.
+    if (typeof row?.reward_zaps === 'number' && row.reward_zaps > 0) return Math.floor(row.reward_zaps)
+    // ADR-443: a timed sit values by the tier its real time REACHED (`tier`), else the creator's
+    // weight class. Size the delta from the LIVE zap_config amount (the same number the one-shot
+    // full path pays via awardZapsForAction), so partial + finish totals the full even when an
+    // operator has tuned zap_config away from the static ZAP_AMOUNTS defaults.
+    const { practiceLogAction, zapAmountForAction } = await import('@/lib/zaps')
+    return await zapAmountForAction(practiceLogAction(tier ?? row?.weight_class ?? null))
   } catch {
     return 0
   }
@@ -1994,7 +1998,9 @@ export async function logPractice(input: {
     if (isFullSit) {
       // Top up to complete: flip completed=true, raise seconds_done, and pay the REST of
       // the reward (the delta the partial held back), so partial + finish totals the full.
-      const alreadyPaid = Math.max(0, existing.zaps_awarded ?? 0)
+      // A partial ALWAYS paid PARTIAL_ZAPS; if its best-effort zaps_awarded write failed the
+      // column is null, so floor to PARTIAL_ZAPS (never 0) or the finish overpays by that 1 Zap.
+      const alreadyPaid = Math.max(0, existing.zaps_awarded ?? PARTIAL_ZAPS)
       const delta = Math.max(0, fullReward - alreadyPaid)
       // COMPARE-AND-SWAP the completion flip FIRST, gated on completed=false, so two concurrent
       // finishes (a double tap, a client retry) can never both pay the top-up: Postgres locks the
@@ -2202,8 +2208,11 @@ export async function logPractice(input: {
     } else {
       const { practiceLogAction } = await import('@/lib/zaps')
       // ADR-443: a timed sit pays the tier its real time REACHED; a quick-log pays the
-      // recommended weight class. Either way the live amount comes from zap_config.
-      const tier = isTimed ? achieved : weightClass
+      // recommended weight class. Either way the live amount comes from zap_config. A sit
+      // that REACHED its target but ran under the Light floor has achieved='partial' — a
+      // COMPLETED sit, not a real partial — so it pays the practice's own weight class (a
+      // Light practice → 8), never the Standard fall-through of practiceLogAction('partial').
+      const tier = isTimed ? (achieved === 'partial' ? weightClass : achieved) : weightClass
       zapsAwarded = (await awardZapsForAction(profileId, practiceLogAction(tier))).amount
     }
   } catch {

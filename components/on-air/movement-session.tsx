@@ -171,6 +171,7 @@ export function MovementSession({
   onCompleted,
   resumeRecord,
   onExit,
+  onLeaveViaLink,
   mode: doorMode,
   onModeChange,
 }: {
@@ -207,6 +208,9 @@ export function MovementSession({
   resumeRecord?: LiveSessionRecord | null
   /** Overlay mode: leaving CLOSES the overlay via this callback instead of navigating. */
   onExit?: () => void
+  /** A reveal DEEP-LINK exit (the member tapped Vera's dispatch link and is navigating away):
+   *  close the overlay WITHOUT advancing a sequenced run over the new page. Falls back to onExit. */
+  onLeaveViaLink?: () => void
   /** The unified-door mode this session is showing ('move'). Only meaningful with onModeChange. */
   mode?: TimerMode
   /** When provided (the unified Mindless door), the setup masthead renders the Be Still | Get
@@ -424,9 +428,12 @@ export function MovementSession({
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [stage])
 
-  // Let the audio context go when the surface unmounts.
+  // Release everything the takeover holds when the surface unmounts. finish()/leave() already run
+  // releaseQuiet() on the normal exits; this is the backstop for an UNEXPECTED unmount (e.g. the
+  // provider closing the overlay mid-run) so the screen wake lock + fullscreen never leak.
   useEffect(() => {
     const ctx = audio
+    const lock = wakeLock
     return () => {
       try {
         void ctx.current?.close()
@@ -434,6 +441,13 @@ export function MovementSession({
         // already closed
       }
       ctx.current = null
+      try {
+        void lock.current?.release()
+      } catch {
+        // already released
+      }
+      lock.current = null
+      void exitAppFullscreen()
     }
   }, [])
 
@@ -738,8 +752,15 @@ export function MovementSession({
 
   async function finish() {
     if (finishing.current) return
-    finishing.current = true
     const e = pausedAt !== null ? (pausedAt - startedAt) / 1000 : (Date.now() - startedAt) / 1000
+    // Warm-up / no-op guard: an end before ANY real airtime this session (still in the pre-roll, or
+    // paused at zero) banks nothing — leave instead of writing a 0-second junk log or re-banking a
+    // resume's already-counted time. A run that actually elapsed always has e > 0 here.
+    if (Math.round(e) <= 0) {
+      leave()
+      return
+    }
+    finishing.current = true
     // The total banked = what an earlier partial already banked (resumeOffset, 0 for a
     // fresh sit) + this session's own elapsed. Capped so we never log more than the
     // whole practice: on a "Finish Practice" resume the cap is the authored target
@@ -828,7 +849,7 @@ export function MovementSession({
             You finished it. The rest of the Zaps just landed.
           </div>
         )}
-        <Reveal payload={payload} onClose={closeReveal} onAction={onExit} />
+        <Reveal payload={payload} onClose={closeReveal} onAction={onLeaveViaLink ?? onExit} />
       </Overlay>
     )
   }

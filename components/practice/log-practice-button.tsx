@@ -39,7 +39,6 @@ export function LogPracticeButton({
   initialLogged = false,
   onLogged,
   timerKind,
-  mindlessMode,
   movementConfig,
   resumeFromSec,
   secondsTarget,
@@ -54,8 +53,9 @@ export function LogPracticeButton({
   /** Which timer the practice routes to. Omit for the plain one-tap log (back-compat).
    *  When set, the button opens the matching timer/sheet instead of logging in place. */
   timerKind?: TimerKind
-  /** The mindless flavour, for a timer_kind = 'mindless' practice (the session also
-   *  derives it from the practice, so this is advisory only). */
+  /** The mindless flavour, for a timer_kind = 'mindless' practice. Accepted for back-compat but
+   *  NOT forwarded: the session derives the flavour from the practice itself, so it is advisory
+   *  only (the provider's open() has no mindlessMode option — passing it here was a no-op). */
   mindlessMode?: MindlessMode | null
   /** The Movement config, for a timer_kind = 'movement' practice; its `mode` opens the timer. */
   movementConfig?: MovementConfig | null
@@ -104,9 +104,8 @@ export function LogPracticeButton({
       } else {
         // 'mindless' AND 'none' both go to the On Air sit; the session derives the
         // real flavour from the practice's mindless_mode (a 'none' practice carries
-        // 'log' → the Just Log screen). mindlessMode rides along as an advisory hint.
+        // 'log' → the Just Log screen), so no mindlessMode is forwarded here.
         const opts: TimerResumeOptions = { practiceId, autoStart: true }
-        if (mindlessMode) opts.mindlessMode = mindlessMode
         if (isResume) {
           opts.resumeFromSec = resumeFromSec
           opts.secondsTarget = secondsTarget
@@ -173,7 +172,6 @@ export function LogPracticeButton({
 type TimerResumeOptions = {
   practiceId: string
   mode?: MovementConfig['mode']
-  mindlessMode?: MindlessMode
   resumeFromSec?: number
   secondsTarget?: number
   autoStart?: boolean
