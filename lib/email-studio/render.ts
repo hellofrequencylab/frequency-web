@@ -37,6 +37,10 @@ export interface EmailColors {
   surfaceElevated: string
   border: string
   text: string
+  /** The heading ink (a touch lighter than `text`) — the default is a lifted warm charcoal (see
+   *  DEFAULT_EMAIL_COLORS.heading). Not an operator-tunable slot (absent from EMAIL_COLOR_KEYS); it always
+   *  carries the DAWN default via the DEFAULT_EMAIL_COLORS spread. */
+  heading: string
   muted: string
   subtle: string
   primary: string
@@ -55,6 +59,10 @@ export const DEFAULT_EMAIL_COLORS: EmailColors = {
   surfaceElevated: '#FAF6EC',
   border: '#E9E1D4',
   text: '#3D352A',
+  // Heading ink: a slightly LIFTED warm charcoal, sitting between DAWN --color-text (#3D352A) and
+  // --color-text-muted (#6B6253). Softer than the body ink so a headline reads as charcoal, not a heavy
+  // near-black slab, while staying well past WCAG AA on the cream/white email background (~9:1 on #FFFFFF).
+  heading: '#4A4234',
   muted: '#6B6253',
   subtle: '#8F8675',
   primary: '#E2912F',
@@ -182,6 +190,13 @@ function weightOf(text: TextStyle | undefined): number | undefined {
  *  touch tighter for email. A block's own `mb` overrides it. */
 const DEFAULT_GAP_PX = 24
 
+/** The unified SEMIBOLD weight for the whole heading family (the plain Heading, the Display heading, and the
+ *  features "section heading"). The operator likes the lighter section-heading weight and wants the display
+ *  headings to match it, so every heading-family title renders at the LIGHTER of the two prior weights
+ *  (semibold 600, not bold 700) — a soft charcoal headline rather than a heavy black slab. An operator's
+ *  explicit Weight step still overrides it per block. */
+const HEADING_WEIGHT = 600
+
 const FONT_STACK = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`
 
 /** Join non-empty inline-style fragments into a single `style="..."` value (no trailing semicolons fuss). */
@@ -232,21 +247,21 @@ function textStyleParts(style: BlockStyle | undefined, colors: EmailColors, base
 
 /** A heading fragment. `rich` (a `textarea` field authored on the canvas) emits sanitized inline HTML;
  *  otherwise the text is a plain `text` field and stays fully escaped. The default ink is the DAWN
- *  `--color-text` warm charcoal (colors.text, #3D352A) — a dark brown, never pure black — and `baseWeight`
- *  lets a caller soften the Header blocks (heading / displayHeading) from bold to semibold so a headline reads
- *  as charcoal rather than a heavy black slab. An operator's explicit Weight step still overrides it. */
+ *  lifted-charcoal heading ink (colors.heading, #4A4234, falling back to colors.text) — a soft dark brown,
+ *  never pure black — and `baseWeight` defaults to the unified semibold HEADING_WEIGHT so every heading-family
+ *  title reads as charcoal rather than a heavy black slab. An operator's explicit Weight step still overrides it. */
 function heading(
   text: string,
   style: BlockStyle | undefined,
   colors: EmailColors,
   basePx = 22,
   rich = false,
-  baseWeight = 700,
+  baseWeight = HEADING_WEIGHT,
 ): string {
   if (!text) return ''
   const px = Math.round(basePx * sizeMultiplier(style))
   const w = weightOf(style?.text) ?? baseWeight
-  const color = style?.text?.color ? textColorHex(style.text.color, colors) : colors.text
+  const color = style?.text?.color ? textColorHex(style.text.color, colors) : (colors.heading ?? colors.text)
   const body = rich ? renderInlineRich(text) : escapeHtml(text)
   return `<h2${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:${px}px`, `line-height:1.25`, `font-weight:${w}`, `color:${color}`])}>${body}</h2>`
 }
@@ -382,9 +397,12 @@ function features(props: Record<string, unknown>, style: BlockStyle | undefined,
     const rows = cells.map((c) => `<tr><td${styleAttr([`padding:0 0 16px 0`])}>${c}</td></tr>`).join('')
     list = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">${rows}</table>`
   }
-  // `eyebrow` is a plain `text` field; the features `title` (Heading) is a plain `text` field too.
-  const head = [eyebrow(eb, colors), heading(title, style, colors, 22)].filter(Boolean).join('')
-  const spacer = head && list ? `<div style="height:12px;line-height:12px;font-size:0;">&nbsp;</div>` : ''
+  // `eyebrow` is a plain `text` field; the features `title` (the "section heading") is a plain `text` field
+  // too. It renders at the unified HEADING_WEIGHT (semibold), matching the display headings.
+  const head = [eyebrow(eb, colors), heading(title, style, colors, 22, false, HEADING_WEIGHT)].filter(Boolean).join('')
+  // Open up the gap between the section heading and the feature grid so the boxes are not crammed against the
+  // title (was 12px; a roomier 24px lets the section breathe).
+  const spacer = head && list ? `<div style="height:24px;line-height:24px;font-size:0;">&nbsp;</div>` : ''
   const html = `${head}${spacer}${list}`
   const text = [eb, title, ...items.map((it) => `${it.title}${it.title && it.text ? ' - ' : ''}${it.text}`)].filter(Boolean).join('\n')
   void style
@@ -554,13 +572,14 @@ function editorial(props: Record<string, unknown>, style: BlockStyle | undefined
 function renderBlockInner(id: string, props: Record<string, unknown>, style: BlockStyle | undefined, colors: EmailColors): Rendered {
   switch (id) {
     case 'heading':
-      // The plain Heading block's `text` is a `text` field (fully escaped, not rich). Softened to semibold
-      // (600) charcoal so a headline reads as dark brown, not a heavy black block (was bold 700).
-      return { html: heading(s(props, 'text'), style, colors, 24, false, 600), text: s(props, 'text') }
+      // The plain Heading block's `text` is a `text` field (fully escaped, not rich). Semibold HEADING_WEIGHT
+      // charcoal so a headline reads as dark brown, not a heavy black block.
+      return { html: heading(s(props, 'text'), style, colors, 24, false, HEADING_WEIGHT), text: s(props, 'text') }
     case 'displayHeading':
-      // Display heading's `text` is a rich `textarea` field. Same softened charcoal semibold as the plain
-      // Heading (size still carries the display emphasis, so it does not need extra weight).
-      return { html: heading(s(props, 'text'), style, colors, 30, true, 600), text: richToText(s(props, 'text')) }
+      // Display heading's `text` is a rich `textarea` field. Same unified HEADING_WEIGHT as the plain Heading
+      // and the features "section heading", so the big display headings match the section heading the operator
+      // likes (size still carries the display emphasis, so it does not need extra weight).
+      return { html: heading(s(props, 'text'), style, colors, 30, true, HEADING_WEIGHT), text: richToText(s(props, 'text')) }
     case 'text':
     case 'prose':
       return { html: paragraph(s(props, 'text'), style, colors, 15), text: richToText(s(props, 'text')) }
