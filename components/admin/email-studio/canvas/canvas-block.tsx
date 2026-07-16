@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ImagePlus, Package, Pencil } from 'lucide-react'
-import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
+import { fieldsForBlock, featureLayout, gridColumns, type FieldDef } from '@/lib/entity-blocks/block-content'
 import { DEFAULT_EMAIL_COLORS as C } from '@/lib/email-studio/render'
 import { BlockIcon } from '@/components/entity-blocks/block-icon'
 import { LoomImagePopup } from '../loom/loom-image-popup'
@@ -123,7 +123,7 @@ function EmptyItemsHint({ label }: { label: string }) {
  *  Robustness: the mapped slots are keyed by a STRUCTURAL signature (icon + link, the rail-owned fields) so a
  *  rail reorder / add / remove remounts + re-seeds the slots, while a plain text keystroke leaves the key
  *  stable (no caret jump). No effects, no set-state-in-effect. */
-function FeaturesCanvas({ label, value, onChange }: { label: string; value: unknown; onChange: (v: unknown) => void }) {
+function FeaturesCanvas({ label, value, cols, onChange }: { label: string; value: unknown; cols: number; onChange: (v: unknown) => void }) {
   const items: Array<Record<string, unknown>> = Array.isArray(value) ? (value as Array<Record<string, unknown>>) : []
   if (items.length === 0) return <EmptyItemsHint label={label} />
   const sig = items.map((it) => `${typeof it.icon === 'string' ? it.icon : ''}~${typeof it.link === 'string' ? it.link : ''}`).join('|')
@@ -131,8 +131,11 @@ function FeaturesCanvas({ label, value, onChange }: { label: string; value: unkn
     const nextItems = items.map((it, j) => (j === i ? { ...it, [key]: next } : it))
     onChange(nextItems)
   }
+  // Honor the block's selected column count (2 / 3 / 4). `minmax(0, 1fr)` lets the columns shrink to fit a
+  // narrow canvas rather than overflow, so the preview stays responsive AND matches the email (which renders
+  // the same N-up grid). A `list` layout collapses to a single column (cols === 1) here.
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
       {items.map((it, i) => {
         const icon = typeof it.icon === 'string' ? it.icon : ''
         const title = typeof it.title === 'string' ? it.title : ''
@@ -324,9 +327,11 @@ export function CanvasBlock({
           />
         )
       case 'heading':
+        // DAWN `--color-text` warm charcoal (C.text, #3D352A) at semibold — a dark brown, not a heavy black
+        // slab (was font-extrabold). Matches the softened Header blocks in the compiled email.
         return (
           <div key={key} style={{ fontFamily: FONT, color: C.text }}>
-            <EditableSlot value={value} placeholder={f.label} rich={rich} className="text-2xl font-extrabold leading-tight" onChange={set(key)} />
+            <EditableSlot value={value} placeholder={f.label} rich={rich} className="text-2xl font-semibold leading-tight" onChange={set(key)} />
           </div>
         )
       case 'quote':
@@ -352,8 +357,13 @@ export function CanvasBlock({
             </span>
           </div>
         )
-      case 'features':
-        return <FeaturesCanvas key={key} label={f.label} value={props[f.key]} onChange={(v) => onField(f.key, v)} />
+      case 'features': {
+        // The Features grid honors its selected column count. The grid layouts (columns / cards / stats) go
+        // 2 / 3 / 4 up; list + spotlight stack single-column (cols 1) — mirroring the email renderer exactly.
+        const fLayout = featureLayout(props)
+        const featureCols = fLayout === 'columns' || fLayout === 'cards' || fLayout === 'stats' ? gridColumns(props) : 1
+        return <FeaturesCanvas key={key} label={f.label} value={props[f.key]} cols={featureCols} onChange={(v) => onField(f.key, v)} />
+      }
       case 'cards':
         return <CardsCanvas key={key} label={f.label} value={props[f.key]} onChange={(v) => onField(f.key, v)} />
       case 'body':

@@ -16,8 +16,10 @@ export function ComposeToolbar({
   campaignId,
   subject,
   preheader,
+  fromName,
   onSubject,
   onPreheader,
+  onFromName,
   previewOpen,
   onTogglePreview,
   showPreviewToggle = true,
@@ -26,8 +28,11 @@ export function ComposeToolbar({
   campaignId: string
   subject: string
   preheader: string
+  /** The friendly From display name recipients see. Blank sends as the default Frequency name. */
+  fromName: string
   onSubject: (value: string) => void
   onPreheader: (value: string) => void
+  onFromName: (value: string) => void
   previewOpen: boolean
   onTogglePreview: () => void
   /** The trio layout shows the preview permanently on the right, so it hides this toggle. */
@@ -95,6 +100,21 @@ export function ComposeToolbar({
             onChange={(e) => onPreheader(e.target.value)}
             className="w-full rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
           />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">
+            From name
+          </span>
+          <input
+            type="text"
+            value={fromName}
+            placeholder="Frequency"
+            onChange={(e) => onFromName(e.target.value)}
+            className="w-full rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+          />
+          <span className="mt-1 block text-2xs text-subtle">
+            The name recipients see this email is from. Leave it blank to send as Frequency. The sending address stays the same.
+          </span>
         </label>
       </div>
 

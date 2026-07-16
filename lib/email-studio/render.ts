@@ -17,6 +17,8 @@ import {
   sanitizeInlineHtml,
   inlineHtmlToText,
   fieldsForBlock,
+  featureLayout,
+  gridColumns,
   KNOWN_BLOCK_IDS,
   type BlockStyle,
   type TextStyle,
@@ -229,11 +231,21 @@ function textStyleParts(style: BlockStyle | undefined, colors: EmailColors, base
 }
 
 /** A heading fragment. `rich` (a `textarea` field authored on the canvas) emits sanitized inline HTML;
- *  otherwise the text is a plain `text` field and stays fully escaped. */
-function heading(text: string, style: BlockStyle | undefined, colors: EmailColors, basePx = 22, rich = false): string {
+ *  otherwise the text is a plain `text` field and stays fully escaped. The default ink is the DAWN
+ *  `--color-text` warm charcoal (colors.text, #3D352A) — a dark brown, never pure black — and `baseWeight`
+ *  lets a caller soften the Header blocks (heading / displayHeading) from bold to semibold so a headline reads
+ *  as charcoal rather than a heavy black slab. An operator's explicit Weight step still overrides it. */
+function heading(
+  text: string,
+  style: BlockStyle | undefined,
+  colors: EmailColors,
+  basePx = 22,
+  rich = false,
+  baseWeight = 700,
+): string {
   if (!text) return ''
   const px = Math.round(basePx * sizeMultiplier(style))
-  const w = weightOf(style?.text) ?? 700
+  const w = weightOf(style?.text) ?? baseWeight
   const color = style?.text?.color ? textColorHex(style.text.color, colors) : colors.text
   const body = rich ? renderInlineRich(text) : escapeHtml(text)
   return `<h2${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:${px}px`, `line-height:1.25`, `font-weight:${w}`, `color:${color}`])}>${body}</h2>`
@@ -285,9 +297,67 @@ function iconGlyph(token: unknown): string {
   return typeof token === 'string' && token && !isLucideIconName(token) ? token : ''
 }
 
+interface FeatureItem {
+  icon: string
+  title: string
+  text: string
+  link: string
+}
+
+/** One feature item's inner HTML (icon, title/link, text), left-aligned. Shared by the stacked (list /
+ *  spotlight) layout and the multi-column grid, so a cell reads identically however it is placed. */
+function featureCell(it: FeatureItem, colors: EmailColors): string {
+  const icon = it.icon ? `<div${styleAttr([`font-size:22px`, `line-height:1`, `margin:0 0 6px 0`])}>${escapeHtml(it.icon)}</div>` : ''
+  const titleInner = escapeHtml(it.title)
+  const titleNode = it.link
+    ? `<a href="${escapeHtml(it.link)}"${styleAttr([`color:${colors.primaryStrong}`, `text-decoration:none`])}>${titleInner}</a>`
+    : titleInner
+  const h = it.title ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${FONT_STACK}`, `font-size:16px`, `font-weight:700`, `color:${colors.text}`])}>${titleNode}</p>` : ''
+  const b = it.text ? `<p${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:14px`, `line-height:1.6`, `color:${colors.muted}`])}>${escapeHtml(it.text).replace(/\n/g, '<br>')}</p>` : ''
+  return `${icon}${h}${b}`
+}
+
+/** Lay feature cells out as an EMAIL-SAFE N-column grid (2, 3, or 4). Email clients do NOT support CSS grid /
+ *  flex, so this is TABLE / inline-block based and bulletproof:
+ *    • Outlook (word engine, ignores inline-block) gets an MSO ghost `<table>` with fixed-percentage `<td>`s.
+ *    • Every other client gets fluid inline-block columns that STACK on a narrow screen with NO media query
+ *      (the fluid-hybrid / "spongy" technique): each column is `width:100%` capped at a per-column
+ *      `max-width`, so N columns can only sit side by side while the parent is wide enough for them; on a
+ *      phone the parent shrinks below that and the columns reflow to a single stack.
+ *  Cells chunk into rows of N. `font-size:0` on the row wrapper kills the whitespace gap between inline-blocks;
+ *  each column resets its own font-size. */
+function featureColumns(cells: string[], cols: number): string {
+  // Desktop per-column cap in px. The email content area is ~520px inside the 600px card, so N * maxW just
+  // fits; a phone's narrower parent drops below 2 * maxW (for 2 / 3 up) and the columns stack.
+  const maxW = Math.floor(520 / cols)
+  const pct = Math.round(100 / cols)
+  const gutter = 8
+  const rows: string[] = []
+  for (let i = 0; i < cells.length; i += cols) {
+    const group = cells.slice(i, i + cols)
+    const columns = group
+      .map(
+        (cell) =>
+          `<!--[if mso]><td width="${pct}%" valign="top" style="padding:0 ${gutter}px;"><![endif]-->` +
+          `<div style="display:inline-block;width:100%;max-width:${maxW}px;vertical-align:top;box-sizing:border-box;padding:0 ${gutter}px;text-align:left;font-size:14px;">${cell}</div>` +
+          `<!--[if mso]></td><![endif]-->`,
+      )
+      .join('')
+    rows.push(
+      `<div style="text-align:center;font-size:0;margin:0 0 8px 0;">` +
+        `<!--[if mso]><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><![endif]-->` +
+        columns +
+        `<!--[if mso]></tr></table><![endif]-->` +
+        `</div>`,
+    )
+  }
+  return rows.join('')
+}
+
 function features(props: Record<string, unknown>, style: BlockStyle | undefined, colors: EmailColors): Rendered {
   const eb = s(props, 'eyebrow')
-  const items = Array.isArray(props.items)
+  const title = s(props, 'title')
+  const items: FeatureItem[] = Array.isArray(props.items)
     ? (props.items as Array<{ icon?: unknown; title?: unknown; text?: unknown; link?: unknown }>)
         .map((it) => ({
           icon: iconGlyph(it.icon),
@@ -297,27 +367,26 @@ function features(props: Record<string, unknown>, style: BlockStyle | undefined,
         }))
         .filter((it) => it.title || it.text)
     : []
-  if (!eb && !items.length) return { html: '', text: '' }
-  // Single-column email: each feature is a stacked row (no side-by-side grid). The title becomes a link when
-  // the item carries one (the whole-item link, made email-friendly).
-  const rows = items
-    .map((it) => {
-      const icon = it.icon ? `<div${styleAttr([`font-size:22px`, `line-height:1`, `margin:0 0 6px 0`])}>${escapeHtml(it.icon)}</div>` : ''
-      const titleInner = escapeHtml(it.title)
-      const titleNode = it.link
-        ? `<a href="${escapeHtml(it.link)}"${styleAttr([`color:${colors.primaryStrong}`, `text-decoration:none`])}>${titleInner}</a>`
-        : titleInner
-      const h = it.title ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${FONT_STACK}`, `font-size:16px`, `font-weight:700`, `color:${colors.text}`])}>${titleNode}</p>` : ''
-      const b = it.text ? `<p${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:14px`, `line-height:1.6`, `color:${colors.muted}`])}>${escapeHtml(it.text).replace(/\n/g, '<br>')}</p>` : ''
-      return `<tr><td${styleAttr([`padding:0 0 16px 0`])}>${icon}${h}${b}</td></tr>`
-    })
-    .join('')
-  const list = rows
-    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">${rows}</table>`
-    : ''
-  const head = eb ? eyebrow(eb, colors) : ''
-  const html = `${head}${list}`
-  const text = [eb, ...items.map((it) => `${it.title}${it.title && it.text ? ' - ' : ''}${it.text}`)].filter(Boolean).join('\n')
+  if (!eb && !title && !items.length) return { html: '', text: '' }
+  // Honor the block's LAYOUT + COLUMN count (ADR-585). The grid layouts (columns / cards / stats) place the
+  // items side by side, 2 / 3 / 4 up; list + spotlight stay a single stacked column (the safe email default,
+  // and the only sane rendering for spotlight, which email cannot alternate reliably). Legacy blocks with no
+  // layout key fold to `list`, so an existing email is unchanged.
+  const layout = featureLayout(props)
+  const cols = layout === 'columns' || layout === 'cards' || layout === 'stats' ? gridColumns(props) : 1
+  const cells = items.map((it) => featureCell(it, colors))
+  let list = ''
+  if (cols > 1 && cells.length) {
+    list = featureColumns(cells, cols)
+  } else if (cells.length) {
+    const rows = cells.map((c) => `<tr><td${styleAttr([`padding:0 0 16px 0`])}>${c}</td></tr>`).join('')
+    list = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">${rows}</table>`
+  }
+  // `eyebrow` is a plain `text` field; the features `title` (Heading) is a plain `text` field too.
+  const head = [eyebrow(eb, colors), heading(title, style, colors, 22)].filter(Boolean).join('')
+  const spacer = head && list ? `<div style="height:12px;line-height:12px;font-size:0;">&nbsp;</div>` : ''
+  const html = `${head}${spacer}${list}`
+  const text = [eb, title, ...items.map((it) => `${it.title}${it.title && it.text ? ' - ' : ''}${it.text}`)].filter(Boolean).join('\n')
   void style
   return { html, text }
 }
@@ -485,11 +554,13 @@ function editorial(props: Record<string, unknown>, style: BlockStyle | undefined
 function renderBlockInner(id: string, props: Record<string, unknown>, style: BlockStyle | undefined, colors: EmailColors): Rendered {
   switch (id) {
     case 'heading':
-      // The plain Heading block's `text` is a `text` field (fully escaped, not rich).
-      return { html: heading(s(props, 'text'), style, colors, 24), text: s(props, 'text') }
+      // The plain Heading block's `text` is a `text` field (fully escaped, not rich). Softened to semibold
+      // (600) charcoal so a headline reads as dark brown, not a heavy black block (was bold 700).
+      return { html: heading(s(props, 'text'), style, colors, 24, false, 600), text: s(props, 'text') }
     case 'displayHeading':
-      // Display heading's `text` is a rich `textarea` field.
-      return { html: heading(s(props, 'text'), style, colors, 30, true), text: richToText(s(props, 'text')) }
+      // Display heading's `text` is a rich `textarea` field. Same softened charcoal semibold as the plain
+      // Heading (size still carries the display emphasis, so it does not need extra weight).
+      return { html: heading(s(props, 'text'), style, colors, 30, true, 600), text: richToText(s(props, 'text')) }
     case 'text':
     case 'prose':
       return { html: paragraph(s(props, 'text'), style, colors, 15), text: richToText(s(props, 'text')) }

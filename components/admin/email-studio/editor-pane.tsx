@@ -25,7 +25,7 @@ import { saveEmailCampaign, sendTestEmail, type LoadedEmailCampaign } from '@/ap
 /** The persist action shape the pane injects into the store + compose fields (matches saveEmailCampaign). */
 type SaveCampaign = (
   id: string,
-  patch: { layout?: BuilderLayout | EntityLayout; subject?: string; preheader?: string },
+  patch: { layout?: BuilderLayout | EntityLayout; subject?: string; preheader?: string; fromName?: string },
 ) => Promise<{ error?: string }>
 
 // EMAIL EDITOR PANE. The right pane's editor for ONE selected email. It REUSES the entity-blocks arranger
@@ -108,6 +108,7 @@ export function EmailEditorPane({
   const { id } = campaign
   const [subject, setSubject] = useState(campaign.subject)
   const [preheader, setPreheader] = useState(campaign.preheader)
+  const [fromName, setFromName] = useState(campaign.fromName ?? '')
   const [previewOpen, setPreviewOpen] = useState(false)
 
   // The arranger's injected persist: the store hands the freshest BuilderLayout here (debounced), and this
@@ -120,7 +121,7 @@ export function EmailEditorPane({
   // Debounced subject / preheader save (separate from the layout store's own debounce).
   const fieldTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const scheduleFieldSave = useCallback(
-    (patch: { subject?: string; preheader?: string }) => {
+    (patch: { subject?: string; preheader?: string; fromName?: string }) => {
       if (fieldTimer.current) clearTimeout(fieldTimer.current)
       fieldTimer.current = setTimeout(() => {
         void saveCampaign(id, patch)
@@ -144,6 +145,13 @@ export function EmailEditorPane({
     (value: string) => {
       setPreheader(value)
       scheduleFieldSave({ preheader: value })
+    },
+    [scheduleFieldSave],
+  )
+  const onFromName = useCallback(
+    (value: string) => {
+      setFromName(value)
+      scheduleFieldSave({ fromName: value })
     },
     [scheduleFieldSave],
   )
@@ -182,8 +190,10 @@ export function EmailEditorPane({
             campaignId={id}
             subject={subject}
             preheader={preheader}
+            fromName={fromName}
             onSubject={onSubject}
             onPreheader={onPreheader}
+            onFromName={onFromName}
             previewOpen
             onTogglePreview={() => {}}
             showPreviewToggle={false}
@@ -210,8 +220,10 @@ export function EmailEditorPane({
             campaignId={id}
             subject={subject}
             preheader={preheader}
+            fromName={fromName}
             onSubject={onSubject}
             onPreheader={onPreheader}
+            onFromName={onFromName}
             previewOpen
             onTogglePreview={() => {}}
             showPreviewToggle={false}
@@ -243,8 +255,10 @@ export function EmailEditorPane({
           campaignId={id}
           subject={subject}
           preheader={preheader}
+          fromName={fromName}
           onSubject={onSubject}
           onPreheader={onPreheader}
+          onFromName={onFromName}
           previewOpen={previewOpen}
           onTogglePreview={() => setPreviewOpen((v) => !v)}
           sendTest={sendTest}
