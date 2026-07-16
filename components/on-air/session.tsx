@@ -42,6 +42,8 @@ import {
   ambientTrackBySlug,
   bellToneBySlug,
   bellVolumeScale,
+  coerceBellVolume,
+  coerceAmbientVolume,
   breathPositionAt,
   buildCustomPattern,
   clampMinutes,
@@ -98,6 +100,7 @@ interface MindlessSetup {
   bellEveryMin: number
   haptics: boolean
   ambientTrack: string | null
+  ambientVolume: number
   /** The chosen warm-up length (seconds), so a recovered run keeps its warm-up. Optional
    *  for back-compat with records written before warm-up was selectable. */
   warmupSec?: number
@@ -377,11 +380,13 @@ export function OnAirSession({
   const [customOut, setCustomOut] = useState(saved?.customOut ?? prefs.customOut ?? 6)
   const [bell, setBell] = useState(prefs.bell ?? false)
   const [bellToneSlug, setBellToneSlug] = useState(prefs.bellTone ?? 'soft')
-  const [bellVolume, setBellVolume] = useState<BellVolume>(prefs.bellVolume ?? 'medium')
+  // Bell + ambient loudness are 0..1 sliders now (coerce migrates a legacy quiet/medium/loud pref).
+  const [bellVolume, setBellVolume] = useState<number>(coerceBellVolume(prefs.bellVolume))
   const [endBell, setEndBell] = useState(prefs.endBell ?? true)
   const [bellEveryMin, setBellEveryMin] = useState(prefs.bellEveryMin ?? 1)
   const [haptics, setHaptics] = useState(prefs.haptics ?? false)
   const [ambientSlug, setAmbientSlug] = useState<string | null>(prefs.ambientTrack ?? null)
+  const [ambientVolume, setAmbientVolume] = useState<number>(coerceAmbientVolume(prefs.ambientVolume))
   // The warm-up countdown length (3 / 5 / 10s), selectable on setup. Seeds from prefs.
   const [warmupSec, setWarmupSec] = useState(() => clampWarmupSec(prefs.warmupSec))
   // Mobile-only: the cue settings collapse so the primary controls (mode, minutes, Tune out) stay
@@ -644,7 +649,14 @@ export function OnAirSession({
     const track = ambientTrackBySlug(slug)
     const ctx = ensureCtx()
     if (!track || !ctx) return
-    ambient.current = createAmbient(ctx, track.src, { fadeInSec, autoStopAfterSec })
+    ambient.current = createAmbient(ctx, track.src, { fadeInSec, autoStopAfterSec, volume: ambientVolume })
+  }
+
+  /** Live-set the ambient loudness from the volume slider: move a playing loop (or audition) to the
+   *  new level without a restart, and remember it for the sit. */
+  function changeAmbientVolume(v: number) {
+    setAmbientVolume(v)
+    ambient.current?.setVolume(v)
   }
 
   /** Setup chip tap: select + a short audition that fades out on its own, so the
@@ -707,6 +719,7 @@ export function OnAirSession({
       bellEveryMin,
       haptics,
       ambientTrack: ambientSlug,
+      ambientVolume,
       warmupSec,
     }
   }
@@ -800,6 +813,7 @@ export function OnAirSession({
     bellEveryMin,
     haptics,
     ambientSlug,
+    ambientVolume,
     warmupSec,
   ])
 
@@ -830,11 +844,12 @@ export function OnAirSession({
     setCustomOut(s.customOut)
     setBell(s.bell)
     setBellToneSlug(s.bellToneSlug)
-    setBellVolume(s.bellVolume)
+    setBellVolume(coerceBellVolume(s.bellVolume))
     setEndBell(s.endBell)
     setBellEveryMin(s.bellEveryMin)
     setHaptics(s.haptics)
     setAmbientSlug(s.ambientTrack)
+    setAmbientVolume(coerceAmbientVolume(s.ambientVolume))
     setWarmupSec(clampWarmupSec(s.warmupSec))
     // Re-arm ambience only on a gesture (audio needs a tap to unlock). On an auto-resume the
     // chip below restores it. A quick fade-in since the sit is already mid-flight.
@@ -1077,6 +1092,7 @@ export function OnAirSession({
       bellEveryMin,
       haptics,
       ambientTrack: ambientSlug,
+      ambientVolume,
       warmupSec,
       // The Journal / Just Log reflection (server trims + caps it, and only stores it for a
       // note-bearing mode). Empty stays empty; the server maps it to null.
@@ -1169,6 +1185,37 @@ export function OnAirSession({
     // warmup: 0 — the member was just breathing; resume straight into the remaining time instead of
     // running a SECOND warm-up (the reported "double warm-up").
     void start({ practiceId, mode: 'timer', minutes: remainingMin, warmup: 0 })
+  }
+
+  // Begin the resolved practice from the setup screen. `fresh` = "New Practice": ignore today's
+  // partial and run the FULL length from zero (the split button's second action); otherwise
+  // Continue/Start on the current minutes (the remaining time when there is a partial today).
+  function beginResolved(fresh = false) {
+    if (!runPracticeId) return
+    // A movement default (rare — the door routes it to Get Moving first) hands off; everything else
+    // runs the sit on the resolved mode. A log-only resolved practice on a timed mode runs Free Practice.
+    if (practiceKind === 'movement' && !runningFree) {
+      handOffToMovement(practiceId)
+      return
+    }
+    let runMinutes = minutes
+    if (fresh) {
+      // Drop the banked partial and run the practice's full length from zero.
+      resumeBanked.current = 0
+      resumeTarget.current = 0
+      runMinutes = activeResume
+        ? clampMinutes(Math.round(activeResume.targetSec / 60))
+        : minutes
+      setMinutes(runMinutes)
+    }
+    // Running the Free Practice fallback: commit it as the selected practice first so every
+    // downstream read (the active-session push, finishWith's logsAs mapping) resolves against it.
+    if (runningFree) {
+      setPracticeId(runPracticeId)
+      resumeBanked.current = 0
+      resumeTarget.current = 0
+    }
+    void start({ practiceId: runPracticeId, mode, minutes: runMinutes })
   }
 
   if (stage === 'reveal' && payload) {
@@ -1390,6 +1437,15 @@ export function OnAirSession({
             className="rounded-full px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
           >
             Close &amp; Log Session
+          </button>
+          {/* Cancel: leave the sit WITHOUT logging (item #3) — drops the run, banks nothing.
+              Kept visually subordinate to Close & Log so the default stays "log it". */}
+          <button
+            type="button"
+            onClick={leave}
+            className="rounded-full px-4 py-1 text-2xs font-medium text-subtle transition-colors hover:text-danger"
+          >
+            Cancel · don&rsquo;t log
           </button>
         </div>
         {showInstructions && (
@@ -1712,6 +1768,26 @@ export function OnAirSession({
                       </button>
                     ))}
                   </div>
+                  {/* Ambient volume — a slider, shown once a track is chosen. Live-updates the
+                      audition so a member hears the level; remembered for the sit. */}
+                  {ambientSlug && (
+                    <div className="mt-2.5">
+                      <div className="flex items-center justify-between">
+                        <SubLabel>Ambient volume</SubLabel>
+                        <span className="text-2xs font-medium text-subtle">{Math.round(ambientVolume * 100)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={Math.round(ambientVolume * 100)}
+                        onChange={(e) => changeAmbientVolume(Number(e.target.value) / 100)}
+                        aria-label="Ambient volume"
+                        className="mt-1.5 w-full accent-primary"
+                      />
+                    </div>
+                  )}
                 </div>
                 {bell && (
                   <>
@@ -1746,34 +1822,33 @@ export function OnAirSession({
                   </div>
                 </div>
 
-                {/* Volume — scales the synth peak; previews the current voice. */}
+                {/* Bell volume — a slider scaling the synth peak; previews the current voice when
+                    the member lets go of the slider (a gesture, so audio is unlocked). */}
                 <div>
-                  <SubLabel>Volume</SubLabel>
-                  <div className="mt-1.5 grid grid-cols-3 gap-2">
-                    {(['quiet', 'medium', 'loud'] as BellVolume[]).map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => {
-                          setBellVolume(v)
-                          try {
-                            audio.current = audio.current ?? new AudioContext()
-                            void audio.current.resume()
-                            chime(audio.current, bellToneBySlug(bellToneSlug), bellVolumeScale(v))
-                          } catch {
-                            // preview is a nicety
-                          }
-                        }}
-                        className={`rounded-xl border px-2 py-1.5 text-xs capitalize transition-colors ${
-                          v === bellVolume
-                            ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                            : 'border-border text-muted hover:bg-surface-elevated'
-                        }`}
-                      >
-                        {v}
-                      </button>
-                    ))}
+                  <div className="flex items-center justify-between">
+                    <SubLabel>Bell volume</SubLabel>
+                    <span className="text-2xs font-medium text-subtle">{Math.round(bellVolume * 100)}%</span>
                   </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={Math.round(bellVolume * 100)}
+                    onChange={(e) => setBellVolume(Number(e.target.value) / 100)}
+                    onPointerUp={(e) => {
+                      const v = Number((e.currentTarget as HTMLInputElement).value) / 100
+                      try {
+                        audio.current = audio.current ?? new AudioContext()
+                        void audio.current.resume()
+                        chime(audio.current, bellToneBySlug(bellToneSlug), bellVolumeScale(v))
+                      } catch {
+                        // preview is a nicety
+                      }
+                    }}
+                    aria-label="Bell volume"
+                    className="mt-1.5 w-full accent-primary"
+                  />
                 </div>
 
                 {/* Interval bell — the silent-timer modes (Meditate / Stillness / Ritual /
@@ -1864,34 +1939,37 @@ export function OnAirSession({
             Log is an instant log; everything else begins the sit on the resolved practice's mode +
             minutes — "Continue Practice" when it has a partial today (resumes the remaining time),
             else "Start Practice". Pressing it arms the single warm-up countdown, then runs. */}
-        <button
-          type="button"
-          onClick={() => {
-            if (!runPracticeId) return
-            // A movement default (rare — the door routes it to Get Moving first) hands off; every
-            // other kind runs the sit on the resolved mode + minutes (resuming if partial). A
-            // log-only resolved practice on a timed mode runs the Free Practice fallback instead.
-            if (practiceKind === 'movement' && !runningFree) { handOffToMovement(practiceId); return }
-            // When running the Free Practice fallback, commit it as the selected practice first so
-            // every downstream read (the active-session push, finishWith's logsAs mapping) resolves
-            // against Free Practice, not the log-only resolved practice.
-            if (runningFree) {
-              setPracticeId(runPracticeId)
-              resumeBanked.current = 0
-              resumeTarget.current = 0
-            }
-            void start({ practiceId: runPracticeId, mode, minutes })
-          }}
-          disabled={!runPracticeId}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
-        >
-          <OnAirIcon className="h-4 w-4" />{' '}
-          {mode === 'log'
-            ? 'Log it'
-            : activeResume
-              ? 'Continue Practice'
-              : 'Start Practice'}
-        </button>
+        {mode !== 'log' && activeResume ? (
+          // An unfinished practice today: the button SPLITS into Continue (resume the remaining
+          // time) and New Practice (start the full length fresh, dropping the banked partial).
+          <div className="flex gap-2 lg:mx-auto lg:max-w-sm">
+            <button
+              type="button"
+              onClick={() => beginResolved(false)}
+              disabled={!runPracticeId}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            >
+              <OnAirIcon className="h-4 w-4" /> Continue
+            </button>
+            <button
+              type="button"
+              onClick={() => beginResolved(true)}
+              disabled={!runPracticeId}
+              className="flex flex-1 items-center justify-center rounded-xl border border-border bg-surface px-4 py-3.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+            >
+              New Practice
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => beginResolved(false)}
+            disabled={!runPracticeId}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
+          >
+            <OnAirIcon className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Start Practice'}
+          </button>
+        )}
       </div>
       </div>
       </div>

@@ -75,12 +75,15 @@ export interface CompleteSessionInput {
   customOut?: number
   bell?: boolean
   bellTone?: string
-  bellVolume?: 'quiet' | 'medium' | 'loud'
+  /** Bell loudness as a 0..1 slider fraction (was the quiet/medium/loud presets). */
+  bellVolume?: number
   endBell?: boolean
   bellEveryMin?: number
   haptics?: boolean
   /** Ambient loop slug, null = none. */
   ambientTrack?: string | null
+  /** Ambient loop loudness as a 0..1 slider fraction. */
+  ambientVolume?: number
   /** The warm-up countdown length (3 | 5 | 10s), remembered with the rest of the setup. */
   warmupSec?: number
   /** The optional free-text reflection from a Journal / Just Log session. Trimmed + capped
@@ -166,8 +169,8 @@ export async function completeSession(
       bell: typeof input.bell === 'boolean' ? input.bell : prior.bell,
       bellTone: typeof input.bellTone === 'string' ? input.bellTone : prior.bellTone,
       bellVolume:
-        input.bellVolume === 'quiet' || input.bellVolume === 'medium' || input.bellVolume === 'loud'
-          ? input.bellVolume
+        typeof input.bellVolume === 'number' && Number.isFinite(input.bellVolume)
+          ? Math.min(1, Math.max(0, input.bellVolume))
           : prior.bellVolume,
       endBell: typeof input.endBell === 'boolean' ? input.endBell : prior.endBell,
       bellEveryMin:
@@ -177,6 +180,10 @@ export async function completeSession(
       haptics: typeof input.haptics === 'boolean' ? input.haptics : prior.haptics,
       // null = the member turned it off (persist that); undefined = keep prior.
       ambientTrack: input.ambientTrack === undefined ? prior.ambientTrack : input.ambientTrack,
+      ambientVolume:
+        typeof input.ambientVolume === 'number' && Number.isFinite(input.ambientVolume)
+          ? Math.min(1, Math.max(0, input.ambientVolume))
+          : prior.ambientVolume,
       // The warm-up length (3 | 5 | 10s), clamped to a valid preset; keep prior otherwise.
       warmupSec:
         input.warmupSec === 3 || input.warmupSec === 5 || input.warmupSec === 10

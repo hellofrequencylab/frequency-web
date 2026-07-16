@@ -222,8 +222,22 @@ export function MovementSession({
   const [stage, setStage] = useState<Stage>('setup')
 
   // --- setup state ----------------------------------------------------------
+  // Get Moving must resolve a MOVEMENT practice, never a Be Still one: the shared loader default
+  // (defaultPracticeId) is mode-agnostic and can be a Mind sit / log-only practice (e.g. "One Small
+  // Reach"), which a walk must not log against (item #1). Prefer, in order: the shared default when
+  // it IS a movement practice, a movement practice with a partial today, a movement practice not yet
+  // logged, then any movement practice (the loader's movement Free Practice is one). Only if there is
+  // no movement practice at all do we fall back to the old resolution.
+  const isMove = (p: OnAirPractice) => p.timerKind === 'movement'
   const initialId =
-    defaultPracticeId ?? practices.find((p) => !p.loggedToday)?.id ?? practices[0]?.id ?? ''
+    (defaultPracticeId && practices.find((p) => p.id === defaultPracticeId && isMove(p))?.id) ||
+    practices.find((p) => isMove(p) && p.partialToday)?.id ||
+    practices.find((p) => isMove(p) && !p.loggedToday)?.id ||
+    practices.find((p) => isMove(p))?.id ||
+    defaultPracticeId ||
+    practices.find((p) => !p.loggedToday)?.id ||
+    practices[0]?.id ||
+    ''
 
   // The resume point for a practice, in { bankedSec, targetSec }. The SELECTED practice's
   // `partialToday` is now the PRIMARY source (so a Zap-menu / chooser / auto-select all resume),
@@ -1024,6 +1038,15 @@ export function MovementSession({
           >
             Stop &amp; Log
           </button>
+          {/* Cancel: leave the run WITHOUT logging (item #3) — drops it, banks nothing. Subordinate
+              to Stop & Log so the default stays "log it". */}
+          <button
+            type="button"
+            onClick={leave}
+            className="rounded-full px-4 py-1 text-2xs font-medium text-subtle transition-colors hover:text-danger"
+          >
+            Cancel · don&rsquo;t log
+          </button>
         </div>
       </Overlay>
     )
@@ -1243,8 +1266,10 @@ export function MovementSession({
         )}
 
         {/* Practice read-out (which log this banks). No picker: the door already resolved what to
-            run, so this just shows the member which log the Start button banks. */}
-        {practice && (
+            run. NEVER shown for the Free Practice fallback (a `logsAs` chip that maps to the Be
+            Still meditation sit) — a Get Moving run must not advertise "Logs as One Small Reach"
+            (item #1). Mirrors the Be Still guard in session.tsx. */}
+        {practice && !practice.logsAs && (
           <p className="flex min-w-0 items-center justify-center gap-1.5 text-sm text-text">
             <span className="shrink-0 text-subtle">Logs as</span>
             <span className="truncate font-semibold">{practice.title}</span>

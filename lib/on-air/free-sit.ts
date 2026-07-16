@@ -6,12 +6,12 @@
 import type { SessionMode } from '@/lib/on-air'
 import type { OnAirPractice } from '@/components/on-air/session'
 
-/** The Free Practice fallback in a loaded practice list: the open-length sit the loader always
- *  appends. It is the only entry that maps to ANOTHER log via `logsAs` and still routes to a timer
- *  (timer_kind !== 'none'), so it is unambiguous without importing the id constant. Returns
- *  undefined when the list has no Free Practice (e.g. the default sit practice is missing). */
+/** The Be Still Free Practice fallback in a loaded practice list: the open-length SIT the loader
+ *  appends. It maps to another log via `logsAs` and routes to the mindless timer. The `mindless`
+ *  check keeps it from matching the Get Moving Free Practice (also a `logsAs` chip, but timer_kind
+ *  'movement'), so Be Still never picks up the walk. Returns undefined when the sit is missing. */
 export function findFreeSit(practices: OnAirPractice[]): OnAirPractice | undefined {
-  return practices.find((p) => !!p.logsAs && p.timerKind !== 'none')
+  return practices.find((p) => !!p.logsAs && p.timerKind === 'mindless')
 }
 
 /** Whether a Be Still Begin should run the Free Practice fallback rather than the resolved practice.
