@@ -80,6 +80,8 @@ function platformRow(rows: Record<string, string>[], overrides: Partial<ContactI
     committedAt: null,
     createdAt: '',
     updatedAt: '',
+    createdIds: [],
+    rolledBackAt: null,
     ...overrides,
   }
 }

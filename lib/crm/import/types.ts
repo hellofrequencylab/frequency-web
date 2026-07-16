@@ -38,8 +38,11 @@ export type MappingChoice = TargetField | 'custom' | 'ignore'
 /** How a mapping was decided, weakest to strongest confidence signal. */
 export type MappingReason = 'synonym' | 'fuzzy' | 'value' | 'ai' | 'manual' | 'none'
 
-/** The inferred value type of a column, from a sample of its values. */
-export type ValueType = 'text' | 'number' | 'email' | 'phone' | 'url' | 'date'
+/** The inferred value type of a column, from a sample of its values. Drives type-aware
+ *  formatting on the contact card (a date reads as a date, a phone dials, a url is a link)
+ *  and light validation. `boolean` (yes/no) is auto-inferred; `select` (a fixed option set)
+ *  is only ever chosen by hand, so it is never auto-inferred. */
+export type ValueType = 'text' | 'number' | 'email' | 'phone' | 'url' | 'date' | 'boolean' | 'select'
 
 // ── Column mapping ──────────────────────────────────────────────────────────────
 
@@ -63,6 +66,9 @@ export interface ColumnMapping {
    *  the source header. Drives the registry label + the contact-detail display; the key is derived
    *  from it but pinned once chosen so a rename does not orphan stored values. */
   customLabel?: string
+  /** When target='custom' and valueType='select': the fixed option set for the field. Optional;
+   *  most custom fields are free text and carry none. */
+  customOptions?: string[]
 }
 
 // ── Parsed source ───────────────────────────────────────────────────────────────
@@ -86,6 +92,13 @@ export interface RowError {
   field: string
   /** A short, plain, member-safe message ("That email address looks off."). */
   message: string
+  /** How serious the problem is. 'error' (the default when omitted) means a field could not be
+   *  used and was left blank; 'warning' means the row still imports as is, we just want a human to
+   *  glance at it (a likely email typo, a same-name-and-phone near-duplicate). */
+  severity?: 'error' | 'warning'
+  /** For a warning with a fix in hand (an email typo): the value we would suggest. Never applied
+   *  automatically; the operator keeps the original unless they act on it. */
+  suggestion?: string
 }
 
 /** What committing WOULD do, per the current mapping + merge strategy. Shown in preview. */
@@ -99,6 +112,10 @@ export interface DiffCounts {
   skipped: number
   /** Rows with a validation problem (still counted toward created/merged when usable). */
   flagged: number
+  /** Rows carrying a non-blocking warning but no hard error (a likely email typo, a same-name-and
+   *  -phone near-duplicate). Import proceeds; the count just tells the operator how many to glance
+   *  at. Optional so older staged validation results still type-check. */
+  warned?: number
 }
 
 /** One line in the row-level preview table. Derived from the SAME planCommit output as
@@ -117,6 +134,9 @@ export interface PreviewRow {
   matchedKey: string | null
   /** The first validation problem on this row, if any (drives the "needs a look" flag). */
   error: string | null
+  /** The severity of `error`: 'error' (a field was dropped) or 'warning' (imports as is, just
+   *  glance at it). Null when the row is clean. Optional so older staged rows still type-check. */
+  severity?: 'error' | 'warning' | null
 }
 
 /** The full dry-run result staged in `validation`. */
@@ -215,6 +235,11 @@ export interface ContactImportRow {
   committedAt: string | null
   createdAt: string
   updatedAt: string
+  /** The ids of the contact rows this import CREATED (not merges), so a later "undo this import"
+   *  deletes exactly those rows and nothing else. Empty until a commit runs. */
+  createdIds: string[]
+  /** When the import was rolled back (its created rows deleted), or null. */
+  rolledBackAt: string | null
 }
 
 /** A known custom field in the registry (per owner/Space). */
@@ -223,4 +248,6 @@ export interface CustomFieldEntry {
   label: string
   valueType: ValueType
   fingerprint: string | null
+  /** For a 'select' field: the fixed option set. Empty for every other type. */
+  options?: string[]
 }

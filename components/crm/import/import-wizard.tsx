@@ -7,9 +7,9 @@
 // tokens (no hex). Copy passes NAMING + CONTENT-VOICE (no em dashes).
 
 import { useState, useRef, useEffect } from 'react'
-import { UploadCloud, Sparkles, Loader2, Check, ArrowRight, ArrowLeft, FileSpreadsheet, FileText, AlertTriangle, ClipboardType } from 'lucide-react'
+import { UploadCloud, Sparkles, Loader2, Check, ArrowRight, ArrowLeft, FileSpreadsheet, FileText, AlertTriangle, ClipboardType, Undo2 } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
-import { parseCsvFile, sourceFromContacts, mergeSources, looksLikeTable } from '@/lib/crm/import/parse'
+import { sourceFromContacts, mergeSources, parseFileLocally } from '@/lib/crm/import/parse'
 import { customFieldKey } from '@/lib/crm/import/map'
 import {
   stageImport,
@@ -19,6 +19,8 @@ import {
   commitAction,
   extractContactsAction,
   extractZipSources,
+  extractSpreadsheetSource,
+  rollbackAction,
   listKnownCustomFields,
 } from '@/lib/crm/import/actions'
 import { isError } from '@/lib/action-result'
@@ -99,6 +101,7 @@ export function ImportWizard({
   const [mergeStrategy, setMergeStrategy] = useState<MergeStrategy>('fill_empty')
   const [validation, setValidation] = useState<ValidationResult | null>(null)
   const [result, setResult] = useState<CommitResult | null>(null)
+  const [undone, setUndone] = useState(false)
   const [busy, setBusy] = useState(false)
   const [banner, setBanner] = useState<Banner>(null)
   const [showPaste, setShowPaste] = useState(false)
@@ -186,14 +189,31 @@ export function ImportWizard({
             markDone(item.id, count, inner.length ? `some entries skipped: ${inner.join(', ')}` : undefined)
             continue
           }
-          const parsed = await parseCsvFile(file)
-          if (looksLikeTable(parsed)) {
-            sources.push(parsed)
+          // A spreadsheet (.xlsx / .xls) is read server-side (a workbook is a ZIP of XML), first
+          // sheet only. Detect by extension or MIME so a renamed workbook still works.
+          const isXlsx = /\.xls[xm]?$/i.test(file.name) || /spreadsheet|excel|ms-excel/i.test(file.type)
+          if (isXlsx) {
+            const fd = new FormData()
+            fd.append('file', file)
+            const res = await extractSpreadsheetSource(fd)
+            if (isError(res)) {
+              markSkipped(item.id, res.error)
+              continue
+            }
+            sources.push(res.data.source)
             if (!firstLabel) firstLabel = file.name
-            markDone(item.id, parsed.rows.length)
+            markDone(item.id, res.data.source.rows.length)
             continue
           }
-          // Not a table Vera can read deterministically -> AI extraction from its text.
+          // A CSV / TSV, a vCard, a JSON export, or plain-text notes parse in the browser.
+          const local = await parseFileLocally(file)
+          if (local) {
+            sources.push(local.source)
+            if (!firstLabel) firstLabel = file.name
+            markDone(item.id, local.source.rows.length)
+            continue
+          }
+          // Nothing deterministic could read it -> AI extraction from its text.
           const raw = await file.text()
           const res = await extractContactsAction(raw, { spaceId: scopeSpaceId })
           if (isError(res)) {
@@ -373,7 +393,22 @@ export function ImportWizard({
       return
     }
     setResult(res.data)
+    setUndone(false)
     setStep('done')
+  }
+
+  async function undo() {
+    if (!importId) return
+    setBusy(true)
+    setBanner(null)
+    const res = await rollbackAction(importId)
+    setBusy(false)
+    if (isError(res)) {
+      setBanner({ kind: 'err', text: res.error })
+      return
+    }
+    setUndone(true)
+    setBanner({ kind: 'ok', text: `Undone. We removed ${res.data.deleted} contact${res.data.deleted === 1 ? '' : 's'} this import added.` })
   }
 
   const steps: { key: Step; label: string }[] = [
@@ -436,7 +471,7 @@ export function ImportWizard({
               variant="first-use"
               icon={FileSpreadsheet}
               title="Bring in your contacts"
-              description="Drop files here, or choose them. A spreadsheet, an export from another CRM, or even a plain note all work. CSV, TSV, text, and a .zip export are fine, and you can bring in more than one at once. Vera reads whatever you give it and matches the columns on the next step."
+              description="Drop files here, or choose them. A spreadsheet, an export from another CRM, your phone contacts, or even a plain note all work. CSV, Excel, vCard, JSON, text, and a .zip export are all fine, and you can bring in more than one at once. Vera reads whatever you give it and matches the columns on the next step."
               action={
                 <button
                   type="button"
@@ -454,7 +489,7 @@ export function ImportWizard({
             ref={fileRef}
             type="file"
             multiple
-            accept=".csv,.tsv,.tab,.txt,.zip,text/csv,text/tab-separated-values,text/plain,application/zip,application/x-zip-compressed"
+            accept=".csv,.tsv,.tab,.txt,.vcf,.json,.xlsx,.xls,.zip,text/csv,text/tab-separated-values,text/plain,text/vcard,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/zip,application/x-zip-compressed"
             className="hidden"
             onChange={(e) => {
               const files = Array.from(e.target.files ?? [])
@@ -673,15 +708,22 @@ export function ImportWizard({
 
           {validation.rows && validation.rows.length > 0 && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-semibold text-text">Row by row</p>
-                {validation.errors.length > 0 && (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-warning">
-                    <AlertTriangle className="h-3.5 w-3.5" /> {validation.errors.length} need a look
-                  </span>
-                )}
+                <span className="inline-flex flex-wrap items-center gap-2 text-xs font-medium">
+                  {(validation.diff.flagged ?? 0) > 0 && (
+                    <span className="inline-flex items-center gap-1 text-danger">
+                      <AlertTriangle className="h-3.5 w-3.5" /> {validation.diff.flagged} flagged
+                    </span>
+                  )}
+                  {(validation.diff.warned ?? 0) > 0 && (
+                    <span className="inline-flex items-center gap-1 text-warning">
+                      <AlertTriangle className="h-3.5 w-3.5" /> {validation.diff.warned} to double-check
+                    </span>
+                  )}
+                </span>
               </div>
-              <p className="text-xs text-muted">Flagged rows still import where they can. We just could not use one field.</p>
+              <p className="text-xs text-muted">Flagged rows still import where they can. We just could not use one field. Rows to double-check import as is.</p>
               <div className="max-h-96 overflow-auto rounded-xl border border-border">
                 <table className="w-full min-w-[34rem] text-sm">
                   <thead className="sticky top-0">
@@ -696,7 +738,7 @@ export function ImportWizard({
                     {validation.rows.map((r) => (
                       <tr key={r.rowIndex} className="border-b border-border/60 align-top last:border-0">
                         <td className="px-3 py-2 text-subtle">{r.rowIndex + 2}</td>
-                        <td className="px-3 py-2"><ActionBadge action={r.action} flagged={!!r.error} /></td>
+                        <td className="px-3 py-2"><ActionBadge action={r.action} severity={r.error ? (r.severity ?? 'error') : null} /></td>
                         <td className="px-3 py-2">
                           <p className="font-medium text-text">{r.name || '—'}</p>
                           {r.email && <p className="text-2xs text-subtle">{r.email}</p>}
@@ -735,16 +777,32 @@ export function ImportWizard({
       {step === 'done' && result && (
         <EmptyState
           variant="cleared"
-          title="Your contacts are in"
-          description={`Created ${result.created}, merged ${result.merged}, skipped ${result.skipped}${result.failed ? `, ${result.failed} could not be saved` : ''}. You can import another file any time.`}
+          title={undone ? 'Import undone' : 'Your contacts are in'}
+          description={
+            undone
+              ? 'We removed the contacts this import added. You can import another file any time.'
+              : `Created ${result.created}, merged ${result.merged}, skipped ${result.skipped}${result.failed ? `, ${result.failed} could not be saved` : ''}. You can import another file any time.`
+          }
           action={
-            <button
-              type="button"
-              onClick={() => { setStep('upload'); setSource(null); setImportId(null); setMapping([]); setValidation(null); setResult(null); setBanner(null); setFilename(''); setPasted(''); setShowPaste(false); setQueue([]); }}
-              className="inline-flex items-center gap-2 rounded-xl border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
-            >
-              <UploadCloud className="h-4 w-4" /> Import another file
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {!undone && result.created > 0 && (
+                <button
+                  type="button"
+                  onClick={undo}
+                  disabled={busy}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+                >
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />} Undo this import
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => { setStep('upload'); setSource(null); setImportId(null); setMapping([]); setValidation(null); setResult(null); setUndone(false); setBanner(null); setFilename(''); setPasted(''); setShowPaste(false); setQueue([]); }}
+                className="inline-flex items-center gap-2 rounded-xl border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+              >
+                <UploadCloud className="h-4 w-4" /> Import another file
+              </button>
+            </div>
           }
         />
       )}
@@ -775,12 +833,13 @@ const ACTION_BADGE: Record<PreviewRow['action'], { label: string; cls: string }>
   skip: { label: 'Skip', cls: 'bg-surface-elevated text-muted' },
 }
 
-function ActionBadge({ action, flagged }: { action: PreviewRow['action']; flagged: boolean }) {
+function ActionBadge({ action, severity }: { action: PreviewRow['action']; severity: 'error' | 'warning' | null }) {
   const a = ACTION_BADGE[action]
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
       <span className={`rounded-md px-1.5 py-0.5 text-2xs font-medium ${a.cls}`}>{a.label}</span>
-      {flagged && <span className="rounded-md bg-warning-bg px-1.5 py-0.5 text-2xs font-medium text-warning">Needs a look</span>}
+      {severity === 'error' && <span className="rounded-md bg-danger-bg px-1.5 py-0.5 text-2xs font-medium text-danger">Needs a look</span>}
+      {severity === 'warning' && <span className="rounded-md bg-warning-bg px-1.5 py-0.5 text-2xs font-medium text-warning">Double-check</span>}
     </span>
   )
 }

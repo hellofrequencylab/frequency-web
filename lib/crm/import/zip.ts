@@ -40,6 +40,17 @@ export interface ZipReadResult {
   skipped: ZipSkip[]
 }
 
+/** A raw (undecoded) entry pulled from a ZIP: its path + its inflated bytes. */
+export interface ZipRawEntry {
+  name: string
+  bytes: Buffer
+}
+
+export interface ZipRawReadResult {
+  entries: ZipRawEntry[]
+  skipped: ZipSkip[]
+}
+
 /** Is this central-directory entry a CSV we should try to read? */
 function isCsvName(name: string): boolean {
   return /\.csv$/i.test(name)
@@ -65,13 +76,16 @@ function findEocd(buf: Buffer): number {
 }
 
 /**
- * Extract the CSV entries from a ZIP archive buffer. Never throws on a malformed or
- * partially-unreadable archive: it returns whatever CSV entries it could safely inflate
- * plus a list of what it skipped and why. An empty `entries` with a single skip of
- * reason 'not-a-zip' means the buffer was not a recognizable ZIP.
+ * Extract the entries whose name matches `predicate` from a ZIP archive buffer, returning their
+ * raw inflated bytes. Never throws on a malformed or partially-unreadable archive: it returns
+ * whatever entries it could safely inflate plus a list of what it skipped and why. An empty
+ * `entries` with a single skip of reason 'not-a-zip' means the buffer was not a recognizable ZIP.
+ *
+ * This is the shared engine behind both the CSV reader (readZipCsvEntries) and the XLSX adapter
+ * (which pulls the workbook XML parts out of the .xlsx container, itself a ZIP).
  */
-export function readZipCsvEntries(buf: Buffer): ZipReadResult {
-  const entries: ZipCsvEntry[] = []
+export function readZipEntries(buf: Buffer, predicate: (name: string) => boolean): ZipRawReadResult {
+  const entries: ZipRawEntry[] = []
   const skipped: ZipSkip[] = []
 
   const eocd = findEocd(buf)
@@ -98,7 +112,7 @@ export function readZipCsvEntries(buf: Buffer): ZipReadResult {
     cdOffset = cdOffset + 46 + nameLen + extraLen + commentLen
 
     if (name.endsWith('/')) continue // a directory entry
-    if (!isCsvName(name)) continue // we only pull CSVs
+    if (!predicate(name)) continue // not an entry this caller wants
     if (isUnsafeName(name)) {
       skipped.push({ name, reason: 'unsafe-path' })
       continue
@@ -147,11 +161,20 @@ export function readZipCsvEntries(buf: Buffer): ZipReadResult {
         continue
       }
       totalBytes += out.length
-      entries.push({ name, text: out.toString('utf8') })
+      entries.push({ name, bytes: out })
     } catch {
       skipped.push({ name, reason: 'inflate-failed' })
     }
   }
 
   return { entries, skipped }
+}
+
+/**
+ * Extract the CSV entries from a ZIP archive buffer as decoded UTF-8 text. A thin wrapper over
+ * readZipEntries with the CSV-name predicate; behavior + skip reasons are unchanged.
+ */
+export function readZipCsvEntries(buf: Buffer): ZipReadResult {
+  const { entries, skipped } = readZipEntries(buf, isCsvName)
+  return { entries: entries.map((e) => ({ name: e.name, text: e.bytes.toString('utf8') })), skipped }
 }

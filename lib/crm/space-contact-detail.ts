@@ -30,6 +30,9 @@ import { draftContextLine, explainMemberScores, type ScoreReadout } from '@/lib/
 import { getMemberContext, type MemberFacts } from '@/lib/ai/memory'
 import { resolvePlaybookForScores } from '@/lib/playbooks/resolve'
 import { effectiveAutonomyTier, type AutonomyTier } from '@/lib/playbooks/registry'
+import { listSpaceCustomFields } from '@/lib/crm/import/store'
+import { humanizeFieldKey } from '@/lib/crm/import/custom-fields'
+import type { ValueType } from '@/lib/crm/import/types'
 
 /** The identity + enriched fields the detail header shows. name/email come from the Space contact row;
  *  phone/company/city are best-effort enrichment from a linked capture (null when none is known). */
@@ -42,17 +45,11 @@ export interface SpaceContactIdentity {
   city: string | null
   consentState: string
   createdAt: string | null
-  /** Imported custom fields (from `contacts.meta.custom`), each with a display label humanized from its
-   *  stable key. Empty when the contact carries none. */
-  customFields: { key: string; label: string; value: string }[]
-}
-
-/** Turn a stable custom-field key into a display label: `lead_source` -> `Lead source`. (The registry
- *  holds the operator's original label, but it is owner-scoped, so the detail surface humanizes the key
- *  rather than doing a cross-owner registry read.) */
-function humanizeFieldKey(key: string): string {
-  const spaced = key.replace(/_/g, ' ').trim()
-  return spaced ? spaced.charAt(0).toUpperCase() + spaced.slice(1) : key
+  /** Imported custom fields (from `contacts.meta.custom`), each resolved against the Space's custom
+   *  -field registry for its human label + value type (so the card can format a date, dial a phone,
+   *  link a url). An unknown key still shows, with a label humanized from the key + a text type, so
+   *  imported data is never hidden. Empty when the contact carries none. */
+  customFields: { key: string; label: string; value: string; valueType: ValueType }[]
 }
 
 /** The Altitude 3 "where this person is" band + shared scores for the detail header. All fail-safe:
@@ -130,14 +127,17 @@ export async function getSpaceContactDetail(
   if (!contact) return null
 
   // Fold the sources in parallel; each is independently fail-safe. The contact's member profile id
-  // (the score / matches / facts key) is resolved off the contact row, null for a pure lead.
-  const [enrichment, interactions, notes, dealsAll, profileId] = await Promise.all([
+  // (the score / matches / facts key) is resolved off the contact row, null for a pure lead. The
+  // Space's custom-field registry labels + types this contact's meta.custom (fail-safe to []).
+  const [enrichment, interactions, notes, dealsAll, profileId, registry] = await Promise.all([
     enrichFromCapture(contact.email),
     listContactInteractions({ subjectKind: 'contact', subjectId: contactId, spaceId, limit: 100 }),
     listClientNotes(spaceId, contactId),
     getDeals(spaceId),
     resolveContactProfileId(contactId),
+    listSpaceCustomFields(spaceId),
   ])
+  const registryByKey = new Map(registry.map((f) => [f.key, f]))
 
   // The Space's private notes fold into the timeline as legacy notes (buildTimeline shapes + sorts).
   const timeline = buildTimeline({
@@ -157,11 +157,15 @@ export async function getSpaceContactDetail(
     city: enrichment.city,
     consentState: contact.consent_state,
     createdAt: contact.created_at,
-    customFields: Object.entries(contact.custom ?? {}).map(([key, value]) => ({
-      key,
-      label: humanizeFieldKey(key),
-      value,
-    })),
+    customFields: Object.entries(contact.custom ?? {}).map(([key, value]) => {
+      const def = registryByKey.get(key)
+      return {
+        key,
+        label: def?.label || humanizeFieldKey(key),
+        value,
+        valueType: def?.valueType ?? 'text',
+      }
+    }),
   }
 
   // The Space's effective autonomy allowance sets the picker's EFFECTIVE tier (fail-closed to

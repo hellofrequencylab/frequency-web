@@ -15,9 +15,10 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { autoMapColumns, headerFingerprint } from './map'
 import { parseCsvText } from './parse'
 import { readZipCsvEntries } from './zip'
+import { parseXlsxBuffer } from './xlsx'
 import { proposeMapping, extractContactsFromText, type AiSuggestion, type ExtractedContact } from './ai'
 import { computeValidation } from './preview'
-import { commitImport } from './commit'
+import { commitImport, rollbackImport, type RollbackResult } from './commit'
 import { createImport, getImport, updateImport, findRememberedMapping, listCustomFields } from './store'
 import type {
   ParsedSource,
@@ -163,6 +164,35 @@ export async function extractZipSources(formData: FormData): Promise<ActionResul
   return ok({ sources, files, skipped })
 }
 
+const MAX_XLSX_BYTES = 20 * 1024 * 1024 // 20 MB workbook
+
+/** Read the first sheet of an uploaded .xlsx / .xls workbook into a ParsedSource server-side (a
+ *  workbook is a ZIP of XML, parsed with zero dependencies by lib/crm/import/xlsx.ts). The client
+ *  then merges it with any other files and stages it like a normal import. FAIL-SOFT: an unreadable
+ *  or legacy-binary workbook returns a calm reason, never throws. */
+export async function extractSpreadsheetSource(formData: FormData): Promise<ActionResult<{ source: ParsedSource }>> {
+  try {
+    await requireProfile()
+  } catch {
+    return fail('Sign in to import contacts.')
+  }
+  const file = formData.get('file')
+  if (!(file instanceof File)) return fail('No spreadsheet was uploaded.')
+  if (file.size > MAX_XLSX_BYTES) return fail('That spreadsheet is too large. Keep it under 20 MB.')
+
+  let buf: Buffer
+  try {
+    buf = Buffer.from(await file.arrayBuffer())
+  } catch {
+    return fail('We could not read that spreadsheet.')
+  }
+
+  const { source, error } = parseXlsxBuffer(buf)
+  if (!source || error) return fail(error ?? 'We could not read that spreadsheet.')
+  if (!source.rows.length) return fail('That spreadsheet had no rows we could read.')
+  return ok({ source })
+}
+
 /** Pull contacts out of unstructured text (a pasted block, a .txt file the delimited parser
  *  could not read). Gated on the kill switch + budget cap, mirroring suggestMapping. The
  *  client sends the raw text; only a capped sample reaches the model (privacy). FAIL-SOFT:
@@ -255,6 +285,22 @@ export async function commitAction(id: string): Promise<ActionResult<CommitResul
     return fail('Sign in to continue.')
   }
   const res = await commitImport(id, profileId)
+  revalidatePath('/network/contacts')
+  revalidatePath('/admin/marketing/contacts')
+  revalidatePath('/admin/crm')
+  return res
+}
+
+/** Undo a committed import: delete exactly the contacts that commit created. Idempotent + gated the
+ *  same way the commit was. Revalidates the contact surfaces so the deletions show at once. */
+export async function rollbackAction(id: string): Promise<ActionResult<RollbackResult>> {
+  let profileId: string
+  try {
+    profileId = await requireProfile()
+  } catch {
+    return fail('Sign in to continue.')
+  }
+  const res = await rollbackImport(id, profileId)
   revalidatePath('/network/contacts')
   revalidatePath('/admin/marketing/contacts')
   revalidatePath('/admin/crm')

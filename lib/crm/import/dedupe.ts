@@ -20,6 +20,7 @@ import type {
   PreviewRow,
   MergeStrategy,
 } from './types'
+import { normalizePhone, phoneIsPlausible, suggestEmailDomain } from './validate'
 
 // ── Keys (mirror existingContactKeys / phoneKey exactly) ─────────────────────────
 
@@ -115,6 +116,9 @@ export function projectRow(row: Record<string, string>, mapping: ColumnMapping[]
     }
   }
   c.email = c.email.toLowerCase()
+  // Normalize the stored phone to an E.164-ish form (best effort, never destructive). The dedupe key
+  // is derived separately (phoneKey), so this changes only how the number is stored + displayed.
+  if (c.phone) c.phone = normalizePhone(c.phone)
   return c
 }
 
@@ -129,17 +133,32 @@ export function validateRow(c: ProjectedContact, rowIndex: number): RowError[] {
   const errors: RowError[] = []
   const hasIdentity = !!(c.displayName || c.email || c.phone)
   if (!hasIdentity) {
-    errors.push({ rowIndex, field: 'row', message: 'No name, email, or phone. Nothing to import from this row.' })
+    errors.push({ rowIndex, field: 'row', message: 'No name, email, or phone. Nothing to import from this row.', severity: 'error' })
     return errors
   }
   if (c.email && !EMAIL_RE.test(c.email)) {
-    errors.push({ rowIndex, field: 'email', message: 'That email address looks off. It will be left blank.' })
-  }
-  if (c.phone) {
-    const digits = c.phone.replace(/\D+/g, '')
-    if (digits.length < 7) {
-      errors.push({ rowIndex, field: 'phone', message: 'That phone number looks too short. It will be left blank.' })
+    errors.push({ rowIndex, field: 'email', message: 'That email address looks off. It will be left blank.', severity: 'error' })
+  } else if (c.email) {
+    // A valid-looking address whose domain is a near-miss of a common one: a NON-blocking warning.
+    // The address is kept as typed; we just offer the likely fix.
+    const suggestion = suggestEmailDomain(c.email)
+    if (suggestion) {
+      errors.push({
+        rowIndex,
+        field: 'email',
+        message: `Did you mean ${suggestion}? We kept it as typed.`,
+        severity: 'warning',
+        suggestion,
+      })
     }
+  }
+  if (c.phone && !phoneIsPlausible(c.phone)) {
+    const digits = c.phone.replace(/\D+/g, '')
+    const message =
+      digits.length < 7
+        ? 'That phone number looks too short. It will be left blank.'
+        : 'That phone number looks too long. It will be left blank.'
+    errors.push({ rowIndex, field: 'phone', message, severity: 'error' })
   }
   return errors
 }
@@ -192,6 +211,10 @@ export function planCommit(
   const errors: RowError[] = []
   const seenEmail = new Set<string>()
   const seenPhone = new Set<string>()
+  // Fuzzy near-duplicate signal: which (normalized name + phone key) pairs we have already seen, so
+  // a later row with the SAME name AND the SAME phone earns a soft "looks like a duplicate" warning
+  // even when it is being kept (the strict email/phone dedupe would only skip an exact key repeat).
+  const seenNamePhone = new Set<string>()
   const customKeys = new Set<string>()
   for (const m of mapping) if (m.target === 'custom' && m.customKey) customKeys.add(m.customKey)
 
@@ -199,16 +222,17 @@ export function planCommit(
   let merged = 0
   let skipped = 0
   let flagged = 0
+  let warned = 0
 
   rows.forEach((raw, rowIndex) => {
     const contact = projectRow(raw, mapping)
     const rowErrors = validateRow(contact, rowIndex)
-    if (rowErrors.length) {
-      errors.push(...rowErrors)
-      flagged++
-    }
 
     if (!isImportable(contact)) {
+      if (rowErrors.length) {
+        errors.push(...rowErrors)
+        flagged++
+      }
       planned.push({ rowIndex, action: 'skip', contact, matchedKey: null })
       skipped++
       return
@@ -217,7 +241,32 @@ export function planCommit(
     // Drop a malformed email so it neither dedupes nor persists (the row still imports).
     const ek = EMAIL_RE.test(contact.email) ? emailKey(contact.email) : null
     if (!ek) contact.email = ''
+    // Blank an implausible phone (too short / too long) so it neither dedupes nor persists, matching
+    // the flag's "it will be left blank" promise (mirrors the malformed-email drop above).
+    if (contact.phone && !phoneIsPlausible(contact.phone)) contact.phone = ''
     const pk = phoneKey(contact.phone)
+
+    // Fuzzy same-name + same-phone soft warning (a likely duplicate the strict dedupe may keep).
+    const nameKey = contact.displayName.trim().toLowerCase().replace(/\s+/g, ' ')
+    if (nameKey && pk) {
+      const sig = `${nameKey}|${pk}`
+      if (seenNamePhone.has(sig)) {
+        rowErrors.push({
+          rowIndex,
+          field: 'row',
+          message: 'Same name and phone as an earlier row. It may be a duplicate.',
+          severity: 'warning',
+        })
+      }
+      seenNamePhone.add(sig)
+    }
+
+    // Fold this row's problems into the totals: an error flags the row, a warning-only row is warned.
+    if (rowErrors.length) {
+      errors.push(...rowErrors)
+      if (rowErrors.some((e) => (e.severity ?? 'error') === 'error')) flagged++
+      else warned++
+    }
 
     // INTERNAL dedupe: this key already appeared earlier in the file.
     if ((ek && seenEmail.has(ek)) || (pk && seenPhone.has(pk))) {
@@ -245,7 +294,7 @@ export function planCommit(
     if (pk) seenPhone.add(pk)
   })
 
-  const diff: DiffCounts = { created, merged, skipped, flagged }
+  const diff: DiffCounts = { created, merged, skipped, flagged, warned }
   return { rows: planned, diff, errors, customKeys: [...customKeys] }
 }
 
@@ -256,8 +305,15 @@ export const PREVIEW_ROW_CAP = 200
  *  per-row list derived from the SAME planned rows as `diff`, so the table and the totals can
  *  never drift apart. */
 export function toValidationResult(plan: CommitPlan): ValidationResult {
-  const firstErrorByRow = new Map<number, string>()
-  for (const e of plan.errors) if (!firstErrorByRow.has(e.rowIndex)) firstErrorByRow.set(e.rowIndex, e.message)
+  // Per row, keep the FIRST hard error if there is one (it is the more urgent message), else the
+  // first warning. This drives the row's "needs a look" line + its severity dot in the preview.
+  const byRow = new Map<number, { message: string; severity: 'error' | 'warning' }>()
+  for (const e of plan.errors) {
+    const severity = (e.severity ?? 'error') as 'error' | 'warning'
+    const prev = byRow.get(e.rowIndex)
+    if (!prev) byRow.set(e.rowIndex, { message: e.message, severity })
+    else if (prev.severity === 'warning' && severity === 'error') byRow.set(e.rowIndex, { message: e.message, severity })
+  }
 
   const rows: PreviewRow[] = plan.rows.slice(0, PREVIEW_ROW_CAP).map((r) => ({
     rowIndex: r.rowIndex,
@@ -265,7 +321,8 @@ export function toValidationResult(plan: CommitPlan): ValidationResult {
     name: r.contact.displayName,
     email: r.contact.email,
     matchedKey: r.matchedKey,
-    error: firstErrorByRow.get(r.rowIndex) ?? null,
+    error: byRow.get(r.rowIndex)?.message ?? null,
+    severity: byRow.get(r.rowIndex)?.severity ?? null,
   }))
 
   return { diff: plan.diff, errors: plan.errors, customKeys: plan.customKeys, rows, rowTotal: plan.rows.length }
