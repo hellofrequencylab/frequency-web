@@ -19,10 +19,11 @@ function sampleLayout(): EntityLayout {
 describe('renderEmailLayout', () => {
   it('renders authored blocks as inline-styled, table-based HTML', () => {
     const { html, text } = renderEmailLayout(sampleLayout())
-    // Heading as an <h2> with an inline font-size + the brand ink hex.
+    // Heading as an <h2> with an inline font-size + the lifted-charcoal heading ink at the unified semibold.
     expect(html).toContain('<h2')
     expect(html).toContain('Welcome aboard')
-    expect(html).toContain('#3D352A')
+    expect(html).toContain('#4A4234') // heading ink (a touch lighter than the #3D352A body ink)
+    expect(html).toContain('font-weight:600') // unified heading-family semibold
     // Paragraph preserves the authored line break as <br>.
     expect(html).toContain('A short paragraph.<br>With a break.')
     // Button is a bulletproof inline-block link with the primary hex + the safe href.
@@ -237,6 +238,63 @@ describe('shell + compileEmailDoc', () => {
     expect(out.html).toContain('<!DOCTYPE html>')
     expect(out.html).toContain('Welcome aboard')
     expect(out.text).toContain('Unsubscribe: https://x/u')
+  })
+
+  it('default header renders the Frequency logo IMAGE (absolute PNG, retina, alt fallback)', () => {
+    const html = emailDocumentShell({ body: '<p>hi</p>' })
+    // Absolute-URL raster PNG (no SVG — mail clients cannot render it), explicit width, alt text fallback.
+    expect(html).toContain('https://frequencylocal.com/frequency-logo.png')
+    expect(html).toContain('alt="Frequency"')
+    expect(html).toContain('width="168"')
+    expect(html).not.toContain('.svg')
+  })
+
+  it('a per-Space wordmark brand keeps its wordmark text (no Frequency logo stamped on it)', () => {
+    const html = emailDocumentShell({ body: '<p>hi</p>', brand: { wordmark: 'Acme Studio' } })
+    expect(html).toContain('Acme Studio')
+    expect(html).not.toContain('frequency-logo.png')
+  })
+
+  it('renders a full CAN-SPAM legal footer (sender, address, copyright, real routes)', () => {
+    const html = emailDocumentShell({ body: '<p>hi</p>', unsubscribeUrl: 'https://x/u' })
+    // Sender identity + one-line description.
+    expect(html).toContain('A place to be human')
+    // Physical mailing-address line: the real CAN-SPAM postal address plus the legal org.
+    expect(html).toContain('Frequency Labs Holdings')
+    expect(html).toContain('802 Caminito Azul, Carlsbad, CA 92011')
+    // Dated copyright.
+    expect(html).toContain(`&copy; ${new Date().getFullYear()}`)
+    // Links to the real routes.
+    expect(html).toContain('href="https://frequencylocal.com/privacy"')
+    expect(html).toContain('href="https://frequencylocal.com/terms"')
+    expect(html).toContain('href="https://frequencylocal.com/help"')
+  })
+
+  it('keeps the unsubscribe SUBTLE but present and working', () => {
+    const html = emailDocumentShell({ body: '<p>hi</p>', unsubscribeUrl: 'https://x/u' })
+    // The exact one-click token URL is preserved.
+    expect(html).toContain('href="https://x/u"')
+    expect(html).toContain('Unsubscribe')
+    // Subtle: the legal fine-print cluster renders at the smallest size in the lightest ink, as an
+    // underlined TEXT link, not the old prominent pill button.
+    expect(html).toContain('font-size:10px')
+    expect(html).toContain('text-decoration:underline')
+    expect(html).not.toContain('border-radius:999px')
+  })
+
+  it('the marketing/nav links are prominent (body ink, larger than the legal fine print)', () => {
+    const html = emailDocumentShell({ body: '<p>hi</p>', unsubscribeUrl: 'https://x/u' })
+    // The link row is 13px in the readable body-ink color; the legal cluster below it is 10px subtle.
+    expect(html).toContain('font-size:13px')
+  })
+
+  it('a Space brand address overrides the default platform address', () => {
+    const html = emailDocumentShell({
+      body: '<p>hi</p>',
+      brand: { address: 'Acme Studio, 1 Main St, Springfield' },
+    })
+    expect(html).toContain('Acme Studio, 1 Main St, Springfield')
+    expect(html).not.toContain('802 Caminito Azul')
   })
 })
 

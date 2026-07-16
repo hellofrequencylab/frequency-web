@@ -17,10 +17,12 @@
 // AUTHORITY: createInvite / listInvites / revokeInvite are gated on canManageMembers (owner / admin,
 // see lib/spaces/entitlements.ts). acceptInvite is for the AUTHENTICATED invitee. The server is the
 // authority for every gate (P5): reads fail-safe (empty / null), writes fail-closed on a permission
-// miss. EMAIL DELIVERY IS OUT OF SCOPE for now — createInvite returns the link/token so the owner
-// can share it by hand; sending the email is a later, additive step (never a refactor, P4).
+// miss. EMAIL DELIVERY: createInvite now enqueues the shared invite email (lib/email.ts
+// sendInviteEmail) with the accept link, best-effort so a mail hiccup never fails invite creation.
+// It STILL returns the link/token too, so the owner can also copy + share it by hand.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendInviteEmail } from '@/lib/email'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -159,9 +161,10 @@ function mapInvite(r: InviteRow): SpaceInvite | null {
  * email if one exists (new token + role + expiry) or inserts a new one, so re-inviting the same email
  * never piles up. CHECK-THEN-WRITE in app code (an expression partial index is not a usable PostgREST
  * upsert target, the codebase convention for the booking/membership partial indexes); the partial
- * unique index (space_id, lower(email)) WHERE status='pending' is the race backstop. Returns the
- * invite + the ready-to-share accept link (email delivery is NOT built yet — the owner shares the
- * link by hand). Fail-closed on permission.
+ * unique index (space_id, lower(email)) WHERE status='pending' is the race backstop. Enqueues the
+ * invite email with the accept link (best-effort — a mail hiccup never fails invite creation) and
+ * returns the invite + the ready-to-share accept link so the owner can also share it by hand.
+ * Fail-closed on permission.
  */
 export async function createInvite(
   spaceId: string,
@@ -194,6 +197,43 @@ export async function createInvite(
   const token = generateInviteToken()
   // Refresh the 14-day window on every (re-)invite so a refreshed link is freshly live.
   const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+
+  // The email greeting bits, resolved once for both the refresh + insert branches. The
+  // inviter's display name is best-effort (falls back to a plain noun); the context is the
+  // Space's brand/name, matching what the members UI shows.
+  let inviterName = 'A teammate'
+  try {
+    const { data: inviter } = await createAdminClient()
+      .from('profiles')
+      .select('display_name')
+      .eq('id', profileId)
+      .maybeSingle()
+    if (inviter?.display_name) inviterName = inviter.display_name as string
+  } catch {
+    // Keep the fallback; the greeting is cosmetic, never a gate.
+  }
+  const spaceName = space.brandName ?? space.name
+
+  // Enqueue the teammate invite email best-effort. The invite row is already written when
+  // this runs, so a mail hiccup (a queue blip) must NEVER fail invite creation — the owner
+  // still gets the copyable accept link in the UI. A re-invite refreshes the token and
+  // resends the current link, which is intended. Suppression is enforced at the outbox
+  // drain (sendRawEmail); an invitee is a stranger with no profileId/consent to weigh, so
+  // this is transactional/relationship mail, exactly like the Circle + claim invites.
+  const deliverInvite = async (acceptToken: string) => {
+    try {
+      await sendInviteEmail({
+        to: normalizedEmail,
+        inviterName,
+        contextName: spaceName,
+        contextKind: 'space',
+        inviteUrl: inviteAcceptUrl(acceptToken),
+      })
+    } catch (e) {
+      console.error('[createInvite] invite email enqueue failed', e)
+    }
+  }
+
   try {
     // Is there already a LIVE invite for this email in this Space? Refresh it in place (the email is
     // stored lower-cased, so the comparison matches the partial-unique index's lower(email)).
@@ -219,6 +259,7 @@ export async function createInvite(
       if (error || !data) return fail('Could not create the invite. Try again.')
       const invite = mapInvite(data)
       if (!invite) return fail('Could not create the invite. Try again.')
+      await deliverInvite(invite.token)
       return ok({ invite, acceptUrl: inviteAcceptUrl(invite.token) })
     }
 
@@ -239,6 +280,7 @@ export async function createInvite(
     if (error || !data) return fail('Could not create the invite. Try again.')
     const invite = mapInvite(data)
     if (!invite) return fail('Could not create the invite. Try again.')
+    await deliverInvite(invite.token)
     return ok({ invite, acceptUrl: inviteAcceptUrl(invite.token) })
   } catch {
     return fail('Could not create the invite. Try again.')

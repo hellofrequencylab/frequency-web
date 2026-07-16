@@ -19,8 +19,8 @@ import { cn } from '@/lib/utils'
 // the email + role and refreshes a live invite for the same email, so this form is convenience, not
 // the gate. Below the form, the current pending invites list with a copyable accept link + a revoke.
 //
-// HONESTY (CONTENT-VOICE skeptic test): email delivery is NOT built yet, so the form says so plainly
-// and surfaces the link to share by hand. Plain labels, the space-role nouns, no em/en dashes.
+// The form emails the invite (the accept link) and ALSO surfaces the link to copy + share by hand.
+// Plain labels, the space-role nouns, no em/en dashes.
 
 // The roles an owner may invite at, shown as the member-facing nouns (the ladder, lib/spaces/
 // membership.ts). 'viewer' reads as the plain "Member".
@@ -190,9 +190,9 @@ export function InviteForm({
         </div>
 
         <p className="text-xs text-subtle">
-          We do not send the email yet, so copy the invite link below and share it with your teammate.
-          When they open it while signed in, they join your team at the role you picked. Email
-          delivery is coming.
+          We email your teammate the invite with a link to join. You can also copy the link below and
+          share it yourself. When they open it while signed in, they join your team at the role you
+          picked.
         </p>
 
         {error && (
@@ -208,8 +208,8 @@ export function InviteForm({
             className="inline-flex items-center gap-1 text-sm font-medium text-success"
             role="status"
           >
-            <Check className="h-4 w-4" aria-hidden /> Invite ready for {justInvited}. Copy its link
-            below.
+            <Check className="h-4 w-4" aria-hidden /> Invite sent to {justInvited}. You can also copy
+            its link below.
           </p>
         )}
       </form>

@@ -18,14 +18,30 @@ vi.mock('@/lib/auth', () => ({
   getMyProfileId: async () => currentProfileId,
 }))
 
-let resolvedSpace: { id: string; slug: string; ownerProfileId?: string | null } | null = {
+let resolvedSpace: {
+  id: string
+  slug: string
+  ownerProfileId?: string | null
+  name?: string
+  brandName?: string | null
+} | null = {
   id: 'space-1',
   slug: 'river-studio',
   ownerProfileId: 'owner-0000-4000-a000-0000000ownr',
+  name: 'River Studio',
+  brandName: null,
 }
 vi.mock('./store', () => ({
   getSpaceById: async () => resolvedSpace,
 }))
+
+// Email sender seam — createInvite enqueues the shared invite email with the accept link. The
+// outbox itself is exercised elsewhere; here we only prove createInvite hands sendInviteEmail the
+// right invite (recipient, Space context, join link) and that a mail hiccup never fails the invite.
+const { sendInviteEmail } = vi.hoisted(() => ({
+  sendInviteEmail: vi.fn<(...args: unknown[]) => Promise<void>>(async () => {}),
+}))
+vi.mock('@/lib/email', () => ({ sendInviteEmail }))
 
 let canManageMembers = true
 vi.mock('./entitlements', () => ({
@@ -201,10 +217,18 @@ beforeEach(() => {
   db.invites = []
   db.updates = []
   currentProfileId = 'owner-0000-4000-a000-0000000ownr'
-  resolvedSpace = { id: 'space-1', slug: 'river-studio', ownerProfileId: 'owner-0000-4000-a000-0000000ownr' }
+  resolvedSpace = {
+    id: 'space-1',
+    slug: 'river-studio',
+    ownerProfileId: 'owner-0000-4000-a000-0000000ownr',
+    name: 'River Studio',
+    brandName: null,
+  }
   canManageMembers = true
   addSpaceMember.mockClear()
   addSpaceMember.mockResolvedValue({ id: 'm1' })
+  sendInviteEmail.mockClear()
+  sendInviteEmail.mockResolvedValue(undefined)
 })
 
 describe('pure helpers (fail-closed)', () => {
@@ -293,6 +317,46 @@ describe('createInvite — gated on canManageMembers', () => {
     if (isError(second)) return
     expect(db.invites.filter((r) => r.status === 'pending')).toHaveLength(1)
     expect(second.data.invite.role).toBe('admin') // role refreshed
+  })
+
+  it('emails the invitee the accept link (Space-context transactional invite)', async () => {
+    const result = await createInvite('space-1', 'teammate@example.com', 'editor')
+    expect(isError(result)).toBe(false)
+    if (isError(result)) return
+    expect(sendInviteEmail).toHaveBeenCalledTimes(1)
+    expect(sendInviteEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'teammate@example.com',
+        contextKind: 'space',
+        contextName: 'River Studio',
+        inviteUrl: result.data.acceptUrl,
+      }),
+    )
+  })
+
+  it('RE-invite resends the refreshed link (matches Circle resend-on-reinvite)', async () => {
+    await createInvite('space-1', 'teammate@example.com', 'editor')
+    const second = await createInvite('space-1', 'teammate@example.com', 'admin')
+    expect(isError(second)).toBe(false)
+    if (isError(second)) return
+    expect(sendInviteEmail).toHaveBeenCalledTimes(2)
+    expect(sendInviteEmail).toHaveBeenLastCalledWith(
+      expect.objectContaining({ to: 'teammate@example.com', inviteUrl: second.data.acceptUrl }),
+    )
+  })
+
+  it('a mail hiccup does NOT fail invite creation (fail-safe)', async () => {
+    sendInviteEmail.mockRejectedValueOnce(new Error('queue down'))
+    const result = await createInvite('space-1', 'teammate@example.com', 'editor')
+    expect(isError(result)).toBe(false) // the invite row is still written + returned
+    expect(db.invites.filter((r) => r.status === 'pending')).toHaveLength(1)
+  })
+
+  it('does not email when the caller is not a manager (nothing written, nothing sent)', async () => {
+    canManageMembers = false
+    const result = await createInvite('space-1', 'teammate@example.com', 'editor')
+    expect(isError(result)).toBe(true)
+    expect(sendInviteEmail).not.toHaveBeenCalled()
   })
 })
 

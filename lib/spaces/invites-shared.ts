@@ -15,8 +15,8 @@ import { type SpaceRole } from '@/lib/spaces/membership'
 export type InviteStatus = 'pending' | 'accepted' | 'revoked'
 
 /** A `space_invites` row as the app consumes it (camelCased; the fields the surfaces need). The
- *  `token` is included so the owner list can render the copyable accept link (email delivery is not
- *  built yet). */
+ *  `token` is included so the owner list can render the copyable accept link (a share-by-hand
+ *  backup alongside the emailed invite). */
 export interface SpaceInvite {
   id: string
   spaceId: string
@@ -32,7 +32,7 @@ export interface SpaceInvite {
 /** The shape createInvite hands back on success: the invite plus the ready-to-share accept link. */
 export interface CreatedInvite {
   invite: SpaceInvite
-  /** The absolute accept link to share by hand until email delivery ships. */
+  /** The absolute accept link. The invite is emailed too; this is the share-by-hand backup. */
   acceptUrl: string
 }
 

@@ -182,12 +182,20 @@ export async function inviteByEmail(
     .insert({ token, circle_id: circleId, created_by: myProfileId })
   if (error) return { ok: false, error: error.message }
 
-  await sendInviteEmail({
-    to: clean,
-    inviterName: me?.display_name ?? 'A member',
-    circleName: circle.name,
-    inviteUrl: `${SITE_URL}/join/${token}`,
-  })
+  // Enqueue the invite email best-effort: the link is already created, so a mail hiccup
+  // (a queue blip) must never fail the invite. A re-invite mints a fresh link + resends,
+  // which is intended. Suppression is enforced at the outbox drain (sendRawEmail).
+  try {
+    await sendInviteEmail({
+      to: clean,
+      inviterName: me?.display_name ?? 'A member',
+      contextName: circle.name,
+      contextKind: 'circle',
+      inviteUrl: `${SITE_URL}/join/${token}`,
+    })
+  } catch (e) {
+    console.error('[inviteByEmail] invite email enqueue failed', e)
+  }
 
   return { ok: true }
 }

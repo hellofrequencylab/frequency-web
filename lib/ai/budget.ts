@@ -71,6 +71,8 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'seed-image-plan': 4,          // vision: read the uploaded photos, pick the hero + categorize (Sonnet vision; per import)
   // ── Classifieds & Housing Seeder (operator-facing, low-volume, per-paste) ─────────────────────
   'listing-seed-extract': 5,     // extract a structured listing from one pasted block (Sonnet; forced tool, per paste)
+  // ── Resonance CRM messaging generator (operator-facing, low-volume; drafts a campaign or a sequence) ─
+  'messaging-generator': 4,      // draft a campaign email or a multi-step email sequence from the guided flow (Sonnet; forced tool, one call per build)
 }
 
 export function dailyCapFor(feature: string, fallbackUsd = 1): number {

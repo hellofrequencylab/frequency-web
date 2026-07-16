@@ -20,6 +20,7 @@ import {
   Mail,
   Megaphone,
   Paintbrush,
+  Link2,
   Workflow,
   BarChart3,
   CreditCard,
@@ -119,6 +120,10 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // immutable entry point each arrived through. Same `crm` feature gate as the CRM board; the surface
   // self-gates on ownership. Links out to the Space CRM's leads view.
   { id: 'space.leads', label: 'Lead capture', desc: 'Contacts captured from QR scans, events, and referrals, and how each one arrived.', Icon: UserPlus, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/leads`, order: 38, tier: 'primary', priority: 18 },
+  // Capture links (CRM Phase 3): make a shareable link for each of the other front doors, a warm intro,
+  // an event check-in, a lead magnet, or a card swap. Same `crm` feature gate as the CRM board; the page
+  // self-gates on ownership. Links out to the door-link maker.
+  { id: 'space.doors', label: 'Capture links', desc: 'Make a link for a warm intro, an event, a lead magnet, or a card swap.', Icon: Link2, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/doors`, order: 39, tier: 'primary', priority: 19 },
 
   // ── Offerings & money (independent modules) ──────────────────────────────────────────────────────────
   { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#availability`, order: 40, tier: 'primary', priority: 30 },

@@ -6,7 +6,7 @@
 // legacy /admin/marketing/* composer — "New email" and a row's "Open" both open the in-place popup, and
 // there are no quick-links back to the old system. Voice canon: no em dashes.
 
-import { useCallback, useMemo, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { Search, Send } from 'lucide-react'
 import { MessagingConsole } from '@/components/admin/messaging/messaging-console'
 import { MarketingComposePopup } from '@/components/admin/crm/marketing-compose-popup'
@@ -19,10 +19,14 @@ export function MarketingWorkspace({
   campaigns: initialCampaigns,
   funnels,
   segments,
+  openCampaignId,
 }: {
   campaigns: MessagingCampaignItem[]
   funnels: MessagingFunnelItem[]
   segments: SegmentOption[]
+  /** When present (the `?open=<id>` param), open that campaign straight into the composer on mount. The
+   *  guided generator routes here after Vera drafts a single campaign, so the operator lands on their draft. */
+  openCampaignId?: string
 }) {
   const [query, setQuery] = useState('')
   const [composeOpen, setComposeOpen] = useState(false)
@@ -59,6 +63,17 @@ export function MarketingWorkspace({
   // A useCallback keeps the identity fixed so the trap only ever sets up / tears down when the popup truly opens
   // or closes, never mid-compose.
   const closeCompose = useCallback(() => setComposeOpen(false), [])
+
+  // Deep-link open (`?open=<id>`): open that campaign into the composer once, on the first mount that carries
+  // the param. A ref guards against re-firing if the component re-renders with the same param still in the URL.
+  const openedDeepLink = useRef(false)
+  useEffect(() => {
+    if (openCampaignId && !openedDeepLink.current) {
+      openedDeepLink.current = true
+      setComposeCampaignId(openCampaignId)
+      setComposeOpen(true)
+    }
+  }, [openCampaignId])
 
   function handleDelete(id: string) {
     const target = campaigns.find((c) => c.id === id)
