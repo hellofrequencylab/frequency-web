@@ -187,7 +187,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
                   </span>
                 </span>
                 <span className="mt-0.5 block truncate text-xs leading-snug text-muted">
-                  Get moving.
+                  Tune out.
                 </span>
               </span>
               <span className="flex h-8 shrink-0 items-center gap-0.5 rounded-full bg-primary pl-3 pr-2 text-xs font-bold text-on-primary shadow-sm transition-transform group-hover:scale-105">

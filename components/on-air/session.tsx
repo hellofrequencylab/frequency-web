@@ -412,6 +412,15 @@ export function OnAirSession({
   const [payload, setPayload] = useState<RevealPayload | null>(null)
   const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
   const finishing = useRef(false)
+  // The exact args of the last completeSession attempt, so the error screen's "Try again" REPLAYS
+  // them (the real seconds + started_at) instead of recomputing a fresh 0-anchored claim with a
+  // null started_at — which the server timer-proof rejects, zeroing a legitimate sit's Zaps.
+  const lastFinishArgs = useRef<{
+    seconds: number
+    startedIso: string | null
+    practiceIdOverride?: string
+    modeOverride?: SessionMode
+  } | null>(null)
   const audio = useRef<AudioContext | null>(null)
   const ambient = useRef<AmbientHandle | null>(null)
   const lastPhase = useRef<BreathPhase | null>(null)
@@ -992,6 +1001,9 @@ export function OnAirSession({
     practiceIdOverride?: string,
     modeOverride?: SessionMode,
   ) {
+    // Remember this attempt's exact args so an error-screen retry replays the SAME proof-valid
+    // claim (real seconds + started_at), never a recomputed null-anchored one.
+    lastFinishArgs.current = { seconds, startedIso, practiceIdOverride, modeOverride }
     // The sit is ending: drop the crash-recovery cache + the server active session (completeSession
     // also clears the row server-side as the authoritative end).
     clearLiveSession('mindless')
@@ -1179,7 +1191,13 @@ export function OnAirSession({
         <p className="text-sm font-medium text-text">That didn’t save. Your sit still happened.</p>
         <button
           type="button"
-          onClick={() => void finishWith(Math.round((Date.now() - startedAt) / 1000), null)}
+          onClick={() => {
+            // Replay the failed attempt's exact args (real seconds + started_at) so the timer-proof
+            // passes; fall back to a live recompute only if none was captured.
+            const a = lastFinishArgs.current
+            if (a) void finishWith(a.seconds, a.startedIso, a.practiceIdOverride, a.modeOverride)
+            else void finishWith(Math.round((Date.now() - startedAt) / 1000), new Date(startedAt).toISOString())
+          }}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
         >
           Try again

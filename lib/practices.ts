@@ -1996,21 +1996,44 @@ export async function logPractice(input: {
       // the reward (the delta the partial held back), so partial + finish totals the full.
       const alreadyPaid = Math.max(0, existing.zaps_awarded ?? 0)
       const delta = Math.max(0, fullReward - alreadyPaid)
+      // COMPARE-AND-SWAP the completion flip FIRST, gated on completed=false, so two concurrent
+      // finishes (a double tap, a client retry) can never both pay the top-up: Postgres locks the
+      // row on UPDATE, and the `.eq('completed', false)` means a racing second call updates ZERO
+      // rows. Only the call that actually flips the row goes on to award the delta. The row is
+      // stamped with the intended total up front; if the award then fails or short-pays, we
+      // reconcile zaps_awarded down so the un-log debit stays exact.
+      let won = false
+      try {
+        const { data: flipped } = await db()
+          .from('practice_logs')
+          .update({ completed: true, seconds_done: newDone, seconds_target: newTarget, zaps_awarded: alreadyPaid + delta })
+          .eq('id', existing.id)
+          .eq('completed', false)
+          .select('id')
+        won = Array.isArray(flipped) ? flipped.length > 0 : !!flipped
+      } catch {
+        // a failed flip means we did not win the swap; pay nothing (a duplicate finish no-ops)
+        won = false
+      }
+      if (!won) return { logged: false, zapsAwarded: 0 }
       let paid = 0
       if (delta > 0) {
         try {
           paid = (await awardZaps(profileId, delta, { actionType: 'practice_logged' })).amount
         } catch {
-          // never let a reward write break the finish; the row still flips to complete
+          // never let a reward write break the finish; the row already flipped to complete
         }
       }
-      try {
-        await db()
-          .from('practice_logs')
-          .update({ completed: true, seconds_done: newDone, seconds_target: newTarget, zaps_awarded: alreadyPaid + paid })
-          .eq('id', existing.id)
-      } catch {
-        // bookkeeping only; the award already landed
+      // Reconcile the recorded amount to what actually paid (the flip stamped the intended total).
+      if (paid !== delta) {
+        try {
+          await db()
+            .from('practice_logs')
+            .update({ zaps_awarded: alreadyPaid + paid })
+            .eq('id', existing.id)
+        } catch {
+          // bookkeeping only; the award already landed
+        }
       }
       return { logged: true, zapsAwarded: paid, finished: true }
     }
