@@ -91,7 +91,7 @@ function ComposeBody({
   }, [campaignId])
 
   return (
-    <Dialog open onClose={onClose} ariaLabel="New email" className="max-w-6xl !mt-0">
+    <Dialog open onClose={onClose} ariaLabel="New email" className="max-w-7xl !mt-0">
       <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xl">
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-3">
           <div className="min-w-0">
@@ -122,9 +122,11 @@ function ComposeBody({
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-            {/* CENTER — the block editor (autosaves to the draft). */}
+            {/* CENTER — the SAME on-canvas WYSIWYG editor as the "Message Member" popup (arrangement="canvas"):
+                block list + the live clickable email canvas + the full block palette. NOT the stacked
+                toggle-list. */}
             <div className="min-w-0 flex-1 overflow-y-auto p-5">
-              <EmailEditorPane campaign={loaded} arrangement="stacked" />
+              <EmailEditorPane campaign={loaded} arrangement="canvas" />
             </div>
             {/* RIGHT — audience + schedule + send. */}
             <aside className="shrink-0 overflow-y-auto border-t border-border p-5 lg:w-80 lg:border-l lg:border-t-0">
