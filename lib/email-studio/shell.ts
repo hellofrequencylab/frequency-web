@@ -17,7 +17,7 @@ export interface EmailBrand {
   logoUrl?: string
   /** Small uppercase tagline under the wordmark (default 'A place to be human'). Pass '' to hide. */
   tagline?: string
-  /** The physical mailing address shown in the footer (CAN-SPAM). Falls back to a Frequency identity line. */
+  /** The physical mailing address shown in the footer (CAN-SPAM). Falls back to the platform postal address. */
   address?: string
   /** The site base URL the header wordmark links to (default the app URL). */
   baseUrl?: string
@@ -37,10 +37,9 @@ const frequencyLogoUrl = (baseUrl: string): string => `${baseUrl.replace(/\/$/, 
  *  email shell stays framework-free (importing lib/site pulls the whole nav registry). */
 const ORG_LEGAL_NAME = 'Frequency Labs Holdings'
 
-/** CAN-SPAM requires a valid physical postal address. No real address constant exists in the codebase yet, so
- *  this is a CLEARLY-MARKED placeholder the operator MUST replace before bulk sending (pass EmailBrand.address
- *  with the real mailing address, or edit this line). Never a fake street. */
-const ADDRESS_PLACEHOLDER = `${ORG_LEGAL_NAME} · [mailing address]`
+/** The real CAN-SPAM physical postal address for the platform (Frequency Labs Holdings). A per-Space send can
+ *  override it with EmailBrand.address; the default platform shell uses this. Kept subtle in the footer. */
+const POSTAL_ADDRESS = '802 Caminito Azul, Carlsbad, CA 92011'
 
 export interface EmailDocumentShellInput {
   /** The rendered block body HTML (from renderEmailLayout). */
@@ -87,28 +86,26 @@ function footer(input: EmailDocumentShellInput, colors: EmailColors, baseUrl: st
   const name = escapeHtml(brand.wordmark ?? 'Frequency')
   // One-line description under the name. The tagline field doubles as it; '' hides the line (matches header).
   const desc = brand.tagline === undefined ? 'A place to be human' : brand.tagline
-  // Physical postal address (CAN-SPAM). A real send passes brand.address; otherwise a clearly-marked placeholder.
-  const addr = brand.address ? escapeHtml(brand.address) : escapeHtml(ADDRESS_PLACEHOLDER)
+  // Physical postal address (CAN-SPAM). A Space send may override with brand.address; else the real platform address.
+  const addr = brand.address ? escapeHtml(brand.address) : escapeHtml(`${ORG_LEGAL_NAME}, ${POSTAL_ADDRESS}`)
   const year = new Date().getFullYear()
+  // PROMINENT links: the marketing/nav row reads in body ink at a clear size so members actually click through.
   const link = (href: string, label: string): string =>
-    `<a href="${escapeHtml(href)}" style="color:${colors.muted};text-decoration:none;font-weight:600;">${label}</a>`
+    `<a href="${escapeHtml(href)}" style="color:${colors.text};text-decoration:none;font-weight:600;">${label}</a>`
   const sep = `<span style="color:${colors.subtle};">&nbsp;&middot;&nbsp;</span>`
   const links = [link(`${base}/privacy`, 'Privacy'), link(`${base}/terms`, 'Terms'), link(`${base}/help`, 'Help')].join(sep)
-  // Unsubscribe stays SUBTLE: a small, muted text link (not a button), but present and working. Preserves the
-  // exact one-click unsubscribe URL/token the send agent supplies.
+  // SUBTLE fine print: the CAN-SPAM legal cluster (unsubscribe + address + copyright) in the lightest ink at the
+  // smallest size, so it recedes into the background. Unsubscribe stays underlined + working (one-click token
+  // preserved); it is quiet, not hidden, and the List-Unsubscribe header carries the conspicuous inbox control.
   const unsub = input.unsubscribeUrl
-    ? `<p style="margin:14px 0 0;font-size:11px;color:${colors.subtle};line-height:1.6;">
-        <a href="${escapeHtml(input.unsubscribeUrl)}" style="color:${colors.subtle};text-decoration:underline;">Unsubscribe</a>${sep}<a href="${escapeHtml(input.unsubscribeUrl)}" style="color:${colors.subtle};text-decoration:underline;">Manage emails</a>
-      </p>`
+    ? `<a href="${escapeHtml(input.unsubscribeUrl)}" style="color:${colors.subtle};text-decoration:underline;">Unsubscribe</a>${sep}<a href="${escapeHtml(input.unsubscribeUrl)}" style="color:${colors.subtle};text-decoration:underline;">Manage emails</a><br>`
     : ''
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
     <tr><td align="center" style="font-family:${FONT_STACK};padding:24px 16px 0;text-align:center;">
       <p style="margin:0 0 3px;font-size:15px;font-weight:700;letter-spacing:-0.2px;color:${colors.heading ?? colors.text};">${name}</p>
-      ${desc ? `<p style="margin:0 0 14px;font-size:12px;color:${colors.muted};">${escapeHtml(desc)}</p>` : `<div style="height:14px;line-height:14px;font-size:0;">&nbsp;</div>`}
-      <p style="margin:0 0 14px;font-size:12px;line-height:1.6;">${links}</p>
-      <p style="margin:0 0 4px;font-size:12px;color:${colors.subtle};line-height:1.6;">${addr}</p>
-      <p style="margin:0;font-size:12px;color:${colors.subtle};line-height:1.6;">&copy; ${year} ${escapeHtml(ORG_LEGAL_NAME)}. All rights reserved.</p>
-      ${unsub}
+      ${desc ? `<p style="margin:0 0 16px;font-size:12px;color:${colors.muted};">${escapeHtml(desc)}</p>` : `<div style="height:16px;line-height:16px;font-size:0;">&nbsp;</div>`}
+      <p style="margin:0 0 18px;font-size:13px;line-height:1.6;">${links}</p>
+      <p style="margin:0;font-size:10px;color:${colors.subtle};line-height:1.7;">${unsub}&copy; ${year} ${escapeHtml(ORG_LEGAL_NAME)}${sep}${addr}</p>
     </td></tr>
   </table>`
 }

@@ -259,9 +259,9 @@ describe('shell + compileEmailDoc', () => {
     const html = emailDocumentShell({ body: '<p>hi</p>', unsubscribeUrl: 'https://x/u' })
     // Sender identity + one-line description.
     expect(html).toContain('A place to be human')
-    // Physical mailing-address line: a clearly-marked placeholder (never a fake street) plus the legal org.
+    // Physical mailing-address line: the real CAN-SPAM postal address plus the legal org.
     expect(html).toContain('Frequency Labs Holdings')
-    expect(html).toContain('[mailing address]')
+    expect(html).toContain('802 Caminito Azul, Carlsbad, CA 92011')
     // Dated copyright.
     expect(html).toContain(`&copy; ${new Date().getFullYear()}`)
     // Links to the real routes.
@@ -275,18 +275,26 @@ describe('shell + compileEmailDoc', () => {
     // The exact one-click token URL is preserved.
     expect(html).toContain('href="https://x/u"')
     expect(html).toContain('Unsubscribe')
-    // Subtle: a small muted TEXT link, not the old prominent pill button.
-    expect(html).toContain('font-size:11px')
+    // Subtle: the legal fine-print cluster renders at the smallest size in the lightest ink, as an
+    // underlined TEXT link, not the old prominent pill button.
+    expect(html).toContain('font-size:10px')
+    expect(html).toContain('text-decoration:underline')
     expect(html).not.toContain('border-radius:999px')
   })
 
-  it('a Space brand address overrides the placeholder', () => {
+  it('the marketing/nav links are prominent (body ink, larger than the legal fine print)', () => {
+    const html = emailDocumentShell({ body: '<p>hi</p>', unsubscribeUrl: 'https://x/u' })
+    // The link row is 13px in the readable body-ink color; the legal cluster below it is 10px subtle.
+    expect(html).toContain('font-size:13px')
+  })
+
+  it('a Space brand address overrides the default platform address', () => {
     const html = emailDocumentShell({
       body: '<p>hi</p>',
       brand: { address: 'Acme Studio, 1 Main St, Springfield' },
     })
     expect(html).toContain('Acme Studio, 1 Main St, Springfield')
-    expect(html).not.toContain('[mailing address]')
+    expect(html).not.toContain('802 Caminito Azul')
   })
 })
 
