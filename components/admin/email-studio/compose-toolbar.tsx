@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { Eye, EyeOff, Loader2, Send } from 'lucide-react'
 import { MergeTagPicker } from './merge-tag-picker'
+import { EmojiPicker } from '@/components/feed/emoji-picker'
 import { sendTestEmail } from '@/app/(main)/admin/email-studio/actions'
 import { isError, type ActionResult } from '@/lib/action-result'
 
@@ -37,6 +38,28 @@ export function ComposeToolbar({
 }) {
   const [pending, startTransition] = useTransition()
   const [note, setNote] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
+  const subjectRef = useRef<HTMLInputElement>(null)
+
+  // Splice a picked emoji into the SUBJECT at the caret (or over the selection), then restore focus + caret
+  // just past it. The subject is a controlled input, so we read the live selection off the ref, hand the new
+  // string up through onSubject (which sets state + autosaves), and reposition the caret after the value
+  // repaints. Offsets are UTF-16 code units, which is exactly what setSelectionRange expects, so a multi-unit
+  // emoji lands the caret correctly. Falls back to appending when the ref is not mounted.
+  function insertEmojiIntoSubject(emoji: string) {
+    const el = subjectRef.current
+    if (!el) {
+      onSubject(subject + emoji)
+      return
+    }
+    const start = el.selectionStart ?? subject.length
+    const end = el.selectionEnd ?? start
+    onSubject(subject.slice(0, start) + emoji + subject.slice(end))
+    requestAnimationFrame(() => {
+      el.focus()
+      const pos = start + emoji.length
+      el.setSelectionRange(pos, pos)
+    })
+  }
 
   function onSendTest() {
     setNote(null)
@@ -53,6 +76,7 @@ export function ComposeToolbar({
         <label className="block">
           <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Subject</span>
           <input
+            ref={subjectRef}
             type="text"
             value={subject}
             placeholder="Subject line"
@@ -76,6 +100,8 @@ export function ComposeToolbar({
 
       <div className="flex flex-wrap items-center gap-2">
         <MergeTagPicker />
+        {/* Drop an emoji into the subject line at the caret. */}
+        <EmojiPicker onSelect={insertEmojiIntoSubject} />
         <button
           type="button"
           onClick={onSendTest}

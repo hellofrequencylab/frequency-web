@@ -54,6 +54,10 @@ export function EmojiPicker({ onSelect, disabled }: { onSelect: (emoji: string) 
     <div ref={rootRef} className="relative">
       <button
         type="button"
+        // Keep the caret in the field that opened the picker (the textarea / subject input): a plain mousedown
+        // would blur it, so the emoji insert would lose its selection. preventDefault holds focus; the click
+        // still fires and toggles the popover.
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => setOpen((o) => !o)}
         disabled={disabled}
         aria-label="Add emoji"
