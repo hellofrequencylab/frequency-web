@@ -120,6 +120,54 @@ describe('autoMapColumns', () => {
     const map = autoMapColumns(headers, rows)
     expect(map.filter((m) => m.target === 'tags')).toHaveLength(2)
   })
+
+  it('auto-maps a Google Contacts export (Given/Family Name, E-mail 1 - Value, Phone 1 - Value, Organization Name)', () => {
+    const headers = ['Given Name', 'Family Name', 'E-mail 1 - Value', 'Phone 1 - Value', 'Organization Name']
+    const rows = [
+      {
+        'Given Name': 'Sarah',
+        'Family Name': 'Kim',
+        'E-mail 1 - Value': 'sarah@x.com',
+        'Phone 1 - Value': '(555) 123-4567',
+        'Organization Name': 'Acme',
+      },
+    ]
+    const by = Object.fromEntries(autoMapColumns(headers, rows).map((m) => [m.header, m.target]))
+    expect(by['Given Name']).toBe('displayName')
+    expect(by['Family Name']).toBe('displayName')
+    expect(by['E-mail 1 - Value']).toBe('email')
+    expect(by['Phone 1 - Value']).toBe('phone')
+    expect(by['Organization Name']).toBe('company')
+  })
+
+  it('auto-maps an Outlook export (First/Last Name, E-mail Address, Home Phone, Company)', () => {
+    const headers = ['First Name', 'Last Name', 'E-mail Address', 'Home Phone', 'Company']
+    const rows = [
+      { 'First Name': 'Sarah', 'Last Name': 'Kim', 'E-mail Address': 'sarah@x.com', 'Home Phone': '5551234567', Company: 'Acme' },
+    ]
+    const by = Object.fromEntries(autoMapColumns(headers, rows).map((m) => [m.header, m.target]))
+    expect(by['First Name']).toBe('displayName')
+    expect(by['Last Name']).toBe('displayName')
+    expect(by['E-mail Address']).toBe('email')
+    expect(by['Home Phone']).toBe('phone')
+    expect(by['Company']).toBe('company')
+  })
+
+  it('name-join: keeps BOTH first/last name columns as displayName (no full-name column)', () => {
+    const headers = ['First Name', 'Last Name']
+    const rows = [{ 'First Name': 'Sarah', 'Last Name': 'Kim' }]
+    const map = autoMapColumns(headers, rows)
+    expect(map.filter((m) => m.target === 'displayName')).toHaveLength(2)
+  })
+
+  it('a single full-name column wins over name parts (parts fall back to custom)', () => {
+    const headers = ['Name', 'First Name', 'Last Name']
+    const rows = [{ Name: 'Sarah Kim', 'First Name': 'Sarah', 'Last Name': 'Kim' }]
+    const map = autoMapColumns(headers, rows)
+    expect(map.filter((m) => m.target === 'displayName')).toHaveLength(1)
+    expect(map.find((m) => m.header === 'Name')?.target).toBe('displayName')
+    expect(map.filter((m) => m.target === 'custom')).toHaveLength(2)
+  })
 })
 
 describe('headerFingerprint', () => {

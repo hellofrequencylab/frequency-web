@@ -7,7 +7,7 @@
 // tokens (no hex). Copy passes NAMING + CONTENT-VOICE (no em dashes).
 
 import { useState, useRef, useEffect } from 'react'
-import { UploadCloud, Sparkles, Loader2, Check, ArrowRight, ArrowLeft, FileSpreadsheet, AlertTriangle, ClipboardType } from 'lucide-react'
+import { UploadCloud, Sparkles, Loader2, Check, ArrowRight, ArrowLeft, FileSpreadsheet, FileText, AlertTriangle, ClipboardType } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { parseCsvFile, sourceFromContacts, mergeSources, looksLikeTable } from '@/lib/crm/import/parse'
 import { customFieldKey } from '@/lib/crm/import/map'
@@ -22,7 +22,7 @@ import {
   listKnownCustomFields,
 } from '@/lib/crm/import/actions'
 import { isError } from '@/lib/action-result'
-import { TARGET_FIELDS, type ColumnMapping, type MappingChoice, type MergeStrategy, type ParsedSource, type ValidationResult, type CommitResult, type ImportTargetKind } from '@/lib/crm/import/types'
+import { TARGET_FIELDS, type ColumnMapping, type MappingChoice, type MergeStrategy, type ParsedSource, type ValidationResult, type PreviewRow, type CommitResult, type ImportTargetKind } from '@/lib/crm/import/types'
 import type { ManagedSpace } from '@/lib/spaces/managed'
 
 const input =
@@ -56,6 +56,26 @@ type Step = 'upload' | 'map' | 'preview' | 'done'
 
 type Banner = { kind: 'ok' | 'warn' | 'err'; text: string } | null
 
+/** One row in the per-file upload queue: what we are reading and how it went. */
+type QueueItem = {
+  id: string
+  name: string
+  size: number
+  status: 'parsing' | 'done' | 'skipped'
+  /** Contacts pulled from this file (status 'done'). */
+  count?: number
+  /** Why it was skipped, or a note on a partial read (status 'skipped', or 'done' with a caveat). */
+  reason?: string
+}
+
+/** A short, plain file size ("18 KB", "2.4 MB"). */
+function formatBytes(n: number): string {
+  if (!n) return '0 KB'
+  if (n < 1024) return `${n} B`
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`
+}
+
 export function ImportWizard({
   targetKind,
   spaces = [],
@@ -84,6 +104,8 @@ export function ImportWizard({
   const [showPaste, setShowPaste] = useState(false)
   const [pasted, setPasted] = useState('')
   const [knownFields, setKnownFields] = useState<{ key: string; label: string }[]>([])
+  const [queue, setQueue] = useState<QueueItem[]>([])
+  const [dragging, setDragging] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const scopeSpaceId = targetKind === 'space' ? spaceId : null
@@ -121,10 +143,27 @@ export function ImportWizard({
     setBusy(true)
     setBanner(null)
     const sources: ParsedSource[] = []
-    const notes: string[] = []
     let firstLabel = ''
+    let skipCount = 0
+
+    // Seed the queue: one row per file (plus pasted text), all "parsing" until each resolves.
+    const stamp = Date.now()
+    const items: QueueItem[] = files.map((f, i) => ({ id: `f${stamp}-${i}`, name: f.name, size: f.size, status: 'parsing' }))
+    if (text.trim()) items.push({ id: `t${stamp}`, name: 'Pasted text', size: text.length, status: 'parsing' })
+    setQueue(items)
+
+    const update = (id: string, patch: Partial<QueueItem>) =>
+      setQueue((prev) => prev.map((q) => (q.id === id ? { ...q, ...patch } : q)))
+    const markDone = (id: string, count: number, reason?: string) => update(id, { status: 'done', count, reason })
+    const markSkipped = (id: string, reason: string) => {
+      skipCount++
+      update(id, { status: 'skipped', reason })
+    }
+
     try {
-      for (const file of files) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const item = items[i]
         try {
           // A ZIP (e.g. a Notion / CRM export) is unzipped server-side; each CSV inside becomes a
           // source, merged with the rest. Detect by extension or MIME so a renamed archive still works.
@@ -134,51 +173,59 @@ export function ImportWizard({
             fd.append('file', file)
             const res = await extractZipSources(fd)
             if (isError(res)) {
-              notes.push(`${file.name}: ${res.error}`)
+              markSkipped(item.id, res.error)
               continue
             }
-            for (const src of res.data.sources) sources.push(src)
-            for (const s of res.data.skipped) notes.push(`${file.name} › ${s.name || 'an entry'}: skipped (${s.reason}).`)
+            let count = 0
+            for (const src of res.data.sources) {
+              sources.push(src)
+              count += src.rows.length
+            }
+            const inner = res.data.skipped.map((s) => `${s.name || 'an entry'} (${s.reason})`)
             if (res.data.files.length && !firstLabel) firstLabel = file.name
+            markDone(item.id, count, inner.length ? `some entries skipped: ${inner.join(', ')}` : undefined)
             continue
           }
           const parsed = await parseCsvFile(file)
           if (looksLikeTable(parsed)) {
             sources.push(parsed)
             if (!firstLabel) firstLabel = file.name
+            markDone(item.id, parsed.rows.length)
             continue
           }
           // Not a table Vera can read deterministically -> AI extraction from its text.
           const raw = await file.text()
           const res = await extractContactsAction(raw, { spaceId: scopeSpaceId })
           if (isError(res)) {
-            notes.push(`${file.name}: ${res.error}`)
+            markSkipped(item.id, res.error)
             continue
           }
           const src = sourceFromContacts(res.data.contacts)
           if (!src.rows.length) {
-            notes.push(`${file.name}: we could not find any contacts in it.`)
+            markSkipped(item.id, 'we could not find any contacts in it')
             continue
           }
-          if (res.data.truncated) notes.push(`${file.name}: it is long, so we read the first part.`)
           sources.push(src)
           if (!firstLabel) firstLabel = file.name
+          markDone(item.id, src.rows.length, res.data.truncated ? 'it is long, so we read the first part' : undefined)
         } catch {
-          notes.push(`${file.name}: we could not read it, so we skipped it.`)
+          markSkipped(item.id, 'we could not read it')
         }
       }
 
       if (text.trim()) {
+        const item = items[items.length - 1]
         const res = await extractContactsAction(text, { spaceId: scopeSpaceId })
         if (isError(res)) {
-          notes.push(`Pasted text: ${res.error}`)
+          markSkipped(item.id, res.error)
         } else {
           const src = sourceFromContacts(res.data.contacts)
           if (src.rows.length) {
             sources.push(src)
             if (!firstLabel) firstLabel = 'pasted text'
+            markDone(item.id, src.rows.length)
           } else {
-            notes.push('Pasted text: we could not find any contacts in it.')
+            markSkipped(item.id, 'we could not find any contacts in it')
           }
         }
       }
@@ -186,9 +233,7 @@ export function ImportWizard({
       if (!sources.length) {
         setBanner({
           kind: 'warn',
-          text: notes.length
-            ? notes.join(' ')
-            : 'We could not find any contacts to bring in. A file with a header row (Name, Email, Phone) works best, or paste a list.',
+          text: 'We could not find any contacts to bring in. A file with a header row (Name, Email, Phone) works best, or paste a list.',
         })
         return
       }
@@ -216,13 +261,16 @@ export function ImportWizard({
       setMapping(res.data.mapping)
       setPasted('')
       setShowPaste(false)
-      setStep('map')
 
-      const skipLine = notes.length ? ` A few items needed a second look: ${notes.join(' ')}` : ''
-      if (res.data.remembered) {
-        setBanner({ kind: 'ok', text: `We matched your columns the way you did last time. Review and adjust below.${skipLine}` })
-      } else if (notes.length) {
-        setBanner({ kind: 'warn', text: `Your contacts are staged.${skipLine}` })
+      // When every file read cleanly, go straight to matching. If some were skipped, stay here so
+      // the queue below shows what happened; the "Continue to matching" button carries on.
+      if (skipCount === 0) {
+        setStep('map')
+        if (res.data.remembered) {
+          setBanner({ kind: 'ok', text: 'We matched your columns the way you did last time. Review and adjust below.' })
+        }
+      } else {
+        setBanner({ kind: 'warn', text: 'Your contacts are staged. Some files needed a second look. Check the list, then continue to matching.' })
       }
     } catch {
       setBanner({ kind: 'err', text: 'We could not read that. A plain .csv, or a pasted list, works best.' })
@@ -230,6 +278,26 @@ export function ImportWizard({
       setBusy(false)
       if (fileRef.current) fileRef.current.value = ''
     }
+  }
+
+  const canIngest = !busy && !(targetKind === 'space' && !spaceId)
+
+  function onDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    setDragging(false)
+    if (!canIngest) return
+    const files = Array.from(e.dataTransfer.files ?? [])
+    if (files.length) void ingest(files, '')
+  }
+
+  function onDragOver(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    if (canIngest) setDragging(true)
+  }
+
+  function onDragLeave(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    setDragging(false)
   }
 
   function setColumnTarget(header: string, target: MappingChoice) {
@@ -357,23 +425,31 @@ export function ImportWizard({
             </p>
           )}
 
-          <EmptyState
-            variant="first-use"
-            icon={FileSpreadsheet}
-            title="Bring in your contacts"
-            description="Drop in a spreadsheet, an export from another CRM, or even a plain note. CSV, TSV, text, and a .zip export all work, and you can choose more than one file at once. Vera reads whatever you give it and matches the columns on the next step."
-            action={
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                disabled={busy || (targetKind === 'space' && !spaceId)}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
-              >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-                {busy ? 'Reading…' : 'Choose files'}
-              </button>
-            }
-          />
+          {/* Real drop target. The hidden input + button stay as the keyboard/click fallback. */}
+          <div
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+            className={`rounded-2xl border-2 border-dashed transition-colors ${dragging ? 'border-primary bg-primary-bg' : 'border-border'}`}
+          >
+            <EmptyState
+              variant="first-use"
+              icon={FileSpreadsheet}
+              title="Bring in your contacts"
+              description="Drop files here, or choose them. A spreadsheet, an export from another CRM, or even a plain note all work. CSV, TSV, text, and a .zip export are fine, and you can bring in more than one at once. Vera reads whatever you give it and matches the columns on the next step."
+              action={
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={!canIngest}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                >
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+                  {busy ? 'Reading…' : 'Choose files'}
+                </button>
+              }
+            />
+          </div>
           <input
             ref={fileRef}
             type="file"
@@ -385,6 +461,50 @@ export function ImportWizard({
               if (files.length) void ingest(files, '')
             }}
           />
+
+          {queue.length > 0 && (
+            <ul className="space-y-2">
+              {queue.map((q) => (
+                <li key={q.id} className="flex items-start gap-3 rounded-xl border border-border bg-surface p-3">
+                  <FileText className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-text">{q.name}</p>
+                    <p className="text-2xs text-subtle">{formatBytes(q.size)}</p>
+                    {q.reason && <p className="mt-0.5 text-2xs text-muted">{q.reason}</p>}
+                  </div>
+                  <div className="shrink-0 text-xs font-medium">
+                    {q.status === 'parsing' && (
+                      <span className="inline-flex items-center gap-1 text-subtle">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Reading…
+                      </span>
+                    )}
+                    {q.status === 'done' && (
+                      <span className="inline-flex items-center gap-1 text-success">
+                        <Check className="h-3.5 w-3.5" /> {q.count ?? 0} contact{q.count === 1 ? '' : 's'}
+                      </span>
+                    )}
+                    {q.status === 'skipped' && (
+                      <span className="inline-flex items-center gap-1 text-warning">
+                        <AlertTriangle className="h-3.5 w-3.5" /> Skipped
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {importId && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setStep('map')}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              >
+                Continue to matching <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
 
           <div className="rounded-xl border border-border bg-surface-elevated/40 p-4">
             <button
@@ -551,17 +671,47 @@ export function ImportWizard({
             </button>
           </div>
 
-          {validation.errors.length > 0 && (
-            <div className="rounded-xl border border-warning/40 bg-warning-bg p-3">
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-warning">
-                <AlertTriangle className="h-4 w-4" /> {validation.errors.length} row{validation.errors.length === 1 ? '' : 's'} need a look
-              </p>
-              <p className="mt-1 text-xs text-muted">These rows still import where they can. We just could not use one field.</p>
-              <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto text-xs text-muted">
-                {validation.errors.slice(0, 50).map((e, i) => (
-                  <li key={i}>Row {e.rowIndex + 2}: {e.message}</li>
-                ))}
-              </ul>
+          {validation.rows && validation.rows.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-text">Row by row</p>
+                {validation.errors.length > 0 && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-warning">
+                    <AlertTriangle className="h-3.5 w-3.5" /> {validation.errors.length} need a look
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted">Flagged rows still import where they can. We just could not use one field.</p>
+              <div className="max-h-96 overflow-auto rounded-xl border border-border">
+                <table className="w-full min-w-[34rem] text-sm">
+                  <thead className="sticky top-0">
+                    <tr className="border-b border-border bg-surface-elevated text-left text-xs text-muted">
+                      <th className="px-3 py-2 font-medium">Row</th>
+                      <th className="px-3 py-2 font-medium">Action</th>
+                      <th className="px-3 py-2 font-medium">Contact</th>
+                      <th className="px-3 py-2 font-medium">Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {validation.rows.map((r) => (
+                      <tr key={r.rowIndex} className="border-b border-border/60 align-top last:border-0">
+                        <td className="px-3 py-2 text-subtle">{r.rowIndex + 2}</td>
+                        <td className="px-3 py-2"><ActionBadge action={r.action} flagged={!!r.error} /></td>
+                        <td className="px-3 py-2">
+                          <p className="font-medium text-text">{r.name || '—'}</p>
+                          {r.email && <p className="text-2xs text-subtle">{r.email}</p>}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-muted">{rowDetail(r)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {validation.rowTotal !== undefined && validation.rowTotal > validation.rows.length && (
+                <p className="text-xs text-subtle">
+                  + {validation.rowTotal - validation.rows.length} more row{validation.rowTotal - validation.rows.length === 1 ? '' : 's'}, handled the same way. Import to bring them all in.
+                </p>
+              )}
             </div>
           )}
 
@@ -590,7 +740,7 @@ export function ImportWizard({
           action={
             <button
               type="button"
-              onClick={() => { setStep('upload'); setSource(null); setImportId(null); setMapping([]); setValidation(null); setResult(null); setBanner(null); setFilename(''); setPasted(''); setShowPaste(false); }}
+              onClick={() => { setStep('upload'); setSource(null); setImportId(null); setMapping([]); setValidation(null); setResult(null); setBanner(null); setFilename(''); setPasted(''); setShowPaste(false); setQueue([]); }}
               className="inline-flex items-center gap-2 rounded-xl border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
               <UploadCloud className="h-4 w-4" /> Import another file
@@ -617,6 +767,30 @@ function MatchBadge({ m }: { m: ColumnMapping }) {
       {m.reason === 'ai' ? 'Vera' : strong ? 'Auto' : 'Review'} · {pct}%
     </span>
   )
+}
+
+const ACTION_BADGE: Record<PreviewRow['action'], { label: string; cls: string }> = {
+  create: { label: 'New', cls: 'bg-success-bg text-success' },
+  merge: { label: 'Merge', cls: 'bg-primary-bg text-primary-strong' },
+  skip: { label: 'Skip', cls: 'bg-surface-elevated text-muted' },
+}
+
+function ActionBadge({ action, flagged }: { action: PreviewRow['action']; flagged: boolean }) {
+  const a = ACTION_BADGE[action]
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      <span className={`rounded-md px-1.5 py-0.5 text-2xs font-medium ${a.cls}`}>{a.label}</span>
+      {flagged && <span className="rounded-md bg-warning-bg px-1.5 py-0.5 text-2xs font-medium text-warning">Needs a look</span>}
+    </span>
+  )
+}
+
+/** The plain "why" line for a preview row: the field problem, the contact it matches, or nothing. */
+function rowDetail(r: PreviewRow): string {
+  if (r.error) return r.error
+  if (r.action === 'merge') return r.matchedKey ? `Matches ${r.matchedKey}` : 'Matches a contact you already have'
+  if (r.action === 'skip') return r.matchedKey ? `Duplicate of ${r.matchedKey}` : 'Nothing to import from this row'
+  return 'New contact'
 }
 
 function Stat({ label, value, tone }: { label: string; value: number; tone: string }) {
