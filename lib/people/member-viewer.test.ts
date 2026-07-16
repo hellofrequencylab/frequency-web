@@ -182,3 +182,63 @@ describe('profileHrefFor', () => {
     expect(profileHrefFor({ handle: 'ada', profileHref: '/x/ada' })).toBe('/x/ada')
   })
 })
+
+describe('R2 members-only roster · role / business / activity facets + sort', () => {
+  // loadMemberSummaries writes namespaced facet tokens into `badges` (role:<rung> / biz:yes|no /
+  // active:yes|no) so the SAME pure facet filter refines over the classifier fields with no new query.
+  const roster: MemberSummary[] = [
+    member({
+      id: 'host-biz-active',
+      handle: 'nova',
+      displayName: 'Nova',
+      badges: ['resonant', 'engaged', 'role:host', 'biz:yes', 'active:yes'],
+      sortValues: { activeThisWeek: 1 },
+    }),
+    member({
+      id: 'member-quiet',
+      handle: 'ivy',
+      displayName: 'Ivy',
+      badges: ['cooling', 'new', 'role:member', 'biz:no', 'active:no'],
+      sortValues: { activeThisWeek: 0 },
+    }),
+    member({
+      id: 'guide-active',
+      handle: 'wren',
+      displayName: 'Wren',
+      badges: ['resonant', 'activated', 'role:guide', 'biz:no', 'active:yes'],
+      sortValues: { activeThisWeek: 1 },
+    }),
+  ]
+
+  it('filters by role token', () => {
+    expect(roster.filter((m) => matchesFacets(m, { role: 'role:host' })).map((m) => m.id)).toEqual([
+      'host-biz-active',
+    ])
+  })
+
+  it('filters by business yes and no', () => {
+    expect(roster.filter((m) => matchesFacets(m, { business: 'biz:yes' })).map((m) => m.id)).toEqual([
+      'host-biz-active',
+    ])
+    expect(roster.filter((m) => matchesFacets(m, { business: 'biz:no' })).map((m) => m.id)).toEqual([
+      'member-quiet',
+      'guide-active',
+    ])
+  })
+
+  it('filters by activity, and combines facets', () => {
+    expect(roster.filter((m) => matchesFacets(m, { active: 'active:yes' })).map((m) => m.id)).toEqual([
+      'host-biz-active',
+      'guide-active',
+    ])
+    // Active this week AND not a business -> just the active guide.
+    const combined = applyQuery(roster, { facets: { active: 'active:yes', business: 'biz:no' } }, 1, 15)
+    expect(combined.filtered.map((m) => m.id)).toEqual(['guide-active'])
+  })
+
+  it('sorts "Active now" (active-this-week first) on the activeThisWeek signal', () => {
+    const out = sortMembers(roster, { key: 'activeThisWeek', direction: 'desc' }).map((m) => m.id)
+    // The two active rows lead (stable input order among them), the quiet member trails.
+    expect(out).toEqual(['host-biz-active', 'guide-active', 'member-quiet'])
+  })
+})
