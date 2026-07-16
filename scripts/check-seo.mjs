@@ -52,6 +52,7 @@ const INTENTIONALLY_EXCLUDED = new Map([
   ['/demo', '308 permanentRedirect → /the-community (retired; no redirect chain for crawlers, SEO-1)'],
   ['/lead-funnel-kit', 'robots noindex — operator-only funnel infographic, not a crawl target'],
   ['/beta/confirm', 'robots noindex — double-opt-in confirmation landing (transactional)'],
+  ['/subscribe/confirm', 'robots noindex — double-opt-in confirmation landing (transactional)'],
   ['/founders/checkout', 'robots noindex — Stripe checkout hand-off (gate lives in the action)'],
   ['/founders/checkout/success', 'robots noindex — post-payment founding-membership confirm'],
 ])

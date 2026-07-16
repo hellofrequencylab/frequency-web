@@ -15,7 +15,7 @@
 
 import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createContact, updateContact, existingContactKeys, listContacts } from '@/lib/connections/store'
+import { createContact, updateContact, existingContactKeys, listContacts, deleteContact } from '@/lib/connections/store'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
@@ -29,12 +29,18 @@ import type { NetworkContactListItem, ContactDetails, ContactOtherDetail } from 
 
 const empty = (v: string | null | undefined) => !((v ?? '').trim())
 
-/** The custom fields the mapping introduced, with their inferred value type. The label is the
- *  operator's chosen name (customLabel) when set, else the source header. */
-function customFieldDefs(row: ContactImportRow): { key: string; label: string; valueType: ValueType }[] {
+/** The custom fields the mapping introduced, with their inferred value type + any operator-declared
+ *  options (for a 'select' field). The label is the operator's chosen name (customLabel) when set,
+ *  else the source header. */
+function customFieldDefs(row: ContactImportRow): { key: string; label: string; valueType: ValueType; options?: string[] }[] {
   return row.mapping
     .filter((m) => m.target === 'custom' && m.customKey)
-    .map((m) => ({ key: m.customKey as string, label: m.customLabel?.trim() || m.header, valueType: m.valueType }))
+    .map((m) => ({
+      key: m.customKey as string,
+      label: m.customLabel?.trim() || m.header,
+      valueType: m.valueType,
+      ...(m.customOptions && m.customOptions.length ? { options: m.customOptions } : {}),
+    }))
 }
 
 /** Fold a projected row's custom fields into a ContactDetails.other list (idempotent by
@@ -59,8 +65,9 @@ function customToDetails(existing: ContactDetails, custom: Record<string, string
 
 // ── Member target ────────────────────────────────────────────────────────────────
 
-async function commitToMember(ownerId: string, row: ContactImportRow): Promise<CommitResult> {
+async function commitToMember(ownerId: string, row: ContactImportRow): Promise<{ result: CommitResult; createdIds: string[] }> {
   const defs = customFieldDefs(row)
+  const createdIds: string[] = []
   const { emails, phones } = await existingContactKeys(ownerId)
   const existing: ExistingKeys = { emails, phones }
 
@@ -106,6 +113,7 @@ async function commitToMember(ownerId: string, row: ContactImportRow): Promise<C
       })
       if (id) {
         created++
+        createdIds.push(id)
         // Keep the in-run index fresh so a later row can't re-create this key.
         const ek = emailKey(c.email)
         const pk = phoneKey(c.phone)
@@ -133,7 +141,7 @@ async function commitToMember(ownerId: string, row: ContactImportRow): Promise<C
     }
   }
 
-  return { created, merged, skipped, failed, total: row.source.rows.length }
+  return { result: { created, merged, skipped, failed, total: row.source.rows.length }, createdIds }
 }
 
 /** Build the update patch for a member merge, honoring the strategy per scalar field. */
@@ -201,6 +209,9 @@ async function commitToSpace(
   spaceId: string,
   opts: { dedupePhone?: boolean } = {},
 ): Promise<CommitResult> {
+  // Stamp the created rows with this import's id so an "undo this import" deletes exactly the rows
+  // this commit created (never a merge, never a row from another import).
+  const batchId = row.id
   const db = createAdminClient()
   const dedupePhone = opts.dedupePhone ?? false
 
@@ -262,7 +273,7 @@ async function commitToSpace(
           display_name: c.displayName || null,
           consent_state: 'unknown', // a lead, never auto-subscribed (ADR-099)
           source: 'import',
-          meta: spaceMeta(c),
+          meta: { ...spaceMeta(c), import_batch: batchId },
         } as unknown as Database['public']['Tables']['contacts']['Insert'])
         if (error) failed++
         else {
@@ -341,6 +352,10 @@ export async function commitImport(id: string, createdBy: string): Promise<Actio
   if (!row.source.rows.length) return fail('That file has no rows to import.')
 
   let result: CommitResult
+  // The ids of the rows this commit created. For a member import we collect them from createContact;
+  // for a Space / platform import the created rows are tagged with meta.import_batch = row.id, so an
+  // undo deletes exactly those (see rollbackImport).
+  let createdIds: string[] = []
   if (row.targetKind === 'platform') {
     // Frequency's OWN list (the ROOT-space contacts hub). No Space, no picker. Staff only:
     // this is the platform contact hub (crm.root.allContacts), never a tenant list.
@@ -362,7 +377,9 @@ export async function commitImport(id: string, createdBy: string): Promise<Actio
     }
     result = await commitToSpace(row, spaceId)
   } else {
-    result = await commitToMember(createdBy, row)
+    const member = await commitToMember(createdBy, row)
+    result = member.result
+    createdIds = member.createdIds
   }
 
   // Remember the custom fields for next time (best-effort), then stamp the outcome.
@@ -375,12 +392,98 @@ export async function commitImport(id: string, createdBy: string): Promise<Actio
       fingerprint: headerFingerprint(row.source.headers),
     })
   }
+  // The critical write (status + result) uses only columns that predate every migration, so a commit
+  // always marks itself committed (idempotency holds).
   await updateImport(id, createdBy, {
     status: 'committed',
     result,
     committedAt: new Date().toISOString(),
     error: null,
   })
+  // Best-effort, migration-independent: record the created ids for undo. If the column predates the
+  // created_ids migration this write no-ops (undo then falls back to the meta.import_batch tag for a
+  // Space / platform import), never failing the commit.
+  if (createdIds.length) await updateImport(id, createdBy, { createdIds })
 
   return ok(result)
+}
+
+// ── Undo (rollback a committed import) ─────────────────────────────────────────
+export interface RollbackResult {
+  deleted: number
+}
+
+/**
+ * Undo a committed import: delete exactly the contact rows the commit CREATED (never a merged row,
+ * never a row from a different import). A member import deletes by the captured created ids; a Space
+ * / platform import deletes the sealed `contacts` rows tagged with this import's batch id, guarded to
+ * source='import' + consent_state='unknown' so a row a human later edited/subscribed is left alone.
+ * Idempotent + fail-safe: an already-rolled-back import returns { deleted: 0 }. Owner-gated (member)
+ * / team-gated (space) exactly like the commit.
+ */
+export async function rollbackImport(id: string, createdBy: string): Promise<ActionResult<RollbackResult>> {
+  const row = await getImport(id, createdBy)
+  if (!row) return fail('We could not find that import.')
+  if (row.status !== 'committed') return fail('That import has not been brought in yet.')
+  if (row.rolledBackAt) return ok({ deleted: 0 })
+
+  let deleted = 0
+  if (row.targetKind === 'member') {
+    for (const contactId of row.createdIds) {
+      if (await deleteContact(createdBy, contactId)) deleted++
+    }
+  } else {
+    // Resolve + re-gate the scope exactly as the commit did.
+    let spaceId: string | null = null
+    if (row.targetKind === 'platform') {
+      if (!(await isPlatformStaff())) return fail('Only Frequency staff can undo a platform import.')
+      spaceId = await getRootSpaceId()
+    } else {
+      spaceId = row.targetSpaceId
+      if (!spaceId) return fail('That import has no Space selected.')
+      const space = await getSpaceById(spaceId)
+      if (!space) return fail('We could not find that Space.')
+      const caps = await getSpaceCapabilities(space, createdBy)
+      if (!spaceFunctionAccess(space, 'crm', caps.role)) {
+        return fail('Only this Space’s team can undo this import.')
+      }
+    }
+    if (!spaceId) return fail('We could not reach that contact list right now.')
+    deleted = await deleteImportedContacts(spaceId, row.id)
+  }
+
+  await updateImport(id, createdBy, { rolledBackAt: new Date().toISOString() })
+  return ok({ deleted })
+}
+
+/** Delete the sealed `contacts` rows a Space / platform import created (tagged by batch id), guarded
+ *  to import leads that are still unknown/unedited. Returns the count deleted. Fail-safe to 0. */
+async function deleteImportedContacts(spaceId: string, batchId: string): Promise<number> {
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        delete: () => {
+          eq: (c: string, v: string) => {
+            eq: (c: string, v: string) => {
+              eq: (c: string, v: string) => {
+                eq: (c: string, v: string) => { select: (c: string) => Promise<{ data: { id: string }[] | null; error: unknown }> }
+              }
+            }
+          }
+        }
+      }
+    }
+    const { data, error } = await db
+      .from('contacts')
+      .delete()
+      .eq('space_id', spaceId)
+      .eq('meta->>import_batch', batchId)
+      .eq('source', 'import')
+      .eq('consent_state', 'unknown')
+      .select('id')
+    if (error || !data) return 0
+    return data.length
+  } catch {
+    return 0
+  }
 }

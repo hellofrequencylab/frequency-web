@@ -28,10 +28,15 @@
 // admin client (not in the generated DB types yet, ADR-246). Every IO path is FAIL-SAFE: a capture can
 // never break a scan or a signup — errors return null and the caller falls through to its normal flow.
 //
-// SCHEMA NOTE: public.contacts carries a GLOBAL unique index on lower(email) (20240221000000), so an
-// email maps to at most ONE contacts row. A sealed lead is therefore that single row tagged with a
-// space_id; on signup the profiles_sync_contact trigger links its profile_id by that same email. We
-// never hijack a row that already belongs to a DIFFERENT real Space (see upsertSealedLead).
+// SCHEMA NOTE: public.contacts uniqueness is PER-SPACE — unique(space_id, lower(email)) (ADR-624,
+// 20261164000000_contact_tenancy_per_space.sql), so the SAME email can be a separate contact in the ROOT
+// space AND in an independent (white-label) Space's CRM. Every email lookup here is therefore scoped to a
+// known space_id (a bare .maybeSingle() on email would throw on a multi-row address). A sealed lead is
+// the row tagged with its Space's space_id; on signup the profiles_sync_contact trigger links profile_id
+// on the ROOT contact only, never a tenant Space's lead row. A member down-spilling into a Space becomes
+// a SEPARATE sealed tenant lead (see linkMemberToSpaceLead) — we never re-tag the root member contact.
+// Back-compat: a scoped read returns the exact same row under the OLD global index, so this is
+// behavior-preserving before the migration and correct after it.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordContactInteraction } from '@/lib/crm/interactions'
@@ -267,14 +272,33 @@ interface ContactRow {
 
 const CONTACT_COLS = 'id, email, space_id, profile_id, consent_state, display_name, meta'
 
-async function findContactByEmail(email: string): Promise<ContactRow | null> {
+/** Resolve the ONE contact for an email WITHIN a given Space. Per-space tenancy: uniqueness is
+ *  (space_id, lower(email)), so a Space-scoped read yields at most one row and `.maybeSingle()` is safe.
+ *  Never leave this unscoped — a bare email lookup can span Spaces and throw on multi-row. FAIL-SAFE. */
+async function findContactByEmail(email: string, spaceId: string): Promise<ContactRow | null> {
   try {
-    const { data } = (await table('contacts').select(CONTACT_COLS).ilike('email', email).maybeSingle()) as {
-      data: ContactRow | null
-    }
+    const { data } = (await table('contacts')
+      .select(CONTACT_COLS)
+      .eq('space_id', spaceId)
+      .ilike('email', email)
+      .maybeSingle()) as { data: ContactRow | null }
     return data ?? null
   } catch {
     return null
+  }
+}
+
+/** ALL contact rows sharing an email across Spaces (per-space tenancy: an address can live in the root
+ *  space AND in one or more tenant Spaces). Set-returning — never `.maybeSingle()` — so a multi-row
+ *  address is safe under the per-space unique index. FAIL-SAFE: [] on any error. */
+async function findContactsByEmail(email: string): Promise<ContactRow[]> {
+  try {
+    const { data } = (await table('contacts').select(CONTACT_COLS).ilike('email', email)) as {
+      data: ContactRow[] | null
+    }
+    return data ?? []
+  } catch {
+    return []
   }
 }
 
@@ -291,9 +315,12 @@ async function findContactByProfile(profileId: string): Promise<ContactRow | nul
 }
 
 /** Whether we may tag a contact row's space_id to `spaceId`: only if it is currently unclaimed
- *  (null or the root space) or already this space. Never hijacks another real Space's lead. */
-async function mayClaimSpace(current: string | null, spaceId: string): Promise<boolean> {
+ *  (null or an UNCLAIMED root backfill row) or already this space. Never hijacks another real Space's
+ *  lead, and — per per-space tenancy (ADR-624) — never re-tags a root contact that already carries a
+ *  real member (`profile_id` set); that row is the member's PLATFORM record, not adoptable stock. */
+async function mayClaimSpace(current: string | null, spaceId: string, profileId: string | null): Promise<boolean> {
   if (!current || current === spaceId) return true
+  if (profileId) return false // a linked member's root contact is never re-taggable to a tenant Space
   const root = await rootSpaceId()
   return !!root && current === root
 }
@@ -441,7 +468,7 @@ function channelForDoor(door: LeadDoor): 'in_person' | 'event' | 'system' {
 /**
  * Capture-now: seal a Space lead from an email/phone-bearing door (lead magnet, warm intro, event,
  * share-back, or a Space-QR capture that collected contact details). Idempotent + fail-safe:
- *   • upserts the sealed contact by email (global unique), tagging it to the Space when unclaimed;
+ *   • upserts the sealed contact by (space_id, email) — a clean per-space upsert (ADR-624);
  *   • stamps the immutable entry point ONCE (never overwritten on a re-capture);
  *   • appends a touchpoint (capture / rescan) + a CRM interaction with metadata.entry_point;
  *   • applies consent per the door (default 'unknown'; mailable only for consent-native doors).
@@ -459,8 +486,8 @@ export async function captureLead(input: CaptureLeadInput): Promise<CaptureResul
     const where = clip(input.where, MAX_WHERE)
     const label = clip(input.label ?? doorLabel(input.door), MAX_LABEL)
 
-    // 1. Resolve / seal the contact by email (the canonical global key).
-    let contact = email ? await findContactByEmail(email) : null
+    // 1. Resolve / seal the contact by (space_id, email) — the per-space key (ADR-624).
+    let contact = email ? await findContactByEmail(email, spaceId) : null
     const nowIso = new Date().toISOString()
 
     if (!contact) {
@@ -485,7 +512,7 @@ export async function captureLead(input: CaptureLeadInput): Promise<CaptureResul
     } else {
       // Existing row: never downgrade. Tag the Space only if unclaimed; lift consent only unknown->sub.
       const patch: Record<string, unknown> = { last_seen_at: nowIso, updated_at: nowIso }
-      if (await mayClaimSpace(contact.space_id, spaceId)) patch.space_id = spaceId
+      if (await mayClaimSpace(contact.space_id, spaceId, contact.profile_id)) patch.space_id = spaceId
       const nextConsent = consentStateForDoor(input.door, (contact.consent_state as ConsentState) ?? 'unknown', opts)
       if (nextConsent !== (contact.consent_state ?? 'unknown')) patch.consent_state = nextConsent
       if (!contact.display_name && input.displayName) patch.display_name = input.displayName.trim() || null
@@ -557,10 +584,12 @@ async function recordInteractionForCapture(
 }
 
 /**
- * DOWN-SPILL: a SIGNED-IN member scanned a Space lead-grab code. They already have a contacts row (the
- * profiles_sync_contact trigger created it by their email), so link them into the Space directly: tag
- * the Space (if unclaimed), stamp the immutable entry point, log a touchpoint + interaction. Idempotent
- * (re-scan refreshes met-context, never a duplicate door) + fail-safe. Returns the contactId or null.
+ * DOWN-SPILL: a SIGNED-IN member scanned a Space lead-grab code. Under per-space tenancy (ADR-624) the
+ * member enters this Space as a SEPARATE sealed tenant lead — never by re-tagging their platform (root)
+ * contact into the Space (that would move a member's root record into a tenant CRM: tenancy corruption).
+ * We use the member's root contact ONLY to read their identity (email/display name), then resolve or
+ * create THIS Space's row by (space_id, email) and stamp the door / touchpoint / interaction on it.
+ * Idempotent (re-scan refreshes met-context, never a duplicate door) + fail-safe. Returns the contactId.
  */
 export async function linkMemberToSpaceLead(input: {
   spaceId: string
@@ -576,23 +605,51 @@ export async function linkMemberToSpaceLead(input: {
     const spaceId = (input.spaceId ?? '').trim()
     const profileId = (input.profileId ?? '').trim()
     if (!spaceId || !profileId) return null
-    const contact = await findContactByProfile(profileId)
-    if (!contact) return null // no CRM row yet (rare) — nothing to link; caller falls through
+
+    // Identify the member by their platform (root) contact — used ONLY to read identity, NEVER as the row
+    // we tag into the Space. The tenant lead is keyed on the member's email.
+    const member = await findContactByProfile(profileId)
+    const email = member?.email ? normalizeEmail(member.email) : null
+    if (!member || !email) return null // no CRM row / no email — nothing to link; caller falls through
 
     const where = clip(input.where, MAX_WHERE)
     const label = clip(input.label ?? doorLabel(input.door), MAX_LABEL)
     const nowIso = new Date().toISOString()
 
-    const patch: Record<string, unknown> = { last_seen_at: nowIso, updated_at: nowIso }
-    if (await mayClaimSpace(contact.space_id, spaceId)) patch.space_id = spaceId
-    const nextConsent = consentStateForDoor(input.door, (contact.consent_state as ConsentState) ?? 'unknown', {
-      offerUnlocked: input.offerUnlocked,
-    })
-    if (nextConsent !== (contact.consent_state ?? 'unknown')) patch.consent_state = nextConsent
-    try {
-      await table('contacts').update(patch).eq('id', contact.id)
-    } catch {
-      /* best-effort */
+    // Resolve THIS Space's row for the member's email; create a sealed tenant lead if absent. Scoped to
+    // (space_id, email) so it is safe under both indexes and never touches the member's root contact. The
+    // tenant lead stays profile_id NULL (a white-label CRM's lead is not the platform member record); the
+    // join is recorded as a touchpoint, not by linking profile_id here.
+    let contact = await findContactByEmail(email, spaceId)
+    if (!contact) {
+      const consent = consentStateForDoor(input.door, 'unknown', { offerUnlocked: input.offerUnlocked })
+      const { data: inserted } = (await table('contacts')
+        .insert([
+          {
+            email,
+            space_id: spaceId,
+            display_name: member.display_name ?? null,
+            consent_state: consent,
+            source: `lead_${input.door}`,
+            last_seen_at: nowIso,
+          },
+        ])
+        .select(CONTACT_COLS)
+        .maybeSingle()) as { data: ContactRow | null }
+      contact = inserted ?? null
+      if (!contact) return null // e.g. pre-migration collision with a root row — fail-safe no-op
+    } else {
+      const patch: Record<string, unknown> = { last_seen_at: nowIso, updated_at: nowIso }
+      const nextConsent = consentStateForDoor(input.door, (contact.consent_state as ConsentState) ?? 'unknown', {
+        offerUnlocked: input.offerUnlocked,
+      })
+      if (nextConsent !== (contact.consent_state ?? 'unknown')) patch.consent_state = nextConsent
+      if (!contact.display_name && member.display_name) patch.display_name = member.display_name
+      try {
+        await table('contacts').update(patch).eq('id', contact.id)
+      } catch {
+        /* best-effort */
+      }
     }
 
     const firstTouch = await stampEntryPoint({
@@ -666,19 +723,27 @@ export async function claimLeadOnSignup(profileId: string, email: string | null 
   try {
     if (!profileId) return
     const key = normalizeEmail(email)
-    const contact = key ? await findContactByEmail(key) : await findContactByProfile(profileId)
-    if (!contact) return
-    const entry = await getEntryPoint(contact.id)
-    if (!entry) return // not a lead-grab lead — nothing to claim
-    await logTouchpoint({
-      spaceId: entry.space_id,
-      contactId: contact.id,
-      kind: 'claim',
-      channel: 'system',
-      note: 'Joined Frequency and claimed on signup',
-      actorProfileId: profileId,
-      metadata: { door: entry.kind, redeemed: 'email_match' },
-    })
+    // Per-space tenancy (ADR-624): one email can resolve to MULTIPLE contact rows (the root member row
+    // PLUS a sealed lead in each tenant Space). Resolve the SET and claim every row that carried an entry
+    // point — never a single unscoped `.maybeSingle()` (which throws on a multi-row address post-migration).
+    const contacts = key ? await findContactsByEmail(key) : []
+    if (contacts.length === 0) {
+      const byProfile = await findContactByProfile(profileId)
+      if (byProfile) contacts.push(byProfile)
+    }
+    for (const contact of contacts) {
+      const entry = await getEntryPoint(contact.id)
+      if (!entry) continue // not a lead-grab lead — nothing to claim on this row
+      await logTouchpoint({
+        spaceId: entry.space_id,
+        contactId: contact.id,
+        kind: 'claim',
+        channel: 'system',
+        note: 'Joined Frequency and claimed on signup',
+        actorProfileId: profileId,
+        metadata: { door: entry.kind, redeemed: 'email_match' },
+      })
+    }
   } catch {
     /* best-effort */
   }

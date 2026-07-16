@@ -155,11 +155,22 @@ function looksLikePhone(v: string): boolean {
   return digits.length >= 7 && digits.length <= 15 && /^[+()\d\s.-]+$/.test(v)
 }
 
-/** Infer a column's value type from a sample of its non-empty values (majority vote). */
+/** The words we read as a boolean value (case-insensitive). A column whose values are all in this
+ *  set is a boolean field (a "VIP?" yes/no, an "Active" true/false). */
+const BOOLEAN_WORDS = new Set(['true', 'false', 'yes', 'no', 'y', 'n', '1', '0'])
+
+/** Infer a column's value type from a sample of its non-empty values (majority vote). `select` is
+ *  never inferred here (it needs an operator-declared option set); `boolean` is, when every sampled
+ *  value reads as yes/no/true/false. */
 export function inferValueType(values: string[]): ValueType {
   const samples = values.map((v) => (v ?? '').trim()).filter(Boolean).slice(0, 20)
   if (!samples.length) return 'text'
-  const tally: Record<ValueType, number> = { text: 0, number: 0, email: 0, phone: 0, url: 0, date: 0 }
+  // Boolean is all-or-nothing: a single non-boolean value rules it out (so a "0"/"1" id column of
+  // mixed values does not read as boolean). Checked before the majority vote.
+  if (samples.every((v) => BOOLEAN_WORDS.has(v.toLowerCase()))) return 'boolean'
+  const tally: Record<ValueType, number> = {
+    text: 0, number: 0, email: 0, phone: 0, url: 0, date: 0, boolean: 0, select: 0,
+  }
   for (const v of samples) {
     if (EMAIL_RE.test(v)) tally.email++
     else if (looksLikePhone(v)) tally.phone++

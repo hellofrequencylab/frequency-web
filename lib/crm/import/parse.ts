@@ -9,6 +9,9 @@
 
 import Papa from 'papaparse'
 import type { ParsedSource } from './types'
+import { parseVcardText } from './vcard'
+import { parseJsonText } from './json'
+import { parseNotesText } from './notes'
 
 /** Rows are capped when staged; parse a bit above that so the count stays honest. */
 const PARSE_ROW_CAP = 5000
@@ -132,4 +135,61 @@ export function mergeSources(sources: ParsedSource[]): ParsedSource {
  *  so the caller routes it to the AI extractor instead. */
 export function looksLikeTable(source: ParsedSource): boolean {
   return source.headers.length >= 2 && source.rows.length >= 1
+}
+
+// ── Local (client-side) file-type routing ────────────────────────────────────────
+// The wizard hands EVERY chosen file here first. A format the browser can parse without a
+// model or the server (CSV/TSV, vCard, JSON, plain-text notes) is parsed deterministically
+// and returned as a ParsedSource. Anything this cannot make sense of returns null, so the
+// caller routes it onward (XLSX -> a server action; unstructured text -> the AI extractor).
+// FAIL-SAFE: every branch is wrapped so a bad file yields null, never a throw.
+
+const EXT_RE = /\.([a-z0-9]+)$/i
+
+/** The lowercased file extension (without the dot), or ''. */
+function extensionOf(name: string): string {
+  const m = EXT_RE.exec(name ?? '')
+  return m ? m[1].toLowerCase() : ''
+}
+
+/** What a local parse produced: the parsed source + which adapter handled it (so the caller can
+ *  message "we read your notes" vs "we read your spreadsheet"). */
+export interface LocalParse {
+  source: ParsedSource
+  kind: 'csv' | 'vcard' | 'json' | 'notes'
+}
+
+/**
+ * Parse a chosen file locally when its type is one the browser can handle (CSV/TSV, vCard, JSON,
+ * plain-text notes). Returns null when the type is not locally parseable (XLSX, ZIP, unknown) or
+ * when a best-effort text parse found nothing, so the caller falls back to the server / AI path.
+ */
+export async function parseFileLocally(file: File): Promise<LocalParse | null> {
+  const ext = extensionOf(file.name)
+  const mime = (file.type || '').toLowerCase()
+  try {
+    if (ext === 'csv' || ext === 'tsv' || ext === 'tab' || mime === 'text/csv' || mime === 'text/tab-separated-values') {
+      const source = await parseCsvFile(file)
+      return source.rows.length ? { source, kind: 'csv' } : null
+    }
+    if (ext === 'vcf' || ext === 'vcard' || mime === 'text/vcard' || mime === 'text/x-vcard') {
+      const source = parseVcardText(await file.text())
+      return source.rows.length ? { source, kind: 'vcard' } : null
+    }
+    if (ext === 'json' || mime === 'application/json') {
+      const source = parseJsonText(await file.text())
+      return source.rows.length ? { source, kind: 'json' } : null
+    }
+    if (ext === 'txt' || ext === 'text' || mime === 'text/plain') {
+      // A .txt might be a clean delimited table OR loose notes. Try the delimited parse first (a
+      // tab/comma table with a header row), then fall back to best-effort note parsing.
+      const table = await parseCsvFile(file)
+      if (looksLikeTable(table)) return { source: table, kind: 'csv' }
+      const { source } = parseNotesText(await file.text())
+      return source.rows.length ? { source, kind: 'notes' } : null
+    }
+  } catch {
+    return null
+  }
+  return null
 }

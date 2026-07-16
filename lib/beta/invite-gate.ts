@@ -17,6 +17,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { betaInviteOnly } from '@/lib/platform-flags'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 /** Is this email an ADMITTED beta contact — a contacts row with source='beta_waitlist' and
  *  meta.beta_status='invited'? Case-insensitive match. FAILS OPEN (returns true) on any error so a
@@ -26,13 +27,12 @@ export async function isInvitedBetaContact(email: string): Promise<boolean> {
   if (!clean) return false
   try {
     const db = createAdminClient()
-    const { data } = await db
-      .from('contacts')
-      .select('id, meta')
-      .eq('source', 'beta_waitlist')
-      .ilike('email', clean)
-      .limit(1)
-      .maybeSingle()
+    // ROOT-scoped: beta_waitlist rows are root-owned (marketing capture inserts to root via the
+    // contacts_default_space_id trigger). Per-space tenancy (ADR-624) makes an unscoped email lookup a
+    // multi-row hazard; scope to root when resolvable. `.limit(1)` keeps the fail-open guarantee either way.
+    const root = await loadRootSpaceId()
+    const base = db.from('contacts').select('id, meta').eq('source', 'beta_waitlist').ilike('email', clean)
+    const { data } = await (root ? base.eq('space_id', root) : base).limit(1).maybeSingle()
     if (!data) return false
     const meta = (data.meta && typeof data.meta === 'object' ? data.meta : {}) as Record<string, unknown>
     return meta.beta_status === 'invited'

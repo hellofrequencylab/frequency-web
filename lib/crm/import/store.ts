@@ -69,6 +69,13 @@ function registryTable() {
   }).from('custom_field_registry')
 }
 
+/** Read a raw registry row's optional options array (jsonb text[]). */
+function readOptions(r: Record<string, unknown>): string[] | undefined {
+  const o = r.options
+  if (Array.isArray(o)) return o.filter((v): v is string => typeof v === 'string')
+  return undefined
+}
+
 function mapRow(r: Record<string, unknown>): ContactImportRow {
   return {
     id: String(r.id),
@@ -86,6 +93,8 @@ function mapRow(r: Record<string, unknown>): ContactImportRow {
     committedAt: (r.committed_at as string) ?? null,
     createdAt: (r.created_at as string) ?? '',
     updatedAt: (r.updated_at as string) ?? '',
+    createdIds: Array.isArray(r.created_ids) ? (r.created_ids as string[]) : [],
+    rolledBackAt: (r.rolled_back_at as string) ?? null,
   }
 }
 
@@ -148,6 +157,10 @@ export interface UpdateImportPatch {
   result?: CommitResult
   error?: string | null
   committedAt?: string | null
+  /** The ids of the rows a commit created, so a later rollback deletes exactly those. */
+  createdIds?: string[]
+  /** When the import's created rows were deleted (undo), or null. */
+  rolledBackAt?: string | null
 }
 
 /** Patch an import, scoped to its creator. Returns false on error. */
@@ -161,6 +174,8 @@ export async function updateImport(id: string, createdBy: string, patch: UpdateI
     if (patch.result !== undefined) u.result = patch.result
     if (patch.error !== undefined) u.error = patch.error
     if (patch.committedAt !== undefined) u.committed_at = patch.committedAt
+    if (patch.createdIds !== undefined) u.created_ids = patch.createdIds
+    if (patch.rolledBackAt !== undefined) u.rolled_back_at = patch.rolledBackAt
     const { error } = await importsTable().update(u).eq('id', id).eq('created_by', createdBy)
     return !error
   } catch {
@@ -173,7 +188,9 @@ export async function updateImport(id: string, createdBy: string, patch: UpdateI
 /** The known custom fields for an owner + optional Space scope. Fail-safe to []. */
 export async function listCustomFields(ownerId: string, spaceId: string | null): Promise<CustomFieldEntry[]> {
   try {
-    const { data } = await registryTable().select('key, label, value_type, fingerprint, space_id').eq('owner_id', ownerId).order('created_at', { ascending: true })
+    // Select '*' (not a fixed column list) so a deploy that predates the `options` migration still
+    // reads cleanly (a missing column just reads as undefined), keeping the code migration-independent.
+    const { data } = await registryTable().select('*').eq('owner_id', ownerId).order('created_at', { ascending: true })
     const wantSpace = spaceId ?? null
     return ((data ?? []) as Record<string, unknown>[])
       .filter((r) => ((r.space_id as string) ?? null) === wantSpace)
@@ -182,7 +199,35 @@ export async function listCustomFields(ownerId: string, spaceId: string | null):
         label: (r.label as string) ?? String(r.key),
         valueType: (r.value_type as ValueType) ?? 'text',
         fingerprint: (r.fingerprint as string) ?? null,
+        options: readOptions(r),
       }))
+  } catch {
+    return []
+  }
+}
+
+/** Every known custom field for a SPACE's sealed list, regardless of which operator first mapped it
+ *  (the contact-detail surface reads this via the service-role admin client to label + type-format a
+ *  contact's `meta.custom`). Fail-safe to []. Keyed by field key (last writer wins on a dup). */
+export async function listSpaceCustomFields(spaceId: string): Promise<CustomFieldEntry[]> {
+  try {
+    const handle = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => { eq: (col: string, val: string) => { order: (col: string, opts: { ascending: boolean }) => Promise<{ data: Record<string, unknown>[] | null }> } }
+      }
+    }
+    const { data } = await handle
+      .from('custom_field_registry')
+      .select('*')
+      .eq('space_id', spaceId)
+      .order('created_at', { ascending: true })
+    return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+      key: String(r.key),
+      label: (r.label as string) ?? String(r.key),
+      valueType: (r.value_type as ValueType) ?? 'text',
+      fingerprint: (r.fingerprint as string) ?? null,
+      options: readOptions(r),
+    }))
   } catch {
     return []
   }
@@ -194,7 +239,7 @@ export async function listCustomFields(ownerId: string, spaceId: string | null):
 export async function rememberCustomFields(input: {
   ownerId: string
   spaceId: string | null
-  fields: { key: string; label: string; valueType: ValueType }[]
+  fields: { key: string; label: string; valueType: ValueType; options?: string[] }[]
   fingerprint: string
 }): Promise<void> {
   if (!input.fields.length) return
@@ -209,6 +254,7 @@ export async function rememberCustomFields(input: {
         key: f.key,
         label: f.label,
         value_type: f.valueType,
+        options: f.options && f.options.length ? f.options : null,
         fingerprint: input.fingerprint,
       }))
     if (rows.length) await registryTable().insert(rows)

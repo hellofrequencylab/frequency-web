@@ -53,7 +53,8 @@ describe('projectRow', () => {
     )
     expect(c.displayName).toBe('Sarah Kim')
     expect(c.email).toBe('sarah@x.com')
-    expect(c.phone).toBe('(555) 123-4567')
+    // The stored phone is normalized to E.164-ish (10 digits -> +1). Dedupe still uses the last-10.
+    expect(c.phone).toBe('+15551234567')
     expect(c.company).toBe('Acme')
     expect(c.tags).toEqual(['vip', 'investor'])
     expect(c.custom).toEqual({ lead_source: 'expo' })
@@ -87,6 +88,18 @@ describe('validateRow', () => {
   it('passes a clean row', () => {
     const c = projectRow({ Name: 'A', Email: 'a@b.com' }, [col('Name', 'displayName'), col('Email', 'email')])
     expect(validateRow(c, 0)).toEqual([])
+  })
+  it('warns (non-blocking) on a likely email domain typo, keeping the address', () => {
+    const c = projectRow({ Name: 'A', Email: 'a@gmial.com' }, [col('Name', 'displayName'), col('Email', 'email')])
+    const errs = validateRow(c, 0)
+    const warn = errs.find((e) => e.field === 'email' && e.severity === 'warning')
+    expect(warn?.suggestion).toBe('a@gmail.com')
+    expect(c.email).toBe('a@gmial.com') // kept as typed
+  })
+  it('flags an implausible (too-long) phone', () => {
+    const c = projectRow({ Name: 'A', Phone: '1234567890123456789' }, [col('Name', 'displayName'), col('Phone', 'phone')])
+    const errs = validateRow(c, 0)
+    expect(errs.some((e) => e.field === 'phone' && (e.severity ?? 'error') === 'error')).toBe(true)
   })
 })
 
@@ -143,6 +156,25 @@ describe('planCommit', () => {
     expect(plan.diff.created).toBe(1)
     expect(plan.rows[0].contact.email).toBe('')
     expect(plan.diff.flagged).toBe(1)
+  })
+  it('blanks an implausible phone but still imports the row', () => {
+    const rows = [{ Name: 'A', Email: 'a@x.com', Phone: '12345', Company: '', Tags: '', 'Lead Source': '' }]
+    const plan = planCommit(rows, MAPPING, NO_EXISTING, 'fill_empty')
+    expect(plan.diff.created).toBe(1)
+    expect(plan.rows[0].contact.phone).toBe('')
+    expect(plan.diff.flagged).toBe(1)
+  })
+  it('soft-warns (warned, not flagged) on a same-name + same-phone near-duplicate', () => {
+    const rows = [
+      { Name: 'Jane Doe', Email: 'jane@a.com', Phone: '555-000-1111', Company: '', Tags: '', 'Lead Source': '' },
+      { Name: 'Jane Doe', Email: 'jane@b.com', Phone: '(555) 000-1111', Company: '', Tags: '', 'Lead Source': '' },
+    ]
+    const plan = planCommit(rows, MAPPING, NO_EXISTING, 'fill_empty')
+    // The second row repeats the phone key -> internal skip, and carries the same-name+phone warning.
+    expect(plan.diff.skipped).toBe(1)
+    expect(plan.diff.warned).toBe(1)
+    expect(plan.diff.flagged).toBe(0)
+    expect(plan.errors.some((e) => e.severity === 'warning')).toBe(true)
   })
 })
 

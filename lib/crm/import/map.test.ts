@@ -60,6 +60,13 @@ describe('inferValueType', () => {
   it('is text for an empty sample', () => {
     expect(inferValueType(['', '  '])).toBe('text')
   })
+  it('detects a boolean column (yes/no, true/false)', () => {
+    expect(inferValueType(['yes', 'no', 'Yes', 'NO'])).toBe('boolean')
+    expect(inferValueType(['TRUE', 'false', 'true'])).toBe('boolean')
+  })
+  it('does NOT read a mixed 0/1/other column as boolean', () => {
+    expect(inferValueType(['1', '0', '7', 'many'])).not.toBe('boolean')
+  })
 })
 
 describe('mapColumn', () => {

@@ -29,6 +29,8 @@ import { ClientNotesPanel } from './client-notes-panel'
 import { SpaceContactResonance } from './space-contact-resonance'
 import { SpacePlaybookPicker } from './space-playbook-picker'
 import { relativeTime, summarizeTimeline, type TimelineEntry } from '@/lib/crm/timeline'
+import { formatCustomFieldValue } from '@/lib/crm/import/custom-fields'
+import type { ValueType } from '@/lib/crm/import/types'
 
 // Channel-aware icon element for a timeline row, so an owner reads the kind of touch at a glance
 // instead of a row of identical clocks. Notes and QR scans keep their origin icon; everything else
@@ -153,7 +155,8 @@ export async function SpaceContactDetail({
         </dl>
 
         {/* Imported custom fields (contacts.meta.custom). Shown when the contact carries any, so imported
-            data that used to be write-only is now visible on the record. */}
+            data that used to be write-only is now visible on the record. Each value renders per its
+            registry type: a date reads as a date, a phone dials, a url / email is a link. */}
         {identity.customFields.length > 0 && (
           <div className="mt-4 border-t border-border pt-4">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-subtle">Custom fields</p>
@@ -161,7 +164,9 @@ export async function SpaceContactDetail({
               {identity.customFields.map((f) => (
                 <div key={f.key} className="min-w-0">
                   <dt className="text-xs font-medium text-muted">{f.label}</dt>
-                  <dd className="truncate text-sm text-text" title={f.value}>{f.value}</dd>
+                  <dd className="truncate text-sm text-text">
+                    <CustomFieldValue value={f.value} valueType={f.valueType} />
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -250,6 +255,31 @@ export async function SpaceContactDetail({
         <p className="mt-2 text-xs text-subtle">Notes you add also show on the timeline above.</p>
       </div>
     </section>
+  )
+}
+
+// Render one custom-field value per its registry type: a phone dials, an email / url is a link, a
+// date + boolean read in a friendly form, everything else is plain text. The value always shows.
+function CustomFieldValue({ value, valueType }: { value: string; valueType: ValueType }) {
+  const d = formatCustomFieldValue(value, valueType)
+  if (!d.display) return <span className="text-subtle">Not set</span>
+  if (d.href) {
+    const external = d.kind === 'link'
+    return (
+      <a
+        href={d.href}
+        title={d.display}
+        {...(external ? { target: '_blank', rel: 'noreferrer noopener' } : {})}
+        className="truncate text-primary-strong underline-offset-2 hover:underline"
+      >
+        {d.display}
+      </a>
+    )
+  }
+  return (
+    <span className="truncate" title={d.display}>
+      {d.display}
+    </span>
   )
 }
 

@@ -9,6 +9,7 @@ import { buildBetaConfirmUrl } from '@/lib/beta-tokens'
 import { SITE_URL } from '@/lib/site'
 import { headers } from 'next/headers'
 import { rateLimitOk } from '@/lib/rate-limit'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 // FOUNDING BUSINESS reservation (the fee-buydown cohort, ADR-599). WAITLIST MODE: this writes a
 // `contacts` lead (consent stays pending until the double opt-in confirm) tagged as a founding
@@ -52,11 +53,17 @@ export async function reserveFoundingBusiness(input: {
   const admin = createAdminClient()
   const nowIso = new Date().toISOString()
 
-  const { data: existing } = await admin
-    .from('contacts')
-    .select('id, consent_state, display_name, meta')
-    .ilike('email', email)
-    .maybeSingle()
+  // ROOT-scoped: this waitlist inserts to the root hub (→ root via the contacts_default_space_id trigger),
+  // and per-space tenancy (ADR-624) makes an unscoped email lookup a multi-row throw hazard.
+  const rootId = await loadRootSpaceId()
+  const { data: existing } = rootId
+    ? await admin
+        .from('contacts')
+        .select('id, consent_state, display_name, meta')
+        .eq('space_id', rootId)
+        .ilike('email', email)
+        .maybeSingle()
+    : { data: null }
 
   const alreadyConfirmed = existing?.consent_state === 'subscribed'
 
