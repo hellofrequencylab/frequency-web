@@ -2,6 +2,30 @@ import { describe, it, expect } from 'vitest'
 import { deflateRawSync } from 'node:zlib'
 import { readZipCsvEntries } from './zip'
 
+// A deflate-bomb: a stream that INFLATES to far more than the per-entry cap, while the central
+// directory UNDER-reports the uncompressed size so it slips past the pre-inflation size check.
+// The `inflateRawSync(raw, { maxOutputLength })` guard must abort mid-inflation (RangeError →
+// skipped 'inflate-failed') instead of allocating the whole payload first.
+function buildBombZip(name: string, uncompressedBytes: number, declaredUncompSize: number): Buffer {
+  const nameBuf = Buffer.from(name, 'utf8')
+  const raw = Buffer.alloc(uncompressedBytes) // zeros compress to almost nothing
+  const stored = deflateRawSync(raw)
+  const local = Buffer.concat([
+    u32(0x04034b50), u16(20), u16(0), u16(8), u16(0), u16(0),
+    u32(0), u32(stored.length), u32(declaredUncompSize), u16(nameBuf.length), u16(0), nameBuf, stored,
+  ])
+  const central = Buffer.concat([
+    u32(0x02014b50), u16(20), u16(20), u16(0), u16(8), u16(0), u16(0),
+    u32(0), u32(stored.length), u32(declaredUncompSize), u16(nameBuf.length), u16(0), u16(0),
+    u16(0), u16(0), u32(0), u32(0), nameBuf,
+  ])
+  const eocd = Buffer.concat([
+    u32(0x06054b50), u16(0), u16(0), u16(1), u16(1),
+    u32(central.length), u32(local.length), u16(0),
+  ])
+  return Buffer.concat([local, central, eocd])
+}
+
 // Build a minimal ZIP by hand so we can exercise the reader without a fixture file. Supports STORED
 // (method 0) and DEFLATE (method 8) entries, which is exactly what the reader handles.
 const u16 = (n: number) => {
@@ -71,6 +95,15 @@ describe('readZipCsvEntries', () => {
     const { entries, skipped } = readZipCsvEntries(zip)
     expect(entries.map((e) => e.name)).toEqual(['ok.csv'])
     expect(skipped.some((s) => s.name === '../evil.csv' && s.reason === 'unsafe-path')).toBe(true)
+  })
+
+  it('aborts a deflate-bomb mid-inflation instead of allocating the whole payload', () => {
+    // 26 MB of zeros inflates past the 25 MB per-entry cap, but the CD claims only 100 bytes so it
+    // clears the pre-inflation size check. The maxOutputLength guard must stop it → skipped, no entry.
+    const zip = buildBombZip('bomb.csv', 26 * 1024 * 1024, 100)
+    const { entries, skipped } = readZipCsvEntries(zip)
+    expect(entries).toHaveLength(0)
+    expect(skipped.some((s) => s.name === 'bomb.csv' && s.reason === 'inflate-failed')).toBe(true)
   })
 
   it('reports a non-zip buffer instead of throwing', () => {

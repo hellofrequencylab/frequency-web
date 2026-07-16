@@ -3,9 +3,10 @@
 //
 // The Vercel↔Upstash integration injects the creds as KV_REST_API_URL / KV_REST_API_TOKEN
 // (Vercel's KV naming), not the SDK's default UPSTASH_* — so we build the client from
-// those explicitly. When they're absent (local dev / a preview without the integration),
-// the limiter NO-OPS (allows everything) so nothing breaks; and a Redis hiccup FAILS OPEN
-// for the same reason — rate limiting must never take the site down.
+// those explicitly. When they're absent in dev/test/preview the limiter NO-OPS (allows
+// everything) so nothing breaks; in PRODUCTION an absent limiter FAILS CLOSED (denies) so a
+// missing integration can't silently unthrottle public endpoints. A Redis hiccup at runtime
+// still FAILS OPEN — rate limiting must never take the site down.
 
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
@@ -15,6 +16,11 @@ type Window = Parameters<typeof Ratelimit.slidingWindow>[1]
 const url = process.env.KV_REST_API_URL
 const token = process.env.KV_REST_API_TOKEN
 const redis = url && token ? new Redis({ url, token }) : null
+
+// Are we running in a real production deployment? If so, an UNCONFIGURED limiter must FAIL CLOSED
+// (deny) rather than silently no-op — a missing Upstash integration in prod would otherwise leave
+// abuse-prone public endpoints wide open. In dev/test/preview we still no-op so local flows work.
+const IS_PRODUCTION = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
 
 // One Ratelimit per (limit, window) config — reused across requests.
 const limiters = new Map<string, Ratelimit>()
@@ -46,12 +52,14 @@ export function tooMany(): Response {
 
 /**
  * Is this request within the limit? `true` = allowed. Scoped by `bucket` (the endpoint
- * name) + `id` (usually the IP), so each endpoint has its own window. No-ops to `true`
- * when Upstash isn't configured, and fails open on any Redis error.
+ * name) + `id` (usually the IP), so each endpoint has its own window. When Upstash isn't
+ * configured it FAILS CLOSED in production (deny) so a missing integration can't leave public
+ * endpoints unthrottled, but no-ops to `true` in dev/test/preview. Still fails OPEN on a Redis
+ * error at runtime — a transient KV hiccup must never take the site down.
  */
 export async function rateLimitOk(bucket: string, id: string, limit: number, window: Window): Promise<boolean> {
   const rl = limiterFor(limit, window)
-  if (!rl) return true
+  if (!rl) return !IS_PRODUCTION
   try {
     const { success } = await rl.limit(`${bucket}:${id}`)
     return success

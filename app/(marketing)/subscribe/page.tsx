@@ -4,12 +4,12 @@ import { Mail, MousePointerClick, Inbox } from 'lucide-react'
 import { PageHero, Section, FaqList } from '@/components/marketing/marketing-ui'
 import { SubscribeForm } from '@/components/marketing/subscribe-form'
 import { JsonLd } from '@/components/json-ld'
-import { breadcrumbSchema } from '@/lib/jsonld'
+import { breadcrumbSchema, faqSchema } from '@/lib/jsonld'
 
 export const metadata: Metadata = {
   title: 'Get notes from Frequency',
   description:
-    "Leave your email and hear from Daniel Tyack, through Frequency. A few notes a month on Circles, practices, and events. We email you to confirm first, so nobody lands on the list by accident.",
+    "A few notes a month from Daniel Tyack, through Frequency: Circles, practices, and events. Leave your email, confirm the link, and you're on the list.",
   alternates: { canonical: '/subscribe' },
   openGraph: {
     title: 'Get notes from Frequency',
@@ -48,7 +48,12 @@ const FAQS = [
 export default function SubscribePage() {
   return (
     <>
-      <JsonLd data={breadcrumbSchema([{ name: 'Subscribe', path: '/subscribe' }])} />
+      <JsonLd
+        data={[
+          faqSchema(FAQS.map((f) => ({ q: f.q, a: f.a }))),
+          breadcrumbSchema([{ name: 'Subscribe', path: '/subscribe' }]),
+        ]}
+      />
 
       <PageHero
         eyebrow="Stay in the loop"

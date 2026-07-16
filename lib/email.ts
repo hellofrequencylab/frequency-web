@@ -1133,9 +1133,9 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank
     <h2 style="font-size:14px;font-weight:800;color:#9A5E12;text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">This week's dispatches</h2>
     ${dispatches.map((d) => `
       <div style="border-left:3px solid #9A5E12;padding:0 0 0 14px;margin-bottom:18px;">
-        <p style="margin:0 0 4px;font-size:11px;color:#8F8675;font-weight:600;">${d.authorName}</p>
-        <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#3D352A;">${d.title}</p>
-        ${d.excerpt ? `<p style="margin:0 0 8px;font-size:14px;color:#6B6253;line-height:1.5;">${d.excerpt}</p>` : ''}
+        <p style="margin:0 0 4px;font-size:11px;color:#8F8675;font-weight:600;">${escapeHtml(d.authorName)}</p>
+        <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#3D352A;">${escapeHtml(d.title)}</p>
+        ${d.excerpt ? `<p style="margin:0 0 8px;font-size:14px;color:#6B6253;line-height:1.5;">${escapeHtml(d.excerpt)}</p>` : ''}
         <a href="${d.url}" style="font-size:13px;font-weight:600;color:#9A5E12;text-decoration:none;">Read →</a>
       </div>
     `).join('')}
