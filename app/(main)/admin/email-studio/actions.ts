@@ -311,6 +311,15 @@ export async function loadEmailCampaign(id: string): Promise<LoadedEmailCampaign
  * (kind 'email') server-side, never trusted from the wire. When the layout changes it also refreshes the
  * cached compiled_html so a later send / preview has send-ready HTML on hand. Returns `{ error? }` (the shape
  * the store's debounced flush expects).
+ *
+ * NO revalidation here (deliberate): this is the DEBOUNCED autosave, fired on every keystroke burst while the
+ * composer is open. A revalidatePath / refresh in a Server Action makes Next re-render the CURRENT route and
+ * commit it as a seeded navigation (see next/dist/docs server-actions: "A single response carries data and
+ * UI"). Under the CRM Marketing popup that seeded navigation re-rendered the composing route mid-typing, which
+ * tore focus out of the subject/body field and could close the popup. The card lists that show a subject /
+ * status keep themselves in sync optimistically (the workspaces' onSubjectChange) and reload fresh on the next
+ * navigation, so autosave never needs to revalidate a path. Lifecycle acts that DO change the list (create /
+ * delete / test / send) still revalidate in their own actions.
  */
 export async function saveEmailCampaign(
   id: string,
@@ -353,7 +362,8 @@ export async function saveEmailCampaign(
   const { error } = await db.from('campaigns').update(update).eq('id', id)
   if (error) return { error: 'Could not save your email. Try again.' }
 
-  revalidatePath('/admin/beta')
+  // Intentionally no revalidatePath — see the note above: revalidating from this per-keystroke autosave would
+  // force a seeded navigation that remounts / refocuses the open composer.
   return {}
 }
 

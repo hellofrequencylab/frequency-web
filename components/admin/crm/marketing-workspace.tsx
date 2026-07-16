@@ -6,7 +6,7 @@
 // legacy /admin/marketing/* composer — "New email" and a row's "Open" both open the in-place popup, and
 // there are no quick-links back to the old system. Voice canon: no em dashes.
 
-import { useMemo, useState, useTransition } from 'react'
+import { useCallback, useMemo, useState, useTransition } from 'react'
 import { Search, Send } from 'lucide-react'
 import { MessagingConsole } from '@/components/admin/messaging/messaging-console'
 import { MarketingComposePopup } from '@/components/admin/crm/marketing-compose-popup'
@@ -52,6 +52,13 @@ export function MarketingWorkspace({
     setComposeCampaignId(id)
     setComposeOpen(true)
   }
+
+  // STABLE close identity: the popup's Dialog runs a focus-trap effect keyed on [open, onClose], so a fresh
+  // onClose on every parent re-render would refire that effect and yank focus out of the field the operator is
+  // typing in (and, once focus lands on the Close control, a typed space would activate it and shut the popup).
+  // A useCallback keeps the identity fixed so the trap only ever sets up / tears down when the popup truly opens
+  // or closes, never mid-compose.
+  const closeCompose = useCallback(() => setComposeOpen(false), [])
 
   function handleDelete(id: string) {
     const target = campaigns.find((c) => c.id === id)
@@ -110,7 +117,7 @@ export function MarketingWorkspace({
 
       <MarketingComposePopup
         open={composeOpen}
-        onClose={() => setComposeOpen(false)}
+        onClose={closeCompose}
         segments={segments}
         campaignId={composeCampaignId}
       />
