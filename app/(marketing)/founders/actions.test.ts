@@ -55,8 +55,12 @@ vi.mock('@/lib/supabase/admin', () => ({
       if (table !== 'contacts') throw new Error(`unexpected table ${table}`)
       return {
         select: () => ({
-          ilike: () => ({
-            maybeSingle: async () => ({ data: existingContact, error: null }),
+          // Per-space tenancy (ADR-624): the lookup is root-scoped, so the chain now
+          // carries an `.eq('space_id', root)` before `.ilike`.
+          eq: () => ({
+            ilike: () => ({
+              maybeSingle: async () => ({ data: existingContact, error: null }),
+            }),
           }),
         }),
         insert: async (row: unknown) => {
@@ -72,6 +76,8 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
+// Per-space tenancy (ADR-624): the action root-scopes its contact lookup via loadRootSpaceId.
+vi.mock('@/lib/spaces/store', () => ({ loadRootSpaceId: vi.fn(async () => 'root-space') }))
 vi.mock('@/lib/email', () => ({ sendBetaConfirmEmail }))
 vi.mock('@/lib/beta-tokens', () => ({ buildBetaConfirmUrl }))
 vi.mock('@/lib/suppression', () => ({ isSuppressed }))
