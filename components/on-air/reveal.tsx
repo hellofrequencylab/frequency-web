@@ -15,6 +15,7 @@ import { Zap, Gem, Flame, Shield, Radio, ChevronLeft, ChevronRight } from 'lucid
 import { RewardsArt, StreakArt, StatsArt, DispatchArt } from './reveal-art'
 import type { RevealPayload } from '@/lib/on-air'
 import { achievedTier, TIER_LABELS, TIER_ORDER, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
+import { depthStreakLine } from '@/lib/practices/depth-streak'
 
 const fmtMin = (sec: number) => {
   const m = Math.round(sec / 60)
@@ -426,6 +427,9 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
   // Only nudge a real, full timed sit: an "already counted" repeat or a partial
   // sit gets its own message on the Rewards card, never a depth ladder here.
   const nudge = payload.logged && !payload.partial ? depthNudge(stats.sessionSeconds) : null
+  // The per-practice depth streak (PD6-2): consecutive days at Standard+ / the personal target.
+  // Flavor only, shown when this session actually logged and the run is worth naming (>= 2 days).
+  const depthFlavor = payload.logged ? depthStreakLine(stats.depthStreak ?? 0) : null
   const rows: [string, string][] = [
     // Named after what was actually done (ADR-443): "This walk" / "This sit", never crossed.
     [stats.sessionLabel, fmtMin(stats.sessionSeconds)],
@@ -465,6 +469,11 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
             <p className="mt-0.5 text-xs text-muted">Top of the dial. Hold it here.</p>
           )}
         </div>
+      )}
+      {depthFlavor && (
+        <p className="mt-3 flex items-center justify-center gap-1.5 text-xs font-medium text-primary-strong">
+          <Flame className="h-3.5 w-3.5" aria-hidden /> {depthFlavor}
+        </p>
       )}
       <Link href="/crew/leaderboard" className="mt-4 inline-block text-xs font-semibold text-primary-strong hover:underline">
         Full stats →

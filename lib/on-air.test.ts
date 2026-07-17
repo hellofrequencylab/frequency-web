@@ -5,8 +5,11 @@ import {
   buildCustomPattern,
   buildSessionDispatch,
   cycleSeconds,
+  dispatchOpener,
+  modeForMindless,
   patternBySlug,
   ringScaleAt,
+  statSessionLabel,
 } from './on-air'
 
 const box = patternBySlug('box')
@@ -139,6 +142,61 @@ describe('buildSessionDispatch', () => {
       buildSessionDispatch({ practicesLeft: [], gathering: null }),
     ]
     for (const d of cases) expect(d.copy).not.toContain('—')
+  })
+})
+
+// The ONE label map (PD0-1): mode → the exact activity word every end-of-session surface reads,
+// so a meditation never renders as yoga and a walk never reads "Good sit" (ADR-443). No retired
+// "Deep", no em dashes, no narrated feelings.
+describe('mode → activity noun label map (PD0-1 / PD7-1)', () => {
+  it('names the sit for the quiet timed modes (meditate / stillness / ritual)', () => {
+    // 'meditate' is the SessionMode 'timer'.
+    expect(modeForMindless('meditate')).toBe('timer')
+    for (const kind of ['timer', 'stillness', 'ritual'] as const) {
+      expect(statSessionLabel(kind)).toBe('This sit')
+      expect(dispatchOpener(kind)).toBe('Good sit.')
+    }
+  })
+
+  it('names breathing for breathe', () => {
+    expect(modeForMindless('breathe')).toBe('breath')
+    expect(dispatchOpener('breath')).toBe('Nice breathing.')
+    // Breathing reads most naturally as a plain session in the stats row.
+    expect(statSessionLabel('breath')).toBe('This session')
+  })
+
+  it('names the walk for walk', () => {
+    expect(statSessionLabel('walk')).toBe('This walk')
+    expect(dispatchOpener('walk')).toBe('Nice walk.')
+  })
+
+  it('names yoga for yoga (never a sit)', () => {
+    expect(statSessionLabel('yoga')).toBe('This yoga')
+    expect(dispatchOpener('yoga')).toBe('Nice flow.')
+    expect(statSessionLabel('yoga')).not.toBe('This sit')
+  })
+
+  it('maps every mindless mode to its SessionMode one-to-one, with a safe fallback', () => {
+    expect(modeForMindless('journal')).toBe('journal')
+    expect(modeForMindless('log')).toBe('log')
+    expect(modeForMindless(null)).toBe('timer') // default
+    expect(modeForMindless(undefined, 'breath')).toBe('breath') // caller default honored
+  })
+
+  it('never emits an em dash or the retired word "Deep" in any label', () => {
+    const kinds = [
+      'timer', 'stillness', 'ritual', 'breath', 'journal', 'log',
+      'walk', 'run', 'yoga', 'strength', 'stretch', 'play',
+    ] as const
+    for (const k of kinds) {
+      for (const s of [statSessionLabel(k), dispatchOpener(k)]) {
+        expect(s).not.toContain('—')
+        expect(s).not.toMatch(/\bDeep\b/)
+      }
+    }
+    // An unmapped kind still returns clean, neutral copy.
+    expect(dispatchOpener(null)).toBe('Nicely done.')
+    expect(statSessionLabel(null)).toBe('This session')
   })
 })
 

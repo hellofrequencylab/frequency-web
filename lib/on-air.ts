@@ -541,6 +541,9 @@ export interface RevealPayload {
     nextDepthMark: number | null
     amplitude: number
     amplitudeLevel: number
+    /** The per-practice depth streak after this log: consecutive days at Standard+ / the personal
+     *  target (PD6-2). Surfaced as reveal flavor when it's a real run. Derived, economy-neutral. */
+    depthStreak?: number
   }
   dispatch: {
     copy: string

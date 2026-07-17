@@ -9,7 +9,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { logPractice, getPracticesToLogToday, type LogPracticeResult } from '@/lib/practices'
+import { logPractice, getPracticesToLogToday, getPracticeDepthContext, type LogPracticeResult } from '@/lib/practices'
 import { getPracticeStreak } from '@/lib/practice-streak'
 import { amplitudeLevel } from '@/lib/amplitude'
 import { getOrCreateDispatch } from '@/lib/vera-dispatch'
@@ -272,7 +272,7 @@ export async function completeSession(
 
   // 3. Post-log state for the reveal. Today's airtime is a handful of rows;
   //    summed in JS (PostgREST aggregates are disabled on hosted projects).
-  const [practiceRow, streak, profRow, depthRow, todayRows] = await Promise.all([
+  const [practiceRow, streak, profRow, depthRow, todayRows, depthContext] = await Promise.all([
     admin.from('practices').select('title').eq('id', input.practiceId).maybeSingle(),
     getPracticeStreak(profileId),
     admin.from('profiles').select('amplitude').eq('id', profileId).maybeSingle(),
@@ -291,6 +291,9 @@ export async function completeSession(
       .select('seconds')
       .eq('profile_id', profileId)
       .gte('ended_at', `${new Date().toISOString().slice(0, 10)}T00:00:00Z`),
+    // The per-practice depth streak AFTER this log (PD6-2) — flavor for the reveal. Derived from
+    // practice_logs (economy-neutral); fail-safe to an empty context on any read error.
+    getPracticeDepthContext(profileId, input.practiceId),
   ])
 
   const todaySeconds = ((todayRows.data as { seconds: number }[] | null) ?? []).reduce(
@@ -370,6 +373,7 @@ export async function completeSession(
       nextDepthMark: [10, 25, 50, 100].find((m) => m > lifetimeLogs) ?? null,
       amplitude,
       amplitudeLevel: amplitudeLevel(amplitude),
+      depthStreak: depthContext.depthStreak,
     },
     dispatch,
   })

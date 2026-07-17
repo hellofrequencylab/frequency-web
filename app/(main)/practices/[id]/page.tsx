@@ -1,10 +1,17 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, permanentRedirect } from 'next/navigation'
-import { Zap, Wand2, Pencil, Timer } from 'lucide-react'
+import { Zap, Wand2, Pencil, Timer, Flame } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getPracticeCapabilities } from '@/lib/core/load-capabilities'
-import { getRankedPractice, getPracticeMemberState, getPracticeCreator } from '@/lib/practices'
+import {
+  getRankedPractice,
+  getPracticeMemberState,
+  getPracticeCreator,
+  getPracticeDepthContext,
+  type PracticeDepthContext,
+} from '@/lib/practices'
+import { matchItLine, newBestLine, depthStreakLine } from '@/lib/practices/depth-streak'
 import { resolvePracticeSlugRedirect } from '@/lib/practices/clean'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import { DetailTemplate } from '@/components/templates'
@@ -85,13 +92,22 @@ export default async function PracticeDetailPage({ params }: Params) {
   // Public practices are world-readable; a private one is only its owner's.
   if (!practice.is_public && !isOwner) notFound()
 
-  const [pillars, state, creator, practiceCaps] = await Promise.all([
+  // The "dig deeper" context (PD6): the prior session to match + the depth streak. Only for a
+  // timed practice a signed-in member has (a one-tap / signed-out page has no target to nudge).
+  // Derived, economy-neutral; fail-safe to an empty context so it never blocks the page.
+  const depthPromise: Promise<PracticeDepthContext> =
+    profileId && practice.uses_timer
+      ? getPracticeDepthContext(profileId, practice.id)
+      : Promise.resolve({ lastSession: null, depthStreak: 0 })
+
+  const [pillars, state, creator, practiceCaps, depth] = await Promise.all([
     getPillars(),
     profileId
       ? getPracticeMemberState(profileId, practice.id)
       : Promise.resolve({ adopted: false, loggedToday: false, partialToday: null }),
     getPracticeCreator(practice.created_by),
     getPracticeCapabilities(practice.id),
+    depthPromise,
   ])
   // The Edit-practice affordance opens the in-place Settings drawer. Show it to a
   // manager only — practice.editSettings is exactly the owner / staff / parent-space
@@ -112,6 +128,10 @@ export default async function PracticeDetailPage({ params }: Params) {
   // Phase E upsell tease gate (ADR-466): when a practice was logged today (the habit just paid off),
   // tease building a Program — ONLY when billing is live AND the caller is below Crew. Dormant while OFF.
   const programsTease = state.loggedToday ? await resolveTierTeaseGate('crew') : null
+
+  // The "dig deeper" setup nudge (PD6-1/PD6-2): the depth streak flavor + the prior session to
+  // match. Copy lives in lib/practices/depth-streak (one voice-canon source, live tier nouns).
+  const depthStreakFlavor = depthStreakLine(depth.depthStreak)
 
   return (
     <DetailTemplate
@@ -268,6 +288,25 @@ export default async function PracticeDetailPage({ params }: Params) {
           </>
         )}
       </div>
+
+      {/* The "dig deeper" pull (PD6): a next-day nudge to match the prior session + the depth
+          streak. Only for a timed practice the member owns/adopted (the derive returns empty
+          otherwise). No narrated feelings, no em dashes, live tier nouns (never "Deep"). */}
+      {(depth.lastSession || depthStreakFlavor) && (
+        <div className="-mt-3 mb-6 space-y-1 text-sm">
+          {!state.loggedToday && depth.lastSession && (
+            <p className="text-muted">
+              {matchItLine(depth.lastSession)}{' '}
+              <span className="text-subtle">{newBestLine()}</span>
+            </p>
+          )}
+          {depthStreakFlavor && (
+            <p className="inline-flex items-center gap-1.5 font-medium text-primary-strong">
+              <Flame className="h-3.5 w-3.5 shrink-0" aria-hidden /> {depthStreakFlavor}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Phase E upsell tease (ADR-466): logged today — tease turning practices into a Program (a
           guided path others can follow). Shown only at the logged-today success moment, and only when

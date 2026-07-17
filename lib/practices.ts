@@ -19,6 +19,12 @@ import { ROLE_HIERARCHY } from '@/lib/core/roles'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { resolveMemberDay } from '@/lib/member-day'
 import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/practices/tiers'
+import {
+  deriveDepthStreak,
+  lastDepthSession,
+  type DepthLog,
+  type LastDepthSession,
+} from '@/lib/practices/depth-streak'
 import { sanitizeMovementConfig, type MovementConfig } from '@/lib/movement'
 import { cleanWarmupMessage, WARMUP_SEC_MAX } from '@/lib/on-air'
 
@@ -1158,6 +1164,56 @@ function partialFromLogRow(
   const targetSec = Math.max(0, Math.round(row.seconds_target ?? 0))
   if (targetSec <= 0 || targetSec - bankedSec <= 0) return null
   return { bankedSec, targetSec }
+}
+
+/** The "dig deeper" context for a practice (PD6): the prior session to match + the current
+ *  depth streak. DERIVED from practice_logs (no schema, no writes, economy-neutral); the pure
+ *  math lives in lib/practices/depth-streak. Surfaced on the practice setup (the next-day nudge)
+ *  and the reveal (flavor). */
+export interface PracticeDepthContext {
+  /** The member's most recent PRIOR session for this practice (before today), or null. */
+  lastSession: LastDepthSession | null
+  /** Consecutive days landing Standard+ / the personal target for this practice (0 = no run). */
+  depthStreak: number
+}
+
+/** How far back the depth-streak read scans practice_logs. A run longer than this is
+ *  vanishingly rare and the display just caps there. */
+const DEPTH_STREAK_WINDOW_DAYS = 120
+
+/**
+ * Read a member's depth context for one practice: their prior session (for the "Yesterday: 15 min
+ * · Heavy. Match it?" pull) and their current depth streak (Standard+ / on-target days in a row).
+ * FAIL-SAFE: a read error returns an empty context so a flaky read never blocks the page. The
+ * "today" boundary is the member's LOCAL day (the same boundary logPractice keys logged_for
+ * under), so an evening-Pacific log buckets on the right calendar day.
+ */
+export async function getPracticeDepthContext(
+  profileId: string,
+  practiceId: string,
+  clientTimezone?: string | null,
+): Promise<PracticeDepthContext> {
+  try {
+    const today = await resolveMemberDay(profileId, clientTimezone)
+    // A shifted window start (member-local day math) so the read covers the whole streak span.
+    const [y, m, d] = today.split('-').map(Number)
+    const since = new Date(Date.UTC(y, m - 1, d - DEPTH_STREAK_WINDOW_DAYS)).toISOString().slice(0, 10)
+    const { data } = await db()
+      .from('practice_logs')
+      .select('logged_for, seconds_done, seconds_target')
+      .eq('profile_id', profileId)
+      .eq('practice_id', practiceId)
+      .gte('logged_for', since)
+    const rows = (data as { logged_for: string; seconds_done: number | null; seconds_target: number | null }[] | null) ?? []
+    const logs: DepthLog[] = rows.map((r) => ({
+      day: String(r.logged_for),
+      secondsDone: Math.max(0, Math.round(r.seconds_done ?? 0)),
+      secondsTarget: Math.max(0, Math.round(r.seconds_target ?? 0)),
+    }))
+    return { lastSession: lastDepthSession(logs, today), depthStreak: deriveDepthStreak(logs, today) }
+  } catch {
+    return { lastSession: null, depthStreak: 0 }
+  }
 }
 
 // --- Mutations (callers enforce authz: host for circle, self for personal) -
