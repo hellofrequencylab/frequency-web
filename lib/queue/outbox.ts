@@ -282,8 +282,15 @@ export async function requeueDeadLettered(
     console.error(`[outbox] requeueDeadLettered update failed: ${updErr.message}`)
     return 0
   }
-  console.warn(`[outbox] requeued ${ids.length} dead-lettered job(s)${opts?.kind ? ` kind=${opts.kind}` : ''}`)
+  console.warn(`[outbox] requeued ${ids.length} dead-lettered job(s)${opts?.kind ? ` kind=${safeKindForLog(opts.kind)}` : ''}`)
   return ids.length
+}
+
+/** Sanitize a caller-supplied job `kind` before it lands in a log line: strip everything but word
+ *  chars + dash and bound the length, so a client-reachable value can never inject newlines / control
+ *  chars into the log (CodeQL log-injection). Real job kinds ('email', 'push', 'sms') pass through. */
+function safeKindForLog(kind: string): string {
+  return kind.replace(/[^\w-]/g, '').slice(0, 40)
 }
 
 /** A terminal status for a dead-letter an operator has consciously abandoned. Distinct from 'failed'
@@ -320,6 +327,6 @@ export async function discardDeadLettered(opts?: { kind?: string; limit?: number
     console.error(`[outbox] discardDeadLettered update failed: ${updErr.message}`)
     return 0
   }
-  console.warn(`[outbox] discarded ${ids.length} dead-lettered job(s)${opts?.kind ? ` kind=${opts.kind}` : ''}`)
+  console.warn(`[outbox] discarded ${ids.length} dead-lettered job(s)${opts?.kind ? ` kind=${safeKindForLog(opts.kind)}` : ''}`)
   return ids.length
 }
