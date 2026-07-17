@@ -6,7 +6,7 @@ import { emailPalette, entityBlockById } from '@/lib/entity-blocks/registry'
 import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
 import { addRow, moveRow, placeBlock, removeBlock, type BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { DEFAULT_EMAIL_COLORS, type EmailColors } from '@/lib/email-studio/render'
-import { emailFooterHtml } from '@/lib/email-studio/shell'
+import { emailFooterHtml, emailHeaderHtml } from '@/lib/email-studio/shell'
 import { useProfileLayout } from '@/components/entity-blocks/profile-layout-context'
 import { FieldEditor } from '@/components/entity-blocks/block-edit-panel'
 import { CanvasBlock } from './canvas/canvas-block'
@@ -92,6 +92,12 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
   // WYSIWYG matches what sends; the placeholder unsubscribe URL stands in for the send-time one-click token.
   const footerHtml = useMemo(
     () => emailFooterHtml({ brand: { colors: C }, unsubscribeUrl: EDITOR_UNSUBSCRIBE_PLACEHOLDER }),
+    [C],
+  )
+  // The brand HEADER chrome, from the SAME builder the sent email uses (emailHeaderHtml — no fork), so the
+  // editor shows the identical wordmark + tagline lockup, not a hand-rolled one missing the tagline.
+  const headerHtml = useMemo(
+    () => emailHeaderHtml({ brand: { colors: C } }),
     [C],
   )
 
@@ -302,9 +308,8 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
           className="mx-auto w-full max-w-[600px] rounded-2xl p-6 sm:p-9"
           style={{ background: C.surface, border: `1px solid ${C.border}` }}
         >
-          <div className="mb-6">
-            <span className="text-xl font-black lowercase" style={{ color: C.primaryStrong }}>frequency</span>
-          </div>
+          {/* Brand header — the SAME wordmark + tagline lockup the sent email renders (no hand-rolled copy). */}
+          <div className="mb-6" dangerouslySetInnerHTML={{ __html: headerHtml }} />
 
           {blocks.length === 0 ? (
             <p className="py-10 text-center text-sm" style={{ color: C.subtle }}>

@@ -19,7 +19,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
-import { resolveSegment, type SegmentKey } from '@/lib/studio/campaigns'
+import { resolveSegment, sendCategoryForSegment, type SegmentKey } from '@/lib/studio/campaigns'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
@@ -401,17 +401,20 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   try {
     const recipients = await resolveSegment(row.segment)
     const names = await loadContactNames(recipients.map((r) => r.contactId))
+    // The send-gate category depends on the AUDIENCE (lib/studio/campaigns sendCategoryForSegment):
+    // `subscribed_members` is the opt-IN marketing audience → 'marketing' (email_marketing, opt-in);
+    // `members` / `site_signups` / trait / place / event / direct-set are the operator's own
+    // account-holders → 'lifecycle' (opt-OUT member newsletter each member can still unsubscribe from).
+    const sendCategory = sendCategoryForSegment(row.segment)
 
     for (const r of recipients) {
-      // The ONE unified send-gate (suppression + consent + preference) — the same seam the
-      // marketing composer and the beta send ride. A campaign is a MARKETING send, so the gate must
-      // check the `email_marketing` scope (opt-IN, defaultGranted:false in lib/consent/scopes.ts), NOT
-      // `email_lifecycle` (opt-OUT). Using 'lifecycle' here let members who never opted into marketing
-      // (or revoked it) still receive broadcasts; 'marketing' makes resolveSendGate require the
-      // email_marketing grant, mirroring the per-Space path (lib/spaces/email.ts marketing consent).
-      const decision = await resolveSendGate(r.profileId, 'email', 'marketing', { email: r.email })
+      // The ONE unified send-gate (suppression + consent + preference) — the same seam the marketing
+      // composer and the beta send ride, run under the audience's consent category (see above).
+      const decision = await resolveSendGate(r.profileId, 'email', sendCategory, { email: r.email })
       if (!decision.allowed) continue
 
+      // The unsubscribe link toggles the lifecycle preference (the broad email opt-out); a global
+      // broadcast unsubscribe is a hard opt-out regardless of the send's gate category.
       const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: r.profileId, category: 'lifecycle' })
       const { firstName, lastName } = splitName(names.get(r.contactId) ?? null)
       // Per-recipient contact vars, plus the shared product vars resolved above (a product is the same for

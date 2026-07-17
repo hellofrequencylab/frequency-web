@@ -121,6 +121,15 @@ export function emailFooterHtml(input: EmailFooterInput = {}): string {
   return footer(input, colors, baseUrl)
 }
 
+/** The brand HEADER html (wordmark/logo + tagline), from the SAME builder the sent email uses — so the
+ *  editor preview shows the identical lockup, not a hand-rolled approximation. */
+export function emailHeaderHtml(input: EmailFooterInput = {}): string {
+  const brand = input.brand ?? {}
+  const colors = brand.colors ?? DEFAULT_EMAIL_COLORS
+  const baseUrl = brand.baseUrl ?? DEFAULT_BASE_URL
+  return header(brand, colors, baseUrl)
+}
+
 /**
  * Compose the full themed email HTML document from a rendered body. Fail-safe: an empty body still yields a
  * valid, minimal document. Inline styles only; single centered 600px card on the DAWN canvas.
