@@ -62,6 +62,29 @@ describe('validateSegmentDefinition', () => {
     expect(validateSegmentDefinition({ combinator: 'sometimes', predicates: [{ type: 'tag', key: 'web_beta' }] })).toHaveLength(1)
     expect(validateSegmentDefinition({ combinator: 'all', predicates: [] })).toHaveLength(1)
   })
+
+  it('rejects a value whose type does not match the trait type (would silently never match)', () => {
+    // rfm_score is a `number` trait. A string '40' passes the scalar check but compares as `40 === '40'`
+    // (false) at eval time, so the segment silently matches nobody. The validator must reject it.
+    expect(
+      validateSegmentDefinition({ combinator: 'all', predicates: [{ type: 'trait', key: 'rfm_score', op: 'eq', value: '40' }] }),
+    ).toHaveLength(1)
+    // The correctly-typed number is accepted.
+    expect(
+      validateSegmentDefinition({ combinator: 'all', predicates: [{ type: 'trait', key: 'rfm_score', op: 'eq', value: 40 }] }),
+    ).toEqual([])
+    // A boolean trait (wam_status) rejects a string, accepts a boolean.
+    expect(
+      validateSegmentDefinition({ combinator: 'all', predicates: [{ type: 'trait', key: 'wam_status', op: 'eq', value: 'true' }] }),
+    ).toHaveLength(1)
+    expect(
+      validateSegmentDefinition({ combinator: 'all', predicates: [{ type: 'trait', key: 'wam_status', op: 'eq', value: true }] }),
+    ).toEqual([])
+    // An enum trait (lifecycle_stage) compares as a string, so a string value is accepted.
+    expect(
+      validateSegmentDefinition({ combinator: 'all', predicates: [{ type: 'trait', key: 'lifecycle_stage', op: 'eq', value: 'dormant' }] }),
+    ).toEqual([])
+  })
 })
 
 describe('uniqueSegmentSlug', () => {

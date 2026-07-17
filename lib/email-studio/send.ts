@@ -404,8 +404,12 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
 
     for (const r of recipients) {
       // The ONE unified send-gate (suppression + consent + preference) — the same seam the
-      // marketing composer and the beta send ride. Marketing email uses the lifecycle category.
-      const decision = await resolveSendGate(r.profileId, 'email', 'lifecycle', { email: r.email })
+      // marketing composer and the beta send ride. A campaign is a MARKETING send, so the gate must
+      // check the `email_marketing` scope (opt-IN, defaultGranted:false in lib/consent/scopes.ts), NOT
+      // `email_lifecycle` (opt-OUT). Using 'lifecycle' here let members who never opted into marketing
+      // (or revoked it) still receive broadcasts; 'marketing' makes resolveSendGate require the
+      // email_marketing grant, mirroring the per-Space path (lib/spaces/email.ts marketing consent).
+      const decision = await resolveSendGate(r.profileId, 'email', 'marketing', { email: r.email })
       if (!decision.allowed) continue
 
       const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: r.profileId, category: 'lifecycle' })
@@ -439,7 +443,12 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
     }
   } catch (err) {
     console.error('[email-studio] sendCampaignNow send loop failed:', err)
-    // Leave the row 'sending' so the failure is visible and no partial run is marked 'sent'.
+    // The atomic claim above already flipped the row to 'sending'. A failure AFTER the claim (the
+    // likely one: resolveSegment / loadContactNames throwing before any recipient is enqueued) must
+    // NOT strand the row in 'sending' — it could then never be re-sent (sendCampaignNow refuses a
+    // 'sending' row, and there is no 'sending' -> draft/scheduled transition). Reset the status back to
+    // the pre-claim value so the campaign is re-sendable. Best-effort; nothing is ever marked 'sent'.
+    await db.from('campaigns').update({ status: row.status }).eq('id', campaignId)
     return fail('The send did not complete. No status was changed to sent.')
   }
 

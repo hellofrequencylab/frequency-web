@@ -6,6 +6,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
+import { isSuppressed } from '@/lib/suppression'
 import { buildLeadUnsubUrl } from '@/lib/connections/lead-unsub'
 import { nextStepAfter, runAtFrom, type NurtureStep } from '@/lib/nurture/schedule'
 import { parseEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
@@ -147,6 +148,13 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
         if (optedOut) { await cancel(e.id); cancelled++ }
         continue
       }
+    } else {
+      // Pure lead (no profile_id): the unified gate above is skipped, so it was gated ONLY by
+      // consent_state != 'unsubscribed' above — suppression (hard bounce / complaint / manual, and any
+      // per-Space opt-out) was NOT enforced. Check it here before enqueue so a nurture step never reaches
+      // a suppressed address. A suppressed address is undeliverable, so END the sequence, mirroring the
+      // member gate's 'suppressed' branch (isSuppressed fail-safes to true on a read blip, same as there).
+      if (await isSuppressed(e.email)) { await cancel(e.id); cancelled++; continue }
     }
 
     // Atomic send-claim: lock THIS enrollment for THIS run by compare-and-swapping next_run_at on

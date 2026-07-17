@@ -200,13 +200,20 @@ export interface ExistingKeys {
  *   • internal   — a row whose key was already SEEN earlier in this same file is a skip
  *                  (the first occurrence wins), so a re-import is idempotent.
  * Rows with no identity are skipped and flagged. PURE: the commit layer executes the plan.
+ *
+ * `opts.requireEmail` (default false): when the target keys on email (a Space / platform `contacts`
+ * list, where contacts.email is NOT NULL), an email-less row cannot be committed, so it is classified
+ * as a SKIP here — keeping the dry-run preview count identical to what commitToSpace actually does. A
+ * member/network target keeps phone-only rows (leave this false).
  */
 export function planCommit(
   rows: Record<string, string>[],
   mapping: ColumnMapping[],
   existing: ExistingKeys,
   strategy: MergeStrategy,
+  opts: { requireEmail?: boolean } = {},
 ): CommitPlan {
+  const requireEmail = opts.requireEmail ?? false
   const planned: PlannedRow[] = []
   const errors: RowError[] = []
   const seenEmail = new Set<string>()
@@ -266,6 +273,15 @@ export function planCommit(
       errors.push(...rowErrors)
       if (rowErrors.some((e) => (e.severity ?? 'error') === 'error')) flagged++
       else warned++
+    }
+
+    // The target keys on email and cannot store an email-less row: classify it as a skip so the
+    // preview count matches the commit (which skips it). Placed after the quality-flag folding above,
+    // so a phone-only row still reports its warnings; only its ACTION becomes 'skip'.
+    if (requireEmail && !ek) {
+      planned.push({ rowIndex, action: 'skip', contact, matchedKey: null })
+      skipped++
+      return
     }
 
     // INTERNAL dedupe: this key already appeared earlier in the file.

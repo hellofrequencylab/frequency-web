@@ -86,7 +86,19 @@ export function validateSegmentDefinition(def: unknown): string[] {
       const t = getTrait(p.key)
       if (!t || t.kind !== 'computed') errors.push(`predicate ${i}: "${p.key}" is not a registered computed trait`)
       if (!TRAIT_OPS.includes(p.op)) errors.push(`predicate ${i}: invalid op "${p.op}"`)
-      if (!['number', 'string', 'boolean'].includes(typeof p.value)) errors.push(`predicate ${i}: value must be a scalar`)
+      if (!['number', 'string', 'boolean'].includes(typeof p.value)) {
+        errors.push(`predicate ${i}: value must be a scalar`)
+      } else if (t && t.kind === 'computed') {
+        // The value's runtime type must MATCH the trait's registry type. Without this, a scalar of the
+        // wrong type passes (e.g. rfm_score is `number`, but value:'40' as a string), then silently never
+        // matches at eval time (`40 === '40'` is false). Reject the mismatch here. enum + timestamp trait
+        // values compare as strings, so they map to the 'string' runtime type.
+        const expected: 'number' | 'boolean' | 'string' =
+          t.type === 'number' ? 'number' : t.type === 'boolean' ? 'boolean' : 'string'
+        if (typeof p.value !== expected) {
+          errors.push(`predicate ${i}: value for "${p.key}" must be a ${expected}`)
+        }
+      }
     } else {
       errors.push(`predicate ${i}: type must be "tag" or "trait"`)
     }
@@ -141,10 +153,16 @@ function traitRowValue(row: { value_num: number | null; value_text: string | nul
 export async function loadMemberSnapshots(): Promise<MemberSnapshot[]> {
   const client = db()
   const nowMs = Date.now()
-  const [{ data: tagRows }, { data: traitRows }] = await Promise.all([
+  const [{ data: tagRows }, { data: traitRows }, { data: realRows }] = await Promise.all([
     client.from('member_tags').select('profile_id, tag_key, expires_at'),
     client.from('member_traits').select('profile_id, trait_key, value_num, value_text, value_bool'),
+    // Real members only — exclude demo + system profiles, the SAME filter loadMemberDirectory applies.
+    // Without it, seeded demo/system profiles that carry tags/traits inflate segment counts and, via
+    // resolveSegmentProfileIds, get targeted by activation + campaign sends. (ADR-069.)
+    client.from('profiles').select('id').eq('is_demo', false).eq('is_system', false),
   ])
+
+  const real = new Set((realRows ?? []).map((r) => (r as { id: string }).id))
 
   const snaps = new Map<string, MemberSnapshot>()
   const get = (id: string) => {
@@ -153,9 +171,11 @@ export async function loadMemberSnapshots(): Promise<MemberSnapshot[]> {
     return s
   }
   for (const r of (tagRows ?? []) as Array<{ profile_id: string; tag_key: string; expires_at: string | null }>) {
+    if (!real.has(r.profile_id)) continue // skip demo/system
     if (!r.expires_at || Date.parse(r.expires_at) > nowMs) get(r.profile_id).tags.add(r.tag_key)
   }
   for (const r of (traitRows ?? []) as Array<{ profile_id: string; trait_key: string; value_num: number | null; value_text: string | null; value_bool: boolean | null }>) {
+    if (!real.has(r.profile_id)) continue // skip demo/system
     get(r.profile_id).traits.set(r.trait_key, traitRowValue(r))
   }
   return [...snaps.values()]

@@ -15,7 +15,7 @@
 
 import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createContact, updateContact, existingContactKeys, listContacts, deleteContact } from '@/lib/connections/store'
+import { createContact, updateContact, existingContactKeys, listContactsForMerge, deleteContact, type ContactMergeRow } from '@/lib/connections/store'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
@@ -25,7 +25,7 @@ import { getImport, updateImport, rememberCustomFields, getRootSpaceId } from '.
 import { headerFingerprint } from './map'
 import { planCommit, emailKey, phoneKey, type ProjectedContact, type ExistingKeys } from './dedupe'
 import type { ContactImportRow, CommitResult, ValueType } from './types'
-import type { NetworkContactListItem, ContactDetails, ContactOtherDetail } from '@/lib/connections/types'
+import type { ContactDetails, ContactOtherDetail } from '@/lib/connections/types'
 
 const empty = (v: string | null | undefined) => !((v ?? '').trim())
 
@@ -71,10 +71,13 @@ async function commitToMember(ownerId: string, row: ContactImportRow): Promise<{
   const { emails, phones } = await existingContactKeys(ownerId)
   const existing: ExistingKeys = { emails, phones }
 
-  // For merges we need the existing row id + its current values: build a key -> row map.
-  let byKey = new Map<string, NetworkContactListItem>()
+  // For merges we need the existing row id + its current values: build a key -> row map. This reads
+  // the FULL contact cohort (unbounded), the SAME set existingContactKeys plans against, so a row that
+  // matches a contact past any page cap still resolves here (never miscounted as failed — the plan and
+  // the id resolution use one cohort).
+  let byKey = new Map<string, ContactMergeRow>()
   try {
-    const all = await listContacts(ownerId, 2000)
+    const all = await listContactsForMerge(ownerId)
     for (const c of all) {
       const ek = emailKey(c.email)
       const pk = phoneKey(c.phone)
@@ -85,6 +88,8 @@ async function commitToMember(ownerId: string, row: ContactImportRow): Promise<{
     byKey = new Map()
   }
 
+  // member/network target keeps phone-only rows (network_contacts has a phone column), so no
+  // requireEmail here.
   const plan = planCommit(row.source.rows, row.mapping, existing, row.mergeStrategy)
   let created = 0
   let merged = 0
@@ -146,7 +151,7 @@ async function commitToMember(ownerId: string, row: ContactImportRow): Promise<{
 
 /** Build the update patch for a member merge, honoring the strategy per scalar field. */
 function mergeMemberPatch(
-  existing: NetworkContactListItem,
+  existing: ContactMergeRow,
   c: ProjectedContact,
   defs: { key: string; label: string }[],
   strategy: string,
@@ -245,7 +250,10 @@ async function commitToSpace(
   }
 
   const existing: ExistingKeys = { emails, phones: dedupePhone ? phones : new Set() }
-  const plan = planCommit(row.source.rows, row.mapping, existing, row.mergeStrategy)
+  // A sealed `contacts` row REQUIRES an email (contacts.email NOT NULL), so an email-less row is
+  // skipped below regardless of what it planned as. Tell planCommit to classify those as 'skip' too,
+  // so the dry-run preview count matches this commit's outcome (no "12 created" -> "12 skipped" drift).
+  const plan = planCommit(row.source.rows, row.mapping, existing, row.mergeStrategy, { requireEmail: true })
   const now = new Date().toISOString()
   let created = 0
   let merged = 0

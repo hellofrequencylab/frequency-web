@@ -83,6 +83,36 @@ async function insertCampaignDraft(
   return (data as { id: string }).id
 }
 
+/**
+ * Insert one DRAFT campaign for the MANUAL campaign path (no generated body). Mirrors insertCampaignDraft's
+ * `campaigns` draft shape (block_json is the body source of truth — an empty layout here; `body` is a legacy
+ * NOT NULL column seeded empty; status 'draft'), carrying the operator's own inputs so nothing they typed is
+ * lost: the name becomes the working subject, the audience becomes the segment, and their free-text notes ride
+ * along in the preheader (a spot they can move in the composer). The draft opens in the composer via ?open=<id>
+ * and rides the existing gated send later. NEVER sends.
+ */
+async function insertManualCampaignDraft(
+  db: ReturnType<typeof createAdminClient>,
+  profileId: string,
+  opts: { name: string; segment: string | null; details?: string },
+): Promise<string | null> {
+  const { data, error } = await db
+    .from('campaigns')
+    .insert({
+      block_json: { rows: [] } as unknown as never,
+      body: '',
+      subject: opts.name.slice(0, 300),
+      preheader: (opts.details ?? '').slice(0, 300),
+      segment: opts.segment ?? '',
+      status: 'draft',
+      created_by: profileId,
+    } as unknown as never)
+    .select('id')
+    .single()
+  if (error || !data) return null
+  return (data as { id: string }).id
+}
+
 /** Build the object for a goal and return where to send the operator next. */
 export async function startBuild(input: StartBuildInput): Promise<ActionResult<StartBuildResult>> {
   const goal = getMessagingGoal(input.goalKey)
@@ -152,10 +182,17 @@ async function startManual(
     return ok({ href: `/admin/marketing/messaging/funnels/${res.data.id}`, veraPending })
   }
 
-  // Campaign goal: the composer is the working author surface. Carry the audience as a hint so the composer
-  // can preselect it (a query the composer reads; harmless if not).
-  const params = new URLSearchParams()
-  if (input.audience) params.set('segment', input.audience)
-  const query = params.toString()
-  return ok({ href: `/admin/crm/marketing${query ? `?${query}` : ''}`, veraPending })
+  // Campaign goal: mint a real draft carrying the operator's inputs, then open it in the composer via
+  // ?open=<id>. The CRM Marketing page reads ONLY ?open= (?segment= dead-ends — no draft, inputs lost), so
+  // this mirrors the sibling paths: manual funnel createFunnel+opens, Vera campaign insertCampaignDraft+opens.
+  const gate = await writerGate()
+  if (!gate.ok) return fail(gate.error)
+  const db = createAdminClient()
+  const id = await insertManualCampaignDraft(db, gate.profileId, {
+    name,
+    segment: input.audience ?? null,
+    details: input.details?.trim() || undefined,
+  })
+  if (!id) return fail('Could not start your draft. Try again.')
+  return ok({ href: `/admin/crm/marketing?open=${id}`, veraPending })
 }

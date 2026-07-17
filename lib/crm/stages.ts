@@ -242,6 +242,12 @@ export async function setStageKind(
     const guard = canSetStageKind(stages, stageId, kind)
     if (!guard.ok) return fail(guard.reason ?? 'That change is not allowed.')
 
+    // No-op kind change (e.g. Won -> Won): return WITHOUT writing. Re-running the deal re-sync below
+    // would re-stamp closed_at = now for every deal in the stage, inflating computeMetrics.upgradesThisMonth
+    // and clobbering the real historical close dates. Nothing changes, so there is nothing to persist.
+    const target = stages.find((s) => s.id === stageId)
+    if (target && target.kind === kind) return ok()
+
     const { error } = await db()
       .from('crm_stages')
       .update({ kind })
@@ -259,6 +265,32 @@ export async function setStageKind(
       })
       .eq('stage_id', stageId)
       .eq('space_id', auth.spaceId)
+
+    // TOCTOU compensation (see wonLostFloorHolds): the guard above is a check-then-act across separate
+    // statements, so a concurrent setStageKind/deleteStage could pass its own guard and, together with
+    // this write, drop the LAST Won or Lost stage to zero. Only a change AWAY from won/lost can do that;
+    // if the floor is now broken, revert this stage (and its deals) so >=1 Won and >=1 Lost always remain.
+    if (
+      (target?.kind === 'won' || target?.kind === 'lost') &&
+      !(await wonLostFloorHolds(auth.spaceId))
+    ) {
+      await db()
+        .from('crm_stages')
+        .update({ kind: target.kind })
+        .eq('id', stageId)
+        .eq('space_id', auth.spaceId)
+      await db()
+        .from('crm_deals')
+        .update({
+          status: target.kind,
+          closed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('stage_id', stageId)
+        .eq('space_id', auth.spaceId)
+      revalidateSpace(slug)
+      return fail('Another change removed the last Won or Lost stage. Try again.')
+    }
 
     revalidateSpace(slug)
   } catch {
@@ -310,6 +342,7 @@ export async function deleteStage(slug: string, stageId: string): Promise<Action
     const stages = await getStages(auth.spaceId)
     const guard = canDeleteStage(stages, stageId)
     if (!guard.ok) return fail(guard.reason ?? 'That stage cannot be removed.')
+    const target = stages.find((s) => s.id === stageId)
 
     // Reassign any deals in this stage to an adjacent open stage before deleting (never orphan a deal).
     const dealCount = await countDealsInStage(auth.spaceId, stageId)
@@ -337,11 +370,44 @@ export async function deleteStage(slug: string, stageId: string): Promise<Action
       .eq('id', stageId)
       .eq('space_id', auth.spaceId)
     if (error) return fail('Could not remove the stage. Try again.')
+
+    // TOCTOU compensation (see wonLostFloorHolds): the canDeleteStage guard is a check-then-act, so a
+    // concurrent delete/kind-change could drop the last Won or Lost alongside this one. Only deleting a
+    // won/lost stage can do that; if the floor is now broken, recreate an (empty — its deals were already
+    // reassigned) same-kind stage so >=1 Won and >=1 Lost always remain, and report a retry.
+    if (
+      (target?.kind === 'won' || target?.kind === 'lost') &&
+      !(await wonLostFloorHolds(auth.spaceId))
+    ) {
+      await db()
+        .from('crm_stages')
+        .insert({
+          space_id: auth.spaceId,
+          name: target.name,
+          kind: target.kind,
+          sort_order: target.sort_order,
+        })
+      revalidateSpace(slug)
+      return fail('Another change removed the last Won or Lost stage. Try again.')
+    }
+
     revalidateSpace(slug)
   } catch {
     return fail('Could not remove the stage. Try again.')
   }
   return ok()
+}
+
+/**
+ * Whether the Won/Lost floor (>=1 Won AND >=1 Lost stage) still holds for a Space, read fresh. Used to
+ * COMPENSATE after a mutation whose check-then-act guard could have raced another concurrent write to
+ * zero. An empty read (getStages is fail-safe to []) is treated as "holds", so a transient read error
+ * NEVER triggers a false revert — a real pipeline always carries at least one Won and one Lost. Pure IO.
+ */
+async function wonLostFloorHolds(spaceId: string): Promise<boolean> {
+  const stages = await getStages(spaceId)
+  if (stages.length === 0) return true
+  return countKind(stages, 'won') >= 1 && countKind(stages, 'lost') >= 1
 }
 
 /** Count the deals sitting in a stage, scoped to this Space. Fail-safe to 0. */

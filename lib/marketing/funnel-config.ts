@@ -23,6 +23,9 @@ export type FunnelIconName = 'calendar' | 'contact' | 'qr' | 'envelope' | 'spark
 export interface FunnelHero {
   eyebrow: string
   h1: string
+  /** Keyword-rich <title> (the h1 is a benefit line and carries no niche keyword). Falls back to h1
+   *  when absent. Keep it ~55 chars including the "· Frequency" title template. */
+  seoTitle?: string
   subhead: string
   /** Under the CTA row, e.g. "No card. Free while you grow." */
   microcopy: string
@@ -71,6 +74,9 @@ export interface FunnelConfig {
   /** The Space Mode a "Start free" pre-seeds for this niche (the signup bridge, funnels P2). */
   mode: { type: SpaceType; variant: string }
   hero: FunnelHero
+  /** Answer-first meta description (~150 chars). The hero subhead is written for the page and runs long
+   *  (184 chars truncates in SERPs), so set this for the crawlable summary. Falls back to subhead. */
+  metaDescription?: string
   problem: { header: string; body: string; caption: string }
   howItWorks: { header: string; steps: FunnelStep[]; caption: string }
   features: FunnelFeature[]
@@ -129,7 +135,7 @@ export const FUNNEL_FOOTER = {
   links: [
     { label: 'Privacy', href: '/privacy' },
     { label: 'Terms', href: '/terms' },
-    { label: 'Contact', href: '/contact' },
+    { label: 'Contact', href: 'mailto:hello@frequencylocal.com' },
   ],
 } as const
 
@@ -141,11 +147,14 @@ export const COACHES_FUNNEL: FunnelConfig = {
   hero: {
     eyebrow: 'For coaches, healers, and guides',
     h1: 'Your practice, made perfect.',
+    seoTitle: 'Booking + contacts software for coaches and healers',
     subhead:
       "Bookings, payments, and every person you've met, together in one place. Frequency keeps your relationships close, so the people you meet come back, and bring the next ones. Start free.",
     microcopy: 'No card. Free while you grow.',
     trustLine: 'A place to be human.',
   },
+  metaDescription:
+    'Frequency gives coaches and healers bookings, payments, and one contact list in one place, so clients rebook and refer. Free to start, no card.',
   problem: {
     header: 'The work is the calling. The admin is the tax.',
     body: 'Your calendar lives in one app, payments in another, client notes in a notebook and in your head. You mean to follow up, and the day gets away from you. So the client who came once never books again, and you never quite know why. None of it is why you started.',

@@ -47,7 +47,7 @@ vi.mock('@/lib/connections/store', () => ({
   createContact: vi.fn(),
   updateContact: vi.fn(),
   existingContactKeys: vi.fn(),
-  listContacts: vi.fn(),
+  listContactsForMerge: vi.fn(),
 }))
 vi.mock('@/lib/spaces/store', () => ({ getSpaceById: vi.fn() }))
 vi.mock('@/lib/spaces/entitlements', () => ({ getSpaceCapabilities: vi.fn() }))
@@ -56,6 +56,10 @@ vi.mock('@/lib/spaces/functions', () => ({ spaceFunctionAccess: vi.fn() }))
 import { commitImport } from './commit'
 import { isError } from '@/lib/action-result'
 import { planCommit, type ExistingKeys } from './dedupe'
+import { createContact, updateContact, existingContactKeys, listContactsForMerge } from '@/lib/connections/store'
+import { getSpaceById } from '@/lib/spaces/store'
+import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 
 function col(header: string, target: ColumnMapping['target'], customKey?: string): ColumnMapping {
   return { header, target, confidence: 1, reason: 'manual', valueType: 'text', ...(customKey ? { customKey } : {}) }
@@ -86,6 +90,26 @@ function platformRow(rows: Record<string, string>[], overrides: Partial<ContactI
   }
 }
 
+function memberRow(rows: Record<string, string>[], overrides: Partial<ContactImportRow> = {}): ContactImportRow {
+  return platformRow(rows, { targetKind: 'member', createdBy: 'owner1', ...overrides })
+}
+
+function spaceRow(
+  headers: string[],
+  mapping: ColumnMapping[],
+  rows: Record<string, string>[],
+  overrides: Partial<ContactImportRow> = {},
+): ContactImportRow {
+  return platformRow(rows, {
+    targetKind: 'space',
+    targetSpaceId: 'space1',
+    createdBy: 'owner1',
+    source: { headers, rows, rowCount: rows.length },
+    mapping,
+    ...overrides,
+  })
+}
+
 beforeEach(() => {
   existingRows = []
   insertedRows = []
@@ -93,6 +117,7 @@ beforeEach(() => {
   staff = true
   rootId = 'root-space-id'
   importRow = null
+  vi.clearAllMocks()
 })
 
 describe('commitImport — platform target', () => {
@@ -158,6 +183,61 @@ describe('commitImport — platform target', () => {
     if (isError(res)) return
     expect(res.data.created).toBe(5)
     expect(insertedRows).toHaveLength(0)
+  })
+})
+
+describe('commitImport — member target (id-resolution cohort)', () => {
+  it('resolves a planned merge against the FULL contact cohort, not a capped page', async () => {
+    // The plan dedupes against existingContactKeys (UNBOUNDED). The id-resolution map must read the
+    // SAME full cohort (listContactsForMerge, uncapped) — a contact that would fall past a page cap
+    // still resolves, so its row merges instead of being miscounted as failed.
+    vi.mocked(existingContactKeys).mockResolvedValue({ emails: new Set(['far@x.com']), phones: new Set() })
+    vi.mocked(listContactsForMerge).mockResolvedValue([
+      { id: 'far1', displayName: 'Far Away', email: 'far@x.com', phone: null, title: null, company: null, city: null, website: null, details: {} },
+    ])
+    vi.mocked(updateContact).mockResolvedValue(true)
+    vi.mocked(createContact).mockResolvedValue('new1')
+
+    importRow = memberRow([
+      { Name: 'Far Away Updated', Email: 'far@x.com', Phone: '' }, // merge -> far1
+      { Name: 'Brand New', Email: 'new@x.com', Phone: '' }, // create
+    ])
+    const res = await commitImport('imp1', 'owner1')
+    expect(isError(res)).toBe(false)
+    if (isError(res)) return
+    expect(res.data).toMatchObject({ created: 1, merged: 1, skipped: 0, failed: 0, total: 2 })
+    expect(vi.mocked(updateContact).mock.calls[0]?.[1]).toBe('far1')
+  })
+})
+
+describe('commitImport — Space target (preview/commit parity for phone-only rows)', () => {
+  const NAME_PHONE: ColumnMapping[] = [col('Name', 'displayName'), col('Phone', 'phone')]
+
+  it('skips a Name,Phone (email-less) row, and the preview count matches that commit', async () => {
+    vi.mocked(getSpaceById).mockResolvedValue({ id: 'space1' } as never)
+    vi.mocked(getSpaceCapabilities).mockResolvedValue({ role: 'owner' } as never)
+    vi.mocked(spaceFunctionAccess).mockReturnValue(true)
+
+    const rows: Record<string, string>[] = [
+      { Name: 'Phone Only', Phone: '555-111-2222' }, // no email -> skipped at commit
+      { Name: 'Has Email', Phone: '555-333-4444', Email: 'has@x.com' }, // Email col not mapped below
+    ]
+    // Only Name + Phone are mapped (a classic "Name,Phone" import), so neither row has an email key.
+    importRow = spaceRow(['Name', 'Phone'], NAME_PHONE, rows)
+    const res = await commitImport('imp1', 'owner1')
+    expect(isError(res)).toBe(false)
+    if (isError(res)) return
+    // Both rows are email-less -> both skipped at commit; nothing inserted.
+    expect(res.data).toMatchObject({ created: 0, merged: 0, skipped: 2, failed: 0, total: 2 })
+    expect(insertedRows).toHaveLength(0)
+
+    // The dry-run preview uses planCommit with requireEmail=true for a Space target. Its counts must
+    // equal the commit outcome (no "created" that later becomes "skipped").
+    const preview = planCommit(rows, NAME_PHONE, { emails: new Set(), phones: new Set() }, 'fill_empty', {
+      requireEmail: true,
+    })
+    expect(preview.diff.created).toBe(res.data.created)
+    expect(preview.diff.skipped).toBe(res.data.skipped)
   })
 })
 
