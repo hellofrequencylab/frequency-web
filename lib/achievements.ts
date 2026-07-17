@@ -108,6 +108,9 @@ export type GamificationEvent =
   // A governed playbook finished for this member (Resonance Engine Phase 5 · ADR-386).
   // Fires retroactive milestones for the advocate state (e.g. connector / facilitator).
   | { type: 'playbook_complete'; profileId: string; playbookId?: string }
+  // A real connection landed for this member — a captured event guest RSVP'd / attended /
+  // joined (ADR-154 / ADR-777). Drives the Connector achievement (10 / 25 / 100).
+  | { type: 'connector_connection'; profileId: string }
 
 export interface NewAchievement {
   id: string
@@ -256,6 +259,8 @@ function isRelevantEvent(criteria: AchievementCriteria, event: GamificationEvent
     case 'task_complete':  return event.type === 'task_complete'
     // Playbook completions (ADR-386): the advocate-state recognition path.
     case 'playbook_complete': return event.type === 'playbook_complete'
+    // Connector (ADR-154): the event-invite real-connection milestone.
+    case 'connections':    return event.type === 'connector_connection'
     // Amplitude moves on every zap-paying act — check it wherever zaps flow.
     case 'amplitude':
       return event.type === 'practice_log' || event.type === 'task_complete' ||
@@ -283,6 +288,8 @@ interface UserStats {
   amplitude: number
   /** Governed playbooks finished for this member (playbook_runs status 'done', ADR-386). */
   playbooksCompleted: number
+  /** Real connections captured (event_guests RSVP'd going/maybe) — the Connector count. */
+  connectionCount: number
 }
 
 async function getUserStats(admin: AdminClient, profileId: string): Promise<UserStats> {
@@ -352,6 +359,30 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
     playbooksCompleted = 0
   }
 
+  // Real connections (ADR-154 / ADR-777): captured event guests who at least RSVP'd
+  // (going/maybe). A bare capture (declined / no stated intent) never counts. event_guests
+  // is not in the generated types yet (ADR-246), so count it untyped, FAIL-SAFE to 0.
+  let connectionCount = 0
+  try {
+    const eg = admin as unknown as {
+      from: (t: string) => {
+        select: (c: string, o: { count: 'exact'; head: true }) => {
+          eq: (col: string, val: string) => {
+            in: (col: string, vals: string[]) => Promise<{ count: number | null }>
+          }
+        }
+      }
+    }
+    const { count } = await eg
+      .from('event_guests')
+      .select('id', { count: 'exact', head: true })
+      .eq('inviter_profile_id', profileId)
+      .in('rsvp_status', ['going', 'maybe'])
+    connectionCount = count ?? 0
+  } catch {
+    connectionCount = 0
+  }
+
   type InviteLinkRow = { used_count: number | null }
   const totalReferrals = (inviteLinks.data ?? []).reduce(
     (sum, link) => sum + ((link as InviteLinkRow).used_count ?? 0), 0
@@ -377,6 +408,7 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
     practiceStreak: p?.current_streak ?? 0,
     amplitude: Number(p?.amplitude ?? 0),
     playbooksCompleted,
+    connectionCount,
   }
 }
 
@@ -422,6 +454,8 @@ function isCriteriaMet(
       return stats.amplitude >= criteria.count
     case 'playbook_complete':
       return stats.playbooksCompleted >= criteria.count
+    case 'connections':
+      return stats.connectionCount >= criteria.count
     default:
       return false
   }

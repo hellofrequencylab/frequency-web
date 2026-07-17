@@ -1,8 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { getCachedUser } from '@/lib/auth'
+import { getCachedUser, getCallerProfile } from '@/lib/auth'
 import { contactsOwnerId } from '@/lib/connections/access'
+import { operatesSpace, isSpaceTeamMember } from '@/lib/spaces/operated'
+import { resolveVisibilityChange } from '@/lib/connections/visibility'
 import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { scanCardImage, assistFromText } from '@/lib/ai/connections-ai'
 import { dedupeTags, normalizeTag, coerceContactDetails } from '@/lib/connections/normalize'
@@ -197,14 +199,36 @@ export async function setStatus(id: string, status: ContactStatus): Promise<void
   revalidatePath(`/connections/${id}`)
 }
 
-export async function setVisibility(id: string, visibility: Visibility): Promise<void> {
+export async function setVisibility(
+  id: string,
+  visibility: Visibility,
+  sharedSpaceId?: string | null,
+): Promise<void> {
   const ownerId = await requireOwner()
-  // Offer only private ↔ network to members (ADR-154 §2); 'shared' is a separate
-  // deferred tier, so never accept it here even if a caller forges the value.
-  const next: Visibility = visibility === 'network' ? 'network' : 'private'
-  await store.updateContact(ownerId, id, { visibility: next })
+  // The 'shared' tier (ADR-778) is allowed ONLY when the owner actually OPERATES the chosen Space —
+  // verified server-side against the DB, NEVER trusted from the client. An unauthorized or unscoped
+  // 'shared' request coerces to 'private' (resolveVisibilityChange, fail-closed); moving away from
+  // 'shared' always clears the scope. private ↔ network is unchanged (ADR-132/154).
+  const wantsShared = visibility === 'shared' && !!(sharedSpaceId ?? '').trim()
+  const operatesTargetSpace = wantsShared ? await operatesSpace(ownerId, (sharedSpaceId ?? '').trim()) : false
+  const next = resolveVisibilityChange({ requested: visibility, sharedSpaceId, operatesTargetSpace })
+  await store.updateContact(ownerId, id, {
+    visibility: next.visibility,
+    sharedSpaceId: next.sharedSpaceId,
+  })
   revalidatePath('/network/contacts')
   revalidatePath(`/connections/${id}`)
+}
+
+/** The operated-Space TEAM read (ADR-778): the contacts SHARED with `spaceId`, as card views. GATED —
+ *  the caller must be on the Space's team (owner or an active member of ANY role); anyone else reads
+ *  []. Card fields only; the owner's private notes and tags are never returned. Read-only. */
+export async function listSpaceSharedContacts(spaceId: string): Promise<store.SharedWithSpaceView[]> {
+  const viewerId = (await getCallerProfile())?.id ?? null
+  const sid = (spaceId ?? '').trim()
+  if (!viewerId || !sid) return []
+  if (!(await isSpaceTeamMember(viewerId, sid))) return []
+  return store.listSharedWithSpace(sid)
 }
 
 // ── Promote to the marketing contacts DB (consent-gated, ADR-742) ─────────────

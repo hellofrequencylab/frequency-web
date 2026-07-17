@@ -20,6 +20,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import { rewardConnectorCapture } from '@/lib/rewards/connector'
 
 // event_guests + network_contacts + contacts are not all in the generated DB types yet
 // (ADR-246), so we talk to them through an untyped fluent handle — the repo convention
@@ -215,6 +216,20 @@ export async function captureEventGuest(input: EventGuestInput): Promise<EventGu
     }
   } catch {
     // Swallowed by contract: the marketing leg is best-effort.
+  }
+
+  // ── Gamification hook (ADR-154 / ADR-777): reward the inviter for the OUTCOME ──
+  // Additive, best-effort, rewrites nothing above. Pays the small capture ⚡ once the
+  // guest is kept, plus the RSVP ⚡ when they stated going/maybe. Idempotent + daily-
+  // capped inside grantConnectorOutcome; a reward failure never fails the capture.
+  if (result.guestId || result.networkContactId) {
+    await rewardConnectorCapture({
+      inviterProfileId,
+      eventId,
+      guestId: result.guestId,
+      email,
+      rsvpStatus,
+    })
   }
 
   return result

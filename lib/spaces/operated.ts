@@ -166,6 +166,72 @@ export const listOperatedSpaces = cache(
 )
 
 /**
+ * Point check: does this profile OPERATE this ONE Space? True when they OWN it
+ * (spaces.owner_profile_id) OR hold an ACTIVE 'admin' space_members row for it — the exact bar
+ * listOperatedSpaces folds two ways. This is the server-side gate for the network-contacts 'shared'
+ * tier (ADR-778): who may CHOOSE to share a personal contact with a Space's team. Two narrow
+ * `limit(1)` probes, both filtered to `spaceId`, in parallel. FAIL-SAFE: `false` on any error or a
+ * missing id (never opens sharing on a read failure). REQUEST-CACHED on (profileId, spaceId).
+ */
+export const operatesSpace = cache(
+  async (profileId: string | null | undefined, spaceId: string | null | undefined): Promise<boolean> => {
+    if (!profileId || !spaceId) return false
+    try {
+      const [ownedRes, adminRes] = (await Promise.all([
+        spacesTable().select('id').eq('owner_profile_id', profileId).eq('id', spaceId).limit(1),
+        membersTable()
+          .select('space_id')
+          .eq('profile_id', profileId)
+          .eq('space_id', spaceId)
+          .eq('role', 'admin')
+          .eq('status', 'active')
+          .limit(1),
+      ])) as [
+        { data: OwnedSpaceRow[] | null; error: unknown },
+        { data: AdminMemberRow[] | null; error: unknown },
+      ]
+      const owns = !ownedRes.error && (ownedRes.data?.length ?? 0) > 0
+      const admins = !adminRes.error && (adminRes.data?.length ?? 0) > 0
+      return owns || admins
+    } catch {
+      return false
+    }
+  },
+)
+
+/**
+ * Point check: is this profile on the TEAM of this ONE Space? True when they OWN it OR hold ANY
+ * ACTIVE space_members row (any role) for it. This is the READ audience for the 'shared' tier
+ * (ADR-778): who may SEE a card shared with the Space's team. BROADER than operatesSpace on purpose
+ * (a viewer-role teammate reads, but only an owner/admin may choose to share). FAIL-SAFE: `false` on
+ * any error or a missing id. REQUEST-CACHED on (profileId, spaceId).
+ */
+export const isSpaceTeamMember = cache(
+  async (profileId: string | null | undefined, spaceId: string | null | undefined): Promise<boolean> => {
+    if (!profileId || !spaceId) return false
+    try {
+      const [ownedRes, memberRes] = (await Promise.all([
+        spacesTable().select('id').eq('owner_profile_id', profileId).eq('id', spaceId).limit(1),
+        membersTable()
+          .select('space_id')
+          .eq('profile_id', profileId)
+          .eq('space_id', spaceId)
+          .eq('status', 'active')
+          .limit(1),
+      ])) as [
+        { data: OwnedSpaceRow[] | null; error: unknown },
+        { data: AdminMemberRow[] | null; error: unknown },
+      ]
+      const owns = !ownedRes.error && (ownedRes.data?.length ?? 0) > 0
+      const member = !memberRes.error && (memberRes.data?.length ?? 0) > 0
+      return owns || member
+    } catch {
+      return false
+    }
+  },
+)
+
+/**
  * Cheap EXISTS check: does this profile OWN or actively ADMIN at least one Space? Powers the nav
  * gate for the "My Spaces" operator item (shown only to people who run a Space) without resolving
  * the full operated set. Two `limit(1)` probes in parallel — a networked round-trip a fraction the

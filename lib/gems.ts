@@ -34,6 +34,9 @@ type GemAction =
   // Spark variable layer (Rewards Economy v3 / ADR-305, lib/rewards/spark.ts): the
   // capped, low-frequency surprise Gem bonus on top of the deterministic base.
   | 'spark_bonus'
+  // Connector join bonus (ADR-154 / ADR-777, lib/rewards/connector.ts): the 💎 paid to
+  // an inviter when a person they captured at an event actually joins Frequency.
+  | 'connector_join'
 
 interface AwardResult {
   awarded: boolean

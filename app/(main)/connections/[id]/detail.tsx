@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Mail, Phone, MapPin, Globe, Lock, Pencil, Check, X, Plus, Trash2, Loader2, User, Sparkles, CalendarClock, History,
+  Mail, Phone, MapPin, Globe, Lock, Users, Pencil, Check, X, Plus, Trash2, Loader2, User, Sparkles, CalendarClock, History,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { DetailTemplate } from '@/components/templates'
@@ -12,7 +12,7 @@ import { normalizeTag, hasAnyDetails } from '@/lib/connections/normalize'
 import { DetailsEditor, DetailsView } from '@/components/connections/contact-details-fields'
 import { UpsellTease } from '@/components/upsell/upsell-tease'
 import { PromoteToContacts } from '@/components/connections/promote-to-contacts'
-import { VisibilityControl } from '@/components/connections/visibility-control'
+import { VisibilityControl, type OperatedSpaceOption } from '@/components/connections/visibility-control'
 import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 import type { ContactDetail } from '@/lib/connections/store'
 import { filterTimeline, type TimelineEntry } from '@/lib/crm/timeline'
@@ -55,6 +55,7 @@ export function Detail({
   timelineEntries = [],
   back,
   crmTease,
+  operatedSpaces = [],
 }: {
   initial: ContactDetail
   reminders?: ContactReminder[]
@@ -65,6 +66,8 @@ export function Detail({
   back?: { href: string; label: string }
   /** Phase E upsell-tease gate (ADR-466), resolved server-side. Renders nothing while billing is OFF. */
   crmTease?: TeaseGate
+  /** The Spaces the owner operates (ADR-778) — enables the 'Shared with a Space team' tier. */
+  operatedSpaces?: OperatedSpaceOption[]
 }) {
   const router = useRouter()
   const { contact, notes, tags, avatarUrl, cardFrontUrl, cardBackUrl, logoUrl } = initial
@@ -172,8 +175,14 @@ export function Detail({
           </select>
           {/* At-a-glance visibility; the actionable toggle + helper live in the Sharing section below. */}
           <span className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2 py-1 text-xs font-medium text-muted">
-            {contact.visibility === 'network' ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-            {contact.visibility === 'network' ? 'Network' : 'Private'}
+            {contact.visibility === 'network' ? (
+              <Globe className="h-3.5 w-3.5" />
+            ) : contact.visibility === 'shared' ? (
+              <Users className="h-3.5 w-3.5" />
+            ) : (
+              <Lock className="h-3.5 w-3.5" />
+            )}
+            {contact.visibility === 'network' ? 'Network' : contact.visibility === 'shared' ? 'Shared' : 'Private'}
           </span>
         </span>
       }
@@ -228,7 +237,13 @@ export function Detail({
       {/* Sharing — the owner-only Private ↔ Network toggle (ADR-132/154). Helper text stays honest
           to canViewLead's network_local rule: Network exposes only the basic card to same-city stewards. */}
       <Section title="Sharing">
-        <VisibilityControl contactId={contact.id} initial={contact.visibility} city={contact.city} />
+        <VisibilityControl
+          contactId={contact.id}
+          initial={contact.visibility}
+          initialSharedSpaceId={contact.sharedSpaceId}
+          city={contact.city}
+          operatedSpaces={operatedSpaces}
+        />
       </Section>
 
       {/* Details — read or edit. A calm, divided panel rather than three heavy

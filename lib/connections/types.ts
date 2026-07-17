@@ -122,6 +122,8 @@ export interface NetworkContact {
   id: string
   ownerId: string
   visibility: Visibility
+  /** When visibility='shared', the Space whose team may read this card (ADR-778). Null otherwise. */
+  sharedSpaceId: string | null
   source: ContactSource
   status: ContactStatus
   displayName: string | null

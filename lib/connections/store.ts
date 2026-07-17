@@ -28,7 +28,7 @@ import type {
 
 const BUCKET = 'network-contacts'
 const COLS =
-  'id, owner_id, visibility, source, status, display_name, email, phone, title, company, city, website, socials, avatar_path, details, card_front_path, card_back_path, logo_path, linked_profile_id, linked_contact_id, last_contacted_at, created_at, updated_at'
+  'id, owner_id, visibility, shared_space_id, source, status, display_name, email, phone, title, company, city, website, socials, avatar_path, details, card_front_path, card_back_path, logo_path, linked_profile_id, linked_contact_id, last_contacted_at, created_at, updated_at'
 
 const db = () => createAdminClient()
 const emptyToNull = (v: string | null | undefined): string | null => {
@@ -41,6 +41,7 @@ function mapContact(r: Record<string, unknown>): NetworkContact {
     id: String(r.id),
     ownerId: String(r.owner_id),
     visibility: (r.visibility as Visibility) ?? 'private',
+    sharedSpaceId: (r.shared_space_id as string) ?? null,
     source: (r.source as ContactSource) ?? 'manual',
     status: (r.status as ContactStatus) ?? 'new',
     displayName: (r.display_name as string) ?? null,
@@ -263,6 +264,8 @@ export interface UpdateContactPatch {
   website?: string | null
   socials?: ContactSocials
   visibility?: Visibility
+  /** The Space a 'shared' contact is scoped to (ADR-778). Pass null to clear it on a downgrade. */
+  sharedSpaceId?: string | null
   status?: ContactStatus
   avatarPath?: string | null
   details?: ContactDetails
@@ -286,6 +289,7 @@ export async function updateContact(
   if (patch.website !== undefined) u.website = emptyToNull(patch.website)
   if (patch.socials !== undefined) u.socials = patch.socials
   if (patch.visibility !== undefined) u.visibility = patch.visibility
+  if (patch.sharedSpaceId !== undefined) u.shared_space_id = patch.sharedSpaceId
   if (patch.status !== undefined) u.status = patch.status
   if (patch.avatarPath !== undefined) u.avatar_path = patch.avatarPath
   if (patch.details !== undefined) u.details = patch.details
@@ -499,6 +503,65 @@ export async function getSharedContact(id: string): Promise<SharedContactView | 
     company: (r.company as string) ?? null,
     website: (r.website as string) ?? null,
     socials: (r.socials as ContactSocials) ?? {},
+  }
+}
+
+// ── Shared-with-Space discovery (the operated-Space TEAM read, ADR-778) ──────
+
+/** One shared contact's CARD, as the Space team reads it. The card fields ONLY — the owner's
+ *  private notes and tags are NEVER included (the privacy invariant, mirroring ADR-742 promotion). */
+export interface SharedWithSpaceView {
+  id: string
+  ownerId: string
+  displayName: string | null
+  title: string | null
+  company: string | null
+  city: string | null
+  email: string | null
+  phone: string | null
+  website: string | null
+  socials: ContactSocials
+  avatarUrl: string | null
+}
+
+/** Every contact SHARED with `spaceId` (visibility='shared' AND shared_space_id=spaceId), as card
+ *  views for that Space's team. Service-role read; the CALLER must first verify the viewer is on the
+ *  Space's team (isSpaceTeamMember) — this raw reader trusts its caller to gate, exactly like
+ *  getSharedContact. Returns ONLY the card fields + a short-lived signed avatar URL; notes and tags
+ *  are never read here, so a shared card can never leak the owner's private annotations. FAIL-SAFE:
+ *  [] on any error (a missing shared_space_id column pre-migration degrades cleanly). */
+export async function listSharedWithSpace(spaceId: string): Promise<SharedWithSpaceView[]> {
+  if (!spaceId) return []
+  try {
+    const { data } = await db()
+      .from('network_contacts')
+      .select(
+        'id, owner_id, display_name, title, company, city, email, phone, website, socials, avatar_path',
+      )
+      .eq('visibility', 'shared')
+      .eq('shared_space_id', spaceId)
+      .order('display_name', { ascending: true })
+    const rows = (data ?? []) as Record<string, unknown>[]
+    const paths = rows.map((r) => r.avatar_path).filter((p): p is string => typeof p === 'string')
+    const urls = await signedUrlMap(paths)
+    return rows.map((r) => {
+      const avatarPath = (r.avatar_path as string) ?? null
+      return {
+        id: String(r.id),
+        ownerId: String(r.owner_id),
+        displayName: (r.display_name as string) ?? null,
+        title: (r.title as string) ?? null,
+        company: (r.company as string) ?? null,
+        city: (r.city as string) ?? null,
+        email: (r.email as string) ?? null,
+        phone: (r.phone as string) ?? null,
+        website: (r.website as string) ?? null,
+        socials: (r.socials as ContactSocials) ?? {},
+        avatarUrl: avatarPath ? urls.get(avatarPath) ?? null : null,
+      }
+    })
+  } catch {
+    return []
   }
 }
 

@@ -9,6 +9,7 @@ import { RelationshipTimeline } from '@/components/people/relationship-timeline'
 import { LinkMemberCard } from '@/components/connections/link-member-card'
 import { getProfileSummaries } from '@/lib/connections/matching'
 import { resolveTierTeaseGate } from '@/lib/pricing/tease-gate'
+import { listOperatedSpaces } from '@/lib/spaces/operated'
 import { Detail } from './detail'
 
 export const dynamic = 'force-dynamic'
@@ -59,11 +60,15 @@ export default async function ProfileDetailPage({ params }: { params: Promise<{ 
   // ONLY when billing is live AND the caller is below Crew. Dormant (HIDDEN) while billing_live is OFF.
   const crmTease = await resolveTierTeaseGate('crew')
 
+  // The Spaces this member operates (ADR-778) — enables the 'Shared with a Space team' visibility tier.
+  // Empty for a member who runs no Space, so the Sharing control never offers a tier they can't use.
+  const operatedSpaces = (await listOperatedSpaces(ownerId)).map((s) => ({ id: s.id, name: s.name }))
+
   return (
     // Focus surface (page-chrome.ts → 'none'): centered, no rail. The Detail shell owns the
     // header band + the single back-link; the page never hand-rolls chrome (PAGE-FRAMEWORK §8).
     <div className="mx-auto max-w-2xl">
-      <Detail initial={data} reminders={reminders} timeline={timeline} timelineEntries={timelineEntries} back={{ href: '/connections', label: 'Profiles' }} crmTease={crmTease} />
+      <Detail initial={data} reminders={reminders} timeline={timeline} timelineEntries={timelineEntries} back={{ href: '/connections', label: 'Profiles' }} crmTease={crmTease} operatedSpaces={operatedSpaces} />
       {/* Manual contact ↔ member link — the path for when the auto detector can't
           fire (card email differs from signup email, no phone on the profile). */}
       <LinkMemberCard contactId={id} contactName={data.contact.displayName} linked={linked} />

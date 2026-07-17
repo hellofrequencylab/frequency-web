@@ -11,6 +11,7 @@ function contact(over: Partial<NetworkContactListItem>): NetworkContactListItem 
     id: 'c1',
     ownerId: 'o1',
     visibility: 'private',
+    sharedSpaceId: null,
     source: 'manual',
     status: 'active',
     displayName: 'Pat',
