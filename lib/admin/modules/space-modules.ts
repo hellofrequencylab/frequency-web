@@ -6,6 +6,7 @@ import {
   LayoutTemplate,
   Users,
   UserPlus,
+  Share2,
   Star,
   Briefcase,
   CalendarClock,
@@ -124,6 +125,10 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // an event check-in, a lead magnet, or a card swap. Same `crm` feature gate as the CRM board; the page
   // self-gates on ownership. Links out to the door-link maker.
   { id: 'space.doors', label: 'Capture links', desc: 'Make a link for a warm intro, an event, a lead magnet, or a card swap.', Icon: Link2, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/doors`, order: 39, tier: 'primary', priority: 19 },
+  // Shared with team (ADR-778): the contact CARDS members chose to share with this Space's team (network
+  // 'shared' tier). A `link` row out to the CRM sub-view (/crm/shared); the page itself gates on team
+  // membership (broader than the CRM role), and the reader returns card fields only (never notes/tags).
+  { id: 'space.shared', label: 'Shared with team', desc: 'Contact cards your members shared with the team.', Icon: Share2, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/shared`, order: 39.5, tier: 'primary', priority: 19.5 },
 
   // ── Offerings & money (independent modules) ──────────────────────────────────────────────────────────
   { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#availability`, order: 40, tier: 'primary', priority: 30 },

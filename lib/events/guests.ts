@@ -18,6 +18,7 @@
 // them ONLY from a verified signed token (lib/qr/event-invite.ts) before invoking this.
 // Every write is bound to the resolved inviter/event scope.
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { rewardConnectorCapture } from '@/lib/rewards/connector'
@@ -90,22 +91,48 @@ export async function captureEventGuest(input: EventGuestInput): Promise<EventGu
   const nowIso = new Date().toISOString()
 
   // ── Leg 1 (PRIORITY): the event's guest list ────────────────────────────────
+  // Dedupe on (event_id, email) so a form RESUBMIT refreshes the same guest row rather than minting a
+  // duplicate. This is load-bearing: `result.guestId` is the connector reward's idempotency key AND the
+  // Connector achievement counts event_guests rows — a bare insert let a resubmit re-pay the capture/RSVP
+  // reward and inflate the connection count. One person + one event = one row (mirrors leg 2's dedupe).
   try {
-    const { data } = await db
+    const { data: existingGuest } = await db
       .from('event_guests')
-      .insert({
-        event_id: eventId,
-        inviter_profile_id: inviterProfileId,
-        display_name: displayName,
-        email,
-        phone,
-        rsvp_status: rsvpStatus,
-        source: 'event_qr',
-        meta,
-      })
       .select('id')
+      .eq('event_id', eventId)
+      .eq('email', email)
+      .order('created_at', { ascending: true })
+      .limit(1)
       .maybeSingle()
-    result.guestId = (data as { id?: string } | null)?.id ?? null
+    const existingGuestId = (existingGuest as { id?: string } | null)?.id ?? null
+    if (existingGuestId) {
+      await db
+        .from('event_guests')
+        .update({
+          display_name: displayName ?? undefined,
+          phone: phone ?? undefined,
+          rsvp_status: rsvpStatus,
+          meta,
+        })
+        .eq('id', existingGuestId)
+      result.guestId = existingGuestId
+    } else {
+      const { data } = await db
+        .from('event_guests')
+        .insert({
+          event_id: eventId,
+          inviter_profile_id: inviterProfileId,
+          display_name: displayName,
+          email,
+          phone,
+          rsvp_status: rsvpStatus,
+          source: 'event_qr',
+          meta,
+        })
+        .select('id')
+        .maybeSingle()
+      result.guestId = (data as { id?: string } | null)?.id ?? null
+    }
   } catch {
     // Isolated: a guest-list failure must not stop the personal-book leg.
   }
@@ -233,4 +260,67 @@ export async function captureEventGuest(input: EventGuestInput): Promise<EventGu
   }
 
   return result
+}
+
+// ── Host read: this event's captured guest list (the operator reader for ADR-154) ──
+
+/** One captured guest, as the event host reads it on the Manage dashboard. Card-only fields
+ *  (name, email, stated RSVP, when they were captured, and who invited them). event_guests has
+ *  no notes/tags, so nothing private is projected here. */
+export interface EventGuestListItem {
+  id: string
+  displayName: string | null
+  email: string | null
+  rsvpStatus: GuestRsvpStatus | null
+  /** When the guest was captured through a member's attributed event invite. */
+  capturedAt: string
+  /** The member whose invite captured them (event_guests.inviter_profile_id → profiles). */
+  inviterName: string | null
+}
+
+/**
+ * The captured guests for one event, newest first, for the host Manage dashboard (ADR-154).
+ *
+ * GATING: this is a SERVICE-ROLE read. The event_guests SELECT policy already lets the host read
+ * their own event's rows, but the Manage surface reads through the admin client (which bypasses
+ * RLS), so the caller MUST have authorized the viewer as the event host / admin BEFORE calling
+ * this — exactly as the Manage page does (getEventCapabilities → 'event.editSettings', 404 on
+ * miss), mirroring lib/events/[slug]/manage/load.ts. It NEVER exposes the inviter's other
+ * contacts: it reads only THIS event's guest rows. FAIL-SAFE: [] on any error.
+ */
+export async function listEventGuests(eventId: string): Promise<EventGuestListItem[]> {
+  const id = (eventId || '').trim()
+  if (!id) return []
+  try {
+    // event_guests isn't in the generated DB types yet (ADR-246), so this read widens to an
+    // untyped client — the same seam lib/events/[slug]/manage/load.ts uses for event_dispatches.
+    // eslint-disable-next-line no-restricted-syntax -- event_guests not in generated types yet (ADR-246 exception)
+    const admin = createAdminClient() as unknown as SupabaseClient
+    const { data } = await admin
+      .from('event_guests')
+      .select(
+        'id, display_name, email, rsvp_status, created_at, inviter:profiles!inviter_profile_id ( display_name )',
+      )
+      .eq('event_id', id)
+      .order('created_at', { ascending: false })
+
+    type Row = {
+      id: string
+      display_name: string | null
+      email: string | null
+      rsvp_status: GuestRsvpStatus | null
+      created_at: string
+      inviter: { display_name: string | null } | null
+    }
+    return ((data ?? []) as unknown as Row[]).map((r) => ({
+      id: r.id,
+      displayName: r.display_name,
+      email: r.email,
+      rsvpStatus: r.rsvp_status,
+      capturedAt: r.created_at,
+      inviterName: r.inviter?.display_name ?? null,
+    }))
+  } catch {
+    return []
+  }
 }

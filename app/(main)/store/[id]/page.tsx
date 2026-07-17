@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getProduct } from '@/lib/commerce/products'
+import { getProductReviews } from '@/lib/commerce/reviews'
 import { DetailTemplate } from '@/components/templates'
 import { JsonLd } from '@/components/json-ld'
 import { productSchema } from '@/lib/jsonld'
@@ -54,6 +55,11 @@ export default async function ShopProductPage({ params }: { params: Promise<{ id
   if (!product || product.ownerKind !== 'platform' || product.status !== 'active') notFound()
   const soldOut = product.stock === 0
 
+  // Store products are commerce_products under the same review model as Market, so the Store's Product
+  // JSON-LD gets rating parity: the visible-review aggregate feeds AggregateRating and a handful of
+  // Review nodes. Gated downstream on reviewCount > 0, so an unreviewed item carries no rating node.
+  const reviews = await getProductReviews(product.id)
+
   return (
     <div className="mx-auto w-full max-w-2xl">
       <JsonLd
@@ -66,6 +72,16 @@ export default async function ShopProductPage({ params }: { params: Promise<{ id
           inStock: !soldOut,
           sellerName: SITE_NAME,
           path: `/store/${product.id}`,
+          aggregateRating:
+            reviews.average != null && reviews.count > 0
+              ? { ratingValue: reviews.average, reviewCount: reviews.count }
+              : null,
+          reviews: reviews.latest.map((r) => ({
+            author: r.author?.displayName ?? null,
+            rating: r.rating,
+            body: r.body,
+            datePublished: r.createdAt,
+          })),
         })}
       />
       <DetailTemplate

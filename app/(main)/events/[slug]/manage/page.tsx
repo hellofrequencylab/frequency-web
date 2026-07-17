@@ -14,6 +14,7 @@ import {
   EngagementSection,
   RsvpBreakdownSection,
   RosterSection,
+  InvitedGuestsSection,
   ApprovalsSection,
   FollowUpSection,
   QuestionnaireSection,
@@ -107,6 +108,13 @@ export default async function ManageEventPage({
         <SectionHeader title="Roster" />
         <Suspense fallback={<SectionFallback />}>
           <RosterSection eventId={event.id} />
+        </Suspense>
+      </section>
+
+      <section>
+        <SectionHeader title="Invited guests" />
+        <Suspense fallback={<SectionFallback />}>
+          <InvitedGuestsSection eventId={event.id} />
         </Suspense>
       </section>
 
