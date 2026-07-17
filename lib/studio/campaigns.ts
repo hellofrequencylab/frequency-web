@@ -38,6 +38,14 @@ export const TRAIT_SEGMENT_PREFIX = 'seg:'
 export const BUILTIN_SEGMENTS: { key: SegmentKey; label: string }[] = [
   { key: 'members', label: 'All members (not unsubscribed)' },
   { key: 'subscribed_members', label: 'Subscribed members only' },
+  // Entire contact list — EVERYONE in the root-space contact book: members, site sign-ups, AND the
+  // imported list (source='import', which has no Frequency account). Unlike every other builtin, this
+  // does NOT require a profile_id, so the imported cold list IS included and reached as ordinary opt-out
+  // subscribers (owner directive: "treat them as normal email subscribers who haven't confirmed"). At
+  // send time a profile-less contact is gated by the hard suppression list (global OR root-space) plus
+  // the not-unsubscribed filter, and unsubscribes via a per-address space-scoped token. Use this for a
+  // warm-up series to an owned list; keep `site_signups` for a blast that must EXCLUDE the import.
+  { key: 'all_contacts', label: 'Entire contact list (members + imported, not unsubscribed)' },
   // Site sign-ups only — organic members, with the imported email list (source='import')
   // held out. This is the audience for a blast that should reach people who joined ON the
   // site but NOT contacts we uploaded from an outside list. The hold-out is by SOURCE, so it
@@ -109,7 +117,10 @@ export async function listSegmentOptions(): Promise<{ key: SegmentKey; label: st
 export interface Recipient {
   contactId: string
   email: string
-  profileId: string
+  /** The Frequency profile behind this contact, or null for a profile-less imported lead (only the
+   *  `all_contacts` audience yields null). A profile drives the member send-gate + profile unsubscribe
+   *  token; a null one is reached as an opt-out subscriber (suppression-gated, space unsubscribe token). */
+  profileId: string | null
 }
 
 /** Map a set of profile ids onto their member contacts (the send-seam shape), excluding
@@ -178,6 +189,24 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
   if (parsed.kind === 'trait') {
     const profileIds = await resolveSegmentProfileIds(parsed.slug)
     return recipientsForProfileIds(db, profileIds)
+  }
+
+  // ENTIRE CONTACT LIST (`all_contacts`) — the one builtin that reaches PROFILE-LESS imported leads.
+  // It deliberately SKIPS the `.not('profile_id', 'is', null)` filter every other builtin applies, so
+  // the imported list is included alongside members + site sign-ups. Scoped to the root space (never
+  // crosses a tenant Space's contacts) and still excludes unsubscribed. Profile-less rows come back with
+  // profileId=null; sendCampaignNow gates them by suppression only (see its per-recipient branch).
+  if (parsed.slug === 'all_contacts') {
+    const rootId = await loadRootSpaceId()
+    let allq = db
+      .from('contacts')
+      .select('id, email, profile_id, consent_state')
+      .neq('consent_state', 'unsubscribed')
+    allq = rootId ? allq.or(`space_id.is.null,space_id.eq.${rootId}`) : allq.is('space_id', null)
+    const { data } = await allq
+    return (data ?? [])
+      .filter((c) => c.email)
+      .map((c) => ({ contactId: c.id, email: c.email as string, profileId: (c.profile_id as string) ?? null }))
   }
 
   let q = db

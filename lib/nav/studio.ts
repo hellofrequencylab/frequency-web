@@ -547,7 +547,9 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     href: '/admin/crm', icon: 'Contact', min: 'janitor', staffDomain: 'marketing',
     related: ['acquisition', 'marketing', 'vera-ai'],
     links: [
-      { leaf: 'crm' }, { leaf: 'crm-inbox' }, { leaf: 'crm-tasks' }, { leaf: 'crm-contacts' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' },
+      // Mirror the sub-nav order (owner directive): Roster | Marketing | Inbox | Tasks | Contacts |
+      // Intelligence | Pipeline, then Segments in its own Audiences bucket.
+      { leaf: 'crm' }, { leaf: 'crm-marketing' }, { leaf: 'crm-inbox' }, { leaf: 'crm-tasks' }, { leaf: 'crm-contacts' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' },
       { leaf: 'segments', section: 'Audiences' },
     ],
   },
@@ -645,7 +647,10 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
       // renders the section's own landing link ("Resonance CRM" -> /admin/crm, the roster home), so
       // adding the crm leaf too would paint TWO tabs on the same URL (the "Resonance CRM" + "Roster"
       // duplicate). The section link IS the roster tab.
-      { heading: 'Engine', leaves: [{ leaf: 'crm-inbox' }, { leaf: 'crm-tasks' }, { leaf: 'crm-contacts' }, { leaf: 'crm-marketing' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }] },
+      // Order (owner directive): Resonance CRM (the section landing link) | Marketing | Inbox | Tasks |
+      // Contacts | Intelligence | Pipeline. Marketing leads the Engine group so the compose-and-send door
+      // sits first, right after the roster home.
+      { heading: 'Engine', leaves: [{ leaf: 'crm-marketing' }, { leaf: 'crm-inbox' }, { leaf: 'crm-tasks' }, { leaf: 'crm-contacts' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }] },
     ],
   },
   {

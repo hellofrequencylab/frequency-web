@@ -36,6 +36,7 @@ export interface SegmentOption {
 const DEFAULT_SEGMENTS: SegmentOption[] = [
   { key: 'members', label: 'All members (not unsubscribed)' },
   { key: 'subscribed_members', label: 'Subscribed members only' },
+  { key: 'all_contacts', label: 'Entire contact list (members + imported, not unsubscribed)' },
   { key: 'beta_waitlist', label: 'Beta waitlist (confirmed, has account)' },
 ]
 
