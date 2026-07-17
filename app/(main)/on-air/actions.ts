@@ -89,6 +89,11 @@ export interface CompleteSessionInput {
   /** The optional free-text reflection from a Journal / Just Log session. Trimmed + capped
    *  server-side; empty becomes null. Stored on the session history row, never the economy. */
   note?: string | null
+  /** Run-over verification (ADR-627 WAM instrumentation): true when the member was PRESENT at
+   *  finalize (a Finish/Close tap), false for an unattended auto-finalize / resume-return the
+   *  run-over gate clamped. Flows to the `practice.verified` event context (no second event).
+   *  Omitted on paths that don't distinguish (defaults to a present finish). */
+  attended?: boolean
 }
 
 /** The longest a stored session note may be (characters). Trimmed + capped server-side so a
@@ -261,6 +266,8 @@ export async function completeSession(
         circleId: input.circleId ?? null,
         secondsDone,
         secondsTarget,
+        // Present at finalize unless the client flagged an unattended auto-finalize (ADR-627).
+        attended: input.attended ?? true,
       })
 
   // 3. Post-log state for the reveal. Today's airtime is a handful of rows;

@@ -6,7 +6,9 @@ import { Banner, StatusChip } from '@/components/admin/status'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
 import { AiToggle } from './toggle'
 import { ReindexHelpButton } from './reindex-help-button'
+import { AutonomyControls } from './autonomy-controls'
 import type { getAiControlsData } from './load-ai'
+import type { AutonomyControlsData } from './load-autonomy'
 
 // Presentational "AI controls" suite shared by the /admin/ai Settings page and the
 // in-place Platform·AI module (ADR-149): master switch + help-index reindex + today's
@@ -22,7 +24,15 @@ const fmtUsd = (n: number) => `$${n.toFixed(2)}`
 const fmtWhen = (s: string | null) =>
   s ? new Date(s).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''
 
-export function AiControlsView({ data, onChanged }: { data: Data; onChanged?: () => void }) {
+export function AiControlsView({
+  data,
+  autonomy,
+  onChanged,
+}: {
+  data: Data
+  autonomy?: AutonomyControlsData
+  onChanged?: () => void
+}) {
   const { enabled, envReady, rows, totalSpend, helpChunks, events } = data
 
   const usageColumns: ColumnDef<FeatureRow>[] = [
@@ -75,6 +85,9 @@ export function AiControlsView({ data, onChanged }: { data: Data; onChanged?: ()
           )}
         </div>
       </FormSection>
+
+      {/* Vera autonomous sending — the circuit breaker + graduation controls (default OFF). */}
+      {autonomy && <AutonomyControls data={autonomy} />}
 
       {/* Ask Vera — help index (build/refresh the RAG corpus) */}
       <FormSection

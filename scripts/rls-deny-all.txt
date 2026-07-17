@@ -28,6 +28,7 @@ challenge_qr_codes
 contact_relationships
 content_ratings
 creator_tips
+crm_tasks
 email_events
 email_suppressions
 entry_campaigns
@@ -101,5 +102,6 @@ team_members
 trust_scores
 trust_signals
 vera_config
+vera_autonomy_decisions
 event_placement_requests
 email_templates

@@ -866,7 +866,8 @@ export function OnAirSession({
       setStartedAt(rec.startedAt)
       const clampedThis = clampLoggedSeconds(resumeTargetSec, resumeElapsed, [])
       const seconds = rec.resumeFromSec + Math.max(0, clampedThis)
-      void finishWith(seconds, new Date(rec.startedAt).toISOString(), rec.practiceId, s.mode)
+      // Over-deadline resume (ADR-627): finalized on the member's behalf, so NOT attended airtime.
+      void finishWith(seconds, new Date(rec.startedAt).toISOString(), rec.practiceId, s.mode, false)
       return
     }
     if (viaGesture && s.bell) {
@@ -1089,7 +1090,8 @@ export function OnAirSession({
     finishing.current = true
     const clampedThis = clampLoggedSeconds(minutes * 60, currentElapsedSec(), confirmationsRef.current)
     const seconds = resumeBanked.current + Math.max(0, clampedThis)
-    void finishWith(seconds, new Date(startedAt).toISOString(), undefined, activeModeRef.current)
+    // Unattended auto-finalize (ADR-627): the member walked away, so this is NOT attended airtime.
+    void finishWith(seconds, new Date(startedAt).toISOString(), undefined, activeModeRef.current, false)
   }
 
   async function finish(early: boolean) {
@@ -1131,6 +1133,10 @@ export function OnAirSession({
     startedIso: string | null,
     practiceIdOverride?: string,
     modeOverride?: SessionMode,
+    // ADR-627 WAM: whether the member was PRESENT at finalize. A Finish/Close tap is attended;
+    // the auto-finalize + over-deadline resume paths pass false so the run-over gate's unattended
+    // clamp is recorded on the practice.verified event. Defaults to a present finish.
+    attended = true,
   ) {
     // Remember this attempt's exact args so an error-screen retry replays the SAME proof-valid
     // claim (real seconds + started_at), never a recomputed null-anchored one.
@@ -1175,6 +1181,7 @@ export function OnAirSession({
       // The Journal / Just Log reflection (server trims + caps it, and only stores it for a
       // note-bearing mode). Empty stays empty; the server maps it to null.
       note: modeHasNote(sentMode) ? note : null,
+      attended,
     })
     finishing.current = false
     if (isError(result)) {

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
 import { cn } from '@/lib/utils'
 import { createSegment, updateSegment, previewSegment, type SegmentActionResult } from './actions'
+import { allowedOpsForType, opLabel, clampOp } from './field-ops'
 import type {
   Combinator,
   Predicate,
@@ -37,15 +38,6 @@ export interface ComposerInitial {
   description: string
   definition: SegmentDefinition
 }
-
-const OPS: { value: TraitOp; label: string }[] = [
-  { value: 'eq', label: 'is' },
-  { value: 'neq', label: 'is not' },
-  { value: 'gt', label: 'greater than' },
-  { value: 'gte', label: 'at least' },
-  { value: 'lt', label: 'less than' },
-  { value: 'lte', label: 'at most' },
-]
 
 // A row in editing state. `op`/`value` only matter for trait rows; we keep them around so
 // switching a row's type back and forth doesn't lose what was typed.
@@ -309,8 +301,11 @@ function PredicateRow({
           const key = e.target.value
           // A boolean trait's control renders "true" by default; seed the row's value so an
           // untouched control persists what the operator sees (was: showed true, saved false).
+          // Also clamp the operator to one the new field type allows, so switching from a
+          // number field (e.g. "at least") to a boolean can't keep a nonsensical comparison.
           const picked = row.type === 'trait' ? traitByKey.get(key) : undefined
-          onChange(picked?.type === 'boolean' ? { key, value: 'true' } : { key })
+          const op = clampOp(row.op, picked?.type)
+          onChange(picked?.type === 'boolean' ? { key, op, value: 'true' } : { key, op })
         }}
         className={cn(fieldClasses, 'min-w-40 flex-1')}
       >
@@ -331,9 +326,9 @@ function PredicateRow({
             onChange={(e) => onChange({ op: e.target.value as TraitOp })}
             className={cn(fieldClasses, 'w-auto')}
           >
-            {OPS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
+            {allowedOpsForType(trait?.type).map((op) => (
+              <option key={op} value={op}>
+                {opLabel(op, trait?.type)}
               </option>
             ))}
           </select>
@@ -381,6 +376,19 @@ function ValueControl({
           </option>
         ))}
       </select>
+    )
+  }
+  // A date picker for timestamp traits. Its value is an ISO date ("2026-01-01"), which
+  // compares correctly against the stored ISO timestamp lexicographically (ADR-630).
+  if (trait?.type === 'timestamp') {
+    return (
+      <Input
+        aria-label="Value"
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-40"
+      />
     )
   }
   return (

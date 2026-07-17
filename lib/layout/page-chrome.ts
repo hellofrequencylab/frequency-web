@@ -450,6 +450,11 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   // catalog entry makes the cockpit an explicitly managed operator surface; the rail decision
   // stays the admin default, exactly like Phase 1's /admin/crm/today.
   { route: '/admin/crm', label: 'Resonance cockpit', area: 'Operator' },
+  // The CRM 2-way Inbox (ADR-629) + Tasks (ADR-628). Both live under /admin/*, so railFor already
+  // returns 'none' (the admin workspace mounts its own info rail); these entries just register them as
+  // explicitly managed operator surfaces. The rail decision stays the admin default.
+  { route: '/admin/crm/inbox', label: 'CRM Inbox', area: 'Operator' },
+  { route: '/admin/crm/tasks', label: 'CRM Tasks', area: 'Operator' },
   // The practice library curation workspace (Phase 1 "Scale it", ADR-438). Lives under /admin/*,
   // so railFor already returns 'none' (the admin workspace mounts its own info rail); the in-page
   // facet rail is a body column, NOT the shell rail. This catalog entry only makes it an explicitly

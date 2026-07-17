@@ -5,6 +5,7 @@ import {
   reconfirmIntervalSec,
   overageThresholdSec,
   nextCheckpointSec,
+  airtimeVerification,
   OVERAGE_THRESHOLD_RATIO,
   RECONFIRM_MIN_INTERVAL_SEC,
   RECONFIRM_MAX_INTERVAL_SEC,
@@ -110,5 +111,60 @@ describe('clampLoggedSeconds', () => {
     const remainingTarget = 3 * MIN // threshold 4.5 min
     expect(clampLoggedSeconds(remainingTarget, 40 * MIN, [])).toBe(remainingTarget)
     expect(clampLoggedSeconds(remainingTarget, 4 * MIN, [])).toBe(4 * MIN)
+  })
+})
+
+describe('airtimeVerification — the practice.verified signal (WAM)', () => {
+  const target = 5 * MIN // threshold 7.5 min
+
+  it('an open-ended (zero target) run is untimed, attended airtime', () => {
+    const v = airtimeVerification(0, 90 * MIN, [], { present: true })
+    expect(v).toEqual({ loggedSec: 90 * MIN, attended: true, clamped: false, reason: 'untimed' })
+  })
+
+  it('a run under the overage line is honest full airtime (within_target)', () => {
+    const v = airtimeVerification(target, 6 * MIN, [], { present: true })
+    expect(v.reason).toBe('within_target')
+    expect(v.loggedSec).toBe(6 * MIN)
+    expect(v.clamped).toBe(false)
+  })
+
+  it('a present finish over the line logs actual airtime and reads attended', () => {
+    const elapsed = 45 * MIN
+    // Present finish appends "now" to the confirmations at the call site.
+    const v = airtimeVerification(target, elapsed, [9 * MIN, elapsed], { present: true })
+    expect(v.reason).toBe('attended')
+    expect(v.attended).toBe(true)
+    expect(v.loggedSec).toBe(elapsed)
+    expect(v.clamped).toBe(false)
+  })
+
+  it('an absent auto-finalize over the line is clamped + unattended', () => {
+    // Confirmed at 9 min, then walked away to 45 min: log 9 min, flag it clamped + unattended.
+    const v = airtimeVerification(target, 45 * MIN, [9 * MIN], { present: false })
+    expect(v.reason).toBe('clamped_unattended')
+    expect(v.attended).toBe(false)
+    expect(v.clamped).toBe(true)
+    expect(v.loggedSec).toBe(9 * MIN)
+  })
+
+  it('the overnight case (no confirms, absent) clamps to the target, unattended', () => {
+    const v = airtimeVerification(target, 8 * 60 * MIN, [], { present: false })
+    expect(v.reason).toBe('clamped_unattended')
+    expect(v.loggedSec).toBe(target)
+    expect(v.clamped).toBe(true)
+  })
+
+  it('loggedSec always mirrors clampLoggedSeconds', () => {
+    for (const [elapsed, confirms] of [
+      [6 * MIN, []],
+      [45 * MIN, []],
+      [45 * MIN, [9 * MIN]],
+      [60 * MIN, [9 * MIN, 14 * MIN, 19 * MIN]],
+    ] as [number, number[]][]) {
+      expect(airtimeVerification(target, elapsed, confirms, { present: false }).loggedSec).toBe(
+        clampLoggedSeconds(target, elapsed, confirms),
+      )
+    }
   })
 })
