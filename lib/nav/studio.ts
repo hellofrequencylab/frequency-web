@@ -327,6 +327,12 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'crm-marketing', href: '/admin/crm/marketing', label: 'Marketing', desc: 'Compose and send email to the whole community or a section: all members, a circle, a saved segment, or individuals. Campaigns, funnels, drafts, and sent in one place.', icon: 'Send', min: 'janitor', staffDomain: 'marketing',
     world: 'growth', worldLabel: 'CRM: Marketing', worldOrder: 10,
     adminGroups: [{ domain: 'crm', section: 'Marketing' }], adminNav: { section: 'crm', heading: 'Engine' } },
+  // Contacts — the whole roster in one place: members, subscribers, and imported leads, each read
+  // through the classifier (status, community role, business standing, activity, Spaces, relationship
+  // kinds) with plenty of sorting + faceting, plus the "ready for a Business Space" upgrade segment.
+  { id: 'crm-contacts', href: '/admin/crm/contacts', label: 'Contacts', desc: 'Every contact in one roster: members, subscribers, and imported leads. Sort and filter by status, community role, Space, relationship, and business standing, and spot members ready to upgrade to a Business Space.', icon: 'Contact', min: 'janitor', staffDomain: 'marketing',
+    world: 'growth', worldLabel: 'CRM: Contacts', worldOrder: 12,
+    adminGroups: [{ domain: 'crm', section: 'Resonance' }], adminNav: { section: 'crm', heading: 'Engine' } },
   { id: 'segments', href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', icon: 'PieChart', min: 'janitor', staffDomain: 'insights', staffLevel: 'read',
     world: 'growth', worldLabel: 'CRM: Segments', worldOrder: 11,
     adminGroups: [{ domain: 'crm', section: 'Audiences' }] },
@@ -531,7 +537,7 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     href: '/admin/crm', icon: 'Contact', min: 'janitor', staffDomain: 'marketing',
     related: ['acquisition', 'marketing', 'vera-ai'],
     links: [
-      { leaf: 'crm' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' },
+      { leaf: 'crm' }, { leaf: 'crm-contacts' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' },
       { leaf: 'segments', section: 'Audiences' },
     ],
   },
@@ -629,7 +635,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
       // renders the section's own landing link ("Resonance CRM" -> /admin/crm, the roster home), so
       // adding the crm leaf too would paint TWO tabs on the same URL (the "Resonance CRM" + "Roster"
       // duplicate). The section link IS the roster tab.
-      { heading: 'Engine', leaves: [{ leaf: 'crm-marketing' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }] },
+      { heading: 'Engine', leaves: [{ leaf: 'crm-contacts' }, { leaf: 'crm-marketing' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }] },
     ],
   },
   {

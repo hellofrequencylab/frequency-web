@@ -20,6 +20,7 @@
 import { suppress, isSuppressed } from '@/lib/suppression'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import { escapeLike } from '@/lib/search-sanitize'
 
 const norm = (s: string) => s.trim().toLowerCase()
 
@@ -64,11 +65,17 @@ async function contactConsentState(email: string, spaceId?: string): Promise<Con
   try {
     const scope = spaceId ?? (await loadRootSpaceId())
     if (!scope) return 'unknown'
+    // Case-insensitive match on lower(email) — the column can carry a mixed-case address (an OAuth
+    // signup / import path stores it un-normalized), and uniqueness is defined on lower(email), so a
+    // case-sensitive `.eq` would MISS such a row and wrongly report 'unknown' (a compliance risk if it
+    // hides an 'unsubscribed'). escapeLike neutralizes the `%`/`_` LIKE wildcards so the address matches
+    // literally; under the per-space unique(space_id, lower(email)) index this yields at most one row, so
+    // `.maybeSingle()` stays safe.
     const { data } = await createAdminClient()
       .from('contacts')
       .select('consent_state')
       .eq('space_id', scope)
-      .eq('email', norm(email))
+      .ilike('email', escapeLike(norm(email)))
       .maybeSingle()
     const raw = (data as { consent_state?: string } | null)?.consent_state
     return raw === 'subscribed' || raw === 'unsubscribed' ? raw : 'unknown'

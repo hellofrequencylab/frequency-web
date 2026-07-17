@@ -27,7 +27,7 @@ export async function syncScanToCrm(input: {
   // multi-row throw hazard; scope to root so `.maybeSingle()` is safe and we never adopt a tenant lead.
   const root = await loadRootSpaceId()
   const { data: existing } = root
-    ? await db.from('contacts').select('id, display_name').eq('space_id', root).ilike('email', email).maybeSingle()
+    ? await db.from('contacts').select('id, display_name').eq('space_id', root).eq('email', email).maybeSingle()
     : { data: null }
 
   let contactId = (existing as { id?: string } | null)?.id ?? null
@@ -91,7 +91,7 @@ export async function syncContactToSpaceCrm(input: {
       .from('contacts')
       .select('id, display_name')
       .eq('space_id', input.spaceId)
-      .ilike('email', email)
+      .eq('email', email)
       .maybeSingle()
 
     let contactId = (existing as { id?: string } | null)?.id ?? null

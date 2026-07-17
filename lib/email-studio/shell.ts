@@ -35,14 +35,19 @@ const ORG_LEGAL_NAME = 'Frequency Labs Holdings'
  *  override it with EmailBrand.address; the default platform shell uses this. Kept subtle in the footer. */
 const POSTAL_ADDRESS = '802 Caminito Azul, Carlsbad, CA 92011'
 
-export interface EmailDocumentShellInput {
+/** The brand + unsubscribe inputs shared by the full shell and the standalone footer builder, so the on-canvas
+ *  editor and the sent email read from ONE footer source of truth. */
+export interface EmailFooterInput {
+  /** The one-click unsubscribe URL (required for compliant bulk mail; the send agent supplies it). */
+  unsubscribeUrl?: string
+  brand?: EmailBrand
+}
+
+export interface EmailDocumentShellInput extends EmailFooterInput {
   /** The rendered block body HTML (from renderEmailLayout). */
   body: string
   /** Optional preview / preheader text shown beside the subject in the inbox. */
   preheader?: string
-  /** The one-click unsubscribe URL (required for compliant bulk mail; the send agent supplies it). */
-  unsubscribeUrl?: string
-  brand?: EmailBrand
 }
 
 /** A hidden preheader span: the inbox preview text, then whitespace to stop the client pulling body copy in. */
@@ -72,7 +77,7 @@ function header(brand: EmailBrand, colors: EmailColors, baseUrl: string): string
  *  carries a physical mailing address and a dated copyright line, links to the real Privacy / Terms / Help
  *  routes, and keeps a SUBTLE but working unsubscribe link (small, muted). Every string is voice-safe (no em
  *  dashes). Centered, inline-styled, table-safe. */
-function footer(input: EmailDocumentShellInput, colors: EmailColors, baseUrl: string): string {
+function footer(input: EmailFooterInput, colors: EmailColors, baseUrl: string): string {
   const brand = input.brand ?? {}
   const base = baseUrl.replace(/\/$/, '')
   const name = escapeHtml(brand.wordmark ?? 'Frequency')
@@ -103,6 +108,17 @@ function footer(input: EmailDocumentShellInput, colors: EmailColors, baseUrl: st
       <p style="margin:0;font-size:10px;color:${colors.subtle};line-height:1.7;">&copy; ${year} ${escapeHtml(ORG_LEGAL_NAME)}${sep}${addr}</p>
     </td></tr>
   </table>`
+}
+
+/** The standalone legal FOOTER as HTML, sharing ONE source of truth with the sent email (both go through the
+ *  same `footer` builder — no fork). The on-canvas editor renders this below its editable block canvas so the
+ *  WYSIWYG matches the sent mail; pass a placeholder `unsubscribeUrl` there (the real one-click token is only
+ *  injected at send). Palette + base URL come off the brand, defaulting to the platform DAWN shell. */
+export function emailFooterHtml(input: EmailFooterInput = {}): string {
+  const brand = input.brand ?? {}
+  const colors = brand.colors ?? DEFAULT_EMAIL_COLORS
+  const baseUrl = brand.baseUrl ?? DEFAULT_BASE_URL
+  return footer(input, colors, baseUrl)
 }
 
 /**
