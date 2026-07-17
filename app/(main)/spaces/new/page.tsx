@@ -1,4 +1,6 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Sparkles, ArrowRight } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { getMyProfileId } from '@/lib/auth'
 import { listModeChoices } from '@/lib/spaces/modes'
@@ -35,6 +37,24 @@ export default async function NewSpacePage() {
       description="Set up a home for your practice, business, or organization. You can change everything later."
       back={{ href: '/spaces/directory', label: 'Spaces' }}
     >
+      {/* Business quick-start front door: the simplest path (name + links + one line), lands you on a
+          seeded page in under a minute. Kept above the full form so a business owner takes the fast lane. */}
+      <Link
+        href="/spaces/new/business"
+        className="mb-6 flex items-center justify-between gap-3 rounded-2xl border border-primary-strong/40 bg-primary-bg/40 px-4 py-3 transition-colors hover:bg-primary-bg motion-reduce:transition-none"
+      >
+        <span className="flex items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+            <Sparkles className="h-4 w-4" aria-hidden />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-text">Running a business? Start here</span>
+            <span className="block text-xs text-muted">Drop your name and links, get a ready-to-fill page in under a minute.</span>
+          </span>
+        </span>
+        <ArrowRight className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+      </Link>
+
       <CreateSpaceForm choices={choices} />
     </FocusTemplate>
   )
