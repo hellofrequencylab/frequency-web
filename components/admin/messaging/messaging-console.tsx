@@ -48,14 +48,6 @@ export function MessagingConsole({
   onNewCampaign?: () => void
 }) {
   const [tab, setTab] = useState<Tab>(campaigns.length === 0 && funnels.length > 0 ? 'funnels' : 'campaigns')
-  // The funnel a rail click (or the operator) has deep-selected in the Funnels sub-pane.
-  const [selectedFunnelId, setSelectedFunnelId] = useState<string | null>(null)
-
-  // Rail card click: slide to Funnels and highlight that funnel. Pure client state, no navigation.
-  function openFunnel(id: string) {
-    setSelectedFunnelId(id)
-    setTab('funnels')
-  }
 
   const onCampaigns = tab === 'campaigns'
 
@@ -85,37 +77,31 @@ export function MessagingConsole({
           className="flex w-full transition-transform duration-300 ease-out motion-reduce:transition-none"
           style={{ transform: onCampaigns ? 'translateX(0)' : 'translateX(-100%)' }}
         >
-          {/* Pane 1 — Campaigns (primary) + Funnel rail */}
+          {/* Pane 1 — Campaigns, FULL WIDTH (owner directive: no side rail; the email list runs the
+              whole width). Funnels are reached by the sub-tab above, which slides this track over. */}
           <section
             aria-label="Campaigns"
             aria-hidden={!onCampaigns}
             inert={!onCampaigns || undefined}
             className="w-full shrink-0"
           >
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
-              <div className="min-w-0">
-                <CampaignsPanel
-                  campaigns={campaigns}
-                  onDeleteCampaign={onDeleteCampaign}
-                  deletingId={deletingId}
-                  onOpenCampaign={onOpenCampaign}
-                  onNewCampaign={onNewCampaign}
-                />
-              </div>
-              <aside className="min-w-0">
-                <FunnelRail funnels={funnels} selectedId={selectedFunnelId} onOpenFunnel={openFunnel} />
-              </aside>
-            </div>
+            <CampaignsPanel
+              campaigns={campaigns}
+              onDeleteCampaign={onDeleteCampaign}
+              deletingId={deletingId}
+              onOpenCampaign={onOpenCampaign}
+              onNewCampaign={onNewCampaign}
+            />
           </section>
 
-          {/* Pane 2 — Funnels (full grid, deep-selectable) */}
+          {/* Pane 2 — Funnels (full grid). The sub-tab slides here; no deep-select rail anymore. */}
           <section
             aria-label="Funnels"
             aria-hidden={onCampaigns}
             inert={onCampaigns || undefined}
             className="w-full shrink-0"
           >
-            <FunnelsPanel funnels={funnels} selectedId={onCampaigns ? null : selectedFunnelId} />
+            <FunnelsPanel funnels={funnels} selectedId={null} />
           </section>
         </div>
       </div>
@@ -323,48 +309,6 @@ function FilterChip({
     >
       {children}
     </button>
-  )
-}
-
-// The right-hand rail on the Campaigns sub-tab: a compact stack of funnel cards. Clicking one
-// slides to the Funnels sub-tab and deep-selects it (no navigation).
-function FunnelRail({
-  funnels,
-  selectedId,
-  onOpenFunnel,
-}: {
-  funnels: MessagingFunnelItem[]
-  selectedId: string | null
-  onOpenFunnel: (id: string) => void
-}) {
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-2xs font-bold uppercase tracking-wide text-subtle">Funnels</h3>
-        {funnels.length > 0 && <span className="text-2xs font-bold tabular-nums text-subtle">{funnels.length}</span>}
-      </div>
-      {funnels.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-surface/50 p-4 text-xs text-muted">
-          No funnels yet. A funnel is a series of emails that fires from a trigger, like joining.{' '}
-          <Link href="/admin/marketing/messaging/new" className="font-semibold text-primary-strong hover:underline">
-            Build one
-          </Link>
-          .
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {funnels.map((f) => (
-            <FunnelCard
-              key={f.id}
-              funnel={f}
-              compact
-              selected={selectedId === f.id}
-              onActivate={() => onOpenFunnel(f.id)}
-            />
-          ))}
-        </div>
-      )}
-    </div>
   )
 }
 

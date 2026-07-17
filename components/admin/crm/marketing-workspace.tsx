@@ -42,12 +42,16 @@ export function MarketingWorkspace({
   const [error, setError] = useState<string | null>(null)
   const [, startTransition] = useTransition()
 
-  // Keep the client list in sync with the server whenever a refresh lands fresh props. The compose popup
-  // autosaves without revalidating (per-keystroke), so a draft created inside the popup would otherwise never
-  // join this list until a hard reload. closeCompose triggers router.refresh(); this effect adopts the result.
-  useEffect(() => {
+  // Adopt fresh server data whenever a refresh lands new props (the compose popup autosaves without
+  // revalidating, so a draft made in the popup would otherwise never join this list until a hard reload;
+  // closeCompose triggers router.refresh()). This is React's "adjust state during render" pattern for
+  // prop-derived state — it reconciles synchronously without a cascading-render effect. Optimistic local
+  // edits (a delete below) don't change `initialCampaigns`, so they are never clobbered between refreshes.
+  const [lastInitial, setLastInitial] = useState(initialCampaigns)
+  if (initialCampaigns !== lastInitial) {
+    setLastInitial(initialCampaigns)
     setCampaigns(initialCampaigns)
-  }, [initialCampaigns])
+  }
 
   const q = query.trim().toLowerCase()
   const filteredCampaigns = useMemo(
