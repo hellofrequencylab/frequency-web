@@ -18,6 +18,7 @@ import { referralsEnabled } from '@/lib/platform-flags'
 import { normalizeSplash, primarySplashLink } from '@/lib/qr/splash'
 import { renderSplashPage } from '@/lib/qr/splash-render'
 import { captureQrContact } from '@/lib/connections/qr-capture'
+import { makeEventInviteToken } from '@/lib/qr/event-invite'
 import {
   LEAD_GRAB_COOKIE,
   LEAD_GRAB_MAX_AGE,
@@ -224,6 +225,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       return to(`/connections/${contactId}`)
     }
     // null → fall through to the existing signed-in routing (owner profile view, etc.).
+  }
+
+  // EVENT-INVITE CAPTURE LOOP (ADR-154, Phase 3 headline). An ANONYMOUS scan of a member's
+  // ATTRIBUTED event QR (owner + event stamped) opens the PUBLIC, non-member RSVP capture
+  // form. The inviter + event are handed off in a SIGNED token (never a client-trusted id),
+  // minted here from the code's own owner_profile_id + event_id; the form resolves them by
+  // verifying the token. Only for an anonymous scanner — a signed-in member falls through to
+  // the normal event branch below (one-tap RSVP), and the owner scanning their own code does
+  // too. withReferral still drops the referral/first-touch cookies, so a later signup by this
+  // guest is attributed to the inviter.
+  if (!profileId && code.owner_profile_id && code.event_id) {
+    const token = makeEventInviteToken(code.owner_profile_id, code.event_id)
+    return withReferral(to(`/rsvp/${token}`))
   }
 
   // SPACE QR LEAD-GRAB (CRM-MASTER-BUILD-PLAN §Phase 3, front door #1). A Space-owned code with

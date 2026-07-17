@@ -199,8 +199,63 @@ export async function setStatus(id: string, status: ContactStatus): Promise<void
 
 export async function setVisibility(id: string, visibility: Visibility): Promise<void> {
   const ownerId = await requireOwner()
-  await store.updateContact(ownerId, id, { visibility })
+  // Offer only private ↔ network to members (ADR-154 §2); 'shared' is a separate
+  // deferred tier, so never accept it here even if a caller forges the value.
+  const next: Visibility = visibility === 'network' ? 'network' : 'private'
+  await store.updateContact(ownerId, id, { visibility: next })
+  revalidatePath('/network/contacts')
   revalidatePath(`/connections/${id}`)
+}
+
+// ── Promote to the marketing contacts DB (consent-gated, ADR-742) ─────────────
+
+/** `promoted` — a fresh lead row was created/linked this call; `already` — it was
+ *  already in the contacts DB (idempotent, no dup). Both carry the contacts.id. */
+export type PromoteResult =
+  | { ok: true; state: 'promoted' | 'already'; contactId: string }
+  | { ok: false; reason: string }
+
+/** Promote a personal capture into the SHARED marketing `contacts` DB as an
+ *  unconfirmed lead (ADR-099/154). DELIBERATE + consent-gated: only the owner (member
+ *  tier) may call it, the marketing row is created at consent_state='unknown' (added,
+ *  never mailable until they confirm), and it links the personal row via
+ *  linked_contact_id. Idempotent (an already-linked capture returns 'already', never a
+ *  dup) and fail-safe (any error returns a calm reason, promotes nothing).
+ *
+ *  PRIVACY INVARIANT: we pass ONLY the email + display name to the bridge. Personal
+ *  notes and tags are NEVER copied into the marketing layer. syncScanToCrm also never
+ *  downgrades an existing lead/member's source or consent. */
+export async function promoteToContacts(contactId: string): Promise<PromoteResult> {
+  const ownerId = await requireOwner()
+
+  // Re-read the row from a trusted, owner-scoped source (never trust client-supplied
+  // fields) — this is also the ownership check: a capture the caller doesn't own reads null.
+  const detail = await store.getContact(ownerId, contactId)
+  if (!detail) return { ok: false, reason: 'That contact is not in your list.' }
+  const { contact } = detail
+
+  // Idempotent: already bridged → report the linked state, create nothing.
+  if (contact.linkedContactId) return { ok: true, state: 'already', contactId: contact.linkedContactId }
+
+  const email = (contact.email ?? '').trim()
+  if (!email) return { ok: false, reason: 'Add an email first. Frequency contacts are matched by email address.' }
+
+  try {
+    const cid = await syncScanToCrm({
+      ownerId,
+      networkContactId: contactId,
+      email,
+      displayName: contact.displayName,
+      // NOTE: no notes, no tags — the marketing layer never receives your private annotations.
+    })
+    if (!cid) return { ok: false, reason: 'Could not add them right now. Try again in a moment.' }
+    revalidatePath('/network/contacts')
+    revalidatePath(`/connections/${contactId}`)
+    return { ok: true, state: 'promoted', contactId: cid }
+  } catch {
+    // Fail-safe: never surface a raw error to the member, and promote nothing on a throw.
+    return { ok: false, reason: 'Could not add them right now. Try again in a moment.' }
+  }
 }
 
 // ── Notes & tags ─────────────────────────────────────────────────────────────
