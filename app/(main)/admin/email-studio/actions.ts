@@ -450,7 +450,20 @@ export async function sendTestEmail(id: string): Promise<ActionResult<{ to: stri
   // including a custom sender address like Daniel Tyack <danieltyack@send.frequencylocal.com>, not the noreply.
   const from = await resolveCampaignFromHeader(id)
 
-  await sendRawEmail({ to, from, subject: `[Test] ${subject}`, html, text })
+  // A rejected send (e.g. Resend refusing while a tracking domain is unverified) must NOT bubble up as an
+  // unhandled server-action error and trip the admin error boundary ("this view didn't load"). Catch it and
+  // return a friendly, actionable failure so the composer shows an inline message and the page stays alive.
+  try {
+    await sendRawEmail({ to, from, subject: `[Test] ${subject}`, html, text })
+  } catch (e) {
+    // Surface the provider's ACTUAL reason to the operator (this is a staff-gated action, so the raw
+    // Resend error is safe + useful here) instead of throwing, which would trip the admin error boundary
+    // ("this view didn't load"). Strip our internal prefix so the message reads cleanly.
+    const raw = e instanceof Error ? e.message : String(e)
+    const detail = raw.replace(/^\[email\]\s*send failed:\s*/i, '').trim()
+    console.error('[email-studio] test send failed', e)
+    return fail(`The email provider rejected this send: ${detail || 'unknown error'}. The page is fine; fix the cause in Resend and try again.`)
+  }
   await db.from('campaigns').update({ test_sent_at: new Date().toISOString() }).eq('id', id)
 
   revalidatePath('/admin/beta')
