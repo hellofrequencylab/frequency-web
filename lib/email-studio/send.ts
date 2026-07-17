@@ -117,6 +117,18 @@ export async function loadCampaignFromAddress(campaignId: string): Promise<strin
 }
 
 /**
+ * The SINGLE source of truth for a campaign's From header, used by BOTH the real send (sendCampaignNow) and the
+ * test send (sendTestEmail) so a test shows EXACTLY the From a recipient will see — they can never diverge.
+ * Precedence: per-campaign `from_address` → `EMAIL_BROADCAST_FROM` → platform default, with the friendly
+ * `from_name` swapped on top. Fail-safe pre-migration (both reads return null → the broadcast/platform default).
+ */
+export async function resolveCampaignFromHeader(campaignId: string): Promise<string> {
+  const fromAddress = await loadCampaignFromAddress(campaignId)
+  const fromBase = fromAddress ?? BROADCAST_FROM
+  return buildCampaignFrom(await loadCampaignFromName(campaignId), fromBase)
+}
+
+/**
  * Best-effort read of a campaign's per-send From NAME (the `from_name` column, added by the
  * 20261166000000_campaign_from_name migration). FAIL-SAFE: before that migration is applied the column does
  * not exist and PostgREST returns an error, which we swallow and treat as "no name set" (→ default From). The
@@ -448,9 +460,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   // (EMAIL_BROADCAST_FROM), else the platform noreply — then the friendly display NAME (from_name) swapped on
   // top. Fail-safe: pre-migration both reads return null and we send from the broadcast/platform default. The
   // from_address domain must be Resend-verified (an ops step); sanitizeFromAddress only format-checks it.
-  const fromAddress = await loadCampaignFromAddress(campaignId)
-  const fromBase = fromAddress ?? BROADCAST_FROM
-  const fromHeader = buildCampaignFrom(await loadCampaignFromName(campaignId), fromBase)
+  const fromHeader = await resolveCampaignFromHeader(campaignId)
 
   // Reply-To so a recipient can just hit Reply and reach a human (the envelope From stays the verified
   // noreply domain). Precedence: EMAIL_REPLY_TO (a platform reply address — point it at the CRM inbound-

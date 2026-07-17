@@ -30,7 +30,7 @@ import {
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { compileEmailDoc } from '@/lib/email-studio/shell'
 import { applyMergeTags, sanitizeEmailRichContent } from '@/lib/email-studio/render'
-import { sanitizeFromName, buildCampaignFrom, loadCampaignFromName } from '@/lib/email-studio/send'
+import { sanitizeFromName, loadCampaignFromName, resolveCampaignFromHeader } from '@/lib/email-studio/send'
 import { buildUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
@@ -445,9 +445,10 @@ export async function sendTestEmail(id: string): Promise<ActionResult<{ to: stri
   const html = applyMergeTags(compiled.html, vars, { fallbacks })
   const text = applyMergeTags(compiled.text, vars, { fallbacks, escape: false })
 
-  // Send the test from the campaign's own From name (fail-safe to the default), so the operator sees exactly
-  // what recipients will. Envelope address stays the verified domain.
-  const from = buildCampaignFrom(await loadCampaignFromName(id))
+  // Send the test from the SAME resolved From header the real send uses (per-campaign from_address →
+  // EMAIL_BROADCAST_FROM → default, with from_name on top), so the test shows EXACTLY what recipients see —
+  // including a custom sender address like Daniel Tyack <danieltyack@send.frequencylocal.com>, not the noreply.
+  const from = await resolveCampaignFromHeader(id)
 
   await sendRawEmail({ to, from, subject: `[Test] ${subject}`, html, text })
   await db.from('campaigns').update({ test_sent_at: new Date().toISOString() }).eq('id', id)
