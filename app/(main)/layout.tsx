@@ -42,6 +42,7 @@ import { resolvePersonalTeaseGate } from '@/lib/pricing/tease-gate'
 import { PageViewTracker } from '@/components/analytics/track-provider'
 import { ObserveProvider } from '@/components/analytics/observe-provider'
 import { GaConsentGate } from '@/components/analytics/ga-consent-gate'
+import { GaStaffOptOut } from '@/components/analytics/ga-staff-optout'
 import { hasConsent } from '@/lib/consent/consent'
 import { demoModeEnabled, demoContentExists } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
@@ -357,6 +358,10 @@ export default async function MainLayout({
   // (admin+, the EMBEDDED-ADMIN inline layer). Suppressed under a downgrade preview so a
   // steward's "view as" faithfully hides operator chrome, matching staffRole above.
   const pageWebRole = previewingDown ? 'none' : asWebRole(profile.web_role)
+  // Keep an operator's own browsing out of Google Analytics. Gated on the TRUE web role (not the
+  // view-as-downgraded pageWebRole), so previewing as a member does not re-enable tracking. GaStaffOptOut
+  // persists the opt-out in the browser so even future first-paints are excluded before the page_view.
+  const gaStaffExcluded = isStaff(asWebRole(profile.web_role))
 
   // Janitor Bug Alert (support): the janitor (Executive Admin) gets a prominent header alert the
   // moment a support ticket is open, so a bug report never sits unseen. One cheap head-count, run
@@ -576,7 +581,8 @@ export default async function MainLayout({
       menuViewerRole={menuViewerRole}
       menuTimings={menuTimings}
     >
-      <GaConsentGate disabled={!analyticsConsent} />
+      <GaConsentGate disabled={!analyticsConsent || gaStaffExcluded} />
+      {gaStaffExcluded && <GaStaffOptOut />}
       <ImpersonationBanner />
       {/* Beta countdown (platform_settings.beta_ends_at) — renders nothing until an operator sets a
           date; its one cached read sits behind Suspense so it never blocks the shell. */}
