@@ -763,6 +763,77 @@ export function howToSchema(howTo: {
   }
 }
 
+// ── Product reviews + rating (commerce AIO) ─────────────────────────────────────
+// The two nodes that make a Product star-rich-result eligible AND give answer engines
+// quotable member sentiment: an AggregateRating (average + count) and a handful of
+// individual schema.org Review nodes. Both are the SINGLE source both commerce surfaces
+// (Market /market/[id] and the Frequency Store /store/[id]) build from, so their rating
+// schema can never drift. Every node is gated on REAL data — a null/zero rating or an
+// empty author/body is dropped, never faked, because answer engines silently discard a
+// malformed node, which would negate the whole SEO investment.
+
+/** The 1-5 star scale every rating node advertises (bestRating/worstRating), so an engine reads a
+ *  4.8 correctly rather than assuming a 1-100 or 1-10 scale. */
+const RATING_BEST = 5
+const RATING_WORST = 1
+/** How many individual Review nodes ride a Product node. Enough to be quotable, capped so the JSON-LD
+ *  stays lean (Google reads the aggregate for stars; the individual nodes are for AIO citation). */
+const REVIEW_NODES_CAP = 8
+
+/** One member review, mapped onto a schema.org Review node. `author` is the reviewer's display name;
+ *  `body` is the quotable text; `datePublished` is the ISO date. Any entry missing a real author name
+ *  or a non-empty body is dropped (never a placeholder). */
+export interface ProductReviewInput {
+  author: string | null | undefined
+  rating: number | null | undefined
+  body: string | null | undefined
+  datePublished: string | null | undefined
+}
+
+/** A schema.org AggregateRating (average + count) on the 1-5 scale, or null when there are no visible
+ *  reviews. Never emits a fake 0 — answer engines drop a malformed node. Shared by productSchema and
+ *  the shared listing JSON-LD so both commerce surfaces carry an identical rating shape. */
+export function aggregateRatingNode(
+  rating: { ratingValue: number; reviewCount: number } | null | undefined,
+): object | null {
+  if (!rating || !(rating.reviewCount > 0) || !Number.isFinite(rating.ratingValue)) return null
+  return {
+    '@type': 'AggregateRating',
+    ratingValue: rating.ratingValue,
+    reviewCount: rating.reviewCount,
+    bestRating: RATING_BEST,
+    worstRating: RATING_WORST,
+  }
+}
+
+/** schema.org Review nodes for a product's individual reviews, to nest under a Product's `review`
+ *  property (no @context — the parent Product carries it). AIO lever: quotable review text + star
+ *  rich-result eligibility. Emits ONLY reviews with a real author name AND a non-empty body (never a
+ *  placeholder), the rating clamped to the 1-5 scale, capped so the node stays lean. Returns [] when
+ *  nothing qualifies, so the caller drops the `review` property entirely rather than emit an empty one. */
+export function productReviewNodes(
+  reviews: readonly ProductReviewInput[] | null | undefined,
+  cap = REVIEW_NODES_CAP,
+): object[] {
+  const out: object[] = []
+  for (const r of reviews ?? []) {
+    if (out.length >= cap) break
+    const name = r.author?.trim()
+    const body = r.body?.trim()
+    const rating = Number(r.rating)
+    if (!name || !body || !Number.isFinite(rating) || rating < RATING_WORST) continue
+    const ratingValue = Math.min(RATING_BEST, Math.max(RATING_WORST, rating))
+    out.push({
+      '@type': 'Review',
+      author: { '@type': 'Person', name },
+      reviewRating: { '@type': 'Rating', ratingValue, bestRating: RATING_BEST, worstRating: RATING_WORST },
+      reviewBody: body,
+      ...(r.datePublished ? { datePublished: r.datePublished } : {}),
+    })
+  }
+  return out
+}
+
 // ── Product / Offer (maker, shop, Space storefront) ─────────────────────────────
 // One crawlable Product per sellable item — the AEO node an answer engine cites for
 // "where can I buy X". Price in major units, 2dp, currency upper-cased (mirrors Event).
@@ -779,9 +850,17 @@ export function productSchema(p: {
   sellerName?: string | null
   /** Canonical app path, e.g. `/store/tote` or `/market/<id>`. */
   path: string
+  /** The product's visible-review aggregate (average + count). Emitted as an AggregateRating ONLY when
+   *  reviewCount > 0; pass null / omit for an unreviewed item so no rating node is faked. */
+  aggregateRating?: { ratingValue: number; reviewCount: number } | null
+  /** A handful of the product's visible reviews, emitted as nested schema.org Review nodes (capped +
+   *  filtered to a real author + body). Omit / [] for an unreviewed item. */
+  reviews?: readonly ProductReviewInput[] | null
 }) {
   const url = abs(p.path)
   const hasPrice = typeof p.priceCents === 'number' && Number.isFinite(p.priceCents)
+  const rating = aggregateRatingNode(p.aggregateRating)
+  const reviews = productReviewNodes(p.reviews)
   return {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -790,6 +869,8 @@ export function productSchema(p: {
     image: [...(p.image ? [p.image] : []), abs('/opengraph-image')],
     url,
     ...(p.sellerName ? { brand: { '@type': 'Brand', name: p.sellerName } } : {}),
+    ...(rating ? { aggregateRating: rating } : {}),
+    ...(reviews.length ? { review: reviews } : {}),
     ...(hasPrice
       ? {
           offers: {

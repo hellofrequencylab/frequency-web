@@ -12,7 +12,7 @@
 
 import type { Metadata } from 'next'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
-import { breadcrumbSchema } from '@/lib/jsonld'
+import { breadcrumbSchema, aggregateRatingNode, productReviewNodes } from '@/lib/jsonld'
 import type { ListingDetailView } from '@/lib/listings-shared/detail-view'
 
 /** Canonical app path for a listing, keyed off its vertical. The one source both the metadata
@@ -123,15 +123,14 @@ export function listingJsonLd(view: ListingDetailView): object[] {
 
   // AggregateRating (commerce AIO): emitted ONLY when there is a real average AND at least one review.
   // A null/zero rating is dropped — answer engines silently discard malformed schema, which would negate
-  // the node. Only a Market Product carries reviews today (housing/classifieds pass null).
-  const rating =
-    view.aggregateRating && view.aggregateRating.reviewCount > 0
-      ? {
-          '@type': 'AggregateRating',
-          ratingValue: view.aggregateRating.ratingValue,
-          reviewCount: view.aggregateRating.reviewCount,
-        }
-      : undefined
+  // the node. Carries the 1-5 bestRating/worstRating scale. Only a Market Product carries reviews today
+  // (housing/classifieds pass null). Shared with productSchema so both commerce surfaces match.
+  const rating = aggregateRatingNode(view.aggregateRating)
+
+  // Individual Review nodes (commerce AIO): a handful of quotable member reviews, each a schema.org
+  // Review with author + reviewRating + reviewBody + datePublished. Emitted ONLY when reviews exist;
+  // the builder caps + drops any without a real author or body, so an empty set yields no `review`.
+  const reviews = productReviewNodes(view.reviews)
 
   const primary = {
     '@context': 'https://schema.org',
@@ -146,6 +145,7 @@ export function listingJsonLd(view: ListingDetailView): object[] {
       : {}),
     ...(!isHousing && view.seller ? { brand: { '@type': 'Brand', name: view.seller.displayName } } : {}),
     ...(rating ? { aggregateRating: rating } : {}),
+    ...(reviews.length ? { review: reviews } : {}),
     ...(offer ? { offers: offer } : {}),
   }
 

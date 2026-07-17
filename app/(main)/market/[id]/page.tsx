@@ -172,6 +172,15 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
       reviews.average != null && reviews.count > 0
         ? { ratingValue: reviews.average, reviewCount: reviews.count }
         : null,
+    // The latest visible reviews feed the individual schema.org Review nodes (quotable text + star
+    // rich results). The JSON-LD builder caps + drops any without a real author/body, so the full
+    // visible list is safe to pass; an unreviewed product yields no Review nodes.
+    reviews: reviews.latest.map((r) => ({
+      author: r.author?.displayName ?? null,
+      rating: r.rating,
+      body: r.body,
+      datePublished: r.createdAt,
+    })),
   })
 
   return (

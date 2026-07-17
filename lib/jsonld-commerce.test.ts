@@ -23,6 +23,48 @@ describe('productSchema', () => {
     }
     expect(s.offers.availability).toBe('https://schema.org/SoldOut')
   })
+
+  it('emits an AggregateRating (1-5 scale) and Review nodes when the product has reviews', () => {
+    const s = productSchema({
+      title: 'Stoneware mug',
+      priceCents: 2400,
+      path: '/store/mug',
+      aggregateRating: { ratingValue: 4.7, reviewCount: 9 },
+      reviews: [
+        { author: 'Maya R.', rating: 5, body: 'Beautiful glaze.', datePublished: '2026-02-01T00:00:00.000Z' },
+        { author: 'Devon', rating: 4, body: 'Solid everyday mug.', datePublished: '2026-02-02T00:00:00.000Z' },
+      ],
+    }) as {
+      aggregateRating: { '@type': string; ratingValue: number; reviewCount: number; bestRating: number; worstRating: number }
+      review: { '@type': string; author: { name: string }; reviewRating: { ratingValue: number }; reviewBody: string }[]
+    }
+    expect(s.aggregateRating).toEqual({
+      '@type': 'AggregateRating',
+      ratingValue: 4.7,
+      reviewCount: 9,
+      bestRating: 5,
+      worstRating: 1,
+    })
+    expect(s.review).toHaveLength(2)
+    expect(s.review[0].author.name).toBe('Maya R.')
+    expect(s.review[0].reviewBody).toBe('Beautiful glaze.')
+  })
+
+  it('omits rating + review nodes for an unreviewed product (never a fake 0)', () => {
+    const s = productSchema({ title: 'x', priceCents: 100, path: '/store/x', aggregateRating: null, reviews: [] })
+    expect(s).not.toHaveProperty('aggregateRating')
+    expect(s).not.toHaveProperty('review')
+  })
+
+  it('omits the AggregateRating when reviewCount is 0', () => {
+    const s = productSchema({
+      title: 'x',
+      priceCents: 100,
+      path: '/store/x',
+      aggregateRating: { ratingValue: 0, reviewCount: 0 },
+    })
+    expect(s).not.toHaveProperty('aggregateRating')
+  })
 })
 
 describe('productListSchema', () => {

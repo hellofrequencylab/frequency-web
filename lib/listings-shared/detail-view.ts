@@ -16,6 +16,7 @@ import {
 } from '@/lib/marketplace'
 import type { CommerceProduct } from '@/lib/commerce/types'
 import type { HousingDetail, Listing } from '@/lib/listings/types'
+import type { ProductReviewInput } from '@/lib/jsonld'
 
 /** The listing table a comment thread hangs off (matches listing_comments.target_kind). Airwaves P2
  *  (ADR-608) reuses the same polymorphic spine for a Recording's discussion thread ('recording'). */
@@ -80,6 +81,11 @@ export interface ListingDetailView {
    *  commerce AIO lever). Null when there are no visible reviews — never a fake 0, which answer engines
    *  drop as malformed. Only Market products carry reviews today; the other verticals pass null. */
   aggregateRating: { ratingValue: number; reviewCount: number } | null
+  /** A handful of the listing's VISIBLE reviews, emitted as schema.org Review nodes on the Product
+   *  JSON-LD (AIO: quotable text + star rich-result eligibility). Empty when the listing carries no
+   *  reviews; only Market products populate it (classifieds/housing pass []). The JSON-LD builder caps
+   *  + filters these, so passing the full visible set is fine. */
+  reviews: ProductReviewInput[]
   back: { href: string; label: string }
 }
 
@@ -180,8 +186,9 @@ export function listingDetailFromMarket(
     pickup,
     highestOfferCents: opts.highestOfferCents ?? null,
     status: listing.status !== 'active' ? listing.status : null,
-    // Classifieds carry no review model, so no AggregateRating node.
+    // Classifieds carry no review model, so no AggregateRating or Review nodes.
     aggregateRating: null,
+    reviews: [],
     back: { href: '/classifieds', label: 'Classifieds' },
   }
 }
@@ -203,6 +210,9 @@ export function listingDetailFromProduct(
     /** The product's visible-review aggregate (average + count), for the AggregateRating JSON-LD. Pass
      *  null / omit when there are no reviews so the node is dropped rather than emitted as a fake 0. */
     aggregateRating?: { ratingValue: number; reviewCount: number } | null
+    /** A handful of the product's visible reviews, for the schema.org Review nodes on the Product JSON-LD.
+     *  Pass the visible set (the builder caps + filters); omit / [] when there are none. */
+    reviews?: ProductReviewInput[]
   },
 ): ListingDetailView {
   return {
@@ -231,6 +241,7 @@ export function listingDetailFromProduct(
     highestOfferCents: opts.highestOfferCents ?? null,
     status: product.status !== 'active' ? product.status : null,
     aggregateRating: opts.aggregateRating ?? null,
+    reviews: opts.reviews ?? [],
     back: { href: '/market', label: 'Market' },
   }
 }
@@ -281,8 +292,9 @@ export function listingDetailFromHousing(
     pickup: null,
     highestOfferCents: null,
     status: listing.status !== 'active' ? listing.status : null,
-    // Housing carries no review model, so no AggregateRating node.
+    // Housing carries no review model, so no AggregateRating or Review nodes.
     aggregateRating: null,
+    reviews: [],
     back: { href: '/marketplace/housing', label: 'Housing' },
   }
 }
