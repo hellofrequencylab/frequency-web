@@ -5,6 +5,7 @@ import {
   emailHtmlByteLength,
   emailSizeWarning,
   sanitizeFromName,
+  sanitizeFromAddress,
   buildCampaignFrom,
   EMAIL_SIZE_WARN_BYTES,
   type CampaignStatus,
@@ -159,5 +160,31 @@ describe('from-name sanitize + header build', () => {
     expect(from).not.toContain('<evil')
     expect(from.startsWith('Bad Name')).toBe(true)
     expect(from.endsWith('<noreply@send.frequencylocal.com>')).toBe(true)
+  })
+})
+
+describe('from-address sanitize + broadcast envelope', () => {
+  it('accepts a clean, well-formed address', () => {
+    expect(sanitizeFromAddress('daniel@danieltyack.com')).toBe('daniel@danieltyack.com')
+    expect(sanitizeFromAddress('  hello@frequencylocal.com  ')).toBe('hello@frequencylocal.com')
+  })
+
+  it('rejects header-injection, malformed, and non-string values', () => {
+    expect(sanitizeFromAddress('daniel@danieltyack.com\r\nBcc: evil@x.com')).toBe('')
+    expect(sanitizeFromAddress('not-an-email')).toBe('') // no @
+    expect(sanitizeFromAddress('a@b')).toBe('') // no dotted domain
+    expect(sanitizeFromAddress('a b@c.com')).toBe('') // whitespace
+    expect(sanitizeFromAddress('"x"<y@z.com>')).toBe('') // delimiters
+    expect(sanitizeFromAddress(null)).toBe('')
+    expect(sanitizeFromAddress(42)).toBe('')
+  })
+
+  it('builds the broadcast From from a BARE address base, swapping the display name on top', () => {
+    // A per-campaign from_address is a bare addr-spec; buildCampaignFrom must keep it and prepend the name.
+    expect(buildCampaignFrom('Daniel Tyack', 'daniel@danieltyack.com')).toBe('Daniel Tyack <daniel@danieltyack.com>')
+  })
+
+  it('returns the bare address unchanged when no display name is set', () => {
+    expect(buildCampaignFrom('', 'daniel@danieltyack.com')).toBe('daniel@danieltyack.com')
   })
 })
