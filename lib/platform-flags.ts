@@ -192,6 +192,47 @@ export const betaEndsAt = cache(async (): Promise<Date | null> => {
   return Number.isNaN(ms) ? null : new Date(ms)
 })
 
+// Vera AUTONOMY master switch (platform_flags.vera_autonomy_enabled) — the graduation gate that
+// lets Vera SEND email autonomously (past propose-only, ADR-028). This is ALSO the global kill
+// switch: OFF stops every autonomous send at once. Defaults to FALSE on a missing row OR any read
+// error — fail-closed, so autonomy is off by default and a transient DB hiccup can never open it.
+// The live gate is still the full circuit breaker (lib/ai/vera/circuit-breaker.ts) AND the send-gate;
+// this flag is the first, most fundamental of them. Audited via platform_flag_events. Cached per request.
+export const veraAutonomyEnabledFlag = cache(async (): Promise<boolean> => {
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('platform_flags')
+      .select('value')
+      .eq('key', 'vera_autonomy_enabled')
+      .maybeSingle()
+    return data?.value ?? false
+  } catch {
+    return false
+  }
+})
+
+// Vera circuit-breaker ARMED latch (platform_flags.vera_breaker_armed) — the anomaly trip. TRUE = armed
+// (healthy); an anomaly trip flips it FALSE (disarmed) and it stays off until an operator manually
+// re-arms. Autonomy may not send while disarmed. Defaults to TRUE on a missing row (the healthy, armed
+// posture) so the breaker starts armed; the master switch above (default FALSE) is what keeps autonomy
+// off until an owner opts in, so a default-armed breaker never means "sending". Cached per request.
+export const veraBreakerArmedFlag = cache(async (): Promise<boolean> => {
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('platform_flags')
+      .select('value')
+      .eq('key', 'vera_breaker_armed')
+      .maybeSingle()
+    return data?.value ?? true
+  } catch {
+    // A read blip should not READ as "sending is fine"; but the master switch (fail-closed FALSE)
+    // is the real gate, so returning true here is safe — autonomy stays off via the master.
+    return true
+  }
+})
+
 export interface FlagEvent {
   id: string
   flagKey: string

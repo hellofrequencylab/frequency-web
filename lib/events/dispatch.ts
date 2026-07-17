@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { enqueue } from '@/lib/queue/outbox'
 import type { PushPayload } from '@/lib/push'
+import { routeNotification } from '@/lib/notifications/router'
 import { resolveEventDispatchAudience } from '@/lib/events/dispatch-audience'
 import { sendSms, isSmsProvisioned } from '@/lib/comms/sms'
 
@@ -214,9 +214,12 @@ export async function fanOutEventSms(
  * unsolicited to nearby strangers would be spam; nearby resonant members discover it
  * in their feed instead.
  *
- * Deduplicated across both. Each member's notification prefs / quiet hours /
- * consent are applied downstream by the send-gate at drain time, so this only
- * resolves WHO, never WHETHER. Returns the number enqueued. Best-effort — a single
+ * Deduplicated across both. This resolves WHO; the notification ROUTER (ADR-627) owns
+ * WHETHER + the job shape: routeNotification('event.dispatch', …) looks the type up in the
+ * registry (category 'dispatches', push channel), runs the unified send-gate PER member
+ * (push preference + per-event mute), and enqueues only the allowed ones on the same outbox.
+ * Gating here at route time means a muted member's job is never enqueued at all (the drain's
+ * gate remains a redundant safety net). Returns the number enqueued. Best-effort — a single
  * bad recipient never aborts the batch.
  */
 export async function fanOutEventPush(
@@ -228,8 +231,12 @@ export async function fanOutEventPush(
   let enqueued = 0
   for (const profileId of recipients) {
     try {
-      await enqueue('push', { profileId, payload, category: 'dispatches' })
-      enqueued++
+      const result = await routeNotification(
+        'event.dispatch',
+        { profileId },
+        { title: payload.title, body: payload.body ?? '', url: payload.url ?? '/events', eventId },
+      )
+      enqueued += result.enqueuedCount
     } catch {
       // skip a bad recipient; the rest of the fan-out still goes out
     }

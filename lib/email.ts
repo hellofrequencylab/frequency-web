@@ -523,15 +523,19 @@ View booking: ${p.manageUrl}
 `
 }
 
-export async function sendBookingReminderEmail(params: {
+export interface BookingReminderEmailParams {
   to: string
   recipientName: string
   spaceName: string
   serviceName: string | null
   whenAbsolute: string
   manageUrl: string
-}) {
-  await enqueueEmail({
+}
+
+/** Render the booking-reminder email into an outbox-ready payload. PURE (no IO), so the
+ *  notification router (ADR-627) can transport it and a caller can enqueue it directly. */
+export function buildBookingReminderEmail(params: BookingReminderEmailParams): EmailPayload {
+  return {
     to: params.to,
     subject: `Reminder: ${params.serviceName ?? params.spaceName}`,
     html: emailShell(`
@@ -551,7 +555,11 @@ When: ${params.whenAbsolute}
 
 View booking: ${params.manageUrl}
 `,
-  })
+  }
+}
+
+export async function sendBookingReminderEmail(params: BookingReminderEmailParams) {
+  await enqueueEmail(buildBookingReminderEmail(params))
 }
 
 export async function sendBookingCancelledEmail(params: {

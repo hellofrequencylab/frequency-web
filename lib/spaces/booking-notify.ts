@@ -11,9 +11,10 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueue } from '@/lib/queue/outbox'
+import { routeNotification } from '@/lib/notifications/router'
 import {
   sendBookingConfirmationEmail,
-  sendBookingReminderEmail,
+  buildBookingReminderEmail,
   sendBookingCancelledEmail,
 } from '@/lib/email'
 
@@ -325,12 +326,22 @@ export async function runBookingReminder(payload: Record<string, unknown>): Prom
   if (!member) return
 
   const tz = await bookingTimezone(admin, booking.space_id)
-  await sendBookingReminderEmail({
-    to: member.email,
-    recipientName: member.name,
-    spaceName,
-    serviceName: null,
-    whenAbsolute: formatWhen(booking.starts_at, tz),
-    manageUrl: `${APP_URL}/spaces/${space.slug}/book`,
-  })
+  // Route through the notification registry (ADR-627): the 'booking.reminder' type is
+  // transactional email, so the gate only weighs global suppression (no consent/pref) — the
+  // same guard sendRawEmail applied before, now uniform + declarative. The email is rendered
+  // from the existing template and handed to the router to transport durably.
+  await routeNotification(
+    'booking.reminder',
+    { profileId: booking.member_profile_id, email: member.email },
+    {
+      email: buildBookingReminderEmail({
+        to: member.email,
+        recipientName: member.name,
+        spaceName,
+        serviceName: null,
+        whenAbsolute: formatWhen(booking.starts_at, tz),
+        manageUrl: `${APP_URL}/spaces/${space.slug}/book`,
+      }),
+    },
+  )
 }

@@ -333,6 +333,16 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'crm-contacts', href: '/admin/crm/contacts', label: 'Contacts', desc: 'Every contact in one roster: members, subscribers, and imported leads. Sort and filter by status, community role, Space, relationship, and business standing, and spot members ready to upgrade to a Business Space.', icon: 'Contact', min: 'janitor', staffDomain: 'marketing',
     world: 'growth', worldLabel: 'CRM: Contacts', worldOrder: 12,
     adminGroups: [{ domain: 'crm', section: 'Resonance' }], adminNav: { section: 'crm', heading: 'Engine' } },
+  // Inbox (ADR-629) — the 2-way threaded conversations view. Reads the contact_interactions timeline
+  // (inbound + outbound) grouped by contact; the reply composer enqueues through the gated send path.
+  { id: 'crm-inbox', href: '/admin/crm/inbox', label: 'Inbox', desc: 'Every contact conversation in one place: read the thread and reply. Replies go out through the consent gate.', icon: 'Inbox', min: 'janitor', staffDomain: 'marketing',
+    world: 'growth', worldLabel: 'CRM: Inbox', worldOrder: 15,
+    adminGroups: [{ domain: 'crm', section: 'Resonance' }], adminNav: { section: 'crm', heading: 'Engine' } },
+  // Tasks (ADR-628) — the operator follow-up board (open/done/snoozed), optionally tied to a contact.
+  // Distinct from member-facing crew_tasks (the volunteer economy); this is the staff to-do queue.
+  { id: 'crm-tasks', href: '/admin/crm/tasks', label: 'Tasks', desc: 'Your CRM follow-up list: queue a call-back, mark it done, or snooze it for later.', icon: 'ListTodo', min: 'janitor', staffDomain: 'marketing',
+    world: 'growth', worldLabel: 'CRM: Tasks', worldOrder: 16,
+    adminGroups: [{ domain: 'crm', section: 'Resonance' }], adminNav: { section: 'crm', heading: 'Engine' } },
   { id: 'segments', href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', icon: 'PieChart', min: 'janitor', staffDomain: 'insights', staffLevel: 'read',
     world: 'growth', worldLabel: 'CRM: Segments', worldOrder: 11,
     adminGroups: [{ domain: 'crm', section: 'Audiences' }] },
@@ -537,7 +547,7 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     href: '/admin/crm', icon: 'Contact', min: 'janitor', staffDomain: 'marketing',
     related: ['acquisition', 'marketing', 'vera-ai'],
     links: [
-      { leaf: 'crm' }, { leaf: 'crm-contacts' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' },
+      { leaf: 'crm' }, { leaf: 'crm-inbox' }, { leaf: 'crm-tasks' }, { leaf: 'crm-contacts' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' },
       { leaf: 'segments', section: 'Audiences' },
     ],
   },
@@ -635,7 +645,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
       // renders the section's own landing link ("Resonance CRM" -> /admin/crm, the roster home), so
       // adding the crm leaf too would paint TWO tabs on the same URL (the "Resonance CRM" + "Roster"
       // duplicate). The section link IS the roster tab.
-      { heading: 'Engine', leaves: [{ leaf: 'crm-contacts' }, { leaf: 'crm-marketing' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }] },
+      { heading: 'Engine', leaves: [{ leaf: 'crm-inbox' }, { leaf: 'crm-tasks' }, { leaf: 'crm-contacts' }, { leaf: 'crm-marketing' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }] },
     ],
   },
   {

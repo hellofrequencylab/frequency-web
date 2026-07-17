@@ -1897,6 +1897,12 @@ export async function logPractice(input: {
   /** The length the timed log is measured against (duration_min*60, or the open-sit
    *  minutes*60). null/0 = a one-tap log (no target) → the full reward, exactly as today. */
   secondsTarget?: number | null
+  /** Run-over verification (ADR-627 WAM instrumentation): whether the member was PRESENT when the
+   *  sit finalized (a Finish/Close tap) vs an unattended auto-finalize the gate clamped. Stamped
+   *  onto the `practice.verified` event context (never a second event — the per-day idempotency key
+   *  is unchanged, so no double count). Omitted by non-timer callers (check-ins, quick logs), which
+   *  leave the context exactly as before. See lib/on-air/run-over.ts `airtimeVerification`. */
+  attended?: boolean | null
 }): Promise<LogPracticeResult> {
   const {
     profileId,
@@ -1905,6 +1911,7 @@ export async function logPractice(input: {
     clientTimezone = null,
     secondsDone = null,
     secondsTarget = null,
+    attended = null,
   } = input
   // The log "day" is the member's LOCAL calendar day, resolved from their durable
   // home_timezone (then the client tz, then UTC). Server-resolved so the day that
@@ -2086,7 +2093,15 @@ export async function logPractice(input: {
     source: 'web',
     eventType: 'practice.verified',
     actorProfileId: profileId,
-    context: { practiceId, circleId, kind: 'practice_log' },
+    // `attended` (ADR-627) enriches the SAME event — a present finish vs an unattended, gate-clamped
+    // auto-finalize — for verified-airtime quality analytics. Only stamped when the caller supplied it
+    // (On Air's timed finalize); omitted callers keep the original context shape. WAM is unaffected.
+    context: {
+      practiceId,
+      circleId,
+      kind: 'practice_log',
+      ...(attended != null ? { attended } : {}),
+    },
     verifiedAt: new Date(),
   })
   if (!recorded) return { logged: false, zapsAwarded: 0 }

@@ -102,3 +102,56 @@ export function clampLoggedSeconds(
     : 0
   return Math.min(elapsed, Math.max(target, lastConfirmed))
 }
+
+// ── practice.verified verification (WAM instrumentation · ADR-627) ────────────────────────────
+// The North Star is Weekly Active Members = ≥1 `practice.verified` in a rolling 7 days (ADR-024).
+// A finalized On Air sit emits that event through the economy (logPractice → recordEngagementEvent),
+// but the raw event alone doesn't say whether the banked airtime was ATTENDED (the member was present
+// / confirmed) or CLAMPED (the run-over gate trimmed an unattended over-run down to the confirmed
+// ceiling). This PURE classifier turns the run-over gate's own inputs into that verification, so the
+// finalize path can stamp it onto the `practice.verified` event context WITHOUT emitting a second
+// event (the per-day idempotency key is unchanged → no double count). WAM itself is binary and
+// unaffected; the signal is for verified-airtime QUALITY (analytics + a future WAM refinement).
+
+export interface AirtimeVerification {
+  /** Seconds that will be logged — the run-over clamp (mirror of clampLoggedSeconds). */
+  loggedSec: number
+  /** The member was present at finalize (tapped Finish/Close) — real, attended airtime. False for
+   *  the auto-finalize + resume-return paths, where the gate finalizes on the member's behalf. */
+  attended: boolean
+  /** The run-over gate trimmed unattended overage before logging (loggedSec < actual elapsed). */
+  clamped: boolean
+  reason: 'untimed' | 'within_target' | 'attended' | 'clamped_unattended'
+}
+
+/**
+ * Classify a finalized run's banked airtime for the `practice.verified` event. PURE. Takes the SAME
+ * inputs the clamp does plus whether the member was `present` at finalize, and reports the logged
+ * seconds, whether the airtime was attended, and whether the gate clamped an unattended over-run.
+ *
+ *   - no real target (open-ended count-up)          -> 'untimed'   (attended, never clamped)
+ *   - never passed the 150% overage line            -> 'within_target' (honest full airtime)
+ *   - present at finalize (Finish/Close tap)         -> 'attended'  (their tap confirms now)
+ *   - absent + over the line, gate trimmed the tail  -> 'clamped_unattended'
+ *
+ * `confirmedAtSec` is the confirmation set the clamp receives (a PRESENT finish appends "now" at the
+ * call site, so pass the same array here for a faithful loggedSec). Never throws; all math is floored.
+ */
+export function airtimeVerification(
+  targetSec: number,
+  elapsedSec: number,
+  confirmedAtSec: number[] = [],
+  opts: { present: boolean } = { present: true },
+): AirtimeVerification {
+  const elapsed = Math.max(0, Math.round(elapsedSec))
+  const target = Math.max(0, Math.round(targetSec))
+  const loggedSec = clampLoggedSeconds(target, elapsed, confirmedAtSec)
+  const clamped = loggedSec < elapsed
+
+  if (target <= 0) return { loggedSec, attended: opts.present, clamped: false, reason: 'untimed' }
+  if (elapsed <= overageThresholdSec(target)) {
+    return { loggedSec, attended: opts.present, clamped: false, reason: 'within_target' }
+  }
+  if (opts.present) return { loggedSec, attended: true, clamped, reason: 'attended' }
+  return { loggedSec, attended: false, clamped, reason: 'clamped_unattended' }
+}

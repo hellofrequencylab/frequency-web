@@ -697,6 +697,8 @@ export function MovementSession({
           practiceIdOverride: rec.practiceId,
           resumeFromSecOverride: recOffset,
           movementModeOverride: rec.setup.config.mode,
+          // Over-deadline resume (ADR-627): finalized on the member's behalf, NOT attended airtime.
+          attended: false,
         })
         return
       }
@@ -851,7 +853,8 @@ export function MovementSession({
     const bankedThis = clampLoggedSeconds(gateTargetRef.current, currentElapsedSec(), confirmationsRef.current)
     const done = resumeOffset + Math.max(0, bankedThis)
     const seconds = finishCap === null ? done : Math.min(done, finishCap)
-    void finishWith(Math.max(0, seconds))
+    // Unattended auto-finalize (ADR-627): the member walked away, so this is NOT attended airtime.
+    void finishWith(Math.max(0, seconds), { attended: false })
   }
 
   async function finish() {
@@ -886,6 +889,9 @@ export function MovementSession({
       practiceIdOverride?: string
       resumeFromSecOverride?: number
       movementModeOverride?: string
+      // ADR-627 WAM: false on the unattended auto-finalize / over-deadline resume paths so the
+      // run-over gate's clamp is recorded on the practice.verified event. Defaults to a present Stop.
+      attended?: boolean
     },
   ) {
     // The run is ending: drop the crash-recovery cache + the server active session (completeSession
@@ -906,6 +912,7 @@ export function MovementSession({
       // banked / mode synchronously, before the resumed state has landed (see resumeFromRecord).
       startedAt: opts?.startedIso ?? new Date(startedAt).toISOString(),
       movementMode: opts?.movementModeOverride ?? plan.mode,
+      attended: opts?.attended ?? true,
     })
     finishing.current = false
     if (isError(result)) {

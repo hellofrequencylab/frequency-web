@@ -65,6 +65,8 @@ import {
   Images,
   ClipboardPaste,
   Send,
+  Inbox,
+  ListTodo,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
@@ -85,7 +87,7 @@ const ICONS: Record<string, LucideIcon> = {
   Bot, HelpCircle, Users, Shield, QrCode, Power, FileText, BadgeCheck, Lightbulb, ScrollText,
   LifeBuoy, ShoppingBag, Map, CreditCard, Gamepad2, SlidersHorizontal, TrendingUp, Rocket,
   Layers, Contact, Briefcase, Menu, GraduationCap, ToggleRight, Share2, Palette,
-  LayoutPanelLeft, Workflow, Images, ClipboardPaste, Send,
+  LayoutPanelLeft, Workflow, Images, ClipboardPaste, Send, Inbox, ListTodo,
 }
 function icon(name: string): LucideIcon {
   return ICONS[name] ?? LayoutDashboard
