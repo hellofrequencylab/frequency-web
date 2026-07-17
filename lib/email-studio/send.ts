@@ -95,48 +95,23 @@ export async function loadCampaignFromName(campaignId: string): Promise<string |
 }
 
 /**
- * Resolve the Reply-To for a campaign so a recipient can just hit Reply and reach a human. Precedence:
- *   1. EMAIL_REPLY_TO env — a platform reply address. Point it at the CRM inbound-parse address (Resend
- *      inbound) to capture replies on the Inbox timeline + alert the owner.
- *   2. else the campaign creator's own email (from their member contact row), so a reply lands in their
- *      inbox with zero configuration.
- * Returns undefined when neither resolves (the send then falls back to the noreply envelope). Fail-safe.
+ * The BRAND reply address for a broadcast. A recipient hits Reply and reaches the Frequency inbox, never
+ * an individual's personal account. This is the address Resend inbound is pointed at (ADR-629): once inbound
+ * is configured, every reply lands as a ticket on the CRM Inbox timeline (/admin/crm/inbox) and alerts the
+ * owner. Override per-deployment with the EMAIL_REPLY_TO env var.
  */
-export async function loadCampaignReplyTo(campaignId: string): Promise<string | undefined> {
+export const BRAND_REPLY_TO = 'hello@frequencylocal.com'
+
+/**
+ * Resolve the Reply-To for a campaign. It is ALWAYS the brand inbox (EMAIL_REPLY_TO env, else BRAND_REPLY_TO)
+ * so replies feed the CRM Inbox as tickets, not anyone's private mailbox. The `campaignId` is accepted for a
+ * future per-campaign/per-Space override but is intentionally unused today. Fail-safe: returns undefined only
+ * if the configured value is not a valid address (the send then falls back to the noreply envelope).
+ */
+export async function loadCampaignReplyTo(_campaignId: string): Promise<string | undefined> {
   const override = process.env.EMAIL_REPLY_TO
-  if (override && override.trim()) return override.trim()
-  try {
-    const db = createAdminClient()
-    const { data: campaign } = await db.from('campaigns').select('created_by').eq('id', campaignId).maybeSingle()
-    const creator = (campaign as { created_by?: string | null } | null)?.created_by
-    if (!creator) return undefined
-    // AUTHORITATIVE: the creator's ACCOUNT (auth) email. This is the reliable source — an operator/owner
-    // may have no `contacts` row of their own, which is exactly why the contacts-only lookup returned
-    // nothing before. Resolve profiles.auth_user_id → the auth user's email via the service-role client.
-    const { data: profile } = await db.from('profiles').select('auth_user_id').eq('id', creator).maybeSingle()
-    const authId = (profile as { auth_user_id?: string | null } | null)?.auth_user_id
-    if (authId) {
-      try {
-        const { data: userRes } = await db.auth.admin.getUserById(authId)
-        const authEmail = userRes?.user?.email
-        if (typeof authEmail === 'string' && authEmail.includes('@')) return authEmail
-      } catch {
-        /* fall through to the contact-row fallback */
-      }
-    }
-    // FALLBACK: a member contact email (for a creator who is only a contact, not an auth user).
-    const { data: contact } = await db
-      .from('contacts')
-      .select('email')
-      .eq('profile_id', creator)
-      .not('email', 'is', null)
-      .limit(1)
-      .maybeSingle()
-    const email = (contact as { email?: string | null } | null)?.email
-    return typeof email === 'string' && email.includes('@') ? email : undefined
-  } catch {
-    return undefined
-  }
+  const addr = (override && override.trim()) || BRAND_REPLY_TO
+  return addr.includes('@') ? addr : undefined
 }
 
 // ── Size guard (Gmail clips a message past ~102 KB) ─────────────────────────────
