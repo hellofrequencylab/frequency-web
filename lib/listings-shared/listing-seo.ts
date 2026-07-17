@@ -121,6 +121,18 @@ export function listingJsonLd(view: ListingDetailView): object[] {
         }
       : undefined
 
+  // AggregateRating (commerce AIO): emitted ONLY when there is a real average AND at least one review.
+  // A null/zero rating is dropped — answer engines silently discard malformed schema, which would negate
+  // the node. Only a Market Product carries reviews today (housing/classifieds pass null).
+  const rating =
+    view.aggregateRating && view.aggregateRating.reviewCount > 0
+      ? {
+          '@type': 'AggregateRating',
+          ratingValue: view.aggregateRating.ratingValue,
+          reviewCount: view.aggregateRating.reviewCount,
+        }
+      : undefined
+
   const primary = {
     '@context': 'https://schema.org',
     '@type': isHousing ? 'Accommodation' : 'Product',
@@ -133,6 +145,7 @@ export function listingJsonLd(view: ListingDetailView): object[] {
       ? { address: { '@type': 'PostalAddress', addressLocality: view.locationLabel } }
       : {}),
     ...(!isHousing && view.seller ? { brand: { '@type': 'Brand', name: view.seller.displayName } } : {}),
+    ...(rating ? { aggregateRating: rating } : {}),
     ...(offer ? { offers: offer } : {}),
   }
 

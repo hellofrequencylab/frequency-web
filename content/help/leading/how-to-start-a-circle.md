@@ -3,7 +3,7 @@ title: How to start a Circle
 description: Pick one thing, set a standing time, recruit a co-host, and run a simple first night. You do not build a community. You host one Circle, and we hand you the format.
 category: leading
 order: 1
-updated: 2026-06-24
+updated: 2026-07-17
 audience: host
 role: host
 featureKeys: [circles, events]
@@ -98,6 +98,14 @@ canceling, not from a small turnout. See
 No. You are the Host, not the teacher. Your job is to hold the time and welcome
 people, not to be the most skilled person in the room. Plenty of great Circles are
 run by someone learning the thing right alongside everyone else.
+
+### How do I get people to the first gathering?
+
+Share your personal invite link. Every gathering gives you a link and a QR with
+your name on them, and the people you invite can RSVP without an account. Text it
+to a few friends, one at a time, and ask them plainly to come. Guests who RSVP,
+show up, or join land in your contacts and earn you **Zaps** as a Connector, so the
+work of filling the room counts. See [Events & RSVPs](/help/groups/events).
 
 ### Does it have to meet in person?
 

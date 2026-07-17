@@ -3,7 +3,7 @@ title: Meeting people safely
 description: How to meet someone from Frequency in person, the safe way.
 category: safety
 order: 2
-updated: 2026-06-26
+updated: 2026-07-17
 audience: member
 featureKeys: [connections, events, moderation]
 status: published
@@ -22,6 +22,11 @@ Frequency is built so you meet people the natural way: at a circle or a public e
 
 - **We never share your exact location.** Others only ever see your approximate neighborhood or your city, never your address. You control all of this in **Settings, Connections & Location**.
 - **You decide who can find you.** Ghost mode hides you entirely; you can limit who discovers you to your connections, or no one.
+
+## Invites and saved contacts
+
+- **An invite link points at a real gathering, not a private meetup.** When someone shares their personal invite and you RSVP, you're going to an event with other people there. That is the public-first rule working for you: meet in the open, around something real, not one-on-one first.
+- **Saved contacts stay private.** When you invite people and they RSVP, or when you scan someone's code to save them, that contact is private to you. It is never broadcast, and nobody is added to a mailing list. The same is true in reverse: RSVPing to a friend's invite shares your details with that one person, not a list.
 
 ## If someone makes you uncomfortable
 

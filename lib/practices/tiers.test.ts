@@ -69,4 +69,24 @@ describe('practice tiers — time vs points (ADR-442)', () => {
     expect(achievedTier(5 * 60)).toBe('standard')
     expect(achievedTier(15 * 60)).toBe('heavy')
   })
+
+  it('the partial floor: any engaged time under the Light floor is a partial (banks 1 Zap)', () => {
+    // Below LIGHT_FLOOR_MIN the sit clears the day + streak but pays only 1 Zap (logPractice).
+    // The pure gate here is that the OUTCOME is 'partial' — never a real tier — for anything short.
+    expect(achievedTier(0)).toBe('partial')
+    expect(achievedTier((LIGHT_FLOOR_MIN * 60) - 1)).toBe('partial') // one second under the floor
+    // Exactly the Light floor is the first REAL tier (the day earns Light, not a partial).
+    expect(achievedTier(LIGHT_FLOOR_MIN * 60)).toBe('light')
+  })
+
+  it('quick-log fallback: a no-timer log keeps the RECOMMENDED tier, not an achieved one', () => {
+    // A quick-log practice (timer_kind = 'none') has no engaged time to measure, so logPractice
+    // never runs achievedTier on it — the reward is the creator's recommended weight class,
+    // preselected from its stored Zap value. That resolution is coerceTierZaps / tierForZaps:
+    expect(tierForZaps(TIER_ZAPS.light)).toBe('light')
+    expect(tierForZaps(TIER_ZAPS.standard)).toBe('standard')
+    expect(tierForZaps(TIER_ZAPS.heavy)).toBe('heavy')
+    // A stored value is snapped to an allowed amount (never an arbitrary quick-log payout).
+    expect(coerceTierZaps(TIER_ZAPS.heavy + 100)).toBe(TIER_ZAPS.heavy)
+  })
 })

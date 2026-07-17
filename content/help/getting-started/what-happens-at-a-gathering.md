@@ -3,7 +3,7 @@ title: What happens at a gathering?
 description: A small group, a standing activity, and a couple of hours together. Here is the honest play-by-play so the first one feels less unknown.
 category: getting-started
 order: 7
-updated: 2026-06-24
+updated: 2026-07-17
 audience: member
 featureKeys: [events, circles]
 status: published
@@ -68,6 +68,13 @@ hello turns into a friendship.
 A few minutes early beats right on time. You get to settle, say hi before things
 start, and you are not the person walking in once everyone is seated. If you are
 running late, come anyway. Late is better than not at all.
+
+### Can I bring a friend who is not on Frequency?
+
+Yes, and it is a good move. Bringing one person you already know makes the first
+five minutes easier for both of you. Share your personal invite link for the
+gathering and they can RSVP without an account. See
+[how do I RSVP](/help/getting-started/how-to-rsvp).
 
 ### Can I leave early if it is not for me?
 

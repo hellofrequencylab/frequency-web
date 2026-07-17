@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Store, ShoppingCart, Receipt, Flag, ShieldAlert, Plus, Eye, EyeOff } from 'lucide-react'
+import { Store, ShoppingCart, Receipt, Flag, ShieldAlert, Plus, Eye, EyeOff, Star } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
@@ -9,6 +9,7 @@ import { listPlatformCatalog, listSpaceCatalog } from '@/lib/commerce/products'
 import { orderStatusCounts } from '@/lib/commerce/orders'
 import { reportStatusCounts } from '@/lib/commerce/reports'
 import { disputeStatusCounts } from '@/lib/commerce/disputes'
+import { reviewStatusCounts } from '@/lib/commerce/reviews'
 import { marketplaceVisibility, MARKET_AREAS, AREA_LABEL } from '@/lib/marketplace/visibility'
 import type { CommerceProduct } from '@/lib/commerce/types'
 import {
@@ -66,12 +67,13 @@ function CatalogRow({ p, oversight = false }: { p: CommerceProduct; oversight?: 
 export default async function MarketplaceAdminPage() {
   await requireAdmin('admin', { staff: 'platform' })
 
-  const [catalog, spaceCatalog, orderCounts, reportCounts, disputeCounts, visibility] = await Promise.all([
+  const [catalog, spaceCatalog, orderCounts, reportCounts, disputeCounts, reviewCounts, visibility] = await Promise.all([
     listPlatformCatalog(),
     listSpaceCatalog(),
     orderStatusCounts(),
     reportStatusCounts(),
     disputeStatusCounts(),
+    reviewStatusCounts(),
     marketplaceVisibility(),
   ])
   const liveCount = catalog.filter((p) => p.status === 'active').length
@@ -97,15 +99,19 @@ export default async function MarketplaceAdminPage() {
           <Link href="/admin/marketplace/disputes" className={buttonClasses('secondary', 'sm')}>
             <ShieldAlert className="h-4 w-4" aria-hidden /> Disputes
           </Link>
+          <Link href="/admin/marketplace/reviews" className={buttonClasses('secondary', 'sm')}>
+            <Star className="h-4 w-4" aria-hidden /> Reviews
+          </Link>
         </div>
       }
     >
-      <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-6">
         <StatCard label="Shop products" value={catalog.length} icon={Store} />
         <StatCard label="Live" value={liveCount} icon={ShoppingCart} />
         <StatCard label="Orders" value={ordersDone} icon={Receipt} href="/admin/marketplace/orders" />
         <StatCard label="Open reports" value={openReports} icon={Flag} href="/admin/marketplace/reports" />
         <StatCard label="Open disputes" value={openDisputes} icon={ShieldAlert} href="/admin/marketplace/disputes" />
+        <StatCard label="Reviews" value={reviewCounts.visible + reviewCounts.hidden} icon={Star} href="/admin/marketplace/reviews" />
       </div>
 
       <AdminSection

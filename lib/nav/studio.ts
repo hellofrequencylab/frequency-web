@@ -374,6 +374,8 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
     adminGroups: [{ domain: 'operations', section: 'Commerce' }], adminNav: { section: 'marketplace', heading: 'Activity' } },
   { id: 'marketplace-disputes', href: '/admin/marketplace/disputes', label: 'Marketplace disputes', desc: 'Buyer disputes and refund requests on orders, with resolve controls.', icon: 'ShieldAlert', min: 'admin', staffDomain: 'platform',
     adminGroups: [{ domain: 'operations', section: 'Commerce' }], adminNav: { section: 'marketplace', heading: 'Activity' } },
+  { id: 'marketplace-reviews', href: '/admin/marketplace/reviews', label: 'Marketplace reviews', desc: 'Every rating members left on a listing or Shop item, with hide and restore controls.', icon: 'Star', min: 'admin', staffDomain: 'platform',
+    adminGroups: [{ domain: 'operations', section: 'Commerce' }], adminNav: { section: 'marketplace', heading: 'Activity' } },
   { id: 'payments', href: '/admin/payments', label: 'Payments', desc: 'Turn host payouts (tips, tickets, sales) on or off.', icon: 'CreditCard', min: 'janitor',
     world: 'platform', worldLabel: 'Payments', worldOrder: 6,
     adminGroups: [{ domain: 'operations', section: 'Platform' }], adminNav: { section: 'operations', heading: 'Platform' } },
@@ -582,7 +584,7 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     related: ['vera-ai'],
     links: [
       { leaf: 'menu' }, { leaf: 'pages' }, { leaf: 'payments' }, { leaf: 'pricing' }, { leaf: 'appearance' }, { leaf: 'spaces' }, { leaf: 'page-layout' },
-      { leaf: 'marketplace' }, { leaf: 'marketplace-orders' }, { leaf: 'marketplace-reports' }, { leaf: 'marketplace-disputes' },
+      { leaf: 'marketplace' }, { leaf: 'marketplace-orders' }, { leaf: 'marketplace-reports' }, { leaf: 'marketplace-disputes' }, { leaf: 'marketplace-reviews' },
       { leaf: 'demo' }, { leaf: 'business-seeder' }, { leaf: 'listing-seeder' }, { leaf: 'audit' },
     ],
   },
@@ -668,7 +670,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
     href: '/admin/marketplace', label: 'Marketplace', min: 'admin', staffDomain: 'platform',
     groups: [
       { heading: 'Catalog', leaves: [{ leaf: 'marketplace', label: 'Shop catalog' }] },
-      { heading: 'Activity', leaves: [{ leaf: 'marketplace-orders', label: 'Orders' }, { leaf: 'marketplace-reports', label: 'Reports' }, { leaf: 'marketplace-disputes', label: 'Disputes' }] },
+      { heading: 'Activity', leaves: [{ leaf: 'marketplace-orders', label: 'Orders' }, { leaf: 'marketplace-reports', label: 'Reports' }, { leaf: 'marketplace-disputes', label: 'Disputes' }, { leaf: 'marketplace-reviews', label: 'Reviews' }] },
     ],
   },
   {

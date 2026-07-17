@@ -76,6 +76,10 @@ export interface ListingDetailView {
   highestOfferCents: number | null
   /** Non-active status ("closed", "sold", ...) surfaced as a muted chip; null when active. */
   status: string | null
+  /** The listing's aggregate review rating, emitted as schema.org AggregateRating in the JSON-LD (a
+   *  commerce AIO lever). Null when there are no visible reviews — never a fake 0, which answer engines
+   *  drop as malformed. Only Market products carry reviews today; the other verticals pass null. */
+  aggregateRating: { ratingValue: number; reviewCount: number } | null
   back: { href: string; label: string }
 }
 
@@ -176,6 +180,8 @@ export function listingDetailFromMarket(
     pickup,
     highestOfferCents: opts.highestOfferCents ?? null,
     status: listing.status !== 'active' ? listing.status : null,
+    // Classifieds carry no review model, so no AggregateRating node.
+    aggregateRating: null,
     back: { href: '/classifieds', label: 'Classifieds' },
   }
 }
@@ -194,6 +200,9 @@ export function listingDetailFromProduct(
     seller?: { handle: string; displayName: string; avatarUrl: string | null } | null
     action?: ListingAction | null
     highestOfferCents?: number | null
+    /** The product's visible-review aggregate (average + count), for the AggregateRating JSON-LD. Pass
+     *  null / omit when there are no reviews so the node is dropped rather than emitted as a fake 0. */
+    aggregateRating?: { ratingValue: number; reviewCount: number } | null
   },
 ): ListingDetailView {
   return {
@@ -221,6 +230,7 @@ export function listingDetailFromProduct(
     pickup: null,
     highestOfferCents: opts.highestOfferCents ?? null,
     status: product.status !== 'active' ? product.status : null,
+    aggregateRating: opts.aggregateRating ?? null,
     back: { href: '/market', label: 'Market' },
   }
 }
@@ -271,6 +281,8 @@ export function listingDetailFromHousing(
     pickup: null,
     highestOfferCents: null,
     status: listing.status !== 'active' ? listing.status : null,
+    // Housing carries no review model, so no AggregateRating node.
+    aggregateRating: null,
     back: { href: '/marketplace/housing', label: 'Housing' },
   }
 }

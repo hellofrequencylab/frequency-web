@@ -3,7 +3,7 @@ title: How do I RSVP to a Circle?
 description: Open the next gathering, tap RSVP, and add it to your calendar. That is the whole first action, and it takes under a minute.
 category: getting-started
 order: 6
-updated: 2026-06-24
+updated: 2026-07-17
 audience: member
 featureKeys: [events, circles]
 status: published
@@ -66,5 +66,20 @@ It happens, and you can update your RSVP so the Host has an accurate count. But
 the real fix for the cold feet is knowing what you are walking into. Read
 [what happens at a gathering](/help/getting-started/what-happens-at-a-gathering)
 first; it is almost always less awkward than your head says.
+
+### Someone sent me an invite link. Do I need an account to RSVP?
+
+No. If a friend shares their personal invite link or QR for an event, opening it
+gives you a short form: your name, your email, and going or maybe. That is the
+whole thing, and you can do it without signing up. Your details go straight to the
+person who invited you, not to a mailing list. You can always make an account
+later to get the reminder and the calendar link.
+
+### Can I invite people to a gathering?
+
+Yes. Every event gives you your own invite link and QR to share, and the people
+you bring can RSVP without an account. Bringing people who RSVP, show up, or join
+also earns you **Zaps** as a Connector. See
+[Events & RSVPs](/help/groups/events) for how the invite loop works.
 
 Next: [what happens at a gathering](/help/getting-started/what-happens-at-a-gathering).
