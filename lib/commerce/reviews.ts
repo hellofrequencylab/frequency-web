@@ -192,3 +192,76 @@ export async function hideProductReview(id: string): Promise<void> {
     .eq('id', id)
   if (error) throw new Error(error.message)
 }
+
+/** Un-hide a review (operator moderation; the reverse of hideProductReview). */
+export async function unhideProductReview(id: string): Promise<void> {
+  const { error } = await db()
+    .from('commerce_reviews')
+    .update({ status: 'visible', updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+// ── Operator moderation queue (the /admin/marketplace/reviews console) ──────────────────────────────
+// The one place an operator SEES every product review, visible AND hidden, to spot-check and moderate.
+// Reads through the admin client behind the platform-staff gate (RLS's public policy only exposes
+// VISIBLE reviews on active products, which is deliberately too narrow for oversight). Mirrors
+// listMarketplaceReports.
+
+export interface ModeratedReview {
+  id: string
+  productId: string
+  productTitle: string
+  rating: number
+  body: string
+  status: 'visible' | 'hidden'
+  createdAt: string
+  reviewer: string
+}
+
+const MODERATION_CAP = 200
+
+/** Every product review for the operator queue, newest first (visible + hidden). Carries the product
+ *  title + reviewer name for the row. ONE query, no N+1 (both ride embedded selects). Fail-safe to []. */
+export async function listReviewsForModeration(): Promise<ModeratedReview[]> {
+  try {
+    const { data } = await db()
+      .from('commerce_reviews')
+      .select(
+        'id, product_id, rating, body, status, created_at, product:commerce_products!product_id ( title ), reviewer:profiles!reviewer_profile_id ( display_name )',
+      )
+      .order('created_at', { ascending: false })
+      .limit(MODERATION_CAP)
+    return ((data ?? []) as Record<string, unknown>[]).map((r) => {
+      const product = r.product as { title?: unknown } | null
+      const reviewer = r.reviewer as { display_name?: unknown } | null
+      return {
+        id: String(r.id),
+        productId: String(r.product_id),
+        productTitle: (product?.title as string) || 'Untitled listing',
+        rating: Number(r.rating) || 0,
+        body: typeof r.body === 'string' ? r.body : '',
+        status: r.status === 'hidden' ? 'hidden' : 'visible',
+        createdAt: String(r.created_at),
+        reviewer: (reviewer?.display_name as string) || 'Member',
+      }
+    })
+  } catch {
+    return []
+  }
+}
+
+/** How many reviews are visible vs hidden, for the console's stat cards. Fail-safe to zeros. */
+export async function reviewStatusCounts(): Promise<{ visible: number; hidden: number }> {
+  try {
+    const { data } = await db().from('commerce_reviews').select('status')
+    const counts = { visible: 0, hidden: 0 }
+    for (const r of (data ?? []) as { status?: unknown }[]) {
+      if (r.status === 'hidden') counts.hidden += 1
+      else counts.visible += 1
+    }
+    return counts
+  } catch {
+    return { visible: 0, hidden: 0 }
+  }
+}

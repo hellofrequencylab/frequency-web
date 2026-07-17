@@ -8,7 +8,7 @@ import { createProduct, setProductStatus, updateProduct, deleteProduct } from '@
 import { refundCommerceOrder } from '@/lib/commerce/checkout'
 import { setReportStatus, type ReportStatus } from '@/lib/commerce/reports'
 import { setDisputeStatus, orderForDispute } from '@/lib/commerce/disputes'
-import { hideProductReview } from '@/lib/commerce/reviews'
+import { hideProductReview, unhideProductReview } from '@/lib/commerce/reviews'
 import { setPlatformFlag } from '@/lib/platform-flags'
 import { areaFlagKey, type MarketArea } from '@/lib/marketplace/visibility'
 import type { ProductStatus } from '@/lib/commerce/types'
@@ -131,6 +131,15 @@ export async function hideProductReviewAction(id: string): Promise<void> {
   await requireOperator()
   await hideProductReview(id)
   revalidatePath('/admin/marketplace')
+  revalidatePath('/admin/marketplace/reviews')
+}
+
+/** Un-hide a product review (operator moderation; the reverse of hide). */
+export async function unhideProductReviewAction(id: string): Promise<void> {
+  await requireOperator()
+  await unhideProductReview(id)
+  revalidatePath('/admin/marketplace')
+  revalidatePath('/admin/marketplace/reviews')
 }
 
 /** Publish / hide a whole marketplace area. Hidden = invisible to members (nav + page),

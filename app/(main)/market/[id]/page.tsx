@@ -166,6 +166,12 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
     seller: null,
     action: heroAction,
     highestOfferCents,
+    // The visible-review aggregate feeds the Product AggregateRating JSON-LD (a commerce AIO signal). Only
+    // emitted downstream when count > 0, so a listing with no reviews carries no rating node.
+    aggregateRating:
+      reviews.average != null && reviews.count > 0
+        ? { ratingValue: reviews.average, reviewCount: reviews.count }
+        : null,
   })
 
   return (
