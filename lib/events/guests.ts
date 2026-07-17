@@ -18,6 +18,7 @@
 // them ONLY from a verified signed token (lib/qr/event-invite.ts) before invoking this.
 // Every write is bound to the resolved inviter/event scope.
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { rewardConnectorCapture } from '@/lib/rewards/connector'
@@ -259,4 +260,67 @@ export async function captureEventGuest(input: EventGuestInput): Promise<EventGu
   }
 
   return result
+}
+
+// ── Host read: this event's captured guest list (the operator reader for ADR-154) ──
+
+/** One captured guest, as the event host reads it on the Manage dashboard. Card-only fields
+ *  (name, email, stated RSVP, when they were captured, and who invited them). event_guests has
+ *  no notes/tags, so nothing private is projected here. */
+export interface EventGuestListItem {
+  id: string
+  displayName: string | null
+  email: string | null
+  rsvpStatus: GuestRsvpStatus | null
+  /** When the guest was captured through a member's attributed event invite. */
+  capturedAt: string
+  /** The member whose invite captured them (event_guests.inviter_profile_id → profiles). */
+  inviterName: string | null
+}
+
+/**
+ * The captured guests for one event, newest first, for the host Manage dashboard (ADR-154).
+ *
+ * GATING: this is a SERVICE-ROLE read. The event_guests SELECT policy already lets the host read
+ * their own event's rows, but the Manage surface reads through the admin client (which bypasses
+ * RLS), so the caller MUST have authorized the viewer as the event host / admin BEFORE calling
+ * this — exactly as the Manage page does (getEventCapabilities → 'event.editSettings', 404 on
+ * miss), mirroring lib/events/[slug]/manage/load.ts. It NEVER exposes the inviter's other
+ * contacts: it reads only THIS event's guest rows. FAIL-SAFE: [] on any error.
+ */
+export async function listEventGuests(eventId: string): Promise<EventGuestListItem[]> {
+  const id = (eventId || '').trim()
+  if (!id) return []
+  try {
+    // event_guests isn't in the generated DB types yet (ADR-246), so this read widens to an
+    // untyped client — the same seam lib/events/[slug]/manage/load.ts uses for event_dispatches.
+    // eslint-disable-next-line no-restricted-syntax -- event_guests not in generated types yet (ADR-246 exception)
+    const admin = createAdminClient() as unknown as SupabaseClient
+    const { data } = await admin
+      .from('event_guests')
+      .select(
+        'id, display_name, email, rsvp_status, created_at, inviter:profiles!inviter_profile_id ( display_name )',
+      )
+      .eq('event_id', id)
+      .order('created_at', { ascending: false })
+
+    type Row = {
+      id: string
+      display_name: string | null
+      email: string | null
+      rsvp_status: GuestRsvpStatus | null
+      created_at: string
+      inviter: { display_name: string | null } | null
+    }
+    return ((data ?? []) as unknown as Row[]).map((r) => ({
+      id: r.id,
+      displayName: r.display_name,
+      email: r.email,
+      rsvpStatus: r.rsvp_status,
+      capturedAt: r.created_at,
+      inviterName: r.inviter?.display_name ?? null,
+    }))
+  } catch {
+    return []
+  }
 }

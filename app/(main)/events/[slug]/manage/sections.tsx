@@ -31,6 +31,7 @@ import { QuestionEditor } from './question-editor'
 import { FollowUpButton } from './follow-up-button'
 import { TicketTiersPanel } from './ticket-tiers-panel'
 import { listEventTicketTiers } from '@/lib/events/ticket-tiers'
+import { listEventGuests, type EventGuestListItem, type GuestRsvpStatus } from '@/lib/events/guests'
 
 // The Manage Dashboard's body sections (EVENTS-REWORK A2). Each is an async Server
 // Component that fetches its own slice, so the page can stream them behind their
@@ -339,6 +340,84 @@ export async function FollowUpSection({ eventId }: { eventId: string }) {
         </li>
       ))}
     </ul>
+  )
+}
+
+// ── Invited guests (the captured-guest list, ADR-154) ─────────────────────────
+// The people captured through a member's attributed event invite (the public RSVP
+// capture form behind /q/<slug>), written to event_guests. Read-only for the host;
+// the page already authorized the caller (event.editSettings), so listEventGuests
+// just reads. Card-only fields — event_guests carries no notes/tags to leak.
+
+const GUEST_RSVP_CHIP: Record<GuestRsvpStatus, { Icon: typeof Check; cls: string; label: string }> = {
+  going: { Icon: Check, cls: 'bg-success-bg text-success', label: 'Going' },
+  maybe: { Icon: Star, cls: 'bg-primary-bg text-primary-strong', label: 'Maybe' },
+  declined: { Icon: Users, cls: 'bg-surface-elevated text-subtle', label: 'Declined' },
+}
+
+function GuestRsvpChip({ status }: { status: GuestRsvpStatus | null }) {
+  if (!status) {
+    return (
+      <span className="inline-flex items-center rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+        No reply
+      </span>
+    )
+  }
+  const chip = GUEST_RSVP_CHIP[status]
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold ${chip.cls}`}
+    >
+      <chip.Icon className="h-3 w-3" />
+      {chip.label}
+    </span>
+  )
+}
+
+export async function InvitedGuestsSection({ eventId }: { eventId: string }) {
+  const guests: EventGuestListItem[] = await listEventGuests(eventId)
+
+  if (guests.length === 0) {
+    return (
+      <EmptyState
+        variant="first-use"
+        title="No guests captured yet"
+        description="When someone RSVPs through a member's event invite, they land here with who invited them, ready for you to welcome."
+      />
+    )
+  }
+
+  return (
+    <div>
+      <SectionHeader title="Captured guests" count={guests.length} />
+      <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Guest</th>
+              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">RSVP</th>
+              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Invited by</th>
+              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Captured</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {guests.map((g) => (
+              <tr key={g.id} className="align-top">
+                <td className="px-4 py-2.5">
+                  <p className="font-medium text-text">{g.displayName || 'A guest'}</p>
+                  {g.email && <p className="text-xs text-subtle">{g.email}</p>}
+                </td>
+                <td className="px-4 py-2.5">
+                  <GuestRsvpChip status={g.rsvpStatus} />
+                </td>
+                <td className="px-4 py-2.5 text-muted">{g.inviterName || <span className="text-subtle">—</span>}</td>
+                <td className="px-4 py-2.5 text-subtle">{fmtDate(g.capturedAt)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   )
 }
 
