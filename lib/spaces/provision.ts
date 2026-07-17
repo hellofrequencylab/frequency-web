@@ -30,6 +30,8 @@ import { listTypeDefaultsForType } from '@/lib/spaces/type-defaults'
 import { resolveMode, isModeVariant } from '@/lib/spaces/modes'
 import { ensureSpaceStages } from '@/lib/crm/pipeline'
 import { isSafeSlug } from '@/lib/theme/validate'
+import { slugify } from '@/lib/utils'
+import { buildBusinessStarter, type BusinessIntake } from '@/lib/spaces/business-starter'
 import { type ActionResult, fail } from '@/lib/action-result'
 
 /** The fields the create wizard collects. `visibility` defaults to 'network' (discoverable). The
@@ -185,6 +187,94 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   // /settings, which now just redirects here anyway). redirect() throws, so it must sit OUTSIDE any
   // try/catch (Next docs: redirecting.md).
   redirect(`/spaces/${slug}/manage`)
+}
+
+/** Find a free slug from a name: slugify it, then append -2, -3 ... until one is untaken (bounded). */
+async function uniqueSlugFrom(name: string): Promise<string | null> {
+  const base = slugify(name).slice(0, 40).replace(/^-+|-+$/g, '') || 'space'
+  for (let n = 1; n <= 50; n++) {
+    const candidate = n === 1 ? base : `${base}-${n}`
+    if (isSafeSlug(candidate) && !(await slugTaken(candidate))) return candidate
+  }
+  return null
+}
+
+/**
+ * BUSINESS QUICK-START provisioning. The simple, self-serve path a business owner takes: they drop a
+ * name, a one-line "what you do", and their website / Instagram / Facebook, and this stands up a business
+ * Space that already FEELS like theirs — a warm Frequency Loom cover, their real links, and a page whose
+ * every content block is a PROMPT written to them (buildBusinessStarter). It writes NO finished copy for
+ * them. The Space is created PRIVATE so the prompts are for the owner's eyes until they publish. On
+ * success it REDIRECTS to the live Space page so they see it immediately (not the /manage console).
+ */
+export async function createBusinessSpace(input: BusinessIntake): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to create a space.')
+
+  const name = (input.name ?? '').trim()
+  if (!name) return fail('Give your business a name.')
+  if (name.length > 200) return fail('That name is too long. Keep it under 200 characters.')
+
+  const slug = await uniqueSlugFrom(name)
+  if (!slug) return fail('We could not make a web address from that name. Try a different name.')
+
+  const entityId = await rootEntityId()
+  if (!entityId) return fail('Spaces are not ready yet. Try again in a moment.')
+
+  // Seed the business type's tool config from the operator's per-type defaults over the code defaults.
+  const typeDefaults = await listTypeDefaultsForType('business')
+  const { entitlements: seedEntitlements, featureRoles: seedFeatureRoles } = seedSpaceConfigFromDefaults(
+    'business',
+    typeDefaults,
+  )
+
+  const starter = buildBusinessStarter({
+    name,
+    whatYouDo: (input.whatYouDo ?? '').trim(),
+    website: input.website,
+    instagram: input.instagram,
+    facebook: input.facebook,
+  })
+
+  let created: string
+  try {
+    const { data, error } = await spacesTable()
+      .insert({
+        slug,
+        name,
+        type: 'business',
+        status: 'active',
+        entity_id: entityId,
+        skin: DEFAULT_SPACE_SKIN,
+        network_connected: true,
+        // Private until they publish: the seeded prompts are owner-facing guidance, never public copy.
+        visibility: 'private',
+        plan: 'free',
+        entitlements: seedEntitlements,
+        feature_roles: seedFeatureRoles,
+        owner_profile_id: profileId,
+        brand_name: name,
+        mode_variant: null,
+        // Starter identity so the page is never blank: a warm cover, a tagline prompt, a short-about
+        // prompt, and the owner's real links + a story prompt in preferences.profileData.
+        cover_image_url: starter.coverImageUrl,
+        tagline: starter.tagline,
+        about: starter.aboutShort,
+        preferences: { profileData: starter.profileData },
+      })
+      .select('id')
+      .maybeSingle()
+    if (error || !data?.id) return fail('Could not create your space. Try again.')
+    created = data.id
+  } catch {
+    return fail('Could not create your space. Try again.')
+  }
+
+  await addSpaceMember({ spaceId: created, profileId, role: 'admin', status: 'active' })
+  await ensureSpaceStages(created, 'business', null)
+
+  // Land them ON their new page so they see it right away. redirect() throws, so it sits outside try.
+  redirect(`/spaces/${slug}`)
 }
 
 /**
