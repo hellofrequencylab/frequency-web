@@ -62,9 +62,32 @@ export function sanitizeFromName(raw: unknown): string {
 }
 
 /**
+ * The default envelope From for a BROADCAST (global Email Studio campaign), distinct from the platform default
+ * so a warm list can send from a real person's verified address while transactional mail stays on noreply.
+ * Overridable with EMAIL_BROADCAST_FROM ("Daniel Tyack <daniel@danieltyack.com>"); falls back to EMAIL_FROM.
+ * The address's domain MUST be verified in Resend or the send fails authentication.
+ */
+const BROADCAST_FROM = process.env.EMAIL_BROADCAST_FROM?.trim() || DEFAULT_FROM
+
+/**
+ * Sanitize an operator-set full From ADDRESS (the envelope identity a broadcast sends from). Strips CR/LF/tab
+ * (header-injection guard) and requires a single, well-formed addr-spec (one `@`, a dotted domain, none of the
+ * header-breaking or list-separator chars). Returns '' when the value is not a safe address (→ the caller falls
+ * back to the broadcast/default From). Format-only: Resend-domain VERIFICATION is an ops step we cannot check
+ * here. Pure + total.
+ */
+export function sanitizeFromAddress(raw: unknown): string {
+  if (typeof raw !== 'string') return ''
+  const v = raw.replace(/[\r\n\t]+/g, '').trim()
+  if (!/^[^\s<>@",;:\\]+@[^\s<>@",;:\\]+\.[^\s<>@",;:\\]+$/.test(v)) return ''
+  return v.slice(0, 254)
+}
+
+/**
  * Build the send From header from an optional per-campaign display name, KEEPING the verified envelope address
- * from `base` (default EMAIL_FROM) and swapping only the friendly name. A blank / unusable name returns `base`
- * unchanged. Pure + total.
+ * from `base` (default EMAIL_FROM) and swapping only the friendly name. `base` may be a bare address
+ * (`daniel@danieltyack.com`) or a full `Name <address>` header — either way the address inside is preserved.
+ * A blank / unusable name returns `base` unchanged. Pure + total.
  */
 export function buildCampaignFrom(fromName: unknown, base: string = DEFAULT_FROM): string {
   const name = sanitizeFromName(fromName)
@@ -72,6 +95,25 @@ export function buildCampaignFrom(fromName: unknown, base: string = DEFAULT_FROM
   const match = base.match(/<([^>]+)>/)
   const address = match ? match[1] : base
   return `${name} <${address}>`
+}
+
+/**
+ * Load a campaign's optional per-campaign envelope From ADDRESS (campaigns.from_address). Mirrors
+ * loadCampaignFromName: selected via a string-typed column name so the not-yet-regenerated types never trip the
+ * compiler, and fail-safe (returns null pre-migration or on any error). Returns the sanitized address, or null.
+ */
+export async function loadCampaignFromAddress(campaignId: string): Promise<string | null> {
+  try {
+    const db = createAdminClient()
+    const col: string = 'from_address'
+    const { data, error } = await db.from('campaigns').select(col).eq('id', campaignId).maybeSingle()
+    if (error || !data) return null
+    const v = (data as unknown as Record<string, unknown>)[col]
+    const clean = sanitizeFromAddress(v)
+    return clean || null
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -402,9 +444,13 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   const doc: EmailDoc = { ...rawDoc, layout: await resolveProductRefs(rawDoc.layout) }
   const productVars = productVarsFromLayout(doc.layout)
 
-  // The friendly From NAME (display name only; the envelope address stays the verified domain). Fail-safe:
-  // pre-migration this reads null and we send from the platform default.
-  const fromHeader = buildCampaignFrom(await loadCampaignFromName(campaignId))
+  // The send From: a per-campaign envelope ADDRESS (from_address) if set, else the broadcast default
+  // (EMAIL_BROADCAST_FROM), else the platform noreply — then the friendly display NAME (from_name) swapped on
+  // top. Fail-safe: pre-migration both reads return null and we send from the broadcast/platform default. The
+  // from_address domain must be Resend-verified (an ops step); sanitizeFromAddress only format-checks it.
+  const fromAddress = await loadCampaignFromAddress(campaignId)
+  const fromBase = fromAddress ?? BROADCAST_FROM
+  const fromHeader = buildCampaignFrom(await loadCampaignFromName(campaignId), fromBase)
 
   // Reply-To so a recipient can just hit Reply and reach a human (the envelope From stays the verified
   // noreply domain). Precedence: EMAIL_REPLY_TO (a platform reply address — point it at the CRM inbound-
