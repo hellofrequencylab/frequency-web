@@ -56,14 +56,17 @@ export function StatCard({
   href?: string
   /** Hard-bordered card on bg-surface (for stat rows sitting on the canvas). */
   bordered?: boolean
-  /** 'sm' = compact tile (text-sm value) for phrase values that would wrap at 2xl. */
-  size?: 'md' | 'sm'
+  /** 'sm' = compact tile (text-sm value) for phrase values that would wrap at 2xl.
+   *  'xs' = HALF-height dense tile (text-base value, tight padding) for metric-dense dashboards
+   *  where many tiles share a row (email performance, KPI strips). */
+  size?: 'md' | 'sm' | 'xs'
   /** Optional trend series rendered as a sparkline under the stat (ADR-233: value +
    *  delta + context visual — never a bare number). */
   sparkline?: number[]
 }) {
   const t = delta ? TREND[delta.trend ?? 'flat'] : null
   const sm = size === 'sm'
+  const xs = size === 'xs'
 
   // VALUE-FIRST anatomy (dashboard redesign): the number is the loudest thing in
   // the tile; the label sits quiet beneath in sentence case (uppercase + tracking
@@ -73,15 +76,19 @@ export function StatCard({
       <div className="flex items-start justify-between gap-2">
         <p
           className={`tabular-nums text-text ${
-            sm ? 'text-sm font-bold' : 'text-xl font-extrabold leading-none'
+            sm
+              ? 'text-sm font-bold'
+              : xs
+                ? 'text-base font-extrabold leading-none'
+                : 'text-xl font-extrabold leading-none'
           }`}
         >
           {value}
         </p>
-        {Icon && <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-subtle" />}
+        {Icon && <Icon className={`mt-0.5 shrink-0 text-subtle ${xs ? 'h-3 w-3' : 'h-3.5 w-3.5'}`} />}
       </div>
-      <p className="mt-1 text-xs font-medium text-muted">{label}</p>
-      {detail && <p className="mt-0.5 text-xs text-subtle">{detail}</p>}
+      <p className={`font-medium text-muted ${xs ? 'mt-0.5 text-2xs' : 'mt-1 text-xs'}`}>{label}</p>
+      {detail && <p className={`text-subtle ${xs ? 'mt-0.5 text-2xs' : 'mt-0.5 text-xs'}`}>{detail}</p>}
       {delta && t && (
         <p className={`mt-1 inline-flex items-center gap-1 text-xs font-medium ${t.cls}`}>
           <t.Icon className="h-3.5 w-3.5 shrink-0" />
@@ -96,9 +103,9 @@ export function StatCard({
     </>
   )
 
-  const cls = `block rounded-2xl ${sm ? 'px-4 py-3' : 'px-3.5 py-2.5'} ${
-    bordered ? 'border border-border bg-surface shadow-sm' : 'bg-surface-elevated/60'
-  }`
+  const cls = `block ${xs ? 'rounded-xl px-3 py-2' : 'rounded-2xl'} ${
+    sm ? 'px-4 py-3' : xs ? '' : 'px-3.5 py-2.5'
+  } ${bordered ? 'border border-border bg-surface shadow-sm' : 'bg-surface-elevated/60'}`
   return href ? (
     <Link
       href={href}

@@ -1,8 +1,8 @@
 'use client'
 
-import { forwardRef, useEffect, useMemo, useRef, useState, type Ref } from 'react'
+import { Fragment, forwardRef, useEffect, useMemo, useRef, useState, type Ref } from 'react'
 import Link from 'next/link'
-import { ArrowUpRight, Activity, Trash2 } from 'lucide-react'
+import { ArrowUpRight, Activity, Trash2, ChevronRight } from 'lucide-react'
 import { StatusChip } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
@@ -34,6 +34,7 @@ export function MessagingConsole({
   deletingId,
   onOpenCampaign,
   onNewCampaign,
+  renderExpansion,
 }: {
   campaigns: MessagingCampaignItem[]
   funnels: MessagingFunnelItem[]
@@ -46,6 +47,10 @@ export function MessagingConsole({
   onOpenCampaign?: (id: string) => void
   /** When provided, the empty-state "start one" opens the in-place composer instead of the legacy wizard. */
   onNewCampaign?: () => void
+  /** When provided, a SENT campaign row becomes expandable: clicking it folds open a detail panel
+   *  rendered by this callback (the Marketing tab passes per-campaign analytics + Vera). Omit to keep
+   *  rows flat (the per-Space messaging surface). */
+  renderExpansion?: (campaignId: string) => React.ReactNode
 }) {
   const [tab, setTab] = useState<Tab>(campaigns.length === 0 && funnels.length > 0 ? 'funnels' : 'campaigns')
 
@@ -91,6 +96,7 @@ export function MessagingConsole({
               deletingId={deletingId}
               onOpenCampaign={onOpenCampaign}
               onNewCampaign={onNewCampaign}
+              renderExpansion={renderExpansion}
             />
           </section>
 
@@ -149,15 +155,19 @@ function CampaignsPanel({
   deletingId,
   onOpenCampaign,
   onNewCampaign,
+  renderExpansion,
 }: {
   campaigns: MessagingCampaignItem[]
   onDeleteCampaign?: (id: string) => void
   deletingId?: string | null
   onOpenCampaign?: (id: string) => void
   onNewCampaign?: () => void
+  renderExpansion?: (campaignId: string) => React.ReactNode
 }) {
   // Campaigns-column status filter (client-only). Sits above the table beside the shared search.
   const [statusFilter, setStatusFilter] = useState<MessagingStatus | 'all'>('all')
+  // Which SENT row is folded open to show its analytics (only one at a time). Opt-in via renderExpansion.
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   // The statuses actually present, in legend order, so the filter never offers an empty bucket.
   const availableStatuses = useMemo(() => {
@@ -234,48 +244,89 @@ function CampaignsPanel({
             <tbody className="divide-y divide-border">
               {shown.map((c) => {
                 const meta = messagingStatusMeta(c.status)
+                // A sent row is expandable when the parent supplies a detail renderer (Marketing tab).
+                const expandable = !!renderExpansion && c.status === 'sent'
+                const expanded = expandable && expandedId === c.id
+                const toggle = () => setExpandedId((cur) => (cur === c.id ? null : c.id))
                 return (
-                  <tr key={c.id} className="bg-surface hover:bg-surface-elevated/50">
-                    <td className="px-4 py-2.5 font-medium text-text">{c.name}</td>
-                    <td className="px-4 py-2.5 text-muted">{c.segment}</td>
-                    <td className="px-4 py-2.5">
-                      <StatusChip tone={meta.tone} size="sm">
-                        {meta.glyph} {meta.label}
-                      </StatusChip>
-                    </td>
-                    <td className="px-4 py-2.5 text-right tabular-nums text-muted">{c.recipientCount.toLocaleString()}</td>
-                    <td className="px-4 py-2.5 text-right">
-                      <div className="inline-flex items-center gap-3">
-                        {onOpenCampaign ? (
-                          <button
-                            type="button"
-                            onClick={() => onOpenCampaign(c.id)}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
-                          >
-                            Open <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                          </button>
-                        ) : (
-                          <Link
-                            href={c.href}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
-                          >
-                            Open <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                          </Link>
-                        )}
-                        {onDeleteCampaign && c.status === 'draft' && (
-                          <button
-                            type="button"
-                            onClick={() => onDeleteCampaign(c.id)}
-                            disabled={deletingId === c.id}
-                            aria-label={`Delete ${c.name.trim() || 'untitled'} draft`}
-                            className="rounded p-1 text-subtle transition-colors hover:text-danger disabled:opacity-50 motion-reduce:transition-none"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                  <Fragment key={c.id}>
+                    <tr
+                      className={cn(
+                        'bg-surface hover:bg-surface-elevated/50',
+                        expandable && 'cursor-pointer',
+                        expanded && 'bg-surface-elevated/50',
+                      )}
+                      onClick={expandable ? toggle : undefined}
+                      aria-expanded={expandable ? expanded : undefined}
+                    >
+                      <td className="px-4 py-2.5 font-medium text-text">
+                        <span className="inline-flex items-center gap-1.5">
+                          {expandable && (
+                            <ChevronRight
+                              className={cn(
+                                'h-3.5 w-3.5 shrink-0 text-subtle transition-transform motion-reduce:transition-none',
+                                expanded && 'rotate-90',
+                              )}
+                              aria-hidden
+                            />
+                          )}
+                          {c.name}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-muted">{c.segment}</td>
+                      <td className="px-4 py-2.5">
+                        <StatusChip tone={meta.tone} size="sm">
+                          {meta.glyph} {meta.label}
+                        </StatusChip>
+                      </td>
+                      <td className="px-4 py-2.5 text-right tabular-nums text-muted">{c.recipientCount.toLocaleString()}</td>
+                      <td className="px-4 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-3">
+                          {onOpenCampaign ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onOpenCampaign(c.id)
+                              }}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
+                            >
+                              Open <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                            </button>
+                          ) : (
+                            <Link
+                              href={c.href}
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
+                            >
+                              Open <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                            </Link>
+                          )}
+                          {onDeleteCampaign && c.status === 'draft' && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onDeleteCampaign(c.id)
+                              }}
+                              disabled={deletingId === c.id}
+                              aria-label={`Delete ${c.name.trim() || 'untitled'} draft`}
+                              className="rounded p-1 text-subtle transition-colors hover:text-danger disabled:opacity-50 motion-reduce:transition-none"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {expanded && (
+                      <tr className="bg-surface">
+                        <td colSpan={5} className="p-0">
+                          {renderExpansion!(c.id)}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 )
               })}
             </tbody>

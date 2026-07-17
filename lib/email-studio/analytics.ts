@@ -251,6 +251,84 @@ export async function getCampaignMetrics(campaignId: string): Promise<CampaignMe
   }
 }
 
+// ── ACCOUNT-WIDE OVERVIEW ──────────────────────────────────────────────────────────────────────
+// The whole email_events ledger rolled up: the deliverability + engagement health of everything the
+// platform sends (campaigns + transactional). Feeds the Marketing "Email performance" dashboard.
+
+/** Everything the account-wide email dashboard needs: raw totals, the three campaign rates, plus
+ *  complaint / unsubscribe rates and a couple of context facts. All fractions in [0,1]. */
+export interface MarketingEmailOverview extends EventCounts, CampaignRates {
+  /** complained / delivered. Spam-report rate; keep this under ~0.1% or deliverability suffers. */
+  complaintRate: number
+  /** unsubscribed / delivered. */
+  unsubscribeRate: number
+  /** delivered / sent. The share of attempted mail the mailbox providers accepted. */
+  deliveryRate: number
+  /** ISO timestamp of the most recent recorded event, or null when the ledger is empty. */
+  lastEventAt: string | null
+  /** How many campaigns have actually sent (status sent OR a sent_at), for context under the rates. */
+  campaignsSent: number
+}
+
+const ZERO_OVERVIEW: MarketingEmailOverview = {
+  ...ZERO_COUNTS,
+  ...computeRates(ZERO_COUNTS),
+  complaintRate: 0,
+  unsubscribeRate: 0,
+  deliveryRate: 0,
+  lastEventAt: null,
+  campaignsSent: 0,
+}
+
+/**
+ * Roll the ENTIRE `email_events` ledger up into one overview (all campaigns + transactional mail). Uses
+ * cheap head-only COUNT queries per event type (no row payloads), so it scales as the ledger grows.
+ * FAIL-SOFT: any read error (including the table not existing) yields the all-zero overview, so the
+ * dashboard renders an honest empty state rather than throwing.
+ */
+export async function getMarketingEmailOverview(): Promise<MarketingEmailOverview> {
+  try {
+    const client = db()
+    const countType = async (eventType: string): Promise<number> => {
+      const { count, error } = await client
+        .from('email_events')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_type', eventType)
+      return error || count == null ? 0 : count
+    }
+
+    const [sent, delivered, opened, clicked, bounced, unsubscribed, complained] = await Promise.all(
+      COUNTED_TYPES.map((t) => countType(t)),
+    )
+    const counts: EventCounts = { sent, delivered, opened, clicked, bounced, unsubscribed, complained }
+
+    // campaignsSent + last event: two more cheap reads, both fail-soft.
+    const { count: campaignsSent } = await client
+      .from('campaigns')
+      .select('*', { count: 'exact', head: true })
+      .not('sent_at', 'is', null)
+    const { data: latest } = await client
+      .from('email_events')
+      .select('created_at')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const ratio = (num: number, den: number): number => (den > 0 ? num / den : 0)
+    return {
+      ...counts,
+      ...computeRates(counts),
+      complaintRate: ratio(complained, delivered),
+      unsubscribeRate: ratio(unsubscribed, delivered),
+      deliveryRate: ratio(delivered, sent),
+      lastEventAt: (latest as { created_at?: string } | null)?.created_at ?? null,
+      campaignsSent: campaignsSent ?? 0,
+    }
+  } catch {
+    return ZERO_OVERVIEW
+  }
+}
+
 /** One day of the engagement timeline: an ISO date (YYYY-MM-DD) with that day's open + click tallies. */
 export interface CampaignTimelinePoint {
   day: string

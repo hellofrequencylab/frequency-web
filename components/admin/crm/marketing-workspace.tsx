@@ -14,6 +14,7 @@ import { Search, Send, Sparkles } from 'lucide-react'
 import { MessagingConsole } from '@/components/admin/messaging/messaging-console'
 import { buttonClasses } from '@/components/ui/button'
 import { MarketingComposePopup } from '@/components/admin/crm/marketing-compose-popup'
+import { CampaignAnalyticsExpansion } from '@/components/admin/crm/campaign-analytics-expansion'
 import { deleteEmailDraft } from '@/app/(main)/admin/email-studio/actions'
 import { isError } from '@/lib/action-result'
 import type { MessagingCampaignItem, MessagingFunnelItem } from '@/lib/messaging/console'
@@ -158,6 +159,7 @@ export function MarketingWorkspace({
         onNewCampaign={openNew}
         onDeleteCampaign={handleDelete}
         deletingId={deletingId}
+        renderExpansion={(id) => <CampaignAnalyticsExpansion campaignId={id} />}
       />
 
       <MarketingComposePopup
