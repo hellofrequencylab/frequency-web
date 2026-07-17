@@ -285,3 +285,41 @@ export async function requeueDeadLettered(
   console.warn(`[outbox] requeued ${ids.length} dead-lettered job(s)${opts?.kind ? ` kind=${opts.kind}` : ''}`)
   return ids.length
 }
+
+/** A terminal status for a dead-letter an operator has consciously abandoned. Distinct from 'failed'
+ *  (the recoverable dead-letter) so a poison job stops re-dead-lettering forever: requeueDeadLettered
+ *  resets attempts=0, so a permanently-bad payload would loop failed → requeued → failed. Discarding it
+ *  moves it OUT of the dead-letter view (which filters status='failed') and out of the drain (which only
+ *  claims 'pending'), while keeping the row + last_error for the record instead of deleting it. */
+export const DISCARDED_STATUS = 'discarded' as const
+
+/**
+ * Discard dead-lettered jobs (mark terminal). For a poison job that will never succeed on retry (a
+ * malformed payload, a deleted recipient) so it stops cluttering the recovery queue. Gated in the
+ * server action, exactly like requeueDeadLettered. Returns the number discarded.
+ */
+export async function discardDeadLettered(opts?: { kind?: string; limit?: number }): Promise<number> {
+  const client = db()
+  let select = client.from('notification_queue').select('id').eq('status', DEAD_LETTER_STATUS)
+  if (opts?.kind) select = select.eq('kind', opts.kind)
+  select = select.order('updated_at', { ascending: true }).limit(opts?.limit ?? 500)
+
+  const { data: rows, error: selErr } = await select
+  if (selErr) {
+    console.error(`[outbox] discardDeadLettered select failed: ${selErr.message}`)
+    return 0
+  }
+  const ids = (rows ?? []).map((r) => (r as { id: string }).id)
+  if (ids.length === 0) return 0
+
+  const { error: updErr } = await client
+    .from('notification_queue')
+    .update({ status: DISCARDED_STATUS, updated_at: new Date().toISOString() })
+    .in('id', ids)
+  if (updErr) {
+    console.error(`[outbox] discardDeadLettered update failed: ${updErr.message}`)
+    return 0
+  }
+  console.warn(`[outbox] discarded ${ids.length} dead-lettered job(s)${opts?.kind ? ` kind=${opts.kind}` : ''}`)
+  return ids.length
+}

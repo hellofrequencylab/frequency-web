@@ -2,7 +2,7 @@ import { summarizeDeadLettered, listDeadLettered } from '@/lib/queue/outbox'
 import { AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
-import { RequeueButton } from '@/app/(main)/admin/marketing/deliverability/requeue-button'
+import { RequeueButton, DiscardButton } from '@/app/(main)/admin/marketing/deliverability/requeue-button'
 
 // Deliverability layout module (ADR-270/294): the dead-letter queue — jobs that exhausted every
 // retry, grouped by kind with one-tap requeue once the cause is fixed. Self-fetching RSC; keeps its
@@ -57,17 +57,19 @@ export async function MarketingDeliverabilityDeadLetters() {
   return (
     <AdminSection
       title="Dead-letter queue"
-      description="Jobs that exhausted every retry. They no longer drain on their own. Fix the cause, then requeue."
+      description="Jobs that exhausted every retry. They no longer drain on their own. Fix the cause and requeue, or discard a poison job that will never succeed."
     >
       <div className="space-y-4">
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-sm">
           <RequeueButton label="Requeue all" />
+          <DiscardButton label="Discard all" />
           {summary.map((s) => (
             <span key={s.kind} className="inline-flex items-center gap-2">
               <span className="text-xs text-muted">
                 <code className="rounded bg-surface-elevated px-1 py-0.5 text-text">{s.kind}</code>: {s.count}
               </span>
               <RequeueButton kind={s.kind} label={`Requeue ${s.kind}`} />
+              <DiscardButton kind={s.kind} label={`Discard ${s.kind}`} />
             </span>
           ))}
         </div>
