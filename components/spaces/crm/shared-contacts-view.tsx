@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { Mail, Phone, MapPin, Globe, Instagram, Linkedin, Link2, Users2 } from 'lucide-react'
+import { Mail, Phone, MapPin, Globe, AtSign, Link2, Users2 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -37,8 +37,8 @@ function socialHref(platform: 'instagram' | 'linkedin' | 'x' | 'other', value: s
 }
 
 const SOCIAL_META: Record<'instagram' | 'linkedin' | 'x' | 'other', { Icon: LucideIcon; label: string }> = {
-  instagram: { Icon: Instagram, label: 'Instagram' },
-  linkedin: { Icon: Linkedin, label: 'LinkedIn' },
+  instagram: { Icon: AtSign, label: 'Instagram' },
+  linkedin: { Icon: Link2, label: 'LinkedIn' },
   x: { Icon: Link2, label: 'X' },
   other: { Icon: Link2, label: 'Link' },
 }
