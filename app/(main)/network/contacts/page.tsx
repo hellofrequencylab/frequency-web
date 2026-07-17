@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Plus, ScanText, Lock, Globe, MapPin, Search, Contact, UserRoundCheck, Download } from 'lucide-react'
+import { Plus, ScanText, Lock, Globe, MapPin, Search, Contact, UserRoundCheck, ShieldCheck, Download } from 'lucide-react'
 import { contactsOwnerId } from '@/lib/connections/access'
 import { googleImportConfigured } from '@/lib/integrations/google/config'
 import { listContacts, listDueReminders, type ContactSort as ContactSortKey } from '@/lib/connections/store'
@@ -228,6 +228,12 @@ export default async function ConnectionsPage({
                     {c.linkedProfileId && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 font-medium text-success">
                         <UserRoundCheck className="h-3 w-3" /> On Frequency
+                      </span>
+                    )}
+                    {/* Promoted into the shared marketing contacts DB (linked_contact_id), ADR-742. */}
+                    {c.linkedContactId && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 font-medium text-success">
+                        <ShieldCheck className="h-3 w-3" /> In contacts
                       </span>
                     )}
                     {c.tags.slice(0, 3).map((t) => (

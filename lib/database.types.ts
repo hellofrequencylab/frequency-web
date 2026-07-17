@@ -6940,6 +6940,7 @@ export type Database = {
           match_dismissed: boolean
           owner_id: string
           phone: string | null
+          shared_space_id: string | null
           socials: Json
           source: string
           status: string
@@ -6968,6 +6969,7 @@ export type Database = {
           match_dismissed?: boolean
           owner_id: string
           phone?: string | null
+          shared_space_id?: string | null
           socials?: Json
           source?: string
           status?: string
@@ -6996,6 +6998,7 @@ export type Database = {
           match_dismissed?: boolean
           owner_id?: string
           phone?: string | null
+          shared_space_id?: string | null
           socials?: Json
           source?: string
           status?: string

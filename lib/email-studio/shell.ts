@@ -40,6 +40,11 @@ const POSTAL_ADDRESS = '802 Caminito Azul, Carlsbad, CA 92011'
 export interface EmailFooterInput {
   /** The one-click unsubscribe URL (required for compliant bulk mail; the send agent supplies it). */
   unsubscribeUrl?: string
+  /** The "Manage emails" preference-page URL (the token /manage-emails page for this recipient). Kept
+   *  DISTINCT from `unsubscribeUrl` so "Manage emails" opens the preference center, never fires the
+   *  one-click opt-out. Absent in the composer preview / test, where the footer falls back to the
+   *  tokenless /manage-emails page so the link is never dead. */
+  manageUrl?: string
   brand?: EmailBrand
 }
 
@@ -91,20 +96,23 @@ function footer(input: EmailFooterInput, colors: EmailColors, baseUrl: string): 
     `<a href="${escapeHtml(href)}" style="color:${colors.text};text-decoration:none;font-weight:600;">${label}</a>`
   const sep = `<span style="color:${colors.subtle};">&nbsp;&middot;&nbsp;</span>`
   const links = [link(`${base}/privacy`, 'Privacy'), link(`${base}/terms`, 'Terms'), link(`${base}/help`, 'Help')].join(sep)
-  // SUBTLE fine print, but the unsubscribe is ALWAYS shown (even in the composer preview, before the send injects
-  // the token) so an operator can see it is there. Unsubscribe reads in muted ink + underline (a touch more
-  // findable than the lightest address/copyright line); it links to the real one-click token at send, and renders
-  // as plain underlined text in preview. The List-Unsubscribe header still carries the conspicuous inbox control.
-  const unsubLink = (label: string): string =>
-    input.unsubscribeUrl
-      ? `<a href="${escapeHtml(input.unsubscribeUrl)}" style="color:${colors.muted};text-decoration:underline;">${label}</a>`
-      : `<span style="color:${colors.muted};text-decoration:underline;">${label}</span>`
+  // SUBTLE fine print, but the two account links ALWAYS resolve to a live destination. "Unsubscribe" links to
+  // the per-recipient one-click token the send injects; "Manage emails" links to the preference page (kept
+  // DISTINCT so it opens the preference center, never fires the one-click opt-out). In the composer preview /
+  // test send, where no per-recipient token exists, BOTH fall back to the tokenless /manage-emails page (a real
+  // page that routes a signed-in member to their preferences) so the footer is never dead. The List-Unsubscribe
+  // header still carries the conspicuous inbox control. Both read in muted ink + underline.
+  const manageFallback = `${base}/manage-emails`
+  const mutedLink = (href: string, label: string): string =>
+    `<a href="${escapeHtml(href)}" style="color:${colors.muted};text-decoration:underline;">${label}</a>`
+  const unsubscribeHref = input.unsubscribeUrl ?? manageFallback
+  const manageHref = input.manageUrl ?? manageFallback
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
     <tr><td align="center" style="font-family:${FONT_STACK};padding:24px 16px 0;text-align:center;">
       <p style="margin:0 0 3px;font-size:15px;font-weight:700;letter-spacing:-0.2px;color:${colors.heading ?? colors.text};">${name}</p>
       ${desc ? `<p style="margin:0 0 16px;font-size:12px;color:${colors.muted};">${escapeHtml(desc)}</p>` : `<div style="height:16px;line-height:16px;font-size:0;">&nbsp;</div>`}
       <p style="margin:0 0 14px;font-size:13px;line-height:1.6;">${links}</p>
-      <p style="margin:0 0 4px;font-size:11px;line-height:1.6;">${unsubLink('Unsubscribe')}${sep}${unsubLink('Manage emails')}</p>
+      <p style="margin:0 0 4px;font-size:11px;line-height:1.6;">${mutedLink(unsubscribeHref, 'Unsubscribe')}${sep}${mutedLink(manageHref, 'Manage emails')}</p>
       <p style="margin:0;font-size:10px;color:${colors.subtle};line-height:1.7;">&copy; ${year} ${escapeHtml(ORG_LEGAL_NAME)}${sep}${addr}</p>
     </td></tr>
   </table>`
@@ -166,6 +174,8 @@ import type { EmailDoc } from './types'
 export interface CompileEmailOptions extends RenderEmailOptions {
   brand?: EmailBrand
   unsubscribeUrl?: string
+  /** The "Manage emails" preference-page URL for this recipient (see EmailFooterInput.manageUrl). */
+  manageUrl?: string
 }
 
 /**
@@ -182,8 +192,12 @@ export function compileEmailDoc(
     body,
     preheader: doc.preheader,
     unsubscribeUrl: opts.unsubscribeUrl,
+    manageUrl: opts.manageUrl,
     brand: opts.brand,
   })
-  const footerText = opts.unsubscribeUrl ? `\n\n---\nUnsubscribe: ${opts.unsubscribeUrl}` : ''
+  const footerLines: string[] = []
+  if (opts.unsubscribeUrl) footerLines.push(`Unsubscribe: ${opts.unsubscribeUrl}`)
+  if (opts.manageUrl) footerLines.push(`Manage emails: ${opts.manageUrl}`)
+  const footerText = footerLines.length ? `\n\n---\n${footerLines.join('\n')}` : ''
   return { html, text: `${text}${footerText}`, subject: doc.subject, preheader: doc.preheader }
 }

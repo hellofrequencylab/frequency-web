@@ -51,6 +51,7 @@ const ZAP_CRITERIA_TYPES = new Set<string>([
   'circle_activate',// activated a circle so it stands on its own
   'event_posted',     // published a town event captured from a poster — outreach
   'event_claim_bonus',// an organizer claimed an event you posted — outreach that lands
+  'connections',      // real connections from the event-invite loop (ADR-154) — in-person outreach
   // Meta milestones about the in-person ladder itself.
   'season_zaps',
   'rank_reached',

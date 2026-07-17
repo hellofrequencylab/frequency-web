@@ -10,6 +10,7 @@ import { applyReferralAttribution, applyEntryPointConversion } from '@/lib/qr/re
 import { postWelcomeForMember } from '@/lib/onboarding/welcome'
 import { ensureMemberCodes } from '@/lib/qr/member-codes'
 import { persistAcquisition } from '@/lib/attribution/acquisition'
+import { rewardConnectorJoinOnSignup } from '@/lib/rewards/connector'
 import {
   LEAD_GRAB_COOKIE,
   parseLeadGrab,
@@ -95,6 +96,10 @@ export async function completeOnboarding(data: {
       /* claim is a bonus, never a blocker on signup */
     }
     await claimLeadOnSignup(updated.id, user.email).catch(() => {})
+    // Connector reward (ADR-154 / ADR-777): if this new member's email matches one or more
+    // inviters' event-sourced personal contacts, each inviter earns the join ⚡⚡ + 💎 (the person
+    // they captured actually joined). Idempotent + daily-capped + fail-safe inside the grant engine.
+    await rewardConnectorJoinOnSignup(user.email).catch(() => {})
     // Welcome the new member (ADR-231): grants the join Zaps AND drops the one quiet
     // "@handle joined 👋" line into the feed + the personal notification. This is the
     // classic path — it previously only granted Zaps and never posted the feed line,

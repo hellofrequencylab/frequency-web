@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Search, Send, Sparkles } from 'lucide-react'
 import { MessagingConsole } from '@/components/admin/messaging/messaging-console'
 import { buttonClasses } from '@/components/ui/button'
@@ -31,6 +32,7 @@ export function MarketingWorkspace({
    *  guided generator routes here after Vera drafts a single campaign, so the operator lands on their draft. */
   openCampaignId?: string
 }) {
+  const router = useRouter()
   const [query, setQuery] = useState('')
   const [composeOpen, setComposeOpen] = useState(false)
   // undefined = compose a NEW email; a string = open THAT existing campaign in the popup.
@@ -39,6 +41,17 @@ export function MarketingWorkspace({
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [, startTransition] = useTransition()
+
+  // Adopt fresh server data whenever a refresh lands new props (the compose popup autosaves without
+  // revalidating, so a draft made in the popup would otherwise never join this list until a hard reload;
+  // closeCompose triggers router.refresh()). This is React's "adjust state during render" pattern for
+  // prop-derived state — it reconciles synchronously without a cascading-render effect. Optimistic local
+  // edits (a delete below) don't change `initialCampaigns`, so they are never clobbered between refreshes.
+  const [lastInitial, setLastInitial] = useState(initialCampaigns)
+  if (initialCampaigns !== lastInitial) {
+    setLastInitial(initialCampaigns)
+    setCampaigns(initialCampaigns)
+  }
 
   const q = query.trim().toLowerCase()
   const filteredCampaigns = useMemo(
@@ -65,7 +78,13 @@ export function MarketingWorkspace({
   // typing in (and, once focus lands on the Close control, a typed space would activate it and shut the popup).
   // A useCallback keeps the identity fixed so the trap only ever sets up / tears down when the popup truly opens
   // or closes, never mid-compose.
-  const closeCompose = useCallback(() => setComposeOpen(false), [])
+  // On close, also re-pull the server console so a draft composed in the popup (or a just-sent / scheduled
+  // status change) shows immediately, instead of only after a manual reload. router is stable, so the close
+  // identity stays fixed and the Dialog focus-trap never re-fires mid-compose.
+  const closeCompose = useCallback(() => {
+    setComposeOpen(false)
+    router.refresh()
+  }, [router])
 
   // Deep-link open (`?open=<id>`): open that campaign into the composer once, on the first mount that carries
   // the param. A ref guards against re-firing if the component re-renders with the same param still in the URL.

@@ -181,6 +181,11 @@ const LEDGER_LABELS: Record<string, string> = {
   streak_milestone: 'Streak milestone',
   journey_bonus: 'Journey bonus',
   journey_reward: 'Journey reward',
+  // Connector — the event-invite capture loop (ADR-154).
+  connector_capture: 'Captured a guest at an event',
+  connector_rsvp: 'A guest you invited RSVP’d',
+  connector_attend: 'A guest you invited showed up',
+  connector_join: 'A guest you invited joined Frequency',
   co_op_pulse: 'Practiced together with your circle (legacy bonus)',
   welcome_back: 'Welcome back',
   practice_full_cycle: '13 weeks on one practice (legacy)',

@@ -58,6 +58,10 @@ export type AchievementCriteria =
   // the advocate state earns recognition (e.g. `connector` / `facilitator`). Counts
   // `playbook_runs` rows for this member as subject with status 'done'.
   | { type: 'playbook_complete'; count: number }
+  // Connector achievement (ADR-154 / ADR-777) — the event-invite capture loop. Counts
+  // this member's REAL connections: captured event guests (event_guests) who at least
+  // RSVP'd going/maybe. A bare capture never counts (reward the outcome, anti-farm).
+  | { type: 'connections'; count: number }
 
 // ---------------------------------------------------------------------------
 // Streak types

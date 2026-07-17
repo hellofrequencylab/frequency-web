@@ -1,8 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { getCachedUser } from '@/lib/auth'
+import { getCachedUser, getCallerProfile } from '@/lib/auth'
 import { contactsOwnerId } from '@/lib/connections/access'
+import { operatesSpace, isSpaceTeamMember } from '@/lib/spaces/operated'
+import { resolveVisibilityChange } from '@/lib/connections/visibility'
 import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { scanCardImage, assistFromText } from '@/lib/ai/connections-ai'
 import { dedupeTags, normalizeTag, coerceContactDetails } from '@/lib/connections/normalize'
@@ -197,10 +199,87 @@ export async function setStatus(id: string, status: ContactStatus): Promise<void
   revalidatePath(`/connections/${id}`)
 }
 
-export async function setVisibility(id: string, visibility: Visibility): Promise<void> {
+export async function setVisibility(
+  id: string,
+  visibility: Visibility,
+  sharedSpaceId?: string | null,
+): Promise<void> {
   const ownerId = await requireOwner()
-  await store.updateContact(ownerId, id, { visibility })
+  // The 'shared' tier (ADR-778) is allowed ONLY when the owner actually OPERATES the chosen Space —
+  // verified server-side against the DB, NEVER trusted from the client. An unauthorized or unscoped
+  // 'shared' request coerces to 'private' (resolveVisibilityChange, fail-closed); moving away from
+  // 'shared' always clears the scope. private ↔ network is unchanged (ADR-132/154).
+  const wantsShared = visibility === 'shared' && !!(sharedSpaceId ?? '').trim()
+  const operatesTargetSpace = wantsShared ? await operatesSpace(ownerId, (sharedSpaceId ?? '').trim()) : false
+  const next = resolveVisibilityChange({ requested: visibility, sharedSpaceId, operatesTargetSpace })
+  await store.updateContact(ownerId, id, {
+    visibility: next.visibility,
+    sharedSpaceId: next.sharedSpaceId,
+  })
+  revalidatePath('/network/contacts')
   revalidatePath(`/connections/${id}`)
+}
+
+/** The operated-Space TEAM read (ADR-778): the contacts SHARED with `spaceId`, as card views. GATED —
+ *  the caller must be on the Space's team (owner or an active member of ANY role); anyone else reads
+ *  []. Card fields only; the owner's private notes and tags are never returned. Read-only. */
+export async function listSpaceSharedContacts(spaceId: string): Promise<store.SharedWithSpaceView[]> {
+  const viewerId = (await getCallerProfile())?.id ?? null
+  const sid = (spaceId ?? '').trim()
+  if (!viewerId || !sid) return []
+  if (!(await isSpaceTeamMember(viewerId, sid))) return []
+  return store.listSharedWithSpace(sid)
+}
+
+// ── Promote to the marketing contacts DB (consent-gated, ADR-742) ─────────────
+
+/** `promoted` — a fresh lead row was created/linked this call; `already` — it was
+ *  already in the contacts DB (idempotent, no dup). Both carry the contacts.id. */
+export type PromoteResult =
+  | { ok: true; state: 'promoted' | 'already'; contactId: string }
+  | { ok: false; reason: string }
+
+/** Promote a personal capture into the SHARED marketing `contacts` DB as an
+ *  unconfirmed lead (ADR-099/154). DELIBERATE + consent-gated: only the owner (member
+ *  tier) may call it, the marketing row is created at consent_state='unknown' (added,
+ *  never mailable until they confirm), and it links the personal row via
+ *  linked_contact_id. Idempotent (an already-linked capture returns 'already', never a
+ *  dup) and fail-safe (any error returns a calm reason, promotes nothing).
+ *
+ *  PRIVACY INVARIANT: we pass ONLY the email + display name to the bridge. Personal
+ *  notes and tags are NEVER copied into the marketing layer. syncScanToCrm also never
+ *  downgrades an existing lead/member's source or consent. */
+export async function promoteToContacts(contactId: string): Promise<PromoteResult> {
+  const ownerId = await requireOwner()
+
+  // Re-read the row from a trusted, owner-scoped source (never trust client-supplied
+  // fields) — this is also the ownership check: a capture the caller doesn't own reads null.
+  const detail = await store.getContact(ownerId, contactId)
+  if (!detail) return { ok: false, reason: 'That contact is not in your list.' }
+  const { contact } = detail
+
+  // Idempotent: already bridged → report the linked state, create nothing.
+  if (contact.linkedContactId) return { ok: true, state: 'already', contactId: contact.linkedContactId }
+
+  const email = (contact.email ?? '').trim()
+  if (!email) return { ok: false, reason: 'Add an email first. Frequency contacts are matched by email address.' }
+
+  try {
+    const cid = await syncScanToCrm({
+      ownerId,
+      networkContactId: contactId,
+      email,
+      displayName: contact.displayName,
+      // NOTE: no notes, no tags — the marketing layer never receives your private annotations.
+    })
+    if (!cid) return { ok: false, reason: 'Could not add them right now. Try again in a moment.' }
+    revalidatePath('/network/contacts')
+    revalidatePath(`/connections/${contactId}`)
+    return { ok: true, state: 'promoted', contactId: cid }
+  } catch {
+    // Fail-safe: never surface a raw error to the member, and promote nothing on a throw.
+    return { ok: false, reason: 'Could not add them right now. Try again in a moment.' }
+  }
 }
 
 // ── Notes & tags ─────────────────────────────────────────────────────────────

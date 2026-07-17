@@ -29,6 +29,7 @@ import { sendEventRsvpConfirmationEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 import { sendSms } from '@/lib/comms/sms'
 import { recordContactInteraction } from '@/lib/crm/interactions'
+import { rewardConnectorAttendanceForCheckin } from '@/lib/rewards/connector'
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -1063,6 +1064,10 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
     // never let a reward read break the check-in
   }
   await recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
+  // Connector loop (ADR-154 / ADR-777): if this attendee was captured as a guest for
+  // THIS event by an inviter, that inviter earns the attend ⚡⚡ — their invitee showed up.
+  // Fire-and-forget + fail-safe: a reward failure never affects the member's check-in.
+  rewardConnectorAttendanceForCheckin(eventId, myProfileId).catch((e) => console.error('[connector]', e))
   // A first check-in changes the event's going/check-in counts the detail + manage
   // pages render, so refresh them (the 'going' branches already revalidate; this path didn't).
   revalidatePath('/events', 'layout')

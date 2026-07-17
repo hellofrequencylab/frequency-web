@@ -252,6 +252,10 @@ export async function sendApprovedBetaCampaign(id: string): Promise<ActionResult
   try {
     const recipients = await resolveSegment(campaign.segment)
     for (const r of recipients) {
+      // Beta audiences are always profile-bearing; a null profileId (only the `all_contacts` audience
+      // yields those) has no member send-gate to run, so skip it defensively — beta never sends to the
+      // profile-less imported list.
+      if (!r.profileId) continue
       // The ONE unified send-gate (suppression + consent + preference) — the same seam
       // sendCampaign and the automations engine ride. Marketing rides the lifecycle category.
       const decision = await resolveSendGate(r.profileId, 'email', 'lifecycle', { email: r.email })
