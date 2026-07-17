@@ -191,17 +191,22 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
     return recipientsForProfileIds(db, profileIds)
   }
 
-  // ENTIRE CONTACT LIST (`all_contacts`) — the one builtin that reaches PROFILE-LESS imported leads.
-  // It deliberately SKIPS the `.not('profile_id', 'is', null)` filter every other builtin applies, so
-  // the imported list is included alongside members + site sign-ups. Scoped to the root space (never
-  // crosses a tenant Space's contacts) and still excludes unsubscribed. Profile-less rows come back with
-  // profileId=null; sendCampaignNow gates them by suppression only (see its per-recipient branch).
+  // ENTIRE CONTACT LIST (`all_contacts`) — the one builtin that reaches PROFILE-LESS leads. It skips the
+  // `.not('profile_id', 'is', null)` filter every other builtin applies, but ONLY for the imported list.
+  // CONSENT INVARIANT (ADR-154, critical): a profile-less lead is mailable here ONLY when `source='import'`
+  // (the owner's own uploaded list, authorized as opt-out subscribers). Every OTHER profile-less lead is a
+  // CAPTURE at `consent_state='unknown'` that has never confirmed an email — an event-QR RSVP (`source='event'`),
+  // a scan-invite (`source='scan_invite'`), etc. — and must NOT be blasted (it becomes mailable only on a later
+  // confirm/signup, i.e. once it has a profile). So the audience is: (member/account-holder → has a profile_id)
+  // OR (the imported list → source='import'). Scoped to the root space, still excludes unsubscribed.
   if (parsed.slug === 'all_contacts') {
     const rootId = await loadRootSpaceId()
     let allq = db
       .from('contacts')
-      .select('id, email, profile_id, consent_state')
+      .select('id, email, profile_id, consent_state, source')
       .neq('consent_state', 'unsubscribed')
+      // (has an account) OR (is the owned imported list) — NEVER a profile-less capture lead.
+      .or('profile_id.not.is.null,source.eq.import')
     allq = rootId ? allq.or(`space_id.is.null,space_id.eq.${rootId}`) : allq.is('space_id', null)
     const { data } = await allq
     return (data ?? [])

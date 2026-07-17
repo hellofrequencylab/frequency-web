@@ -167,6 +167,16 @@ export async function upsertProductReview(input: {
 }): Promise<boolean> {
   const rating = Math.trunc(input.rating)
   if (!(rating >= 1 && rating <= 5)) return false
+  // Moderation must be DURABLE: if an operator hid this member's review, editing/re-submitting it must
+  // NOT flip it back to visible (else moderation is trivially reversible by the author). Preserve an
+  // existing 'hidden' status; a brand-new review defaults to 'visible'.
+  const { data: existing } = await db()
+    .from('commerce_reviews')
+    .select('status')
+    .eq('product_id', input.productId)
+    .eq('reviewer_profile_id', input.reviewerProfileId)
+    .maybeSingle()
+  const status = (existing as { status?: string } | null)?.status === 'hidden' ? 'hidden' : 'visible'
   const { error } = await db()
     .from('commerce_reviews')
     .upsert(
@@ -176,7 +186,7 @@ export async function upsertProductReview(input: {
         rating,
         body: input.body.trim().slice(0, 2000),
         verified_purchase: input.verifiedPurchase,
-        status: 'visible',
+        status,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'product_id,reviewer_profile_id' },

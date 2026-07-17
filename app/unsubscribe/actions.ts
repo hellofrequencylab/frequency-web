@@ -15,8 +15,12 @@ import {
 } from '@/lib/comms/contact-preferences'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
+// Every preference category a one-click link may target. Must stay in sync with NOTIFICATION_CATEGORIES
+// and the /manage-emails toggles — 'comments' was missing, so a comments unsubscribe link silently no-oped
+// (the API route 200s regardless). 'transactional' is deliberately absent: account/security mail is not
+// unsubscribable.
 const VALID_CATEGORIES: NotificationCategory[] = [
-  'dispatches', 'events', 'mentions', 'lifecycle',
+  'dispatches', 'events', 'mentions', 'comments', 'lifecycle',
 ]
 
 // Flip email_<category> to false for the given profile, verifying the

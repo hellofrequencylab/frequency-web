@@ -13958,3 +13958,27 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 - **FORCE ROW LEVEL SECURITY — keep low priority.** A near-no-op for this app: the service-role client bypasses RLS via `BYPASSRLS` (most access), and plain ENABLE already governs anon/authenticated paths. The nuance PR-#1779 missed is that FORCE also subjects the table OWNER to RLS, which would put the large `SECURITY DEFINER` RPC surface (owned by `postgres`) under RLS and risk BREAKING functions that legitimately rely on owner-bypass. If ever adopted, do it per-table with the definer RPCs tested — never a blanket sweep.
 
 **Consequences.** Additive UX + one queue-recovery affordance; no schema, no new capability (reuses the marketing staff gate). Validated: `tsc --noEmit` clean, `eslint` clean on changed files, and the CodeQL log-injection alerts on the new log lines resolved by dropping the caller-supplied value from the log.
+
+## ADR-777: Connector rewards — reward the OUTCOME of an event-invite capture, never the row
+
+**Status:** Accepted (2026-07-17) · Gamification / anti-farm · pairs with ADR-154 (the event-invite capture loop) and migration `20261172000000_connector_rewards`. Touches `lib/rewards/connector.ts`, `lib/events/guests.ts`, `app/(main)/events/actions.ts` (check-in), `app/onboarding/actions.ts` (signup), `lib/achievements.ts`.
+
+**Context.** ADR-154 shipped the capture loop (a member's attributed event QR → a public RSVP form → the guest triple-write). It needed a reward model that pays the inviter for bringing real people, WITHOUT paying for a bare row (the anti-farm doctrine: "adding a row is never a payout").
+
+**Decision.** Pay the inviter on ascending real outcomes: capture 2⚡, RSVP going/maybe 4⚡, verified check-in 8⚡, signup 8⚡ + 5💎. Every grant is (a) IDEMPOTENT via a deterministic `reward_grants` rule_key `connector:<outcome>:<inviter>:<guestKey>`, (b) DAILY-CAPPED per inviter (`CONNECTOR_DAILY_CAP=25`), and (c) FAIL-SAFE (a reward failure never breaks the capture/check-in/signup flow). Three call-site seams (capture in `captureEventGuest`, attend in `checkInEvent`, join in `completeOnboarding`) each fail-safe. A "real connection" (RSVP'd/attended/joined, never a bare capture) advances the Connector achievement at 10/25/100. The `guestKey` MUST be stable per (event, person): `captureEventGuest` leg 1 dedupes `event_guests` on `(event_id, email)` so a form resubmit refreshes the same row rather than minting a new id — otherwise the capture/RSVP reward re-pays and the achievement count inflates on every resubmit (fixed 2026-07-17 in the post-merge correctness sweep).
+
+**Alternatives.** Pay on the raw capture row (rejected — farmable). Key the reward on the `event_guests` row id without deduping the insert (rejected — a bare insert makes the id non-stable, defeating idempotency). Award Gems for every outcome (rejected — economy inflation; only the join carries a 💎).
+
+**Consequences.** Additive; the achievement tiers + the `connector_join` gem key are seeded in `20261172000000`. The Connector count reads `event_guests` rows with `rsvp_status IN ('going','maybe')` for the inviter, so the leg-1 dedupe is load-bearing for count accuracy too.
+
+## ADR-778: The `'shared'` visibility tier for personal network contacts (supersedes ADR-742's deferral)
+
+**Status:** Accepted (2026-07-17) · Privacy / CRM · migration `20261171000000_network_contacts_shared_space`. **Supersedes** the ADR-742 note that deferred this tier ("Offer the 'shared' visibility tier now — rejected, deferred"): the tier is now specified and its write path + RLS ship. Touches `lib/connections/visibility.ts`, `lib/connections/store.ts`, `lib/connections/types.ts`, `lib/spaces/operated.ts`, `app/(main)/connections/actions.ts`, `components/connections/visibility-control.tsx`.
+
+**Context.** ADR-098 built `network_contacts` as an owner-scoped personal CRM (private → shared → network). ADR-132/154 shipped private↔network for members; `'shared'` was left deferred (ADR-742). This lands it.
+
+**Decision.** `'shared'` means the contact's CARD (name/role/company/city/links/email/phone — never the owner's private notes/tags) is readable by the TEAM of ONE Space (`shared_space_id`) the owner OPERATES. Two distinct bars: WHO MAY SHARE — the owner must operate the target Space (own it or be an active admin space_member), verified server-side via `operatesSpace` and the pure fail-closed `resolveVisibilityChange` (an unauthorized/unscoped `shared` coerces to `private`); WHO MAY READ — the Space's team (owner or any active space_member), gated by `isSpaceTeamMember`. A permissive RLS SELECT policy OR-ed alongside the owner/network policies grants the team a READ of the shared row; writes stay owner-only; the notes/tags tables are untouched (owner-only), so the privacy invariant holds. Moving away from `'shared'` clears `shared_space_id` (a DB CHECK mirrors it).
+
+**Read surface.** The team-facing READ SURFACE — a Space operator view listing the shared cards via `listSpaceSharedContacts` (card fields only, gated by `isSpaceTeamMember`) — ships alongside the write tier so a contact shared with a Space's team is actually visible to that team. The RLS grants a raw row read (broader than the app reader's card-only projection); a defense-in-depth follow-up is to expose only card columns via a security-barrier view.
+
+**Consequences.** Additive column + CHECK + partial index + one RLS policy; the cross-steward `network` tier (ADR-132) and `canViewLead` are untouched. Consent never transfers, notes/tags never leak.

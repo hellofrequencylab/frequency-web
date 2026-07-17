@@ -90,22 +90,48 @@ export async function captureEventGuest(input: EventGuestInput): Promise<EventGu
   const nowIso = new Date().toISOString()
 
   // ── Leg 1 (PRIORITY): the event's guest list ────────────────────────────────
+  // Dedupe on (event_id, email) so a form RESUBMIT refreshes the same guest row rather than minting a
+  // duplicate. This is load-bearing: `result.guestId` is the connector reward's idempotency key AND the
+  // Connector achievement counts event_guests rows — a bare insert let a resubmit re-pay the capture/RSVP
+  // reward and inflate the connection count. One person + one event = one row (mirrors leg 2's dedupe).
   try {
-    const { data } = await db
+    const { data: existingGuest } = await db
       .from('event_guests')
-      .insert({
-        event_id: eventId,
-        inviter_profile_id: inviterProfileId,
-        display_name: displayName,
-        email,
-        phone,
-        rsvp_status: rsvpStatus,
-        source: 'event_qr',
-        meta,
-      })
       .select('id')
+      .eq('event_id', eventId)
+      .eq('email', email)
+      .order('created_at', { ascending: true })
+      .limit(1)
       .maybeSingle()
-    result.guestId = (data as { id?: string } | null)?.id ?? null
+    const existingGuestId = (existingGuest as { id?: string } | null)?.id ?? null
+    if (existingGuestId) {
+      await db
+        .from('event_guests')
+        .update({
+          display_name: displayName ?? undefined,
+          phone: phone ?? undefined,
+          rsvp_status: rsvpStatus,
+          meta,
+        })
+        .eq('id', existingGuestId)
+      result.guestId = existingGuestId
+    } else {
+      const { data } = await db
+        .from('event_guests')
+        .insert({
+          event_id: eventId,
+          inviter_profile_id: inviterProfileId,
+          display_name: displayName,
+          email,
+          phone,
+          rsvp_status: rsvpStatus,
+          source: 'event_qr',
+          meta,
+        })
+        .select('id')
+        .maybeSingle()
+      result.guestId = (data as { id?: string } | null)?.id ?? null
+    }
   } catch {
     // Isolated: a guest-list failure must not stop the personal-book leg.
   }

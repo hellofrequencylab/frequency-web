@@ -40,13 +40,15 @@ const DISALLOW = [
   "/settings",
   "/join/",
   "/unsubscribe",
-  // Capture funnel landing paths (warm-intro accept, check-in, unlock, exchange). Each page
+  "/manage-emails",
+  // Capture funnel landing paths (warm-intro accept, check-in, unlock, exchange, event RSVP). Each page
   // already sets per-page noindex; disallowing here is belt-and-suspenders so crawlers never
   // spend budget on a single-use, token-gated URL.
   "/intro",
   "/checkin",
   "/unlock",
   "/exchange",
+  "/rsvp",
 ];
 
 // AI answer engines and their crawlers. We name each one explicitly (allow "/",
