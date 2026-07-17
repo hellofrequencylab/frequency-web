@@ -6,6 +6,7 @@ import { emailPalette, entityBlockById } from '@/lib/entity-blocks/registry'
 import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
 import { addRow, moveRow, placeBlock, removeBlock, type BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { DEFAULT_EMAIL_COLORS, type EmailColors } from '@/lib/email-studio/render'
+import { emailFooterHtml } from '@/lib/email-studio/shell'
 import { useProfileLayout } from '@/components/entity-blocks/profile-layout-context'
 import { FieldEditor } from '@/components/entity-blocks/block-edit-panel'
 import { CanvasBlock } from './canvas/canvas-block'
@@ -54,6 +55,10 @@ function isCoreField(f: FieldDef): boolean {
 
 const label = (id: string) => entityBlockById(id)?.label ?? id
 
+// A stand-in unsubscribe target for the EDIT canvas only. The real one-click token is injected at send; here it
+// just makes the shared footer's unsubscribe read as a live link so the operator sees the compliant control.
+const EDITOR_UNSUBSCRIBE_PLACEHOLDER = 'https://frequencylocal.com/unsubscribe'
+
 export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
   // The canvas chrome (the framing canvas, the card surface/border, the brand wordmark ink) mirrors the email
   // palette so the WYSIWYG surface reads in the same colors the email will send in. Defaults to the platform
@@ -81,6 +86,14 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
     const placed = new Set(blocks)
     return emailPalette().filter((b) => !placed.has(b.id))
   }, [blocks])
+
+  // The legal FOOTER chrome, built from the SAME shell builder the sent email uses (emailFooterHtml — no fork),
+  // painted in this editor's brand palette. Rendered as non-editable chrome below the block canvas so the
+  // WYSIWYG matches what sends; the placeholder unsubscribe URL stands in for the send-time one-click token.
+  const footerHtml = useMemo(
+    () => emailFooterHtml({ brand: { colors: C }, unsubscribeUrl: EDITOR_UNSUBSCRIBE_PLACEHOLDER }),
+    [C],
+  )
 
 
   if (!store || !store.seeded) {
@@ -314,6 +327,21 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
               ))}
             </div>
           )}
+        </div>
+
+        {/* The legal FOOTER — non-editable chrome BELOW the card, so the WYSIWYG shows the whole email (wordmark,
+            Privacy/Terms/Help, address, unsubscribe) exactly as it sends. It is NOT a block in the list, so it
+            can't be selected, reordered, or removed; pointer-events are off so its placeholder links stay inert.
+            Same markup the send uses (emailFooterHtml), never re-wrapped at send. */}
+        <div className="mx-auto mt-1 w-full max-w-[600px] px-6 sm:px-9">
+          <p className="mb-1 text-center text-2xs" style={{ color: C.subtle }}>
+            Legal footer, added to every email
+          </p>
+          <div
+            className="pointer-events-none select-none"
+            aria-label="Email legal footer, added automatically"
+            dangerouslySetInnerHTML={{ __html: footerHtml }}
+          />
         </div>
       </div>
 

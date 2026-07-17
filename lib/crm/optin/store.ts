@@ -86,7 +86,7 @@ async function findContactByEmail(email: string): Promise<ExistingContact | null
       .from('contacts')
       .select('id, consent_state, display_name, profile_id, meta')
       .eq('space_id', rootId)
-      .ilike('email', email)
+      .eq('email', email.toLowerCase())
       .maybeSingle()
     if (!data) return null
     const meta = (data.meta && typeof data.meta === 'object' ? data.meta : {}) as Record<string, unknown>

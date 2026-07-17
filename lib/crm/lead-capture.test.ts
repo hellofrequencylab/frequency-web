@@ -54,7 +54,10 @@ vi.mock('@/lib/supabase/admin', () => {
   return { createAdminClient: () => ({ from: (t: string) => makeBuilder(t) }) }
 })
 
-vi.mock('@/lib/crm/interactions', () => ({ recordContactInteraction: async () => {} }))
+const { recordInteraction } = vi.hoisted(() => ({
+  recordInteraction: vi.fn(async (_input: unknown, _spaceId?: string | null) => ({ id: 'int-1' })),
+}))
+vi.mock('@/lib/crm/interactions', () => ({ recordContactInteraction: recordInteraction }))
 
 // PURE-engine tests for the capture-now / claim-on-join lead-grab engine (CRM Phase 3). These lock the
 // three invariants the DB also enforces: entry-point immutability (a set-once, well-formed door row),
@@ -184,14 +187,16 @@ describe('findContactByEmail is space-scoped (per-space tenancy, ADR-624)', () =
     await captureLead({ spaceId: 'space-1', door: 'lead_magnet', email: 'Jo@Example.com' })
 
     // The lookup chain is the `contacts` query that matched on email. It must ALSO have filtered space_id.
+    // The match is an exact `.eq` on the lowercased address (not `.ilike`, which treats `_`/`%` in an
+    // address as wildcards); the stored column is lowercased, so an exact match is correct and safe.
     const lookup = chains.find(
-      (c) => c.table === 'contacts' && c.calls.some(([m, a]) => m === 'ilike' && a[0] === 'email'),
+      (c) => c.table === 'contacts' && c.calls.some(([m, a]) => m === 'eq' && (a as unknown[])[0] === 'email'),
     )
     expect(lookup, 'expected a contacts email lookup to have run').toBeTruthy()
     const eqCalls = lookup!.calls.filter(([m]) => m === 'eq')
     expect(eqCalls).toContainEqual(['eq', ['space_id', 'space-1']])
     // And the email match is present on the same chain (proving the scope + email dedupe are together).
-    expect(lookup!.calls).toContainEqual(['ilike', ['email', 'jo@example.com']])
+    expect(lookup!.calls).toContainEqual(['eq', ['email', 'jo@example.com']])
   })
 })
 
@@ -238,6 +243,34 @@ describe('front-door wrappers seal the right consent (doors 2 to 5)', () => {
     const res = await captureWarmIntro({ spaceId: 'space-1', email: 'jo@example.com', vouchedByProfileId: 'owner-1' })
     expect(res).not.toBeNull()
     expect(consentWrites()).not.toContain('subscribed')
+  })
+})
+
+// FIX: the "Lead captured via …" timeline row was silently dropped because owner_profile_id (a NOT-NULL
+// FK to profiles.id) was set to the SPACE id, which is never a profile id — the INSERT always violated the
+// FK and was swallowed. The row must carry a REAL profile id (the staff attributor, else the Space owner),
+// or be skipped when neither exists (so we never insert a guaranteed-failing FK-violating row).
+describe('capture interaction carries a real profile owner_profile_id (FK-safe), never the space id', () => {
+  beforeEach(() => {
+    chains.length = 0
+    recordInteraction.mockClear()
+  })
+
+  it('uses the staff attributor (capturedByProfileId) as owner_profile_id — a profile id, not the space id', async () => {
+    await captureLead({ spaceId: 'space-1', door: 'event', email: 'jo@example.com', capturedByProfileId: 'prof-9' })
+    expect(recordInteraction).toHaveBeenCalled()
+    const [payload, scope] = recordInteraction.mock.calls.at(-1) as [{ ownerProfileId: string }, string]
+    expect(payload.ownerProfileId).toBe('prof-9')
+    expect(payload.ownerProfileId).not.toBe('space-1')
+    // The Space scope (2nd arg) is what the Space timeline read filters on — it stays the space id.
+    expect(scope).toBe('space-1')
+  })
+
+  it('SKIPS the interaction (never an FK-violating row) when there is no attributor and the Space has no owner', async () => {
+    // The mocked spaces row carries no owner_profile_id (like the platform root space), so there is no
+    // real profile to own the row — recording is skipped rather than stamping the space id into the FK.
+    await captureLead({ spaceId: 'space-1', door: 'event', email: 'jo@example.com' })
+    expect(recordInteraction).not.toHaveBeenCalled()
   })
 })
 

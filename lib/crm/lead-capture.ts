@@ -280,7 +280,7 @@ async function findContactByEmail(email: string, spaceId: string): Promise<Conta
     const { data } = (await table('contacts')
       .select(CONTACT_COLS)
       .eq('space_id', spaceId)
-      .ilike('email', email)
+      .eq('email', email.toLowerCase())
       .maybeSingle()) as { data: ContactRow | null }
     return data ?? null
   } catch {
@@ -293,7 +293,7 @@ async function findContactByEmail(email: string, spaceId: string): Promise<Conta
  *  address is safe under the per-space unique index. FAIL-SAFE: [] on any error. */
 async function findContactsByEmail(email: string): Promise<ContactRow[]> {
   try {
-    const { data } = (await table('contacts').select(CONTACT_COLS).ilike('email', email)) as {
+    const { data } = (await table('contacts').select(CONTACT_COLS).eq('email', email.toLowerCase())) as {
       data: ContactRow[] | null
     }
     return data ?? []
@@ -546,9 +546,28 @@ export async function captureLead(input: CaptureLeadInput): Promise<CaptureResul
       actorProfileId: input.capturedByProfileId,
       metadata: { door: input.door },
     })
-    await recordInteractionForCapture(spaceId, contact.id, input.door, where, label, input.channel ?? null)
+    await recordInteractionForCapture(spaceId, contact.id, input.door, where, label, input.channel ?? null, input.capturedByProfileId ?? null)
 
     return { contactId: contact.id, firstTouch }
+  } catch {
+    return null
+  }
+}
+
+/** The Space's owner profile id (spaces.owner_profile_id), or null when unset (e.g. the platform ROOT
+ *  space, whose owner is null). A lead-capture interaction row needs a REAL profile id for its NOT-NULL
+ *  owner_profile_id FK; the Space owner is that stand-in when a capture had no staff attributor.
+ *  FAIL-SAFE: null on any error. */
+async function spaceOwnerProfileId(spaceId: string): Promise<string | null> {
+  const sid = (spaceId ?? '').trim()
+  if (!sid) return null
+  try {
+    const { data } = (await createAdminClient()
+      .from('spaces')
+      .select('owner_profile_id')
+      .eq('id', sid)
+      .maybeSingle()) as { data: { owner_profile_id?: string | null } | null }
+    return data?.owner_profile_id ?? null
   } catch {
     return null
   }
@@ -562,15 +581,20 @@ async function recordInteractionForCapture(
   where: string | null,
   label: string | null,
   channel: string | null,
+  capturedByProfileId: string | null,
 ): Promise<void> {
   const ch = (channel ?? channelForDoor(door)) as 'in_person' | 'event' | 'system'
+  // owner_profile_id is NOT NULL and a real FK to profiles(id). A lead-capture has no PERSONAL owner —
+  // it belongs to the Space (scope is `space_id`, the 2nd arg, which every read of these rows filters
+  // on) — but the row still needs a REAL profile id to satisfy the FK. Use the staff attributor when
+  // present, else the Space's owner profile. When NEITHER exists (e.g. the root space has no owner), we
+  // SKIP the row rather than insert an FK-violating one that the DB would reject and the .catch() swallow
+  // (which silently dropped the "Lead captured via …" timeline row before this fix).
+  const owner = (capturedByProfileId ?? '').trim() || (await spaceOwnerProfileId(spaceId))
+  if (!owner) return
   await recordContactInteraction(
     {
-      // owner_profile_id is NOT NULL, but a lead-capture has no PERSONAL owner — it belongs to the
-      // Space. The scope that matters is `space_id` (the 2nd arg), which every read of these rows
-      // filters on; the space id sitting in owner_profile_id is inert (a personal-timeline read keys
-      // on a real profile id, and UUIDs never collide), so it never mis-surfaces. Not a member owner.
-      ownerProfileId: spaceId,
+      ownerProfileId: owner,
       subjectKind: 'contact',
       subjectId: contactId,
       channel: ch === 'in_person' || ch === 'event' || ch === 'system' ? ch : 'system',
@@ -672,7 +696,7 @@ export async function linkMemberToSpaceLead(input: {
       actorProfileId: profileId,
       metadata: { door: input.door, member: true },
     })
-    await recordInteractionForCapture(spaceId, contact.id, input.door, where, label, null)
+    await recordInteractionForCapture(spaceId, contact.id, input.door, where, label, null, input.capturedByProfileId ?? null)
     return contact.id
   } catch {
     return null

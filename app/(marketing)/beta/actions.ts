@@ -56,7 +56,7 @@ export async function requestBetaAccess(input: {
         .from('contacts')
         .select('id, consent_state, display_name, meta')
         .eq('space_id', rootId)
-        .ilike('email', email)
+        .eq('email', email)
         .maybeSingle()
     : { data: null }
 

@@ -55,7 +55,7 @@ export async function captureLead(input: {
   // trigger), and per-space tenancy (ADR-624) makes an unscoped email lookup a multi-row throw hazard.
   const rootId = await loadRootSpaceId()
   const { data: existing } = rootId
-    ? await admin.from('contacts').select('id, display_name, meta').eq('space_id', rootId).ilike('email', email).maybeSingle()
+    ? await admin.from('contacts').select('id, display_name, meta').eq('space_id', rootId).eq('email', email).maybeSingle()
     : { data: null }
 
   const existingMeta = (existing?.meta && typeof existing.meta === 'object' ? existing.meta : {}) as Record<string, unknown>

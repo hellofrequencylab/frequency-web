@@ -83,6 +83,7 @@ import {
   resumeActiveSession,
   clearActiveSession,
 } from '@/lib/on-air/active-session'
+import { clampLoggedSeconds, runOverStateAt } from '@/lib/on-air/run-over'
 
 // What a saved Mindless run carries beyond the shared record fields: the mode + cue settings the
 // live clock is rebuilt from. startedAt/pausedAt/practiceId/banked are on the record itself.
@@ -418,6 +419,14 @@ export function OnAirSession({
   // The clock resumes immediately; this shows a small non-blocking "Tap to restore sound" chip
   // when sound was configured, so the member can re-arm it. Cleared on the tap (item #4).
   const [needRestore, setNeedRestore] = useState(false)
+  // Run-over confirmation gate (docs/DECISIONS ADR run-over): once a sit passes 150% of its
+  // target we ask "still practicing?" and only CONFIRMED time (or the target) is banked, so an
+  // unattended run never inflates logged airtime. `confirmationsRef` holds the airtime-elapsed
+  // (seconds) of each confirm; the clock tick + finalize read it. `runOverPrompt` toggles the
+  // non-blocking chip. Kept in a ref so the 250ms tick always sees the current list without
+  // re-subscribing the interval; mirrored to state only to drive the render.
+  const confirmationsRef = useRef<number[]>([])
+  const [runOverPrompt, setRunOverPrompt] = useState(false)
   const [payload, setPayload] = useState<RevealPayload | null>(null)
   const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
   const finishing = useRef(false)
@@ -555,6 +564,19 @@ export function OnAirSession({
       // Past the target the clock keeps counting (auto-continue): bank the overtime so the
       // live screen counts up and the deeper time earns its tier.
       setOvertime(elapsed > total ? Math.floor(elapsed - total) : 0)
+      // Run-over gate: once past 150% of target, show the "still practicing?" chip; a checkpoint
+      // left unanswered for a whole interval means the member walked away -> auto-finalize at the
+      // last confirmed point (or target) instead of counting forever. This also catches a return
+      // from a backgrounded tab: the tick recomputes elapsed from the wall-clock startedAt, so on
+      // refocus a run already past its deadline finalizes on the next tick.
+      if (total > 0) {
+        const runOver = runOverStateAt(total, elapsed, confirmationsRef.current)
+        if (runOver.phase === 'abandoned') {
+          autoFinalizeRunOver()
+          return
+        }
+        setRunOverPrompt(runOver.phase === 'prompting')
+      }
       // Cues: a phase-change ding/tap in breath mode, an interval ding on the
       // timer (Meditate). At zero the end bell rings ONCE and the screen waits —
       // the member collects with Finish in their own time (P10), no auto-advance.
@@ -826,6 +848,27 @@ export function OnAirSession({
   // re-acquire best-effort, so a "Tap to restore sound" chip is offered when sound was configured.
   function resumeFromRecord(rec: LiveSessionRecord<MindlessSetup>, viaGesture = true) {
     const s = rec.setup
+    // Run-over gate on the RESUME path (the double-count culprit, ADR-521): a session restored
+    // PAST its abandonment deadline (left running overnight, then auto-resumed cross-device) must
+    // NOT come back as a runaway running clock that then logs the wall clock. Confirmations are not
+    // persisted, so an over-deadline resume finalizes at the target (plus any earlier banked
+    // partial), never the elapsed. A paused record is a deliberate hold, so it still resumes.
+    const resumeTargetSec = s.minutes * 60
+    const resumeElapsed = liveElapsedSeconds(rec)
+    if (
+      rec.pausedAt === null &&
+      runOverStateAt(resumeTargetSec, resumeElapsed, []).phase === 'abandoned'
+    ) {
+      finishing.current = true
+      resumeBanked.current = rec.resumeFromSec
+      activeModeRef.current = s.mode
+      setPracticeId(rec.practiceId)
+      setStartedAt(rec.startedAt)
+      const clampedThis = clampLoggedSeconds(resumeTargetSec, resumeElapsed, [])
+      const seconds = rec.resumeFromSec + Math.max(0, clampedThis)
+      void finishWith(seconds, new Date(rec.startedAt).toISOString(), rec.practiceId, s.mode)
+      return
+    }
     if (viaGesture && s.bell) {
       try {
         audio.current = audio.current ?? new AudioContext()
@@ -949,6 +992,9 @@ export function OnAirSession({
     // live clock: no armed pause, no pre-roll, no second countdown.
     const arming = warm > 0
     begunRef.current = false
+    // A fresh run starts with a clean run-over gate: no confirmations, no prompt.
+    confirmationsRef.current = []
+    setRunOverPrompt(false)
     const now = Date.now()
     setStartedAt(now)
     setPausedAt(arming ? now : null)
@@ -1019,6 +1065,33 @@ export function OnAirSession({
     }
   }
 
+  // This session's real airtime (seconds) right now, paused-adjusted. The run-over gate + the
+  // finalize paths all measure against this, never raw wall clock.
+  function currentElapsedSec(): number {
+    return Math.max(0, Math.round(((pausedAt ?? Date.now()) - startedAt) / 1000))
+  }
+
+  // The member tapped "still here" on the run-over prompt: bank the elapsed up to now as a
+  // confirmation, which extends the logged ceiling and arms the next checkpoint one interval out.
+  function confirmRunOver() {
+    const next = [...confirmationsRef.current, currentElapsedSec()]
+    confirmationsRef.current = next
+    setRunOverPrompt(false)
+    if (haptics) buzz(10)
+  }
+
+  // A checkpoint went a whole interval unanswered (the member walked away / the tab was left
+  // open / a background return landed past the deadline): AUTO-FINALIZE at the last confirmed
+  // point (or the target), never counting the unattended run-over. Absent member -> the current
+  // elapsed is NOT counted as a confirmation, so the clamp holds to what was actually confirmed.
+  function autoFinalizeRunOver() {
+    if (finishing.current) return
+    finishing.current = true
+    const clampedThis = clampLoggedSeconds(minutes * 60, currentElapsedSec(), confirmationsRef.current)
+    const seconds = resumeBanked.current + Math.max(0, clampedThis)
+    void finishWith(seconds, new Date(startedAt).toISOString(), undefined, activeModeRef.current)
+  }
+
   async function finish(early: boolean) {
     if (finishing.current) return
     // The end bell already rang when the clock hit zero; an early Close Session
@@ -1033,10 +1106,16 @@ export function OnAirSession({
       return
     }
     finishing.current = true
-    // Auto-continue (ADR-443): a full Finish banks the ACTUAL time, so a sit that ran past
-    // its target earns the deeper tier. Floored at the target so a finish a beat early never
-    // reads as a partial. An early Close banks exactly what was sat (may be a partial).
-    const thisSession = early ? actual : Math.max(minutes * 60, actual)
+    // Auto-continue (ADR-443) + run-over gate: a member who taps Finish/Close is PRESENT, so
+    // their tap confirms the elapsed up to now (appended to the confirmations) and the actual
+    // airtime is banked. The gate only bites the ABSENT paths (auto-finalize / resume-return),
+    // which pass the real confirmations without a now-append. A full Finish is still floored at
+    // the target so a finish a beat early never reads as a partial; an early Close banks what was
+    // sat (may be a partial). Under 150% of target the clamp is a no-op, so the happy path is
+    // unchanged.
+    const presentConfirmations = [...confirmationsRef.current, actual]
+    const banked = clampLoggedSeconds(minutes * 60, actual, presentConfirmations)
+    const thisSession = early ? banked : Math.max(minutes * 60, banked)
     // A resume runs the REMAINING time and then AUTO-CONTINUES (ADR-443): the member keeps sitting
     // past the target until they stop, and the WHOLE sit is logged — banked + this session, overtime
     // and all (e.g. 15 of 20 banked + 5 remaining + 3 extra = 23 min logged). No cap: "complete and
@@ -1415,6 +1494,24 @@ export function OnAirSession({
           </div>
         </div>
 
+        {/* Run-over confirmation gate: once a sit runs past 150% of its target, a gentle,
+            non-blocking chip asks the member to confirm they are still practicing. The clock keeps
+            running; confirming banks the time to now and keeps logging. Left unanswered for a whole
+            interval, the sit auto-finalizes at the last confirmed point so an unattended run never
+            inflates airtime. Voice: plain, no narrated feelings, no em dashes. */}
+        {preroll === null && runOverPrompt && (
+          <div className="mx-auto mb-2 w-full max-w-sm rounded-2xl border border-primary/50 bg-primary-bg/30 px-4 py-3 text-center">
+            <p className="text-sm font-semibold text-text">Still practicing?</p>
+            <p className="mt-0.5 text-xs text-muted">Confirm to keep logging.</p>
+            <button
+              type="button"
+              onClick={confirmRunOver}
+              className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+            >
+              Still here
+            </button>
+          </div>
+        )}
         {/* Docked controls (P10 + item #5): Pause ⇄ Resume while running, Finish once the
             clock lands. Finish and Close BOTH log and move on — ending early is never punished.
             Pinned to the bottom and always visible even when the content above scrolls. */}

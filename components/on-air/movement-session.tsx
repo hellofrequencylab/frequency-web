@@ -85,6 +85,7 @@ import {
   resumeActiveSession,
   clearActiveSession,
 } from '@/lib/on-air/active-session'
+import { clampLoggedSeconds, runOverStateAt } from '@/lib/on-air/run-over'
 
 // What a saved Movement run carries beyond the shared record fields: the config the plan is
 // rebuilt from. Everything else (startedAt, pausedAt, practiceId, banked, target) is on the record.
@@ -360,6 +361,14 @@ export function MovementSession({
     return totalSeconds(plan)
   }, [bankedSec, targetSec, plan])
 
+  // This session's own target for the run-over gate: the finish cap minus what an earlier partial
+  // already banked (a resume runs only the remaining time), or the plan total for a fresh sit.
+  // Open-ended Play (finishCap null) has no target, so the gate is a no-op there (it counts up).
+  const gateTargetSec = finishCap === null ? 0 : Math.max(0, finishCap - resumeOffset)
+  useEffect(() => {
+    gateTargetRef.current = gateTargetSec
+  }, [gateTargetSec])
+
   // Whether THIS session is a resume (the selected practice has a partial today, or the open-args
   // did). Drives the setup's "Continue Practice" label + the remaining-time cue. The live math
   // already resumes off bankedSec; this is the render flag for the SELECTED practice.
@@ -394,6 +403,14 @@ export function MovementSession({
   const [flash, setFlash] = useState(false)
   // After an automatic (no-gesture) resume, a small non-blocking chip to re-arm sound.
   const [needRestore, setNeedRestore] = useState(false)
+  // Run-over confirmation gate (shared with the Be Still sit): once THIS session runs past 150%
+  // of its target we ask "still moving?" and only confirmed time (or the target) is banked, so an
+  // unattended run never inflates airtime. `confirmationsRef` holds the airtime-elapsed (seconds)
+  // of each confirm; `gateTargetRef` mirrors this session's target for the 250ms tick. An
+  // open-ended Play run (no target) is never gated — it counts up by design.
+  const confirmationsRef = useRef<number[]>([])
+  const gateTargetRef = useRef(0)
+  const [runOverPrompt, setRunOverPrompt] = useState(false)
   const [payload, setPayload] = useState<RevealPayload | null>(null)
   const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
   const finishing = useRef(false)
@@ -478,6 +495,21 @@ export function MovementSession({
       const e = (Date.now() - startedAt) / 1000
       setElapsed(e)
 
+      // Run-over gate: once THIS session runs past 150% of its target, show the "still moving?"
+      // chip; a checkpoint left a whole interval unanswered means the member walked away ->
+      // auto-finalize at the last confirmed point (or target). Also catches a background return:
+      // the tick recomputes elapsed from the wall-clock startedAt, so on refocus a run past its
+      // deadline finalizes on the next tick. Open-ended Play (gate target 0) is never gated.
+      const gate = gateTargetRef.current
+      if (gate > 0) {
+        const runOver = runOverStateAt(gate, e, confirmationsRef.current)
+        if (runOver.phase === 'abandoned') {
+          autoFinalizeRunOver()
+          return
+        }
+        setRunOverPrompt(runOver.phase === 'prompting')
+      }
+
       const pos = phaseAt(plan, resumeOffset + e)
 
       // Phase change -> a bell + a small buzz. Lead-in into work, work into rest,
@@ -530,6 +562,9 @@ export function MovementSession({
       }
     }, 250)
     return () => clearInterval(id)
+    // autoFinalizeRunOver is a stable hoisted handler reading refs/current state; listing it (a
+    // per-render function) would needlessly re-subscribe the wall-clock tick. Deps are otherwise complete.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, startedAt, pausedAt, plan, resumeOffset, walkIntervalMin, runIntervalMin, stretchIntervalMin])
 
   // The warm-up pre-roll (item #10): tick down, buzz each second (a stronger pulse + flash on the
@@ -639,6 +674,33 @@ export function MovementSession({
   // on load passes false: the clock resumes immediately, but audio/screen re-acquire best-effort, so
   // a "Tap to restore sound" chip is offered.
   function resumeFromRecord(rec: LiveSessionRecord<MovementSetup>, viaGesture = true) {
+    // Run-over gate on the RESUME path (the double-count culprit, ADR-521): a run restored PAST its
+    // abandonment deadline (left running overnight, then auto-resumed cross-device) must NOT come
+    // back as a runaway clock. Confirmations are not persisted, so an over-deadline resume finalizes
+    // at the target (plus any earlier banked partial), never the elapsed. A paused record is a
+    // deliberate hold, so it still resumes; open-ended Play (no plan total) is never gated.
+    const gatePlan = buildPlan(rec.setup.config)
+    const gateTotal = totalSeconds(gatePlan)
+    if (gateTotal !== null && rec.pausedAt === null) {
+      const recOffset = rec.resumeFromSec > 0 ? Math.min(Math.round(rec.resumeFromSec), gateTotal) : 0
+      const recRemainingTarget = Math.max(0, gateTotal - recOffset)
+      const recElapsed = liveElapsedSeconds(rec)
+      if (
+        recRemainingTarget > 0 &&
+        runOverStateAt(recRemainingTarget, recElapsed, []).phase === 'abandoned'
+      ) {
+        finishing.current = true
+        const bankedThis = clampLoggedSeconds(recRemainingTarget, recElapsed, [])
+        const seconds = Math.min(gateTotal, recOffset + Math.max(0, bankedThis))
+        void finishWith(Math.max(0, seconds), {
+          startedIso: new Date(rec.startedAt).toISOString(),
+          practiceIdOverride: rec.practiceId,
+          resumeFromSecOverride: recOffset,
+          movementModeOverride: rec.setup.config.mode,
+        })
+        return
+      }
+    }
     if (viaGesture) {
       try {
         audio.current = audio.current ?? new AudioContext()
@@ -712,6 +774,9 @@ export function MovementSession({
     setFlash(false)
     setNeedRestore(false)
     begunRef.current = false
+    // A fresh run starts with a clean run-over gate: no confirmations, no prompt.
+    confirmationsRef.current = []
+    setRunOverPrompt(false)
     const now = Date.now()
     setStartedAt(now)
     setElapsed(0)
@@ -764,6 +829,31 @@ export function MovementSession({
     }
   }
 
+  // This session's real airtime (seconds) right now, paused-adjusted.
+  function currentElapsedSec(): number {
+    return Math.max(0, Math.round(((pausedAt ?? Date.now()) - startedAt) / 1000))
+  }
+
+  // The member tapped "still here" on the run-over prompt: bank the elapsed up to now as a
+  // confirmation, extending the logged ceiling and arming the next checkpoint one interval out.
+  function confirmRunOver() {
+    confirmationsRef.current = [...confirmationsRef.current, currentElapsedSec()]
+    setRunOverPrompt(false)
+    buzz(10)
+  }
+
+  // A checkpoint went a whole interval unanswered (walked away / tab left open / background return
+  // past the deadline): AUTO-FINALIZE at the last confirmed point (or target), never the unattended
+  // run-over. Absent member -> the current elapsed is NOT counted as a confirmation.
+  function autoFinalizeRunOver() {
+    if (finishing.current) return
+    finishing.current = true
+    const bankedThis = clampLoggedSeconds(gateTargetRef.current, currentElapsedSec(), confirmationsRef.current)
+    const done = resumeOffset + Math.max(0, bankedThis)
+    const seconds = finishCap === null ? done : Math.min(done, finishCap)
+    void finishWith(Math.max(0, seconds))
+  }
+
   async function finish() {
     if (finishing.current) return
     const e = pausedAt !== null ? (pausedAt - startedAt) / 1000 : (Date.now() - startedAt) / 1000
@@ -775,18 +865,29 @@ export function MovementSession({
       return
     }
     finishing.current = true
-    // The total banked = what an earlier partial already banked (resumeOffset, 0 for a
-    // fresh sit) + this session's own elapsed. Capped so we never log more than the
-    // whole practice: on a "Finish Practice" resume the cap is the authored target
-    // (secondsTarget); otherwise the plan's own run length. Open-ended Play has neither,
-    // so it banks the raw elapsed.
-    const done = resumeOffset + Math.round(e)
+    // The total banked = what an earlier partial already banked (resumeOffset, 0 for a fresh sit) +
+    // this session's own elapsed, run-over-gated. A member who taps Stop is PRESENT, so their tap
+    // confirms the elapsed up to now (appended to the confirmations) and the actual airtime banks;
+    // the gate only bites the ABSENT paths. Under 150% of target the clamp is a no-op, so the happy
+    // path is unchanged. Still capped so we never log more than the whole practice: a resume's cap
+    // is the authored target, else the plan length; open-ended Play has neither so it banks raw.
+    const el = Math.round(e)
+    const bankedThis = clampLoggedSeconds(gateTargetRef.current, el, [...confirmationsRef.current, el])
+    const done = resumeOffset + bankedThis
     const seconds = finishCap === null ? done : Math.min(done, finishCap)
     buzz(10)
     await finishWith(Math.max(0, seconds))
   }
 
-  async function finishWith(seconds: number) {
+  async function finishWith(
+    seconds: number,
+    opts?: {
+      startedIso?: string
+      practiceIdOverride?: string
+      resumeFromSecOverride?: number
+      movementModeOverride?: string
+    },
+  ) {
     // The run is ending: drop the crash-recovery cache + the server active session (completeSession
     // also clears the row server-side as the authoritative end).
     clearLiveSession('movement')
@@ -794,15 +895,17 @@ export function MovementSession({
     setStage('saving')
     await releaseQuiet()
     const result = await completeSession({
-      practiceId: practice?.logsAs ?? practiceId,
+      practiceId: opts?.practiceIdOverride ?? practice?.logsAs ?? practiceId,
       // A Movement sit is a real timed sit: it claims mode 'timer' so the economy +
       // timer-proof path runs unchanged. The movement mode tags the session row.
       mode: 'timer',
       pattern: null,
       seconds,
-      resumeFromSec: resumeOffset,
-      startedAt: new Date(startedAt).toISOString(),
-      movementMode: plan.mode,
+      resumeFromSec: opts?.resumeFromSecOverride ?? resumeOffset,
+      // Overrides let the resume-path run-over finalize report the RECORD's own started_at /
+      // banked / mode synchronously, before the resumed state has landed (see resumeFromRecord).
+      startedAt: opts?.startedIso ?? new Date(startedAt).toISOString(),
+      movementMode: opts?.movementModeOverride ?? plan.mode,
     })
     finishing.current = false
     if (isError(result)) {
@@ -1014,6 +1117,24 @@ export function MovementSession({
           )}
         </div>
 
+        {/* Run-over confirmation gate: once a run passes 150% of its target, a gentle, non-blocking
+            chip asks the member to confirm they are still moving. The clock keeps running; confirming
+            banks the time to now and keeps logging. Left unanswered for a whole interval, the run
+            auto-finalizes at the last confirmed point so an unattended run never inflates airtime.
+            Voice: plain, no narrated feelings, no em dashes. */}
+        {!warming && runOverPrompt && (
+          <div className="mx-auto mb-2 w-full max-w-sm rounded-2xl border border-move/50 bg-move-bg/30 px-4 py-3 text-center">
+            <p className="text-sm font-semibold text-text">Still moving?</p>
+            <p className="mt-0.5 text-xs text-muted">Confirm to keep logging.</p>
+            <button
+              type="button"
+              onClick={confirmRunOver}
+              className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-move px-3.5 py-1.5 text-sm font-bold text-on-move transition-colors hover:bg-move-hover"
+            >
+              Still here
+            </button>
+          </div>
+        )}
         {/* Docked action bar — always visible, even as the screen scrolls. Opaque canvas so
             the content above never shows through / overlaps it. */}
         <div className="sticky bottom-0 -mx-6 flex flex-col items-center gap-3 bg-canvas px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4">

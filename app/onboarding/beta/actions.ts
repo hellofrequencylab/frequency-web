@@ -163,7 +163,7 @@ async function enrollPersonaOnboarding(profileId: string, email: string, primary
       // multi-row throw hazard, so scope to root. byProfile above usually resolves first.
       const rootId = await loadRootSpaceId()
       const { data: byEmail } = rootId
-        ? await admin.from('contacts').select('id').eq('space_id', rootId).ilike('email', email).maybeSingle()
+        ? await admin.from('contacts').select('id').eq('space_id', rootId).eq('email', email.toLowerCase()).maybeSingle()
         : { data: null }
       contactId = (byEmail as { id: string } | null)?.id ?? null
     }
