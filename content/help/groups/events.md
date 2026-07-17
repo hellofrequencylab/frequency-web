@@ -3,7 +3,7 @@ title: Events & RSVPs
 description: Find gatherings, RSVP, and add them to your calendar.
 category: groups
 order: 3
-updated: 2026-06-26
+updated: 2026-07-17
 audience: member
 role: host
 featureKeys: [events]
@@ -60,10 +60,24 @@ See a cool event poster around town, or one on Eventbrite or in a group chat? Ca
 
 When you **check in at the door** of an event you're going to, you earn your Zaps, keep your streak, and you also become a **verified member**: a small check appears by your name. Showing up in the real world is the truest sign you're a real person, so it's how verification works here. Nothing to upload, no form, just turn up.
 
-## Building Current together
+## Invite people with your own link
 
-- When you show up to a gathering **with your circle**, your circle builds **Current** together: a shared measure of your circle showing up for each other. It builds every time a member attends.
-- It's **collaborative, not a competition**. Circles are never ranked against each other. A circle's Current stays private to its members unless the circle chooses to share it.
+Every event gives you a personal invite to share: a link and a QR code that point straight at the event with your name on them. Text the link, drop it in a group chat, or let someone scan the code off your phone.
+
+- **The person you invite does not need an account.** When someone who isn't on Frequency opens your link, they get a simple RSVP form: name, email, a phone number if they want, and going or maybe. That's it. They're in.
+- **Your guests are yours, and they're private.** Anyone who RSVPs through your link lands in your own contacts, stamped with the event. They are **not** added to any mailing list and nobody blasts them. It works like saving a name in your phone, not like handing out an email list.
+- **We keep the count straight.** If the same person RSVPs twice, it updates their card instead of making a duplicate.
+
+## What you earn for bringing people
+
+Sharing your invite is how you earn as a **Connector**. You get credit for the real thing that happens, not for a name on a list. The reward gets bigger the realer the outcome:
+
+- Someone fills out your RSVP form: a few **Zaps**.
+- They RSVP going or maybe: more **Zaps**.
+- They show up and check in at the door: more **Zaps** again.
+- They join Frequency: the biggest payout, **Zaps plus a Gem**.
+
+Keep it real. The reward is for people who actually RSVP, show up, or join, never for adding rows nobody engages with, and there's a daily cap so the loop can't be farmed. Bring in **10, 25, or 100** real connections and you earn the **Connector** achievement, a permanent badge in [your Vault](/help/membership/the-vault).
 
 ## Chat and photos
 
