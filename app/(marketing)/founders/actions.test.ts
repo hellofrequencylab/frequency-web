@@ -55,10 +55,10 @@ vi.mock('@/lib/supabase/admin', () => ({
       if (table !== 'contacts') throw new Error(`unexpected table ${table}`)
       return {
         select: () => ({
-          // Per-space tenancy (ADR-624): the lookup is root-scoped, so the chain now
-          // carries an `.eq('space_id', root)` before `.ilike`.
+          // Per-space tenancy (ADR-624): root-scoped `.eq('space_id', root)`, then an exact
+          // `.eq('email', …)` on the lowercased column (wildcard-safe; replaced the old ilike).
           eq: () => ({
-            ilike: () => ({
+            eq: () => ({
               maybeSingle: async () => ({ data: existingContact, error: null }),
             }),
           }),
