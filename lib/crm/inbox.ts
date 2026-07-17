@@ -321,7 +321,25 @@ export async function recordInboundEmail(
       },
       contact.spaceId,
     )
-    return res ? { status: 'recorded', contactId: contact.contactId } : { status: 'error', contactId: contact.contactId }
+    if (!res) return { status: 'error', contactId: contact.contactId }
+
+    // ALERT the owner: a reply is owed, so ping them (bell + the CRM Inbox already shows the thread).
+    // Best-effort: the reply is already on the timeline, so a notification failure must never fail it.
+    try {
+      const admin = createAdminClient() as unknown as {
+        from: (t: string) => { insert: (row: Record<string, unknown>) => Promise<{ error: unknown }> }
+      }
+      await admin.from('notifications').insert({
+        recipient_id: owner,
+        type: 'crm_inbound_reply',
+        reference_type: 'contact',
+        reference_id: contact.contactId,
+        body: `replied to your email${parsed.subject ? `: ${parsed.subject.slice(0, 80)}` : ''}`,
+      })
+    } catch {
+      /* best-effort: the reply is recorded regardless of the alert */
+    }
+    return { status: 'recorded', contactId: contact.contactId }
   } catch {
     return { status: 'error' }
   }

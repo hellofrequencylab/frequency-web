@@ -46,6 +46,11 @@ export const BUILTIN_SEGMENTS: { key: SegmentKey; label: string }[] = [
   // the not-unsubscribed filter, and unsubscribes via a per-address space-scoped token. Use this for a
   // warm-up series to an owned list; keep `site_signups` for a blast that must EXCLUDE the import.
   { key: 'all_contacts', label: 'Entire contact list (members + imported, not unsubscribed)' },
+  // Imported contact list ONLY — just the contacts uploaded from an outside list (source='import'),
+  // the mirror image of `site_signups`. Reaches the owned imported list and NOTHING else (no members,
+  // no site sign-ups), as opt-out subscribers (same owner directive as all_contacts). Use this to write
+  // to just the people you brought over, separately from your on-site audience.
+  { key: 'imported_contacts', label: 'Imported contact list only (no members or sign-ups)' },
   // Site sign-ups only — organic members, with the imported email list (source='import')
   // held out. This is the audience for a blast that should reach people who joined ON the
   // site but NOT contacts we uploaded from an outside list. The hold-out is by SOURCE, so it
@@ -209,6 +214,23 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
       .or('profile_id.not.is.null,source.eq.import')
     allq = rootId ? allq.or(`space_id.is.null,space_id.eq.${rootId}`) : allq.is('space_id', null)
     const { data } = await allq
+    return (data ?? [])
+      .filter((c) => c.email)
+      .map((c) => ({ contactId: c.id, email: c.email as string, profileId: (c.profile_id as string) ?? null }))
+  }
+
+  // IMPORTED CONTACT LIST ONLY (`imported_contacts`) — just the uploaded list (source='import'), nothing
+  // else. The mirror of `site_signups`. Reached as opt-out subscribers exactly like the all_contacts
+  // import rows (suppression-gated at send). Scoped to the root space, excludes unsubscribed.
+  if (parsed.slug === 'imported_contacts') {
+    const rootId = await loadRootSpaceId()
+    let impq = db
+      .from('contacts')
+      .select('id, email, profile_id, consent_state, source')
+      .eq('source', 'import')
+      .neq('consent_state', 'unsubscribed')
+    impq = rootId ? impq.or(`space_id.is.null,space_id.eq.${rootId}`) : impq.is('space_id', null)
+    const { data } = await impq
     return (data ?? [])
       .filter((c) => c.email)
       .map((c) => ({ contactId: c.id, email: c.email as string, profileId: (c.profile_id as string) ?? null }))
