@@ -94,6 +94,36 @@ export async function loadCampaignFromName(campaignId: string): Promise<string |
   }
 }
 
+/**
+ * Resolve the Reply-To for a campaign so a recipient can just hit Reply and reach a human. Precedence:
+ *   1. EMAIL_REPLY_TO env — a platform reply address. Point it at the CRM inbound-parse address (Resend
+ *      inbound) to capture replies on the Inbox timeline + alert the owner.
+ *   2. else the campaign creator's own email (from their member contact row), so a reply lands in their
+ *      inbox with zero configuration.
+ * Returns undefined when neither resolves (the send then falls back to the noreply envelope). Fail-safe.
+ */
+export async function loadCampaignReplyTo(campaignId: string): Promise<string | undefined> {
+  const override = process.env.EMAIL_REPLY_TO
+  if (override && override.trim()) return override.trim()
+  try {
+    const db = createAdminClient()
+    const { data: campaign } = await db.from('campaigns').select('created_by').eq('id', campaignId).maybeSingle()
+    const creator = (campaign as { created_by?: string | null } | null)?.created_by
+    if (!creator) return undefined
+    const { data: contact } = await db
+      .from('contacts')
+      .select('email')
+      .eq('profile_id', creator)
+      .not('email', 'is', null)
+      .limit(1)
+      .maybeSingle()
+    const email = (contact as { email?: string | null } | null)?.email
+    return typeof email === 'string' && email.includes('@') ? email : undefined
+  } catch {
+    return undefined
+  }
+}
+
 // ── Size guard (Gmail clips a message past ~102 KB) ─────────────────────────────
 // We warn a touch under the clip so an operator can trim before the footer / unsubscribe
 // gets cut off. Measured on the compiled HTML's UTF-8 byte length (what the mailbox sees).
@@ -121,7 +151,7 @@ export function emailSizeWarning(bytes: number): string {
 // draft -> scheduled -> sending -> sent ; scheduled -> cancelled ; sending -> paused -> sending
 
 /** The send-lifecycle status held on `campaigns.status`. */
-export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'cancelled'
+export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'cancelled' | 'failed'
 
 /** A lifecycle action an operator (or the sender) can take on a campaign. */
 export type CampaignAction = 'schedule' | 'send' | 'complete' | 'pause' | 'resume' | 'cancel'
@@ -134,6 +164,10 @@ const TRANSITIONS: Record<CampaignStatus, Partial<Record<CampaignAction, Campaig
   paused: { resume: 'sending', cancel: 'cancelled' },
   sent: {},
   cancelled: {},
+  // A send that errored (stamped by the scheduled-send cron). RECOVERABLE: an operator can re-send it
+  // or re-schedule it once the cause is fixed, instead of the campaign being stuck forever (before this,
+  // 'failed' had no transitions, so the composer's Send/Schedule refused it — a dead end).
+  failed: { send: 'sending', schedule: 'scheduled', cancel: 'cancelled' },
 }
 
 /**
@@ -382,6 +416,12 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   // pre-migration this reads null and we send from the platform default.
   const fromHeader = buildCampaignFrom(await loadCampaignFromName(campaignId))
 
+  // Reply-To so a recipient can just hit Reply and reach a human (the envelope From stays the verified
+  // noreply domain). Precedence: EMAIL_REPLY_TO (a platform reply address — point it at the CRM inbound-
+  // parse address to capture replies on the Inbox timeline) → else the campaign creator's own email, so a
+  // reply lands in their inbox with zero setup. Null when neither resolves (replies fall back to noreply).
+  const replyTo = await loadCampaignReplyTo(campaignId)
+
   const db = createAdminClient()
 
   // ATOMIC CLAIM (not a bare update): flip → 'sending' ONLY while the row is still in the status we
@@ -460,6 +500,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
       await enqueueEmail({
         to: r.email,
         from: fromHeader,
+        ...(replyTo ? { replyTo } : {}),
         subject,
         html,
         text,

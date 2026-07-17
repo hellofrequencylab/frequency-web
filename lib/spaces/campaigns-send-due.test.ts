@@ -31,6 +31,19 @@ vi.mock('./email', () => ({
 
 vi.mock('@/lib/log', () => ({ log: { info: () => {}, warn: () => {}, error: () => {} } }))
 
+// GLOBAL Email Studio send seam: a global campaign (root/null space) routes here, not to the per-Space
+// system. Track the ids it was called with; default to an ok result.
+let globalSendResult: { data: { recipientCount: number } } | { error: string } = { data: { recipientCount: 1 } }
+const globalSendCalls: string[] = []
+vi.mock('@/lib/email-studio/send', () => ({
+  sendCampaignNow: async (id: string) => {
+    globalSendCalls.push(id)
+    return globalSendResult
+  },
+}))
+// The root-space id used to discriminate global vs per-Space campaigns. Distinct from seed()'s 'space-A'.
+vi.mock('@/lib/spaces/store', () => ({ loadRootSpaceId: async () => 'root-space' }))
+
 // In-memory campaigns store + a chainable admin mock that honors the conditional claim.
 interface Row {
   id: string
@@ -119,6 +132,8 @@ beforeEach(() => {
   store.rows = []
   stamps.length = 0
   sendCalls.length = 0
+  globalSendCalls.length = 0
+  globalSendResult = { data: { recipientCount: 1 } }
   audience = [{ contactId: 'c1', email: 'a@x.com' }]
   sendResult = { data: { sent: 1, suppressed: 0, failed: 0 } }
 })
@@ -177,10 +192,36 @@ describe('sendDueCampaigns', () => {
     expect(row.status).toBe('failed')
   })
 
-  it('skips a scheduled campaign with no space_id', async () => {
+  it('routes a GLOBAL campaign (null space) to the Email Studio sender, not the per-Space seam', async () => {
     seed({ space_id: null })
     const res = await sendDueCampaigns()
-    expect(res.claimed).toBe(0)
+    expect(globalSendCalls).toEqual(['cmp-1']) // sent via sendCampaignNow
+    expect(sendCalls).toEqual([]) // NOT the per-Space system seam
+    expect(res.sent).toBe(1)
+  })
+
+  it('routes a GLOBAL campaign (root space) to the Email Studio sender', async () => {
+    seed({ space_id: 'root-space' })
+    const res = await sendDueCampaigns()
+    expect(globalSendCalls).toEqual(['cmp-1'])
     expect(sendCalls).toEqual([])
+    expect(res.sent).toBe(1)
+  })
+
+  it('a GLOBAL send error counts as failed (does not throw)', async () => {
+    seed({ space_id: null })
+    globalSendResult = { error: 'gate blocked' }
+    const res = await sendDueCampaigns()
+    expect(res.failed).toBe(1)
+    expect(res.sent).toBe(0)
+  })
+
+  it('still routes a per-Space campaign (non-root space) to the per-Space seam', async () => {
+    const row = seed({ space_id: 'space-A' })
+    const res = await sendDueCampaigns()
+    expect(sendCalls).toEqual(['space-A'])
+    expect(globalSendCalls).toEqual([])
+    expect(res.sent).toBe(1)
+    expect(row.status).toBe('sent')
   })
 })

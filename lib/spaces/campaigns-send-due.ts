@@ -21,6 +21,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveAudience, definitionToFilter } from '@/lib/spaces/audiences'
 import { sendSpaceCampaignSystem, SPACE_UNSUBSCRIBE_PLACEHOLDER } from '@/lib/spaces/email'
+import { sendCampaignNow } from '@/lib/email-studio/send'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 import { isError } from '@/lib/action-result'
 import { log } from '@/lib/log'
 
@@ -110,11 +112,41 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
   const due = dueRows ?? []
   if (due.length === 0) return { due: 0, claimed: 0, sent: 0, failed: 0 }
 
+  // GLOBAL vs per-Space routing. Two different campaign shapes share the `campaigns` table:
+  //   • GLOBAL Email Studio campaigns — space_id = root (or legacy null), audience in the `segment`
+  //     column, body in `block_json`. They MUST send through sendCampaignNow (resolveSegment + compile
+  //     block_json + the unified consent gate). Sending them through the per-Space seam below reads the
+  //     wrong fields (audience_filter / body), resolves 0 recipients, and wrongly stamps them 'failed'.
+  //   • per-Space campaigns — a non-root space_id + a stored audience_filter → the existing seam.
+  // Discriminate by space: root or null → global. (Before this, the cron grabbed global campaigns and
+  // failed every one — no global scheduled send could go out. ADR-scheduled-global-send.)
+  const rootSpaceId = await loadRootSpaceId()
+  const isGlobalCampaign = (spaceId: string | null): boolean => !spaceId || spaceId === rootSpaceId
+
   let claimed = 0
   let sent = 0
   let failed = 0
 
   for (const row of due) {
+    // GLOBAL campaign → the Email Studio sender. sendCampaignNow does its OWN atomic claim
+    // (scheduled → sending) + stamping, so we do NOT pre-claim here. Idempotent: it refuses an
+    // already-sent/sending row. A transient failure resets it to 'scheduled' and it retries next pass.
+    if (isGlobalCampaign(row.space_id)) {
+      claimed++
+      try {
+        const res = await sendCampaignNow(row.id)
+        if (isError(res)) {
+          failed++
+          log.error('cron.space_campaigns.global_send_failed', { id: row.id, error: res.error })
+        } else {
+          sent++
+        }
+      } catch (err) {
+        failed++
+        log.error('cron.space_campaigns.global_send_threw', { id: row.id, error: String(err) })
+      }
+      continue
+    }
     if (!row.space_id) continue // a scheduled campaign with no Space can never resolve an audience.
 
     // CLAIM: flip scheduled -> sending, re-asserting status='scheduled' so only one pass wins. A null
