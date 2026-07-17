@@ -6,6 +6,7 @@ import { setPlatformFlag } from '@/lib/platform-flags'
 import { reindexHelpChunks, type ReindexResult } from '@/lib/ai/help-index'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
+  AUTONOMY_CATEGORIES,
   type AutonomyCategory,
   type AutonomyCaps,
   type AutonomyAnomaly,
@@ -41,6 +42,9 @@ export async function setVeraAutonomyEnabled(enabled: boolean): Promise<void> {
 /** Per-category autonomy toggle (each send-capable tool opts in separately). */
 export async function setVeraAutonomyCategory(category: AutonomyCategory, enabled: boolean): Promise<void> {
   const { profileId } = await requireAdmin('janitor', { staff: 'platform' })
+  // Validate the category against the fixed allowlist before using it as a property key — the value
+  // arrives from the client, and an unchecked computed key is a property-injection sink (CodeQL).
+  if (!AUTONOMY_CATEGORIES.includes(category)) return
   await saveAutonomyTuning({ categories: { [category]: enabled } }, profileId)
   revalidatePath('/admin/vera-ai')
 }

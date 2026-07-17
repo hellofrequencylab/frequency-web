@@ -1,3 +1,7 @@
+// authz-delegated: platform-wide autonomous-send + audit-ledger write (no per-user resource owner). The
+// guards are the CIRCUIT BREAKER (owner-enabled, default OFF) + resolveSendGate, both required below and
+// unbypassable; there is no caller-supplied scope to bind to. See ADR-274/275 + ADR-626.
+//
 // The Vera autonomous-send GRADUATION path (ADR — Vera autonomous-send graduation).
 //
 // This is the ONLY function that turns a Vera-decided send into a real, autonomous send. It routes

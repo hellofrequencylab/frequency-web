@@ -260,9 +260,19 @@ export function parseInboundEmailPayload(payload: unknown): ParsedInboundEmail |
 /** Pull a lowercased email address out of a string or a `{ address }` / `{ email }` object. */
 function extractAddress(raw: unknown): string | null {
   if (typeof raw === 'string') {
-    // A raw string may be "Name <a@b.com>" or "a@b.com".
-    const match = raw.match(/<([^>]+)>/)
-    const candidate = (match ? match[1] : raw).trim().toLowerCase()
+    // A raw string may be "Name <a@b.com>" or "a@b.com". Bound the input (an address is short) and pull
+    // the bracketed part with linear indexOf — NOT a regex like /<([^>]+)>/, which backtracks
+    // polynomially on a long unclosed "<..." (CodeQL: polynomial ReDoS on uncontrolled data).
+    const s = raw.slice(0, 320)
+    const lt = s.indexOf('<')
+    let inner = s
+    if (lt >= 0) {
+      const gt = s.indexOf('>', lt + 1)
+      if (gt > lt) inner = s.slice(lt + 1, gt)
+    }
+    const candidate = inner.trim().toLowerCase()
+    // Reject control chars (CR/LF etc.) so a captured address can never inject into a log line or thread.
+    if (/[\x00-\x1f\x7f]/.test(candidate)) return null
     return candidate.includes('@') ? candidate : null
   }
   if (raw && typeof raw === 'object') {

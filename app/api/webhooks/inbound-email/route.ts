@@ -53,7 +53,8 @@ export async function POST(req: Request) {
   // Best-effort record (never integrity-critical): a write blip should not force a redelivery.
   const result = await recordInboundEmail(parsed)
   if (result.status !== 'recorded') {
-    console.warn(`[inbound-email] not recorded (${result.status}) for ${parsed.from}`)
+    // Log the status only — never the user-controlled from-address (log-injection sink, CodeQL).
+    console.warn(`[inbound-email] not recorded (${result.status})`)
   }
   return NextResponse.json({ ok: true, status: result.status })
 }
