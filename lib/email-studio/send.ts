@@ -110,6 +110,21 @@ export async function loadCampaignReplyTo(campaignId: string): Promise<string | 
     const { data: campaign } = await db.from('campaigns').select('created_by').eq('id', campaignId).maybeSingle()
     const creator = (campaign as { created_by?: string | null } | null)?.created_by
     if (!creator) return undefined
+    // AUTHORITATIVE: the creator's ACCOUNT (auth) email. This is the reliable source — an operator/owner
+    // may have no `contacts` row of their own, which is exactly why the contacts-only lookup returned
+    // nothing before. Resolve profiles.auth_user_id → the auth user's email via the service-role client.
+    const { data: profile } = await db.from('profiles').select('auth_user_id').eq('id', creator).maybeSingle()
+    const authId = (profile as { auth_user_id?: string | null } | null)?.auth_user_id
+    if (authId) {
+      try {
+        const { data: userRes } = await db.auth.admin.getUserById(authId)
+        const authEmail = userRes?.user?.email
+        if (typeof authEmail === 'string' && authEmail.includes('@')) return authEmail
+      } catch {
+        /* fall through to the contact-row fallback */
+      }
+    }
+    // FALLBACK: a member contact email (for a creator who is only a contact, not an auth user).
     const { data: contact } = await db
       .from('contacts')
       .select('email')
