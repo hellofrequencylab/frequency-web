@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Building2, Mail, Search, Sparkles, UserRound, X } from 'lucide-react'
@@ -9,8 +9,11 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { ROLE_LABEL } from '@/lib/community-roles'
 import {
+  assignableKinds,
+  isAssignableKind,
   relationshipKind,
   relationshipLabel,
+  type RelationshipKind,
   type RelationshipTone,
 } from '@/lib/crm/relationships'
 import {
@@ -20,6 +23,8 @@ import {
   type ContactSort,
 } from '@/lib/crm/contacts-roster'
 import type { Facet } from '@/lib/people/member-viewer'
+import { assignRelationship, removeRelationship } from '../relationship-actions'
+import { isError, type ActionResult } from '@/lib/action-result'
 
 // THE CONTACTS ROSTER ISLAND: the thin interactive shell over the pure core (lib/crm/contacts-roster).
 // It mirrors the member-viewer's HERO toolbar (live search + a prominent sort selector + facets) but
@@ -286,14 +291,7 @@ function ContactRow({ row }: { row: ContactRosterRow }) {
               {relationshipLabel('business')}
             </StatusChip>
           )}
-          {row.relationshipKinds.map((k) => {
-            const def = relationshipKind(k)
-            return (
-              <StatusChip key={k} tone={toneToChip(def?.tone ?? 'neutral')} size="sm">
-                {relationshipLabel(k)}
-              </StatusChip>
-            )
-          })}
+          <RelationshipEditor contactId={row.contactId} initialKinds={row.relationshipKinds} />
           {row.upgradeCandidate && (
             <StatusChip tone="success" size="sm">
               <Sparkles className="h-2.5 w-2.5" aria-hidden />
@@ -346,5 +344,99 @@ function ContactRow({ row }: { row: ContactRosterRow }) {
         </Link>
       )}
     </li>
+  )
+}
+
+// ── The assign-a-relationship write surface (the CRM "small sliver") ───────────────────────────────
+// The one WRITER for the assignable-relationship read path: it paints a contact's stored kinds as
+// removable chips and offers an "Add relationship" menu of the assignable registry (voice-safe labels)
+// that has not been assigned yet. Both edits are OPTIMISTIC — the chip changes on click, and the server
+// action revalidates the roster on success so the change also flows into the "Relationship" facet; a
+// rejected write rolls the chip back and shows the friendly error. Semantic tokens only, no hex.
+
+function RelationshipEditor({
+  contactId,
+  initialKinds,
+}: {
+  contactId: string
+  initialKinds: RelationshipKind[]
+}) {
+  const [kinds, setKinds] = useState<RelationshipKind[]>(initialKinds)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
+
+  // The "Add relationship" menu: every assignable kind this contact does not already hold (registry order).
+  const available = useMemo(
+    () => assignableKinds().filter((k) => !kinds.includes(k.key as RelationshipKind)),
+    [kinds],
+  )
+
+  // Optimistically paint `next`, run the gated action, and roll back to `prev` with the error on reject.
+  const run = useCallback(
+    (next: RelationshipKind[], action: () => Promise<ActionResult>) => {
+      const prev = kinds
+      setError(null)
+      setKinds(next)
+      startTransition(async () => {
+        const res = await action()
+        if (isError(res)) {
+          setKinds(prev)
+          setError(res.error)
+        }
+      })
+    },
+    [kinds],
+  )
+
+  const add = (kind: RelationshipKind) =>
+    run([...kinds, kind], () => assignRelationship(contactId, kind))
+  const remove = (kind: RelationshipKind) =>
+    run(kinds.filter((k) => k !== kind), () => removeRelationship(contactId, kind))
+
+  return (
+    <>
+      {kinds.map((k) => {
+        const def = relationshipKind(k)
+        const label = relationshipLabel(k)
+        return (
+          <StatusChip key={k} tone={toneToChip(def?.tone ?? 'neutral')} size="sm">
+            {label}
+            <button
+              type="button"
+              onClick={() => remove(k)}
+              disabled={pending}
+              aria-label={`Remove ${label} relationship`}
+              className="-mr-0.5 ml-0.5 rounded-full p-0.5 transition-colors hover:bg-text/10 disabled:opacity-50"
+            >
+              <X className="h-2.5 w-2.5" aria-hidden />
+            </button>
+          </StatusChip>
+        )
+      })}
+
+      {available.length > 0 && (
+        <label className="inline-flex shrink-0 items-center">
+          <span className="sr-only">Add a relationship for this contact</span>
+          <select
+            value=""
+            disabled={pending}
+            onChange={(e) => {
+              const value = e.target.value
+              if (isAssignableKind(value)) add(value)
+            }}
+            className="rounded-full border border-dashed border-border bg-surface px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:border-primary hover:text-primary focus:outline-none disabled:opacity-50"
+          >
+            <option value="">+ Add relationship</option>
+            {available.map((k) => (
+              <option key={k.key} value={k.key}>
+                {k.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {error && <span className="basis-full text-2xs text-danger">{error}</span>}
+    </>
   )
 }

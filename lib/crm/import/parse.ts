@@ -18,21 +18,53 @@ const PARSE_ROW_CAP = 5000
 
 /** The slice of a Papa parse result we use. Declared locally because `papaparse` ships without
  *  bundled types in this project, so `Papa` is ambient-any; annotating the callback keeps our
- *  own code free of implicit-any. */
-type PapaResultLike = { data: unknown; meta?: { fields?: string[] } }
+ *  own code free of implicit-any. We parse WITHOUT header mode (so `data` is an array of row
+ *  arrays), then build the row objects ourselves — see normalizeArrayParsed. */
+type PapaArrayResultLike = { data: unknown }
 
-/** Shared normalizer: Papa's fields + row data -> a clean ParsedSource (header row becomes the
- *  keys, every cell a trimmed string, empty rows dropped, capped). Typed against `unknown` so it
- *  never leans on Papa's ambient types. */
-function normalizeParsed(fields: readonly string[] | undefined, data: unknown): ParsedSource {
-  const headers = (fields ?? []).map((h) => h.trim()).filter(Boolean)
+/** Build the de-duplicated header list from the header row, positionally. A repeated column name is
+ *  suffixed ("Email" -> "Email 2") so a second same-named column is never collapsed onto the first
+ *  (last-wins data loss). Mirrors xlsx.ts's header de-dup exactly. An empty header cell is dropped
+ *  (its column is ignored), preserving the prior header-mode behavior. Returns the unique header
+ *  names plus a per-column key (null where the column was dropped). */
+function buildHeaders(headerRow: unknown[]): { headers: string[]; colKeys: (string | null)[] } {
+  const headers: string[] = []
+  const colKeys: (string | null)[] = []
+  const used = new Set<string>()
+  for (const raw of headerRow) {
+    const base = (typeof raw === 'string' ? raw : '').trim()
+    if (!base) {
+      colKeys.push(null)
+      continue
+    }
+    let unique = base
+    let n = 2
+    while (used.has(unique.toLowerCase())) unique = `${base} ${n++}`
+    used.add(unique.toLowerCase())
+    headers.push(unique)
+    colKeys.push(unique)
+  }
+  return { headers, colKeys }
+}
+
+/** Shared normalizer: Papa's array-of-arrays (first row = headers) -> a clean ParsedSource. Every
+ *  cell is a trimmed string, empty rows are dropped, and the row count is capped. Typed against
+ *  `unknown` so it never leans on Papa's ambient types. */
+function normalizeArrayParsed(data: unknown): ParsedSource {
   const rawRows = Array.isArray(data) ? (data as unknown[]) : []
+  const headerRow = Array.isArray(rawRows[0]) ? (rawRows[0] as unknown[]) : []
+  const { headers, colKeys } = buildHeaders(headerRow)
   const rows: Record<string, string>[] = []
-  for (const r of rawRows) {
-    if (!r || typeof r !== 'object') continue
-    const rec = r as Record<string, unknown>
+  for (let i = 1; i < rawRows.length; i++) {
+    const arr = rawRows[i]
+    if (!Array.isArray(arr)) continue
     const out: Record<string, string> = {}
-    for (const h of headers) out[h] = typeof rec[h] === 'string' ? (rec[h] as string).trim() : ''
+    for (const h of headers) out[h] = ''
+    colKeys.forEach((key, col) => {
+      if (key === null) return
+      const v = (arr as unknown[])[col]
+      out[key] = typeof v === 'string' ? v.trim() : v == null ? '' : String(v)
+    })
     if (Object.values(out).some(Boolean)) rows.push(out)
   }
   return { headers, rows: rows.slice(0, PARSE_ROW_CAP), rowCount: rows.length }
@@ -42,11 +74,10 @@ function normalizeParsed(fields: readonly string[] | undefined, data: unknown): 
  *  rows are dropped by Papa, never thrown), so a messy file still onboards. */
 export function parseCsvFile(file: File): Promise<ParsedSource> {
   return new Promise((resolve, reject) => {
-    Papa.parse<Record<string, string>>(file, {
-      header: true,
+    Papa.parse(file, {
+      header: false,
       skipEmptyLines: 'greedy',
-      transformHeader: (h: string) => h.trim(),
-      complete: (results: PapaResultLike) => resolve(normalizeParsed(results.meta?.fields, results.data)),
+      complete: (results: PapaArrayResultLike) => resolve(normalizeArrayParsed(results.data)),
       error: (err: unknown) => reject(err instanceof Error ? err : new Error('Could not read that CSV.')),
     })
   })
@@ -56,12 +87,11 @@ export function parseCsvFile(file: File): Promise<ParsedSource> {
  *  pulled out of an uploaded ZIP, where there is no browser File to stream. Papa parses a string
  *  synchronously. */
 export function parseCsvText(text: string): ParsedSource {
-  const results = Papa.parse<Record<string, string>>(text, {
-    header: true,
+  const results = Papa.parse(text, {
+    header: false,
     skipEmptyLines: 'greedy',
-    transformHeader: (h: string) => h.trim(),
-  }) as PapaResultLike
-  return normalizeParsed(results.meta?.fields, results.data)
+  }) as PapaArrayResultLike
+  return normalizeArrayParsed(results.data)
 }
 
 /** A small sample of rows for the deterministic auto-map + the AI assist. */

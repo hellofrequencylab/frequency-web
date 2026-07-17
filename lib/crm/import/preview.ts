@@ -58,6 +58,9 @@ async function readExistingKeys(row: ContactImportRow): Promise<ExistingKeys> {
 /** Compute the dry-run validation for the CURRENT mapping + merge strategy on a row. */
 export async function computeValidation(row: ContactImportRow): Promise<ValidationResult> {
   const existing = await readExistingKeys(row)
-  const plan = planCommit(row.source.rows, row.mapping, existing, row.mergeStrategy)
+  // A Space / platform target keys on email (contacts.email NOT NULL), so an email-less row is
+  // skipped at commit — mirror that here so the preview count equals the commit outcome.
+  const requireEmail = row.targetKind === 'space' || row.targetKind === 'platform'
+  const plan = planCommit(row.source.rows, row.mapping, existing, row.mergeStrategy, { requireEmail })
   return toValidationResult(plan)
 }

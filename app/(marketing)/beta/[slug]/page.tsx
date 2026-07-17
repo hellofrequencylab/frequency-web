@@ -26,6 +26,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: splash.headline,
     description: splash.body,
+    // Private invite/cohort links, shared directly with an audience, not a public crawl target. Noindex
+    // (and kept out of the sitemap) so a shared /beta/<slug> never surfaces in search.
+    robots: { index: false },
     alternates: { canonical: `/beta/${slug}` },
     openGraph: { title: splash.headline, description: splash.body, url: `/beta/${slug}` },
   }

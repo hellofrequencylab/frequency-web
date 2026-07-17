@@ -210,6 +210,49 @@ export async function existingContactKeys(
   return { emails, phones }
 }
 
+/** A slim contact row for import-merge id resolution: the id + the scalar fields a merge patch
+ *  needs + the details jsonb. Deliberately narrower than NetworkContactListItem (no tags, no signed
+ *  avatar URL) so this read stays cheap. */
+export interface ContactMergeRow {
+  id: string
+  displayName: string | null
+  email: string | null
+  phone: string | null
+  title: string | null
+  company: string | null
+  city: string | null
+  website: string | null
+  details: ContactDetails
+}
+
+/** Every owner contact as a slim merge row (id + scalars + details), UNBOUNDED (no limit). The import
+ *  commit builds its email/phone -> id resolution map from this so it covers the SAME full cohort as
+ *  existingContactKeys — an owner with more contacts than listContacts' page cap still resolves every
+ *  planned merge (a row matching a contact past the cap is no longer miscounted as failed). Owner-
+ *  scoped read; fail-safe to [] on a read error (the commit then degrades exactly like the key read). */
+export async function listContactsForMerge(ownerId: string): Promise<ContactMergeRow[]> {
+  try {
+    const { data } = await db()
+      .from('network_contacts')
+      .select('id, display_name, email, phone, title, company, city, website, details')
+      .eq('owner_id', ownerId)
+    return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+      id: String(r.id),
+      displayName: (r.display_name as string) ?? null,
+      email: (r.email as string) ?? null,
+      phone: (r.phone as string) ?? null,
+      title: (r.title as string) ?? null,
+      company: (r.company as string) ?? null,
+      city: (r.city as string) ?? null,
+      website: (r.website as string) ?? null,
+      details: (r.details as ContactDetails) ?? {},
+    }))
+  } catch {
+    /* read failure → empty cohort (commit degrades like existingContactKeys, never loses data) */
+    return []
+  }
+}
+
 export interface UpdateContactPatch {
   displayName?: string | null
   email?: string | null

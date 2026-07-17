@@ -174,7 +174,18 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
     .select('id, email, profile_id, consent_state')
     .not('profile_id', 'is', null)
     .neq('consent_state', 'unsubscribed')
-  if (parsed.slug === 'subscribed_members') q = q.eq('consent_state', 'subscribed')
+  // MARKETING OPT-IN GATE. A global Email Studio broadcast is a MARKETING send, and `email_marketing`
+  // is opt-IN (lib/consent/scopes.ts: defaultGranted:false) while `email_lifecycle` is opt-OUT. The
+  // double-opt-in funnel (lib/consent confirmOptin) grants email_marketing AND stamps
+  // consent_state='subscribed' together, so a broadcast may reach ONLY 'subscribed' contacts — the SAME
+  // rule the per-Space path enforces (lib/spaces/email.ts canEmailContact(email,'marketing'): an
+  // 'unknown'/never-opted-in address is skipped). The broad marketing audiences (`members`,
+  // `site_signups`) therefore require 'subscribed' here; `subscribed_members` already did. The send-gate
+  // re-checks email_marketing per recipient at send (lib/email-studio/send.ts, category 'marketing') as
+  // the backstop, but narrowing the audience here keeps counts honest and mirrors the Space funnel.
+  if (parsed.slug === 'members' || parsed.slug === 'subscribed_members' || parsed.slug === 'site_signups') {
+    q = q.eq('consent_state', 'subscribed')
+  }
   // Site sign-ups: the same profile-bearing, not-unsubscribed rule, with the imported
   // email list held out by SOURCE. `source <> 'import'` alone would also drop rows with a
   // NULL source (SQL three-valued logic), so keep null-source members in with an explicit

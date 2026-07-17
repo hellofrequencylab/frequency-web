@@ -13,6 +13,10 @@ import { getContactPreferences, CONTACT_TOPICS } from '@/lib/comms/contact-prefe
 import type { NotificationTopic } from '@/lib/notification-preferences'
 import { PreferenceCenter, type ContactTopicState } from './preference-center'
 
+// Token-authorised transactional landing (reached from an email link, never crawled). Already in
+// robots.ts DISALLOW; this page-level noindex is defense-in-depth so the URL can never enter the index.
+export const metadata = { robots: { index: false } }
+
 const CATEGORY_LABELS: Record<string, string> = {
   dispatches: 'broadcasts',
   events:     'event reminders',

@@ -6,6 +6,7 @@ import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { authorizeAction } from '@/lib/admin/guard'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // The CRM suite is a steward tool — hosts and up. Every action gates here, and
@@ -25,8 +26,20 @@ function db() {
   return createAdminClient()
 }
 
+// The first stage of the ROOT space's pipeline. This global CRM (root-scoped) seeds root-owned deals,
+// so the default stage MUST come from the root Space: every Space seeds its own stages at sort_order=0,
+// so an unscoped `order(sort_order).limit(1)` could return a FOREIGN Space's stage, giving the deal a
+// stage_id that is invisible on the root board yet still counted in metrics. Scope to the root space id.
 async function firstStageId(): Promise<string | null> {
-  const { data } = await db().from('crm_stages').select('id').order('sort_order').limit(1).maybeSingle()
+  const rootId = await loadRootSpaceId()
+  if (!rootId) return null
+  const { data } = await db()
+    .from('crm_stages')
+    .select('id')
+    .eq('space_id', rootId)
+    .order('sort_order')
+    .limit(1)
+    .maybeSingle()
   return (data as { id: string } | null)?.id ?? null
 }
 

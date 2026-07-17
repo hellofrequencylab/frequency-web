@@ -273,6 +273,27 @@ describe('setStageKind', () => {
     expect(dealsUpdate[1]).toMatchObject({ status: 'won' })
     expect(h.state.ops).toContainEqual(['eq', 'space_id', 'space-1'])
   })
+  it('is a no-op on an unchanged kind (Won -> Won): NO write, so closed_at is not re-stamped', async () => {
+    seedStages()
+    const res = await setStageKind('demo', 'w', 'won')
+    expect('data' in res).toBe(true)
+    // The bug: re-selecting the same kind re-ran the deal re-sync and re-stamped closed_at = now, losing
+    // historical close dates + inflating upgradesThisMonth. Neither the stage nor its deals may be written.
+    expect(h.state.ops.some((o) => o[0] === 'stages.update')).toBe(false)
+    expect(h.state.ops.some((o) => o[0] === 'deals.update')).toBe(false)
+  })
+  it('compensates a TOCTOU race: reverts the stage when the write dropped the last Won to zero', async () => {
+    // Guard sees TWO Won stages (change is allowed), but a concurrent write left ZERO Won by the time the
+    // post-write floor check reads — so the stage (and its deals) must be reverted to keep >=1 Won/Lost.
+    vi.mocked(getStages)
+      .mockResolvedValueOnce([S('o', 'open', 0), S('w', 'won', 1), S('w2', 'won', 2), S('l', 'lost', 3)])
+      .mockResolvedValueOnce([S('o', 'open', 0), S('l', 'lost', 3)])
+    const res = await setStageKind('demo', 'w', 'open')
+    expect('error' in res).toBe(true)
+    const stageUpdates = h.state.ops.filter((o) => o[0] === 'stages.update').map((o) => o[1])
+    // First the attempted change to open, then the compensating revert back to won.
+    expect(stageUpdates).toEqual([{ kind: 'open' }, { kind: 'won' }])
+  })
 })
 
 // ── reorderStages ────────────────────────────────────────────────────────────────────────────────────
@@ -334,5 +355,21 @@ describe('deleteStage', () => {
     expect('data' in res).toBe(true)
     expect(h.state.ops.some((o) => o[0] === 'deals.update')).toBe(false)
     expect(h.state.ops.some((o) => o[0] === 'stages.delete')).toBe(true)
+  })
+  it('compensates a TOCTOU race: recreates a same-kind stage when the delete dropped the last Won', async () => {
+    // Guard sees TWO Won stages (delete allowed), but a concurrent write left ZERO Won by the post-delete
+    // floor check — so an (empty) same-kind stage is recreated to keep >=1 Won/Lost.
+    vi.mocked(getStages)
+      .mockResolvedValueOnce([S('o', 'open', 0), S('w', 'won', 1), S('w2', 'won', 2), S('l', 'lost', 3)])
+      .mockResolvedValueOnce([S('o', 'open', 0), S('l', 'lost', 3)])
+    h.state.dealsCount = 0
+    const res = await deleteStage('demo', 'w')
+    expect('error' in res).toBe(true)
+    const delIdx = h.state.ops.findIndex((o) => o[0] === 'stages.delete')
+    const insertIdx = h.state.ops.findIndex((o) => o[0] === 'stages.insert')
+    expect(delIdx).toBeGreaterThanOrEqual(0)
+    // The recreate happens AFTER the delete, restoring a Won stage.
+    expect(insertIdx).toBeGreaterThan(delIdx)
+    expect(h.state.ops.find((o) => o[0] === 'stages.insert')![1]).toMatchObject({ kind: 'won' })
   })
 })

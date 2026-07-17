@@ -164,6 +164,17 @@ describe('planCommit', () => {
     expect(plan.rows[0].contact.phone).toBe('')
     expect(plan.diff.flagged).toBe(1)
   })
+  it('requireEmail classifies a phone-only row as skip (Space/platform target parity)', () => {
+    // A Name,Phone row (no email) would create under the default, but a sealed `contacts` list keys on
+    // email and skips it at commit. requireEmail makes the PLAN skip it too, so preview == commit.
+    const rows = [{ Name: 'Phone Only', Email: '', Phone: '555-000-1111', Company: '', Tags: '', 'Lead Source': '' }]
+    const withEmail = planCommit(rows, MAPPING, NO_EXISTING, 'fill_empty', { requireEmail: true })
+    expect(withEmail.diff).toMatchObject({ created: 0, skipped: 1 })
+    expect(withEmail.rows[0].action).toBe('skip')
+    // Default (member target) still allows the phone-only create.
+    const noFlag = planCommit(rows, MAPPING, NO_EXISTING, 'fill_empty')
+    expect(noFlag.diff.created).toBe(1)
+  })
   it('soft-warns (warned, not flagged) on a same-name + same-phone near-duplicate', () => {
     const rows = [
       { Name: 'Jane Doe', Email: 'jane@a.com', Phone: '555-000-1111', Company: '', Tags: '', 'Lead Source': '' },

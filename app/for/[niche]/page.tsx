@@ -21,14 +21,18 @@ export async function generateMetadata({ params }: { params: Promise<{ niche: st
   const config = getFunnelConfig(niche)
   if (!config) return {}
   const { hero } = config
-  const title = `${hero.h1} ${hero.eyebrow}`
+  // The <title> leads with the niche keyword (the h1 is a benefit line); OG/Twitter keep the fuller
+  // headline. The meta description is answer-first and length-safe, falling back to the hero subhead.
+  const pageTitle = hero.seoTitle ?? hero.h1
+  const ogTitle = `${hero.h1} ${hero.eyebrow}`
+  const description = config.metaDescription ?? hero.subhead
   const path = `/for/${niche}`
   return {
-    title: hero.h1,
-    description: hero.subhead,
+    title: pageTitle,
+    description,
     alternates: { canonical: path },
-    openGraph: { title, description: hero.subhead, url: path, type: 'website' },
-    twitter: { card: 'summary_large_image', title, description: hero.subhead },
+    openGraph: { title: ogTitle, description, url: path, type: 'website' },
+    twitter: { card: 'summary_large_image', title: ogTitle, description },
   }
 }
 
@@ -46,7 +50,10 @@ export default async function FunnelDoorPage({ params }: { params: Promise<{ nic
     <>
       <JsonLd
         data={[
-          breadcrumbSchema([{ name: config.hero.eyebrow, path }]),
+          breadcrumbSchema([
+            { name: 'Frequency', path: '/' },
+            { name: config.hero.eyebrow, path },
+          ]),
           faqSchema(config.faq.map((f) => ({ q: f.q, a: f.a }))),
           productSchema({
             title: `Frequency ${config.nonprofit ? 'Non Profit' : 'Business'}`,
