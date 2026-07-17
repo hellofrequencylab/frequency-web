@@ -31,6 +31,8 @@ import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { compileEmailDoc } from '@/lib/email-studio/shell'
 import { applyMergeTags, sanitizeEmailRichContent } from '@/lib/email-studio/render'
 import { sanitizeFromName, buildCampaignFrom, loadCampaignFromName } from '@/lib/email-studio/send'
+import { buildUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
+import { SITE_URL } from '@/lib/site'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
 import { sendRawEmail } from '@/lib/email'
 import { BETA_LAUNCH_EMAILS } from '@/lib/beta/launch-emails'
@@ -428,7 +430,13 @@ export async function sendTestEmail(id: string): Promise<ActionResult<{ to: stri
 
   const layout = layoutFromBlockJson(data.block_json)
   const doc = { layout, subject: data.subject ?? '', preheader: data.preheader ?? '' }
-  const compiled = compileEmailDoc(doc)
+  // A TEST is delivered to the operator's OWN address, so build REAL footer links for them (their own
+  // (profileId, lifecycle) token). This makes the footer's "Unsubscribe" + "Manage emails" links live in the
+  // exact surface the operator clicks from, instead of the tokenless preview fallback. They can resubscribe on
+  // the manage page, so a test click is never a dead end.
+  const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: gate.profileId, category: 'lifecycle' })
+  const manageUrl = buildManageEmailsUrl({ baseUrl: SITE_URL, profileId: gate.profileId, category: 'lifecycle' })
+  const compiled = compileEmailDoc(doc, { unsubscribeUrl, manageUrl })
   if (!compiled.html.trim()) return fail('Add some content before sending a test.')
 
   const vars = exampleMergeVars()

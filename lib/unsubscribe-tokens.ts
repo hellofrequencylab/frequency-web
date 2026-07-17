@@ -70,6 +70,21 @@ export function buildUnsubscribeUrl(params: {
   return `${baseUrl}/unsubscribe?p=${encodeURIComponent(profileId)}&c=${encodeURIComponent(category)}&t=${token}`
 }
 
+// The "Manage emails" preference page carried alongside the one-click unsubscribe in the footer. Signed
+// with the SAME (profileId, category) HMAC as buildUnsubscribeUrl — the token proves we issued a link for
+// this person, and the /manage-emails page verifies it before showing the per-category toggles. Distinct
+// from buildUnsubscribeUrl only in the PATH (/manage-emails vs /unsubscribe): the unsubscribe path opts the
+// member out on load (RFC 8058 no-click), the manage path lets them adjust categories + resubscribe.
+export function buildManageEmailsUrl(params: {
+  baseUrl:   string
+  profileId: string
+  category:  NotificationCategory
+}): string {
+  const { baseUrl, profileId, category } = params
+  const token = makeUnsubscribeToken(profileId, category)
+  return `${baseUrl}/manage-emails?p=${encodeURIComponent(profileId)}&c=${encodeURIComponent(category)}&t=${token}`
+}
+
 // ── Per-Space unsubscribe (ENTITY-SPACES-BUILD Phase 3) ─────────────────────────────────────────
 //
 // A Space emails CONTACTS, not just members, so the per-Space unsubscribe is keyed on

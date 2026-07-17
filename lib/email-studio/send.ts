@@ -23,7 +23,7 @@ import { resolveSegment, sendCategoryForSegment, type SegmentKey } from '@/lib/s
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { isSuppressed } from '@/lib/suppression'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
-import { buildUnsubscribeUrl, buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
+import { buildUnsubscribeUrl, buildSpaceUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { assertApproved } from '@/lib/beta/approvals'
 import { SITE_URL } from '@/lib/site'
@@ -414,6 +414,9 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
 
     for (const r of recipients) {
       let unsubscribeUrl: string
+      // "Manage emails" opens the preference page (adjust categories / resubscribe), kept DISTINCT from the
+      // one-click unsubscribe so it never fires the opt-out on load.
+      let manageUrl: string
       if (r.profileId) {
         // Member / profile-bearing contact: the ONE unified send-gate (suppression + consent +
         // preference) — the same seam the marketing composer and the beta send ride, run under the
@@ -423,6 +426,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
         // The unsubscribe link toggles the lifecycle preference (the broad email opt-out); a global
         // broadcast unsubscribe is a hard opt-out regardless of the send's gate category.
         unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: r.profileId, category: 'lifecycle' })
+        manageUrl = buildManageEmailsUrl({ baseUrl: SITE_URL, profileId: r.profileId, category: 'lifecycle' })
       } else {
         // Profile-less imported lead (only the `all_contacts` audience yields these). There is no profile
         // to run the member send-gate against, so gate by the hard suppression list (global OR root-space)
@@ -432,6 +436,9 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
         if (!rootSpaceId) continue
         if (await isSuppressed(r.email, rootSpaceId)) continue
         unsubscribeUrl = buildSpaceUnsubscribeUrl({ baseUrl: SITE_URL, spaceId: rootSpaceId, email: r.email })
+        // The per-Space /unsubscribe?s=&e= landing IS a preference center (opt down individual topics or
+        // unsubscribe from everything), so "Manage emails" points a profile-less lead at that same token page.
+        manageUrl = unsubscribeUrl
       }
       const { firstName, lastName } = splitName(names.get(r.contactId) ?? null)
       // Per-recipient contact vars, plus the shared product vars resolved above (a product is the same for
@@ -441,7 +448,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
 
       // Compile per recipient so the footer carries THIS recipient's unsubscribe link, then
       // resolve merge tags: HTML gets escaped values (default), text + subject stay raw.
-      const compiled = compileEmailDoc(doc, { unsubscribeUrl })
+      const compiled = compileEmailDoc(doc, { unsubscribeUrl, manageUrl })
       const html = applyMergeTags(compiled.html, vars, { fallbacks })
       const text = applyMergeTags(compiled.text, vars, { fallbacks, escape: false })
       const subject = applyMergeTags(subjectTemplate, vars, { fallbacks, escape: false })
