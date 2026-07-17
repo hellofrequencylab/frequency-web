@@ -3,6 +3,7 @@
 // console (one source of truth) and the gated email-studio send pipeline; the "New email" popup always
 // saves as a draft. Gate mirrors the messaging surface (admin floor OR the marketing capability).
 
+import { Suspense } from 'react'
 import { Send, Megaphone, Activity, Rocket, FileEdit, Clock } from 'lucide-react'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
@@ -16,6 +17,31 @@ import { EmailBestPractices } from '@/components/admin/crm/email-best-practices'
 
 export const dynamic = 'force-dynamic'
 
+// The email-response dashboard rolls the whole email_events ledger, so it is kept OFF the page's critical
+// path: it resolves inside its own <Suspense> below, streaming in after the campaign list paints. This can
+// neither block the first byte nor take the page down (getMarketingEmailOverview is itself fail-safe to an
+// all-zero overview), which is the PAGE-FRAMEWORK rule for a slow / optional section.
+async function EmailInsights() {
+  const overview = await getMarketingEmailOverview()
+  return (
+    <>
+      <AdminSection
+        title="Email performance"
+        description="How everything you send is landing: delivered, opened, clicked, bounced, and flagged. Clicks are the signal to trust (Apple Mail privacy inflates opens)."
+      >
+        <EmailPerformance overview={overview} />
+      </AdminSection>
+
+      <AdminSection
+        title="Best practices"
+        description="Live health checks on your deliverability, plus the levers that move open rate."
+      >
+        <EmailBestPractices overview={overview} />
+      </AdminSection>
+    </>
+  )
+}
+
 export default async function CrmMarketingPage({
   searchParams,
 }: {
@@ -26,10 +52,9 @@ export default async function CrmMarketingPage({
 }) {
   await requireAdmin('admin', { staff: 'marketing' })
   const { open } = await searchParams
-  const [{ campaigns, funnels, counts }, segments, emailOverview] = await Promise.all([
+  const [{ campaigns, funnels, counts }, segments] = await Promise.all([
     getMessagingConsole(),
     listSegmentOptions(),
-    getMarketingEmailOverview(),
   ])
 
   return (
@@ -48,19 +73,9 @@ export default async function CrmMarketingPage({
         <StatCard size="xs" label="Drafts" value={counts.drafts} icon={FileEdit} />
       </div>
 
-      <AdminSection
-        title="Email performance"
-        description="How everything you send is landing: delivered, opened, clicked, bounced, and flagged. Clicks are the signal to trust (Apple Mail privacy inflates opens)."
-      >
-        <EmailPerformance overview={emailOverview} />
-      </AdminSection>
-
-      <AdminSection
-        title="Best practices"
-        description="Live health checks on your deliverability, plus the levers that move open rate."
-      >
-        <EmailBestPractices overview={emailOverview} />
-      </AdminSection>
+      <Suspense fallback={null}>
+        <EmailInsights />
+      </Suspense>
 
       <AdminSection
         title="Everything you send"
