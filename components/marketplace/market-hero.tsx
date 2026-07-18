@@ -36,7 +36,6 @@ export function MarketHero({
       search={search}
       actions={action}
       size="large"
-      align="center"
     />
   )
 }
