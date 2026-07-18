@@ -56,6 +56,22 @@ export function MessagingConsole({
 
   const onCampaigns = tab === 'campaigns'
 
+  // The two panes sit side by side in one flex track (for the slide), so the track would otherwise reserve
+  // the height of the TALLER pane — leaving dead space below a short Campaigns list when the empty Funnels
+  // pane is taller. Measure the ACTIVE pane and clamp the viewport to it, animating the height on tab change.
+  const campaignsPaneRef = useRef<HTMLElement>(null)
+  const funnelsPaneRef = useRef<HTMLElement>(null)
+  const [paneHeight, setPaneHeight] = useState<number | undefined>(undefined)
+  useEffect(() => {
+    const el = onCampaigns ? campaignsPaneRef.current : funnelsPaneRef.current
+    if (!el) return
+    // ResizeObserver's first callback fires async with the current size, so we never call setState
+    // synchronously in the effect body (keeps the follow height correct as the pane's content grows/shrinks).
+    const ro = new ResizeObserver(() => setPaneHeight(el.offsetHeight))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [onCampaigns])
+
   return (
     <div className="space-y-5">
       {/* Status legend */}
@@ -77,14 +93,20 @@ export function MessagingConsole({
 
       {/* Sliding sub-pane track. The viewport clips; the track holds both panes side by side and
           translates between them. overflow-hidden here is the carousel clip, never a page scroll. */}
-      <div className="overflow-hidden">
+      <div
+        className="overflow-hidden transition-[height] duration-300 ease-out motion-reduce:transition-none"
+        style={{ height: paneHeight }}
+      >
+        {/* items-start so each pane keeps its NATURAL height (not stretched to the taller sibling), which is
+            what the viewport height above follows. */}
         <div
-          className="flex w-full transition-transform duration-300 ease-out motion-reduce:transition-none"
+          className="flex w-full items-start transition-transform duration-300 ease-out motion-reduce:transition-none"
           style={{ transform: onCampaigns ? 'translateX(0)' : 'translateX(-100%)' }}
         >
           {/* Pane 1 — Campaigns, FULL WIDTH (owner directive: no side rail; the email list runs the
               whole width). Funnels are reached by the sub-tab above, which slides this track over. */}
           <section
+            ref={campaignsPaneRef}
             aria-label="Campaigns"
             aria-hidden={!onCampaigns}
             inert={!onCampaigns || undefined}
@@ -102,6 +124,7 @@ export function MessagingConsole({
 
           {/* Pane 2 — Funnels (full grid). The sub-tab slides here; no deep-select rail anymore. */}
           <section
+            ref={funnelsPaneRef}
             aria-label="Funnels"
             aria-hidden={onCampaigns}
             inert={onCampaigns || undefined}

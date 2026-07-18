@@ -37,7 +37,7 @@ export function PageHeading({
   /** Vertical alignment of the actions block against the title block: 'start'
    *  (default, top-aligned) or 'end' — bottom-aligned with the last line of the
    *  description (dashboard header stats sit on the subtitle's baseline). */
-  actionsAlign?: 'start' | 'end'
+  actionsAlign?: 'start' | 'end' | 'center'
   /** Render the operator on-page "Settings" admin bar on the header rule (default on). Set false on
    *  pages that carry their own customizer (e.g. Practices' per-user "Customize this page"), so the
    *  old operator page-layout customizer doesn't double up. A plain divider is drawn instead. */
@@ -87,7 +87,13 @@ export function PageHeading({
           )}
         </div>
         {actions && (
-          <div className={`shrink-0 ${actionsAlign === 'end' ? 'sm:self-end' : ''}`}>{actions}</div>
+          <div
+            className={`shrink-0 ${
+              actionsAlign === 'end' ? 'sm:self-end' : actionsAlign === 'center' ? 'sm:self-center' : ''
+            }`}
+          >
+            {actions}
+          </div>
         )}
       </div>
     </div>

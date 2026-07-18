@@ -49,7 +49,7 @@ export function AdminTemplate({
   /** Right-aligned header controls (buttons, links). */
   actions?: React.ReactNode
   /** Passed to PageHeading — 'end' bottom-aligns actions with the description. */
-  actionsAlign?: 'start' | 'end'
+  actionsAlign?: 'start' | 'end' | 'center'
   /** Explicit back-link. When omitted, a sub-page auto-links back to its parent domain
    *  dashboard (resolved client-side from the path); a domain root shows nothing. */
   back?: { href: string; label: string }
