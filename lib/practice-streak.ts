@@ -347,22 +347,45 @@ export async function recordPracticeStreak(
   const { current } = derivePracticeStreak(logged, frozen, today)
   longest = Math.max(longest, current)
 
-  // First-time milestone rewards. `current` only ever climbs by 1 per day, so
-  // gating on "not yet paid" pays each checkpoint exactly once, ever.
+  // First-time milestone rewards. `current` only ever climbs by 1 per day, so gating on "not yet paid"
+  // pays each checkpoint at most once per member. BUT this function is a lock-free read-modify-write on
+  // profiles.meta, and logPractice is NOT serialized per member, so two concurrent same-day logs can both
+  // read `milestonesPaid` WITHOUT the new checkpoint and both try to pay it. To make the ECONOMY correct
+  // under that race, each milestone payout is gated by a reward_grants idempotency claim
+  // (`streak.milestone:{profileId}:{day}`) whose UNIQUE (rule_key, profile_id) insert is the real lock:
+  // only the run that wins the insert pays + banks + posts the feed line. The meta `paid` set is still
+  // updated (so the mirror is right), but the claim, not meta, is the source of truth for "already paid",
+  // which also self-heals a meta lost-update (a later log re-detects the milestone, the claim blocks the
+  // double-pay). A failed award RELEASES the claim so a later log can retry (claim-then-pay self-heal).
   let banked = 0
   let topMilestone: number | null = null
   for (const m of STREAK_MILESTONES) {
-    if (current >= m.day && !paid.has(m.day)) {
-      paid.add(m.day)
-      topMilestone = m.day
-      if (m.zaps > 0) {
-        await awardZaps(profileId, m.zaps, {
-          actionType: 'streak_milestone',
-          metadata: { day: m.day },
-        }).catch(() => {})
+    if (current < m.day || paid.has(m.day)) continue
+    const ruleKey = `streak.milestone:${profileId}:${m.day}`
+    const { error: claimErr } = await admin.from('reward_grants').insert({
+      rule_key: ruleKey,
+      profile_id: profileId,
+      reward_kind: 'zaps',
+      amount: m.zaps,
+      detail: 'Streak milestone',
+    })
+    paid.add(m.day) // reflect in the meta mirror regardless of who won the claim
+    if (claimErr) continue // a concurrent/prior run already claimed + paid this checkpoint
+    if (m.zaps > 0) {
+      const res = await awardZaps(profileId, m.zaps, {
+        actionType: 'streak_milestone',
+        metadata: { day: m.day },
+      }).catch(() => null)
+      if (!res || !res.awarded) {
+        // The pay did not land (disabled config / transient failure): release the claim + un-mark so a
+        // later log retries, rather than stranding the milestone as claimed-but-unpaid.
+        await admin.from('reward_grants').delete().eq('profile_id', profileId).eq('rule_key', ruleKey)
+        paid.delete(m.day)
+        continue
       }
-      if (m.freeze) banked++
     }
+    topMilestone = m.day
+    if (m.freeze) banked++
   }
   // Vera marks the moment in the feed (ADR-239) — one quiet line for the
   // highest checkpoint just crossed, same once-ever gate as the payout.

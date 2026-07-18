@@ -94,23 +94,31 @@ export async function maybeSpark(
     })
     if (error) return none // already sparked today / lost the race
 
+    // Claim-then-pay self-heal: if the award does NOT land (a disabled/absent config row, a transient
+    // failure), RELEASE the claim so the member is not left with a claimed-but-unpaid tombstone that
+    // silently eats their one Spark for the rest of the day. This mirrors the release-on-unpaid pattern
+    // the other reward engines (creation/connector/quest) use, and it is the ONLY place the claim is
+    // cleared — a SUCCESSFUL claim is never released (that is what makes the once-per-day cap hold even
+    // across a log -> unlog -> re-log loop; unlog no longer re-opens it).
+    const release = async () => {
+      await admin.from('reward_grants').delete().eq('profile_id', profileId).eq('rule_key', ruleKey)
+    }
+
     if (currency === 'zaps') {
       const r = await awardZaps(profileId, amount, {
         actionType: 'spark_bonus',
         metadata: { rule: ruleKey, source: context.source ?? null },
       })
-      return r.awarded
-        ? { sparked: true, currency, amount: r.amount }
-        : { ...none, currency }
+      if (!r.awarded) await release()
+      return r.awarded ? { sparked: true, currency, amount: r.amount } : { ...none, currency }
     }
 
     const r = await awardGems(profileId, 'spark_bonus', amount, {
       rule: ruleKey,
       source: context.source ?? null,
     })
-    return r.awarded
-      ? { sparked: true, currency, amount: r.amount }
-      : { ...none, currency }
+    if (!r.awarded) await release()
+    return r.awarded ? { sparked: true, currency, amount: r.amount } : { ...none, currency }
   } catch (err) {
     console.error('[maybeSpark]', err instanceof Error ? err.message : err)
     return none
