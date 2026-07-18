@@ -1,7 +1,10 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { canCreate } from '@/lib/core/load-capabilities'
+import { getCallerProfile } from '@/lib/auth'
+import { isPaid } from '@/lib/core/access-matrix'
 import { JourneySpark } from '@/components/journey/v2/journey-spark'
+import { AuthoringAccessNote } from '@/components/pricing/authoring-access-note'
 import { JOURNEY_TEMPLATES } from '@/lib/journeys/templates'
 
 // Create a Journey (ADR-302). New Journeys open in the guided builder: Vera's short Spark wizard
@@ -21,6 +24,9 @@ export default async function NewJourneyPage() {
   // library, where "New journey" shows the free-beta upgrade popup (ADR-414).
   if (!(await canCreate('journey.create'))) redirect('/journeys')
 
+  const caller = await getCallerProfile()
+  const paidOwner = isPaid(caller?.realMembershipTier)
+
   // Lightweight template metadata for the "Start from a template" picker. The full template trees
   // (lib/journeys/templates.ts) pull in server-only compose code, so we map to a client-safe shape
   // here and hand it to the wizard as props rather than importing it into the client bundle.
@@ -33,5 +39,12 @@ export default async function NewJourneyPage() {
     lessons: t.phases.reduce((n, p) => n + p.modules.reduce((m, mod) => m + mod.lessons.length, 0), 0),
   }))
 
-  return <JourneySpark templates={templates} />
+  return (
+    <>
+      <div className="mx-auto w-full max-w-lg px-4 pt-6">
+        <AuthoringAccessNote kind="journey" paidOwner={paidOwner} />
+      </div>
+      <JourneySpark templates={templates} />
+    </>
+  )
 }

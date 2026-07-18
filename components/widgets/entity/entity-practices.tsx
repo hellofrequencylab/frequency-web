@@ -18,9 +18,10 @@ export async function EntityPractices() {
   const space = getActiveSpace()
   if (!space) return null
 
+  // The public profile shows only PUBLISHED content (drafts stay in the owner's manager).
   const [practices, journeys] = await Promise.all([
-    listPracticesForSpace(space.id, 6),
-    listJourneyPlansForSpace(space.id, 6),
+    listPracticesForSpace(space.id, 6, { publishedOnly: true }),
+    listJourneyPlansForSpace(space.id, 6, { publishedOnly: true }),
   ])
 
   return (
@@ -34,6 +35,7 @@ export async function EntityPractices() {
             description="Practices this space publishes show up here to try."
             ownerTitle="No practices shared yet."
             ownerActionLabel="Share your first practice"
+            ownerActionHref={`/spaces/${space.slug}/practices`}
           />
         ) : (
           <div className="grid gap-4 @lg:grid-cols-2">
@@ -63,6 +65,7 @@ export async function EntityPractices() {
             description="Multi-week Journeys this space builds show up here to adopt."
             ownerTitle="No journeys built yet."
             ownerActionLabel="Build your first Journey"
+            ownerActionHref={`/spaces/${space.slug}/journeys`}
           />
         ) : (
           <div className="grid gap-4 @lg:grid-cols-2">

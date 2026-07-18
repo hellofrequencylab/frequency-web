@@ -18,6 +18,7 @@ import {
   type Viewer,
 } from './capabilities'
 import { type CommunityRole } from './roles'
+import { crewCreateUpsell } from './beta-notices'
 import { deriveTier } from './entitlement'
 import { isPaid } from './access-matrix'
 import {
@@ -93,7 +94,8 @@ export async function canCreate(cap: CreateCapability): Promise<boolean> {
  *  top of every create action/page — the capability popup is UX, this is law. */
 export async function assertCanCreate(cap: CreateCapability): Promise<void> {
   if (!(await canCreate(cap))) {
-    throw new Error('Upgrade to Crew to create this. Crew is free during the beta, one tap, no card.')
+    // Beta-aware copy from the one rule (lib/core/beta-notices) so launch flips it in place.
+    throw new Error(crewCreateUpsell('this'))
   }
 }
 

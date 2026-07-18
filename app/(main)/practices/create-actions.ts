@@ -12,6 +12,7 @@ import { redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { canCreate } from '@/lib/core/load-capabilities'
+import { crewCreateUpsell } from '@/lib/core/beta-notices'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import {
   createPractice,
@@ -41,7 +42,7 @@ async function authorizeCreatePractice(): Promise<
   // Real-Crew create gate (ADR-414) — reads the true tier (pre beta-override) so a free
   // member is sold the one-tap free-beta upgrade rather than silently allowed.
   if (!(await canCreate('practice.create'))) {
-    return { error: 'Upgrade to Crew to create a practice. Crew is free during the beta, one tap, no card.' }
+    return { error: crewCreateUpsell('a practice') }
   }
   const autoApprove = atLeastRole(caller.community_role, 'host') || caller.webRole !== 'none'
   return { profileId: caller.id, autoApprove }

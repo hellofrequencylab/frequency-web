@@ -377,24 +377,26 @@ export async function createPlan(input: {
  * space B — the by-space read the Phase 1 profile's `entity-journeys` module uses. FAIL-SAFE:
  * [] on any error / missing tenant. space_id is reached with an untyped handle (ADR-246).
  */
-export async function listJourneyPlansForSpace(spaceId?: string | null, limit = 50): Promise<JourneyPlan[]> {
+export async function listJourneyPlansForSpace(
+  spaceId?: string | null,
+  limit = 50,
+  opts?: { publishedOnly?: boolean },
+): Promise<JourneyPlan[]> {
   const sid = spaceId ?? (await loadRootSpaceId())
   if (!sid) return []
   try {
-    const q = db().from('journey_plans') as unknown as {
-      select: (cols: string) => {
-        eq: (col: string, val: string) => {
-          order: (col: string, opts: { ascending: boolean }) => {
-            limit: (n: number) => Promise<{ data: unknown; error: unknown }>
-          }
-        }
-      }
+    type Chain = {
+      select: (cols: string) => Chain
+      eq: (col: string, val: string) => Chain
+      neq: (col: string, val: string) => Chain
+      order: (col: string, o: { ascending: boolean }) => Chain
+      limit: (n: number) => Promise<{ data: unknown; error: unknown }>
     }
-    const { data, error } = await q
-      .select(PLAN_COLS)
-      .eq('space_id', sid)
-      .order('created_at', { ascending: false })
-      .limit(limit)
+    let q = (db().from('journey_plans') as unknown as Chain).select(PLAN_COLS).eq('space_id', sid)
+    // The PUBLIC profile block passes publishedOnly so private drafts stay in the owner's manager only.
+    // Published = visibility past 'private' (unlisted = live to the space; public = library).
+    if (opts?.publishedOnly) q = q.neq('visibility', 'private')
+    const { data, error } = await q.order('created_at', { ascending: false }).limit(limit)
     if (error) return []
     return (data as JourneyPlan[] | null) ?? []
   } catch {
