@@ -85,26 +85,30 @@ export default async function SpaceManagePage({
   // to the Mode & focus page; a Profile & Settings button opens the header-level settings surface (identity,
   // team, reviews, plan, danger). The on-page "Settings" admin bar is off (the hub owns its own navigation).
   const headerRight = (
-    <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
-      <span className="inline-flex items-center gap-1.5 text-sm text-text">
-        <Users className="h-4 w-4 text-subtle" aria-hidden />
-        <b className="font-semibold tabular-nums">{activeMembers}</b>
-        <span className="text-muted">members</span>
-      </span>
-      <span className="inline-flex items-center gap-1.5 text-sm text-text">
-        <CreditCard className="h-4 w-4 text-subtle" aria-hidden />
-        <b className="font-semibold">{planLabel}</b>
-      </span>
-      <Link
-        href={`/spaces/${space.slug}/manage/mode`}
-        className="inline-flex items-center gap-1.5 text-sm text-text transition-colors hover:text-primary-strong"
-      >
-        <Compass className="h-4 w-4 text-subtle" aria-hidden />
-        <span className="max-w-[14rem] truncate">{modeLabel}</span>
-      </Link>
+    // Mobile: a tidy left-aligned wrap under the title (never crammed right); sm+: aligns right in the
+    // header row. The stat chips sit on one flowing row; the Profile & Settings button is a full tap target.
+    <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <span className="inline-flex items-center gap-1.5 text-sm text-text">
+          <Users className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+          <b className="font-semibold tabular-nums">{activeMembers}</b>
+          <span className="text-muted">members</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-sm text-text">
+          <CreditCard className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+          <b className="font-semibold">{planLabel}</b>
+        </span>
+        <Link
+          href={`/spaces/${space.slug}/manage/mode`}
+          className="inline-flex min-w-0 items-center gap-1.5 text-sm text-text transition-colors hover:text-primary-strong"
+        >
+          <Compass className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+          <span className="truncate">{modeLabel}</span>
+        </Link>
+      </div>
       <Link
         href={`/spaces/${space.slug}/manage/settings`}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text shadow-sm transition-colors hover:border-border-strong hover:bg-surface-elevated"
+        className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-text shadow-sm transition-colors hover:border-border-strong hover:bg-surface-elevated"
       >
         <SlidersHorizontal className="h-4 w-4" aria-hidden />
         Profile &amp; Settings
