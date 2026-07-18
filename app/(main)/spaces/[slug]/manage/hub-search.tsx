@@ -27,26 +27,29 @@ export function HubSearch({ items }: { items: HubSearchItem[] }) {
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 shadow-sm focus-within:border-border-strong">
+      <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 shadow-sm focus-within:border-border-strong">
         <Search className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
         <input
           type="search"
+          inputMode="search"
+          enterKeyHint="search"
+          autoComplete="off"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search this space's tools and settings"
           aria-label="Search this space's tools and settings"
-          className="w-full bg-transparent text-sm text-text outline-none placeholder:text-subtle"
+          className="w-full bg-transparent text-base text-text outline-none placeholder:text-subtle sm:text-sm"
         />
       </div>
       {q && (
-        <div className="absolute inset-x-0 top-full z-20 mt-1.5 overflow-hidden rounded-xl border border-border bg-surface shadow-lg">
+        <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-xl border border-border bg-surface shadow-lg">
           {matches.length > 0 ? (
-            <ul className="max-h-80 overflow-y-auto py-1">
+            <ul className="max-h-[60vh] overflow-y-auto py-1">
               {matches.map((it) => (
-                <li key={it.href}>
+                <li key={`${it.section}:${it.label}:${it.href}`}>
                   <Link
                     href={it.href}
-                    className="group flex items-center gap-2 px-3 py-2 text-sm outline-none transition-colors hover:bg-surface-elevated focus-visible:bg-surface-elevated"
+                    className="group flex items-center gap-2 px-3 py-2.5 text-sm outline-none transition-colors hover:bg-surface-elevated focus-visible:bg-surface-elevated"
                   >
                     <span className="flex-1 truncate font-medium text-text">{it.label}</span>
                     <span className="shrink-0 text-2xs uppercase tracking-wide text-subtle">{it.section}</span>
