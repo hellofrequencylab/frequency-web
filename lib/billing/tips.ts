@@ -59,6 +59,9 @@ export async function createTipCheckout(opts: {
   const name = recipientRow?.display_name ?? 'a host'
   const handle = recipientRow?.handle
 
+  // A tip is a profile → profile gratuity with NO space seller, so it keeps the FLAT platform fee (ADR-590);
+  // the paying-state take-rate ladder is a space-seller lever (memberships / storefront / space-hosted
+  // tickets), which does not apply here.
   const fee = platformFeeCents(amount)
   const message = opts.message?.trim().slice(0, 280) || null
 

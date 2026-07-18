@@ -63,7 +63,7 @@ export function sectionForModule(module: SpaceModule): SpaceHubSection | null {
   if (SETTINGS_MODULE_IDS.has(module.id)) return 'settings'
 
   // Resonance — the CRM relationship + capture surfaces (people + communication).
-  if (['space.crm', 'space.leads', 'space.doors', 'space.shared'].includes(module.id)) return 'resonance'
+  if (['space.crm', 'space.inbox', 'space.leads', 'space.doors', 'space.shared'].includes(module.id)) return 'resonance'
 
   // Marketing — outbound reach + growth (email trio, QR + scans, automation/drip).
   if (['space.comms', 'space.marketing', 'space.emailstyle', 'space.reach', 'space.insights', 'space.automation'].includes(module.id)) {
