@@ -21,16 +21,9 @@ export function hrefForSurface(id: string, slug: string): string | null {
   const base = `/spaces/${slug}`
   switch (id) {
     case 'space.basics':
-      // The dedicated basics editor, NOT the /settings index (which redirects console types to /manage,
-      // looping "Open basics" straight back to this console).
-      return `${base}/settings/basics`
-    case 'space.branding':
-      // Identity & Branding is a rail-inline section with no standalone page yet; the console links it to
-      // the basics editor, which still carries those fields. Non-looping.
-      return `${base}/settings/basics`
-    case 'space.settings':
-      // The lower Settings section (rating + visibility) is rail-inline; link the console card to the basics
-      // editor, which still carries visibility. Non-looping.
+      // "Profile and Settings" — the dedicated basics editor (name, brand, page theme, info, visibility),
+      // NOT the /settings index (which redirects console types to /manage, looping straight back here). The
+      // former separate Identity/Branding + Settings cards collapsed into this one (ADR-782).
       return `${base}/settings/basics`
     case 'space.layout':
       return `${base}/manage/layout`

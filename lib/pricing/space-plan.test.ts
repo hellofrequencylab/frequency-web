@@ -76,6 +76,7 @@ const FULL_DEPTH = {
   reporting: true,
   team: true,
   whitelabel: true,
+  space_full_website: true,
 }
 
 describe('setSpacePlan, set-to-target the billing namespace (ADR-552)', () => {

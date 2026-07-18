@@ -1,8 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   IdCard,
-  Palette,
-  SlidersHorizontal,
   LayoutTemplate,
   Users,
   UserPlus,
@@ -92,6 +90,17 @@ export interface SpaceModule {
    *  grid on the rail (a back-office destination: QR · Email · Insights · Plan and usage); `inline` /
    *  omitted renders it in the rail body via `render`/`tier`. Ignored by the console + Module Manager. */
   placement?: 'inline' | 'bank'
+  /** The freemium/premium marking shown in the console (ADR-782): `included` = free for every Space,
+   *  `freemium` = free with a cap a paid plan lifts, `premium` = paid plan or add-on only. Purely a BADGE
+   *  (it does NOT gate — gating stays in lib/pricing/gates.ts + the function registry); it makes the plan
+   *  story legible on the /manage console. Defaults to `included` when omitted. */
+  access?: 'included' | 'freemium' | 'premium'
+  /** Console CONSOLIDATION (ADR-782): the id of the PARENT module this one folds UNDER on the /manage
+   *  console, so the console shows ONE card per surface with its siblings nested (Email design/style under
+   *  Email; Automation / Lead capture / Capture links / Shared under CRM; Scans under QR codes). The module
+   *  stays a first-class catalog row (still gated, still in the rail, still deep-linkable); only the console
+   *  groups it beneath its parent instead of as its own top-level card. Top-level modules omit it. */
+  parent?: string
 }
 
 const base = (slug: string) => `/spaces/${slug}`
@@ -104,70 +113,78 @@ const base = (slug: string) => `/spaces/${slug}`
  */
 export const SPACE_MODULES: readonly SpaceModule[] = [
   // ── The space itself (shell — always on) ─────────────────────────────────────────────────────────────
-  { id: 'space.branding', label: 'Identity and Branding', desc: 'Name, tagline, header, logo, cover, and accent.', Icon: Palette, family: 'space', slot: 'place', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/settings/basics`, order: 10, tier: 'standard', priority: 10 },
-  { id: 'space.basics', label: 'Info and Connect', desc: 'About, Story, contact and hours, and your links.', Icon: IdCard, family: 'space', slot: 'basics', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/settings/basics`, order: 15, tier: 'standard', priority: 15 },
-  { id: 'space.layout', label: 'Page', desc: 'Arrange the sections of your page into rows and columns.', Icon: LayoutTemplate, family: 'space', slot: 'layout', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/manage/layout`, order: 20, tier: 'standard', priority: 20 },
-  { id: 'space.settings', label: 'Settings', desc: 'Who can see your space, and the ratings you allow.', Icon: SlidersHorizontal, family: 'space', slot: 'safety', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/settings/basics`, order: 25, tier: 'primary', priority: 70 },
+  // ONE "Profile and Settings" card (ADR-782): the former three shell cards (Identity and Branding · Info
+  // and Connect · Settings) all deep-linked to the SAME /settings/basics editor, which is already one
+  // section-based form (pictures · name & bio · brand · page theme · info & connect · visibility). They
+  // collapse to this single card so the console no longer shows three rows that open the same page.
+  { id: 'space.basics', label: 'Profile and Settings', desc: 'Your name, tagline and story, brand and accent, page theme, contact and hours, links, and who can see your space.', Icon: IdCard, family: 'space', slot: 'basics', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/settings/basics`, order: 15, tier: 'standard', priority: 15, access: 'included' },
+  { id: 'space.layout', label: 'Page', desc: 'Arrange the sections of your page into rows and columns.', Icon: LayoutTemplate, family: 'space', slot: 'layout', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/manage/layout`, order: 20, tier: 'standard', priority: 20, access: 'included' },
 
   // ── Audience & relationships ─────────────────────────────────────────────────────────────────────────
-  { id: 'space.people', label: 'Members', desc: 'The people on your team and the role each one holds.', Icon: Users, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'members' }, featureKey: 'members', render: 'panel', deepLink: (s) => `${base(s)}/settings/members`, order: 30, tier: 'primary', priority: 10 },
-  { id: 'space.crm', label: 'CRM', desc: 'Your pipeline, contacts, private notes, and Vera autonomy.', Icon: Briefcase, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'panel', deepLink: (s) => `${base(s)}/crm`, order: 35, tier: 'primary', priority: 15 },
-  // Automation is a CRM amplifier — item 7 moves it INTO the CRM / Audience section, right after CRM. It rides
-  // the `crm` feature gate; the surface self-gates on the automation entitlement and shows an upgrade notice
-  // when the plan lacks it. A `link` row out to its own Focus route (rules + drip editor); never banked.
-  { id: 'space.automation', label: 'Automation', desc: 'Rules and drip sequences over your own contacts.', Icon: Workflow, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/settings/automation`, order: 36, tier: 'primary', priority: 16 },
+  { id: 'space.people', label: 'Team and members', desc: 'The people on your team and the role each one holds.', Icon: Users, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'members' }, featureKey: 'members', render: 'panel', deepLink: (s) => `${base(s)}/settings/members`, order: 30, tier: 'primary', priority: 10, access: 'included' },
+  // CRM is the ONE card for the whole pipeline (ADR-782): Automation, Lead capture, Capture links, and
+  // Shared with team fold UNDER it on the console (each `parent: 'space.crm'`), so the Audience group shows
+  // one CRM card with its four workspaces nested instead of five separate rows. Each stays a first-class
+  // module (own gate + deepLink + rail row); only the console consolidates them.
+  { id: 'space.crm', label: 'CRM', desc: 'Your pipeline, contacts, private notes, and Vera autonomy.', Icon: Briefcase, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'panel', deepLink: (s) => `${base(s)}/crm`, order: 35, tier: 'primary', priority: 15, access: 'freemium' },
+  // Automation rides the `crm` feature gate; the surface self-gates on the automation ENTITLEMENT (a paid
+  // amplifier) and shows an upgrade notice when the plan lacks it. Nested under CRM on the console.
+  { id: 'space.automation', label: 'Automation', desc: 'Rules and drip sequences over your own contacts.', Icon: Workflow, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/settings/automation`, order: 36, tier: 'primary', priority: 16, access: 'premium', parent: 'space.crm' },
   // Reviews is a gateable feature keyed on the `reviews` function: the member rating and review wall on the
   // public profile. Default ON (only an explicit `false` hides it); we recommend keeping it on to build trust.
-  { id: 'space.reviews', label: 'Reviews', desc: 'The member rating and review wall on your profile.', Icon: Star, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'reviews' }, featureKey: 'reviews', render: 'link', deepLink: (s) => `${base(s)}/reviews`, order: 37, tier: 'primary', priority: 17 },
+  { id: 'space.reviews', label: 'Reviews', desc: 'The member rating and review wall on your profile.', Icon: Star, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'reviews' }, featureKey: 'reviews', render: 'link', deepLink: (s) => `${base(s)}/reviews`, order: 37, tier: 'primary', priority: 17, access: 'included' },
   // Lead capture (CRM Phase 3): contacts captured from Space QR scans, events, and referrals, with the
-  // immutable entry point each arrived through. Same `crm` feature gate as the CRM board; the surface
-  // self-gates on ownership. Links out to the Space CRM's leads view.
-  { id: 'space.leads', label: 'Lead capture', desc: 'Contacts captured from QR scans, events, and referrals, and how each one arrived.', Icon: UserPlus, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/leads`, order: 38, tier: 'primary', priority: 18 },
+  // immutable entry point each arrived through. Same `crm` feature gate as the CRM board; nested under CRM.
+  { id: 'space.leads', label: 'Lead capture', desc: 'Contacts captured from QR scans, events, and referrals, and how each one arrived.', Icon: UserPlus, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/leads`, order: 38, tier: 'primary', priority: 18, access: 'freemium', parent: 'space.crm' },
   // Capture links (CRM Phase 3): make a shareable link for each of the other front doors, a warm intro,
-  // an event check-in, a lead magnet, or a card swap. Same `crm` feature gate as the CRM board; the page
-  // self-gates on ownership. Links out to the door-link maker.
-  { id: 'space.doors', label: 'Capture links', desc: 'Make a link for a warm intro, an event, a lead magnet, or a card swap.', Icon: Link2, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/doors`, order: 39, tier: 'primary', priority: 19 },
+  // an event check-in, a lead magnet, or a card swap. Same `crm` feature gate as the CRM board; nested under CRM.
+  { id: 'space.doors', label: 'Capture links', desc: 'Make a link for a warm intro, an event, a lead magnet, or a card swap.', Icon: Link2, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/doors`, order: 39, tier: 'primary', priority: 19, access: 'freemium', parent: 'space.crm' },
   // Shared with team (ADR-778): the contact CARDS members chose to share with this Space's team (network
-  // 'shared' tier). A `link` row out to the CRM sub-view (/crm/shared); the page itself gates on team
-  // membership (broader than the CRM role), and the reader returns card fields only (never notes/tags).
-  { id: 'space.shared', label: 'Shared with team', desc: 'Contact cards your members shared with the team.', Icon: Share2, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/shared`, order: 39.5, tier: 'primary', priority: 19.5 },
+  // 'shared' tier). Nested under CRM on the console; the PAGE itself gates on team membership (broader than
+  // the CRM role), and the reader returns card fields only (never notes/tags).
+  { id: 'space.shared', label: 'Shared with team', desc: 'Contact cards your members shared with the team.', Icon: Share2, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/shared`, order: 39.5, tier: 'primary', priority: 19.5, access: 'freemium', parent: 'space.crm' },
 
   // ── Offerings & money (independent modules) ──────────────────────────────────────────────────────────
-  { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#availability`, order: 40, tier: 'primary', priority: 30 },
-  { id: 'space.memberships', label: 'Memberships', desc: 'The tiers members can join, and who has joined.', Icon: BadgeCheck, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'memberships' }, featureKey: 'memberships', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#memberships`, order: 45, tier: 'primary', priority: 31 },
-  { id: 'space.donations', label: 'Donations', desc: 'The fund, a short description, and the amounts members can pick.', Icon: HeartHandshake, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'donations' }, featureKey: 'donations', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#donations`, order: 50, tier: 'primary', priority: 32 },
-  { id: 'space.enroll', label: 'Enrollment', desc: 'The program details, and who has enrolled.', Icon: GraduationCap, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'enroll' }, featureKey: 'enroll', render: 'panel', deepLink: (s) => `${base(s)}/settings/enroll`, order: 55, tier: 'primary', priority: 33 },
+  { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#availability`, order: 40, tier: 'primary', priority: 30, access: 'included' },
+  { id: 'space.memberships', label: 'Memberships', desc: 'The tiers members can join, and who has joined.', Icon: BadgeCheck, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'memberships' }, featureKey: 'memberships', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#memberships`, order: 45, tier: 'primary', priority: 31, access: 'included' },
+  { id: 'space.donations', label: 'Donations', desc: 'The fund, a short description, and the amounts members can pick.', Icon: HeartHandshake, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'donations' }, featureKey: 'donations', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#donations`, order: 50, tier: 'primary', priority: 32, access: 'included' },
+  { id: 'space.enroll', label: 'Enrollment', desc: 'The program details, and who has enrolled.', Icon: GraduationCap, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'enroll' }, featureKey: 'enroll', render: 'panel', deepLink: (s) => `${base(s)}/settings/enroll`, order: 55, tier: 'primary', priority: 33, access: 'included' },
   // Practices + Journeys (the practitioner's content). Practices are the daily-log atom (each with its
   // own timer); Journeys compose them into multi week programs (the e-learning upsell: free spaces publish
   // one). Both are `link` rows out to their own space-scoped manager (data-heavy authoring, like Airwaves).
-  { id: 'space.practices', label: 'Practices', desc: 'Build the practices members do, each with its own timer.', Icon: Sparkles, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'practices' }, featureKey: 'practices', render: 'link', deepLink: (s) => `${base(s)}/practices`, order: 56, tier: 'primary', priority: 33.5 },
-  { id: 'space.journeys', label: 'Journeys', desc: 'Build multi week programs from your practices.', Icon: Route, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'journeys' }, featureKey: 'journeys', render: 'link', deepLink: (s) => `${base(s)}/journeys`, order: 57, tier: 'primary', priority: 33.6 },
-  { id: 'space.tickets', label: 'Tickets', desc: 'Free or RSVP ticket tiers, and who has reserved a spot.', Icon: Ticket, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'tickets' }, featureKey: 'tickets', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#tickets`, order: 60, tier: 'primary', priority: 34 },
-  { id: 'space.checkin', label: 'Check in', desc: 'Show the door code, and see who checked in.', Icon: DoorOpen, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'checkin' }, featureKey: 'checkin', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#checkin`, order: 65, tier: 'primary', priority: 35 },
+  // On the console they cluster with Airwaves into the "Content" group (console.tsx groupForModule).
+  { id: 'space.practices', label: 'Practices', desc: 'Build the practices members do, each with its own timer.', Icon: Sparkles, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'practices' }, featureKey: 'practices', render: 'link', deepLink: (s) => `${base(s)}/practices`, order: 56, tier: 'primary', priority: 33.5, access: 'freemium' },
+  { id: 'space.journeys', label: 'Journeys', desc: 'Build multi week programs from your practices.', Icon: Route, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'journeys' }, featureKey: 'journeys', render: 'link', deepLink: (s) => `${base(s)}/journeys`, order: 57, tier: 'primary', priority: 33.6, access: 'freemium' },
+  { id: 'space.tickets', label: 'Tickets', desc: 'Free or RSVP ticket tiers, and who has reserved a spot.', Icon: Ticket, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'tickets' }, featureKey: 'tickets', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#tickets`, order: 60, tier: 'primary', priority: 34, access: 'included' },
+  { id: 'space.checkin', label: 'Check in', desc: 'Show the door code, and see who checked in.', Icon: DoorOpen, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'checkin' }, featureKey: 'checkin', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#checkin`, order: 65, tier: 'primary', priority: 35, access: 'included' },
   // Shop is now a first-class GATEABLE feature keyed on the `shop` function (SpaceFunctionKey), so it can
   // be turned off, role-gated, and entitlement-gated (the `storefront` tier key) like every sibling
-  // offering — it is no longer the always-on outlier. Same label/render/deepLink/order/tier/priority.
-  { id: 'space.services', label: 'Shop', desc: 'Your catalog, orders, and storefront.', Icon: Store, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'shop' }, featureKey: 'shop', render: 'link', deepLink: (s) => `${base(s)}/settings/shop`, order: 70, tier: 'primary', priority: 40 },
+  // offering — it is no longer the always-on outlier. Free Spaces can sell; a paid plan lowers fees.
+  { id: 'space.services', label: 'Shop', desc: 'Your catalog, orders, and storefront.', Icon: Store, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'shop' }, featureKey: 'shop', render: 'link', deepLink: (s) => `${base(s)}/settings/shop`, order: 70, tier: 'primary', priority: 40, access: 'freemium' },
   // Airwaves (ADR-608, P1): the Space's audio/video Recordings library. Upload a Recording into the Loom,
   // manage the catalog, and attach a Recording to any offering, journey, event, or the Space itself.
-  { id: 'space.airwaves', label: 'Airwaves', desc: 'Your recordings, and where each one plays.', Icon: Radio, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'airwaves' }, featureKey: 'airwaves', render: 'link', deepLink: (s) => `${base(s)}/settings/airwaves`, order: 72, tier: 'primary', priority: 41 },
+  { id: 'space.airwaves', label: 'Airwaves', desc: 'Your recordings, and where each one plays.', Icon: Radio, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'airwaves' }, featureKey: 'airwaves', render: 'link', deepLink: (s) => `${base(s)}/settings/airwaves`, order: 72, tier: 'primary', priority: 41, access: 'included' },
 
   // ── Reach & comms ────────────────────────────────────────────────────────────────────────────────────
-  { id: 'space.reach', label: 'QR codes', desc: 'Create codes for this space and the pages they open.', Icon: QrCode, family: 'reach', slot: 'reach', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'panel', deepLink: (s) => `${base(s)}/settings/qr`, order: 75, tier: 'primary', priority: 50, placement: 'bank' },
-  { id: 'space.comms', label: 'Email', desc: 'Write a campaign, pick who gets it, and send or schedule it.', Icon: Mail, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'panel', deepLink: (s) => `${base(s)}/settings/email`, order: 80, tier: 'primary', priority: 55, placement: 'bank' },
-  // Marketing (Email in the Business CRM, P1): the FULL on-canvas email editor embedded in the CRM. Reuses the
-  // one Email Studio engine (EmailCanvasEditor) pointed at this Space's own drafts, seeded from the Space brand
-  // (spaceEmailColors). A `link` row out to its own wide editor route; gated on the `email` function (plan-gated,
-  // so free Spaces see the upgrade nudge). Distinct from `space.comms` (the plain-text quick composer + send).
-  { id: 'space.marketing', label: 'Marketing', desc: 'Design a branded email on the canvas, block by block.', Icon: Megaphone, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'link', deepLink: (s) => `${base(s)}/marketing`, order: 81, tier: 'primary', priority: 56 },
+  // QR codes is the ONE reach card (ADR-782): Scans and insights (`space.insights`, same `qr` gate, the
+  // /settings/qr#scans view) folds UNDER it on the console, so Reach shows one QR card with its scan
+  // analytics nested rather than two near-duplicate rows onto the same page.
+  { id: 'space.reach', label: 'QR codes', desc: 'Create codes for this space, and see the scans they drive.', Icon: QrCode, family: 'reach', slot: 'reach', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'panel', deepLink: (s) => `${base(s)}/settings/qr`, order: 75, tier: 'primary', priority: 50, placement: 'bank', access: 'freemium' },
+  // Email is the ONE comms card (ADR-782): Email design (the canvas editor, `space.marketing`) and Email
+  // style (the palette, `space.emailstyle`) fold UNDER it on the console — Compose / Design / Style read as
+  // one Email surface. Each stays a first-class module (own deepLink + rail row).
+  { id: 'space.comms', label: 'Email', desc: 'Write a campaign, pick who gets it, and send or schedule it.', Icon: Mail, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'panel', deepLink: (s) => `${base(s)}/settings/email`, order: 80, tier: 'primary', priority: 55, placement: 'bank', access: 'freemium' },
+  // Email design (Email in the Business CRM, P1): the FULL on-canvas email editor. Reuses the one Email Studio
+  // engine (EmailCanvasEditor) pointed at this Space's own drafts, seeded from the Space brand. Gated on the
+  // `email` function; nested under Email on the console. Distinct destination from `space.comms` (the composer).
+  { id: 'space.marketing', label: 'Email design', desc: 'Design a branded email on the canvas, block by block.', Icon: Megaphone, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'link', deepLink: (s) => `${base(s)}/marketing`, order: 81, tier: 'primary', priority: 56, access: 'freemium', parent: 'space.comms' },
   // Email style (Email in the Business CRM, P1): tune the brand-derived palette a Space's emails default to
-  // (spaces.preferences.emailStyle, seeded from the brand accent). A `link` row out to its own Focus surface;
-  // gated on the `email` function like its siblings.
-  { id: 'space.emailstyle', label: 'Email style', desc: 'Set the brand colors your emails use by default.', Icon: Paintbrush, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'link', deepLink: (s) => `${base(s)}/settings/email-style`, order: 82, tier: 'extra', priority: 57 },
+  // (spaces.preferences.emailStyle, seeded from the brand accent). Gated on `email`; nested under Email.
+  { id: 'space.emailstyle', label: 'Email style', desc: 'Set the brand colors your emails use by default.', Icon: Paintbrush, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'link', deepLink: (s) => `${base(s)}/settings/email-style`, order: 82, tier: 'extra', priority: 57, access: 'freemium', parent: 'space.comms' },
 
   // ── Growth & billing ─────────────────────────────────────────────────────────────────────────────────
-  { id: 'space.insights', label: 'Insights', desc: 'Scans, growth, and how your space is doing.', Icon: BarChart3, family: 'growth', slot: 'insights', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'link', deepLink: (s) => `${base(s)}/settings/qr#scans`, order: 85, tier: 'extra', priority: 20, placement: 'bank' },
-  { id: 'space.billing', label: 'Plan and usage', desc: 'Your plan, what it unlocks, and billing.', Icon: CreditCard, family: 'growth', slot: 'billing', gate: { kind: 'feature', fn: 'billing' }, featureKey: 'billing', render: 'panel', deepLink: (s) => `${base(s)}/settings/billing`, order: 90, tier: 'extra', priority: 30, placement: 'bank' },
+  { id: 'space.insights', label: 'Scans and insights', desc: 'Scans, growth, and how your space is doing.', Icon: BarChart3, family: 'growth', slot: 'insights', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'link', deepLink: (s) => `${base(s)}/settings/qr#scans`, order: 85, tier: 'extra', priority: 20, placement: 'bank', access: 'freemium', parent: 'space.reach' },
+  { id: 'space.billing', label: 'Plan and usage', desc: 'Your plan, what it unlocks, and billing.', Icon: CreditCard, family: 'growth', slot: 'billing', gate: { kind: 'feature', fn: 'billing' }, featureKey: 'billing', render: 'panel', deepLink: (s) => `${base(s)}/settings/billing`, order: 90, tier: 'extra', priority: 30, placement: 'bank', access: 'included' },
 
   // ── System ───────────────────────────────────────────────────────────────────────────────────────────
   // The "Menu and features" (Module Manager) rail entry was REMOVED (item 7): the bottom More menu no longer
@@ -175,18 +192,17 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Danger renders as a rail LINK-row (its inline delete lives in the /manage console + Module Manager, which
   // special-case `space.danger` by id — the `render` value drives only the rail, ADR-546b). It has no
   // deepLink, so the rail row falls back to the /manage console (its delete control home). Never banked.
-  { id: 'space.danger', label: 'Danger zone', desc: 'Delete this space. This cannot be undone.', Icon: Trash2, family: 'system', slot: 'danger', gate: { kind: 'always' }, featureKey: null, render: 'link', order: 99, tier: 'extra', priority: 99 },
+  { id: 'space.danger', label: 'Danger zone', desc: 'Delete this space. This cannot be undone.', Icon: Trash2, family: 'system', slot: 'danger', gate: { kind: 'always' }, featureKey: null, render: 'link', order: 99, tier: 'extra', priority: 99, access: 'included' },
 ]
 
-/** Module ids that may NEVER be hidden from the menu or turned off: the shell config surfaces (Identity /
- *  Info / Page / Settings), Danger, and the Module Manager itself. Hiding any of these would strand the
- *  owner (they could not get back to edit their space or its menu). The Module Manager UI hard-disables
- *  the hide + feature controls for these, and `readModuleMenuPrefs` drops them from any stored hidden list. */
+/** Module ids that may NEVER be hidden from the menu or turned off: the shell config surfaces (Profile
+ *  and Settings, Page) and Danger. Hiding any of these would strand the owner (they could not get back to
+ *  edit their space). The Module Manager UI hard-disables the hide + feature controls for these, and
+ *  `readModuleMenuPrefs` drops them from any stored hidden list. (Identity / Settings collapsed INTO
+ *  `space.basics` "Profile and Settings" in ADR-782.) */
 export const UNHIDEABLE_MODULE_IDS: readonly string[] = [
-  'space.branding',
   'space.basics',
   'space.layout',
-  'space.settings',
   'space.danger',
 ]
 

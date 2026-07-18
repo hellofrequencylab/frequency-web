@@ -77,8 +77,15 @@ export function isSpacePlanLabel(raw: string | null | undefined): boolean {
 // add-on, in NO tier base.
 
 /** Business tier depth keys = the FULL paid depth (CRM + governed playbooks + marketing + team +
- *  branding). Business and Nonprofit both grant this exact set; free grants nothing. The former Pro core
- *  (['crm', 'crm.playbooks']) folds in here so a former practitioner does not regress (ADR-552). */
+ *  branding + the multi-page website). Business and Nonprofit both grant this exact set; free grants
+ *  nothing. The former Pro core (['crm', 'crm.playbooks']) folds in here so a former practitioner does
+ *  not regress (ADR-552).
+ *
+ *  `space_full_website` (the multi-page profile / full website upsell) rides this set so a paid tier
+ *  actually GRANTS it (ADR-782). It is enforced by a PURE default-deny read (spaceCanUseFullWebsite),
+ *  NOT the billing-latent featureAllowed seam, so it stays locked for free Spaces regardless of
+ *  billingLive; being in the plan depth is the ONLY way a Business/Nonprofit Space ever unlocks it.
+ *  Kept in lock-step with SPACE_FULL_WEBSITE_KEY (lib/spaces/entitlements.ts). */
 export const BUSINESS_DEPTH_ENTITLEMENT_KEYS: readonly string[] = [
   'crm',
   'crm.playbooks',
@@ -88,6 +95,7 @@ export const BUSINESS_DEPTH_ENTITLEMENT_KEYS: readonly string[] = [
   'reporting',
   'team',
   'whitelabel',
+  'space_full_website',
 ]
 
 /** The metered ADD-ON(S) -> the entitlement keys each turns on (ADR-472 §1b). AI Engine is now the

@@ -20,11 +20,11 @@ const byId = (id: string): SpaceModule => {
   return m
 }
 
-// The console clusters by module SLOT into the SAME 7 groups the admin rail uses (ADR-520, SPACE_GROUP_META:
-// Identity/Info=basics · Page=layout · Audience=people · Offerings & money=engage · Reach=reach · Growth=
-// insights · Danger=danger). Every module must fold into one of those seven, so the console and rail agree.
-describe('groupForModule (every module folds into one of the 7 console groups)', () => {
-  const KNOWN_SLOTS = ['basics', 'layout', 'people', 'engage', 'reach', 'insights', 'danger']
+// The console clusters by module SLOT into the console groups (ADR-782): Setup=basics · Content=place ·
+// Audience=people · Offerings & money=engage · Reach=reach · Plan and billing=insights · Danger=danger.
+// Every TOP-LEVEL module must fold into one of those seven, so nothing is orphaned.
+describe('groupForModule (every module folds into one of the console groups)', () => {
+  const KNOWN_SLOTS = ['basics', 'place', 'people', 'engage', 'reach', 'insights', 'danger']
 
   it('assigns every catalog module to a known group slot', () => {
     for (const mod of SPACE_MODULES) {
@@ -32,13 +32,18 @@ describe('groupForModule (every module folds into one of the 7 console groups)',
     }
   })
 
-  it('folds Identity & Branding (place) and Settings (safety) into the identity group (basics)', () => {
-    expect(groupForModule(byId('space.branding'))).toBe('basics')
+  it('folds Profile and Settings + Page into the Setup group (basics)', () => {
     expect(groupForModule(byId('space.basics'))).toBe('basics')
-    expect(groupForModule(byId('space.settings'))).toBe('basics')
+    expect(groupForModule(byId('space.layout'))).toBe('basics') // Page folds into Setup
   })
 
-  it('keeps Members + CRM in Audience (people) and every commerce module in Offerings & money (engage)', () => {
+  it('clusters Practices / Journeys / Airwaves into the Content group (place)', () => {
+    expect(groupForModule(byId('space.practices'))).toBe('place')
+    expect(groupForModule(byId('space.journeys'))).toBe('place')
+    expect(groupForModule(byId('space.airwaves'))).toBe('place')
+  })
+
+  it('keeps Members + CRM in Audience (people) and the commerce modules in Offerings & money (engage)', () => {
     expect(groupForModule(byId('space.people'))).toBe('people')
     expect(groupForModule(byId('space.crm'))).toBe('people')
     for (const id of [
@@ -54,7 +59,7 @@ describe('groupForModule (every module folds into one of the 7 console groups)',
     }
   })
 
-  it('folds Email (comms) into Reach, and Plan and usage (billing) into Growth (insights)', () => {
+  it('folds Email (comms) into Reach, and Plan and usage (billing) into Plan and billing (insights)', () => {
     expect(groupForModule(byId('space.reach'))).toBe('reach')
     expect(groupForModule(byId('space.comms'))).toBe('reach')
     expect(groupForModule(byId('space.insights'))).toBe('insights')
@@ -124,15 +129,15 @@ describe('Mode is a secondary signal: Identity is never demoted below mode modul
   const emphasis: SpaceFunctionKey[] = ['crm', 'availability', 'email']
 
   it('tags only modules whose gate function the Mode emphasizes (shell modules never tagged)', () => {
-    expect(isSuggestedByMode(byId('space.branding'), emphasis)).toBe(false)
+    expect(isSuggestedByMode(byId('space.basics'), emphasis)).toBe(false)
     expect(isSuggestedByMode(byId('space.crm'), emphasis)).toBe(true)
     expect(isSuggestedByMode(byId('space.booking'), emphasis)).toBe(true)
     // No emphasis at all: nothing is suggested.
     expect(isSuggestedByMode(byId('space.crm'), [])).toBe(false)
   })
 
-  it('does not move an always-on module below an emphasized one when ordering the identity group', () => {
-    // The identity (basics) group: Identity & Branding + Info and Connect + Settings, all always-on.
+  it('does not move an always-on module below an emphasized one when ordering the Setup group', () => {
+    // The Setup (basics) group: Profile and Settings + Page, both always-on.
     const identityGroup = spaceModuleManifest({}).filter((m) => groupForModule(m) === 'basics')
     const ordered = orderWithinGroupByEmphasis(identityGroup, emphasis)
     // No gate functions, so emphasis never reorders them: they keep catalog order, never demoted.
