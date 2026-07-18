@@ -34,6 +34,8 @@ export function AdminTemplate({
   actions,
   actionsAlign,
   back,
+  hideBackLink = false,
+  adminBar = true,
   width = 'default',
   children,
 }: {
@@ -50,12 +52,18 @@ export function AdminTemplate({
   /** Explicit back-link. When omitted, a sub-page auto-links back to its parent domain
    *  dashboard (resolved client-side from the path); a domain root shows nothing. */
   back?: { href: string; label: string }
+  /** Suppress the auto (or explicit) back-link entirely — for a page that reads as a top-level
+   *  workspace rather than a nested sub-page. */
+  hideBackLink?: boolean
+  /** Forwarded to PageHeading: render the operator on-page "Settings" bar on the header rule
+   *  (default on). Set false for a page that owns its header chrome and wants a plain divider. */
+  adminBar?: boolean
   width?: keyof typeof WIDTHS
   children: React.ReactNode
 }) {
   return (
     <div className={`mx-auto w-full ${WIDTHS[width]}`}>
-      <AdminAutoBackLink back={back} />
+      {!hideBackLink && <AdminAutoBackLink back={back} />}
       <PageHeading
         eyebrow={eyebrow}
         title={
@@ -71,6 +79,7 @@ export function AdminTemplate({
         description={description}
         actions={actions}
         actionsAlign={actionsAlign}
+        adminBar={adminBar}
       />
       <div className="space-y-8 lg:space-y-10">{children}</div>
     </div>

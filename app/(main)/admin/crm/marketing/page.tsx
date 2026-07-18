@@ -2,45 +2,23 @@
 // circle, or individuals), with campaigns + funnels + drafts + sent in one place. Reuses the messaging
 // console (one source of truth) and the gated email-studio send pipeline; the "New email" popup always
 // saves as a draft. Gate mirrors the messaging surface (admin floor OR the marketing capability).
+//
+// Layout (owner directive 2026-07): a top-level workspace, so NO back-link and NO on-page Settings bar.
+// The pipeline quick-stats live in a compact card in the header's right slot (~1/3). Body order: Email
+// performance (small inline stats) → Everything you send → Best practices + open-rate playbook.
 
-import { Suspense } from 'react'
-import { Send, Megaphone, Activity, Rocket, FileEdit, Clock } from 'lucide-react'
+import { Send } from 'lucide-react'
 import { AdminTemplate, AdminSection } from '@/components/templates'
-import { StatCard } from '@/components/ui/stat-card'
 import { requireAdmin } from '@/lib/admin/guard'
 import { getMessagingConsole } from '@/lib/messaging/console'
 import { listSegmentOptions } from '@/lib/studio/campaigns'
 import { getMarketingEmailOverview } from '@/lib/email-studio/analytics'
 import { MarketingWorkspace } from '@/components/admin/crm/marketing-workspace'
+import { MarketingQuickStats } from '@/components/admin/crm/marketing-quick-stats'
 import { EmailPerformance } from '@/components/admin/crm/email-performance'
 import { EmailBestPractices } from '@/components/admin/crm/email-best-practices'
 
 export const dynamic = 'force-dynamic'
-
-// The email-response dashboard rolls the whole email_events ledger, so it is kept OFF the page's critical
-// path: it resolves inside its own <Suspense> below, streaming in after the campaign list paints. This can
-// neither block the first byte nor take the page down (getMarketingEmailOverview is itself fail-safe to an
-// all-zero overview), which is the PAGE-FRAMEWORK rule for a slow / optional section.
-async function EmailInsights() {
-  const overview = await getMarketingEmailOverview()
-  return (
-    <>
-      <AdminSection
-        title="Email performance"
-        description="How everything you send is landing: delivered, opened, clicked, bounced, and flagged. Clicks are the signal to trust (Apple Mail privacy inflates opens)."
-      >
-        <EmailPerformance overview={overview} />
-      </AdminSection>
-
-      <AdminSection
-        title="Best practices"
-        description="Live health checks on your deliverability, plus the levers that move open rate."
-      >
-        <EmailBestPractices overview={overview} />
-      </AdminSection>
-    </>
-  )
-}
 
 export default async function CrmMarketingPage({
   searchParams,
@@ -52,9 +30,12 @@ export default async function CrmMarketingPage({
 }) {
   await requireAdmin('admin', { staff: 'marketing' })
   const { open } = await searchParams
-  const [{ campaigns, funnels, counts }, segments] = await Promise.all([
+  // getMarketingEmailOverview is fail-safe (returns an all-zero overview on any error), so it is safe on the
+  // critical path — it feeds both the header "Emails sent" stat and the Email performance strip.
+  const [{ campaigns, funnels, counts }, segments, emailOverview] = await Promise.all([
     getMessagingConsole(),
     listSegmentOptions(),
+    getMarketingEmailOverview(),
   ])
 
   return (
@@ -63,25 +44,31 @@ export default async function CrmMarketingPage({
       title="Marketing"
       icon={Send}
       width="wide"
+      hideBackLink
+      adminBar={false}
       description="Send email to the whole community or a section: all members, a saved segment, a circle, or individuals. Campaigns and funnels live here, and the composer always saves as a draft until you send."
+      actions={<MarketingQuickStats counts={counts} overview={emailOverview} />}
+      actionsAlign="start"
     >
-      <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5">
-        <StatCard size="xs" label="Campaigns" value={counts.campaigns} icon={Megaphone} />
-        <StatCard size="xs" label="Funnels" value={counts.funnels} icon={Activity} />
-        <StatCard size="xs" label="Live" value={counts.live} icon={Rocket} />
-        <StatCard size="xs" label="Scheduled" value={counts.scheduled} icon={Clock} />
-        <StatCard size="xs" label="Drafts" value={counts.drafts} icon={FileEdit} />
-      </div>
-
-      <Suspense fallback={null}>
-        <EmailInsights />
-      </Suspense>
+      <AdminSection
+        title="Email performance"
+        description="How everything you send is landing: delivered, opened, clicked, bounced, and flagged. Clicks are the signal to trust (Apple Mail privacy inflates opens)."
+      >
+        <EmailPerformance overview={emailOverview} />
+      </AdminSection>
 
       <AdminSection
         title="Everything you send"
         description="Campaigns and funnels in one place, colored by status. Click a sent email to fold open its stats and Vera's read on your opens."
       >
         <MarketingWorkspace campaigns={campaigns} funnels={funnels} segments={segments} openCampaignId={open} />
+      </AdminSection>
+
+      <AdminSection
+        title="Best practices"
+        description="Live health checks on your deliverability, plus the levers that move open rate."
+      >
+        <EmailBestPractices overview={emailOverview} />
       </AdminSection>
     </AdminTemplate>
   )
