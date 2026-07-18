@@ -114,8 +114,11 @@ async function joinedAtFor(profileIds: string[]): Promise<Map<string, number>> {
 
 /** Load + map the scored roster for a filter into MemberSummary[] (recency-sortable, facet-matchable).
  *  Returns [] when nobody is scored, so the host shows its fail-safe empty state. */
-export async function loadMemberSummaries(filter: MemberFilter): Promise<MemberSummary[]> {
-  const rows = await listMembersByFilter(filter)
+export async function loadMemberSummaries(
+  filter: MemberFilter,
+  opts: { spaceId?: string | null } = {},
+): Promise<MemberSummary[]> {
+  const rows = await listMembersByFilter(filter, { spaceId: opts.spaceId })
   if (rows.length === 0) return []
 
   const profileIds = rows.map((r) => r.profileId)
