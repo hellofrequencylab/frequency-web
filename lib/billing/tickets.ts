@@ -25,7 +25,9 @@ import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
 import { getConnectStatus, payoutsLive } from './connect'
-import { platformFeeCents } from './fees'
+import { platformFeeCents, spaceTakeRateCents } from './fees'
+import { spaceIsPaying } from './space-subscription-items'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
 
@@ -93,6 +95,7 @@ interface EventRow {
   ends_at: string | null
   starts_at: string
   host_id: string | null
+  space_id: string | null
 }
 
 interface TicketTypeRow {
@@ -133,7 +136,7 @@ export async function createTicketCheckout(opts: {
 
   const { data } = await db()
     .from('events')
-    .select('id, title, slug, price_cents, is_cancelled, ends_at, starts_at, host_id')
+    .select('id, title, slug, price_cents, is_cancelled, ends_at, starts_at, host_id, space_id')
     .eq('id', opts.eventId)
     .maybeSingle()
   const event = data as EventRow | null
@@ -203,7 +206,19 @@ export async function createTicketCheckout(opts: {
   if (!status.accountId || !status.ready) return { error: 'Tickets aren’t available for this event yet.' }
 
   const gross = ticketTotalCents(unitCents, qty)
-  const fee = platformFeeCents(gross)
+  // Take-rate ladder (ADR-590/785): a SPACE-hosted event's tickets honor the space's paying-state rate
+  // (5% free usage → 3% paid Business / Non Profit), the same lever as space memberships + the storefront.
+  // A PERSONAL event (no owning space, or the platform root) keeps the flat platform fee. Fail-safe: the
+  // space resolution is best-effort; any miss falls back to the flat fee (never under-collect).
+  let fee = platformFeeCents(gross)
+  if (event.space_id) {
+    const root = await loadRootSpaceId()
+    if (event.space_id !== root) {
+      const { data: sp } = await db().from('spaces').select('plan').eq('id', event.space_id).maybeSingle()
+      const plan = (sp as { plan?: string | null } | null)?.plan ?? 'free'
+      fee = await spaceTakeRateCents(gross, plan, await spaceIsPaying(event.space_id))
+    }
+  }
   const tierLabel = tier ? ` (${tier.name})` : ''
 
   const session = await stripe.checkout.sessions.create({

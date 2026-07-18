@@ -133,6 +133,9 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // one CRM card with its four workspaces nested instead of five separate rows. Each stays a first-class
   // module (own gate + deepLink + rail row); only the console consolidates them.
   { id: 'space.crm', label: 'CRM', desc: 'Your pipeline, contacts, private notes, and Vera autonomy.', Icon: Briefcase, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'panel', deepLink: (s) => `${base(s)}/crm`, order: 35, tier: 'primary', priority: 15, access: 'freemium', freeNote: '250 contacts free, then unlimited' },
+  // Inbox (ADR-786): the space's 2-way conversation view — read a contact thread and reply through the
+  // consent gate. Same `crm` gate as the board; lives under /crm and clusters into Resonance on the hub.
+  { id: 'space.inbox', label: 'Inbox', desc: 'Read every contact conversation and reply, through the consent gate.', Icon: Mail, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/inbox`, order: 35.5, tier: 'primary', priority: 15.5, access: 'included' },
   // Automation rides the `crm` feature gate; the surface self-gates on the automation ENTITLEMENT (a paid
   // amplifier) and shows an upgrade notice when the plan lacks it. Nested under CRM on the console.
   { id: 'space.automation', label: 'Automation', desc: 'Rules and drip sequences over your own contacts.', Icon: Workflow, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/settings/automation`, order: 36, tier: 'primary', priority: 16, access: 'premium', parent: 'space.crm', freeNote: 'On a paid plan' },

@@ -23,7 +23,18 @@ function when(at: string): string {
   return new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-export function InboxWorkspace({ threads }: { threads: InboxThread[] }) {
+/** The reply action shape both inboxes share: the admin `sendInboxReplyAction` (default) or the space
+ *  `sendSpaceInboxReplyAction` bound to a slug. Injecting it lets one workspace serve both inboxes. */
+type SendReply = (input: { contactId: string; subject: string; body: string }) => ReturnType<typeof sendInboxReplyAction>
+
+export function InboxWorkspace({
+  threads,
+  sendReply = sendInboxReplyAction,
+}: {
+  threads: InboxThread[]
+  /** The gated reply action (defaults to the admin inbox action; the space inbox passes its own). */
+  sendReply?: SendReply
+}) {
   const [selectedId, setSelectedId] = useState<string | null>(threads[0]?.contactId ?? null)
   const selected = useMemo(
     () => threads.find((t) => t.contactId === selectedId) ?? threads[0] ?? null,
@@ -72,12 +83,12 @@ export function InboxWorkspace({ threads }: { threads: InboxThread[] }) {
         })}
       </ul>
 
-      {selected && <Conversation key={selected.contactId} thread={selected} />}
+      {selected && <Conversation key={selected.contactId} thread={selected} sendReply={sendReply} />}
     </div>
   )
 }
 
-function Conversation({ thread }: { thread: InboxThread }) {
+function Conversation({ thread, sendReply }: { thread: InboxThread; sendReply: SendReply }) {
   const router = useRouter()
   const lastSubject = thread.messages[0]?.title ?? ''
   const [subject, setSubject] = useState(lastSubject.startsWith('Re:') ? lastSubject : `Re: ${lastSubject}`)
@@ -95,7 +106,7 @@ function Conversation({ thread }: { thread: InboxThread }) {
     setError(null)
     setOkMsg(null)
     start(async () => {
-      const res = await sendInboxReplyAction({ contactId: thread.contactId, subject: subject.trim(), body: trimmed })
+      const res = await sendReply({ contactId: thread.contactId, subject: subject.trim(), body: trimmed })
       if (isError(res)) {
         setError(res.error)
         return

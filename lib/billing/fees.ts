@@ -3,10 +3,12 @@
 // destination charge; the rest transfers to the recipient's connected account.
 // Server-only config, but pure functions (no I/O) so they're trivially testable.
 
-/** The platform fee percentage (0–100), from env, defaulting to 3% (ADR-590: "our 3% plus card
- *  processing, no surprise fees ever" — the flat 3% applies to every Connect channel: tips, tickets,
- *  store). A blank/unset env is "not configured" → 3 (note `Number('')` is 0, so guard it explicitly);
- *  an explicit '0' is a deliberate 0% fee; the env var can still override for a promo. */
+/** The platform fee percentage (0–100), from env, defaulting to 3% (ADR-590). This FLAT rate is the floor
+ *  for channels with NO space seller: tips (profile → profile gratuities) and personal-event tickets. The
+ *  SPACE-seller channels — space memberships, the storefront (ADR-596), and space-hosted event tickets
+ *  (ADR-785) — instead use the paying-state take-rate LADDER (5% free → 3% paid) via `spaceTakeRateCents`.
+ *  A blank/unset env is "not configured" → 3 (note `Number('')` is 0, so guard it explicitly); an explicit
+ *  '0' is a deliberate 0% fee; the env var can still override for a promo. */
 export function platformFeePct(): number {
   const env = process.env.STRIPE_PLATFORM_FEE_PCT
   if (!env || !env.trim()) return 3
