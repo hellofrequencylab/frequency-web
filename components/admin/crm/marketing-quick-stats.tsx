@@ -22,7 +22,7 @@ export function MarketingQuickStats({
   // No background card (owner directive): the stats read as a plain cluster in the header. A left inset on
   // sm+ opens breathing room between the title/description block and the stats.
   return (
-    <div className="w-full sm:w-80 sm:pl-10">
+    <div className="w-full sm:w-80 sm:border-l sm:border-border sm:pl-8">
       <div className="grid grid-cols-3 gap-x-4 gap-y-3.5">
         {stats.map((s) => (
           <div key={s.label} className="min-w-0">

@@ -49,7 +49,7 @@ export default async function CrmMarketingPage({
       contentSpacing="tight"
       description="Send email to the whole community or a section: all members, a saved segment, a circle, or individuals. Campaigns and funnels live here, and the composer always saves as a draft until you send."
       actions={<MarketingQuickStats counts={counts} overview={emailOverview} />}
-      actionsAlign="start"
+      actionsAlign="center"
     >
       <AdminSection
         title="Email performance"
