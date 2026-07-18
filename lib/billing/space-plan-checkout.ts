@@ -165,10 +165,12 @@ async function resolveLoadoutPriceId(
 }
 
 /** The catalog item keys + their seat-ness a loadout maps to. PURE (ADR-552). Business -> business_base
- *  plus one item per active metered add-on (only AI now); Nonprofit -> the per-seat item. The Business
- *  base is the full depth; the AI add-on layers on top. */
+ *  plus one item per active metered add-on (only AI now); Nonprofit -> the single flat nonprofit item.
+ *  The Business base is the full depth; the AI add-on layers on top. NOTHING here is per-seat: Nonprofit
+ *  is a FLAT $29/mo (ADR-590), not a per-seat charge, so it bills quantity 1 like the Business base. The
+ *  `nonprofit_seat` catalog key is a legacy name (the item is flat); see pricing-catalog.test.ts. */
 function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; perSeat: boolean }[] {
-  if (loadout.plan === 'nonprofit') return [{ key: 'nonprofit_seat', perSeat: true }]
+  if (loadout.plan === 'nonprofit') return [{ key: 'nonprofit_seat', perSeat: false }]
   const out: { key: CatalogItemKey; perSeat: boolean }[] = [{ key: 'business_base', perSeat: false }]
   const addons = [...new Set((loadout.addons ?? []).map((a) => asAddonKey(typeof a === 'string' ? a : null)).filter((a): a is AddonKey => a !== null))]
   for (const addon of addons) {
@@ -179,8 +181,8 @@ function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; pe
   return out
 }
 
-/** Create a single multi-item subscription Checkout for a Space owner's loadout (Pro base + add-ons,
- *  or the nonprofit seat / organization item), monthly or yearly. Charges the FOUNDING price (or the
+/** Create a single multi-item subscription Checkout for a Space owner's loadout (Business base + add-ons,
+ *  or the flat nonprofit item), monthly or yearly. Charges the FOUNDING price (or the
  *  Space's grandfathered locked price when it holds one), with a 14-day per-item trial and proration.
  *  Returns the session URL, or null when the loadout is not sellable / not synced / the space has no
  *  owner. GATED on spacePlanSellable for the base plan.

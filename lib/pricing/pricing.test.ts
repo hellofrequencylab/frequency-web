@@ -61,7 +61,7 @@ describe('space tiers (collapsed to free/business/nonprofit · ADR-552)', () => 
   })
 
   it('Business and Nonprofit are FULL depth and IDENTICAL at the key level (no AI keys)', () => {
-    const full = ['crm', 'crm.playbooks', 'email', 'automation', 'multi_pipeline', 'reporting', 'team', 'whitelabel']
+    const full = ['crm', 'crm.playbooks', 'email', 'automation', 'multi_pipeline', 'reporting', 'team', 'whitelabel', 'space_full_website']
     for (const plan of ['business', 'nonprofit'] as const) {
       // exact set (order-independent)
       expect([...planEntitlementKeys(plan)].sort()).toEqual([...full].sort())

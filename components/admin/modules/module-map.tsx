@@ -37,6 +37,19 @@ import { PersonalSpotlightModule } from './personal-spotlight-module'
 import { PersonalLayoutModule } from './personal-layout-module'
 import { PersonalAppearanceModule } from './personal-appearance-module'
 
+// The collapsed "Profile and Settings" inline body (ADR-782): the three former shell section editors
+// (Identity & Branding · Info & Connect · Settings) stacked, so the single `space.basics` module renders
+// the full config inline on the rail — matching what the /manage console's card opens (/settings/basics).
+function SpaceProfileSettingsModule() {
+  return (
+    <>
+      <SpaceBrandingModule />
+      <SpaceBasicsModule />
+      <SpaceSettingsModule />
+    </>
+  )
+}
+
 // The render layer of the admin-module registry (ADR-250 step 1). The catalog
 // (lib/admin/modules/registry.ts) stays pure metadata — it must, because the module
 // components import `moduleById` from it for their own label/icon, so the catalog can
@@ -80,18 +93,16 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'journey.export': JourneyExportModule,
   'journey.danger': JourneyDangerModule,
   // Space inline config surfaces (inline-first rail, ADR-514). These are the space modules whose
-  // `render` is 'inline' — Basics / Branding / Settings / Page — each a thin wrapper that self-fetches its
+  // `render` is 'inline' — Profile and Settings / Page — each a thin wrapper that self-fetches its
   // read-gated data and mounts the existing editor in the flattened bar. The Space's feature workflows
   // (Members, CRM, the seven Offerings & money surfaces, QR, Email, Insights, Billing, Danger) stay
   // `render: 'link'` and draw a link-row instead, so they are NOT in this map. Vera autonomy + the Pipeline
   // are no longer standalone rail modules (modular menu P1b, ADR-544b): they fold into CRM.
-  // Info & Connect (Section 2, ADR-535): About, Story, contact, links. (Stable id stays `space.basics`.)
-  'space.basics': SpaceBasicsModule,
-  // Identity & Branding (Section 1, ADR-535): name, tagline, header/logo images, cover style, accent — the
-  // header-hero half.
-  'space.branding': SpaceBrandingModule,
-  // Settings (the lower section, ADR-535): rating + visibility, pulled out of the forward-facing sections.
-  'space.settings': SpaceSettingsModule,
+  //
+  // ADR-782: the former three shell cards (Identity & Branding + Info & Connect + Settings) collapsed into
+  // ONE `space.basics` "Profile and Settings" module. Its inline body stacks the three existing section
+  // editors (Branding · Info & Connect · Settings) so the rail keeps the full config in one surface.
+  'space.basics': SpaceProfileSettingsModule,
   'space.layout': SpacePageModule,
   // Personal "You" apps (ADMIN-RAIL.md Phase 4 / ADR-515 Phase 2) — self-account settings for any
   // signed-in viewer. The rail BODY is just three inline surfaces: Profile (identity), a condensed

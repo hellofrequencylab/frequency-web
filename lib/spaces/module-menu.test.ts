@@ -39,7 +39,7 @@ describe('readModuleMenuPrefs (fail-safe)', () => {
   it('drops UNHIDEABLE ids from the hidden list (shell / Danger / Module Manager can never be hidden)', () => {
     const prefs = {
       moduleMenu: {
-        hidden: ['space.branding', 'space.basics', 'space.layout', 'space.settings', 'space.danger', 'space.modules', 'space.crm'],
+        hidden: ['space.basics', 'space.layout', 'space.danger', 'space.crm'],
       },
     }
     // Only the genuinely hideable service survives.
@@ -54,11 +54,11 @@ describe('readModuleMenuPrefs (fail-safe)', () => {
 
 describe('sanitize helpers', () => {
   it('sanitizeModuleOrder allows any known id (order may list shell ids)', () => {
-    expect(sanitizeModuleOrder(['space.branding', 'space.crm', 'bogus'])).toEqual(['space.branding', 'space.crm'])
+    expect(sanitizeModuleOrder(['space.basics', 'space.crm', 'bogus'])).toEqual(['space.basics', 'space.crm'])
     expect(sanitizeModuleOrder('not-an-array')).toEqual([])
   })
 
   it('sanitizeHiddenModules refuses unhideable ids', () => {
-    expect(sanitizeHiddenModules(['space.danger', 'space.crm', 'space.branding'])).toEqual(['space.crm'])
+    expect(sanitizeHiddenModules(['space.danger', 'space.crm', 'space.basics'])).toEqual(['space.crm'])
   })
 })

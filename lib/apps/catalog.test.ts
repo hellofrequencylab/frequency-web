@@ -79,7 +79,7 @@ describe('Space editor lane ← SPACE_MODULES (modular menu P3b, ADR-546b)', () 
     // and links out for every feature workflow. Identity / Info / Settings / Page mount inline editors;
     // every other module (the services, QR, Email, Insights, Billing, the Module Manager, Danger) links out
     // (a `panel` module renders a link-row whose body opens on-page via `?panel=`).
-    const INLINE = ['space.branding', 'space.basics', 'space.settings', 'space.layout']
+    const INLINE = ['space.basics', 'space.layout']
     for (const id of INLINE) {
       expect(APPS.find((a) => a.id === id)?.surfaces.editor?.render, id).toBe('inline')
     }

@@ -46,30 +46,48 @@ export { hrefForSurface }
 // surfaces (this full-page console + the in-rail bar) never disagree on the IA. Groups render in
 // SPACE_CONSOLE_GROUPS order (Identity leads so the space's own identity is first; Danger trails).
 
-/** The 7 Space console groups, in render order — the SPACE_GROUP_META slots (ADR-520). Identity leads;
- *  Danger trails. Each group's header label + icon come from SPACE_GROUP_META. Every module folds into one
- *  of these seven via groupForModule, so nothing is orphaned. */
+/** The 7 Space console groups, in render order (ADR-782). Setup leads; Danger trails. Each group's header
+ *  label + icon come from SPACE_GROUP_META. Every TOP-LEVEL module folds into one of these seven via
+ *  groupForModule, so nothing is orphaned; sub-modules (`parent`) nest under their parent card. */
 const SPACE_CONSOLE_GROUPS: readonly AdminSlot[] = [
-  'basics', // Identity + Info and Connect + Settings
-  'layout', // Page
-  'people', // Audience (Members + CRM)
-  'engage', // Offerings & money (the 7 split commerce modules)
-  'reach', // Reach (QR + Email)
-  'insights', // Growth (Insights + Plan and usage)
+  'basics', // Setup — Profile and Settings + Page
+  'place', // Content — Practices, Journeys, Airwaves (repurposed slot; see groupForModule)
+  'people', // Audience — Team, CRM (+ Automation / Leads / Capture links / Shared nested), Reviews
+  'engage', // Offerings & money — the split commerce modules + Shop
+  'reach', // Reach — QR codes (+ Scans nested), Email (+ Design / Style nested)
+  'insights', // Plan and billing — Plan and usage
   'danger', // Danger
 ]
 
+/** Console-only group header overrides (ADR-782). The console regroups more aggressively than the rail
+ *  (it folds Page into Setup and pulls Practices/Journeys/Airwaves into a Content group), so a few group
+ *  headers read differently HERE than on the rail. This overrides just those labels and FALLS BACK to the
+ *  shared SPACE_GROUP_META for the rest, so the rail's headers stay untouched and no parallel IA source is
+ *  introduced (MENU-CONTRACT: this is a label map, not a module catalog). */
+const CONSOLE_GROUP_LABEL: Partial<Record<AdminSlot, string>> = {
+  basics: 'Profile and Setup',
+  place: 'Content',
+  insights: 'Plan and billing',
+}
+
 /**
- * The console group (one of the 7 SPACE_CONSOLE_GROUPS slots) a module clusters into. PURE. The module
- * catalog uses the finer engineering spine slots, so several fold together for the console's 7-group IA:
- * Identity & Branding (`place`) and the lower Settings section (`safety`) join the identity `basics`
- * group; Email (`comms`) joins `reach`; Plan and usage (`billing`) joins the Growth `insights` group. The
- * offerings modules already use `engage`, so they land in "Offerings & money" unchanged.
+ * The console group (one of the SPACE_CONSOLE_GROUPS slots) a module clusters into. PURE (ADR-782). The
+ * module catalog uses the finer engineering spine slots, so several fold together for the console IA:
+ *   • Content — Practices / Journeys / Airwaves cluster into the repurposed `place` slot (their engineering
+ *     slot stays `engage`, so the RAIL keeps them in Offerings; only the console regroups them here).
+ *   • Setup — Page (`layout`) and the retired Settings section (`safety`) join the `basics` group so Profile
+ *     and Settings + Page read as one setup cluster.
+ *   • Reach — Email (`comms`) joins `reach`.
+ *   • Plan and billing — Plan and usage (`billing`) joins the `insights` group.
+ * The offerings modules already use `engage`, so they land in "Offerings and money" unchanged.
  */
 export function groupForModule(module: SpaceModule): AdminSlot {
+  if (module.id === 'space.practices' || module.id === 'space.journeys' || module.id === 'space.airwaves') {
+    return 'place' // the Content cluster
+  }
   switch (module.slot) {
-    case 'place':
     case 'safety':
+    case 'layout':
       return 'basics'
     case 'comms':
       return 'reach'
@@ -127,12 +145,72 @@ export function orderWithinGroupByEmphasis(
     .map((w) => w.m)
 }
 
+// ── Access marking (Included / Freemium / Premium) ─────────────────────────────────────────────────────
+//
+// Each card carries a small BADGE (ADR-782) so the plan story is legible: what every Space gets, what is
+// free with a cap, and what needs a paid plan. This is presentation only — it does NOT gate (gating lives
+// in lib/pricing/gates.ts + the function registry). Token-clean (no hardcoded color). During the open beta
+// every tool is usable regardless of badge; the badge previews the post-launch model.
+
+type AccessLevel = NonNullable<SpaceModule['access']>
+
+const ACCESS_META: Record<AccessLevel, { label: string; className: string; gloss: string }> = {
+  included: {
+    label: 'Included',
+    className: 'border-border bg-surface-elevated text-subtle',
+    gloss: 'Free for every space',
+  },
+  freemium: {
+    label: 'Freemium',
+    className: 'border-primary/30 bg-primary-bg text-primary-strong',
+    gloss: 'Free with a cap a paid plan lifts',
+  },
+  premium: {
+    label: 'Premium',
+    className: 'border-signal/30 bg-signal-bg text-signal-strong',
+    gloss: 'A paid plan or add-on',
+  },
+}
+
+/** The access level a module advertises, defaulting to `included` when unset. PURE. */
+function accessLevel(module: SpaceModule): AccessLevel {
+  return module.access ?? 'included'
+}
+
+/** A small access pill (Included / Freemium / Premium). `compact` drops the text to a dot on nested rows. */
+function AccessBadge({ level }: { level: AccessLevel }) {
+  const meta = ACCESS_META[level]
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded-full border px-1.5 py-0.5 text-2xs font-semibold ${meta.className}`}
+      title={meta.gloss}
+    >
+      {meta.label}
+    </span>
+  )
+}
+
+/** The one-line legend above the board so the three markings are self-explaining. */
+function AccessLegend() {
+  return (
+    <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted">
+      {(['included', 'freemium', 'premium'] as const).map((level) => (
+        <span key={level} className="inline-flex items-center gap-1.5">
+          <AccessBadge level={level} />
+          <span>{ACCESS_META[level].gloss}</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
 // ── Rows ─────────────────────────────────────────────────────────────────────────────────────────────
 //
 // The console is a DENSE, CONSOLIDATED board: compact one-line link ROWS (icon + label, no per-card
 // description, no per-group blurb) laid out in tight titled groups across a multi-column grid, so the
 // whole console fits WITHOUT the page scrolling. Each row opens the module's on-page panel (or its deep
-// route); only the presentation is tightened. The `desc` rides in the row's title (hover) tooltip.
+// route); only the presentation is tightened. The `desc` rides in the row's title (hover) tooltip. A card
+// with sub-modules (`parent`) renders them as nested sub-rows beneath it, so one surface = one card.
 
 /** One module as a compact tappable ROW into its panel / sub-page: a small icon tile + the label (one
  *  line), an optional "Suggested" dot, and a quiet open chevron. The full description rides in the title
@@ -141,23 +219,29 @@ function SectionRow({
   module,
   href,
   suggested,
+  nested = false,
+  children,
 }: {
   module: SpaceModule
   href: string
   suggested: boolean
+  /** A sub-module row (rendered under its parent card): indented, lighter, smaller icon tile. */
+  nested?: boolean
+  /** Nested sub-module rows, rendered in a sub-list beneath this card (a card with `parent` children). */
+  children?: React.ReactNode
 }) {
   const Icon = module.Icon
   return (
-    <li>
+    <li className={nested ? 'ml-3.5 border-l border-border pl-2.5' : undefined}>
       <Link
         href={href}
         title={module.desc}
-        className="group flex items-center gap-2.5 rounded-lg border border-border bg-surface px-2.5 py-2 shadow-sm outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+        className={`group flex items-center gap-2.5 rounded-lg border border-border shadow-sm outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none ${nested ? 'bg-surface/60 px-2 py-1.5' : 'bg-surface px-2.5 py-2'}`}
       >
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-bg text-primary-strong">
-          <Icon className="h-3.5 w-3.5" aria-hidden />
+        <span className={`flex shrink-0 items-center justify-center rounded-md bg-primary-bg text-primary-strong ${nested ? 'h-6 w-6' : 'h-7 w-7'}`}>
+          <Icon className={nested ? 'h-3 w-3' : 'h-3.5 w-3.5'} aria-hidden />
         </span>
-        <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">{module.label}</span>
+        <span className={`min-w-0 flex-1 truncate font-medium text-text ${nested ? 'text-xs' : 'text-sm'}`}>{module.label}</span>
         {suggested && (
           <span
             className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong"
@@ -167,11 +251,13 @@ function SectionRow({
             <span className="sr-only">Suggested for your mode</span>
           </span>
         )}
+        <AccessBadge level={accessLevel(module)} />
         <ArrowRight
           className="h-3.5 w-3.5 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
           aria-hidden
         />
       </Link>
+      {children ? <ul className="mt-1.5 space-y-1.5">{children}</ul> : null}
     </li>
   )
 }
@@ -216,13 +302,17 @@ function DangerRow({
 function GroupCluster({
   title,
   modules,
+  childrenByParent,
   slug,
   emphasis,
   canDelete,
   spaceId,
 }: {
   title: string
+  /** The TOP-LEVEL modules in this group (no `parent`), already ordered. */
   modules: SpaceModule[]
+  /** Sub-modules keyed by their parent id, rendered nested under the parent card. */
+  childrenByParent: Map<string, SpaceModule[]>
   slug: string
   emphasis: readonly SpaceFunctionKey[]
   canDelete: boolean
@@ -238,16 +328,22 @@ function GroupCluster({
           }
           // P1: prefer the module's ON-PAGE panel when one exists (no regression to the Stage-D5 `?panel=`
           // behavior — Members / CRM / Store / QR / Email / Billing open inline in the profile body); a
-          // module with no panel (the 7 split commerce services, Insights) falls through to its deep route.
+          // module with no panel (the split commerce services) falls through to its deep route.
           const href = panelHrefForModule(module, slug)
           if (!href) return null
+          const kids = childrenByParent.get(module.id) ?? []
+          const kidRows = kids
+            .map((kid) => {
+              const kidHref = panelHrefForModule(kid, slug)
+              return kidHref ? (
+                <SectionRow key={kid.id} module={kid} href={kidHref} suggested={isSuggestedByMode(kid, emphasis)} nested />
+              ) : null
+            })
+            .filter(Boolean)
           return (
-            <SectionRow
-              key={module.id}
-              module={module}
-              href={href}
-              suggested={isSuggestedByMode(module, emphasis)}
-            />
+            <SectionRow key={module.id} module={module} href={href} suggested={isSuggestedByMode(module, emphasis)}>
+              {kidRows.length > 0 ? kidRows : undefined}
+            </SectionRow>
           )
         })}
       </ul>
@@ -271,11 +367,27 @@ export function SpaceManageConsole({
   canDelete: boolean
   spaceId: string
 }) {
-  // Bucket the flat manifest by console GROUP (the 7-group IA, ADR-520), preserving incoming (catalog)
-  // order within each bucket, then apply the Mode emphasis WITHIN each bucket only. Render the groups in
-  // SPACE_CONSOLE_GROUPS order; a group with no modules for this Space renders nothing.
-  const byGroup = new Map<AdminSlot, SpaceModule[]>()
+  // Split the manifest into TOP-LEVEL cards and their nested sub-modules (ADR-782): a module with a
+  // `parent` present in this manifest folds under that parent's card; an orphan child (its parent gated
+  // out / hidden) falls back to a top-level card so nothing is unreachable.
+  const present = new Set(modules.map((m) => m.id))
+  const childrenByParent = new Map<string, SpaceModule[]>()
+  const topLevel: SpaceModule[] = []
   for (const mod of modules) {
+    if (mod.parent && present.has(mod.parent)) {
+      const list = childrenByParent.get(mod.parent) ?? []
+      list.push(mod)
+      childrenByParent.set(mod.parent, list)
+    } else {
+      topLevel.push(mod)
+    }
+  }
+
+  // Bucket the TOP-LEVEL cards by console GROUP (the IA, ADR-782), preserving incoming (catalog) order
+  // within each bucket, then apply the Mode emphasis WITHIN each bucket only. Render the groups in
+  // SPACE_CONSOLE_GROUPS order; a group with no cards for this Space renders nothing.
+  const byGroup = new Map<AdminSlot, SpaceModule[]>()
+  for (const mod of topLevel) {
     const g = groupForModule(mod)
     const list = byGroup.get(g) ?? []
     list.push(mod)
@@ -286,27 +398,32 @@ export function SpaceManageConsole({
   // reads as one consolidated board that fits WITHOUT the page scrolling. break-inside-avoid on each
   // group keeps it whole within a column.
   return (
-    <div className="gap-x-6 [column-gap:1.5rem] sm:columns-2 xl:columns-3">
-      {SPACE_CONSOLE_GROUPS.map((slot) => {
-        const inGroup = byGroup.get(slot)
-        if (!inGroup || inGroup.length === 0) return null
-        const meta = SPACE_GROUP_META[slot]
-        if (!meta) return null
-        // The Danger group keeps its single row; every other group orders within itself by emphasis.
-        const ordered = slot === 'danger' ? inGroup : orderWithinGroupByEmphasis(inGroup, emphasis)
-        return (
-          <div key={slot} className="mb-5 break-inside-avoid">
-            <GroupCluster
-              title={meta.label}
-              modules={ordered}
-              slug={slug}
-              emphasis={emphasis}
-              canDelete={canDelete}
-              spaceId={spaceId}
-            />
-          </div>
-        )
-      })}
+    <div>
+      <AccessLegend />
+      <div className="gap-x-6 [column-gap:1.5rem] sm:columns-2 xl:columns-3">
+        {SPACE_CONSOLE_GROUPS.map((slot) => {
+          const inGroup = byGroup.get(slot)
+          if (!inGroup || inGroup.length === 0) return null
+          const meta = SPACE_GROUP_META[slot]
+          if (!meta) return null
+          const title = CONSOLE_GROUP_LABEL[slot] ?? meta.label
+          // The Danger group keeps its single row; every other group orders within itself by emphasis.
+          const ordered = slot === 'danger' ? inGroup : orderWithinGroupByEmphasis(inGroup, emphasis)
+          return (
+            <div key={slot} className="mb-5 break-inside-avoid">
+              <GroupCluster
+                title={title}
+                modules={ordered}
+                childrenByParent={childrenByParent}
+                slug={slug}
+                emphasis={emphasis}
+                canDelete={canDelete}
+                spaceId={spaceId}
+              />
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

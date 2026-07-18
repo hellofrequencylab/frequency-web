@@ -46,7 +46,7 @@ describe('SPACE_MODULES catalog', () => {
       }
     }
     // The shell areas that can never be turned off:
-    for (const id of ['space.branding', 'space.basics', 'space.layout', 'space.settings', 'space.danger']) {
+    for (const id of ['space.basics', 'space.layout', 'space.danger']) {
       expect(spaceModuleById(id)?.gate.kind).toBe('always')
     }
   })
@@ -119,7 +119,7 @@ describe('hide/family metadata', () => {
   })
 
   it('protects the shell config surfaces and Danger from hiding', () => {
-    for (const id of ['space.branding', 'space.basics', 'space.layout', 'space.settings', 'space.danger']) {
+    for (const id of ['space.basics', 'space.layout', 'space.danger']) {
       expect(isModuleHideable(id), `${id} must be unhideable`).toBe(false)
       expect(UNHIDEABLE_MODULE_IDS).toContain(id)
     }
@@ -156,14 +156,41 @@ describe('rail presentation metadata (priority + placement)', () => {
   it('never banks Danger (destructive is never a bottom-bank quick-link)', () => {
     expect(spaceModuleById('space.danger')!.placement ?? 'inline').toBe('inline')
   })
+})
 
-  it('keeps Settings a late footer in the primary band (priority above the services)', () => {
-    // The rail priority differs from the catalog `order`: Settings sorts LAST in the primary band (a
-    // settings footer, not a headline), so its rail priority is high even though its catalog order is low.
-    const settings = spaceModuleById('space.settings')!
-    const services = ['space.people', 'space.crm', 'space.booking', 'space.services'].map(
-      (id) => spaceModuleById(id)!,
-    )
-    for (const s of services) expect(settings.priority!).toBeGreaterThan(s.priority!)
+// ADR-782: the console consolidation (Profile & Settings collapse + parent-nesting + access badges).
+describe('console consolidation metadata (ADR-782)', () => {
+  it('collapsed the three duplicate basics cards into one space.basics', () => {
+    expect(spaceModuleById('space.branding')).toBeNull()
+    expect(spaceModuleById('space.settings')).toBeNull()
+    const basics = spaceModuleById('space.basics')!
+    expect(basics.label).toBe('Profile and Settings')
+    expect(basics.deepLink?.('demo')).toBe('/spaces/demo/settings/basics')
   })
+
+  it('every access badge is one of included / freemium / premium', () => {
+    for (const m of SPACE_MODULES) {
+      if (m.access !== undefined) expect(['included', 'freemium', 'premium']).toContain(m.access)
+    }
+  })
+
+  it('every `parent` points to a real, panel-or-linkable module (no dangling nest)', () => {
+    for (const m of SPACE_MODULES) {
+      if (!m.parent) continue
+      const parent = spaceModuleById(m.parent)
+      expect(parent, `${m.id} nests under a missing parent ${m.parent}`).not.toBeNull()
+      expect(parent!.parent, `${m.id} parent ${m.parent} is itself nested (no two-level nesting)`).toBeUndefined()
+    }
+  })
+
+  it('nests the CRM cluster under CRM and the email trio under Email', () => {
+    for (const id of ['space.automation', 'space.leads', 'space.doors', 'space.shared']) {
+      expect(spaceModuleById(id)!.parent).toBe('space.crm')
+    }
+    for (const id of ['space.marketing', 'space.emailstyle']) {
+      expect(spaceModuleById(id)!.parent).toBe('space.comms')
+    }
+    expect(spaceModuleById('space.insights')!.parent).toBe('space.reach')
+  })
+
 })

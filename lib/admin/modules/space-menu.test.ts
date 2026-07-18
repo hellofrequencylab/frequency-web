@@ -36,7 +36,7 @@ describe('resolveSpaceMenu gating', () => {
   it('keeps every SHELL module regardless of function access', () => {
     const menu = resolveSpaceMenu({ canUse: () => false, canManageMenu: true })
     const ids = idsOf(menu)
-    for (const id of ['space.branding', 'space.basics', 'space.layout', 'space.settings', 'space.danger']) {
+    for (const id of ['space.basics', 'space.layout', 'space.danger']) {
       expect(ids).toContain(id)
     }
   })
@@ -44,12 +44,12 @@ describe('resolveSpaceMenu gating', () => {
   it('honors the owner hide + order overrides (delegated to spaceModuleManifest)', () => {
     const menu = resolveSpaceMenu(
       { canUse: allOn, canManageMenu: true },
-      { hidden: ['space.crm'], order: ['space.people', 'space.branding'] },
+      { hidden: ['space.crm'], order: ['space.people', 'space.basics'] },
     )
     const ids = idsOf(menu)
     expect(ids).not.toContain('space.crm')
     expect(ids[0]).toBe('space.people')
-    expect(ids[1]).toBe('space.branding')
+    expect(ids[1]).toBe('space.basics')
   })
 })
 
