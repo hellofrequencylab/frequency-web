@@ -11,6 +11,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { getPlan } from '@/lib/journey-plans'
+import { createPractice } from '@/lib/practices'
 import { draftSlotCoaching } from '@/lib/ai/journey-slot-coaching'
 import { planJourneyEdits, type JourneyForEdit } from '@/lib/ai/journey-edit'
 import { getCurrentSeason } from '@/lib/seasons'
@@ -225,6 +226,74 @@ export async function setBlockPracticeAction(
   if (error) return fail('Could not swap the practice.')
   done(slug)
   return ok()
+}
+
+/**
+ * Turn a "write your own" practice SLOT into a REAL practice (build item J4c). A composed / seeded
+ * practice block carries a title + body + Pillar but NO `practice_id`, so in the player it is inert:
+ * no timer, no Zaps, no Log button (the player only mounts PracticeActions for a block with a real
+ * `practice_id`). This mints a real `practices` row from the slot (author-owned, stamped to the
+ * Journey's Space, a private draft, out of the public library) and links the block to it, so the slot
+ * becomes a working, timer-carrying practice the author can then refine in the practice editor.
+ * Owner-gated like every edit action. No-op-safe: refuses a slot that is not a practice block or that
+ * already has a practice.
+ */
+export async function mintPracticeForBlockAction(
+  slug: string,
+  itemId: string,
+): Promise<ActionResult<{ practiceId: string }>> {
+  const a = await authorPlan(slug)
+  if (!a) return fail('Only the author can edit this journey.')
+  const admin = db()
+
+  const { data: itemRow } = await admin
+    .from('journey_plan_items')
+    .select('title, body, domain_id, practice_id, block_type')
+    .eq('id', itemId)
+    .eq('plan_id', a.planId)
+    .maybeSingle()
+  const item = itemRow as
+    | { title: string | null; body: string | null; domain_id: string | null; practice_id: string | null; block_type: string | null }
+    | null
+  if (!item || item.block_type !== 'practice') return fail('That is not a practice slot.')
+  if (item.practice_id) return fail('This slot already has a practice.')
+
+  // Stamp the new practice to the Journey's owner + Space so it belongs where the Journey does.
+  const { data: planRow } = await admin
+    .from('journey_plans')
+    .select('author_id, space_id')
+    .eq('id', a.planId)
+    .maybeSingle()
+  const plan = planRow as { author_id: string | null; space_id: string | null } | null
+
+  const title = (item.title ?? '').trim() || 'Untitled practice'
+  const practice = await createPractice({
+    title,
+    description: item.body?.trim() || null,
+    createdBy: plan?.author_id ?? a.profileId,
+    // Space-scoped, private draft, not library-approved: usable inside the Journey, not in the public
+    // library until the separate paid-Crew + review path.
+    spaceId: plan?.space_id ?? null,
+    isPublic: false,
+    status: 'draft',
+  })
+  if (!practice) return fail('Could not create the practice.')
+
+  // Carry the slot's Pillar onto the new practice so it reads under the right Focus.
+  if (item.domain_id) {
+    await admin.from('practices').update({ domain_id: item.domain_id }).eq('id', practice.id)
+  }
+
+  const { error } = await admin
+    .from('journey_plan_items')
+    .update({ practice_id: practice.id, title })
+    .eq('id', itemId)
+    .eq('plan_id', a.planId)
+    .eq('block_type', 'practice')
+  if (error) return fail('Could not link the new practice.')
+
+  done(slug)
+  return ok({ practiceId: practice.id })
 }
 
 /** Vera drafts a per-slot coaching line for a practice block (JOURNEYS.md §6), grounded in the

@@ -21,6 +21,7 @@ import {
   draftSlotCoachingAction,
   populateWeekAction,
   setBlockPracticeAction,
+  mintPracticeForBlockAction,
   setLeafAnchorAction,
   setLeafWarmupMessageAction,
 } from '@/app/(main)/journeys/[slug]/edit/actions'
@@ -534,7 +535,20 @@ export function JourneyEditor({
                       <Check className="h-3.5 w-3.5" /> Adopted from the library
                     </span>
                   ) : (
-                    <span className="text-2xs text-subtle">No library practice linked yet.</span>
+                    <>
+                      <span className="text-2xs text-subtle">No practice yet.</span>
+                      {/* Mint a REAL practice from this slot (title + note + Pillar), so it carries a
+                          timer and earns Zaps in the player instead of staying an inert block. */}
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => run(() => mintPracticeForBlockAction(slug, l.id))}
+                        className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-primary-strong hover:bg-primary-bg"
+                        title="Create a real, timer-carrying practice from this slot"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" /> Make it real
+                      </button>
+                    </>
                   )}
                   {practices.length > 0 && (
                     <button

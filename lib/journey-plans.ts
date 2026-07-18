@@ -731,6 +731,28 @@ export async function adoptPlan(profileId: string, planId: string): Promise<void
   ]
   for (const pid of practiceIds) await adoptPractice(profileId, pid)
 
+  // Ensure a SOLO enrollment (journey_enrollments, run_id null) exists for this adoption. journey_plan_adoptions
+  // (written below) is kept for the surfaces that still read it (content-signals, coop-pulse, the prompt cron,
+  // the demo engine), but the v2 progress reader (getMemberJourneyProgress), the daily next-step cron
+  // (listEnrolledMemberIds), and the solo drip anchor (getSoloEnrollmentStart) all read journey_enrollments.
+  // Without this row an adopted (non-cohort) Journey is invisible to progress + nudges and its phase-drip
+  // never locks (ADR-252 backfilled existing adoptions once, but the live adopt path never wrote it). Idempotent
+  // via the solo unique index (profile_id, plan_id where run_id is null); best-effort so it never blocks adopt.
+  try {
+    const { data: existingEnroll } = await client
+      .from('journey_enrollments')
+      .select('id')
+      .eq('profile_id', profileId)
+      .eq('plan_id', planId)
+      .is('run_id', null)
+      .maybeSingle()
+    if (!existingEnroll) {
+      await client.from('journey_enrollments').insert({ profile_id: profileId, plan_id: planId })
+    }
+  } catch {
+    // a solo-enrollment write must never block adopting the Journey
+  }
+
   const { data: existingRow } = await client
     .from('journey_plan_adoptions')
     .select('id, active')

@@ -2207,13 +2207,25 @@ export async function logPractice(input: {
         if (!error) {
           const res = await awardZapsForAction(profileId, 'welcome_back')
           if (res.amount > 0) {
+            // Record the ACTUAL amount paid so the un-log reversal debits exactly that.
             await db()
               .from('reward_grants')
               .update({ amount: res.amount })
               .eq('profile_id', profileId)
               .eq('rule_key', `welcome.back:${day}`)
+            welcomeBack = true
+          } else {
+            // Nothing was paid (a disabled/absent welcome_back config, or a transient failure). DELETE the
+            // claim rather than leaving an amount:0 row: a stored 0 would later be read as a "pre-feature"
+            // grant and reversed at the STATIC default (10), debiting Zaps that were never awarded. And do
+            // not report welcomeBack to the UI when no Zaps landed. Deleting is safe: 0 was paid, so a
+            // re-log re-attempting the grant re-pays 0.
+            await db()
+              .from('reward_grants')
+              .delete()
+              .eq('profile_id', profileId)
+              .eq('rule_key', `welcome.back:${day}`)
           }
-          welcomeBack = true
         }
       }
     }
@@ -2536,13 +2548,13 @@ export async function unlogPractice(input: {
         .eq('profile_id', profileId)
         .eq('rule_key', `welcome.back:${day}`)
     }
-    // Re-open today's Spark by removing the claim row (so a re-log can roll again). The
-    // tiny Gem payout is rank-safe and left in the ledger; only the cap claim is cleared.
-    await admin
-      .from('reward_grants')
-      .delete()
-      .eq('profile_id', profileId)
-      .eq('rule_key', `spark:${profileId}:${day}`)
+    // NOTE: the Spark claim (`spark:{profileId}:{day}`) is deliberately LEFT in place on un-log. Clearing
+    // it used to "re-open the day for a fresh roll", but because the paid Gems are kept in the ledger
+    // (awardGems has no debit primitive), that let a log -> unlog -> re-log loop re-roll the 4% Spark and
+    // bank every win, breaking the once-per-member-per-UTC-day guarantee. Keeping the claim means a member
+    // gets at most one Spark roll per day no matter how many times they re-log. A roll that never paid is
+    // already released inside maybeSpark (claim-then-pay self-heal), so a legitimate unpaid day is not
+    // stranded here.
   } catch {
     // a best-effort bonus reversal must never break the un-log
   }
