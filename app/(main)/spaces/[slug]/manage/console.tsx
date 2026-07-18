@@ -313,38 +313,48 @@ export function SpaceManageConsole({
   emphasis,
   section,
   crmEmbed,
+  canDelete,
+  spaceId,
 }: {
   slug: string
   /** The gated module manifest, in catalog order. */
   modules: SpaceModule[]
   /** The Mode's emphasized functions — a SECONDARY signal (tag + within-category order), never a gate. */
   emphasis: readonly SpaceFunctionKey[]
-  /** The active browse category (from `?section=`). */
-  section: Exclude<SpaceHubSection, 'settings'>
-  /** The embedded CRM board node, built server-side by the page and shown atop the Resonance category so the
-   *  hub opens on the space's live pipeline + contacts (owner directive: Resonance = the CRM + inbox view). */
+  /** The active hub tab (from `?section=`). */
+  section: SpaceHubSection
+  /** The embedded CRM roster node, built server-side by the page and shown atop the Resonance tab so the
+   *  hub opens on the space's live Resonance CRM (owner directive). */
   crmEmbed?: React.ReactNode
+  /** Whether the Profile & Settings tab's Danger zone renders its delete control (owner / staff). */
+  canDelete: boolean
+  spaceId: string
 }) {
-  // A BROWSE hub: only the active category's features render, each a flat top-level card (no nested
-  // sub-menus). Settings-bucket modules (Team / Reviews / Plan / Danger) and the removed Page module never
-  // appear here — they live on the Profile & Settings surface (SpaceSettingsSurface).
-  const inSection = modules.filter((m) => sectionForModule(m) === section)
   const blurb = SPACE_HUB_SECTIONS.find((s) => s.key === section)?.blurb
+  // The Profile & Settings tab renders the settings surface (identity · Team · Reviews · Plan & Billing ·
+  // Danger); every other tab renders its flat feature cards, with the Resonance CRM roster atop Resonance.
+  const inSection = modules.filter((m) => sectionForModule(m) === section)
 
   return (
     <div>
       <HubNav slug={slug} section={section} />
       <div className="mt-5">
         {blurb && <p className="mb-4 max-w-2xl text-sm text-muted">{blurb}</p>}
-        {section === 'resonance' && crmEmbed && <div className="mb-6">{crmEmbed}</div>}
-        {inSection.length > 0 ? (
-          <FeatureGrid modules={inSection} slug={slug} emphasis={emphasis} />
+        {section === 'settings' ? (
+          <SpaceSettingsSurface slug={slug} modules={modules} canDelete={canDelete} spaceId={spaceId} />
         ) : (
-          <p className="text-sm text-subtle">Nothing here yet for this space.</p>
+          <>
+            {section === 'resonance' && crmEmbed && <div className="mb-6">{crmEmbed}</div>}
+            {inSection.length > 0 ? (
+              <FeatureGrid modules={inSection} slug={slug} emphasis={emphasis} />
+            ) : (
+              <p className="text-sm text-subtle">Nothing here yet for this space.</p>
+            )}
+            <div className="mt-6">
+              <AccessLegend />
+            </div>
+          </>
         )}
-        <div className="mt-6">
-          <AccessLegend />
-        </div>
       </div>
     </div>
   )

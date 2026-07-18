@@ -19,29 +19,29 @@
 import { SPACE_MODULES, type SpaceModule } from './space-modules'
 import { panelHrefForModule } from '@/lib/spaces/surface-hrefs'
 
-/** A hub category id. `settings` is the header-level Profile & Settings surface, not a browse tab. */
+/** A hub tab id. `settings` is the Profile & Settings tab (identity, team, reviews, plan & billing, danger). */
 export type SpaceHubSection = 'resonance' | 'marketing' | 'offerings' | 'programs' | 'settings'
 
-/** The four browse categories, in display order (Resonance first — the hub's default landing). */
-export const SPACE_HUB_SECTIONS: readonly { key: Exclude<SpaceHubSection, 'settings'>; label: string; blurb: string }[] = [
+/** The hub tabs, in display order. Resonance leads (the default landing); Profile & Settings trails — it is
+ *  a real tab now (ADR-788), NOT a header button, so Plan & Billing + Team + Reviews are one tap away. */
+export const SPACE_HUB_SECTIONS: readonly { key: SpaceHubSection; label: string; blurb: string }[] = [
   { key: 'resonance', label: 'Resonance', blurb: 'Your people and every conversation: pipeline, contacts, the inbox, and connections.' },
   { key: 'marketing', label: 'Marketing', blurb: 'Reach and grow: email, QR codes, lead capture, and automation.' },
   { key: 'offerings', label: 'Offerings & Money', blurb: 'Everything your space sells: bookings, memberships, donations, tickets, and the shop.' },
   { key: 'programs', label: 'Content & Programs', blurb: 'What your space teaches and hosts: practices, journeys, and recordings.' },
+  { key: 'settings', label: 'Profile & Settings', blurb: 'Your identity and brand, team and roles, reviews, plan and billing, and the danger zone.' },
 ]
 
-/** The default landing category (Resonance). */
-export const DEFAULT_HUB_SECTION: Exclude<SpaceHubSection, 'settings'> = 'resonance'
+/** The default landing tab (Resonance). */
+export const DEFAULT_HUB_SECTION: SpaceHubSection = 'resonance'
 
-/** Narrow an arbitrary `?section=` value to a known browse category, defaulting to Resonance. PURE. */
-export function asHubSection(raw: string | null | undefined): Exclude<SpaceHubSection, 'settings'> {
-  return SPACE_HUB_SECTIONS.some((s) => s.key === raw)
-    ? (raw as Exclude<SpaceHubSection, 'settings'>)
-    : DEFAULT_HUB_SECTION
+/** Narrow an arbitrary `?section=` value to a known hub tab, defaulting to Resonance. PURE. */
+export function asHubSection(raw: string | null | undefined): SpaceHubSection {
+  return SPACE_HUB_SECTIONS.some((s) => s.key === raw) ? (raw as SpaceHubSection) : DEFAULT_HUB_SECTION
 }
 
-/** The module ids that belong to the header-level Profile & Settings surface (not a browse tab). Team,
- *  Reviews, Plan & usage, and Danger join the identity/brand/visibility shell here (owner directive). */
+/** The module ids that belong to the Profile & Settings tab. Team, Reviews, Plan & Billing, and Danger
+ *  join the identity/brand/visibility shell here (owner directive). */
 const SETTINGS_MODULE_IDS = new Set<string>([
   'space.basics', // Profile and Settings (identity, brand, page theme, visibility)
   'space.people', // Team and members

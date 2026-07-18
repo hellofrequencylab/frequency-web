@@ -4,6 +4,7 @@ import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/ent
 import { usableSpaceFunctions } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { resolveMode, readModePreferences, effectiveNavEmphasis } from '@/lib/spaces/modes'
+import { isStaff } from '@/lib/core/roles'
 import { resolveSpaceMenu } from '@/lib/admin/modules/space-menu'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { asHubSection, type SpaceHubSection } from '@/lib/admin/modules/space-hub'
@@ -76,6 +77,10 @@ export async function SpaceManageBoard({ slug, section: rawSection }: { slug: st
   // to this space's reachable members. Self-gating: the detail loader re-checks space-manage + tenancy.
   const crmEmbed = section === 'resonance' ? <SpaceMemberViewer spaceId={space.id} slug={space.slug} /> : undefined
 
+  // Deleting a Space is OWNER-grade (or platform staff): the Profile & Settings tab's Danger zone renders
+  // its delete control only when true; otherwise header-only.
+  const canDelete = caps.isOwner || isStaff(caller?.webRole)
+
   return (
     <SpaceManageConsole
       slug={space.slug}
@@ -83,6 +88,8 @@ export async function SpaceManageBoard({ slug, section: rawSection }: { slug: st
       emphasis={emphasis}
       section={section}
       crmEmbed={crmEmbed}
+      canDelete={canDelete}
+      spaceId={space.id}
     />
   )
 }

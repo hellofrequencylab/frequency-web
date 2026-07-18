@@ -50,12 +50,13 @@ describe('sectionForModule (the hub IA)', () => {
     }
   })
 
-  it('puts identity + Team + Reviews + Plan + Danger on the Profile & Settings surface (not a browse tab)', () => {
+  it('puts identity + Team + Reviews + Plan & Billing + Danger on the Profile & Settings tab', () => {
     for (const id of ['space.basics', 'space.people', 'space.reviews', 'space.billing', 'space.danger']) {
       expect(isSettingsModule(spaceModuleById(id)!), `${id} belongs to Profile & Settings`).toBe(true)
     }
-    // And none of the four browse categories is named "settings".
-    expect(SPACE_HUB_SECTIONS.some((s) => (s.key as string) === 'settings')).toBe(false)
+    // Profile & Settings is a real hub tab (ADR-788) so Plan & Billing is reachable in one tap.
+    expect(SPACE_HUB_SECTIONS.some((s) => s.key === 'settings')).toBe(true)
+    expect(SPACE_HUB_SECTIONS[SPACE_HUB_SECTIONS.length - 1].key).toBe('settings') // trails the browse tabs
   })
 })
 
@@ -64,7 +65,7 @@ describe('asHubSection', () => {
     expect(asHubSection(undefined)).toBe('resonance')
     expect(asHubSection('bogus')).toBe('resonance')
     expect(asHubSection('marketing')).toBe('marketing')
-    expect(asHubSection('settings')).toBe('resonance') // settings is not a browse section
+    expect(asHubSection('settings')).toBe('settings') // Profile & Settings is a real tab now (ADR-788)
   })
 })
 
