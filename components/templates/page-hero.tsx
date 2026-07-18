@@ -2,62 +2,50 @@ import Image from 'next/image'
 
 // PAGE HERO — the ONE canonical header band for the whole site (THEME-PROTOCOL, the "structure" layer).
 //
-// The single source of truth for the overlay-on-cover header grammar the owner standardized on (the
-// Business Spaces / Circles look): a cover image under an ink legibility scrim, with the eyebrow, title,
-// subtitle, optional avatar/badges/meta, an optional in-hero search, and the page actions anchored over
-// it. EVERY hero-bearing surface renders this component (IndexTemplate's overlay branch, the commerce
-// MarketHero, the manager pages), so changing the header look site-wide is a single edit HERE.
+// This IS the Business Spaces / Circles hero the owner standardized on: a full-bleed cover under a dark
+// ink gradient + the amber glow, a bold uppercase font-display title, an eyebrow, a subtitle, an optional
+// in-hero search, optional actions, capped by the light strip. Centered, fixed min-height so every hero
+// reads the same regardless of copy. EVERY hero-bearing surface renders this (IndexTemplate's overlay
+// branch, the commerce MarketHero, the manager pages), so the header look is a single edit HERE.
 //
-// TOKENS ONLY (no hardcoded hex): the scrim is `from-ink/*`, text is `text-on-ink` / `text-on-ink-muted`
-// (DAWN). This replaces MarketHero's old inline `rgb(20 18 16 / …)` gradient + `text-white`, so commerce
-// heroes now theme + dark-mode correctly like everything else.
-//
-// Presentational + server-friendly (no hooks). Voice-canon copy comes from the caller (no em dashes).
+// TOKENS ONLY (no hardcoded hex): the scrim is a `var(--color-ink)` color-mix, the eyebrow is
+// `text-primary`, the title/subtitle are `text-on-ink`. `amber-glow` / `light-strip` / `font-display`
+// are house utilities from globals.css. Presentational + server-friendly (no hooks). Voice-canon copy
+// comes from the caller (no em dashes).
 
 export type PageHeroSize = 'standard' | 'large'
-/** `start` = the left-anchored overlay (the standard index + entity grammar). `center` = the centered
- *  commerce hero (Store / Market), kept as a variant of the SAME primitive so both share one scrim,
- *  one token set, and one edit point. */
-export type PageHeroAlign = 'start' | 'center'
 
 export interface PageHeroProps {
   /** Cover image URL. `null` renders the neutral gradient placeholder; omit entirely for no cover. */
   coverImage?: string | null
   /** Focal point ("x% y%") from the operator's focal picker, so the crop keeps the subject in frame. */
   coverFocus?: string | null
-  /** Small contextual line above the title (on-ink). */
+  /** Small contextual line above the title (uppercase, accent). */
   eyebrow?: React.ReactNode
   title: React.ReactNode
-  /** The one-line promise / description under the title (on-ink). */
+  /** The one-line promise / description under the title. */
   subtitle?: React.ReactNode
-  /** Optional entity logo/avatar chip (Spaces/Circles), rendered left of the title lockup. */
-  avatar?: React.ReactNode
-  /** Status / mode chips beside the title. */
-  badges?: React.ReactNode
-  /** A meta row (counts, location) under the subtitle, on-ink. */
-  meta?: React.ReactNode
-  /** Primary + secondary actions, anchored bottom-right (start) or centered (center). Secondary buttons
-   *  that ride the scrim should use on-ink styles (border-on-ink/30 bg-on-ink/10 text-on-ink). */
-  actions?: React.ReactNode
-  /** Optional in-hero search bar (the commerce surfaces). */
+  /** Optional in-hero search bar (the commerce + directory surfaces). */
   search?: React.ReactNode
-  /** Band size. `large` is the taller directory hero; `standard` is the uniform index hero. */
+  /** Primary + secondary actions, centered under the title. Secondary buttons that ride the scrim should
+   *  use on-ink styles (border-on-ink/30 bg-on-ink/10 text-on-ink). */
+  actions?: React.ReactNode
+  /** Band size. `large` is the taller directory hero; `standard` is the shorter one. */
   size?: PageHeroSize
-  /** Content alignment (see PageHeroAlign). Defaults to `start`. */
-  align?: PageHeroAlign
-  /** Use the raw <img> element instead of next/image. Needed when the cover is an arbitrary operator URL
+  /** Use the raw <img> element instead of next/image — needed when the cover is an arbitrary operator URL
    *  on a non-whitelisted host (the IndexTemplate overlay case); next/image only allows configured hosts. */
   rawImg?: boolean
 }
 
 const SIZE_MINH: Record<PageHeroSize, string> = {
-  standard: 'min-h-[14rem] sm:min-h-[18rem]',
-  large: 'min-h-[18rem] sm:min-h-[24rem]',
+  standard: 'min-h-[15rem] sm:min-h-[20rem]',
+  large: 'min-h-[15rem] sm:min-h-[24rem]',
 }
-const SIZE_TITLE: Record<PageHeroSize, string> = {
-  standard: 'text-2xl sm:text-3xl',
-  large: 'text-3xl sm:text-4xl',
-}
+
+// The ink scrim, faithful to the original MarketHero (darker top + bottom, lighter middle), token-clean:
+// `var(--color-ink)` via color-mix so it themes + dark-modes instead of a hardcoded rgb().
+const SCRIM =
+  'linear-gradient(180deg, color-mix(in srgb, var(--color-ink) 80%, transparent) 0%, color-mix(in srgb, var(--color-ink) 55%, transparent) 45%, color-mix(in srgb, var(--color-ink) 92%, transparent) 100%)'
 
 export function PageHero({
   coverImage,
@@ -65,21 +53,14 @@ export function PageHero({
   eyebrow,
   title,
   subtitle,
-  avatar,
-  badges,
-  meta,
-  actions,
   search,
-  size = 'standard',
-  align = 'start',
+  actions,
+  size = 'large',
   rawImg = false,
 }: PageHeroProps) {
-  const minH = SIZE_MINH[size]
-  const centered = align === 'center'
   const focalStyle = coverFocus ? { objectPosition: coverFocus } : undefined
-
   return (
-    <section className={`relative ${minH} overflow-hidden rounded-2xl border border-border`}>
+    <section className="relative overflow-hidden rounded-3xl border border-border">
       {/* Cover: a real photo, or the neutral gradient placeholder when null/absent. */}
       {coverImage ? (
         rawImg ? (
@@ -91,39 +72,25 @@ export function PageHero({
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg" aria-hidden />
       )}
-      {/* Ink legibility scrim (tokens only). */}
-      <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/35 to-transparent" aria-hidden />
+      {/* Ink scrim (tokens only) + the house amber glow. */}
+      <div className="absolute inset-0" style={{ background: SCRIM }} aria-hidden />
+      <div className="amber-glow pointer-events-none absolute inset-0" aria-hidden />
 
-      <div
-        className={`relative flex ${minH} flex-col gap-4 p-6 sm:p-8 ${
-          centered ? 'items-center justify-center text-center' : 'justify-end sm:flex-row sm:items-end sm:justify-between'
-        }`}
-      >
-        <div className={`flex min-w-0 items-end gap-4 ${centered ? 'flex-col items-center' : ''}`}>
-          {avatar && !centered && <div className="shrink-0">{avatar}</div>}
-          <div className="min-w-0">
-            {eyebrow && (
-              <p className={`mb-1.5 text-xs font-semibold uppercase tracking-widest text-on-ink-muted ${centered ? 'sm:mb-3' : ''}`}>
-                {eyebrow}
-              </p>
-            )}
-            <div className={`flex flex-wrap items-center gap-2 ${centered ? 'justify-center' : ''}`}>
-              <h1 className={`text-balance ${SIZE_TITLE[size]} font-bold text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]`}>
-                {title}
-              </h1>
-              {badges}
-            </div>
-            {subtitle && (
-              <p className={`mt-1 max-w-2xl text-sm font-medium leading-relaxed text-on-ink [text-shadow:0_1px_2px_rgb(0_0_0/0.4)] ${centered ? 'mx-auto' : ''}`}>
-                {subtitle}
-              </p>
-            )}
-            {meta && <div className="mt-2 text-sm text-on-ink-muted">{meta}</div>}
-            {search && <div className={`mt-4 w-full max-w-lg ${centered ? 'mx-auto' : ''}`}>{search}</div>}
-          </div>
-        </div>
-        {actions && <div className={`flex flex-wrap items-center gap-2 ${centered ? 'justify-center' : 'shrink-0'}`}>{actions}</div>}
+      {/* Centered content, fixed min-height so every hero is the same size no matter the copy. */}
+      <div className={`relative z-10 mx-auto flex ${SIZE_MINH[size]} max-w-3xl flex-col items-center justify-center px-6 py-8 text-center sm:py-12`}>
+        {eyebrow && (
+          <p className="mb-3 text-sm font-bold uppercase tracking-[0.25em] text-primary sm:mb-4">{eyebrow}</p>
+        )}
+        <h1 className="font-display uppercase leading-[0.95] text-balance text-on-ink text-[clamp(1.75rem,6vw,3.75rem)]">
+          {title}
+        </h1>
+        {subtitle && (
+          <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-on-ink/80 sm:mt-5 sm:text-lg">{subtitle}</p>
+        )}
+        {search && <div className="mt-4 w-full max-w-lg sm:mt-6">{search}</div>}
+        {actions && <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:mt-6 sm:gap-3">{actions}</div>}
       </div>
+      <div className="light-strip absolute inset-x-0 bottom-0 z-10" aria-hidden />
     </section>
   )
 }

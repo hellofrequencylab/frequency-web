@@ -31,7 +31,6 @@ export function IndexTemplate({
   heroImage,
   heroFocus,
   heroOverlay = false,
-  heroSize = 'standard',
   underHero,
   banner,
   adminBar = true,
@@ -103,7 +102,7 @@ export function IndexTemplate({
             title={title}
             subtitle={description}
             actions={action}
-            size={heroSize}
+            size="large"
             rawImg={!!heroImage}
           />
         </div>
