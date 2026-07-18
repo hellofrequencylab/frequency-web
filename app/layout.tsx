@@ -64,8 +64,8 @@ const atkinson = Atkinson_Hyperlegible({ variable: "--font-atkinson", subsets: [
 // themeScript below cannot drift. They mirror --color-canvas (light) and --color-ink (dark) in
 // app/globals.css; the pre-paint script must inline a literal (it runs before CSS loads), so these
 // are the single source for that one literal pair (app-shell reads the live CSS vars at runtime).
-const THEME_COLOR_LIGHT = '#FBFAF6'
-const THEME_COLOR_DARK = '#16130E'
+const THEME_COLOR_LIGHT = '#FBFAF6' // token-ok: pre-paint literal (runs before CSS; mirrors --color-canvas)
+const THEME_COLOR_DARK = '#16130E' // token-ok: pre-paint literal (runs before CSS; mirrors --color-ink)
 
 export const viewport: Viewport = {
   width: "device-width",

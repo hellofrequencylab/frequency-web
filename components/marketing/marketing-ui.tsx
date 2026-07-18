@@ -63,7 +63,7 @@ export function PhotoHero({
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(180deg, rgb(20 18 16 / 0.80) 0%, rgb(20 18 16 / 0.62) 45%, rgb(20 18 16 / 0.95) 100%)',
+            'linear-gradient(180deg, color-mix(in srgb, var(--color-ink) 80%, transparent) 0%, color-mix(in srgb, var(--color-ink) 62%, transparent) 45%, color-mix(in srgb, var(--color-ink) 95%, transparent) 100%)',
         }}
       />
       <div className="amber-glow absolute inset-0 pointer-events-none" />

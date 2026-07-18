@@ -154,6 +154,7 @@ export default async function RoomPage({
       {/* Takeover chat bar — bespoke, full-bleed chrome (the documented exception,
           MEMBER-DESIGN-SYSTEM §207), with the room identity title routed through the
           shared PageHeading grammar instead of a hand-rolled <h1>. */}
+      {/* header-ok: conversation pane, not a page header — bespoke takeover chrome (§207); the title routes through PageHeading */}
       <header className="flex shrink-0 items-center gap-3 border-b border-border bg-surface px-5 py-3">
         <Link
           href="/messages"

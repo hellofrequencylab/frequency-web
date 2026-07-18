@@ -433,7 +433,7 @@ function Splash({
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(180deg, rgb(20 18 16 / 0.78) 0%, rgb(20 18 16 / 0.62) 48%, rgb(20 18 16 / 0.9) 100%)',
+              'linear-gradient(180deg, color-mix(in srgb, var(--color-ink) 78%, transparent) 0%, color-mix(in srgb, var(--color-ink) 62%, transparent) 48%, color-mix(in srgb, var(--color-ink) 90%, transparent) 100%)',
           }}
         />
         <div className="amber-glow absolute inset-0 pointer-events-none" />

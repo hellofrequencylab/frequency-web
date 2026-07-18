@@ -125,6 +125,7 @@ export default async function ShowPage({
 
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold uppercase tracking-widest text-subtle">Show</p>
+              {/* header-ok: the h1 lives inside DetailTemplate's `band` slot, which by contract owns the single page h1 (the band replaces the default title lockup). The template owns the chrome. */}
               <h1 className="mt-1 text-balance text-2xl font-bold leading-tight text-text sm:text-3xl">{show.title}</h1>
               {show.author && <p className="mt-1 text-sm text-muted">{show.author}</p>}
               {show.description && (

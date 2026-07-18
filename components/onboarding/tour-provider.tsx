@@ -144,7 +144,7 @@ export function TourProvider({
         <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-text">{tip.title}</p>
-          <p className="mt-1 text-[13px] leading-snug text-muted">{tip.body}</p>
+          <p className="mt-1 text-sm leading-snug text-muted">{tip.body}</p>
           {(tip.cta || tip.cta2) && (
             <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
               {tip.cta && (

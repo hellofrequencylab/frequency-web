@@ -44,7 +44,7 @@ export async function DemoNotice() {
           <Zap className="h-5 w-5 fill-current" aria-hidden />
         </span>
         <div className="min-w-0">
-          <h3 className="text-[13px] font-extrabold uppercase tracking-wide text-warning">Help build it</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide text-warning">Help build it</h3>
           <p className="text-2xs font-semibold leading-tight text-text">
             {demoCount.toLocaleString()} demo {demoCount === 1 ? 'member' : 'members'} · {realCount} real
           </p>
@@ -52,7 +52,7 @@ export async function DemoNotice() {
       </div>
 
       <div className="px-3.5 py-3">
-        <p className="text-[13px] leading-snug text-subtle">
+        <p className="text-sm leading-snug text-subtle">
           Anything with a{' '}
           <Zap className="inline h-3 w-3 fill-warning align-[-1px] text-warning" aria-hidden /> bolt is
           sample content keeping the place alive while we grow. It recedes as real members join.
@@ -67,7 +67,7 @@ export async function DemoNotice() {
                 href={a.href}
                 className="group flex items-center justify-between gap-2 rounded-lg border border-warning/25 bg-surface/60 px-2.5 py-1.5 transition-colors hover:border-warning/50 hover:bg-warning-bg/70"
               >
-                <span className="text-[13px] font-medium text-text transition-colors group-hover:text-warning">{a.label}</span>
+                <span className="text-sm font-medium text-text transition-colors group-hover:text-warning">{a.label}</span>
                 <span className="inline-flex shrink-0 items-center gap-0.5 text-xs font-extrabold text-warning tabular-nums">
                   +{a.zaps}
                   <Zap className="h-3 w-3 fill-warning" aria-hidden />

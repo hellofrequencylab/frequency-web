@@ -88,6 +88,7 @@ export async function updateSpaceBranding(
   let brandAccent: string | null = null
   if (accentRaw) {
     if (!isSafeAccent(accentRaw)) {
+      // token-ok: example hex shown in validation copy, not a style value
       return fail('That accent color isn’t valid. Use a hex (#3D352A) or rgb/hsl value.')
     }
     brandAccent = accentRaw

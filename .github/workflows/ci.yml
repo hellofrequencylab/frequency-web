@@ -46,6 +46,10 @@ jobs:
         run: pnpm check:canon
       - name: Admin-menu contract check
         run: pnpm check:menu
+      - name: Token contract check (no hardcoded style)
+        run: pnpm check:tokens
+      - name: Header contract check (no hand-rolled page <h1>)
+        run: pnpm check:headers
       - name: SEO/sitemap coherence
         run: pnpm check:seo
       - name: RLS coverage (static shift-left of the DB advisors)
