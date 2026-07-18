@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { ArrowRight, Sparkles, Trash2 } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
+import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { DangerDelete } from '@/components/admin/danger-delete'
 import { deleteSpace } from '@/lib/spaces/provision'
 import type { SpaceModule } from '@/lib/admin/modules/space-modules'
 import type { AdminSlot } from '@/lib/admin/modules/registry'
-import { SPACE_GROUP_META } from '@/lib/admin/modules/spine'
+import { SPACE_HUB_SECTIONS, sectionForModule, type SpaceHubSection } from '@/lib/admin/modules/space-hub'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import { hrefForSurface, panelHrefForModule } from '@/lib/spaces/surface-hrefs'
 
@@ -40,46 +41,15 @@ export { hrefForSurface }
 
 // ── Grouping (pure metadata) ─────────────────────────────────────────────────────────────────────────
 //
-// The console renders its sections in the SAME 7 member-facing GROUPS the admin rail uses (ADR-520): it
-// clusters each module by its group slot and labels the group from the shared SPACE_GROUP_META (Identity ·
-// Info and Connect · Page · Audience · Offerings & money · Reach · Growth · Danger), so the two owner
-// surfaces (this full-page console + the in-rail bar) never disagree on the IA. Groups render in
-// SPACE_CONSOLE_GROUPS order (Identity leads so the space's own identity is first; Danger trails).
-
-/** The 7 Space console groups, in render order (ADR-782). Setup leads; Danger trails. Each group's header
- *  label + icon come from SPACE_GROUP_META. Every TOP-LEVEL module folds into one of these seven via
- *  groupForModule, so nothing is orphaned; sub-modules (`parent`) nest under their parent card. */
-const SPACE_CONSOLE_GROUPS: readonly AdminSlot[] = [
-  'basics', // Setup — Profile and Settings + Page
-  'place', // Content — Practices, Journeys, Airwaves (repurposed slot; see groupForModule)
-  'people', // Audience — Team, CRM (+ Automation / Leads / Capture links / Shared nested), Reviews
-  'engage', // Offerings & money — the split commerce modules + Shop
-  'reach', // Reach — QR codes (+ Scans nested), Email (+ Design / Style nested)
-  'insights', // Plan and billing — Plan and usage
-  'danger', // Danger
-]
-
-/** Console-only group header overrides (ADR-782). The console regroups more aggressively than the rail
- *  (it folds Page into Setup and pulls Practices/Journeys/Airwaves into a Content group), so a few group
- *  headers read differently HERE than on the rail. This overrides just those labels and FALLS BACK to the
- *  shared SPACE_GROUP_META for the rest, so the rail's headers stay untouched and no parallel IA source is
- *  introduced (MENU-CONTRACT: this is a label map, not a module catalog). */
-const CONSOLE_GROUP_LABEL: Partial<Record<AdminSlot, string>> = {
-  basics: 'Profile and Setup',
-  place: 'Content',
-  insights: 'Plan and billing',
-}
+// The hub renders the module manifest into the FOUR browse categories (lib/admin/modules/space-hub.ts):
+// Resonance · Marketing · Offerings & Money · Content & Programs, plus the header-level Profile & Settings
+// surface. `groupForModule` below is the LEGACY 7-slot console grouping, retained only for the drift-guard
+// tests + any caller that still reads the coarse spine slot; the live hub uses `sectionForModule`.
 
 /**
- * The console group (one of the SPACE_CONSOLE_GROUPS slots) a module clusters into. PURE (ADR-782). The
- * module catalog uses the finer engineering spine slots, so several fold together for the console IA:
- *   • Content — Practices / Journeys / Airwaves cluster into the repurposed `place` slot (their engineering
- *     slot stays `engage`, so the RAIL keeps them in Offerings; only the console regroups them here).
- *   • Setup — Page (`layout`) and the retired Settings section (`safety`) join the `basics` group so Profile
- *     and Settings + Page read as one setup cluster.
- *   • Reach — Email (`comms`) joins `reach`.
- *   • Plan and billing — Plan and usage (`billing`) joins the `insights` group.
- * The offerings modules already use `engage`, so they land in "Offerings and money" unchanged.
+ * The legacy console group a module clusters into (PURE). Superseded for rendering by `sectionForModule`
+ * (space-hub.ts), but kept for the console drift-guard tests. Folds the finer engineering spine slots:
+ * Practices/Journeys/Airwaves → `place`; Page/Settings → `basics`; Email → `reach`; Billing → `insights`.
  */
 export function groupForModule(module: SpaceModule): AdminSlot {
   if (module.id === 'space.practices' || module.id === 'space.journeys' || module.id === 'space.airwaves') {
@@ -241,7 +211,12 @@ function SectionRow({
         <span className={`flex shrink-0 items-center justify-center rounded-md bg-primary-bg text-primary-strong ${nested ? 'h-6 w-6' : 'h-7 w-7'}`}>
           <Icon className={nested ? 'h-3 w-3' : 'h-3.5 w-3.5'} aria-hidden />
         </span>
-        <span className={`min-w-0 flex-1 truncate font-medium text-text ${nested ? 'text-xs' : 'text-sm'}`}>{module.label}</span>
+        <span className="min-w-0 flex-1">
+          <span className={`block truncate font-medium text-text ${nested ? 'text-xs' : 'text-sm'}`}>{module.label}</span>
+          {!nested && module.freeNote && (
+            <span className="mt-0.5 block truncate text-2xs text-muted">{module.freeNote}</span>
+          )}
+        </span>
         {suggested && (
           <span
             className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong"
@@ -296,58 +271,39 @@ function DangerRow({
   )
 }
 
-/** One titled group: a compact SectionHeader, then a tight vertical list of its rows. Sits in a
- *  multi-column grid cell (break-inside-avoid keeps a group whole). No blurb — the console is
- *  consolidated to fit without scrolling. */
-function GroupCluster({
-  title,
+/** The category nav for the hub — the four browse sections as underline tabs (the Classifieds category-menu
+ *  pattern), `?section=` in the URL so it is server-rendered + shareable. Profile & Settings is a header
+ *  affordance, not a tab. */
+function HubNav({ slug, section }: { slug: string; section: SpaceHubSection }) {
+  const hubBase = `/spaces/${slug}/manage`
+  return (
+    <UnderlineTabs
+      activeHref={`${hubBase}?section=${section}`}
+      tabs={SPACE_HUB_SECTIONS.map((s) => ({ href: `${hubBase}?section=${s.key}`, label: s.label }))}
+    />
+  )
+}
+
+/** A flat grid of feature cards for one category — every feature is a top-level card WITHIN the category
+ *  space (no nested sub-menus, owner directive). Ordered by Mode emphasis, then catalog order. */
+function FeatureGrid({
   modules,
-  childrenByParent,
   slug,
   emphasis,
-  canDelete,
-  spaceId,
 }: {
-  title: string
-  /** The TOP-LEVEL modules in this group (no `parent`), already ordered. */
   modules: SpaceModule[]
-  /** Sub-modules keyed by their parent id, rendered nested under the parent card. */
-  childrenByParent: Map<string, SpaceModule[]>
   slug: string
   emphasis: readonly SpaceFunctionKey[]
-  canDelete: boolean
-  spaceId: string
 }) {
+  const ordered = orderWithinGroupByEmphasis(modules, emphasis)
   return (
-    <section className="break-inside-avoid">
-      <SectionHeader title={title} />
-      <ul className="-mt-1 space-y-1.5">
-        {modules.map((module) => {
-          if (module.id === 'space.danger') {
-            return <DangerRow key={module.id} module={module} canDelete={canDelete} spaceId={spaceId} />
-          }
-          // P1: prefer the module's ON-PAGE panel when one exists (no regression to the Stage-D5 `?panel=`
-          // behavior — Members / CRM / Store / QR / Email / Billing open inline in the profile body); a
-          // module with no panel (the split commerce services) falls through to its deep route.
-          const href = panelHrefForModule(module, slug)
-          if (!href) return null
-          const kids = childrenByParent.get(module.id) ?? []
-          const kidRows = kids
-            .map((kid) => {
-              const kidHref = panelHrefForModule(kid, slug)
-              return kidHref ? (
-                <SectionRow key={kid.id} module={kid} href={kidHref} suggested={isSuggestedByMode(kid, emphasis)} nested />
-              ) : null
-            })
-            .filter(Boolean)
-          return (
-            <SectionRow key={module.id} module={module} href={href} suggested={isSuggestedByMode(module, emphasis)}>
-              {kidRows.length > 0 ? kidRows : undefined}
-            </SectionRow>
-          )
-        })}
-      </ul>
-    </section>
+    <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+      {ordered.map((module) => {
+        const href = panelHrefForModule(module, slug)
+        if (!href) return null
+        return <SectionRow key={module.id} module={module} href={href} suggested={isSuggestedByMode(module, emphasis)} />
+      })}
+    </ul>
   )
 }
 
@@ -355,75 +311,79 @@ export function SpaceManageConsole({
   slug,
   modules,
   emphasis,
+  section,
+  crmEmbed,
+}: {
+  slug: string
+  /** The gated module manifest, in catalog order. */
+  modules: SpaceModule[]
+  /** The Mode's emphasized functions — a SECONDARY signal (tag + within-category order), never a gate. */
+  emphasis: readonly SpaceFunctionKey[]
+  /** The active browse category (from `?section=`). */
+  section: Exclude<SpaceHubSection, 'settings'>
+  /** The embedded CRM board node, built server-side by the page and shown atop the Resonance category so the
+   *  hub opens on the space's live pipeline + contacts (owner directive: Resonance = the CRM + inbox view). */
+  crmEmbed?: React.ReactNode
+}) {
+  // A BROWSE hub: only the active category's features render, each a flat top-level card (no nested
+  // sub-menus). Settings-bucket modules (Team / Reviews / Plan / Danger) and the removed Page module never
+  // appear here — they live on the Profile & Settings surface (SpaceSettingsSurface).
+  const inSection = modules.filter((m) => sectionForModule(m) === section)
+  const blurb = SPACE_HUB_SECTIONS.find((s) => s.key === section)?.blurb
+
+  return (
+    <div>
+      <HubNav slug={slug} section={section} />
+      <div className="mt-5">
+        {blurb && <p className="mb-4 max-w-2xl text-sm text-muted">{blurb}</p>}
+        {section === 'resonance' && crmEmbed && <div className="mb-6">{crmEmbed}</div>}
+        {inSection.length > 0 ? (
+          <FeatureGrid modules={inSection} slug={slug} emphasis={emphasis} />
+        ) : (
+          <p className="text-sm text-subtle">Nothing here yet for this space.</p>
+        )}
+        <div className="mt-6">
+          <AccessLegend />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** The header-level PROFILE & SETTINGS surface (ADR-785): the space's identity/brand/visibility shell plus
+ *  Team, Reviews, Plan & usage, and the Danger zone — everything that is configuration rather than daily
+ *  operation. Rendered by the Profile & Settings route, not the browse hub. */
+export function SpaceSettingsSurface({
+  slug,
+  modules,
   canDelete,
   spaceId,
 }: {
   slug: string
-  /** The gated module manifest, in catalog order (the page does NOT pre-reorder by Mode). */
   modules: SpaceModule[]
-  /** The Mode's emphasized functions — a SECONDARY signal (tag + within-group order), never a gate. */
-  emphasis: readonly SpaceFunctionKey[]
-  /** Whether the Danger section renders its delete control (owner / staff); else header-only. */
   canDelete: boolean
   spaceId: string
 }) {
-  // Split the manifest into TOP-LEVEL cards and their nested sub-modules (ADR-782): a module with a
-  // `parent` present in this manifest folds under that parent's card; an orphan child (its parent gated
-  // out / hidden) falls back to a top-level card so nothing is unreachable.
-  const present = new Set(modules.map((m) => m.id))
-  const childrenByParent = new Map<string, SpaceModule[]>()
-  const topLevel: SpaceModule[] = []
-  for (const mod of modules) {
-    if (mod.parent && present.has(mod.parent)) {
-      const list = childrenByParent.get(mod.parent) ?? []
-      list.push(mod)
-      childrenByParent.set(mod.parent, list)
-    } else {
-      topLevel.push(mod)
-    }
-  }
-
-  // Bucket the TOP-LEVEL cards by console GROUP (the IA, ADR-782), preserving incoming (catalog) order
-  // within each bucket, then apply the Mode emphasis WITHIN each bucket only. Render the groups in
-  // SPACE_CONSOLE_GROUPS order; a group with no cards for this Space renders nothing.
-  const byGroup = new Map<AdminSlot, SpaceModule[]>()
-  for (const mod of topLevel) {
-    const g = groupForModule(mod)
-    const list = byGroup.get(g) ?? []
-    list.push(mod)
-    byGroup.set(g, list)
-  }
-
-  // The groups flow across a multi-column grid (masonry-like via CSS columns) so the whole console
-  // reads as one consolidated board that fits WITHOUT the page scrolling. break-inside-avoid on each
-  // group keeps it whole within a column.
+  const settingsModules = modules.filter((m) => sectionForModule(m) === 'settings')
+  const cards = settingsModules.filter((m) => m.id !== 'space.danger')
+  const danger = settingsModules.find((m) => m.id === 'space.danger')
   return (
-    <div>
-      <AccessLegend />
-      <div className="gap-x-6 [column-gap:1.5rem] sm:columns-2 xl:columns-3">
-        {SPACE_CONSOLE_GROUPS.map((slot) => {
-          const inGroup = byGroup.get(slot)
-          if (!inGroup || inGroup.length === 0) return null
-          const meta = SPACE_GROUP_META[slot]
-          if (!meta) return null
-          const title = CONSOLE_GROUP_LABEL[slot] ?? meta.label
-          // The Danger group keeps its single row; every other group orders within itself by emphasis.
-          const ordered = slot === 'danger' ? inGroup : orderWithinGroupByEmphasis(inGroup, emphasis)
-          return (
-            <div key={slot} className="mb-5 break-inside-avoid">
-              <GroupCluster
-                title={title}
-                modules={ordered}
-                childrenByParent={childrenByParent}
-                slug={slug}
-                emphasis={emphasis}
-                canDelete={canDelete}
-                spaceId={spaceId}
-              />
-            </div>
-          )
+    <div className="space-y-6">
+      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {cards.map((module) => {
+          const href = panelHrefForModule(module, slug)
+          if (!href) return null
+          return <SectionRow key={module.id} module={module} href={href} suggested={false} />
         })}
-      </div>
+      </ul>
+      {danger && (
+        <section>
+          <SectionHeader title="Danger zone" />
+          <ul className="-mt-1">
+            <DangerRow module={danger} canDelete={canDelete} spaceId={spaceId} />
+          </ul>
+        </section>
+      )}
     </div>
   )
 }

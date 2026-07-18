@@ -192,5 +192,31 @@ describe('console consolidation metadata (ADR-782)', () => {
     }
     expect(spaceModuleById('space.insights')!.parent).toBe('space.reach')
   })
+})
 
+// ADR-784: the access badges corrected to match the real code caps (feature-meters.ts), + the free-cap
+// sublabel (freeNote) that makes the upgrade lever legible.
+describe('access badges match the real free-tier caps (ADR-784)', () => {
+  it('badges the metered offerings Freemium (they are capped on free, not fully Included)', () => {
+    for (const id of ['space.booking', 'space.memberships', 'space.tickets']) {
+      expect(spaceModuleById(id)!.access, `${id} is capped on free`).toBe('freemium')
+    }
+  })
+
+  it('badges Team Freemium (1 seat free, then paid per seat)', () => {
+    expect(spaceModuleById('space.people')!.access).toBe('freemium')
+  })
+
+  it('badges Practices Included (no cap constant backs a freemium claim)', () => {
+    expect(spaceModuleById('space.practices')!.access).toBe('included')
+  })
+
+  it('gives every Freemium / Premium card a freeNote lever (except email/qr children that ride a parent)', () => {
+    const childRides = new Set(['space.marketing', 'space.emailstyle', 'space.leads', 'space.doors', 'space.shared', 'space.insights'])
+    for (const m of SPACE_MODULES) {
+      if ((m.access === 'freemium' || m.access === 'premium') && !childRides.has(m.id)) {
+        expect(m.freeNote, `${m.id} needs a freeNote lever`).toBeTruthy()
+      }
+    }
+  })
 })

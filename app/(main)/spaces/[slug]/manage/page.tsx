@@ -8,12 +8,14 @@ import { listSpaceMembers } from '@/lib/spaces/membership'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { resolveMode } from '@/lib/spaces/modes'
+import Link from 'next/link'
 import { SPACE_PLAN_LABEL, asSpacePlan } from '@/lib/pricing/plans'
-import { Compass, CreditCard, Users } from 'lucide-react'
+import { Compass, CreditCard, Users, SlidersHorizontal } from 'lucide-react'
 import { DashboardTemplate } from '@/components/templates'
-import { StatCard } from '@/components/ui/stat-card'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { PlacementApprovals } from '@/components/events/placement-approvals'
+import { hubSearchItems } from '@/lib/admin/modules/space-hub'
+import { HubSearch } from './hub-search'
 import { SpaceManageBoard } from './manage-board'
 
 // The Space OWNER CONSOLE (ADR-441 EM1-3, the Spaces harmonization slice). The unified
@@ -39,10 +41,13 @@ export const metadata: Metadata = {
 
 export default async function SpaceManagePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ section?: string }>
 }) {
   const { slug } = await params
+  const { section } = await searchParams
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
 
@@ -76,29 +81,50 @@ export default async function SpaceManagePage({
   const members = await listSpaceMembers(space.id)
   const activeMembers = members.filter((m) => m.status === 'active').length
 
+  // Stats sit TIGHT in the header (right of the identity), not as a big StatCard grid. The Mode chip links
+  // to the Mode & focus page; a Profile & Settings button opens the header-level settings surface (identity,
+  // team, reviews, plan, danger). The on-page "Settings" admin bar is off (the hub owns its own navigation).
+  const headerRight = (
+    <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+      <span className="inline-flex items-center gap-1.5 text-sm text-text">
+        <Users className="h-4 w-4 text-subtle" aria-hidden />
+        <b className="font-semibold tabular-nums">{activeMembers}</b>
+        <span className="text-muted">members</span>
+      </span>
+      <span className="inline-flex items-center gap-1.5 text-sm text-text">
+        <CreditCard className="h-4 w-4 text-subtle" aria-hidden />
+        <b className="font-semibold">{planLabel}</b>
+      </span>
+      <Link
+        href={`/spaces/${space.slug}/manage/mode`}
+        className="inline-flex items-center gap-1.5 text-sm text-text transition-colors hover:text-primary-strong"
+      >
+        <Compass className="h-4 w-4 text-subtle" aria-hidden />
+        <span className="max-w-[14rem] truncate">{modeLabel}</span>
+      </Link>
+      <Link
+        href={`/spaces/${space.slug}/manage/settings`}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text shadow-sm transition-colors hover:border-border-strong hover:bg-surface-elevated"
+      >
+        <SlidersHorizontal className="h-4 w-4" aria-hidden />
+        Profile &amp; Settings
+      </Link>
+    </div>
+  )
+
   return (
     <DashboardTemplate
       eyebrow={`Manage ${typeLabel.toLowerCase()} space`}
       title={brandName}
-      description="Your space's settings in one place. Open a section to manage it; changes show up on your space page."
+      description="Your control hub. Browse a category to manage it; changes show up on your space page."
       width="default"
+      adminBar={false}
+      actions={headerRight}
       banner={staffViewing ? <StaffPreviewBanner spaceName={brandName} /> : undefined}
-      stats={
-        <>
-          <StatCard label="Team members" value={activeMembers} icon={Users} />
-          <StatCard label="Plan" value={planLabel} size="sm" icon={CreditCard} />
-          {/* The Mode + Focus stat doubles as the entry point to the Mode and focus settings page. */}
-          <StatCard
-            label="Mode and focus"
-            value={modeLabel}
-            size="sm"
-            icon={Compass}
-            href={`/spaces/${space.slug}/manage/mode`}
-          />
-        </>
-      }
     >
-      <SpaceManageBoard slug={slug} />
+      {/* The Space search bar, directly under the header rule (a fast finder over every tool + setting). */}
+      <HubSearch items={hubSearchItems(space.slug)} />
+      <SpaceManageBoard slug={slug} section={section} />
       {/* Pending "where does this event live" requests a Space steward can approve. Only a manager
           (not a staff previewer) acts on them; the actions re-check steward caps server-side. */}
       {canManage && (

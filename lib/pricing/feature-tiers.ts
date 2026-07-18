@@ -91,14 +91,12 @@ export function tierPriceCents(axis: GateAxis, tier: string): number {
 }
 
 /** A plain, honest placeholder price label for a tier on its axis, reusing the shared display format
- *  (formatCents). "Free" for the floor; "$X/mo" for a flat tier; the per-seat / from qualifier for the
- *  two Space tiers that carry one. PURE. */
+ *  (formatCents). "Free" for the floor; "$X/mo" for a flat tier. Non Profit is a FLAT $29/mo (ADR-590),
+ *  never per-seat. PURE. */
 export function tierPriceLabel(axis: GateAxis, tier: string): string {
   const cents = tierPriceCents(axis, tier)
   if (cents === 0) return 'Free'
-  const base = formatCents(cents)
-  if (axis === 'plan' && tier === 'nonprofit') return `${base}/seat/mo`
-  return `${base}/mo`
+  return `${formatCents(cents)}/mo`
 }
 
 // ── The per-feature raw config (axis + minTier + what each rung unlocks) ─────────────────────────────

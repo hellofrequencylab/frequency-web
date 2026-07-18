@@ -59,15 +59,16 @@ Reset monthly where marked ↻. Generous on **activation** (reach the first win)
 | AI (Vera) | ~10 msgs / day, no playbooks | more + playbooks; heavy = add‑on | scale |
 | Money take‑rate | ~5% + Stripe | ~3% + Stripe | the self‑funding trigger |
 
-**The no‑brainer math (surfaced in‑product):** once a Space processes ~$1,000/mo, the 2%
-take‑rate saving (~$20) exceeds the ~$19 base. The billing surface shows "You'd have saved
-$X this month on Business." Any operator clearing about a grand a month upgrades on pure
-economics.
+**The no‑brainer math (surfaced in‑product):** the 2‑point take‑rate saving (5% → 3%) compounds
+with the cap jumps; once a Space processes enough volume the saving alone offsets a real share of
+the base. The billing surface shows "You'd have saved $X this month on Business." An operator doing
+steady business upgrades on pure economics. (Price is now **$49 founding / $79 list**, ADR‑590/591 —
+the earlier ~$19/$29 figures are superseded.)
 
-**Business scaling = base + two dials.** Low base (~$19 founding / $29 list) includes the big
-cap jumps + 1 seat + multi‑page/custom domain/badge‑off + the lower take‑rate. Then it scales
-only by **per seat** (+$9) and **usage steps** on the two dimensions that actually cost us
-(email sends, AI). Everything else is effectively unlimited at base — no nickel‑and‑diming.
+**Business scaling = base + two dials.** The base (**$49 founding / $79 list**; Non Profit **$29 flat**)
+includes the big cap jumps + 1 seat + multi‑page/custom domain/badge‑off + the lower 3% take‑rate.
+Then it scales only by **per seat** (+$9) and **usage steps** on the two dimensions that actually cost
+us (email sends, AI). Everything else is effectively unlimited at base — no nickel‑and‑diming.
 
 **Non Profit** is the same depth as Business, discounted, per licensed seat, 501(c)(3)
 verified, with donation/volunteer framing.

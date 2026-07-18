@@ -27,6 +27,7 @@ export function DashboardTemplate({
   stats,
   banner,
   width = 'wide',
+  adminBar = true,
   children,
 }: {
   eyebrow?: React.ReactNode
@@ -40,12 +41,15 @@ export function DashboardTemplate({
   /** Full-width header media rendered ABOVE the title (e.g. the operator header image). */
   banner?: React.ReactNode
   width?: keyof typeof WIDTHS
+  /** Render the header's on-page operator "Settings" admin bar (default on). Set false on a workspace that
+   *  owns its own navigation / customizer so the header rule stays a plain divider. */
+  adminBar?: boolean
   children: React.ReactNode
 }) {
   return (
     <div className={`mx-auto w-full ${WIDTHS[width]}`}>
       {banner}
-      <PageHeading eyebrow={eyebrow} title={title} description={description} actions={actions} back={back} />
+      <PageHeading eyebrow={eyebrow} title={title} description={description} actions={actions} back={back} adminBar={adminBar} />
       {stats && (
         <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{stats}</div>
       )}
