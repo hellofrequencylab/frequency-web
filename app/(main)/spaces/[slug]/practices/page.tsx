@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft, Sparkles, FileText, Radio, Globe } from 'lucide-react'
+import { Sparkles, FileText, Radio, Globe } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -46,19 +45,14 @@ export default async function SpacePracticesManagerPage({ params }: { params: Pr
 
   return (
     <IndexTemplate
+      heroOverlay
+      back={{ href: spaceManageHref(space.type, space.slug), label: 'Back to manage' }}
       eyebrow={brandName}
       title="Practices"
       description="Build the practices your members do, each with its own timer. Drafts stay private until you make them live in your space."
       action={<NewSpacePracticeButton slug={space.slug} />}
     >
       <div className="max-w-4xl space-y-6">
-        <Link
-          href={spaceManageHref(space.type, space.slug)}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-text"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to manage
-        </Link>
-
         <AuthoringAccessNote kind="practice" paidOwner={asSpacePlan(space.plan) !== 'free'} />
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { Map, FileText, Globe, Library, ArrowLeft } from 'lucide-react'
+import { Map, FileText, Globe, Library } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -69,19 +68,14 @@ export default async function SpaceJourneysManagerPage({ params }: { params: Pro
 
   return (
     <IndexTemplate
+      heroOverlay
+      back={{ href: spaceManageHref(space.type, space.slug), label: 'Back to manage' }}
       eyebrow={space.brandName ?? space.name}
       title="Journeys"
       description="Build multi week programs for your members. Drafts stay private until you publish them."
       action={<NewSpaceJourneyButton slug={space.slug} />}
     >
       <div className="max-w-4xl space-y-6">
-        <Link
-          href={spaceManageHref(space.type, space.slug)}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-text"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to manage
-        </Link>
-
         <AuthoringAccessNote kind="journey" paidOwner={asSpacePlan(space.plan) !== 'free'} />
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
