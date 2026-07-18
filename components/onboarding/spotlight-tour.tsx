@@ -143,6 +143,7 @@ export function SpotlightTour({
             left: rect.left - PAD,
             width: rect.width + PAD * 2,
             height: rect.height + PAD * 2,
+            // token-ok: full-page spotlight scrim (pure-black backdrop dimming the page, not a themed surface)
             boxShadow: '0 0 0 9999px rgba(0,0,0,0.62)',
           }}
         />
@@ -166,7 +167,7 @@ export function SpotlightTour({
           <div className="min-w-0 flex-1">
             <p className="text-2xs font-semibold uppercase tracking-wider text-primary-strong">Vera</p>
             <h2 id="spotlight-title" className="mt-0.5 text-sm font-bold text-text">{stop.title}</h2>
-            <p className="mt-1 text-[13px] leading-snug text-muted">{stop.body}</p>
+            <p className="mt-1 text-sm leading-snug text-muted">{stop.body}</p>
           </div>
           <button
             type="button"

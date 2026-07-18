@@ -133,6 +133,7 @@ export default async function ConversationPage({
       {/* Takeover chat bar — bespoke, full-bleed chrome (the documented exception,
           MEMBER-DESIGN-SYSTEM §207), but the identity title now flows through the
           shared PageHeading grammar instead of a hand-rolled <h1>. */}
+      {/* header-ok: conversation pane, not a page header — bespoke takeover chrome (§207); the title routes through PageHeading */}
       <header className="shrink-0 flex items-center gap-3 border-b border-border bg-surface px-5 py-3">
         <Link
           href="/messages"

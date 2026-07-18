@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Map, FileText, Globe, Users, ArrowLeft } from 'lucide-react'
+import { Map, FileText, Globe, Users } from 'lucide-react'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { canCreate } from '@/lib/core/load-capabilities'
 import { isPaid } from '@/lib/core/access-matrix'
@@ -69,15 +69,13 @@ export default async function MyJourneysPage({ searchParams }: { searchParams: P
 
   return (
     <IndexTemplate
+      heroOverlay
+      back={{ href: '/journeys', label: 'Back to the library' }}
       title="Your Journeys"
       description="Your space to store, edit, and publish everything you build. Drafts stay private until you publish them to the community library."
       action={<NewJourneyButton canCreate={canBuildJourney} />}
     >
       <div className="max-w-4xl space-y-6">
-        <Link href="/journeys" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-text">
-          <ArrowLeft className="h-4 w-4" /> Back to the library
-        </Link>
-
         <AuthoringAccessNote kind="journey" paidOwner={paidOwner} />
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

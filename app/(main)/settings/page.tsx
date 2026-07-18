@@ -49,6 +49,7 @@ export default function SettingsPage() {
     const isDark = next === 'dark' || (next === 'system' && sysDark)
     document.documentElement.classList.toggle('dark', isDark)
     const meta = document.querySelector('meta[name="theme-color"]')
+    // token-ok: browser theme-color literal (mirrors --color-ink/--color-canvas; set on <meta>, no CSS var)
     if (meta) meta.setAttribute('content', isDark ? '#16130E' : '#FBFAF6')
   }
 

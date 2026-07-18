@@ -7,7 +7,7 @@ import { Globe, MapPin } from 'lucide-react'
 import { isOnline } from '@/lib/presence'
 import { InviteMemberCompose } from '@/components/compose/invite-member-compose'
 import { type CommunityRole } from '@/lib/community-roles'
-import { PageHeading } from '@/components/templates/page-heading'
+import { IndexTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
 import { CircleLocationSearch } from '@/components/circles/circle-location-search'
@@ -376,18 +376,21 @@ export default async function CommunityPage({
 
   return (
     <div>
-      {/* Hub tab strip — Community · Friends · Contacts read as one Network hub. */}
+      {/* Hub tab strip — Community · Friends · Contacts read as one Network hub. Stays
+          above the hero band so the Network sub-nav still leads the page. */}
       <NetworkTabs active="/network" />
-      {/* Header: globe + operator-editable title/description, Invite on the right. */}
-      <PageHeading
+      {/* Header: unified hero band with the operator-editable title/description, Invite on
+          the right. Globe glyph rides the title; the stats row + filters follow in the body. */}
+      <IndexTemplate
+        heroOverlay
         title={
           <span className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary-strong" />
+            <Globe className="h-5 w-5" />
             {title}
           </span>
         }
         description={description}
-        actions={
+        action={
           <div className="flex items-center gap-2">
             {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
             {ctaLabel && ctaHref && (
@@ -401,8 +404,7 @@ export default async function CommunityPage({
             <InviteMemberCompose inviterName={viewerName} />
           </div>
         }
-      />
-
+      >
       {/* Community size, pinned right against a baseline rule under the header. */}
       <div className="flex flex-wrap items-end justify-end gap-x-4 gap-y-1 border-b border-border">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pb-2.5 text-sm text-muted">
@@ -583,6 +585,7 @@ export default async function CommunityPage({
           </Suspense>
         </aside>
       </div>
+      </IndexTemplate>
     </div>
   )
 }

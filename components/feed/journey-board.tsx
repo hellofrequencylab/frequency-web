@@ -174,7 +174,7 @@ export function JourneyBoard({
                   </span>
                 )}
               </p>
-              <p className="mt-0.5 text-[13px] leading-snug text-muted">
+              <p className="mt-0.5 text-sm leading-snug text-muted">
                 {atRisk
                   ? willFreezeProtect
                     ? 'Today’s not logged yet. A freeze has you covered, but logging keeps it clean.'

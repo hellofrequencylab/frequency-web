@@ -1,11 +1,12 @@
-import Image from 'next/image'
+import { PageHero } from '@/components/templates/page-hero'
 
-// MARKET HERO — the section header for the FOUR commerce surfaces (Classifieds / Market / Frequency
-// Store / Housing), following the site's PhotoHero grammar (components/marketing/marketing-ui.tsx): a
-// full-bleed image under a dark vertical gradient + the amber glow, a bold uppercase eyebrow, a heavy
-// font-display uppercase title, a subtitle, an instant search bar, and an optional CTA, capped by the
-// light strip. Contained (rounded). FIXED HEIGHT (min-h) so all four heroes render the SAME size
-// regardless of their copy. Voice-canon copy comes from the caller (no em dashes).
+// MARKET HERO — the commerce/browse section header (Classifieds / Market / Frequency Store / Housing,
+// and the browse indexes that adopted it). It is now a THIN wrapper over the canonical PageHero (the one
+// site-wide header band, THEME-PROTOCOL "structure" layer): the `center` + `large` variant with an
+// in-hero search. Keeping the same props means every caller is unchanged, but the header is now
+// single-sourced and TOKEN-CLEAN — the old inline `rgb(20 18 16 / …)` scrim + `text-white` are gone, so
+// these heroes theme + dark-mode correctly like the rest of the site. Voice-canon copy comes from the
+// caller (no em dashes).
 export function MarketHero({
   image,
   focal,
@@ -16,54 +17,26 @@ export function MarketHero({
   action,
 }: {
   image: string
-  /** Focal point for the hero image, a CSS object-position string ("x% y%"). Unset = centered
-   *  (the object-center default). Lets a surface keep the important part of the photo in frame. */
+  /** Focal point ("x% y%") so the crop keeps the subject in frame. */
   focal?: string | null
   eyebrow?: string
   title: React.ReactNode
   subtitle?: string
-  /** The instant search bar (MarketSearchBar), rendered inside the hero image. */
+  /** The instant search bar (MarketSearchBar), rendered inside the hero. */
   search?: React.ReactNode
   action?: React.ReactNode
 }) {
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-border">
-      <Image
-        src={image}
-        alt=""
-        fill
-        preload
-        sizes="100vw"
-        style={focal ? { objectPosition: focal } : undefined}
-        className={`object-cover ${focal ? '' : 'object-center'}`}
-      />
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(180deg, rgb(20 18 16 / 0.80) 0%, rgb(20 18 16 / 0.55) 45%, rgb(20 18 16 / 0.92) 100%)',
-        }}
-        aria-hidden
-      />
-      <div className="amber-glow pointer-events-none absolute inset-0" aria-hidden />
-      {/* Fixed min-height + centered content = every hero is the same height (matches the Frequency
-          Store hero) no matter how much copy or how many controls it carries. */}
-      <div className="relative z-10 mx-auto flex min-h-[15rem] max-w-3xl flex-col items-center justify-center px-6 py-8 text-center sm:min-h-[24rem] sm:py-12">
-        {eyebrow && (
-          <p className="mb-3 text-sm font-bold uppercase tracking-[0.25em] text-primary sm:mb-4">{eyebrow}</p>
-        )}
-        <h1 className="font-display uppercase leading-[0.95] text-balance text-white text-[clamp(1.75rem,6vw,3.75rem)]">
-          {title}
-        </h1>
-        {subtitle && (
-          <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-white/80 sm:mt-5 sm:text-lg">
-            {subtitle}
-          </p>
-        )}
-        {search && <div className="mt-4 w-full max-w-lg sm:mt-6">{search}</div>}
-        {action && <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:mt-6 sm:gap-3">{action}</div>}
-      </div>
-      <div className="light-strip absolute inset-x-0 bottom-0 z-10" aria-hidden />
-    </section>
+    <PageHero
+      coverImage={image}
+      coverFocus={focal}
+      eyebrow={eyebrow}
+      title={title}
+      subtitle={subtitle}
+      search={search}
+      actions={action}
+      size="large"
+      align="center"
+    />
   )
 }

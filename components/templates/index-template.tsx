@@ -10,7 +10,10 @@
 //
 // Presentational + server-friendly (no hooks).
 
+import Link from 'next/link'
+import { ChevronLeft } from 'lucide-react'
 import { PageHeading } from './page-heading'
+import { PageHero } from './page-hero'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
 
@@ -79,44 +82,30 @@ export function IndexTemplate({
   // OVERLAY hero: one composed header band — image + bottom-heavy ink scrim + the page heading
   // grammar (eyebrow / h1 / description on-ink, the action bottom-right) anchored over it. The
   // standard PageHeading is suppressed (its h1 would double), but the admin-bar rule below stays.
-  if (heroImage && heroOverlay) {
-    // The size lever: 'standard' reproduces the uniform index hero exactly; 'large' is the
-    // deliberately taller band (Business Spaces stays the biggest header on the site).
-    const bandMinH = heroSize === 'large' ? 'min-h-[18rem] sm:min-h-[24rem]' : 'min-h-[14rem] sm:min-h-[18rem]'
-    const titleSize = heroSize === 'large' ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'
+  if (heroOverlay) {
+    // The overlaid index hero now renders the ONE canonical PageHero (the single-source header band),
+    // so this branch and every entity/commerce hero share one component + one edit point. A page may
+    // pass `heroOverlay` with no `heroImage` (or an explicit null) to get the band with the neutral
+    // gradient placeholder — so a manager surface with no cover still reads as a unified hero.
     return (
       <div>
         {trail && <Breadcrumbs trail={trail} />}
-        <div className={`relative mt-3 ${bandMinH} overflow-hidden rounded-2xl border border-border`}>
-          {/* Raw <img> (not next/image) so an arbitrary operator URL on a non-whitelisted host
-              still renders; fetchPriority high gives this above-the-fold hero an LCP hint. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={heroImage}
-            alt=""
-            fetchPriority="high"
-            style={heroFocus ? { objectPosition: heroFocus } : undefined}
-            className="absolute inset-0 h-full w-full object-cover"
+        {back && (
+          <Link href={back.href} className="mb-2 mt-3 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text">
+            <ChevronLeft className="h-4 w-4" /> {back.label}
+          </Link>
+        )}
+        <div className={back ? '' : 'mt-3'}>
+          <PageHero
+            coverImage={heroImage ?? null}
+            coverFocus={heroFocus}
+            eyebrow={eyebrow}
+            title={title}
+            subtitle={description}
+            actions={action}
+            size={heroSize}
+            rawImg={!!heroImage}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/35 to-transparent" aria-hidden />
-          <div className={`relative flex ${bandMinH} flex-col justify-end gap-4 p-6 sm:flex-row sm:items-end sm:justify-between sm:p-8`}>
-            <div className="min-w-0">
-              {eyebrow && (
-                <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-on-ink-muted">
-                  {eyebrow}
-                </p>
-              )}
-              <h1 className={`mb-1 text-balance ${titleSize} font-bold text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]`}>
-                {title}
-              </h1>
-              {description && (
-                <p className="max-w-2xl text-sm font-medium leading-relaxed text-on-ink [text-shadow:0_1px_2px_rgb(0_0_0/0.4)]">
-                  {description}
-                </p>
-              )}
-            </div>
-            {action && <div className="shrink-0">{action}</div>}
-          </div>
         </div>
         {/* Secondary page controls, directly under the overlaid hero band (same wrapping pill
             row as the standard-banner branch) — keeps the header-right `action` for the CTA. */}

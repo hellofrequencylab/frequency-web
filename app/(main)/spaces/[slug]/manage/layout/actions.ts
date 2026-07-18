@@ -482,6 +482,7 @@ export async function setSpaceHeroLook(
  */
 export async function setSpaceAccent(slug: string, token: string): Promise<ActionResult> {
   const trimmed = token.trim()
+  // token-ok: example hex shown in validation copy, not a style value
   if (trimmed && !isValidAccent(trimmed)) return fail('Pick a brand color, or enter a hex like #E2912F.')
 
   const auth = await authorizeEditor(slug)
