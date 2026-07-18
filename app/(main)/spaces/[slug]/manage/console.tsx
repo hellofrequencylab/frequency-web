@@ -241,7 +241,12 @@ function SectionRow({
         <span className={`flex shrink-0 items-center justify-center rounded-md bg-primary-bg text-primary-strong ${nested ? 'h-6 w-6' : 'h-7 w-7'}`}>
           <Icon className={nested ? 'h-3 w-3' : 'h-3.5 w-3.5'} aria-hidden />
         </span>
-        <span className={`min-w-0 flex-1 truncate font-medium text-text ${nested ? 'text-xs' : 'text-sm'}`}>{module.label}</span>
+        <span className="min-w-0 flex-1">
+          <span className={`block truncate font-medium text-text ${nested ? 'text-xs' : 'text-sm'}`}>{module.label}</span>
+          {!nested && module.freeNote && (
+            <span className="mt-0.5 block truncate text-2xs text-muted">{module.freeNote}</span>
+          )}
+        </span>
         {suggested && (
           <span
             className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong"
