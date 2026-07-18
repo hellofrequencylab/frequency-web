@@ -10,7 +10,7 @@ import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { resolveMode } from '@/lib/spaces/modes'
 import Link from 'next/link'
 import { SPACE_PLAN_LABEL, asSpacePlan } from '@/lib/pricing/plans'
-import { Compass, CreditCard, Users, SlidersHorizontal } from 'lucide-react'
+import { Compass, CreditCard, Users } from 'lucide-react'
 import { DashboardTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { PlacementApprovals } from '@/components/events/placement-approvals'
@@ -84,34 +84,26 @@ export default async function SpaceManagePage({
   // Stats sit TIGHT in the header (right of the identity), not as a big StatCard grid. The Mode chip links
   // to the Mode & focus page; a Profile & Settings button opens the header-level settings surface (identity,
   // team, reviews, plan, danger). The on-page "Settings" admin bar is off (the hub owns its own navigation).
+  // Tight stats in the header (right of the identity on sm+, a tidy left-aligned wrap on mobile). NO
+  // Profile & Settings button — that is a hub tab now, so Plan & Billing is one tap away in the nav. The
+  // Mode chip links to the Mode & focus page.
   const headerRight = (
-    // Mobile: a tidy left-aligned wrap under the title (never crammed right); sm+: aligns right in the
-    // header row. The stat chips sit on one flowing row; the Profile & Settings button is a full tap target.
-    <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-4">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-        <span className="inline-flex items-center gap-1.5 text-sm text-text">
-          <Users className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-          <b className="font-semibold tabular-nums">{activeMembers}</b>
-          <span className="text-muted">members</span>
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-sm text-text">
-          <CreditCard className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-          <b className="font-semibold">{planLabel}</b>
-        </span>
-        <Link
-          href={`/spaces/${space.slug}/manage/mode`}
-          className="inline-flex min-w-0 items-center gap-1.5 text-sm text-text transition-colors hover:text-primary-strong"
-        >
-          <Compass className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-          <span className="truncate">{modeLabel}</span>
-        </Link>
-      </div>
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 sm:justify-end">
+      <span className="inline-flex items-center gap-1.5 text-sm text-text">
+        <Users className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+        <b className="font-semibold tabular-nums">{activeMembers}</b>
+        <span className="text-muted">members</span>
+      </span>
+      <span className="inline-flex items-center gap-1.5 text-sm text-text">
+        <CreditCard className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+        <b className="font-semibold">{planLabel}</b>
+      </span>
       <Link
-        href={`/spaces/${space.slug}/manage/settings`}
-        className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-text shadow-sm transition-colors hover:border-border-strong hover:bg-surface-elevated"
+        href={`/spaces/${space.slug}/manage/mode`}
+        className="inline-flex min-w-0 items-center gap-1.5 text-sm text-text transition-colors hover:text-primary-strong"
       >
-        <SlidersHorizontal className="h-4 w-4" aria-hidden />
-        Profile &amp; Settings
+        <Compass className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+        <span className="truncate">{modeLabel}</span>
       </Link>
     </div>
   )
