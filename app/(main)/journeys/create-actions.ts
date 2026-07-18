@@ -83,6 +83,54 @@ export async function extractOverviewAction(formData: FormData): Promise<ActionR
   }
 }
 
+/** Multi-file version (ADR-302, streamlined creator): read a WHOLE stack of course documents at once
+ *  (the outline plus any supporting handouts) and hand Vera the combined text. Extracts each supported
+ *  file (PDF, Word, plain text / markdown), concatenates them with a filename header so Vera can tell
+ *  the pieces apart, and reports which files it could not read so the UI can say so honestly (a zip or
+ *  an image is accepted by the picker but not text-extractable here). Bounded on count + total size. */
+export async function extractOverviewFilesAction(
+  formData: FormData,
+): Promise<ActionResult<{ text: string; read: number; skipped: string[] }>> {
+  const caller = await getCallerProfile()
+  if (!caller) return fail('Sign in first.')
+  const files = formData.getAll('files').filter((f): f is File => f instanceof File)
+  if (!files.length) return fail('No files to read.')
+
+  const MAX_FILES = 12
+  const MAX_TOTAL = 20 * 1024 * 1024 // 20 MB across the whole batch
+  const parts: string[] = []
+  const skipped: string[] = []
+  let read = 0
+  let total = 0
+
+  for (const file of files.slice(0, MAX_FILES)) {
+    total += file.size
+    if (total > MAX_TOTAL) {
+      skipped.push(`${file.name} (batch over 20 MB)`)
+      continue
+    }
+    try {
+      const buf = Buffer.from(await file.arrayBuffer())
+      const text = await extractOverviewText(buf, file.type, file.name)
+      if (text) {
+        parts.push(`--- ${file.name} ---\n${text}`)
+        read++
+      } else {
+        skipped.push(file.name)
+      }
+    } catch {
+      skipped.push(file.name)
+    }
+  }
+  if (files.length > MAX_FILES) skipped.push(`and ${files.length - MAX_FILES} more (limit ${MAX_FILES} files)`)
+
+  const text = parts.join('\n\n').slice(0, 40000)
+  if (!text) {
+    return fail("Couldn't read any text from those files. Vera reads PDF, Word, and plain text.")
+  }
+  return ok({ text, read, skipped })
+}
+
 /** Create the Journey from the reviewed identity, seed N weekly Phases, AND pre-seed the opening
  *  week's four Pillar practices from the library off the interview answers (Vera interviews the host
  *  and pre-seeds the whole format for them to tweak — ADR-302). The deferred-creation rule holds:

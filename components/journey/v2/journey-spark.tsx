@@ -2,10 +2,11 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, ArrowLeft, Loader2, Upload, Video, MapPin, Users, Compass, LayoutTemplate } from 'lucide-react'
+import { Sparkles, ArrowLeft, Loader2, Upload, Video, MapPin, Users, Compass, LayoutTemplate, PenLine } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
+import { InfoTip } from '@/components/ui/info-tip'
 import { isError } from '@/lib/action-result'
-import { sparkJourneyAction, createJourneyFromSparkAction, extractOverviewAction, createMasterFrameworkAction, createJourneyFromTemplateAction } from '@/app/(main)/journeys/create-actions'
+import { sparkJourneyAction, createJourneyFromSparkAction, extractOverviewFilesAction, createMasterFrameworkAction, createJourneyFromTemplateAction } from '@/app/(main)/journeys/create-actions'
 import type { JourneyPace, ArcWeek, SparkSettings, SparkMeeting } from '@/lib/ai/journey-spark'
 import { JourneyBuilder } from './journey-builder'
 
@@ -58,6 +59,7 @@ export function JourneySpark({ templates = [] }: { templates?: JourneyTemplateMe
   const [pace, setPace] = useState<JourneyPace>('light')
   const [sourceText, setSourceText] = useState('') // the pasted / uploaded overview
   const [extracting, setExtracting] = useState(false)
+  const [skipped, setSkipped] = useState<string[]>([]) // files Vera could not read (surfaced honestly)
 
   // Vera's drafted identity (review step, editable).
   const [title, setTitle] = useState('')
@@ -130,15 +132,23 @@ export function JourneySpark({ templates = [] }: { templates?: JourneyTemplateMe
     start(() => createJourneyFromTemplateAction(id))
   }
 
-  const onFile = (file: File) => {
+  // Read a WHOLE stack of files at once (the outline plus any supporting docs). Vera extracts each
+  // supported file (PDF, Word, text) and concatenates them; any it cannot read is reported honestly.
+  const onFiles = (fileList: FileList | null) => {
+    const files = fileList ? Array.from(fileList) : []
+    if (!files.length) return
     setError(null)
+    setSkipped([])
     setExtracting(true)
     const fd = new FormData()
-    fd.append('file', file)
+    for (const f of files) fd.append('files', f)
     start(async () => {
-      const res = await extractOverviewAction(fd)
+      const res = await extractOverviewFilesAction(fd)
       if (isError(res)) setError(res.error)
-      else setSourceText((prev) => (prev.trim() ? `${prev}\n\n${res.data.text}` : res.data.text))
+      else {
+        setSourceText((prev) => (prev.trim() ? `${prev}\n\n${res.data.text}` : res.data.text))
+        setSkipped(res.data.skipped)
+      }
       setExtracting(false)
     })
   }
@@ -157,13 +167,13 @@ export function JourneySpark({ templates = [] }: { templates?: JourneyTemplateMe
       step === 4
 
   const heading = picking
-    ? { title: 'Start from a template', description: 'Pick a ready-made structure. We create it as a private draft and open the editor so you can make it yours.' }
+    ? { title: 'Start from a proven structure', description: 'Pick a shape. We create it as a private draft and open the editor so you can make it yours.' }
     : onReview
     ? { title: 'Here is your Journey', description: "Vera's draft. Edit anything, then create it." }
     : usingOverview
-      ? { title: 'Paste or upload your overview', description: 'Drop in your own write-up (PDF, Word, or text) and Vera rebuilds it as a balanced Journey.' }
+      ? { title: 'Upload your course', description: 'Drop in your outline and any supporting documents, all at once, and Vera builds the whole Journey from them. Or paste it below.' }
       : [
-          { title: 'Who is this Journey for?', description: 'Tell Vera who it is for in a sentence and she drafts the whole Journey. Or, you can upload your course outline below.' },
+          { title: 'Tell us about this journey', description: "Who's it for, and what do you want them to get out of it?" },
           { title: 'What is it about?', description: 'A topic, or just general wellbeing. Either works.' },
           { title: 'What should people walk away with?', description: 'The outcome, in plain words. Lead with the feeling.' },
           { title: 'How long, and how much a day?', description: 'One Phase per week. Keep the daily ask honest.' },
@@ -175,13 +185,40 @@ export function JourneySpark({ templates = [] }: { templates?: JourneyTemplateMe
 
       <div className="mt-7">
         <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-primary-strong">New Journey</p>
-        <h1 className="text-2xl font-bold text-text">{heading.title}</h1>
+        <h1 className="flex items-center gap-1.5 text-2xl font-bold text-text">
+          {heading.title}
+          {!picking && !onReview && !usingOverview && step === 1 && (
+            <InfoTip
+              side="bottom"
+              label="Describe the person and the change. For example: busy parents who want calmer mornings, and by the end they keep a ten minute routine that sticks. The more specific you are, the sharper Vera's draft."
+            />
+          )}
+        </h1>
         <p className="mt-1 text-sm leading-relaxed text-muted">{heading.description}</p>
 
         <div className="mt-5">
-          {/* TEMPLATE picker — instantiate a simple proven skeleton (ADR-252, J4). */}
+          {/* Combined structure picker (ADR-252, J4): the recommended framework, the ready-made
+              templates, and a section by section scratch build, in one place. */}
           {picking && (
             <div className="space-y-2.5">
+              {/* The recommended framework — the proven shape, no AI, filled as you go. */}
+              <button
+                type="button"
+                onClick={framework}
+                disabled={pending}
+                className="flex w-full items-start gap-3 rounded-xl border border-primary/40 bg-primary-bg/30 px-4 py-3 text-left transition-colors hover:bg-primary-bg/50 disabled:opacity-60"
+              >
+                {pending ? <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-primary-strong" /> : <Compass className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />}
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
+                    Recommended framework
+                    <span className="rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">Best start</span>
+                  </span>
+                  <span className="block text-xs leading-snug text-muted">The proven shape: a welcome, weekly practices across the Pillars, an Expression Challenge each week, and a capstone.</span>
+                </span>
+              </button>
+
+              {/* Ready-made template skeletons. */}
               {templates.map((t) => (
                 <button
                   key={t.id}
@@ -201,6 +238,20 @@ export function JourneySpark({ templates = [] }: { templates?: JourneyTemplateMe
                   {pending ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary-strong" /> : null}
                 </button>
               ))}
+
+              {/* Start from scratch — a blank draft with the three seeded phases, built section by section. */}
+              <button
+                type="button"
+                onClick={() => setMode('manual')}
+                disabled={pending}
+                className="flex w-full items-start gap-3 rounded-xl border border-dashed border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
+              >
+                <PenLine className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-text">Start from scratch</span>
+                  <span className="block text-xs leading-snug text-muted">A blank Journey. Add phases, modules, and lessons section by section, at your own pace.</span>
+                </span>
+              </button>
             </div>
           )}
 
@@ -222,17 +273,36 @@ export function JourneySpark({ templates = [] }: { templates?: JourneyTemplateMe
                   disabled={extracting || pending}
                   className={`${wizardSecondaryClass} !px-3 !py-2 text-sm`}
                 >
-                  {extracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Upload a file
+                  {extracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Upload files
                 </button>
-                <span className="text-xs text-subtle">PDF, Word, or plain text</span>
+                <span className="inline-flex items-center gap-1 text-xs text-subtle">
+                  Add them all at once
+                  <InfoTip
+                    side="top"
+                    label="Select your outline and every supporting document together. Vera reads PDF, Word, and plain text and weaves them into one Journey. A zip or an image is accepted but not read yet, so unzip first for now."
+                  />
+                </span>
                 <input
                   ref={fileRef}
                   type="file"
-                  accept=".txt,.md,.pdf,.docx,.doc,application/pdf,text/plain"
+                  multiple
+                  accept=".txt,.md,.pdf,.docx,.doc,.rtf,.pages,.zip,application/pdf,text/plain,application/zip"
                   className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = '' }}
+                  onChange={(e) => { onFiles(e.target.files); e.target.value = '' }}
                 />
               </div>
+
+              {/* Vera AI note — set the expectation that a model drafts from what they upload. */}
+              <p className="flex items-center gap-1 text-2xs text-subtle">
+                <Sparkles className="h-3 w-3 text-primary-strong" aria-hidden /> Vera reads your files and drafts the Journey. You review and edit everything before it is created.
+              </p>
+
+              {/* Honest report of anything Vera could not read from the batch. */}
+              {skipped.length > 0 && (
+                <p className="rounded-lg border border-border bg-canvas px-3 py-2 text-2xs text-muted">
+                  Could not read: {skipped.join(', ')}. Vera reads PDF, Word, and plain text.
+                </p>
+              )}
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Weeks</span>
                 {WEEK_CHOICES.map((w) => (
@@ -245,50 +315,43 @@ export function JourneySpark({ templates = [] }: { templates?: JourneyTemplateMe
             </div>
           )}
 
-          {/* QUESTIONS path */}
+          {/* QUESTIONS path — step 1 landing: the "about" box + the two other ways in. */}
           {!picking && !usingOverview && step === 1 && (
             <>
-              <textarea autoFocus value={who} onChange={(e) => setWho(e.target.value)} rows={3} className={FIELD} placeholder="e.g. People who feel wired and tired and want their evenings back." />
-              {/* Prominent second path: drop in a full outline and let Vera build the whole thing. */}
+              <textarea autoFocus value={who} onChange={(e) => setWho(e.target.value)} rows={4} className={FIELD} placeholder="e.g. Busy parents who feel wired and tired. By the end they keep a ten minute evening wind down and get their evenings back." />
+
+              <p className="mt-5 mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Or start another way</p>
+
+              {/* Second path: drop in a WHOLE stack of course docs at once and let Vera build it. */}
               <button
                 type="button"
                 onClick={() => { setUsingOverview(true); setStep(1) }}
-                className="mt-3 flex w-full items-center gap-3 rounded-xl border border-dashed border-primary/40 bg-primary-bg/20 px-4 py-3 text-left transition-colors hover:bg-primary-bg/40"
+                className="flex w-full items-center gap-3 rounded-xl border border-dashed border-primary/40 bg-primary-bg/20 px-4 py-3 text-left transition-colors hover:bg-primary-bg/40"
               >
                 <Upload className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-text">Already have your course written?</span>
-                  <span className="block text-xs leading-snug text-muted">Upload or paste your outline (PDF, Word, or text) and Vera builds the whole Journey, week by week, from it.</span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1 text-sm font-semibold text-text">
+                    Upload your course
+                    <span className="rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">Vera AI</span>
+                  </span>
+                  <span className="block text-xs leading-snug text-muted">Already have a course written? Upload your outline and any supporting documents, all at once, and let Vera sort it out.</span>
                 </span>
               </button>
-              {/* The recommended path: stamp the proven shape and start filling — no questions, no AI. */}
+
+              {/* Combined "proven structure": the recommended framework, the templates, and a section by
+                  section scratch build, all in one picker. */}
               <button
                 type="button"
-                onClick={framework}
+                onClick={() => setPicking(true)}
                 disabled={pending}
-                className="mt-3 flex w-full items-center gap-3 rounded-xl border border-primary/40 bg-primary-bg/30 px-4 py-3 text-left transition-colors hover:bg-primary-bg/50 disabled:opacity-60"
+                className="mt-3 flex w-full items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
               >
-                {pending ? <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary-strong" /> : <Compass className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />}
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-text">Start from the recommended framework</span>
-                  <span className="block text-xs leading-snug text-muted">Stamp the proven shape: a welcome, weekly practices across the Pillars, an Expression Challenge each week, and a capstone. Fill it in as you go.</span>
+                <LayoutTemplate className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-text">Start from a proven structure</span>
+                  <span className="block text-xs leading-snug text-muted">The recommended framework, a ready-made template, or a blank build you shape section by section.</span>
                 </span>
               </button>
-              {/* Simpler skeletons: a reset, a coaching arc, an onboarding program. */}
-              {templates.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setPicking(true)}
-                  disabled={pending}
-                  className="mt-3 flex w-full items-center gap-3 rounded-xl border border-dashed border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
-                >
-                  <LayoutTemplate className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold text-text">Start from a template</span>
-                    <span className="block text-xs leading-snug text-muted">Pick a ready-made structure (a reset, a coaching arc, an onboarding program) and fill in the lessons.</span>
-                  </span>
-                </button>
-              )}
             </>
           )}
           {!usingOverview && step === 2 && (

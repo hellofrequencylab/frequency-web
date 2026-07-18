@@ -77,6 +77,29 @@ export const JOURNEY_TEMPLATES: JourneyTemplate[] = [
       phase('First win', [L('video', 'Do the first thing'), L('practice', 'Your first action'), L('reflection', 'How did it go?')]),
     ],
   },
+  {
+    id: 'thirty-day-challenge',
+    name: '30-Day Challenge',
+    description: 'A high-energy month: one daily practice, weekly check-ins, and a finish-line reflection.',
+    emoji: '🔥',
+    phases: [
+      phase('Week 1 · Show up', [L('video', 'The challenge, and the one daily practice'), L('practice', 'Day 1 to 7'), L('check', 'End of week one')]),
+      phase('Week 2 · Build momentum', [L('practice', 'Day 8 to 14'), L('reflection', 'What is getting easier?')]),
+      phase('Week 3 · Push through', [L('practice', 'Day 15 to 21'), L('reading', 'Getting past the dip'), L('check', 'End of week three')]),
+      phase('Week 4 · Finish strong', [L('practice', 'Day 22 to 30'), L('reflection', 'What you built'), L('exercise', 'Keep one habit')]),
+    ],
+  },
+  {
+    id: 'weekend-intensive',
+    name: 'Weekend Intensive',
+    description: 'A two-day deep dive: teach it Saturday, apply it Sunday, and leave with a plan.',
+    emoji: '⚡',
+    phases: [
+      phase('Before you start', [L('video', 'Welcome + what to bring'), L('reading', 'Read this first')]),
+      phase('Day 1 · Learn it', [L('video', 'The core teaching'), L('exercise', 'Work it through'), L('reflection', 'What landed?')]),
+      phase('Day 2 · Live it', [L('practice', 'Put it into practice'), L('exercise', 'Your real-world plan'), L('reflection', 'Your next step')]),
+    ],
+  },
 ]
 
 export function getTemplate(id: string): JourneyTemplate | undefined {
