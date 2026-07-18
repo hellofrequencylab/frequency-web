@@ -4,9 +4,10 @@ import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/ent
 import { usableSpaceFunctions } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { resolveMode, readModePreferences, effectiveNavEmphasis } from '@/lib/spaces/modes'
-import { isStaff } from '@/lib/core/roles'
 import { resolveSpaceMenu } from '@/lib/admin/modules/space-menu'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
+import { asHubSection, type SpaceHubSection } from '@/lib/admin/modules/space-hub'
+import { CrmBody } from '../crm/crm-body'
 import { SpaceManageConsole } from './console'
 
 // The Space owner console BOARD (ADR-441 EM1-3): the reusable render boundary that resolves the Space,
@@ -19,7 +20,8 @@ import { SpaceManageConsole } from './console'
 // resolveSpaceManageAccess (canManage owner/admin/editor || staffViewing janitor preview), and renders
 // nothing for everyone else. Every surface's mutation re-checks its OWN gate in its settings sub-page,
 // so this console gate is UX and the sub-pages stay the authority.
-export async function SpaceManageBoard({ slug }: { slug: string }) {
+export async function SpaceManageBoard({ slug, section: rawSection }: { slug: string; section?: string }) {
+  const section = asHubSection(rawSection)
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
 
@@ -69,17 +71,21 @@ export async function SpaceManageBoard({ slug }: { slug: string }) {
   const prefs = readModePreferences(space.preferences)
   const emphasis = effectiveNavEmphasis(mode, prefs)
 
-  // Deleting a Space is OWNER-grade (or platform staff). The Danger section's control only renders
-  // when this is true; otherwise the section shows header-only (mirrors circle's Danger).
-  const canDelete = caps.isOwner || isStaff(caller?.webRole)
+  // Resonance is the RELATIONSHIP hub: it opens on the space's own CRM (the cockpit view — health verdict,
+  // worklist, and the reciprocal-match connections), so an operator lands on live work, not a config grid.
+  // The board is embedded chrome-free + self-gating (renders a locked notice / nothing on its own).
+  const crmEmbed = section === 'resonance' ? <CrmBody slug={space.slug} activeView="cockpit" /> : undefined
 
   return (
     <SpaceManageConsole
       slug={space.slug}
       modules={modules}
       emphasis={emphasis}
-      canDelete={canDelete}
-      spaceId={space.id}
+      section={section}
+      crmEmbed={crmEmbed}
     />
   )
 }
+
+/** The section type re-exported for the page shell (which reads `?section=` and hands it here). */
+export type { SpaceHubSection }
