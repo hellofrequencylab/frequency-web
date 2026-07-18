@@ -14098,3 +14098,16 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 **Alternatives.** Add an `'inbox'` CRM view tab (rejected — it churns the `CrmView` union + the board's `?view=` validation; a sibling `/crm/inbox` route + a Resonance module is cleaner and reuses the admin workspace). Fork `InboxWorkspace` for the space (rejected — one injected `sendReply` prop serves both). Ladder tips (rejected — no space seller; flat is correct).
 
 **Consequences.** No migration. Resonance is complete (CRM + inbox); a free space now pays the correct 5% on space-hosted tickets (was 3%, under-charging free / removing the upgrade incentive) — latent while billing is off. Full suite green (5678 tests), tsc + eslint + `check:menu`/`check:tokens`/`check:headers` clean.
+
+## ADR-787: The Space Resonance tab shows the real Resonance CRM roster (not the CRM cockpit)
+
+**Status:** Accepted (2026-07-18) · Corrects ADR-785 · NO migration. Adds `components/spaces/crm/space-member-viewer.tsx` + `loadSpaceMemberDetail`; scopes `loadMemberSummaries` with a `spaceId`.
+
+**Context.** ADR-785 made Resonance the hub's landing but embedded the space CRM **cockpit** (`CrmBody activeView="cockpit"` — the health/worklist board). The owner's actual spec (from the original request) was the **admin Resonance CRM** view — the master-detail `MemberViewer` roster ("pick a member, see everything about them inline"), scoped to the space. The cockpit was the wrong component.
+
+**Decision.** Render the SAME `MemberViewer` the admin Resonance CRM uses, scoped to the space:
+1. `loadMemberSummaries(filter, { spaceId })` passes the space scope through to `listMembersByFilter` (which already supports it), so the roster reads this space's reachable scored members.
+2. `loadSpaceMemberDetail(slug, profileId)` is the space-manager path to the rich inline detail — gated on **space-manage** AND a **TENANCY check** (the member must be in this space's roster, so a manager can never open an arbitrary platform member by id). It reuses the SAME `buildMemberDetail` builder the admin `loadMemberDetail` uses (extracted as a private helper; the admin loader is unchanged externally).
+3. `SpaceMemberViewer` mounts `MemberViewer` with the space roster + the slug-bound detail loader; `manage-board` embeds it on the Resonance section instead of `CrmBody`.
+
+**Consequences.** No migration. The space Resonance tab now reads identically to the admin Resonance CRM, scoped + gated to the space. The CRM board (`/crm`, People/Pipeline/Cockpit/Import) is unchanged and still linked. Security: the inline detail is tenancy-checked, so a space owner sees only their own space's members. Full suite green (5678), tsc + eslint + guards clean. (Mobile responsiveness across the hub + site is a separate follow-up sweep.)

@@ -7,7 +7,7 @@ import { resolveMode, readModePreferences, effectiveNavEmphasis } from '@/lib/sp
 import { resolveSpaceMenu } from '@/lib/admin/modules/space-menu'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { asHubSection, type SpaceHubSection } from '@/lib/admin/modules/space-hub'
-import { CrmBody } from '../crm/crm-body'
+import { SpaceMemberViewer } from '@/components/spaces/crm/space-member-viewer'
 import { SpaceManageConsole } from './console'
 
 // The Space owner console BOARD (ADR-441 EM1-3): the reusable render boundary that resolves the Space,
@@ -71,10 +71,10 @@ export async function SpaceManageBoard({ slug, section: rawSection }: { slug: st
   const prefs = readModePreferences(space.preferences)
   const emphasis = effectiveNavEmphasis(mode, prefs)
 
-  // Resonance is the RELATIONSHIP hub: it opens on the space's own CRM (the cockpit view — health verdict,
-  // worklist, and the reciprocal-match connections), so an operator lands on live work, not a config grid.
-  // The board is embedded chrome-free + self-gating (renders a locked notice / nothing on its own).
-  const crmEmbed = section === 'resonance' ? <CrmBody slug={space.slug} activeView="cockpit" /> : undefined
+  // Resonance is the RELATIONSHIP hub: it opens on the space's own Resonance CRM roster — the SAME
+  // master-detail member viewer the admin Resonance CRM uses (pick a member, see everything inline), scoped
+  // to this space's reachable members. Self-gating: the detail loader re-checks space-manage + tenancy.
+  const crmEmbed = section === 'resonance' ? <SpaceMemberViewer spaceId={space.id} slug={space.slug} /> : undefined
 
   return (
     <SpaceManageConsole

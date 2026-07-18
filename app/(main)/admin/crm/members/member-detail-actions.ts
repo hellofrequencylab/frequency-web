@@ -2,8 +2,11 @@
 
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getCallerProfile } from '@/lib/auth'
+import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { getProfileSummaries } from '@/lib/connections/matching'
-import { getMemberScores } from '@/lib/dashboard/scores'
+import { getMemberScores, listMembersByFilter } from '@/lib/dashboard/scores'
 import { listInteractionsForPerson } from '@/lib/crm/interactions'
 import { buildTimeline, relativeTime, interactionTitle } from '@/lib/crm/timeline'
 import { getContactEngagementStats } from '@/lib/crm/engagement-stats'
@@ -248,7 +251,31 @@ function milestonesFromPerson(person: Person | null): Milestone[] {
  */
 export async function loadMemberDetail(profileId: string): Promise<CrmMemberDetail> {
   await requireAdmin('janitor')
+  return buildMemberDetail(profileId)
+}
 
+/**
+ * Space-manager path (ADR-787): a space owner / admin (or a staff previewer) loads a member's rich detail
+ * INLINE in the space Resonance roster, gated on space-manage AND a TENANCY check — the member must be in
+ * THIS space's reachable roster, so a manager can never read an arbitrary platform member by guessing an id.
+ * Reuses the SAME builder as the admin loader, so the space + admin Resonance CRM read identically. `slug`
+ * is bound server-side by the roster, so the client only passes the profile id.
+ */
+export async function loadSpaceMemberDetail(slug: string, profileId: string): Promise<CrmMemberDetail> {
+  const caller = await getCallerProfile()
+  const viewerProfileId = caller?.id ?? null
+  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
+  if (!space) throw new Error('Space not found')
+  const { canManage, staffViewing } = await resolveSpaceManageAccess(space, viewerProfileId, caller?.webRole)
+  if (!canManage && !staffViewing) throw new Error('Not authorized')
+  // TENANCY: only a member in this space's own scored roster may be opened here.
+  const roster = await listMembersByFilter({ kind: 'all' }, { spaceId: space.id })
+  if (!roster.some((r) => r.profileId === profileId)) throw new Error('Not in this space')
+  return buildMemberDetail(profileId)
+}
+
+/** Build the rich CRM member detail for a profile. NO gate — every caller gates + tenancy-checks first. */
+async function buildMemberDetail(profileId: string): Promise<CrmMemberDetail> {
   // Identity is the floor — resolve it first so we can always return something.
   const summaries = await getProfileSummaries([profileId])
   const summary = summaries.get(profileId)
