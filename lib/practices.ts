@@ -1230,8 +1230,10 @@ export async function createPractice(input: {
    *  column default ('approved') stand — host+ authored content is live at birth; a
    *  Crew proposal passes 'pending' so it stays out of the public pool until a Host+
    *  approves it. The column predates this code (migration 20260605120000), but the
-   *  write is guarded so a stale schema (no `status` column) never blocks creation. */
-  status?: 'pending' | 'approved'
+   *  write is guarded so a stale schema (no `status` column) never blocks creation.
+   *  'draft' is the Space-authored state: usable by the Space's members (the space read
+   *  ignores status), not library-approved, until the paid-Crew + review publish path. */
+  status?: 'draft' | 'pending' | 'approved'
 }): Promise<Practice | null> {
   const isPublic = input.isPublic ?? true
   const insert: Record<string, unknown> = {
@@ -1247,10 +1249,10 @@ export async function createPractice(input: {
   // when the root row is missing (the backfill sweeps the NULL to root).
   const spaceId = input.spaceId ?? (await loadRootSpaceId())
   if (spaceId) insert.space_id = spaceId
-  // Only set status when the caller asks for a non-default ('pending'): a defensive
-  // insert that tolerates a not-yet-applied column would otherwise be harder to reason
-  // about. 'approved' is the column default, so omitting it is equivalent + safe.
-  if (input.status === 'pending') insert.status = 'pending'
+  // Set status only when the caller asks for a NON-default one ('draft' or 'pending'):
+  // 'approved' is the column default, so omitting it is equivalent + safe, and the defensive
+  // fallback below can still strip it if the column isn't applied yet.
+  if (input.status && input.status !== 'approved') insert.status = input.status
   let { data } = await db().from('practices').insert(insert).select(PRACTICE_COLS).maybeSingle()
   // Defensive fallback: if the `status` column isn't applied yet, the insert above
   // errors and returns no row. Retry once without it so creation never hard-depends on
@@ -1293,29 +1295,40 @@ export async function createPractice(input: {
  * by-space read the Phase 1 profile's `entity-practices` module uses. FAIL-SAFE: [] on any
  * error / missing tenant. space_id is reached with an untyped handle (ADR-246).
  */
-export async function listPracticesForSpace(spaceId?: string | null, limit = 50): Promise<Practice[]> {
+export async function listPracticesForSpace(
+  spaceId?: string | null,
+  limit = 50,
+  opts?: { publishedOnly?: boolean },
+): Promise<Practice[]> {
   const sid = spaceId ?? (await loadRootSpaceId())
   if (!sid) return []
   try {
-    const q = db().from('practices') as unknown as {
-      select: (cols: string) => {
-        eq: (col: string, val: string) => {
-          order: (col: string, opts: { ascending: boolean }) => {
-            limit: (n: number) => Promise<{ data: unknown; error: unknown }>
-          }
-        }
-      }
+    // Untyped chain (space_id isn't in the generated types, ADR-246); loose so we can add a
+    // conditional status filter without re-typing every rung.
+    type Chain = {
+      select: (cols: string) => Chain
+      eq: (col: string, val: string) => Chain
+      order: (col: string, o: { ascending: boolean }) => Chain
+      limit: (n: number) => Promise<{ data: unknown; error: unknown }>
     }
-    const { data, error } = await q
-      .select(PRACTICE_COLS)
-      .eq('space_id', sid)
-      .order('created_at', { ascending: false })
-      .limit(limit)
+    let q = (db().from('practices') as unknown as Chain).select(PRACTICE_COLS).eq('space_id', sid)
+    // The PUBLIC profile block passes publishedOnly so drafts (status='draft') stay in the owner's
+    // manager only. 'approved' = live to the Space (and any is_public library practice is approved too).
+    if (opts?.publishedOnly) q = q.eq('status', 'approved')
+    const { data, error } = await q.order('created_at', { ascending: false }).limit(limit)
     if (error) return []
     return (data as Practice[] | null) ?? []
   } catch {
     return []
   }
+}
+
+/** Set a practice's library review status (draft/pending/approved/rejected/archived). Caller enforces
+ *  authz. For a Space practice, moving to 'approved' is the "make it live to my space" step (no staff
+ *  needed for own-space content); reaching the PUBLIC library still flips is_public through the
+ *  paid-Crew + review flow. Reached with the untyped admin handle (ADR-246). */
+export async function setPracticeStatus(practiceId: string, status: string): Promise<void> {
+  await db().from('practices').update({ status }).eq('id', practiceId)
 }
 
 /**

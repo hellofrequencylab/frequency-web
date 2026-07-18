@@ -12,6 +12,7 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { createPlan } from '@/lib/journey-plans'
+import { crewCreateUpsell } from '@/lib/core/beta-notices'
 import { getTemplate, templateToBlocks, MASTER_FRAMEWORK, masterFrameworkToBlocks } from '@/lib/journeys/templates'
 import { pillarIdsBySlug } from '@/lib/journeys/compose'
 import { draftJourneySpark, type SparkAnswers, type JourneySpark, type ArcWeek, type SparkSettings, type SparkMeeting } from '@/lib/ai/journey-spark'
@@ -255,7 +256,7 @@ export async function createMasterFrameworkAction(input: {
   const caller = await getCallerProfile()
   if (!caller) return fail('Sign in to build a Journey.')
   if (!(await canCreate('journey.create')))
-    return fail('Upgrade to Crew to build a Journey. Crew is free during the beta, one tap, no card.')
+    return fail(crewCreateUpsell('a Journey'))
 
   const title = input.title?.trim().slice(0, 120) || MASTER_FRAMEWORK.name
   const plan = await createPlan({ authorId: caller.id, title, emoji: MASTER_FRAMEWORK.emoji })

@@ -23,6 +23,7 @@ export async function EntitySectionEmpty({
   description,
   ownerTitle,
   ownerActionLabel,
+  ownerActionHref,
 }: {
   icon: LucideIcon
   /** The member-facing copy: names the situation + the next step, quiet voice. */
@@ -32,6 +33,9 @@ export async function EntitySectionEmpty({
   ownerTitle?: string
   /** The owner CTA label, e.g. "Add your first session". When omitted no action shows. */
   ownerActionLabel?: string
+  /** Override the owner CTA destination (defaults to the Space management hub). Lets a section point
+   *  the owner straight at its own manager, e.g. the Practices or Journeys builder. */
+  ownerActionHref?: string
 }) {
   const space = getActiveSpace()
   if (!space) return null
@@ -42,7 +46,7 @@ export async function EntitySectionEmpty({
   const canEdit = await viewerCanEditActiveSpace()
   // The management entry (ADR-441 EM1-3): the unified /manage console for the console types, the
   // legacy /settings hub otherwise. One rule, one helper.
-  const settingsHref = spaceManageHref(space.type, space.slug)
+  const settingsHref = ownerActionHref ?? spaceManageHref(space.type, space.slug)
 
   if (canEdit && ownerActionLabel) {
     return (

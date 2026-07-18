@@ -57,6 +57,8 @@ export type SpaceFunctionKey =
   | 'profile'
   | 'reviews'
   | 'airwaves'
+  | 'practices'
+  | 'journeys'
 
 /** A Space type, or the wildcard '*' meaning "every type offers this function". */
 type FunctionTypeScope = SpaceType | '*'
@@ -203,6 +205,22 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     key: 'airwaves',
     label: 'Airwaves',
     description: 'Host audio and video recordings, then attach them anywhere in your space.',
+    entitlement: null,
+    defaultMinRole: 'editor',
+    types: ['*'],
+  },
+  {
+    key: 'practices',
+    label: 'Practices',
+    description: 'Build the practices members do, each with its own timer, and share them in your space.',
+    entitlement: null,
+    defaultMinRole: 'editor',
+    types: ['*'],
+  },
+  {
+    key: 'journeys',
+    label: 'Journeys',
+    description: 'Build multi week programs from your practices. Free spaces publish one.',
     entitlement: null,
     defaultMinRole: 'editor',
     types: ['*'],

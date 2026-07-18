@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { getCircleCapabilities, canCreate } from '@/lib/core/load-capabilities'
+import { crewCreateUpsell } from '@/lib/core/beta-notices'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { redirect } from 'next/navigation'
 import {
@@ -151,7 +152,7 @@ async function authorizeCreatePractice(): Promise<
   // member is sold the one-tap free-beta upgrade rather than silently allowed. Nothing
   // unvetted goes public regardless: a non-host author still creates PENDING (below).
   if (!(await canCreate('practice.create'))) {
-    return { error: 'Upgrade to Crew to create a practice. Crew is free during the beta, one tap, no card.' }
+    return { error: crewCreateUpsell('a practice') }
   }
   // Host+ (or platform staff, who curate the library) author live; everyone else pending review.
   const autoApprove = atLeastRole(caller.community_role, 'host') || caller.webRole !== 'none'

@@ -26,6 +26,7 @@ import {
   type JourneyMeeting,
 } from '@/lib/journey-plans'
 import { getSeasonalQuests } from '@/lib/quests'
+import { checkJourneyPublish } from '@/lib/journeys/publish-gate'
 import { reviewJourneyForLibrary } from '@/lib/ai/journey-review'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -248,6 +249,13 @@ export async function setJourneyVisibility(
   // grants, so an operator who opens a member's Journey in the editor can publish/unpublish it.
   const isOwnerOrAdmin = author === caller.id || (await getGlobalCapabilities()).has('admin.access')
   if (!isOwnerOrAdmin) return fail('Not allowed.')
+
+  // Free-vs-paid publish lever (the Journey upsell): a free owner publishes one Journey, and the
+  // public library is paid-only. Space-owned Journeys read the Space plan; personal ones read the
+  // author's tier. Going back to a private draft is always allowed. (checkJourneyPublish fail-opens
+  // on an unresolved row, so this never blocks an operator's legitimate edit by accident.)
+  const gate = await checkJourneyPublish(planId, visibility)
+  if (!gate.ok) return fail(gate.message ?? 'That is a paid feature.')
 
   if (visibility === 'public') {
     await publishPlan(planId)

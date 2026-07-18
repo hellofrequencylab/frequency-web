@@ -2,14 +2,16 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Map, FileText, Globe, Users, ArrowLeft } from 'lucide-react'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { canCreate } from '@/lib/core/load-capabilities'
+import { isPaid } from '@/lib/core/access-matrix'
 import { getMyPlanSummaries, type MyPlanSummary } from '@/lib/journey-plans'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { NewJourneyButton } from '@/components/studio/journey/new-journey-button'
 import { JourneyManageCard, type ManagePlan } from '@/components/journeys/journey-manage-card'
+import { AuthoringAccessNote } from '@/components/pricing/authoring-access-note'
 
 export const metadata: Metadata = { title: 'Your Journeys' }
 export const dynamic = 'force-dynamic'
@@ -60,6 +62,10 @@ export default async function MyJourneysPage({ searchParams }: { searchParams: P
   const countFor = (k: FilterKey) => (k === 'live' ? published.length : k === 'draft' ? drafts.length : all.length)
   // Real Crew (or steward/staff) may build a journey; others get the free-beta popup.
   const canBuildJourney = await canCreate('journey.create')
+  // The permission note reads the REAL (post-beta) tier so it states what changes at launch, not the
+  // beta-granted tier. Personal journeys are owned by the member, so paid = the member's real tier.
+  const caller = await getCallerProfile()
+  const paidOwner = isPaid(caller?.realMembershipTier)
 
   return (
     <IndexTemplate
@@ -71,6 +77,8 @@ export default async function MyJourneysPage({ searchParams }: { searchParams: P
         <Link href="/journeys" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-text">
           <ArrowLeft className="h-4 w-4" /> Back to the library
         </Link>
+
+        <AuthoringAccessNote kind="journey" paidOwner={paidOwner} />
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard bordered size="sm" icon={Map} label="Journeys" value={all.length} />

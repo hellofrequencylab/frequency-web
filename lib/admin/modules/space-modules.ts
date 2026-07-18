@@ -26,6 +26,8 @@ import {
   BarChart3,
   CreditCard,
   Trash2,
+  Sparkles,
+  Route,
 } from 'lucide-react'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import type { AdminSlot } from './registry'
@@ -135,6 +137,11 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   { id: 'space.memberships', label: 'Memberships', desc: 'The tiers members can join, and who has joined.', Icon: BadgeCheck, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'memberships' }, featureKey: 'memberships', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#memberships`, order: 45, tier: 'primary', priority: 31 },
   { id: 'space.donations', label: 'Donations', desc: 'The fund, a short description, and the amounts members can pick.', Icon: HeartHandshake, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'donations' }, featureKey: 'donations', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#donations`, order: 50, tier: 'primary', priority: 32 },
   { id: 'space.enroll', label: 'Enrollment', desc: 'The program details, and who has enrolled.', Icon: GraduationCap, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'enroll' }, featureKey: 'enroll', render: 'panel', deepLink: (s) => `${base(s)}/settings/enroll`, order: 55, tier: 'primary', priority: 33 },
+  // Practices + Journeys (the practitioner's content). Practices are the daily-log atom (each with its
+  // own timer); Journeys compose them into multi week programs (the e-learning upsell: free spaces publish
+  // one). Both are `link` rows out to their own space-scoped manager (data-heavy authoring, like Airwaves).
+  { id: 'space.practices', label: 'Practices', desc: 'Build the practices members do, each with its own timer.', Icon: Sparkles, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'practices' }, featureKey: 'practices', render: 'link', deepLink: (s) => `${base(s)}/practices`, order: 56, tier: 'primary', priority: 33.5 },
+  { id: 'space.journeys', label: 'Journeys', desc: 'Build multi week programs from your practices.', Icon: Route, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'journeys' }, featureKey: 'journeys', render: 'link', deepLink: (s) => `${base(s)}/journeys`, order: 57, tier: 'primary', priority: 33.6 },
   { id: 'space.tickets', label: 'Tickets', desc: 'Free or RSVP ticket tiers, and who has reserved a spot.', Icon: Ticket, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'tickets' }, featureKey: 'tickets', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#tickets`, order: 60, tier: 'primary', priority: 34 },
   { id: 'space.checkin', label: 'Check in', desc: 'Show the door code, and see who checked in.', Icon: DoorOpen, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'checkin' }, featureKey: 'checkin', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#checkin`, order: 65, tier: 'primary', priority: 35 },
   // Shop is now a first-class GATEABLE feature keyed on the `shop` function (SpaceFunctionKey), so it can

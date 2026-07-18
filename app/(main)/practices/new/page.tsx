@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { canCreate } from '@/lib/core/load-capabilities'
 import { PracticeSpark } from '@/components/studio/practice/practice-spark'
+import { AuthoringAccessNote } from '@/components/pricing/authoring-access-note'
 
 // Create a Practice (ADR-358), the atom-level twin of /journeys/new. New Practices open in the
 // guided builder: Vera's short Spark wizard (who · the act · outcome · cadence · time) drafts the
@@ -23,5 +24,12 @@ export default async function NewPracticePage() {
   // library, where "Create a practice" shows the free-beta upgrade popup (ADR-414).
   if (!(await canCreate('practice.create'))) redirect('/practices')
 
-  return <PracticeSpark />
+  return (
+    <>
+      <div className="mx-auto w-full max-w-lg px-4 pt-6">
+        <AuthoringAccessNote kind="practice" />
+      </div>
+      <PracticeSpark />
+    </>
+  )
 }
