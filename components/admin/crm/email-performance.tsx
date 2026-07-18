@@ -30,8 +30,10 @@ export function EmailPerformance({ overview }: { overview: MarketingEmailOvervie
     )
   }
 
+  // Dynamic full-width row: the six stats stretch to fill the width (two-up on phones, three-up on small,
+  // all six across on large), so the strip never leaves dead space on the right.
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
       <PerfStat value={overview.delivered.toLocaleString()} label="Delivered" hint={`${pct(overview.deliveryRate)} of ${overview.sent.toLocaleString()} sent`} />
       <PerfStat value={pct(overview.openRate)} label="Open rate" hint={`${overview.opened.toLocaleString()} opens`} />
       <PerfStat value={pct(overview.clickRate)} label="Click rate" hint={`${overview.clicked.toLocaleString()} clicks`} />
