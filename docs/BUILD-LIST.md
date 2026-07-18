@@ -7,6 +7,29 @@
 > Legend: ✅ done · ⏳ partial / in flight · 📋 specced, not built · 🔴 blocked / gated.
 > Spec detail still lives in the per-topic docs; this is the **order of operations**.
 
+## 🎨 Site re-theme — every surface unified, one parent to change — 2026-07-18 ([ADR-781](DECISIONS.md), full plan [RETHEME-PLAN.md](RETHEME-PLAN.md), protocol [THEME-PROTOCOL.md](THEME-PROTOCOL.md))
+
+Finish the parent/child theme so any look change (color · radius · font · header · card · copy) is a
+**single parent edit that reaches every surface, with no drift**. Color + headers + layout + menu are
+already single-source; the gaps are radius (**4,722** literal `rounded-*`, 0 token usage), type/weight
+(raw values in base CSS), control/card consolidation (~18 raw buttons), hero coverage (24 of 31 browse
+pages still plain), the copy cascade (`page_content` is header-only), and per-Space theming depth.
+Enforced by CI gates so new drift fails a PR. **Sequence: tokens (P1–P3) → headers (P4–P5) → copy (P6)
+→ operator theming + safety net (P7–P8).** Lift: S ≈ 1 day · M ≈ 2–4 days · L ≈ 1–2 weeks.
+
+| # | Scope | Lift | Status |
+|---|---|---|---|
+| P0 | **Headers + enforcement.** One `PageHero` for browse/commerce; `check:tokens` + `check:headers` hard gates; the protocol doc. | — | ✅ ADR-781 (PR #1805) |
+| P1 | **Radius tokens.** Codemod 4,722 `rounded-2xl/xl/lg` + 1,000 `rounded-full` → `rounded-card/control/pill` by role; extend `check:tokens` to flag literal `rounded-*`. The single biggest unifier. | L | 📋 |
+| P2 | **Type + weight contract.** Tokenize the raw heading weight/line-height/letter-spacing; lock the named type scale as the contract. | M | 📋 |
+| P3 | **Control + card consolidation.** ~18 raw `<button bg-primary>` → `Button`; hand-rolled cards → `EntityCard`/`ModuleCard`; unify badges/empties; lint flags raw styled buttons/cards. | M | 📋 |
+| P4 | **Universal browse hero.** The 24 plain `IndexTemplate` pages adopt `heroOverlay` (section-default covers) so the hero is everywhere. | M | 📋 |
+| P5 | **Entity headers → `PageHero`.** Fold the 43 `DetailTemplate` band pages onto the one `PageHero` grammar (entity + index = one component). | M–L | 📋 |
+| P6 | **Copy cascade.** Generalize `page_content` into `site → section → page` inherit-cascade; widen editable fields to body copy + images; extend `check:canon` to `.tsx`. | L | 📋 |
+| P7 | **Per-Space / white-label depth.** Widen the child-theme override surface (surfaces + type), operator theme controls, a theme-contract compile check. | L | 📋 |
+| P8 | **Dark-mode + a11y + visual regression.** Contrast/dark audit; visual-regression snapshots so a parent edit can't silently break a surface. | M–L | 📋 |
+| P9 | **Marketing ↔ in-app reconciliation** (optional). Align the marketing brand system with the app tokens where they diverge. | M | 📋 |
+
 ## 🧭 Practice library at scale — 2026-06-28 ([ADR-438](DECISIONS.md), full spec [PRACTICE-LIBRARY.md](PRACTICE-LIBRARY.md), economy detail [REWARDS-ECONOMY §3a](REWARDS-ECONOMY.md))
 
 Re-architect the practice library from a ~200-item staff set into an **endlessly growing,
