@@ -25,7 +25,7 @@ export function UnderlineTabs({
 }) {
   const pathname = usePathname()
   return (
-    <nav className="-mb-px flex gap-1 overflow-x-auto border-b border-border" aria-label="Tabs">
+    <nav className="admin-subnav-scroll -mb-px flex gap-1 overflow-x-auto border-b border-border" aria-label="Tabs">
       {tabs.map((t) => {
         const active = activeHref !== undefined ? activeHref === t.href : pathname === t.href
         return (
