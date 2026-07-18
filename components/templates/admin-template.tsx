@@ -37,6 +37,7 @@ export function AdminTemplate({
   hideBackLink = false,
   adminBar = true,
   width = 'default',
+  contentSpacing = 'default',
   children,
 }: {
   title: string
@@ -59,6 +60,9 @@ export function AdminTemplate({
    *  (default on). Set false for a page that owns its header chrome and wants a plain divider. */
   adminBar?: boolean
   width?: keyof typeof WIDTHS
+  /** Vertical rhythm between body <AdminSection> blocks. 'default' is the roomy admin cadence;
+   *  'tight' pulls the sections closer for a denser workspace. */
+  contentSpacing?: 'default' | 'tight'
   children: React.ReactNode
 }) {
   return (
@@ -81,7 +85,9 @@ export function AdminTemplate({
         actionsAlign={actionsAlign}
         adminBar={adminBar}
       />
-      <div className="space-y-8 lg:space-y-10">{children}</div>
+      <div className={contentSpacing === 'tight' ? 'space-y-5 lg:space-y-6' : 'space-y-8 lg:space-y-10'}>
+        {children}
+      </div>
     </div>
   )
 }
