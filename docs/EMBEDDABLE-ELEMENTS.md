@@ -107,6 +107,13 @@ role-gating but is deliberately absent from the component map — templates impo
 directly, which is still the one mount. The drift guard permits this (a registered `ElementKey` need not
 be in `ElementPropsMap`); `MountableElementKey` narrows to the client-mountable subset.
 
+A surface resolves its header config with `resolveHeaderElement({ spaceId?, defaults })`
+(`lib/elements/header.ts`): it reads the `element_settings` layers and folds them with the surface's own
+`defaults` — an operator value set in `/admin/elements` (or a Space override) WINS over the default and
+applies with no deploy, else the surface keeps its baseline. So the master genuinely retunes every
+header that defers, while each section still has a sensible layout/height. The size ladder is the single
+`lib/layout/header-sizes.ts` (PageHero renders it; the registry lists it).
+
 ## First citizen: the Loom picker
 
 The Loom picker is the reference implementation of all three parts:

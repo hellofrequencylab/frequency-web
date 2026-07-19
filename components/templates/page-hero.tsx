@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { HEADER_MIN_H, type HeaderSize } from '@/lib/layout/header-sizes'
 
 // PAGE HERO — the ONE canonical header band for the whole site (THEME-PROTOCOL, the "structure" layer),
 // and the render side of the `header` embeddable element (docs/EMBEDDABLE-ELEMENTS.md, ADR-792). ONE
@@ -17,7 +18,7 @@ import Image from 'next/image'
 // are house utilities from globals.css. Presentational + server-friendly (no hooks), so it renders in a
 // Server Component (the h1 stays server-rendered for SEO). Voice-canon copy comes from the caller.
 
-export type PageHeroSize = 'short' | 'standard' | 'large' | 'tall'
+export type PageHeroSize = HeaderSize
 export type PageHeroVariant = 'overlay' | 'identity' | 'minimal'
 
 export interface PageHeroProps {
@@ -48,13 +49,6 @@ export interface PageHeroProps {
   rawImg?: boolean
   /** Desaturate the cover (demo/seeded surfaces read as not-quite-real, e.g. demo profiles). */
   dimmed?: boolean
-}
-
-const SIZE_MINH: Record<PageHeroSize, string> = {
-  short: 'min-h-[11rem] sm:min-h-[14rem]',
-  standard: 'min-h-[15rem] sm:min-h-[20rem]',
-  large: 'min-h-[15rem] sm:min-h-[24rem]',
-  tall: 'min-h-[20rem] sm:min-h-[30rem]',
 }
 
 // The ink scrim, faithful to the original MarketHero (darker top + bottom, lighter middle), token-clean:
@@ -106,12 +100,12 @@ export function PageHero({
 
       {variant === 'minimal' ? (
         // Cover + scrim only. The page still needs its heading, so keep an sr-only h1 (a11y + SEO).
-        <div className={`relative z-10 ${SIZE_MINH[resolvedSize]}`}>
+        <div className={`relative z-10 ${HEADER_MIN_H[resolvedSize]}`}>
           <h1 className="sr-only">{title}</h1>
         </div>
       ) : variant === 'identity' ? (
         // Entity header: the lockup anchored bottom-left, an optional leading chip beside the title.
-        <div className={`relative z-10 flex ${SIZE_MINH[resolvedSize]} flex-col justify-end px-6 py-6 sm:px-8 sm:py-8`}>
+        <div className={`relative z-10 flex ${HEADER_MIN_H[resolvedSize]} flex-col justify-end px-6 py-6 sm:px-8 sm:py-8`}>
           {eyebrow && (
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-primary sm:text-sm">{eyebrow}</p>
           )}
@@ -128,7 +122,7 @@ export function PageHero({
         </div>
       ) : (
         // Overlay (default): centered content, fixed min-height so every hero is the same size.
-        <div className={`relative z-10 mx-auto flex ${SIZE_MINH[resolvedSize]} max-w-3xl flex-col items-center justify-center px-6 py-8 text-center sm:py-12`}>
+        <div className={`relative z-10 mx-auto flex ${HEADER_MIN_H[resolvedSize]} max-w-3xl flex-col items-center justify-center px-6 py-8 text-center sm:py-12`}>
           {eyebrow && (
             <p className="mb-3 text-sm font-bold uppercase tracking-[0.25em] text-primary sm:mb-4">{eyebrow}</p>
           )}

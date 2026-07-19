@@ -49,8 +49,14 @@ CI-enforced), independently shippable:
 - **4-header Page header** ⬤⬤ M — ✅ DONE (ADR-793): `PageHero` gained layout variants (overlay /
   identity / minimal) + `size`/`leading`/`dimmed`; registered `'header'` with role-gated features
   (layout, height, focal point, links, darken-cover); Journeys + personal profiles converted to the
-  immersive `identity` layout. Follow-up: read `element_settings` per-surface + fold the two height
-  ladders (`lib/spaces/hero-config.ts`, `lib/events/hero-height.ts`) into the element.
+  immersive `identity` layout. **Config wired:** `resolveHeaderElement()` (`lib/elements/header.ts`)
+  reads the master/space `element_settings` so an operator retunes a header's layout/height from
+  `/admin/elements` with no deploy (surface default → operator value precedence); the element's size
+  ladder is now the single `lib/layout/header-sizes.ts`. ⏳ Remaining: roll the resolver across the
+  overlay/index + commerce heroes, and converge the legacy fixed-height cover ladders
+  (`lib/spaces/hero-config.ts` short/medium/tall, `lib/events/hero-height.ts` short/standard/tall) onto
+  this ladder when those surfaces adopt the element — that step changes some pixel heights + migrates
+  stored height values, so it ships with those surfaces' conversion (needs a preview sign-off).
 - **4a QR Studio** ⬤⬤ M
 - **4b Email editor popup** ⬤⬤ M
 - **4c Resonance CRM board** ⬤⬤⬤ L (large surface)

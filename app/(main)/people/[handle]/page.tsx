@@ -46,6 +46,7 @@ import { FrequencySignature } from '@/components/profile/frequency-signature'
 import { getLinkedContactForProfile } from '@/lib/connections/matching'
 import { PrivateContactPanel } from '@/components/connections/private-contact-panel'
 import { DetailTemplate, PageHero } from '@/components/templates'
+import { resolveHeaderElement } from '@/lib/elements/header'
 import { ProfileAvatar } from '@/components/profile/profile-avatar'
 import { ProfileSpotlightBlocks } from '@/components/profile/profile-spotlight-blocks'
 import { OwnerProfileLayoutPreview } from '@/components/profile/owner-profile-layout-preview'
@@ -420,6 +421,9 @@ export default async function ProfilePage({
   // primitives — no hand-rolled header, no raw <h1>. The global community rail stays
   // put beyond the body (page-chrome keeps profiles 'global'); the body splits at xl so
   // it never cramps against that rail, stacking the info column up top below xl.
+  // The header (avatar + name over the cover) is the standardized `header` element (ADR-793), identity
+  // layout; layout + height resolve from its master config, so an operator can retune it site-wide.
+  const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } })
   return (
     <>
       {tippedCents !== null && (
@@ -437,8 +441,8 @@ export default async function ProfilePage({
       <DetailTemplate
         hero={
           <PageHero
-            variant="identity"
-            size="standard"
+            variant={header.layout}
+            size={header.height}
             coverImage={headerImageUrl}
             dimmed={isDemo}
             leading={<ProfileAvatar src={profile.avatar_url} name={profile.display_name} initials={initials} dimmed={isDemo} />}

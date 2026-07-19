@@ -13,6 +13,7 @@ import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { adoptPlanAction, forkPlanAction } from '../actions'
 import { enabledWidgets } from '@/lib/journey-page-config'
+import { resolveHeaderElement } from '@/lib/elements/header'
 import {
   StoryBlock,
   OutcomesBlock,
@@ -144,17 +145,19 @@ export default async function JourneyPlanPage({
     forkAction: forkPlanAction,
   }
 
-  // The standardized `header` element (ADR-792), identity layout: the cover + Journey icon + title +
+  // The standardized `header` element (ADR-793), identity layout: the cover + Journey icon + title +
   // one-line summary overlaid immersively (the "liked" Business-page look), instead of the old plain
   // image band with the title stranded below it. The interactive meta (badges, author/streak/path links,
   // stat chips, enroll/manage) stays in the light `band` under the hero, so those controls keep their
-  // normal styling and contrast.
+  // normal styling and contrast. Layout + height resolve from the header element's master config
+  // (/admin/elements), defaulting to identity/standard, so an operator can retune it without a deploy.
+  const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } })
   const page = (
     <DetailTemplate
       hero={
         <PageHero
-          variant="identity"
-          size="standard"
+          variant={header.layout}
+          size={header.height}
           coverImage={plan.cover_image ?? null}
           eyebrow={topPillar ? topPillar.name : 'Journey'}
           leading={
