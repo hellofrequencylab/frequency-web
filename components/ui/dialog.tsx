@@ -14,6 +14,7 @@ export function Dialog({
   children,
   ariaLabel,
   className,
+  align = 'top',
 }: {
   open: boolean
   onClose: () => void
@@ -22,6 +23,9 @@ export function Dialog({
   ariaLabel?: string
   /** Panel sizing / extras — pass a `max-w-*` (the panel is `w-full` otherwise). */
   className?: string
+  /** Vertical placement. `top` (default) pins the panel near the top (every existing caller). `center`
+   *  centers it in the viewport — for a big center-screen modal like the Loom picker. */
+  align?: 'top' | 'center'
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -95,7 +99,10 @@ export function Dialog({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm sm:p-8"
+      className={cn(
+        'fixed inset-0 z-[60] flex justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm sm:p-8',
+        align === 'center' ? 'items-center' : 'items-start',
+      )}
       onMouseDown={onClose}
     >
       <div
@@ -105,7 +112,7 @@ export function Dialog({
         aria-label={ariaLabel}
         tabIndex={-1}
         onMouseDown={(e) => e.stopPropagation()}
-        className={cn('mt-[6vh] w-full outline-none motion-safe:animate-[slideUp_0.3s_ease-out]', className)}
+        className={cn('w-full outline-none motion-safe:animate-[slideUp_0.3s_ease-out]', align === 'center' ? 'my-auto' : 'mt-[6vh]', className)}
       >
         {children}
       </div>
