@@ -15,8 +15,16 @@ import { Dialog } from '@/components/ui/dialog'
 import {
   Upload, Loader2, ImageIcon, Sparkles, Tag as TagIcon, Building2, User, Check, X, Search,
 } from 'lucide-react'
-import { loomScopes, loomImages, uploadLoomImage, type LoomScope } from '@/lib/loom/picker-actions'
+import { loomScopes, loomImages, uploadLoomImage, type LoomScope, type LoomPickerConfig } from '@/lib/loom/picker-actions'
 import type { LoomPickAsset } from '@/lib/library/store'
+
+// Fallback config until the resolved one loads (matches the registry defaults). The real config comes
+// from the element_settings master (role-gated), resolved server-side by loomScopes().
+const FALLBACK_CONFIG: LoomPickerConfig = {
+  tabs: { images: true, elements: true, tags: true, spaces: true, airwaves: false },
+  aiCreate: false,
+  defaultScope: 'mine',
+}
 
 type View = 'images' | 'elements' | 'tags'
 
@@ -39,6 +47,7 @@ export function LoomPicker({
   title?: string
 }) {
   const [scopes, setScopes] = useState<LoomScope[]>([])
+  const [config, setConfig] = useState<LoomPickerConfig>(FALLBACK_CONFIG)
   const [scope, setScope] = useState('mine')
   const [view, setView] = useState<View>('images')
   const [tag, setTag] = useState<string | null>(null)
@@ -56,11 +65,23 @@ export function LoomPicker({
   // setState-in-effect: reset here, at the close, instead).
   const close = () => { setSelected([]); onClose() }
 
-  // Resolve the caller's scopes once per open.
+  // Resolve the caller's scopes + the role-gated config once per open. setState lands inside the async
+  // callback (not synchronously in the effect body), so it honors the no-setState-in-effect rule.
   useEffect(() => {
     if (!open) return
     let live = true
-    loomScopes().then((r) => { if (live) setScopes(r.scopes) }).catch(() => {})
+    loomScopes()
+      .then((r) => {
+        if (!live) return
+        setScopes(r.scopes)
+        setConfig(r.config)
+        // Honor the configured default scope: open on the first Space when set to 'space'.
+        if (r.config.defaultScope === 'space') {
+          const firstSpace = r.scopes.find((s) => s.kind === 'space')
+          if (firstSpace) setScope(firstSpace.key)
+        }
+      })
+      .catch(() => {})
     return () => { live = false }
   }, [open])
 
@@ -149,17 +170,24 @@ export function LoomPicker({
           <aside className="w-48 shrink-0 space-y-3 overflow-y-auto border-r border-border p-3">
             <div className="space-y-0.5">
               <p className="px-2.5 pb-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Browse</p>
-              <button type="button" onClick={() => { setView('images'); setTag(null) }} className={`${rail} ${view === 'images' && !tag ? railOn : railOff}`}>
-                <ImageIcon className="h-4 w-4 shrink-0" /> Images
-              </button>
-              <button type="button" onClick={() => { setView('elements'); setTag(null) }} className={`${rail} ${view === 'elements' ? railOn : railOff}`}>
-                <Sparkles className="h-4 w-4 shrink-0" /> Elements
-              </button>
-              <button type="button" onClick={() => setView('tags')} className={`${rail} ${view === 'tags' ? railOn : railOff}`}>
-                <TagIcon className="h-4 w-4 shrink-0" /> Tags
-              </button>
+              {config.tabs.images && (
+                <button type="button" onClick={() => { setView('images'); setTag(null) }} className={`${rail} ${view === 'images' && !tag ? railOn : railOff}`}>
+                  <ImageIcon className="h-4 w-4 shrink-0" /> Images
+                </button>
+              )}
+              {config.tabs.elements && (
+                <button type="button" onClick={() => { setView('elements'); setTag(null) }} className={`${rail} ${view === 'elements' ? railOn : railOff}`}>
+                  <Sparkles className="h-4 w-4 shrink-0" /> Elements
+                </button>
+              )}
+              {config.tabs.tags && (
+                <button type="button" onClick={() => setView('tags')} className={`${rail} ${view === 'tags' ? railOn : railOff}`}>
+                  <TagIcon className="h-4 w-4 shrink-0" /> Tags
+                </button>
+              )}
             </div>
 
+            {config.tabs.spaces && (
             <div className="space-y-0.5">
               <p className="px-2.5 pb-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Library</p>
               {scopes.map((s) => {
@@ -179,6 +207,7 @@ export function LoomPicker({
                 )
               })}
             </div>
+            )}
           </aside>
 
           {/* Main: upload box + grid (or tag list) */}
