@@ -339,12 +339,14 @@ export function SpaceManageConsole({
     <div>
       <HubNav slug={slug} section={section} />
       <div className="mt-5">
-        {blurb && <p className="mb-4 max-w-2xl text-sm text-muted">{blurb}</p>}
-        {section === 'settings' ? (
+        {/* Resonance renders the full Resonance CRM surface (its own header); no hub blurb there. */}
+        {blurb && section !== 'resonance' && <p className="mb-4 max-w-2xl text-sm text-muted">{blurb}</p>}
+        {section === 'resonance' ? (
+          crmEmbed
+        ) : section === 'settings' ? (
           <SpaceSettingsSurface slug={slug} modules={modules} canDelete={canDelete} spaceId={spaceId} />
         ) : (
           <>
-            {section === 'resonance' && crmEmbed && <div className="mb-6">{crmEmbed}</div>}
             {inSection.length > 0 ? (
               <FeatureGrid modules={inSection} slug={slug} emphasis={emphasis} />
             ) : (
