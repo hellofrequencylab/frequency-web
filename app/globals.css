@@ -1078,6 +1078,19 @@ h1, h2, h3, h4, h5, h6 {
   to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 
+/* ── Pill-nav panel slide ──────────────────────────────────────────────────────
+   The space Marketing (and any client pill-nav) panel slides in from the right as
+   the active pill changes, so content "slides over to the next area" with no page
+   reload. Reduced-motion neutralizes it (the global guard below also does). */
+@keyframes panelSlideIn {
+  from { opacity: 0; transform: translateX(1.5rem); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-panel-slide { animation: panelSlideIn 0.25s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-panel-slide { animation: none; }
+}
+
 /* ── Spotlight animated gradient background ────────────────────────────────────
    A slow pan of an oversized gradient (background-size 300%). Member opt-in via the
    Spotlight theme editor; the duration is set inline from a validated value. Honors

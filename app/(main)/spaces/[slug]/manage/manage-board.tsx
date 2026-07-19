@@ -7,8 +7,9 @@ import { resolveMode, readModePreferences, effectiveNavEmphasis } from '@/lib/sp
 import { isStaff } from '@/lib/core/roles'
 import { resolveSpaceMenu } from '@/lib/admin/modules/space-menu'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
-import { asHubSection, type SpaceHubSection } from '@/lib/admin/modules/space-hub'
+import { asHubSection, sectionForModule, type SpaceHubSection } from '@/lib/admin/modules/space-hub'
 import { SpaceResonanceCrm } from '@/components/spaces/crm/space-resonance-crm'
+import { SpaceMarketing } from '@/components/spaces/marketing/space-marketing'
 import { SpaceManageConsole } from './console'
 
 // The Space owner console BOARD (ADR-441 EM1-3): the reusable render boundary that resolves the Space,
@@ -80,6 +81,20 @@ export async function SpaceManageBoard({ slug, section: rawSection }: { slug: st
       <SpaceResonanceCrm spaceId={space.id} slug={space.slug} spaceName={brandName} />
     ) : undefined
 
+  // Marketing IS the space's Marketing dashboard: the SAME admin CRM Marketing composition (email
+  // performance + everything you send + the draft-first canvas composer popup), fronted by a classifieds
+  // pill sub-nav across the marketing sub-surfaces that swaps in place with no reload. The pills are the
+  // gated marketing modules in catalog order (only what this space + role can use), so the tab never shows a
+  // surface the console would have hidden.
+  const marketingEmbed =
+    section === 'marketing' ? (
+      <SpaceMarketing
+        space={space}
+        marketingModuleIds={modules.filter((m) => sectionForModule(m) === 'marketing').map((m) => m.id)}
+        staffViewing={staffViewing}
+      />
+    ) : undefined
+
   // Deleting a Space is OWNER-grade (or platform staff): the Profile & Settings tab's Danger zone renders
   // its delete control only when true; otherwise header-only.
   const canDelete = caps.isOwner || isStaff(caller?.webRole)
@@ -91,6 +106,7 @@ export async function SpaceManageBoard({ slug, section: rawSection }: { slug: st
       emphasis={emphasis}
       section={section}
       crmEmbed={crmEmbed}
+      marketingEmbed={marketingEmbed}
       canDelete={canDelete}
       spaceId={space.id}
     />
