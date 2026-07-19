@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { Sparkles } from 'lucide-react'
+import { PageHeading } from '@/components/templates'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ImportContactsButton } from '@/components/crm/import/import-contacts-button'
 import { SpaceCrmHealthStatRow } from './space-crm-stats'
@@ -23,17 +24,25 @@ export async function SpaceResonanceCrm({
   spaceName: string
 }) {
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.15em] text-primary-strong">
-            <Sparkles className="h-3.5 w-3.5" aria-hidden /> Resonance CRM
-          </p>
-          <p className="mt-1 text-sm text-muted">Pick a member to see everything about them, inline.</p>
-        </div>
-        <ImportContactsButton target={{ kind: 'space', spaceId }} spaceName={spaceName} />
-      </div>
+    <div>
+      {/* The SAME header grammar as the admin /admin/crm page (PageHeading via AdminTemplate): eyebrow "CRM"
+          + the Sparkles-iconed "Resonance CRM" H1 + the one-line description + Import contacts on the right +
+          the header rule. adminBar is off (the platform operator Settings control does not belong on a space),
+          so a plain divider is drawn instead. */}
+      <PageHeading
+        eyebrow="CRM"
+        title={
+          <span className="inline-flex items-center gap-2">
+            <Sparkles className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
+            Resonance CRM
+          </span>
+        }
+        description={<span className="block truncate">Pick a member to see everything about them, inline.</span>}
+        actions={<ImportContactsButton target={{ kind: 'space', spaceId }} spaceName={spaceName} />}
+        adminBar={false}
+      />
 
+      <div className="space-y-5">
       <Suspense
         fallback={
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -47,6 +56,7 @@ export async function SpaceResonanceCrm({
       </Suspense>
 
       <SpaceMemberViewer spaceId={spaceId} slug={slug} />
+      </div>
     </div>
   )
 }
