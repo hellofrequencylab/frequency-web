@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { writerGate } from '@/lib/beta/guard'
+import { getCallerProfile } from '@/lib/auth'
 import { getRootSpaceId, searchSpaceLibraryImages, insertSpaceLibraryImage } from '@/lib/library/store'
 
 // Server actions behind the Email Studio canvas's on-canvas image editor. A 'use server' module exports
@@ -94,6 +95,8 @@ export async function uploadEmailLoomImage(
       url: pub.publicUrl,
       mime: file.type || 'image/jpeg',
       bytes: file.size,
+      // Stamp the uploader so this asset shows in their personal Loom ("My uploads").
+      createdBy: (await getCallerProfile())?.id ?? null,
     })
     if (!id) {
       // Roll back the orphaned file so a failed insert doesn't leave litter in storage.

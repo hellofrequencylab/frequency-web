@@ -11,6 +11,7 @@ import {
   withSpotlightEnabled,
   withSpotlightPublished,
 } from '@/lib/profile/spotlight-flags'
+import { writeProfileHeaderFocus } from '@/lib/profile/header-focus'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 
 // Owner-only: publish or unpublish your own Spotlight page (the public mini-site).
@@ -90,6 +91,39 @@ export async function setMySpotlightEnabled(enabled: boolean): Promise<void> {
   if (handle) revalidatePath(`/spotlight/${handle}`)
 }
 
+// Owner-only: reposition your own profile HEADER banner inside its cropped hero window (a CSS
+// object-position, "x% y%"). The debounce-target for the drag-to-focus picker in the profile form —
+// separate from the big multi-field updateProfile Save so a drag persists on its own without re-running
+// the handle-uniqueness check. Self-scoped: the read + write both run under the caller's SESSION client,
+// so the `profiles: read own` + `profiles: self update` RLS policies enforce auth_user_id ownership at the
+// database. Read-modify-write of the isolated `headerFocal` meta key (writeProfileHeaderFocus normalizes
+// and drops the centered default) preserves every other meta key. Mirrors setSpaceCoverFocus.
+export async function setProfileHeaderFocus(focus: string): Promise<void> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const { data: me } = await supabase
+    .from('profiles')
+    .select('id, handle, meta')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!me) throw new Error('Profile not found')
+
+  const meta = (me as { meta?: unknown }).meta
+  const nextMeta = writeProfileHeaderFocus(meta, focus)
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ meta: nextMeta as never })
+    .eq('auth_user_id', user.id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/settings/profile')
+  const handle = (me as { handle?: string }).handle
+  if (handle) revalidatePath(`/people/${handle}`) // the member's own public profile, so the reposition shows at once
+}
+
 // Avatar/header upload runs on the server (not the browser client) because the
 // browser client often has no session under SSR-cookie auth, which makes the
 // storage write run as `anon` and fail the owner-INSERT RLS policy. Here the auth
@@ -113,6 +147,8 @@ export async function updateProfile(data: {
   bio: string
   avatarUrl: string
   headerImageUrl?: string
+  /** The header banner FOCAL POINT (CSS object-position "x% y%"), stored on profiles.meta.headerFocal. */
+  headerFocal?: string
   phone?: string
   city?: string
   website?: string
@@ -160,6 +196,18 @@ export async function updateProfile(data: {
     u.home_lat = data.home.lat
     u.home_lng = data.home.lng
     u.home_label = data.home.label.slice(0, 160)
+  }
+  // Header focal point lives on the meta jsonb bag (no column) — read-modify-write so the isolated
+  // `headerFocal` key is set/dropped without disturbing any other meta key. writeProfileHeaderFocus
+  // normalizes (defense in depth) and drops the centered default so a plain profile stays sparse.
+  if (data.headerFocal !== undefined) {
+    const { data: cur } = await supabase
+      .from('profiles')
+      .select('meta')
+      .eq('auth_user_id', user.id)
+      .maybeSingle()
+    const nextMeta = writeProfileHeaderFocus((cur as { meta?: unknown } | null)?.meta, data.headerFocal)
+    ;(update as Record<string, unknown>).meta = nextMeta
   }
 
   const { error } = await supabase

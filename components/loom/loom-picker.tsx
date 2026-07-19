@@ -155,7 +155,7 @@ export function LoomPicker({
   const railOff = 'text-muted hover:bg-surface-elevated hover:text-text'
 
   return (
-    <Dialog open={open} onClose={close} ariaLabel={title} className="max-w-4xl">
+    <Dialog open={open} onClose={close} ariaLabel={title} align="center" className="max-w-4xl">
       <div className="flex max-h-[85vh] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">

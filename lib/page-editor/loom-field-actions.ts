@@ -113,6 +113,8 @@ export async function uploadToLoom(
     mime: file.type || fallbackMimeFor(target.kind),
     bytes: file.size,
     kind: target.kind,
+    // Stamp the uploader so this asset shows in their personal Loom ("My uploads"), like the picker does.
+    createdBy: (await getCallerProfile())?.id ?? null,
   })
   if (!id) {
     // Roll back the orphaned file so a failed insert doesn't leave litter in storage.
