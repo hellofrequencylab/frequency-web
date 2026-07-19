@@ -80,6 +80,7 @@ export const ELEMENTS: readonly ElementDef[] = [
       { key: 'focus', label: 'Focal point', kind: 'toggle', defaultOn: true, defaultRole: 'editor', help: 'Let editors set the cover image focal point.' },
       { key: 'links', label: 'Header links', kind: 'toggle', defaultOn: true, defaultRole: 'editor', help: 'Show the header buttons / call-to-action links.' },
       { key: 'scrim', label: 'Darken cover', kind: 'toggle', defaultOn: true, defaultRole: 'admin', help: 'Keep the ink scrim so overlaid text stays legible.' },
+      { key: 'overlayStyle', label: 'Overlay', kind: 'choice', choices: [{ value: 'shadow', label: 'Shadow (dark)' }, { value: 'none', label: 'None (clean)' }, { value: 'fade', label: 'Fade (from bottom)' }], default: 'shadow', defaultRole: 'editor', help: 'The overlay treatment over the cover image.' },
     ],
   },
   {

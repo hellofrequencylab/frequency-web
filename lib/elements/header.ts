@@ -14,7 +14,7 @@ import { readElementLayers } from './store'
 import { elementDef } from './registry'
 import { resolveElementConfig, type StoredElementConfig } from './config'
 import { asHeaderSize } from '@/lib/layout/header-sizes'
-import type { PageHeroSize, PageHeroVariant } from '@/components/templates/page-hero'
+import type { PageHeroSize, PageHeroVariant, HeroOverlayStyle } from '@/components/templates/page-hero'
 
 /** The effective, ready-to-render header config for a surface. */
 export interface HeaderElementConfig {
@@ -24,8 +24,10 @@ export interface HeaderElementConfig {
   focus: boolean
   /** Show the header links / call-to-action cluster. */
   links: boolean
-  /** Keep the ink scrim so overlaid text stays legible. */
+  /** @deprecated the boolean twin of overlayStyle (true = 'shadow', false = 'none'). */
   scrim: boolean
+  /** The overlay treatment over the cover: none / shadow / fade. */
+  overlayStyle: HeroOverlayStyle
 }
 
 /** A surface's intrinsic baseline, used unless the operator has set a master/space value. */
@@ -34,9 +36,12 @@ export interface HeaderDefaults {
   height?: PageHeroSize
   /** Whether this surface draws the ink overlay by default (profiles ship overlay-off). */
   scrim?: boolean
+  /** The surface's default overlay style (wins over the scrim boolean when set). */
+  overlayStyle?: HeroOverlayStyle
 }
 
 const LAYOUTS: readonly PageHeroVariant[] = ['overlay', 'identity', 'minimal']
+const OVERLAY_STYLES: readonly HeroOverlayStyle[] = ['none', 'shadow', 'fade']
 
 export const DEFAULT_HEADER_CONFIG: HeaderElementConfig = {
   layout: 'overlay',
@@ -44,10 +49,15 @@ export const DEFAULT_HEADER_CONFIG: HeaderElementConfig = {
   focus: true,
   links: true,
   scrim: true,
+  overlayStyle: 'shadow',
 }
 
 function asLayout(v: unknown): PageHeroVariant | undefined {
   return typeof v === 'string' && (LAYOUTS as readonly string[]).includes(v) ? (v as PageHeroVariant) : undefined
+}
+
+function asOverlayStyle(v: unknown): HeroOverlayStyle | undefined {
+  return typeof v === 'string' && (OVERLAY_STYLES as readonly string[]).includes(v) ? (v as HeroOverlayStyle) : undefined
 }
 
 function asBool(v: unknown): boolean | undefined {
@@ -71,12 +81,17 @@ export function pickHeaderConfig(
   // scrim (the ink overlay) follows the same precedence as layout/height: an operator-set value wins,
   // else the surface default (profiles ship overlay-off), else the registry default (on).
   const setScrim = asBool(layers.space?.settings?.scrim ?? layers.platform.settings?.scrim)
+  const setOverlayStyle = asOverlayStyle(layers.space?.settings?.overlayStyle ?? layers.platform.settings?.overlayStyle)
+  const scrim = setScrim ?? defaults?.scrim ?? DEFAULT_HEADER_CONFIG.scrim
   return {
     layout: setLayout ?? defaults?.layout ?? asLayout(resolved.settings.layout) ?? DEFAULT_HEADER_CONFIG.layout,
     height: setHeight ?? defaults?.height ?? asHeaderSize(resolved.settings.height) ?? DEFAULT_HEADER_CONFIG.height,
     focus: resolved.settings.focus !== false,
     links: resolved.settings.links !== false,
-    scrim: setScrim ?? defaults?.scrim ?? DEFAULT_HEADER_CONFIG.scrim,
+    scrim,
+    // overlayStyle: operator-set wins, else the surface default, else derive from the scrim boolean
+    // (off → 'none', on → the registry default 'shadow').
+    overlayStyle: setOverlayStyle ?? defaults?.overlayStyle ?? (scrim ? asOverlayStyle(resolved.settings.overlayStyle) ?? 'shadow' : 'none'),
   }
 }
 
