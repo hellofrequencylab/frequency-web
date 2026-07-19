@@ -50,12 +50,6 @@ import { OwnerProfileLayoutPreview } from '@/components/profile/owner-profile-la
 import { ShareRefProvider } from '@/components/qr/share-ref-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 
-// QrShareDropdown hardcodes its trigger's classes and takes no className, so we wrap it to make the
-// trigger read as the ONE glassy on-ink header button (HERO_ACTION_CLASS) — the `> button` child
-// selector restyles only the trigger, never the buttons inside the opened dialog. Tokens only.
-const HERO_QR_WRAP =
-  '[&>button]:!inline-flex [&>button]:!items-center [&>button]:!justify-center [&>button]:!gap-1.5 [&>button]:!rounded-lg [&>button]:!border [&>button]:!border-white/40 [&>button]:!bg-white/10 [&>button]:!px-3 [&>button]:!py-1.5 [&>button]:!text-sm [&>button]:!font-semibold [&>button]:!text-on-ink [&>button]:!backdrop-blur-sm [&>button]:hover:!bg-white/20 [&>button]:hover:!text-on-ink'
-
 export default async function ProfilePage({
   params,
   searchParams,
@@ -297,24 +291,29 @@ export default async function ProfilePage({
   // Edit Profile (and a contact-card download when they enabled one); the profile QR +
   // share link ride the header actions (QrShareDropdown). A signed-in non-owner gets the
   // full friend/contact/message/tip/block/moderate set.
-  const ownerActions = (
-    <>
-      {/* Edit profile opens the side admin rail (identity editor + the in-rail page builder) on the
-          profile's own page; the full /settings/profile form stays reachable from inside the rail. */}
+  // The owner's on-cover header action is just Save contact (when they expose a vCard); Edit profile moved
+  // to a right-aligned admin row BELOW the header (see the band), so it doesn't ride the cover photo.
+  const ownerActions = vcardEnabled ? (
+    <a href={`${profilePath}/vcard`} className={HERO_ACTION_CLASS}>
+      <Contact className="h-3.5 w-3.5" />
+      Save contact
+    </a>
+  ) : null
+
+  // Edit profile — the owner's admin control, in a right-aligned row just below the header (matches the
+  // Journey admin row). Opens the side admin rail (identity editor + the in-rail page builder); the full
+  // /settings/profile form stays reachable from inside the rail. Light chrome (it sits on the page, not
+  // the cover), like the Journey Manage button.
+  const editProfileRow = isOwner ? (
+    <div className="flex justify-end">
       <OpenAdminBarButton
         scope={{ kind: 'profile', id: profileId }}
         label="Edit profile"
-        icon={<Pencil className="h-3.5 w-3.5" />}
-        className={HERO_ACTION_CLASS}
+        icon={<Pencil className="h-4 w-4" />}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
       />
-      {vcardEnabled && (
-        <a href={`${profilePath}/vcard`} className={HERO_ACTION_CLASS}>
-          <Contact className="h-3.5 w-3.5" />
-          Save contact
-        </a>
-      )}
-    </>
-  )
+    </div>
+  ) : null
 
   // The secondary, lower-stakes controls (Block · janitor "Act as") render as small
   // text LINKS in a row UNDER the primary button row, right-aligned — they shouldn't
@@ -429,9 +428,7 @@ export default async function ProfilePage({
             actions={
               <>
                 {isOwner ? ownerActions : viewerActions}
-                <span className={HERO_QR_WRAP}>
-                  <QrShareDropdown manager={isOwner} />
-                </span>
+                <QrShareDropdown manager={isOwner} className={HERO_ACTION_CLASS} />
               </>
             }
           />
@@ -439,6 +436,8 @@ export default async function ProfilePage({
         title={profile.display_name}
         band={
           <div className="min-w-0 space-y-3">
+            {/* Owner's Edit profile — a right-aligned admin row just below the header (not on the cover). */}
+            {editProfileRow}
             {/* Gamification + status chips and the at-a-glance meta read BELOW the header. */}
             {badges && <div className="flex flex-wrap items-center gap-1.5">{badges}</div>}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
