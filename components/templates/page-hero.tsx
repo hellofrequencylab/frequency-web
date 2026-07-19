@@ -74,9 +74,11 @@ function fadeScrim(color: string): string {
 }
 
 /** The ONE header-action button style — on-ink, glassy — so every header's buttons match (Space, Profile,
- *  Journey, Marketplace). Import this for any button placed in a PageHero `actions` slot. */
+ *  Journey, Marketplace). Kept byte-for-byte identical to the Space header's `onInkSecondaryClasses`
+ *  (app/(main)/spaces/[slug]/(profile)/layout.tsx) so the "look like the button on Spaces" ask holds for
+ *  every header button site-wide. Import this for any button placed in a PageHero `actions` slot. */
 export const HERO_ACTION_CLASS =
-  'inline-flex items-center gap-1.5 rounded-lg border border-on-ink/30 bg-on-ink/10 px-3 py-1.5 text-sm font-medium text-on-ink backdrop-blur transition-colors hover:bg-on-ink/20'
+  'inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/40 bg-white/10 px-3 py-1.5 text-sm font-semibold text-on-ink backdrop-blur-sm transition-colors hover:bg-white/20'
 
 export function PageHero({
   coverImage,
@@ -153,7 +155,10 @@ export function PageHero({
                 )}
               </div>
             </div>
-            {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+            {/* Actions ALWAYS right-aligned: `ml-auto` pushes the cluster to the right of the row, and when
+                the row wraps (narrow), the cluster lands alone on its line and `ml-auto` keeps it right —
+                never left/centered. `justify-end` right-aligns the buttons within the cluster too. */}
+            {actions && <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">{actions}</div>}
           </div>
         </div>
       ) : (

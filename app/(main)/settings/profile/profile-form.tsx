@@ -2,49 +2,14 @@
 
 import { useState, useEffect, useRef, useTransition } from 'react'
 import Link from 'next/link'
-import { getInitials } from '@/lib/utils'
 import { Check, Loader2, Sparkles, ExternalLink } from 'lucide-react'
-import { updateProfile, uploadProfileImageAction, setSpotlightPublished, setMySpotlightEnabled, setProfileHeaderFocus } from './actions'
+import { updateProfile, setSpotlightPublished, setMySpotlightEnabled, setProfileHeaderFocus, setProfileAvatarFocus } from './actions'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
-import { LoomPicker } from '@/components/loom/loom-picker'
 import { HeaderImageField } from '@/components/ui/header-image-field'
-import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
-import { DEFAULT_OBJECT_POSITION, objectPositionToXY } from '@/lib/images/focal-point'
+import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { heroAspect } from '@/lib/spaces/hero-config'
 
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
-
-// Crop a picked file to a square JPEG at `size`, honoring the chosen focal point (fx/fy are 0-100
-// percentages, defaulting to centered). The image is scaled to cover the square, then offset so the
-// focal point stays in frame: offset 0 keeps that edge, offset (size - dim) keeps the far edge, and
-// (size - dim) * pct/100 lands the chosen focus. Baking the crop here means the stored 512² avatar is
-// already framed correctly, so every avatar surface renders it right with no per-surface focal wiring.
-function resizeToJpeg(file: File, size = 512, focal?: { x: number; y: number }): Promise<Blob> {
-  const fx = focal ? focal.x : 50
-  const fy = focal ? focal.y : 50
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      const canvas = document.createElement('canvas')
-      canvas.width = size
-      canvas.height = size
-      const ctx = canvas.getContext('2d')!
-      const scale = Math.max(size / img.width, size / img.height)
-      const w = img.width * scale
-      const h = img.height * scale
-      ctx.drawImage(img, (size - w) * (fx / 100), (size - h) * (fy / 100), w, h)
-      canvas.toBlob(
-        blob => blob ? resolve(blob) : reject(new Error('Canvas export failed')),
-        'image/jpeg',
-        0.92
-      )
-    }
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not decode image')) }
-    img.src = url
-  })
-}
 
 const HANDLE_RE = /^[a-z0-9_]+$/
 
@@ -66,6 +31,8 @@ export function ProfileForm({
     handle: string
     bio: string
     avatarUrl: string
+    /** The saved avatar FOCAL POINT (CSS object-position "x% y%"). Defaults to centered. */
+    avatarFocal: string
     headerImageUrl: string
     /** The saved header banner FOCAL POINT (CSS object-position "x% y%"). Defaults to centered. */
     headerFocal: string
@@ -91,12 +58,10 @@ export function ProfileForm({
   const [home,          setHome]          = useState<{ lat: number; lng: number; label: string } | null>(null)
   const [website,       setWebsite]       = useState(initial.website)
   const [avatarUrl,     setAvatarUrl]     = useState(initial.avatarUrl)
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(initial.avatarUrl || null)
-  const [avatarFile,    setAvatarFile]    = useState<File | null>(null)
-  // Avatar FOCUS — the crop the member drags on a freshly picked photo. Baked into the 512² JPEG on
-  // save (resizeToJpeg), so it needs no schema or per-surface render wiring. Only shown for a local
-  // file pick; a Loom-chosen image is already a finished URL and keeps its own framing.
-  const [avatarFocus,   setAvatarFocus]   = useState(DEFAULT_OBJECT_POSITION)
+  // Avatar FOCUS — where the photo sits in its round crop. The SAME drag-to-focus control the header uses,
+  // on the existing photo too; debounced to profiles.meta.avatarFocal and applied at render (ProfileAvatar).
+  const [avatarFocus,   setAvatarFocus]   = useState(initial.avatarFocal || DEFAULT_OBJECT_POSITION)
+  const avatarFocusTimer                  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [headerUrl,     setHeaderUrl]     = useState(initial.headerImageUrl)
   // Header FOCUS — where the header banner sits in its cropped hero window (a CSS object-position).
   // The SAME reusable control the Space + event rails use (ImageFocalPicker): the marker moves live
@@ -106,9 +71,6 @@ export function ProfileForm({
   // persists it.
   const [headerFocus,   setHeaderFocus]   = useState(initial.headerFocal || DEFAULT_OBJECT_POSITION)
   const focusTimer                        = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [uploading,     setUploading]     = useState(false)
-  const [uploadError,   setUploadError]   = useState('')
-  const [avatarLoomOpen, setAvatarLoomOpen] = useState(false)
   const [spotEnabled,   setSpotEnabled]   = useState(initial.spotlightEnabled)
   const [spotPublished, setSpotPublished] = useState(initial.spotlightPublished)
   const [spotPending,   setSpotPending]   = useState(false)
@@ -116,8 +78,6 @@ export function ProfileForm({
   const [saved,         setSaved]         = useState(false)
   const [saveError,     setSaveError]     = useState('')
   const [isPending,     startTransition]  = useTransition()
-
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Handle status is derived during render — the only thing that genuinely needs
   // an effect is the async uniqueness check, whose result we store tagged with
@@ -158,51 +118,16 @@ export function ProfileForm({
     return () => clearTimeout(timer)
   }, [handle, handleNeedsCheck, handleCheck, userId])
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
-    if (file.size > MAX_BYTES) {
-      setUploadError(`File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 5 MB.`)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-      return
-    }
-
-    setUploadError('')
-    setAvatarFile(file)
-    setAvatarPreview(URL.createObjectURL(file))
-    setAvatarFocus(DEFAULT_OBJECT_POSITION) // a fresh photo starts centered; the member drags to reframe
-  }
-
-  async function uploadAvatar(): Promise<string> {
-    if (!avatarFile) return avatarUrl
-    setUploading(true)
-    setUploadError('')
-
-    let blob: Blob
-    try {
-      const { x, y } = objectPositionToXY(avatarFocus)
-      blob = await resizeToJpeg(avatarFile, 512, { x, y })
-    } catch {
-      setUploadError('Could not process image. Try a different file.')
-      setUploading(false)
-      return avatarUrl
-    }
-
-    try {
-      const fd = new FormData()
-      fd.append('file', blob, 'avatar.jpg')
-      fd.append('kind', 'avatar')
-      const url = await uploadProfileImageAction(fd)
-      setAvatarUrl(url)
-      return url
-    } catch (err) {
-      setUploadError(`Upload failed: ${err instanceof Error ? err.message : 'unknown error'}`)
-      return avatarUrl
-    } finally {
-      setUploading(false)
-    }
+  // Debounced live save of the avatar focal point (400ms), mirroring the header one. The marker moves
+  // instantly; the write lands once the drag settles, and the value also rides the main Save.
+  function onAvatarFocusChange(next: string) {
+    setAvatarFocus(next)
+    if (avatarFocusTimer.current) clearTimeout(avatarFocusTimer.current)
+    avatarFocusTimer.current = setTimeout(() => {
+      void setProfileAvatarFocus(next).catch(() => {
+        /* a transient focal save failure is non-blocking; the value still rides the main Save */
+      })
+    }, 400)
   }
 
   // Debounced live save of the header focal point (400ms, matching the Space form). The picker updates
@@ -223,7 +148,6 @@ export function ProfileForm({
     HANDLE_RE.test(handle) &&
     handleStatus !== 'taken' &&
     handleStatus !== 'checking' &&
-    !uploading &&
     !isPending
 
   async function handleSave(e: React.FormEvent) {
@@ -231,22 +155,17 @@ export function ProfileForm({
     setSaveError('')
     setSaved(false)
 
-    let finalAvatarUrl = avatarUrl
-    if (avatarFile) {
-      finalAvatarUrl = await uploadAvatar()
-    }
-    // The header image is set directly by the shared field (via the Loom picker, which returns a public
-    // URL) or cleared to '', so `headerUrl` is already the value to persist.
-    const finalHeaderUrl = headerUrl
-
+    // Avatar + header images are set directly by the shared fields (via the Loom picker, which returns a
+    // public URL) or cleared to '', so their state is already the value to persist.
     startTransition(async () => {
       try {
         await updateProfile({
           displayName:    displayName.trim(),
           handle:         handle.trim(),
           bio:            bio.trim(),
-          avatarUrl:      finalAvatarUrl,
-          headerImageUrl: finalHeaderUrl,
+          avatarUrl:      avatarUrl,
+          avatarFocal:    avatarFocus,
+          headerImageUrl: headerUrl,
           headerFocal:    headerFocus,
           phone:          phone.trim(),
           city:           city.trim(),
@@ -254,7 +173,6 @@ export function ProfileForm({
           home,
         })
         setSaved(true)
-        setAvatarFile(null)
         setTimeout(() => setSaved(false), 3000)
       } catch (err) {
         setSaveError(err instanceof Error ? err.message : 'Something went wrong.')
@@ -290,7 +208,6 @@ export function ProfileForm({
     }
   }
 
-  const showInitials = getInitials(displayName || initial.displayName || '?')
   const spotlightUrl = handle ? `/spotlight/${handle}` : ''
 
   return (
@@ -313,91 +230,25 @@ export function ProfileForm({
         />
       </div>
 
-      {/* ── Avatar ──────────────────────────────────── */}
+      {/* ── Photo (avatar) — the SAME shared image control as the header: browse/upload via the full-screen
+          Loom picker (scoped to your uploads), with the same drag-to-focus selector on a round crop so you
+          can reframe an existing photo too. ──────── */}
       <div>
         <label className={lbl}>Photo</label>
-        <div className="flex items-center gap-4">
-          {avatarPreview ? (
-            // avatarPreview is a local object-URL (blob:) once a file is picked,
-            // so the Next optimizer can't handle it — a plain <img> is correct.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarPreview}
-              alt="Profile photo"
-              className="w-16 h-16 rounded-full object-cover shrink-0 ring-2 ring-surface shadow"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-primary-bg text-primary-strong text-xl font-bold flex items-center justify-center shrink-0 select-none">
-              {showInitials}
-            </div>
-          )}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="text-sm font-medium text-primary-strong hover:text-primary-strong transition-colors"
-              >
-                {avatarPreview ? 'Change photo' : 'Choose a photo'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setAvatarLoomOpen(true)}
-                className="text-sm text-subtle hover:text-muted transition-colors"
-              >
-                Browse your Loom
-              </button>
-            </div>
-            {avatarPreview && avatarPreview !== initial.avatarUrl && (
-              <button
-                type="button"
-                onClick={() => {
-                  setAvatarFile(null)
-                  setAvatarPreview(initial.avatarUrl || null)
-                  setAvatarUrl(initial.avatarUrl)
-                  setAvatarFocus(DEFAULT_OBJECT_POSITION)
-                  if (fileInputRef.current) fileInputRef.current.value = ''
-                }}
-                className="text-sm text-subtle hover:text-muted transition-colors"
-              >
-                Revert
-              </button>
-            )}
-            <p className="text-xs text-subtle">Any image format up to 5 MB · resized to 512×512</p>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          <LoomPicker
-            open={avatarLoomOpen}
-            onClose={() => setAvatarLoomOpen(false)}
-            onSelect={(url) => { setAvatarUrl(url); setAvatarPreview(url); setAvatarFile(null); setAvatarFocus(DEFAULT_OBJECT_POSITION); setUploadError('') }}
-            title="Choose your profile photo"
-            scopeKey="mine"
-          />
-        </div>
-        {/* Focus selector — on a freshly picked photo, drag to choose the best square crop. Baked into
-            the saved image, so it looks right everywhere your avatar shows. A round mask previews it. */}
-        {avatarFile && avatarPreview && (
-          <div className="mt-3 max-w-[16rem]">
-            <ImageFocalPicker
-              imageUrl={avatarPreview}
-              value={avatarFocus}
-              onChange={setAvatarFocus}
-              disabled={isPending || uploading}
-              aspect={1}
-              label="Reposition photo"
-              hint="Drag to choose the best square crop."
-              showSliders={false}
-              className="[&_img]:rounded-full"
-            />
-          </div>
-        )}
-        {uploadError && <p className="mt-1.5 text-xs text-danger">{uploadError}</p>}
+        <HeaderImageField
+          value={avatarUrl || null}
+          onChange={(url) => setAvatarUrl(url ?? '')}
+          focus={avatarFocus}
+          onFocusChange={onAvatarFocusChange}
+          aspect={1}
+          rounded
+          scopeKey="mine"
+          disabled={isPending}
+          label="Profile photo"
+          hint="A square photo reads best."
+          focusHint="Drag to choose which part of your photo stays in the circle."
+          className="max-w-[16rem]"
+        />
       </div>
 
       {/* ── Display name ────────────────────────────── */}
@@ -647,12 +498,12 @@ export function ProfileForm({
           disabled={!canSave}
           className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
         >
-          {isPending || uploading ? (
+          {isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : saved ? (
             <Check className="w-4 h-4" />
           ) : null}
-          {isPending || uploading ? 'Saving…' : saved ? 'Saved!' : 'Save changes'}
+          {isPending ? 'Saving…' : saved ? 'Saved!' : 'Save changes'}
         </button>
       </div>
     </form>

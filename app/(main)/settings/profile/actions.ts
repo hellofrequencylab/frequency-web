@@ -11,7 +11,7 @@ import {
   withSpotlightEnabled,
   withSpotlightPublished,
 } from '@/lib/profile/spotlight-flags'
-import { writeProfileHeaderFocus } from '@/lib/profile/header-focus'
+import { writeProfileHeaderFocus, writeProfileAvatarFocus } from '@/lib/profile/header-focus'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 
 // Owner-only: publish or unpublish your own Spotlight page (the public mini-site).
@@ -124,6 +124,35 @@ export async function setProfileHeaderFocus(focus: string): Promise<void> {
   if (handle) revalidatePath(`/people/${handle}`) // the member's own public profile, so the reposition shows at once
 }
 
+// The AVATAR focal point — where the profile photo sits inside its round crop. Same debounced, self-scoped
+// read-modify-write as setProfileHeaderFocus, but on the `avatarFocal` meta key. Lets a member drag to
+// reframe an EXISTING photo (not only a fresh upload). Mirrors setProfileHeaderFocus exactly.
+export async function setProfileAvatarFocus(focus: string): Promise<void> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const { data: me } = await supabase
+    .from('profiles')
+    .select('id, handle, meta')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!me) throw new Error('Profile not found')
+
+  const meta = (me as { meta?: unknown }).meta
+  const nextMeta = writeProfileAvatarFocus(meta, focus)
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ meta: nextMeta as never })
+    .eq('auth_user_id', user.id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/settings/profile')
+  const handle = (me as { handle?: string }).handle
+  if (handle) revalidatePath(`/people/${handle}`)
+}
+
 // Avatar/header upload runs on the server (not the browser client) because the
 // browser client often has no session under SSR-cookie auth, which makes the
 // storage write run as `anon` and fail the owner-INSERT RLS policy. Here the auth
@@ -149,6 +178,8 @@ export async function updateProfile(data: {
   headerImageUrl?: string
   /** The header banner FOCAL POINT (CSS object-position "x% y%"), stored on profiles.meta.headerFocal. */
   headerFocal?: string
+  /** The avatar FOCAL POINT (CSS object-position "x% y%"), stored on profiles.meta.avatarFocal. */
+  avatarFocal?: string
   phone?: string
   city?: string
   website?: string
@@ -197,16 +228,19 @@ export async function updateProfile(data: {
     u.home_lng = data.home.lng
     u.home_label = data.home.label.slice(0, 160)
   }
-  // Header focal point lives on the meta jsonb bag (no column) — read-modify-write so the isolated
-  // `headerFocal` key is set/dropped without disturbing any other meta key. writeProfileHeaderFocus
-  // normalizes (defense in depth) and drops the centered default so a plain profile stays sparse.
-  if (data.headerFocal !== undefined) {
+  // Header + avatar focal points live on the meta jsonb bag (no column) — one read-modify-write so both
+  // isolated keys are set/dropped without disturbing any other meta key. The writers normalize (defense in
+  // depth) and drop the centered default so a plain profile stays sparse. Combined into a single meta write
+  // so the second key can't clobber the first.
+  if (data.headerFocal !== undefined || data.avatarFocal !== undefined) {
     const { data: cur } = await supabase
       .from('profiles')
       .select('meta')
       .eq('auth_user_id', user.id)
       .maybeSingle()
-    const nextMeta = writeProfileHeaderFocus((cur as { meta?: unknown } | null)?.meta, data.headerFocal)
+    let nextMeta: unknown = (cur as { meta?: unknown } | null)?.meta
+    if (data.headerFocal !== undefined) nextMeta = writeProfileHeaderFocus(nextMeta, data.headerFocal)
+    if (data.avatarFocal !== undefined) nextMeta = writeProfileAvatarFocus(nextMeta, data.avatarFocal)
     ;(update as Record<string, unknown>).meta = nextMeta
   }
 

@@ -22,7 +22,7 @@ import { getProfileCapabilities, getGlobalCapabilities } from '@/lib/core/load-c
 import { getRealCallerWebRole } from '@/lib/auth'
 import { actAsMember } from '@/app/(main)/impersonate-actions'
 import { readSpotlightPublished, readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
-import { readProfileHeaderFocus } from '@/lib/profile/header-focus'
+import { readProfileHeaderFocus, readProfileAvatarFocus } from '@/lib/profile/header-focus'
 import { atLeastRole } from '@/lib/core/roles'
 import { MemberSupportPanel } from '@/components/support/member-support-panel'
 import { ConnectionPanel } from '@/components/people/connection-panel'
@@ -54,7 +54,7 @@ import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 // trigger read as the ONE glassy on-ink header button (HERO_ACTION_CLASS) — the `> button` child
 // selector restyles only the trigger, never the buttons inside the opened dialog. Tokens only.
 const HERO_QR_WRAP =
-  '[&>button]:!gap-1.5 [&>button]:!rounded-lg [&>button]:!border [&>button]:!border-on-ink/30 [&>button]:!bg-on-ink/10 [&>button]:!px-3 [&>button]:!py-1.5 [&>button]:!text-sm [&>button]:!font-medium [&>button]:!text-on-ink [&>button]:!backdrop-blur [&>button]:hover:!bg-on-ink/20 [&>button]:hover:!text-on-ink'
+  '[&>button]:!inline-flex [&>button]:!items-center [&>button]:!justify-center [&>button]:!gap-1.5 [&>button]:!rounded-lg [&>button]:!border [&>button]:!border-white/40 [&>button]:!bg-white/10 [&>button]:!px-3 [&>button]:!py-1.5 [&>button]:!text-sm [&>button]:!font-semibold [&>button]:!text-on-ink [&>button]:!backdrop-blur-sm [&>button]:hover:!bg-white/20 [&>button]:hover:!text-on-ink'
 
 export default async function ProfilePage({
   params,
@@ -124,6 +124,7 @@ export default async function ProfilePage({
   const headerImageUrl = (profile as { header_image_url?: string | null }).header_image_url ?? null
   // Where the header banner sits in its cropped hero window (owner's focal picker), stored on meta.headerFocal.
   const headerFocus = readProfileHeaderFocus((profile as { meta?: unknown }).meta)
+  const avatarFocus = readProfileAvatarFocus((profile as { meta?: unknown }).meta)
   // Spotlight (opt-in public mini-site): show a link to it when this member has
   // published one. Derived from meta server-side; the blob never reaches the client.
   const spotlightPublished = readSpotlightPublished((profile as { meta?: unknown }).meta)
@@ -414,7 +415,7 @@ export default async function ProfilePage({
             coverImage={headerImageUrl}
             coverFocus={headerFocus}
             dimmed={isDemo}
-            leading={<ProfileAvatar src={profile.avatar_url} name={profile.display_name} initials={initials} dimmed={isDemo} />}
+            leading={<ProfileAvatar src={profile.avatar_url} name={profile.display_name} initials={initials} dimmed={isDemo} focus={avatarFocus} />}
             eyebrow={roleBadge}
             title={profile.display_name}
             subtitle={

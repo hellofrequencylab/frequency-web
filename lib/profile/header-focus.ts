@@ -27,3 +27,23 @@ export function writeProfileHeaderFocus(meta: unknown, focus: string): Record<st
   else delete base.headerFocal
   return base
 }
+
+/** Read the saved AVATAR focal point out of profiles.meta (jsonb), defaulting to centered. Same shape as
+ *  the header focal, but under `avatarFocal` — it positions the profile photo inside its round crop. */
+export function readProfileAvatarFocus(meta: unknown): string {
+  if (meta && typeof meta === 'object') {
+    const v = (meta as Record<string, unknown>).avatarFocal
+    if (typeof v === 'string' && v.trim()) return v.trim()
+  }
+  return DEFAULT_OBJECT_POSITION
+}
+
+/** Merge a chosen AVATAR focal point into an existing meta object, dropping the key when it is the centered
+ *  default so the stored meta stays sparse. Preserves every other meta key. Returns the next meta. */
+export function writeProfileAvatarFocus(meta: unknown, focus: string): Record<string, unknown> {
+  const base = meta && typeof meta === 'object' ? { ...(meta as Record<string, unknown>) } : {}
+  const normalized = normalizeObjectPosition(focus)
+  if (normalized) base.avatarFocal = normalized
+  else delete base.avatarFocal
+  return base
+}

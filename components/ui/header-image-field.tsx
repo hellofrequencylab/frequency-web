@@ -30,6 +30,8 @@ export function HeaderImageField({
   hint = 'Wide banner across the top of your page.',
   focusHint = 'Drag to choose which part of your header photo stays in frame. This preview matches your header height.',
   disabled = false,
+  rounded = false,
+  className,
 }: {
   /** The current cover image URL, or null when none is set. */
   value: string | null
@@ -48,21 +50,27 @@ export function HeaderImageField({
   /** Helper line under the focal preview once an image is set. */
   focusHint?: string
   disabled?: boolean
+  /** Round the preview (a profile photo / avatar) instead of the default rectangular banner crop. */
+  rounded?: boolean
+  /** Extra classes on the outer wrapper (e.g. a max-width for a compact avatar control). */
+  className?: string
 }) {
   const [pickerOpen, setPickerOpen] = useState(false)
 
   // Empty: the shared dropzone, which opens the scoped Loom picker (browse + upload) or accepts a pasted URL.
   if (!value) {
     return (
-      <ImageUpload
-        value={null}
-        onChange={onChange}
-        label={label}
-        hint={hint}
-        disabled={disabled}
-        loom
-        scopeKey={scopeKey}
-      />
+      <div className={className}>
+        <ImageUpload
+          value={null}
+          onChange={onChange}
+          label={label}
+          hint={hint}
+          disabled={disabled}
+          loom
+          scopeKey={scopeKey}
+        />
+      </div>
     )
   }
 
@@ -70,7 +78,7 @@ export function HeaderImageField({
   // Replace / Remove overlaid. Repositioning never changes the header height; it only picks what stays in
   // frame. Replace reopens the same scoped Loom picker.
   return (
-    <div className="space-y-1.5">
+    <div className={`space-y-1.5${className ? ` ${className}` : ''}`}>
       <div className="relative">
         <ImageFocalPicker
           // Key the preview by its aspect so a height switch REMOUNTS the crop box — it can never render at
@@ -84,6 +92,7 @@ export function HeaderImageField({
           hint={focusHint}
           showSliders={false}
           aspect={aspect}
+          className={rounded ? '[&_img]:rounded-full' : undefined}
         />
         {/* Replace / Remove sit top-right over the preview; the focal marker owns the rest of the frame. */}
         <div className="absolute right-2 top-9 flex gap-1.5">

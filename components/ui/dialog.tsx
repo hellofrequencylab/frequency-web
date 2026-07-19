@@ -1,7 +1,20 @@
 'use client'
 
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
+
+// True on the client, false during SSR + the first hydration pass — without a setState-in-effect (which the
+// repo's lint forbids). Lets the portal render only once we're safely on the client, matching the server's
+// null so hydration never mismatches.
+const emptySubscribe = () => () => {}
+function useIsClient() {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  )
+}
 
 // Shared modal/overlay shell — one place for the backdrop, centering, ESC +
 // backdrop-click to close, body scroll-lock, focus trap + restore, and dialog
@@ -28,6 +41,8 @@ export function Dialog({
   align?: 'top' | 'center'
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
+  // Only portal on the client (createPortal needs document.body); the server + first hydration render null.
+  const isClient = useIsClient()
 
   useEffect(() => {
     if (!open) return
@@ -95,9 +110,14 @@ export function Dialog({
     }
   }, [open, onClose])
 
-  if (!open) return null
+  if (!open || !isClient) return null
 
-  return (
+  // PORTAL TO document.body — the overlay is `position: fixed`, but a `fixed` element anchors to the
+  // nearest ancestor with a `transform` / `filter` / `perspective`, not the viewport. Several callers open
+  // this from inside the admin rail, which slides in with `transform: translateX(...)` — without the portal
+  // the "full-screen" overlay was trapped inside that rail and rendered as a narrow sidebar panel. Portaling
+  // to the body escapes every such context so it always covers the true viewport.
+  return createPortal(
     <div
       className={cn(
         'fixed inset-0 z-[60] flex justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm sm:p-8',
@@ -116,6 +136,7 @@ export function Dialog({
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
