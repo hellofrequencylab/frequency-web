@@ -36,15 +36,32 @@ function isElementRole(v: unknown): v is ElementRole {
   return typeof v === 'string' && (ELEMENT_ROLES as readonly string[]).includes(v)
 }
 
-/** Coerce a raw jsonb value into a clean StoredElementConfig (fail-safe: junk -> empty). */
+/** A feature-key write must never target a prototype-polluting property name (the roles map is keyed by
+ *  caller-supplied strings from jsonb). Guards `normalizeElementConfig`'s dynamic writes. */
+function isSafeFeatureKey(k: string): boolean {
+  return k !== '__proto__' && k !== 'constructor' && k !== 'prototype'
+}
+
+/** Coerce a raw jsonb value into a clean StoredElementConfig (fail-safe: junk -> empty). The `roles`
+ *  map is rebuilt key-by-key with a prototype-injection guard (the keys come from stored jsonb). */
 export function normalizeElementConfig(raw: unknown): StoredElementConfig {
   if (!raw || typeof raw !== 'object') return {}
   const r = raw as Record<string, unknown>
   const out: StoredElementConfig = {}
-  if (r.settings && typeof r.settings === 'object') out.settings = r.settings as Record<string, boolean | string>
+  if (r.settings && typeof r.settings === 'object') {
+    const settings: Record<string, boolean | string> = {}
+    for (const [k, v] of Object.entries(r.settings as Record<string, unknown>)) {
+      if (!isSafeFeatureKey(k)) continue
+      if (typeof v === 'boolean' || typeof v === 'string') settings[k] = v
+    }
+    out.settings = settings
+  }
   if (r.roles && typeof r.roles === 'object') {
     const roles: Record<string, ElementRole> = {}
-    for (const [k, v] of Object.entries(r.roles as Record<string, unknown>)) if (isElementRole(v)) roles[k] = v
+    for (const [k, v] of Object.entries(r.roles as Record<string, unknown>)) {
+      if (!isSafeFeatureKey(k)) continue
+      if (isElementRole(v)) roles[k] = v
+    }
     out.roles = roles
   }
   return out
