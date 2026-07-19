@@ -51,12 +51,13 @@ CI-enforced), independently shippable:
   (layout, height, focal point, links, darken-cover); Journeys + personal profiles converted to the
   immersive `identity` layout. **Config wired:** `resolveHeaderElement()` (`lib/elements/header.ts`)
   reads the master/space `element_settings` so an operator retunes a header's layout/height from
-  `/admin/elements` with no deploy (surface default → operator value precedence); the element's size
-  ladder is now the single `lib/layout/header-sizes.ts`. ⏳ Remaining: roll the resolver across the
-  overlay/index + commerce heroes, and converge the legacy fixed-height cover ladders
-  (`lib/spaces/hero-config.ts` short/medium/tall, `lib/events/hero-height.ts` short/standard/tall) onto
-  this ladder when those surfaces adopt the element — that step changes some pixel heights + migrates
-  stored height values, so it ships with those surfaces' conversion (needs a preview sign-off).
+  `/admin/elements` with no deploy (surface default → operator value precedence); the header element's
+  min-height ladder is the single `lib/layout/header-sizes.ts`. **Cover height pickers folded:** the
+  Space + Event hero height pickers now resolve from ONE shared ladder (`lib/layout/cover-height.ts`,
+  Short / Standard / Tall) built on the most-developed Space functions (its 224/352/576 heights +
+  focal-preview aspect math); the Space's third copy in `space-branding-form` is gone; a legacy stored
+  `medium` maps to `standard` (no migration). ⏳ Remaining: roll the resolver across the overlay/index +
+  commerce heroes.
 - **4a QR Studio** ⬤⬤ M
 - **4b Email editor popup** ⬤⬤ M
 - **4c Resonance CRM board** ⬤⬤⬤ L (large surface)

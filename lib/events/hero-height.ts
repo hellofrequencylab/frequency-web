@@ -1,42 +1,34 @@
-// The event page hero height — a 3-way lever the host picks (Event page overhaul), mirroring the
-// Business Space cover hero (lib/spaces/hero-config.ts). Stored on the existing events.theme jsonb
-// bag under `heroHeight` (no new DB column); 'standard' is the default and is dropped when written
-// so a plain event keeps an empty theme. The classes match the Space cover heights so the "tall"
-// option gives the same large-hero feel.
+// The event page hero height. It resolves from the SHARED cover-height ladder (lib/layout/cover-height.ts)
+// that the Business Space cover hero also uses — one ladder, one set of functions (Short / Standard /
+// Tall), instead of a second near-identical copy. Stored on the existing events.theme jsonb bag under
+// `heroHeight` (no new DB column); 'standard' is the default and is dropped when written so a plain event
+// keeps an empty theme.
 
-export type EventHeroHeight = 'short' | 'standard' | 'tall'
+import {
+  coverHeightClass,
+  asCoverHeight,
+  COVER_HEIGHT_OPTIONS,
+  COVER_HEIGHT_DEFAULT,
+  type CoverHeight,
+} from '@/lib/layout/cover-height'
 
-export const EVENT_HERO_HEIGHTS: { value: EventHeroHeight; label: string }[] = [
-  { value: 'short', label: 'Short' },
-  { value: 'standard', label: 'Standard' },
-  { value: 'tall', label: 'Tall' },
-]
+export type EventHeroHeight = CoverHeight
 
-const DEFAULT_HEIGHT: EventHeroHeight = 'standard'
+/** The height tiers for the event hero picker (the shared Short / Standard / Tall ladder). */
+export const EVENT_HERO_HEIGHTS: { value: EventHeroHeight; label: string }[] = [...COVER_HEIGHT_OPTIONS]
 
-// Fixed heights (full-width, object-cover), mirroring the Space cover hero's short/medium/tall.
-const HERO_HEIGHT_CLASS: Record<EventHeroHeight, string> = {
-  short: 'h-56 sm:h-72',
-  standard: 'h-72 sm:h-[22rem]',
-  tall: 'h-[24rem] sm:h-[32rem]',
-}
-
-/** The Tailwind height classes for a hero height. */
+/** The Tailwind height classes for a hero height (delegates to the shared ladder). */
 export function eventHeroHeightClass(height: EventHeroHeight): string {
-  return HERO_HEIGHT_CLASS[height]
+  return coverHeightClass(height)
 }
 
-function isHeroHeight(v: unknown): v is EventHeroHeight {
-  return v === 'short' || v === 'standard' || v === 'tall'
-}
-
-/** Read the saved hero height out of events.theme (jsonb), defaulting to 'standard'. */
+/** Read the saved hero height out of events.theme (jsonb), defaulting to 'standard' (maps legacy 'medium'). */
 export function readEventHeroHeight(theme: unknown): EventHeroHeight {
   if (theme && typeof theme === 'object') {
-    const h = (theme as Record<string, unknown>).heroHeight
-    if (isHeroHeight(h)) return h
+    const h = asCoverHeight((theme as Record<string, unknown>).heroHeight)
+    if (h) return h
   }
-  return DEFAULT_HEIGHT
+  return COVER_HEIGHT_DEFAULT
 }
 
 /** Merge a chosen hero height into an existing theme object, dropping the key when it is the
@@ -46,7 +38,7 @@ export function writeEventHeroHeight(
   height: EventHeroHeight,
 ): Record<string, unknown> {
   const base = theme && typeof theme === 'object' ? { ...(theme as Record<string, unknown>) } : {}
-  if (height === DEFAULT_HEIGHT) delete base.heroHeight
+  if (height === COVER_HEIGHT_DEFAULT) delete base.heroHeight
   else base.heroHeight = height
   return base
 }
