@@ -28,7 +28,7 @@ export default async function ElementsConsolePage() {
       icon={Blocks}
       eyebrow="Platform"
       title="Elements"
-      description="The reusable elements that appear across Frequency. Edit an element's master settings and role gates here, and every occurrence updates site-wide."
+      description="Every reusable element that appears across Frequency, defined in one place. Preview each one, edit its master settings and role gates here, and every occurrence updates site-wide."
     >
       <AdminSection>
         <div className="space-y-4">
