@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight, ImageIcon, Loader2, Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { LoomPicker } from '@/components/loom/loom-picker'
 
 // Multi-image sibling of ImageUpload (components/ui/image-upload). Manages an ORDERED
 // array of storage PATHS in a public Supabase Storage bucket, under the signer's own
@@ -51,6 +52,8 @@ export function MultiImageUpload({
   upload,
   reorderable = false,
   leading = null,
+  loom = false,
+  onPickFromLoom,
 }: {
   /** Ordered storage paths in `bucket`. */
   value: string[]
@@ -77,14 +80,39 @@ export function MultiImageUpload({
   reorderable?: boolean
   /** A pinned first tile (the key/cover image) folded in ahead of the reorderable gallery. */
   leading?: LeadingImage | null
+  /** Show a "Select from Loom" trigger that opens the shared multi-select picker (owner directive:
+   *  every image upload opens the Loom). Picked URLs append into `value`. */
+  loom?: boolean
+  /** How picked Loom URLs become stored values. Omit -> the URLs append to `value` verbatim (for
+   *  URL-tolerant columns). Provide it to transform first (e.g. events copy each URL into event-media
+   *  server-side and return PATHS). Receives the picked URLs, returns the next full array. */
+  onPickFromLoom?: (pickedUrls: string[]) => string[] | Promise<string[]>
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [loomOpen, setLoomOpen] = useState(false)
+
+  async function addFromLoom(urls: string[]) {
+    const room = max - value.length
+    if (room <= 0) { setError(`You can add up to ${max} images.`); return }
+    const picked = urls.slice(0, room)
+    if (onPickFromLoom) {
+      setBusy(true)
+      try { onChange(await onPickFromLoom(picked)) }
+      catch { setError('Those images could not be added. Try again.') }
+      finally { setBusy(false) }
+    } else {
+      onChange([...value, ...picked])
+    }
+  }
 
   const supabase = createClient()
-  const publicUrl = (path: string) => supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
+  // A value element is either a storage PATH (legacy) or a full Loom URL (new picks). Resolve a path;
+  // pass a URL through as-is, so the two are interchangeable with no data migration.
+  const publicUrl = (ref: string) =>
+    /^https?:\/\//i.test(ref) ? ref : supabase.storage.from(bucket).getPublicUrl(ref).data.publicUrl
   const atMax = value.length >= max
 
   /** Move the tile at `from` to `to`, clamped, and persist the new order. */
@@ -285,28 +313,40 @@ export function MultiImageUpload({
         {!atMax && (
           <button
             type="button"
-            onClick={() => inputRef.current?.click()}
+            onClick={() => (loom ? setLoomOpen(true) : inputRef.current?.click())}
             disabled={disabled || busy}
             className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border text-2xs text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
           >
             {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
-            {busy ? 'Uploading…' : 'Add'}
+            {busy ? 'Uploading…' : loom ? 'Choose' : 'Add'}
           </button>
         )}
       </div>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={(e) => {
-          const files = Array.from(e.target.files ?? [])
-          if (files.length) void addFiles(files)
-          e.target.value = ''
-        }}
-      />
+      {loom && (
+        <LoomPicker
+          open={loomOpen}
+          onClose={() => setLoomOpen(false)}
+          multiple
+          onSelectMany={(urls) => void addFromLoom(urls)}
+          title="Add images"
+        />
+      )}
+
+      {!loom && (
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            const files = Array.from(e.target.files ?? [])
+            if (files.length) void addFiles(files)
+            e.target.value = ''
+          }}
+        />
+      )}
 
       {hint && <p className="text-2xs text-muted">{hint}</p>}
       {error && <p className="text-2xs text-danger">{error}</p>}

@@ -25,6 +25,9 @@ import {
   type LoomPickAsset,
 } from '@/lib/library/store'
 import { classifyLoomUpload, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
+import { resolveElement } from '@/lib/elements/store'
+import { elementDef } from '@/lib/elements/registry'
+import { elementFeatureOn, elementChoice, type ViewerRoleCtx } from '@/lib/elements/config'
 
 /** One selectable Loom scope in the picker's left rail. `key` is 'mine' or a Space id. */
 export interface LoomScope {
@@ -33,22 +36,65 @@ export interface LoomScope {
   kind: 'mine' | 'space'
 }
 
-/** The caller's Loom scopes: their personal uploads first, then each Space they run (a per-space
- *  category, so a teammate sees that Space's shared assets). FAIL-SAFE to just 'mine'. */
-export async function loomScopes(): Promise<{ scopes: LoomScope[] }> {
+/** The Loom picker's resolved config for THIS viewer (from the element_settings master, role-gated).
+ *  The picker honors it: which tabs render, whether AI Create shows, which scope it opens on. */
+export interface LoomPickerConfig {
+  tabs: { images: boolean; elements: boolean; tags: boolean; spaces: boolean; airwaves: boolean }
+  aiCreate: boolean
+  defaultScope: 'mine' | 'space'
+}
+
+const DEFAULT_LOOM_CONFIG: LoomPickerConfig = {
+  tabs: { images: true, elements: true, tags: true, spaces: true, airwaves: false },
+  aiCreate: false,
+  defaultScope: 'mine',
+}
+
+/** Resolve the Loom element config for the caller (global context: community_role + staff), role-gating
+ *  each feature. FAIL-SAFE to the registry defaults. */
+async function resolveLoomConfig(
+  caller: { community_role?: unknown; webRole?: unknown } | null,
+): Promise<LoomPickerConfig> {
+  const def = elementDef('loom-picker')
+  const resolved = await resolveElement('loom-picker')
+  if (!def || !resolved) return DEFAULT_LOOM_CONFIG
+  const ctx: ViewerRoleCtx = {
+    communityRole: (caller?.community_role as ViewerRoleCtx['communityRole']) ?? null,
+    webRole: (caller?.webRole as ViewerRoleCtx['webRole']) ?? null,
+  }
+  const on = (k: string) => elementFeatureOn(def, resolved, k, ctx)
+  return {
+    tabs: {
+      images: on('tab.images'),
+      elements: on('tab.elements'),
+      tags: on('tab.tags'),
+      spaces: on('tab.spaces'),
+      airwaves: on('tab.airwaves'),
+    },
+    aiCreate: on('aiCreate'),
+    defaultScope: elementChoice(resolved, 'defaultScope') === 'space' ? 'space' : 'mine',
+  }
+}
+
+/** The caller's Loom scopes + resolved config. Scopes: their personal uploads first, then each Space
+ *  they run (a per-space category). Config: the role-gated element_settings for the Loom picker.
+ *  FAIL-SAFE to just 'mine' + the default config. */
+export async function loomScopes(): Promise<{ scopes: LoomScope[]; config: LoomPickerConfig }> {
   const caller = await getCallerProfile()
-  if (!caller) return { scopes: [] }
+  if (!caller) return { scopes: [], config: DEFAULT_LOOM_CONFIG }
   let spaces: { id: string; name: string }[] = []
   try {
     spaces = (await listOperatedSpaces(caller.id)).map((s) => ({ id: s.id, name: s.name }))
   } catch {
     spaces = []
   }
+  const config = await resolveLoomConfig(caller)
   return {
     scopes: [
       { key: 'mine', label: 'My uploads', kind: 'mine' },
       ...spaces.map((s) => ({ key: s.id, label: s.name, kind: 'space' as const })),
     ],
+    config,
   }
 }
 

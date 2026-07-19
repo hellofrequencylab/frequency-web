@@ -243,6 +243,9 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'library', href: '/admin/library', label: 'Loom Studio', desc: 'The media & asset library: every image the site uses, plus the illustration kit.', icon: 'Images', min: 'janitor',
     world: 'content', worldLabel: 'Loom', worldOrder: 9,
     adminGroups: [{ domain: 'acquisition', section: 'Assets' }] },
+  { id: 'elements', href: '/admin/elements', label: 'Elements', desc: 'The reusable elements across the site (the Loom picker, and more): edit each one\'s master settings and role gates once, applied site-wide.', icon: 'LayoutGrid', min: 'admin',
+    world: 'content', worldLabel: 'Elements', worldOrder: 10,
+    adminGroups: [{ domain: 'acquisition', section: 'Assets' }] },
 
   // ═══════════════ GROWTH ═══════════════
   // §5b: Entry points · QR · Referrals · Applications · Onboarding · Campaigns · Funnels ·

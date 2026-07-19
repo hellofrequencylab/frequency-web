@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getPracticeCapabilities } from '@/lib/core/load-capabilities'
 import { slugify } from '@/lib/utils'
+import { isLoomPublicImageUrl } from '@/lib/loom/urls'
 
 // Safe raster image types for cover uploads. SVG is excluded deliberately (it can carry script);
 // the public site-media bucket has no MIME constraint, so an arbitrary content-type (text/html,
@@ -128,6 +129,24 @@ export async function uploadPracticeCover(
   if (slug) revalidatePath(`/practices/${slug}`)
   revalidatePath('/practices')
   return { url: data.publicUrl }
+}
+
+/** Persist a Loom-picked cover URL (the URL-only sibling of uploadPracticeCover). Same
+ *  practice.editSettings gate; the URL must be a Supabase public object URL. */
+export async function setPracticeCoverUrl(
+  id: string,
+  slug: string | null,
+  url: string,
+): Promise<{ error: string } | void> {
+  const caps = await getPracticeCapabilities(id)
+  if (!caps.has('practice.editSettings')) return { error: 'Unauthorized' }
+  if (!isLoomPublicImageUrl(url)) return { error: 'That image could not be used.' }
+  const admin = createAdminClient()
+  const { error } = await admin.from('practices').update({ header_image: url }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath(`/practices/${id}`)
+  if (slug) revalidatePath(`/practices/${slug}`)
+  revalidatePath('/practices')
 }
 
 export async function removePracticeCover(id: string, slug: string | null) {

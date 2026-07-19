@@ -1,7 +1,8 @@
 'use client'
 
-import { useMemo, useRef, type ReactNode } from 'react'
-import { Palette, Upload, X, RotateCcw, TriangleAlert } from 'lucide-react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { Palette, ImagePlus, X, RotateCcw, TriangleAlert } from 'lucide-react'
+import { LoomPicker } from '@/components/loom/loom-picker'
 import {
   type QrStyle,
   type ModuleShape,
@@ -48,22 +49,12 @@ export function StyleEditor({
    *  for a horizontal designer. */
   renderCompact?: (parts: { preview: ReactNode; controls: ReactNode; presets: ReactNode }) => ReactNode
 }) {
-  const fileRef = useRef<HTMLInputElement>(null)
+  const [logoLoomOpen, setLogoLoomOpen] = useState(false)
   const svg = useMemo(() => renderStyledQrSvg(previewUrl, value, 240), [previewUrl, value])
   const warnings = useMemo(() => scannabilityWarnings(value), [value])
 
   function set<K extends keyof QrStyle>(key: K, v: QrStyle[K]) {
     onChange({ ...value, [key]: v })
-  }
-
-  function onLogoFile(file: File | undefined) {
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const src = String(reader.result)
-      if (isSafeLogoSrc(src)) set('logo', src)
-    }
-    reader.readAsDataURL(file)
   }
 
   // Compact mode shows the four core looks; the full set (incl. Forest / Gold) is
@@ -216,17 +207,16 @@ export function StyleEditor({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => fileRef.current?.click()}
+            onClick={() => setLogoLoomOpen(true)}
             className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-muted hover:text-text hover:bg-surface-elevated transition-colors"
           >
-            <Upload className="w-3 h-3" /> Upload
+            <ImagePlus className="w-3 h-3" /> Choose
           </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => onLogoFile(e.target.files?.[0])}
+          <LoomPicker
+            open={logoLoomOpen}
+            onClose={() => setLogoLoomOpen(false)}
+            onSelect={(url) => { if (isSafeLogoSrc(url)) set('logo', url) }}
+            title="Choose a logo"
           />
           {value.logo && (
             <button

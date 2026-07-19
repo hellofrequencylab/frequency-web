@@ -9,7 +9,7 @@ import { fieldClasses, labelClasses } from '@/components/ui/field'
 import {
   getEditablePageContent,
   savePageContent,
-  uploadPageHero,
+  setPageHeroUrl,
   removePageHero,
   type EditablePageContent,
 } from '@/lib/page-content-actions'
@@ -89,7 +89,7 @@ export function PageContentModule() {
             alt="Page hero image"
             canEdit
             forceEdit
-            upload={uploadPageHero.bind(null, pathname)}
+            setUrl={setPageHeroUrl.bind(null, pathname)}
             remove={removePageHero.bind(null, pathname)}
           />
         </div>

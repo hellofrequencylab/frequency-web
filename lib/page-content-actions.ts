@@ -6,6 +6,7 @@ import { atLeastRole } from '@/lib/core/roles'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { CONTENT_EDIT_ROUTES } from '@/lib/layout/editable-content'
+import { isLoomPublicImageUrl } from '@/lib/loom/urls'
 
 // Who may edit page content (ADR-180) — role-specific: admin+ (operators who tune
 // public-facing chrome). Reads return null for anyone below, so the editor renders
@@ -141,6 +142,25 @@ export async function uploadPageHero(
 
   revalidatePath(route)
   return { url: pub.publicUrl }
+}
+
+/** Persist a Loom-picked hero URL for a route (the URL-only sibling of uploadPageHero: the file is
+ *  already stored in the Loom, so this just validates + writes the column). Same admin gate + route
+ *  guard; the URL must be a Supabase public object URL so a caller can't inject an arbitrary src. */
+export async function setPageHeroUrl(route: string, url: string): Promise<{ error: string } | void> {
+  const me = await getCallerProfile()
+  if (!me || !atLeastRole(me.community_role, MIN_ROLE)) return { error: 'Not allowed.' }
+  if (!isEditableRoute(route)) return { error: 'That page isn’t editable.' }
+  if (!isLoomPublicImageUrl(url)) return { error: 'That image could not be used.' }
+  const db = createAdminClient()
+  const { error } = await db.from('page_content').upsert({
+    route,
+    hero_image: url,
+    updated_by: me.id,
+    updated_at: new Date().toISOString(),
+  })
+  if (error) return { error: error.message }
+  revalidatePath(route)
 }
 
 /** Clear a route's hero image. Admin-gated; mirrors removeCircleCover. */

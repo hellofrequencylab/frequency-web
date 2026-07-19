@@ -1,14 +1,13 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Upload, X, GripVertical, Plus } from 'lucide-react'
-import { uploadSiteMediaBatch } from './upload-action'
+import { ImagePlus, X, GripVertical, Plus } from 'lucide-react'
+import { LoomPicker } from '@/components/loom/loom-picker'
 
-// A Puck custom field for the Image block's GALLERY mode: an ORDERED list of images. Extends the
-// single-image control (image-field.tsx) to MULTI-UPLOAD — one file input accepts many files, each
-// uploaded to the SAME `site-media` bucket via `uploadSiteMediaBatch` (same bucket + validation as the
-// single upload). Images can also be added by URL, removed, and reordered by drag. The stored value is
-// `{ src: string }[]`, so the block renders the images in the operator's chosen order.
+// A Puck custom field for the Image block's GALLERY mode: an ORDERED list of images. Images are added
+// from the Loom (browse your library + upload multi / drag-drop, via the shared picker) or by URL,
+// removed, and reordered by drag. The stored value is `{ src: string }[]`, so the block renders the
+// images in the operator's chosen order.
 
 export type GalleryImage = { src: string }
 
@@ -20,28 +19,19 @@ function GalleryImagesField({
   onChange: (value: GalleryImage[]) => void
 }) {
   const images = value ?? []
-  const fileRef = useRef<HTMLInputElement>(null)
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
   const [url, setUrl] = useState('')
+  const [loomOpen, setLoomOpen] = useState(false)
   const dragIndex = useRef<number | null>(null)
 
-  async function onFiles(files: FileList | null) {
-    if (!files || files.length === 0) return
-    setErr(null)
-    setBusy(true)
-    const fd = new FormData()
-    Array.from(files).forEach((f) => fd.append('files', f))
-    const res = await uploadSiteMediaBatch(fd)
-    setBusy(false)
-    if (res.urls.length > 0) onChange([...images, ...res.urls.map((src) => ({ src }))])
-    if (res.error) setErr(res.error)
+  function addUrls(srcs: string[]) {
+    if (srcs.length === 0) return
+    onChange([...images, ...srcs.map((src) => ({ src }))])
   }
 
   function addUrl() {
     const src = url.trim()
     if (!src) return
-    onChange([...images, { src }])
+    addUrls([src])
     setUrl('')
   }
 
@@ -120,32 +110,18 @@ function GalleryImagesField({
 
       <button
         type="button"
-        onClick={() => fileRef.current?.click()}
-        disabled={busy}
-        className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-2 py-2 text-sm text-muted transition-colors hover:border-border-strong hover:bg-surface disabled:opacity-60"
+        onClick={() => setLoomOpen(true)}
+        className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-2 py-2 text-sm text-muted transition-colors hover:border-border-strong hover:bg-surface"
       >
-        <Upload className="h-3.5 w-3.5" aria-hidden />
-        {busy ? 'Uploading…' : 'Upload images'}
+        <ImagePlus className="h-3.5 w-3.5" aria-hidden />
+        Choose from your Loom
       </button>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        multiple
-        hidden
-        disabled={busy}
-        onChange={(e) => {
-          onFiles(e.target.files)
-          e.target.value = ''
-        }}
-      />
-
-      {err && <p className="text-xs text-danger">{err}</p>}
+      <LoomPicker open={loomOpen} onClose={() => setLoomOpen(false)} multiple onSelectMany={addUrls} title="Add images" />
     </div>
   )
 }
 
-/** The Puck custom field: an ordered gallery image list (multi-upload + URL + reorder). */
+/** The Puck custom field: an ordered gallery image list (Loom multi-pick + URL + reorder). */
 export const galleryImagesField = {
   type: 'custom' as const,
   label: 'Gallery images',
