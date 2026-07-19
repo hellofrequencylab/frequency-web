@@ -16,14 +16,16 @@ point of the guards is that a conversion can't regress the architecture.
 
 ## The phases
 
-### Phase 0 — Foundation & guardrails ⬤⬤ M · architectural (mostly shipped in #1819)
-- Elements **registry + `element_settings` config + role gates** — **done** (#1819, ADR-792).
-- The generic **`<AppElement name=… />` mounter** + the **typed-wrapper** convention (both, per the
-  dialed-in decision).
-- **`check:elements`** hard CI guard (mirrors `check:menu`) + **drift tests** (registry ↔ mounter ↔
-  console resolve identically) + **CODEOWNERS** on `lib/elements/**` + the **PR-template review block**
-  + `docs/REVIEWING-CHANGES.md` — **partly done**.
-- **Apply** the `element_settings` migration (via the migration workflow).
+### Phase 0 — Foundation & guardrails ⬤⬤ M · architectural — ✅ DONE
+- Elements **registry + `element_settings` config + role gates** — ✅ (#1819, ADR-792).
+- The generic **`<AppElement name=… />` mounter** (`components/elements/app-element.tsx`) + the
+  **component map** (`components/elements/registry.tsx`) + the **typed-wrapper** convention — ✅.
+- **`check:elements`** hard CI guard (`scripts/check-elements.mjs`, mirrors `check:menu`; wired into
+  the `checks` job) + **drift test** (`components/elements/registry.test.ts`: registry ↔ component map
+  in lock-step) + classifier test + **CODEOWNERS** on `lib/elements/**` · `components/elements/**` ·
+  `scripts/check-*.mjs` + the **PR-template review block** + `docs/REVIEWING-CHANGES.md` — ✅.
+- **Apply** the `element_settings` migration (via the migration workflow) — ⏳ deferred (one shared DB;
+  code fail-safes to registry defaults until it lands).
 - **Ships:** the contract is real and un-mergeable to violate; Loom is the reference app.
 
 ### Phase 1 — Owner review/ship system ⬤ S · process

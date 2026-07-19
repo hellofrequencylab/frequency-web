@@ -46,6 +46,8 @@ jobs:
         run: pnpm check:canon
       - name: Admin-menu contract check
         run: pnpm check:menu
+      - name: Elements contract check (one catalog + store, mounted via registry)
+        run: pnpm check:elements
       - name: Token contract check (no hardcoded style)
         run: pnpm check:tokens
       - name: Header contract check (no hand-rolled page <h1>)

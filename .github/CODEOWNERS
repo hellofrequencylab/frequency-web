@@ -14,3 +14,10 @@
 # /supabase/migrations/   @your-db-owner
 # /docs/                  @your-docs-owner
 # /lib/ai/                @your-ai-owner
+#
+# Architectural contracts — the single-source registries + their CI guards. Changes here alter a
+# site-wide contract (ADR-553 menu, ADR-792 elements), so route them to an owner once the team grows:
+# /lib/elements/              @your-arch-owner   # elements catalog + config + store (ADR-792)
+# /components/elements/       @your-arch-owner   # the element component map + <AppElement> mounter
+# /lib/admin/modules/         @your-arch-owner   # the admin-menu catalogs (ADR-553)
+# /scripts/check-*.mjs        @your-arch-owner   # the contract guards themselves

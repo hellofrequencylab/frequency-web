@@ -38,6 +38,26 @@ element's own thin wrapper that resolves from the registry). Because the registr
 every occurrence is identical. This mirrors the admin MENU-CONTRACT (`APPS` / `SPACE_MODULES`), now
 extended from menu items to embeddable UI.
 
+**Two registries, kept in lock-step.** The framework splits into a PURE half and a RENDER half so the
+catalog stays client-safe and testable:
+
+- `lib/elements/registry.ts` — the **pure catalog**: the `ElementKey` union + `ELEMENTS` (each
+  element's features + `defaultRole` gates). No React, no components; safe to import anywhere.
+- `components/elements/registry.tsx` — the **component map**: `ELEMENT_COMPONENTS` (key → the one
+  canonical component) + `ElementPropsMap` (each element's props, which type `<AppElement>`).
+
+`components/elements/app-element.tsx` is the **generic mounter**: `<AppElement name="loom-picker" …/>`.
+The `name` discriminates the props, so a wrong/missing prop is a compile error. An element MAY also
+export a **typed wrapper** (`const LoomElement = (p: ElementProps<'loom-picker'>) => <AppElement
+name="loom-picker" {...p} />`) as ergonomic sugar — never a second implementation.
+
+**Enforcement (hard, in CI).** `pnpm check:elements` (`scripts/check-elements.mjs`, wired into the
+`checks` job) fails a PR that (a) declares a second `ElementDef[]` catalog outside the registry, or
+(b) reaches the `element_settings` table outside `lib/elements/store.ts`. The vitest drift guard
+(`components/elements/registry.test.ts`) locks the two registries in lock-step: every mountable key is
+a registered `ElementKey` with a catalog entry, and the component map + props map agree. Escape hatch:
+`// element-ok: <reason>` on the line. This is the elements twin of `check:menu` (ADR-553).
+
 ### 3. The shared config layer — `element_settings` (with role gating)
 
 ONE generic table, so every element's rules are editable without touching code:
