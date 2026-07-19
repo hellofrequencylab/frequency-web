@@ -14111,3 +14111,13 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 3. `SpaceMemberViewer` mounts `MemberViewer` with the space roster + the slug-bound detail loader; `manage-board` embeds it on the Resonance section instead of `CrmBody`.
 
 **Consequences.** No migration. The space Resonance tab now reads identically to the admin Resonance CRM, scoped + gated to the space. The CRM board (`/crm`, People/Pipeline/Cockpit/Import) is unchanged and still linked. Security: the inline detail is tenancy-checked, so a space owner sees only their own space's members. Full suite green (5678), tsc + eslint + guards clean. (Mobile responsiveness across the hub + site is a separate follow-up sweep.)
+
+## ADR-789: The Space Resonance tab IS the Resonance CRM (exact admin composition, scoped)
+
+**Status:** Accepted (2026-07-18) · Corrects ADR-785/787 · NO migration. Adds `components/spaces/crm/{space-crm-stats,space-resonance-crm}.tsx`; the Resonance hub tab now renders the full CRM surface instead of feature cards.
+
+**Context.** The owner's spec for the space Resonance tab was "EXACTLY the layout for the main Resonance CRM" (`/admin/crm`): the header + Import contacts, the four health stat cards, and the master-detail member viewer. ADR-787 wired the member viewer but left the hub feature-card grid on the tab; it did not replicate the stat row / header / import, so it did not read as the Resonance CRM.
+
+**Decision.** The Resonance tab renders `SpaceResonanceCrm` — the SAME composition as the admin CRM page, scoped to the space: the "Resonance CRM" header + "Pick a member to see everything about them, inline" + `ImportContactsButton target={{ kind: 'space', spaceId }}`, then `SpaceCrmHealthStatRow` (Members / Active this week / At risk / Resonance Health, the same cards + tones, read from `getSpaceHealth(spaceId)` instead of `getPlatformHealth`), then the `MemberViewer` master-detail (via `loadMemberSummaries({ spaceId })` + the tenancy-gated `loadSpaceMemberDetail`). The hub feature-card grid + access legend no longer render on Resonance.
+
+**Consequences.** No migration. The space Resonance tab reads pixel-for-composition identical to the admin Resonance CRM, every function the same component, scoped + gated to the space. Follow-ups still open (owner directive): move the admin CRM tab menu under its search bar; replicate the admin Marketing console on the space Marketing tab with a classifieds-style client-side pill sub-nav (Email / Email design / Email style / QR codes / Scans / Automation) and the "New email" popup composer (upgraded editor). Full suite green, tsc + eslint + guards clean.

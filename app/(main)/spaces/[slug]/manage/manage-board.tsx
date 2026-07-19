@@ -8,7 +8,7 @@ import { isStaff } from '@/lib/core/roles'
 import { resolveSpaceMenu } from '@/lib/admin/modules/space-menu'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { asHubSection, type SpaceHubSection } from '@/lib/admin/modules/space-hub'
-import { SpaceMemberViewer } from '@/components/spaces/crm/space-member-viewer'
+import { SpaceResonanceCrm } from '@/components/spaces/crm/space-resonance-crm'
 import { SpaceManageConsole } from './console'
 
 // The Space owner console BOARD (ADR-441 EM1-3): the reusable render boundary that resolves the Space,
@@ -72,10 +72,13 @@ export async function SpaceManageBoard({ slug, section: rawSection }: { slug: st
   const prefs = readModePreferences(space.preferences)
   const emphasis = effectiveNavEmphasis(mode, prefs)
 
-  // Resonance is the RELATIONSHIP hub: it opens on the space's own Resonance CRM roster — the SAME
-  // master-detail member viewer the admin Resonance CRM uses (pick a member, see everything inline), scoped
-  // to this space's reachable members. Self-gating: the detail loader re-checks space-manage + tenancy.
-  const crmEmbed = section === 'resonance' ? <SpaceMemberViewer spaceId={space.id} slug={space.slug} /> : undefined
+  // Resonance IS the space's Resonance CRM: the EXACT admin /admin/crm composition (header + Import + the
+  // four health stat cards + the master-detail member viewer), scoped to this space + gated on space-manage.
+  const brandName = space.brandName ?? space.name
+  const crmEmbed =
+    section === 'resonance' ? (
+      <SpaceResonanceCrm spaceId={space.id} slug={space.slug} spaceName={brandName} />
+    ) : undefined
 
   // Deleting a Space is OWNER-grade (or platform staff): the Profile & Settings tab's Danger zone renders
   // its delete control only when true; otherwise header-only.
