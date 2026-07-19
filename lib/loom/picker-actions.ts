@@ -98,6 +98,32 @@ export async function loomScopes(): Promise<{ scopes: LoomScope[]; config: LoomP
   }
 }
 
+/** ONE authorized Loom scope + the role-gated config, for a picker locked to a single context (the
+ *  Space/profile/page being edited). Unlike loomScopes() this never lists every operated Space: it
+ *  authorizes just `scopeKey` (via resolveScope) and returns that one scope's label, or `scope: null`
+ *  when the caller cannot read it. FAIL-SAFE — an unauthorized/missing scopeKey yields a null scope +
+ *  default config, never a throw. */
+export async function loomScope(
+  scopeKey: string,
+): Promise<{ scope: LoomScope | null; config: LoomPickerConfig }> {
+  const caller = await getCallerProfile()
+  if (!caller) return { scope: null, config: DEFAULT_LOOM_CONFIG }
+  const config = await resolveLoomConfig(caller)
+  if (scopeKey === 'mine') {
+    return { scope: { key: 'mine', label: 'My uploads', kind: 'mine' }, config }
+  }
+  const resolved = await resolveScope(caller.id, scopeKey)
+  if (!resolved) return { scope: null, config }
+  let label = 'This library'
+  try {
+    const space = await getSpaceById(scopeKey)
+    if (space?.name) label = space.name
+  } catch {
+    // keep the fallback label
+  }
+  return { scope: { key: scopeKey, label, kind: 'space' }, config }
+}
+
 /** Resolve + AUTHORIZE a scope key to a concrete query scope. 'mine' = the caller's personal Loom;
  *  a Space id requires the caller to manage that Space (owner/admin/editor). Null on any miss. */
 async function resolveScope(

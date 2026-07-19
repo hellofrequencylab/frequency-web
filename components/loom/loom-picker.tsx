@@ -15,7 +15,7 @@ import { Dialog } from '@/components/ui/dialog'
 import {
   Upload, Loader2, ImageIcon, Sparkles, Tag as TagIcon, Building2, User, Check, X, Search,
 } from 'lucide-react'
-import { loomScopes, loomImages, uploadLoomImage, type LoomScope, type LoomPickerConfig } from '@/lib/loom/picker-actions'
+import { loomScopes, loomScope as loomScopeAction, loomImages, uploadLoomImage, type LoomScope, type LoomPickerConfig } from '@/lib/loom/picker-actions'
 import type { LoomPickAsset } from '@/lib/library/store'
 
 // Fallback config until the resolved one loads (matches the registry defaults). The real config comes
@@ -35,6 +35,7 @@ export function LoomPicker({
   onSelectMany,
   multiple = false,
   title = 'Choose an image',
+  scopeKey,
 }: {
   open: boolean
   onClose: () => void
@@ -45,10 +46,14 @@ export function LoomPicker({
   /** Let the user pick several images at once (a confirm bar replaces click-to-close). For galleries. */
   multiple?: boolean
   title?: string
+  /** Lock the picker to ONE Loom scope ('mine' or a Space id) — the context being edited. When set, the
+   *  left-rail scope switcher is hidden and only this scope's images/tags load (still authorized +
+   *  fail-safe server-side). Undefined = the full multi-scope picker (My uploads + every operated Space). */
+  scopeKey?: string
 }) {
   const [scopes, setScopes] = useState<LoomScope[]>([])
   const [config, setConfig] = useState<LoomPickerConfig>(FALLBACK_CONFIG)
-  const [scope, setScope] = useState('mine')
+  const [scope, setScope] = useState(scopeKey ?? 'mine')
   const [view, setView] = useState<View>('images')
   const [tag, setTag] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -65,25 +70,38 @@ export function LoomPicker({
   // setState-in-effect: reset here, at the close, instead).
   const close = () => { setSelected([]); onClose() }
 
-  // Resolve the caller's scopes + the role-gated config once per open. setState lands inside the async
-  // callback (not synchronously in the effect body), so it honors the no-setState-in-effect rule.
+  // Resolve scope(s) + the role-gated config once per open. setState lands inside the async callback
+  // (not synchronously in the effect body), so it honors the no-setState-in-effect rule.
+  //   - scopeKey set  → lock to that ONE authorized scope (no left-rail switcher, no operated-space list).
+  //   - scopeKey unset → the full multi-scope picker (My uploads + every operated Space).
   useEffect(() => {
     if (!open) return
     let live = true
-    loomScopes()
-      .then((r) => {
-        if (!live) return
-        setScopes(r.scopes)
-        setConfig(r.config)
-        // Honor the configured default scope: open on the first Space when set to 'space'.
-        if (r.config.defaultScope === 'space') {
-          const firstSpace = r.scopes.find((s) => s.kind === 'space')
-          if (firstSpace) setScope(firstSpace.key)
-        }
-      })
-      .catch(() => {})
+    if (scopeKey) {
+      loomScopeAction(scopeKey)
+        .then((r) => {
+          if (!live) return
+          setScope(scopeKey)
+          setScopes(r.scope ? [r.scope] : [])
+          setConfig(r.config)
+        })
+        .catch(() => {})
+    } else {
+      loomScopes()
+        .then((r) => {
+          if (!live) return
+          setScopes(r.scopes)
+          setConfig(r.config)
+          // Honor the configured default scope: open on the first Space when set to 'space'.
+          if (r.config.defaultScope === 'space') {
+            const firstSpace = r.scopes.find((s) => s.kind === 'space')
+            if (firstSpace) setScope(firstSpace.key)
+          }
+        })
+        .catch(() => {})
+    }
     return () => { live = false }
-  }, [open])
+  }, [open, scopeKey])
 
   const refresh = useCallback(
     (opts: { scope: string; view: View; tag: string | null; q: string }) => {
@@ -187,7 +205,9 @@ export function LoomPicker({
               )}
             </div>
 
-            {config.tabs.spaces && (
+            {/* Scope switcher — only in the multi-scope picker. When locked to a single scopeKey, the
+                caller has already chosen the context, so no switcher renders. */}
+            {!scopeKey && config.tabs.spaces && (
             <div className="space-y-0.5">
               <p className="px-2.5 pb-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Library</p>
               {scopes.map((s) => {

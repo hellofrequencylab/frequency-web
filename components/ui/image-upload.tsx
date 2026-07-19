@@ -41,6 +41,7 @@ export function ImageUpload({
   disabled = false,
   uploadFn,
   loom = true,
+  scopeKey,
 }: {
   /** A public URL (mode 'url') or a storage path (mode 'path'). */
   value: string | null
@@ -62,6 +63,9 @@ export function ImageUpload({
    *  input. On by default for URL-mode controls (owner directive: every image upload opens the Loom).
    *  Path-mode controls (which store a storage path, not a URL) keep the direct file input. */
   loom?: boolean
+  /** Lock the Loom picker to ONE scope ('mine' or a Space id) — the context being edited — so it shows
+   *  only that library, not every Space the caller operates. Undefined = the full multi-scope picker. */
+  scopeKey?: string
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
@@ -202,6 +206,7 @@ export function ImageUpload({
           onClose={() => setPickerOpen(false)}
           onSelect={(url) => onChange(url)}
           title={`Choose ${label.toLowerCase()}`}
+          scopeKey={scopeKey}
         />
       )}
 
