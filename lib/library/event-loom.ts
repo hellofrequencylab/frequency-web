@@ -70,6 +70,8 @@ export async function copyImageToLoom(input: {
   title?: string | null
   mime?: string | null
   bytes?: number | null
+  /** The uploader (library_assets.created_by), so the image shows in their personal Loom "My uploads". */
+  createdBy?: string | null
 }): Promise<void> {
   try {
     if (await loomHasStoragePath(input.spaceId, input.storageBucket, input.storagePath)) return
@@ -85,6 +87,7 @@ export async function copyImageToLoom(input: {
       url: input.url,
       mime: input.mime || 'image/jpeg',
       bytes: input.bytes ?? 0,
+      createdBy: input.createdBy ?? null,
     })
   } catch {
     /* best-effort: a Loom copy failure must never break the event flow */
@@ -159,5 +162,7 @@ export async function copyEventMediaToProfileLoom(input: {
     title: input.title,
     mime: input.mime,
     bytes: input.bytes,
+    // The profile owns this Loom, so stamp them as the uploader → shows in their "My uploads".
+    createdBy: input.profileId,
   })
 }

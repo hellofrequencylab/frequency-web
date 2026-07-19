@@ -53,6 +53,8 @@ export interface JourneyPlan {
   forked_count: number
   adopt_count: number
   cover_image: string | null
+  /** Cover HEADER focal point (CSS object-position "x% y%"). Null = centered default (ADR-focal). */
+  cover_focus: string | null
   created_at: string
   updated_at: string
   published_at: string | null
@@ -182,7 +184,7 @@ export interface JourneyPlanItem {
 
 const PLAN_COLS =
   'id, slug, title, summary, intro, emoji, accent, author_id, space_id, visibility, fork_of, ' +
-  'forked_count, adopt_count, cover_image, created_at, updated_at, published_at, ' +
+  'forked_count, adopt_count, cover_image, cover_focus, created_at, updated_at, published_at, ' +
   'quest_id, official, window_starts_at, window_ends_at, status, page_config, completion_gems, ' +
   'drip_interval_days, certificate_enabled, difficulty, category, tags, daily_minutes, enroll_cap, meeting'
 
@@ -885,6 +887,7 @@ export async function duplicatePlan(profileId: string, planId: string): Promise<
       emoji: src.emoji,
       accent: src.accent,
       cover_image: src.cover_image,
+      cover_focus: src.cover_focus,
       author_id: profileId,
       visibility: 'private',
       status: 'draft',

@@ -15,7 +15,7 @@ import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
-import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight, Sparkles, UserCog } from 'lucide-react'
+import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight, UserCog } from 'lucide-react'
 import { parseVcard } from '@/lib/vcard'
 import { type CommunityRole, RoleBadge, FoundingBadge } from '@/lib/community-roles'
 import { getProfileCapabilities, getGlobalCapabilities } from '@/lib/core/load-capabilities'
@@ -23,10 +23,6 @@ import { getRealCallerWebRole } from '@/lib/auth'
 import { actAsMember } from '@/app/(main)/impersonate-actions'
 import { readSpotlightPublished, readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 import { readProfileHeaderFocus } from '@/lib/profile/header-focus'
-import { getMemberProfileModules } from '@/lib/spotlight/data'
-import { SpotlightShell } from '@/components/spotlight/spotlight-shell'
-import { MemberProfileModules } from '@/components/widgets/member-profile/member-profile-modules'
-import { SpotlightOverlay } from '@/components/spotlight/spotlight-overlay'
 import { atLeastRole } from '@/lib/core/roles'
 import { MemberSupportPanel } from '@/components/support/member-support-panel'
 import { ConnectionPanel } from '@/components/people/connection-panel'
@@ -52,6 +48,7 @@ import { ProfileAvatar } from '@/components/profile/profile-avatar'
 import { ProfileSpotlightBlocks } from '@/components/profile/profile-spotlight-blocks'
 import { OwnerProfileLayoutPreview } from '@/components/profile/owner-profile-layout-preview'
 import { ShareRefProvider } from '@/components/qr/share-ref-context'
+import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 
 export default async function ProfilePage({
   params,
@@ -131,11 +128,6 @@ export default async function ProfilePage({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const isOwner = !!user && profile.auth_user_id === user.id
-
-  // The owner opens their Spotlight as a full-page overlay (linktree centered + a pinned Edit / QR
-  // tab) straight from their profile, so fetch their (non-publish-gated) mini-site data once here.
-  const ownerSpotlightData =
-    isOwner && spotlightEnabled ? await getMemberProfileModules(profile.handle as string) : null
 
   const role = (profile.community_role ?? 'member') as CommunityRole
   const isDemo = (profile as { is_demo?: boolean }).is_demo ?? false
@@ -280,7 +272,7 @@ export default async function ProfilePage({
   // Badges — shared by the Detail identity band.
   {/* The ROLE badge (e.g. Janitor) is an IDENTITY chip — it rides the header image beside the name
       (the space-page treatment). The system voice (Vera, ADR-231) shows "Moderator". */}
-  const roleBadge = <RoleBadge role={profile.is_system ? 'moderator' : role} className="text-xs leading-tight" />
+  const roleBadge = <RoleBadge role={profile.is_system ? 'moderator' : role} className="text-2xs leading-tight" />
   {/* The remaining chips (Founder / Supporter / season rank / demo) are gamification/status — they read
       BELOW the header with the stats, not over the photo. */}
   const badges = (
@@ -296,36 +288,8 @@ export default async function ProfilePage({
 
   // The Detail band's action slot — same controls + gating as before. The owner gets
   // Edit Profile (and a contact-card download when they enabled one); the profile QR +
-  // share link now live in the band's own "Share" panel (PageAdminBar). A signed-in
-  // non-owner gets the full friend/contact/message/tip/block/moderate set.
-  // Link to this member's public Spotlight page, shown to any visitor ONLY when it's
-  // published (an unpublished page 404s, so we never link a visitor into a dead end).
-  const spotlightLink = spotlightPublished ? (
-    <Link
-      href={`/spotlight/${profile.handle}`}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-    >
-      <Sparkles className="h-3.5 w-3.5" />
-      Spotlight
-    </Link>
-  ) : null
-
-  // The OWNER gets a Spotlight entry whenever it's enabled, so they can always reach it
-  // from their own profile header: the live page once published, otherwise the builder
-  // (where they design + publish it). Falls back to nothing until it's turned on.
-  const ownerSpotlightLink = spotlightEnabled && ownerSpotlightData ? (
-    <SpotlightOverlay
-      handle={profile.handle as string}
-      profileId={profileId}
-      label={spotlightPublished ? 'Spotlight' : 'Build Spotlight'}
-      avatarUrl={profile.avatar_url}
-    >
-      <SpotlightShell data={ownerSpotlightData} showBio={false}>
-        <MemberProfileModules member={ownerSpotlightData} grid={ownerSpotlightData.grid} />
-      </SpotlightShell>
-    </SpotlightOverlay>
-  ) : null
-
+  // share link ride the header actions (QrShareDropdown). A signed-in non-owner gets the
+  // full friend/contact/message/tip/block/moderate set.
   const ownerActions = (
     <>
       {/* Edit profile opens the side admin rail (identity editor + the in-rail page builder) on the
@@ -336,7 +300,6 @@ export default async function ProfilePage({
         icon={<Pencil className="h-3.5 w-3.5" />}
         className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
       />
-      {ownerSpotlightLink}
       {vcardEnabled && (
         <a
           href={`${profilePath}/vcard`}
@@ -356,7 +319,6 @@ export default async function ProfilePage({
   const viewerActions = user ? (
     <div className="flex flex-col items-end gap-2">
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {spotlightLink}
         {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
         {vcardEnabled && (
           <a
@@ -428,9 +390,10 @@ export default async function ProfilePage({
   // it never cramps against that rail, stacking the info column up top below xl.
   // The header is the standardized `header` element (ADR-793), identity layout — the Space-page
   // treatment with a ROUND profile photo: avatar + role badge + name + @handle + actions all ride the
-  // cover, stats/gamification read below. Scrim ON (like a Space) so the overlaid identity + buttons
-  // stay legible. layout / height / overlay resolve from the master config (retune site-wide).
-  const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } })
+  // cover, stats/gamification read below. Scrim OFF by default (a clean photo; PageHero's on-image-text
+  // keeps the overlaid identity + buttons legible), unless an operator turns it on. layout / height /
+  // scrim resolve from the master config (retune site-wide).
+  const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard', scrim: false } })
   return (
     <>
       {tippedCents !== null && (
@@ -457,8 +420,20 @@ export default async function ProfilePage({
             leading={<ProfileAvatar src={profile.avatar_url} name={profile.display_name} initials={initials} dimmed={isDemo} />}
             eyebrow={roleBadge}
             title={profile.display_name}
-            subtitle={<span className="font-medium text-on-ink/90">@{profile.handle as string}</span>}
-            actions={isOwner ? ownerActions : viewerActions}
+            subtitle={
+              <span className="block">
+                <span className="font-medium text-on-ink/90">@{profile.handle as string}</span>
+                {profile.bio && (
+                  <span className="mt-0.5 block line-clamp-1 text-on-ink/75">{profile.bio}</span>
+                )}
+              </span>
+            }
+            actions={
+              <>
+                {isOwner ? ownerActions : viewerActions}
+                <QrShareDropdown manager={isOwner} />
+              </>
+            }
           />
         }
         title={profile.display_name}

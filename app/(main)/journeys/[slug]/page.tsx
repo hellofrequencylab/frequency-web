@@ -5,6 +5,7 @@ import { Globe, Lock, Link2, Pencil, Sparkles, Flame, Layers, SlidersHorizontal 
 import { DetailTemplate, PageHero } from '@/components/templates'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { ShareImageProvider } from '@/components/qr/share-image-context'
+import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { getCallerProfile } from '@/lib/auth'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { getJourneyView, getPlan, getPlanAuthor } from '@/lib/journey-plans'
@@ -160,6 +161,7 @@ export default async function JourneyPlanPage({
           size={header.height}
           overlay={header.scrim}
           coverImage={plan.cover_image ?? null}
+          coverFocus={plan.cover_focus ?? undefined}
           eyebrow={topPillar ? topPillar.name : 'Journey'}
           leading={
             <span
@@ -173,16 +175,8 @@ export default async function JourneyPlanPage({
           subtitle={plan.summary || undefined}
           actions={
             <>
-              {canManageJourney && (
-                <OpenAdminBarButton
-                  scope={{ kind: 'journey', id: plan.id }}
-                  caps={Array.from(journeyCaps)}
-                  label="Manage"
-                  icon={<SlidersHorizontal className="h-4 w-4" />}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-on-ink/30 bg-on-ink/10 px-3 py-1.5 text-sm font-medium text-on-ink backdrop-blur transition-colors hover:bg-on-ink/20"
-                />
-              )}
               <EnrollCta {...enrollProps} layout="inline" />
+              <QrShareDropdown manager={canManageJourney} />
             </>
           }
         />
@@ -190,6 +184,21 @@ export default async function JourneyPlanPage({
       title={plan.title}
       band={
         <div className="min-w-0 space-y-2">
+            {/* Author/admin controls read as a normal light row BELOW the header (no longer riding the
+                cover): the scoped Journey rail trigger. */}
+            {(canManageJourney || isAuthor) && (
+              <div className="flex flex-wrap items-center gap-2 pb-1">
+                {canManageJourney && (
+                  <OpenAdminBarButton
+                    scope={{ kind: 'journey', id: plan.id }}
+                    caps={Array.from(journeyCaps)}
+                    label="Manage"
+                    icon={<SlidersHorizontal className="h-4 w-4" />}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                  />
+                )}
+              </div>
+            )}
             <span className="inline-flex flex-wrap items-center gap-1.5">
               {plan.official && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">

@@ -25,16 +25,16 @@ import { openAdminBar } from '@/components/admin/open-admin-bar'
 const SHAREABLE_PREFIXES = [
   'circles',
   'channels',
-  'people',
   'hubs',
   'nexuses',
   // Entity detail pages that should share their OWN public code (their entity's image is supplied via
   // ShareImageProvider where the page wires it). Spaces and Events are intentionally NOT here: each
   // carries its own dedicated header share control (SpaceShareButton / EventShareButton — the entity's
   // code + link + attribution + native share), so the generic divider control would be a redundant
-  // second share affordance sitting beside it.
+  // second share affordance sitting beside it. People (profiles) and Journeys are likewise NOT here:
+  // both now carry their OWN "QR & Share" control in the header actions, so the divider control would
+  // duplicate it.
   'practices',
-  'journeys',
   'programs',
   'partners',
 ] as const
@@ -91,6 +91,12 @@ export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}
   // DOUBLE the standard divider gap (the shell divider is mb-5 sm:mb-6; this is 2x), so space pages
   // breathe under the menu without reintroducing a line. Token spacing only, no hardcoded values.
   if (isSpaceProfile) return <div className="h-10 sm:h-12" aria-hidden />
+
+  // Journey pages (/journeys/<slug> and /journeys/<slug>/learn) want NO hairline rule under the header
+  // at all (owner directive) — the header carries its own "QR & Share" control, so the divider's rule +
+  // share link would both be redundant. Mirror the Space-profile treatment: a rule-less spacer that owns
+  // the gap under the header without drawing a line. Token spacing only.
+  if (/^\/journeys\/[^/]+/.test(pathname)) return <div className="h-8 sm:h-10" aria-hidden />
 
   // When acting AS the page's divider, always at least draw the rule; otherwise (a
   // legacy caller that owns its divider) render nothing when there is nothing to show.
