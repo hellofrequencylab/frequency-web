@@ -6,6 +6,17 @@
 
 <!-- The reason / the problem it solves. Link an issue or ADR if there is one. -->
 
+## How to review (owner)
+
+<!-- Plain-language, no code. See docs/REVIEWING-CHANGES.md. Fill in the 2-3 things to click on the
+     Vercel Preview, e.g. "Open a Journey → hit the cover → confirm the Loom popup opens." -->
+
+1. Wait for CI to go green (that IS the code review).
+2. Open the **Vercel Preview** link above and check:
+   - <!-- step 1 -->
+   - <!-- step 2 -->
+3. If it looks right, merge (or auto-merge ships it on green).
+
 ## How / files
 
 <!-- Brief notes on the approach, or a table of the key files touched. -->
