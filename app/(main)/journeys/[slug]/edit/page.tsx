@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
-import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { getPlan, getVeraReview, normalizeJourneyMeeting } from '@/lib/journey-plans'
+import { canEditJourney } from '@/lib/journeys/authoring'
 import { listPublicPractices } from '@/lib/practices'
 import { getPillars } from '@/lib/pillars'
 import { JourneyEditor, type EditorBlock, type EditorPractice, type EditorPillar } from '@/components/journey/v2/journey-editor'
@@ -26,8 +26,9 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
 
   const loaded = await getPlan(slug)
   if (!loaded) notFound()
-  // The author, or an operator (admin.access) managing any Journey in the library.
-  if (loaded.plan.author_id !== caller.id && !(await getGlobalCapabilities()).has('admin.access')) {
+  // The author, a platform operator (admin.access), OR a manager of the Space this Journey belongs to
+  // (team authoring: a Space's editors may edit the Space's Journeys, not only their original author).
+  if (!(await canEditJourney(loaded.plan.id, caller.id))) {
     redirect(`/journeys/${slug}/learn`)
   }
 

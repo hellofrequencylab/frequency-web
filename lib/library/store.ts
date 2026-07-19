@@ -271,6 +271,10 @@ export async function insertSpaceLibraryImage(input: {
   mime: string
   bytes: number
   kind?: 'image' | 'audio' | 'video'
+  /** The uploader (library_assets.created_by): the spine of the PERSONAL Loom ("everything I uploaded,
+   *  in any context, is in my Loom"). Set on every picker upload so a person's own assets resolve across
+   *  spaces; omitted for legacy callers (the column stays null). */
+  createdBy?: string | null
 }): Promise<string | null> {
   const { data, error } = await db()
     .from('library_assets')
@@ -286,11 +290,75 @@ export async function insertSpaceLibraryImage(input: {
       url: input.url,
       mime: input.mime,
       bytes: input.bytes,
+      ...(input.createdBy ? { created_by: input.createdBy } : {}),
     })
     .select('id')
     .maybeSingle()
   if (error) return null
   return (data as { id?: unknown } | null)?.id ? String((data as { id: unknown }).id) : null
+}
+
+/** One pickable Loom asset for the universal image picker: the served URL + the label + whether it was
+ *  AI-generated (an "Element") + its tags (for the Tags facet). */
+export type LoomPickAsset = { id: string; title: string; url: string; alt: string | null; generated: boolean; tags: string[] }
+
+/** Shape a raw library_assets row into a LoomPickAsset. AI-generated ("Element") is derived from the
+ *  Recraft/Vera provenance the generators stamp (tags include 'generated', or config.source is set). */
+function toPickAsset(r: Record<string, unknown>): LoomPickAsset {
+  const tags = Array.isArray(r.tags) ? (r.tags as unknown[]).filter((t): t is string => typeof t === 'string') : []
+  const cfg = (r.config && typeof r.config === 'object' ? (r.config as Record<string, unknown>) : {}) as Record<string, unknown>
+  const generated = tags.includes('generated') || typeof cfg.source === 'string'
+  return {
+    id: String(r.id),
+    title: String(r.title ?? '') || 'Untitled',
+    url: String(r.url ?? ''),
+    alt: (r.alt as string | null) ?? null,
+    generated,
+    tags,
+  }
+}
+
+/** IMAGE assets in one Loom SCOPE, newest first, optionally filtered by a text query, a single tag, and
+ *  whether to keep only AI-generated "Elements". A scope is either the caller's PERSONAL Loom
+ *  (`createdBy` = them, any space) or ONE space's own assets (`spaceId`). FAIL-SAFE to []. */
+export async function listLoomScopeImages(
+  scope: { createdBy: string } | { spaceId: string },
+  opts: { q?: string; tag?: string; generatedOnly?: boolean; limit?: number } = {},
+): Promise<LoomPickAsset[]> {
+  try {
+    let query = db()
+      .from('library_assets')
+      .select('id, title, url, alt, tags, config')
+      .eq('kind', 'image')
+      .neq('status', 'archived')
+    query = 'createdBy' in scope ? query.eq('created_by', scope.createdBy) : query.eq('space_id', scope.spaceId)
+    const text = (opts.q ?? '').replace(/[,()*]/g, ' ').trim()
+    if (text) query = query.or(`title.ilike.%${text}%,description.ilike.%${text}%,category.ilike.%${text}%`)
+    if (opts.tag) query = query.contains('tags', [opts.tag])
+    const { data } = await query.order('created_at', { ascending: false }).limit(Math.min(opts.limit ?? 120, 200))
+    let rows = ((data as Array<Record<string, unknown>> | null) ?? []).map(toPickAsset).filter((a) => a.url.length > 0)
+    if (opts.generatedOnly) rows = rows.filter((a) => a.generated)
+    return rows
+  } catch {
+    return []
+  }
+}
+
+/** The distinct image TAGS present in a Loom scope (busiest first), for the picker's Tags facet.
+ *  FAIL-SAFE to []. */
+export async function listLoomScopeTags(scope: { createdBy: string } | { spaceId: string }): Promise<string[]> {
+  try {
+    let query = db().from('library_assets').select('tags').eq('kind', 'image').neq('status', 'archived')
+    query = 'createdBy' in scope ? query.eq('created_by', scope.createdBy) : query.eq('space_id', scope.spaceId)
+    const { data } = await query.limit(2000)
+    const counts = new Map<string, number>()
+    for (const r of (data as Array<{ tags: unknown }> | null) ?? []) {
+      if (Array.isArray(r.tags)) for (const t of r.tags) if (typeof t === 'string' && t.trim()) counts.set(t, (counts.get(t) ?? 0) + 1)
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([t]) => t)
+  } catch {
+    return []
+  }
 }
 
 /** Counts by kind (excludes archived), for the Studio stat row. */

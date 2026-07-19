@@ -773,15 +773,17 @@ export async function claimLeadOnSignup(profileId: string, email: string | null 
   }
 }
 
-// ── The other four front doors (engine-supported hooks; surfaces are TODO) ───────────────────────────
-// Each is a thin, clearly-marked wrapper over captureLead with the door + consent posture pre-set, so a
-// surface can call it without re-deriving the membrane/consent rules. Front door #1 (Space QR) is FULL
-// via app/q/[slug]/route.ts + linkMemberToSpaceLead; these are the scaffolds the engine supports.
+// ── The other four front doors ───────────────────────────────────────────────────────────────────────
+// Each is a thin wrapper over captureLead with the door + consent posture pre-set, so a surface can call
+// it without re-deriving the membrane/consent rules. Front door #1 (Space QR) is served by
+// app/q/[slug]/route.ts + linkMemberToSpaceLead; doors #2-#5 are served by the public capture surfaces
+// under app/(capture)/{intro,checkin,unlock,exchange} (each a page.tsx + actions.ts that calls the
+// matching wrapper below). The mint side lives in app/(main)/spaces/[slug]/crm/doors.
 
 /**
  * FRONT DOOR #2 — vouched warm intro (member -> Space, or Space <-> Space partner share), DOUBLE-OPT-IN.
- * Capture seals the lead as NOT mailable (introAccepted defaults false) until the person accepts. Wire a
- * surface that lets the introduced party confirm, then call acceptWarmIntro(). TODO: build the accept UI.
+ * Capture seals the lead as NOT mailable (introAccepted defaults false) until the person accepts on the
+ * accept surface (app/(capture)/intro), which calls acceptWarmIntro().
  */
 export async function captureWarmIntro(input: {
   spaceId: string
@@ -808,7 +810,7 @@ export async function captureWarmIntro(input: {
 }
 
 /** FRONT DOOR #2 (accept step): the introduced party accepted — flip the lead mailable + log it.
- *  TODO: reach this from a double-opt-in confirmation surface. */
+ *  Reached from the double-opt-in confirmation surface app/(capture)/intro. */
 export async function acceptWarmIntro(spaceId: string, contactId: string): Promise<boolean> {
   try {
     const { data } = (await table('contacts')
@@ -831,7 +833,7 @@ export async function acceptWarmIntro(spaceId: string, contactId: string): Promi
 /**
  * FRONT DOOR #3 — event / attendance capture. Seals an attendee as a lead and records the attendance
  * tier so a Space can map tier -> lifecycle stage in its pipeline. Not mailable on capture (attendance
- * != consent). TODO: wire to the RSVP path and the pipeline stage mapping.
+ * != consent). Served by the event check-in capture surface app/(capture)/checkin.
  */
 export async function captureEventLead(input: {
   spaceId: string
@@ -860,7 +862,7 @@ export async function captureEventLead(input: {
 /**
  * FRONT DOOR #4 — consent-native lead magnet: the download / unlock IS the opt-in, so this door captures
  * the lead as MAILABLE ('subscribed'). Only call this when the surface presented a clear consent notice.
- * TODO: build the magnet capture form + notice text (must pass CONTENT-VOICE).
+ * Served by the lead-magnet unlock surface app/(capture)/unlock (which carries the consent notice).
  */
 export async function captureLeadMagnet(input: {
   spaceId: string

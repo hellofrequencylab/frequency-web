@@ -19,6 +19,8 @@ import {
   applyVeraReview,
   deletePlan,
   normalizeJourneyMeeting,
+  planSpaceId,
+  setPlanSpace,
   type PlanVisibility,
   type PlanStatus,
   type PageWidgetConfig,
@@ -27,8 +29,11 @@ import {
 } from '@/lib/journey-plans'
 import { getSeasonalQuests } from '@/lib/quests'
 import { checkJourneyPublish } from '@/lib/journeys/publish-gate'
+import { canEditJourney } from '@/lib/journeys/authoring'
 import { reviewJourneyForLibrary } from '@/lib/ai/journey-review'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
+import { loadRootSpaceId } from '@/lib/spaces/store'
+import { listOperatedSpaces } from '@/lib/spaces/operated'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 
@@ -37,16 +42,13 @@ import type { Database } from '@/lib/database.types'
 // anyone's public journey are ALL free — Journeys carry no paywall. FormData-based
 // so the builder works without client JS.
 
-/** Caller must be the plan's author OR an operator (admin.access — they may manage any
- *  Journey in the library, the same bypass updatePracticeAction grants). Returns the caller's
- *  profile id, or null. */
+/** Caller must be able to EDIT this Journey: its author, a platform operator (admin.access), OR a
+ *  manager of the Space it belongs to (team authoring — canEditJourney). Returns the caller's profile
+ *  id, or null. One gate shared with the editor route so the console and the editor never drift. */
 async function assertOwner(planId: string): Promise<string | null> {
   const profileId = await getMyProfileId()
   if (!profileId) return null
-  const author = await planAuthorId(planId)
-  if (author && author === profileId) return profileId
-  if ((await getGlobalCapabilities()).has('admin.access')) return profileId
-  return null
+  return (await canEditJourney(planId, profileId)) ? profileId : null
 }
 
 const revalidateSlug = (formData: FormData) =>
@@ -100,6 +102,113 @@ export async function duplicateJourney(planId: string): Promise<ActionResult<{ s
   revalidatePath('/journeys/mine')
   revalidatePath('/journeys', 'layout')
   return ok({ slug: dup.slug })
+}
+
+/**
+ * Upload a Journey cover image SERVER-SIDE through the service-role admin client (ADR-246), so it
+ * never depends on a live browser Storage session token reaching Storage — the fragile browser path
+ * that returned "new row violates row-level security policy" on the `event-media` bucket. Mirrors
+ * uploadSpaceImage: gated on editing the Journey (assertOwner = author / operator / Space manager),
+ * scoped to the Journey (so co-managers can set the cover too), returns the public URL for the
+ * ImageUpload control. Validates type + size before the write.
+ */
+export async function uploadJourneyCover(
+  planId: string,
+  formData: FormData,
+): Promise<{ url: string } | { error: string }> {
+  if (!(await assertOwner(planId))) return { error: 'Not allowed.' }
+  const file = formData.get('file')
+  if (!(file instanceof File) || file.size === 0) return { error: 'Choose an image file.' }
+  if (!file.type.startsWith('image/')) return { error: 'Choose an image file.' }
+  if (file.size > 10 * 1024 * 1024) return { error: 'Image must be under 10 MB.' }
+
+  const admin = createAdminClient()
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+  const path = `journeys/${planId}/covers/${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}.${ext}`
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const { error } = await admin.storage
+    .from('event-media')
+    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: true })
+  if (error) return { error: error.message }
+  return { url: admin.storage.from('event-media').getPublicUrl(path).data.publicUrl }
+}
+
+// --- Reassign owner (personal <-> a Space you run) -------------------------
+// A Journey belongs to its AUTHOR personally (space_id = the root space) or to a SPACE (space_id =
+// that Space), which decides where it shows and whose plan the free-vs-paid publish lever reads. The
+// same person can move their own Journey between the two: keep it on their personal account as the
+// creator, or hand it to a Space they run so it lives on that Space's page + manager.
+
+/** A place a Journey can be assigned to: the caller's personal account, or a Space they run. */
+export interface JourneyOwnerTarget {
+  /** 'personal' (the root space) or a Space id. */
+  id: string
+  label: string
+  kind: 'personal' | 'space'
+}
+
+/**
+ * The owner targets for a Journey: where it lives now, and every place the caller may move it —
+ * their personal account plus each Space they own/admin (listOperatedSpaces). Owner-gated
+ * (assertOwner: author / operator / a manager of the current Space). Lazy-loaded by the manage card
+ * so the pages stay dumb.
+ */
+export async function listJourneyOwnerTargets(
+  planId: string,
+): Promise<ActionResult<{ current: string; targets: JourneyOwnerTarget[] }>> {
+  const profileId = await assertOwner(planId)
+  if (!profileId) return fail('Not allowed.')
+  const [spaceId, root, spaces] = await Promise.all([
+    planSpaceId(planId),
+    loadRootSpaceId(),
+    listOperatedSpaces(profileId),
+  ])
+  const current = !spaceId || spaceId === root ? 'personal' : spaceId
+  const targets: JourneyOwnerTarget[] = [
+    { id: 'personal', label: 'Your personal account', kind: 'personal' },
+    ...spaces.map((s) => ({ id: s.id, label: s.name, kind: 'space' as const })),
+  ]
+  return ok({ current, targets })
+}
+
+/**
+ * Move a Journey between the caller's personal account and a Space they run. `target` is 'personal'
+ * (the root space) or a Space id. Gated: the caller must be able to edit the Journey (assertOwner);
+ * pulling it to personal requires the author (or an operator); handing it to a Space requires the
+ * caller to operate that Space (operatesSpace). Re-checks server-side; the client is never trusted.
+ */
+export async function reassignJourneyOwner(
+  planId: string,
+  target: string,
+): Promise<ActionResult> {
+  const profileId = await assertOwner(planId)
+  if (!profileId) return fail('Not allowed.')
+  const root = await loadRootSpaceId()
+  if (!root) return fail('Could not resolve your account. Try again in a moment.')
+
+  // Build the server-side ALLOW-LIST of destinations this caller may move the Journey to, then require
+  // the requested `target` to be one of them. The tainted client value never decides WHICH check runs;
+  // it is only looked up in a set derived entirely from the caller's real authority (the author/operator
+  // rule for 'personal', the operated Spaces for a hand-off), which resolves the destination space id.
+  const [author, isAdmin, operated] = await Promise.all([
+    planAuthorId(planId),
+    getGlobalCapabilities().then((c) => c.has('admin.access')),
+    listOperatedSpaces(profileId),
+  ])
+  const allowed = new Map<string, string>() // target key -> resolved space id
+  // Pulling a Journey onto a personal account makes it the author's own, so only the author (or an
+  // operator) may do that; a Space admin can't quietly hand a teammate's Journey to themselves.
+  if (author === profileId || isAdmin) allowed.set('personal', root)
+  // Handing it to a Space requires the caller to actually run that Space (owner / active admin).
+  for (const s of operated) allowed.set(s.id, s.id)
+
+  const targetSpaceId = allowed.get(target)
+  if (targetSpaceId === undefined) return fail('You cannot move this journey there.')
+
+  await setPlanSpace(planId, targetSpaceId)
+  revalidatePath('/journeys/mine')
+  revalidatePath('/journeys', 'layout')
+  return ok()
 }
 
 // --- Studio (client builder) actions — JSON args, return ActionResult ---------
@@ -244,11 +353,10 @@ export async function setJourneyVisibility(
 ): Promise<ActionResult<{ status: PlanStatus; review: StoredVeraReview | null }>> {
   const caller = await getCallerProfile()
   if (!caller) return fail('Not allowed.')
-  const author = await planAuthorId(planId)
-  // The author, or an operator (admin.access) managing any Journey — same bypass assertOwner
-  // grants, so an operator who opens a member's Journey in the editor can publish/unpublish it.
-  const isOwnerOrAdmin = author === caller.id || (await getGlobalCapabilities()).has('admin.access')
-  if (!isOwnerOrAdmin) return fail('Not allowed.')
+  // The author, a platform operator (admin.access), or a manager of the owning Space (team
+  // authoring) — the same gate assertOwner + the editor route grant, so a Space's editors can
+  // publish/unpublish the Space's Journeys, not only their original author.
+  if (!(await canEditJourney(planId, caller.id))) return fail('Not allowed.')
 
   // Free-vs-paid publish lever (the Journey upsell): a free owner publishes one Journey, and the
   // public library is paid-only. Space-owned Journeys read the Space plan; personal ones read the

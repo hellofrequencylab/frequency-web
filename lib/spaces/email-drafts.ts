@@ -11,8 +11,10 @@
 // SEPARATION from the plain-text campaign composer (lib/spaces/campaigns.ts): that surface stores a campaign's
 // body as PLAIN TEXT in `campaigns.body`; THIS surface stores a block layout in `campaigns.block_json`. So the
 // Marketing list filters to rows WITH a block_json (`block_json is not null`), and every create here stamps
-// one. The two never clobber each other's body representation. (Bulk SEND of a block draft is a follow-up —
-// the plain composer remains the send path today; here test-send to self works end to end.)
+// one. The two never clobber each other's body representation. Both test-send to self AND bulk send to a
+// resolved audience work end to end here (sendSpaceEmailDraft compiles block_json to branded HTML and sends
+// through the shared lib/spaces/email seam), so a block draft is a first-class send path, not just the plain
+// composer's.
 //
 // TENANCY + AUTHZ (ADR-246/328/329, mirrors campaigns.ts). Every READ + WRITE filters `space_id = spaceId`, so
 // a cross-space id leaks nothing. READS are gated on canEditProfile OR a platform janitor previewing (fail-safe

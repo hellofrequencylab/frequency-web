@@ -9,7 +9,7 @@ import { ArrowLeft, Check, Camera, Eye, Layers, Lock, Sparkles, SlidersHorizonta
 import { ImageUpload } from '@/components/ui/image-upload'
 import { IconAccentFace, IconGrid } from '@/components/studio/kit/studio-identity'
 import { DEFAULT_ACCENT, STUDIO_ACCENTS, accentColor } from '@/lib/studio/accents'
-import { saveJourneyMeta, setJourneyVisibility, adoptJourney } from '@/app/(main)/journeys/actions'
+import { saveJourneyMeta, setJourneyVisibility, adoptJourney, uploadJourneyCover } from '@/app/(main)/journeys/actions'
 import { createJourneyDraftAction } from '@/app/(main)/journeys/create-actions'
 import { isError } from '@/lib/action-result'
 import type { PlanVisibility } from '@/lib/journey-plans'
@@ -186,6 +186,7 @@ function JourneyDetails({ status, visibility, details }: { status: string; visib
 
 export function JourneyBuilder({
   draft = false,
+  spaceSlug = null,
   slug = null,
   planId = null,
   status = 'draft',
@@ -204,6 +205,9 @@ export function JourneyBuilder({
 }: {
   /** New-journey mode: nothing persists until the title is named. */
   draft?: boolean
+  /** When set (draft mode reached from a Space's manager), the drafted Journey is stamped to that
+   *  Space rather than the caller's personal account. */
+  spaceSlug?: string | null
   slug?: string | null
   planId?: string | null
   status?: string
@@ -236,6 +240,17 @@ export function JourneyBuilder({
   const [creating, setCreating] = useState(false)
   const pickerRef = useRef<HTMLSpanElement>(null)
 
+  // Cover uploads run SERVER-SIDE (service-role) so they never depend on a live browser Storage
+  // session token reaching Storage — the fragile path that failed with "new row violates row-level
+  // security policy". Only available in edit mode (a planId exists to bind the upload to).
+  const coverUpload = planId
+    ? (file: File) => {
+        const fd = new FormData()
+        fd.append('file', file)
+        return uploadJourneyCover(planId, fd)
+      }
+    : undefined
+
   // Close the icon/color popover on an outside click or Escape (it used to get stuck open).
   useEffect(() => {
     if (!iconOpen) return
@@ -266,7 +281,7 @@ export function JourneyBuilder({
   const createFromTitle = (title: string) => {
     if (!title.trim() || creating) return
     setCreating(true)
-    start(() => createJourneyDraftAction(title.trim()))
+    start(() => createJourneyDraftAction(title.trim(), spaceSlug))
   }
 
   const eyebrow = (
@@ -336,6 +351,7 @@ export function JourneyBuilder({
                 value={cover}
                 onChange={(url) => { setCover(url ?? null); meta({ coverImage: url }) }}
                 folder="journey-covers"
+                uploadFn={coverUpload}
                 hint="Used as the Journey's logo and cover. Replaces the icon."
               />
             </div>
@@ -387,6 +403,7 @@ export function JourneyBuilder({
                 meta({ coverImage: url })
               }}
               folder="journey-covers"
+              uploadFn={coverUpload}
               hint="Shown on the Journey's page and cards."
             />
           )}
