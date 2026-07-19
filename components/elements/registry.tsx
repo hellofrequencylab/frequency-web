@@ -11,6 +11,7 @@
 
 import type { ComponentType } from 'react'
 import { LoomPicker } from '@/components/loom/loom-picker'
+import { StyleEditor } from '@/app/(main)/admin/qr/style-editor'
 import type { ElementKey } from '@/lib/elements/registry'
 
 /** The props each mountable element accepts, keyed by element key. This is what makes <AppElement>
@@ -18,6 +19,7 @@ import type { ElementKey } from '@/lib/elements/registry'
  *  wired. A key here MUST be a registered ElementKey (compile-checked: the map is typed by it). */
 export interface ElementPropsMap {
   'loom-picker': React.ComponentProps<typeof LoomPicker>
+  'qr-studio': React.ComponentProps<typeof StyleEditor>
 }
 
 /** The subset of ElementKey that is actually mountable today (has a component + props entry). An
@@ -30,4 +32,5 @@ export const ELEMENT_COMPONENTS: {
   [K in MountableElementKey]: ComponentType<ElementPropsMap[K]>
 } = {
   'loom-picker': LoomPicker,
+  'qr-studio': StyleEditor,
 }

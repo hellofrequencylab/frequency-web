@@ -24,5 +24,7 @@ export type AppElementProps<K extends MountableElementKey> = { name: K } & Eleme
  *  renders it with the caller's (type-checked) props. */
 export function AppElement<K extends MountableElementKey>({ name, ...props }: AppElementProps<K>) {
   const Component = ELEMENT_COMPONENTS[name] as React.ComponentType<ElementPropsMap[K]>
-  return <Component {...(props as ElementPropsMap[K])} />
+  // props is Omit<AppElementProps<K>, 'name'>; with a multi-entry props map, TS can't see it as the
+  // per-key shape, so route the (already caller-type-checked) rest through unknown.
+  return <Component {...(props as unknown as ElementPropsMap[K])} />
 }
