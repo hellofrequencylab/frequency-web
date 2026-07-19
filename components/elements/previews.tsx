@@ -11,7 +11,7 @@
 
 import { useState } from 'react'
 import { ImageIcon, Building2, User, Compass, ArrowDownUp } from 'lucide-react'
-import { PageHero, type PageHeroVariant, type PageHeroSize } from '@/components/templates'
+import { PageHero, type PageHeroVariant, type PageHeroSize, type HeroOverlayStyle } from '@/components/templates'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import { StyleEditor } from '@/app/(main)/admin/qr/style-editor'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
@@ -28,7 +28,8 @@ interface HeaderPreset {
   type: string
   variant: PageHeroVariant
   size: PageHeroSize
-  overlay: boolean
+  /** The overlay treatment this header ships (so the gallery demonstrates all three styles). */
+  overlayStyle: HeroOverlayStyle
   eyebrow?: React.ReactNode
   title: string
   subtitle?: string
@@ -40,28 +41,28 @@ interface HeaderPreset {
 
 const HEADER_PRESETS: HeaderPreset[] = [
   {
-    key: 'space', name: 'Space', type: 'Identity', variant: 'identity', size: 'short', overlay: true,
+    key: 'space', name: 'Space', type: 'Identity', variant: 'identity', size: 'short', overlayStyle: 'shadow',
     eyebrow: 'Business', title: 'River Yoga', subtitle: 'Slow, breath-led yoga by the river.',
     leading: <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-on-ink/15 text-on-ink"><Building2 className="h-5 w-5" /></span>,
-    features: ['Logo chip', 'Follow + Book CTA', 'Scrim on'],
+    features: ['Logo chip', 'Follow + Book CTA', 'Shadow overlay'],
   },
   {
-    key: 'profile', name: 'Profile', type: 'Identity', variant: 'identity', size: 'short', overlay: false,
+    key: 'profile', name: 'Profile', type: 'Identity', variant: 'identity', size: 'short', overlayStyle: 'none',
     eyebrow: <span className="rounded bg-on-ink/15 px-1.5 py-0.5 text-2xs text-on-ink">Janitor</span>,
     title: 'Daniel Tyack', subtitle: '@danieltyack',
     leading: <span className="flex h-9 w-9 items-center justify-center rounded-full bg-on-ink/15 text-on-ink ring-2 ring-on-ink/30"><User className="h-5 w-5" /></span>,
-    features: ['Round avatar', 'Role badge', 'Overlay off', 'QR & Share'],
+    features: ['Round avatar', 'Role badge', 'No overlay', 'QR & Share'],
   },
   {
-    key: 'journey', name: 'Journey', type: 'Identity', variant: 'identity', size: 'short', overlay: true,
+    key: 'journey', name: 'Journey', type: 'Identity', variant: 'identity', size: 'short', overlayStyle: 'shadow',
     eyebrow: 'Journey', title: 'The 28-Day Reset', subtitle: 'Build a steadier, quieter week.',
     leading: <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-canvas/90 text-primary shadow ring-1 ring-on-ink/10"><Compass className="h-5 w-5" /></span>,
-    features: ['Accent icon chip', 'Admin action row', 'QR & Share'],
+    features: ['Accent icon chip', 'Admin action row', 'Shadow overlay', 'QR & Share'],
   },
   {
-    key: 'market', name: 'Marketplace', type: 'Overlay', variant: 'overlay', size: 'short', overlay: true,
+    key: 'market', name: 'Marketplace', type: 'Overlay', variant: 'overlay', size: 'short', overlayStyle: 'fade',
     eyebrow: 'Marketplace', title: 'Find your people', subtitle: 'Browse local offerings.', search: true,
-    features: ['Centered', 'In-hero search', 'Large by default'],
+    features: ['Centered', 'In-hero search', 'Fade overlay'],
   },
 ]
 
@@ -98,7 +99,7 @@ function HeaderPreview() {
             <PageHero
               variant={p.variant}
               size={p.size}
-              overlay={p.overlay}
+              overlayStyle={p.overlayStyle}
               coverImage={null}
               eyebrow={p.eyebrow}
               title={p.title}

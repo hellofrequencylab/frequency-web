@@ -31,6 +31,18 @@ import {
 
 export const dynamic = 'force-dynamic'
 
+// The header buttons are the ONE glassy on-ink style (HERO_ACTION_CLASS) so every header matches.
+// EnrollCta + QrShareDropdown are shared components that hardcode their own classes and take no
+// className, so we WRAP them in the actions slot: the descendant/child selectors restyle their
+// buttons/links to HERO_ACTION_CLASS. QR uses `> button` (only the trigger, never the dialog's
+// inner buttons); EnrollCta uses `_button`/`_a` (all it renders is the CTA link + form buttons).
+// Tokens only, no hex. Only the HEADER instances are wrapped — the light repeat-CTA card keeps its
+// normal styling.
+const HERO_QR_WRAP =
+  '[&>button]:!gap-1.5 [&>button]:!rounded-lg [&>button]:!border [&>button]:!border-on-ink/30 [&>button]:!bg-on-ink/10 [&>button]:!px-3 [&>button]:!py-1.5 [&>button]:!text-sm [&>button]:!font-medium [&>button]:!text-on-ink [&>button]:!backdrop-blur [&>button]:hover:!bg-on-ink/20 [&>button]:hover:!text-on-ink'
+const HERO_CTA_WRAP =
+  '[&_a]:!gap-1.5 [&_a]:!rounded-lg [&_a]:!border [&_a]:!border-on-ink/30 [&_a]:!bg-on-ink/10 [&_a]:!px-3 [&_a]:!py-1.5 [&_a]:!text-sm [&_a]:!font-medium [&_a]:!text-on-ink [&_a]:!backdrop-blur [&_a]:hover:!bg-on-ink/20 [&_a]:hover:!text-on-ink [&_button]:!gap-1.5 [&_button]:!rounded-lg [&_button]:!border [&_button]:!border-on-ink/30 [&_button]:!bg-on-ink/10 [&_button]:!px-3 [&_button]:!py-1.5 [&_button]:!text-sm [&_button]:!font-medium [&_button]:!text-on-ink [&_button]:!backdrop-blur [&_button]:hover:!bg-on-ink/20 [&_button]:hover:!text-on-ink'
+
 // The one Journey page (docs/JOURNEYS.md §10). It flips between three faces:
 //   • AUTHOR    → redirects to the v2 editor at /journeys/[slug]/edit (identity + delivery +
 //                 publish settings and the Phase → Module → Lesson structure tree, ADR-252 J5).
@@ -159,24 +171,37 @@ export default async function JourneyPlanPage({
         <PageHero
           variant={header.layout}
           size={header.height}
-          overlay={header.scrim}
+          overlayStyle={header.overlayStyle}
           coverImage={plan.cover_image ?? null}
           coverFocus={plan.cover_focus ?? undefined}
           eyebrow={topPillar ? topPillar.name : 'Journey'}
           leading={
-            <span
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-canvas/90 shadow ring-1 ring-on-ink/10 backdrop-blur"
-              style={{ color: accentColor(accent) }}
-            >
-              <PlanIcon className="h-6 w-6" />
-            </span>
+            plan.logo_image ? (
+              // eslint-disable-next-line @next/next/no-img-element -- operator logo on a user-controlled host, not a configured next/image domain
+              <img
+                src={plan.logo_image}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-2xl object-cover shadow ring-1 ring-on-ink/10"
+              />
+            ) : (
+              <span
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-canvas/90 shadow ring-1 ring-on-ink/10 backdrop-blur"
+                style={{ color: accentColor(accent) }}
+              >
+                <PlanIcon className="h-6 w-6" />
+              </span>
+            )
           }
           title={plan.title}
           subtitle={plan.summary || undefined}
           actions={
             <>
-              <EnrollCta {...enrollProps} layout="inline" />
-              <QrShareDropdown manager={canManageJourney} />
+              <span className={HERO_CTA_WRAP}>
+                <EnrollCta {...enrollProps} layout="inline" />
+              </span>
+              <span className={HERO_QR_WRAP}>
+                <QrShareDropdown manager={canManageJourney} />
+              </span>
             </>
           }
         />
