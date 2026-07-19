@@ -49,6 +49,9 @@ export interface PageHeroProps {
   rawImg?: boolean
   /** Desaturate the cover (demo/seeded surfaces read as not-quite-real, e.g. demo profiles). */
   dimmed?: boolean
+  /** Draw the ink overlay (scrim + amber glow) over the cover. Default on. Off = the clean image shows
+   *  through, with a token text-shadow keeping the overlaid copy legible. */
+  overlay?: boolean
 }
 
 // The ink scrim, faithful to the original MarketHero (darker top + bottom, lighter middle), token-clean:
@@ -73,6 +76,7 @@ export function PageHero({
   size,
   rawImg = false,
   dimmed = false,
+  overlay = true,
 }: PageHeroProps) {
   const focalStyle = coverFocus ? { objectPosition: coverFocus } : undefined
   const dim = dimmed ? ' dimmed' : ''
@@ -80,6 +84,8 @@ export function PageHero({
   // directory hero); an explicit `size` always wins.
   const resolvedSize: PageHeroSize = size ?? (variant === 'identity' ? 'standard' : variant === 'minimal' ? 'short' : 'large')
   const scrim = variant === 'identity' ? SCRIM_IDENTITY : SCRIM
+  // With the overlay off, keep overlaid copy legible over a bright photo via a token text-shadow.
+  const legible = overlay ? '' : ' on-image-text'
 
   return (
     <section className="relative overflow-hidden rounded-3xl border border-border">
@@ -94,9 +100,13 @@ export function PageHero({
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg" aria-hidden />
       )}
-      {/* Ink scrim (tokens only) + the house amber glow. */}
-      <div className="absolute inset-0" style={{ background: scrim }} aria-hidden />
-      <div className="amber-glow pointer-events-none absolute inset-0" aria-hidden />
+      {/* Ink scrim (tokens only) + the house amber glow — the "overlay". Off = the clean image shows. */}
+      {overlay && (
+        <>
+          <div className="absolute inset-0" style={{ background: scrim }} aria-hidden />
+          <div className="amber-glow pointer-events-none absolute inset-0" aria-hidden />
+        </>
+      )}
 
       {variant === 'minimal' ? (
         // Cover + scrim only. The page still needs its heading, so keep an sr-only h1 (a11y + SEO).
@@ -105,13 +115,13 @@ export function PageHero({
         </div>
       ) : variant === 'identity' ? (
         // Entity header: the lockup anchored bottom-left, an optional leading chip beside the title.
-        <div className={`relative z-10 flex ${HEADER_MIN_H[resolvedSize]} flex-col justify-end px-6 py-6 sm:px-8 sm:py-8`}>
+        <div className={`relative z-10 flex ${HEADER_MIN_H[resolvedSize]} flex-col justify-end px-6 py-6 sm:px-8 sm:py-8${legible}`}>
           {eyebrow && (
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-primary sm:text-sm">{eyebrow}</p>
           )}
           <div className="flex items-center gap-3">
             {leading && <span className="shrink-0">{leading}</span>}
-            <h1 className="font-display uppercase leading-[0.95] text-balance text-on-ink text-[clamp(1.5rem,5vw,3rem)] break-words">
+            <h1 className="font-display uppercase leading-[1] text-balance text-on-ink text-[clamp(1.25rem,3vw,2rem)] break-words">
               {title}
             </h1>
           </div>
@@ -122,7 +132,7 @@ export function PageHero({
         </div>
       ) : (
         // Overlay (default): centered content, fixed min-height so every hero is the same size.
-        <div className={`relative z-10 mx-auto flex ${HEADER_MIN_H[resolvedSize]} max-w-3xl flex-col items-center justify-center px-6 py-8 text-center sm:py-12`}>
+        <div className={`relative z-10 mx-auto flex ${HEADER_MIN_H[resolvedSize]} max-w-3xl flex-col items-center justify-center px-6 py-8 text-center sm:py-12${legible}`}>
           {eyebrow && (
             <p className="mb-3 text-sm font-bold uppercase tracking-[0.25em] text-primary sm:mb-4">{eyebrow}</p>
           )}

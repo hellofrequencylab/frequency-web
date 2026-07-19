@@ -33,6 +33,12 @@ describe('pickHeaderConfig (header element config)', () => {
     expect(pickHeaderConfig(layers).height).toBe('short')
   })
 
+  it('a surface can default the overlay (scrim) off, and an operator value still overrides it', () => {
+    expect(pickHeaderConfig(EMPTY, { scrim: false }).scrim).toBe(false)
+    // Operator turning scrim ON at the master beats the surface's overlay-off default.
+    expect(pickHeaderConfig({ platform: { settings: { scrim: true } }, space: null }, { scrim: false }).scrim).toBe(true)
+  })
+
   it('honors the toggles (focus / links / scrim off)', () => {
     const layers = { platform: { settings: { focus: false, links: false, scrim: false } }, space: null }
     const cfg = pickHeaderConfig(layers)

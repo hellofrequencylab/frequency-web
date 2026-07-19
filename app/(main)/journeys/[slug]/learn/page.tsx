@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
@@ -17,7 +16,8 @@ import { LearnPlayer } from '@/components/journey/v2/learn/learn-player'
 import { PracticeDetail } from '@/components/journey/v2/learn/practice-detail'
 import { AboutThisJourneyHero, MeetingBlock, AuthorBlock } from '@/components/journey/v2/learn/journey-overview'
 import { CohortMeter } from '@/components/journey/v2/cohort-meter'
-import { DetailTemplate } from '@/components/templates'
+import { DetailTemplate, PageHero } from '@/components/templates'
+import { resolveHeaderElement } from '@/lib/elements/header'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import type { CohortProgress } from '@/lib/journeys/cohort'
@@ -154,29 +154,35 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   }
   const phaseFocusById = Object.fromEntries(extras.phaseFocus)
 
+  // The standardized `header` element (ADR-793), identity layout — the SAME immersive header the
+  // discovery page uses, so the surface most authors + enrolled members land on matches it. The
+  // interactive controls (Manage / author actions) sit in the light `band` below the cover.
+  const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } })
+
   return (
     <DetailTemplate
       back={{ href: '/journeys', label: 'Journeys' }}
       hero={
-        plan.cover_image ? (
-          <div className="relative h-32 w-full sm:h-40">
-            <Image fill sizes="100vw" src={plan.cover_image} alt="" className="rounded-2xl border border-border object-cover" />
-          </div>
-        ) : undefined
+        <PageHero
+          variant={header.layout}
+          size={header.height}
+          overlay={header.scrim}
+          coverImage={plan.cover_image ?? null}
+          eyebrow="Journey"
+          leading={
+            <span
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+              style={{ backgroundColor: accentTint(plan.accent, 16), color: accentColor(plan.accent) }}
+            >
+              <PlanIcon className="h-6 w-6" />
+            </span>
+          }
+          title={plan.title}
+          subtitle={plan.summary || undefined}
+        />
       }
-      title={
-        <span className="inline-flex items-center gap-3 align-middle">
-          <span
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: accentTint(plan.accent, 16), color: accentColor(plan.accent) }}
-          >
-            <PlanIcon className="h-5 w-5" />
-          </span>
-          <span className="min-w-0 break-words">{plan.title}</span>
-        </span>
-      }
-      subtitle={plan.summary ? <span className="block leading-relaxed">{plan.summary}</span> : undefined}
-      actions={
+      title={plan.title}
+      band={
         canManageJourney || isAuthor ? (
           <div className="flex flex-wrap items-center gap-2">
             {canManageJourney && (
@@ -191,7 +197,9 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
               <JourneyAuthorActions slug={slug} planId={plan.id} visibility={plan.visibility} />
             )}
           </div>
-        ) : undefined
+        ) : (
+          <></>
+        )
       }
     >
       {kickoff && (
