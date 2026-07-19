@@ -115,20 +115,26 @@ export function PageHero({
         </div>
       ) : variant === 'identity' ? (
         // Entity header: the lockup anchored bottom-left, an optional leading chip beside the title.
-        <div className={`relative z-10 flex ${HEADER_MIN_H[resolvedSize]} flex-col justify-end px-6 py-6 sm:px-8 sm:py-8${legible}`}>
-          {eyebrow && (
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-primary sm:text-sm">{eyebrow}</p>
-          )}
-          <div className="flex items-center gap-3">
-            {leading && <span className="shrink-0">{leading}</span>}
-            <h1 className="font-display uppercase leading-[1] text-balance text-on-ink text-[clamp(1.25rem,3vw,2rem)] break-words">
-              {title}
-            </h1>
+        <div className={`relative z-10 flex ${HEADER_MIN_H[resolvedSize]} flex-col justify-end px-5 py-5 sm:px-8 sm:py-7${legible}`}>
+          {/* Space-page parity: the leading avatar/icon + identity anchored bottom-LEFT, the actions
+              bottom-RIGHT, both over the cover. Stats/meta live BELOW in the DetailTemplate band. */}
+          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+            <div className="flex min-w-0 items-end gap-3">
+              {leading && <span className="shrink-0">{leading}</span>}
+              <div className="min-w-0">
+                {eyebrow && (
+                  <div className="mb-1.5 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary sm:text-sm">{eyebrow}</div>
+                )}
+                <h1 className="font-display uppercase leading-[1] text-balance text-on-ink text-[clamp(1.25rem,3vw,2rem)] break-words">
+                  {title}
+                </h1>
+                {subtitle && (
+                  <div className="mt-1.5 max-w-xl text-sm leading-relaxed text-on-ink/85">{subtitle}</div>
+                )}
+              </div>
+            </div>
+            {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
           </div>
-          {subtitle && (
-            <div className="mt-3 max-w-2xl text-sm leading-relaxed text-on-ink/85 sm:text-base">{subtitle}</div>
-          )}
-          {actions && <div className="mt-4 flex flex-wrap items-center gap-2 sm:gap-3">{actions}</div>}
         </div>
       ) : (
         // Overlay (default): centered content, fixed min-height so every hero is the same size.

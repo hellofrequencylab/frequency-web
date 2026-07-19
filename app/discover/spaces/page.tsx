@@ -16,6 +16,7 @@ import {
   normalizePage,
   DIRECTORY_GRID_WIDE,
 } from '@/components/spaces/directory-view'
+import { resolveHeaderElement } from '@/lib/elements/header'
 
 // PUBLIC Business Spaces directory (/discover/spaces) — the indexable, no-rail twin of the in-app directory
 // (/spaces/directory). It renders inside the shared /discover chrome (SiteHeader + footer, no left menu, no
@@ -75,6 +76,9 @@ export default async function PublicSpacesDirectoryPage({
   // The pager base — the current filters, so paging preserves them (no `following` on the public surface).
   const urlBase = { q, category, sort: sortParam, per, page }
 
+  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
+  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+
   return (
     // Ride in the SAME centered content column as the public Space profiles: the member three-column grid
     // (empty rail gutters flanking a flex-1 center column inside max-w-[105rem]), so the directory and a
@@ -101,6 +105,9 @@ export default async function PublicSpacesDirectoryPage({
         eyebrow="Business Spaces"
         title="Find a business or nonprofit near you"
         subtitle={HERO_INVITE}
+        variant={header.layout}
+        size={header.height}
+        overlay={header.scrim}
         search={<DirectorySearch placeholder="Search businesses by name" />}
         action={
           <>

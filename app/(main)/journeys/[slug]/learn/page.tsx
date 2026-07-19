@@ -18,7 +18,7 @@ import { AboutThisJourneyHero, MeetingBlock, AuthorBlock } from '@/components/jo
 import { CohortMeter } from '@/components/journey/v2/cohort-meter'
 import { DetailTemplate, PageHero } from '@/components/templates'
 import { resolveHeaderElement } from '@/lib/elements/header'
-import { accentColor, accentTint } from '@/lib/studio/accents'
+import { accentColor } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import type { CohortProgress } from '@/lib/journeys/cohort'
 
@@ -154,14 +154,13 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   }
   const phaseFocusById = Object.fromEntries(extras.phaseFocus)
 
-  // The standardized `header` element (ADR-793), identity layout — the SAME immersive header the
-  // discovery page uses, so the surface most authors + enrolled members land on matches it. The
-  // interactive controls (Manage / author actions) sit in the light `band` below the cover.
+  // The standardized `header` element (ADR-793), identity layout — the space-page treatment: the cover +
+  // a background-aware icon chip + title + summary, with the Manage / author actions riding the image
+  // (bottom-right). No breadcrumb under the cover. The "About this Journey" stats live in the body below.
   const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } })
 
   return (
     <DetailTemplate
-      back={{ href: '/journeys', label: 'Journeys' }}
       hero={
         <PageHero
           variant={header.layout}
@@ -171,36 +170,36 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
           eyebrow="Journey"
           leading={
             <span
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
-              style={{ backgroundColor: accentTint(plan.accent, 16), color: accentColor(plan.accent) }}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-canvas/90 shadow ring-1 ring-on-ink/10 backdrop-blur"
+              style={{ color: accentColor(plan.accent) }}
             >
               <PlanIcon className="h-6 w-6" />
             </span>
           }
           title={plan.title}
           subtitle={plan.summary || undefined}
+          actions={
+            canManageJourney || isAuthor ? (
+              <>
+                {canManageJourney && (
+                  <OpenAdminBarButton
+                    scope={{ kind: 'journey', id: plan.id }}
+                    caps={Array.from(journeyCaps)}
+                    label="Manage"
+                    icon={<SlidersHorizontal className="h-4 w-4" />}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-on-ink/30 bg-on-ink/10 px-3 py-1.5 text-sm font-medium text-on-ink backdrop-blur transition-colors hover:bg-on-ink/20"
+                  />
+                )}
+                {isAuthor && (
+                  <JourneyAuthorActions slug={slug} planId={plan.id} visibility={plan.visibility} />
+                )}
+              </>
+            ) : undefined
+          }
         />
       }
       title={plan.title}
-      band={
-        canManageJourney || isAuthor ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {canManageJourney && (
-              <OpenAdminBarButton
-                scope={{ kind: 'journey', id: plan.id }}
-                caps={Array.from(journeyCaps)}
-                label="Manage"
-                icon={<SlidersHorizontal className="h-4 w-4" />}
-              />
-            )}
-            {isAuthor && (
-              <JourneyAuthorActions slug={slug} planId={plan.id} visibility={plan.visibility} />
-            )}
-          </div>
-        ) : (
-          <></>
-        )
-      }
+      band={<></>}
     >
       {kickoff && (
         <Link

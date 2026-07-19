@@ -6,6 +6,7 @@ import { canCreate } from '@/lib/core/load-capabilities'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { getPageHeaderImage, getPageHeaderFocus } from '@/lib/page-settings/store'
+import { resolveHeaderElement } from '@/lib/elements/header'
 
 // The Journeys browse + build page. Module-driven (ADR-270/294): the page resolves its
 // operator-editable header (ADR-180) and composes the IndexTemplate chrome, then renders
@@ -48,6 +49,9 @@ export default async function JourneysPage() {
   const bannerFocus = operatorHero ? await getPageHeaderFocus('/journeys') : null
   // Real Crew (or steward/staff) may build a journey; others get the free-beta popup.
   const canBuildJourney = await canCreate('journey.create')
+  // The operator-tunable header element (ADR-793): layout/height/scrim resolve to today's
+  // overlay/large/scrim-on look unless a master value is set in /admin/elements.
+  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
 
   return (
     <IndexTemplate
@@ -61,6 +65,9 @@ export default async function JourneysPage() {
       heroImage={bannerImage}
       heroFocus={bannerFocus}
       heroOverlay
+      heroLayout={header.layout}
+      heroSize={header.height}
+      heroScrim={header.scrim}
       title={title}
       description={description}
       action={

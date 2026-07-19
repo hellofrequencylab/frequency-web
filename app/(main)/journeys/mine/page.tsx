@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { NewJourneyButton } from '@/components/studio/journey/new-journey-button'
 import { JourneyManageCard, type ManagePlan } from '@/components/journeys/journey-manage-card'
 import { AuthoringAccessNote } from '@/components/pricing/authoring-access-note'
+import { resolveHeaderElement } from '@/lib/elements/header'
 
 export const metadata: Metadata = { title: 'Your Journeys' }
 export const dynamic = 'force-dynamic'
@@ -66,10 +67,15 @@ export default async function MyJourneysPage({ searchParams }: { searchParams: P
   // beta-granted tier. Personal journeys are owned by the member, so paid = the member's real tier.
   const caller = await getCallerProfile()
   const paidOwner = isPaid(caller?.realMembershipTier)
+  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
+  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
 
   return (
     <IndexTemplate
       heroOverlay
+      heroLayout={header.layout}
+      heroSize={header.height}
+      heroScrim={header.scrim}
       back={{ href: '/journeys', label: 'Back to the library' }}
       title="Your Journeys"
       description="Your space to store, edit, and publish everything you build. Drafts stay private until you publish them to the community library."
