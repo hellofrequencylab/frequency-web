@@ -246,7 +246,8 @@ that grant a badge and do not touch the Pillar Signature, built on the `achievem
 `intro`, `intro_video`, `cover_image`, `emoji`, `accent`, `author_id`, `visibility`, `status`,
 `fork_of`, `adopt_count`, `forked_count`, `quest_id`/`official` (official library). **Adds:**
 `drip_interval_days int default 7`, `certificate_enabled boolean default false`,
-`completion_gems int default 30`.
+`completion_gems int default 30`, `cover_focus text` (header focal point, ADR-793),
+`logo_image text` (header logo/profile image, the leading chip beside the icon; ADR-794).
 
 **`journey_plan_items`** (the block tree): kept, generalized. `block_type` extends to include
 **`phase`** and **`module`** (containers) alongside the leaf types
