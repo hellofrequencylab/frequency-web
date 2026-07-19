@@ -4,14 +4,7 @@ import type { Metadata } from 'next'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
-import { listSpaceMembers } from '@/lib/spaces/membership'
-import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
-import { resolveMode } from '@/lib/spaces/modes'
-import Link from 'next/link'
-import { SPACE_PLAN_LABEL, asSpacePlan } from '@/lib/pricing/plans'
-import { Compass, CreditCard, Users } from 'lucide-react'
-import { DashboardTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { PlacementApprovals } from '@/components/events/placement-approvals'
 import { hubSearchItems } from '@/lib/admin/modules/space-hub'
@@ -71,55 +64,21 @@ export default async function SpaceManagePage({
   if (!isConsoleSpaceType(space.type)) notFound()
 
   const brandName = space.brandName ?? space.name
-  const typeLabel = spaceTypeLabel(space.type)
-  const planLabel = SPACE_PLAN_LABEL[asSpacePlan(space.plan)]
-  // The Mode + Focus label for the stat row (falls back to the type label when a Space has no Mode).
-  const mode = resolveMode(space.type, space.modeVariant)
-  const modeLabel = mode ? `${mode.modeLabel}: ${mode.focusLabel}` : typeLabel
 
-  // Member count for the stat row (service-role read, fail-safe to an empty list).
-  const members = await listSpaceMembers(space.id)
-  const activeMembers = members.filter((m) => m.status === 'active').length
-
-  // Stats sit TIGHT in the header (right of the identity), not as a big StatCard grid. The Mode chip links
-  // to the Mode & focus page; a Profile & Settings button opens the header-level settings surface (identity,
-  // team, reviews, plan, danger). The on-page "Settings" admin bar is off (the hub owns its own navigation).
-  // Tight stats in the header (right of the identity on sm+, a tidy left-aligned wrap on mobile). NO
-  // Profile & Settings button — that is a hub tab now, so Plan & Billing is one tap away in the nav. The
-  // Mode chip links to the Mode & focus page.
-  const headerRight = (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 sm:justify-end">
-      <span className="inline-flex items-center gap-1.5 text-sm text-text">
-        <Users className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-        <b className="font-semibold tabular-nums">{activeMembers}</b>
-        <span className="text-muted">members</span>
-      </span>
-      <span className="inline-flex items-center gap-1.5 text-sm text-text">
-        <CreditCard className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-        <b className="font-semibold">{planLabel}</b>
-      </span>
-      <Link
-        href={`/spaces/${space.slug}/manage/mode`}
-        className="inline-flex min-w-0 items-center gap-1.5 text-sm text-text transition-colors hover:text-primary-strong"
-      >
-        <Compass className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-        <span className="truncate">{modeLabel}</span>
-      </Link>
-    </div>
-  )
-
+  // Owner directive: the Manage hub reads like the admin CRM workspace (/admin/crm) — it leads with the
+  // SEARCH BAR, then the category MENU, then the section content, with NO big identity hero above them
+  // (the space name lives in the breadcrumb + left rail; the active section renders its own header, e.g.
+  // the Resonance CRM / Marketing PageHeading). The old DashboardTemplate hero (eyebrow + brand title +
+  // description + the members/plan/mode strip) pushed the search + menu far down the page; dropping it puts
+  // the menu right under the search, matching the admin workspace exactly. Wide, no on-page Settings bar.
   return (
-    <DashboardTemplate
-      eyebrow={`Manage ${typeLabel.toLowerCase()} space`}
-      title={brandName}
-      description="Your control hub. Browse a category to manage it; changes show up on your space page."
-      width="default"
-      adminBar={false}
-      actions={headerRight}
-      banner={staffViewing ? <StaffPreviewBanner spaceName={brandName} /> : undefined}
-    >
-      {/* The Space search bar, directly under the header rule (a fast finder over every tool + setting). */}
-      <HubSearch items={hubSearchItems(space.slug)} />
+    <div className="mx-auto w-full max-w-7xl">
+      {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
+      {/* Search first (a fast finder over every tool + setting), then the category menu + section content
+          (SpaceManageBoard renders the HubNav tabs + the active section), exactly like the admin workspace. */}
+      <div className="mb-5">
+        <HubSearch items={hubSearchItems(space.slug)} />
+      </div>
       <SpaceManageBoard slug={slug} section={section} />
       {/* Pending "where does this event live" requests a Space steward can approve. Only a manager
           (not a staff previewer) acts on them; the actions re-check steward caps server-side. */}
@@ -128,6 +87,6 @@ export default async function SpaceManagePage({
           <PlacementApprovals target={{ type: 'space', id: space.id }} />
         </Suspense>
       )}
-    </DashboardTemplate>
+    </div>
   )
 }
