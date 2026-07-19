@@ -38,6 +38,26 @@ element's own thin wrapper that resolves from the registry). Because the registr
 every occurrence is identical. This mirrors the admin MENU-CONTRACT (`APPS` / `SPACE_MODULES`), now
 extended from menu items to embeddable UI.
 
+**Two registries, kept in lock-step.** The framework splits into a PURE half and a RENDER half so the
+catalog stays client-safe and testable:
+
+- `lib/elements/registry.ts` — the **pure catalog**: the `ElementKey` union + `ELEMENTS` (each
+  element's features + `defaultRole` gates). No React, no components; safe to import anywhere.
+- `components/elements/registry.tsx` — the **component map**: `ELEMENT_COMPONENTS` (key → the one
+  canonical component) + `ElementPropsMap` (each element's props, which type `<AppElement>`).
+
+`components/elements/app-element.tsx` is the **generic mounter**: `<AppElement name="loom-picker" …/>`.
+The `name` discriminates the props, so a wrong/missing prop is a compile error. An element MAY also
+export a **typed wrapper** (`const LoomElement = (p: ElementProps<'loom-picker'>) => <AppElement
+name="loom-picker" {...p} />`) as ergonomic sugar — never a second implementation.
+
+**Enforcement (hard, in CI).** `pnpm check:elements` (`scripts/check-elements.mjs`, wired into the
+`checks` job) fails a PR that (a) declares a second `ElementDef[]` catalog outside the registry, or
+(b) reaches the `element_settings` table outside `lib/elements/store.ts`. The vitest drift guard
+(`components/elements/registry.test.ts`) locks the two registries in lock-step: every mountable key is
+a registered `ElementKey` with a catalog entry, and the component map + props map agree. Escape hatch:
+`// element-ok: <reason>` on the line. This is the elements twin of `check:menu` (ADR-553).
+
 ### 3. The shared config layer — `element_settings` (with role gating)
 
 ONE generic table, so every element's rules are editable without touching code:
@@ -74,6 +94,25 @@ ladder (`atLeastRole`) both scopes already use, so there is no second permission
 
 A shared admin editor (in each element's studio, or a single "Elements" console) lists the registry
 and edits each element's `settings` + `roles` — the "master file you edit, site-wide."
+
+## Second citizen: the page header
+
+The page header/hero (`components/templates/page-hero.tsx`) is registered as `'header'` (ADR-793). It is
+the ONE header band for the whole site with a few **layout variants** — `overlay` (centered, the shipped
+default), `identity` (cover + scrim with the lockup anchored bottom-left + an optional leading chip), and
+`minimal` (cover only) — and the SAME editing functions everywhere (height · focal point · header links ·
+darken-cover), each a role-gated `ElementFeature`. It shows that not every element is client-mounted: the
+header is server-rendered (its `<h1>` must stay server-side for SEO), so it is registered for config +
+role-gating but is deliberately absent from the component map — templates import the canonical `PageHero`
+directly, which is still the one mount. The drift guard permits this (a registered `ElementKey` need not
+be in `ElementPropsMap`); `MountableElementKey` narrows to the client-mountable subset.
+
+A surface resolves its header config with `resolveHeaderElement({ spaceId?, defaults })`
+(`lib/elements/header.ts`): it reads the `element_settings` layers and folds them with the surface's own
+`defaults` — an operator value set in `/admin/elements` (or a Space override) WINS over the default and
+applies with no deploy, else the surface keeps its baseline. So the master genuinely retunes every
+header that defers, while each section still has a sensible layout/height. The size ladder is the single
+`lib/layout/header-sizes.ts` (PageHero renders it; the registry lists it).
 
 ## First citizen: the Loom picker
 

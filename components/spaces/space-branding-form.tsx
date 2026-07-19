@@ -31,15 +31,13 @@ import {
   type HeaderCtaPreference,
 } from '@/lib/spaces/header-cta'
 import { heroAspect, type HeroHeight, type HeroButtonOrientation } from '@/lib/spaces/hero-config'
+import { COVER_HEIGHT_OPTIONS, COVER_HEIGHT_DEFAULT } from '@/lib/layout/cover-height'
 
-// The hero LOOK controls that moved into Identity & Branding (item 5): Short/Medium/Tall height + the
+// The hero LOOK controls that moved into Identity & Branding (item 5): Short/Standard/Tall height + the
 // button orientation. Compact segmented buttons, matching Cover style / Page style. Each saves the moment
-// it is picked (no Save button).
-const HERO_HEIGHTS: { value: HeroHeight; label: string }[] = [
-  { value: 'short', label: 'Short' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'tall', label: 'Tall' },
-]
+// it is picked (no Save button). Height options come from the ONE shared cover ladder (Space + Event share
+// it), so there is no third copy to drift.
+const HERO_HEIGHTS: { value: HeroHeight; label: string }[] = [...COVER_HEIGHT_OPTIONS]
 const HERO_BUTTONS: { value: HeroButtonOrientation; label: string }[] = [
   { value: 'row', label: 'In a row' },
   { value: 'stacked', label: 'Stacked' },
@@ -70,7 +68,7 @@ export function SpaceBrandingForm({
   headerCta = null,
   defaultCtaLabel,
   pageTheme,
-  heroHeight = 'medium',
+  heroHeight = COVER_HEIGHT_DEFAULT,
   heroButtonOrientation = 'row',
   readOnly = false,
 }: {

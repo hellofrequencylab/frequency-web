@@ -9,6 +9,14 @@ import {
   type HeaderCtaPreference,
   type ResolvedHeaderCta,
 } from '@/lib/spaces/header-cta'
+import {
+  coverHeightClass,
+  coverAspect,
+  asCoverHeight,
+  COVER_HEIGHT_OPTIONS,
+  COVER_HEIGHT_DEFAULT,
+  type CoverHeight,
+} from '@/lib/layout/cover-height'
 
 // THE EDITABLE TOP-PAGE HERO (the profile COVER hero at the top of a Space page). PR: editable-top-hero.
 // The cover hero — the full-bleed band with the eyebrow / name / tagline / avatar / actions at the top of
@@ -31,26 +39,17 @@ import {
 // COPY NOTE (NAMING + CONTENT-VOICE §10): every field label + placeholder is a plain phrase, sentence case,
 // no em dashes, no hype.
 
-// ── The hero HEIGHT (3-way, reusing the `height` primitive) ───────────────────────────────────────────────
-// Short / Medium / Tall map to the three cover-band heights the render frame paints. `medium` is the default
-// (the current shipped Hero height), so a Space that never touches the control renders unchanged.
+// ── The hero HEIGHT (Short / Standard / Tall) ─────────────────────────────────────────────────────────────
+// The band height resolves from the SHARED cover-height ladder (lib/layout/cover-height.ts) that the Event
+// hero also uses — one ladder, one set of functions. `standard` is the default (the shipped middle height).
+// This ladder USED to live here as short/medium/tall; the middle tier is now 'standard' (vocabulary), and
+// a legacy stored 'medium' is mapped onto 'standard' by asCoverHeight (no data migration).
 
-export type HeroHeight = 'short' | 'medium' | 'tall'
+export type HeroHeight = CoverHeight
 
-/** The Tailwind height utility (responsive) for each hero height. Token-driven spacing scale, no hardcoded
- *  pixels beyond the rem steps the existing cover used. `medium` matches the shipped `h-72 sm:h-[22rem]`.
- *  The three tiers are deliberately WELL SPACED (desktop 224 / 352 / 576px) so Short, Medium, and Tall read
- *  as obviously different bands on the live page AND in the rail's shape-accurate preview — a close ladder
- *  (the old 288/352/512) made Short and Medium look identical. */
-const HERO_HEIGHT_CLASS: Record<HeroHeight, string> = {
-  short: 'h-48 sm:h-56',
-  medium: 'h-72 sm:h-[22rem]',
-  tall: 'h-[24rem] sm:h-[36rem]',
-}
-
-/** The responsive height utility for a resolved hero height. Pure + total. */
+/** The responsive height utility for a resolved hero height (delegates to the shared ladder). Pure. */
 export function heroHeightClass(height: HeroHeight): string {
-  return HERO_HEIGHT_CLASS[height]
+  return coverHeightClass(height)
 }
 
 // ── The hero ASPECT RATIO (width / height) at each height ──────────────────────────────────────────────────
@@ -73,16 +72,12 @@ export function heroHeightClass(height: HeroHeight): string {
 // sm:h-[22rem] = 352px, tall sm:h-[36rem] = 576px. The three ratios stay well separated so Short / Medium /
 // Tall visibly step in the preview when you switch tiers.
 const HERO_HEADER_MAX_WIDTH = 1044 // px — real center-column max (see derivation above), NOT the 1344 sizes hint
-const HERO_ASPECT: Record<HeroHeight, number> = {
-  short: HERO_HEADER_MAX_WIDTH / 224, // ≈ 4.66
-  medium: HERO_HEADER_MAX_WIDTH / 352, // ≈ 2.97
-  tall: HERO_HEADER_MAX_WIDTH / 576, // ≈ 1.81
-}
 
 /** The width:height aspect ratio of the Hero cover at a resolved height, for a shape-accurate crop preview
- *  (the rail's header-image focus picker). Pure + total. */
+ *  (the rail's header-image focus picker). Delegates to the shared ladder at the Space profile's real
+ *  center-column width. Pure + total. */
 export function heroAspect(height: HeroHeight): number {
-  return HERO_ASPECT[height]
+  return coverAspect(height, HERO_HEADER_MAX_WIDTH)
 }
 
 // ── The hero BUTTON ORIENTATION (reusing the `buttonOrientation` primitive) ───────────────────────────────
@@ -108,11 +103,13 @@ export interface HeroEditorValues {
 // `fieldsForBlock`. The CTA sub-fields are declared here too so the whole hero (look + copy + button) edits in
 // ONE panel; the CTA is stored under `headerCta` (see toHeaderCtaPreference), the rest under `hero`.
 
-/** One field the hero editor renders. Uses ONLY the shared FieldType union (text / textarea / url / height /
- *  buttonOrientation), so the arranger's existing FieldEditor dispatches on `type` with no new control JSX. */
+/** One field the hero editor renders. Uses ONLY the shared FieldType union (text / textarea / url /
+ *  segmented / buttonOrientation), so the arranger's existing FieldEditor dispatches on `type` with no new
+ *  control JSX. Height is a `segmented` field (Short / Standard / Tall) driven by the shared cover ladder,
+ *  so the Space + Event hero pickers offer the identical options. */
 export const HERO_FIELDS: readonly FieldDef[] = [
   // Look controls (the ADR-569 C6 primitives).
-  { key: 'height', label: 'Height', type: 'height', defaultValue: 'medium' },
+  { key: 'height', label: 'Height', type: 'segmented', defaultValue: COVER_HEIGHT_DEFAULT, options: [...COVER_HEIGHT_OPTIONS] },
   { key: 'buttonOrientation', label: 'Buttons', type: 'buttonOrientation', defaultValue: 'row' },
   // Copy overrides (fall back to the Space's canonical fields when blank).
   { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small label above your name' },
@@ -164,8 +161,9 @@ export function readHeroConfig(raw: unknown): HeroConfig {
   if (!node || typeof node !== 'object' || Array.isArray(node)) return {}
   const n = node as Record<string, unknown>
   const out: HeroConfig = {}
-  const height = heroEnum(HERO_FIELDS[0], n.height)
-  if (height) out.height = height as HeroHeight
+  // Height: validate against the shared ladder (maps legacy 'medium' -> 'standard'), drop the default (sparse).
+  const height = asCoverHeight(n.height)
+  if (height && height !== COVER_HEIGHT_DEFAULT) out.height = height
   const orientation = heroEnum(HERO_FIELDS[1], n.buttonOrientation)
   if (orientation) out.buttonOrientation = orientation as HeroButtonOrientation
   const eyebrow = heroStr(n.eyebrow, MAX_HERO_TEXT)
@@ -266,7 +264,7 @@ export function resolveHero(input: {
   const { config, preferences, base, brandName, tagline, defaultCtaLabel } = input
   const cta = resolveHeaderCta(readHeaderCtaPreference(preferences), base, defaultCtaLabel)
   return {
-    height: config.height ?? 'medium',
+    height: config.height ?? COVER_HEIGHT_DEFAULT,
     buttonOrientation: config.buttonOrientation ?? 'row',
     eyebrow: config.eyebrow ?? null,
     heading: config.heading ?? brandName,

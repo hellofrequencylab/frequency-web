@@ -27,7 +27,9 @@ const RESOLVE_DEFAULTS = {
 describe('HERO_FIELDS schema', () => {
   it('declares the five sub-item controls with the shared primitive field types', () => {
     const byKey = Object.fromEntries(HERO_FIELDS.map((f) => [f.key, f]))
-    expect(byKey.height?.type).toBe('height')
+    // Height is a segmented Short / Standard / Tall field driven by the shared cover ladder.
+    expect(byKey.height?.type).toBe('segmented')
+    expect(byKey.height?.options?.map((o) => o.value)).toEqual(['short', 'standard', 'tall'])
     expect(byKey.buttonOrientation?.type).toBe('buttonOrientation')
     expect(byKey.eyebrow?.type).toBe('text')
     expect(byKey.heading?.type).toBe('text')
@@ -41,7 +43,7 @@ describe('HERO_FIELDS schema', () => {
 describe('heroHeightClass', () => {
   it('maps each height to a responsive utility (no hardcoded hex, token spacing)', () => {
     expect(heroHeightClass('short')).toContain('h-')
-    expect(heroHeightClass('medium')).toBe('h-72 sm:h-[22rem]')
+    expect(heroHeightClass('standard')).toBe('h-72 sm:h-[22rem]')
     expect(heroHeightClass('tall')).toContain('h-')
     expect(heroHeightClass('short')).not.toBe(heroHeightClass('tall'))
   })
@@ -60,7 +62,9 @@ describe('readHeroConfig', () => {
       buttonOrientation: 'stacked',
     })
     // The declared defaults are dropped so the blob stays sparse.
-    expect(readHeroConfig({ hero: { height: 'medium', buttonOrientation: 'row' } })).toEqual({})
+    expect(readHeroConfig({ hero: { height: 'standard', buttonOrientation: 'row' } })).toEqual({})
+    // A legacy stored 'medium' maps onto 'standard' (the default), so it also drops (no migration needed).
+    expect(readHeroConfig({ hero: { height: 'medium' } })).toEqual({})
   })
   it('drops out-of-enum values and trims / bounds text', () => {
     expect(readHeroConfig({ hero: { height: 'huge' } })).toEqual({})
@@ -125,7 +129,7 @@ describe('hero CTA bridge (reuses the header-cta model, item 5)', () => {
 describe('resolveHero', () => {
   it('is total: falls back to Space defaults for an empty config', () => {
     const hero = resolveHero({ config: {}, preferences: {}, ...RESOLVE_DEFAULTS })
-    expect(hero.height).toBe('medium')
+    expect(hero.height).toBe('standard')
     expect(hero.buttonOrientation).toBe('row')
     expect(hero.eyebrow).toBeNull()
     expect(hero.heading).toBe('River Yoga')
