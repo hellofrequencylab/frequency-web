@@ -33,7 +33,7 @@ import { canEditJourney } from '@/lib/journeys/authoring'
 import { reviewJourneyForLibrary } from '@/lib/ai/journey-review'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { loadRootSpaceId } from '@/lib/spaces/store'
-import { listOperatedSpaces, operatesSpace } from '@/lib/spaces/operated'
+import { listOperatedSpaces } from '@/lib/spaces/operated'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 
@@ -186,21 +186,24 @@ export async function reassignJourneyOwner(
   const root = await loadRootSpaceId()
   if (!root) return fail('Could not resolve your account. Try again in a moment.')
 
-  let targetSpaceId: string
-  if (target === 'personal') {
-    // Pulling a Journey onto a personal account makes it the author's own — only the author (or an
-    // operator) may do that, so a Space admin can't quietly hand a teammate's Journey to themselves.
-    const author = await planAuthorId(planId)
-    const isAdmin = (await getGlobalCapabilities()).has('admin.access')
-    if (author !== profileId && !isAdmin) {
-      return fail('Only the person who created a Journey can move it to their personal account.')
-    }
-    targetSpaceId = root
-  } else {
-    // Handing it to a Space requires the caller to actually run that Space (owner / active admin).
-    if (!(await operatesSpace(profileId, target))) return fail('You do not manage that space.')
-    targetSpaceId = target
-  }
+  // Build the server-side ALLOW-LIST of destinations this caller may move the Journey to, then require
+  // the requested `target` to be one of them. The tainted client value never decides WHICH check runs;
+  // it is only looked up in a set derived entirely from the caller's real authority (the author/operator
+  // rule for 'personal', the operated Spaces for a hand-off), which resolves the destination space id.
+  const [author, isAdmin, operated] = await Promise.all([
+    planAuthorId(planId),
+    getGlobalCapabilities().then((c) => c.has('admin.access')),
+    listOperatedSpaces(profileId),
+  ])
+  const allowed = new Map<string, string>() // target key -> resolved space id
+  // Pulling a Journey onto a personal account makes it the author's own, so only the author (or an
+  // operator) may do that; a Space admin can't quietly hand a teammate's Journey to themselves.
+  if (author === profileId || isAdmin) allowed.set('personal', root)
+  // Handing it to a Space requires the caller to actually run that Space (owner / active admin).
+  for (const s of operated) allowed.set(s.id, s.id)
+
+  const targetSpaceId = allowed.get(target)
+  if (targetSpaceId === undefined) return fail('You cannot move this journey there.')
 
   await setPlanSpace(planId, targetSpaceId)
   revalidatePath('/journeys/mine')
