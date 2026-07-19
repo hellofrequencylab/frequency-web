@@ -313,6 +313,7 @@ export function SpaceManageConsole({
   emphasis,
   section,
   crmEmbed,
+  marketingEmbed,
   canDelete,
   spaceId,
 }: {
@@ -326,6 +327,9 @@ export function SpaceManageConsole({
   /** The embedded CRM roster node, built server-side by the page and shown atop the Resonance tab so the
    *  hub opens on the space's live Resonance CRM (owner directive). */
   crmEmbed?: React.ReactNode
+  /** The embedded Marketing surface (email dashboard + pill sub-nav), built server-side and shown on the
+   *  Marketing tab so it mirrors the admin CRM Marketing page exactly (owner directive). */
+  marketingEmbed?: React.ReactNode
   /** Whether the Profile & Settings tab's Danger zone renders its delete control (owner / staff). */
   canDelete: boolean
   spaceId: string
@@ -339,10 +343,15 @@ export function SpaceManageConsole({
     <div>
       <HubNav slug={slug} section={section} />
       <div className="mt-5">
-        {/* Resonance renders the full Resonance CRM surface (its own header); no hub blurb there. */}
-        {blurb && section !== 'resonance' && <p className="mb-4 max-w-2xl text-sm text-muted">{blurb}</p>}
+        {/* Resonance + Marketing render their own full surfaces (with their own headers / sub-nav); no hub
+            blurb there. Every other tab keeps its short blurb above the feature cards. */}
+        {blurb && section !== 'resonance' && section !== 'marketing' && (
+          <p className="mb-4 max-w-2xl text-sm text-muted">{blurb}</p>
+        )}
         {section === 'resonance' ? (
           crmEmbed
+        ) : section === 'marketing' ? (
+          marketingEmbed
         ) : section === 'settings' ? (
           <SpaceSettingsSurface slug={slug} modules={modules} canDelete={canDelete} spaceId={spaceId} />
         ) : (

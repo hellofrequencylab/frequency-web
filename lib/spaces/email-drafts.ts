@@ -25,7 +25,14 @@ import { getMyProfileId, getCallerProfile, getCachedUser } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { isJanitor } from '@/lib/core/roles'
-import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
+import {
+  resolveAudience,
+  audienceCount,
+  listAudienceTags,
+  type AudienceFilter,
+} from '@/lib/spaces/audiences'
+import { sendSpaceCampaign as sendViaSeam, SPACE_UNSUBSCRIBE_PLACEHOLDER } from '@/lib/spaces/email'
 import {
   parseEntityLayout,
   sanitizeEntityLayout,
@@ -359,6 +366,131 @@ export async function deleteSpaceEmailDraft(spaceId: string, id: string): Promis
     if (error) return fail('Could not delete this draft. Try again.')
   } catch {
     return fail('Could not delete this draft. Try again.')
+  }
+  return ok()
+}
+
+// ── AUDIENCE + REAL SEND (the "New email" popup's send rail) ───────────────────────────────────────────────
+//
+// The block-email composer sends through the SAME anti-spam delivery core the plain-text campaign composer
+// uses (sendSpaceCampaign from @/lib/spaces/email): kill-switch, per-Space daily cap, consent + suppression,
+// per-recipient RFC 8058 one-click unsubscribe, and the outreach_sends ledger all live there, so there is ONE
+// send path, never a fork. The only difference from lib/spaces/campaigns.ts sendSpaceCampaign is the body: a
+// block draft compiles its block_json to branded HTML (compileEmailDoc, Space palette) instead of rendering a
+// plain-text body. The audience count + the send resolve through the SAME resolveAudience, so the number the
+// owner confirms is the number who get the email.
+
+/** The live recipient count for an audience filter, gated on canEditProfile OR a janitor preview so a
+ *  non-editor never probes a Space's contact count. FAIL-SAFE to 0. Mirrors countSpaceAudience. */
+export async function countSpaceEmailAudience(
+  spaceId: string,
+  filter: AudienceFilter = {},
+): Promise<number> {
+  const caller = await getCallerProfile()
+  const space = await getSpaceById(spaceId)
+  if (!space) return 0
+  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
+  if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return 0
+  return audienceCount(spaceId, filter)
+}
+
+/** The distinct tags this Space's audience can be filtered by (the send rail's tag options). Gated on
+ *  canEditProfile OR a janitor preview. FAIL-SAFE to []. */
+export async function listSpaceEmailAudienceTags(spaceId: string): Promise<string[]> {
+  const caller = await getCallerProfile()
+  const space = await getSpaceById(spaceId)
+  if (!space) return []
+  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
+  if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return []
+  return listAudienceTags(spaceId)
+}
+
+/**
+ * SEND a block-email draft NOW to a resolved audience. Gated on canEditProfile + the row belonging to the
+ * Space. Compiles the block layout to branded HTML with the Space's OWN palette (spaceEmailColors) and a
+ * per-recipient unsubscribe placeholder, resolves the recipients over the Space's own contacts, and hands
+ * them to the shared send seam (which owns the kill-switch, cap, suppression, unsubscribe, and ledger). On
+ * success stamps the row status='sent' + sent_at (best-effort). Fail-closed on any gate / validation miss.
+ */
+export async function sendSpaceEmailDraft(
+  spaceId: string,
+  id: string,
+  filter: AudienceFilter = {},
+): Promise<ActionResult<{ recipientCount: number }>> {
+  const gate = await requireSpaceEditor(spaceId)
+  if (!gate.ok) return fail(gate.error)
+  const { space } = gate
+
+  const row = await readDraft(id, spaceId)
+  if (!row) return fail('That email no longer exists.')
+  if ((row.status ?? 'draft') === 'sent') return fail('This email has already gone out.')
+  if (!(row.subject ?? '').trim()) return fail('Give your email a subject before sending.')
+
+  const brand = spaceBrand(space)
+  const layout = layoutFromBlockJson(row.block_json)
+  const compiled = compileEmailDoc(
+    { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
+    { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER },
+  )
+  if (!compiled.html.trim()) return fail('Add some content before sending.')
+
+  // A broadcast is not personalized, so any unfilled merge token degrades to its default fallback rather
+  // than rendering a raw {{token}}. The per-recipient unsubscribe placeholder is left intact for the seam.
+  const fallbacks = MERGE_TAG_DEFAULT_FALLBACKS
+  const subject = applyMergeTags(compiled.subject || 'Your email', {}, { fallbacks, escape: false })
+  const html = applyMergeTags(compiled.html, {}, { fallbacks })
+
+  // Resolve the recipients over THIS Space's contacts (the exact shape the send seam consumes). The count
+  // the owner confirmed in the rail resolves the same way, so it can never disagree with this list.
+  const recipients = await resolveAudience(spaceId, filter)
+  if (recipients.length === 0)
+    return fail('No one matched that audience yet. Add contacts or pick a different filter.')
+
+  const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients })
+  if (isError(res)) return res
+
+  // Stamp the draft as sent (best-effort: the emails already went out, so a failed status write must not
+  // surface as a send failure).
+  try {
+    await campaignsTable()
+      .update({ status: 'sent', sent_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('space_id', spaceId)
+      .maybeSingle()
+  } catch {
+    // ignore: the send succeeded; the status stamp is non-critical.
+  }
+
+  return ok({ recipientCount: res.data.sent })
+}
+
+/**
+ * Discard a Space draft ONLY if it is still pristine — the abandoned-draft cleanup for the "New email" popup,
+ * which mints a draft the instant it opens. Called when the popup closes: a draft with a subject, preheader,
+ * or any authored block content is KEPT (the owner may resume it); a pristine, never-edited one is removed so
+ * it never clutters the "Everything you send" list. Editor-gated + space-scoped + status-guarded (only a
+ * 'draft' is ever touched), so it can never remove real work or a sent email. Best-effort: a miss is harmless.
+ */
+export async function discardSpaceEmailDraftIfEmpty(spaceId: string, id: string): Promise<ActionResult> {
+  const gate = await requireSpaceEditor(spaceId)
+  if (!gate.ok) return ok() // best-effort on close; never surface a gate miss
+
+  const row = await readDraft(id, spaceId)
+  if (!row) return ok()
+  if ((row.status ?? 'draft') !== 'draft') return ok()
+
+  const emptyText = !(row.subject ?? '').trim() && !(row.preheader ?? '').trim()
+  const content =
+    row.block_json && typeof row.block_json === 'object'
+      ? (row.block_json as { content?: Record<string, unknown> }).content
+      : undefined
+  const hasAuthoredContent = !!content && Object.keys(content).length > 0
+  if (!emptyText || hasAuthoredContent) return ok()
+
+  try {
+    await campaignsTable().delete().eq('id', id).eq('space_id', spaceId).eq('status', 'draft').maybeSingle()
+  } catch {
+    // best-effort: leaving a pristine draft behind is harmless.
   }
   return ok()
 }
