@@ -242,6 +242,7 @@ export function ListingBuilder(props: ListingBuilderProps) {
           ordered storage paths through the same images patch. */}
       <div className="mt-4">
         <MultiImageUpload
+          loom
           label="Photos"
           value={images}
           onChange={(next) => { setImages(next); queueSave({ images: next }) }}

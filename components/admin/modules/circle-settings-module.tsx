@@ -9,7 +9,7 @@ import {
   getCircleAdminData,
   updateCircleSettings,
   updateCirclePermalink,
-  uploadCircleCover,
+  setCircleCoverUrl,
   removeCircleCover,
   deleteCircle,
 } from '@/app/(main)/circles/admin-actions'
@@ -80,7 +80,7 @@ export function CircleSettingsModule() {
           alt={data.name}
           canEdit
           forceEdit
-          upload={uploadCircleCover.bind(null, data.id, data.slug)}
+          setUrl={setCircleCoverUrl.bind(null, data.id, data.slug)}
           remove={removeCircleCover.bind(null, data.id, data.slug)}
         />
       </div>

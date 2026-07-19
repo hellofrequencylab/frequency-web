@@ -231,6 +231,7 @@ export function HousingForm() {
 
       <div>
         <MultiImageUpload
+          loom
           value={images}
           onChange={setImages}
           label="Photos"

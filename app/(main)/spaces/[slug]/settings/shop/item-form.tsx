@@ -397,6 +397,7 @@ export function ItemForm({
 
       {/* Photos — the cover is the first tile; drag or use the arrows to reorder. */}
       <MultiImageUpload
+        loom
         label="Photos"
         value={images}
         onChange={setImages}

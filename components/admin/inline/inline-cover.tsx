@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { ImagePlus, X, Loader2 } from 'lucide-react'
 import { useEditMode } from '@/lib/admin/use-edit-mode'
+import { LoomPicker } from '@/components/loom/loom-picker'
 
 // Inline cover-image editor for the tuning layer (ADR-138). Out of Edit Mode it
 // just shows the cover (or nothing). In Edit Mode — and only for someone who can
@@ -16,6 +17,7 @@ export function InlineCover({
   alt,
   canEdit = false,
   upload,
+  setUrl,
   remove,
   forceEdit = false,
   onChange,
@@ -24,6 +26,10 @@ export function InlineCover({
   alt: string
   canEdit?: boolean
   upload?: (fd: FormData) => Promise<{ url: string } | { error: string }>
+  /** When present, the Change/Add controls open the Loom picker; the chosen URL is persisted through
+   *  this action (which validates + writes the column) instead of a raw file upload. Preferred over
+   *  `upload` (owner directive: every image upload opens the Loom). */
+  setUrl?: (url: string) => Promise<{ error: string } | void>
   remove?: () => Promise<void>
   /** Show the edit controls without requiring page Edit Mode — for surfaces that
    *  are themselves an explicit editor (e.g. the Settings panel hero). */
@@ -34,12 +40,28 @@ export function InlineCover({
 }) {
   const { editing } = useEditMode()
   const showEdit = (editing || forceEdit) && canEdit
-  const [url, setUrl] = useState(value)
+  const [url, setLocalUrl] = useState(value)
   const [err, setErr] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const [pickerOpen, setPickerOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // Prefer the Loom picker (a URL-only `setUrl` persister); fall back to the raw file input only for
+  // callers that still pass `upload` and no `setUrl`.
+  const openSource = () => (setUrl ? setPickerOpen(true) : fileRef.current?.click())
+
   if (!url && !showEdit) return null
+
+  function onPick(picked: string) {
+    if (!setUrl) return
+    setErr(null)
+    startTransition(async () => {
+      const res = await setUrl(picked)
+      if (res && 'error' in res) { setErr(res.error); return }
+      setLocalUrl(picked)
+      onChange?.(picked)
+    })
+  }
 
   function pick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -52,7 +74,7 @@ export function InlineCover({
       const res = await upload(fd)
       if ('error' in res) setErr(res.error)
       else {
-        setUrl(res.url)
+        setLocalUrl(res.url)
         onChange?.(res.url)
       }
     })
@@ -62,7 +84,7 @@ export function InlineCover({
     if (!remove) return
     startTransition(async () => {
       await remove()
-      setUrl(null)
+      setLocalUrl(null)
       onChange?.(null)
     })
   }
@@ -76,7 +98,7 @@ export function InlineCover({
       ) : (
         <button
           type="button"
-          onClick={() => fileRef.current?.click()}
+          onClick={openSource}
           disabled={pending}
           className="flex h-40 w-full items-center justify-center gap-2 text-sm text-muted transition-colors hover:text-text disabled:opacity-50 sm:h-52"
         >
@@ -89,7 +111,7 @@ export function InlineCover({
         <div className="absolute right-2 top-2 flex items-center gap-1.5">
           <button
             type="button"
-            onClick={() => fileRef.current?.click()}
+            onClick={openSource}
             disabled={pending}
             className="inline-flex items-center gap-1 rounded-lg bg-surface/90 px-2.5 py-1 text-xs font-medium text-text shadow-sm backdrop-blur transition-colors hover:bg-surface disabled:opacity-50"
           >
@@ -108,7 +130,15 @@ export function InlineCover({
         </div>
       )}
 
-      {showEdit && <input ref={fileRef} type="file" accept="image/*" hidden onChange={pick} />}
+      {showEdit && !setUrl && <input ref={fileRef} type="file" accept="image/*" hidden onChange={pick} />}
+      {setUrl && (
+        <LoomPicker
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          onSelect={onPick}
+          title="Choose a cover image"
+        />
+      )}
       {err && <p className="px-3 py-1.5 text-xs text-danger">{err}</p>}
     </div>
   )

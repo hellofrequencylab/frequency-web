@@ -7,6 +7,7 @@ import { Check, Loader2, Sparkles, ExternalLink } from 'lucide-react'
 import { updateProfile, uploadProfileImageAction, setSpotlightPublished, setMySpotlightEnabled } from './actions'
 import { HeaderEditor } from './header-editor'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
+import { LoomPicker } from '@/components/loom/loom-picker'
 
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
 
@@ -85,6 +86,7 @@ export function ProfileForm({
   const [headerRemoved, setHeaderRemoved] = useState(false)
   const [uploading,     setUploading]     = useState(false)
   const [uploadError,   setUploadError]   = useState('')
+  const [avatarLoomOpen, setAvatarLoomOpen] = useState(false)
   const [spotEnabled,   setSpotEnabled]   = useState(initial.spotlightEnabled)
   const [spotPublished, setSpotPublished] = useState(initial.spotlightPublished)
   const [spotPending,   setSpotPending]   = useState(false)
@@ -318,10 +320,10 @@ export function ProfileForm({
           <div className="flex flex-col gap-1.5">
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => setAvatarLoomOpen(true)}
               className="text-sm font-medium text-primary-strong hover:text-primary-strong transition-colors"
             >
-              {avatarPreview ? 'Change photo' : 'Upload photo'}
+              {avatarPreview ? 'Change photo' : 'Choose a photo'}
             </button>
             {avatarPreview && avatarPreview !== initial.avatarUrl && (
               <button
@@ -345,6 +347,12 @@ export function ProfileForm({
             accept="image/*"
             className="hidden"
             onChange={handleFileChange}
+          />
+          <LoomPicker
+            open={avatarLoomOpen}
+            onClose={() => setAvatarLoomOpen(false)}
+            onSelect={(url) => { setAvatarUrl(url); setAvatarPreview(url); setAvatarFile(null); setUploadError('') }}
+            title="Choose your profile photo"
           />
         </div>
         {uploadError && <p className="mt-1.5 text-xs text-danger">{uploadError}</p>}

@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { getMyProfileId } from '@/lib/auth'
+import { isLoomPublicImageUrl } from '@/lib/loom/urls'
 import { logAdminAction } from '@/lib/admin/audit'
 import { listPublicPractices, getCircleActivePractice } from '@/lib/practices'
 import {
@@ -282,6 +283,23 @@ export async function uploadCircleCover(
   revalidatePath(`/circles/${slug}`)
   revalidatePath('/circles')
   return { url: data.publicUrl }
+}
+
+/** Persist a Loom-picked cover URL (the URL-only sibling of uploadCircleCover). Same
+ *  circle.editSettings gate; the URL must be a Supabase public object URL. */
+export async function setCircleCoverUrl(
+  id: string,
+  slug: string,
+  url: string,
+): Promise<{ error: string } | void> {
+  const caps = await getCircleCapabilities(id)
+  if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
+  if (!isLoomPublicImageUrl(url)) return { error: 'That image could not be used.' }
+  const admin = createAdminClient()
+  const { error } = await admin.from('circles').update({ image_url: url }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath(`/circles/${slug}`)
+  revalidatePath('/circles')
 }
 
 export async function removeCircleCover(id: string, slug: string) {

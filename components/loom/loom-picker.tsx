@@ -24,12 +24,18 @@ export function LoomPicker({
   open,
   onClose,
   onSelect,
+  onSelectMany,
+  multiple = false,
   title = 'Choose an image',
 }: {
   open: boolean
   onClose: () => void
-  /** Called with the chosen image's public URL. The picker closes itself after. */
-  onSelect: (url: string) => void
+  /** Single-select: called with the chosen image's public URL; the picker closes itself after. */
+  onSelect?: (url: string) => void
+  /** Multi-select (with `multiple`): called with all chosen URLs when the user confirms. */
+  onSelectMany?: (urls: string[]) => void
+  /** Let the user pick several images at once (a confirm bar replaces click-to-close). For galleries. */
+  multiple?: boolean
   title?: string
 }) {
   const [scopes, setScopes] = useState<LoomScope[]>([])
@@ -43,7 +49,12 @@ export function LoomPicker({
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [selected, setSelected] = useState<string[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Clear the multi-select basket on every close path, so the next open starts empty (no
+  // setState-in-effect: reset here, at the close, instead).
+  const close = () => { setSelected([]); onClose() }
 
   // Resolve the caller's scopes once per open.
   useEffect(() => {
@@ -109,18 +120,26 @@ export function LoomPicker({
 
   if (!open) return null
 
-  const pick = (url: string) => { onSelect(url); onClose() }
+  const pick = (url: string) => {
+    if (multiple) {
+      setSelected((prev) => (prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url]))
+      return
+    }
+    onSelect?.(url)
+    close()
+  }
+  const confirmMany = () => { if (selected.length) onSelectMany?.(selected); close() }
   const rail = 'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors'
   const railOn = 'bg-primary-bg text-primary-strong font-semibold'
   const railOff = 'text-muted hover:bg-surface-elevated hover:text-text'
 
   return (
-    <Dialog open={open} onClose={onClose} ariaLabel={title} className="max-w-4xl">
+    <Dialog open={open} onClose={close} ariaLabel={title} className="max-w-4xl">
       <div className="flex max-h-[85vh] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-base font-bold text-text">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-1 text-subtle hover:bg-surface-elevated hover:text-text">
+          <button type="button" onClick={close} aria-label="Close" className="rounded-lg p-1 text-subtle hover:bg-surface-elevated hover:text-text">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -245,24 +264,33 @@ export function LoomPicker({
                     </p>
                   ) : (
                     <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                      {assets.map((a) => (
-                        <li key={a.id}>
-                          <button
-                            type="button"
-                            onClick={() => pick(a.url)}
-                            title={a.title}
-                            className="group relative block aspect-square w-full overflow-hidden rounded-xl border border-border bg-canvas outline-none transition-colors hover:border-primary focus-visible:ring-2 focus-visible:ring-primary/50"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset on a user-controlled Storage host, not a configured next/image domain */}
-                            <img src={a.url} alt={a.alt ?? ''} loading="lazy" className="h-full w-full object-cover" />
-                            {a.generated && (
-                              <span className="absolute left-1 top-1 inline-flex items-center gap-0.5 rounded-full bg-canvas/90 px-1.5 py-0.5 text-2xs font-semibold text-primary-strong shadow-sm">
-                                <Sparkles className="h-2.5 w-2.5" /> AI
-                              </span>
-                            )}
-                          </button>
-                        </li>
-                      ))}
+                      {assets.map((a) => {
+                        const on = multiple && selected.includes(a.url)
+                        return (
+                          <li key={a.id}>
+                            <button
+                              type="button"
+                              onClick={() => pick(a.url)}
+                              title={a.title}
+                              aria-pressed={multiple ? on : undefined}
+                              className={`group relative block aspect-square w-full overflow-hidden rounded-xl border bg-canvas outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${on ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-primary'}`}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset on a user-controlled Storage host, not a configured next/image domain */}
+                              <img src={a.url} alt={a.alt ?? ''} loading="lazy" className="h-full w-full object-cover" />
+                              {a.generated && (
+                                <span className="absolute left-1 top-1 inline-flex items-center gap-0.5 rounded-full bg-canvas/90 px-1.5 py-0.5 text-2xs font-semibold text-primary-strong shadow-sm">
+                                  <Sparkles className="h-2.5 w-2.5" /> AI
+                                </span>
+                              )}
+                              {on && (
+                                <span className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary shadow-sm">
+                                  <Check className="h-3 w-3" />
+                                </span>
+                              )}
+                            </button>
+                          </li>
+                        )
+                      })}
                     </ul>
                   )}
                 </>
@@ -270,6 +298,21 @@ export function LoomPicker({
             </div>
           </div>
         </div>
+
+        {/* Multi-select confirm bar */}
+        {multiple && (
+          <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-3">
+            <span className="text-sm text-muted">{selected.length} selected</span>
+            <button
+              type="button"
+              onClick={confirmMany}
+              disabled={selected.length === 0}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            >
+              <Check className="h-3.5 w-3.5" /> Add {selected.length > 0 ? selected.length : ''}
+            </button>
+          </div>
+        )}
       </div>
     </Dialog>
   )

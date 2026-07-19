@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Upload } from 'lucide-react'
-import { uploadSiteMedia } from './upload-action'
+import { ImagePlus } from 'lucide-react'
+import { LoomPicker } from '@/components/loom/loom-picker'
 
-// Custom Puck field: upload an image (→ Supabase Storage) or paste a URL.
+// Custom Puck field: choose an image from the Loom (browse your library + upload multi / drag-drop),
+// or paste a URL. The Loom popup replaces the bare file input; the picked URL is written straight into
+// the Puck data via onChange (the editor persists the whole tree on save).
 export function ImageField({
   value,
   onChange,
@@ -12,21 +14,7 @@ export function ImageField({
   value?: string
   onChange: (value: string) => void
 }) {
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
-
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setErr(null)
-    setBusy(true)
-    const fd = new FormData()
-    fd.set('file', file)
-    const res = await uploadSiteMedia(fd)
-    setBusy(false)
-    if ('url' in res) onChange(res.url)
-    else setErr(res.error)
-  }
+  const [open, setOpen] = useState(false)
 
   return (
     <div className="space-y-2">
@@ -42,13 +30,15 @@ export function ImageField({
           placeholder="Image URL"
           className="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
         />
-        <label className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-sm cursor-pointer hover:bg-surface-elevated">
-          <Upload className="w-3.5 h-3.5" />
-          {busy ? '…' : 'Upload'}
-          <input type="file" accept="image/*" hidden onChange={onFile} disabled={busy} />
-        </label>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-sm hover:bg-surface-elevated"
+        >
+          <ImagePlus className="w-3.5 h-3.5" /> Choose
+        </button>
       </div>
-      {err && <p className="text-xs text-danger">{err}</p>}
+      <LoomPicker open={open} onClose={() => setOpen(false)} onSelect={(url) => onChange(url)} title="Choose an image" />
     </div>
   )
 }

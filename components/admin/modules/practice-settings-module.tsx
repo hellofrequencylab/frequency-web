@@ -11,7 +11,7 @@ import {
   getPracticeAdminData,
   updatePracticeSettings,
   updatePracticePermalink,
-  uploadPracticeCover,
+  setPracticeCoverUrl,
   removePracticeCover,
 } from '@/app/(main)/practices/admin-actions'
 import { deleteOwnPracticeAction } from '@/app/(main)/practices/actions'
@@ -101,7 +101,7 @@ export function PracticeSettingsModule() {
           alt={data.title}
           canEdit
           forceEdit
-          upload={uploadPracticeCover.bind(null, data.id, data.slug)}
+          setUrl={setPracticeCoverUrl.bind(null, data.id, data.slug)}
           remove={removePracticeCover.bind(null, data.id, data.slug)}
         />
       </div>

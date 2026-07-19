@@ -1,8 +1,9 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import { Loader2, Trash2, Upload } from 'lucide-react'
+import { useState } from 'react'
+import { ImagePlus, Trash2 } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
+import { LoomPicker } from '@/components/loom/loom-picker'
 import type { UploadImage } from '@/components/entity-blocks/block-edit-panel'
 
 // THE ON-CANVAS PHOTO POPUP for the WYSIWYG Space page editor (the space analogue of the Email Studio Loom
@@ -11,10 +12,6 @@ import type { UploadImage } from '@/components/entity-blocks/block-edit-panel'
 // PASTE an image URL, write ALT text, and confirm / remove. Every image resolves to a plain public URL, so an
 // uploaded asset and a pasted URL are interchangeable — the block just stores that URL plus a sibling alt
 // string. App-chrome DAWN tokens only (this is admin UI), no hex; voice canon (no em dashes).
-
-// A per-file ceiling kept safely UNDER the server-action body limit (next.config bodySizeLimit, 10mb), so a
-// single upload request never overflows the framework boundary. Larger files are rejected up front.
-const MAX_UPLOAD_BYTES = 9 * 1024 * 1024
 
 /** A photo URL is only SAFE when its scheme is on the allowlist (http(s), a root/protocol-relative path,
  *  or a data:image/ URI) AND it contains no HTML metacharacters (" ' < >). The single allowlist regexp
@@ -31,7 +28,6 @@ export function SpaceImagePopup({
   open,
   currentUrl,
   currentAlt,
-  uploadImage,
   onClose,
   onSelect,
 }: {
@@ -40,13 +36,15 @@ export function SpaceImagePopup({
   currentUrl: string
   /** The slot's current alt text. */
   currentAlt: string
-  /** The Space-scoped gated upload; absent on surfaces with no upload path (URL paste still works). */
+  /** Legacy Space-scoped gated upload. No longer used (the Loom picker handles upload); kept optional
+   *  so existing callers still type-check. */
   uploadImage?: UploadImage
   onClose: () => void
   /** Commit the chosen photo: the URL (empty string clears the slot) and its alt text. */
   onSelect: (url: string, alt: string) => void
 }) {
   const [url, setUrl] = useState(currentUrl)
+  const [loomOpen, setLoomOpen] = useState(false)
   // The image PREVIEW renders only from TRUSTED sources: the already-saved image (the currentUrl prop) or a
   // freshly uploaded file's server URL (res.url). It is deliberately NEVER fed from the raw text-input value,
   // so no DOM-typed string is ever echoed into an img src. A pasted URL is validated + committed on Use, but
@@ -55,9 +53,7 @@ export function SpaceImagePopup({
   const [previewSrc, setPreviewSrc] = useState(currentUrl)
   const [alt, setAlt] = useState(currentAlt)
   const [error, setError] = useState<string | null>(null)
-  const [uploading, setUploading] = useState(false)
   const [prevOpen, setPrevOpen] = useState(open)
-  const inputRef = useRef<HTMLInputElement>(null)
 
   // Reset the working state the moment the dialog opens onto a slot (adjust-state-on-prop-change, done during
   // render so there is no cascading re-render).
@@ -71,30 +67,11 @@ export function SpaceImagePopup({
     }
   }
 
-  async function handleFile(file: File) {
-    if (!uploadImage) return
-    if (!file.type.startsWith('image/')) {
-      setError('Choose an image file.')
-      return
-    }
-    if (file.size > MAX_UPLOAD_BYTES) {
-      setError(`That image is ${(file.size / 1024 / 1024).toFixed(1)} MB. Use one under 9 MB.`)
-      return
-    }
-    setUploading(true)
+  // A Loom pick returns a trusted public URL: set it as both the committed value and the preview.
+  const onPickFromLoom = (picked: string) => {
     setError(null)
-    try {
-      const res = await uploadImage(file)
-      if ('error' in res) setError(res.error)
-      else {
-        setUrl(res.url)
-        setPreviewSrc(res.url) // a server-returned URL is trusted, so it may preview
-      }
-    } catch {
-      setError('That upload did not go through. Try again.')
-    } finally {
-      setUploading(false)
-    }
+    setUrl(picked)
+    setPreviewSrc(picked)
   }
 
   const commit = () => {
@@ -117,7 +94,7 @@ export function SpaceImagePopup({
         <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
           <div>
             <h2 className="text-base font-bold text-text">Choose a photo</h2>
-            <p className="text-xs text-muted">Upload a photo or paste an image link, then add alt text.</p>
+            <p className="text-xs text-muted">Pick from your Loom or paste an image link, then add alt text.</p>
           </div>
           <button
             type="button"
@@ -141,31 +118,14 @@ export function SpaceImagePopup({
             )}
           </div>
 
-          {uploadImage && (
-            <div className="space-y-1">
-              <button
-                type="button"
-                onClick={() => inputRef.current?.click()}
-                disabled={uploading}
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-60"
-              >
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Upload className="h-4 w-4" aria-hidden />}
-                {uploading ? 'Uploading' : 'Upload a photo'}
-              </button>
-              <input
-                ref={inputRef}
-                type="file"
-                accept="image/*"
-                className="sr-only"
-                disabled={uploading}
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) void handleFile(file)
-                  e.target.value = ''
-                }}
-              />
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => setLoomOpen(true)}
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
+          >
+            <ImagePlus className="h-4 w-4" aria-hidden /> Choose from your Loom
+          </button>
+          <LoomPicker open={loomOpen} onClose={() => setLoomOpen(false)} onSelect={onPickFromLoom} title="Choose a photo" />
 
           <div>
             <label className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Image link</label>
