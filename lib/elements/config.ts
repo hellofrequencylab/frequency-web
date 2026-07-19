@@ -36,31 +36,29 @@ function isElementRole(v: unknown): v is ElementRole {
   return typeof v === 'string' && (ELEMENT_ROLES as readonly string[]).includes(v)
 }
 
-/** A feature-key write must never target a prototype-polluting property name (the roles map is keyed by
- *  caller-supplied strings from jsonb). Guards `normalizeElementConfig`'s dynamic writes. */
-function isSafeFeatureKey(k: string): boolean {
-  return k !== '__proto__' && k !== 'constructor' && k !== 'prototype'
-}
-
-/** Coerce a raw jsonb value into a clean StoredElementConfig (fail-safe: junk -> empty). The `roles`
- *  map is rebuilt key-by-key with a prototype-injection guard (the keys come from stored jsonb). */
-export function normalizeElementConfig(raw: unknown): StoredElementConfig {
-  if (!raw || typeof raw !== 'object') return {}
-  const r = raw as Record<string, unknown>
+/** Coerce a raw jsonb value into a clean StoredElementConfig, keeping ONLY the element's known feature
+ *  keys. The maps are built by iterating `featureKeys` (a fixed list from the registry) and READING the
+ *  raw object by those known keys, so a write is never keyed by a caller-supplied string (no property /
+ *  prototype injection). Fail-safe: junk / unknown keys / bad value types are dropped. */
+export function normalizeElementConfig(raw: unknown, featureKeys: readonly string[]): StoredElementConfig {
   const out: StoredElementConfig = {}
-  if (r.settings && typeof r.settings === 'object') {
+  if (!raw || typeof raw !== 'object') return out
+  const r = raw as Record<string, unknown>
+  const rawSettings = r.settings && typeof r.settings === 'object' ? (r.settings as Record<string, unknown>) : null
+  const rawRoles = r.roles && typeof r.roles === 'object' ? (r.roles as Record<string, unknown>) : null
+  if (rawSettings) {
     const settings: Record<string, boolean | string> = {}
-    for (const [k, v] of Object.entries(r.settings as Record<string, unknown>)) {
-      if (!isSafeFeatureKey(k)) continue
-      if (typeof v === 'boolean' || typeof v === 'string') settings[k] = v
+    for (const key of featureKeys) {
+      const v = rawSettings[key]
+      if (typeof v === 'boolean' || typeof v === 'string') settings[key] = v
     }
     out.settings = settings
   }
-  if (r.roles && typeof r.roles === 'object') {
+  if (rawRoles) {
     const roles: Record<string, ElementRole> = {}
-    for (const [k, v] of Object.entries(r.roles as Record<string, unknown>)) {
-      if (!isSafeFeatureKey(k)) continue
-      if (isElementRole(v)) roles[k] = v
+    for (const key of featureKeys) {
+      const v = rawRoles[key]
+      if (isElementRole(v)) roles[key] = v
     }
     out.roles = roles
   }

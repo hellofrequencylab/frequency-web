@@ -13,6 +13,11 @@ import {
   type ResolvedElement,
 } from './config'
 
+/** The known feature keys for an element (the allowlist normalizeElementConfig writes by). */
+function featureKeysFor(elementKey: string): string[] {
+  return elementDef(elementKey)?.features.map((f) => f.key) ?? []
+}
+
 type ConfigRow = { id?: string; config?: unknown }
 
 // A tiny untyped query surface for element_settings (not in the generated DB types yet).
@@ -34,13 +39,14 @@ export async function readElementLayers(
   spaceId?: string | null,
 ): Promise<{ platform: StoredElementConfig; space: StoredElementConfig | null }> {
   try {
+    const keys = featureKeysFor(elementKey)
     const { data: master } = await table().select('config').eq('element_key', elementKey).is('space_id', null).maybeSingle()
     let space: StoredElementConfig | null = null
     if (spaceId) {
       const { data: spaceRow } = await table().select('config').eq('element_key', elementKey).eq('space_id', spaceId).maybeSingle()
-      space = spaceRow ? normalizeElementConfig(spaceRow.config) : null
+      space = spaceRow ? normalizeElementConfig(spaceRow.config, keys) : null
     }
-    return { platform: master ? normalizeElementConfig(master.config) : {}, space }
+    return { platform: master ? normalizeElementConfig(master.config, keys) : {}, space }
   } catch {
     return { platform: {}, space: null }
   }
@@ -71,7 +77,7 @@ export async function writeElementSettings(
     const existing = spaceId
       ? await table().select('id').eq('element_key', elementKey).eq('space_id', spaceId).maybeSingle()
       : await table().select('id').eq('element_key', elementKey).is('space_id', null).maybeSingle()
-    const patch = { config: normalizeElementConfig(config), updated_by: updatedBy, updated_at: new Date().toISOString() }
+    const patch = { config: normalizeElementConfig(config, featureKeysFor(elementKey)), updated_by: updatedBy, updated_at: new Date().toISOString() }
     if (existing.data?.id) {
       const { error } = await table().update(patch).eq('id', existing.data.id).maybeSingle()
       if (error) return { error: String((error as { message?: string })?.message ?? 'Could not save.') }

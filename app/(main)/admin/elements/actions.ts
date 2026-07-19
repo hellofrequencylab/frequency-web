@@ -10,16 +10,17 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { elementDef } from '@/lib/elements/registry'
 import { writeElementSettings } from '@/lib/elements/store'
-import { normalizeElementConfig, type StoredElementConfig } from '@/lib/elements/config'
+import type { StoredElementConfig } from '@/lib/elements/config'
 
-/** Save one element's platform-master settings + role gates. Staff only. */
+/** Save one element's platform-master settings + role gates. Staff only. writeElementSettings
+ *  normalizes the config against the element's known feature keys (drops anything else). */
 export async function saveElementSettings(
   elementKey: string,
   config: StoredElementConfig,
 ): Promise<ActionResult> {
   const { profileId } = await requireAdmin('admin')
   if (!elementDef(elementKey)) return fail('Unknown element.')
-  const res = await writeElementSettings(elementKey, null, normalizeElementConfig(config), profileId)
+  const res = await writeElementSettings(elementKey, null, config, profileId)
   if (res.error) return fail(res.error)
   revalidatePath('/admin/elements')
   return ok()
