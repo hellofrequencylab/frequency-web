@@ -7,12 +7,14 @@
 
 import { redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
-import { assertCanCreate, canCreate } from '@/lib/core/load-capabilities'
+import { canCreate } from '@/lib/core/load-capabilities'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { createPlan } from '@/lib/journey-plans'
 import { crewCreateUpsell } from '@/lib/core/beta-notices'
+import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { getTemplate, templateToBlocks, MASTER_FRAMEWORK, masterFrameworkToBlocks } from '@/lib/journeys/templates'
 import { pillarIdsBySlug } from '@/lib/journeys/compose'
 import { draftJourneySpark, type SparkAnswers, type JourneySpark, type ArcWeek, type SparkSettings, type SparkMeeting } from '@/lib/ai/journey-spark'
@@ -21,18 +23,48 @@ import { composeJourneyAction } from '@/app/(main)/journeys/[slug]/edit/actions'
 import { composeIntoPhase } from '@/lib/journeys/compose'
 import { extractOverviewText } from '@/lib/journeys/extract-text'
 
+/**
+ * Resolve WHO is creating a Journey and WHICH owner it is stamped to, applying the right gate:
+ *  - No `spaceSlug` (the personal `/journeys/new` flow): the author is the caller, gated on the
+ *    personal `journey.create` capability (real Crew / staff), and the Journey is personal (root).
+ *  - A `spaceSlug` (the SAME flow reached from a Space's manager): the author is the caller, gated on
+ *    MANAGING that Space (owner / admin / editor — canEditProfile), NOT the member tier, and the
+ *    Journey is stamped to that Space. So a free member who runs a Space can build for their members.
+ * Returns the author id + owning space id (null = personal/root), or an error string.
+ */
+async function resolveCreateContext(
+  spaceSlug?: string | null,
+): Promise<{ authorId: string; spaceId: string | null } | { error: string }> {
+  const caller = await getCallerProfile()
+  if (!caller) return { error: 'Sign in to build a Journey.' }
+  if (spaceSlug) {
+    const space = await getVisibleSpaceBySlug(spaceSlug, caller.id)
+    if (!space) return { error: 'Space not found.' }
+    const caps = await getSpaceCapabilities(space, caller.id)
+    if (!caps.canEditProfile) return { error: 'You do not manage this space.' }
+    return { authorId: caller.id, spaceId: space.id }
+  }
+  if (!(await canCreate('journey.create'))) return { error: crewCreateUpsell('a Journey') }
+  return { authorId: caller.id, spaceId: null }
+}
+
+/** Where a failed create redirects back to: the Space's Journeys manager, else the library. */
+function createFallback(spaceSlug?: string | null): string {
+  return spaceSlug ? `/spaces/${spaceSlug}/journeys` : '/journeys'
+}
+
 /** Deferred creation (no untitled drafts): a Journey row is created ONLY once the author commits a
  *  title from the single-page editor. Seeds 3 empty phases so the curriculum opens ready to edit,
- *  then drops the author into the editor. */
-export async function createJourneyDraftAction(title: string): Promise<void> {
-  const caller = await getCallerProfile()
-  if (!caller) redirect('/journeys')
-  await assertCanCreate('journey.create')
+ *  then drops the author into the editor. `spaceSlug` stamps the Journey to a Space (the Space
+ *  manager's "New journey" reaches this same flow); omitted, it is a personal Journey. */
+export async function createJourneyDraftAction(title: string, spaceSlug?: string | null): Promise<void> {
+  const ctx = await resolveCreateContext(spaceSlug)
+  if ('error' in ctx) redirect(createFallback(spaceSlug))
   const clean = title.trim().slice(0, 120)
-  if (!clean) redirect('/journeys/new')
+  if (!clean) redirect(spaceSlug ? createFallback(spaceSlug) : '/journeys/new')
 
-  const plan = await createPlan({ authorId: caller.id, title: clean })
-  if (!plan) redirect('/journeys')
+  const plan = await createPlan({ authorId: ctx.authorId, title: clean, spaceId: ctx.spaceId })
+  if (!plan) redirect(createFallback(spaceSlug))
 
   // Three phase boxes, ready to edit (the author fills them, or rebuilds with Vera).
   const admin = createAdminClient()
@@ -147,15 +179,15 @@ export async function createJourneyFromSparkAction(input: {
   meeting?: Partial<SparkMeeting>
   /** The author's pasted/uploaded overview, when they built from a document. */
   sourceText?: string
-}): Promise<void> {
-  const caller = await getCallerProfile()
-  if (!caller) redirect('/journeys')
-  await assertCanCreate('journey.create')
+}, spaceSlug?: string | null): Promise<void> {
+  const ctx = await resolveCreateContext(spaceSlug)
+  if ('error' in ctx) redirect(createFallback(spaceSlug))
+  const authorId = ctx.authorId
   const title = input.title.trim().slice(0, 120)
-  if (!title) redirect('/journeys/new')
+  if (!title) redirect(spaceSlug ? createFallback(spaceSlug) : '/journeys/new')
 
-  const plan = await createPlan({ authorId: caller.id, title, summary: input.promise.trim().slice(0, 280) || null })
-  if (!plan) redirect('/journeys')
+  const plan = await createPlan({ authorId, title, summary: input.promise.trim().slice(0, 280) || null, spaceId: ctx.spaceId })
+  if (!plan) redirect(createFallback(spaceSlug))
 
   const admin = createAdminClient()
   const a = input.answers
@@ -226,7 +258,7 @@ export async function createJourneyFromSparkAction(input: {
         .filter(Boolean)
         .join(' ')
       try {
-        await composeIntoPhase({ admin, planId: plan.id, phaseId: phases[i].id, description, profileId: caller.id })
+        await composeIntoPhase({ admin, planId: plan.id, phaseId: phases[i].id, description, profileId: authorId })
         const { data: kids } = await admin
           .from('journey_plan_items')
           .select('title')
@@ -251,18 +283,18 @@ export async function createJourneyFromSparkAction(input: {
   redirect(`/journeys/${plan.slug}/edit`)
 }
 
-export async function createJourneyFromTemplateAction(templateId: string | null): Promise<void> {
-  const caller = await getCallerProfile()
-  if (!caller) redirect('/journeys')
-  await assertCanCreate('journey.create')
+export async function createJourneyFromTemplateAction(templateId: string | null, spaceSlug?: string | null): Promise<void> {
+  const ctx = await resolveCreateContext(spaceSlug)
+  if ('error' in ctx) redirect(createFallback(spaceSlug))
 
   const template = templateId ? getTemplate(templateId) : null
   const plan = await createPlan({
-    authorId: caller.id,
+    authorId: ctx.authorId,
     title: template ? template.name : 'Untitled journey',
     emoji: template?.emoji ?? null,
+    spaceId: ctx.spaceId,
   })
-  if (!plan) redirect('/journeys')
+  if (!plan) redirect(createFallback(spaceSlug))
 
   if (template) {
     const admin = createAdminClient()
@@ -300,14 +332,14 @@ export async function createMasterFrameworkAction(input: {
   title?: string
   weeks?: number
   fixed?: boolean
+  /** Stamp the Journey to a Space (the Space manager's guided create); omitted, it is personal. */
+  spaceSlug?: string | null
 }): Promise<ActionResult<{ slug: string }>> {
-  const caller = await getCallerProfile()
-  if (!caller) return fail('Sign in to build a Journey.')
-  if (!(await canCreate('journey.create')))
-    return fail(crewCreateUpsell('a Journey'))
+  const ctx = await resolveCreateContext(input.spaceSlug)
+  if ('error' in ctx) return fail(ctx.error)
 
   const title = input.title?.trim().slice(0, 120) || MASTER_FRAMEWORK.name
-  const plan = await createPlan({ authorId: caller.id, title, emoji: MASTER_FRAMEWORK.emoji })
+  const plan = await createPlan({ authorId: ctx.authorId, title, emoji: MASTER_FRAMEWORK.emoji, spaceId: ctx.spaceId })
   if (!plan) return fail('Could not create the Journey. Try again in a moment.')
 
   // Resolve real Pillar ids the way the composer does, then stamp the framework's blocks in order

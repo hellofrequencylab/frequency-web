@@ -68,7 +68,6 @@ export default async function SpaceJourneysManagerPage({ params }: { params: Pro
 
   return (
     <IndexTemplate
-      heroOverlay
       back={{ href: spaceManageHref(space.type, space.slug), label: 'Back to manage' }}
       eyebrow={space.brandName ?? space.name}
       title="Journeys"

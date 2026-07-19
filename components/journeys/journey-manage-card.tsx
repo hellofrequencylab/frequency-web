@@ -4,16 +4,27 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Pencil, Eye, Copy, Globe, Lock, Link2, Trash2, Layers, ListChecks, Users, Loader2 } from 'lucide-react'
+import {
+  Pencil, Eye, Copy, Globe, Lock, Link2, Trash2, Layers, ListChecks, Users, Loader2,
+  ChevronDown, Check, Building2, User, ArrowLeftRight,
+} from 'lucide-react'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { isError } from '@/lib/action-result'
-import { setJourneyVisibility, deleteJourney, duplicateJourney } from '@/app/(main)/journeys/actions'
+import {
+  setJourneyVisibility,
+  deleteJourney,
+  duplicateJourney,
+  reassignJourneyOwner,
+  listJourneyOwnerTargets,
+  type JourneyOwnerTarget,
+} from '@/app/(main)/journeys/actions'
 
-// One row in the "Your Journeys" management space (the admin space for a member's own Journeys).
-// Identity + state badges + structure stats + the full action set: edit, view, publish/unpublish,
-// duplicate (a private-draft copy), delete. Re-checks ownership server-side in every action.
+// One row in the "Your Journeys" management space (both the personal /journeys/mine and a Space's
+// own manager). Identity + state badges + structure stats + the full action set: edit, view,
+// visibility (draft / live in space / listed in library), MOVE the owner (personal <-> a Space you
+// run), duplicate, delete. Every action re-checks authorization server-side.
 
 export interface ManagePlan {
   id: string
@@ -39,6 +50,7 @@ function statusBadge(p: ManagePlan): { label: string; cls: string } {
       ? { label: 'In review', cls: 'bg-warning-bg text-warning' }
       : { label: 'Live', cls: 'bg-success-bg text-success' }
   }
+  if (p.visibility === 'unlisted') return { label: 'Live in space', cls: 'bg-success-bg text-success' }
   return { label: 'Draft', cls: 'bg-surface-elevated text-muted' }
 }
 
@@ -47,6 +59,13 @@ const VIS = {
   unlisted: { Icon: Link2, label: 'Unlisted' },
   private: { Icon: Lock, label: 'Private' },
 } as const
+
+/** The three visibility states an owner can pick, with plain, no-em-dash copy (CONTENT-VOICE). */
+const VIS_OPTIONS: { value: ManagePlan['visibility']; Icon: typeof Globe; label: string; hint: string }[] = [
+  { value: 'private', Icon: Lock, label: 'Draft', hint: 'Only you can see it.' },
+  { value: 'unlisted', Icon: Link2, label: 'Live in your space', hint: 'Members and anyone with the link.' },
+  { value: 'public', Icon: Globe, label: 'Listed in the library', hint: 'In public discovery.' },
+]
 
 function relativeTime(iso: string): string {
   const days = Math.floor((Date.now() - Date.parse(iso)) / 86_400_000)
@@ -57,28 +76,93 @@ function relativeTime(iso: string): string {
   return months < 12 ? `${months}mo ago` : `${Math.floor(months / 12)}y ago`
 }
 
+/** A small popover menu anchored to a trigger button. Closes on outside click (a full-screen
+ *  transparent backdrop) or Escape. Presentational shell reused by the visibility + move menus. */
+function Menu({
+  open,
+  onClose,
+  trigger,
+  children,
+}: {
+  open: boolean
+  onClose: () => void
+  trigger: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <div className="relative">
+      {trigger}
+      {open && (
+        <>
+          <button type="button" aria-hidden tabIndex={-1} onClick={onClose} className="fixed inset-0 z-40 cursor-default" />
+          <div
+            role="menu"
+            className="absolute right-0 z-50 mt-1 w-60 rounded-xl border border-border bg-surface p-1 shadow-lg"
+            onKeyDown={(e) => e.key === 'Escape' && onClose()}
+          >
+            {children}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
   const router = useRouter()
   const [pending, start] = useTransition()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [note, setNote] = useState<string | null>(null)
+  const [visOpen, setVisOpen] = useState(false)
+  const [moveOpen, setMoveOpen] = useState(false)
+  // Owner targets are lazy-loaded when the Move menu first opens (keeps the manager pages dumb).
+  const [targets, setTargets] = useState<{ current: string; targets: JourneyOwnerTarget[] } | null>(null)
+  const [targetsLoading, setTargetsLoading] = useState(false)
   const badge = statusBadge(plan)
   const Vis = VIS[plan.visibility]
   const Icon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
   const isPublic = plan.visibility === 'public'
 
-  const togglePublish = () =>
+  const setVisibility = (target: ManagePlan['visibility']) =>
     start(async () => {
       setNote(null)
-      const res = await setJourneyVisibility(plan.id, isPublic ? 'private' : 'public')
+      setVisOpen(false)
+      if (target === plan.visibility) return
+      const res = await setJourneyVisibility(plan.id, target)
       if (isError(res)) { setNote(res.error); return }
       setNote(
-        isPublic
-          ? 'Unpublished. It is private again.'
-          : res.data.status === 'pending'
-            ? 'Sent to the community library for review.'
-            : 'Published to the community library.',
+        target === 'private'
+          ? 'Moved back to a draft.'
+          : target === 'unlisted'
+            ? 'Live in your space. Members and anyone with the link can open it.'
+            : res.data.status === 'pending'
+              ? 'Sent to the community library for review.'
+              : 'Listed in the community library.',
       )
+      router.refresh()
+    })
+
+  const openMove = () => {
+    setMoveOpen((o) => !o)
+    setNote(null)
+    if (!targets && !targetsLoading) {
+      setTargetsLoading(true)
+      listJourneyOwnerTargets(plan.id)
+        .then((res) => { if (!isError(res)) setTargets(res.data) })
+        .finally(() => setTargetsLoading(false))
+    }
+  }
+
+  const move = (target: string) =>
+    start(async () => {
+      setNote(null)
+      setMoveOpen(false)
+      if (targets && target === targets.current) return
+      const res = await reassignJourneyOwner(plan.id, target)
+      if (isError(res)) { setNote(res.error); return }
+      const label = targets?.targets.find((t) => t.id === target)?.label ?? 'its new owner'
+      setNote(`Moved to ${label}.`)
+      setTargets(null) // force a refetch of the current owner next open
       router.refresh()
     })
 
@@ -95,6 +179,8 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
       const res = await deleteJourney(plan.id)
       if (!isError(res)) router.refresh()
     })
+
+  const btn = 'inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60'
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
@@ -132,14 +218,82 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
         <Link href={`/journeys/${plan.slug}/edit`} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
           <Pencil className="h-3.5 w-3.5" /> Edit
         </Link>
-        <Link href={`/journeys/${plan.slug}`} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated">
+        <Link href={`/journeys/${plan.slug}`} className={btn}>
           <Eye className="h-3.5 w-3.5" /> View
         </Link>
-        <button type="button" disabled={pending} onClick={togglePublish} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60">
-          {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isPublic ? <Lock className="h-3.5 w-3.5" /> : <Globe className="h-3.5 w-3.5" />}
-          {isPublic ? 'Unpublish' : 'Publish'}
-        </button>
-        <button type="button" disabled={pending} onClick={duplicate} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60">
+
+        {/* Visibility — draft / live in your space (unlisted) / listed in the library (public). */}
+        <Menu
+          open={visOpen}
+          onClose={() => setVisOpen(false)}
+          trigger={
+            <button type="button" disabled={pending} onClick={() => { setVisOpen((o) => !o); setNote(null) }} className={btn}>
+              {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Vis.Icon className="h-3.5 w-3.5" />}
+              Visibility <ChevronDown className="h-3 w-3 text-subtle" />
+            </button>
+          }
+        >
+          {VIS_OPTIONS.map((o) => {
+            const active = o.value === plan.visibility
+            return (
+              <button
+                key={o.value}
+                type="button"
+                role="menuitem"
+                disabled={pending}
+                onClick={() => setVisibility(o.value)}
+                className={`flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-elevated disabled:opacity-60 ${active ? 'bg-surface-elevated' : ''}`}
+              >
+                <o.Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1.5 text-sm font-medium text-text">
+                    {o.label} {active && <Check className="h-3.5 w-3.5 text-success" aria-hidden />}
+                  </span>
+                  <span className="block text-2xs text-muted">{o.hint}</span>
+                </span>
+              </button>
+            )
+          })}
+        </Menu>
+
+        {/* Move — reassign the owner between the caller's personal account and a Space they run. */}
+        <Menu
+          open={moveOpen}
+          onClose={() => setMoveOpen(false)}
+          trigger={
+            <button type="button" disabled={pending} onClick={openMove} className={btn}>
+              <ArrowLeftRight className="h-3.5 w-3.5" /> Move <ChevronDown className="h-3 w-3 text-subtle" />
+            </button>
+          }
+        >
+          <p className="px-2.5 py-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Show this journey on</p>
+          {targetsLoading && (
+            <p className="flex items-center gap-2 px-2.5 py-2 text-sm text-muted"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading</p>
+          )}
+          {targets?.targets.map((t) => {
+            const active = t.id === targets.current
+            const TIcon = t.kind === 'personal' ? User : Building2
+            return (
+              <button
+                key={t.id}
+                type="button"
+                role="menuitem"
+                disabled={pending}
+                onClick={() => move(t.id)}
+                className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-surface-elevated disabled:opacity-60 ${active ? 'bg-surface-elevated' : ''}`}
+              >
+                <TIcon className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+                <span className="min-w-0 flex-1 truncate font-medium text-text">{t.label}</span>
+                {active && <Check className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden />}
+              </button>
+            )
+          })}
+          {targets && targets.targets.length <= 1 && (
+            <p className="px-2.5 py-2 text-2xs text-muted">Run a Space to move this journey onto its page.</p>
+          )}
+        </Menu>
+
+        <button type="button" disabled={pending} onClick={duplicate} className={btn}>
           <Copy className="h-3.5 w-3.5" /> Duplicate
         </button>
         <button type="button" disabled={pending} onClick={() => setConfirmDelete(true)} className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-1.5 text-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60">

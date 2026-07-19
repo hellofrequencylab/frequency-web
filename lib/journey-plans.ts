@@ -44,6 +44,10 @@ export interface JourneyPlan {
   /** Accent color token (a pillar/brand token name, e.g. 'jade'). Optional. */
   accent: string | null
   author_id: string | null
+  /** The owning Space (tenancy axis). The root space id (or null) = a personal Journey; any other
+   *  Space id = it belongs to that Space (shows on its profile + manager). Drives the free-vs-paid
+   *  publish lever's owner + the reassign-owner control. */
+  space_id: string | null
   visibility: PlanVisibility
   fork_of: string | null
   forked_count: number
@@ -177,7 +181,7 @@ export interface JourneyPlanItem {
 }
 
 const PLAN_COLS =
-  'id, slug, title, summary, intro, emoji, accent, author_id, visibility, fork_of, ' +
+  'id, slug, title, summary, intro, emoji, accent, author_id, space_id, visibility, fork_of, ' +
   'forked_count, adopt_count, cover_image, created_at, updated_at, published_at, ' +
   'quest_id, official, window_starts_at, window_ends_at, status, page_config, completion_gems, ' +
   'drip_interval_days, certificate_enabled, difficulty, category, tags, daily_minutes, enroll_cap, meeting'
@@ -307,6 +311,24 @@ export async function getPlan(
 export async function planAuthorId(planId: string): Promise<string | null> {
   const { data } = await db().from('journey_plans').select('author_id').eq('id', planId).maybeSingle()
   return (data as { author_id: string | null } | null)?.author_id ?? null
+}
+
+/** The owning Space id of a plan (the tenancy axis), or null. Used by the team-authoring gate
+ *  (canEditJourney) and the reassign-owner control. space_id is untyped (ADR-246). */
+export async function planSpaceId(planId: string): Promise<string | null> {
+  const { data } = await db().from('journey_plans').select('space_id').eq('id', planId).maybeSingle()
+  return (data as { space_id: string | null } | null)?.space_id ?? null
+}
+
+/** Reassign the owning Space of a Journey (the tenancy axis): the root space id for a personal
+ *  Journey, or a Space id to hand it to that Space's page + manager. Caller enforces authz (the
+ *  author for a pull-to-personal, an operator of the target Space to hand it over). space_id is
+ *  reached untyped (ADR-246). */
+export async function setPlanSpace(planId: string, spaceId: string): Promise<void> {
+  await db()
+    .from('journey_plans')
+    .update({ space_id: spaceId, ...touch() } as never)
+    .eq('id', planId)
 }
 
 export interface PlanAuthor {

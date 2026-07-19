@@ -13,7 +13,7 @@ import { IconAccentFace, AccentPicker, IconGrid } from '@/components/studio/kit/
 import { ImageUpload } from '@/components/ui/image-upload'
 import { DEFAULT_ACCENT } from '@/lib/studio/accents'
 import { isError } from '@/lib/action-result'
-import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview, setJourneyAttributes, setJourneyMeeting } from '@/app/(main)/journeys/actions'
+import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview, setJourneyAttributes, setJourneyMeeting, uploadJourneyCover } from '@/app/(main)/journeys/actions'
 import { normalizeJourneyMeeting } from '@/lib/journey-plans'
 import type { PlanStatus, PlanVisibility, StoredVeraReview, JourneyMeeting, JourneyTouchpoint } from '@/lib/journey-plans'
 import { Toggle } from '@/components/admin/toggle'
@@ -221,6 +221,11 @@ export function JourneySettings(props: JourneySettingsProps) {
             meta({ coverImage: url })
           }}
           folder="journey-covers"
+          uploadFn={(file) => {
+            const fd = new FormData()
+            fd.append('file', file)
+            return uploadJourneyCover(props.planId, fd)
+          }}
           hint="Shown on the Journey's discovery page and cards."
         />
       )}

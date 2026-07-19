@@ -42,7 +42,15 @@ export interface JourneyTemplateMeta {
   lessons: number
 }
 
-export function JourneySpark({ templates = [] }: { templates?: JourneyTemplateMeta[] }) {
+export function JourneySpark({
+  templates = [],
+  spaceSlug = null,
+}: {
+  templates?: JourneyTemplateMeta[]
+  /** When set, this same guided create is reached from a Space's Journeys manager: the new Journey is
+   *  stamped to that Space (owner authoring), not the caller's personal account. */
+  spaceSlug?: string | null
+}) {
   const router = useRouter()
   const [mode, setMode] = useState<'wizard' | 'manual'>('wizard')
   const [usingOverview, setUsingOverview] = useState(false)
@@ -72,7 +80,7 @@ export function JourneySpark({ templates = [] }: { templates?: JourneyTemplateMe
   const [meeting, setMeeting] = useState<SparkMeeting>(EMPTY_MEETING)
   const patchMeeting = (patch: Partial<SparkMeeting>) => setMeeting((m) => ({ ...m, ...patch }))
 
-  if (mode === 'manual') return <JourneyBuilder draft />
+  if (mode === 'manual') return <JourneyBuilder draft spaceSlug={spaceSlug} />
 
   const onReview = step === 5
   const total = picking ? 1 : usingOverview ? 2 : 5
@@ -110,7 +118,7 @@ export function JourneySpark({ templates = [] }: { templates?: JourneyTemplateMe
         settings: settings ?? undefined,
         meeting,
         sourceText: usingOverview ? sourceText : undefined,
-      }),
+      }, spaceSlug),
     )
   }
 
@@ -119,7 +127,7 @@ export function JourneySpark({ templates = [] }: { templates?: JourneyTemplateMe
   const framework = () => {
     setError(null)
     start(async () => {
-      const res = await createMasterFrameworkAction({ weeks })
+      const res = await createMasterFrameworkAction({ weeks, spaceSlug })
       if (isError(res)) setError(res.error)
       else router.push(`/journeys/${res.data.slug}/edit`)
     })
@@ -129,7 +137,7 @@ export function JourneySpark({ templates = [] }: { templates?: JourneyTemplateMe
   // redirects server-side) drop into the editor to make it yours.
   const chooseTemplate = (id: string) => {
     setError(null)
-    start(() => createJourneyFromTemplateAction(id))
+    start(() => createJourneyFromTemplateAction(id, spaceSlug))
   }
 
   // Read a WHOLE stack of files at once (the outline plus any supporting docs). Vera extracts each
