@@ -58,11 +58,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               band height; a hairline border-b reads the scroll seam as chrome. The old shell-rendered
               admin sub-header is gone, so this band now pins directly under the main header (3.5rem) at
               EVERY breakpoint — the sub-nav row it absorbed is inside this same container. */}
+          {/* Owner directive (ADR-790): the search command bar sits ON TOP, the world sub-nav menu BELOW
+              it — so the Resonance CRM (and every world) reads "search, then the tab menu under it". */}
           <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 mb-6 border-b border-border bg-[var(--color-canvas)]">
-            <AdminSubNav sections={adminHeaderMenu.categories} viewer={menuViewer} />
             <div className="py-2.5">
               <AdminSearchBar role={role} webRole={webRole} staffRole={staffRole} />
             </div>
+            <AdminSubNav sections={adminHeaderMenu.categories} viewer={menuViewer} />
           </div>
 
           {children}
