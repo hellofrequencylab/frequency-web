@@ -33,6 +33,8 @@ import {
   type AudienceFilter,
 } from '@/lib/spaces/audiences'
 import { sendSpaceCampaign as sendViaSeam, SPACE_UNSUBSCRIBE_PLACEHOLDER } from '@/lib/spaces/email'
+import { campaignStatusToMessaging } from '@/lib/messaging/status'
+import type { MessagingCampaignItem } from '@/lib/messaging/console'
 import {
   parseEntityLayout,
   sanitizeEntityLayout,
@@ -173,6 +175,48 @@ export async function listSpaceEmailDrafts(spaceId: string): Promise<EmailCampai
               subject: r.subject ?? '',
               status: r.status ?? 'draft',
               updatedAt: r.created_at,
+            })),
+          )
+        })
+    })
+  } catch {
+    return []
+  }
+}
+
+/**
+ * List a Space's block emails as MessagingCampaignItem rows for the Marketing tab's "Everything you send"
+ * table (the SAME MessagingConsole the admin CRM Marketing tab renders). Reuses listSpaceEmailDrafts's gate +
+ * filter (space_id + block_json not null) but also reads recipient_count + sent_at so the table's Sent column
+ * matches the admin one. FAIL-SAFE to []. The audience label is a fixed "Your contacts" (a Space always sends
+ * to its own contacts); href is unused (the Marketing tab opens rows in the in-place popup, not a link).
+ */
+export async function listSpaceEmailMessagingItems(spaceId: string): Promise<MessagingCampaignItem[]> {
+  const caller = await getCallerProfile()
+  const space = await getSpaceById(spaceId)
+  if (!space) return []
+  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
+  if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return []
+  try {
+    return await new Promise<MessagingCampaignItem[]>((resolve) => {
+      campaignsTable()
+        .select('id, subject, status, recipient_count, sent_at')
+        .eq('space_id', spaceId)
+        .not('block_json', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(100)
+        .then(({ data, error }) => {
+          if (error || !data) return resolve([])
+          resolve(
+            (data as unknown as { id: string; subject: string | null; status: string | null; recipient_count: number | null; sent_at: string | null }[]).map((r) => ({
+              kind: 'campaign' as const,
+              id: r.id,
+              name: r.subject ?? '',
+              segment: 'Your contacts',
+              status: campaignStatusToMessaging(r.status ?? 'draft'),
+              recipientCount: r.recipient_count ?? 0,
+              sentAt: r.sent_at ?? null,
+              href: '',
             })),
           )
         })
