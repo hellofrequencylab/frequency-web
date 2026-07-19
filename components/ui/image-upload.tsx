@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { ImageIcon, Loader2, Upload, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { LoomPicker } from '@/components/loom/loom-picker'
 
 // One reusable header/cover photo control for every Studio popup editor (Journey, Practice,
 // Circle, Event). Uploads the chosen file to a public Supabase Storage bucket under the signer's
@@ -39,6 +40,7 @@ export function ImageUpload({
   mode = 'url',
   disabled = false,
   uploadFn,
+  loom = true,
 }: {
   /** A public URL (mode 'url') or a storage path (mode 'path'). */
   value: string | null
@@ -56,10 +58,18 @@ export function ImageUpload({
    *  file is uploaded through it instead of the browser Storage client, so the upload never depends on a
    *  live browser session token reaching Storage. Always yields a URL, so it pairs with mode 'url'. */
   uploadFn?: (file: File) => Promise<{ url: string } | { error: string }>
+  /** Open the universal Loom picker (browse your Loom + upload multi / drag-drop) instead of a bare file
+   *  input. On by default for URL-mode controls (owner directive: every image upload opens the Loom).
+   *  Path-mode controls (which store a storage path, not a URL) keep the direct file input. */
+  loom?: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  // The Loom picker returns a public URL, so it only applies to URL-mode controls.
+  const useLoom = loom && mode === 'url'
+  const openSource = () => (useLoom ? setPickerOpen(true) : inputRef.current?.click())
 
   // What the <img> preview shows. In path mode the stored value is a path, so resolve it.
   const previewSrc =
@@ -157,7 +167,7 @@ export function ImageUpload({
           <div className="absolute right-2 top-2 flex gap-1.5">
             <button
               type="button"
-              onClick={() => inputRef.current?.click()}
+              onClick={openSource}
               disabled={disabled || busy}
               className="rounded-lg bg-canvas/90 px-2.5 py-1 text-xs font-medium text-text shadow-sm backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
             >
@@ -177,13 +187,22 @@ export function ImageUpload({
       ) : (
         <button
           type="button"
-          onClick={() => inputRef.current?.click()}
+          onClick={openSource}
           disabled={disabled || busy}
           className="flex h-32 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border text-sm text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
-          {busy ? 'Uploading…' : 'Upload a photo'}
+          {busy ? 'Uploading…' : useLoom ? 'Choose or upload a photo' : 'Upload a photo'}
         </button>
+      )}
+
+      {useLoom && (
+        <LoomPicker
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          onSelect={(url) => onChange(url)}
+          title={`Choose ${label.toLowerCase()}`}
+        />
       )}
 
       {mode === 'url' && (
