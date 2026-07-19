@@ -161,6 +161,7 @@ export default async function JourneyPlanPage({
           size={header.height}
           overlay={header.scrim}
           coverImage={plan.cover_image ?? null}
+          coverFocus={plan.cover_focus ?? undefined}
           eyebrow={topPillar ? topPillar.name : 'Journey'}
           leading={
             <span

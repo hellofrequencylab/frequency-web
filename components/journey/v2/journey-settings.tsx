@@ -6,15 +6,17 @@
 // owner-checked plan actions (so the season Studio builder can retire). Autosaves: text on blur,
 // toggles/selects on change; never blocks the editor.
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper, Trophy, Sparkles, RefreshCw, Video, MapPin, Users, Clock } from 'lucide-react'
 import { IconAccentFace, AccentPicker, IconGrid } from '@/components/studio/kit/studio-identity'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
 import { DEFAULT_ACCENT } from '@/lib/studio/accents'
 import { isError } from '@/lib/action-result'
-import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview, setJourneyAttributes, setJourneyMeeting, uploadJourneyCover } from '@/app/(main)/journeys/actions'
+import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview, setJourneyAttributes, setJourneyMeeting, uploadJourneyCover, setJourneyHeaderFocus } from '@/app/(main)/journeys/actions'
 import { normalizeJourneyMeeting } from '@/lib/journey-plans'
+import { readJourneyCoverFocus } from '@/lib/journeys/header'
 import type { PlanStatus, PlanVisibility, StoredVeraReview, JourneyMeeting, JourneyTouchpoint } from '@/lib/journey-plans'
 import { Toggle } from '@/components/admin/toggle'
 import { JourneyEventLink } from './journey-event-link'
@@ -52,6 +54,8 @@ export interface JourneySettingsProps {
   initialCertificateEnabled: boolean
   initialDripIntervalDays: number
   initialCoverImage: string | null
+  /** The saved cover HEADER focal point (CSS object-position "x% y%"). Null/absent = centered. */
+  initialCoverFocus?: string | null
   /** Vera's last rank-eligibility review, if this Journey has been published/reviewed. */
   initialReview: StoredVeraReview | null
   // Discovery + delivery attributes (ADR-302).
@@ -82,6 +86,23 @@ export function JourneySettings(props: JourneySettingsProps) {
   const [iconOpen, setIconOpen] = useState(false)
 
   const [coverImage, setCoverImage] = useState<string | null>(props.initialCoverImage)
+
+  // HEADER FOCUS — where the cover sits in its cropped hero window (a CSS object-position). The SAME
+  // reusable control the Space rail uses (ImageFocalPicker): the marker moves live while a drag DEBOUNCES
+  // the write (400ms), so a drag never fires a save per pixel. Reposition only; never changes the height.
+  const [focus, setFocus] = useState(() => readJourneyCoverFocus(props.initialCoverFocus))
+  const [, startFocus] = useTransition()
+  const focusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const onFocusChange = (next: string) => {
+    setFocus(next)
+    if (focusTimer.current) clearTimeout(focusTimer.current)
+    focusTimer.current = setTimeout(() => {
+      startFocus(async () => {
+        await setJourneyHeaderFocus(props.planId, next)
+      })
+    }, 400)
+  }
+
   const [gems, setGems] = useState(props.initialCompletionGems)
   const [difficulty, setDifficulty] = useState<string>(props.initialDifficulty ?? '')
   const [category, setCategory] = useState(props.initialCategory ?? '')
@@ -213,21 +234,37 @@ export function JourneySettings(props: JourneySettingsProps) {
       {/* Cover image — the banner shown on the Journey's discovery page + cards. Hidden when the
           single-page editor (ADR-301) renders the cover upload in the page header instead. */}
       {!props.hideIdentity && (
-        <ImageUpload
-          label="Cover image"
-          value={coverImage}
-          onChange={(url) => {
-            setCoverImage(url)
-            meta({ coverImage: url })
-          }}
-          folder="journey-covers"
-          uploadFn={(file) => {
-            const fd = new FormData()
-            fd.append('file', file)
-            return uploadJourneyCover(props.planId, fd)
-          }}
-          hint="Shown on the Journey's discovery page and cards."
-        />
+        <div className="space-y-3">
+          <ImageUpload
+            label="Cover image"
+            value={coverImage}
+            onChange={(url) => {
+              setCoverImage(url)
+              meta({ coverImage: url })
+            }}
+            folder="journey-covers"
+            uploadFn={(file) => {
+              const fd = new FormData()
+              fd.append('file', file)
+              return uploadJourneyCover(props.planId, fd)
+            }}
+            hint="Shown on the Journey's discovery page and cards."
+          />
+          {/* HEADER FOCUS — once a cover is set, drag to choose what stays in frame when the wide hero
+              crops it. The reusable ImageFocalPicker (no sliders), debounced through onFocusChange. The
+              preview aspect matches the Journey's wide identity header band. */}
+          {coverImage && (
+            <ImageFocalPicker
+              imageUrl={coverImage}
+              value={focus}
+              onChange={onFocusChange}
+              aspect={16 / 6}
+              showSliders={false}
+              label="Header focus"
+              hint="Drag to choose what stays in frame."
+            />
+          )}
+        </div>
       )}
 
       {/* Delivery + rewards */}

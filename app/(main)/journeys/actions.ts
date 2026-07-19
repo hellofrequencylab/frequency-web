@@ -30,6 +30,7 @@ import {
 import { getSeasonalQuests } from '@/lib/quests'
 import { checkJourneyPublish } from '@/lib/journeys/publish-gate'
 import { canEditJourney } from '@/lib/journeys/authoring'
+import { normalizeJourneyCoverFocus } from '@/lib/journeys/header'
 import { reviewJourneyForLibrary } from '@/lib/ai/journey-review'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { loadRootSpaceId } from '@/lib/spaces/store'
@@ -274,6 +275,19 @@ export async function setJourneyMeeting(
   if (!(await assertOwner(planId))) return fail('Not allowed.')
   const admin = createAdminClient()
   const payload = { meeting: normalizeJourneyMeeting(meeting) }
+  await admin.from('journey_plans').update(payload as unknown as Database['public']['Tables']['journey_plans']['Update']).eq('id', planId)
+  revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
+/** Header focal point (the cover's `object-position`): where the cover banner sits inside its cropped
+ *  hero window. Written to the dedicated `journey_plans.cover_focus` column, normalized to null for the
+ *  centered default so the column stays sparse. Owner-gated (assertOwner). The column is newer than the
+ *  generated types, so the payload is cast (ADR-246), never the admin client — mirrors setJourneyMeeting. */
+export async function setJourneyHeaderFocus(planId: string, focus: string): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  const admin = createAdminClient()
+  const payload = { cover_focus: normalizeJourneyCoverFocus(focus) }
   await admin.from('journey_plans').update(payload as unknown as Database['public']['Tables']['journey_plans']['Update']).eq('id', planId)
   revalidatePath('/journeys', 'layout')
   return ok()

@@ -172,6 +172,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
           size={header.height}
           overlay={header.scrim}
           coverImage={plan.cover_image ?? null}
+          coverFocus={plan.cover_focus ?? undefined}
           eyebrow="Journey"
           leading={
             <span
