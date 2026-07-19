@@ -13,6 +13,8 @@ import { useState } from 'react'
 import { ImageIcon } from 'lucide-react'
 import { PageHero } from '@/components/templates'
 import { LoomPicker } from '@/components/loom/loom-picker'
+import { StyleEditor } from '@/app/(main)/admin/qr/style-editor'
+import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 import type { ElementKey } from '@/lib/elements/registry'
 
 const HEADER_VARIANTS = [
@@ -64,6 +66,18 @@ function LoomPreview() {
   )
 }
 
+function QrPreview() {
+  const [style, setStyle] = useState<QrStyle>(DEFAULT_STYLE)
+  return (
+    <StyleEditor
+      value={style}
+      onChange={setStyle}
+      previewUrl="https://frequencylocal.com/q/preview"
+      variant="inline"
+    />
+  )
+}
+
 /** The preview body for an element, or null if it has none. */
 function previewFor(elementKey: ElementKey): React.ReactNode {
   switch (elementKey) {
@@ -71,6 +85,8 @@ function previewFor(elementKey: ElementKey): React.ReactNode {
       return <HeaderPreview />
     case 'loom-picker':
       return <LoomPreview />
+    case 'qr-studio':
+      return <QrPreview />
     default:
       return null
   }

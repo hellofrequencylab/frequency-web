@@ -82,6 +82,25 @@ export const ELEMENTS: readonly ElementDef[] = [
       { key: 'scrim', label: 'Darken cover', kind: 'toggle', defaultOn: true, defaultRole: 'admin', help: 'Keep the ink scrim so overlaid text stays legible.' },
     ],
   },
+  {
+    // QR Studio — the one QR design editor (app/(main)/admin/qr/style-editor.tsx, StyleEditor). One
+    // canonical, un-forked component mounted on every code surface; client-mountable via <AppElement>.
+    // The features declare the design controls + who may use each (role-gated); consuming them per-viewer
+    // is the resolveQrStudio() follow-up (mirrors resolveHeaderElement). See docs/EMBEDDABLE-ELEMENTS.md.
+    key: 'qr-studio',
+    label: 'QR Studio',
+    description: 'The one QR design editor every code surface opens: colors, shapes, a center logo (via the Loom picker), a scan-me frame, live scannability, and PNG/SVG output.',
+    studioHref: '/admin/qr',
+    features: [
+      { key: 'colors', label: 'Colors', kind: 'toggle', defaultOn: true, defaultRole: 'everyone', help: 'Module + background color swatches.' },
+      { key: 'eyeColor', label: 'Eye color', kind: 'toggle', defaultOn: true, defaultRole: 'editor', help: 'A distinct color for the finder eyes.' },
+      { key: 'gradient', label: 'Gradient fill', kind: 'toggle', defaultOn: true, defaultRole: 'editor', help: 'Two-color gradient across the modules.' },
+      { key: 'shapes', label: 'Shapes', kind: 'toggle', defaultOn: true, defaultRole: 'everyone', help: 'Module / eye / pupil shape pickers.' },
+      { key: 'logo', label: 'Center logo', kind: 'toggle', defaultOn: true, defaultRole: 'editor', help: 'Add a logo (via the Loom picker) with crop + tint.' },
+      { key: 'frame', label: 'Scan-me frame', kind: 'toggle', defaultOn: true, defaultRole: 'editor', help: 'A card label frame under the code.' },
+      { key: 'presets', label: 'Preset set', kind: 'choice', choices: [{ value: 'full', label: 'All presets' }, { value: 'core', label: 'Core four' }], default: 'full', defaultRole: 'everyone', help: 'How many starter looks to show.' },
+    ],
+  },
 ] as const
 
 /** An element def by key, or null. */
