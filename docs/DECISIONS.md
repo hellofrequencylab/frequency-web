@@ -14122,9 +14122,9 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 
 **Consequences.** No migration. The space Resonance tab reads pixel-for-composition identical to the admin Resonance CRM, every function the same component, scoped + gated to the space. Follow-ups still open (owner directive): move the admin CRM tab menu under its search bar; replicate the admin Marketing console on the space Marketing tab with a classifieds-style client-side pill sub-nav (Email / Email design / Email style / QR codes / Scans / Automation) and the "New email" popup composer (upgraded editor). Full suite green, tsc + eslint + guards clean.
 
-## ADR-790: The Space Marketing tab IS the CRM Marketing page (scoped) behind a no-reload pill sub-nav
+## ADR-791: The Space Marketing tab IS the CRM Marketing page (scoped) behind a no-reload pill sub-nav
 
-**Status:** Accepted (2026-07-19) · Completes the ADR-789 follow-up · NO migration. Adds `components/spaces/marketing/{space-marketing,space-marketing-dashboard,space-email-compose-popup,space-send-panel,marketing-pills}.tsx`; extends `lib/spaces/email-drafts.ts` (block-email send + audience + discard-if-empty); adds the `animate-panel-slide` utility.
+**Status:** Accepted (2026-07-19) · Completes the ADR-789 follow-up (ADR-790 was the admin search-above-menu swap) · NO migration. Adds `components/spaces/marketing/{space-marketing,space-marketing-dashboard,space-email-compose-popup,space-send-panel,marketing-pills}.tsx`; extends `lib/spaces/email-drafts.ts` (block-email send + audience + discard-if-empty); adds the `animate-panel-slide` utility.
 
 **Context.** The owner's spec for the space Marketing tab was "EXACTLY the layout for the main Marketing tab, every function the same," plus: replace the marketing feature cards with a classifieds-style pill sub-nav that swaps **in place** (no reload, content slides over), and route **all** email editing through the admin "New email" popup composer with the upgraded on-canvas editor. The hub tab previously rendered the generic feature-card grid, and the space block-email editor (ADR from the Email-in-the-Business-CRM build) only test-sent to self.
 
