@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { getLibrary, getMyRatings, typeLabel, hrefFor, type ContentType, type LibraryItem } from '@/lib/library'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { getPageHeaderImage, getPageHeaderFocus } from '@/lib/page-settings/store'
+import { resolveHeaderElement } from '@/lib/elements/header'
 import { RateButton, CreateMenu } from './interactive'
 
 export const dynamic = 'force-dynamic'
@@ -65,6 +66,8 @@ export default async function LibraryPage({
   const heroImage = operatorHero ?? contentHero ?? '/images/site/community-1.jpg'
   // The focal point applies only to the operator's own header image (the fallbacks crop centered).
   const heroFocus = operatorHero ? await getPageHeaderFocus('/library') : null
+  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
+  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
 
   return (
     <IndexTemplate
@@ -77,6 +80,9 @@ export default async function LibraryPage({
       heroImage={heroImage}
       heroFocus={heroFocus}
       heroOverlay
+      heroLayout={header.layout}
+      heroSize={header.height}
+      heroScrim={header.scrim}
       action={
         <div className="flex items-center gap-2">
           {/* The two guided create flows (each route carries its own canCreate gate). The

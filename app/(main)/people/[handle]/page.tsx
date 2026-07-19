@@ -275,11 +275,13 @@ export default async function ProfilePage({
   const profilePath = `/people/${profile.handle as string}`
 
   // Badges — shared by the Detail identity band.
+  {/* The ROLE badge (e.g. Janitor) is an IDENTITY chip — it rides the header image beside the name
+      (the space-page treatment). The system voice (Vera, ADR-231) shows "Moderator". */}
+  const roleBadge = <RoleBadge role={profile.is_system ? 'moderator' : role} className="text-xs leading-tight" />
+  {/* The remaining chips (Founder / Supporter / season rank / demo) are gamification/status — they read
+      BELOW the header with the stats, not over the photo. */}
   const badges = (
     <span className="flex items-center gap-2 flex-wrap">
-      {/* The system voice (Vera, ADR-231) shows "Moderator" — never the web role. */}
-      <RoleBadge role={profile.is_system ? 'moderator' : role} className="text-xs leading-tight" />
-      {/* A Founding Member wears the gold Founder chip beside their Member badge. */}
       <FoundingBadge founding={profile.is_founding_member} className="text-xs leading-tight" />
       {isSupporter && <SupporterBadge />}
       {rankEndorsed && (
@@ -421,11 +423,11 @@ export default async function ProfilePage({
   // primitives — no hand-rolled header, no raw <h1>. The global community rail stays
   // put beyond the body (page-chrome keeps profiles 'global'); the body splits at xl so
   // it never cramps against that rail, stacking the info column up top below xl.
-  // The header (round avatar + name over the cover) is the standardized `header` element (ADR-793),
-  // identity layout — the Space-page treatment, with a round profile photo. Ships overlay-OFF (the clean
-  // cover photo, legible text via a token shadow); layout / height / overlay resolve from the master
-  // config, so an operator can retune it site-wide.
-  const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard', scrim: false } })
+  // The header is the standardized `header` element (ADR-793), identity layout — the Space-page
+  // treatment with a ROUND profile photo: avatar + role badge + name + @handle + actions all ride the
+  // cover, stats/gamification read below. Scrim ON (like a Space) so the overlaid identity + buttons
+  // stay legible. layout / height / overlay resolve from the master config (retune site-wide).
+  const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } })
   return (
     <>
       {tippedCents !== null && (
@@ -449,33 +451,33 @@ export default async function ProfilePage({
             coverImage={headerImageUrl}
             dimmed={isDemo}
             leading={<ProfileAvatar src={profile.avatar_url} name={profile.display_name} initials={initials} dimmed={isDemo} />}
+            eyebrow={roleBadge}
             title={profile.display_name}
+            subtitle={<span className="font-medium text-on-ink/90">@{profile.handle as string}</span>}
+            actions={isOwner ? ownerActions : viewerActions}
           />
         }
         title={profile.display_name}
         band={
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-            <div className="min-w-0 space-y-3">
-              {badges && <div className="flex flex-wrap items-center gap-1.5">{badges}</div>}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
-                <span className="font-medium">@{profile.handle as string}</span>
-                {regionName && (
-                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
-                )}
-                <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
-                {circles.length > 0 && (
-                  <Link
-                    href={circles.length === 1 ? `/circles/${circles[0]!.slug}` : '/circles'}
-                    className="flex items-center gap-1 transition-colors hover:text-text"
-                  >
-                    <Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}
-                  </Link>
-                )}
-              </div>
-              {/* Bio reads with the identity block, above the header's hairline rule. */}
-              <EditableIdentity isOwner={isOwner} bio={profile.bio ?? ''} />
+          <div className="min-w-0 space-y-3">
+            {/* Gamification + status chips and the at-a-glance meta read BELOW the header. */}
+            {badges && <div className="flex flex-wrap items-center gap-1.5">{badges}</div>}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+              {regionName && (
+                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
+              )}
+              <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
+              {circles.length > 0 && (
+                <Link
+                  href={circles.length === 1 ? `/circles/${circles[0]!.slug}` : '/circles'}
+                  className="flex items-center gap-1 transition-colors hover:text-text"
+                >
+                  <Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}
+                </Link>
+              )}
             </div>
-            <div className="flex items-center gap-2 flex-wrap sm:shrink-0">{isOwner ? ownerActions : viewerActions}</div>
+            {/* Bio reads with the identity block, above the header's hairline rule. */}
+            <EditableIdentity isOwner={isOwner} bio={profile.bio ?? ''} />
           </div>
         }
       >

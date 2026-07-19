@@ -33,6 +33,7 @@ import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { getInitials } from '@/lib/utils'
 import { ConnectionsPulse } from '@/components/connections/connections-pulse'
 import { NetworkTabs } from '@/components/people/network-tabs'
+import { resolveHeaderElement } from '@/lib/elements/header'
 
 type Profile = ProfileIdentity & {
   id: string
@@ -374,6 +375,9 @@ export default async function CommunityPage({
     topicFilter || roleFilter || qFilter?.trim() || nearParam
   )
 
+  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
+  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+
   return (
     <div>
       {/* Hub tab strip — Community · Friends · Contacts read as one Network hub. Stays
@@ -383,6 +387,9 @@ export default async function CommunityPage({
           the right. Globe glyph rides the title; the stats row + filters follow in the body. */}
       <IndexTemplate
         heroOverlay
+        heroLayout={header.layout}
+        heroSize={header.height}
+        heroScrim={header.scrim}
         title={
           <span className="flex items-center gap-2">
             <Globe className="h-5 w-5" />

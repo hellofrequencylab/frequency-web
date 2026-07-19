@@ -12,6 +12,7 @@ import {
   MarketplaceColumns,
 } from '@/components/marketplace/column-selector'
 import type { EventsIndexData } from '@/app/(main)/events/index-data'
+import { resolveHeaderElement } from '@/lib/elements/header'
 
 // EVENTS SURFACE — the ONE Marketplace events composition, rendered at BOTH /events (the member's
 // own events home) and /marketplace/events (the Events tab of the commerce hub). It is the same
@@ -35,7 +36,7 @@ const HERO_DEFAULT_TITLE = 'Events near you'
 const HERO_DEFAULT_SUBTITLE =
   'Paid and free events near you, from community circles and hosts. Search, browse by category, then RSVP or grab a ticket.'
 
-export function EventsSurface({
+export async function EventsSurface({
   data,
   basePath,
   activeCategory,
@@ -84,12 +85,18 @@ export function EventsSurface({
     ? `${basePath}?category=${encodeURIComponent(activeCategory)}`
     : basePath
 
+  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
+  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+
   const hero = (
     <MarketHero
       image={content.heroImage ?? HERO_FALLBACK}
       eyebrow={heroEyebrow}
       title={heroTitle}
       subtitle={heroSubtitle}
+      variant={header.layout}
+      size={header.height}
+      overlay={header.scrim}
       search={<MarketSearchBar placeholder="Search events" />}
       action={actions}
     />

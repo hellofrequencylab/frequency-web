@@ -14,6 +14,7 @@ import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { HousingCategoryNav } from '@/components/marketplace/housing-category-nav'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
+import { resolveHeaderElement } from '@/lib/elements/header'
 
 // Housing — rentals + roommates (connect-only, member-only). Hero-led (the site PhotoHero grammar) to
 // match Classifieds / Market / Frequency Store. The facet band is a plain GET form, so it stays
@@ -54,6 +55,8 @@ export default async function HousingPage({
 }) {
   const viewerProfileId = await getMyProfileId()
   const sp = await searchParams
+  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
+  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
 
   const hero = (
     <MarketHero
@@ -61,6 +64,9 @@ export default async function HousingPage({
       eyebrow="Housing"
       title="Find your place, and your people"
       subtitle="Rentals, sublets, and roommates who actually fit. Listings stay local, and contact is a message away."
+      variant={header.layout}
+      size={header.height}
+      overlay={header.scrim}
       search={<MarketSearchBar placeholder="Search housing" />}
       action={
         viewerProfileId ? (

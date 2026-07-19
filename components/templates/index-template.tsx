@@ -13,7 +13,7 @@
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { PageHeading } from './page-heading'
-import { PageHero } from './page-hero'
+import { PageHero, type PageHeroSize, type PageHeroVariant } from './page-hero'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
 
@@ -31,6 +31,9 @@ export function IndexTemplate({
   heroImage,
   heroFocus,
   heroOverlay = false,
+  heroLayout = 'overlay',
+  heroSize = 'large',
+  heroScrim = true,
   underHero,
   banner,
   adminBar = true,
@@ -61,11 +64,14 @@ export function IndexTemplate({
    *  lockup. Only applies when `heroImage` is set; the admin-bar rule still draws below, so the
    *  operator Settings affordance never disappears. */
   heroOverlay?: boolean
-  /** Overlay hero band size. 'standard' (default) is the uniform index hero every section
-   *  shares; 'large' is a deliberately taller band with a bigger title — reserved for the
-   *  one surface that should read bigger (the Business Spaces directory). Only applies in
-   *  overlay mode. */
-  heroSize?: 'standard' | 'large'
+  /** Overlay hero LAYOUT variant, forwarded to PageHero (`overlay` | `identity` | `minimal`).
+   *  Defaults to the shipped centered `overlay`. Only applies in overlay mode. */
+  heroLayout?: PageHeroVariant
+  /** Overlay hero band size, forwarded to PageHero. Defaults to the taller `large` directory
+   *  band (today's look). Only applies in overlay mode. */
+  heroSize?: PageHeroSize
+  /** Draw the ink scrim over the overlay hero cover. Default on. Only applies in overlay mode. */
+  heroScrim?: boolean
   /** Optional controls row rendered directly UNDER the hero banner — a wrapping pill row for
    *  secondary page controls (Manage / drafts / subscribe), keeping the header-right `action`
    *  for the primary CTA only. Rendered in BOTH the standard-banner and overlay-hero branches. */
@@ -102,7 +108,9 @@ export function IndexTemplate({
             title={title}
             subtitle={description}
             actions={action}
-            size="large"
+            variant={heroLayout}
+            size={heroSize}
+            overlay={heroScrim}
             rawImg={!!heroImage}
           />
         </div>

@@ -18,6 +18,7 @@ import {
   normalizePerPage,
   normalizePage,
 } from '@/components/spaces/directory-view'
+import { resolveHeaderElement } from '@/lib/elements/header'
 
 // The Spaces DIRECTORY — the in-app surface where a member browses the networked entity Spaces
 // (practitioners, businesses, organizations, coaching academies, event spaces) and opens one's
@@ -74,6 +75,9 @@ export default async function SpacesDirectoryPage({
   // The shared base for every pager/size link — the current filters, so paging preserves them.
   const urlBase = { q, category, following: followingParam, sort: sortParam, per, page }
 
+  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
+  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+
   return (
     <div className="space-y-6">
       <MarketHero
@@ -81,6 +85,9 @@ export default async function SpacesDirectoryPage({
         eyebrow="Directory"
         title="Business Spaces"
         subtitle="Find a business or nonprofit near you. See what they offer, from classes to services to events, then follow or reach out."
+        variant={header.layout}
+        size={header.height}
+        overlay={header.scrim}
         search={<DirectorySearch placeholder="Search Spaces by name" />}
         action={
           viewerProfileId ? (

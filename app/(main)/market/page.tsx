@@ -17,6 +17,7 @@ import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
+import { resolveHeaderElement } from '@/lib/elements/header'
 
 // Market — the community commerce umbrella (ADR-596). Hero-led (the site PhotoHero grammar), a stats
 // band, then Products / Services / Tickets rails aggregating market-published listings across makers and
@@ -68,6 +69,9 @@ export default async function MarketPage({
   const shown = group ? byGroup(group) : null
   const sections = MARKET_GROUPS.map((g) => ({ group: g, items: byGroup(g) })).filter((s) => s.items.length > 0)
 
+  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
+  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+
   return (
     <MarketSearchProvider>
     <div className="space-y-6">
@@ -76,6 +80,9 @@ export default async function MarketPage({
         eyebrow="The Market"
         title="Buy from your community"
         subtitle="Products, services, and tickets from the people and businesses around you. Buy direct, the seller gets paid, the fee stays low."
+        variant={header.layout}
+        size={header.height}
+        overlay={header.scrim}
         search={<MarketSearchBar placeholder="Search the Market" />}
         action={
           viewerProfileId ? (

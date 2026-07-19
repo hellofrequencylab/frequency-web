@@ -12,6 +12,7 @@ import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
+import { resolveHeaderElement } from '@/lib/elements/header'
 
 // Classifieds (ADR-596) — the peer trade board (offer / free / lend / request), connect-only, no fees.
 // Hero-led (the site PhotoHero grammar) + a stats band. Operator-editable header content (ADR-180).
@@ -56,6 +57,9 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
     seededUnclaimed: l.seededUnclaimed,
   }))
 
+  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
+  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+
   return (
     <MarketSearchProvider>
     <div className="space-y-6">
@@ -64,6 +68,9 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
         eyebrow="Classifieds"
         title="Swap, share, and find it local"
         subtitle={description}
+        variant={header.layout}
+        size={header.height}
+        overlay={header.scrim}
         search={<MarketSearchBar placeholder="Search listings" />}
         action={
           profileId || (ctaLabel && ctaHref) ? (

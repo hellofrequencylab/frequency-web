@@ -9,6 +9,7 @@ import { PageContents } from '@/components/templates/page-contents'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { getPageHeaderImage, getPageHeaderFocus } from '@/lib/page-settings/store'
+import { resolveHeaderElement } from '@/lib/elements/header'
 
 // Practices (ADR-270/294). The whole interior is module-driven: the personal blocks (stats ·
 // activity · Pillar balance · your practices) AND the faceted Practice Library are layout modules
@@ -112,6 +113,8 @@ export default async function PracticesPage({
   const heroImage = operatorHero ?? contentHero ?? '/images/site/meditation-circle.jpg'
   // The focal point applies only to the operator's own header image (the fallbacks crop centered).
   const heroFocus = operatorHero ? await getPageHeaderFocus('/practices') : null
+  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
+  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
 
   return (
     <IndexTemplate
@@ -176,6 +179,9 @@ export default async function PracticesPage({
       heroImage={heroImage}
       heroFocus={heroFocus}
       heroOverlay
+      heroLayout={header.layout}
+      heroSize={header.height}
+      heroScrim={header.scrim}
     >
       {/* Jump between your stuff and the library. The personal entries point at module-driven
           blocks that render only for a signed-in member with data; a dangling anchor is harmless

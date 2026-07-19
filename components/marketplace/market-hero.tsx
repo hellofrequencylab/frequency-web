@@ -1,4 +1,5 @@
 import { PageHero } from '@/components/templates/page-hero'
+import type { PageHeroSize, PageHeroVariant } from '@/components/templates'
 
 // MARKET HERO — the commerce/browse section header (Classifieds / Market / Frequency Store / Housing,
 // and the browse indexes that adopted it). It is now a THIN wrapper over the canonical PageHero (the one
@@ -15,6 +16,9 @@ export function MarketHero({
   subtitle,
   search,
   action,
+  variant = 'overlay',
+  size = 'large',
+  overlay = true,
 }: {
   image: string
   /** Focal point ("x% y%") so the crop keeps the subject in frame. */
@@ -25,6 +29,12 @@ export function MarketHero({
   /** The instant search bar (MarketSearchBar), rendered inside the hero. */
   search?: React.ReactNode
   action?: React.ReactNode
+  /** The layout variant, forwarded to PageHero. Defaults to the shipped centered `overlay`. */
+  variant?: PageHeroVariant
+  /** Band height, forwarded to PageHero. Defaults to the tall directory `large`. */
+  size?: PageHeroSize
+  /** Draw the ink overlay (scrim). Default on. */
+  overlay?: boolean
 }) {
   return (
     <PageHero
@@ -35,7 +45,9 @@ export function MarketHero({
       subtitle={subtitle}
       search={search}
       actions={action}
-      size="large"
+      variant={variant}
+      size={size}
+      overlay={overlay}
     />
   )
 }

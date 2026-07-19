@@ -14134,7 +14134,7 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 
 ## ADR-792: Embeddable elements — one canonical element, invoked by key, configured once (role-gated)
 
-**Status:** Accepted (2026-07-19) · Migration `20261180000000_element_settings.sql` (written, not applied). Adds `lib/elements/{registry,config,store}.ts`, the `/admin/elements` console, and wires the Loom picker as the first citizen. Full spec: `docs/EMBEDDABLE-ELEMENTS.md`.
+**Status:** Accepted (2026-07-19) · Migration `20261180000000_element_settings.sql` **APPLIED to prod 2026-07-19** (Frequency Community; table live, RLS enabled with no client policies = deny-all, the two partial-unique indexes present, 0 rows so all elements still fail-safe to registry defaults until an operator sets config). Adds `lib/elements/{registry,config,store}.ts`, the `/admin/elements` console, and wires the Loom picker as the first citizen. Now also: the `header` + `qr-studio` elements (ADR-793) and the config resolvers. Full spec: `docs/EMBEDDABLE-ELEMENTS.md`.
 
 **Context.** Reusable in-product features (the Loom picker, QR Studio, the Email editor popup, the Resonance CRM board) were wired per surface, so "the same" element drifted between pages and its rules lived in code, edited instance by instance. The owner's directive: every reusable element should be its own app — one canonical implementation, mounted by key on any page with no divergence, whose rules are edited in ONE master and apply site-wide, with functions/settings gated by role.
 

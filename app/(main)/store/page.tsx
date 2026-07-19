@@ -8,6 +8,7 @@ import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/mar
 import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
+import { resolveHeaderElement } from '@/lib/elements/header'
 
 // Frequency Store — first-party Frequency retail (commerce core, owner_kind='platform'). Frequency is the
 // seller. Hero-led (the site PhotoHero grammar). Distinct from the Vault (Gems) and a Space's Shop tab.
@@ -26,6 +27,8 @@ const HERO_IMAGE = 'https://picsum.photos/seed/frequency-store/1600/600'
 export default async function ShopPage() {
   // Full catalog; the hero search bar filters it instantly on the client (no server round-trip).
   const products = await listShopProducts()
+  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
+  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
   return (
     <MarketSearchProvider>
       <div className="space-y-6">
@@ -34,6 +37,9 @@ export default async function ShopPage() {
           eyebrow="Frequency Store"
           title="Wear it, gift it, show up"
           subtitle="Frequency merch, event passes, and retreats, straight from us to you."
+          variant={header.layout}
+          size={header.height}
+          overlay={header.scrim}
           search={<MarketSearchBar placeholder="Search the Store" />}
         />
 

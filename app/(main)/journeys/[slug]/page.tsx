@@ -9,7 +9,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { getJourneyView, getPlan, getPlanAuthor } from '@/lib/journey-plans'
 import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
-import { accentColor, accentTint } from '@/lib/studio/accents'
+import { accentColor } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { adoptPlanAction, forkPlanAction } from '../actions'
 import { enabledWidgets } from '@/lib/journey-page-config'
@@ -163,20 +163,33 @@ export default async function JourneyPlanPage({
           eyebrow={topPillar ? topPillar.name : 'Journey'}
           leading={
             <span
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
-              style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-canvas/90 shadow ring-1 ring-on-ink/10 backdrop-blur"
+              style={{ color: accentColor(accent) }}
             >
               <PlanIcon className="h-6 w-6" />
             </span>
           }
           title={plan.title}
           subtitle={plan.summary || undefined}
+          actions={
+            <>
+              {canManageJourney && (
+                <OpenAdminBarButton
+                  scope={{ kind: 'journey', id: plan.id }}
+                  caps={Array.from(journeyCaps)}
+                  label="Manage"
+                  icon={<SlidersHorizontal className="h-4 w-4" />}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-on-ink/30 bg-on-ink/10 px-3 py-1.5 text-sm font-medium text-on-ink backdrop-blur transition-colors hover:bg-on-ink/20"
+                />
+              )}
+              <EnrollCta {...enrollProps} layout="inline" />
+            </>
+          }
         />
       }
       title={plan.title}
       band={
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div className="min-w-0 space-y-2">
+        <div className="min-w-0 space-y-2">
             <span className="inline-flex flex-wrap items-center gap-1.5">
               {plan.official && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
@@ -221,18 +234,6 @@ export default async function JourneyPlanPage({
             <span className="block pt-0.5">
               <JourneyStatChips facts={facts} plan={plan} enrolledCount={plan.adopt_count} />
             </span>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap sm:shrink-0">
-            {canManageJourney && (
-              <OpenAdminBarButton
-                scope={{ kind: 'journey', id: plan.id }}
-                caps={Array.from(journeyCaps)}
-                label="Manage"
-                icon={<SlidersHorizontal className="h-4 w-4" />}
-              />
-            )}
-            <EnrollCta {...enrollProps} layout="inline" />
-          </div>
         </div>
       }
     >
