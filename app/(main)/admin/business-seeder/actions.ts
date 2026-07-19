@@ -373,7 +373,7 @@ export async function uploadSeederImages(intakeId: string, formData: FormData): 
       ? row.inputs.imagesFiledToLoom.filter((u): u is string => typeof u === 'string')
       : []
     const toFile = added.filter((u) => !alreadyFiled.includes(u))
-    const filed = await fileSeedImagesIntoLoom(row.targetSpaceId, toFile, { primaryUrl: images[0] })
+    const filed = await fileSeedImagesIntoLoom(row.targetSpaceId, toFile, { primaryUrl: images[0], createdBy: row.createdBy })
     if (filed.length > 0) nextInputs.imagesFiledToLoom = [...alreadyFiled, ...filed]
   }
 

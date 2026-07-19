@@ -690,7 +690,7 @@ export async function applyIntake(
       ? row.inputs.imagesFiledToLoom.filter((u): u is string => typeof u === 'string')
       : []
     const toFile = seedImages.filter((u) => !alreadyFiled.includes(u))
-    const filed = await fileSeedImagesIntoLoom(result.spaceId, toFile, { primaryUrl: seedImages[0] })
+    const filed = await fileSeedImagesIntoLoom(result.spaceId, toFile, { primaryUrl: seedImages[0], createdBy: owner })
     if (filed.length > 0) {
       await store.setInputs(intakeId, {
         ...row.inputs,
@@ -717,7 +717,7 @@ export async function applyIntake(
 export async function fileSeedImagesIntoLoom(
   spaceId: string,
   images: string[],
-  opts: { primaryUrl?: string } = {},
+  opts: { primaryUrl?: string; createdBy?: string | null } = {},
 ): Promise<string[]> {
   const filed: string[] = []
   const assetIds: string[] = []
@@ -735,6 +735,7 @@ export async function fileSeedImagesIntoLoom(
         url,
         mime,
         bytes: 0,
+        createdBy: opts.createdBy ?? null,
       })
       if (id) {
         filed.push(url)
