@@ -9,6 +9,7 @@ export function ProfileAvatar({
   name,
   initials,
   dimmed = false,
+  focus,
 }: {
   /** The photo/logo URL; falls back to initials on a tinted disc when null. */
   src: string | null
@@ -18,6 +19,8 @@ export function ProfileAvatar({
   initials: string
   /** Demo profiles desaturate their photo so they read as not-quite-real. */
   dimmed?: boolean
+  /** The chosen focal point ("x% y%") so the photo keeps its subject in the round crop. Centered default. */
+  focus?: string | null
 }) {
   return src ? (
     <Image
@@ -25,6 +28,7 @@ export function ProfileAvatar({
       alt={name}
       width={112}
       height={112}
+      style={focus ? { objectPosition: focus } : undefined}
       className={`h-16 w-16 shrink-0 rounded-full object-cover ring-4 ring-surface sm:h-20 sm:w-20 ${
         dimmed ? 'dimmed' : ''
       }`}

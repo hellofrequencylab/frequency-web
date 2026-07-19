@@ -10,7 +10,7 @@ import { shortLinkUrl } from '@/lib/qr/links'
 import { ProfileForm } from './profile-form'
 import { ProfileQrCard } from '@/components/settings/profile-qr-card'
 import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spotlight-flags'
-import { readProfileHeaderFocus } from '@/lib/profile/header-focus'
+import { readProfileHeaderFocus, readProfileAvatarFocus } from '@/lib/profile/header-focus'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 import { resolveTierTeaseGate } from '@/lib/pricing/tease-gate'
 import { getOnboardingStatus } from '@/lib/onboarding/status'
@@ -95,6 +95,7 @@ export default async function ProfileSettingsPage() {
           handle:      profile.handle ?? '',
           bio:         profile.bio ?? '',
           avatarUrl:   profile.avatar_url ?? '',
+          avatarFocal: readProfileAvatarFocus((profile as { meta?: unknown }).meta),
           headerImageUrl,
           headerFocal: readProfileHeaderFocus((profile as { meta?: unknown }).meta),
           email:       user.email ?? '',

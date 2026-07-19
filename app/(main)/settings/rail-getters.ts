@@ -25,7 +25,7 @@ import {
   readSpotlightThemeRaw,
   readSpotlightBackgroundRaw,
 } from '@/lib/profile/spotlight-flags'
-import { readProfileHeaderFocus } from '@/lib/profile/header-focus'
+import { readProfileHeaderFocus, readProfileAvatarFocus } from '@/lib/profile/header-focus'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
 import { validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
 import type { SpotlightBackground } from '@/lib/spotlight/blocks/schema'
@@ -48,6 +48,7 @@ interface ProfileRailData {
     handle: string
     bio: string
     avatarUrl: string
+    avatarFocal: string
     headerImageUrl: string
     headerFocal: string
     email: string
@@ -97,6 +98,7 @@ export async function getProfileRailData(): Promise<ProfileRailData | null> {
       handle: profile.handle ?? '',
       bio: profile.bio ?? '',
       avatarUrl: profile.avatar_url ?? '',
+      avatarFocal: readProfileAvatarFocus((profile as { meta?: unknown }).meta),
       headerImageUrl,
       headerFocal: readProfileHeaderFocus((profile as { meta?: unknown }).meta),
       email: user.email ?? '',
