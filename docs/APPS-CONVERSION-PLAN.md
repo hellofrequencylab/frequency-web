@@ -46,6 +46,11 @@ point of the guards is that a conversion can't regress the architecture.
 ### Phase 4 — Convert the reusable elements to apps ⬤⬤⬤–⬤⬤⬤⬤ L–XL total · the bulk
 Each is one canonical app (registry row + typed wrapper + config + role gates + registry-mounted,
 CI-enforced), independently shippable:
+- **4-header Page header** ⬤⬤ M — ✅ DONE (ADR-793): `PageHero` gained layout variants (overlay /
+  identity / minimal) + `size`/`leading`/`dimmed`; registered `'header'` with role-gated features
+  (layout, height, focal point, links, darken-cover); Journeys + personal profiles converted to the
+  immersive `identity` layout. Follow-up: read `element_settings` per-surface + fold the two height
+  ladders (`lib/spaces/hero-config.ts`, `lib/events/hero-height.ts`) into the element.
 - **4a QR Studio** ⬤⬤ M
 - **4b Email editor popup** ⬤⬤ M
 - **4c Resonance CRM board** ⬤⬤⬤ L (large surface)

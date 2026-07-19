@@ -1,9 +1,8 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { Globe, Lock, Link2, Pencil, Sparkles, Flame, Layers, SlidersHorizontal } from 'lucide-react'
-import { DetailTemplate } from '@/components/templates'
+import { DetailTemplate, PageHero } from '@/components/templates'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { ShareImageProvider } from '@/components/qr/share-image-context'
 import { getCallerProfile } from '@/lib/auth'
@@ -145,91 +144,92 @@ export default async function JourneyPlanPage({
     forkAction: forkPlanAction,
   }
 
+  // The standardized `header` element (ADR-792), identity layout: the cover + Journey icon + title +
+  // one-line summary overlaid immersively (the "liked" Business-page look), instead of the old plain
+  // image band with the title stranded below it. The interactive meta (badges, author/streak/path links,
+  // stat chips, enroll/manage) stays in the light `band` under the hero, so those controls keep their
+  // normal styling and contrast.
   const page = (
     <DetailTemplate
       hero={
-        plan.cover_image ? (
-          <div className="relative h-44 w-full sm:h-56">
-            <Image fill sizes="100vw" src={plan.cover_image} alt="" className="rounded-2xl border border-border object-cover" />
-          </div>
-        ) : undefined
+        <PageHero
+          variant="identity"
+          size="standard"
+          coverImage={plan.cover_image ?? null}
+          eyebrow={topPillar ? topPillar.name : 'Journey'}
+          leading={
+            <span
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+              style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
+            >
+              <PlanIcon className="h-6 w-6" />
+            </span>
+          }
+          title={plan.title}
+          subtitle={plan.summary || undefined}
+        />
       }
-      title={
-        <span className="inline-flex items-center gap-3 align-middle">
-          <span
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
-          >
-            <PlanIcon className="h-6 w-6" />
-          </span>
-          <span className="min-w-0 break-words">{plan.title}</span>
-        </span>
-      }
-      subtitle={
-        <span className="block space-y-2">
-          {plan.summary && <span className="block leading-relaxed text-text">{plan.summary}</span>}
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-            {author && (
+      title={plan.title}
+      band={
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0 space-y-2">
+            <span className="inline-flex flex-wrap items-center gap-1.5">
+              {plan.official && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
+                  <Sparkles className="h-3 w-3" /> Official
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+                <vis.Icon className="h-3 w-3" /> {vis.label}
+              </span>
+              {topPillar && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+                  {topPillar.name}
+                </span>
+              )}
+            </span>
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+              {author && (
+                <Link
+                  href={`/people/${author.handle}`}
+                  className="inline-flex items-center gap-1 text-muted hover:text-text"
+                >
+                  By <span className="font-semibold text-text">{author.displayName}</span>
+                </Link>
+              )}
               <Link
-                href={`/people/${author.handle}`}
-                className="inline-flex items-center gap-1 text-muted hover:text-text"
+                href="/crew"
+                className="inline-flex items-center gap-1 text-primary-strong hover:underline"
               >
-                By <span className="font-semibold text-text">{author.displayName}</span>
+                <Flame className="h-3 w-3 shrink-0" aria-hidden />
+                Keep your streak in the Quest
               </Link>
+              <a
+                href="#the-path"
+                className="inline-flex items-center gap-1 text-primary-strong hover:underline"
+              >
+                <Layers className="h-3 w-3 shrink-0" aria-hidden />
+                The path
+              </a>
+            </span>
+            {/* Stat-chip row — quiet, tokenized facts (gamified-stat law: only gems reads
+                as a reward; the rest is calm context). */}
+            <span className="block pt-0.5">
+              <JourneyStatChips facts={facts} plan={plan} enrolledCount={plan.adopt_count} />
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap sm:shrink-0">
+            {canManageJourney && (
+              <OpenAdminBarButton
+                scope={{ kind: 'journey', id: plan.id }}
+                caps={Array.from(journeyCaps)}
+                label="Manage"
+                icon={<SlidersHorizontal className="h-4 w-4" />}
+              />
             )}
-            <Link
-              href="/crew"
-              className="inline-flex items-center gap-1 text-primary-strong hover:underline"
-            >
-              <Flame className="h-3 w-3 shrink-0" aria-hidden />
-              Keep your streak in the Quest
-            </Link>
-            <a
-              href="#the-path"
-              className="inline-flex items-center gap-1 text-primary-strong hover:underline"
-            >
-              <Layers className="h-3 w-3 shrink-0" aria-hidden />
-              The path
-            </a>
-          </span>
-          {/* Stat-chip row — quiet, tokenized facts (gamified-stat law: only gems reads
-              as a reward; the rest is calm context). */}
-          <span className="block pt-0.5">
-            <JourneyStatChips facts={facts} plan={plan} enrolledCount={plan.adopt_count} />
-          </span>
-        </span>
-      }
-      badges={
-        <span className="inline-flex flex-wrap items-center gap-1.5">
-          {plan.official && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
-              <Sparkles className="h-3 w-3" /> Official
-            </span>
-          )}
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
-            <vis.Icon className="h-3 w-3" /> {vis.label}
-          </span>
-          {topPillar && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
-              {topPillar.name}
-            </span>
-          )}
-        </span>
-      }
-      actions={
-        canManageJourney ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <OpenAdminBarButton
-              scope={{ kind: 'journey', id: plan.id }}
-              caps={Array.from(journeyCaps)}
-              label="Manage"
-              icon={<SlidersHorizontal className="h-4 w-4" />}
-            />
             <EnrollCta {...enrollProps} layout="inline" />
           </div>
-        ) : (
-          <EnrollCta {...enrollProps} layout="inline" />
-        )
+        </div>
       }
     >
       {/* Two-column body: a readable main column + an interior STICKY rail (distinct from

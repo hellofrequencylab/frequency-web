@@ -95,6 +95,18 @@ ladder (`atLeastRole`) both scopes already use, so there is no second permission
 A shared admin editor (in each element's studio, or a single "Elements" console) lists the registry
 and edits each element's `settings` + `roles` — the "master file you edit, site-wide."
 
+## Second citizen: the page header
+
+The page header/hero (`components/templates/page-hero.tsx`) is registered as `'header'` (ADR-793). It is
+the ONE header band for the whole site with a few **layout variants** — `overlay` (centered, the shipped
+default), `identity` (cover + scrim with the lockup anchored bottom-left + an optional leading chip), and
+`minimal` (cover only) — and the SAME editing functions everywhere (height · focal point · header links ·
+darken-cover), each a role-gated `ElementFeature`. It shows that not every element is client-mounted: the
+header is server-rendered (its `<h1>` must stay server-side for SEO), so it is registered for config +
+role-gating but is deliberately absent from the component map — templates import the canonical `PageHero`
+directly, which is still the one mount. The drift guard permits this (a registered `ElementKey` need not
+be in `ElementPropsMap`); `MountableElementKey` narrows to the client-mountable subset.
+
 ## First citizen: the Loom picker
 
 The Loom picker is the reference implementation of all three parts:

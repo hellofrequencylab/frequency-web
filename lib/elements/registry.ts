@@ -5,7 +5,7 @@
 // only) so it is client-safe and trivially testable, like the menu catalogs (SPACE_MODULES).
 
 /** Every registrable element. Extend the union as elements adopt the framework. */
-export type ElementKey = 'loom-picker' | 'qr-studio' | 'email-editor' | 'crm-board'
+export type ElementKey = 'loom-picker' | 'header' | 'qr-studio' | 'email-editor' | 'crm-board'
 
 /** The generic role tier a feature gates on. Resolved BY CONTEXT (docs §3): in a Space it maps to the
  *  SpaceRole ladder; globally to the community_role ladder + platform staff. So one vocabulary gates
@@ -64,6 +64,22 @@ export const ELEMENTS: readonly ElementDef[] = [
       { key: 'tab.airwaves', label: 'Airwaves tab', kind: 'toggle', defaultOn: false, defaultRole: 'everyone', help: 'Recordings in the Loom (coming soon).' },
       { key: 'aiCreate', label: 'AI Create', kind: 'toggle', defaultOn: false, defaultRole: 'editor', help: 'Generate a new Element with AI from inside Elements.' },
       { key: 'defaultScope', label: 'Opens on', kind: 'choice', choices: [{ value: 'mine', label: 'My uploads' }, { value: 'space', label: 'A space' }], default: 'mine', defaultRole: 'everyone', help: 'Which library the picker shows first.' },
+    ],
+  },
+  {
+    // The one page header/hero band (components/templates/page-hero.tsx). ONE component, a few LAYOUTS,
+    // the SAME editing functions everywhere; each function gated by role. Server-rendered, so it is
+    // registered here for config + role gates but is NOT in the client component map — templates import
+    // the canonical PageHero directly (that is the one mount). See docs/EMBEDDABLE-ELEMENTS.md.
+    key: 'header',
+    label: 'Page header',
+    description: 'The one header/hero band every page uses: one look, a few layouts (overlay, entity, minimal), the same height / focal-point / links controls site-wide.',
+    features: [
+      { key: 'layout', label: 'Layout', kind: 'choice', choices: [{ value: 'overlay', label: 'Overlay (centered)' }, { value: 'identity', label: 'Entity (bottom-left)' }, { value: 'minimal', label: 'Minimal (cover only)' }], default: 'overlay', defaultRole: 'editor', help: 'Which header layout this surface uses.' },
+      { key: 'height', label: 'Height', kind: 'choice', choices: [{ value: 'short', label: 'Short' }, { value: 'standard', label: 'Standard' }, { value: 'large', label: 'Large' }, { value: 'tall', label: 'Tall' }], default: 'large', defaultRole: 'editor', help: 'The band height.' },
+      { key: 'focus', label: 'Focal point', kind: 'toggle', defaultOn: true, defaultRole: 'editor', help: 'Let editors set the cover image focal point.' },
+      { key: 'links', label: 'Header links', kind: 'toggle', defaultOn: true, defaultRole: 'editor', help: 'Show the header buttons / call-to-action links.' },
+      { key: 'scrim', label: 'Darken cover', kind: 'toggle', defaultOn: true, defaultRole: 'admin', help: 'Keep the ink scrim so overlaid text stays legible.' },
     ],
   },
 ] as const

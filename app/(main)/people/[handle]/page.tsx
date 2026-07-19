@@ -45,8 +45,7 @@ import { ProfileAwards } from '@/components/profile/profile-awards'
 import { FrequencySignature } from '@/components/profile/frequency-signature'
 import { getLinkedContactForProfile } from '@/lib/connections/matching'
 import { PrivateContactPanel } from '@/components/connections/private-contact-panel'
-import { DetailTemplate } from '@/components/templates'
-import { ProfileCover } from '@/components/profile/profile-cover'
+import { DetailTemplate, PageHero } from '@/components/templates'
 import { ProfileAvatar } from '@/components/profile/profile-avatar'
 import { ProfileSpotlightBlocks } from '@/components/profile/profile-spotlight-blocks'
 import { OwnerProfileLayoutPreview } from '@/components/profile/owner-profile-layout-preview'
@@ -436,36 +435,42 @@ export default async function ProfilePage({
           credited to this owner (proxy drops fq_ref → applyReferralAttribution). */}
       <ShareRefProvider profileId={profileId}>
       <DetailTemplate
-        hero={<ProfileCover imageUrl={headerImageUrl} dimmed={isDemo} />}
-        title={
-          <span className="inline-flex items-center gap-3 align-middle">
-            <ProfileAvatar src={profile.avatar_url} name={profile.display_name} initials={initials} dimmed={isDemo} />
-            <span className="min-w-0 break-words">{profile.display_name}</span>
-          </span>
+        hero={
+          <PageHero
+            variant="identity"
+            size="standard"
+            coverImage={headerImageUrl}
+            dimmed={isDemo}
+            leading={<ProfileAvatar src={profile.avatar_url} name={profile.display_name} initials={initials} dimmed={isDemo} />}
+            title={profile.display_name}
+          />
         }
-        badges={badges}
-        subtitle={
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <span className="font-medium">@{profile.handle as string}</span>
-              {regionName && (
-                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
-              )}
-              <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
-              {circles.length > 0 && (
-                <Link
-                  href={circles.length === 1 ? `/circles/${circles[0]!.slug}` : '/circles'}
-                  className="flex items-center gap-1 transition-colors hover:text-text"
-                >
-                  <Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}
-                </Link>
-              )}
+        title={profile.display_name}
+        band={
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div className="min-w-0 space-y-3">
+              {badges && <div className="flex flex-wrap items-center gap-1.5">{badges}</div>}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+                <span className="font-medium">@{profile.handle as string}</span>
+                {regionName && (
+                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
+                )}
+                <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
+                {circles.length > 0 && (
+                  <Link
+                    href={circles.length === 1 ? `/circles/${circles[0]!.slug}` : '/circles'}
+                    className="flex items-center gap-1 transition-colors hover:text-text"
+                  >
+                    <Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}
+                  </Link>
+                )}
+              </div>
+              {/* Bio reads with the identity block, above the header's hairline rule. */}
+              <EditableIdentity isOwner={isOwner} bio={profile.bio ?? ''} />
             </div>
-            {/* Bio reads with the identity block, above the header's hairline rule. */}
-            <EditableIdentity isOwner={isOwner} bio={profile.bio ?? ''} />
+            <div className="flex items-center gap-2 flex-wrap sm:shrink-0">{isOwner ? ownerActions : viewerActions}</div>
           </div>
         }
-        actions={isOwner ? ownerActions : viewerActions}
       >
       {/* ── BODY — a 2/3 content area beside a 1/3 tiled info column. The content
           carries bio + the relationship panels + composer + timeline; the info column
