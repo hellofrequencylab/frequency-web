@@ -115,7 +115,7 @@ export function PageHero({
         </div>
       ) : variant === 'identity' ? (
         // Entity header: the lockup anchored bottom-left, an optional leading chip beside the title.
-        <div className={`relative z-10 flex ${HEADER_MIN_H[resolvedSize]} flex-col justify-end px-5 py-5 sm:px-8 sm:py-7${legible}`}>
+        <div className={`relative z-10 flex ${HEADER_MIN_H[resolvedSize]} flex-col justify-end px-6 py-6 sm:px-8 sm:py-8${legible}`}>
           {/* Space-page parity: the leading avatar/icon + identity anchored bottom-LEFT, the actions
               bottom-RIGHT, both over the cover. Stats/meta live BELOW in the DetailTemplate band. */}
           <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">

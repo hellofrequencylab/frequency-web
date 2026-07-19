@@ -17,6 +17,8 @@ import { PracticeDetail } from '@/components/journey/v2/learn/practice-detail'
 import { AboutThisJourneyHero, MeetingBlock, AuthorBlock } from '@/components/journey/v2/learn/journey-overview'
 import { CohortMeter } from '@/components/journey/v2/cohort-meter'
 import { DetailTemplate, PageHero } from '@/components/templates'
+import { ShareImageProvider } from '@/components/qr/share-image-context'
+import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { resolveHeaderElement } from '@/lib/elements/header'
 import { accentColor } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
@@ -160,6 +162,9 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } })
 
   return (
+    // The framework "QR & Share" control (header actions) centers THIS Journey's cover in its share QR —
+    // the entity's own image, never the viewer's avatar.
+    <ShareImageProvider imageUrl={plan.cover_image ?? null}>
     <DetailTemplate
       hero={
         <PageHero
@@ -178,28 +183,32 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
           }
           title={plan.title}
           subtitle={plan.summary || undefined}
-          actions={
-            canManageJourney || isAuthor ? (
-              <>
-                {canManageJourney && (
-                  <OpenAdminBarButton
-                    scope={{ kind: 'journey', id: plan.id }}
-                    caps={Array.from(journeyCaps)}
-                    label="Manage"
-                    icon={<SlidersHorizontal className="h-4 w-4" />}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-on-ink/30 bg-on-ink/10 px-3 py-1.5 text-sm font-medium text-on-ink backdrop-blur transition-colors hover:bg-on-ink/20"
-                  />
-                )}
-                {isAuthor && (
-                  <JourneyAuthorActions slug={slug} planId={plan.id} visibility={plan.visibility} />
-                )}
-              </>
-            ) : undefined
-          }
+          actions={<QrShareDropdown manager={canManageJourney} />}
         />
       }
       title={plan.title}
-      band={<></>}
+      band={
+        canManageJourney || isAuthor ? (
+          // Author/admin controls read as a normal light row BELOW the header (no longer riding the
+          // cover): the scoped Journey rail trigger + the author's Edit/Publish set.
+          <div className="flex flex-wrap items-center gap-2">
+            {canManageJourney && (
+              <OpenAdminBarButton
+                scope={{ kind: 'journey', id: plan.id }}
+                caps={Array.from(journeyCaps)}
+                label="Manage"
+                icon={<SlidersHorizontal className="h-4 w-4" />}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              />
+            )}
+            {isAuthor && (
+              <JourneyAuthorActions slug={slug} planId={plan.id} visibility={plan.visibility} />
+            )}
+          </div>
+        ) : (
+          <></>
+        )
+      }
     >
       {kickoff && (
         <Link
@@ -268,5 +277,6 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         dripIntervalDays={dripIntervalDays}
       />
     </DetailTemplate>
+    </ShareImageProvider>
   )
 }
