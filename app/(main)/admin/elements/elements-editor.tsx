@@ -6,6 +6,7 @@ import { Check, Loader2, ExternalLink } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { ELEMENT_ROLES, ELEMENT_ROLE_LABEL, type ElementDef, type ElementRole } from '@/lib/elements/registry'
 import type { ResolvedElement, StoredElementConfig } from '@/lib/elements/config'
+import { ElementPreview } from '@/components/elements/previews'
 import { saveElementSettings } from './actions'
 
 // One card per registered element: edit its feature settings (toggles / choices) + per-feature ROLE
@@ -40,6 +41,9 @@ export function ElementEditor({ def, resolved }: { def: ElementDef; resolved: Re
           </Link>
         )}
       </div>
+
+      {/* Live preview of the canonical element (omitted for elements without one). */}
+      <ElementPreview elementKey={def.key} />
 
       <ul className="mt-4 divide-y divide-border">
         {def.features.map((f) => (

@@ -1257,6 +1257,15 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 16px 1px color-mix(in srgb, var(--color-primary) calc(55% * var(--ornament, 0.6) / 0.6), transparent);
 }
 
+/* Legible overlaid text when a header runs WITHOUT the ink overlay (PageHero overlay={false}): a
+   token-based text-shadow so an overlaid title / eyebrow / subtitle stays readable straight over a
+   bright photo. Uses --color-ink via color-mix (no raw rgb/hex), so it themes + dark-modes. */
+.on-image-text {
+  text-shadow:
+    0 1px 2px color-mix(in srgb, var(--color-ink) 55%, transparent),
+    0 2px 12px color-mix(in srgb, var(--color-ink) 45%, transparent);
+}
+
 /* Soft amber radial glow backdrop, e.g. behind a hero CTA or within a dark band.
    Place as an absolutely-positioned, pointer-events-none layer. */
 .amber-glow {

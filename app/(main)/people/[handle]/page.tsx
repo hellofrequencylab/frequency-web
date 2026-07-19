@@ -421,9 +421,11 @@ export default async function ProfilePage({
   // primitives — no hand-rolled header, no raw <h1>. The global community rail stays
   // put beyond the body (page-chrome keeps profiles 'global'); the body splits at xl so
   // it never cramps against that rail, stacking the info column up top below xl.
-  // The header (avatar + name over the cover) is the standardized `header` element (ADR-793), identity
-  // layout; layout + height resolve from its master config, so an operator can retune it site-wide.
-  const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } })
+  // The header (round avatar + name over the cover) is the standardized `header` element (ADR-793),
+  // identity layout — the Space-page treatment, with a round profile photo. Ships overlay-OFF (the clean
+  // cover photo, legible text via a token shadow); layout / height / overlay resolve from the master
+  // config, so an operator can retune it site-wide.
+  const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard', scrim: false } })
   return (
     <>
       {tippedCents !== null && (
@@ -443,6 +445,7 @@ export default async function ProfilePage({
           <PageHero
             variant={header.layout}
             size={header.height}
+            overlay={header.scrim}
             coverImage={headerImageUrl}
             dimmed={isDemo}
             leading={<ProfileAvatar src={profile.avatar_url} name={profile.display_name} initials={initials} dimmed={isDemo} />}

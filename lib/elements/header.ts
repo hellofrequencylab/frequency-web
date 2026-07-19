@@ -32,6 +32,8 @@ export interface HeaderElementConfig {
 export interface HeaderDefaults {
   layout?: PageHeroVariant
   height?: PageHeroSize
+  /** Whether this surface draws the ink overlay by default (profiles ship overlay-off). */
+  scrim?: boolean
 }
 
 const LAYOUTS: readonly PageHeroVariant[] = ['overlay', 'identity', 'minimal']
@@ -48,6 +50,10 @@ function asLayout(v: unknown): PageHeroVariant | undefined {
   return typeof v === 'string' && (LAYOUTS as readonly string[]).includes(v) ? (v as PageHeroVariant) : undefined
 }
 
+function asBool(v: unknown): boolean | undefined {
+  return typeof v === 'boolean' ? v : undefined
+}
+
 /** PURE: fold the stored layers + a surface's defaults into the effective header config. The layout /
  *  height precedence is: an operator-set value (space override → platform master) → the surface default →
  *  the registry default. The three toggles read the fully-resolved boolean (default on). Exported so it
@@ -62,12 +68,15 @@ export function pickHeaderConfig(
   // An operator's EXPLICIT (sparse) layout/height, if any, wins over the surface default.
   const setLayout = asLayout(layers.space?.settings?.layout ?? layers.platform.settings?.layout)
   const setHeight = asHeaderSize(layers.space?.settings?.height ?? layers.platform.settings?.height)
+  // scrim (the ink overlay) follows the same precedence as layout/height: an operator-set value wins,
+  // else the surface default (profiles ship overlay-off), else the registry default (on).
+  const setScrim = asBool(layers.space?.settings?.scrim ?? layers.platform.settings?.scrim)
   return {
     layout: setLayout ?? defaults?.layout ?? asLayout(resolved.settings.layout) ?? DEFAULT_HEADER_CONFIG.layout,
     height: setHeight ?? defaults?.height ?? asHeaderSize(resolved.settings.height) ?? DEFAULT_HEADER_CONFIG.height,
     focus: resolved.settings.focus !== false,
     links: resolved.settings.links !== false,
-    scrim: resolved.settings.scrim !== false,
+    scrim: setScrim ?? defaults?.scrim ?? DEFAULT_HEADER_CONFIG.scrim,
   }
 }
 

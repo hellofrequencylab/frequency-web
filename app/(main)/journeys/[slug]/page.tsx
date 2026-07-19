@@ -158,6 +158,7 @@ export default async function JourneyPlanPage({
         <PageHero
           variant={header.layout}
           size={header.height}
+          overlay={header.scrim}
           coverImage={plan.cover_image ?? null}
           eyebrow={topPillar ? topPillar.name : 'Journey'}
           leading={
