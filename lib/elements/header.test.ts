@@ -39,6 +39,16 @@ describe('pickHeaderConfig (header element config)', () => {
     expect(pickHeaderConfig({ platform: { settings: { scrim: true } }, space: null }, { scrim: false }).scrim).toBe(true)
   })
 
+  it('resolves overlayStyle: default shadow, derived from scrim, surface default, and operator override', () => {
+    expect(pickHeaderConfig(EMPTY).overlayStyle).toBe('shadow')
+    // scrim off with no explicit style → 'none'.
+    expect(pickHeaderConfig(EMPTY, { scrim: false }).overlayStyle).toBe('none')
+    // a surface default style wins over the scrim derivation.
+    expect(pickHeaderConfig(EMPTY, { scrim: false, overlayStyle: 'fade' }).overlayStyle).toBe('fade')
+    // an operator master value beats the surface default.
+    expect(pickHeaderConfig({ platform: { settings: { overlayStyle: 'fade' } }, space: null }, { overlayStyle: 'none' }).overlayStyle).toBe('fade')
+  })
+
   it('honors the toggles (focus / links / scrim off)', () => {
     const layers = { platform: { settings: { focus: false, links: false, scrim: false } }, space: null }
     const cfg = pickHeaderConfig(layers)

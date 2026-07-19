@@ -226,6 +226,7 @@ export async function saveJourneyMeta(
     emoji?: string | null
     accent?: string | null
     coverImage?: string | null
+    logoImage?: string | null
   },
 ): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')

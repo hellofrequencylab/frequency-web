@@ -42,13 +42,19 @@ import { ProfileAwards } from '@/components/profile/profile-awards'
 import { FrequencySignature } from '@/components/profile/frequency-signature'
 import { getLinkedContactForProfile } from '@/lib/connections/matching'
 import { PrivateContactPanel } from '@/components/connections/private-contact-panel'
-import { DetailTemplate, PageHero } from '@/components/templates'
+import { DetailTemplate, PageHero, HERO_ACTION_CLASS } from '@/components/templates'
 import { resolveHeaderElement } from '@/lib/elements/header'
 import { ProfileAvatar } from '@/components/profile/profile-avatar'
 import { ProfileSpotlightBlocks } from '@/components/profile/profile-spotlight-blocks'
 import { OwnerProfileLayoutPreview } from '@/components/profile/owner-profile-layout-preview'
 import { ShareRefProvider } from '@/components/qr/share-ref-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
+
+// QrShareDropdown hardcodes its trigger's classes and takes no className, so we wrap it to make the
+// trigger read as the ONE glassy on-ink header button (HERO_ACTION_CLASS) — the `> button` child
+// selector restyles only the trigger, never the buttons inside the opened dialog. Tokens only.
+const HERO_QR_WRAP =
+  '[&>button]:!gap-1.5 [&>button]:!rounded-lg [&>button]:!border [&>button]:!border-on-ink/30 [&>button]:!bg-on-ink/10 [&>button]:!px-3 [&>button]:!py-1.5 [&>button]:!text-sm [&>button]:!font-medium [&>button]:!text-on-ink [&>button]:!backdrop-blur [&>button]:hover:!bg-on-ink/20 [&>button]:hover:!text-on-ink'
 
 export default async function ProfilePage({
   params,
@@ -298,13 +304,10 @@ export default async function ProfilePage({
         scope={{ kind: 'profile', id: profileId }}
         label="Edit profile"
         icon={<Pencil className="h-3.5 w-3.5" />}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        className={HERO_ACTION_CLASS}
       />
       {vcardEnabled && (
-        <a
-          href={`${profilePath}/vcard`}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-        >
+        <a href={`${profilePath}/vcard`} className={HERO_ACTION_CLASS}>
           <Contact className="h-3.5 w-3.5" />
           Save contact
         </a>
@@ -321,20 +324,14 @@ export default async function ProfilePage({
       <div className="flex flex-wrap items-center justify-end gap-2">
         {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
         {vcardEnabled && (
-          <a
-            href={`${profilePath}/vcard`}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-          >
+          <a href={`${profilePath}/vcard`} className={HERO_ACTION_CLASS}>
             <Contact className="w-3.5 h-3.5" />
             Save contact
           </a>
         )}
         {!isBlocked && friendState.kind === 'accepted' && (
           <form action={startConversation.bind(null, profileId)}>
-            <button
-              type="submit"
-              className="flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-sm font-medium text-primary-strong hover:bg-primary-bg transition-colors"
-            >
+            <button type="submit" className={HERO_ACTION_CLASS}>
               <MessageSquare className="w-3.5 h-3.5" />
               Message
             </button>
@@ -413,7 +410,7 @@ export default async function ProfilePage({
           <PageHero
             variant={header.layout}
             size={header.height}
-            overlay={header.scrim}
+            overlayStyle={header.overlayStyle}
             coverImage={headerImageUrl}
             coverFocus={headerFocus}
             dimmed={isDemo}
@@ -431,7 +428,9 @@ export default async function ProfilePage({
             actions={
               <>
                 {isOwner ? ownerActions : viewerActions}
-                <QrShareDropdown manager={isOwner} />
+                <span className={HERO_QR_WRAP}>
+                  <QrShareDropdown manager={isOwner} />
+                </span>
               </>
             }
           />

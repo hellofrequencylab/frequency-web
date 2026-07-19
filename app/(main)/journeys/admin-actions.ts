@@ -55,6 +55,7 @@ export async function getJourneyRailData(slug: string): Promise<JourneyRailData 
     initialDripIntervalDays: plan.drip_interval_days,
     initialCoverImage: plan.cover_image,
     initialCoverFocus: plan.cover_focus ?? null,
+    initialLogoImage: plan.logo_image ?? null,
     initialReview: review,
     initialDifficulty: p.difficulty ?? null,
     initialCategory: p.category ?? null,

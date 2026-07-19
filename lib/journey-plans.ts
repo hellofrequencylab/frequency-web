@@ -55,6 +55,8 @@ export interface JourneyPlan {
   cover_image: string | null
   /** Cover HEADER focal point (CSS object-position "x% y%"). Null = centered default (ADR-focal). */
   cover_focus: string | null
+  /** Square logo / profile image shown as the header's leading chip beside the icon. Null = icon only. */
+  logo_image: string | null
   created_at: string
   updated_at: string
   published_at: string | null
@@ -184,7 +186,7 @@ export interface JourneyPlanItem {
 
 const PLAN_COLS =
   'id, slug, title, summary, intro, emoji, accent, author_id, space_id, visibility, fork_of, ' +
-  'forked_count, adopt_count, cover_image, cover_focus, created_at, updated_at, published_at, ' +
+  'forked_count, adopt_count, cover_image, cover_focus, logo_image, created_at, updated_at, published_at, ' +
   'quest_id, official, window_starts_at, window_ends_at, status, page_config, completion_gems, ' +
   'drip_interval_days, certificate_enabled, difficulty, category, tags, daily_minutes, enroll_cap, meeting'
 
@@ -545,6 +547,7 @@ export async function updatePlan(
     emoji?: string | null
     accent?: string | null
     coverImage?: string | null
+    logoImage?: string | null
     status?: PlanStatus
     completionGems?: number
     pageConfig?: PageWidgetConfig[] | null
@@ -559,6 +562,7 @@ export async function updatePlan(
   if (patch.emoji !== undefined) update.emoji = patch.emoji?.trim().slice(0, 16) || null
   if (patch.accent !== undefined) update.accent = patch.accent?.trim().slice(0, 24) || null
   if (patch.coverImage !== undefined) update.cover_image = patch.coverImage?.trim().slice(0, 500) || null
+  if (patch.logoImage !== undefined) update.logo_image = patch.logoImage?.trim().slice(0, 500) || null
   // Page layout + review status (ADR-197). Clamped to their schema bounds.
   if (patch.status !== undefined) update.status = patch.status
   if (patch.completionGems !== undefined)
@@ -888,6 +892,7 @@ export async function duplicatePlan(profileId: string, planId: string): Promise<
       accent: src.accent,
       cover_image: src.cover_image,
       cover_focus: src.cover_focus,
+      logo_image: src.logo_image,
       author_id: profileId,
       visibility: 'private',
       status: 'draft',

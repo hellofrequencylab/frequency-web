@@ -33,6 +33,12 @@ import type { CohortProgress } from '@/lib/journeys/cohort'
 // the tree wraps loose lessons in an implicit phase — so it's reachable before the full v2 cutover.
 export const dynamic = 'force-dynamic'
 
+// QrShareDropdown hardcodes its trigger's classes and takes no className, so we wrap it to make the
+// trigger read as the ONE glassy on-ink header button (HERO_ACTION_CLASS) — the `> button` child
+// selector restyles only the trigger, never the buttons inside the opened dialog. Tokens only.
+const HERO_QR_WRAP =
+  '[&>button]:!gap-1.5 [&>button]:!rounded-lg [&>button]:!border [&>button]:!border-on-ink/30 [&>button]:!bg-on-ink/10 [&>button]:!px-3 [&>button]:!py-1.5 [&>button]:!text-sm [&>button]:!font-medium [&>button]:!text-on-ink [&>button]:!backdrop-blur [&>button]:hover:!bg-on-ink/20 [&>button]:hover:!text-on-ink'
+
 export default async function JourneyLearnPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const supabase = await createClient()
@@ -170,21 +176,34 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         <PageHero
           variant={header.layout}
           size={header.height}
-          overlay={header.scrim}
+          overlayStyle={header.overlayStyle}
           coverImage={plan.cover_image ?? null}
           coverFocus={plan.cover_focus ?? undefined}
           eyebrow="Journey"
           leading={
-            <span
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-canvas/90 shadow ring-1 ring-on-ink/10 backdrop-blur"
-              style={{ color: accentColor(plan.accent) }}
-            >
-              <PlanIcon className="h-6 w-6" />
-            </span>
+            plan.logo_image ? (
+              // eslint-disable-next-line @next/next/no-img-element -- operator logo on a user-controlled host, not a configured next/image domain
+              <img
+                src={plan.logo_image}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-2xl object-cover shadow ring-1 ring-on-ink/10"
+              />
+            ) : (
+              <span
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-canvas/90 shadow ring-1 ring-on-ink/10 backdrop-blur"
+                style={{ color: accentColor(plan.accent) }}
+              >
+                <PlanIcon className="h-6 w-6" />
+              </span>
+            )
           }
           title={plan.title}
           subtitle={plan.summary || undefined}
-          actions={<QrShareDropdown manager={canManageJourney} />}
+          actions={
+            <span className={HERO_QR_WRAP}>
+              <QrShareDropdown manager={canManageJourney} />
+            </span>
+          }
         />
       }
       title={plan.title}

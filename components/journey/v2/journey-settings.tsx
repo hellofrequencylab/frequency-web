@@ -11,10 +11,10 @@ import { useRouter } from 'next/navigation'
 import { Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper, Trophy, Sparkles, RefreshCw, Video, MapPin, Users, Clock } from 'lucide-react'
 import { IconAccentFace, AccentPicker, IconGrid } from '@/components/studio/kit/studio-identity'
 import { ImageUpload } from '@/components/ui/image-upload'
-import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
+import { HeaderImageField } from '@/components/ui/header-image-field'
 import { DEFAULT_ACCENT } from '@/lib/studio/accents'
 import { isError } from '@/lib/action-result'
-import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview, setJourneyAttributes, setJourneyMeeting, uploadJourneyCover, setJourneyHeaderFocus } from '@/app/(main)/journeys/actions'
+import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview, setJourneyAttributes, setJourneyMeeting, setJourneyHeaderFocus } from '@/app/(main)/journeys/actions'
 import { normalizeJourneyMeeting } from '@/lib/journey-plans'
 import { readJourneyCoverFocus } from '@/lib/journeys/header'
 import type { PlanStatus, PlanVisibility, StoredVeraReview, JourneyMeeting, JourneyTouchpoint } from '@/lib/journey-plans'
@@ -56,6 +56,8 @@ export interface JourneySettingsProps {
   initialCoverImage: string | null
   /** The saved cover HEADER focal point (CSS object-position "x% y%"). Null/absent = centered. */
   initialCoverFocus?: string | null
+  /** The Journey's logo / profile image (square), shown as the header's leading chip beside the icon. */
+  initialLogoImage?: string | null
   /** Vera's last rank-eligibility review, if this Journey has been published/reviewed. */
   initialReview: StoredVeraReview | null
   // Discovery + delivery attributes (ADR-302).
@@ -86,6 +88,7 @@ export function JourneySettings(props: JourneySettingsProps) {
   const [iconOpen, setIconOpen] = useState(false)
 
   const [coverImage, setCoverImage] = useState<string | null>(props.initialCoverImage)
+  const [logoImage, setLogoImage] = useState<string | null>(props.initialLogoImage ?? null)
 
   // HEADER FOCUS — where the cover sits in its cropped hero window (a CSS object-position). The SAME
   // reusable control the Space rail uses (ImageFocalPicker): the marker moves live while a drag DEBOUNCES
@@ -231,39 +234,38 @@ export function JourneySettings(props: JourneySettingsProps) {
 
       {/* The story/intro write-up moved out of Settings to sit above the curriculum (ADR-302). */}
 
-      {/* Cover image — the banner shown on the Journey's discovery page + cards. Hidden when the
-          single-page editor (ADR-301) renders the cover upload in the page header instead. */}
+      {/* Header images — the wide cover banner (with the same drag-to-focus control every header uses)
+          plus a square logo / profile image shown as the header's leading chip. Both open the ONE Loom
+          picker, scoped to the author's own uploads. Hidden when the single-page editor (ADR-301) renders
+          the cover upload in the page header instead. */}
       {!props.hideIdentity && (
-        <div className="space-y-3">
-          <ImageUpload
+        <div className="space-y-4">
+          <HeaderImageField
             label="Cover image"
             value={coverImage}
             onChange={(url) => {
               setCoverImage(url)
               meta({ coverImage: url })
             }}
-            folder="journey-covers"
-            uploadFn={(file) => {
-              const fd = new FormData()
-              fd.append('file', file)
-              return uploadJourneyCover(props.planId, fd)
-            }}
-            hint="Shown on the Journey's discovery page and cards."
+            focus={focus}
+            onFocusChange={onFocusChange}
+            aspect={16 / 6}
+            scopeKey="mine"
+            hint="Wide banner shown across the top of the Journey and on its cards."
           />
-          {/* HEADER FOCUS — once a cover is set, drag to choose what stays in frame when the wide hero
-              crops it. The reusable ImageFocalPicker (no sliders), debounced through onFocusChange. The
-              preview aspect matches the Journey's wide identity header band. */}
-          {coverImage && (
-            <ImageFocalPicker
-              imageUrl={coverImage}
-              value={focus}
-              onChange={onFocusChange}
-              aspect={16 / 6}
-              showSliders={false}
-              label="Header focus"
-              hint="Drag to choose what stays in frame."
+          <div className="w-[11rem]">
+            <ImageUpload
+              label="Logo image"
+              value={logoImage}
+              onChange={(url) => {
+                setLogoImage(url)
+                meta({ logoImage: url })
+              }}
+              folder="journey-logos"
+              scopeKey="mine"
+              hint="Optional. A square logo or profile image beside the icon."
             />
-          )}
+          </div>
         </div>
       )}
 

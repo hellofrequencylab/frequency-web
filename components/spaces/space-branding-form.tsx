@@ -2,13 +2,13 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, Loader2, PanelTop, Type, X } from 'lucide-react'
+import { Check, ChevronDown, Loader2, PanelTop, Type } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Input, Textarea, Label } from '@/components/ui/field'
 import { ImageUpload } from '@/components/ui/image-upload'
-import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
+import { HeaderImageField } from '@/components/ui/header-image-field'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { AccentPicker } from '@/components/spaces/space-form'
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
@@ -260,16 +260,13 @@ export function SpaceBrandingForm({
       <section className="space-y-4">
         <SectionHeader title="Pictures" />
         <HeaderImageField
-          coverUrl={coverUrl}
+          value={coverUrl}
           aspect={heroAspect(hHeight)}
           focus={focus}
           onFocusChange={onFocusChange}
           disabled={readOnly}
-          uploadFn={(file) => {
-            const fd = new FormData()
-            fd.append('file', file)
-            return uploadSpaceImage(slug, 'cover', fd)
-          }}
+          scopeKey={spaceId}
+          hint="Wide banner across the top of your page. About 1600 by 500."
           onChange={(v) => {
             setCoverUrl(v)
             run(() => setSpaceImages(slug, { coverImageUrl: v }))
@@ -289,6 +286,7 @@ export function SpaceBrandingForm({
               hint="Your profile image. A square reads best."
               folder="space-logos"
               disabled={readOnly}
+              scopeKey={spaceId}
               uploadFn={(file) => {
                 const fd = new FormData()
                 fd.append('file', file)
@@ -604,129 +602,6 @@ export function SpaceBrandingForm({
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Saving…
         </p>
       )}
-    </div>
-  )
-}
-
-// THE COMBINED HEADER IMAGE CONTROL — one control for the header/hero photo (upload + reposition), so the
-// image, its crop, and the focus all live together instead of a separate upload box and focus card. When a
-// photo is set, the preview renders IN THE RAIL at the HERO'S SET HEIGHT RATIO (`aspect`, not a fixed pixel
-// height) with the drag-to-focus marker on it (the same reusable ImageFocalPicker the event rail uses) plus
-// Replace / Remove — so the box is the same SHAPE as the live header (wide + short for Short, taller for Tall)
-// whatever the rail width. Empty, it falls back to the shared ImageUpload dropzone (upload or paste a URL).
-// Server-side upload (uploadFn), so it never depends on a live browser Storage token. Copy runs CONTENT-VOICE.
-function HeaderImageField({
-  coverUrl,
-  aspect,
-  focus,
-  onFocusChange,
-  disabled = false,
-  uploadFn,
-  onChange,
-}: {
-  coverUrl: string | null
-  /** The width:height aspect ratio of the hero at its current height, so the preview matches the live crop
-   *  shape at any rail width (heroAspect). */
-  aspect: number
-  /** The saved cover focal point ("x% y%") and its debounced setter (owned by the parent form). */
-  focus: string
-  onFocusChange: (v: string) => void
-  disabled?: boolean
-  uploadFn: (file: File) => Promise<{ url: string } | { error: string }>
-  /** Called with the new public URL (cache-busted) after an upload, or null when the photo is removed. */
-  onChange: (v: string | null) => void
-}) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function doUpload(file: File) {
-    setError(null)
-    if (!file.type.startsWith('image/')) {
-      setError('Choose an image file.')
-      return
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setError(`Image is ${(file.size / 1024 / 1024).toFixed(1)} MB. The limit is 10 MB.`)
-      return
-    }
-    setBusy(true)
-    const res = await uploadFn(file)
-    setBusy(false)
-    if ('error' in res) {
-      setError(`Upload failed: ${res.error}`)
-      return
-    }
-    // Cache-bust so a replace shows immediately.
-    onChange(`${res.url}?t=${Date.now()}`)
-  }
-
-  // Empty: the shared dropzone (upload + paste-a-URL), labelled as the header image.
-  if (!coverUrl) {
-    return (
-      <ImageUpload
-        value={null}
-        onChange={onChange}
-        label="Header image"
-        hint="Wide banner across the top of your page. About 1600 by 500."
-        folder="space-covers"
-        disabled={disabled}
-        uploadFn={uploadFn}
-      />
-    )
-  }
-
-  // Set: ONE control — the preview at the hero's set height, the drag-to-focus selector on it, and Replace /
-  // Remove overlaid. Repositioning never changes the header height; it only picks what stays in frame.
-  return (
-    <div className="space-y-1.5">
-      <div className="relative">
-        <ImageFocalPicker
-          // Key the preview by its aspect so a Short/Medium/Tall switch REMOUNTS the crop box: it can never
-          // render at a stale height, whatever the reconciler does with the changed inline style.
-          key={`hero-${aspect}`}
-          imageUrl={coverUrl}
-          value={focus}
-          onChange={onFocusChange}
-          disabled={disabled || busy}
-          label="Header image"
-          hint="Drag to choose which part of your header photo stays in frame. This preview matches your header height."
-          showSliders={false}
-          aspect={aspect}
-        />
-        {/* Replace / Remove sit top-right over the preview; the focal marker owns the rest of the frame. */}
-        <div className="absolute right-2 top-9 flex gap-1.5">
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            disabled={disabled || busy}
-            className="rounded-lg bg-canvas/90 px-2.5 py-1 text-xs font-medium text-text shadow-sm backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60 motion-reduce:transition-none"
-          >
-            {busy ? 'Uploading…' : 'Replace'}
-          </button>
-          <button
-            type="button"
-            onClick={() => onChange(null)}
-            disabled={disabled || busy}
-            aria-label="Remove header image"
-            className="rounded-lg bg-canvas/90 p-1 text-subtle shadow-sm backdrop-blur transition-colors hover:text-danger disabled:opacity-60 motion-reduce:transition-none"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0]
-          if (f) void doUpload(f)
-          e.target.value = ''
-        }}
-      />
-      {error && <p className="text-2xs text-danger">{error}</p>}
     </div>
   )
 }
