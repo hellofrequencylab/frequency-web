@@ -22,6 +22,7 @@ import { getProfileCapabilities, getGlobalCapabilities } from '@/lib/core/load-c
 import { getRealCallerWebRole } from '@/lib/auth'
 import { actAsMember } from '@/app/(main)/impersonate-actions'
 import { readSpotlightPublished, readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
+import { readProfileHeaderFocus } from '@/lib/profile/header-focus'
 import { getMemberProfileModules } from '@/lib/spotlight/data'
 import { SpotlightShell } from '@/components/spotlight/spotlight-shell'
 import { MemberProfileModules } from '@/components/widgets/member-profile/member-profile-modules'
@@ -118,6 +119,8 @@ export default async function ProfilePage({
 
   // header_image_url isn't in the generated types yet (new column) — read via cast.
   const headerImageUrl = (profile as { header_image_url?: string | null }).header_image_url ?? null
+  // Where the header banner sits in its cropped hero window (owner's focal picker), stored on meta.headerFocal.
+  const headerFocus = readProfileHeaderFocus((profile as { meta?: unknown }).meta)
   // Spotlight (opt-in public mini-site): show a link to it when this member has
   // published one. Derived from meta server-side; the blob never reaches the client.
   const spotlightPublished = readSpotlightPublished((profile as { meta?: unknown }).meta)
@@ -449,6 +452,7 @@ export default async function ProfilePage({
             size={header.height}
             overlay={header.scrim}
             coverImage={headerImageUrl}
+            coverFocus={headerFocus}
             dimmed={isDemo}
             leading={<ProfileAvatar src={profile.avatar_url} name={profile.display_name} initials={initials} dimmed={isDemo} />}
             eyebrow={roleBadge}

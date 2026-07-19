@@ -4,10 +4,13 @@ import { useState, useEffect, useRef, useTransition } from 'react'
 import Link from 'next/link'
 import { getInitials } from '@/lib/utils'
 import { Check, Loader2, Sparkles, ExternalLink } from 'lucide-react'
-import { updateProfile, uploadProfileImageAction, setSpotlightPublished, setMySpotlightEnabled } from './actions'
+import { updateProfile, uploadProfileImageAction, setSpotlightPublished, setMySpotlightEnabled, setProfileHeaderFocus } from './actions'
 import { HeaderEditor } from './header-editor'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 import { LoomPicker } from '@/components/loom/loom-picker'
+import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
+import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
+import { heroAspect } from '@/lib/spaces/hero-config'
 
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
 
@@ -57,6 +60,8 @@ export function ProfileForm({
     bio: string
     avatarUrl: string
     headerImageUrl: string
+    /** The saved header banner FOCAL POINT (CSS object-position "x% y%"). Defaults to centered. */
+    headerFocal: string
     email: string
     phone: string
     city: string
@@ -84,6 +89,14 @@ export function ProfileForm({
   const [headerUrl,     setHeaderUrl]     = useState(initial.headerImageUrl)
   const [headerBlob,    setHeaderBlob]    = useState<Blob | null>(null)
   const [headerRemoved, setHeaderRemoved] = useState(false)
+  // Header FOCUS — where the header banner sits in its cropped hero window (a CSS object-position).
+  // The SAME reusable control the Space + event rails use (ImageFocalPicker): the marker moves live
+  // while a drag DEBOUNCES the write via the dedicated setProfileHeaderFocus action (so a drag does
+  // not fire a save per pixel). This is a reposition only; it never changes the header's height. The
+  // value is also included in the main Save (updateProfile) so a Save before the debounce fires still
+  // persists it.
+  const [headerFocus,   setHeaderFocus]   = useState(initial.headerFocal || DEFAULT_OBJECT_POSITION)
+  const focusTimer                        = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [uploading,     setUploading]     = useState(false)
   const [uploadError,   setUploadError]   = useState('')
   const [avatarLoomOpen, setAvatarLoomOpen] = useState(false)
@@ -204,6 +217,18 @@ export function ProfileForm({
     }
   }
 
+  // Debounced live save of the header focal point (400ms, matching the Space form). The picker updates
+  // the marker instantly; the write lands once the drag settles.
+  function onHeaderFocusChange(next: string) {
+    setHeaderFocus(next)
+    if (focusTimer.current) clearTimeout(focusTimer.current)
+    focusTimer.current = setTimeout(() => {
+      void setProfileHeaderFocus(next).catch(() => {
+        /* a transient focal save failure is non-blocking; the value still rides the main Save */
+      })
+    }, 400)
+  }
+
   const canSave =
     displayName.trim().length > 0 &&
     handle.length >= 3 &&
@@ -237,6 +262,7 @@ export function ProfileForm({
           bio:            bio.trim(),
           avatarUrl:      finalAvatarUrl,
           headerImageUrl: finalHeaderUrl,
+          headerFocal:    headerFocus,
           phone:          phone.trim(),
           city:           city.trim(),
           website:        website.trim(),
@@ -297,6 +323,23 @@ export function ProfileForm({
             setHeaderRemoved(removed)
           }}
         />
+        {/* Reposition — only once a header image is set. Drag the marker to choose which part of the
+            banner stays in frame when it is cropped into your profile hero. Previewed at the hero's
+            standard identity shape; saves on its own (debounced) and again with the main Save. */}
+        {headerUrl && !headerRemoved && (
+          <div className="mt-3">
+            <ImageFocalPicker
+              imageUrl={headerUrl}
+              value={headerFocus}
+              onChange={onHeaderFocusChange}
+              disabled={isPending}
+              aspect={heroAspect('standard')}
+              label="Reposition header"
+              hint="Drag to choose which part of your header photo stays in frame when it is cropped."
+              showSliders={false}
+            />
+          </div>
+        )}
       </div>
 
       {/* ── Avatar ──────────────────────────────────── */}
