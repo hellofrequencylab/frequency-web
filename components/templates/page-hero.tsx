@@ -20,6 +20,7 @@ import { HEADER_MIN_H, type HeaderSize } from '@/lib/layout/header-sizes'
 
 export type PageHeroSize = HeaderSize
 export type PageHeroVariant = 'overlay' | 'identity' | 'minimal'
+export type HeroOverlayStyle = 'none' | 'shadow' | 'fade'
 
 export interface PageHeroProps {
   /** Cover image URL. `null` renders the neutral gradient placeholder; omit entirely for no cover. */
@@ -49,19 +50,33 @@ export interface PageHeroProps {
   rawImg?: boolean
   /** Desaturate the cover (demo/seeded surfaces read as not-quite-real, e.g. demo profiles). */
   dimmed?: boolean
-  /** Draw the ink overlay (scrim + amber glow) over the cover. Default on. Off = the clean image shows
-   *  through, with a token text-shadow keeping the overlaid copy legible. */
+  /** @deprecated use `overlayStyle`. Back-compat: true → 'shadow', false → 'none'. */
   overlay?: boolean
+  /** The overlay treatment over the cover (unified across every header):
+   *   • 'shadow' (default) — a full ink scrim + the house amber glow (today's look).
+   *   • 'none'   — the clean image, overlaid copy kept legible by a token text-shadow.
+   *   • 'fade'   — a color faded UP from the bottom (blends the cover into the page). */
+  overlayStyle?: HeroOverlayStyle
+  /** CSS color for the shadow/fade overlay (from the editor's color picker). Defaults: shadow →
+   *  var(--color-ink); fade → var(--color-canvas) (the page background). */
+  overlayColor?: string
 }
 
-// The ink scrim, faithful to the original MarketHero (darker top + bottom, lighter middle), token-clean:
-// `var(--color-ink)` via color-mix so it themes + dark-modes instead of a hardcoded rgb().
-const SCRIM =
-  'linear-gradient(180deg, color-mix(in srgb, var(--color-ink) 80%, transparent) 0%, color-mix(in srgb, var(--color-ink) 55%, transparent) 45%, color-mix(in srgb, var(--color-ink) 92%, transparent) 100%)'
-// The identity variant anchors its lockup at the bottom, so it wants a heavier FOOT on the scrim (the
-// copy sits over the darkest region) and a lighter head. Same token, different stops.
-const SCRIM_IDENTITY =
-  'linear-gradient(180deg, color-mix(in srgb, var(--color-ink) 45%, transparent) 0%, color-mix(in srgb, var(--color-ink) 55%, transparent) 45%, color-mix(in srgb, var(--color-ink) 92%, transparent) 100%)'
+// The overlay gradients, parameterized by color (tokens by default) so they theme + dark-mode. `shadow`
+// is the darker-top/bottom scrim (identity variant lightens the top so the bottom lockup reads); `fade`
+// pulls the color up from the bottom only, melting the cover into the page.
+function shadowScrim(color: string, identity: boolean): string {
+  const top = identity ? 45 : 80
+  return `linear-gradient(180deg, color-mix(in srgb, ${color} ${top}%, transparent) 0%, color-mix(in srgb, ${color} 55%, transparent) 45%, color-mix(in srgb, ${color} 92%, transparent) 100%)`
+}
+function fadeScrim(color: string): string {
+  return `linear-gradient(180deg, transparent 0%, transparent 38%, color-mix(in srgb, ${color} 88%, transparent) 100%)`
+}
+
+/** The ONE header-action button style — on-ink, glassy — so every header's buttons match (Space, Profile,
+ *  Journey, Marketplace). Import this for any button placed in a PageHero `actions` slot. */
+export const HERO_ACTION_CLASS =
+  'inline-flex items-center gap-1.5 rounded-lg border border-on-ink/30 bg-on-ink/10 px-3 py-1.5 text-sm font-medium text-on-ink backdrop-blur transition-colors hover:bg-on-ink/20'
 
 export function PageHero({
   coverImage,
@@ -77,15 +92,24 @@ export function PageHero({
   rawImg = false,
   dimmed = false,
   overlay = true,
+  overlayStyle,
+  overlayColor,
 }: PageHeroProps) {
   const focalStyle = coverFocus ? { objectPosition: coverFocus } : undefined
   const dim = dimmed ? ' dimmed' : ''
   // Sensible default height per variant (identity headers read best a touch shorter than the big
   // directory hero); an explicit `size` always wins.
   const resolvedSize: PageHeroSize = size ?? (variant === 'identity' ? 'standard' : variant === 'minimal' ? 'short' : 'large')
-  const scrim = variant === 'identity' ? SCRIM_IDENTITY : SCRIM
-  // With the overlay off, keep overlaid copy legible over a bright photo via a token text-shadow.
-  const legible = overlay ? '' : ' on-image-text'
+  // Resolve the overlay: explicit overlayStyle wins; else map the legacy `overlay` boolean.
+  const oStyle: HeroOverlayStyle = overlayStyle ?? (overlay === false ? 'none' : 'shadow')
+  const scrimBg =
+    oStyle === 'shadow'
+      ? shadowScrim(overlayColor || 'var(--color-ink)', variant === 'identity')
+      : oStyle === 'fade'
+        ? fadeScrim(overlayColor || 'var(--color-canvas)')
+        : null
+  // Without a full shadow scrim, keep overlaid copy legible over the photo via a token text-shadow.
+  const legible = oStyle === 'shadow' ? '' : ' on-image-text'
 
   return (
     <section className="relative overflow-hidden rounded-3xl border border-border">
@@ -100,13 +124,9 @@ export function PageHero({
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg" aria-hidden />
       )}
-      {/* Ink scrim (tokens only) + the house amber glow — the "overlay". Off = the clean image shows. */}
-      {overlay && (
-        <>
-          <div className="absolute inset-0" style={{ background: scrim }} aria-hidden />
-          <div className="amber-glow pointer-events-none absolute inset-0" aria-hidden />
-        </>
-      )}
+      {/* The overlay (tokens only): a colorable shadow/fade scrim; the amber glow rides the shadow style. */}
+      {scrimBg && <div className="absolute inset-0" style={{ background: scrimBg }} aria-hidden />}
+      {oStyle === 'shadow' && <div className="amber-glow pointer-events-none absolute inset-0" aria-hidden />}
 
       {variant === 'minimal' ? (
         // Cover + scrim only. The page still needs its heading, so keep an sr-only h1 (a11y + SEO).
