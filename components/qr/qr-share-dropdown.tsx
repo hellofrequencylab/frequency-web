@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { Share2 } from 'lucide-react'
+import { Share2, QrCode } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { PageQrManager, PageShareKit } from '@/components/qr/page-qr-manager'
 import { publicShareUrl } from '@/lib/qr/public-url'
@@ -74,8 +74,20 @@ export function QrShareDropdown({
           'inline-flex shrink-0 items-center gap-1 rounded-md bg-canvas px-1.5 py-0.5 text-xs font-semibold text-muted transition-colors hover:text-text'
         }
       >
-        <Share2 className="h-3.5 w-3.5" aria-hidden />
-        QR &amp; Share
+        {/* In a header (className given) match the Space "Connect" button EXACTLY: the label "QR" then a
+            QR-code glyph (SpaceShareButton renders the same). Elsewhere (page admin bar) keep the full
+            descriptive share affordance. */}
+        {className ? (
+          <>
+            QR
+            <QrCode className="h-4 w-4" aria-hidden />
+          </>
+        ) : (
+          <>
+            <Share2 className="h-3.5 w-3.5" aria-hidden />
+            QR &amp; Share
+          </>
+        )}
       </button>
 
       <Dialog

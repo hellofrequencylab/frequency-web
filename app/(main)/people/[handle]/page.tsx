@@ -22,7 +22,7 @@ import { getProfileCapabilities, getGlobalCapabilities } from '@/lib/core/load-c
 import { getRealCallerWebRole } from '@/lib/auth'
 import { actAsMember } from '@/app/(main)/impersonate-actions'
 import { readSpotlightPublished, readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
-import { readProfileHeaderFocus, readProfileAvatarFocus } from '@/lib/profile/header-focus'
+import { readProfileHeaderFocus, readProfileAvatarFocus, readProfileOverlayStyle, readProfileOverlayColor } from '@/lib/profile/header-focus'
 import { atLeastRole } from '@/lib/core/roles'
 import { MemberSupportPanel } from '@/components/support/member-support-panel'
 import { ConnectionPanel } from '@/components/people/connection-panel'
@@ -273,7 +273,15 @@ export default async function ProfilePage({
   // Badges — shared by the Detail identity band.
   {/* The ROLE badge (e.g. Janitor) is an IDENTITY chip — it rides the header image beside the name
       (the space-page treatment). The system voice (Vera, ADR-231) shows "Moderator". */}
-  const roleBadge = <RoleBadge role={profile.is_system ? 'moderator' : role} className="text-2xs leading-tight" />
+  // Smaller than the default .rank-badge (which hard-codes 12px + 2/8 padding), and the eyebrow wrapper adds
+  // wide tracking + uppercase — so shrink with important utilities + reset the tracking so JANITOR reads as a
+  // compact chip, not a big banner.
+  const roleBadge = (
+    <RoleBadge
+      role={profile.is_system ? 'moderator' : role}
+      className="!px-1.5 !py-0 !text-3xs !tracking-normal leading-tight"
+    />
+  )
   {/* The remaining chips (Founder / Supporter / season rank / demo) are gamification/status — they read
       BELOW the header with the stats, not over the photo. */}
   const badges = (
@@ -300,19 +308,16 @@ export default async function ProfilePage({
     </a>
   ) : null
 
-  // Edit profile — the owner's admin control, in a right-aligned row just below the header (matches the
-  // Journey admin row). Opens the side admin rail (identity editor + the in-rail page builder); the full
-  // /settings/profile form stays reachable from inside the rail. Light chrome (it sits on the page, not
-  // the cover), like the Journey Manage button.
-  const editProfileRow = isOwner ? (
-    <div className="flex justify-end">
-      <OpenAdminBarButton
-        scope={{ kind: 'profile', id: profileId }}
-        label="Edit profile"
-        icon={<Pencil className="h-4 w-4" />}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-      />
-    </div>
+  // Edit profile — the owner's admin control, right-aligned on the SAME row as the stats line just below the
+  // header (light chrome; it sits on the page, not the cover). Opens the side admin rail (identity editor +
+  // the in-rail page builder); the full /settings/profile form stays reachable from inside the rail.
+  const editProfileButton = isOwner ? (
+    <OpenAdminBarButton
+      scope={{ kind: 'profile', id: profileId }}
+      label="Edit profile"
+      icon={<Pencil className="h-4 w-4" />}
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+    />
   ) : null
 
   // The secondary, lower-stakes controls (Block · janitor "Act as") render as small
@@ -390,7 +395,11 @@ export default async function ProfilePage({
   // cover, stats/gamification read below. Scrim OFF by default (a clean photo; PageHero's on-image-text
   // keeps the overlaid identity + buttons legible), unless an operator turns it on. layout / height /
   // scrim resolve from the master config (retune site-wide).
-  const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard', scrim: false } })
+  // The owner's picked overlay (profiles.meta) is the surface default — an operator master value in
+  // /admin/elements can still override it site-wide (resolveHeaderElement precedence).
+  const overlayStyle = readProfileOverlayStyle((profile as { meta?: unknown }).meta)
+  const overlayColor = readProfileOverlayColor((profile as { meta?: unknown }).meta)
+  const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard', scrim: false, overlayStyle } })
   return (
     <>
       {tippedCents !== null && (
@@ -411,20 +420,14 @@ export default async function ProfilePage({
             variant={header.layout}
             size={header.height}
             overlayStyle={header.overlayStyle}
+            overlayColor={overlayColor ?? undefined}
             coverImage={headerImageUrl}
             coverFocus={headerFocus}
             dimmed={isDemo}
             leading={<ProfileAvatar src={profile.avatar_url} name={profile.display_name} initials={initials} dimmed={isDemo} focus={avatarFocus} />}
             eyebrow={roleBadge}
             title={profile.display_name}
-            subtitle={
-              <span className="block">
-                <span className="font-medium text-on-ink/90">@{profile.handle as string}</span>
-                {profile.bio && (
-                  <span className="mt-0.5 block line-clamp-1 text-on-ink/75">{profile.bio}</span>
-                )}
-              </span>
-            }
+            subtitle={<span className="font-medium text-on-ink/90">@{profile.handle as string}</span>}
             actions={
               <>
                 {isOwner ? ownerActions : viewerActions}
@@ -435,24 +438,27 @@ export default async function ProfilePage({
         }
         title={profile.display_name}
         band={
-          <div className="min-w-0 space-y-3">
-            {/* Owner's Edit profile — a right-aligned admin row just below the header (not on the cover). */}
-            {editProfileRow}
-            {/* Gamification + status chips and the at-a-glance meta read BELOW the header. */}
-            {badges && <div className="flex flex-wrap items-center gap-1.5">{badges}</div>}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
-              {regionName && (
-                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
-              )}
-              <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
-              {circles.length > 0 && (
-                <Link
-                  href={circles.length === 1 ? `/circles/${circles[0]!.slug}` : '/circles'}
-                  className="flex items-center gap-1 transition-colors hover:text-text"
-                >
-                  <Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}
-                </Link>
-              )}
+          <div className="min-w-0 space-y-2">
+            {/* ONE compact line right under the header: the at-a-glance stats/meta on the left with the
+                status chips (Ghost/Founder/rank) at the END, and the owner's Edit profile on the right. */}
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+                {regionName && (
+                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
+                )}
+                <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
+                {circles.length > 0 && (
+                  <Link
+                    href={circles.length === 1 ? `/circles/${circles[0]!.slug}` : '/circles'}
+                    className="flex items-center gap-1 transition-colors hover:text-text"
+                  >
+                    <Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}
+                  </Link>
+                )}
+                {/* Status chips (Ghost rank, Founder, Supporter, demo) sit at the END of the stats line. */}
+                {badges}
+              </div>
+              {editProfileButton}
             </div>
             {/* Bio reads with the identity block, above the header's hairline rule. */}
             <EditableIdentity isOwner={isOwner} bio={profile.bio ?? ''} />

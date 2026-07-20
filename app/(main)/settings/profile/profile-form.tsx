@@ -36,6 +36,9 @@ export function ProfileForm({
     headerImageUrl: string
     /** The saved header banner FOCAL POINT (CSS object-position "x% y%"). Defaults to centered. */
     headerFocal: string
+    /** The header overlay style ('none' | 'shadow' | 'fade') and its optional color. */
+    overlayStyle: string
+    overlayColor: string
     email: string
     phone: string
     city: string
@@ -71,6 +74,9 @@ export function ProfileForm({
   // persists it.
   const [headerFocus,   setHeaderFocus]   = useState(initial.headerFocal || DEFAULT_OBJECT_POSITION)
   const focusTimer                        = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Header OVERLAY — the 3 shared styles (none / shadow / fade), editable per profile (saved on Save).
+  const [overlayStyle,  setOverlayStyle]  = useState(initial.overlayStyle || 'none')
+  const [overlayColor,  setOverlayColor]  = useState(initial.overlayColor || '')
   const [spotEnabled,   setSpotEnabled]   = useState(initial.spotlightEnabled)
   const [spotPublished, setSpotPublished] = useState(initial.spotlightPublished)
   const [spotPending,   setSpotPending]   = useState(false)
@@ -168,6 +174,8 @@ export function ProfileForm({
           avatarFocal:    avatarFocus,
           headerImageUrl: headerUrl,
           headerFocal:    headerFocus,
+          headerOverlayStyle: overlayStyle,
+          headerOverlayColor: overlayColor || null,
           phone:          phone.trim(),
           city:           city.trim(),
           website:        website.trim(),
@@ -210,6 +218,10 @@ export function ProfileForm({
   }
 
   const spotlightUrl = handle ? `/spotlight/${handle}` : ''
+  // The native <input type="color"> needs a hex starting value; shadow starts dark, fade starts near the
+  // page background. These are only the picker's initial swatch, not app chrome.
+  // token-ok: native color input requires a hex value (picker starting swatch, not UI chrome)
+  const overlayColorDefault = overlayStyle === 'shadow' ? '#111111' : '#fbf8f1'
 
   return (
     <form onSubmit={handleSave} className="space-y-6">
@@ -229,6 +241,52 @@ export function ProfileForm({
           hint="Wide banner across the top of your profile."
           focusHint="Drag to choose which part of your header photo stays in frame."
         />
+      </div>
+
+      {/* ── Header overlay — the 3 shared styles (ADR-794). None keeps a clean photo; Shadow darkens it;
+          Fade blends it into the page. Shadow and Fade take a pickable color. Saved with the form. ── */}
+      <div>
+        <label className={lbl}>Header overlay</label>
+        <div className="flex flex-wrap gap-2">
+          {([['none', 'None'], ['shadow', 'Shadow'], ['fade', 'Fade']] as const).map(([v, label]) => {
+            const active = overlayStyle === v
+            return (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setOverlayStyle(v)}
+                aria-pressed={active}
+                disabled={isPending}
+                className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+                  active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong'
+                }`}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+        {overlayStyle !== 'none' && (
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              type="color"
+              aria-label="Overlay color"
+              value={overlayColor || overlayColorDefault}
+              onChange={(e) => setOverlayColor(e.target.value)}
+              disabled={isPending}
+              className="h-8 w-12 cursor-pointer rounded border border-border bg-surface disabled:opacity-60"
+            />
+            <span className="text-xs text-subtle">Overlay color</span>
+            {overlayColor && (
+              <button type="button" onClick={() => setOverlayColor('')} className="text-xs text-subtle transition-colors hover:text-text">
+                Reset
+              </button>
+            )}
+          </div>
+        )}
+        <p className="mt-1 text-xs text-subtle">
+          None keeps a clean photo. Shadow darkens it so overlaid text pops. Fade blends it into the page.
+        </p>
       </div>
 
       {/* ── Photo (avatar) — the SAME shared image control as the header: browse/upload via the full-screen
