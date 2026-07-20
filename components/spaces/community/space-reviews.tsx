@@ -170,7 +170,7 @@ export function SpaceReviews({
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated/50 p-4">
           <p className="text-sm text-muted">Sign in to leave a review.</p>
           <Link
-            href="/login"
+            href="/sign-in"
             className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             Sign in

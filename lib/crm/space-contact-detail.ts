@@ -18,6 +18,7 @@
 // so the enrichment read goes through the untyped admin client (ADR-246).
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { escapeLike } from '@/lib/search-sanitize'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities, autoExecutionAllowed } from '@/lib/spaces/entitlements'
@@ -277,7 +278,9 @@ async function enrichFromCapture(
     const { data, error } = await db
       .from('network_contacts')
       .select('phone, company, city, created_at')
-      .ilike('email', needle)
+      // escapeLike: `_`/`%` in an email are ILIKE wildcards — without escaping, a different person's
+      // captures would populate this contact's detail card.
+      .ilike('email', escapeLike(needle))
       .order('created_at', { ascending: false })
       .limit(20)
     if (error || !data) return blank
