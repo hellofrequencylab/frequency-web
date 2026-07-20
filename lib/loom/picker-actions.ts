@@ -130,8 +130,20 @@ export async function loomScope(
 async function resolveScope(
   callerId: string,
   scopeKey: string,
-): Promise<{ createdBy: string } | { spaceId: string } | null> {
-  if (scopeKey === 'mine') return { createdBy: callerId }
+): Promise<{ createdBy: string; spaceIds?: string[] } | { spaceId: string } | null> {
+  if (scopeKey === 'mine') {
+    // A person's Loom is EVERYTHING they own: their own uploads (created_by) UNION every image uploaded to
+    // a Space they OWN. So a page/space owner picks from all of it in one place, not just what they
+    // personally uploaded. Owned spaces only (via 'owner', not admin'd) — the person who owns the page owns
+    // its library. Fail-safe: a bad space read just drops the union back to the personal set.
+    let spaceIds: string[] = []
+    try {
+      spaceIds = (await listOperatedSpaces(callerId)).filter((s) => s.via === 'owner').map((s) => s.id)
+    } catch {
+      spaceIds = []
+    }
+    return { createdBy: callerId, spaceIds }
+  }
   // FAIL-SAFE: a transient DB error resolving/authorizing the space must not throw (the picker's
   // contract is "never a throw" → an empty, safe picker), so swallow it to a null (unauthorized) scope.
   try {

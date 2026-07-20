@@ -325,11 +325,19 @@ function toPickAsset(r: Record<string, unknown>): LoomPickAsset {
   }
 }
 
+// The OWNER ("My uploads") provenance gate, as a PostgREST OR expression: show every source EXCEPT the
+// business importer's seed/import placeholders (those belong to the space until it is claimed). Written as
+// a POSITIVE `in.()` allowlist over the CHECK-constrained `source` vocabulary (library_assets_source_check)
+// plus NULL legacy uploads — no negation, so the filter can never be a malformed query — and any source we
+// don't list is hidden-by-default (the safe direction). `event-claim` (event photos) IS shown; only
+// seed/import are held back. Keep in lockstep with the source CHECK constraint.
+const OWNER_SCOPE_SOURCE_OR = 'source.is.null,source.in.(upload,event-claim,recraft,vera,generated,curated)'
+
 /** IMAGE assets in one Loom SCOPE, newest first, optionally filtered by a text query, a single tag, and
- *  whether to keep only AI-generated "Elements". A scope is either the caller's PERSONAL Loom
- *  (`createdBy` = them, any space) or ONE space's own assets (`spaceId`). FAIL-SAFE to []. */
+ *  whether to keep only AI-generated "Elements". A scope is either the OWNER's Loom (`createdBy` = them,
+ *  UNIONED with the spaces they own via `spaceIds`) or ONE space's own assets (`spaceId`). FAIL-SAFE to []. */
 export async function listLoomScopeImages(
-  scope: { createdBy: string } | { spaceId: string },
+  scope: { createdBy: string; spaceIds?: string[] } | { spaceId: string },
   opts: { q?: string; tag?: string; kinds?: string[]; generatedOnly?: boolean; limit?: number } = {},
 ): Promise<LoomPickAsset[]> {
   try {
@@ -342,10 +350,17 @@ export async function listLoomScopeImages(
       .in('kind', kinds)
       .neq('status', 'archived')
     if ('createdBy' in scope) {
-      // Personal Loom ("My uploads") = GENUINE uploads only. Seeded/imported photos, AI-generated art,
-      // and images that arrived with a claimed event all carry a non-upload `source`, so they never
-      // pollute a member's own uploads. NULL = legacy/ambiguous, treated as a real upload (shown).
-      query = query.eq('created_by', scope.createdBy).or('source.eq.upload,source.is.null')
+      // OWNER Loom ("My uploads") = every genuine upload across MY profile AND the Spaces I OWN. Ownership
+      // is a UNION (created_by = me OR the asset lives in one of my owned spaces), so a page/space owner
+      // sees every image uploaded to their pages, not only the ones they personally uploaded. The ONLY
+      // thing held back is the business importer's SEED/IMPORT placeholder content — it belongs to the
+      // space until someone claims it. Event photos, legacy NULL uploads, and everything else stay visible.
+      // PostgREST ANDs separate `.or()` calls, so this is (ownership) AND (not a seed placeholder).
+      const ownedIds = 'spaceIds' in scope ? scope.spaceIds ?? [] : []
+      const ownership = ownedIds.length
+        ? `created_by.eq.${scope.createdBy},space_id.in.(${ownedIds.join(',')})`
+        : `created_by.eq.${scope.createdBy}`
+      query = query.or(ownership).or(OWNER_SCOPE_SOURCE_OR)
     } else {
       query = query.eq('space_id', scope.spaceId)
     }
@@ -364,15 +379,19 @@ export async function listLoomScopeImages(
 /** The distinct image TAGS present in a Loom scope (busiest first), for the picker's Tags facet.
  *  FAIL-SAFE to []. */
 export async function listLoomScopeTags(
-  scope: { createdBy: string } | { spaceId: string },
+  scope: { createdBy: string; spaceIds?: string[] } | { spaceId: string },
   kinds: string[] = ['image'],
 ): Promise<string[]> {
   try {
     const wanted = kinds.length ? kinds : ['image']
     let query = db().from('library_assets').select('tags').in('kind', wanted).neq('status', 'archived')
     if ('createdBy' in scope) {
-      // Match listLoomScopeImages: the personal Tags facet counts only genuine uploads.
-      query = query.eq('created_by', scope.createdBy).or('source.eq.upload,source.is.null')
+      // Match listLoomScopeImages: the owner Tags facet spans my uploads + my owned spaces, minus seeds.
+      const ownedIds = 'spaceIds' in scope ? scope.spaceIds ?? [] : []
+      const ownership = ownedIds.length
+        ? `created_by.eq.${scope.createdBy},space_id.in.(${ownedIds.join(',')})`
+        : `created_by.eq.${scope.createdBy}`
+      query = query.or(ownership).or(OWNER_SCOPE_SOURCE_OR)
     } else {
       query = query.eq('space_id', scope.spaceId)
     }
