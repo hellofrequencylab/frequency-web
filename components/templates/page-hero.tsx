@@ -110,8 +110,15 @@ export function PageHero({
       : oStyle === 'fade'
         ? fadeScrim(overlayColor || 'var(--color-canvas)')
         : null
-  // Without a full shadow scrim, keep overlaid copy legible over the photo via a token text-shadow.
-  const legible = oStyle === 'shadow' ? '' : ' on-image-text'
+  // Text tone + legibility halo per overlay:
+  //  • shadow — light copy on the dark scrim, no halo needed.
+  //  • none   — light copy on the raw photo, kept legible by a dark ink halo.
+  //  • fade   — the cover melts into the PAGE background, so overlaid copy must contrast with THAT (not be
+  //             light-on-light in light mode). Use the theme foreground `text` + a canvas-colored halo
+  //             (always the opposite tone to `text`, so it reads in both light and dark mode).
+  const fade = oStyle === 'fade'
+  const legible = oStyle === 'shadow' ? '' : fade ? ' on-fade-text' : ' on-image-text'
+  const titleTone = fade ? 'text-text' : 'text-on-ink'
 
   return (
     <section className="relative overflow-hidden rounded-3xl border border-border">
@@ -147,11 +154,11 @@ export function PageHero({
                 {eyebrow && (
                   <div className="mb-1.5 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary sm:text-sm">{eyebrow}</div>
                 )}
-                <h1 className="font-display uppercase leading-[1] text-balance text-on-ink text-[clamp(1.25rem,3vw,2rem)] break-words">
+                <h1 className={`font-display uppercase leading-[1] text-balance ${titleTone} text-[clamp(1.25rem,3vw,2rem)] break-words`}>
                   {title}
                 </h1>
                 {subtitle && (
-                  <div className="mt-1.5 max-w-xl text-sm leading-relaxed text-on-ink/85">{subtitle}</div>
+                  <div className={`mt-1.5 max-w-xl text-sm leading-relaxed ${fade ? 'text-text/80' : 'text-on-ink/85'}`}>{subtitle}</div>
                 )}
               </div>
             </div>
@@ -167,11 +174,11 @@ export function PageHero({
           {eyebrow && (
             <p className="mb-3 text-sm font-bold uppercase tracking-[0.25em] text-primary sm:mb-4">{eyebrow}</p>
           )}
-          <h1 className="font-display uppercase leading-[0.95] text-balance text-on-ink text-[clamp(1.75rem,6vw,3.75rem)]">
+          <h1 className={`font-display uppercase leading-[0.95] text-balance ${titleTone} text-[clamp(1.75rem,6vw,3.75rem)]`}>
             {title}
           </h1>
           {subtitle && (
-            <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-on-ink/80 sm:mt-5 sm:text-lg">{subtitle}</p>
+            <p className={`mx-auto mt-3 max-w-2xl text-base leading-relaxed ${fade ? 'text-text/80' : 'text-on-ink/80'} sm:mt-5 sm:text-lg`}>{subtitle}</p>
           )}
           {search && <div className="mt-4 w-full max-w-lg sm:mt-6">{search}</div>}
           {actions && <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:mt-6 sm:gap-3">{actions}</div>}

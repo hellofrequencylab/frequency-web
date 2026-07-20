@@ -31,6 +31,7 @@ export function HeaderImageField({
   focusHint = 'Drag to choose which part of your header photo stays in frame. This preview matches your header height.',
   disabled = false,
   rounded = false,
+  noUrlPaste = false,
   className,
 }: {
   /** The current cover image URL, or null when none is set. */
@@ -52,6 +53,8 @@ export function HeaderImageField({
   disabled?: boolean
   /** Round the preview (a profile photo / avatar) instead of the default rectangular banner crop. */
   rounded?: boolean
+  /** Hide the "or paste an image URL" fallback (used for the avatar, whose URL is allowlisted server-side). */
+  noUrlPaste?: boolean
   /** Extra classes on the outer wrapper (e.g. a max-width for a compact avatar control). */
   className?: string
 }) {
@@ -69,6 +72,7 @@ export function HeaderImageField({
           disabled={disabled}
           loom
           scopeKey={scopeKey}
+          noUrlPaste={noUrlPaste}
         />
       </div>
     )
@@ -92,7 +96,7 @@ export function HeaderImageField({
           hint={focusHint}
           showSliders={false}
           aspect={aspect}
-          className={rounded ? '[&_img]:rounded-full' : undefined}
+          rounded={rounded}
         />
         {/* Replace / Remove sit top-right over the preview; the focal marker owns the rest of the frame. */}
         <div className="absolute right-2 top-9 flex gap-1.5">

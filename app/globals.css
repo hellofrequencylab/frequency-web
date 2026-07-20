@@ -1266,6 +1266,15 @@ h1, h2, h3, h4, h5, h6 {
     0 2px 12px color-mix(in srgb, var(--color-ink) 45%, transparent);
 }
 
+/* Legibility halo for DARK text riding a light (page-background) fade — the `fade` header overlay. The halo
+   is the canvas color, which is always the opposite tone to the theme's `text`, so dark-text-on-light (light
+   mode) and light-text-on-dark (dark mode) both stay readable over the cover photo above the fade. */
+.on-fade-text {
+  text-shadow:
+    0 1px 2px color-mix(in srgb, var(--color-canvas) 70%, transparent),
+    0 2px 12px color-mix(in srgb, var(--color-canvas) 55%, transparent);
+}
+
 /* Soft amber radial glow backdrop, e.g. behind a hero CTA or within a dark band.
    Place as an absolutely-positioned, pointer-events-none layer. */
 .amber-glow {

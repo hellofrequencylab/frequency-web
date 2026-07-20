@@ -42,6 +42,7 @@ export function ImageUpload({
   uploadFn,
   loom = true,
   scopeKey,
+  noUrlPaste = false,
 }: {
   /** A public URL (mode 'url') or a storage path (mode 'path'). */
   value: string | null
@@ -66,6 +67,9 @@ export function ImageUpload({
   /** Lock the Loom picker to ONE scope ('mine' or a Space id) — the context being edited — so it shows
    *  only that library, not every Space the caller operates. Undefined = the full multi-scope picker. */
   scopeKey?: string
+  /** Hide the "or paste an image URL" fallback (url mode). Used where an external URL would be dropped by
+   *  a server-side allowlist (e.g. the profile avatar), so the affordance can't silently no-op. */
+  noUrlPaste?: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
@@ -210,7 +214,7 @@ export function ImageUpload({
         />
       )}
 
-      {mode === 'url' && (
+      {mode === 'url' && !noUrlPaste && (
         <input
           type="url"
           value={value ?? ''}

@@ -174,7 +174,9 @@ export async function updateProfile(data: {
   displayName: string
   handle: string
   bio: string
-  avatarUrl: string
+  /** The avatar: a valid URL to set it, `null` to explicitly CLEAR it (the Remove control), or `''`/an
+   *  unverifiable URL to leave the stored value untouched (so a legacy/OAuth avatar is never wiped). */
+  avatarUrl: string | null
   headerImageUrl?: string
   /** The header banner FOCAL POINT (CSS object-position "x% y%"), stored on profiles.meta.headerFocal. */
   headerFocal?: string
@@ -186,7 +188,12 @@ export async function updateProfile(data: {
   /** A picked city also sets the member's home location (powers "near you"). */
   home?: { lat: number; lng: number; label: string } | null
 }) {
-  const { displayName, handle, bio, avatarUrl } = sanitizeProfileInput(data)
+  const { displayName, handle, bio, avatarUrl } = sanitizeProfileInput({
+    displayName: data.displayName,
+    handle: data.handle,
+    bio: data.bio,
+    avatarUrl: data.avatarUrl ?? undefined,
+  })
   const phone = (data.phone ?? '').trim().slice(0, 40)
   const city = (data.city ?? '').trim().slice(0, 120)
   const website = (data.website ?? '').trim().slice(0, 200)
@@ -217,7 +224,14 @@ export async function updateProfile(data: {
     city: city || null,
     website: website || null,
   }
-  if (avatarUrl) update.avatar_url = avatarUrl
+  // Avatar: an explicit null CLEARS it (the Remove control); a valid (sanitized) URL SETS it; an empty or
+  // unverifiable value leaves the stored avatar untouched, so an unrelated save never wipes a legacy/OAuth
+  // (non-Supabase) avatar the sanitizer can't verify.
+  if (data.avatarUrl === null) {
+    update.avatar_url = null
+  } else if (avatarUrl) {
+    update.avatar_url = avatarUrl
+  }
   // header_image_url + home_* aren't in the generated types yet — set via cast.
   if (data.headerImageUrl !== undefined) {
     (update as Record<string, unknown>).header_image_url = data.headerImageUrl.trim() || null

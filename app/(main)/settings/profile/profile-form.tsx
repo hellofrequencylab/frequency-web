@@ -163,7 +163,8 @@ export function ProfileForm({
           displayName:    displayName.trim(),
           handle:         handle.trim(),
           bio:            bio.trim(),
-          avatarUrl:      avatarUrl,
+          // A set photo sends its URL; an empty one sends null so Remove actually clears it.
+          avatarUrl:      avatarUrl ? avatarUrl : null,
           avatarFocal:    avatarFocus,
           headerImageUrl: headerUrl,
           headerFocal:    headerFocus,
@@ -242,6 +243,7 @@ export function ProfileForm({
           onFocusChange={onAvatarFocusChange}
           aspect={1}
           rounded
+          noUrlPaste
           scopeKey="mine"
           disabled={isPending}
           label="Profile photo"
