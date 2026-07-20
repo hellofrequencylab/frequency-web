@@ -43,6 +43,7 @@ export function ImageUpload({
   loom = true,
   scopeKey,
   noUrlPaste = false,
+  kinds,
 }: {
   /** A public URL (mode 'url') or a storage path (mode 'path'). */
   value: string | null
@@ -70,6 +71,9 @@ export function ImageUpload({
   /** Hide the "or paste an image URL" fallback (url mode). Used where an external URL would be dropped by
    *  a server-side allowlist (e.g. the profile avatar), so the affordance can't silently no-op. */
   noUrlPaste?: boolean
+  /** PURPOSE scoping forwarded to the Loom picker — the asset families relevant here. e.g. a logo passes
+   *  ['image','icon'] so the popup offers both Images and Icons; a plain photo passes ['image']. */
+  kinds?: string[]
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
@@ -211,6 +215,7 @@ export function ImageUpload({
           onSelect={(url) => onChange(url)}
           title={`Choose ${label.toLowerCase()}`}
           scopeKey={scopeKey}
+          kinds={kinds}
         />
       )}
 

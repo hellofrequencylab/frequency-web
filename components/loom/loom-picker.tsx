@@ -13,20 +13,29 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { Dialog } from '@/components/ui/dialog'
 import {
-  Upload, Loader2, ImageIcon, Sparkles, Tag as TagIcon, Building2, User, Check, X, Search,
+  Upload, Loader2, ImageIcon, Sparkles, Tag as TagIcon, Building2, User, Check, X, Search, Shapes,
 } from 'lucide-react'
 import { loomScopes, loomScope as loomScopeAction, loomImages, uploadLoomImage, type LoomScope, type LoomPickerConfig } from '@/lib/loom/picker-actions'
+import { searchSiteIcons, type SiteIcon } from '@/lib/loom/site-icons'
 import type { LoomPickAsset } from '@/lib/library/store'
 
 // Fallback config until the resolved one loads (matches the registry defaults). The real config comes
 // from the element_settings master (role-gated), resolved server-side by loomScopes().
 const FALLBACK_CONFIG: LoomPickerConfig = {
-  tabs: { images: true, elements: true, tags: true, spaces: true, airwaves: false },
+  tabs: { images: true, icons: true, elements: true, tags: true, spaces: true, airwaves: false },
   aiCreate: false,
   defaultScope: 'mine',
 }
 
-type View = 'images' | 'elements' | 'tags'
+type View = 'images' | 'icons' | 'elements' | 'tags'
+
+// The library_assets `kind`s each browse view pulls. Purpose-scoping intersects a caller's `kinds`
+// with these, so a photo picker never surfaces icons/audio and a logo picker can offer both.
+const KINDS_FOR_VIEW: Record<'images' | 'icons' | 'elements', string[]> = {
+  images: ['image'],
+  icons: ['icon'],
+  elements: ['image', 'element'],
+}
 
 export function LoomPicker({
   open,
@@ -36,6 +45,7 @@ export function LoomPicker({
   multiple = false,
   title = 'Choose an image',
   scopeKey,
+  kinds,
 }: {
   open: boolean
   onClose: () => void
@@ -50,6 +60,11 @@ export function LoomPicker({
    *  left-rail scope switcher is hidden and only this scope's images/tags load (still authorized +
    *  fail-safe server-side). Undefined = the full multi-scope picker (My uploads + every operated Space). */
   scopeKey?: string
+  /** PURPOSE scoping — the asset families relevant to the surface that opened the picker. A profile
+   *  photo passes ['image'] (no Icons view); a logo passes ['image','icon']; an Airwaves field
+   *  ['audio','video']. Undefined = the full asset manager (every family the config allows). Each browse
+   *  view is only offered when the purpose includes its family, so a popup shows only relevant assets. */
+  kinds?: string[]
 }) {
   const [scopes, setScopes] = useState<LoomScope[]>([])
   const [config, setConfig] = useState<LoomPickerConfig>(FALLBACK_CONFIG)
@@ -58,6 +73,7 @@ export function LoomPicker({
   const [tag, setTag] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [assets, setAssets] = useState<LoomPickAsset[]>([])
+  const [siteIcons, setSiteIcons] = useState<SiteIcon[]>([])
   const [tags, setTags] = useState<string[]>([])
   const [loading, startLoad] = useTransition()
   const [uploading, setUploading] = useState(false)
@@ -107,29 +123,66 @@ export function LoomPicker({
     (opts: { scope: string; view: View; tag: string | null; q: string }) => {
       startLoad(async () => {
         setError(null)
-        const res = await loomImages(opts.scope, {
-          q: opts.q || undefined,
-          tag: opts.tag || undefined,
-          view: opts.view === 'elements' ? 'elements' : 'images',
-        })
+        const viewKinds = opts.view === 'icons' ? KINDS_FOR_VIEW.icons
+          : opts.view === 'elements' ? KINDS_FOR_VIEW.elements
+          : KINDS_FOR_VIEW.images
+        // The Icons view unions the scope's UPLOADED icons with the house SITE icons (Lucide/Phosphor/
+        // Tabler), each resolved to a self-contained SVG data URL server-side.
+        const [res, site] = await Promise.all([
+          loomImages(opts.scope, {
+            q: opts.q || undefined,
+            tag: opts.tag || undefined,
+            kinds: viewKinds,
+            generatedOnly: opts.view === 'elements',
+          }),
+          opts.view === 'icons' ? searchSiteIcons(opts.q, 60) : Promise.resolve([] as SiteIcon[]),
+        ])
         setAssets(res.assets)
         setTags(res.tags)
+        setSiteIcons(site)
       })
     },
     [],
   )
 
-  // Reload when scope / view / tag change (query has its own debounce below).
+  // Which browse views this popup offers = the role-gated config INTERSECTED with the caller's purpose
+  // (`kinds`). No purpose = the full asset manager (every family the config allows).
+  const wants = (fam: string) => !kinds || kinds.length === 0 || kinds.includes(fam)
+  const showImages = config.tabs.images && wants('image')
+  const showIcons = config.tabs.icons && wants('icon')
+  const showElements = config.tabs.elements && (wants('image') || wants('element'))
+  const showTags = config.tabs.tags && (showImages || showIcons)
+  const availableViews: View[] = [
+    ...(showImages ? ['images' as const] : []),
+    ...(showIcons ? ['icons' as const] : []),
+    ...(showElements ? ['elements' as const] : []),
+    ...(showTags ? ['tags' as const] : []),
+  ]
+  // The view actually shown: the user's selection when it is still offered, else the first available
+  // one. Derived (not stored), so a narrowed purpose never needs a setState-in-effect to correct it.
+  const activeView: View = availableViews.includes(view) ? view : (availableViews[0] ?? 'images')
+
+  // The grid's tiles, normalized across sources. The Icons view appends the house SITE icons (SVG data
+  // URLs) after any uploaded icons; every other view is just its assets. `contain` = pad + object-contain
+  // (glyphs), else object-cover (photos). Value is what gets picked/stored (a URL or a data URL).
+  const tiles: { key: string; value: string; label: string; src: string; contain: boolean; generated: boolean }[] = [
+    ...assets.map((a) => ({ key: a.id, value: a.url, label: a.title, src: a.url, contain: a.kind === 'icon', generated: a.generated })),
+    ...(activeView === 'icons'
+      ? siteIcons.map((s) => ({ key: `site:${s.name}`, value: s.dataUrl, label: s.label, src: s.dataUrl, contain: true, generated: false }))
+      : []),
+  ]
+
+  // Reload when scope / active view / tag change (query has its own debounce below).
   useEffect(() => {
     if (!open) return
-    refresh({ scope, view, tag, q: query })
+    refresh({ scope, view: activeView, tag, q: query })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, scope, view, tag])
+  }, [open, scope, activeView, tag])
 
   // Debounced text search.
   useEffect(() => {
     if (!open) return
-    const t = setTimeout(() => refresh({ scope, view, tag, q: query }), 300)
+    const t = setTimeout(() => refresh({ scope, view: activeView, tag, q: query }), 300)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query])
@@ -148,7 +201,7 @@ export function LoomPicker({
         if ('error' in res) { setError(res.error); continue }
         if (!firstUrl) firstUrl = res.url
         setAssets((prev) => [
-          { id: res.id, title: file.name, url: res.url, alt: null, generated: false, tags: [] },
+          { id: res.id, title: file.name, url: res.url, alt: null, kind: 'image', generated: false, tags: [] },
           ...prev.filter((a) => a.id !== res.id),
         ])
       }
@@ -188,18 +241,23 @@ export function LoomPicker({
           <aside className="w-48 shrink-0 space-y-3 overflow-y-auto border-r border-border p-3">
             <div className="space-y-0.5">
               <p className="px-2.5 pb-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Browse</p>
-              {config.tabs.images && (
-                <button type="button" onClick={() => { setView('images'); setTag(null) }} className={`${rail} ${view === 'images' && !tag ? railOn : railOff}`}>
+              {showImages && (
+                <button type="button" onClick={() => { setView('images'); setTag(null) }} className={`${rail} ${activeView === 'images' && !tag ? railOn : railOff}`}>
                   <ImageIcon className="h-4 w-4 shrink-0" /> Images
                 </button>
               )}
-              {config.tabs.elements && (
-                <button type="button" onClick={() => { setView('elements'); setTag(null) }} className={`${rail} ${view === 'elements' ? railOn : railOff}`}>
+              {showIcons && (
+                <button type="button" onClick={() => { setView('icons'); setTag(null) }} className={`${rail} ${activeView === 'icons' ? railOn : railOff}`}>
+                  <Shapes className="h-4 w-4 shrink-0" /> Icons
+                </button>
+              )}
+              {showElements && (
+                <button type="button" onClick={() => { setView('elements'); setTag(null) }} className={`${rail} ${activeView === 'elements' ? railOn : railOff}`}>
                   <Sparkles className="h-4 w-4 shrink-0" /> Elements
                 </button>
               )}
-              {config.tabs.tags && (
-                <button type="button" onClick={() => setView('tags')} className={`${rail} ${view === 'tags' ? railOn : railOff}`}>
+              {showTags && (
+                <button type="button" onClick={() => setView('tags')} className={`${rail} ${activeView === 'tags' ? railOn : railOff}`}>
                   <TagIcon className="h-4 w-4 shrink-0" /> Tags
                 </button>
               )}
@@ -217,7 +275,7 @@ export function LoomPicker({
                   <button
                     key={s.key}
                     type="button"
-                    onClick={() => { setScope(s.key); setTag(null); if (view === 'tags') setView('images') }}
+                    onClick={() => { setScope(s.key); setTag(null); if (activeView === 'tags') setView('images') }}
                     className={`${rail} ${on ? railOn : railOff}`}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
@@ -273,7 +331,7 @@ export function LoomPicker({
 
             {/* Body */}
             <div className="min-h-0 flex-1 overflow-y-auto p-3">
-              {view === 'tags' ? (
+              {activeView === 'tags' ? (
                 <div>
                   {tags.length === 0 ? (
                     <p className="py-8 text-center text-sm text-subtle">No tags yet in this library.</p>
@@ -302,31 +360,36 @@ export function LoomPicker({
                       <button type="button" onClick={() => setTag(null)} className="text-subtle hover:text-text">Clear</button>
                     </div>
                   )}
-                  {view === 'elements' && (
+                  {activeView === 'elements' && (
                     <p className="mb-2 text-2xs text-subtle">Elements are images created with AI. Upload generated art here, or generate new Elements (coming soon).</p>
+                  )}
+                  {activeView === 'icons' && (
+                    <p className="mb-2 text-2xs text-subtle">Site icons plus any you upload. Search by name, or drop a new icon above.</p>
                   )}
                   {loading ? (
                     <p className="flex items-center justify-center gap-2 py-10 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading</p>
-                  ) : assets.length === 0 ? (
+                  ) : tiles.length === 0 ? (
                     <p className="py-10 text-center text-sm text-subtle">
-                      {view === 'elements' ? 'No AI-created images here yet.' : 'Nothing here yet. Upload an image to get started.'}
+                      {activeView === 'elements' ? 'No AI-created images here yet.'
+                        : activeView === 'icons' ? 'No icons here yet. Upload one above, or search the site icons.'
+                        : 'Nothing here yet. Upload an image to get started.'}
                     </p>
                   ) : (
                     <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                      {assets.map((a) => {
-                        const on = multiple && selected.includes(a.url)
+                      {tiles.map((t) => {
+                        const on = multiple && selected.includes(t.value)
                         return (
-                          <li key={a.id}>
+                          <li key={t.key}>
                             <button
                               type="button"
-                              onClick={() => pick(a.url)}
-                              title={a.title}
+                              onClick={() => pick(t.value)}
+                              title={t.label}
                               aria-pressed={multiple ? on : undefined}
-                              className={`group relative block aspect-square w-full overflow-hidden rounded-xl border bg-canvas outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${on ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-primary'}`}
+                              className={`group relative block aspect-square w-full overflow-hidden rounded-xl border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${t.contain ? 'bg-surface' : 'bg-canvas'} ${on ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-primary'}`}
                             >
-                              {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset on a user-controlled Storage host, not a configured next/image domain */}
-                              <img src={a.url} alt={a.alt ?? ''} loading="lazy" className="h-full w-full object-cover" />
-                              {a.generated && (
+                              {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset URL or an inline SVG data URL, not a configured next/image domain */}
+                              <img src={t.src} alt={t.label} loading="lazy" className={`h-full w-full ${t.contain ? 'object-contain p-3' : 'object-cover'}`} />
+                              {t.generated && (
                                 <span className="absolute left-1 top-1 inline-flex items-center gap-0.5 rounded-full bg-canvas/90 px-1.5 py-0.5 text-2xs font-semibold text-primary-strong shadow-sm">
                                   <Sparkles className="h-2.5 w-2.5" /> AI
                                 </span>

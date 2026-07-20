@@ -19,6 +19,7 @@ function builder(table: string) {
     select: () => api,
     eq: () => api,
     neq: () => api,
+    in: () => api,
     or: (expr: string) => {
       call.ors.push(expr)
       return api
@@ -38,7 +39,9 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ from: (t: string) => builder(t) }),
 }))
 
-import { searchSpaceLibraryImages, insertSpaceLibraryImage } from './store'
+import { searchSpaceLibraryImages, insertSpaceLibraryImage, listLoomScopeImages } from './store'
+
+const PROFILE_A = 'bbbbbbbb-0000-4000-b000-00000000000b'
 
 beforeEach(() => {
   calls.length = 0
@@ -83,5 +86,34 @@ describe('insertSpaceLibraryImage writes to the SPACE, not root/public', () => {
     expect(ins.kind).toBe('image')
     // Never public / never root-shared.
     expect(ins.visibility).not.toBe('public')
+  })
+
+  it('stamps the provenance `source` when given, and omits it when not', async () => {
+    await insertSpaceLibraryImage({
+      spaceId: SPACE_A, title: 'seed', slug: 'seed-1', storageBucket: 'library-media',
+      storagePath: `${SPACE_A}/s.png`, url: 'https://cdn/s.png', mime: 'image/png', bytes: 1, source: 'seed',
+    })
+    expect(calls.find((c) => c.insert)!.insert!.source).toBe('seed')
+
+    calls.length = 0
+    await insertSpaceLibraryImage({
+      spaceId: SPACE_A, title: 'u', slug: 'u-1', storageBucket: 'library-media',
+      storagePath: `${SPACE_A}/u.png`, url: 'https://cdn/u.png', mime: 'image/png', bytes: 1,
+    })
+    expect('source' in calls.find((c) => c.insert)!.insert!).toBe(false)
+  })
+})
+
+describe('listLoomScopeImages restricts the PERSONAL scope to genuine uploads', () => {
+  it('adds the source=upload OR source is null filter for a createdBy (My uploads) scope', async () => {
+    await listLoomScopeImages({ createdBy: PROFILE_A })
+    const q = calls.find((c) => c.table === 'library_assets')!
+    expect(q.ors.some((o) => o.includes('source.eq.upload') && o.includes('source.is.null'))).toBe(true)
+  })
+
+  it('does NOT apply the source filter to a space-scoped folder (all of the space is shown)', async () => {
+    await listLoomScopeImages({ spaceId: SPACE_A })
+    const q = calls.find((c) => c.table === 'library_assets')!
+    expect(q.ors.some((o) => o.includes('source.'))).toBe(false)
   })
 })

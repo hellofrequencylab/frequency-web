@@ -39,13 +39,13 @@ export interface LoomScope {
 /** The Loom picker's resolved config for THIS viewer (from the element_settings master, role-gated).
  *  The picker honors it: which tabs render, whether AI Create shows, which scope it opens on. */
 export interface LoomPickerConfig {
-  tabs: { images: boolean; elements: boolean; tags: boolean; spaces: boolean; airwaves: boolean }
+  tabs: { images: boolean; icons: boolean; elements: boolean; tags: boolean; spaces: boolean; airwaves: boolean }
   aiCreate: boolean
   defaultScope: 'mine' | 'space'
 }
 
 const DEFAULT_LOOM_CONFIG: LoomPickerConfig = {
-  tabs: { images: true, elements: true, tags: true, spaces: true, airwaves: false },
+  tabs: { images: true, icons: true, elements: true, tags: true, spaces: true, airwaves: false },
   aiCreate: false,
   defaultScope: 'mine',
 }
@@ -66,6 +66,7 @@ async function resolveLoomConfig(
   return {
     tabs: {
       images: on('tab.images'),
+      icons: on('tab.icons'),
       elements: on('tab.elements'),
       tags: on('tab.tags'),
       spaces: on('tab.spaces'),
@@ -148,15 +149,18 @@ async function resolveScope(
  *  only AI-generated images. Gated + FAIL-SAFE. */
 export async function loomImages(
   scopeKey: string,
-  opts: { q?: string; tag?: string; view?: 'images' | 'elements' } = {},
+  opts: { q?: string; tag?: string; kinds?: string[]; generatedOnly?: boolean } = {},
 ): Promise<{ assets: LoomPickAsset[]; tags: string[] }> {
   const caller = await getCallerProfile()
   if (!caller) return { assets: [], tags: [] }
   const scope = await resolveScope(caller.id, scopeKey)
   if (!scope) return { assets: [], tags: [] }
+  // The asset families this view wants (purpose-scoped): the picker passes ['image'] for photos,
+  // ['icon'] for the Icons view, ['image','element'] + generatedOnly for Elements, etc.
+  const kinds = opts.kinds && opts.kinds.length ? opts.kinds : ['image']
   const [assets, tags] = await Promise.all([
-    listLoomScopeImages(scope, { q: opts.q, tag: opts.tag, generatedOnly: opts.view === 'elements' }),
-    listLoomScopeTags(scope),
+    listLoomScopeImages(scope, { q: opts.q, tag: opts.tag, kinds, generatedOnly: opts.generatedOnly }),
+    listLoomScopeTags(scope, kinds),
   ])
   return { assets, tags }
 }
@@ -213,6 +217,7 @@ export async function uploadLoomImage(
     bytes: file.size,
     kind: 'image',
     createdBy: caller.id,
+    source: 'upload',
   })
   if (!id) {
     await admin.storage.from(target.bucket).remove([path])

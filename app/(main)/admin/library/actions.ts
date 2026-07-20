@@ -55,6 +55,7 @@ export async function uploadLibraryImage(
     kind: target.kind,
     title: rawTitle || base,
     slug,
+    source: 'curated',
     status: 'approved',
     visibility: 'public',
     storage_bucket: target.bucket,

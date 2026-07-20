@@ -275,6 +275,10 @@ export async function insertSpaceLibraryImage(input: {
    *  in any context, is in my Loom"). Set on every picker upload so a person's own assets resolve across
    *  spaces; omitted for legacy callers (the column stays null). */
   createdBy?: string | null
+  /** Provenance (library_assets.source): 'upload' for a genuine member upload, 'seed'/'import' for
+   *  importer content, 'event-claim' for images that arrived with a claimed event. Drives the Loom
+   *  "My uploads" filter (only real uploads surface). Omitted = NULL = treated as a real upload. */
+  source?: 'upload' | 'seed' | 'import' | 'event-claim' | 'recraft' | 'vera' | 'generated' | 'curated' | null
 }): Promise<string | null> {
   const { data, error } = await db()
     .from('library_assets')
@@ -291,6 +295,7 @@ export async function insertSpaceLibraryImage(input: {
       mime: input.mime,
       bytes: input.bytes,
       ...(input.createdBy ? { created_by: input.createdBy } : {}),
+      ...(input.source ? { source: input.source } : {}),
     })
     .select('id')
     .maybeSingle()
@@ -298,9 +303,10 @@ export async function insertSpaceLibraryImage(input: {
   return (data as { id?: unknown } | null)?.id ? String((data as { id: unknown }).id) : null
 }
 
-/** One pickable Loom asset for the universal image picker: the served URL + the label + whether it was
+/** One pickable Loom asset for the universal image picker: the served URL + the label + its `kind`
+ *  (image | icon | element | …, so the picker can render/scope by family) + whether it was
  *  AI-generated (an "Element") + its tags (for the Tags facet). */
-export type LoomPickAsset = { id: string; title: string; url: string; alt: string | null; generated: boolean; tags: string[] }
+export type LoomPickAsset = { id: string; title: string; url: string; alt: string | null; kind: string; generated: boolean; tags: string[] }
 
 /** Shape a raw library_assets row into a LoomPickAsset. AI-generated ("Element") is derived from the
  *  Recraft/Vera provenance the generators stamp (tags include 'generated', or config.source is set). */
@@ -313,6 +319,7 @@ function toPickAsset(r: Record<string, unknown>): LoomPickAsset {
     title: String(r.title ?? '') || 'Untitled',
     url: String(r.url ?? ''),
     alt: (r.alt as string | null) ?? null,
+    kind: String(r.kind ?? 'image'),
     generated,
     tags,
   }
@@ -323,15 +330,25 @@ function toPickAsset(r: Record<string, unknown>): LoomPickAsset {
  *  (`createdBy` = them, any space) or ONE space's own assets (`spaceId`). FAIL-SAFE to []. */
 export async function listLoomScopeImages(
   scope: { createdBy: string } | { spaceId: string },
-  opts: { q?: string; tag?: string; generatedOnly?: boolean; limit?: number } = {},
+  opts: { q?: string; tag?: string; kinds?: string[]; generatedOnly?: boolean; limit?: number } = {},
 ): Promise<LoomPickAsset[]> {
   try {
+    // The asset families this view wants (purpose-scoped popups): a profile-photo picker asks for
+    // ['image'], a logo picker ['image','icon'], an Airwaves field ['audio','video']. Default: images.
+    const kinds = opts.kinds && opts.kinds.length ? opts.kinds : ['image']
     let query = db()
       .from('library_assets')
-      .select('id, title, url, alt, tags, config')
-      .eq('kind', 'image')
+      .select('id, title, url, alt, kind, tags, config')
+      .in('kind', kinds)
       .neq('status', 'archived')
-    query = 'createdBy' in scope ? query.eq('created_by', scope.createdBy) : query.eq('space_id', scope.spaceId)
+    if ('createdBy' in scope) {
+      // Personal Loom ("My uploads") = GENUINE uploads only. Seeded/imported photos, AI-generated art,
+      // and images that arrived with a claimed event all carry a non-upload `source`, so they never
+      // pollute a member's own uploads. NULL = legacy/ambiguous, treated as a real upload (shown).
+      query = query.eq('created_by', scope.createdBy).or('source.eq.upload,source.is.null')
+    } else {
+      query = query.eq('space_id', scope.spaceId)
+    }
     const text = (opts.q ?? '').replace(/[,()*]/g, ' ').trim()
     if (text) query = query.or(`title.ilike.%${text}%,description.ilike.%${text}%,category.ilike.%${text}%`)
     if (opts.tag) query = query.contains('tags', [opts.tag])
@@ -346,10 +363,19 @@ export async function listLoomScopeImages(
 
 /** The distinct image TAGS present in a Loom scope (busiest first), for the picker's Tags facet.
  *  FAIL-SAFE to []. */
-export async function listLoomScopeTags(scope: { createdBy: string } | { spaceId: string }): Promise<string[]> {
+export async function listLoomScopeTags(
+  scope: { createdBy: string } | { spaceId: string },
+  kinds: string[] = ['image'],
+): Promise<string[]> {
   try {
-    let query = db().from('library_assets').select('tags').eq('kind', 'image').neq('status', 'archived')
-    query = 'createdBy' in scope ? query.eq('created_by', scope.createdBy) : query.eq('space_id', scope.spaceId)
+    const wanted = kinds.length ? kinds : ['image']
+    let query = db().from('library_assets').select('tags').in('kind', wanted).neq('status', 'archived')
+    if ('createdBy' in scope) {
+      // Match listLoomScopeImages: the personal Tags facet counts only genuine uploads.
+      query = query.eq('created_by', scope.createdBy).or('source.eq.upload,source.is.null')
+    } else {
+      query = query.eq('space_id', scope.spaceId)
+    }
     const { data } = await query.limit(2000)
     const counts = new Map<string, number>()
     for (const r of (data as Array<{ tags: unknown }> | null) ?? []) {

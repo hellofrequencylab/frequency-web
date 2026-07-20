@@ -186,9 +186,11 @@ export function SpaceSettingsForm({
                 saveImage({ brandLogoUrl: v })
               }}
               label="Logo"
-              hint="Your profile image. A square reads best."
+              hint="Your profile image. Opens the Loom to pick a photo or an icon, or upload your own. A square reads best."
               folder="space-logos"
               disabled={readOnly}
+              kinds={['image', 'icon']}
+              noUrlPaste
               uploadFn={(file) => {
                 const fd = new FormData()
                 fd.append('file', file)

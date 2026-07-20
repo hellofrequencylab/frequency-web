@@ -97,6 +97,7 @@ export async function uploadEmailLoomImage(
       bytes: file.size,
       // Stamp the uploader so this asset shows in their personal Loom ("My uploads").
       createdBy: (await getCallerProfile())?.id ?? null,
+      source: 'upload',
     })
     if (!id) {
       // Roll back the orphaned file so a failed insert doesn't leave litter in storage.
