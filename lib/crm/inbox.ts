@@ -12,6 +12,7 @@
 // call site (the Studio surface / the signature-verified webhook), exactly like the rest of the CRM.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { escapeLike } from '@/lib/search-sanitize'
 import {
   listContactInteractions,
   recordContactInteraction,
@@ -364,7 +365,9 @@ async function matchContactByEmail(email: string): Promise<ContactSendTarget | n
     const { data, error } = await db
       .from('contacts')
       .select('id, email, profile_id, space_id, created_at')
-      .ilike('email', needle)
+      // escapeLike: `_`/`%` in an email are ILIKE wildcards — an inbound reply from `a_b@x.com` must not
+      // bind to `axb@x.com` (wrong contact's timeline + wrong owner notified).
+      .ilike('email', escapeLike(needle))
       .order('created_at', { ascending: false })
       .limit(1)
     if (error || !data || data.length === 0) return null

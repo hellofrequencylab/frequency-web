@@ -12,6 +12,7 @@
 // an all-zero stat block on any error, so the card never breaks on a stats miss.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { escapeLike } from '@/lib/search-sanitize'
 import type { ContactInteraction } from './interactions'
 
 /** A minimal email_events row shape for the aggregator (event_type is all we count on). */
@@ -149,7 +150,7 @@ export async function getContactEngagementStats(
         ? db.from('contact_interactions').select('channel, direction, occurred_at').in('subject_id', ids).limit(2000)
         : Promise.resolve({ data: [], error: null }),
       needle
-        ? db.from('email_events').select('event_type, created_at').ilike('email', needle).limit(2000)
+        ? db.from('email_events').select('event_type, created_at').ilike('email', escapeLike(needle)).limit(2000)
         : Promise.resolve({ data: [], error: null }),
     ])
 

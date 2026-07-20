@@ -14,6 +14,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { cityFromMeta } from '@/lib/crm/contact-fields'
+import { escapeLike } from '@/lib/search-sanitize'
 
 function db() {
   return createAdminClient()
@@ -172,7 +173,9 @@ async function loadCaptures(email: string): Promise<Capture[]> {
     .select(
       'id, owner_id, source, visibility, status, display_name, email, phone, title, company, city, invited_at, created_at',
     )
-    .ilike('email', email)
+    // escapeLike: an email local-part can contain `_` / `%`, which are ILIKE wildcards — without escaping,
+    // `john_doe@x.com` would also match `johnXdoe@x.com` and merge a DIFFERENT person's captures.
+    .ilike('email', escapeLike(email))
     .order('created_at', { ascending: false })
   const rows = (data ?? []) as Record<string, unknown>[]
   if (rows.length === 0) return []

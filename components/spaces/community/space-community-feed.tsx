@@ -179,7 +179,7 @@ function JoinPrompt({ spaceId, brandName, signedIn }: { spaceId: string; brandNa
         <FollowSpaceButton spaceId={spaceId} spaceName={brandName} initialFollowing={false} />
       ) : (
         <Link
-          href="/login"
+          href="/sign-in"
           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           Sign in
