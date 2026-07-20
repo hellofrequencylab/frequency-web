@@ -38,6 +38,7 @@ export async function SpaceMemberViewer({ spaceId, slug }: { spaceId: string; sl
       members={members}
       loadDetail={loadSpaceMemberDetail.bind(null, slug)}
       detailVariant="crm"
+      messageScope={{ spaceId, slug }}
       defaultView="list"
       pageSize={24}
       sortOptions={MEMBER_SORT_OPTIONS}

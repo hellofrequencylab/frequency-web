@@ -52,11 +52,31 @@ export interface SpaceEmailStats {
   complained: number
   suppressed: number
   failed: number
+  /** DISTINCT sends that were OPENED at least once (a person reloading an email counts once), from
+   *  space_email_events. 0 until the tracking pixel + endpoints are live and events accrue. */
+  opened: number
+  /** DISTINCT sends that had at least one tracked link CLICKED, from space_email_events. */
+  clicked: number
   /** bounced / sent, a fraction (0 when nothing was sent). */
   bounceRate: number
   /** complained / sent, a fraction (0 when nothing was sent). The anti-spam health signal; the
    *  panel flags it when it exceeds 0.1% (0.001). */
   complaintRate: number
+  /** opened / delivered, a fraction (0 when nothing was delivered). Engagement, not deliverability:
+   *  the denominator is `delivered` (a delivery-confirmed send), so it needs the Resend delivery
+   *  webhook to move rows to 'delivered'; it reads 0 while every send is still 'sent'. */
+  openRate: number
+  /** clicked / delivered, a fraction (0 when nothing was delivered). */
+  clickRate: number
+}
+
+/** Per-contact engagement rollup for the Community Resonance member detail: how many emails a person was
+ *  sent, and how many they opened / clicked / replied to. All whole numbers, all 0 for an unknown address. */
+export interface ContactEngagement {
+  sent: number
+  opened: number
+  clicked: number
+  replied: number
 }
 
 /** One effective suppression for a Space (its own row, or a global one that affects it). */
@@ -88,9 +108,16 @@ const ZERO_STATS: SpaceEmailStats = {
   complained: 0,
   suppressed: 0,
   failed: 0,
+  opened: 0,
+  clicked: 0,
   bounceRate: 0,
   complaintRate: 0,
+  openRate: 0,
+  clickRate: 0,
 }
+
+// Hard cap on how many addresses a single per-contact engagement read will resolve at once.
+const MAX_ENGAGEMENT_EMAILS = 500
 
 // Hard cap so a list read can never pull an unbounded number of rows.
 const DEFAULT_LIST_LIMIT = 50
@@ -131,13 +158,25 @@ type SuppressionRow = {
   reason: string | null
   created_at: string
 }
+type EventRow = {
+  send_id: string | null
+  contact_email: string | null
+  kind: string
+}
 
 type SendQuery = {
   select: (cols: string) => SendQuery
   eq: (col: string, val: string) => SendQuery
+  in: (col: string, vals: string[]) => SendQuery
   order: (col: string, opts: { ascending: boolean }) => SendQuery
   limit: (n: number) => SendQuery
   then: (resolve: (r: { data: SendRow[] | null; error: unknown }) => unknown) => Promise<unknown>
+}
+type EventQuery = {
+  select: (cols: string) => EventQuery
+  eq: (col: string, val: string) => EventQuery
+  in: (col: string, vals: string[]) => EventQuery
+  then: (resolve: (r: { data: EventRow[] | null; error: unknown }) => unknown) => Promise<unknown>
 }
 type SuppressionQuery = {
   select: (cols: string) => SuppressionQuery
@@ -158,6 +197,10 @@ function sendsTable(): SendQuery {
 function suppressionsTable(): SuppressionQuery {
   const dbc = createAdminClient() as unknown as { from: (t: string) => SuppressionQuery }
   return dbc.from('email_suppressions')
+}
+function eventsTable(): EventQuery {
+  const dbc = createAdminClient() as unknown as { from: (t: string) => EventQuery }
+  return dbc.from('space_email_events')
 }
 
 const SEND_COLS = 'id, space_id, email, status, error, created_at'
@@ -222,6 +265,11 @@ export async function getSpaceEmailStats(spaceId: string): Promise<SpaceEmailSta
     const attempted =
       counts.sent + counts.delivered + counts.bounced + counts.complained + counts.failed
 
+    // ENGAGEMENT: DISTINCT sends opened / clicked, from space_email_events. Counting distinct send_ids
+    // (not raw events) means one recipient reloading an email or clicking twice counts once. Best-effort
+    // + fail-safe: on any error engagement reads 0, so the deliverability snapshot still renders.
+    const { opened, clicked } = await countEngagement(spaceId)
+
     return {
       sent: attempted,
       delivered: counts.delivered,
@@ -229,12 +277,121 @@ export async function getSpaceEmailStats(spaceId: string): Promise<SpaceEmailSta
       complained: counts.complained,
       suppressed: counts.suppressed,
       failed: counts.failed,
+      opened,
+      clicked,
       bounceRate: attempted > 0 ? counts.bounced / attempted : 0,
       complaintRate: attempted > 0 ? counts.complained / attempted : 0,
+      // Engagement rates are over DELIVERED (a delivery-confirmed send), per the analytics contract.
+      // 0 when nothing was delivered (never a divide-by-zero).
+      openRate: counts.delivered > 0 ? opened / counts.delivered : 0,
+      clickRate: counts.delivered > 0 ? clicked / counts.delivered : 0,
     }
   } catch {
     return ZERO_STATS
   }
+}
+
+/** Count DISTINCT sends opened / clicked for a Space over its space_email_events. Best-effort + fail-safe
+ *  to { 0, 0 } on any error; the caller has already gated authz. */
+async function countEngagement(spaceId: string): Promise<{ opened: number; clicked: number }> {
+  try {
+    const { data, error } = await eventsTable().select('send_id, kind').eq('space_id', spaceId)
+    if (error || !data) return { opened: 0, clicked: 0 }
+    const openSends = new Set<string>()
+    const clickSends = new Set<string>()
+    for (const e of data) {
+      if (!e.send_id) continue
+      if (e.kind === 'open') openSends.add(e.send_id)
+      else if (e.kind === 'click') clickSends.add(e.send_id)
+    }
+    return { opened: openSends.size, clicked: clickSends.size }
+  } catch {
+    return { opened: 0, clicked: 0 }
+  }
+}
+
+/**
+ * Per-contact engagement for the Community Resonance member detail: for each address, how many emails it
+ * was SENT (attempted sends), plus DISTINCT sends it OPENED / CLICKED and the count of REPLIES. Gated on
+ * canEditProfile (or a staff janitor preview). Filtered on space_id, so another Space's engagement can
+ * never leak. FAIL-SAFE to an empty map for an unauthorized caller, a missing table, or any error; a
+ * requested address with no activity maps to all-zeros. `emails` is normalized (lowercased, de-duped)
+ * and capped so a caller cannot request an unbounded IN list.
+ */
+export async function getSpaceContactEngagement(
+  spaceId: string,
+  emails: string[],
+): Promise<Map<string, ContactEngagement>> {
+  const result = new Map<string, ContactEngagement>()
+  if (!spaceId || !Array.isArray(emails) || emails.length === 0) return result
+  if (!(await canReadSpaceEmail(spaceId))) return result
+
+  const normalized = [
+    ...new Set(emails.map((e) => (typeof e === 'string' ? e.trim().toLowerCase() : '')).filter(Boolean)),
+  ].slice(0, MAX_ENGAGEMENT_EMAILS)
+  if (normalized.length === 0) return result
+  for (const e of normalized) result.set(e, { sent: 0, opened: 0, clicked: 0, replied: 0 })
+
+  try {
+    // SENT per address: attempted sends (reached the provider) from this Space's ledger.
+    const { data: sends } = await sendsTable().select('email, status').eq('space_id', spaceId).in('email', normalized)
+    if (sends) {
+      for (const s of sends) {
+        const email = typeof s.email === 'string' ? s.email.trim().toLowerCase() : ''
+        const rec = email ? result.get(email) : undefined
+        if (rec && isAttempted(s.status)) rec.sent += 1
+      }
+    }
+
+    // OPEN / CLICK (distinct per send) + REPLY (count) per address from the engagement log.
+    const { data: events } = await eventsTable()
+      .select('contact_email, send_id, kind')
+      .eq('space_id', spaceId)
+      .in('contact_email', normalized)
+    if (events) {
+      const openSeen = new Map<string, Set<string>>()
+      const clickSeen = new Map<string, Set<string>>()
+      for (const ev of events) {
+        const email = typeof ev.contact_email === 'string' ? ev.contact_email.trim().toLowerCase() : ''
+        const rec = email ? result.get(email) : undefined
+        if (!rec || !email) continue
+        if (ev.kind === 'open') {
+          const set = openSeen.get(email) ?? new Set<string>()
+          if (ev.send_id) set.add(ev.send_id)
+          openSeen.set(email, set)
+        } else if (ev.kind === 'click') {
+          const set = clickSeen.get(email) ?? new Set<string>()
+          if (ev.send_id) set.add(ev.send_id)
+          clickSeen.set(email, set)
+        } else if (ev.kind === 'reply') {
+          rec.replied += 1
+        }
+      }
+      for (const [email, set] of openSeen) {
+        const rec = result.get(email)
+        if (rec) rec.opened = set.size
+      }
+      for (const [email, set] of clickSeen) {
+        const rec = result.get(email)
+        if (rec) rec.clicked = set.size
+      }
+    }
+  } catch {
+    // fall through to whatever was gathered (zeros on total failure).
+  }
+  return result
+}
+
+/** A send row that actually reached the provider (the SENT denominator): everything except still-queued
+ *  and pre-send suppressed. */
+function isAttempted(status: unknown): boolean {
+  return (
+    status === 'sent' ||
+    status === 'delivered' ||
+    status === 'bounced' ||
+    status === 'complained' ||
+    status === 'failed'
+  )
 }
 
 /**

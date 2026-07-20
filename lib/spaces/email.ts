@@ -30,6 +30,8 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { canEmailContact } from '@/lib/crm/contact-consent'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { mapResendEventToInteraction, resendIdempotencyKey, type ResendTimelineEventType } from './email-timeline'
+import { encodeSendToken, injectTracking } from './email-tracking'
+import { randomUUID } from 'crypto'
 
 // ── Tunables (documented v1 values) ─────────────────────────────────────────────────────────────
 
@@ -178,6 +180,10 @@ async function countTodaySends(spaceId: string): Promise<number> {
 /** Insert one outreach_sends ledger row. Service-role; swallows errors (logged) so a ledger write
  *  failure never throws into the send loop (the email already went; the row is best-effort). */
 async function recordSend(row: {
+  /** Optional explicit row id. The 'sent' path pre-generates the send id so a per-recipient tracking
+   *  token can be minted BEFORE the html is sent; passing it here keys the ledger row to that token so
+   *  space_email_events.send_id resolves. Omitted (DB default uuid) for suppressed/failed rows. */
+  id?: string
   spaceId: string
   campaignId?: string
   contactId?: string
@@ -192,6 +198,7 @@ async function recordSend(row: {
     }
     await db.from('outreach_sends').insert([
       {
+        ...(row.id ? { id: row.id } : {}),
         space_id: row.spaceId,
         campaign_id: row.campaignId ?? null,
         contact_id: row.contactId ?? null,
@@ -399,7 +406,20 @@ async function deliverSpaceCampaign(
     const headers = listUnsubscribeHeaders(unsubscribeUrl)
     // Personalize the body's unsubscribe link for THIS recipient (the header carries the same URL).
     // A body with no placeholder is sent unchanged, so this is safe for any html.
-    const personalizedHtml = html.split(SPACE_UNSUBSCRIBE_PLACEHOLDER).join(unsubscribeUrl)
+    let personalizedHtml = html.split(SPACE_UNSUBSCRIBE_PLACEHOLDER).join(unsubscribeUrl)
+
+    // ENGAGEMENT TRACKING (additive, FAIL-SAFE): pre-generate this send's ledger id so a per-recipient
+    // opaque token maps opens/clicks back to THIS exact row, then inject an open pixel + rewrite links
+    // through the click endpoint. ANY error here falls back to the ORIGINAL personalizedHtml and an
+    // untracked send — tracking must NEVER block or corrupt the email. The generated id is passed to
+    // recordSend so outreach_sends.id == the token's send id (space_email_events.send_id resolves).
+    const sendId = randomUUID()
+    try {
+      const token = encodeSendToken(sendId)
+      personalizedHtml = injectTracking(personalizedHtml, token, BASE_URL)
+    } catch {
+      // swallow — send the un-tracked html rather than fail the send.
+    }
 
     try {
       const { id } = await sendRawEmail({
@@ -418,6 +438,7 @@ async function deliverSpaceCampaign(
         // fresh countTodaySends would also count this row; this keeps the in-window check honest).
         liveSentToday++
         await recordSend({
+          id: sendId,
           spaceId,
           campaignId: input.campaignId,
           contactId: rec.contactId,

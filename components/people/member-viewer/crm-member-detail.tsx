@@ -29,7 +29,9 @@ import { getInitials, cn } from '@/lib/utils'
 // Type-only import: never pull the server-only network reader into the client bundle.
 import type { MemberNetwork, NetworkItem } from '@/lib/crm/member-network'
 import { MemberComposer } from '@/components/admin/crm/member-composer'
+import { SpaceMemberComposer } from '@/components/spaces/crm/space-member-composer'
 import { discardDraftIfEmpty } from '@/app/(main)/admin/email-studio/actions'
+import { discardSpaceEmailDraftIfEmpty } from '@/lib/spaces/email-drafts'
 import type { CrmMemberDetail } from './types'
 import type { MemberRole } from '@/lib/people/member-viewer'
 
@@ -204,8 +206,17 @@ function FullProfile({ detail }: { detail: CrmMemberDetail }) {
   )
 }
 
-/** The CRM master-detail pane. `detail` carries the compact profile fields plus the rich CRM fields. */
-export function CrmMemberDetailPane({ detail }: { detail: CrmMemberDetail }) {
+/** The CRM master-detail pane. `detail` carries the compact profile fields plus the rich CRM fields.
+ *  `messageScope` OPTIONALLY re-scopes the "Message Member" composer to a Space: when provided, the popup
+ *  renders the space-scoped composer (sends via the Space email path, searches only the Space's contacts)
+ *  instead of the platform admin composer. Undefined = the unchanged platform behavior. */
+export function CrmMemberDetailPane({
+  detail,
+  messageScope,
+}: {
+  detail: CrmMemberDetail
+  messageScope?: { spaceId: string; slug: string }
+}) {
   const [composeOpen, setComposeOpen] = useState(false)
   // The draft the popup is editing. Remembered across a close so reopening for the SAME member resumes
   // the saved draft. It never needs a manual reset: the viewer keys this pane by profileId, so selecting
@@ -213,11 +224,14 @@ export function CrmMemberDetailPane({ detail }: { detail: CrmMemberDetail }) {
   const [draftId, setDraftId] = useState<string | null>(null)
   // Close the compose popup, and discard the draft it minted IF it was never edited or sent — the popup
   // creates a draft on open, so abandoning it (open then close) would otherwise leak an empty campaign
-  // into the Email Studio list. discardDraftIfEmpty is a no-op for a resumable (edited) or sent draft.
+  // into the sends list. The discard is a no-op for a resumable (edited) or sent draft. In a Space the
+  // draft lives on the Space's own `campaigns` rows, so discard it through the space-scoped cleanup.
   const closeCompose = () => {
     setComposeOpen(false)
     const id = draftId
-    if (id) void discardDraftIfEmpty(id)
+    if (!id) return
+    if (messageScope) void discardSpaceEmailDraftIfEmpty(messageScope.spaceId, id)
+    else void discardDraftIfEmpty(id)
   }
   const contact = detail.contact
   const hasContact = !!(contact && (contact.email || contact.phone || contact.links?.length))
@@ -318,17 +332,31 @@ export function CrmMemberDetailPane({ detail }: { detail: CrmMemberDetail }) {
                 </button>
               </div>
               <div className="flex min-h-0 flex-1">
-                {/* CENTER — the full-size editor. */}
+                {/* CENTER — the full-size editor. In a Space this is the space-scoped composer (Space email
+                    path, Space contacts only); on the platform it is the unchanged admin composer. */}
                 <div className="min-w-0 flex-1 overflow-y-auto p-5">
-                  <MemberComposer
-                    profileId={detail.profileId}
-                    email={detail.email}
-                    displayName={detail.displayName}
-                    manages={composerManages}
-                    initialCampaignId={draftId ?? undefined}
-                    onDraftReady={setDraftId}
-                    onSent={() => setDraftId(null)}
-                  />
+                  {messageScope ? (
+                    <SpaceMemberComposer
+                      spaceId={messageScope.spaceId}
+                      slug={messageScope.slug}
+                      profileId={detail.profileId}
+                      email={detail.email}
+                      displayName={detail.displayName}
+                      initialCampaignId={draftId ?? undefined}
+                      onDraftReady={setDraftId}
+                      onSent={() => setDraftId(null)}
+                    />
+                  ) : (
+                    <MemberComposer
+                      profileId={detail.profileId}
+                      email={detail.email}
+                      displayName={detail.displayName}
+                      manages={composerManages}
+                      initialCampaignId={draftId ?? undefined}
+                      onDraftReady={setDraftId}
+                      onSent={() => setDraftId(null)}
+                    />
+                  )}
                 </div>
                 {/* RIGHT — editorial stats + threaded communications. */}
                 <ComposeContextRail detail={detail} />

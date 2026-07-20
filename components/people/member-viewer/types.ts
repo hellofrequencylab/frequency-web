@@ -121,4 +121,8 @@ export interface MemberViewerProps {
   onQueryChange?: (query: MemberQuery) => void
   /** Override the no-results / empty pane. */
   emptyState?: React.ReactNode
+  /** Re-scope the CRM pane's "Message Member" composer to a Space (detailVariant `crm` only). When set, the
+   *  composer sends via the SPACE email path and searches only that Space's contacts, with no crossover to
+   *  the platform CRM. Omit (default) = the unchanged platform composer. */
+  messageScope?: { spaceId: string; slug: string }
 }
