@@ -104,11 +104,24 @@ describe('insertSpaceLibraryImage writes to the SPACE, not root/public', () => {
   })
 })
 
-describe('listLoomScopeImages restricts the PERSONAL scope to genuine uploads', () => {
-  it('adds the source=upload OR source is null filter for a createdBy (My uploads) scope', async () => {
+describe('listLoomScopeImages: the OWNER scope spans my profile + owned spaces, hiding only seed placeholders', () => {
+  it('gates a createdBy (My uploads) scope to hide ONLY seed/import placeholders (NULL + uploads + event photos stay)', async () => {
     await listLoomScopeImages({ createdBy: PROFILE_A })
     const q = calls.find((c) => c.table === 'library_assets')!
-    expect(q.ors.some((o) => o.includes('source.eq.upload') && o.includes('source.is.null'))).toBe(true)
+    // The provenance gate is a positive allowlist over the source vocabulary: NULL + every source EXCEPT
+    // the importer's seed/import placeholders. So genuine uploads, event photos (event-claim), and legacy
+    // NULLs all stay visible; seed/import are the only ones held back (never appear in the allowlist).
+    const gate = q.ors.find((o) => o.includes('source.is.null') && o.includes('source.in.(upload'))
+    expect(gate).toBeTruthy()
+    expect(gate).toContain('event-claim')
+    expect(gate).not.toContain('seed')
+    expect(gate).not.toContain('import')
+  })
+
+  it('unions in the owner’s owned spaces when given (created_by = me OR space_id in my spaces)', async () => {
+    await listLoomScopeImages({ createdBy: PROFILE_A, spaceIds: [SPACE_A] })
+    const q = calls.find((c) => c.table === 'library_assets')!
+    expect(q.ors.some((o) => o.includes(`created_by.eq.${PROFILE_A}`) && o.includes(`space_id.in.(${SPACE_A})`))).toBe(true)
   })
 
   it('does NOT apply the source filter to a space-scoped folder (all of the space is shown)', async () => {
