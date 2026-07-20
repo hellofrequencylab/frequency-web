@@ -69,7 +69,11 @@ export function readProfileOverlayStyle(meta: unknown): ProfileOverlayStyle {
 export function readProfileOverlayColor(meta: unknown): string | null {
   if (meta && typeof meta === 'object') {
     const v = (meta as Record<string, unknown>).headerOverlayColor
-    if (typeof v === 'string' && v.trim()) return v.trim()
+    // Only ever return a strict hex color — the value is rendered into a CSS color-mix() on the public
+    // header, so a non-hex string (tampered/legacy) must never reach the style (CSS injection guard).
+    if (typeof v === 'string' && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(v.trim())) {
+      return v.trim()
+    }
   }
   return null
 }
@@ -81,9 +85,12 @@ export function writeProfileOverlay(meta: unknown, style: string, color: string 
   const s = (OVERLAY_STYLES as readonly string[]).includes(style) ? style : 'none'
   if (s === 'none') delete base.headerOverlayStyle
   else base.headerOverlayStyle = s
-  // Only a shadow/fade overlay carries a color; a trimmed non-empty value is kept, else the token default.
+  // Only a shadow/fade overlay carries a color, and it is STRICTLY a hex color. The value is rendered into
+  // a CSS `color-mix(...)` on the public header, so it must never be an arbitrary string a caller POSTed
+  // (that would be CSS injection). The native color input only ever yields #rrggbb; anything else is dropped.
   const c = (color ?? '').trim()
-  if (s !== 'none' && c) base.headerOverlayColor = c
+  const safe = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(c) ? c : ''
+  if (s !== 'none' && safe) base.headerOverlayColor = safe
   else delete base.headerOverlayColor
   return base
 }
