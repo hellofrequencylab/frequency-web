@@ -248,7 +248,7 @@ export function ProfileForm({
       <div>
         <label className={lbl}>Header overlay</label>
         <div className="flex flex-wrap gap-2">
-          {([['none', 'None'], ['shadow', 'Shadow'], ['fade', 'Fade']] as const).map(([v, label]) => {
+          {([['none', 'None'], ['shadow', 'Shade'], ['fade', 'Blend']] as const).map(([v, label]) => {
             const active = overlayStyle === v
             return (
               <button

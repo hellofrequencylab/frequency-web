@@ -159,7 +159,10 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   // The standardized `header` element (ADR-793), identity layout — the space-page treatment: the cover +
   // a background-aware icon chip + title + summary, with the Manage / author actions riding the image
   // (bottom-right). No breadcrumb under the cover. The "About this Journey" stats live in the body below.
-  const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } })
+  const oStyle = plan.header_overlay_style
+  const header = await resolveHeaderElement({
+    defaults: { layout: 'identity', height: 'standard', ...(oStyle === 'none' || oStyle === 'shadow' || oStyle === 'fade' ? { overlayStyle: oStyle } : {}) },
+  })
 
   return (
     // The framework "QR & Share" control (header actions) centers THIS Journey's cover in its share QR —

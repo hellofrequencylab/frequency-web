@@ -36,14 +36,20 @@ export function readCoverSize(preferences?: unknown): CoverSize {
 //   'blend'           — a gradient that fades to the PAGE background (canvas) so the photo melts into
 //                       the page; the overlaid identity uses the theme's own text tokens. Reads softer
 //                       and matches the page, at the cost of photo-dependent legibility.
+//   'none'            — no scrim; the clean photo, with a token text-shadow keeping the overlaid identity
+//                       legible (matches the profile/journey "None" overlay). Standardizes the three-way
+//                       None / Shade / Blend control across Spaces, Journeys, and Profiles.
 // Fail-safe to 'shade' for any missing/malformed value (matches the already-shipped behavior).
 
-export type CoverScrim = 'shade' | 'blend'
+export type CoverScrim = 'none' | 'shade' | 'blend'
+
+const COVER_SCRIMS: readonly CoverScrim[] = ['none', 'shade', 'blend']
 
 /** Read the operator's chosen Hero scrim off a raw preferences blob. Default-safe to 'shade'. PURE. */
 export function readCoverScrim(preferences: unknown): CoverScrim {
   if (!preferences || typeof preferences !== 'object' || Array.isArray(preferences)) return 'shade'
-  return (preferences as Record<string, unknown>).coverScrim === 'blend' ? 'blend' : 'shade'
+  const v = (preferences as Record<string, unknown>).coverScrim
+  return typeof v === 'string' && (COVER_SCRIMS as readonly string[]).includes(v) ? (v as CoverScrim) : 'shade'
 }
 
 /** Compute the next preferences blob for a scrim change. Non-destructive: only `coverScrim` is

@@ -51,6 +51,7 @@ const HERO_BUTTONS: { value: HeroButtonOrientation; label: string }[] = [
 
 // The two Hero cover-scrim treatments (a Space profile is always Hero, ADR-526). Compact buttons.
 const COVER_SCRIMS: { value: CoverScrim; label: string; tagline: string }[] = [
+  { value: 'none', label: 'None', tagline: 'A clean photo with no overlay.' },
   { value: 'shade', label: 'Shade', tagline: 'A soft dark fade so your name stays readable on any photo.' },
   { value: 'blend', label: 'Blend', tagline: 'The photo melts into the page. Best with a calm image.' },
 ]
@@ -370,8 +371,8 @@ export function SpaceBrandingForm({
 
         {/* Shade — the cover-scrim treatment over the header photo. */}
         <div className="space-y-2">
-          <Label className="block font-semibold">Shade</Label>
-          <div className="grid grid-cols-2 gap-2">
+          <Label className="block font-semibold">Overlay</Label>
+          <div className="grid grid-cols-3 gap-2">
             {COVER_SCRIMS.map((c) => {
               const active = scrim === c.value
               return (

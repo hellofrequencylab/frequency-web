@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Check, Camera, Eye, Layers, Lock, Sparkles, SlidersHorizontal, Save, Send, Loader2, ListChecks, Gem, Clock, BarChart3 } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
-import { IconAccentFace, IconGrid } from '@/components/studio/kit/studio-identity'
+import { IconAccentFace } from '@/components/studio/kit/studio-identity'
 import { DEFAULT_ACCENT, STUDIO_ACCENTS, accentColor } from '@/lib/studio/accents'
 import { saveJourneyMeta, setJourneyVisibility, adoptJourney, uploadJourneyCover } from '@/app/(main)/journeys/actions'
 import { createJourneyDraftAction } from '@/app/(main)/journeys/create-actions'
@@ -234,7 +234,9 @@ export function JourneyBuilder({
   const router = useRouter()
   const [, start] = useTransition()
   const [cover, setCover] = useState<string | null>(initialCover)
-  const [icon, setIcon] = useState(initialEmoji ?? 'compass')
+  // Icon is display-only now (the fallback face when there's no logo); the picker was removed (owner ask),
+  // so nothing sets it. The logo/profile image below is the editable identity mark.
+  const [icon] = useState(initialEmoji ?? 'compass')
   const [accent, setAccent] = useState(initialAccent ?? DEFAULT_ACCENT)
   const [iconOpen, setIconOpen] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -320,10 +322,7 @@ export function JourneyBuilder({
           </button>
           {iconOpen && (
             <div className="absolute left-0 top-[3.75rem] z-30 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-3 text-left shadow-xl">
-              <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Icon</p>
-              {/* Picking an icon closes the popover (clear commit). */}
-              <IconGrid value={icon} size="sm" onPick={(k) => { setIcon(k); meta({ emoji: k }); setIconOpen(false) }} />
-              <p className="mb-1.5 mt-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Color</p>
+              <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Color</p>
               <div className="flex flex-wrap gap-2">
                 {STUDIO_ACCENTS.map((a) => {
                   const on = accent === a.key
@@ -347,14 +346,15 @@ export function JourneyBuilder({
                   cover, so the small face + the cover band stay in sync: the upload sets BOTH the cover
                   banner (coverImage) AND the header leading chip (logoImage), so it truly "replaces the
                   icon" on the live header. The rail Settings module can set the two separately. */}
-              <p className="mb-1.5 mt-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Logo image</p>
+              <p className="mb-1.5 mt-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Logo or profile image</p>
               <ImageUpload
                 label="Upload an image"
                 value={cover}
                 onChange={(url) => { setCover(url ?? null); meta({ coverImage: url, logoImage: url }) }}
                 folder="journey-covers"
+                scopeKey="mine"
                 uploadFn={coverUpload}
-                hint="Used as the Journey's logo and cover. Replaces the icon."
+                hint="The Journey's leading mark and cover. Opens the Loom to pick an image, upload, or use an Element."
               />
             </div>
           )}

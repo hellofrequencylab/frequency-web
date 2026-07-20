@@ -9,7 +9,7 @@
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper, Trophy, Sparkles, RefreshCw, Video, MapPin, Users, Clock } from 'lucide-react'
-import { IconAccentFace, AccentPicker, IconGrid } from '@/components/studio/kit/studio-identity'
+import { AccentPicker } from '@/components/studio/kit/studio-identity'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { HeaderImageField } from '@/components/ui/header-image-field'
 import { DEFAULT_ACCENT } from '@/lib/studio/accents'
@@ -56,8 +56,11 @@ export interface JourneySettingsProps {
   initialCoverImage: string | null
   /** The saved cover HEADER focal point (CSS object-position "x% y%"). Null/absent = centered. */
   initialCoverFocus?: string | null
-  /** The Journey's logo / profile image (square), shown as the header's leading chip beside the icon. */
+  /** The Journey's logo / profile image (square), shown as the header's leading chip. */
   initialLogoImage?: string | null
+  /** Header overlay style ('none' | 'shadow' | 'fade', labeled None/Shade/Blend) + optional hex color. */
+  initialOverlayStyle?: string | null
+  initialOverlayColor?: string | null
   /** Vera's last rank-eligibility review, if this Journey has been published/reviewed. */
   initialReview: StoredVeraReview | null
   // Discovery + delivery attributes (ADR-302).
@@ -83,12 +86,13 @@ export function JourneySettings(props: JourneySettingsProps) {
       router.refresh()
     })
 
-  const [icon, setIcon] = useState(props.initialEmoji ?? 'compass')
   const [accent, setAccent] = useState(props.initialAccent ?? DEFAULT_ACCENT)
-  const [iconOpen, setIconOpen] = useState(false)
 
   const [coverImage, setCoverImage] = useState<string | null>(props.initialCoverImage)
   const [logoImage, setLogoImage] = useState<string | null>(props.initialLogoImage ?? null)
+  // Header OVERLAY — the shared None / Shade / Blend control (values none/shadow/fade), editable per Journey.
+  const [overlayStyle, setOverlayStyle] = useState(props.initialOverlayStyle || 'shadow')
+  const [overlayColor, setOverlayColor] = useState(props.initialOverlayColor || '')
 
   // HEADER FOCUS — where the cover sits in its cropped hero window (a CSS object-position). The SAME
   // reusable control the Space rail uses (ImageFocalPicker): the marker moves live while a drag DEBOUNCES
@@ -197,23 +201,12 @@ export function JourneySettings(props: JourneySettingsProps) {
         </div>
       )}
 
-      {/* Identity — icon, accent, title, subtitle. Hidden in the single-page editor (ADR-301),
-          which renders the icon/accent picker beside the title in the page header instead (so the
-          accent dots are never loose in the sidebar). */}
+      {/* Identity — title, subtitle, accent. The icon PICKER was removed (owner ask): the Journey's leading
+          mark is the logo/profile image below, uploaded through the Loom picker (which itself offers images,
+          uploads, and icon-style Elements). Hidden in the single-page editor (ADR-301). */}
       {!props.hideIdentity && (
-        <div className="flex items-start gap-3">
-          <div className="relative shrink-0">
-            <IconAccentFace icon={icon} accent={accent} size="md" onClick={() => setIconOpen((v) => !v)} />
-            {iconOpen && (
-              <div className="absolute left-0 top-[3.25rem] z-10 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-3 shadow-xl">
-                <IconGrid value={icon} size="sm" onPick={(k) => { setIcon(k); setIconOpen(false); meta({ emoji: k }) }} />
-              </div>
-            )}
-            <div className="mt-2 flex justify-center">
-              <AccentPicker accent={accent} onChange={(a) => { setAccent(a); meta({ accent: a }) }} />
-            </div>
-          </div>
-          <div className="min-w-0 flex-1">
+        <div className="space-y-3">
+          <div className="min-w-0">
             <input
               defaultValue={props.initialTitle}
               onBlur={(e) => meta({ title: e.target.value })}
@@ -229,6 +222,7 @@ export function JourneySettings(props: JourneySettingsProps) {
               className="mt-1 w-full bg-transparent text-sm text-muted outline-none placeholder:text-subtle"
             />
           </div>
+          <AccentPicker accent={accent} onChange={(a) => { setAccent(a); meta({ accent: a }) }} />
         </div>
       )}
 
@@ -255,7 +249,7 @@ export function JourneySettings(props: JourneySettingsProps) {
           />
           <div className="w-[11rem]">
             <ImageUpload
-              label="Logo image"
+              label="Logo or profile image"
               value={logoImage}
               onChange={(url) => {
                 setLogoImage(url)
@@ -263,8 +257,49 @@ export function JourneySettings(props: JourneySettingsProps) {
               }}
               folder="journey-logos"
               scopeKey="mine"
-              hint="Optional. A square logo or profile image beside the icon."
+              hint="The Journey's leading mark. Opens the Loom to pick an image, upload, or use an Element."
             />
+          </div>
+          {/* Header overlay — the shared None / Shade / Blend control (ADR-794). None keeps a clean photo,
+              Shade darkens it, Blend fades it into the page; Shade/Blend take a pickable color. Autosaves. */}
+          <div>
+            <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Header overlay</span>
+            <div className="flex flex-wrap gap-2">
+              {([['none', 'None'], ['shadow', 'Shade'], ['fade', 'Blend']] as const).map(([v, label]) => {
+                const active = overlayStyle === v
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => { setOverlayStyle(v); meta({ headerOverlayStyle: v }) }}
+                    aria-pressed={active}
+                    className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                      active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-canvas text-muted hover:border-border-strong'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+            {overlayStyle !== 'none' && (
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="color"
+                  aria-label="Overlay color"
+                  // token-ok: native color input requires a hex value (picker starting swatch, not UI chrome)
+                  value={overlayColor || (overlayStyle === 'shadow' ? '#111111' : '#fbf8f1')}
+                  onChange={(e) => { setOverlayColor(e.target.value); meta({ headerOverlayColor: e.target.value }) }}
+                  className="h-8 w-12 cursor-pointer rounded border border-border bg-surface"
+                />
+                <span className="text-xs text-subtle">Overlay color</span>
+                {overlayColor && (
+                  <button type="button" onClick={() => { setOverlayColor(''); meta({ headerOverlayColor: null }) }} className="text-xs text-subtle transition-colors hover:text-text">
+                    Reset
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
