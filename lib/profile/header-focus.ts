@@ -47,3 +47,43 @@ export function writeProfileAvatarFocus(meta: unknown, focus: string): Record<st
   else delete base.avatarFocal
   return base
 }
+
+// The member's HEADER OVERLAY (the `header` element's 3 styles, ADR-794) — editable per profile. Stored on
+// profiles.meta so it needs no column: `headerOverlayStyle` ('none' | 'shadow' | 'fade') + an optional
+// `headerOverlayColor` (a CSS color the operator picked for shadow/fade). Profiles default to 'none' (the
+// clean cover the owner asked for); an unset value === that default.
+export type ProfileOverlayStyle = 'none' | 'shadow' | 'fade'
+const OVERLAY_STYLES: readonly ProfileOverlayStyle[] = ['none', 'shadow', 'fade']
+
+/** Read the saved header overlay STYLE out of profiles.meta, defaulting to 'none' (the clean profile cover). */
+export function readProfileOverlayStyle(meta: unknown): ProfileOverlayStyle {
+  if (meta && typeof meta === 'object') {
+    const v = (meta as Record<string, unknown>).headerOverlayStyle
+    if (typeof v === 'string' && (OVERLAY_STYLES as readonly string[]).includes(v)) return v as ProfileOverlayStyle
+  }
+  return 'none'
+}
+
+/** Read the saved header overlay COLOR (a CSS color) out of profiles.meta, or null when unset (the token
+ *  default applies: ink for shadow, canvas for fade). */
+export function readProfileOverlayColor(meta: unknown): string | null {
+  if (meta && typeof meta === 'object') {
+    const v = (meta as Record<string, unknown>).headerOverlayColor
+    if (typeof v === 'string' && v.trim()) return v.trim()
+  }
+  return null
+}
+
+/** Merge a chosen overlay style + color into meta, dropping the keys at their defaults so meta stays sparse
+ *  (style 'none' and an empty color are the defaults). Preserves every other meta key. */
+export function writeProfileOverlay(meta: unknown, style: string, color: string | null): Record<string, unknown> {
+  const base = meta && typeof meta === 'object' ? { ...(meta as Record<string, unknown>) } : {}
+  const s = (OVERLAY_STYLES as readonly string[]).includes(style) ? style : 'none'
+  if (s === 'none') delete base.headerOverlayStyle
+  else base.headerOverlayStyle = s
+  // Only a shadow/fade overlay carries a color; a trimmed non-empty value is kept, else the token default.
+  const c = (color ?? '').trim()
+  if (s !== 'none' && c) base.headerOverlayColor = c
+  else delete base.headerOverlayColor
+  return base
+}

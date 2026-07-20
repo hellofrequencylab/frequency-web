@@ -10,7 +10,7 @@ import { shortLinkUrl } from '@/lib/qr/links'
 import { ProfileForm } from './profile-form'
 import { ProfileQrCard } from '@/components/settings/profile-qr-card'
 import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spotlight-flags'
-import { readProfileHeaderFocus, readProfileAvatarFocus } from '@/lib/profile/header-focus'
+import { readProfileHeaderFocus, readProfileAvatarFocus, readProfileOverlayStyle, readProfileOverlayColor } from '@/lib/profile/header-focus'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 import { resolveTierTeaseGate } from '@/lib/pricing/tease-gate'
 import { getOnboardingStatus } from '@/lib/onboarding/status'
@@ -98,6 +98,8 @@ export default async function ProfileSettingsPage() {
           avatarFocal: readProfileAvatarFocus((profile as { meta?: unknown }).meta),
           headerImageUrl,
           headerFocal: readProfileHeaderFocus((profile as { meta?: unknown }).meta),
+          overlayStyle: readProfileOverlayStyle((profile as { meta?: unknown }).meta),
+          overlayColor: readProfileOverlayColor((profile as { meta?: unknown }).meta) ?? '',
           email:       user.email ?? '',
           phone:       profile.phone ?? '',
           city:        profile.city ?? '',

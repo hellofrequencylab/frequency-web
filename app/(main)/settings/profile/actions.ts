@@ -11,7 +11,7 @@ import {
   withSpotlightEnabled,
   withSpotlightPublished,
 } from '@/lib/profile/spotlight-flags'
-import { writeProfileHeaderFocus, writeProfileAvatarFocus } from '@/lib/profile/header-focus'
+import { writeProfileHeaderFocus, writeProfileAvatarFocus, writeProfileOverlay } from '@/lib/profile/header-focus'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 
 // Owner-only: publish or unpublish your own Spotlight page (the public mini-site).
@@ -182,6 +182,9 @@ export async function updateProfile(data: {
   headerFocal?: string
   /** The avatar FOCAL POINT (CSS object-position "x% y%"), stored on profiles.meta.avatarFocal. */
   avatarFocal?: string
+  /** The header overlay style ('none' | 'shadow' | 'fade') + optional color, stored on profiles.meta. */
+  headerOverlayStyle?: string
+  headerOverlayColor?: string | null
   phone?: string
   city?: string
   website?: string
@@ -246,7 +249,7 @@ export async function updateProfile(data: {
   // isolated keys are set/dropped without disturbing any other meta key. The writers normalize (defense in
   // depth) and drop the centered default so a plain profile stays sparse. Combined into a single meta write
   // so the second key can't clobber the first.
-  if (data.headerFocal !== undefined || data.avatarFocal !== undefined) {
+  if (data.headerFocal !== undefined || data.avatarFocal !== undefined || data.headerOverlayStyle !== undefined) {
     const { data: cur } = await supabase
       .from('profiles')
       .select('meta')
@@ -255,6 +258,7 @@ export async function updateProfile(data: {
     let nextMeta: unknown = (cur as { meta?: unknown } | null)?.meta
     if (data.headerFocal !== undefined) nextMeta = writeProfileHeaderFocus(nextMeta, data.headerFocal)
     if (data.avatarFocal !== undefined) nextMeta = writeProfileAvatarFocus(nextMeta, data.avatarFocal)
+    if (data.headerOverlayStyle !== undefined) nextMeta = writeProfileOverlay(nextMeta, data.headerOverlayStyle, data.headerOverlayColor ?? null)
     ;(update as Record<string, unknown>).meta = nextMeta
   }
 
