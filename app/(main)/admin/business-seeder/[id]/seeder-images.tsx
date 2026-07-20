@@ -24,6 +24,7 @@ import {
   setPrimarySeederImage,
   reorderSeederImages,
 } from '../actions'
+import { shrinkImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 
 export function SeederImages({
   intakeId,
@@ -70,37 +71,38 @@ export function SeederImages({
     })
   }
 
-  // A per-file ceiling kept safely UNDER the server-action body limit (next.config bodySizeLimit, 10mb), so
-  // a single request never overflows the framework boundary (which would crash the route rather than return
-  // an error). Larger images are skipped with a clear message instead.
-  const MAX_UPLOAD_BYTES = 9 * 1024 * 1024
-
   function addFiles(files: File[]) {
     setError(null)
     setNote(null)
     if (!files.length) return
-    const tooBig = files.filter((f) => f.size > MAX_UPLOAD_BYTES)
-    const okFiles = files.filter((f) => f.size <= MAX_UPLOAD_BYTES)
-
-    // Pack files into BATCHES that each stay under the body limit, and send each batch in ONE request (the
-    // action files a whole batch at once). Sequential batches — the action is read-modify-write and files
-    // into the Loom per call, so it must not race — but a handful of multi-photo requests is far faster than
-    // one request per photo. A file is only ever alone in a batch when it alone approaches the limit.
-    const batches: File[][] = []
-    let batch: File[] = []
-    let batchBytes = 0
-    for (const f of okFiles) {
-      if (batch.length && batchBytes + f.size > MAX_UPLOAD_BYTES) {
-        batches.push(batch)
-        batch = []
-        batchBytes = 0
-      }
-      batch.push(f)
-      batchBytes += f.size
-    }
-    if (batch.length) batches.push(batch)
 
     startBusy(async () => {
+      // Shrink large photos in the browser FIRST: uploads post through a Vercel serverless function whose
+      // request-body limit (~4.5 MB) sits under next.config's bodySizeLimit, so an over-limit batch is
+      // rejected by the platform BEFORE the action runs. Downscaling a big camera photo (routinely 7–12 MB)
+      // makes it fit; anything still too large after that (e.g. a HEIC Chrome can't decode) is dropped.
+      const shrunk = await Promise.all(files.map((f) => shrinkImageForUpload(f)))
+      const tooBig = shrunk.filter((f) => f.size > SERVER_MAX_BYTES)
+      const okFiles = shrunk.filter((f) => f.size <= SERVER_MAX_BYTES)
+
+      // Pack files into BATCHES that each stay under the body limit, and send each batch in ONE request (the
+      // action files a whole batch at once). Sequential batches — the action is read-modify-write and files
+      // into the Loom per call, so it must not race — but a handful of multi-photo requests is far faster than
+      // one request per photo. A file is only ever alone in a batch when it alone approaches the limit.
+      const batches: File[][] = []
+      let batch: File[] = []
+      let batchBytes = 0
+      for (const f of okFiles) {
+        if (batch.length && batchBytes + f.size > SERVER_MAX_BYTES) {
+          batches.push(batch)
+          batch = []
+          batchBytes = 0
+        }
+        batch.push(f)
+        batchBytes += f.size
+      }
+      if (batch.length) batches.push(batch)
+
       let failed = 0
       let done = 0
       setProgress({ done: 0, total: okFiles.length })
@@ -124,7 +126,7 @@ export function SeederImages({
       setProgress(null)
       if (tooBig.length > 0) {
         setError(
-          `${tooBig.length} image${tooBig.length === 1 ? ' was' : 's were'} over 9 MB and skipped. Use a smaller version.`,
+          `${tooBig.length} image${tooBig.length === 1 ? ' is' : 's are'} too large to upload (over 4 MB and could not be resized here). Save a smaller version and try again.`,
         )
       } else if (failed === 0) {
         setNote(`Added ${okFiles.length} image${okFiles.length === 1 ? '' : 's'}.`)
