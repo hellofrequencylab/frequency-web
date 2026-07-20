@@ -100,7 +100,14 @@ export async function getBalance(worldId: string, userId: string): Promise<numbe
   return (data ?? []).reduce((sum, r) => sum + (r.delta as number), 0);
 }
 
-/** Add DJ points for the season and recompute rank (read-modify-write). */
+/**
+ * Add DJ points for the season and recompute rank ATOMICALLY.
+ *
+ * Delegates to the `resonance.add_dj_points` RPC (migration 0016), which does the
+ * increment-and-rank in a single `insert ... on conflict do update set
+ * dj_points = dj_points + excluded.dj_points` statement. This replaces the old
+ * select+add+upsert, which two concurrent awards could interleave to lose one.
+ */
 export async function addDjPoints(
   worldId: string,
   userId: string,
@@ -108,23 +115,78 @@ export async function addDjPoints(
   points: number,
 ): Promise<{ djPoints: number; rank: RankName }> {
   const supabase = createServerClient();
-  const { data: existing, error } = await supabase
-    .from("reputation")
-    .select("dj_points")
-    .eq("world_id", worldId)
-    .eq("user_id", userId)
-    .eq("season_id", seasonId)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("add_dj_points", {
+    p_world_id: worldId,
+    p_user_id: userId,
+    p_season_id: seasonId,
+    p_points: points,
+  });
   if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    djPoints: (row?.out_dj_points as number) ?? 0,
+    rank: (row?.out_rank as RankName) ?? rankForPoints(0),
+  };
+}
 
-  const djPoints = (existing?.dj_points ?? 0) + points;
-  const rank = rankForPoints(djPoints);
-  const { error: upErr } = await supabase.from("reputation").upsert(
-    { world_id: worldId, user_id: userId, season_id: seasonId, dj_points: djPoints, rank },
-    { onConflict: "world_id,user_id,season_id" },
-  );
-  if (upErr) throw upErr;
-  return { djPoints, rank };
+/**
+ * All-or-nothing DJ award for a finished play: credit `points` Zaps AND the same
+ * DJ points in ONE transaction (RPC `resonance.award_for_play`, migration 0016).
+ *
+ * The ledger's unique (world,user,reason,ref) key anchors idempotency; the
+ * reputation increment happens in the same transaction, so a mid-failure rolls
+ * back both (never Zaps-without-points) and a retry is a no-op. `newly` is false
+ * when this play was already awarded.
+ */
+export async function awardForPlayAtomic(
+  worldId: string,
+  userId: string,
+  points: number,
+  seasonId: string,
+  refId: string,
+): Promise<{ newly: boolean; djPoints: number; rank: RankName }> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase.rpc("award_for_play", {
+    p_world_id: worldId,
+    p_user_id: userId,
+    p_amount: points,
+    p_season_id: seasonId,
+    p_ref_id: refId,
+  });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    newly: Boolean(row?.newly),
+    djPoints: (row?.out_dj_points as number) ?? 0,
+    rank: (row?.out_rank as RankName) ?? rankForPoints(0),
+  };
+}
+
+/**
+ * Atomically debit `amount` Zaps, only if the balance covers it (RPC
+ * `resonance.spend_zaps`, migration 0016). A per-wallet advisory lock serializes
+ * concurrent spends so two can't both read the same balance and overdraw.
+ * Idempotent on (world,user,reason,ref). Returns whether it debited and the
+ * resulting balance.
+ */
+export async function debitZaps(
+  worldId: string,
+  userId: string,
+  amount: number,
+  reason: "purchase" | "reward",
+  refId: string,
+): Promise<{ ok: boolean; balance: number }> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase.rpc("spend_zaps", {
+    p_world_id: worldId,
+    p_user_id: userId,
+    p_amount: amount,
+    p_reason: reason,
+    p_ref_id: refId,
+  });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  return { ok: Boolean(row?.ok), balance: (row?.balance as number) ?? 0 };
 }
 
 export async function getStanding(worldId: string, userId: string): Promise<Standing> {

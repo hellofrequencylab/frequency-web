@@ -79,10 +79,11 @@ export async function listUpcomingEvents(
   const ids = (events ?? []).map((e) => e.id as string);
   if (ids.length === 0) return [];
 
-  const { data: tickets } = await supabase
+  const { data: tickets, error: ticketsError } = await supabase
     .from("event_tickets")
     .select("*")
     .in("event_id", ids);
+  if (ticketsError) throw ticketsError;
 
   const counts = new Map<string, number>();
   const mine = new Map<string, EventTicket>();
@@ -115,45 +116,19 @@ export async function claimTicket(
   amountCents: number,
 ): Promise<EventTicket> {
   const supabase = createServerClient();
-  const event = await getEvent(eventId);
-  if (!event) throw new Error("event not found");
-
-  const status = event.ticketType === "free" ? "confirmed" : "reserved";
-
-  if (event.capacity != null) {
-    const { count, error: countError } = await supabase
-      .from("event_tickets")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", eventId);
-    if (countError) throw countError;
-
-    const { data: existing } = await supabase
-      .from("event_tickets")
-      .select("id")
-      .eq("event_id", eventId)
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (!existing && (count ?? 0) >= event.capacity) {
-      throw new Error("at capacity");
-    }
-  }
-
-  const { data, error } = await supabase
-    .from("event_tickets")
-    .upsert(
-      {
-        event_id: eventId,
-        user_id: userId,
-        amount_cents: amountCents,
-        status,
-      },
-      { onConflict: "event_id,user_id" },
-    )
-    .select("*")
-    .single();
-  if (error) throw error;
-  return toTicket(data);
+  // Capacity check and ticket insert happen ATOMICALLY in the DB (RPC
+  // `resonance.claim_ticket`, migration 0016), serialized by a per-event advisory
+  // lock. This closes the count-then-upsert TOCTOU where two concurrent claimants
+  // could both pass the capacity check and oversell the event. The RPC derives
+  // status from the event's ticket_type and raises 'at capacity' / 'event not
+  // found', which the caller surfaces (the route maps 'at capacity' -> 409).
+  const { data, error } = await supabase.rpc("claim_ticket", {
+    p_event_id: eventId,
+    p_user_id: userId,
+    p_amount_cents: amountCents,
+  });
+  if (error) throw new Error(error.message);
+  return toTicket(data as Record<string, unknown>);
 }
 
 // ---- mappers ---------------------------------------------------------------

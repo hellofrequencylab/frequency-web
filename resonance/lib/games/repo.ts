@@ -95,8 +95,13 @@ export async function endSession(venueId: string): Promise<GameSession> {
 }
 
 /**
- * Add `delta` points for a player, stamping `last_round` so the caller can guard
- * against scoring the same round twice. Read-modify-write upsert on (venue,user).
+ * Add `delta` points for a player ATOMICALLY, stamping `last_round` so the caller
+ * can guard against scoring the same round twice.
+ *
+ * Delegates to the `resonance.add_game_score` RPC (migration 0016), which does a
+ * single `insert ... on conflict do update set points = points + excluded.points`.
+ * This replaces the old select+add+upsert, which two concurrent scores for the
+ * same player could interleave to lose one.
  */
 export async function addScore(
   venueId: string,
@@ -105,27 +110,14 @@ export async function addScore(
   round: number,
 ): Promise<number> {
   const supabase = createServerClient();
-  const { data: existing, error } = await supabase
-    .from("game_scores")
-    .select("points")
-    .eq("venue_id", venueId)
-    .eq("user_id", userId)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("add_game_score", {
+    p_venue_id: venueId,
+    p_user_id: userId,
+    p_delta: delta,
+    p_round: round,
+  });
   if (error) throw error;
-
-  const points = ((existing?.points as number | undefined) ?? 0) + delta;
-  const { error: upErr } = await supabase.from("game_scores").upsert(
-    {
-      venue_id: venueId,
-      user_id: userId,
-      points,
-      last_round: round,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "venue_id,user_id" },
-  );
-  if (upErr) throw upErr;
-  return points;
+  return (data as number | null) ?? 0;
 }
 
 /**

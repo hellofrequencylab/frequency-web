@@ -90,16 +90,29 @@ export async function advance(
     const t = tally(await listVotes(current.currentPlayId));
     if (shouldBump(t)) bumped = current.currentDjUserId;
   }
-  if (bumped) await leaveSeat(venueId, bumped);
 
-  const seats = (await listSeats(venueId)).sort((a, b) => a.seatIndex - b.seatIndex);
+  // Snapshot the rotation order BEFORE removing anyone, and note where the
+  // current DJ sat. If we removed the bumped DJ first, `findIndex` would return
+  // -1 and rotation would wrongly restart at seat 0 instead of continuing from
+  // the bumped DJ's position.
+  let seats = (await listSeats(venueId)).sort((a, b) => a.seatIndex - b.seatIndex);
+  const curPos = current?.currentDjUserId
+    ? seats.findIndex((s) => s.occupantUserId === current.currentDjUserId)
+    : -1;
 
-  // 2. Round-robin from after the current DJ to the next one with a track.
-  const startIdx = (() => {
-    if (!current?.currentDjUserId) return 0;
-    const i = seats.findIndex((s) => s.occupantUserId === current.currentDjUserId);
-    return i === -1 ? 0 : (i + 1) % Math.max(seats.length, 1);
-  })();
+  if (bumped) {
+    await leaveSeat(venueId, bumped);
+    seats = seats.filter((s) => s.occupantUserId !== bumped);
+  }
+
+  // 2. Round-robin from after the current DJ to the next one with a track. When
+  //    the current DJ was just bumped and removed, the successor now occupies
+  //    `curPos`, so we start there; otherwise we step one past the current DJ.
+  //    Fall back to the top if the current DJ isn't/was never seated.
+  const startIdx =
+    seats.length === 0 || curPos === -1
+      ? 0
+      : (bumped ? curPos : curPos + 1) % seats.length;
 
   let chosen: { dj: string; itemId: string; mediaId: string } | null = null;
   for (let k = 0; k < seats.length; k++) {
