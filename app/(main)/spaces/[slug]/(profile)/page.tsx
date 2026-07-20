@@ -24,7 +24,7 @@ import { isPanelId } from '@/components/spaces/workspace/surface-panels'
 // The body is wrapped in its OWN <Suspense> with the shared profile-body skeleton, so the chrome never
 // blocks on the Space read while the modules resolve (D5). Each section inside the module render carries
 // its own <Suspense>, so a slow section never blocks the ones above it.
-async function SpaceProfileBody({ slug, panel }: { slug: string; panel?: string }) {
+async function SpaceProfileBody({ slug, panel, area }: { slug: string; panel?: string; area?: string }) {
   const viewerProfileId = await getMyProfileId()
   const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
   if (!space) notFound()
@@ -65,7 +65,7 @@ async function SpaceProfileBody({ slug, panel }: { slug: string; panel?: string 
   // put (the layout does not re-render on a query change). Same gate that picks the owner preview below;
   // only a KNOWN panel id (isPanelId) branches, so an unknown / absent panel falls through to normal.
   // A visitor / non-owner never sees a panel (canSeeAsOwner is false).
-  if (canSeeAsOwner && isPanelId(panel)) return <SpaceBodyPanel slug={space.slug} panel={panel} />
+  if (canSeeAsOwner && isPanelId(panel)) return <SpaceBodyPanel slug={space.slug} panel={panel} area={area} />
 
   if (canSeeAsOwner) return <OwnerSpaceLayoutPreview slug={space.slug} />
 
@@ -77,16 +77,18 @@ export default async function SpaceLandingPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ panel?: string | string[] }>
+  searchParams: Promise<{ panel?: string | string[]; area?: string | string[] }>
 }) {
   const { slug } = await params
   // The inline-workspace selector (Stage D1). A soft-nav to `?panel=members` swaps only this body — the
-  // (profile) layout's hero + menu persist. The body re-gates on manage + a known panel id.
-  const { panel } = await searchParams
+  // (profile) layout's hero + menu persist. The body re-gates on manage + a known panel id. `area` scopes
+  // the Manage dashboard panel to one management area (?panel=manage&area=community).
+  const { panel, area } = await searchParams
   const panelId = typeof panel === 'string' ? panel : undefined
+  const areaId = typeof area === 'string' ? area : undefined
   return (
     <Suspense fallback={<ProfileBodySkeleton />}>
-      <SpaceProfileBody slug={slug} panel={panelId} />
+      <SpaceProfileBody slug={slug} panel={panelId} area={areaId} />
     </Suspense>
   )
 }

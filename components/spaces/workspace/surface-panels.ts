@@ -29,6 +29,13 @@ export interface SurfacePanel {
  *  panel BODY components are dispatched in space-body-panel.tsx (a Server Component), so no server-only
  *  body import ever leaks into the client bundle that imports PANEL_SURFACE_TO_ID. */
 export const SURFACE_PANELS: Record<string, SurfacePanel> = {
+  // The Manage dashboard (the operator's landing): a quick-stats row + link cards to the five management
+  // areas. `?panel=manage&area=<key>` opens an area in place. "Open full page" targets the standalone
+  // console. The body (ManageDashboard) is dispatched specially in space-body-panel.tsx (it needs `area`).
+  manage: {
+    label: 'Manage',
+    fullHref: (slug) => `/spaces/${slug}/manage`,
+  },
   members: {
     label: 'Members',
     fullHref: (slug) => `/spaces/${slug}/settings/members`,

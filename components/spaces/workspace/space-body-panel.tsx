@@ -15,6 +15,7 @@ import { DonationsBody } from '@/app/(main)/spaces/[slug]/settings/donations/don
 import { EnrollBody } from '@/app/(main)/spaces/[slug]/settings/enroll/enroll-body'
 import { TicketsBody } from '@/app/(main)/spaces/[slug]/settings/tickets/tickets-body'
 import { CheckinBody } from '@/app/(main)/spaces/[slug]/settings/checkin/checkin-body'
+import { ManageDashboard } from '@/app/(main)/spaces/[slug]/manage/manage-dashboard'
 
 // INLINE WORKSPACE — the panel BODY (Stage D1). The Space profile's persistent hero + tab menu live in
 // the (profile) route-group layout, so a `?panel=<id>` soft-navigation swaps ONLY this body (the layout
@@ -50,10 +51,16 @@ const PANEL_BODIES: Record<string, PanelBody> = {
   checkin: CheckinBody,
 }
 
-export function SpaceBodyPanel({ slug, panel }: { slug: string; panel: string }) {
+export function SpaceBodyPanel({ slug, panel, area }: { slug: string; panel: string; area?: string }) {
   const entry = SURFACE_PANELS[panel]
+  if (!entry) return null
+  // The Manage dashboard takes an extra `area` (which management area to open), so it is dispatched
+  // directly rather than through the (slug-only) PANEL_BODIES map.
   const Body = PANEL_BODIES[panel]
-  if (!entry || !Body) return null
+  const body = panel === 'manage'
+    ? <ManageDashboard slug={slug} area={area} />
+    : Body ? <Body slug={slug} /> : null
+  if (!body) return null
 
   return (
     <div className="space-y-6">
@@ -93,13 +100,7 @@ export function SpaceBodyPanel({ slug, panel }: { slug: string; panel: string })
           skeleton. A BOUNDED panel (Stage D5: the wide CRM board) is wrapped in an `overflow-x-auto` box so
           it horizontal-scrolls WITHIN the panel column instead of breaking the page layout out full-width. */}
       <Suspense fallback={<ProfileBodySkeleton />}>
-        {entry.bounded ? (
-          <div className="overflow-x-auto">
-            <Body slug={slug} />
-          </div>
-        ) : (
-          <Body slug={slug} />
-        )}
+        {entry.bounded ? <div className="overflow-x-auto">{body}</div> : body}
       </Suspense>
     </div>
   )
