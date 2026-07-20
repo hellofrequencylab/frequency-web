@@ -56,6 +56,8 @@ export async function getJourneyRailData(slug: string): Promise<JourneyRailData 
     initialCoverImage: plan.cover_image,
     initialCoverFocus: plan.cover_focus ?? null,
     initialLogoImage: plan.logo_image ?? null,
+    initialOverlayStyle: plan.header_overlay_style ?? 'shadow',
+    initialOverlayColor: plan.header_overlay_color ?? '',
     initialReview: review,
     initialDifficulty: p.difficulty ?? null,
     initialCategory: p.category ?? null,

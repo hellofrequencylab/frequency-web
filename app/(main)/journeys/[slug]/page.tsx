@@ -161,7 +161,12 @@ export default async function JourneyPlanPage({
   // stat chips, enroll/manage) stays in the light `band` under the hero, so those controls keep their
   // normal styling and contrast. Layout + height resolve from the header element's master config
   // (/admin/elements), defaulting to identity/standard, so an operator can retune it without a deploy.
-  const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } })
+  // The author's picked overlay (journey_plans) is the surface default; an operator master value still
+  // overrides site-wide. Only none/shadow/fade are honored; anything else falls back to the registry default.
+  const oStyle = plan.header_overlay_style
+  const header = await resolveHeaderElement({
+    defaults: { layout: 'identity', height: 'standard', ...(oStyle === 'none' || oStyle === 'shadow' || oStyle === 'fade' ? { overlayStyle: oStyle } : {}) },
+  })
   const page = (
     <DetailTemplate
       hero={
@@ -169,6 +174,7 @@ export default async function JourneyPlanPage({
           variant={header.layout}
           size={header.height}
           overlayStyle={header.overlayStyle}
+          overlayColor={plan.header_overlay_color ?? undefined}
           coverImage={plan.cover_image ?? null}
           coverFocus={plan.cover_focus ?? undefined}
           eyebrow={topPillar ? topPillar.name : 'Journey'}

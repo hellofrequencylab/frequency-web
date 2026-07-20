@@ -57,6 +57,9 @@ export interface JourneyPlan {
   cover_focus: string | null
   /** Square logo / profile image shown as the header's leading chip beside the icon. Null = icon only. */
   logo_image: string | null
+  /** Header overlay style ('none' | 'shadow' | 'fade', labeled None/Shade/Blend) + optional hex color. */
+  header_overlay_style: string | null
+  header_overlay_color: string | null
   created_at: string
   updated_at: string
   published_at: string | null
@@ -186,7 +189,7 @@ export interface JourneyPlanItem {
 
 const PLAN_COLS =
   'id, slug, title, summary, intro, emoji, accent, author_id, space_id, visibility, fork_of, ' +
-  'forked_count, adopt_count, cover_image, cover_focus, logo_image, created_at, updated_at, published_at, ' +
+  'forked_count, adopt_count, cover_image, cover_focus, logo_image, header_overlay_style, header_overlay_color, created_at, updated_at, published_at, ' +
   'quest_id, official, window_starts_at, window_ends_at, status, page_config, completion_gems, ' +
   'drip_interval_days, certificate_enabled, difficulty, category, tags, daily_minutes, enroll_cap, meeting'
 
@@ -548,6 +551,8 @@ export async function updatePlan(
     accent?: string | null
     coverImage?: string | null
     logoImage?: string | null
+    headerOverlayStyle?: string | null
+    headerOverlayColor?: string | null
     status?: PlanStatus
     completionGems?: number
     pageConfig?: PageWidgetConfig[] | null
@@ -563,6 +568,16 @@ export async function updatePlan(
   if (patch.accent !== undefined) update.accent = patch.accent?.trim().slice(0, 24) || null
   if (patch.coverImage !== undefined) update.cover_image = patch.coverImage?.trim().slice(0, 500) || null
   if (patch.logoImage !== undefined) update.logo_image = patch.logoImage?.trim().slice(0, 500) || null
+  // Header overlay: style is one of none/shadow/fade (else dropped to null = surface default); color is
+  // STRICTLY a hex value (it renders into a CSS color-mix on the public header — no arbitrary strings).
+  if (patch.headerOverlayStyle !== undefined) {
+    const s = patch.headerOverlayStyle
+    update.header_overlay_style = s === 'shadow' || s === 'fade' || s === 'none' ? s : null
+  }
+  if (patch.headerOverlayColor !== undefined) {
+    const c = (patch.headerOverlayColor ?? '').trim()
+    update.header_overlay_color = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(c) ? c : null
+  }
   // Page layout + review status (ADR-197). Clamped to their schema bounds.
   if (patch.status !== undefined) update.status = patch.status
   if (patch.completionGems !== undefined)
@@ -893,6 +908,8 @@ export async function duplicatePlan(profileId: string, planId: string): Promise<
       cover_image: src.cover_image,
       cover_focus: src.cover_focus,
       logo_image: src.logo_image,
+      header_overlay_style: src.header_overlay_style,
+      header_overlay_color: src.header_overlay_color,
       author_id: profileId,
       visibility: 'private',
       status: 'draft',

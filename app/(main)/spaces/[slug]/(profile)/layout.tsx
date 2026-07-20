@@ -217,7 +217,9 @@ export default async function SpaceProfileChromeLayout({
   // overlaid identity (WCAG-safe on any photo, on-ink text); 'blend' = the photo fades to the page
   // canvas and the identity uses the theme's own text tokens. Default-safe to 'shade'.
   const coverScrim = readCoverScrim(space.preferences)
-  const heroOnInk = coverScrim === 'shade'
+  // 'shade' and 'none' overlay light on-ink text on the photo (shade backs it with a dark scrim; none relies
+  // on a token text-shadow); 'blend' fades to the page canvas and uses the theme's own text tokens.
+  const heroOnInk = coverScrim !== 'blend'
   // The operator's chosen cover FOCAL POINT (where the cropped cover sits in its window), set with the shared
   // ImageFocalPicker in the Branding rail. A CSS object-position applied to the cover <Image> below; unset
   // reads as centered ("50% 50%"), so a Space that never touched it crops exactly as before. Repositions
@@ -439,14 +441,15 @@ export default async function SpaceProfileChromeLayout({
   // while the top of the image stays crisp. ONE identity row anchors to the bottom over the scrim:
   // avatar + name on the left, the action buttons pushed RIGHT on the same line (they wrap below the
   // lockup only when the row runs out of room). Tokens only (ink), no hardcoded hex.
-  const heroScrimGradient = heroOnInk
-    ? 'from-ink/80 via-ink/30 to-transparent'
-    : 'from-canvas via-canvas/40 to-transparent'
+  // 'none' draws NO scrim (the clean photo); shade/blend keep their gradient. When there is no scrim the
+  // overlaid identity leans on the `on-image-text` token shadow to stay legible over the raw photo.
+  const heroScrimGradient =
+    coverScrim === 'none' ? null : heroOnInk ? 'from-ink/80 via-ink/30 to-transparent' : 'from-canvas via-canvas/40 to-transparent'
   const heroCoverNode = (
     <div className={cn('relative w-full overflow-hidden rounded-xl bg-surface-elevated', coverH)}>
       {coverImage}
-      <div className={cn('absolute inset-0 bg-gradient-to-t', heroScrimGradient)} />
-      <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
+      {heroScrimGradient && <div className={cn('absolute inset-0 bg-gradient-to-t', heroScrimGradient)} />}
+      <div className={cn('absolute inset-x-0 bottom-0 p-6 sm:p-8', coverScrim === 'none' && 'on-image-text')}>
         {/* Mobile only: the Follow chip sits ABOVE the profile pic + title (the operator's ask). On desktop
             Follow lives inside the name lockup, so this is suppressed there. */}
         {viewerProfileId && <div className="mb-3 sm:hidden">{followButton(heroOnInk)}</div>}
