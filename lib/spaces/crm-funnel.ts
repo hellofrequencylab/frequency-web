@@ -98,8 +98,12 @@ const ZERO_EMAIL: SpaceEmailStats = {
   complained: 0,
   suppressed: 0,
   failed: 0,
+  opened: 0,
+  clicked: 0,
   bounceRate: 0,
   complaintRate: 0,
+  openRate: 0,
+  clickRate: 0,
 }
 
 const ZERO_REACH: ContactReach = { total: 0, subscribed: 0, unsubscribed: 0 }

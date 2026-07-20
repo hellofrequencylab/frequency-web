@@ -86,6 +86,7 @@ space_service_types
 space_drip_enrollments
 space_drip_sequences
 space_drip_steps
+space_email_events
 space_email_templates
 space_enrollments
 space_follows

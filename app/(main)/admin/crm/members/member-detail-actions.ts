@@ -10,6 +10,7 @@ import { getMemberScores, listMembersByFilter } from '@/lib/dashboard/scores'
 import { listInteractionsForPerson } from '@/lib/crm/interactions'
 import { buildTimeline, relativeTime, interactionTitle } from '@/lib/crm/timeline'
 import { getContactEngagementStats } from '@/lib/crm/engagement-stats'
+import { getSpaceContactEngagement } from '@/lib/spaces/email-analytics'
 import { getMemberNetwork, filterMajorMilestones, type Milestone } from '@/lib/crm/member-network'
 import { resolvePerson, type Person } from '@/lib/crm/person'
 import { buildJourney } from '@/lib/crm/journey'
@@ -271,11 +272,14 @@ export async function loadSpaceMemberDetail(slug: string, profileId: string): Pr
   // TENANCY: only a member in this space's own scored roster may be opened here.
   const roster = await listMembersByFilter({ kind: 'all' }, { spaceId: space.id })
   if (!roster.some((r) => r.profileId === profileId)) throw new Error('Not in this space')
-  return buildMemberDetail(profileId)
+  // Pass the space id so the engagement rollup (Sent/Opened/Clicked/Replied) reflects THIS space's own
+  // emails to the member, never the platform CRM (no crossover).
+  return buildMemberDetail(profileId, space.id)
 }
 
-/** Build the rich CRM member detail for a profile. NO gate — every caller gates + tenancy-checks first. */
-async function buildMemberDetail(profileId: string): Promise<CrmMemberDetail> {
+/** Build the rich CRM member detail for a profile. NO gate — every caller gates + tenancy-checks first.
+ *  `spaceId` scopes the engagement rollup to one space's own emails (space Resonance); omit for platform. */
+async function buildMemberDetail(profileId: string, spaceId?: string): Promise<CrmMemberDetail> {
   // Identity is the floor — resolve it first so we can always return something.
   const summaries = await getProfileSummaries([profileId])
   const summary = summaries.get(profileId)
@@ -301,6 +305,16 @@ async function buildMemberDetail(profileId: string): Promise<CrmMemberDetail> {
 
     // Batch the rich reads for the ONE selected member. Each source is independently fail-safe, so a
     // single failing read leaves the others intact rather than collapsing to the identity floor.
+    // Engagement rollup. For a SPACE scope, this space's OWN emails to the member only (sent from
+    // outreach_sends + opens/clicks/replies from space_email_events) — no crossover to the platform CRM.
+    // Otherwise the platform-wide rollup. Both resolve to the same {sent,opened,clicked,replied,lastTouchAt}
+    // shape so the pane reads identically.
+    const engagementP = spaceId
+      ? getSpaceContactEngagement(spaceId, email ? [email] : []).then((m) => {
+          const e = (email ? m.get(email.trim().toLowerCase()) : undefined) ?? { sent: 0, opened: 0, clicked: 0, replied: 0 }
+          return { sent: e.sent, opened: e.opened, clicked: e.clicked, replied: e.replied, lastTouchAt: null as string | null }
+        })
+      : getContactEngagementStats(subjectIds, email)
     const [scores, interactions, roles, funnels, pipeline, network, engagement] = await Promise.all([
       getMemberScores(profileId),
       listInteractionsForPerson([profileId, contactId], 24),
@@ -308,7 +322,7 @@ async function buildMemberDetail(profileId: string): Promise<CrmMemberDetail> {
       funnelsForProfile(profileId),
       pipelineForProfile(profileId),
       getMemberNetwork(profileId),
-      getContactEngagementStats(subjectIds, email),
+      engagementP,
     ])
 
     // Everything is inline now, so "view all" points back at this member on the CRM home (no separate

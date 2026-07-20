@@ -20,6 +20,7 @@ import {
   type InteractionChannel,
 } from '@/lib/crm/interactions'
 import { interactionTitle } from '@/lib/crm/timeline'
+import { recordInboundReplyEvent } from '@/lib/spaces/email-tracking'
 
 // ── Conversational channels ───────────────────────────────────────────────────────────────────────
 // The inbox is about MESSAGES, so it reads the channels a person and an operator actually converse on
@@ -323,6 +324,16 @@ export async function recordInboundEmail(
       contact.spaceId,
     )
     if (!res) return { status: 'error', contactId: contact.contactId }
+
+    // SPACE EMAIL ENGAGEMENT (additive, best-effort): if this reply is from someone a Space emailed,
+    // log a 'reply' engagement event against the most recent send to that address, so the Marketing
+    // dashboard + member detail can show replies. FAIL-SAFE: no matching send => nothing recorded, and
+    // a failure never affects the recorded inbound interaction above.
+    try {
+      await recordInboundReplyEvent(parsed.from, contact.spaceId)
+    } catch {
+      /* best-effort: the inbound interaction is already recorded */
+    }
 
     // ALERT the owner: a reply is owed, so ping them (bell + the CRM Inbox already shows the thread).
     // Best-effort: the reply is already on the timeline, so a notification failure must never fail it.

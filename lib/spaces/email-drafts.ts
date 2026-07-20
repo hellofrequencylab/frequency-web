@@ -34,7 +34,7 @@ import {
   listAudienceTags,
   type AudienceFilter,
 } from '@/lib/spaces/audiences'
-import { sendSpaceCampaign as sendViaSeam, SPACE_UNSUBSCRIBE_PLACEHOLDER } from '@/lib/spaces/email'
+import { sendSpaceCampaign as sendViaSeam, SPACE_UNSUBSCRIBE_PLACEHOLDER, type SpaceRecipient } from '@/lib/spaces/email'
 import { campaignStatusToMessaging } from '@/lib/messaging/status'
 import type { MessagingCampaignItem } from '@/lib/messaging/console'
 import {
@@ -497,6 +497,61 @@ export async function sendSpaceEmailDraft(
 
   // Stamp the draft as sent (best-effort: the emails already went out, so a failed status write must not
   // surface as a send failure).
+  try {
+    await campaignsTable()
+      .update({ status: 'sent', sent_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('space_id', spaceId)
+      .maybeSingle()
+  } catch {
+    // ignore: the send succeeded; the status stamp is non-critical.
+  }
+
+  return ok({ recipientCount: res.data.sent })
+}
+
+/**
+ * SEND a block-email draft NOW to an EXPLICIT recipient list (not an audience filter). The 1:1 / small-set
+ * sibling of sendSpaceEmailDraft: the Space Resonance member composer resolves the chosen members to their
+ * Space contacts and hands them here directly, instead of resolving a tag / segment audience. Everything
+ * else is IDENTICAL to sendSpaceEmailDraft (editor-gated + space-scoped, compiled with the Space's OWN brand
+ * palette + a per-recipient unsubscribe placeholder, sent through the shared anti-spam seam that owns the
+ * kill-switch, daily cap, consent + suppression, unsubscribe, and ledger; then stamped status='sent'). We do
+ * NOT fork the send path — this is the one Space send seam with the audience already resolved. Fail-closed.
+ */
+export async function sendSpaceEmailDraftToRecipients(
+  spaceId: string,
+  id: string,
+  recipients: SpaceRecipient[],
+): Promise<ActionResult<{ recipientCount: number }>> {
+  const gate = await requireSpaceEditor(spaceId)
+  if (!gate.ok) return fail(gate.error)
+  const { space } = gate
+
+  if (!Array.isArray(recipients) || recipients.length === 0)
+    return fail('Add at least one recipient before sending.')
+
+  const row = await readDraft(id, spaceId)
+  if (!row) return fail('That email no longer exists.')
+  if ((row.status ?? 'draft') === 'sent') return fail('This email has already gone out.')
+  if (!(row.subject ?? '').trim()) return fail('Give your email a subject before sending.')
+
+  const brand = spaceBrand(space)
+  const layout = layoutFromBlockJson(row.block_json)
+  const compiled = compileEmailDoc(
+    { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
+    { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER },
+  )
+  if (!compiled.html.trim()) return fail('Add some content before sending.')
+
+  const fallbacks = MERGE_TAG_DEFAULT_FALLBACKS
+  const subject = applyMergeTags(compiled.subject || 'Your email', {}, { fallbacks, escape: false })
+  const html = applyMergeTags(compiled.html, {}, { fallbacks })
+
+  const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients })
+  if (isError(res)) return res
+
+  // Stamp the draft as sent (best-effort: the emails already went out).
   try {
     await campaignsTable()
       .update({ status: 'sent', sent_at: new Date().toISOString() })

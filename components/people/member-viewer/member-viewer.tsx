@@ -68,6 +68,7 @@ export function MemberViewer({
   onSelectedChange,
   onQueryChange,
   emptyState,
+  messageScope,
 }: MemberViewerProps) {
   const options = useMemo(() => sortOptions ?? [], [sortOptions])
 
@@ -268,7 +269,11 @@ export function MemberViewer({
     detailVariant === 'crm' ? (
       // Key by profileId so selecting a different member REMOUNTS the pane — resetting its compose
       // popup + remembered draft cleanly, no reset effect needed.
-      <CrmMemberDetailPane key={(detail as CrmMemberDetail).profileId} detail={detail as CrmMemberDetail} />
+      <CrmMemberDetailPane
+        key={(detail as CrmMemberDetail).profileId}
+        detail={detail as CrmMemberDetail}
+        messageScope={messageScope}
+      />
     ) : (
       <MemberDetailCard detail={detail} mode={detailMode} />
     )

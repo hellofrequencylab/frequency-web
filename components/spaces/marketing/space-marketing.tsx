@@ -1,41 +1,36 @@
-import { Suspense } from 'react'
-import { Send } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowUpRight, Send } from 'lucide-react'
 import { PageHeading } from '@/components/templates'
-import { Skeleton } from '@/components/ui/skeleton'
+import { SectionHeader } from '@/components/ui/section-header'
 import { MarketingQuickStats } from '@/components/admin/crm/marketing-quick-stats'
-import { spaceEmailColors, spaceEmailColorDefaults } from '@/lib/spaces/email-colors'
+import { spaceEmailColors } from '@/lib/spaces/email-colors'
 import {
-  listSpaceEmailDrafts,
   listSpaceEmailAudienceTags,
   listSpaceEmailMessagingItems,
 } from '@/lib/spaces/email-drafts'
 import { getSpaceEmailStats, listSpaceSuppressions } from '@/lib/spaces/email-analytics'
 import { isSpaceEmailEnabled } from '@/lib/spaces/email'
 import { listSpaceSegments } from '@/lib/spaces/segments'
+import { spaceModuleById } from '@/lib/admin/modules/space-modules'
+import { panelHrefForModule } from '@/lib/spaces/surface-hrefs'
 import type { SpaceEmailStats } from '@/lib/spaces/email-analytics'
 import type { MarketingEmailOverview } from '@/lib/email-studio/analytics'
 import type { Space } from '@/lib/spaces/types'
 import { SpaceMarketingDashboard } from './space-marketing-dashboard'
-import { SpaceEmailWorkspace } from './space-email-workspace'
-import { EmailStyleEditor } from '@/components/spaces/email/email-style-editor'
 import { EmailBody } from '@/app/(main)/spaces/[slug]/settings/email/email-body'
-import { QrBody } from '@/app/(main)/spaces/[slug]/settings/qr/qr-body'
-import { AutomationBody } from '@/app/(main)/spaces/[slug]/settings/automation/automation-body'
-import { MarketingPills, type MarketingPanel } from './marketing-pills'
 
 // THE SPACE MARKETING TAB (owner directive): the space Marketing hub reads as the SAME page as the admin CRM
-// Marketing page, scoped to the space. It leads with the SAME header grammar (PageHeading: eyebrow "Resonance
-// CRM" + the Send-iconed "Marketing" H1 + description + the pipeline quick stats on the right), then a
-// classifieds-style pill sub-nav across the marketing sub-surfaces that swaps IN PLACE with no reload
-// (MarketingPills). The Email pill is the SAME three-section body as the admin Marketing page (Email
-// performance + Everything you send + Best practices), reusing the admin components unchanged. The pills are
-// the gated marketing modules in catalog order (only what this space + role can use).
+// Marketing page, scoped to the space. It leads with the SAME header grammar (PageHeading: eyebrow
+// "Community Resonance" + the Send-iconed "Marketing" H1 + description + the pipeline quick stats on the
+// right), then the Marketing DASHBOARD as the main body (the SAME three-section body as the admin Marketing
+// page: Email performance + Everything you send + Best practices, reusing the admin components unchanged).
+// The OTHER marketing tools are link-box CARDS at the bottom, mirroring how the Community/Resonance tab
+// surfaces the rest of its CRM as cards (console.tsx, section === 'resonance'): the embed leads, then a
+// SectionHeader + a grid of link cards. No pill sub-nav.
 //
-// Each panel is a SERVER-rendered slot streamed behind its own Suspense (PAGE-FRAMEWORK §5). Voice canon: no
-// em dashes.
+// This is a Server Component. Voice canon: no em dashes.
 
-const PANEL_LABEL: Record<string, string> = {
-  'space.comms': 'Email',
+const TOOL_LABEL: Record<string, string> = {
   'space.marketing': 'Email design',
   'space.emailstyle': 'Email style',
   'space.reach': 'QR codes',
@@ -43,31 +38,52 @@ const PANEL_LABEL: Record<string, string> = {
   'space.automation': 'Automation',
 }
 
-function panelSkeleton() {
+/** One marketing tool as a tappable link-box CARD into its surface: a small icon tile + the label + a
+ *  one-line description + a quiet open affordance. Mirrors the console's feature-card visual (icon tile,
+ *  DAWN tokens), with the ArrowUpRight that signals a jump to another surface. */
+function MarketingToolCard({ id, href }: { id: string; href: string }) {
+  const mod = spaceModuleById(id)
+  if (!mod) return null
+  const Icon = mod.Icon
+  const label = TOOL_LABEL[id] ?? mod.label
   return (
-    <div className="space-y-3">
-      <Skeleton className="h-24 rounded-2xl" />
-      <Skeleton className="h-64 rounded-2xl" />
-    </div>
+    <li>
+      <Link
+        href={href}
+        className="group flex h-full items-start gap-3 rounded-xl border border-border bg-surface p-3.5 shadow-sm outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+      >
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+          <Icon className="h-4 w-4" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-text">{label}</span>
+          <span className="mt-0.5 block text-xs text-muted">{mod.desc}</span>
+        </span>
+        <ArrowUpRight
+          className="h-4 w-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
+          aria-hidden
+        />
+      </Link>
+    </li>
   )
 }
 
-/** Build the admin `MarketingEmailOverview` shape from a Space's own deliverability snapshot. The Space email
- *  ledger (outreach_sends) records DELIVERY only (sent / delivered / bounced / complained / suppressed), not
- *  per-send opens or clicks, so those read 0 here (honest: the Space does not track email engagement yet).
- *  Unsubscribes come from the Space's own opt-out suppressions. PURE. */
+/** Build the admin `MarketingEmailOverview` shape from a Space's own deliverability + engagement snapshot.
+ *  Delivery (sent / delivered / bounced / complained / suppressed) comes from the Space email ledger
+ *  (outreach_sends); opens + clicks come from the Space's self-hosted engagement events (space_email_events,
+ *  via getSpaceEmailStats). Unsubscribes come from the Space's own opt-out suppressions. PURE. */
 function toOverview(stats: SpaceEmailStats, unsubscribed: number, campaignsSent: number): MarketingEmailOverview {
   const { sent, delivered } = stats
   return {
     sent,
     delivered,
-    opened: 0,
-    clicked: 0,
+    opened: stats.opened,
+    clicked: stats.clicked,
     bounced: stats.bounced,
     complained: stats.complained,
     unsubscribed,
-    openRate: 0,
-    clickRate: 0,
+    openRate: stats.openRate,
+    clickRate: stats.clickRate,
     bounceRate: stats.bounceRate,
     complaintRate: stats.complaintRate,
     unsubscribeRate: delivered > 0 ? unsubscribed / delivered : 0,
@@ -93,12 +109,10 @@ export async function SpaceMarketing({
   const readOnly = staffViewing
 
   const colors = spaceEmailColors(space)
-  const brandDefaults = spaceEmailColorDefaults(space)
 
-  const [tags, segments, drafts, messagingItems, stats, suppressions, emailEnabled] = await Promise.all([
+  const [tags, segments, messagingItems, stats, suppressions, emailEnabled] = await Promise.all([
     listSpaceEmailAudienceTags(spaceId),
     listSpaceSegments(spaceId),
-    listSpaceEmailDrafts(spaceId),
     listSpaceEmailMessagingItems(spaceId),
     getSpaceEmailStats(spaceId),
     listSpaceSuppressions(spaceId, 200),
@@ -118,62 +132,20 @@ export async function SpaceMarketing({
   const unsubscribed = suppressions.filter((s) => !s.isGlobal && (s.reason ?? '').toLowerCase().includes('unsub')).length
   const overview = toOverview(stats, unsubscribed, campaignsSent)
 
-  function nodeFor(id: string): React.ReactNode {
-    switch (id) {
-      case 'space.comms':
-        return (
-          <SpaceMarketingDashboard
-            spaceId={spaceId}
-            slug={slug}
-            colors={colors}
-            tags={tags}
-            segments={segmentOptions}
-            campaigns={messagingItems}
-            overview={overview}
-            emailEnabled={emailEnabled}
-            readOnly={readOnly}
-          />
-        )
-      case 'space.marketing':
-        return (
-          <Suspense fallback={panelSkeleton()}>
-            <SpaceEmailWorkspace spaceId={spaceId} initialCampaigns={drafts} colors={colors} />
-          </Suspense>
-        )
-      case 'space.emailstyle':
-        return (
-          <EmailStyleEditor slug={slug} current={colors} brandDefaults={brandDefaults} readOnly={readOnly} />
-        )
-      case 'space.reach':
-        return (
-          <Suspense fallback={panelSkeleton()}>
-            <QrBody slug={slug} />
-          </Suspense>
-        )
-      case 'space.insights':
-        return (
-          <Suspense fallback={panelSkeleton()}>
-            <QrBody slug={slug} />
-          </Suspense>
-        )
-      case 'space.automation':
-        return (
-          <Suspense fallback={panelSkeleton()}>
-            <AutomationBody slug={slug} />
-          </Suspense>
-        )
-      default:
-        return null
-    }
-  }
-
-  const panels: MarketingPanel[] = marketingModuleIds
-    .filter((id) => id in PANEL_LABEL)
-    .map((id) => ({ key: id, label: PANEL_LABEL[id], node: nodeFor(id) }))
+  // The other marketing tools become link-box cards below the dashboard, in catalog order, minus the Email
+  // dashboard (space.comms, that IS the body). Drop any id with no resolvable surface href (defensive).
+  const tools = marketingModuleIds
+    .filter((id) => id !== 'space.comms' && id in TOOL_LABEL)
+    .map((id) => {
+      const mod = spaceModuleById(id)
+      const href = mod ? panelHrefForModule(mod, slug) : null
+      return href ? { id, href } : null
+    })
+    .filter((t): t is { id: string; href: string } => t !== null)
 
   const header = (
     <PageHeading
-      eyebrow="Resonance CRM"
+      eyebrow="Community Resonance"
       title={
         <span className="inline-flex items-center gap-2">
           <Send className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
@@ -187,9 +159,9 @@ export async function SpaceMarketing({
     />
   )
 
-  // Fail-safe: if nothing gated through (should not happen for a manager), fall back to the plain Email
-  // surface so the tab is never empty.
-  if (panels.length === 0) {
+  // Fail-safe: if the Marketing (Email) dashboard is not gated through, fall back to the plain Email surface
+  // so the tab is never empty.
+  if (!marketingModuleIds.includes('space.comms')) {
     return (
       <div>
         {header}
@@ -201,7 +173,29 @@ export async function SpaceMarketing({
   return (
     <div>
       {header}
-      <MarketingPills panels={panels} />
+      <div className="space-y-8">
+        <SpaceMarketingDashboard
+          spaceId={spaceId}
+          slug={slug}
+          colors={colors}
+          tags={tags}
+          segments={segmentOptions}
+          campaigns={messagingItems}
+          overview={overview}
+          emailEnabled={emailEnabled}
+          readOnly={readOnly}
+        />
+        {tools.length > 0 && (
+          <div>
+            <SectionHeader title="Marketing tools" />
+            <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {tools.map((t) => (
+                <MarketingToolCard key={t.id} id={t.id} href={t.href} />
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
