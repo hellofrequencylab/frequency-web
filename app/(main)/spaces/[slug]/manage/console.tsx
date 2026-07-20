@@ -349,7 +349,20 @@ export function SpaceManageConsole({
           <p className="mb-4 max-w-2xl text-sm text-muted">{blurb}</p>
         )}
         {section === 'resonance' ? (
-          crmEmbed
+          // Community leads with the member viewer (health + master-detail roster), then surfaces the
+          // rest of the CRM as cards: the board (People · Pipeline · Cockpit · Import, opened in the
+          // `?panel=crm` workspace), the Inbox, Lead capture, Capture links, and Shared with team. Without
+          // these, Pipeline + Cockpit had NO home inside Community (only `/crm` or a deep URL); the cards
+          // give every CRM sub-function a visible entry point here.
+          <div className="space-y-8">
+            {crmEmbed}
+            {inSection.length > 0 && (
+              <div>
+                <SectionHeader title="CRM tools" />
+                <FeatureGrid modules={inSection} slug={slug} emphasis={emphasis} />
+              </div>
+            )}
+          </div>
         ) : section === 'marketing' ? (
           marketingEmbed
         ) : section === 'settings' ? (
