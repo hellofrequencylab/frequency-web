@@ -24,7 +24,7 @@ import {
   insertSpaceLibraryImage,
   type LoomPickAsset,
 } from '@/lib/library/store'
-import { classifyLoomUpload, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
+import { classifyLoomUpload, effectiveMime, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
 import { resolveElement } from '@/lib/elements/store'
 import { elementDef } from '@/lib/elements/registry'
 import { elementFeatureOn, elementChoice, type ViewerRoleCtx } from '@/lib/elements/config'
@@ -192,7 +192,10 @@ export async function uploadLoomImage(
 
   const file = formData.get('file')
   if (!(file instanceof File) || file.size === 0) return { error: 'No file chosen.' }
-  const target = classifyLoomUpload(file.type)
+  // Recover a missing/misreported MIME from the filename (iPhone .heic photos often arrive with a blank
+  // File.type), so a real image is classified + uploaded with a correct content-type instead of rejected.
+  const mime = effectiveMime(file.type, file.name)
+  const target = classifyLoomUpload(mime)
   if (!target || target.kind !== 'image') return { error: 'Choose an image file.' }
   if (file.size > target.maxBytes) {
     return { error: `Image is ${(file.size / 1024 / 1024).toFixed(1)} MB. The limit is ${Math.round(target.maxBytes / 1024 / 1024)} MB.` }
@@ -211,7 +214,7 @@ export async function uploadLoomImage(
 
   const { error: upErr } = await admin.storage
     .from(target.bucket)
-    .upload(path, bytes, { contentType: file.type || fallbackMimeFor(target.kind), upsert: false })
+    .upload(path, bytes, { contentType: mime || fallbackMimeFor(target.kind), upsert: false })
   if (upErr) return { error: upErr.message }
 
   const { data: pub } = admin.storage.from(target.bucket).getPublicUrl(path)
@@ -225,7 +228,7 @@ export async function uploadLoomImage(
     storageBucket: target.bucket,
     storagePath: path,
     url: pub.publicUrl,
-    mime: file.type || fallbackMimeFor(target.kind),
+    mime: mime || fallbackMimeFor(target.kind),
     bytes: file.size,
     kind: 'image',
     createdBy: caller.id,

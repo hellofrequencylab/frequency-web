@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { loomScopes, loomScope as loomScopeAction, loomImages, uploadLoomImage, type LoomScope, type LoomPickerConfig } from '@/lib/loom/picker-actions'
 import { searchSiteIcons, type SiteIcon } from '@/lib/loom/site-icons'
+import { looksLikeImage } from '@/lib/library/upload-kinds'
 import type { LoomPickAsset } from '@/lib/library/store'
 
 // Fallback config until the resolved one loads (matches the registry defaults). The real config comes
@@ -189,8 +190,13 @@ export function LoomPicker({
 
   const doUpload = useCallback(
     async (files: File[]) => {
-      const images = files.filter((f) => f.type.startsWith('image/'))
-      if (images.length === 0) return
+      // Accept by MIME OR by image extension: iPhone .heic photos often arrive with a blank File.type,
+      // and dropping them here made the uploader silently do nothing. If some files are not images, say so.
+      const images = files.filter((f) => looksLikeImage(f.type, f.name))
+      if (images.length === 0) {
+        if (files.length > 0) setError('Choose an image file (JPEG, PNG, GIF, WebP, HEIC, AVIF, or SVG).')
+        return
+      }
       setError(null)
       setUploading(true)
       let firstUrl: string | null = null
