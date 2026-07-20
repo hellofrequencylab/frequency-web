@@ -16,7 +16,7 @@ import { LearnPlayer } from '@/components/journey/v2/learn/learn-player'
 import { PracticeDetail } from '@/components/journey/v2/learn/practice-detail'
 import { AboutThisJourneyHero, MeetingBlock, AuthorBlock } from '@/components/journey/v2/learn/journey-overview'
 import { CohortMeter } from '@/components/journey/v2/cohort-meter'
-import { DetailTemplate, PageHero } from '@/components/templates'
+import { DetailTemplate, PageHero, HERO_ACTION_CLASS } from '@/components/templates'
 import { ShareImageProvider } from '@/components/qr/share-image-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { resolveHeaderElement } from '@/lib/elements/header'
@@ -32,12 +32,6 @@ import type { CohortProgress } from '@/lib/journeys/cohort'
 // Phase → Module → Lesson tree for the signed-in member. Works on existing (flat) journeys too —
 // the tree wraps loose lessons in an implicit phase — so it's reachable before the full v2 cutover.
 export const dynamic = 'force-dynamic'
-
-// QrShareDropdown hardcodes its trigger's classes and takes no className, so we wrap it to make the
-// trigger read as the ONE glassy on-ink header button (HERO_ACTION_CLASS) — the `> button` child
-// selector restyles only the trigger, never the buttons inside the opened dialog. Tokens only.
-const HERO_QR_WRAP =
-  '[&>button]:!gap-1.5 [&>button]:!rounded-lg [&>button]:!border [&>button]:!border-on-ink/30 [&>button]:!bg-on-ink/10 [&>button]:!px-3 [&>button]:!py-1.5 [&>button]:!text-sm [&>button]:!font-medium [&>button]:!text-on-ink [&>button]:!backdrop-blur [&>button]:hover:!bg-on-ink/20 [&>button]:hover:!text-on-ink'
 
 export default async function JourneyLearnPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -199,11 +193,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
           }
           title={plan.title}
           subtitle={plan.summary || undefined}
-          actions={
-            <span className={HERO_QR_WRAP}>
-              <QrShareDropdown manager={canManageJourney} />
-            </span>
-          }
+          actions={<QrShareDropdown manager={canManageJourney} className={HERO_ACTION_CLASS} />}
         />
       }
       title={plan.title}

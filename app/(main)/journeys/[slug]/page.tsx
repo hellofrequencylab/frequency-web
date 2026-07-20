@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { Globe, Lock, Link2, Pencil, Sparkles, Flame, Layers, SlidersHorizontal } from 'lucide-react'
-import { DetailTemplate, PageHero } from '@/components/templates'
+import { DetailTemplate, PageHero, HERO_ACTION_CLASS } from '@/components/templates'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { ShareImageProvider } from '@/components/qr/share-image-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
@@ -31,17 +31,14 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-// The header buttons are the ONE glassy on-ink style (HERO_ACTION_CLASS) so every header matches.
-// EnrollCta + QrShareDropdown are shared components that hardcode their own classes and take no
-// className, so we WRAP them in the actions slot: the descendant/child selectors restyle their
-// buttons/links to HERO_ACTION_CLASS. QR uses `> button` (only the trigger, never the dialog's
-// inner buttons); EnrollCta uses `_button`/`_a` (all it renders is the CTA link + form buttons).
-// Tokens only, no hex. Only the HEADER instances are wrapped — the light repeat-CTA card keeps its
-// normal styling.
-const HERO_QR_WRAP =
-  '[&>button]:!gap-1.5 [&>button]:!rounded-lg [&>button]:!border [&>button]:!border-on-ink/30 [&>button]:!bg-on-ink/10 [&>button]:!px-3 [&>button]:!py-1.5 [&>button]:!text-sm [&>button]:!font-medium [&>button]:!text-on-ink [&>button]:!backdrop-blur [&>button]:hover:!bg-on-ink/20 [&>button]:hover:!text-on-ink'
+// The header buttons are the ONE glassy on-ink style (HERO_ACTION_CLASS = the Space header's button) so
+// every header matches. QrShareDropdown now takes a `className` (passed directly below). EnrollCta is a
+// shared component that hardcodes its own classes and takes no className, so we still WRAP it in the
+// actions slot: the descendant selectors restyle its CTA link + form buttons to match HERO_ACTION_CLASS.
+// Kept token-for-token in sync with HERO_ACTION_CLASS. Only the HEADER instance is wrapped — the light
+// repeat-CTA card keeps its normal styling.
 const HERO_CTA_WRAP =
-  '[&_a]:!gap-1.5 [&_a]:!rounded-lg [&_a]:!border [&_a]:!border-on-ink/30 [&_a]:!bg-on-ink/10 [&_a]:!px-3 [&_a]:!py-1.5 [&_a]:!text-sm [&_a]:!font-medium [&_a]:!text-on-ink [&_a]:!backdrop-blur [&_a]:hover:!bg-on-ink/20 [&_a]:hover:!text-on-ink [&_button]:!gap-1.5 [&_button]:!rounded-lg [&_button]:!border [&_button]:!border-on-ink/30 [&_button]:!bg-on-ink/10 [&_button]:!px-3 [&_button]:!py-1.5 [&_button]:!text-sm [&_button]:!font-medium [&_button]:!text-on-ink [&_button]:!backdrop-blur [&_button]:hover:!bg-on-ink/20 [&_button]:hover:!text-on-ink'
+  '[&_a]:!inline-flex [&_a]:!items-center [&_a]:!justify-center [&_a]:!gap-1.5 [&_a]:!rounded-lg [&_a]:!border [&_a]:!border-white/40 [&_a]:!bg-white/10 [&_a]:!px-3 [&_a]:!py-1.5 [&_a]:!text-sm [&_a]:!font-semibold [&_a]:!text-on-ink [&_a]:!backdrop-blur-sm [&_a]:hover:!bg-white/20 [&_a]:hover:!text-on-ink [&_button]:!inline-flex [&_button]:!items-center [&_button]:!justify-center [&_button]:!gap-1.5 [&_button]:!rounded-lg [&_button]:!border [&_button]:!border-white/40 [&_button]:!bg-white/10 [&_button]:!px-3 [&_button]:!py-1.5 [&_button]:!text-sm [&_button]:!font-semibold [&_button]:!text-on-ink [&_button]:!backdrop-blur-sm [&_button]:hover:!bg-white/20 [&_button]:hover:!text-on-ink'
 
 // The one Journey page (docs/JOURNEYS.md §10). It flips between three faces:
 //   • AUTHOR    → redirects to the v2 editor at /journeys/[slug]/edit (identity + delivery +
@@ -199,9 +196,7 @@ export default async function JourneyPlanPage({
               <span className={HERO_CTA_WRAP}>
                 <EnrollCta {...enrollProps} layout="inline" />
               </span>
-              <span className={HERO_QR_WRAP}>
-                <QrShareDropdown manager={canManageJourney} />
-              </span>
+              <QrShareDropdown manager={canManageJourney} className={HERO_ACTION_CLASS} />
             </>
           }
         />

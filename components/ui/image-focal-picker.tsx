@@ -32,6 +32,7 @@ export function ImageFocalPicker({
   hint = 'Drag the marker to keep the important part of the photo in frame when it is cropped.',
   showSliders = true,
   className,
+  rounded = false,
   heightClassName,
 }: {
   /** The image to preview. Required — the picker is meaningless without it. */
@@ -55,6 +56,8 @@ export function ImageFocalPicker({
    *  enough and the sliders would crowd the panel (the event cover-focus control). */
   showSliders?: boolean
   className?: string
+  /** Round the crop FRAME (border + clip) into a circle, for an avatar preview. Pair with aspect={1}. */
+  rounded?: boolean
   /** An explicit Tailwind HEIGHT class (e.g. the hero's set height) for the crop frame. When set it drives
    *  the frame height and the `aspect` ratio is ignored, so the preview matches exactly what the render site
    *  paints (used by the Space header control to preview at the hero's chosen height). */
@@ -199,7 +202,8 @@ export function ImageFocalPicker({
               : { paddingBottom: `${100 / aspect}%`, height: 0 }
         }
         className={cn(
-          'relative w-full touch-none select-none overflow-hidden rounded-xl border border-border bg-surface-elevated outline-none',
+          'relative w-full touch-none select-none overflow-hidden border border-border bg-surface-elevated outline-none',
+          rounded ? 'rounded-full' : 'rounded-xl',
           'focus-visible:ring-2 focus-visible:ring-border-strong/40',
           disabled ? 'cursor-not-allowed opacity-60' : 'cursor-crosshair',
           heightClassName,

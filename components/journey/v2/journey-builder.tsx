@@ -344,12 +344,14 @@ export function JourneyBuilder({
                 })}
               </div>
               {/* Or upload an image to use as the Journey's logo (build item 1). It doubles as the
-                  cover, so the small face + the cover band stay in sync. */}
+                  cover, so the small face + the cover band stay in sync: the upload sets BOTH the cover
+                  banner (coverImage) AND the header leading chip (logoImage), so it truly "replaces the
+                  icon" on the live header. The rail Settings module can set the two separately. */}
               <p className="mb-1.5 mt-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Logo image</p>
               <ImageUpload
                 label="Upload an image"
                 value={cover}
-                onChange={(url) => { setCover(url ?? null); meta({ coverImage: url }) }}
+                onChange={(url) => { setCover(url ?? null); meta({ coverImage: url, logoImage: url }) }}
                 folder="journey-covers"
                 uploadFn={coverUpload}
                 hint="Used as the Journey's logo and cover. Replaces the icon."

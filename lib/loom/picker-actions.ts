@@ -131,11 +131,17 @@ async function resolveScope(
   scopeKey: string,
 ): Promise<{ createdBy: string } | { spaceId: string } | null> {
   if (scopeKey === 'mine') return { createdBy: callerId }
-  const space = await getSpaceById(scopeKey)
-  if (!space) return null
-  const caps = await getSpaceCapabilities(space, callerId)
-  if (!caps.canEditProfile) return null
-  return { spaceId: scopeKey }
+  // FAIL-SAFE: a transient DB error resolving/authorizing the space must not throw (the picker's
+  // contract is "never a throw" → an empty, safe picker), so swallow it to a null (unauthorized) scope.
+  try {
+    const space = await getSpaceById(scopeKey)
+    if (!space) return null
+    const caps = await getSpaceCapabilities(space, callerId)
+    if (!caps.canEditProfile) return null
+    return { spaceId: scopeKey }
+  } catch {
+    return null
+  }
 }
 
 /** The images in one scope for the picker grid, plus that scope's tag facets. `view='elements'` keeps

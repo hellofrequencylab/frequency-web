@@ -108,7 +108,10 @@ export function Dialog({
         previouslyFocused.focus?.()
       }
     }
-  }, [open, onClose])
+    // `isClient` is a dep so the effect re-runs once the portal actually mounts (a Dialog rendered with
+    // open=true on first paint mounts its panel only after isClient flips true) — otherwise the focus trap
+    // would capture a null panel and never re-bind.
+  }, [open, onClose, isClient])
 
   if (!open || !isClient) return null
 

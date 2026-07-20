@@ -29,8 +29,13 @@ export function QrShareDropdown({
   /** Whether the viewer manages this page (host+ / staff). Managers get the QR
    *  designer; everyone else gets the read-only share kit. */
   manager,
+  /** Replace the trigger button's chrome (like SpaceShareButton). Pass HERO_ACTION_CLASS to make the
+   *  profile/journey header's QR & Share button match the Space header's on-ink button exactly. When
+   *  omitted, the default compact trigger is used (page admin bar, etc.). */
+  className,
 }: {
   manager: boolean
+  className?: string
 }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
@@ -64,7 +69,10 @@ export function QrShareDropdown({
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="inline-flex shrink-0 items-center gap-1 rounded-md bg-canvas px-1.5 py-0.5 text-xs font-semibold text-muted transition-colors hover:text-text"
+        className={
+          className ??
+          'inline-flex shrink-0 items-center gap-1 rounded-md bg-canvas px-1.5 py-0.5 text-xs font-semibold text-muted transition-colors hover:text-text'
+        }
       >
         <Share2 className="h-3.5 w-3.5" aria-hidden />
         QR &amp; Share
