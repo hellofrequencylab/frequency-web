@@ -80,7 +80,26 @@ export function decodeSendToken(token: string | null | undefined): string | null
   return sendId
 }
 
-// ── Inject (PURE) ────────────────────────────────────────────────────────────────────────────────
+/** Sign a click DESTINATION to its send token, so the `u` param on a tracked link cannot be swapped.
+ *  16-hex HMAC over (token, url). Without this, a recipient holding a valid token could turn the click
+ *  endpoint into an open redirect (frequencylocal.com/e/c/<token>?u=<evil>); binding the url shuts that. */
+export function signClickUrl(token: string, url: string): string {
+  const hmac = createHmac('sha256', getSecret())
+  hmac.update(`space-email-click:${token}:${url}`)
+  return hmac.digest('hex').slice(0, 16)
+}
+
+/** Verify a click destination against its token's signature (constant-time). Any bad shape/mismatch = false. */
+export function verifyClickUrl(token: string, url: string, sig: string | null | undefined): boolean {
+  if (typeof sig !== 'string' || !/^[0-9a-f]{16}$/.test(sig)) return false
+  try {
+    return timingSafeEqual(Buffer.from(signClickUrl(token, url), 'hex'), Buffer.from(sig, 'hex'))
+  } catch {
+    return false
+  }
+}
+
+// ── Inject ───────────────────────────────────────────────────────────────────────────────────────
 
 // A 1x1 transparent GIF, hidden. Kept out of the layout (display:none + 1px) so it never shows.
 function pixelTag(base: string, token: string): string {
@@ -110,7 +129,9 @@ export function injectTracking(html: string, token: string, baseUrl: string): st
       if (!safe) return whole // mailto:/tel:/#/javascript: etc. — leave untouched
       // Never wrap the unsubscribe link (one-click semantics) or our own tracker (self-loop).
       if (safe.includes('/e/c/') || safe.includes('/unsubscribe')) return whole
-      return `${pre}${quote}${clickBase}?u=${encodeURIComponent(safe)}${quote}`
+      // Sign the destination to the token so the redirect endpoint can prove `u` was not tampered.
+      const sig = signClickUrl(token, safe)
+      return `${pre}${quote}${clickBase}?u=${encodeURIComponent(safe)}&s=${sig}${quote}`
     },
   )
 

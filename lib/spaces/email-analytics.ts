@@ -281,10 +281,13 @@ export async function getSpaceEmailStats(spaceId: string): Promise<SpaceEmailSta
       clicked,
       bounceRate: attempted > 0 ? counts.bounced / attempted : 0,
       complaintRate: attempted > 0 ? counts.complained / attempted : 0,
-      // Engagement rates are over DELIVERED (a delivery-confirmed send), per the analytics contract.
-      // 0 when nothing was delivered (never a divide-by-zero).
-      openRate: counts.delivered > 0 ? opened / counts.delivered : 0,
-      clickRate: counts.delivered > 0 ? clicked / counts.delivered : 0,
+      // Engagement rates are over ATTEMPTED sends, the SAME population `opened`/`clicked` are counted
+      // across (an open/click implies the send happened). Using `delivered` here would misread whenever
+      // the delivery webhook lags: opens can outrun `delivered` -> rate > 100%, or `delivered` sits at 0
+      // while opens accrue -> 0% beside "Opened: N". Over attempted, the rate is always in [0,1] and never
+      // reads 0 while events exist.
+      openRate: attempted > 0 ? opened / attempted : 0,
+      clickRate: attempted > 0 ? clicked / attempted : 0,
     }
   } catch {
     return ZERO_STATS
