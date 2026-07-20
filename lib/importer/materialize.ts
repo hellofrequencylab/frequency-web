@@ -736,6 +736,9 @@ export async function fileSeedImagesIntoLoom(
         mime,
         bytes: 0,
         createdBy: opts.createdBy ?? null,
+        // Importer/seed content: keep it OUT of the operator's personal "My uploads" (it still belongs
+        // to the seeded Space's own folder).
+        source: 'seed',
       })
       if (id) {
         filed.push(url)

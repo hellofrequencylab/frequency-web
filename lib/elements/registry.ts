@@ -58,6 +58,7 @@ export const ELEMENTS: readonly ElementDef[] = [
     studioHref: '/admin/library',
     features: [
       { key: 'tab.images', label: 'Images tab', kind: 'toggle', defaultOn: true, defaultRole: 'everyone', help: 'Your uploaded images.' },
+      { key: 'tab.icons', label: 'Icons tab', kind: 'toggle', defaultOn: true, defaultRole: 'everyone', help: 'Site icons + icons you upload.' },
       { key: 'tab.elements', label: 'Elements tab', kind: 'toggle', defaultOn: true, defaultRole: 'everyone', help: 'AI-created images.' },
       { key: 'tab.tags', label: 'Tags tab', kind: 'toggle', defaultOn: true, defaultRole: 'everyone', help: 'Browse by tag.' },
       { key: 'tab.spaces', label: 'Per-space categories', kind: 'toggle', defaultOn: true, defaultRole: 'everyone', help: 'A category for each Space you run.' },

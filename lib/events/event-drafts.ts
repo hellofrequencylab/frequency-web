@@ -587,8 +587,11 @@ async function copyEventImagesToLoom(eventId: string, claimerProfileId: string):
         storagePath: path,
         url: pub.publicUrl,
         title: row.title ?? null,
-        // The claimer owns the Loom we resolved, so stamp them as the uploader → shows in "My uploads".
+        // The claimer owns the Loom we resolved, so stamp them as the uploader. But these images came
+        // WITH the claimed event — the claimer never uploaded them — so mark them 'event-claim' to keep
+        // them OUT of personal "My uploads" (they still appear in the space's own folder).
         createdBy: claimerProfileId,
+        source: 'event-claim',
       })
     }
   } catch {

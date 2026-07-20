@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import { Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { SlidersHorizontal, ArrowUpRight } from 'lucide-react'
@@ -26,8 +25,6 @@ import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { SpaceProfileMenu } from '@/components/spaces/space-profile-menu'
-import { SpaceManageBoard } from '@/app/(main)/spaces/[slug]/manage/manage-board'
-import { SpaceCrmSnapshot } from '@/app/(main)/spaces/[slug]/crm/crm-snapshot'
 import { isFollowing } from '@/lib/spaces/follows'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { SpaceShareButton } from '@/components/spaces/space-share-button'
@@ -520,26 +517,12 @@ export default async function SpaceProfileChromeLayout({
   // the section targets carry scroll-margin that clears the header + this pinned bar). The band above
   // holds only the identity; on the Hero size the identity is already on the cover, so the band is bare.
   //
-  // Manage / CRM are OWNER-only toggles that slide open a compact, in-place panel UNDER the menu on the
-  // same page (no navigation): the manager console + a CRM snapshot, server-rendered here and handed to
-  // the client menu, gated on the same adminTabs the nav computes (a visitor gets neither). The CRM
-  // snapshot streams behind Suspense so it never blocks the profile paint. The panels are intentionally
-  // cramped, a quick in-place view that points to the full workspace / the operator's own website.
-  const hasManage = adminTabs.some((t) => t.label === 'Manage')
-  const hasCrm = adminTabs.some((t) => t.label === 'CRM')
-  const stickyNav = (
-    <SpaceProfileMenu
-      tabs={tabs}
-      manageNode={hasManage ? <SpaceManageBoard slug={space.slug} /> : null}
-      crmNode={
-        hasCrm ? (
-          <Suspense fallback={<p className="px-4 py-6 text-sm text-muted">Loading your CRM…</p>}>
-            <SpaceCrmSnapshot slug={space.slug} />
-          </Suspense>
-        ) : null
-      }
-    />
-  )
+  // "Manage" is an OWNER-only soft-nav to `?panel=manage`: it swaps the profile body to the Manage
+  // dashboard (quick stats + link cards to the five management areas) with the hero + menu pinned, no
+  // reload. It is no longer a fold-out dropdown, and there is no separate CRM item (the CRM lives inside
+  // the dashboard's Community area). A visitor never sees it (canManage false).
+  const canManage = adminTabs.some((t) => t.label === 'Manage')
+  const stickyNav = <SpaceProfileMenu tabs={tabs} canManage={canManage} />
 
   return (
     <AccentScope vars={accentVars} theme={spaceTheme}>

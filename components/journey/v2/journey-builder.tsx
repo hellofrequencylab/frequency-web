@@ -348,13 +348,15 @@ export function JourneyBuilder({
                   icon" on the live header. The rail Settings module can set the two separately. */}
               <p className="mb-1.5 mt-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Logo or profile image</p>
               <ImageUpload
-                label="Upload an image"
+                label="Logo or profile image"
                 value={cover}
                 onChange={(url) => { setCover(url ?? null); meta({ coverImage: url, logoImage: url }) }}
                 folder="journey-covers"
                 scopeKey="mine"
+                kinds={['image', 'icon']}
+                noUrlPaste
                 uploadFn={coverUpload}
-                hint="The Journey's leading mark and cover. Opens the Loom to pick an image, upload, or use an Element."
+                hint="The Journey's leading mark and cover. Opens the Loom to pick a photo or an icon, or upload your own."
               />
             </div>
           )}

@@ -72,6 +72,9 @@ export async function copyImageToLoom(input: {
   bytes?: number | null
   /** The uploader (library_assets.created_by), so the image shows in their personal Loom "My uploads". */
   createdBy?: string | null
+  /** Provenance: 'upload' when the member uploaded this event photo themselves, 'event-claim' when it
+   *  came along with an event they CLAIMED (so it stays out of their personal "My uploads"). */
+  source?: 'upload' | 'event-claim' | null
 }): Promise<void> {
   try {
     if (await loomHasStoragePath(input.spaceId, input.storageBucket, input.storagePath)) return
@@ -88,6 +91,7 @@ export async function copyImageToLoom(input: {
       mime: input.mime || 'image/jpeg',
       bytes: input.bytes ?? 0,
       createdBy: input.createdBy ?? null,
+      source: input.source ?? null,
     })
   } catch {
     /* best-effort: a Loom copy failure must never break the event flow */
@@ -164,5 +168,7 @@ export async function copyEventMediaToProfileLoom(input: {
     bytes: input.bytes,
     // The profile owns this Loom, so stamp them as the uploader → shows in their "My uploads".
     createdBy: input.profileId,
+    // The organizer uploaded this event photo themselves, so it is a genuine personal upload.
+    source: 'upload',
   })
 }

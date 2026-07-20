@@ -79,11 +79,11 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   ]
 
   const canSeeAsOwner = manage.canManage || manage.staffViewing
+  // Just "Manage" now: the CRM has no separate menu item (it lives inside the Manage dashboard's
+  // Community area). `spaceManageHref` is the full-page console; the profile menu instead opens the
+  // in-place `?panel=manage` dashboard, but this Manage tab still backs the /manage + shell layouts.
   const adminTabs: SpaceProfileTab[] = canSeeAsOwner
-    ? [
-        { href: spaceManageHref(space.type, space.slug), label: 'Manage' },
-        ...(isConsoleSpaceType(space.type) ? [{ href: `${base}/crm`, label: 'CRM' }] : []),
-      ]
+    ? [{ href: spaceManageHref(space.type, space.slug), label: 'Manage' }]
     : []
 
   return { tabs, adminTabs }

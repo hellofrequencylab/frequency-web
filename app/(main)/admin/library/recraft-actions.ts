@@ -106,6 +106,7 @@ export async function generateWithRecraft(input: {
         slug,
         category: input.category || (input.lane === 'vector' ? 'Recraft vectors' : 'Recraft images'),
         tags: ['recraft', 'generated', input.lane],
+        source: 'recraft',
         status: 'approved',
         visibility: 'public',
         storage_bucket: stored.bucket,

@@ -145,6 +145,7 @@ export async function saveLoomCard(input: {
     slug,
     category: isIcon ? 'Vera icons' : 'Vera cards',
     tags: isIcon ? ['vera', 'generated', 'icon'] : ['vera', 'generated'],
+    source: 'vera',
     status: 'approved',
     visibility: 'public',
     config: { source: 'vera', mode: input.mode ?? 'graphic', prompt: (input.prompt || '').slice(0, 400), svg: checked.svg },

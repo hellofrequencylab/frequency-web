@@ -257,7 +257,9 @@ export function JourneySettings(props: JourneySettingsProps) {
               }}
               folder="journey-logos"
               scopeKey="mine"
-              hint="The Journey's leading mark. Opens the Loom to pick an image, upload, or use an Element."
+              kinds={['image', 'icon']}
+              noUrlPaste
+              hint="The Journey's leading mark. Opens the Loom to pick an image or icon, or upload your own."
             />
           </div>
           {/* Header overlay — the shared None / Shade / Blend control (ADR-794). None keeps a clean photo,
