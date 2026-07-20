@@ -62,6 +62,14 @@ export function SpaceBodyPanel({ slug, panel, area }: { slug: string; panel: str
     : Body ? <Body slug={slug} /> : null
   if (!body) return null
 
+  // The Manage panel IS the space's in-place console: its own tab bar is the nav, and everything edits here
+  // (there is no "open full page"). So it renders CHROME-FREE — no "Back to page / Open full page" header —
+  // just the console under the persistent profile hero + menu. Every OTHER panel keeps the sticky exit
+  // header with its full-page escape hatch.
+  if (panel === 'manage') {
+    return <Suspense fallback={<ProfileBodySkeleton />}>{body}</Suspense>
+  }
+
   return (
     <div className="space-y-6">
       {/* STICKY panel header (Stage D4): the surface label + the "Back to page" exit + "Open full page"

@@ -30,7 +30,10 @@ export function SpaceProfileMenu({
   // pathname is still the index — so Home drops its active styling and a small affordance names the
   // surface. Owner-gated (a visitor's stray `?panel` is ignored).
   const rawPanel = searchParams.get('panel') ?? undefined
-  const openPanelLabel = canManage && isPanelId(rawPanel) ? SURFACE_PANELS[rawPanel].label : null
+  // The Manage panel is the full in-place console (its own tab bar names where you are), so it does NOT get
+  // the "You are editing X" affordance — that cue is only for the narrower single-surface panels.
+  const openPanelLabel =
+    canManage && isPanelId(rawPanel) && rawPanel !== 'manage' ? SURFACE_PANELS[rawPanel].label : null
   const manageActive = canManage && rawPanel === 'manage'
 
   const indexHref = tabs[0]?.href
