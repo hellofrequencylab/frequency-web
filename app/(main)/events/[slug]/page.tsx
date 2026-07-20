@@ -9,7 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
-import { eventSchema } from '@/lib/jsonld'
+import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
 import { TicketButton, type TicketTierView } from './ticket-button'
@@ -1145,7 +1145,15 @@ export default async function EventDetailPage({
 
   return (
     <div className="pb-24 lg:pb-0">
-      <JsonLd data={eventJsonLd} />
+      <JsonLd
+        data={[
+          eventJsonLd,
+          breadcrumbSchema([
+            { name: 'Events', path: '/events' },
+            { name: event.title, path: `/events/${event.slug}` },
+          ]),
+        ]}
+      />
       {event.is_cancelled && (
         <div className="mb-4 rounded-2xl bg-danger-bg border border-danger px-3 py-2">
           <p className="text-sm font-medium text-danger">This event has been cancelled.</p>

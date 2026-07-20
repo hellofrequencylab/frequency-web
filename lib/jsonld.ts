@@ -1002,3 +1002,94 @@ export function housingListingSchema(h: {
   }
 }
 
+// ── Podcast (PodcastSeries + PodcastEpisode) ─────────────────────────────────────
+// Airwaves (ADR-608): a public Show maps to schema.org/PodcastSeries, one crawlable node per
+// podcast an answer engine can cite for "where can I listen to X" and that ties the on-site page
+// to the RSS feed (webFeed) so directories + engines resolve them as one series. An Episode maps
+// to PodcastEpisode. Every field beyond name/url is OPTIONAL and emitted only when present, so a
+// bare Show still yields a valid node; a malformed/empty field is dropped (answer engines silently
+// discard a malformed node, which would negate the SEO investment). No member data is exposed.
+
+export function podcastSchema(show: {
+  title: string
+  description?: string | null
+  /** The show's host/author line. */
+  author?: string | null
+  /** BCP-47 language tag, e.g. 'en'. */
+  language?: string | null
+  /** The Apple/iTunes category, mapped to schema.org `genre`. */
+  category?: string | null
+  /** Cover art URL (an arbitrary host), or null. */
+  coverUrl?: string | null
+  /** The public Show page path, e.g. `/spaces/<slug>/podcasts/<showSlug>`. */
+  path: string
+  /** The RSS feed URL (absolute) — schema.org `webFeed`, the on-site ⇄ feed link. */
+  feedUrl?: string | null
+  /** The publishing entity (the Space brand name). */
+  publisherName?: string | null
+}) {
+  const url = abs(show.path)
+  const image = [...(show.coverUrl ? [show.coverUrl] : []), abs('/opengraph-image')]
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'PodcastSeries',
+    // A stable entity URI so search + answer engines resolve the Show as one entity across the
+    // on-site page and its RSS feed (AIO).
+    '@id': url,
+    name: show.title,
+    url,
+    image,
+    ...(show.description ? { description: show.description } : {}),
+    ...(show.author ? { author: { '@type': 'Person', name: show.author } } : {}),
+    ...(show.publisherName
+      ? { publisher: { '@type': 'Organization', name: show.publisherName } }
+      : {}),
+    ...(show.category ? { genre: show.category } : {}),
+    ...(show.language ? { inLanguage: show.language } : {}),
+    ...(show.feedUrl ? { webFeed: show.feedUrl } : {}),
+  }
+}
+
+export function podcastEpisodeSchema(ep: {
+  title: string
+  description?: string | null
+  /** The episode's own URL path (its detail page, or the Show page + anchor). */
+  path: string
+  /** ISO publish date → datePublished. */
+  datePublished?: string | null
+  /** Duration in SECONDS → an ISO 8601 duration. */
+  durationSeconds?: number | null
+  /** The playable file URL (the enclosure), emitted as an Audio/VideoObject. */
+  mediaUrl?: string | null
+  mediaKind?: 'audio' | 'video' | null
+  /** Episode artwork URL (an arbitrary host), or null. */
+  imageUrl?: string | null
+  /** The parent Show, for partOfSeries. */
+  series?: { title: string; path: string } | null
+}) {
+  const url = abs(ep.path)
+  const duration =
+    typeof ep.durationSeconds === 'number' &&
+    Number.isFinite(ep.durationSeconds) &&
+    ep.durationSeconds > 0
+      ? `PT${Math.round(ep.durationSeconds)}S`
+      : null
+  const media = ep.mediaUrl
+    ? { '@type': ep.mediaKind === 'video' ? 'VideoObject' : 'AudioObject', contentUrl: ep.mediaUrl }
+    : null
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'PodcastEpisode',
+    name: ep.title,
+    url,
+    ...(ep.description ? { description: ep.description } : {}),
+    ...(ep.datePublished ? { datePublished: ep.datePublished } : {}),
+    ...(duration ? { duration } : {}),
+    ...(ep.imageUrl ? { image: ep.imageUrl } : {}),
+    ...(media ? { associatedMedia: media } : {}),
+    ...(ep.series
+      ? { partOfSeries: { '@type': 'PodcastSeries', name: ep.series.title, url: abs(ep.series.path) } }
+      : {}),
+  }
+}
+

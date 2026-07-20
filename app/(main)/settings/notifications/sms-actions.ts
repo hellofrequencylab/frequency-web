@@ -24,7 +24,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { isSmsProvisioned } from '@/lib/comms/sms'
+import { isSmsProvisioned, isSmsConsentTableReady } from '@/lib/comms/sms'
 import { enqueueSms } from '@/lib/comms/sms-send'
 import {
   normalizeE164,
@@ -72,7 +72,10 @@ export async function sendSmsCode(rawPhone: string): Promise<ActionResult<{ phon
   const phone = normalizeE164(rawPhone)
   if (!phone) return fail('Enter a valid phone number, including the area code.')
 
-  if (!isSmsProvisioned()) {
+  // Fail SAFE two ways: the A2P env flags must be set AND the sms_consent ledger must
+  // exist (migration 20260626010000 is unapplied in prod). Either missing => no-op with
+  // an honest, in-voice message rather than a Postgres "relation does not exist" error.
+  if (!isSmsProvisioned() || !(await isSmsConsentTableReady())) {
     // Honest, in-voice: texts are not live yet (the A2P legal track is the gate).
     return fail('Texts are not turned on yet. Check back soon.')
   }
@@ -123,6 +126,12 @@ export async function verifySmsCode(rawCode: string): Promise<ActionResult> {
 
   const code = (rawCode ?? '').trim()
   if (!/^\d{4,8}$/.test(code)) return fail('Enter the code we texted you.')
+
+  // Fail SAFE if the consent ledger is not provisioned yet (migration unapplied) — there
+  // is nothing to verify against, so no-op with an honest message.
+  if (!(await isSmsConsentTableReady())) {
+    return fail('Texts are not turned on yet. Check back soon.')
+  }
 
   let latest: Record<string, unknown> | null = null
   try {
@@ -228,6 +237,13 @@ export interface SmsPreferences {
 export async function saveSmsPreferences(prefs: SmsPreferences): Promise<ActionResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
+
+  // Fail SAFE: the sms_* preference columns ship in the same unapplied migration as the
+  // sms_consent ledger (20260626010000). If the ledger is absent the columns are too, so
+  // no-op cleanly rather than letting the upsert raise a missing-column error.
+  if (!(await isSmsConsentTableReady())) {
+    return fail('Texts are not turned on yet. Check back soon.')
+  }
 
   const hour = (n: unknown): number => {
     const v = Math.trunc(Number(n))

@@ -40,9 +40,10 @@ export async function discover(): Promise<DiscoverFeed> {
   if (!worlds || worlds.length === 0) return { worlds: [] };
 
   // venue_id -> world_id, so presence/room signals can roll up to a world.
-  const { data: venues } = await supabase
+  const { data: venues, error: venuesError } = await supabase
     .from("venues")
     .select("id, world_id");
+  if (venuesError) throw venuesError;
   const venueWorld = new Map<string, string>();
   (venues ?? []).forEach((v) => venueWorld.set(v.id as string, v.world_id as string));
   const venueIds = (venues ?? []).map((v) => v.id as string);
@@ -50,26 +51,34 @@ export async function discover(): Promise<DiscoverFeed> {
   const nowIso = new Date().toISOString();
   const since = new Date(Date.now() - 45_000).toISOString();
 
-  const [{ data: rooms }, { data: pings }, { data: events }] = await Promise.all([
+  const [roomsRes, pingsRes, eventsRes] = await Promise.all([
     venueIds.length
       ? supabase
           .from("room_state")
           .select("venue_id, is_playing")
           .in("venue_id", venueIds)
-      : Promise.resolve({ data: [] as { venue_id: string; is_playing: boolean }[] }),
+      : Promise.resolve({ data: [] as { venue_id: string; is_playing: boolean }[], error: null }),
     venueIds.length
       ? supabase
           .from("presence_pings")
           .select("venue_id, user_id")
           .in("venue_id", venueIds)
           .gt("last_seen", since)
-      : Promise.resolve({ data: [] as { venue_id: string; user_id: string }[] }),
+      : Promise.resolve({ data: [] as { venue_id: string; user_id: string }[], error: null }),
     supabase
       .from("events")
       .select("id, world_id, title, starts_at")
       .gte("starts_at", nowIso)
       .order("starts_at", { ascending: true }),
   ]);
+  // Surface read failures rather than masking them as an authoritative-looking
+  // empty "happening now" feed (0 live venues / 0 here / no events).
+  if (roomsRes.error) throw roomsRes.error;
+  if (pingsRes.error) throw pingsRes.error;
+  if (eventsRes.error) throw eventsRes.error;
+  const { data: rooms } = roomsRes;
+  const { data: pings } = pingsRes;
+  const { data: events } = eventsRes;
 
   // Venues that count as live: a playing room, or a fresh ping.
   const liveVenueIds = new Set<string>();

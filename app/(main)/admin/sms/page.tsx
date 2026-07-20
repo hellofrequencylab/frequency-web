@@ -6,7 +6,7 @@ import { FormSection } from '@/components/admin/form-section'
 import { Banner, StatusChip } from '@/components/admin/status'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { smsEnabledFlag } from '@/lib/platform-flags'
-import { isSmsProvisioned } from '@/lib/comms/sms'
+import { isSmsProvisioned, isSmsConsentTableReady } from '@/lib/comms/sms'
 import { SmsToggle } from './sms-toggle'
 
 // The operator console for the SMS channel ("text the group", ADR-256) — the single
@@ -74,7 +74,15 @@ function EnvFlagRow({ label, set }: { label: string; set: boolean }) {
 export default async function AdminSmsPage() {
   await requireAdmin('janitor', { staff: 'platform' })
 
-  const [enabled, consent] = await Promise.all([smsEnabledFlag(), smsConsentCounts()])
+  // The sms_consent ledger may not exist yet (migration 20260626010000 is unapplied
+  // in prod). Probe first, and only read consent counts when the table is present —
+  // otherwise the Consent section shows a clean "not provisioned" state instead of
+  // misleading zeros (or a crash).
+  const tableReady = await isSmsConsentTableReady()
+  const [enabled, consent] = await Promise.all([
+    smsEnabledFlag(),
+    tableReady ? smsConsentCounts() : Promise.resolve<ConsentCounts | null>(null),
+  ])
 
   // Legal registration status. Booleans only — the console reads whether each secret is
   // present, never its value.
@@ -130,20 +138,27 @@ export default async function AdminSmsPage() {
           title="Consent"
           description="SMS is opt-in only. These counts are the current state per member (their latest consent record wins), so a member who texted STOP shows as opted out."
         >
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl border border-border bg-surface p-3">
-              <p className="text-2xl font-bold tabular-nums text-text">{consent.consented.toLocaleString()}</p>
-              <p className="mt-0.5 text-xs text-muted">Opted in</p>
+          {consent ? (
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-xl border border-border bg-surface p-3">
+                <p className="text-2xl font-bold tabular-nums text-text">{consent.consented.toLocaleString()}</p>
+                <p className="mt-0.5 text-xs text-muted">Opted in</p>
+              </div>
+              <div className="rounded-xl border border-border bg-surface p-3">
+                <p className="text-2xl font-bold tabular-nums text-text">{consent.optedOut.toLocaleString()}</p>
+                <p className="mt-0.5 text-xs text-muted">Opted out</p>
+              </div>
+              <div className="rounded-xl border border-border bg-surface p-3">
+                <p className="text-2xl font-bold tabular-nums text-text">{consent.pending.toLocaleString()}</p>
+                <p className="mt-0.5 text-xs text-muted">Pending or failed</p>
+              </div>
             </div>
-            <div className="rounded-xl border border-border bg-surface p-3">
-              <p className="text-2xl font-bold tabular-nums text-text">{consent.optedOut.toLocaleString()}</p>
-              <p className="mt-0.5 text-xs text-muted">Opted out</p>
-            </div>
-            <div className="rounded-xl border border-border bg-surface p-3">
-              <p className="text-2xl font-bold tabular-nums text-text">{consent.pending.toLocaleString()}</p>
-              <p className="mt-0.5 text-xs text-muted">Pending or failed</p>
-            </div>
-          </div>
+          ) : (
+            <Banner tone="info" title="SMS is not provisioned yet">
+              The consent ledger has not been set up in this environment, so there is nothing to
+              count. Consent numbers appear here once SMS is provisioned.
+            </Banner>
+          )}
         </FormSection>
       </AdminSection>
     </AdminTemplate>

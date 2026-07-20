@@ -7,6 +7,8 @@ import { ShowSubscribe } from '@/components/airwaves/show-subscribe'
 import { ShowEpisodes, type ShowEpisodeItem } from '@/components/airwaves/show-episodes'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DetailTemplate } from '@/components/templates'
+import { JsonLd } from '@/components/json-ld'
+import { podcastSchema } from '@/lib/jsonld'
 import { SITE_URL } from '@/lib/site'
 
 // Airwaves P3 — the PUBLIC Show page (ADR-608). The in-app, shell-framed listening surface: cover +
@@ -51,6 +53,9 @@ export async function generateMetadata({
     title: show.title,
     description,
     alternates: {
+      // /spaces/<slug>/podcasts/<showSlug> is the canonical public Show URL, so search + AI engines
+      // consolidate on this one page (the RSS feed below is an alternate representation, not canonical).
+      canonical: `/spaces/${slug}/podcasts/${showSlug}`,
       types: {
         'application/rss+xml': `${SITE_URL}/podcasts/${slug}/${showSlug}/rss.xml`,
       },
@@ -98,8 +103,24 @@ export default async function ShowPage({
   // a square cover to the LEFT of the "Show" eyebrow + title + author + description + subscribe
   // row — so it rides the template's `band` slot (the Space-profile precedent), which REPLACES the
   // default lockup and owns the single page <h1>. The Episode list is the template body.
+  // PodcastSeries structured data (schema.org) for SEO + AI answer engines. Built from the shared
+  // podcastSchema helper so the on-site page and the RSS feed resolve as one series (webFeed), the
+  // author/cover/language carried straight from the Show. No member data is exposed.
+  const seriesJsonLd = podcastSchema({
+    title: show.title,
+    description: show.description,
+    author: show.author,
+    language: show.language,
+    category: show.itunesCategory,
+    coverUrl,
+    path: `/spaces/${slug}/podcasts/${showSlug}`,
+    feedUrl,
+    publisherName: spaceName,
+  })
+
   return (
     <div className="mx-auto max-w-3xl">
+      <JsonLd data={seriesJsonLd} />
       <DetailTemplate
         title={show.title}
         band={

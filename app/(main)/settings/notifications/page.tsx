@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { isSmsProvisioned } from '@/lib/comms/sms'
+import { isSmsProvisioned, isSmsConsentTableReady } from '@/lib/comms/sms'
 import {
   DEFAULT_SETTINGS,
   type NotificationSettings,
@@ -73,26 +73,36 @@ export default async function NotificationsPage() {
     sms_quiet_end_hour: smsRow?.sms_quiet_end_hour ?? SMS_PREF_DEFAULTS.sms_quiet_end_hour,
   }
 
+  // The sms_consent ledger may not exist yet (migration 20260626010000 is unapplied in
+  // prod). Probe before reading it so a missing relation degrades to the "coming soon"
+  // SMS state rather than surfacing a Postgres error. SMS is only offered when the A2P
+  // env flags are set AND the ledger table is present.
+  const smsTableReady = await isSmsConsentTableReady()
+
   // Latest sms_consent row (member reads own via RLS). opted_in => verified + consented.
-  const { data: consentRow } = await (supabase as unknown as {
-    from: (t: string) => {
-      select: (c: string) => {
-        eq: (col: string, v: string) => {
-          order: (col: string, opts: { ascending: boolean }) => {
-            limit: (n: number) => {
-              maybeSingle: () => Promise<{ data: { status?: string; phone?: string } | null }>
+  const consentRow = smsTableReady
+    ? (
+        await (supabase as unknown as {
+          from: (t: string) => {
+            select: (c: string) => {
+              eq: (col: string, v: string) => {
+                order: (col: string, opts: { ascending: boolean }) => {
+                  limit: (n: number) => {
+                    maybeSingle: () => Promise<{ data: { status?: string; phone?: string } | null }>
+                  }
+                }
+              }
             }
           }
-        }
-      }
-    }
-  })
-    .from('sms_consent')
-    .select('status, phone')
-    .eq('profile_id', profile.id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+        })
+          .from('sms_consent')
+          .select('status, phone')
+          .eq('profile_id', profile.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      ).data
+    : null
 
   const optedIn = consentRow?.status === 'opted_in' && !!consentRow?.phone
   const smsInitial: SmsFormState = {
@@ -108,9 +118,10 @@ export default async function NotificationsPage() {
       back={{ href: '/settings', label: 'Settings' }}
     >
       <NotificationsForm initial={initial} />
-      {/* isSmsProvisioned() is a server-only env check; pass the boolean to the client
-          form so it renders a "Coming soon" state until the owner turns SMS on. */}
-      <SmsForm initial={smsInitial} smsProvisioned={isSmsProvisioned()} />
+      {/* SMS is server-gated two ways: the A2P env flags (isSmsProvisioned) AND the
+          consent ledger actually existing (smsTableReady). Pass the combined boolean so
+          the client form renders a "Coming soon" state until BOTH are true. */}
+      <SmsForm initial={smsInitial} smsProvisioned={isSmsProvisioned() && smsTableReady} />
       <div className="pt-2" />
       <ConsentScopesForm initial={consentInitial} />
     </FocusTemplate>

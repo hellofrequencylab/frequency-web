@@ -9,6 +9,10 @@ import { listPublicJourneys } from "@/lib/journey-plans";
 import { listActivePartners } from "@/lib/partners/read";
 import { listPublicPractices } from "@/lib/practices";
 import { listNetworkedSpaces } from "@/lib/spaces/discovery";
+import { listShopProducts, listMarketListings } from "@/lib/commerce/products";
+import { listHousingListings } from "@/lib/listings/housing";
+import { listListings as listClassifieds } from "@/lib/marketplace";
+import { listShowsForSpace } from "@/lib/airwaves/shows";
 import { DIRECTORY_TYPES } from "@/components/spaces/space-type";
 import { createPublicClient } from "@/lib/supabase/public";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -215,7 +219,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let spotlightRoutes: MetadataRoute.Sitemap = [];
   let hubRoutes: MetadataRoute.Sitemap = [];
   try {
-    const [channels, circles, events, journeys, organizers, spotlights, hubs, partners, practices, spaces, cities] = await Promise.all([
+    const [channels, circles, events, journeys, organizers, spotlights, hubs, partners, practices, spaces, cities, shopProducts, marketListings, housingListings, classifieds] = await Promise.all([
       getTopicalChannels(),
       getPublicCircles(200),
       getPublicEvents(200),
@@ -234,6 +238,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Browse-by-place city hubs — only cities with ≥1 public circle or upcoming event
       // (empty places never get a URL, so low-value facets stay out of crawl).
       listDiscoverCities().catch(() => []),
+      // Frequency Store products — platform-owned, ACTIVE only (the same gate /store/[id] renders on),
+      // so a draft/archived item never enters the crawl. Fail-safe to [] on any error.
+      listShopProducts({ limit: 100 }).catch(() => []),
+      // Global Market listings (/market/[id]) — active + market-published maker/Space products only
+      // (listMarketListings gates on both), so an unpublished item stays out. Fail-safe to [].
+      listMarketListings({ limit: 100 }).catch(() => []),
+      // Housing listings (/marketplace/housing/[id]) — active only. Fail-safe to [].
+      listHousingListings({ limit: 100 }).catch(() => []),
+      // Classifieds (/classifieds/[id]) — active market_listings only. Fail-safe to [].
+      listClassifieds({ limit: 100 }).catch(() => []),
     ]);
 
     // Density-gated city landing pages (GE11-2) — ONLY cities above the density
@@ -333,6 +347,72 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
+    // Frequency Store product detail pages (/store/[id]) — mirrors the spaceRoutes pattern; each
+    // carries its first photo for the image sitemap when set.
+    const storeRoutes: MetadataRoute.Sitemap = shopProducts.map((p) => ({
+      url: `${SITE_URL}/store/${p.id}`,
+      lastModified: p.updatedAt ? new Date(p.updatedAt) : now,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+      ...(p.images[0] ? { images: [p.images[0]] } : {}),
+    }));
+
+    // Marketplace listing detail pages — the active-only readers each page uses, so a
+    // sold/closed/draft listing is isolated OUT of the sitemap by construction.
+    const marketRoutes: MetadataRoute.Sitemap = marketListings.map((p) => ({
+      url: `${SITE_URL}/market/${p.id}`,
+      lastModified: p.updatedAt ? new Date(p.updatedAt) : now,
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
+    }));
+
+    const housingRoutes: MetadataRoute.Sitemap = housingListings.map((l) => ({
+      url: `${SITE_URL}/marketplace/housing/${l.id}`,
+      lastModified: l.updatedAt ? new Date(l.updatedAt) : now,
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
+    }));
+
+    const classifiedRoutes: MetadataRoute.Sitemap = classifieds.map((l) => ({
+      url: `${SITE_URL}/classifieds/${l.id}`,
+      lastModified: l.updated_at ? new Date(l.updated_at) : now,
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
+    }));
+
+    // Podcast Show pages + the per-Space Shows index (/spaces/<slug>/podcasts[/<showSlug>]). Only
+    // PUBLISHED, public-feed Shows are advertised (the same filter both podcast pages render, which
+    // 404 otherwise), and the index is advertised only when a Space has ≥1 such Show — so an empty
+    // podcasts index (which itself 404s) never enters the crawl. Fail-safe: any per-Space error yields
+    // no entries rather than breaking the sitemap.
+    let podcastRoutes: MetadataRoute.Sitemap = [];
+    try {
+      const perSpace = await Promise.all(
+        spaces.map(async (s) => {
+          const shows = (await listShowsForSpace(s.id).catch(() => [])).filter(
+            (sh) => sh.status === "published" && sh.feedVisibility === "public",
+          );
+          if (shows.length === 0) return [] as MetadataRoute.Sitemap;
+          const index = {
+            url: `${SITE_URL}/spaces/${s.slug}/podcasts`,
+            lastModified: now,
+            changeFrequency: "weekly" as const,
+            priority: 0.6,
+          };
+          const showEntries: MetadataRoute.Sitemap = shows.map((sh) => ({
+            url: `${SITE_URL}/spaces/${s.slug}/podcasts/${sh.slug}`,
+            lastModified: sh.updatedAt ? new Date(sh.updatedAt) : now,
+            changeFrequency: "weekly" as const,
+            priority: 0.6,
+          }));
+          return [index, ...showEntries];
+        }),
+      );
+      podcastRoutes = perSpace.flat();
+    } catch {
+      podcastRoutes = [];
+    }
+
     dynamicRoutes = [
       ...topicRoutes,
       ...circleRoutes,
@@ -345,6 +425,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...spaceHubRoutes,
       ...placeRoutes,
       ...densityCityRoutes,
+      ...storeRoutes,
+      ...marketRoutes,
+      ...housingRoutes,
+      ...classifiedRoutes,
+      ...podcastRoutes,
     ];
   } catch {
     // Fall back to static routes only.

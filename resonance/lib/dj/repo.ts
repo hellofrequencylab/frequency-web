@@ -66,7 +66,7 @@ export async function listVenues(worldId: string): Promise<VenueSummary[]> {
   if (ids.length === 0) return [];
 
   const since = new Date(Date.now() - 45_000).toISOString();
-  const [{ data: seats }, { data: rooms }, { data: pings }] = await Promise.all([
+  const [seatsRes, roomsRes, pingsRes] = await Promise.all([
     supabase.from("venue_seats").select("venue_id").in("venue_id", ids),
     supabase.from("room_state").select("venue_id, is_playing").in("venue_id", ids),
     supabase
@@ -75,6 +75,14 @@ export async function listVenues(worldId: string): Promise<VenueSummary[]> {
       .in("venue_id", ids)
       .gt("last_seen", since),
   ]);
+  // Surface read failures instead of masking them as authoritative-looking zeros
+  // (0 DJs / not playing / nobody here) in the lobby.
+  if (seatsRes.error) throw seatsRes.error;
+  if (roomsRes.error) throw roomsRes.error;
+  if (pingsRes.error) throw pingsRes.error;
+  const { data: seats } = seatsRes;
+  const { data: rooms } = roomsRes;
+  const { data: pings } = pingsRes;
 
   const djs = new Map<string, number>();
   (seats ?? []).forEach((s) =>
@@ -176,24 +184,18 @@ export async function enqueue(
   media: { mediaId: string; title?: string; thumbnail?: string },
 ): Promise<QueueItem> {
   const supabase = createServerClient();
-  const existing = await listQueue(venueId, userId);
-  const position = existing.length
-    ? Math.max(...existing.map((q) => q.position)) + 1
-    : 0;
-  const { data, error } = await supabase
-    .from("queue_items")
-    .insert({
-      venue_id: venueId,
-      user_id: userId,
-      media_id: media.mediaId,
-      title: media.title ?? null,
-      thumbnail: media.thumbnail ?? null,
-      position,
-    })
-    .select("*")
-    .single();
+  // Position is assigned ATOMICALLY inside the DB (RPC `resonance.enqueue_queue_item`,
+  // migration 0016) under a per-(venue,user) advisory lock, so two concurrent
+  // appends can't read the same stale max+1 and land on a duplicate position.
+  const { data, error } = await supabase.rpc("enqueue_queue_item", {
+    p_venue_id: venueId,
+    p_user_id: userId,
+    p_media_id: media.mediaId,
+    p_title: media.title ?? null,
+    p_thumbnail: media.thumbnail ?? null,
+  });
   if (error) throw error;
-  return toQueueItem(data);
+  return toQueueItem(data as Record<string, unknown>);
 }
 
 export async function removeQueueItem(itemId: string): Promise<void> {

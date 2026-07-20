@@ -37,6 +37,7 @@
 // (today it is intentionally absent — there is no provider call in this file).
 // ───────────────────────────────────────────────────────────────────────────
 
+import { cache } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { NotificationCategory } from '@/lib/notification-preferences'
@@ -113,6 +114,27 @@ export function isSmsProvisioned(): boolean {
     !!process.env.TWILIO_MESSAGING_SERVICE_SID
   )
 }
+
+/**
+ * Does the `sms_consent` relation actually exist in this database yet? The SMS
+ * groundwork migration (20260626010000) is UNAPPLIED in some environments (prod
+ * today), so every surface that reads the ledger must degrade gracefully when the
+ * table is absent rather than surfacing a Postgres "relation does not exist" error.
+ *
+ * Probes once with a cheap `select ... limit 1` on the RLS-bypassing service-role
+ * client and caches the answer for the request (React `cache`). Any error — a
+ * missing relation or anything else — resolves to false (fail-safe: treat SMS as
+ * not provisioned). This is DISTINCT from `isSmsProvisioned()`, which reads the
+ * A2P 10DLC env flags; SMS is only truly live when BOTH are true.
+ */
+export const isSmsConsentTableReady = cache(async (): Promise<boolean> => {
+  try {
+    const { error } = await untypedDb().from('sms_consent').select('id').limit(1)
+    return !error
+  } catch {
+    return false
+  }
+})
 
 /**
  * Whether a member is currently `opted_in` in the append-only sms_consent ledger.

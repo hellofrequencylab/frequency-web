@@ -107,6 +107,17 @@ export function useVenue(
     roomStateRef.current = roomState;
   }, [roomState]);
 
+  // Keep the latest avatar + game-event handler in refs so the channel effect can
+  // read them without listing them as deps. Otherwise an inline `onGameEvent` or a
+  // fresh `avatar` object every render would tear down and rejoin the realtime
+  // channel on each render.
+  const avatarRef = useRef(avatar);
+  const onGameEventRef = useRef(onGameEvent);
+  useEffect(() => {
+    avatarRef.current = avatar;
+    onGameEventRef.current = onGameEvent;
+  }, [avatar, onGameEvent]);
+
   const applySnapshot = useCallback((j: Snapshot) => {
     setVenue(j.venue);
     setSeats(j.seats);
@@ -150,7 +161,7 @@ export function useVenue(
           } else if (e.type === ZAPS_AWARDED_EVENT || e.type === RANK_CHANGED_EVENT)
             // standing refreshes via the venue:changed that advance also fires;
             // forward upward so an embedding host can mirror to its own UI.
-            onGameEvent?.(e);
+            onGameEventRef.current?.(e);
         },
         onPresenceSync: (st) => {
           const people = Object.values(st)
@@ -168,7 +179,7 @@ export function useVenue(
           return;
         }
         channelRef.current = ch;
-        void ch.track({ userId, name: displayName, avatar: avatar ?? null });
+        void ch.track({ userId, name: displayName, avatar: avatarRef.current ?? null });
       })
       .catch(() => {
         /* fall back to snapshot refetch */
@@ -178,7 +189,7 @@ export function useVenue(
       void channelRef.current?.leave();
       channelRef.current = null;
     };
-  }, [venueId, userId, displayName, avatar, refetch, onGameEvent]);
+  }, [venueId, userId, displayName, refetch]);
 
   // Presence heartbeat (build plan §11): tell the server we're here now, then keep
   // saying so every 20s. The lobby counts pings seen in the last ~45s as "here now".
