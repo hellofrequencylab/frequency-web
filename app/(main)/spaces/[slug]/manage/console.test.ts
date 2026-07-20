@@ -7,6 +7,7 @@ import {
   type SpaceModule,
 } from '@/lib/admin/modules/space-modules'
 import { panelHrefForModule } from '@/lib/spaces/surface-hrefs'
+import { sectionForModule } from '@/lib/admin/modules/space-hub'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 
 // P1 (docs/MODULAR-MENU.md, ADR-544): the /manage console renders the SPACE menu from the P0 module
@@ -157,5 +158,33 @@ describe('Mode is a secondary signal: Identity is never demoted below mode modul
     const bookingIdx = orderedOfferings.findIndex((m) => m.id === 'space.booking')
     const membershipsIdx = orderedOfferings.findIndex((m) => m.id === 'space.memberships')
     expect(bookingIdx).toBeLessThan(membershipsIdx)
+  })
+})
+
+// Community (resonance) coverage (Phase 2). The Manage hub's Community tab leads with the member viewer
+// (SpaceResonanceCrm), then renders a card grid of the resonance-section modules — so every CRM
+// sub-function keeps a VISIBLE entry point inside Community, not only via `/crm` or a deep URL. The CRM
+// board card (space.crm) opens the `?panel=crm` workspace, which is where Pipeline + Cockpit live, so
+// surfacing that card is what gives Pipeline + Cockpit a home in Community. These lock the invariant the
+// console render relies on: the section's module set, and that each one resolves to a reachable card href.
+describe('Community (resonance) section coverage', () => {
+  const resonance = SPACE_MODULES.filter((m) => sectionForModule(m) === 'resonance')
+
+  it('groups the CRM relationship + capture surfaces under Community', () => {
+    expect(resonance.map((m) => m.id).sort()).toEqual(
+      ['space.crm', 'space.doors', 'space.inbox', 'space.leads', 'space.shared'].sort(),
+    )
+  })
+
+  it('gives every Community module a reachable card href (no silent dead card)', () => {
+    for (const m of resonance) {
+      expect(panelHrefForModule(m, 'demo-space')).toBeTruthy()
+    }
+  })
+
+  it('routes the CRM board card into the ?panel=crm workspace (where Pipeline + Cockpit live)', () => {
+    const board = byId('space.crm')
+    expect(sectionForModule(board)).toBe('resonance')
+    expect(panelHrefForModule(board, 'demo-space')).toBe('/spaces/demo-space?panel=crm')
   })
 })
