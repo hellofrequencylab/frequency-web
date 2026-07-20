@@ -18,6 +18,7 @@ import {
 import { loomScopes, loomScope as loomScopeAction, loomImages, uploadLoomImage, type LoomScope, type LoomPickerConfig } from '@/lib/loom/picker-actions'
 import { searchSiteIcons, type SiteIcon } from '@/lib/loom/site-icons'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
+import { shrinkImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import type { LoomPickAsset } from '@/lib/library/store'
 
 // Fallback config until the resolved one loads (matches the registry defaults). The real config comes
@@ -36,46 +37,6 @@ const KINDS_FOR_VIEW: Record<'images' | 'icons' | 'elements', string[]> = {
   images: ['image'],
   icons: ['icon'],
   elements: ['image', 'element'],
-}
-
-// The server-action body ceiling, kept safely UNDER next.config's 10mb serverActions.bodySizeLimit. An
-// upload over this is rejected by the framework itself (a THROWN server action), so we shrink or skip
-// BEFORE sending — never let an over-limit request hang the "Uploading…" spinner.
-const MAX_UPLOAD_BYTES = 9 * 1024 * 1024
-// Downscale target for oversized photos: the longest edge, and the JPEG quality to re-encode at. 2560px
-// is ample for a full-bleed header while bringing a modern 12–48MP photo well under the upload ceiling.
-const SHRINK_MAX_DIM = 2560
-const SHRINK_QUALITY = 0.85
-
-/**
- * Best-effort BROWSER-side downscale so a large photo fits under the upload ceiling (and uploads faster).
- * Only touches raster formats this browser can decode (JPEG/PNG/WebP) that are actually over the ceiling;
- * SVG/GIF/HEIC and already-small files pass through untouched (HEIC can't be canvas-decoded in Chrome).
- * Re-encodes to JPEG bounded to SHRINK_MAX_DIM. FAIL-SAFE: any decode/encode failure returns the ORIGINAL
- * file, so the upload still attempts with what we have.
- */
-async function shrinkForUpload(file: File): Promise<File> {
-  const decodable = /^image\/(jpeg|png|webp)$/i.test(file.type)
-  if (!decodable || file.size <= MAX_UPLOAD_BYTES) return file
-  try {
-    const bitmap = await createImageBitmap(file)
-    const scale = Math.min(1, SHRINK_MAX_DIM / Math.max(bitmap.width, bitmap.height))
-    const w = Math.max(1, Math.round(bitmap.width * scale))
-    const h = Math.max(1, Math.round(bitmap.height * scale))
-    const canvas = document.createElement('canvas')
-    canvas.width = w
-    canvas.height = h
-    const ctx = canvas.getContext('2d')
-    if (!ctx) { bitmap.close?.(); return file }
-    ctx.drawImage(bitmap, 0, 0, w, h)
-    bitmap.close?.()
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', SHRINK_QUALITY))
-    if (!blob || blob.size === 0 || blob.size >= file.size) return file
-    const base = file.name.replace(/\.[^.]+$/, '') || 'image'
-    return new File([blob], `${base}.jpg`, { type: 'image/jpeg' })
-  } catch {
-    return file
-  }
 }
 
 export function LoomPicker({
@@ -244,12 +205,12 @@ export function LoomPicker({
       let skipped = 0
       try {
         for (const raw of images) {
-          // A big header photo can exceed next.config's 10mb serverActions.bodySizeLimit; the framework then
-          // REJECTS the request (a thrown server action, not a returned error) — which previously left the
-          // spinner turning forever. Downscale/re-encode large photos in the browser first so they fit; a
-          // format we can't safely rasterize (SVG/GIF/HEIC in this browser) is left as-is and size-gated.
-          const file = await shrinkForUpload(raw)
-          if (file.size > MAX_UPLOAD_BYTES) { skipped++; continue }
+          // A big header photo exceeds Vercel's ~4.5 MB serverless body limit; the platform then REJECTS the
+          // request (a thrown server action, not a returned error) — which previously left the spinner turning
+          // forever. Downscale/re-encode large photos in the browser first so they fit; a format we can't
+          // safely rasterize (SVG/GIF/HEIC in this browser) is left as-is and size-gated below.
+          const file = await shrinkImageForUpload(raw)
+          if (file.size > SERVER_MAX_BYTES) { skipped++; continue }
           const fd = new FormData()
           fd.append('file', file)
           // WRAP the server action: a rejection (framework body-limit, transient network error) must show
@@ -273,7 +234,7 @@ export function LoomPicker({
         setUploading(false)
       }
       if (skipped > 0) {
-        setError(`${skipped} image${skipped === 1 ? ' is' : 's are'} too large to upload even after resizing (max 9 MB). Try a smaller version.`)
+        setError(`${skipped} image${skipped === 1 ? ' is' : 's are'} too large to upload (over 4 MB and could not be resized here). Save it as a JPEG or a smaller version and try again.`)
       } else if (threw && !firstUrl) {
         setError('That upload did not go through. Try again in a moment.')
       }
