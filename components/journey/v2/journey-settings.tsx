@@ -9,10 +9,8 @@
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper, Trophy, Sparkles, RefreshCw, Video, MapPin, Users, Clock } from 'lucide-react'
-import { AccentPicker } from '@/components/studio/kit/studio-identity'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { HeaderImageField } from '@/components/ui/header-image-field'
-import { DEFAULT_ACCENT } from '@/lib/studio/accents'
 import { isError } from '@/lib/action-result'
 import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview, setJourneyAttributes, setJourneyMeeting, setJourneyHeaderFocus } from '@/app/(main)/journeys/actions'
 import { normalizeJourneyMeeting } from '@/lib/journey-plans'
@@ -85,8 +83,6 @@ export function JourneySettings(props: JourneySettingsProps) {
       await fn()
       router.refresh()
     })
-
-  const [accent, setAccent] = useState(props.initialAccent ?? DEFAULT_ACCENT)
 
   const [coverImage, setCoverImage] = useState<string | null>(props.initialCoverImage)
   const [logoImage, setLogoImage] = useState<string | null>(props.initialLogoImage ?? null)
@@ -201,28 +197,25 @@ export function JourneySettings(props: JourneySettingsProps) {
         </div>
       )}
 
-      {/* Identity — title, subtitle, accent. The icon PICKER was removed (owner ask): the Journey's leading
-          mark is the logo/profile image below, uploaded through the Loom picker (which itself offers images,
-          uploads, and icon-style Elements). Hidden in the single-page editor (ADR-301). */}
+      {/* Identity — just the Journey title + a one-line summary. Both the icon picker AND the accent-dot
+          picker were removed from this rail (owner ask): the Journey's leading mark is the logo/profile
+          image below, set through the Loom picker. Hidden in the single-page editor (ADR-301). */}
       {!props.hideIdentity && (
-        <div className="space-y-3">
-          <div className="min-w-0">
-            <input
-              defaultValue={props.initialTitle}
-              onBlur={(e) => meta({ title: e.target.value })}
-              maxLength={120}
-              placeholder="Name your Journey"
-              className="w-full bg-transparent text-xl font-bold text-text outline-none placeholder:text-subtle"
-            />
-            <input
-              defaultValue={props.initialSummary ?? ''}
-              onBlur={(e) => meta({ summary: e.target.value })}
-              maxLength={280}
-              placeholder="One line on what this is and who it's for"
-              className="mt-1 w-full bg-transparent text-sm text-muted outline-none placeholder:text-subtle"
-            />
-          </div>
-          <AccentPicker accent={accent} onChange={(a) => { setAccent(a); meta({ accent: a }) }} />
+        <div className="min-w-0">
+          <input
+            defaultValue={props.initialTitle}
+            onBlur={(e) => meta({ title: e.target.value })}
+            maxLength={120}
+            placeholder="Name your Journey"
+            className="w-full bg-transparent text-xl font-bold text-text outline-none placeholder:text-subtle"
+          />
+          <input
+            defaultValue={props.initialSummary ?? ''}
+            onBlur={(e) => meta({ summary: e.target.value })}
+            maxLength={280}
+            placeholder="One line on what this is and who it's for"
+            className="mt-1 w-full bg-transparent text-sm text-muted outline-none placeholder:text-subtle"
+          />
         </div>
       )}
 
