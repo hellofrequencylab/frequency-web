@@ -34,7 +34,7 @@ export async function SpaceResonanceCrm({
         title={
           <span className="inline-flex items-center gap-2">
             <Sparkles className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
-            Resonance CRM
+            Community Resonance
           </span>
         }
         description={<span className="block truncate">Pick a member to see everything about them, inline.</span>}

@@ -22,7 +22,17 @@ import { SpaceManageConsole } from './console'
 // resolveSpaceManageAccess (canManage owner/admin/editor || staffViewing janitor preview), and renders
 // nothing for everyone else. Every surface's mutation re-checks its OWN gate in its settings sub-page,
 // so this console gate is UX and the sub-pages stay the authority.
-export async function SpaceManageBoard({ slug, section: rawSection }: { slug: string; section?: string }) {
+export async function SpaceManageBoard({
+  slug,
+  section: rawSection,
+  sectionHref,
+}: {
+  slug: string
+  section?: string
+  /** How the hub tabs link between sections. Omitted = the standalone `/manage?section=` page; the in-place
+   *  Manage panel passes an override so the tabs soft-nav under the profile header (no reload). */
+  sectionHref?: (key: SpaceHubSection) => string
+}) {
   const section = asHubSection(rawSection)
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
@@ -109,6 +119,7 @@ export async function SpaceManageBoard({ slug, section: rawSection }: { slug: st
       marketingEmbed={marketingEmbed}
       canDelete={canDelete}
       spaceId={space.id}
+      sectionHref={sectionHref}
     />
   )
 }

@@ -274,12 +274,22 @@ function DangerRow({
 /** The category nav for the hub — the four browse sections as underline tabs (the Classifieds category-menu
  *  pattern), `?section=` in the URL so it is server-rendered + shareable. Profile & Settings is a header
  *  affordance, not a tab. */
-function HubNav({ slug, section }: { slug: string; section: SpaceHubSection }) {
-  const hubBase = `/spaces/${slug}/manage`
+function HubNav({
+  slug,
+  section,
+  sectionHref,
+}: {
+  slug: string
+  section: SpaceHubSection
+  /** How a tab links to another section. Default = the standalone `/manage?section=` page; the in-place
+   *  Manage panel passes an override so the tabs soft-nav under the profile header instead (no reload). */
+  sectionHref?: (key: SpaceHubSection) => string
+}) {
+  const href = sectionHref ?? ((key: SpaceHubSection) => `/spaces/${slug}/manage?section=${key}`)
   return (
     <UnderlineTabs
-      activeHref={`${hubBase}?section=${section}`}
-      tabs={SPACE_HUB_SECTIONS.map((s) => ({ href: `${hubBase}?section=${s.key}`, label: s.label }))}
+      activeHref={href(section)}
+      tabs={SPACE_HUB_SECTIONS.map((s) => ({ href: href(s.key), label: s.label }))}
     />
   )
 }
@@ -316,6 +326,7 @@ export function SpaceManageConsole({
   marketingEmbed,
   canDelete,
   spaceId,
+  sectionHref,
 }: {
   slug: string
   /** The gated module manifest, in catalog order. */
@@ -324,6 +335,9 @@ export function SpaceManageConsole({
   emphasis: readonly SpaceFunctionKey[]
   /** The active hub tab (from `?section=`). */
   section: SpaceHubSection
+  /** How the tabs link between sections. Omitted = the standalone `/manage?section=` page; the in-place
+   *  Manage panel passes an override so the tabs soft-nav under the profile header (no reload). */
+  sectionHref?: (key: SpaceHubSection) => string
   /** The embedded CRM roster node, built server-side by the page and shown atop the Resonance tab so the
    *  hub opens on the space's live Resonance CRM (owner directive). */
   crmEmbed?: React.ReactNode
@@ -341,7 +355,7 @@ export function SpaceManageConsole({
 
   return (
     <div>
-      <HubNav slug={slug} section={section} />
+      <HubNav slug={slug} section={section} sectionHref={sectionHref} />
       <div className="mt-5">
         {/* Resonance + Marketing render their own full surfaces (with their own headers / sub-nav); no hub
             blurb there. Every other tab keeps its short blurb above the feature cards. */}
