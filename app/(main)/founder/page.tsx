@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Check, ArrowRight, Rocket, Trophy } from 'lucide-react'
@@ -8,6 +9,22 @@ import { FOUNDER_PAGE } from '@/lib/onboarding/founder-config'
 import { FounderClaim } from './founder-claim'
 
 export const dynamic = 'force-dynamic'
+
+// House metadata for the persistent Founder page — a real title/description (reused from the single
+// FOUNDER_PAGE edit point so the head can't drift from the on-page copy), a self canonical, and an
+// openGraph card for link unfurls. Matches the marketing pages' generateMetadata shape.
+export function generateMetadata(): Metadata {
+  return {
+    title: FOUNDER_PAGE.title,
+    description: FOUNDER_PAGE.description,
+    alternates: { canonical: '/founder' },
+    openGraph: {
+      title: FOUNDER_PAGE.title,
+      description: FOUNDER_PAGE.description,
+      url: '/founder',
+    },
+  }
+}
 
 // Founder's First Week — the durable "go deeper" checklist (build item 1.4). The
 // Vera coach hands off here once activation is done; this page is the persistent
