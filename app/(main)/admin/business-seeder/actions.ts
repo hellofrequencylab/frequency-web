@@ -37,6 +37,7 @@ import { applyIntake, fileSeedImagesIntoLoom } from '@/lib/importer/materialize'
 import { mintSpaceClaimToken } from '@/lib/spaces/claim'
 import { adoptSpaceAsMasterProfile } from '@/lib/importer/adopt'
 import { planSeedImages } from '@/lib/importer/vision'
+import { effectiveMime } from '@/lib/library/upload-kinds'
 import { withImageOrder } from '@/lib/importer/media-order'
 import type { BusinessIntakeRow } from '@/lib/importer/intake'
 import type { IntakeInputs, IntakeStatus } from '@/lib/importer/intake'
@@ -337,7 +338,10 @@ export async function uploadSeederImages(intakeId: string, formData: FormData): 
   let firstError: string | undefined
 
   for (const file of files.slice(0, room)) {
-    if (!file.type.startsWith('image/')) {
+    // Recover a missing/misreported MIME from the filename (iPhone .heic photos often arrive with a blank
+    // File.type), so a real image is not skipped as "not an image" and uploads with a correct content-type.
+    const mime = effectiveMime(file.type, file.name)
+    if (!mime.startsWith('image/')) {
       firstError ??= `${file.name || 'A file'} is not an image and was skipped.`
       continue
     }
@@ -351,7 +355,7 @@ export async function uploadSeederImages(intakeId: string, formData: FormData): 
     const bytes = new Uint8Array(await file.arrayBuffer())
     const { error: upErr } = await admin.storage
       .from(SEED_IMAGE_BUCKET)
-      .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
+      .upload(path, bytes, { contentType: mime || 'image/jpeg', upsert: false })
     if (upErr) {
       firstError ??= upErr.message
       continue

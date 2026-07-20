@@ -46,6 +46,49 @@ export function classifyLoomUpload(mime: string | null | undefined): LoomUploadT
   return null
 }
 
+// Image extensions we accept, mapped to their canonical MIME. Some browsers/OSes report an EMPTY or
+// wrong `File.type` for iPhone camera-roll photos (.heic/.heif) and a few others, which then get
+// silently dropped by a loose `type.startsWith('image/')` gate ("the uploader does nothing"). When the
+// MIME is missing we recover it from the extension here, so the file is still classified + uploaded with
+// a correct content-type. Keep in lockstep with the buckets' allowed_mime_types.
+const IMAGE_EXT_MIME: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  avif: 'image/avif',
+  heic: 'image/heic',
+  heif: 'image/heif',
+  svg: 'image/svg+xml',
+}
+
+/** The lowercased extension of a filename (no dot), or '' when it has none. PURE. */
+function extOf(filename: string | null | undefined): string {
+  const name = (filename ?? '').trim().toLowerCase()
+  const dot = name.lastIndexOf('.')
+  return dot >= 0 && dot < name.length - 1 ? name.slice(dot + 1) : ''
+}
+
+/**
+ * Best-effort MIME for a file: its browser-reported `type` when present, else recovered from the
+ * filename extension (so an empty/misreported image type is not silently dropped). Returns '' when
+ * neither yields a known image/av type. PURE.
+ */
+export function effectiveMime(type: string | null | undefined, filename: string | null | undefined): string {
+  const t = (type ?? '').toLowerCase().trim()
+  if (t) return t
+  const ext = extOf(filename)
+  return IMAGE_EXT_MIME[ext] ?? ''
+}
+
+/** Whether a file looks like an image the Loom accepts — by MIME OR by a known image extension. Used by
+ *  the client upload gates so a blank-MIME camera-roll photo is not filtered out before it can upload. PURE. */
+export function looksLikeImage(type: string | null | undefined, filename: string | null | undefined): boolean {
+  const m = effectiveMime(type, filename)
+  return m.startsWith('image/')
+}
+
 /** A default file extension for a Loom kind, when the original filename has none. PURE. */
 export function fallbackExtFor(kind: LoomUploadKind): string {
   switch (kind) {
