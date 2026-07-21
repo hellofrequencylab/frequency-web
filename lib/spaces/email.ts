@@ -29,6 +29,8 @@ import { buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { canEmailContact } from '@/lib/crm/contact-consent'
 import { isContactTopicMuted } from '@/lib/comms/contact-preferences'
+import type { NotificationTopic } from '@/lib/notification-preferences'
+import { normalizeEmailTopic } from './email-topics'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { mapResendEventToInteraction, resendIdempotencyKey, type ResendTimelineEventType } from './email-timeline'
 import { encodeSendToken, injectTracking } from './email-tracking'
@@ -68,11 +70,14 @@ export interface SpaceRecipient {
 }
 
 /** The input to sendSpaceCampaign. `campaignId` links the sends to a saved campaign (optional for a
- *  one-off). subject + html are the rendered email; recipients is the resolved audience. */
+ *  one-off). subject + html are the rendered email; recipients is the resolved audience. `topic` tags
+ *  the send (marketing / events / dispatches) so the per-recipient mute gate honors that topic; absent
+ *  or invalid falls back to 'marketing' (the pre-topic behavior). */
 export interface SendSpaceCampaignInput {
   campaignId?: string
   subject: string
   html: string
+  topic?: NotificationTopic
   recipients: SpaceRecipient[]
 }
 
@@ -354,6 +359,11 @@ async function deliverSpaceCampaign(
     return fail('Add at least one valid recipient before sending.')
   }
 
+  // The topic this campaign is tagged with (ADR-799 C). Each recipient's per-topic mute is checked
+  // against THIS topic below. Absent/invalid -> 'marketing' (the pre-topic behavior), so a legacy
+  // campaign, a drip, or any un-updated caller sends exactly as before.
+  const sendTopic = normalizeEmailTopic(input?.topic)
+
   // (c) DAILY CAP: how many more may this Space send today? countTodaySends reflects EVERY non-
   // suppressed outreach_sends row for today (including ones this call writes and any CONCURRENT call's),
   // so it is the single live source of truth for the cap. We read it once up front to bail early.
@@ -394,9 +404,12 @@ async function deliverSpaceCampaign(
     // (isContactTopicMuted, "consulted in real time at send time") but never actually wired into the send
     // loop; wiring it here keeps that promise, and matters more now that a membership join can flip a
     // contact to subscribed (ADR-797) while a prior topic opt-down must still be honored.
+    // The consent gate stays purpose 'marketing': every space broadcast is a bulk send that must clear
+    // the marketing double-opt-in, whatever its topic tag (ADR-799 C keeps this deliberate). The softer
+    // per-topic mute below uses the campaign's OWN topic.
     const emailable = (await canEmailContact(rec.email, 'marketing', spaceId)).allowed
     const topicMuted = emailable
-      ? await isContactTopicMuted({ email: rec.email, spaceId, topic: 'marketing' })
+      ? await isContactTopicMuted({ email: rec.email, spaceId, topic: sendTopic })
       : false
     if (!emailable || topicMuted) {
       suppressed++

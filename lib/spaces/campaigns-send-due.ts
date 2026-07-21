@@ -21,6 +21,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveAudience, definitionToFilter } from '@/lib/spaces/audiences'
 import { sendSpaceCampaignSystem, SPACE_UNSUBSCRIBE_PLACEHOLDER } from '@/lib/spaces/email'
+import { normalizeEmailTopic } from '@/lib/spaces/email-topics'
 import { sendCampaignNow } from '@/lib/email-studio/send'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { isError } from '@/lib/action-result'
@@ -45,6 +46,7 @@ interface DueCampaignRow {
   subject: string
   body: string | null
   audience_filter: unknown
+  topic: string | null
 }
 
 // Render a plain-text body to the same minimal HTML the interactive composer uses, with the per-Space
@@ -99,7 +101,7 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
   // Find due campaigns (status scheduled, send time reached). Read-only; the claim below is the gate.
   const { data: dueRows, error: dueErr } = await db
     .from('campaigns')
-    .select('id, space_id, subject, body, audience_filter')
+    .select('id, space_id, subject, body, audience_filter, topic')
     .eq('status', 'scheduled')
     .lte('scheduled_for', nowIso)
     .order('scheduled_for', { ascending: true })
@@ -182,6 +184,7 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
         campaignId: row.id,
         subject: row.subject,
         html: renderCampaignHtml(row.body ?? ''),
+        topic: normalizeEmailTopic(row.topic),
         recipients,
       })
       if (isError(res)) {
