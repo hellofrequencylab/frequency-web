@@ -28,12 +28,14 @@ import { enrollContactInSequence } from '@/lib/spaces/drip-enroll'
 import {
   SPACE_AUTOMATION_TRIGGERS,
   SPACE_AUTOMATION_ACTIONS,
+  SPACE_AUTOMATION_TEMPLATES,
   type SpaceAutomationTrigger,
   type SpaceAutomationAction,
   type EmailAudienceConfig,
   type SpaceAutomationRule,
   type SpaceDripStep,
   type SpaceDripSequence,
+  type SpaceAutomationTemplate,
 } from '@/lib/spaces/automation-types'
 
 // The client-safe types + constants live in ./automation-types (no server-only imports) so a CLIENT
@@ -42,12 +44,14 @@ import {
 export {
   SPACE_AUTOMATION_TRIGGERS,
   SPACE_AUTOMATION_ACTIONS,
+  SPACE_AUTOMATION_TEMPLATES,
   type SpaceAutomationTrigger,
   type SpaceAutomationAction,
   type EmailAudienceConfig,
   type SpaceAutomationRule,
   type SpaceDripStep,
   type SpaceDripSequence,
+  type SpaceAutomationTemplate,
 }
 
 const MAX_NAME_LEN = 80
@@ -518,6 +522,109 @@ export async function startSequenceForAudience(
     if (res.enrolled) enrolled++
   }
   return ok({ enrolled })
+}
+
+// ── TEMPLATES: one-tap pre-built sequences (ADR-796) ─────────────────────────────────────────────
+
+/** The template with this id, or null. Pure. */
+export function automationTemplateById(id: string): SpaceAutomationTemplate | null {
+  return SPACE_AUTOMATION_TEMPLATES.find((t) => t.id === id) ?? null
+}
+
+/**
+ * INSTANTIATE a pre-built template into this Space: create its drip sequence (OFF, so the operator
+ * reviews the steps before anything sends), seed the steps in order, and — for a TRIGGERED template
+ * (e.g. welcome, onboarding) — wire an enabled rule that auto-enrolls the matching member when the
+ * event fires. Gated on canEditProfile.
+ *
+ * WHY A DIRECT RULE INSERT (not createSpaceRule): a trigger->sequence rule carries only a sequenceId
+ * pointer, but createSpaceRule -> validateRule REQUIRES an email subject + body (it validates a one-shot
+ * 'email_audience' rule) and would reject the pointer rule. The dispatcher (fireSpaceTrigger) reads
+ * action_config.sequenceId, so the rule is written straight to the table with that config.
+ *
+ * The SEQUENCE's enabled flag is the real on/off switch: the runner's enrollContactInSequence no-ops on
+ * a disabled sequence, so even with the rule enabled, nothing enrolls until the operator turns the
+ * sequence ON. That matters because the Rules panel was retired (ADR-796) — the operator never sees or
+ * toggles the rule; the sequence toggle is their single, visible control.
+ *
+ * Idempotent by NAME: a template already added (a sequence with its name exists) is not added twice.
+ * Returns the new sequence id. Fail-closed on permission; step / rule inserts are best-effort (the
+ * sequence is the anchor and always lands first).
+ */
+export async function instantiateAutomationTemplate(
+  spaceId: string,
+  templateId: string,
+): Promise<ActionResult<{ sequenceId: string }>> {
+  const gate = await requireSpaceEditor(spaceId)
+  if ('error' in gate) return gate
+
+  const template = automationTemplateById(templateId)
+  if (!template) return fail('That template is not available.')
+
+  // Dedupe: adding the same template twice would create duplicate sequences. Match on the sequence name.
+  const existing = await listSpaceSequences(spaceId)
+  if (existing.some((s) => s.name === template.name)) {
+    return fail('You already added this one. Find it in your sequences below.')
+  }
+
+  const createdBy = await getMyProfileId()
+
+  // 1) The sequence, created OFF (audience defaults to everyone; the operator narrows it for a manual
+  //    start, and it is irrelevant to a trigger enroll, which enrolls the specific member directly).
+  let sequenceId: string
+  try {
+    const { data, error } = await table('space_drip_sequences')
+      .insert([{ space_id: spaceId, name: template.name, audience: {}, enabled: false, created_by: createdBy }])
+      .select(SEQ_COLS)
+      .maybeSingle()
+    if (error || !data) return fail('Could not add the sequence. Try again.')
+    sequenceId = String(data.id)
+  } catch {
+    return fail('Could not add the sequence. Try again.')
+  }
+
+  // 2) The steps, in order (best-effort: the sequence already stands; the operator can add steps by hand
+  //    if a step insert fails).
+  const stepRows = template.steps.map((s, i) => ({
+    sequence_id: sequenceId,
+    space_id: spaceId,
+    step_order: i + 1,
+    delay_hours: normalizeDelayHours(s.delayHours),
+    subject: normalizeSubject(s.subject),
+    body: normalizeBody(s.body),
+  }))
+  if (stepRows.length > 0) {
+    try {
+      await table('space_drip_steps').insert(stepRows).then(() => undefined)
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  // 3) For a triggered template, the auto-enroll rule (ENABLED, pointing at this sequence). Written
+  //    directly because validateRule would reject a sequence-pointer rule (no subject/body). Best-effort:
+  //    without it the sequence still works as a manual-start sequence.
+  if (template.triggerEvent) {
+    try {
+      await table('space_automation_rules')
+        .insert([
+          {
+            space_id: spaceId,
+            name: template.name,
+            trigger_event: template.triggerEvent,
+            action_type: 'email_audience',
+            action_config: { sequenceId },
+            enabled: true,
+            created_by: createdBy,
+          },
+        ])
+        .then(() => undefined)
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  return ok({ sequenceId })
 }
 
 /** Delete a sequence (its steps cascade via the FK). Gated on canEditProfile AND the sequence belonging
