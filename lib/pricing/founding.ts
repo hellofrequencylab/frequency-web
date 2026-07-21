@@ -21,7 +21,7 @@ export interface FoundingConfig {
   member_one_time_cents: number
   /** How many Founding MEMBER seats the round holds (the first 150). */
   member_cap: number
-  /** The Founding BUSINESS locked MONTHLY membership rate (~$39/mo). */
+  /** The Founding BUSINESS locked MONTHLY membership rate ($49/mo, matching the live Business plan). */
   business_monthly_cents: number
   /** The Founding BUSINESS bought-down marketplace take-rate, in basis points (300 = 3%). */
   business_take_bps: number
@@ -34,7 +34,8 @@ export interface FoundingConfig {
 export const FOUNDING_DEFAULT: FoundingConfig = {
   member_one_time_cents: 25000, // $250, locked for life (the Founders Round)
   member_cap: 150, // the first 150
-  business_monthly_cents: 3900, // $39 / mo, locked for the founding business
+  business_monthly_cents: 4900, // $49 / mo, matching the live Business plan (owner decision 2026-07-21;
+  //                               the live value is also set in the `founding` pricing_settings row)
   business_take_bps: 300, // 3% (bought down from the 5-8% ladder, ADR-596)
   business_city_cap: 25, // 25 founding businesses per city
 }
