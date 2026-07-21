@@ -635,6 +635,19 @@ export async function instantiateAutomationTemplate(
 export async function deleteSpaceSequence(spaceId: string, id: string): Promise<ActionResult> {
   const gate = await requireSpaceEditor(spaceId)
   if ('error' in gate) return gate
+  // Also remove any auto-enroll RULE that points at this sequence. A triggered template (ADR-797)
+  // instantiates a paired space_automation_rules row with action_config.sequenceId; the sequence's FK
+  // cascade only reaches its steps, not that rule, so without this the rule orphans on delete and a
+  // re-added template would leave a SECOND enabled member.joined rule. Best-effort + space-scoped; an
+  // orphan rule is inert anyway (it enrolls nobody once its sequence is gone).
+  try {
+    await table('space_automation_rules')
+      .delete()
+      .eq('space_id', spaceId)
+      .eq('action_config->>sequenceId', id)
+  } catch {
+    /* best-effort: an orphaned rule points at a now-deleted sequence, so it can never enroll anyone */
+  }
   try {
     const { error } = await table('space_drip_sequences')
       .delete()

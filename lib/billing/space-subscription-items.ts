@@ -78,24 +78,6 @@ export interface ReconciledItem {
   lockedPriceId: string | null
 }
 
-/** The item keys that bill LICENSED OPERATOR SEATS (they carry a per-item quantity = the seat count):
- *  the Nonprofit seat item and the legacy Team add-on (kept resolvable for grandfathered rows). */
-const SEAT_ITEM_KEYS: readonly ItemKey[] = ['nonprofit_seat', 'team']
-
-/** The total LICENSED operator-seat quantity a set of reconciled items buys (the sum of the seat items'
- *  quantities), to persist onto spaces.seat_quantity. PURE. An empty / seat-less set buys 0 (so the
- *  Space keeps only its base owner seat). Floors each quantity at 0 and ignores non-seat items. */
-export function seatQuantityFromItems(items: readonly ReconciledItem[]): number {
-  let total = 0
-  for (const it of items) {
-    if (SEAT_ITEM_KEYS.includes(it.itemKey)) {
-      const q = Math.floor(it.quantity)
-      total += Number.isFinite(q) && q > 0 ? q : 0
-    }
-  }
-  return total
-}
-
 /** The base TIER a set of item keys implies. PURE (ADR-552). Highest-ranked wins: nonprofit > business >
  *  free. The legacy 'organization' item folds to nonprofit; a 'nonprofit_seat' item -> nonprofit; a
  *  'business' item OR the legacy 'base' (former Pro) item -> business; an empty set -> free. */

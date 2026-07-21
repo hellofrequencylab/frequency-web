@@ -27,9 +27,7 @@ import {
   planForItemKeys,
   addonsForItemKeys,
   persistSpaceSubscriptionItems,
-  seatQuantityFromItems,
 } from './space-subscription-items'
-import { setSpaceSeatQuantity } from '@/lib/spaces/seats'
 
 /** The metadata kinds the space subscription webhook handles. */
 export type SubscriptionKind = 'space_plan' | 'space_membership'
@@ -114,19 +112,12 @@ export async function reconcileSpacePlanSubscription(sub: Stripe.Subscription): 
     const addons = addonsForItemKeys(itemKeys)
     await setSpaceAddons(spaceId, { plan, addons })
     await persistSpaceSubscriptionItems(spaceId, items, itemStatusForSubscription(status))
-    // Persist the LICENSED operator-seat count onto spaces.seat_quantity, the column the seat wall reads
-    // (seats.ts licensedSeats / checkSeatForOperatorInvite). It was previously NEVER written — the
-    // purchased quantity only landed in space_subscription_items — so a Space that bought N seats kept
-    // seat_quantity=0 and could not use any of them once billing goes live. Set-to-target from the items.
-    await setSpaceSeatQuantity(spaceId, seatQuantityFromItems(items))
   } else {
     // Fallback: a canceled sub, or a legacy single-price sub with no recognized catalog items. Use the
     // metadata.plan (canceled -> free) via the base-plan writer, and cancel any persisted item rows.
     const plan = planForSubscription(sub.metadata?.plan, status)
     await setSpacePlan(spaceId, plan)
     await persistSpaceSubscriptionItems(spaceId, [], 'canceled')
-    // No live seat items (canceled, or a legacy seat-less sub) -> clear the licensed seats to the base.
-    await setSpaceSeatQuantity(spaceId, 0)
   }
 
   // Persist the subscription identifiers (audit/reference); a canceled sub clears the id. The columns
