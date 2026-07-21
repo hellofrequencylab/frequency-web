@@ -7,11 +7,10 @@ import {
 } from '@/lib/spaces/entitlements'
 import { listAudienceTags } from '@/lib/spaces/audiences'
 import { listSpaceSegments } from '@/lib/spaces/segments'
-import { listSpaceRules, listSpaceSequences } from '@/lib/spaces/automation'
+import { listSpaceSequences } from '@/lib/spaces/automation'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
-import { RulesPanel } from '@/components/spaces/automation/rules-panel'
 import { SequencesPanel } from '@/components/spaces/automation/sequences-panel'
 
 // AUTOMATION BODY — the chrome-free automation surface (rules + drip sequences), self-gating so it is
@@ -57,8 +56,7 @@ export async function AutomationBody({ slug }: { slug: string }) {
 
   // RENDER is gated above, so these per-Space reads (each space_id-scoped + fail-safe) only run for an
   // authorized viewer. Tags + segments feed the audience pickers.
-  const [rules, sequences, tags, segments] = await Promise.all([
-    listSpaceRules(space.id),
+  const [sequences, tags, segments] = await Promise.all([
     listSpaceSequences(space.id),
     listAudienceTags(space.id),
     listSpaceSegments(space.id),
@@ -71,22 +69,9 @@ export async function AutomationBody({ slug }: { slug: string }) {
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 
       <div className="space-y-8">
-        <section>
-          <SectionHeader title="Rules" />
-          <p className="mb-3 text-sm text-muted">
-            When something happens, send an email. Rules are saved here and run when their trigger
-            fires.
-          </p>
-          <RulesPanel
-            spaceId={space.id}
-            slug={space.slug}
-            rules={rules}
-            tags={tags}
-            segments={segmentOptions}
-            readOnly={staffViewing}
-          />
-        </section>
-
+        {/* The blank-canvas "Rules" builder was removed (ADR-796, Decision 3): its only action type never
+            sent, and open-canvas automation is the named adoption-killer. Drip SEQUENCES (which work) stay;
+            pre-built templates (welcome / onboarding / re-engage) replace the builder in a later phase. */}
         <section>
           <SectionHeader title="Drip sequences" />
           <p className="mb-3 text-sm text-muted">
