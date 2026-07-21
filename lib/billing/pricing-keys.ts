@@ -232,6 +232,10 @@ export interface CatalogItem {
   label: string
   /** True for items billed per licensed seat (Team, Nonprofit seat): checkout sets a quantity. */
   perSeat: boolean
+  /** PLACEHOLDER: the amounts here are a stand-in the owner has not set yet. The catalog SYNC SKIPS a
+   *  placeholder item — no Stripe product/price is minted — so `resolveLoadoutPriceId` stays null and the
+   *  item is genuinely inert (never charged). To go live: set the real amount, remove this flag, re-sync. */
+  placeholder?: boolean
   /** The month amounts (list anchor + founding charged). */
   month: CatalogAmounts
   /** The year amounts, two months free (10x monthly). */
@@ -303,13 +307,15 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     // each ADDITIONAL operator (editor/moderator/admin) bills one seat at this flat rate, on any paid plan.
     // This is a SEPARATE per-seat item (perSeat:true) — distinct from the retired per-seat PLAN pricing
     // (ADR-590) and refining ADR-552's "seats ride the base tier" note per the owner's flat-add-on choice.
-    // PLACEHOLDER PRICE: the owner sets the real amount here, then the catalog SYNC creates the Stripe
-    // product + prices. Until synced, resolveLoadoutPriceId returns null and the seat item is skipped, so
-    // this is inert (no charge) exactly like the rest of billing while it is dark.
+    // PLACEHOLDER (`placeholder:true`): the amount below is a stand-in, and the catalog sync SKIPS it, so NO
+    // Stripe price is minted and resolveLoadoutPriceId stays null (the seat item is dropped from checkout).
+    // This keeps it genuinely inert until the owner sets the real amount AND removes `placeholder` — so a
+    // routine sync of the other items can never mint a live seat price the owner did not approve.
     key: 'operator_seat',
     label: 'Operator seat',
     perSeat: true,
-    ...amountsFromMonthly(900, 900), // PLACEHOLDER $9/seat/mo — owner sets the final amount before sync
+    placeholder: true,
+    ...amountsFromMonthly(900, 900), // PLACEHOLDER $9/seat/mo — owner sets the final amount, then drops the flag
   },
 }
 
