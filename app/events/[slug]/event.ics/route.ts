@@ -13,7 +13,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { eventInstant, resolveZone } from '@/lib/time/zone'
+import { buildVevent, icsEventInstants, renderCalendar } from '@/lib/events/ics'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,43 +29,6 @@ type EventRow = {
   status:        string | null
   visibility:    string | null
   time_zone:     string | null
-}
-
-// Format a JS Date as ICS UTC stamp: YYYYMMDDTHHMMSSZ
-function icsStamp(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return (
-    d.getUTCFullYear().toString() +
-    pad(d.getUTCMonth() + 1) +
-    pad(d.getUTCDate()) +
-    'T' +
-    pad(d.getUTCHours()) +
-    pad(d.getUTCMinutes()) +
-    pad(d.getUTCSeconds()) +
-    'Z'
-  )
-}
-
-// Escape per RFC 5545: backslash, semicolon, comma, newline.
-function icsEscape(s: string): string {
-  return s
-    .replace(/\\/g, '\\\\')
-    .replace(/;/g,  '\\;')
-    .replace(/,/g,  '\\,')
-    .replace(/\r?\n/g, '\\n')
-}
-
-// Fold long lines at 75 octets per RFC 5545 §3.1. We approximate with
-// 75-char limit since our payload is ASCII/punctuation-heavy.
-function fold(line: string): string {
-  if (line.length <= 75) return line
-  const chunks: string[] = []
-  let i = 0
-  while (i < line.length) {
-    chunks.push(line.slice(i, i + 75))
-    i += 75
-  }
-  return chunks.join('\r\n ')
 }
 
 export async function GET(
@@ -95,43 +58,29 @@ export async function GET(
   const isPublicVisibility = vis === 'public' || vis === 'unlisted'
   const masked = !isPublished || !isPublicVisibility || ev.is_cancelled
 
-  // starts_at/ends_at store the event's wall-clock as UTC PARTS. Resolve the TRUE UTC
-  // instant through the event's own zone before stamping (the old code stamped the raw
-  // wall-clock digits with a Z, so a 7pm-PT event landed 7h off in every subscriber's
-  // calendar). Emitting the true instant means each subscriber's client shows the event
-  // at the correct absolute moment in their own local zone.
-  const tz = resolveZone(ev.time_zone)
-  const start = eventInstant(ev.starts_at, tz) ?? new Date(ev.starts_at)
-  const end   = (ev.ends_at ? eventInstant(ev.ends_at, tz) : null)
-    ?? new Date(start.getTime() + 60 * 60 * 1000)  // default 1h
+  // starts_at/ends_at store the event's wall-clock as UTC PARTS. icsEventInstants resolves the TRUE
+  // UTC instant through the event's own zone before stamping (the old code stamped the raw wall-clock
+  // digits with a Z, so a 7pm-PT event landed 7h off). Emitting the true instant means each
+  // subscriber's client shows the event at the correct absolute moment in their own local zone.
+  const { start, end } = icsEventInstants(ev.starts_at, ev.ends_at, ev.time_zone)
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
-  const eventUrl = `${appUrl}/events/${ev.slug}`
 
-  const summary = masked ? 'Private event' : ev.title
-
-  const lines: string[] = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Frequency//Community Events//EN',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    'BEGIN:VEVENT',
-    `UID:${ev.id}@frequency`,
-    `DTSTAMP:${icsStamp(new Date())}`,
-    `DTSTART:${icsStamp(start)}`,
-    `DTEND:${icsStamp(end)}`,
-    fold(`SUMMARY:${icsEscape(summary)}`),
-    fold(`URL:${eventUrl}`),
-  ]
-  // Venue + description are omitted entirely when masked (never leak them).
-  if (!masked && ev.location)    lines.push(fold(`LOCATION:${icsEscape(ev.location)}`))
-  if (!masked && ev.description) lines.push(fold(`DESCRIPTION:${icsEscape(ev.description)}`))
-  if (ev.is_cancelled) lines.push('STATUS:CANCELLED')
-
-  lines.push('END:VEVENT', 'END:VCALENDAR')
-
-  const body = lines.join('\r\n') + '\r\n'
+  const body = renderCalendar({
+    vevents: [
+      buildVevent({
+        uid: ev.id,
+        start,
+        end,
+        summary: masked ? 'Private event' : ev.title,
+        url: `${appUrl}/events/${ev.slug}`,
+        // Venue + description are omitted entirely when masked (never leak them).
+        location: masked ? null : ev.location,
+        description: masked ? null : ev.description,
+        cancelled: ev.is_cancelled,
+      }),
+    ],
+  })
 
   return new NextResponse(body, {
     status: 200,
