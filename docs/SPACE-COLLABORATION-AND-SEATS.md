@@ -58,7 +58,7 @@ Dark while `billingLive()` is off; nothing charges until billing is on AND the S
 - **Billing: FREE to host.** The collaborator pays for their own space; hosting costs the host nothing.
 
 **Data model:** a new `space_collaborations` join table:
-`host_space_id`, `collaborator_space_id`, `status` (pending/approved/declined/ended), `invited_by_space_id`
+`host_space_id`, `collaborator_space_id`, `status` (pending/accepted/declined/revoked; SHIPPED B1-core, migration 20261195000000), `invited_by_space_id`
 (which side initiated), `role`/scope flags for the phased capabilities, timestamps. Unique
 `(host_space_id, collaborator_space_id)`. A host is just a `business` space (no new `SpaceType`); a Focus
 mode preset can frame a venue.
