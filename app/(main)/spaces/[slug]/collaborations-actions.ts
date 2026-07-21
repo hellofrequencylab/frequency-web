@@ -28,12 +28,20 @@ async function viewerApprovesSpace(spaceId: string): Promise<boolean> {
   return approvers.includes(profileId)
 }
 
+/** A chainable + awaitable write filter (supabase builders are both). Lets an update chain extra
+ *  `.eq`/`.in` guards so the status transition is atomic at the DB (the row updates only if it is still
+ *  in the expected state), closing the read-then-write race. */
+interface WriteFilter extends Promise<{ error: { code?: string } | null }> {
+  eq: (c: string, val: string) => WriteFilter
+  in: (c: string, vals: string[]) => WriteFilter
+}
+
 /** Untyped admin handle for the write (space_collaborations isn't in the generated types yet, ADR-246). */
 function collabTable() {
   return (createAdminClient() as unknown as {
     from: (t: string) => {
       insert: (rows: Record<string, unknown>[]) => { select: (c: string) => { maybeSingle: () => Promise<{ data: { id: string } | null; error: { code?: string } | null }> } }
-      update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: { code?: string } | null }> }
+      update: (v: Record<string, unknown>) => WriteFilter
     }
   }).from('space_collaborations')
 }
@@ -116,9 +124,12 @@ async function respondToRequest(collaborationId: string, next: 'accepted' | 'dec
   // Only the side that did NOT initiate may approve/decline.
   if (!(await viewerApprovesSpace(approverSideForRequest(row)))) return fail('You cannot respond to this request.')
 
+  // Guard the status in the WHERE too: the row updates only if it is STILL pending, so a concurrent
+  // decline/accept (or a revoke) cannot be overwritten by a stale read (atomic transition).
   const { error } = await collabTable()
     .update({ status: next, responded_at: new Date().toISOString(), responded_by: profileId })
     .eq('id', collaborationId)
+    .eq('status', 'pending')
   if (error) return fail('Could not update the request. Try again.')
 
   await revalidateSpaces(row.host_space_id, row.collaborator_space_id)
@@ -141,9 +152,12 @@ export async function revokeCollaboration(collaborationId: string): Promise<Acti
   ])
   if (!managesHost && !managesCollab) return fail('You cannot end this collaboration.')
 
+  // Guard the status in the WHERE: only a still-live (pending/accepted) row is revoked, so a concurrent
+  // decline/accept cannot be clobbered by a stale read.
   const { error } = await collabTable()
     .update({ status: 'revoked', responded_at: new Date().toISOString(), responded_by: profileId })
     .eq('id', collaborationId)
+    .in('status', ['pending', 'accepted'])
   if (error) return fail('Could not end the collaboration. Try again.')
 
   await revalidateSpaces(row.host_space_id, row.collaborator_space_id)
