@@ -13,8 +13,10 @@ import {
   planForItemKeys,
   addonsForItemKeys,
   reconciledItemsFromSubscription,
+  seatQuantityFromItems,
   stripItemPortion,
   type ItemKey,
+  type ReconciledItem,
 } from './space-subscription-items'
 
 describe('itemKeyForCatalogKey (catalog -> DB item_key · collapsed ADR-552)', () => {
@@ -159,5 +161,34 @@ describe('reconciledItemsFromSubscription (the webhook item read · collapsed AD
     ])
     const items = reconciledItemsFromSubscription(sub)
     expect(items.map((i) => i.itemKey)).toEqual(['base'])
+  })
+})
+
+// The licensed operator-seat count persisted onto spaces.seat_quantity (the seat wall's source of truth).
+describe('seatQuantityFromItems (licensed seat count · ADR-465)', () => {
+  const item = (itemKey: ItemKey, quantity: number): ReconciledItem => ({
+    itemKey,
+    stripeSubscriptionItemId: 'si_1',
+    quantity,
+    interval: 'month',
+    lockedPriceId: null,
+  })
+
+  it('sums the quantities of seat items only (nonprofit_seat + legacy team)', () => {
+    expect(seatQuantityFromItems([item('nonprofit_seat', 5)])).toBe(5)
+    expect(seatQuantityFromItems([item('team', 3)])).toBe(3)
+    expect(seatQuantityFromItems([item('nonprofit_seat', 4), item('team', 2)])).toBe(6)
+  })
+
+  it('ignores non-seat items and an empty set (buys 0 licensed seats, base owner seat only)', () => {
+    expect(seatQuantityFromItems([item('business', 1), item('ai', 1)])).toBe(0)
+    expect(seatQuantityFromItems([])).toBe(0)
+    expect(seatQuantityFromItems([item('nonprofit_seat', 5), item('business', 1)])).toBe(5)
+  })
+
+  it('floors each quantity at 0 (a garbage / non-positive quantity adds nothing)', () => {
+    expect(seatQuantityFromItems([item('nonprofit_seat', 0)])).toBe(0)
+    expect(seatQuantityFromItems([item('nonprofit_seat', -3)])).toBe(0)
+    expect(seatQuantityFromItems([item('nonprofit_seat', 2.9)])).toBe(2)
   })
 })
