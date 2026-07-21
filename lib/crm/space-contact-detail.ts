@@ -24,7 +24,7 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities, autoExecutionAllowed } from '@/lib/spaces/entitlements'
 import { getContact, getDeals, type CrmDeal } from '@/lib/crm/pipeline'
 import { listClientNotes, type ClientNote } from '@/lib/crm/client-notes'
-import { listContactInteractions } from '@/lib/crm/interactions'
+import { listInteractionsForPerson } from '@/lib/crm/interactions'
 import { buildTimeline, type TimelineEntry } from '@/lib/crm/timeline'
 import { getMemberScores, type MemberScores } from '@/lib/dashboard/scores'
 import { draftContextLine, explainMemberScores, type ScoreReadout } from '@/lib/dashboard/person-band'
@@ -127,15 +127,20 @@ export async function getSpaceContactDetail(
   const contact = await getContact(contactId, spaceId)
   if (!contact) return null
 
-  // Fold the sources in parallel; each is independently fail-safe. The contact's member profile id
-  // (the score / matches / facts key) is resolved off the contact row, null for a pure lead. The
-  // Space's custom-field registry labels + types this contact's meta.custom (fail-safe to []).
-  const [enrichment, interactions, notes, dealsAll, profileId, registry] = await Promise.all([
+  // The contact's member profile id (the score / matches / facts key) is resolved off the contact row,
+  // null for a pure lead. Resolve it first so the timeline read can STITCH the person: reading across the
+  // contact id AND the profile id folds profile-subject touches (event attendance, program adoption, and
+  // future site messages) into the same Space-scoped stream as the contact-subject email history (ADR-796).
+  const profileId = await resolveContactProfileId(contactId)
+
+  // Fold the sources in parallel; each is independently fail-safe. The Space's custom-field registry labels
+  // + types this contact's meta.custom (fail-safe to []). The person-stitch read is STRICTLY scoped to this
+  // Space (listInteractionsForPerson(..., spaceId)), so it never surfaces another party's platform touches.
+  const [enrichment, interactions, notes, dealsAll, registry] = await Promise.all([
     enrichFromCapture(contact.email),
-    listContactInteractions({ subjectKind: 'contact', subjectId: contactId, spaceId, limit: 100 }),
+    listInteractionsForPerson([contactId, profileId], 100, spaceId),
     listClientNotes(spaceId, contactId),
     getDeals(spaceId),
-    resolveContactProfileId(contactId),
     listSpaceCustomFields(spaceId),
   ])
   const registryByKey = new Map(registry.map((f) => [f.key, f]))

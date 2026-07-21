@@ -296,37 +296,80 @@ export async function listContactInteractions(filter: ListInteractionsFilter): P
 
 /**
  * Read the timeline for ONE person across ALL of their subject rows at once — the platform/admin
- * "person view" (ADR-372). A person is stitched from several identity rows (their `contact` id, their
- * `profile` id, and any `network_contact` capture ids), so this gathers every interaction whose
- * `subject_id` is one of those, regardless of who logged it. Subject ids are UUIDs, so an `in` filter
- * across them never collides between kinds. Newest first. Service-role read; the caller (a staff-gated
- * admin surface) has authorized the scope. FAIL-SAFE: [] on any error.
+ * "person view" (ADR-372), now also the Space Resonance card (ADR-796). A person is stitched from several
+ * identity rows (their `contact` id, their `profile` id, and any `network_contact` capture ids), so this
+ * gathers every interaction whose `subject_id` is one of those, regardless of subject KIND — so email
+ * (contact-subject) and event/adoption touches (profile-subject) fold into one stream. Subject ids are
+ * UUIDs, so an `in` filter across them never collides between kinds. Newest first. Service-role read; the
+ * caller has authorized the scope. FAIL-SAFE: [] on any error.
+ *
+ * TENANCY (`spaceId`): the platform person-view passes none and reads GLOBALLY (staff-gated). A SPACE CRM
+ * card passes its `spaceId` and gets a STRICT `space_id = <this space>` scope — so it sees this Space's
+ * touches across every subject kind, and NEVER another party's platform touches about the same person
+ * (e.g. a member's private DMs with unrelated third parties, which carry `space_id = NULL`). Space
+ * communications must therefore be STAMPED with the space id to surface here.
  */
+/**
+ * Log a Space MEMBER activity — event attendance, program adoption, a membership join, etc. — onto the
+ * member's Space-scoped timeline (ADR-796, "log every communication/activity"). The subject is the
+ * member's PROFILE id, STAMPED with the space id, so it folds into the Space Resonance card via the
+ * person-stitch (`listInteractionsForPerson(..., spaceId)`) WITHOUT requiring the member to be a CRM
+ * contact first, and never leaks to another Space (the strict space scope). Best-effort + idempotent;
+ * a timeline write must never break the action, so this swallows everything and returns void.
+ */
+export async function recordSpaceMemberActivity(input: {
+  spaceId: string
+  spaceOwnerProfileId: string | null | undefined
+  memberProfileId: string | null | undefined
+  channel: InteractionChannel
+  summary: string
+  idempotencyKey: string
+  direction?: InteractionDirection
+  metadata?: Record<string, unknown>
+}): Promise<void> {
+  if (!input.spaceId || !input.spaceOwnerProfileId || !input.memberProfileId) return
+  try {
+    await recordContactInteraction(
+      {
+        ownerProfileId: input.spaceOwnerProfileId,
+        subjectKind: 'profile',
+        subjectId: input.memberProfileId,
+        channel: input.channel,
+        direction: input.direction ?? 'inbound',
+        summary: input.summary,
+        source: 'engagement',
+        idempotencyKey: input.idempotencyKey,
+        metadata: input.metadata ?? null,
+      },
+      input.spaceId,
+    )
+  } catch {
+    /* best-effort: a timeline write never breaks the hot path */
+  }
+}
+
 export async function listInteractionsForPerson(
   subjectIds: (string | null | undefined)[],
   limit = 200,
+  spaceId?: string | null,
 ): Promise<ContactInteraction[]> {
   const ids = [...new Set(subjectIds.filter((s): s is string => typeof s === 'string' && s.length > 0))]
   if (ids.length === 0) return []
   const capped = Math.min(Math.max(limit, 1), 500)
+  type InteractionQ = {
+    eq: (col: string, val: string) => InteractionQ
+    order: (col: string, opts: { ascending: boolean }) => {
+      limit: (n: number) => Promise<{ data: InteractionRow[] | null; error: unknown }>
+    }
+  }
   try {
     const db = createAdminClient() as unknown as {
-      from: (t: string) => {
-        select: (c: string) => {
-          in: (col: string, vals: string[]) => {
-            order: (col: string, opts: { ascending: boolean }) => {
-              limit: (n: number) => Promise<{ data: InteractionRow[] | null; error: unknown }>
-            }
-          }
-        }
-      }
+      from: (t: string) => { select: (c: string) => { in: (col: string, vals: string[]) => InteractionQ } }
     }
-    const { data, error } = await db
-      .from('contact_interactions')
-      .select(ROW_COLS)
-      .in('subject_id', ids)
-      .order('occurred_at', { ascending: false })
-      .limit(capped)
+    let q: InteractionQ = db.from('contact_interactions').select(ROW_COLS).in('subject_id', ids)
+    // Strict per-space scope when a Space asked (never leak another tenant's touches); global otherwise.
+    if (typeof spaceId === 'string' && spaceId) q = q.eq('space_id', spaceId)
+    const { data, error } = await q.order('occurred_at', { ascending: false }).limit(capped)
     if (error || !data) return []
     return data.flatMap((r) => {
       const m = mapRow(r)
