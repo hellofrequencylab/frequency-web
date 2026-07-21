@@ -1,6 +1,7 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { summariesFromRows } from '@/app/(main)/admin/crm/member-summaries'
+import { completenessScore, isRealName } from '@/lib/crm/completeness'
 import type { MemberListRow } from '@/lib/dashboard/scores'
 import type { ResonanceTier } from '@/lib/traits/compute'
 import type { MemberSummary } from '@/components/people/member-viewer'
@@ -126,8 +127,10 @@ export async function loadSpaceResonanceContacts(
   if (!spaceId) return []
   try {
     const { data } = await db()
+      // meta (the rich imported fields: phone/company/title/city/website/tags/notes/custom) + engagement
+      // signals ride along so the row can carry a COMPLETENESS score for the "Most complete" sort.
       .from('contacts')
-      .select('id, email, display_name, consent_state, created_at, profile_id')
+      .select('id, email, display_name, consent_state, created_at, profile_id, meta, engagement_score, last_seen_at')
       .eq('space_id', spaceId)
       .order('created_at', { ascending: false })
       .limit(500)
@@ -138,9 +141,31 @@ export async function loadSpaceResonanceContacts(
       if (typeof id !== 'string' || !email) continue
       const profileId = typeof r.profile_id === 'string' ? r.profile_id : null
       if (profileId && excludeProfileIds.has(profileId)) continue // already a member row
-      const name =
-        (typeof r.display_name === 'string' && r.display_name.trim()) || email.split('@')[0] || 'Contact'
+      const rawName = typeof r.display_name === 'string' ? r.display_name.trim() : ''
+      const name = rawName || email.split('@')[0] || 'Contact'
       const createdAt = typeof r.created_at === 'string' ? Date.parse(r.created_at) : NaN
+
+      // COMPLETENESS: read the imported extras out of meta (importer writes these keys, lib/crm/import/
+      // commit.ts) and weight them so a filled-out contact outranks a bare email import. A contact stitched
+      // to a real profile counts as a member; any engagement signal counts as activity.
+      const meta = r.meta && typeof r.meta === 'object' && !Array.isArray(r.meta) ? (r.meta as Record<string, unknown>) : {}
+      const filled = (v: unknown): boolean =>
+        typeof v === 'string' ? v.trim().length > 0 : Array.isArray(v) ? v.length > 0 : v != null && v !== ''
+      const custom = meta.custom
+      const completeness = completenessScore({
+        hasRealName: isRealName(rawName, email),
+        hasPhone: filled(meta.phone),
+        hasCompany: filled(meta.company),
+        hasTitle: filled(meta.title),
+        hasCity: filled(meta.city),
+        hasWebsite: filled(meta.website),
+        hasTags: filled(meta.tags),
+        hasNotes: filled(meta.notes),
+        hasCustomFields: !!custom && typeof custom === 'object' && Object.keys(custom as object).length > 0,
+        isMember: profileId != null,
+        hasActivity: (typeof r.engagement_score === 'number' && r.engagement_score > 0) || filled(r.last_seen_at),
+      })
+
       out.push({
         id: `${CONTACT_ID_PREFIX}${id}`,
         handle: email, // synthetic (no real profile handle); the pane suppresses the /people link for leads
@@ -150,7 +175,11 @@ export async function loadSpaceResonanceContacts(
         // not surface leads. Headline names it a lead so the row still reads clearly.
         badges: [],
         headline: 'Contact',
-        sortValues: { joined: Number.isFinite(createdAt) ? createdAt : 0, activeThisWeek: 0 },
+        sortValues: {
+          joined: Number.isFinite(createdAt) ? createdAt : 0,
+          activeThisWeek: 0,
+          completeness,
+        },
       })
     }
     return out

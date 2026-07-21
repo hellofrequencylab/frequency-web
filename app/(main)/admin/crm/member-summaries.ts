@@ -2,6 +2,7 @@ import { getProfileSummaries } from '@/lib/connections/matching'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listMembersByFilter, type MemberFilter, type MemberListRow } from '@/lib/dashboard/scores'
 import { classifyMembers } from '@/lib/crm/classification'
+import { completenessScore } from '@/lib/crm/completeness'
 import { relationshipLabel } from '@/lib/crm/relationships'
 import { ROLE_LABEL } from '@/lib/community-roles'
 import { tierLabel } from '@/lib/dashboard/verdict'
@@ -83,6 +84,10 @@ export const ACTIVE_FACET: Facet = {
  *  pure applyQuery sort over a row's sortValues / stats. */
 export const MEMBER_SORT_OPTIONS: SortOption[] = [
   { key: 'recent', label: 'Recent', spec: { key: 'joined', direction: 'desc' } },
+  // Most complete: the richest rows first (a real name, phone, company, notes … or a real member) over the
+  // bare email-only imports a CSV drops in. Reads each row's pre-computed `completeness` signal; ties fall
+  // back to newest-first (the roster's input order). The space Resonance roster defaults to this sort.
+  { key: 'complete', label: 'Most complete', spec: { key: 'completeness', direction: 'desc' } },
   { key: 'active', label: 'Active', spec: { key: 'Health', direction: 'desc' } },
   { key: 'needs-help', label: 'Needs help', spec: { key: 'Health', direction: 'asc' } },
   { key: 'active-now', label: 'Active now', spec: { key: 'activeThisWeek', direction: 'desc' } },
@@ -159,10 +164,19 @@ export async function summariesFromRows(rows: MemberListRow[]): Promise<MemberSu
       cls?.communityRole && ROSTER_ROLE_KEYS.includes(cls.communityRole)
         ? [`role:${cls.communityRole}`]
         : []
+    const displayName = s?.displayName ?? r.name
+    // COMPLETENESS for the "Most complete" sort: a real member with a name (and maybe an avatar / activity)
+    // is a "complete" row, so it ranks with the richest contacts and well above the email-only imports.
+    const completeness = completenessScore({
+      isMember: true,
+      hasRealName: !!displayName && displayName.trim().length > 0 && displayName.trim() !== handle,
+      hasAvatar: !!s?.avatarUrl,
+      hasActivity: activeThisWeek,
+    })
     return {
       id: r.profileId,
       handle,
-      displayName: s?.displayName ?? r.name,
+      displayName,
       avatarUrl: s?.avatarUrl ?? null,
       // Facet-matchable badges: the tier + lifecycle stage, plus the R2 role / business / activity
       // tokens (client-side facet filter reads all of these).
@@ -176,8 +190,8 @@ export async function summariesFromRows(rows: MemberListRow[]): Promise<MemberSu
       headline: lifecycle ? `${tierLabel(r.resonanceTier)} · ${lifecycle}` : tierLabel(r.resonanceTier),
       stats: [{ label: 'Health', value: String(Math.round(r.resonanceHealth)) }],
       // Pre-computed sort signals (not rendered as stats): "Recent" reads `joined`; "Active now" reads
-      // `activeThisWeek` (1 before 0 under a desc sort).
-      sortValues: { joined, activeThisWeek: activeThisWeek ? 1 : 0 },
+      // `activeThisWeek` (1 before 0 under a desc sort); "Most complete" reads `completeness`.
+      sortValues: { joined, activeThisWeek: activeThisWeek ? 1 : 0, completeness },
       // Resonance CRM classification (ADR-625), fail-safe to sensible defaults on a miss. The single
       // extension point R2 (card role tag + stats) and R3/R5 (sorting, upgrade signal) consume.
       communityRole: cls?.communityRole ?? null,
