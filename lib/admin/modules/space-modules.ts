@@ -259,6 +259,13 @@ export function isModuleAdvanced(module: SpaceModule): boolean {
   return module.advanced ?? ADVANCED_MODULE_IDS.has(module.id)
 }
 
+/** Whether a module id is ADVANCED — the id-keyed variant the rail uses (it holds App ids, not modules).
+ *  An unknown id is not advanced (fail-open: never hide a surface we can't resolve). */
+export function isAdvancedModuleId(id: string): boolean {
+  const m = spaceModuleById(id)
+  return m ? isModuleAdvanced(m) : false
+}
+
 /** The menu families in their canonical display order (the Module Manager groups its rows by these). */
 export const SPACE_MODULE_FAMILY_ORDER: readonly SpaceModuleFamily[] = [
   'space',
