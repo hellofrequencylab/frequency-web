@@ -5,6 +5,7 @@ import {
   doorLabel,
   isMailableDoor,
   consentStateForDoor,
+  memberJoinConsent,
   normalizeEmail,
   normalizePhoneKey,
   encodeLeadGrab,
@@ -102,6 +103,15 @@ describe('consent posture (capture != marketing consent)', () => {
     expect(consentStateForDoor('space_qr', 'unsubscribed', { offerUnlocked: true })).toBe('unsubscribed')
     expect(consentStateForDoor('event', 'subscribed')).toBe('subscribed')
   })
+
+  // A membership JOIN is affirmative opt-in (ADR-797), a stronger signal than a lead-grab door: it lifts
+  // unknown -> subscribed, but the hard opt-out is still permanent.
+  it('a membership join opts in from unknown, but never resurrects a hard opt-out', () => {
+    expect(memberJoinConsent('unknown')).toBe('subscribed')
+    expect(memberJoinConsent()).toBe('subscribed') // default (no prior row) opts in
+    expect(memberJoinConsent('subscribed')).toBe('subscribed')
+    expect(memberJoinConsent('unsubscribed')).toBe('unsubscribed') // permanence wins
+  })
 })
 
 describe('deterministic dedupe + claim keys', () => {
@@ -187,16 +197,18 @@ describe('findContactByEmail is space-scoped (per-space tenancy, ADR-624)', () =
     await captureLead({ spaceId: 'space-1', door: 'lead_magnet', email: 'Jo@Example.com' })
 
     // The lookup chain is the `contacts` query that matched on email. It must ALSO have filtered space_id.
-    // The match is an exact `.eq` on the lowercased address (not `.ilike`, which treats `_`/`%` in an
-    // address as wildcards); the stored column is lowercased, so an exact match is correct and safe.
+    // The email match is a case-INSENSITIVE `.ilike` on the escaped, lowercased address: the column can
+    // carry a mixed-case value (an OAuth signup / import path stores it un-normalized), and uniqueness is
+    // on lower(email), so an exact `.eq` would miss a stored `Jo@Example.com`. escapeLike neutralizes the
+    // `%`/`_` wildcards so the address still matches literally.
     const lookup = chains.find(
-      (c) => c.table === 'contacts' && c.calls.some(([m, a]) => m === 'eq' && (a as unknown[])[0] === 'email'),
+      (c) => c.table === 'contacts' && c.calls.some(([m, a]) => m === 'ilike' && (a as unknown[])[0] === 'email'),
     )
     expect(lookup, 'expected a contacts email lookup to have run').toBeTruthy()
     const eqCalls = lookup!.calls.filter(([m]) => m === 'eq')
     expect(eqCalls).toContainEqual(['eq', ['space_id', 'space-1']])
-    // And the email match is present on the same chain (proving the scope + email dedupe are together).
-    expect(lookup!.calls).toContainEqual(['eq', ['email', 'jo@example.com']])
+    // And the case-insensitive email match is present on the same chain (scope + email dedupe together).
+    expect(lookup!.calls).toContainEqual(['ilike', ['email', 'jo@example.com']])
   })
 })
 

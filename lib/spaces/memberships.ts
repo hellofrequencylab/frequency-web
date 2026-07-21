@@ -29,6 +29,7 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { fireSpaceTrigger } from '@/lib/spaces/drip-enroll'
+import { ensureSpaceMemberContact } from '@/lib/crm/lead-capture'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
@@ -452,11 +453,19 @@ export async function joinTier(spaceId: string, tierId: string): Promise<ActionR
       return fail('You are already a member here.')
     }
     membershipRowId = data?.id ?? null
-    // AUTOMATION TRIGGER (ADR-561): a member just joined a tier. Fire the 'member.joined' trigger so any
-    // enabled rule enrolls this member (resolved to their Space contact by profile) into its drip
-    // sequence. FIRE-SAFE + fire-and-forget: fireSpaceTrigger never throws and we do not await it, so a
-    // rule error can never break the join.
-    void fireSpaceTrigger(spaceId, 'member.joined', { profileId })
+    // AUTOMATION TRIGGER (ADR-561 + ADR-797): a member just joined a tier. First materialize a mailable
+    // Space contact for them (a join opts them into this Space's member emails, honoring any prior
+    // unsubscribe), THEN fire 'member.joined' with the RESOLVED contactId. This is required because a
+    // tenant Space's contacts carry profile_id NULL (the membrane law), so the trigger cannot resolve the
+    // member's Space contact by profile_id alone — welcome / onboarding would reach no one. Both steps are
+    // fail-safe and run in the background (not awaited), so neither can break or slow the join.
+    void (async () => {
+      const contactId = await ensureSpaceMemberContact(spaceId, profileId)
+      await fireSpaceTrigger(spaceId, 'member.joined', { contactId: contactId ?? undefined, profileId })
+    })().catch(() => {
+      // Both callees are contractually non-throwing; this is cheap insurance against a future contract
+      // break, so an automation error can never surface as an unhandled rejection off the join.
+    })
   } catch {
     return fail('Could not join right now. Try again.')
   }
