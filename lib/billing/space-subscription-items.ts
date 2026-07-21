@@ -36,6 +36,7 @@ export const ITEM_KEYS = [
   'business',
   'ai',
   'nonprofit_seat',
+  'operator_seat', // OPERATOR SEATS (ADR-799): a real per-seat add-on, quantity = extra operators
   'organization',
   // RETIRED (ADR-472), kept resolvable for legacy rows only:
   'marketing',
@@ -61,6 +62,7 @@ export function itemKeyForCatalogKey(catalogKey: string | null | undefined): Ite
     const addon = addonKeyForCatalogItem(key)
     if (addon) return addon
     if (key === 'nonprofit_seat') return 'nonprofit_seat'
+    if (key === 'operator_seat') return 'operator_seat' // the per-seat operator add-on (ADR-799)
   }
   // RETIRED (ADR-552), kept resolvable for legacy rows: the former Pro base + Organization catalog keys.
   if (catalogKey === 'pro_base') return 'base'
@@ -76,6 +78,23 @@ export interface ReconciledItem {
   interval: BillingInterval
   /** The grandfathered price id charged for this item (the founding price). */
   lockedPriceId: string | null
+}
+
+/** The licensed OPERATOR-SEAT quantity a set of reconciled items buys, to persist onto
+ *  spaces.seat_quantity (ADR-799). PURE. Sums the quantity of the `operator_seat` item(s) ONLY — the one
+ *  genuinely per-seat item. NOTHING else counts: the flat plan items (business/nonprofit_seat) are
+ *  perSeat:false and bill quantity 1, so they must NOT be read as seats (that was the reverted ADR-465
+ *  bug). An empty / seat-less set buys 0, leaving the Space with only its base owner seat. Floors each
+ *  quantity at 0. */
+export function seatQuantityFromItems(items: readonly ReconciledItem[]): number {
+  let total = 0
+  for (const it of items) {
+    if (it.itemKey === 'operator_seat') {
+      const q = Math.floor(it.quantity)
+      total += Number.isFinite(q) && q > 0 ? q : 0
+    }
+  }
+  return total
 }
 
 /** The base TIER a set of item keys implies. PURE (ADR-552). Highest-ranked wins: nonprofit > business >

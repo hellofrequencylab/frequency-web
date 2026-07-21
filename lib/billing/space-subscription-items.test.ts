@@ -13,8 +13,10 @@ import {
   planForItemKeys,
   addonsForItemKeys,
   reconciledItemsFromSubscription,
+  seatQuantityFromItems,
   stripItemPortion,
   type ItemKey,
+  type ReconciledItem,
 } from './space-subscription-items'
 
 describe('itemKeyForCatalogKey (catalog -> DB item_key · collapsed ADR-552)', () => {
@@ -159,5 +161,36 @@ describe('reconciledItemsFromSubscription (the webhook item read · collapsed AD
     ])
     const items = reconciledItemsFromSubscription(sub)
     expect(items.map((i) => i.itemKey)).toEqual(['base'])
+  })
+})
+
+// Operator-seat licensing (ADR-799): seat_quantity comes from the REAL per-seat item ONLY.
+describe('seatQuantityFromItems (operator seats · ADR-799)', () => {
+  const item = (itemKey: ItemKey, quantity: number): ReconciledItem => ({
+    itemKey,
+    stripeSubscriptionItemId: 'si_1',
+    quantity,
+    interval: 'month',
+    lockedPriceId: null,
+  })
+
+  it('sums the operator_seat quantity only', () => {
+    expect(seatQuantityFromItems([item('operator_seat', 3)])).toBe(3)
+    expect(seatQuantityFromItems([item('business', 1), item('operator_seat', 5)])).toBe(5)
+    expect(seatQuantityFromItems([item('operator_seat', 2), item('operator_seat', 4)])).toBe(6)
+  })
+
+  it('NEVER reads the flat plan items as seats (the reverted ADR-465 bug)', () => {
+    // nonprofit_seat / business / team are flat (quantity 1) and must NOT count as operator seats.
+    expect(seatQuantityFromItems([item('nonprofit_seat', 1)])).toBe(0)
+    expect(seatQuantityFromItems([item('business', 1), item('ai', 1)])).toBe(0)
+    expect(seatQuantityFromItems([item('team', 3)])).toBe(0)
+    expect(seatQuantityFromItems([])).toBe(0)
+  })
+
+  it('floors each quantity at 0 (garbage / non-positive adds nothing)', () => {
+    expect(seatQuantityFromItems([item('operator_seat', 0)])).toBe(0)
+    expect(seatQuantityFromItems([item('operator_seat', -3)])).toBe(0)
+    expect(seatQuantityFromItems([item('operator_seat', 2.9)])).toBe(2)
   })
 })

@@ -263,6 +263,11 @@ export async function syncPricingCatalogToStripe(changedBy?: string | null): Pro
   const result: SyncResult = { ok: true, synced: [], errors: [] }
 
   for (const item of catalogItems()) {
+    // A PLACEHOLDER item (operator_seat, ADR-799) carries a stand-in amount the owner has not approved.
+    // Skip it entirely so the sync mints NO Stripe product/price for it — resolveLoadoutPriceId stays null
+    // and the item is inert until the owner sets the real amount and drops the flag. Without this, a routine
+    // sync of the live catalog would silently create a chargeable seat price the owner never set.
+    if (item.placeholder) continue
     let productId: string
     try {
       productId = await ensureCatalogProduct(item)

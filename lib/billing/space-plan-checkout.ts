@@ -170,7 +170,14 @@ async function resolveLoadoutPriceId(
  *  is a FLAT $29/mo (ADR-590), not a per-seat charge, so it bills quantity 1 like the Business base. The
  *  `nonprofit_seat` catalog key is a legacy name (the item is flat); see pricing-catalog.test.ts. */
 function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; perSeat: boolean }[] {
-  if (loadout.plan === 'nonprofit') return [{ key: 'nonprofit_seat', perSeat: false }]
+  // OPERATOR SEATS (ADR-799): a per-seat add-on available on ANY paid plan. Included only when the owner
+  // buys extra operator seats (seatQuantity > 0); the checkout sets this item's quantity to the seat
+  // count. The owner's own seat is the free base allowance, so this bills only the ADDITIONAL operators.
+  const wantsSeats = Math.floor(loadout.seatQuantity ?? 0) > 0
+  const operatorSeat: { key: CatalogItemKey; perSeat: boolean }[] = wantsSeats
+    ? [{ key: 'operator_seat', perSeat: true }]
+    : []
+  if (loadout.plan === 'nonprofit') return [{ key: 'nonprofit_seat', perSeat: false }, ...operatorSeat]
   const out: { key: CatalogItemKey; perSeat: boolean }[] = [{ key: 'business_base', perSeat: false }]
   const addons = [...new Set((loadout.addons ?? []).map((a) => asAddonKey(typeof a === 'string' ? a : null)).filter((a): a is AddonKey => a !== null))]
   for (const addon of addons) {
@@ -178,7 +185,7 @@ function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; pe
     if (!catalogKey) continue
     out.push({ key: catalogKey, perSeat: false }) // the AI add-on is not per-seat
   }
-  return out
+  return [...out, ...operatorSeat]
 }
 
 /** Create a single multi-item subscription Checkout for a Space owner's loadout (Business base + add-ons,
