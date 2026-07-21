@@ -10,6 +10,7 @@ import { readProfileData } from '@/lib/spaces/profile-data'
 import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { getSpaceReviews } from '@/lib/spaces/content-data'
 import { SpaceSettingsForm, type SpaceSettingsValues } from '../settings-form'
+import { SpaceInfoConnectForm } from '@/components/spaces/space-business-info-form'
 import { ProfileCompletenessCard } from '../profile-completeness-card'
 
 // SPACE BASICS EDITOR — the console's "Basics" section target (ADR-441 EM1-3 hotfix). The unified
@@ -87,6 +88,8 @@ export default async function SpaceBasicsPage({
     brandAccent: space.brandAccent ?? '',
     brandLogoUrl: space.brandLogoUrl ?? '',
     coverImageUrl: space.coverImageUrl ?? '',
+    // Still supplied (the shared DTO carries it), though the console settings form no longer edits About;
+    // the Info & Connect form below owns it.
     about: extras.about ?? '',
     tagline: extras.tagline ?? '',
     visibility: extras.visibility === 'private' ? 'private' : 'network',
@@ -107,7 +110,7 @@ export default async function SpaceBasicsPage({
     <FocusTemplate
       eyebrow={brandName}
       title="Basics"
-      description="Your space's name, brand, about, and who can find it. Changes show up on your space page."
+      description="Your space's name, brand, about, contact details, links, and who can find it. Changes show up on your space page."
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 
@@ -128,6 +131,20 @@ export default async function SpaceBasicsPage({
         spaceId={space.id}
         slug={space.slug}
         initial={initial}
+        readOnly={staffViewing || !canUseProfile}
+      />
+
+      {/* INFO & CONNECT (audit fix): About, story, the contact block (address, hours, phone, email,
+          website), price range, category, and social links — the forward-facing marketing + connect
+          content the public profile shows, and the fields the completeness meter scores. This editor
+          previously rendered ONLY in the legacy admin-rail inline body, so an owner working from the
+          /manage console had no way to set contact details, hours, website, or socials. It lives here now
+          so the console's Profile & Settings path is a complete identity editor. */}
+      <SpaceInfoConnectForm
+        spaceId={space.id}
+        slug={space.slug}
+        about={extras.about ?? ''}
+        business={profileData}
         readOnly={staffViewing || !canUseProfile}
       />
     </FocusTemplate>

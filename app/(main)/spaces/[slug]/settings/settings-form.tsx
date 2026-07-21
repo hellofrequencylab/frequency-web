@@ -17,19 +17,21 @@ import {
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
 import { SPACE_THEMES, type SpaceThemeId } from '@/lib/theme/space-themes'
 import { setSpaceImages, uploadSpaceImage } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
-import { draftSpaceBioAction, suggestTaglineAction } from '@/app/(main)/spaces/copilot-actions'
+import { suggestTaglineAction } from '@/app/(main)/spaces/copilot-actions'
 
-// The OWNER SETTINGS form (client). Edits the Space profile fields, grouped for clarity (ADR-516 D2):
-//   • Identity — name, tagline, about (with the two Vera draft affordances)
+// The OWNER SETTINGS form (client). Edits the Space IDENTITY fields, grouped for clarity (ADR-516 D2):
 //   • Images   — the header (cover) image + the logo, both real uploaders (not a URL box), saved the
 //                moment an upload resolves through the owner-gated setSpaceImages
+//   • Name & tagline
 //   • Brand    — the brand color picker (a real color picker + on-brand swatches)
+//   • Page theme
 //   • Visibility
-// Identity + Brand + Visibility persist together through the canEditProfile-gated updateSpaceProfile on
-// Save; the images save on their own (like the business form), so a new header/logo shows without a
-// second step. Every write action re-checks authorization server-side, so this client is convenience,
-// never the gate. Reads well in the narrow rail (~360px, single column) and on the full basics page.
-// COPY runs CONTENT-VOICE: plain labels, no narrated feelings, no em dashes.
+// About + Story + the contact block + social links live in the Info & Connect form beside this one (the
+// basics page renders both), so About is NOT here — that keeps a single About editor per surface and
+// avoids a stale-overwrite between two forms writing the same column. Name + tagline + brand + theme +
+// visibility persist together through the canEditProfile-gated updateSpaceProfile on Save; the images save
+// on their own. Every write action re-checks authorization server-side, so this client is convenience,
+// never the gate. COPY runs CONTENT-VOICE: plain labels, no narrated feelings, no em dashes.
 
 export interface SpaceSettingsValues {
   brandName: string
@@ -37,6 +39,9 @@ export interface SpaceSettingsValues {
   brandLogoUrl: string
   /** The Space's header (cover) image URL, edited here alongside the logo. */
   coverImageUrl: string
+  /** The `spaces.about` intro. This shared DTO still carries it (the rail's Info & Connect module reads
+   *  it), but THIS console settings form no longer edits it — the Info & Connect form beside it owns
+   *  About, so there is one About editor per surface and no stale-overwrite between two forms. */
   about: string
   tagline: string
   visibility: 'network' | 'private'
@@ -62,7 +67,6 @@ export function SpaceSettingsForm({
   const router = useRouter()
   const [brandName, setBrandName] = useState(initial.brandName)
   const [brandAccent, setBrandAccent] = useState(initial.brandAccent)
-  const [about, setAbout] = useState(initial.about)
   const [tagline, setTagline] = useState(initial.tagline)
   const [visibility, setVisibility] = useState<'network' | 'private'>(initial.visibility)
   const [theme, setTheme] = useState<SpaceThemeId>(initial.theme)
@@ -89,8 +93,7 @@ export function SpaceSettingsForm({
     })
   }
 
-  // Vera draft state, per field (so each button shows its own spinner + error).
-  const [bioBusy, startBio] = useTransition()
+  // Vera draft state for the tagline suggest affordance (its own spinner + error).
   const [taglineBusy, startTagline] = useTransition()
   const [veraError, setVeraError] = useState<string | null>(null)
 
@@ -117,7 +120,6 @@ export function SpaceSettingsForm({
       const result = await updateSpaceProfile(spaceId, {
         brandName: brandName.trim() || null,
         brandAccent: brandAccent || null,
-        about: about.trim() || null,
         tagline: tagline.trim() || null,
         visibility,
         theme,
@@ -135,7 +137,7 @@ export function SpaceSettingsForm({
     <button
       type="button"
       onClick={onClick}
-      disabled={busy || bioBusy || taglineBusy}
+      disabled={busy || taglineBusy}
       className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong transition-colors hover:text-primary disabled:opacity-50"
     >
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Sparkles className="h-3.5 w-3.5" aria-hidden />}
@@ -236,24 +238,9 @@ export function SpaceSettingsForm({
               'Suggest with Vera',
             )}
           />
-          <TextareaField
-            id="about"
-            label="About"
-            hint="A short bio for your profile. A few sentences is plenty."
-            value={about}
-            onChange={setAbout}
-            placeholder="Tell people who you are and what they can expect."
-            rows={6}
-            maxLength={4000}
-            action={veraButton(
-              () => runDraft(() => draftSpaceBioAction(spaceId), setAbout, startBio),
-              bioBusy,
-              'Draft with Vera',
-            )}
-          />
           <p className="text-xs text-subtle">
-            Vera is AI. The Draft and Suggest buttons write a starting point you review and edit; nothing
-            is saved or published until you do.
+            Vera is AI. Suggest writes a starting point you review and edit; nothing is saved or published
+            until you do. Your About, story, contact details, and links are in Info and Connect below.
           </p>
         </section>
 
