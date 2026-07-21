@@ -21,6 +21,8 @@ import {
   validateRule,
   validateStep,
   SPACE_AUTOMATION_TRIGGERS,
+  SPACE_AUTOMATION_TEMPLATES,
+  automationTemplateById,
 } from './automation'
 
 // ── PURE validators (no IO) ──────────────────────────────────────────────────────────────────────
@@ -315,5 +317,52 @@ describe('startSequenceForAudience gating + enroll', () => {
     const res = await startSequenceForAudience('space-A', 'seq1')
     expect('error' in res).toBe(false)
     if (!('error' in res)) expect(res.data.enrolled).toBe(0)
+  })
+})
+
+// ── TEMPLATES: the pre-built catalog (ADR-796) ─────────────────────────────────────────────────────
+
+describe('automation templates catalog', () => {
+  it('automationTemplateById resolves a known id and is null for an unknown one', () => {
+    expect(automationTemplateById('welcome')?.id).toBe('welcome')
+    expect(automationTemplateById('re-engage')?.triggerEvent).toBeNull()
+    expect(automationTemplateById('nope')).toBeNull()
+  })
+
+  it('welcome + onboarding trigger on member.joined; re-engage is manual (null trigger)', () => {
+    expect(automationTemplateById('welcome')?.triggerEvent).toBe('member.joined')
+    expect(automationTemplateById('onboarding')?.triggerEvent).toBe('member.joined')
+    expect(automationTemplateById('re-engage')?.triggerEvent).toBeNull()
+  })
+
+  it('every template is well-formed: unique id/name, >=1 step, valid trigger, non-negative delays', () => {
+    const ids = new Set<string>()
+    const names = new Set<string>()
+    for (const t of SPACE_AUTOMATION_TEMPLATES) {
+      expect(ids.has(t.id), `duplicate id ${t.id}`).toBe(false)
+      ids.add(t.id)
+      expect(names.has(t.name), `duplicate name ${t.name}`).toBe(false)
+      names.add(t.name)
+      expect(t.title.trim().length).toBeGreaterThan(0)
+      expect(t.description.trim().length).toBeGreaterThan(0)
+      expect(t.steps.length).toBeGreaterThan(0)
+      if (t.triggerEvent !== null) {
+        expect((SPACE_AUTOMATION_TRIGGERS as readonly string[]).includes(t.triggerEvent)).toBe(true)
+      }
+      for (const s of t.steps) {
+        expect(s.subject.trim().length).toBeGreaterThan(0)
+        expect(s.body.trim().length).toBeGreaterThan(0)
+        expect(Number.isInteger(s.delayHours)).toBe(true)
+        expect(s.delayHours).toBeGreaterThanOrEqual(0)
+      }
+    }
+  })
+
+  it('all template copy obeys the voice canon: no em or en dashes', () => {
+    for (const t of SPACE_AUTOMATION_TEMPLATES) {
+      const copy = [t.title, t.description, ...t.steps.flatMap((s) => [s.subject, s.body])].join('\n')
+      expect(copy.includes('—'), `em dash in ${t.id}`).toBe(false)
+      expect(copy.includes('–'), `en dash in ${t.id}`).toBe(false)
+    }
   })
 })

@@ -12,6 +12,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { SequencesPanel } from '@/components/spaces/automation/sequences-panel'
+import { TemplatesPanel } from '@/components/spaces/automation/templates-panel'
 
 // AUTOMATION BODY — the chrome-free automation surface (rules + drip sequences), self-gating so it is
 // safe to mount anywhere. It returns null when the viewer may not manage this Space (the page still 404s
@@ -69,9 +70,24 @@ export async function AutomationBody({ slug }: { slug: string }) {
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 
       <div className="space-y-8">
-        {/* The blank-canvas "Rules" builder was removed (ADR-796, Decision 3): its only action type never
-            sent, and open-canvas automation is the named adoption-killer. Drip SEQUENCES (which work) stay;
-            pre-built templates (welcome / onboarding / re-engage) replace the builder in a later phase. */}
+        {/* TEMPLATES (ADR-796, Decision 3): the blank-canvas "Rules" builder was removed (open-canvas
+            automation is the named adoption killer). These ready-made sequences are the on-ramp: add one,
+            review its steps, turn it on. A triggered template also wires the rule that auto-enrolls the
+            right member on join, so a new member gets a welcome without the operator touching a builder. */}
+        <section>
+          <SectionHeader title="Start from a template" />
+          <p className="mb-3 text-sm text-muted">
+            Add a ready-made sequence in one tap, then edit the steps to sound like you. It stays off until
+            you turn it on.
+          </p>
+          <TemplatesPanel
+            spaceId={space.id}
+            slug={space.slug}
+            existingSequenceNames={sequences.map((s) => s.name)}
+            readOnly={staffViewing}
+          />
+        </section>
+
         <section>
           <SectionHeader title="Drip sequences" />
           <p className="mb-3 text-sm text-muted">

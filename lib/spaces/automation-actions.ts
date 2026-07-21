@@ -13,6 +13,7 @@ import {
   setSpaceRuleEnabled as setSpaceRuleEnabledImpl,
   deleteSpaceRule as deleteSpaceRuleImpl,
   createSpaceSequence as createSpaceSequenceImpl,
+  instantiateAutomationTemplate as instantiateAutomationTemplateImpl,
   addSequenceStep as addSequenceStepImpl,
   deleteSequenceStep as deleteSequenceStepImpl,
   setSpaceSequenceEnabled as setSpaceSequenceEnabledImpl,
@@ -72,6 +73,19 @@ export async function createSpaceSequence(
   input: { name: string; audience?: unknown },
 ): Promise<ActionResult<{ id: string }>> {
   const res = await createSpaceSequenceImpl(spaceId, input)
+  if (!('error' in res)) revalidateAutomation(slug)
+  return res
+}
+
+/** Add a pre-built template (welcome / onboarding / re-engage) as a new drip sequence, created OFF for
+ *  review, plus its auto-enroll rule for a triggered template. Gated on canEditProfile (see the
+ *  implementation). */
+export async function instantiateAutomationTemplate(
+  spaceId: string,
+  slug: string,
+  templateId: string,
+): Promise<ActionResult<{ sequenceId: string }>> {
+  const res = await instantiateAutomationTemplateImpl(spaceId, templateId)
   if (!('error' in res)) revalidateAutomation(slug)
   return res
 }
