@@ -22,6 +22,7 @@ import {
 import type { ComponentConfig } from '@/lib/page-editor/types'
 
 import { getInitials } from '@/lib/utils'
+import { normalizeHttpUrl } from '@/lib/safe-url'
 import { focalClass } from '@/lib/page-editor/image-controls'
 import { CtaButton } from '@/components/page-editor/blocks/kit'
 import { loomImageField, loomSquareImageField } from '@/lib/page-editor/loom-image-field'
@@ -968,7 +969,20 @@ export function SpaceContactBlock({
   if (hours) rows.push({ icon: <Clock className="h-4 w-4" aria-hidden />, text: hours })
   if (phone) rows.push({ icon: <Phone className="h-4 w-4" aria-hidden />, text: <a href={`tel:${phone}`} className="hover:underline">{phone}</a> })
   if (email) rows.push({ icon: <Mail className="h-4 w-4" aria-hidden />, text: <a href={`mailto:${email}`} className="hover:underline">{email}</a> })
-  if (linkHref) rows.push({ icon: <Link2 className="h-4 w-4" aria-hidden />, text: <a href={linkHref} className="hover:underline" target="_blank" rel="noreferrer">{linkLabel || linkHref}</a> })
+  if (linkHref) {
+    // Stored-XSS guard: `website` is stored trim-only (profile-data), so an operator could save a
+    // `javascript:`/`data:` URL that renders here on the PUBLIC profile. normalizeHttpUrl allows only
+    // http/https (defaulting a bare host to https); an unsafe URL renders as plain text, never a live href.
+    const safeLinkHref = normalizeHttpUrl(linkHref)
+    rows.push({
+      icon: <Link2 className="h-4 w-4" aria-hidden />,
+      text: safeLinkHref ? (
+        <a href={safeLinkHref} className="hover:underline" target="_blank" rel="noreferrer">{linkLabel || linkHref}</a>
+      ) : (
+        <span>{linkLabel || linkHref}</span>
+      ),
+    })
+  }
 
   if (rows.length === 0) {
     // Honest-empty on the LIVE page; the stub keeps the section placeable in the editor.
@@ -1380,10 +1394,14 @@ export function SpaceBusinessBlock({
           {shownLinks.map((l, i) => {
             const meta = BUSINESS_PLATFORM_META[l.platform || 'website'] ?? BUSINESS_PLATFORM_META.website
             const Icon = meta.icon
+            // Stored-XSS guard: social `url`s are stored trim-only, so drop any that isn't a safe
+            // http/https link (a `javascript:`/`data:` URL never reaches the public href).
+            const safeHref = normalizeHttpUrl(l.url as string)
+            if (!safeHref) return null
             return (
               <a
                 key={i}
-                href={(l.url as string).trim()}
+                href={safeHref}
                 target="_blank"
                 rel="noreferrer"
                 className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors ${

@@ -225,6 +225,10 @@ export type SpaceContentData = {
 // "view all"; these ceilings are generous relative to what a landing shows.
 const UPDATES_CAP = 24
 const REVIEWS_CAP = 24
+// A generous ceiling on the rating-only aggregate read (count/average/distribution over ALL visible
+// reviews, independent of the REVIEWS_CAP display page). Ratings are tiny ints; above this the summary
+// figures saturate, which is acceptable for a rating rollup and bounds a pathological Space's read.
+const AGGREGATE_CAP = 5000
 const FAQS_CAP = 50
 
 // Untyped admin handle (ADR-246): the space_* tables are not in the generated types yet.
@@ -522,7 +526,25 @@ export async function getSpaceReviews(spaceId: string): Promise<SpaceReviewsData
           : null,
       }
     })
-    const { average, count, distribution } = computeReviewAggregate(all.map((r) => r.rating))
+    // AGGREGATE over ALL visible reviews, not just the 24-row DISPLAY page above. Computing count/average
+    // from the capped `all` under-reported both for any Space with more than REVIEWS_CAP reviews, and (worse)
+    // emitted a wrong AggregateRating.reviewCount to answer engines via the profile JSON-LD. Ratings are tiny
+    // ints, so read just the `rating` column for every visible review (bounded by AGGREGATE_CAP so a
+    // pathological Space can never pull an unbounded set; above it the figures saturate, which is acceptable
+    // for a rating summary). FAIL-SAFE: fall back to the display-list aggregate if this read returns nothing.
+    const { data: ratingData } = await untyped()
+      .from('space_reviews')
+      .select('rating')
+      .eq('space_id', spaceId)
+      .eq('status', 'visible')
+      .order('created_at', { ascending: false })
+      .limit(AGGREGATE_CAP)
+    const ratingRows = (ratingData ?? []) as { rating: number | string }[]
+    const ratings =
+      ratingRows.length > 0
+        ? ratingRows.map((r) => (typeof r.rating === 'number' ? r.rating : Number(r.rating) || 0))
+        : all.map((r) => r.rating)
+    const { average, count, distribution } = computeReviewAggregate(ratings)
     return { average, count, latest: all, all, distribution }
   } catch {
     return empty

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getMyProfileId } from '@/lib/auth'
 import { getProduct } from '@/lib/commerce/products'
 import { upsertProductReview, hasPurchasedProduct } from '@/lib/commerce/reviews'
+import { isSpaceTeamMember } from '@/lib/spaces/operated'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // Trust & Safety (Phase 8): a member reviews a commerce product (a Market listing or a Space Shop
@@ -24,9 +25,15 @@ export async function submitProductReviewAction(
   const product = await getProduct(productId)
   if (!product) return fail('That listing is not available.')
 
-  // The seller cannot review their own listing (the deliverable: a buyer, not the seller).
+  // The seller cannot review their own listing (the deliverable: a buyer, not the seller). A member-owned
+  // listing carries ownerProfileId; a SPACE-owned Shop item carries ownerProfileId=null (the owner is the
+  // Space), so that check alone let a Space owner seed 5-star reviews on their own storefront. Also refuse
+  // anyone on the OWNING SPACE's team (owner / any-role member) for a space-owned item.
   if (product.ownerProfileId && product.ownerProfileId === profileId) {
     return fail('You cannot review your own listing.')
+  }
+  if (product.ownerSpaceId && (await isSpaceTeamMember(profileId, product.ownerSpaceId))) {
+    return fail('You cannot review your own space listing.')
   }
 
   const rating = Math.trunc(input.rating)

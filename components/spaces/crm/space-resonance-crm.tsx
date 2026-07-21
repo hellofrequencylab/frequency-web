@@ -5,7 +5,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ImportContactsButton } from '@/components/crm/import/import-contacts-button'
 import { SpaceCrmHealthStatRow } from './space-crm-stats'
 import { SpaceMemberViewer } from './space-member-viewer'
-import { SpaceResonanceRail } from './space-resonance-rail'
 
 // THE SPACE RESONANCE CRM (ADR-789): the space-scoped twin of the admin /admin/crm page — the SAME
 // composition, exactly: the "Resonance CRM" header + "Pick a member to see everything about them, inline"
@@ -56,17 +55,11 @@ export async function SpaceResonanceCrm({
         <SpaceCrmHealthStatRow spaceId={spaceId} />
       </Suspense>
 
-      {/* Two columns on wide screens: the master-detail roster (main, left) beside a slim rail of live
-          widgets (aside, right, lg:w-72); a single stacked column on mobile. The stat cards above stay
-          full width. The roster keeps its id so the rail's "needs attention" nudge + "Roster" link can
-          scroll straight to it within this tab. */}
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
-        <div id="space-resonance-roster" className="min-w-0 flex-1 scroll-mt-24">
-          <SpaceMemberViewer spaceId={spaceId} slug={slug} />
-        </div>
-        <aside className="w-full lg:w-72 lg:shrink-0">
-          <SpaceResonanceRail spaceId={spaceId} slug={slug} />
-        </aside>
+      {/* The master-detail roster, FULL WIDTH. The slim right rail of live widgets (Live / Needs attention /
+          Just joined) was removed so the CRM board uses the whole column. The roster keeps its id so any
+          in-tab scroll anchor to the roster still resolves. */}
+      <div id="space-resonance-roster" className="min-w-0 scroll-mt-24">
+        <SpaceMemberViewer spaceId={spaceId} slug={slug} />
       </div>
       </div>
     </div>

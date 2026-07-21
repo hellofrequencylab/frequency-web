@@ -47,9 +47,9 @@ per-scope menu.
 | **Role** | `spaces.feature_roles` over a code default (`lib/spaces/functions.ts`) | `spaceFunctionAccess(space, fn, role)` — viewer's Space role must meet the function's min-role. Defaults: most `editor`; `checkin` `moderator`; `crm`/`email`/`billing`/`reviews` `admin`. |
 | **Money (plan/usage)** | `lib/pricing/*` + `lib/billing/*` | **Ships OFF.** `billingLive()` (Stripe env + `billing_live` flag) is false → `featureAllowed` and `withinAllowance` short-circuit to `true`. Nothing is capped or charged. |
 
-The 17 gateable functions are `crm · email · members · qr · availability · memberships ·
+The 18 gateable functions are `crm · email · members · qr · availability · memberships ·
 donations · enroll · tickets · checkin · shop · billing · profile · reviews · airwaves ·
-practices · journeys`. `usableSpaceFunctions()` is the **one** resolver shared by rail + console.
+practices · journeys · loom`. `usableSpaceFunctions()` is the **one** resolver shared by rail + console.
 
 **Access control:** `resolveSpaceManageAccess` → `{ canManage, staffViewing }`. The console *render*
 gates on `canManage || staffViewing` (else `notFound()`, no existence leak); **every mutation
@@ -195,6 +195,7 @@ public-library / publish boundary.
 | **Practices** | Build daily-log practices, each with a timer (mindless / movement / timer-with-movement, warm-up, pillar, rewards); Vera composer | `practices/page.tsx` + shared `PracticeBuilder`; `lib/practices.ts` | Free to go **live in-space**; public **Library** needs paid Crew + staff review | `practices` (+ taxonomy) | ✅ |
 | **Journeys** | Build multi-week programs (phases of practices + lesson/knowledge-check blocks); edit/publish/duplicate/delete; widget-based page config | `journeys/page.tsx` + shared `JourneyEditor`; `lib/journey-plans.ts`, `publish-gate.ts` | Unlimited drafts; free owner may publish **1**; more + library listing need paid | `journey_plans`, `journey_plan_items`, `journey_plan_adoptions` | ✅ / ⚠️ |
 | **Airwaves** | Recordings library ("the Loom"): upload A/V, manage catalog + visibility, attach to hosts, group into **Shows** (podcast RSS + episodes) | `settings/airwaves` → `airwaves-console.tsx`; `lib/airwaves/*` | Space-scoped only (P1 free; no public library) | `recordings`, `podcast_shows`, `recording_attachments`, `library_assets` (deny-all RLS) | ✅ / ⚠️ |
+| **Loom Studio** | Per-space image library: browse, upload, organize, and delete a Space's own images (the full-page Studio for owner/admin/editor; members only get the popup picker). The image counterpart to Airwaves; clusters into the **Content** group | `loom/page.tsx`; `lib/loom/picker-actions.ts` (`loomImages` / `uploadLoomImage` / `deleteSpaceLoomImage`) | Space-scoped only (Free; no public library) | media-asset rows + per-scope storage buckets | ✅ |
 
 **Content & Programs gaps**
 

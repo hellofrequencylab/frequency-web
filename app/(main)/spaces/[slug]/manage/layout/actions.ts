@@ -310,11 +310,13 @@ export async function uploadSpaceBlockImage(
 }
 
 /**
- * Set the Hero cover SCRIM treatment ('shade' dark scrim vs 'blend' fade-to-canvas). Owner/admin/
- * editor-gated (staff preview fails closed). Only affects the Hero cover size. Returns ActionResult.
+ * Set the Hero cover SCRIM treatment ('none' clean photo · 'shade' dark scrim · 'blend' fade-to-canvas).
+ * Owner/admin/editor-gated (staff preview fails closed). Only affects the Hero cover. Returns ActionResult.
  */
 export async function setSpaceCoverScrim(slug: string, scrim: CoverScrim): Promise<ActionResult> {
-  if (scrim !== 'shade' && scrim !== 'blend') return fail('Pick a cover style.')
+  // Accept every CoverScrim the reader/render supports. 'none' was previously rejected here even though the
+  // branding form offers it and preferences.ts renders it, so choosing "None" always failed to persist.
+  if (scrim !== 'none' && scrim !== 'shade' && scrim !== 'blend') return fail('Pick a cover style.')
 
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')

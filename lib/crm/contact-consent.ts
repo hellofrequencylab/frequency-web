@@ -139,8 +139,15 @@ export async function recordGlobalStop(input: GlobalStopInput): Promise<GlobalSt
       await suppress(addr, input.reason) // global email suppression (space_id NULL)
       // INTENTIONAL cross-space update under per-space tenancy (ADR-624): a global STOP must flip EVERY
       // Space's row for this address to unsubscribed (root + every tenant lead), so this stays unscoped by
-      // space_id on purpose. The non-unique lower(email) index keeps the all-rows match fast.
-      await createAdminClient().from('contacts').update({ consent_state: 'unsubscribed' }).eq('email', addr)
+      // space_id on purpose. CASE-INSENSITIVE match: the `contacts.email` column can carry a mixed-case
+      // address (an OAuth-signup / import path stores it un-normalized) and uniqueness is on lower(email),
+      // so a case-sensitive `.eq` would MISS such a row and leave it wrongly `subscribed` — a compliance
+      // gap. `ilike` on the escaped, normalized address matches every casing literally (escapeLike
+      // neutralizes % / _ so the address matches exactly), mirroring `contactConsentState`'s read.
+      await createAdminClient()
+        .from('contacts')
+        .update({ consent_state: 'unsubscribed' })
+        .ilike('email', escapeLike(addr))
       result.emailStopped = true
     } catch {
       // leave emailStopped false; the other leg still runs

@@ -89,9 +89,15 @@ export async function saveSpaceModuleMenu(
 // ── FEATURE writes (ADR-552 Phase 4, moved here from settings/features/actions.ts) ────────────────────
 // The owner (or admin) tunes their own space's tools from the Module Manager. Both actions RE-RESOLVE the
 // space from the slug and re-gate caps.canManageMembers (owner / admin) server-side, so this can never be
-// bypassed and a non-owner cannot tune someone else's space. The owner authority is WITHIN ENTITLEMENTS,
-// narrower than the operator's: a UNIVERSAL function (no entitlement) toggles freely; a PLAN-GATED function
-// may be turned ON only if the plan already grants it, and OFF is always allowed.
+// bypassed and a non-owner cannot tune someone else's space.
+//
+// UNIVERSAL FUNCTIONS (ADR-517 Phase F): EVERY function is a free, default-ON toggle whose on/off lives in
+// spaces.entitlements keyed by the function KEY — the SAME key `spaceFunctionEnabled` reads. A function's
+// `entitlement` field is now ONLY the Phase-G freemium TIER key (read by the live `featureAllowed` seam to
+// govern usage/limits), NOT a pure on/off gate, so the write must key on `def.key` uniformly. (The prior
+// code branched on `def.entitlement`, which silently broke the CRM / Email / Shop toggles: OFF deleted the
+// wrong/absent key so it read back ON, and ON demanded a plan flag that is never set, so it could never be
+// re-enabled. Fixed to mirror the pure resolver — every function toggles the same way.)
 
 /** Authorize the caller as a manager (owner / admin) of `slug`'s space; returns the resolved space id +
  *  its current jsonb blobs, or null on any miss. */
@@ -134,8 +140,10 @@ function revalidateFeatureSurfaces(slug: string): void {
   revalidatePath(`/spaces/${slug}`)
 }
 
-/** Enable or disable a function on the owner's own space. Owner/admin-gated. A plan-gated function can
- *  only be turned ON if the plan grants it; universal functions toggle freely. Returns ActionResult. */
+/** Enable or disable a function on the owner's own space. Owner/admin-gated. Every function is a universal,
+ *  default-ON toggle keyed on its function key (ADR-517 Phase F) — the same key `spaceFunctionEnabled`
+ *  reads. Enabling deletes the key (back to the default-ON); disabling writes `false` (sparse). Returns
+ *  ActionResult. */
 export async function setSpaceFeatureEnabled(
   slug: string,
   fn: string,
@@ -147,22 +155,12 @@ export async function setSpaceFeatureEnabled(
   const auth = await authorizeFeatureManager(slug)
   if (!auth) return fail('You do not have access to manage this space.')
 
+  // Sparse, default-ON: enabling clears the key (absent reads as ON); disabling stores an explicit false.
+  // Keyed on def.key for EVERY function so the write mirrors the read (spaceFunctionEnabled reads by key);
+  // def.entitlement is only the Phase-G tier key and must not drive this on/off write.
   const next = { ...auth.entitlements }
-  if (def.entitlement) {
-    // Plan-gated: ON requires the plan's entitlement (the owner can never out-grant their plan). OFF is
-    // always allowed. We re-read the entitlement off the resolved space blob.
-    if (enabled) {
-      const hasPlan = next[def.entitlement] === true
-      if (!hasPlan) return fail('Your plan does not include this feature yet. Move up a plan to turn it on.')
-      // Already granted by the plan -> nothing to write (the switch is the entitlement itself).
-      return ok()
-    }
-    delete next[def.entitlement]
-  } else {
-    // Universal: default-ON. Enabling -> delete key (back to default); disabling -> false (sparse).
-    if (enabled) delete next[def.key]
-    else next[def.key] = false
-  }
+  if (enabled) delete next[def.key]
+  else next[def.key] = false
 
   if (!(await updateSpaceBlob(auth.spaceId, { entitlements: next }))) return fail('Could not save that change.')
   revalidateFeatureSurfaces(slug)

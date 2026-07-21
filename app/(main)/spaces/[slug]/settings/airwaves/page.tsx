@@ -43,7 +43,12 @@ export default async function AirwavesConsolePage({
   const featureLocked = !staffViewing && (canManage || isMember)
     ? !spaceFunctionAccess(space, 'airwaves', caps.role)
     : false
-  if ((canManage || staffViewing) && featureLocked) {
+  // Airwaves is OFF for this space. A manager (never a staff previewer — featureLocked is false for them)
+  // gets the locked upsell; a plain MEMBER gets nothing (404). Previously the guard only covered managers,
+  // so when an owner turned Airwaves off members still fell through to the browse console below and could
+  // play every non-private recording.
+  if (featureLocked) {
+    if (!canManage) notFound()
     return (
       <FocusTemplate
         eyebrow={brandName}

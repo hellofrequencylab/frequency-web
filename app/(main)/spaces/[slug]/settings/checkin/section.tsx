@@ -5,7 +5,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
-import { ensureCheckinNode, listCheckins } from '@/lib/spaces/checkin'
+import { ensureCheckinNode, countCheckins } from '@/lib/spaces/checkin'
 import { nodeUrl } from '@/lib/qr/links'
 import { renderQrSvg } from '@/lib/qr/render'
 import { CheckinCodeCard } from '@/components/spaces/checkin-code-card'
@@ -56,14 +56,15 @@ export async function CheckinSection({
   const link = node ? nodeUrl(node.id, node.secret) : null
   const svg = link ? await renderQrSvg(link, 256) : null
 
-  // The count for the StatCard is read once here (a fast scan of this Space's check-in node captures).
-  const checkins = await listCheckins(space.id)
+  // The count for the StatCard is a head/count query (countCheckins) — NOT listCheckins(...).length, which
+  // saturates at the 500-row roster cap and would re-fetch the roster the CheckinRoster below already reads.
+  const checkinCount = await countCheckins(space.id)
 
   return (
     <div className="space-y-8">
       {/* The analytics number, plain and honest: total check-ins on this Space's code. */}
       <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
-        <StatCard bordered label="Checked in" value={checkins.length} icon={Users} />
+        <StatCard bordered label="Checked in" value={checkinCount} icon={Users} />
       </div>
 
       {/* The QR to print. Rendered server-side from the existing helpers; the card only displays and
@@ -82,7 +83,7 @@ export async function CheckinSection({
       </section>
 
       <section>
-        <SectionHeader title="Who checked in" count={checkins.length} />
+        <SectionHeader title="Who checked in" count={checkinCount} />
         <Suspense fallback={<RosterSkeleton />}>
           <CheckinRoster spaceId={space.id} />
         </Suspense>
