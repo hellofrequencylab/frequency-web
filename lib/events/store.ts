@@ -48,10 +48,11 @@ const CALENDAR_COLS = 'id, slug, title, starts_at, ends_at, location, time_zone,
 
 /**
  * A space's events for its calendar tab (Events EC2), from `fromDay` (YYYY-MM-DD, inclusive) forward,
- * soonest first. PUBLIC contract: only PUBLISHED, non-private, non-cancelled events (drafts and private
- * events never surface on the public profile). Filtered by space_id so space A never resolves space B's
- * events. FAIL-SAFE: [] on any error / missing tenant. `space_id` is not in the generated types (ADR-246),
- * so the whole chain is reached through an untyped handle.
+ * soonest first. PUBLIC contract, IDENTICAL to the EC1 subscribe feed (space_public_calendar_feed): only
+ * PUBLISHED, public/unlisted, non-cancelled events — so the on-page grid and the subscribed .ics show the
+ * exact same set, and neither leaks a draft, private, or circle_only event. Filtered by space_id so space
+ * A never resolves space B's events. FAIL-SAFE: [] on any error / missing tenant. `space_id`/`visibility`
+ * are not in the generated types (ADR-246), so the whole chain is reached through an untyped handle.
  */
 export async function listSpaceCalendarEvents(
   spaceId: string | null | undefined,
@@ -66,7 +67,7 @@ export async function listSpaceCalendarEvents(
       select: (cols: string) => {
         eq: (col: string, val: string) => {
           eq: (col: string, val: string) => {
-            neq: (col: string, val: string) => {
+            in: (col: string, vals: string[]) => {
               gte: (col: string, val: string) => {
                 order: (col: string, opts: { ascending: boolean }) => {
                   limit: (n: number) => Promise<{ data: unknown; error: unknown }>
@@ -81,7 +82,7 @@ export async function listSpaceCalendarEvents(
       .select(CALENDAR_COLS)
       .eq('space_id', sid)
       .eq('status', 'published')
-      .neq('visibility', 'private')
+      .in('visibility', ['public', 'unlisted'])
       .gte('starts_at', `${fromDay}T00:00:00Z`)
       .order('starts_at', { ascending: true })
       .limit(limit)
