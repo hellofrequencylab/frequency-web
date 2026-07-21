@@ -42,6 +42,9 @@ export async function SpaceMemberViewer({ spaceId, slug }: { spaceId: string; sl
       defaultView="list"
       pageSize={24}
       sortOptions={MEMBER_SORT_OPTIONS}
+      // Default this roster to "Most complete" so the contacts you actually filled out (a name, phone,
+      // company) surface above the bare email-only imports, instead of newest-first burying them.
+      sort={{ key: 'completeness', direction: 'desc' }}
       search={{
         placeholder: 'Search members',
         facets: [ROLE_FACET, BUSINESS_FACET, ACTIVE_FACET, TIER_FACET, LIFECYCLE_FACET],
