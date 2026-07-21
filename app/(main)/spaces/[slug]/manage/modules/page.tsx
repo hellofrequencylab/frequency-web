@@ -70,8 +70,9 @@ export default async function SpaceModulesPage({
       tier: m.tier,
       featureKey: m.featureKey,
       enabled: on,
-      // A plan-gated feature the plan does not grant is LOCKED (the owner cannot out-grant their plan).
-      locked: def?.entitlement != null && !on,
+      // UNIVERSAL FUNCTIONS (ADR-517 Phase F): every service toggles freely; no on/off is plan-locked (the
+      // freemium TIER governs usage/limits via the live seam, not this switch). So no row is ever locked.
+      locked: false,
       // The lowest role that may use this module (owner tunes team access from the same row). Shell
       // modules with no function fall back to 'viewer' (unused: the row shows no role picker).
       minRole: def ? (spaceFunctionMinRole(space, def.key) ?? def.defaultMinRole) : 'viewer',

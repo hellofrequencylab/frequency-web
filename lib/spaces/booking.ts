@@ -1517,6 +1517,17 @@ function cleanAnswers_(
   return out
 }
 
+/** Rebuild the id->value answer map (what `cleanAnswers_` / `validateAndPlaceBooking` expect) from a
+ *  booking's STORED labeled answers jsonb, for carrying answers across a reschedule. Null when there is
+ *  nothing to carry (so a service with no questions is unaffected). */
+function answersMapFromStored(raw: unknown): Record<string, string> | null {
+  const parsed = parseAnswers(raw)
+  if (parsed.length === 0) return null
+  const map: Record<string, string> = {}
+  for (const a of parsed) map[a.id] = a.value
+  return map
+}
+
 /** Parse a booking's stored answers jsonb into the labeled array (fail-closed). */
 export function parseAnswers(raw: unknown): BookingAnswer[] {
   if (!Array.isArray(raw)) return []
@@ -1593,13 +1604,18 @@ export async function rescheduleBooking(
   // Acquire the NEW slot first (as the original booker), re-validated + guarded by the unique index.
   // Carry the original service forward unless the caller overrides it.
   const carryService = serviceTypeId ?? old.service_type_id ?? null
+  // Carry the original booking's ANSWERS forward. The reschedule picker hides the question inputs (it is a
+  // move, not a re-answer), so passing null made validateAndPlaceBooking reject any service with a REQUIRED
+  // question ("Answer the required questions to book.") and silently dropped answers for the rest. Rebuild
+  // the id->value map cleanAnswers_ expects from the stored labeled answers.
+  const carriedAnswers = answersMapFromStored(old.answers)
   const placed = await validateAndPlaceBooking({
     space,
     profileId: old.member_profile_id,
     startsAtISO: newStartsAtISO,
     note: old.note,
     serviceTypeId: carryService,
-    answers: null,
+    answers: carriedAnswers,
     rescheduledFrom: old.id,
   })
   if (!placed.ok) return fail(placed.error)

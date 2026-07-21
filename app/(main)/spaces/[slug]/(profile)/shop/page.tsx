@@ -5,6 +5,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
+import { spaceFunctionDef, spaceFunctionEnabled } from '@/lib/spaces/functions'
 import { listPublicSpaceCatalog } from '@/lib/commerce/products'
 import { productRatingsFor } from '@/lib/commerce/reviews'
 import { marketGroupForKind, MARKET_GROUPS, type MarketGroup } from '@/lib/commerce/types'
@@ -27,10 +28,15 @@ export default async function SpaceShopTabPage({ params }: { params: Promise<{ s
   setActiveSpace(space)
 
   // Double-gate: the nav hides the tab when unpublished, but the /shop URL is still directly reachable,
-  // so refuse it here when the storefront is not published OR the Space is not a Shop-capable type
-  // (matches the write-side isConsoleSpaceType gate — defense in depth).
+  // so refuse it here when the storefront is not published, the Space is not a Shop-capable type, OR the
+  // `shop` FEATURE itself is turned off (matches the write-side isConsoleSpaceType + spaceFunctionAccess
+  // gates — defense in depth). Without the feature check, turning Shop off in the Module Manager left the
+  // public storefront live. The feature switch is a per-Space on/off (not a per-viewer role), so gate on
+  // spaceFunctionEnabled, not the role-aware spaceFunctionAccess.
   const storefront = readStorefrontConfig(space.preferences)
-  if (!storefront.published || !isConsoleSpaceType(space.type)) notFound()
+  const shopDef = spaceFunctionDef('shop')
+  const shopEnabled = shopDef ? spaceFunctionEnabled(space, shopDef) : true
+  if (!storefront.published || !isConsoleSpaceType(space.type) || !shopEnabled) notFound()
 
   const items = await listPublicSpaceCatalog(space.id)
   // Trust & Safety (Phase 8): aggregate ratings per item (batch); every item shares this Space's

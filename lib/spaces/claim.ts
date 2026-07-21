@@ -14,7 +14,7 @@
 
 import { randomBytes } from 'node:crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { addSpaceMember } from '@/lib/spaces/membership'
+import { addSpaceMember, removeSpaceMember } from '@/lib/spaces/membership'
 
 /** A url-safe, hard-to-guess one-time claim secret. PURE. */
 export function mintClaimToken(): string {
@@ -151,6 +151,15 @@ export async function claimSpace(token: string, profileId: string): Promise<Clai
   if (!token || !profileId) return null
   const nowIso = new Date().toISOString()
   try {
+    // Read the PRIOR owner (the platform staffer who seeded the Space) before the transfer, scoped to the
+    // still-unclaimed token, so we can revoke their seeded admin seat after a successful hand-off.
+    const { data: pre } = await spacesTable()
+      .select('owner_profile_id')
+      .eq('claim_token', token)
+      .is('claimed_at', null)
+      .maybeSingle()
+    const priorOwnerId = (pre?.owner_profile_id as string | null) ?? null
+
     const { data, error } = await spacesTable()
       .update({ owner_profile_id: profileId, claimed_by: profileId, claimed_at: nowIso })
       .eq('claim_token', token)
@@ -158,10 +167,18 @@ export async function claimSpace(token: string, profileId: string): Promise<Clai
       .select('id, slug')
       .maybeSingle()
     if (error || !data?.id) return null
+    const spaceId = data.id as string
     // Seat the claimer as an admin member (upsert on (space_id, profile_id)), so the owner role reads
     // consistently through getSpaceCapabilities. Best-effort: the owner column already transferred.
-    await addSpaceMember({ spaceId: data.id as string, profileId, role: 'admin', status: 'active' })
-    return { spaceId: data.id as string, slug: (data.slug as string) ?? '' }
+    await addSpaceMember({ spaceId, profileId, role: 'admin', status: 'active' })
+    // Complete the hand-off: revoke the seeder/operator's seeded admin membership. Without this the staffer
+    // who seeded the Space keeps a durable active `admin` space_members row (full canManageMembers /
+    // canEditProfile) on the customer's Space even after they claim it. Skip when the prior owner is the
+    // claimer (idempotent re-claim safety) or unknown. Best-effort — the ownership transfer already stands.
+    if (priorOwnerId && priorOwnerId !== profileId) {
+      await removeSpaceMember(spaceId, priorOwnerId)
+    }
+    return { spaceId, slug: (data.slug as string) ?? '' }
   } catch {
     return null
   }

@@ -47,8 +47,13 @@ function OrderRow({ o }: { o: CommerceOrder }) {
 export default async function MarketplaceOrdersPage() {
   await requireAdmin('admin', { staff: 'platform' })
   const [orders, counts] = await Promise.all([listAllOrders({ limit: 200 }), orderStatusCounts()])
-  const gross = orders.filter((o) => o.status !== 'refunded' && o.status !== 'failed').reduce((s, o) => s + o.amountCents, 0)
-  const fees = orders.filter((o) => o.status !== 'refunded' && o.status !== 'failed').reduce((s, o) => s + o.platformFeeCents, 0)
+  // Gross / fees count only CAPTURED money (paid or fulfilled), matching the Space-side spaceEarningsSummary.
+  // listAllOrders returns every status, so a `pending` (unpaid checkout), `cancelled`, `failed`, or already
+  // `refunded` order must not pad these tiles (the prior `!== refunded && !== failed` filter let pending +
+  // cancelled inflate both figures).
+  const captured = orders.filter((o) => o.status === 'paid' || o.status === 'fulfilled')
+  const gross = captured.reduce((s, o) => s + o.amountCents, 0)
+  const fees = captured.reduce((s, o) => s + o.platformFeeCents, 0)
 
   return (
     <AdminTemplate

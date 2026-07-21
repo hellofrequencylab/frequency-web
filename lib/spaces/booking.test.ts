@@ -65,10 +65,22 @@ type BookRow = {
   ends_at: string
   status: string
   note: string | null
+  answers?: unknown
+  service_type_id?: string | null
+}
+type ServiceTypeRow = {
+  id: string
+  space_id: string
+  name: string
+  duration_minutes: number
+  active: boolean
+  sort_order: number
+  questions?: unknown
 }
 const db = {
   availability: [] as AvailRow[],
   bookings: [] as BookRow[],
+  serviceTypes: [] as ServiceTypeRow[],
   profiles: [] as { id: string; display_name: string | null }[],
   inserts: [] as Record<string, unknown>[],
   deletes: [] as string[],
@@ -180,6 +192,27 @@ function bookingsBuilder() {
   return api
 }
 
+function serviceTypesBuilder() {
+  const filters: { space_id?: string } = {}
+  const api = {
+    select() {
+      return api
+    },
+    eq(col: string, val: string) {
+      if (col === 'space_id') filters.space_id = val
+      return api
+    },
+    order() {
+      return api
+    },
+    then(resolve: (r: { data: ServiceTypeRow[] | null; error: null }) => unknown) {
+      const data = db.serviceTypes.filter((r) => r.space_id === filters.space_id)
+      return Promise.resolve(resolve({ data, error: null }))
+    },
+  }
+  return api
+}
+
 function profilesBuilder() {
   return {
     select() {
@@ -197,6 +230,7 @@ vi.mock('@/lib/supabase/admin', () => ({
     from(table: string) {
       if (table === 'space_availability') return availabilityBuilder()
       if (table === 'space_bookings') return bookingsBuilder()
+      if (table === 'space_service_types') return serviceTypesBuilder()
       if (table === 'profiles') return profilesBuilder()
       throw new Error(`unexpected table ${table}`)
     },
@@ -904,6 +938,43 @@ describe('rescheduleBooking (action) — atomic new-then-cancel', () => {
     const r = await rescheduleBooking('b1', '2026-06-30T10:15:00.000Z') // not a slot boundary
     expect('error' in r).toBe(true)
     expect(db.bookings.find((b) => b.id === 'b1')!.status).toBe('confirmed') // unchanged
+  })
+
+  it('carries the original answers forward so a service with a REQUIRED question can be rescheduled', async () => {
+    // A service with a required question, and an existing booking that already answered it. The reschedule
+    // picker hides the question inputs, so without carrying answers forward the server would reject the move
+    // with "Answer the required questions to book." (the pre-fix bug).
+    db.serviceTypes.push({
+      id: 'svc-1',
+      space_id: 'space-1',
+      name: 'Intro call',
+      duration_minutes: 30,
+      active: true,
+      sort_order: 0,
+      questions: [{ id: 'q1', label: 'Your goal', type: 'short', required: true }],
+    })
+    db.bookings.length = 0
+    db.bookings.push({
+      id: 'b1',
+      space_id: 'space-1',
+      member_profile_id: 'member-0000-4000-a000-0000000membr',
+      starts_at: '2026-06-30T10:00:00.000Z',
+      ends_at: '2026-06-30T10:30:00.000Z',
+      status: 'confirmed',
+      note: null,
+      service_type_id: 'svc-1',
+      answers: [{ id: 'q1', label: 'Your goal', value: 'Flexibility' }],
+    })
+
+    const r = await rescheduleBooking('b1', '2026-06-30T10:30:00.000Z', 'svc-1')
+    expect('error' in r).toBe(false)
+    expect(db.bookings.find((b) => b.id === 'b1')!.status).toBe('cancelled')
+    const fresh = db.bookings.find(
+      (b) => b.status === 'confirmed' && b.starts_at === '2026-06-30T10:30:00.000Z',
+    )
+    expect(fresh).toBeTruthy()
+    // The answers rode along to the new booking (owner still sees them on the calendar).
+    expect(fresh!.answers).toEqual([{ id: 'q1', label: 'Your goal', value: 'Flexibility' }])
   })
 })
 

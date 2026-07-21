@@ -123,7 +123,10 @@ export async function importContactsToSpace(
     }
 
     // Seed one open deal per imported contact in the first open stage (best-effort; a deal failure
-    // does not un-import the contact, it just means no deal card yet).
+    // does not un-import the contact, it just means no deal card yet). Status is always 'open': a freshly
+    // graduated contact is a NEW deal, so it must never be born won/lost. (getFirstOpenStage falls back to
+    // stages[0] when a pipeline has no open stage, whose kind could be won/lost — using that kind as the
+    // status would mint an instantly-closed deal.)
     try {
       await db.from('crm_deals').insert({
         space_id: spaceId,
@@ -131,7 +134,7 @@ export async function importContactsToSpace(
         contact_name: c.displayName ?? null,
         contact_id: contactId,
         stage_id: firstOpen?.id ?? null,
-        status: firstOpen?.kind ?? 'open',
+        status: 'open',
         owner_id: me,
         created_by: me,
         source: 'graduation',
