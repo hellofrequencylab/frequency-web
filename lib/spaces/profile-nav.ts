@@ -6,6 +6,7 @@ import { readStorefrontConfig } from '@/lib/spaces/storefront'
 import { spaceFunctionDef, spaceFunctionEnabled } from '@/lib/spaces/functions'
 import { deriveSectionNav } from '@/lib/spaces/section-anchors'
 import { getSpaceSectionPresence } from '@/lib/spaces/content-data'
+import { spaceHasPublicUpcomingEvents } from '@/lib/events/store'
 import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
 
 // THE ONE Space profile sub-nav model — the tab set + the operator's admin links — resolved from the
@@ -36,9 +37,13 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   const brandName = space.brandName ?? space.name
   const base = `/spaces/${space.slug}`
 
-  const [presence, manage] = await Promise.all([
+  const [presence, manage, hasCalendarEvents] = await Promise.all([
     getSpaceSectionPresence(space.id, space.slug),
     resolveSpaceManageAccess(space, viewerProfileId, caller?.webRole ?? null),
+    // Gate the Calendar tab on the SAME public/unlisted published set the calendar renders, not on the
+    // broader presence.events (which counts drafts/private/circle_only) — otherwise the tab would show
+    // over an empty grid for a member-only-event space.
+    spaceHasPublicUpcomingEvents(space.id),
   ])
 
   const pages = readProfilePages(space.preferences)
@@ -67,6 +72,10 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
     // The Community feed (Facebook/Yelp-style): the business posts, members react + comment. Public to
     // everyone; the page itself gates who can interact. Always present so a business can start posting.
     { href: `${base}/community`, label: 'Community' },
+    // The Calendar tab (Events EC2): a month grid of the Space's events + a subscribe-to-calendar feed.
+    // Shown only when the Space has upcoming PUBLIC events (the exact set the grid renders), so the tab
+    // never opens onto an empty calendar.
+    ...(hasCalendarEvents ? [{ href: `${base}/calendar`, label: 'Calendar' }] : []),
     // Reviews on their own tab (owner decision): the member rating + review wall. Public read; a signed-in
     // member (not the owner) leaves one review they can revise. Gated on the `reviews` function (default ON).
     ...(reviewsEnabled ? [{ href: `${base}/reviews`, label: 'Reviews' }] : []),

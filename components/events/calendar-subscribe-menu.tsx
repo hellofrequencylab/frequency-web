@@ -3,16 +3,28 @@
 import { useState } from 'react'
 import { CalendarPlus, Check, Copy } from 'lucide-react'
 
-// Client menu for "Subscribe to calendar" (Events B-4). Pure presentation over the
-// member's feed URL (resolved server-side) — a button that opens a small panel
-// with copy + Google/Apple subscribe actions. No data fetching here; the secret
-// URL arrives as a prop and never leaves the component.
+// Client menu for "Subscribe to calendar" (Events B-4 personal feed + EC2 public space feed). Pure
+// presentation over a feed URL (resolved server-side) — a button that opens a small panel with copy +
+// Google/Apple subscribe actions. No data fetching here; the URL arrives as a prop. The default copy is
+// for the PERSONAL member feed (a private token); a public feed (a space calendar) passes its own title
+// + description so the microcopy stays truthful (the space slug is public, not a secret).
+const PERSONAL_TITLE = 'Your events, in your calendar'
+const PERSONAL_DESCRIPTION =
+  "Subscribe once and the events you're going to show up in Google or Apple Calendar, and stay current on their own. This link is yours, so keep it private."
+
 export function CalendarSubscribeMenu({
   httpsUrl,
   webcalUrl,
+  title = PERSONAL_TITLE,
+  description = PERSONAL_DESCRIPTION,
 }: {
   httpsUrl: string
   webcalUrl: string
+  /** Panel heading. Defaults to the personal-feed copy; a public space feed passes its own. */
+  title?: string
+  /** Panel body. Defaults to the personal-feed copy; a public space feed passes its own (never
+   *  "keep it private" — the space feed URL is public). */
+  description?: string
 }) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -47,11 +59,8 @@ export function CalendarSubscribeMenu({
           {/* Click-away backdrop. */}
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} aria-hidden />
           <div className="absolute right-0 z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-4 shadow-pop">
-            <p className="text-sm font-semibold text-text">Your events, in your calendar</p>
-            <p className="mt-1 text-2xs leading-relaxed text-subtle">
-              Subscribe once and the events you&rsquo;re going to show up in Google or Apple
-              Calendar, and stay current on their own. This link is yours, so keep it private.
-            </p>
+            <p className="text-sm font-semibold text-text">{title}</p>
+            <p className="mt-1 text-2xs leading-relaxed text-subtle">{description}</p>
 
             <div className="mt-3 flex flex-col gap-2">
               <a

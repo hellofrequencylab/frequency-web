@@ -32,6 +32,108 @@ export interface SpaceEvent {
 const COLS =
   'id, slug, title, description, starts_at, ends_at, host_id, scope_id, scope_type, is_cancelled, space_id'
 
+/** An event row for the per-space CALENDAR (Events EC2): the fields the month grid + popup need. */
+export interface SpaceCalendarEvent {
+  id: string
+  slug: string
+  title: string
+  starts_at: string
+  ends_at: string | null
+  location: string | null
+  time_zone: string | null
+  is_cancelled: boolean | null
+}
+
+const CALENDAR_COLS = 'id, slug, title, starts_at, ends_at, location, time_zone, is_cancelled'
+
+/**
+ * A space's events for its calendar tab (Events EC2), from `fromDay` (YYYY-MM-DD, inclusive) forward,
+ * soonest first. Same EVENT filters as the EC1 subscribe feed (space_public_calendar_feed): only
+ * PUBLISHED, public/unlisted, non-cancelled events — so the on-page grid and the subscribed .ics show the
+ * exact same event set, and neither leaks a draft, private, or circle_only event. (The EC1 RPC ALSO
+ * gates the owning space on visibility='network' + status='active' in-function; here that space-level
+ * gate is the calendar page's own getVisibleSpaceBySlug, so this reader must stay behind it.) Filtered by
+ * space_id so space A never resolves space B's events. FAIL-SAFE: [] on any error / missing tenant.
+ * `space_id`/`visibility` are not in the generated types (ADR-246), so the chain is reached untyped.
+ */
+export async function listSpaceCalendarEvents(
+  spaceId: string | null | undefined,
+  opts: { fromDay?: string; limit?: number } = {},
+): Promise<SpaceCalendarEvent[]> {
+  const sid = spaceId ?? (await loadRootSpaceId())
+  if (!sid) return []
+  const limit = opts.limit ?? 300
+  const fromDay = opts.fromDay ?? new Date().toISOString().slice(0, 10)
+  try {
+    const db = createAdminClient().from('events') as unknown as {
+      select: (cols: string) => {
+        eq: (col: string, val: string) => {
+          eq: (col: string, val: string) => {
+            in: (col: string, vals: string[]) => {
+              gte: (col: string, val: string) => {
+                order: (col: string, opts: { ascending: boolean }) => {
+                  limit: (n: number) => Promise<{ data: unknown; error: unknown }>
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    const { data, error } = await db
+      .select(CALENDAR_COLS)
+      .eq('space_id', sid)
+      .eq('status', 'published')
+      .in('visibility', ['public', 'unlisted'])
+      .gte('starts_at', `${fromDay}T00:00:00Z`)
+      .order('starts_at', { ascending: true })
+      .limit(limit)
+    if (error) return []
+    return ((data as SpaceCalendarEvent[] | null) ?? []).filter((e) => !e.is_cancelled)
+  } catch {
+    return []
+  }
+}
+
+/**
+ * True when a space has at least one upcoming event the CALENDAR would show (published, public/unlisted,
+ * non-cancelled, from today forward) — the gate for the profile's Calendar tab. Uses the SAME filters as
+ * listSpaceCalendarEvents so the tab never appears over an empty grid (a space whose only upcoming events
+ * are drafts / private / circle_only must NOT get the tab). FAIL-SAFE: false on any error / missing tenant.
+ */
+export async function spaceHasPublicUpcomingEvents(spaceId: string | null | undefined): Promise<boolean> {
+  const sid = spaceId ?? (await loadRootSpaceId())
+  if (!sid) return false
+  const today = new Date().toISOString().slice(0, 10)
+  try {
+    const db = createAdminClient().from('events') as unknown as {
+      select: (cols: string) => {
+        eq: (col: string, val: string | boolean) => {
+          eq: (col: string, val: string | boolean) => {
+            eq: (col: string, val: string | boolean) => {
+              in: (col: string, vals: string[]) => {
+                gte: (col: string, val: string) => { limit: (n: number) => Promise<{ data: unknown; error: unknown }> }
+              }
+            }
+          }
+        }
+      }
+    }
+    const { data, error } = await db
+      .select('id')
+      .eq('space_id', sid)
+      .eq('status', 'published')
+      .eq('is_cancelled', false)
+      .in('visibility', ['public', 'unlisted'])
+      .gte('starts_at', `${today}T00:00:00Z`)
+      .limit(1)
+    if (error) return false
+    return Array.isArray(data) && data.length > 0
+  } catch {
+    return false
+  }
+}
+
 /**
  * The space_id to stamp on a NEW event: the explicit owning space, else the root space (so the
  * existing single-tenant create flows default to root and behave exactly as today). Returns null

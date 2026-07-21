@@ -62,14 +62,18 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
   public/unlisted events (same redaction as the public event page), gated on the space being
   network-visible + active.
 
-### EC2 — the grid view + popup + mounting subscribe
-- A month grid page (`IndexTemplate`) for a space's events and the master calendar, with a list/map
-  toggle reusing the existing surface.
-- A truncated **event popup** on click (title, when, where, cover, RSVP count) with a **Go to Event**
-  link to `/events/<slug>`.
-- Mount `CalendarSubscribe` on the calendar page; the per-space page points at
+### EC2 — the grid view + popup + mounting subscribe ✅ (shipped)
+- A month-grid calendar (`components/events/event-calendar.tsx`) over the pure, unit-tested grid math
+  in `lib/events/calendar-grid.ts` (month matrix + event bucketing by the event's own stored day).
+  Client-side month nav over a server-loaded window.
+- A truncated **event popup** on click (title, when, where) with a **Go to Event** link to
+  `/events/<slug>`. Built on the shared `Dialog` primitive.
+- A per-space **Calendar tab** (`app/(main)/spaces/[slug]/(profile)/calendar`), gated on the Space
+  having upcoming events, reading `listSpaceCalendarEvents` (published, non-private, non-cancelled).
+- Mounted the subscribe affordance (`CalendarSubscribeMenu`) pointing at the EC1 public per-space feed
   `/spaces/<slug>/calendar.ics`.
-- A per-space **Calendar tab** under `app/(main)/spaces/[slug]/(profile)/`.
+- Times are pre-formatted server-side (via `formatEventWhen`) so the timezone lib never ships to the
+  client. Follow-up: a viewer-zone toggle, RSVP counts + covers in the popup, and a list/map toggle.
 
 ### EC3 — the master Frequency calendar + shared events
 - A primary all-public-events calendar + feed (`public_calendar_feed`), with filters (category,
