@@ -11,6 +11,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { logPractice, getPracticesToLogToday, getPracticeDepthContext, type LogPracticeResult } from '@/lib/practices'
 import { getPracticeStreak } from '@/lib/practice-streak'
+import { resolveMemberDay } from '@/lib/member-day'
 import { amplitudeLevel } from '@/lib/amplitude'
 import { getOrCreateDispatch } from '@/lib/vera-dispatch'
 import { getNextGathering } from '@/lib/quest/next-gathering'
@@ -145,6 +146,38 @@ export async function completeSession(
   // type-checked while still sending the column. Regenerate lib/database.types.ts to drop it.
   await admin.from('practice_sessions').insert({ ...sessionRow, note } as typeof sessionRow)
 
+  // Attribution basis for the streak day (ADR-801): a sit left running past midnight belongs to the day
+  // it STARTED, not the finalize day. The client's input.startedAt is spoofable (a crafted request could
+  // claim a yesterday start to revive a dead streak), so we do NOT trust it for the day. Instead we read
+  // the server-authoritative active timer session (ADR-521) — whose `updated_at` is server-stamped on
+  // every write and cannot be forged — and only backdate when that row was last touched on a PRIOR local
+  // day (a genuine forgotten-overnight run). A request that just fabricated the session today has
+  // updated_at = today, so it never earns the backdate. Read BEFORE the delete below.
+  let attributionStartedAt: string | null = null
+  try {
+    const { data: timerRow } = await (admin as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: { started_at: string; updated_at: string } | null }> }
+        }
+      }
+    })
+      .from('practice_timer_sessions')
+      .select('started_at, updated_at')
+      .eq('profile_id', profileId)
+      .maybeSingle()
+    if (timerRow?.started_at && timerRow.updated_at) {
+      const [finalizeDay, updatedDay] = await Promise.all([
+        resolveMemberDay(profileId),
+        resolveMemberDay(profileId, null, new Date(timerRow.updated_at)),
+      ])
+      // Trust the server start day only when the session was last written on a prior local day.
+      if (updatedDay < finalizeDay) attributionStartedAt = timerRow.started_at
+    }
+  } catch {
+    // best-effort: no trustworthy start -> no backdate (attribute to the finalize day, prior behavior)
+  }
+
   // Logging ENDS the run: drop the server-authoritative active timer session (ADR-521)
   // so it never resumes after the sit is banked. Self-scoped (profile_id), best-effort
   // (a failure never blocks the log; the client also clears its localStorage cache).
@@ -268,6 +301,11 @@ export async function completeSession(
         secondsTarget,
         // Present at finalize unless the client flagged an unattended auto-finalize (ADR-627).
         attended: input.attended ?? true,
+        // Attribute a run left going past midnight to the day it STARTED, not the finalize day, so an
+        // overnight/forgotten sit does not leave the practiced day empty and break the streak (ADR-801).
+        // This is the SERVER-authoritative start (gated on the unforgeable updated_at above), not the
+        // client's spoofable input.startedAt, so it can never be used to backdate a streak-save.
+        startedAt: attributionStartedAt,
       })
 
   // 3. Post-log state for the reveal. Today's airtime is a handful of rows;

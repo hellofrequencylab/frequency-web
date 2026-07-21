@@ -298,12 +298,20 @@ export async function getPracticeStreak(
 export async function recordPracticeStreak(
   profileId: string,
   clientTimezone?: string | null,
+  loggedDay?: string | null,
 ): Promise<void> {
   const admin = createAdminClient()
   // The member's LOCAL day — the SAME boundary logPractice keyed the just-written
   // `practice_logs.logged_for` under. Resolving in UTC here (the old bug) advanced the
   // streak against the wrong calendar day for an evening-Pacific log.
   const today = await resolveMemberDay(profileId, clientTimezone)
+  // The day the practice_log was ACTUALLY written for. Normally this IS today, but an On Air sit left
+  // running past midnight is attributed to the day it STARTED (ADR-801), which can be yesterday. The
+  // race-guard below must add THAT day, not today — otherwise it would phantom-count the finalize day
+  // and inflate the streak by one. The streak is still DERIVED as of the real `today` (so an overnight
+  // log correctly leaves today at-risk); only the just-written day differs.
+  const writtenDay =
+    loggedDay && /^\d{4}-\d{2}-\d{2}$/.test(loggedDay) && dayDiff(today, loggedDay) >= 0 ? loggedDay : today
 
   const { data: prof } = await admin.from('profiles').select('meta').eq('id', profileId).maybeSingle()
   const meta = (prof?.meta ?? {}) as Record<string, unknown>
@@ -319,7 +327,7 @@ export async function recordPracticeStreak(
     .eq('profile_id', profileId)
     .gte('logged_for', shiftDay(today, -WINDOW_DAYS))
   const logged = new Set((rows ?? []).map((r) => String((r as { logged_for: string }).logged_for)))
-  logged.add(today) // the just-written log, even if the read raced it
+  logged.add(writtenDay) // the just-written log, even if the read raced it (its ACTUAL day, ADR-801)
 
   // A planned rest window covers its days for free (no reserve spend). Fold those
   // days into the frozen set first, so logging on the day a member picks it back
@@ -438,7 +446,9 @@ export async function recordPracticeStreak(
       fullDayFreezesApplied: fullDayApplied,
       rest: nextRest,
       current,
-      lastDay: today,
+      // The last day a practice was actually logged (the attributed day for an overnight sit, ADR-801),
+      // not necessarily the real `today` when they differ. A mirror; the derived read is authoritative.
+      lastDay: writtenDay,
       updatedAt: new Date().toISOString(),
     } satisfies StoredStreak,
   }
