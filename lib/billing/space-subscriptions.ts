@@ -143,29 +143,67 @@ export async function reconcileSpacePlanSubscription(sub: Stripe.Subscription): 
 export async function reconcileSpaceMembershipSubscription(sub: Stripe.Subscription): Promise<void> {
   const spaceId = sub.metadata?.space_id
   const memberId = sub.metadata?.member_id
+  const tierId = sub.metadata?.tier_id
   if (!spaceId || !memberId) return
   const payment = paymentStatusForSubscription(sub.status)
+  // status column is CHECK-constrained to active/cancelled; payment_status carries the finer Stripe state.
+  const status: 'active' | 'cancelled' = payment === 'canceled' ? 'cancelled' : 'active'
 
-  const db = createAdminClient()
-  // Bind the write to (space_id, member_profile_id) — the active membership row this checkout created.
-  await (db as unknown as {
+  const db = createAdminClient() as unknown as {
     from: (t: string) => {
-      update: (v: Record<string, unknown>) => {
-        eq: (c: string, val: string) => { eq: (c2: string, val2: string) => Promise<{ error: unknown }> }
+      select: (c: string) => {
+        eq: (c: string, v: string) => {
+          eq: (c: string, v: string) => {
+            eq: (c: string, v: string) => { limit: (n: number) => Promise<{ data: { id: string }[] | null }> }
+          }
+        }
       }
+      update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> }
+      insert: (rows: Record<string, unknown>[]) => Promise<{ error: unknown }>
     }
-  })
+  }
+
+  // Find the member's CURRENT active membership in this Space (the partial one-active index means there is
+  // at most one). Scope to status='active' + limit(1) so a cancelled-history row can never make this throw.
+  const { data: activeRows } = await db
     .from('space_memberships')
-    .update({
-      stripe_subscription_id: sub.id,
-      payment_status: payment,
-      // Keep status symmetric with payment_status: a reactivated member must flip back to
-      // 'active' (not stay 'cancelled'), or memberships gated on .eq('status','active')
-      // would keep excluding a paying member.
-      status: payment === 'canceled' ? 'cancelled' : 'active',
-    })
+    .select('id')
     .eq('space_id', spaceId)
     .eq('member_profile_id', memberId)
+    .eq('status', 'active')
+    .limit(1)
+  const activeId = activeRows?.[0]?.id ?? null
+
+  if (activeId) {
+    // Update the existing active membership: payment-state change, reactivation, or a cancel (status flips
+    // to 'cancelled', releasing the one-active guard so a later re-subscribe can re-create it).
+    await db
+      .from('space_memberships')
+      .update({
+        stripe_subscription_id: sub.id,
+        payment_status: payment,
+        status,
+        ...(tierId ? { tier_id: tierId } : {}),
+      })
+      .eq('id', activeId)
+    return
+  }
+
+  // No active membership yet: this is the FIRST-PAYMENT case. createSpaceMembershipCheckout does NOT
+  // pre-create a row (unlike the free joinTier path), so before this the UPDATE matched zero rows and a
+  // paying member got nothing recorded. INSERT the membership now, keyed by the Stripe-signed metadata.
+  // Skip a pure cancel event for a member who never had a membership, and skip if the tier is unknown.
+  if (status === 'cancelled' || !tierId) return
+  await db.from('space_memberships').insert([
+    {
+      space_id: spaceId,
+      member_profile_id: memberId,
+      tier_id: tierId,
+      status: 'active',
+      payment_status: payment,
+      stripe_subscription_id: sub.id,
+    },
+  ])
 }
 
 /** Route a subscription event to the right reconciler by its kind. Returns true if handled (so the
