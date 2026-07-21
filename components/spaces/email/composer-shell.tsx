@@ -15,6 +15,8 @@ import {
 import type { AudienceFilter } from '@/lib/spaces/audiences'
 import { AudiencePicker } from '@/components/spaces/email/audience-picker'
 import { TemplatePicker } from '@/components/spaces/email/template-picker'
+import { EMAIL_TOPIC_OPTIONS, DEFAULT_EMAIL_TOPIC } from '@/lib/spaces/email-topics'
+import type { NotificationTopic } from '@/lib/notification-preferences'
 
 // CAMPAIGN COMPOSER (ENTITY-SPACES-BUILD §C Phase 3 + ADR-380). Mirrors the global composer pattern
 // (app/(main)/admin/marketing/campaigns/campaign-composer.tsx): a subject + a plain-text body where
@@ -56,6 +58,7 @@ export function ComposerShell({
   const router = useRouter()
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
+  const [topic, setTopic] = useState<NotificationTopic>(DEFAULT_EMAIL_TOPIC)
   const [filter, setFilter] = useState<AudienceFilter>({ tag: null })
   const [count, setCount] = useState<number>(0)
   const [when, setWhen] = useState('')
@@ -68,14 +71,14 @@ export function ComposerShell({
 
   // Ensure the draft exists, returning its id (or null on failure, with the error surfaced).
   async function ensureDraft(): Promise<string | null> {
-    const res = await createSpaceCampaign(spaceId, slug, { subject, body })
+    const res = await createSpaceCampaign(spaceId, slug, { subject, body, topic })
     if (isError(res)) {
       setError(res.error)
       return null
     }
     // Keep the body in sync (a create stores the current text); update is a no-op here but keeps the
     // edit path honest if the owner tweaks before sending.
-    await updateSpaceCampaign(spaceId, slug, res.data.id, { subject, body })
+    await updateSpaceCampaign(spaceId, slug, res.data.id, { subject, body, topic })
     return res.data.id
   }
 
@@ -171,6 +174,27 @@ export function ComposerShell({
             />
             <p className="mt-1 text-xs text-subtle">
               Blank lines become paragraphs. We add an unsubscribe link to every email.
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="campaign-topic" className="font-semibold">
+              Topic
+            </Label>
+            <select
+              id="campaign-topic"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value as NotificationTopic)}
+              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              {EMAIL_TOPIC_OPTIONS.map((o) => (
+                <option key={o.key} value={o.key}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-subtle">
+              {EMAIL_TOPIC_OPTIONS.find((o) => o.key === topic)?.help}
             </p>
           </div>
         </div>

@@ -28,6 +28,8 @@ import { isJanitor } from '@/lib/core/roles'
 import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
 import { resolveAudience, type AudienceFilter } from '@/lib/spaces/audiences'
 import { sendSpaceCampaign as sendViaSeam, SPACE_UNSUBSCRIBE_PLACEHOLDER } from '@/lib/spaces/email'
+import { normalizeEmailTopic } from '@/lib/spaces/email-topics'
+import type { NotificationTopic } from '@/lib/notification-preferences'
 
 // Render a plain-text campaign body to a minimal HTML email with a Space-appropriate footer. Inline
 // styles + hex are correct here (an email renders in mail clients, OUTSIDE the DAWN shell, where CSS
@@ -65,6 +67,8 @@ export interface SpaceCampaign {
   scheduledFor: string | null
   sentAt: string | null
   createdAt: string | null
+  /** The topic tag (marketing / events / dispatches) — gates each recipient's per-topic mute (ADR-799 C). */
+  topic: NotificationTopic
 }
 
 /** The fields the composer can set on create / update. Both optional on update; subject is required
@@ -72,6 +76,8 @@ export interface SpaceCampaign {
 export interface CampaignInput {
   subject: string
   body: string
+  /** The topic tag; absent -> 'marketing' (the pre-topic default). */
+  topic?: NotificationTopic
 }
 
 const MAX_SUBJECT_LEN = 200
@@ -116,7 +122,7 @@ export function parseScheduleTime(raw: unknown, now: Date = new Date()): string 
 // The `campaigns` columns the Space surfaces read. space_id + scheduled_for are added by the sibling's
 // migration and reached via the untyped cast until the types regenerate.
 const CAMPAIGN_COLS =
-  'id, subject, body, status, recipient_count, scheduled_for, sent_at, created_at, space_id'
+  'id, subject, body, status, recipient_count, scheduled_for, sent_at, created_at, space_id, topic'
 
 type CampaignRow = {
   id: string
@@ -128,6 +134,7 @@ type CampaignRow = {
   sent_at: string | null
   created_at: string | null
   space_id: string | null
+  topic: string | null
 }
 
 type CampaignQuery = {
@@ -160,6 +167,7 @@ function mapCampaign(r: CampaignRow): SpaceCampaign {
     scheduledFor: r.scheduled_for ?? null,
     sentAt: r.sent_at ?? null,
     createdAt: r.created_at ?? null,
+    topic: normalizeEmailTopic(r.topic),
   }
 }
 
@@ -250,6 +258,7 @@ export async function createSpaceCampaign(
           body,
           status: 'draft',
           created_by: profileId,
+          topic: normalizeEmailTopic(input.topic),
         },
       ])
       .select(CAMPAIGN_COLS)
@@ -286,6 +295,7 @@ export async function updateSpaceCampaign(
     patch.subject = subject
   }
   if (input.body !== undefined) patch.body = normalizeBody(input.body)
+  if (input.topic !== undefined) patch.topic = normalizeEmailTopic(input.topic)
   if (Object.keys(patch).length === 0) return ok()
 
   try {
@@ -381,6 +391,7 @@ export async function sendSpaceCampaign(
     campaignId: id,
     subject: existing.subject,
     html: renderCampaignHtml(existing.body ?? ''),
+    topic: normalizeEmailTopic(existing.topic),
     recipients,
   })
   if (isError(res)) return res
