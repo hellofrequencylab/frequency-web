@@ -11,7 +11,7 @@
 // Module Manager itself) so a garbage or malicious write can never remove the way back. Mirrors the
 // fail-safe read contract of lib/spaces/profile-layout.ts.
 
-import { SPACE_MODULES, isModuleHideable } from '@/lib/admin/modules/space-modules'
+import { SPACE_MODULES, isModuleHideable, isModuleAdvanced } from '@/lib/admin/modules/space-modules'
 
 /** The owner's persisted menu overrides for a Space, ready to hand to `spaceModuleManifest`. */
 export interface ModuleMenuPrefs {
@@ -19,6 +19,10 @@ export interface ModuleMenuPrefs {
   order: string[]
   /** Module ids the owner has hidden from the menu (never a shell / Danger / Module Manager id). */
   hidden: string[]
+  /** ADVANCED module ids the owner has ACTIVATED from the control board (ADR-796). An advanced module stays
+   *  collapsed until it appears here. Always present (default []), so production callers pass a real list
+   *  and advanced modules are OFF by default. */
+  activated: string[]
 }
 
 const VALID_IDS: ReadonlySet<string> = new Set(SPACE_MODULES.map((m) => m.id))
@@ -48,6 +52,15 @@ export function sanitizeHiddenModules(value: unknown): string[] {
   return sanitizeIds(value, isModuleHideable)
 }
 
+/** Sanitize an owner-supplied ACTIVATED list (ADR-796): known, de-duplicated, ADVANCED ids only. A
+ *  non-advanced id is always shown, so activating it is a no-op — drop it to keep the blob minimal. */
+export function sanitizeActivatedModules(value: unknown): string[] {
+  return sanitizeIds(value, (id) => {
+    const m = SPACE_MODULES.find((mod) => mod.id === id)
+    return !!m && isModuleAdvanced(m)
+  })
+}
+
 /** Read the Module Manager's `{ order, hidden }` overrides from a Space's preferences blob. Fail-safe:
  *  a missing / malformed node, or ids no longer in the catalog, resolve to empty lists; a hidden shell /
  *  Danger / Module Manager id is dropped. The result is safe to pass straight to `spaceModuleManifest`. */
@@ -60,5 +73,6 @@ export function readModuleMenuPrefs(preferences: unknown): ModuleMenuPrefs {
   return {
     order: sanitizeModuleOrder(menu.order),
     hidden: sanitizeHiddenModules(menu.hidden),
+    activated: sanitizeActivatedModules(menu.activated),
   }
 }

@@ -250,7 +250,7 @@ export interface AdminScope {
    *  as the /manage console does. The Space "Customize" trigger carries them on the AdminBar detail
    *  (read fail-safe via `readModuleMenuPrefs`); `appsForScope` drops hidden modules + applies the order.
    *  Serializable (plain string arrays). Absent ⇒ the manifest's default (catalog) order + no hiding. */
-  moduleMenu?: { order?: readonly string[]; hidden?: readonly string[] }
+  moduleMenu?: { order?: readonly string[]; hidden?: readonly string[]; activated?: readonly string[] }
 }
 
 // Entity-detail route prefixes → the scope kind they manage; the SECOND path segment is the

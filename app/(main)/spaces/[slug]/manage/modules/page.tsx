@@ -5,7 +5,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { spaceFunctionDef, spaceFunctionEnabled, spaceFunctionMinRole } from '@/lib/spaces/functions'
-import { spaceModuleManifest, isModuleHideable } from '@/lib/admin/modules/space-modules'
+import { spaceModuleManifest, isModuleHideable, isModuleAdvanced } from '@/lib/admin/modules/space-modules'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { FocusTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
@@ -58,6 +58,7 @@ export default async function SpaceModulesPage({
   // un-hidden). Each module's current on/off + lock come from the Space's entitlements + plan.
   const menu = readModuleMenuPrefs(space.preferences)
   const hiddenSet = new Set(menu.hidden)
+  const activatedSet = new Set(menu.activated)
   const rows: ModuleManagerRow[] = spaceModuleManifest({}, { order: menu.order }).map((m) => {
     const key = m.gate.kind === 'feature' ? m.gate.fn : m.featureKey
     const def = key ? spaceFunctionDef(key) : null
@@ -79,6 +80,10 @@ export default async function SpaceModulesPage({
       defaultMinRole: def?.defaultMinRole ?? 'viewer',
       hideable: isModuleHideable(m.id),
       hidden: hiddenSet.has(m.id),
+      // Progressive disclosure (ADR-796): an ADVANCED module is collapsed out of the primary menu until the
+      // owner activates it here (the per-area control board). Shell / Danger are never advanced.
+      advanced: isModuleAdvanced(m),
+      activated: activatedSet.has(m.id),
     }
   })
 

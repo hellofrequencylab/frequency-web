@@ -340,6 +340,7 @@ export function SpaceManageConsole({
   modules,
   emphasis,
   section,
+  dashboardEmbed,
   crmEmbed,
   marketingEmbed,
   canDelete,
@@ -356,6 +357,9 @@ export function SpaceManageConsole({
   /** How the tabs link between sections. Omitted = the standalone `/manage?section=` page; the in-place
    *  Manage panel passes an override so the tabs soft-nav under the profile header (no reload). */
   sectionHref?: (key: SpaceHubSection) => string
+  /** The command-center Home surface (revenue + members + needs-attention + activity + upcoming), built
+   *  server-side and shown on the default `dashboard` tab (ADR-796). */
+  dashboardEmbed?: React.ReactNode
   /** The embedded CRM roster node, built server-side by the page and shown atop the Resonance tab so the
    *  hub opens on the space's live Resonance CRM (owner directive). */
   crmEmbed?: React.ReactNode
@@ -377,10 +381,12 @@ export function SpaceManageConsole({
       <div className="mt-5">
         {/* Resonance + Marketing render their own full surfaces (with their own headers / sub-nav); no hub
             blurb there. Every other tab keeps its short blurb above the feature cards. */}
-        {blurb && section !== 'resonance' && section !== 'marketing' && (
+        {blurb && section !== 'dashboard' && section !== 'resonance' && section !== 'marketing' && (
           <p className="mb-4 max-w-2xl text-sm text-muted">{blurb}</p>
         )}
-        {section === 'resonance' ? (
+        {section === 'dashboard' ? (
+          dashboardEmbed
+        ) : section === 'resonance' ? (
           // Community leads with the member viewer (health + master-detail roster), then surfaces the
           // rest of the CRM as cards: the board (People · Pipeline · Cockpit · Import, opened in the
           // `?panel=crm` workspace), the Inbox, Lead capture, Capture links, and Shared with team. Without

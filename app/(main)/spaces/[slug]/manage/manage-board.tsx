@@ -9,6 +9,7 @@ import { resolveSpaceMenu } from '@/lib/admin/modules/space-menu'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { asHubSection, sectionForModule, type SpaceHubSection } from '@/lib/admin/modules/space-hub'
 import { SpaceResonanceCrm } from '@/components/spaces/crm/space-resonance-crm'
+import { SpaceDashboard } from '@/components/spaces/dashboard/space-dashboard'
 import { SpaceMarketing } from '@/components/spaces/marketing/space-marketing'
 import { SpaceManageConsole } from './console'
 
@@ -74,7 +75,7 @@ export async function SpaceManageBoard({
   const menu = readModuleMenuPrefs(space.preferences)
   const modules = resolveSpaceMenu(
     { canUse: (fn) => usable.has(fn), canManageMenu: caps.canManageMembers },
-    { order: menu.order, hidden: menu.hidden },
+    { order: menu.order, hidden: menu.hidden, activated: menu.activated },
   )
 
   // MODE EMPHASIS (Space Modes M3, ADR-461/464): resolve the Space's Mode ONCE (no N+1) and hand the
@@ -86,6 +87,14 @@ export async function SpaceManageBoard({
   // Resonance IS the space's Resonance CRM: the EXACT admin /admin/crm composition (header + Import + the
   // four health stat cards + the master-detail member viewer), scoped to this space + gated on space-manage.
   const brandName = space.brandName ?? space.name
+
+  // Home IS the command-center Dashboard (ADR-796): revenue + members + needs-attention + activity + upcoming,
+  // the default landing tab. Built server-side and streamed per band; scoped to this space + gated on manage.
+  const dashboardEmbed =
+    section === 'dashboard' ? (
+      <SpaceDashboard spaceId={space.id} slug={space.slug} spaceName={brandName} />
+    ) : undefined
+
   const crmEmbed =
     section === 'resonance' ? (
       <SpaceResonanceCrm spaceId={space.id} slug={space.slug} spaceName={brandName} />
@@ -115,6 +124,7 @@ export async function SpaceManageBoard({
       modules={modules}
       emphasis={emphasis}
       section={section}
+      dashboardEmbed={dashboardEmbed}
       crmEmbed={crmEmbed}
       marketingEmbed={marketingEmbed}
       canDelete={canDelete}

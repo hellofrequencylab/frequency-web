@@ -43,7 +43,7 @@ export interface OpenAdminBarDetail {
    *  (spaces.preferences.moduleMenu — the module `order` + `hidden` set, read fail-safe via
    *  `readModuleMenuPrefs`), so the RAIL honors hiding + reordering exactly as the /manage console does.
    *  Serializable (plain string arrays). Absent ⇒ the manifest's default (catalog) order + no hiding. */
-  moduleMenu?: { order?: string[]; hidden?: string[] }
+  moduleMenu?: { order?: string[]; hidden?: string[]; activated?: string[] }
 }
 
 /** Open the standardized admin bar, optionally pre-scoped. Client-only (uses `window`). */

@@ -61,11 +61,17 @@ describe('sectionForModule (the hub IA)', () => {
 })
 
 describe('asHubSection', () => {
-  it('defaults to Resonance and validates the section param', () => {
-    expect(asHubSection(undefined)).toBe('resonance')
-    expect(asHubSection('bogus')).toBe('resonance')
+  it('defaults to the command-center Home and validates the section param', () => {
+    expect(asHubSection(undefined)).toBe('dashboard') // Home is the default landing (ADR-796)
+    expect(asHubSection('bogus')).toBe('dashboard')
+    expect(asHubSection('resonance')).toBe('resonance')
     expect(asHubSection('marketing')).toBe('marketing')
     expect(asHubSection('settings')).toBe('settings') // Profile & Settings is a real tab now (ADR-788)
+  })
+
+  it('leads with the Home tab and trails with Profile & Settings', () => {
+    expect(SPACE_HUB_SECTIONS[0].key).toBe('dashboard')
+    expect(SPACE_HUB_SECTIONS[SPACE_HUB_SECTIONS.length - 1].key).toBe('settings')
   })
 })
 

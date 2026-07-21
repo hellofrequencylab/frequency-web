@@ -234,7 +234,7 @@ export default async function SpaceProfileChromeLayout({
         scope={{ kind: 'space', id: space.id }}
         spaceType={space.type}
         spaceFns={spaceFns}
-        moduleMenu={{ order: moduleMenu.order, hidden: moduleMenu.hidden }}
+        moduleMenu={{ order: moduleMenu.order, hidden: moduleMenu.hidden, activated: moduleMenu.activated }}
         label={manage.staffViewing ? 'Edit Space (staff)' : 'Edit Space'}
         icon={<SlidersHorizontal className={iconOnly ? 'h-5 w-5' : 'h-4 w-4'} aria-hidden />}
         iconOnly={iconOnly}

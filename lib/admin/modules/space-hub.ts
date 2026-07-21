@@ -19,12 +19,14 @@
 import { SPACE_MODULES, type SpaceModule } from './space-modules'
 import { panelHrefForModule } from '@/lib/spaces/surface-hrefs'
 
-/** A hub tab id. `settings` is the Profile & Settings tab (identity, team, reviews, plan & billing, danger). */
-export type SpaceHubSection = 'resonance' | 'marketing' | 'offerings' | 'programs' | 'settings'
+/** A hub tab id. `dashboard` is the command-center home (ADR-796); `settings` is the Profile & Settings tab
+ *  (identity, team, reviews, plan & billing, danger). */
+export type SpaceHubSection = 'dashboard' | 'resonance' | 'marketing' | 'offerings' | 'programs' | 'settings'
 
 /** The hub tabs, in display order. Resonance leads (the default landing); Profile & Settings trails — it is
  *  a real tab now (ADR-788), NOT a header button, so Plan & Billing + Team + Reviews are one tap away. */
 export const SPACE_HUB_SECTIONS: readonly { key: SpaceHubSection; label: string; blurb: string }[] = [
+  { key: 'dashboard', label: 'Home', blurb: 'Your command center: revenue, members, what needs attention, and the latest activity.' },
   { key: 'resonance', label: 'Resonance', blurb: 'Your people and every conversation: pipeline, contacts, the inbox, and connections.' },
   { key: 'marketing', label: 'Marketing', blurb: 'Reach and grow: email, QR codes, lead capture, and automation.' },
   { key: 'offerings', label: 'Offerings & Money', blurb: 'Everything your space sells: bookings, memberships, donations, tickets, and the shop.' },
@@ -32,8 +34,8 @@ export const SPACE_HUB_SECTIONS: readonly { key: SpaceHubSection; label: string;
   { key: 'settings', label: 'Profile & Settings', blurb: 'Your identity and brand, team and roles, reviews, plan and billing, and the danger zone.' },
 ]
 
-/** The default landing tab (Resonance). */
-export const DEFAULT_HUB_SECTION: SpaceHubSection = 'resonance'
+/** The default landing tab: the command-center Home (ADR-796). */
+export const DEFAULT_HUB_SECTION: SpaceHubSection = 'dashboard'
 
 /** Narrow an arbitrary `?section=` value to a known hub tab, defaulting to Resonance. PURE. */
 export function asHubSection(raw: string | null | undefined): SpaceHubSection {
@@ -85,6 +87,7 @@ export function isSettingsModule(module: SpaceModule): boolean {
 
 /** The display name for each section (including the header-level Profile & Settings surface). */
 export const SPACE_HUB_SECTION_LABEL: Record<SpaceHubSection, string> = {
+  dashboard: 'Home',
   resonance: 'Resonance',
   marketing: 'Marketing',
   offerings: 'Offerings & Money',

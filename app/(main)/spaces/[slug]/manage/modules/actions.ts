@@ -22,7 +22,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { sanitizeModuleOrder, sanitizeHiddenModules } from '@/lib/spaces/module-menu'
+import { sanitizeModuleOrder, sanitizeHiddenModules, sanitizeActivatedModules } from '@/lib/spaces/module-menu'
 import { spaceFunctionDef, DEFAULT_FUNCTION_ROLE, type SpaceFunctionKey } from '@/lib/spaces/functions'
 import { isSpaceRole, type SpaceRole } from '@/lib/spaces/membership'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -48,7 +48,7 @@ async function updateSpacePreferences(spaceId: string, preferences: Record<strin
  */
 export async function saveSpaceModuleMenu(
   slug: string,
-  input: { order?: unknown; hidden?: unknown },
+  input: { order?: unknown; hidden?: unknown; activated?: unknown },
 ): Promise<ActionResult> {
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
@@ -63,6 +63,7 @@ export async function saveSpaceModuleMenu(
 
   const order = sanitizeModuleOrder(input.order)
   const hidden = sanitizeHiddenModules(input.hidden)
+  const activated = sanitizeActivatedModules(input.activated)
 
   // Merge into the existing preferences blob, preserving every other key.
   const current =
@@ -73,6 +74,7 @@ export async function saveSpaceModuleMenu(
   const node: Record<string, unknown> = {}
   if (order.length) node.order = order
   if (hidden.length) node.hidden = hidden
+  if (activated.length) node.activated = activated
   if (Object.keys(node).length) current.moduleMenu = node
   else delete current.moduleMenu
 
