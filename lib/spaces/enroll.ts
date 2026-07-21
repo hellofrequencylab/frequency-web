@@ -447,8 +447,9 @@ export async function enrollInProgram(spaceId: string): Promise<ActionResult> {
     if (activeCount >= program.capacity) return fail('This program is full right now.')
   }
 
+  let enrollmentRowId: string | null = null
   try {
-    const { error } = await enrollmentsTable()
+    const { data, error } = await enrollmentsTable()
       .insert([
         {
           space_id: spaceId,
@@ -464,17 +465,20 @@ export async function enrollInProgram(spaceId: string): Promise<ActionResult> {
       // into the friendly message rather than a raw DB error.
       return fail('You are already enrolled here.')
     }
+    enrollmentRowId = data?.id ?? null
   } catch {
     return fail('Could not enroll right now. Try again.')
   }
   // Log the enrollment onto the member's Space timeline (program adoption shows on Resonance, ADR-796).
+  // Keyed to THIS enrollment row so a member who cancels and re-enrolls logs a fresh entry instead of
+  // being swallowed by a lifetime-stable key.
   await recordSpaceMemberActivity({
     spaceId,
     spaceOwnerProfileId: space.ownerProfileId,
     memberProfileId: profileId,
     channel: 'event',
     summary: program.name ? `Enrolled: ${program.name}` : 'Enrolled in the program',
-    idempotencyKey: `enroll:${spaceId}:${profileId}`,
+    idempotencyKey: `enroll:${enrollmentRowId ?? `${spaceId}:${profileId}`}`,
     metadata: { kind: 'program_enrollment', programId: program.id, programName: program.name ?? null },
   })
   return ok()
@@ -501,14 +505,13 @@ export async function cancelEnrollment(enrollmentId: string): Promise<ActionResu
   }
   if (!row) return fail('Enrollment not found.')
 
-  // The member may always cancel their own; otherwise the caller must be a space admin.
+  // The member may always cancel their own; otherwise the caller must be a space admin. Resolve the
+  // Space once here so the same handle serves both the admin check and the timeline log below.
+  const space = await getSpaceById(row.space_id)
   let allowed = row.member_profile_id === profileId
-  if (!allowed) {
-    const space = await getSpaceById(row.space_id)
-    if (space) {
-      const caps = await getSpaceCapabilities(space, profileId)
-      allowed = caps.isAdmin
-    }
+  if (!allowed && space) {
+    const caps = await getSpaceCapabilities(space, profileId)
+    allowed = caps.isAdmin
   }
   if (!allowed) return fail('You do not have permission to cancel this enrollment.')
 
@@ -519,6 +522,19 @@ export async function cancelEnrollment(enrollmentId: string): Promise<ActionResu
     if (error) return fail('Could not cancel the enrollment. Try again.')
   } catch {
     return fail('Could not cancel the enrollment. Try again.')
+  }
+  // Log the departure onto the member's Space timeline (ADR-796): the comms center records departures as
+  // well as arrivals. Keyed to this enrollment row so it logs exactly once per cancel.
+  if (space) {
+    await recordSpaceMemberActivity({
+      spaceId: row.space_id,
+      spaceOwnerProfileId: space.ownerProfileId,
+      memberProfileId: row.member_profile_id,
+      channel: 'event',
+      summary: 'Cancelled their enrollment',
+      idempotencyKey: `enroll_cancel:${enrollmentId}`,
+      metadata: { kind: 'program_enrollment_cancel', programId: row.program_id },
+    })
   }
   return ok()
 }

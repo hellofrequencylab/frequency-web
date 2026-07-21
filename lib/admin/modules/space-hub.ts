@@ -37,7 +37,8 @@ export const SPACE_HUB_SECTIONS: readonly { key: SpaceHubSection; label: string;
 /** The default landing tab: the command-center Home (ADR-796). */
 export const DEFAULT_HUB_SECTION: SpaceHubSection = 'dashboard'
 
-/** Narrow an arbitrary `?section=` value to a known hub tab, defaulting to Resonance. PURE. */
+/** Narrow an arbitrary `?section=` value to a known hub tab, defaulting to the command-center Home
+ *  (`DEFAULT_HUB_SECTION`, ADR-796). PURE. */
 export function asHubSection(raw: string | null | undefined): SpaceHubSection {
   return SPACE_HUB_SECTIONS.some((s) => s.key === raw) ? (raw as SpaceHubSection) : DEFAULT_HUB_SECTION
 }

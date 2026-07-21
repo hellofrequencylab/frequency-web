@@ -9,7 +9,7 @@ import { SpaceManageBoard } from './manage-board'
 //
 // `?panel=manage&area=<section>` opens a tab; the console's own tabs soft-nav between areas through the SAME
 // param (the `sectionHref` override), so switching tabs never leaves the page — the header + menu persist.
-// No `area` opens the default section (Community). SpaceManageBoard self-gates on manage access (renders
+// No `area` opens the default section (the command-center Home, ADR-796). SpaceManageBoard self-gates on manage access (renders
 // nothing for a non-manager), so this stays a thin pass-through. DAWN tokens, no em dashes.
 export function ManageDashboard({ slug, area }: { slug: string; area?: string }) {
   return (

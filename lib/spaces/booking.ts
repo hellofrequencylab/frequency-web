@@ -30,6 +30,7 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
 import { canTakePayments } from '@/lib/commerce/selling'
 import { payoutsLive } from '@/lib/billing/connect'
+import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
@@ -1563,6 +1564,17 @@ async function afterBookingPlaced(
     serviceName: placed.serviceName,
   })
   await scheduleBookingReminder(placed.bookingId, placed.startsAt)
+  // Log the booking onto the member's Space timeline (event attendance shows on Resonance, ADR-796).
+  // Keyed to THIS booking row so a member who books, cancels, and re-books logs each occurrence.
+  await recordSpaceMemberActivity({
+    spaceId: space.id,
+    spaceOwnerProfileId: space.ownerProfileId,
+    memberProfileId: placed.profileId,
+    channel: 'event',
+    summary: placed.serviceName ? `Booked: ${placed.serviceName}` : 'Booked a time',
+    idempotencyKey: `booking:${placed.bookingId}`,
+    metadata: { kind: 'booking', bookingId: placed.bookingId, serviceName: placed.serviceName, startsAt: placed.startsAt },
+  })
 }
 
 /**
@@ -1730,6 +1742,17 @@ export async function cancelBooking(bookingId: string, reason?: string): Promise
     } catch {
       /* fail-soft */
     }
+    // Log the departure onto the member's Space timeline (ADR-796): the comms center records booking
+    // cancellations too. Keyed to this booking row so it logs exactly once per cancel.
+    await recordSpaceMemberActivity({
+      spaceId: space.id,
+      spaceOwnerProfileId: space.ownerProfileId,
+      memberProfileId: row.member_profile_id,
+      channel: 'event',
+      summary: 'Cancelled a booking',
+      idempotencyKey: `booking_cancel:${bookingId}`,
+      metadata: { kind: 'booking_cancel', bookingId, startsAt: row.starts_at, reason: cleanReason },
+    })
   }
   return ok()
 }
