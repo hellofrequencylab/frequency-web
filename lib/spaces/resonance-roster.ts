@@ -150,7 +150,7 @@ export async function loadSpaceResonanceContacts(
       // to a real profile counts as a member; any engagement signal counts as activity.
       const meta = r.meta && typeof r.meta === 'object' && !Array.isArray(r.meta) ? (r.meta as Record<string, unknown>) : {}
       const filled = (v: unknown): boolean =>
-        typeof v === 'string' ? v.trim().length > 0 : Array.isArray(v) ? v.length > 0 : v != null && v !== ''
+        typeof v === 'string' ? v.trim().length > 0 : Array.isArray(v) ? v.length > 0 : v != null
       const custom = meta.custom
       const completeness = completenessScore({
         hasRealName: isRealName(rawName, email),
