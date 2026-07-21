@@ -34,13 +34,14 @@ describe('yearlyFromMonthly (two months free)', () => {
 })
 
 describe('the clean catalog shape (collapsed · ADR-552)', () => {
-  it('holds exactly the three items (Business base, AI add-on, nonprofit seat)', () => {
+  it('holds exactly the four items (Business base, AI add-on, nonprofit seat, operator seat)', () => {
     expect([...CATALOG_ITEM_KEYS]).toEqual([
       'business_base',
       'addon_ai',
       'nonprofit_seat',
+      'operator_seat',
     ])
-    expect(catalogItems()).toHaveLength(3)
+    expect(catalogItems()).toHaveLength(4)
   })
 
   it('Business base: $49 base, the full-depth paid tier, not per seat', () => {
@@ -48,6 +49,14 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
     expect(biz.month.foundingCents).toBe(4900)
     expect(biz.month.listCents).toBe(7900) // $79 founding anchor over the $49 charged price (ADR-591)
     expect(biz.perSeat).toBe(false)
+  })
+
+  it('Operator seat: a real per-seat add-on (ADR-799), the only perSeat item', () => {
+    const seat = catalogItem('operator_seat')
+    expect(seat.perSeat).toBe(true)
+    expect(seat.month.foundingCents).toBeGreaterThan(0) // placeholder amount; owner sets the final price
+    // It is the ONLY per-seat item; every flat plan/add-on stays perSeat:false.
+    expect(catalogItems().filter((i) => i.perSeat).map((i) => i.key)).toEqual(['operator_seat'])
   })
 
   it('every item has a founding <= list amount on both intervals', () => {
@@ -89,9 +98,9 @@ describe('catalog price keys', () => {
     expect(catalogPriceKey('business_base', 'year', true)).toBe('business_base_year_list')
   })
 
-  it('allCatalogPriceKeys = 3 items x 2 intervals x 2 variants = 12 keys', () => {
+  it('allCatalogPriceKeys = 4 items x 2 intervals x 2 variants = 16 keys', () => {
     const keys = allCatalogPriceKeys()
-    expect(keys).toHaveLength(12)
+    expect(keys).toHaveLength(16)
     expect(keys).toContain('business_base_month')
     expect(keys).toContain('business_base_month_list')
     expect(keys).toContain('addon_ai_month')

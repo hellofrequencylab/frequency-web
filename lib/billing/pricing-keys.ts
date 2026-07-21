@@ -208,6 +208,7 @@ export const CATALOG_ITEM_KEYS = [
   'business_base',
   'addon_ai',
   'nonprofit_seat',
+  'operator_seat',
 ] as const
 
 export type CatalogItemKey = (typeof CATALOG_ITEM_KEYS)[number]
@@ -296,6 +297,19 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     label: 'Frequency Non Profit',
     perSeat: false,
     ...amountsFromMonthly(2900, 2900), // $29/mo flat (ADR-590), everything in Business, discounted for 501c3s
+  },
+  operator_seat: {
+    // OPERATOR SEATS (ADR-799): a genuine per-seat add-on. The owner's seat is free (BASE_SEAT_ALLOWANCE);
+    // each ADDITIONAL operator (editor/moderator/admin) bills one seat at this flat rate, on any paid plan.
+    // This is a SEPARATE per-seat item (perSeat:true) — distinct from the retired per-seat PLAN pricing
+    // (ADR-590) and refining ADR-552's "seats ride the base tier" note per the owner's flat-add-on choice.
+    // PLACEHOLDER PRICE: the owner sets the real amount here, then the catalog SYNC creates the Stripe
+    // product + prices. Until synced, resolveLoadoutPriceId returns null and the seat item is skipped, so
+    // this is inert (no charge) exactly like the rest of billing while it is dark.
+    key: 'operator_seat',
+    label: 'Operator seat',
+    perSeat: true,
+    ...amountsFromMonthly(900, 900), // PLACEHOLDER $9/seat/mo — owner sets the final amount before sync
   },
 }
 
