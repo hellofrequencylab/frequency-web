@@ -379,7 +379,11 @@ async function buildMemberDetail(profileId: string, spaceId?: string): Promise<C
       : getContactEngagementStats(subjectIds, email)
     const [scores, interactions, roles, funnels, pipeline, network, engagement] = await Promise.all([
       getMemberScores(profileId),
-      listInteractionsForPerson([profileId, contactId], 24),
+      // Member-360 timeline (ADR-796). For a SPACE member view (spaceId set) STRICTLY scope to this Space
+      // so it never surfaces the member's touches from OTHER spaces / private platform DMs (the same tenancy
+      // boundary the contact card enforces), and read a fuller 100 (was a global, uncapped-tenant 24). The
+      // platform admin person-view (no spaceId) stays global at 24.
+      listInteractionsForPerson([profileId, contactId], spaceId ? 100 : 24, spaceId),
       rolesForProfile(profileId),
       funnelsForProfile(profileId),
       pipelineForProfile(profileId),
