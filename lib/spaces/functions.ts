@@ -60,6 +60,7 @@ export type SpaceFunctionKey =
   | 'practices'
   | 'journeys'
   | 'loom'
+  | 'collaborators'
 
 /** A Space type, or the wildcard '*' meaning "every type offers this function". */
 type FunctionTypeScope = SpaceType | '*'
@@ -233,6 +234,16 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     entitlement: null,
     defaultMinRole: 'editor',
     types: ['*'],
+  },
+  {
+    // Collaborator spaces (ADR-799 B): host separate businesses that operate inside your space. Free to
+    // host (entitlement null); a host is a business space, so this offers only to `business`. Admin-managed.
+    key: 'collaborators',
+    label: 'Collaborators',
+    description: 'Host separate businesses that operate inside your space, and approve requests to collaborate.',
+    entitlement: null,
+    defaultMinRole: 'admin',
+    types: ['business'],
   },
 ] as const
 

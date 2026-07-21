@@ -7,6 +7,7 @@ import { spaceFunctionDef, spaceFunctionEnabled } from '@/lib/spaces/functions'
 import { deriveSectionNav } from '@/lib/spaces/section-anchors'
 import { getSpaceSectionPresence } from '@/lib/spaces/content-data'
 import { spaceHasPublicUpcomingEvents } from '@/lib/events/store'
+import { spaceHasCollaborators } from '@/lib/spaces/collaborations'
 import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
 
 // THE ONE Space profile sub-nav model — the tab set + the operator's admin links — resolved from the
@@ -37,13 +38,15 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   const brandName = space.brandName ?? space.name
   const base = `/spaces/${space.slug}`
 
-  const [presence, manage, hasCalendarEvents] = await Promise.all([
+  const [presence, manage, hasCalendarEvents, hasCollaborators] = await Promise.all([
     getSpaceSectionPresence(space.id, space.slug),
     resolveSpaceManageAccess(space, viewerProfileId, caller?.webRole ?? null),
     // Gate the Calendar tab on the SAME public/unlisted published set the calendar renders, not on the
     // broader presence.events (which counts drafts/private/circle_only) — otherwise the tab would show
     // over an empty grid for a member-only-event space.
     spaceHasPublicUpcomingEvents(space.id),
+    // The Collaborators tab shows only when there is at least one ACCEPTED collaboration (ADR-799 B1).
+    spaceHasCollaborators(space.id),
   ])
 
   const pages = readProfilePages(space.preferences)
@@ -76,6 +79,9 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
     // Shown only when the Space has upcoming PUBLIC events (the exact set the grid renders), so the tab
     // never opens onto an empty calendar.
     ...(hasCalendarEvents ? [{ href: `${base}/calendar`, label: 'Calendar' }] : []),
+    // The Collaborators tab (ADR-799 B1): the businesses that operate together with this space. Shown
+    // only when there is at least one accepted collaboration.
+    ...(hasCollaborators ? [{ href: `${base}/collaborators`, label: 'Collaborators' }] : []),
     // Reviews on their own tab (owner decision): the member rating + review wall. Public read; a signed-in
     // member (not the owner) leaves one review they can revise. Gated on the `reviews` function (default ON).
     ...(reviewsEnabled ? [{ href: `${base}/reviews`, label: 'Reviews' }] : []),

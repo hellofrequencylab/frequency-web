@@ -11,7 +11,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
-import { getSpaceById } from '@/lib/spaces/store'
+import { getSpaceById, getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
   loadCollaboration,
@@ -103,6 +103,22 @@ export async function requestCollaboration(
 
   await revalidateSpaces(initiatingSpaceId, partnerSpaceId)
   return ok()
+}
+
+/** Invite a collaborator by their space URL or slug (the management surface's invite form). Resolves the
+ *  slug to a space, then delegates to requestCollaboration. `hostSide` says whether THIS space is the host
+ *  (default) or the guest business. Accepts a bare slug or a full /spaces/<slug> URL. */
+export async function requestCollaborationBySlug(
+  initiatingSpaceId: string,
+  partnerSlug: string,
+  hostSide: 'initiator' | 'partner' = 'initiator',
+): Promise<ActionResult> {
+  const clean = (partnerSlug ?? '').trim().replace(/^.*\/spaces\//, '').replace(/[/?#].*$/, '')
+  if (!clean) return fail('Enter the space to invite.')
+  const profileId = await getMyProfileId()
+  const partner = await getVisibleSpaceBySlug(clean, profileId)
+  if (!partner) return fail('Could not find that space. Check the link or slug.')
+  return requestCollaboration(initiatingSpaceId, partner.id, hostSide)
 }
 
 /** Approve a pending request. Caller must be owner/admin of the side that did NOT initiate it. */

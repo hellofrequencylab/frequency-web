@@ -27,6 +27,7 @@ import {
   Trash2,
   Sparkles,
   Route,
+  Handshake,
 } from 'lucide-react'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import type { AdminSlot } from './registry'
@@ -159,6 +160,9 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // 'shared' tier). Nested under CRM on the console; the PAGE itself gates on team membership (broader than
   // the CRM role), and the reader returns card fields only (never notes/tags).
   { id: 'space.shared', label: 'Shared with team', desc: 'Contact cards your members shared with the team.', Icon: Share2, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/shared`, order: 39.5, tier: 'primary', priority: 19.5, access: 'freemium', parent: 'space.crm' },
+  // Collaborator spaces (ADR-799 B): host separate businesses that operate inside your space, and approve
+  // requests to collaborate. Free to host; a link-row out to the /settings/collaborators surface.
+  { id: 'space.collaborators', label: 'Collaborators', desc: 'The businesses that operate inside your space, and requests to collaborate.', Icon: Handshake, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'collaborators' }, featureKey: 'collaborators', render: 'link', deepLink: (s) => `${base(s)}/settings/collaborators`, order: 39.7, tier: 'primary', priority: 19.7, access: 'included' },
 
   // ── Offerings & money (independent modules) ──────────────────────────────────────────────────────────
   { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#availability`, order: 40, tier: 'primary', priority: 30, access: 'freemium', freeNote: '15 bookings/mo free, then unlimited' },
