@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, SlidersHorizontal, Sparkles, Trash2 } from 'lucide-react'
+import { ArrowRight, Compass, SlidersHorizontal, Sparkles, Trash2 } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
 import { DangerDelete } from '@/components/admin/danger-delete'
 import { deleteSpace } from '@/lib/spaces/provision'
@@ -455,6 +455,26 @@ export function SpaceSettingsSurface({
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-text">Menu and features</span>
           <span className="mt-0.5 block text-xs text-muted">Turn on more tools or tidy which ones show in your menu.</span>
+        </span>
+        <ArrowRight
+          className="h-4 w-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
+          aria-hidden
+        />
+      </Link>
+      {/* MODE & FOCUS (audit fix): a full, working surface (switch Mode/Focus, preview what it turns on,
+          override facets) that had NO entry point from the console/hub/search — reachable only from a few
+          offering empty-state prompts. This card is its discoverable home, so an owner can find where to
+          change what their space emphasizes. */}
+      <Link
+        href={`/spaces/${slug}/manage/mode`}
+        className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-3 shadow-sm outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+          <Compass className="h-4 w-4" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-text">Mode and focus</span>
+          <span className="mt-0.5 block text-xs text-muted">Choose what your space leads with, and what its main button opens.</span>
         </span>
         <ArrowRight
           className="h-4 w-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
