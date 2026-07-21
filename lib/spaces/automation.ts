@@ -555,7 +555,10 @@ export async function instantiateAutomationTemplate(
   spaceId: string,
   templateId: string,
 ): Promise<ActionResult<{ sequenceId: string }>> {
-  const gate = await requireSpaceEditor(spaceId)
+  // Gated on the automation ENTITLEMENT (not just editor role): instantiating a triggered template writes
+  // an ENABLED auto-enroll rule, which is a live automation lever — the same bar startSequenceForAudience
+  // holds. The surface already gates render on the entitlement; this closes the direct-action-call path.
+  const gate = await requireAutomationEditor(spaceId)
   if ('error' in gate) return gate
 
   const template = automationTemplateById(templateId)

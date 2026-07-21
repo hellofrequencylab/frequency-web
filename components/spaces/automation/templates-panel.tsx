@@ -85,6 +85,8 @@ export function TemplatesPanel({
                       variant="secondary"
                       onClick={() => onAdd(t.id)}
                       disabled={pending}
+                      aria-busy={pending && busyId === t.id}
+                      aria-label={`Add the ${t.title} template`}
                     >
                       {pending && busyId === t.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -102,8 +104,18 @@ export function TemplatesPanel({
         })}
       </ul>
 
-      {error && <p className="text-sm text-danger">{error}</p>}
-      {notice && <p className="text-sm text-muted">{notice}</p>}
+      {/* A live region so a screen reader announces the async result (the transition swaps this in). */}
+      <div role="status" aria-live="polite">
+        {error && <p className="text-sm text-danger">{error}</p>}
+        {notice && <p className="text-sm text-muted">{notice}</p>}
+      </div>
+
+      {/* Honesty note (ADR-797): a triggered template only enrolls members who join AFTER the sequence is
+          turned on. Past joins are not replayed, so set it up before a launch, not after. */}
+      <p className="text-2xs text-subtle">
+        A template that sends on join applies to members who join after you turn its sequence on. It does
+        not go back over people who joined earlier.
+      </p>
     </div>
   )
 }
