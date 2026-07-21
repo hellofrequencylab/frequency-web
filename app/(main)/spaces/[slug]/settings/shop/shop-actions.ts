@@ -184,6 +184,8 @@ export async function createSpaceProductAction(slug: string, formData: FormData)
     bookingSpaceId: productKind === 'service' ? gate.spaceId : undefined,
     // The full quote + policy (price model, duration, deposit, cancellation, no-show) in one write.
     service,
+    // Market opt-in from the editor: list it in the global Market, or keep it to this Space's page only.
+    marketPublished: formData.get('marketPublished') === '1',
   })
   if (!product) return
 

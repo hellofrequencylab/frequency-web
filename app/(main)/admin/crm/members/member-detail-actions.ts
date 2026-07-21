@@ -6,11 +6,13 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { getProfileSummaries } from '@/lib/connections/matching'
-import { getMemberScores, listMembersByFilter } from '@/lib/dashboard/scores'
+import { getMemberScores } from '@/lib/dashboard/scores'
 import { listInteractionsForPerson } from '@/lib/crm/interactions'
 import { buildTimeline, relativeTime, interactionTitle } from '@/lib/crm/timeline'
 import { getContactEngagementStats } from '@/lib/crm/engagement-stats'
 import { getSpaceContactEngagement } from '@/lib/spaces/email-analytics'
+import { getSpaceContactDetail } from '@/lib/crm/space-contact-detail'
+import { listActiveSpaceMemberIds, isContactRowId, contactIdFromRowId } from '@/lib/spaces/resonance-roster'
 import { getMemberNetwork, filterMajorMilestones, type Milestone } from '@/lib/crm/member-network'
 import { resolvePerson, type Person } from '@/lib/crm/person'
 import { buildJourney } from '@/lib/crm/journey'
@@ -269,12 +271,72 @@ export async function loadSpaceMemberDetail(slug: string, profileId: string): Pr
   if (!space) throw new Error('Space not found')
   const { canManage, staffViewing } = await resolveSpaceManageAccess(space, viewerProfileId, caller?.webRole)
   if (!canManage && !staffViewing) throw new Error('Not authorized')
-  // TENANCY: only a member in this space's own scored roster may be opened here.
-  const roster = await listMembersByFilter({ kind: 'all' }, { spaceId: space.id })
-  if (!roster.some((r) => r.profileId === profileId)) throw new Error('Not in this space')
+  // TENANCY: only an ACTIVE member of THIS space (space_members + owner) may be opened here — the same set
+  // the roster lists, so any real member opens (scored or not) and no arbitrary platform member can.
+  const memberIds = await listActiveSpaceMemberIds(space.id)
+  if (!memberIds.includes(profileId)) throw new Error('Not in this space')
   // Pass the space id so the engagement rollup (Sent/Opened/Clicked/Replied) reflects THIS space's own
   // emails to the member, never the platform CRM (no crossover).
   return buildMemberDetail(profileId, space.id)
+}
+
+/**
+ * The space Resonance master-detail's ONE detail loader (ADR-789): dispatches by row id. A `contact:<uuid>`
+ * id resolves the space CONTACT (lead) detail; any other id is a member profile id and takes the member
+ * path above. So the SAME MemberViewer renders both members and contacts inline. `slug` is bound by the
+ * roster; the client only passes the row id. Space-manage gated; FAIL-SAFE.
+ */
+export async function loadSpaceResonanceDetail(slug: string, id: string): Promise<CrmMemberDetail> {
+  if (!isContactRowId(id)) return loadSpaceMemberDetail(slug, id)
+  const caller = await getCallerProfile()
+  const viewerProfileId = caller?.id ?? null
+  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
+  if (!space) throw new Error('Space not found')
+  const { canManage, staffViewing } = await resolveSpaceManageAccess(space, viewerProfileId, caller?.webRole)
+  if (!canManage && !staffViewing) throw new Error('Not authorized')
+  return buildSpaceContactDetail(space.id, contactIdFromRowId(id))
+}
+
+/**
+ * Build a CrmMemberDetail for a space CONTACT (lead), so the member-viewer's CRM pane renders it just like
+ * a member: identity + email + scores (when the lead is stitched/scored) + the Space's own engagement
+ * rollup + notes. `profileHref` is left undefined so a lead never shows a broken "Open Profile" link, and
+ * the composer keys off the email (messageScope). getSpaceContactDetail re-gates space-manage; on any
+ * miss we return a minimal identity detail rather than throwing, so the pane never crashes.
+ */
+async function buildSpaceContactDetail(spaceId: string, contactId: string): Promise<CrmMemberDetail> {
+  const minimal: CrmMemberDetail = { profileId: `contact:${contactId}`, displayName: 'Contact', handle: contactId }
+  try {
+    const detail = await getSpaceContactDetail(spaceId, contactId)
+    if (!detail) return minimal
+    const { identity, insight, notes } = detail
+    const email = identity.email
+    const engMap = await getSpaceContactEngagement(spaceId, email ? [email] : [])
+    const e = (email ? engMap.get(email.trim().toLowerCase()) : undefined) ?? { sent: 0, opened: 0, clicked: 0, replied: 0 }
+    const crmScores: CrmScores = {
+      health: insight.scores.resonanceHealth,
+      tier: insight.scores.resonanceTier ? tierLabel(insight.scores.resonanceTier) : null,
+      churn: insight.scores.churnRisk ? titleCase(insight.scores.churnRisk) : null,
+      activation: insight.scores.activationPropensity,
+      lifecycle: insight.scores.lifecycleStage ? LIFECYCLE_LABELS[insight.scores.lifecycleStage] ?? insight.scores.lifecycleStage : null,
+    }
+    const contact = email || identity.phone ? { email: email || undefined, phone: identity.phone ?? undefined } : undefined
+    const mappedNotes = notes.map((n) => ({ id: n.id, body: n.body })).filter((n) => n.body.trim().length > 0)
+    return {
+      profileId: insight.profileId ?? `contact:${contactId}`,
+      displayName: identity.name?.trim() || email.split('@')[0] || 'Contact',
+      handle: email || contactId,
+      avatarUrl: null,
+      // No profileHref: a lead has no member profile page, so the pane suppresses the Open Profile link.
+      email,
+      contact,
+      scores: insight.hasScores ? crmScores : undefined,
+      engagement: { sent: e.sent, opened: e.opened, clicked: e.clicked, replied: e.replied, lastTouch: null },
+      notes: mappedNotes.length ? mappedNotes : undefined,
+    }
+  } catch {
+    return minimal
+  }
 }
 
 /** Build the rich CRM member detail for a profile. NO gate — every caller gates + tenancy-checks first.

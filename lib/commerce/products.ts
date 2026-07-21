@@ -254,6 +254,9 @@ export interface ProductPatch {
    *  noShowFeePct). Convenience over `metadata`: MERGED over the existing metadata.service so a
    *  partial edit (e.g. just the policy) never clobbers the other service fields. */
   service?: ServiceConfig | null
+  /** Market opt-in: true lists this item in the global Market (cross-space browse), false keeps it to
+   *  the Space's own page/Shop only. Mirrors setProductMarketPublished; lets the item editor set it inline. */
+  marketPublished?: boolean
 }
 
 /** Edit a product's fields. Caller (server action) has authorized the owner/operator. */
@@ -270,6 +273,7 @@ export async function updateProduct(id: string, patch: ProductPatch): Promise<vo
   if (patch.tags !== undefined) update.tags = (patch.tags ?? []).slice(0, 12)
   if (patch.productKind !== undefined) update.product_kind = patch.productKind
   if (patch.condition !== undefined) update.condition = patch.condition ?? null
+  if (patch.marketPublished !== undefined) update.market_published = patch.marketPublished
   if (patch.metadata !== undefined || patch.service !== undefined) {
     // Merge over existing metadata so we never clobber sibling keys (backfill 'source', etc.). One
     // read serves both `metadata` and the typed `service` convenience.

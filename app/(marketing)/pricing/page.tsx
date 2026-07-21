@@ -12,6 +12,7 @@ import {
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, faqSchema, productSchema } from '@/lib/jsonld'
 import { PricingBillingToggle } from '@/components/marketing/pricing-billing-toggle'
+import { PricingComparison } from '@/components/marketing/pricing-comparison'
 import {
   pricingTiers,
   tierHeadline,
@@ -159,6 +160,17 @@ export default function PricingPage() {
           Flat, never per seat. Yearly is two months free, and you can turn the Resonance Engine on or off
           anytime, with a 14-day trial.
         </p>
+      </Section>
+
+      {/* The value comparison: every Business feature vs the separate tool it replaces, totaled against the
+          one flat price. Reads the pure lib/pricing/comparison catalog. */}
+      <Section tone="canvas">
+        <SectionHeading
+          eyebrow="What it replaces"
+          title="One price. The whole toolbox."
+          kicker="Every tool a growing business stitches together, and what each one costs on its own. On Frequency it is one login, one bill, one flat price."
+        />
+        <PricingComparison />
       </Section>
 
       {/* The three promises that make it a movement, not a SaaS (ADR-590). */}
