@@ -40,6 +40,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordContactInteraction } from '@/lib/crm/interactions'
+import { isSuppressed } from '@/lib/suppression'
+import { escapeLike } from '@/lib/search-sanitize'
 import type { Json } from '@/lib/database.types'
 
 // ── Doors ─────────────────────────────────────────────────────────────────────────────────────────
@@ -287,10 +289,16 @@ const CONTACT_COLS = 'id, email, space_id, profile_id, consent_state, display_na
  *  Never leave this unscoped — a bare email lookup can span Spaces and throw on multi-row. FAIL-SAFE. */
 async function findContactByEmail(email: string, spaceId: string): Promise<ContactRow | null> {
   try {
+    // Case-INSENSITIVE match on the address: the `email` column can carry a mixed-case value (an OAuth
+    // signup / import path stores it un-normalized) while uniqueness is on lower(email) (ADR-624). A
+    // case-sensitive `.eq('john@x.com')` would MISS a stored `John@x.com`, then the caller's insert would
+    // hit the unique(space_id, lower(email)) index and fail — so this must ilike, like contactConsentState.
+    // escapeLike neutralizes the `%`/`_` wildcards so the address matches literally; the per-space unique
+    // index still yields at most one row, so `.maybeSingle()` stays safe.
     const { data } = (await table('contacts')
       .select(CONTACT_COLS)
       .eq('space_id', spaceId)
-      .eq('email', email.toLowerCase())
+      .ilike('email', escapeLike(email.trim().toLowerCase()))
       .maybeSingle()) as { data: ContactRow | null }
     return data ?? null
   } catch {
@@ -736,17 +744,29 @@ export async function ensureSpaceMemberContact(spaceId: string, profileId: strin
     const pid = (profileId ?? '').trim()
     if (!sid || !pid) return null
 
+    // NEVER operate on the root space: its contacts ARE members' platform records (profile_id set), so a
+    // join-driven subscribe there would capture platform-wide marketing consent off a single Space
+    // membership. Business-space joins (the only caller) never carry the root id, so this is pure insurance.
+    if (sid === (await rootSpaceId())) return null
+
     // Identity from the member's platform (root) contact — read ONLY, never tagged into the Space.
     const member = await findContactByProfile(pid)
     const email = member?.email ? normalizeEmail(member.email) : null
     if (!member || !email) return null // no CRM row / no email — nothing to materialize; caller falls through
 
+    // A hard opt-out is recorded as a Space SUPPRESSION (the one-click unsubscribe flow writes suppression,
+    // not consent_state), so a join must not subscribe a suppressed address — the send gate already blocks
+    // it, but flipping consent_state to 'subscribed' would misreport them as mailable. When suppressed, the
+    // contact is still materialized (CRM visibility) but its consent is left as-is (unknown on a new row).
+    const suppressed = await isSuppressed(email, sid)
+
     const nowIso = new Date().toISOString()
     const existing = await findContactByEmail(email, sid)
     if (existing) {
-      // A join is affirmative opt-in: lift 'unknown' -> 'subscribed'. NEVER resurrect a hard opt-out.
+      // A join is affirmative opt-in: lift 'unknown' -> 'subscribed'. NEVER resurrect a hard opt-out
+      // (a stored 'unsubscribed' via memberJoinConsent, or a Space suppression via the guard above).
       const current = (existing.consent_state as ConsentState) ?? 'unknown'
-      const next = memberJoinConsent(current)
+      const next = suppressed ? current : memberJoinConsent(current)
       const patch: Record<string, unknown> = { last_seen_at: nowIso, updated_at: nowIso }
       if (next !== current) patch.consent_state = next
       if (!existing.display_name && member.display_name) patch.display_name = member.display_name
@@ -764,8 +784,9 @@ export async function ensureSpaceMemberContact(spaceId: string, profileId: strin
           email,
           space_id: sid,
           display_name: member.display_name ?? null,
-          // A join opts in (ADR-797); a later unsubscribe still wins permanently (checked on re-join above).
-          consent_state: 'subscribed',
+          // A join opts in (ADR-797) UNLESS the address is suppressed (a hard opt-out is permanent); a
+          // later unsubscribe still wins permanently (checked on re-join above).
+          consent_state: suppressed ? 'unknown' : 'subscribed',
           source: 'membership_join',
           last_seen_at: nowIso,
         },

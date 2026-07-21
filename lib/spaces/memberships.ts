@@ -462,7 +462,10 @@ export async function joinTier(spaceId: string, tierId: string): Promise<ActionR
     void (async () => {
       const contactId = await ensureSpaceMemberContact(spaceId, profileId)
       await fireSpaceTrigger(spaceId, 'member.joined', { contactId: contactId ?? undefined, profileId })
-    })()
+    })().catch(() => {
+      // Both callees are contractually non-throwing; this is cheap insurance against a future contract
+      // break, so an automation error can never surface as an unhandled rejection off the join.
+    })
   } catch {
     return fail('Could not join right now. Try again.')
   }

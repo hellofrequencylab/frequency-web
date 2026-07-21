@@ -28,6 +28,7 @@ import { suppress } from '@/lib/suppression'
 import { buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { canEmailContact } from '@/lib/crm/contact-consent'
+import { isContactTopicMuted } from '@/lib/comms/contact-preferences'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { mapResendEventToInteraction, resendIdempotencyKey, type ResendTimelineEventType } from './email-timeline'
 import { encodeSendToken, injectTracking } from './email-tracking'
@@ -388,7 +389,16 @@ async function deliverSpaceCampaign(
     // an `unsubscribed`, hard-suppressed, OR `unknown` (never opted in) address is SKIPPED, logged as
     // 'suppressed' (it never touched the provider, so it does not consume the daily budget), and never
     // sent. FAIL-CLOSED: canEmailContact denies on any read error, so a lookup blip skips the send.
-    if (!(await canEmailContact(rec.email, 'marketing', spaceId)).allowed) {
+    // PLUS the softer per-topic opt-down: a contact who muted the 'marketing' topic for THIS Space in the
+    // preference center is skipped even if consent_state is subscribed. This gate was defined
+    // (isContactTopicMuted, "consulted in real time at send time") but never actually wired into the send
+    // loop; wiring it here keeps that promise, and matters more now that a membership join can flip a
+    // contact to subscribed (ADR-797) while a prior topic opt-down must still be honored.
+    const emailable = (await canEmailContact(rec.email, 'marketing', spaceId)).allowed
+    const topicMuted = emailable
+      ? await isContactTopicMuted({ email: rec.email, spaceId, topic: 'marketing' })
+      : false
+    if (!emailable || topicMuted) {
       suppressed++
       await recordSend({
         spaceId,
