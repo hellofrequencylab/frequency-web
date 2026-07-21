@@ -22,6 +22,7 @@ import { Worklist } from '@/components/dashboard/worklist'
 import { relativeTime } from '@/lib/utils'
 import { spaceEarningsSummary } from '@/lib/commerce/orders'
 import { getSpaceHealth, getWorklist } from '@/lib/dashboard/scores'
+import { listActiveSpaceMemberIds } from '@/lib/spaces/resonance-roster'
 import { listInboxThreads } from '@/lib/crm/inbox'
 import { listContactInteractions, type ContactInteraction } from '@/lib/crm/interactions'
 import { listEventsForSpace } from '@/lib/events/store'
@@ -83,7 +84,16 @@ export async function SpaceDashboard({
 
 // ── The top stat row: revenue (30d) + members + active + at risk ────────────────────────────────────
 async function DashboardStats({ spaceId, slug }: { spaceId: string; slug: string }) {
-  const [earnings, health] = await Promise.all([spaceEarningsSummary(spaceId, 30), getSpaceHealth(spaceId)])
+  // "Members" is the TRUE active-member count (space_members active + the owner), the same source the
+  // Resonance roster counts from — NOT the health RPC's scored-and-contact-reachable subset, which reads 0
+  // for a space full of members who joined but were never emailed-as-contacts or scored yet. Health,
+  // At risk, and active-this-week stay on the scored subset (that IS what they measure).
+  const [earnings, health, memberIds] = await Promise.all([
+    spaceEarningsSummary(spaceId, 30),
+    getSpaceHealth(spaceId),
+    listActiveSpaceMemberIds(spaceId),
+  ])
+  const memberCount = memberIds.length
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <StatCard
@@ -96,14 +106,14 @@ async function DashboardStats({ spaceId, slug }: { spaceId: string; slug: string
       />
       <StatCard
         label="Members"
-        value={health.members}
+        value={memberCount}
         icon={Users}
-        detail={`${health.weeklyActive} active this week`}
+        detail={memberCount === 0 ? 'No members yet' : `${health.weeklyActive} active this week`}
         href={`/spaces/${slug}?panel=manage&area=resonance`}
       />
       <StatCard
         label="Space health"
-        value={health.members === 0 ? '–' : Math.round(health.meanHealth)}
+        value={health.members === 0 ? 'Not scored' : Math.round(health.meanHealth)}
         icon={HeartPulse}
         detail={health.members === 0 ? 'no scored members yet' : 'mean across members'}
       />

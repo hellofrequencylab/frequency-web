@@ -1849,14 +1849,30 @@ export async function startServiceDeposit(
     })
     if (checkout.error || !checkout.url || !checkout.orderId) {
       // Without an order the settle webhook can never confirm the hold; release it and stop.
-      await cancelBooking(hold.bookingId)
+      await releasePendingHold(hold.bookingId)
       return { error: checkout.error ?? 'Could not start checkout.' }
     }
     await linkBookingToOrder(hold.bookingId, checkout.orderId)
     return { url: checkout.url }
   } catch {
-    await cancelBooking(hold.bookingId)
+    await releasePendingHold(hold.bookingId)
     return { error: 'Could not start checkout.' }
+  }
+}
+
+/**
+ * Release a never-confirmed 'pending' hold (the deposit checkout failed to start, so no order was ever
+ * linked and the settle webhook can never reap it). A DIRECT status flip scoped to a still-pending row:
+ * cancelBooking cannot do this — it early-returns for any non-'confirmed' status and enforces the
+ * member cancellation-notice window, neither of which fits a system-side hold release. Without this the
+ * pending row lingers and readBlockingBookings (which counts 'confirmed' + 'pending') dead-locks the
+ * slot for every future booker. FAIL-SOFT.
+ */
+async function releasePendingHold(bookingId: string): Promise<void> {
+  try {
+    await bookingsTable().update({ status: 'cancelled' }).eq('id', bookingId).eq('status', 'pending')
+  } catch {
+    /* fail-soft: a lingering hold self-heals on the next checkout-expired webhook if an order was linked */
   }
 }
 

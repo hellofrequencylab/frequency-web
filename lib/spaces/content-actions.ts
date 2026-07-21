@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { getVisibleSpaceBySlug, getSpaceById } from '@/lib/spaces/store'
+import { spaceFunctionDef, spaceFunctionEnabled } from '@/lib/spaces/functions'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { isFollowing, listSpaceFollowerIds } from '@/lib/spaces/follows'
 import { isReactionKey } from '@/lib/feed/reactions'
@@ -452,6 +453,12 @@ export async function submitSpaceReview(slug: string, input: ReviewInput): Promi
 
   const space = await getVisibleSpaceBySlug(slug, profileId)
   if (!space) return fail('That space is not available.')
+
+  // Re-gate on the reviews FUNCTION being ON (defense in depth): the Reviews tab notFound()s when an
+  // operator turns reviews off, but a crafted request would otherwise still upsert here. Match the read
+  // gate so the write can never outlive the wall.
+  const reviewsDef = spaceFunctionDef('reviews')
+  if (reviewsDef && !spaceFunctionEnabled(space, reviewsDef)) return fail('Reviews are turned off for this space.')
 
   // The owner cannot review their own Space (the deliverable: a member, not the owner).
   if (space.ownerProfileId && space.ownerProfileId === profileId) {

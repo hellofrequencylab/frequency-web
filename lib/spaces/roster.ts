@@ -227,9 +227,28 @@ export async function bulkRosterOp(
     }
     let okWrite = false
     switch (op.kind) {
-      case 'role':
+      case 'role': {
+        // SEAT-LIMIT ENFORCEMENT (ADR-465): a bulk promotion consumes a seat exactly like a single one,
+        // so it is gated identically — otherwise an owner could multi-select past their licensed seats,
+        // the one thing setMemberRole already prevents. Only a NEWLY seat-consuming change is checked (a
+        // member already an active operator is already counted). Writes are sequential, so each check
+        // sees the prior grants in this batch. A member who would exceed the limit is skipped, not
+        // failed, matching the batch's partial-success contract. GATED on billingLive() inside the check.
+        if (operatorRoleConsumesSeat(op.role)) {
+          const current = await getSpaceMembership(spaceId, profileId)
+          const alreadyCountedOperator =
+            current?.status === 'active' && operatorRoleConsumesSeat(current.role)
+          if (!alreadyCountedOperator) {
+            const seatCheck = await checkSeatForOperatorInvite(spaceId, op.role)
+            if (!seatCheck.allowed) {
+              skipped += 1
+              continue
+            }
+          }
+        }
         okWrite = await updateSpaceMemberRole(spaceId, profileId, op.role)
         break
+      }
       case 'remove':
         okWrite = await removeSpaceMember(spaceId, profileId)
         break

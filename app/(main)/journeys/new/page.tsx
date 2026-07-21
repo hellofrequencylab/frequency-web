@@ -70,7 +70,7 @@ export default async function NewJourneyPage({
       <div className="mx-auto w-full max-w-lg px-4 pt-6">
         <AuthoringAccessNote kind="journey" paidOwner={paidOwner} />
       </div>
-      <JourneySpark templates={templates} />
+      <JourneySpark templates={templates} spaceSlug={spaceSlug ?? null} />
     </>
   )
 }
