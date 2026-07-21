@@ -158,8 +158,8 @@ export async function reconcileSpaceMembershipSubscription(sub: Stripe.Subscript
           }
         }
       }
-      update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> }
-      insert: (rows: Record<string, unknown>[]) => Promise<{ error: unknown }>
+      update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: WriteError }> }
+      insert: (rows: Record<string, unknown>[]) => Promise<{ error: WriteError }>
     }
   }
 
@@ -177,7 +177,7 @@ export async function reconcileSpaceMembershipSubscription(sub: Stripe.Subscript
   if (activeId) {
     // Update the existing active membership: payment-state change, reactivation, or a cancel (status flips
     // to 'cancelled', releasing the one-active guard so a later re-subscribe can re-create it).
-    await db
+    const { error } = await db
       .from('space_memberships')
       .update({
         stripe_subscription_id: sub.id,
@@ -186,15 +186,21 @@ export async function reconcileSpaceMembershipSubscription(sub: Stripe.Subscript
         ...(tierId ? { tier_id: tierId } : {}),
       })
       .eq('id', activeId)
+    // A failed write must NOT ack the webhook 200 — throw so the route releases its event claim and Stripe
+    // retries (the member-tier path's contract). A silent swallow would lose a paid member's state forever.
+    if (error) throw new Error(`space_membership update failed: ${writeErrorMessage(error)}`)
     return
   }
 
   // No active membership yet: this is the FIRST-PAYMENT case. createSpaceMembershipCheckout does NOT
   // pre-create a row (unlike the free joinTier path), so before this the UPDATE matched zero rows and a
   // paying member got nothing recorded. INSERT the membership now, keyed by the Stripe-signed metadata.
-  // Skip a pure cancel event for a member who never had a membership, and skip if the tier is unknown.
-  if (status === 'cancelled' || !tierId) return
-  await db.from('space_memberships').insert([
+  // Only on a CONFIRMED-active payment: an `incomplete`/`past_due`/`canceled` first state must NOT grant an
+  // active membership before payment settles (every consumer gates on status='active' and ignores
+  // payment_status). A subscription that later becomes active fires an `.updated` event that re-runs this
+  // and inserts then, so skipping loses nothing. Also skip if the tier is unknown.
+  if (payment !== 'active' || !tierId) return
+  const { error } = await db.from('space_memberships').insert([
     {
       space_id: spaceId,
       member_profile_id: memberId,
@@ -204,6 +210,19 @@ export async function reconcileSpaceMembershipSubscription(sub: Stripe.Subscript
       stripe_subscription_id: sub.id,
     },
   ])
+  // Swallow ONLY the benign unique-violation (23505): the `.created` and `.updated` events are different
+  // event ids, so both run this; the partial one-active index serializes the two inserts and the loser's
+  // 23505 simply means the membership already exists (success). Surface any OTHER error by throwing, so the
+  // webhook retries instead of silently dropping a paid membership.
+  if (error && error.code !== '23505') {
+    throw new Error(`space_membership insert failed: ${writeErrorMessage(error)}`)
+  }
+}
+
+/** The shape of a supabase-js write error (subset). */
+type WriteError = { code?: string; message?: string } | null
+function writeErrorMessage(error: WriteError): string {
+  return error?.message ?? String(error)
 }
 
 /** Route a subscription event to the right reconciler by its kind. Returns true if handled (so the
