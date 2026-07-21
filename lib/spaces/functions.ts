@@ -237,13 +237,14 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
   },
   {
     // Collaborator spaces (ADR-799 B): host separate businesses that operate inside your space. Free to
-    // host (entitlement null); a host is a business space, so this offers only to `business`. Admin-managed.
+    // host (entitlement null); universal like every other function (the actions gate the real rule: both
+    // sides must be an ACTIVE space). Admin-managed.
     key: 'collaborators',
     label: 'Collaborators',
     description: 'Host separate businesses that operate inside your space, and approve requests to collaborate.',
     entitlement: null,
     defaultMinRole: 'admin',
-    types: ['business'],
+    types: ['*'],
   },
 ] as const
 

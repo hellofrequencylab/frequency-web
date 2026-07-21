@@ -75,8 +75,9 @@ export async function requestCollaboration(
 
   const [initiating, partner] = await Promise.all([getSpaceById(initiatingSpaceId), getSpaceById(partnerSpaceId)])
   if (!initiating || !partner) return fail('One of the spaces could not be found.')
+  // Both sides must be an ACTIVE space (the collaborators function is universal; a suspended/archived
+  // space cannot host or be hosted). Type is not restricted — a venue of any kind can host collaborators.
   for (const s of [initiating, partner]) {
-    if (s.type !== 'business') return fail('Both spaces must be business spaces to collaborate.')
     if (s.status !== 'active') return fail('Both spaces must be active to collaborate.')
   }
 
