@@ -29,6 +29,7 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
+import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
@@ -461,6 +462,16 @@ export async function rsvpToTier(spaceId: string, tierId: string): Promise<Actio
   } catch {
     return fail('Could not reserve right now. Try again.')
   }
+  // Log the reservation onto the member's Space timeline (event attendance shows on Resonance, ADR-796).
+  await recordSpaceMemberActivity({
+    spaceId,
+    spaceOwnerProfileId: space.ownerProfileId,
+    memberProfileId: profileId,
+    channel: 'event',
+    summary: `Reserved a spot: ${tier.name}`,
+    idempotencyKey: `rsvp:${spaceId}:${tierId}:${profileId}`,
+    metadata: { kind: 'ticket_rsvp', tierId, tierName: tier.name },
+  })
   return ok()
 }
 

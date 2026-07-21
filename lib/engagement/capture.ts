@@ -12,6 +12,7 @@ import { verifyCapture, type CaptureAttempt, type VerifyReason } from './verify'
 import { recordEngagementEvent } from './events'
 import { currencyForSource } from './currency'
 import { trustSource } from '@/lib/trust'
+import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import type { EngagementSource } from './events'
 
 // node.type → engagement source. Ghost nodes are a geo source.
@@ -45,7 +46,7 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
 
   const { data: node } = await db
     .from('nodes')
-    .select('type, zaps_value, partner_id')
+    .select('type, zaps_value, partner_id, kind, space_id')
     .eq('id', attempt.nodeId)
     .maybeSingle()
   if (!node) return { ok: false, reason: 'unknown_node' }
@@ -70,6 +71,32 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
     actor_profile_id: attempt.actorProfileId,
     verified: true,
   })
+
+  // 3b) A SPACE CHECK-IN also lands on the member's Space Resonance timeline (event attendance, ADR-796).
+  // Only for a check-in node (never an ordinary QR/NFC/ghost capture), best-effort, and keyed on
+  // (node, actor) so a retry never double-logs. Resolve the Space owner (the book it lands in) lazily.
+  if ((node.kind as string) === 'checkin' && typeof node.space_id === 'string' && node.space_id) {
+    try {
+      // Resolve the Space owner via the client already in hand (no new module dependency in this shared
+      // engagement path — avoids an import cycle risk).
+      const { data: sp } = await db
+        .from('spaces')
+        .select('owner_profile_id')
+        .eq('id', node.space_id)
+        .maybeSingle()
+      await recordSpaceMemberActivity({
+        spaceId: node.space_id,
+        spaceOwnerProfileId: (sp?.owner_profile_id as string | null) ?? null,
+        memberProfileId: attempt.actorProfileId,
+        channel: 'in_person',
+        summary: 'Checked in',
+        idempotencyKey: `checkin:${attempt.nodeId}:${attempt.actorProfileId}`,
+        metadata: { kind: 'event_checkin', nodeId: attempt.nodeId },
+      })
+    } catch {
+      /* best-effort: a timeline write never breaks the capture */
+    }
+  }
 
   // 4) Reward — physical = zaps.
   const amount = Number(node.zaps_value ?? 0)

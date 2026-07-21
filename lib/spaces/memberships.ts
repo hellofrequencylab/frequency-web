@@ -29,6 +29,7 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { fireSpaceTrigger } from '@/lib/spaces/drip-enroll'
+import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -457,6 +458,16 @@ export async function joinTier(spaceId: string, tierId: string): Promise<ActionR
   } catch {
     return fail('Could not join right now. Try again.')
   }
+  // Log the join onto the member's Space timeline (program adoption shows on Resonance, ADR-796).
+  await recordSpaceMemberActivity({
+    spaceId,
+    spaceOwnerProfileId: space.ownerProfileId,
+    memberProfileId: profileId,
+    channel: 'event',
+    summary: `Joined membership: ${tier.name}`,
+    idempotencyKey: `member_join:${spaceId}:${profileId}`,
+    metadata: { kind: 'membership_join', tierId, tierName: tier.name },
+  })
   return ok()
 }
 
