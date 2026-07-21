@@ -108,6 +108,16 @@ export function consentStateForDoor(
   return isMailableDoor(door, opts) ? 'subscribed' : 'unknown'
 }
 
+/**
+ * PURE: the consent_state a MEMBERSHIP JOIN should write, given the row's current consent (ADR-797). A
+ * join is an affirmative opt-in (the owner decided a join opts the member into that Space's member
+ * emails), so 'unknown' becomes 'subscribed'. The one permanent rule still wins: a prior hard opt-out
+ * ('unsubscribed') is NEVER resurrected. An already-'subscribed' row stays subscribed (idempotent).
+ */
+export function memberJoinConsent(current: ConsentState = 'unknown'): ConsentState {
+  return current === 'unsubscribed' ? 'unsubscribed' : 'subscribed'
+}
+
 // ── Identity normalization (deterministic claim matching) ───────────────────────────────────────────
 
 /** PURE: the canonical email key (lowercased, trimmed) or null. */
@@ -698,6 +708,71 @@ export async function linkMemberToSpaceLead(input: {
     })
     await recordInteractionForCapture(spaceId, contact.id, input.door, where, label, null, input.capturedByProfileId ?? null)
     return contact.id
+  } catch {
+    return null
+  }
+}
+
+/**
+ * MEMBERSHIP JOIN -> a mailable Space contact (ADR-797). When someone JOINS a Space (member.joined),
+ * materialize (or refresh) THIS Space's contact for them so the welcome / onboarding automation can reach
+ * them. This is the bridge the `member.joined` trigger needs: a tenant Space's contacts carry profile_id
+ * NULL (the membrane law), so the runtime cannot resolve a member's Space contact by (space_id,
+ * profile_id) — it must resolve by EMAIL, which is what this returns.
+ *
+ * CONSENT: unlike a lead-grab capture (which stays 'unknown' until an explicit opt-in), a JOIN is an
+ * AFFIRMATIVE opt-in — the owner decided a join opts the member into that Space's own member emails
+ * (ADR-797). So the contact is SUBSCRIBED. The one hard rule that still wins: a prior 'unsubscribed' is
+ * PERMANENT and is never resurrected (mirrors consentStateForDoor / the opt-in funnel's permanence).
+ *
+ * TENANCY: the row is keyed (space_id, email) with profile_id NULL — a tenant Space's contact is never the
+ * member's platform (root) record — exactly like linkMemberToSpaceLead. The member's root contact is read
+ * ONLY to resolve their email + name. Idempotent + fail-safe. Returns the Space contactId, or null when
+ * the member has no resolvable email (nothing to materialize; the caller's join still succeeds).
+ */
+export async function ensureSpaceMemberContact(spaceId: string, profileId: string): Promise<string | null> {
+  try {
+    const sid = (spaceId ?? '').trim()
+    const pid = (profileId ?? '').trim()
+    if (!sid || !pid) return null
+
+    // Identity from the member's platform (root) contact — read ONLY, never tagged into the Space.
+    const member = await findContactByProfile(pid)
+    const email = member?.email ? normalizeEmail(member.email) : null
+    if (!member || !email) return null // no CRM row / no email — nothing to materialize; caller falls through
+
+    const nowIso = new Date().toISOString()
+    const existing = await findContactByEmail(email, sid)
+    if (existing) {
+      // A join is affirmative opt-in: lift 'unknown' -> 'subscribed'. NEVER resurrect a hard opt-out.
+      const current = (existing.consent_state as ConsentState) ?? 'unknown'
+      const next = memberJoinConsent(current)
+      const patch: Record<string, unknown> = { last_seen_at: nowIso, updated_at: nowIso }
+      if (next !== current) patch.consent_state = next
+      if (!existing.display_name && member.display_name) patch.display_name = member.display_name
+      try {
+        await table('contacts').update(patch).eq('id', existing.id)
+      } catch {
+        /* best-effort: the contact exists; a consent-bump miss self-heals on the next join/opt-in */
+      }
+      return existing.id
+    }
+
+    const { data: inserted } = (await table('contacts')
+      .insert([
+        {
+          email,
+          space_id: sid,
+          display_name: member.display_name ?? null,
+          // A join opts in (ADR-797); a later unsubscribe still wins permanently (checked on re-join above).
+          consent_state: 'subscribed',
+          source: 'membership_join',
+          last_seen_at: nowIso,
+        },
+      ])
+      .select(CONTACT_COLS)
+      .maybeSingle()) as { data: ContactRow | null }
+    return inserted?.id ?? null // e.g. a pre-migration collision with a root row — fail-safe no-op
   } catch {
     return null
   }

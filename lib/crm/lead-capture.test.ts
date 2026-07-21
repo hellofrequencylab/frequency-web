@@ -5,6 +5,7 @@ import {
   doorLabel,
   isMailableDoor,
   consentStateForDoor,
+  memberJoinConsent,
   normalizeEmail,
   normalizePhoneKey,
   encodeLeadGrab,
@@ -101,6 +102,15 @@ describe('consent posture (capture != marketing consent)', () => {
     expect(consentStateForDoor('lead_magnet', 'unsubscribed')).toBe('unsubscribed')
     expect(consentStateForDoor('space_qr', 'unsubscribed', { offerUnlocked: true })).toBe('unsubscribed')
     expect(consentStateForDoor('event', 'subscribed')).toBe('subscribed')
+  })
+
+  // A membership JOIN is affirmative opt-in (ADR-797), a stronger signal than a lead-grab door: it lifts
+  // unknown -> subscribed, but the hard opt-out is still permanent.
+  it('a membership join opts in from unknown, but never resurrects a hard opt-out', () => {
+    expect(memberJoinConsent('unknown')).toBe('subscribed')
+    expect(memberJoinConsent()).toBe('subscribed') // default (no prior row) opts in
+    expect(memberJoinConsent('subscribed')).toBe('subscribed')
+    expect(memberJoinConsent('unsubscribed')).toBe('unsubscribed') // permanence wins
   })
 })
 
