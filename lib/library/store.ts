@@ -303,6 +303,25 @@ export async function insertSpaceLibraryImage(input: {
   return (data as { id?: unknown } | null)?.id ? String((data as { id: unknown }).id) : null
 }
 
+/** Delete a library asset that belongs to a SPACE, bound to `space_id` so a caller authorized for one space
+ *  can never delete another space's asset. Returns the stored object's bucket+path for best-effort storage
+ *  cleanup, or null when nothing matched. Service-role; the CALLER must authorize the space first. */
+export async function deleteSpaceLibraryAsset(
+  spaceId: string,
+  assetId: string,
+): Promise<{ bucket: string | null; path: string | null } | null> {
+  const { data, error } = await db()
+    .from('library_assets')
+    .delete()
+    .eq('id', assetId)
+    .eq('space_id', spaceId)
+    .select('storage_bucket, storage_path')
+    .maybeSingle()
+  if (error || !data) return null
+  const row = data as { storage_bucket?: string | null; storage_path?: string | null }
+  return { bucket: row.storage_bucket ?? null, path: row.storage_path ?? null }
+}
+
 /** One pickable Loom asset for the universal image picker: the served URL + the label + its `kind`
  *  (image | icon | element | …, so the picker can render/scope by family) + whether it was
  *  AI-generated (an "Element") + its tags (for the Tags facet). */

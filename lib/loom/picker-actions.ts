@@ -22,6 +22,7 @@ import {
   listLoomScopeImages,
   listLoomScopeTags,
   insertSpaceLibraryImage,
+  deleteSpaceLibraryAsset,
   type LoomPickAsset,
 } from '@/lib/library/store'
 import { classifyLoomUpload, effectiveMime, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
@@ -239,4 +240,29 @@ export async function uploadLoomImage(
     return { error: 'Could not save the image to your Loom. Try again.' }
   }
   return { url: pub.publicUrl, id }
+}
+
+/** Delete an image from a SPACE's Loom (the Loom Studio's remove control). Gated: the caller must MANAGE
+ *  that space (the same `canEditProfile` gate `resolveScope` applies to a space id). Only space scopes are
+ *  deletable here — the personal 'mine' scope resolves without a `spaceId`, so it is rejected (a person's
+ *  cross-space uploads are managed where they live). Best-effort removes the stored object too. FAIL-SAFE. */
+export async function deleteSpaceLoomImage(
+  spaceKey: string,
+  assetId: string,
+): Promise<{ ok: true } | { error: string }> {
+  const caller = await getCallerProfile()
+  if (!caller) return { error: 'Sign in to manage this library.' }
+  if (!assetId) return { error: 'Nothing to remove.' }
+  const scope = await resolveScope(caller.id, spaceKey)
+  if (!scope || !('spaceId' in scope)) return { error: 'You cannot manage that library.' }
+  const removed = await deleteSpaceLibraryAsset(scope.spaceId, assetId)
+  if (!removed) return { error: 'That image could not be removed. Try again.' }
+  if (removed.bucket && removed.path) {
+    try {
+      await createAdminClient().storage.from(removed.bucket).remove([removed.path])
+    } catch {
+      /* best-effort: the row is already gone, a lingering object is harmless */
+    }
+  }
+  return { ok: true }
 }

@@ -59,6 +59,7 @@ export type SpaceFunctionKey =
   | 'airwaves'
   | 'practices'
   | 'journeys'
+  | 'loom'
 
 /** A Space type, or the wildcard '*' meaning "every type offers this function". */
 type FunctionTypeScope = SpaceType | '*'
@@ -221,6 +222,14 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     key: 'journeys',
     label: 'Journeys',
     description: 'Build multi week programs from your practices. Free spaces publish one.',
+    entitlement: null,
+    defaultMinRole: 'editor',
+    types: ['*'],
+  },
+  {
+    key: 'loom',
+    label: 'Loom Studio',
+    description: 'Browse, upload, and organize the images in your space library.',
     entitlement: null,
     defaultMinRole: 'editor',
     types: ['*'],

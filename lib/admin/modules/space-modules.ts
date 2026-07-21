@@ -7,6 +7,7 @@ import {
   Share2,
   Star,
   Briefcase,
+  Images,
   CalendarClock,
   BadgeCheck,
   HeartHandshake,
@@ -173,6 +174,11 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Airwaves (ADR-608, P1): the Space's audio/video Recordings library. Upload a Recording into the Loom,
   // manage the catalog, and attach a Recording to any offering, journey, event, or the Space itself.
   { id: 'space.airwaves', label: 'Airwaves', desc: 'Your recordings, and where each one plays.', Icon: Radio, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'airwaves' }, featureKey: 'airwaves', render: 'link', deepLink: (s) => `${base(s)}/settings/airwaves`, order: 72, tier: 'primary', priority: 41, access: 'included' },
+  // Loom Studio (per-space image library): the full-page manager for a space's own images — browse, upload,
+  // organize, and delete. The image counterpart to Airwaves (audio/video); both are media libraries and
+  // cluster into the "Content" group. Reuses the space-scoped Loom actions (loomImages / uploadLoomImage),
+  // gated owner/admin/editor via the Manage console, so regular members only ever get the popup picker.
+  { id: 'space.loom', label: 'Loom Studio', desc: 'Browse, upload, and organize your space images.', Icon: Images, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'loom' }, featureKey: 'loom', render: 'link', deepLink: (s) => `${base(s)}/loom`, order: 73, tier: 'primary', priority: 41.5, access: 'included' },
 
   // ── Reach & comms ────────────────────────────────────────────────────────────────────────────────────
   // QR codes is the ONE reach card (ADR-782): Scans and insights (`space.insights`, same `qr` gate, the
