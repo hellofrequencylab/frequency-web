@@ -67,6 +67,9 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
     // The Community feed (Facebook/Yelp-style): the business posts, members react + comment. Public to
     // everyone; the page itself gates who can interact. Always present so a business can start posting.
     { href: `${base}/community`, label: 'Community' },
+    // The Calendar tab (Events EC2): a month grid of the Space's events + a subscribe-to-calendar feed.
+    // Shown only when the Space actually has upcoming events, so a Space that never runs events stays clean.
+    ...(presence.events ? [{ href: `${base}/calendar`, label: 'Calendar' }] : []),
     // Reviews on their own tab (owner decision): the member rating + review wall. Public read; a signed-in
     // member (not the owner) leaves one review they can revise. Gated on the `reviews` function (default ON).
     ...(reviewsEnabled ? [{ href: `${base}/reviews`, label: 'Reviews' }] : []),

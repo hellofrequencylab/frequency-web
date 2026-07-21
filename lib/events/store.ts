@@ -32,6 +32,66 @@ export interface SpaceEvent {
 const COLS =
   'id, slug, title, description, starts_at, ends_at, host_id, scope_id, scope_type, is_cancelled, space_id'
 
+/** An event row for the per-space CALENDAR (Events EC2): the fields the month grid + popup need. */
+export interface SpaceCalendarEvent {
+  id: string
+  slug: string
+  title: string
+  starts_at: string
+  ends_at: string | null
+  location: string | null
+  time_zone: string | null
+  is_cancelled: boolean | null
+}
+
+const CALENDAR_COLS = 'id, slug, title, starts_at, ends_at, location, time_zone, is_cancelled'
+
+/**
+ * A space's events for its calendar tab (Events EC2), from `fromDay` (YYYY-MM-DD, inclusive) forward,
+ * soonest first. PUBLIC contract: only PUBLISHED, non-private, non-cancelled events (drafts and private
+ * events never surface on the public profile). Filtered by space_id so space A never resolves space B's
+ * events. FAIL-SAFE: [] on any error / missing tenant. `space_id` is not in the generated types (ADR-246),
+ * so the whole chain is reached through an untyped handle.
+ */
+export async function listSpaceCalendarEvents(
+  spaceId: string | null | undefined,
+  opts: { fromDay?: string; limit?: number } = {},
+): Promise<SpaceCalendarEvent[]> {
+  const sid = spaceId ?? (await loadRootSpaceId())
+  if (!sid) return []
+  const limit = opts.limit ?? 300
+  const fromDay = opts.fromDay ?? new Date().toISOString().slice(0, 10)
+  try {
+    const db = createAdminClient().from('events') as unknown as {
+      select: (cols: string) => {
+        eq: (col: string, val: string) => {
+          eq: (col: string, val: string) => {
+            neq: (col: string, val: string) => {
+              gte: (col: string, val: string) => {
+                order: (col: string, opts: { ascending: boolean }) => {
+                  limit: (n: number) => Promise<{ data: unknown; error: unknown }>
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    const { data, error } = await db
+      .select(CALENDAR_COLS)
+      .eq('space_id', sid)
+      .eq('status', 'published')
+      .neq('visibility', 'private')
+      .gte('starts_at', `${fromDay}T00:00:00Z`)
+      .order('starts_at', { ascending: true })
+      .limit(limit)
+    if (error) return []
+    return ((data as SpaceCalendarEvent[] | null) ?? []).filter((e) => !e.is_cancelled)
+  } catch {
+    return []
+  }
+}
+
 /**
  * The space_id to stamp on a NEW event: the explicit owning space, else the root space (so the
  * existing single-tenant create flows default to root and behave exactly as today). Returns null
