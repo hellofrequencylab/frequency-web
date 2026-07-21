@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight, Sparkles, Trash2 } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
-import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { DangerDelete } from '@/components/admin/danger-delete'
 import { deleteSpace } from '@/lib/spaces/provision'
 import type { SpaceModule } from '@/lib/admin/modules/space-modules'
@@ -286,11 +285,30 @@ function HubNav({
   sectionHref?: (key: SpaceHubSection) => string
 }) {
   const href = sectionHref ?? ((key: SpaceHubSection) => `/spaces/${slug}/manage?section=${key}`)
+  // Pill nav (the shared commerce/classifieds facet style, MarketplaceFacets): a rounded, filled-when-active
+  // row instead of the underline strip, so the Manage areas read as one hub the same way Classifieds does.
   return (
-    <UnderlineTabs
-      activeHref={href(section)}
-      tabs={SPACE_HUB_SECTIONS.map((s) => ({ href: href(s.key), label: s.label }))}
-    />
+    <nav className="flex flex-wrap gap-2" aria-label="Manage areas">
+      {SPACE_HUB_SECTIONS.map((s) => {
+        const on = s.key === section
+        return (
+          <Link
+            key={s.key}
+            href={href(s.key)}
+            scroll={false}
+            aria-current={on ? 'page' : undefined}
+            className={
+              'rounded-full px-3 py-1.5 text-sm font-medium transition-colors ' +
+              (on
+                ? 'bg-primary text-on-primary'
+                : 'border border-border text-muted hover:bg-surface-elevated hover:text-text')
+            }
+          >
+            {s.label}
+          </Link>
+        )
+      })}
+    </nav>
   )
 }
 
