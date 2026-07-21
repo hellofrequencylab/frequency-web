@@ -4,7 +4,6 @@ import {
   monthLabel,
   addMonth,
   eventDayKey,
-  bucketEventsByDay,
   WEEKDAY_LABELS,
 } from './calendar-grid'
 
@@ -82,22 +81,6 @@ describe('eventDayKey', () => {
     expect(eventDayKey(null)).toBeNull()
     expect(eventDayKey(undefined)).toBeNull()
     expect(eventDayKey('not-a-date')).toBeNull()
-  })
-})
-
-describe('bucketEventsByDay', () => {
-  it('groups events by their calendar day, preserving order, dropping undated', () => {
-    const events = [
-      { id: 'a', starts_at: '2026-07-20T18:00:00Z' },
-      { id: 'b', starts_at: '2026-07-20T20:00:00Z' },
-      { id: 'c', starts_at: '2026-07-21T09:00:00Z' },
-      { id: 'd', starts_at: null },
-    ]
-    const byDay = bucketEventsByDay(events)
-    expect(byDay.get('2026-07-20')!.map((e) => e.id)).toEqual(['a', 'b'])
-    expect(byDay.get('2026-07-21')!.map((e) => e.id)).toEqual(['c'])
-    expect(byDay.has('undefined')).toBe(false)
-    expect([...byDay.keys()]).toHaveLength(2)
   })
 })
 

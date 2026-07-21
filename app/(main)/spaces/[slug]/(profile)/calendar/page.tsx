@@ -59,7 +59,12 @@ export default async function SpaceCalendarPage({ params }: { params: Promise<{ 
           <h2 className="text-xl font-bold text-text">Calendar</h2>
           <p className="text-sm text-muted">Upcoming events from {brandName}. Subscribe to add them to your own calendar.</p>
         </div>
-        <CalendarSubscribeMenu httpsUrl={httpsUrl} webcalUrl={webcalUrl} />
+        <CalendarSubscribeMenu
+          httpsUrl={httpsUrl}
+          webcalUrl={webcalUrl}
+          title={`${brandName} in your calendar`}
+          description={`Subscribe once and ${brandName}'s events show up in Google or Apple Calendar, and stay current on their own.`}
+        />
       </div>
 
       <EventCalendar events={events} initialYear={initialYear} initialMonth1={initialMonth1} />

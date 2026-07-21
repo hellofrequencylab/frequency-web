@@ -21,9 +21,9 @@ export interface CalendarEvent {
   title: string
   /** YYYY-MM-DD, the event's calendar day (lib/events/calendar-grid eventDayKey). */
   dayKey: string
-  /** Short time for the day-cell chip, e.g. "7:00 PM PDT". */
+  /** Short time for the day-cell chip, e.g. "7:00 PM" (no zone abbrev — the chip is compact). */
   timeLabel: string
-  /** Full when-line for the popup, e.g. "Mon, Jul 20, 7:00 PM PDT". */
+  /** Full when-line for the popup, e.g. "Mon, Jul 20, 7:00 PM PDT" (with zone). */
   whenLabel: string
   location: string | null
   isCancelled: boolean
@@ -186,7 +186,7 @@ export function EventCalendar({
                 Close
               </button>
               <Link href={`/events/${selected.slug}`} className={buttonClasses('primary', 'sm')}>
-                Go to Event
+                Go to event
                 <ArrowUpRight className="h-4 w-4" aria-hidden />
               </Link>
             </div>

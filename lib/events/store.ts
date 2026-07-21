@@ -48,11 +48,13 @@ const CALENDAR_COLS = 'id, slug, title, starts_at, ends_at, location, time_zone,
 
 /**
  * A space's events for its calendar tab (Events EC2), from `fromDay` (YYYY-MM-DD, inclusive) forward,
- * soonest first. PUBLIC contract, IDENTICAL to the EC1 subscribe feed (space_public_calendar_feed): only
+ * soonest first. Same EVENT filters as the EC1 subscribe feed (space_public_calendar_feed): only
  * PUBLISHED, public/unlisted, non-cancelled events — so the on-page grid and the subscribed .ics show the
- * exact same set, and neither leaks a draft, private, or circle_only event. Filtered by space_id so space
- * A never resolves space B's events. FAIL-SAFE: [] on any error / missing tenant. `space_id`/`visibility`
- * are not in the generated types (ADR-246), so the whole chain is reached through an untyped handle.
+ * exact same event set, and neither leaks a draft, private, or circle_only event. (The EC1 RPC ALSO
+ * gates the owning space on visibility='network' + status='active' in-function; here that space-level
+ * gate is the calendar page's own getVisibleSpaceBySlug, so this reader must stay behind it.) Filtered by
+ * space_id so space A never resolves space B's events. FAIL-SAFE: [] on any error / missing tenant.
+ * `space_id`/`visibility` are not in the generated types (ADR-246), so the chain is reached untyped.
  */
 export async function listSpaceCalendarEvents(
   spaceId: string | null | undefined,
@@ -90,6 +92,45 @@ export async function listSpaceCalendarEvents(
     return ((data as SpaceCalendarEvent[] | null) ?? []).filter((e) => !e.is_cancelled)
   } catch {
     return []
+  }
+}
+
+/**
+ * True when a space has at least one upcoming event the CALENDAR would show (published, public/unlisted,
+ * non-cancelled, from today forward) — the gate for the profile's Calendar tab. Uses the SAME filters as
+ * listSpaceCalendarEvents so the tab never appears over an empty grid (a space whose only upcoming events
+ * are drafts / private / circle_only must NOT get the tab). FAIL-SAFE: false on any error / missing tenant.
+ */
+export async function spaceHasPublicUpcomingEvents(spaceId: string | null | undefined): Promise<boolean> {
+  const sid = spaceId ?? (await loadRootSpaceId())
+  if (!sid) return false
+  const today = new Date().toISOString().slice(0, 10)
+  try {
+    const db = createAdminClient().from('events') as unknown as {
+      select: (cols: string) => {
+        eq: (col: string, val: string | boolean) => {
+          eq: (col: string, val: string | boolean) => {
+            eq: (col: string, val: string | boolean) => {
+              in: (col: string, vals: string[]) => {
+                gte: (col: string, val: string) => { limit: (n: number) => Promise<{ data: unknown; error: unknown }> }
+              }
+            }
+          }
+        }
+      }
+    }
+    const { data, error } = await db
+      .select('id')
+      .eq('space_id', sid)
+      .eq('status', 'published')
+      .eq('is_cancelled', false)
+      .in('visibility', ['public', 'unlisted'])
+      .gte('starts_at', `${today}T00:00:00Z`)
+      .limit(1)
+    if (error) return false
+    return Array.isArray(data) && data.length > 0
+  } catch {
+    return false
   }
 }
 

@@ -64,25 +64,12 @@ export function monthMatrix(year: number, month1: number): DayCell[][] {
 }
 
 /** The event's calendar day key (YYYY-MM-DD) — the date portion of `starts_at` (the stored wall-clock
- *  parts, which ARE the event-local day). Returns null for a missing/invalid start (a draft with no date). */
+ *  parts, which ARE the event-local day). Returns null for a missing/invalid start (a draft with no date).
+ *  The calendar page uses this to pre-compute each event's `dayKey`; the client grid buckets by it. */
 export function eventDayKey(startsAt: string | null | undefined): string | null {
   if (!startsAt) return null
   const m = /^(\d{4}-\d{2}-\d{2})/.exec(startsAt)
   return m ? m[1] : null
-}
-
-/** Bucket events onto their calendar day. Returns a Map keyed by YYYY-MM-DD; events with no start day are
- *  dropped. Within a day the input order is preserved (callers pass them sorted by start). */
-export function bucketEventsByDay<T extends { starts_at: string | null }>(events: T[]): Map<string, T[]> {
-  const byDay = new Map<string, T[]>()
-  for (const ev of events) {
-    const key = eventDayKey(ev.starts_at)
-    if (!key) continue
-    const bucket = byDay.get(key)
-    if (bucket) bucket.push(ev)
-    else byDay.set(key, [ev])
-  }
-  return byDay
 }
 
 /** The weekday column headers for a Sunday-start grid. */
