@@ -46,7 +46,7 @@ export function resolveSpaceMenu(
   gate: SpaceMenuGate,
   menu: ModuleManifestOptions = {},
 ): SpaceModule[] {
-  return spaceModuleManifest({}, { order: menu.order, hidden: menu.hidden }).filter((m) => {
+  return spaceModuleManifest({}, { order: menu.order, hidden: menu.hidden, activated: menu.activated }).filter((m) => {
     if (m.id === 'space.modules') return gate.canManageMenu
     return m.gate.kind === 'always' || gate.canUse(m.gate.fn)
   })

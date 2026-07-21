@@ -108,6 +108,12 @@ export interface SpaceModule {
    *  lib/pricing/feature-meters.ts (RAW_METERS) + lib/pricing/settings.ts (take_rate); it is presentation
    *  only and never gates. Omit for a plain Included shell with no cap. */
   freeNote?: string
+  /** PROGRESSIVE DISCLOSURE (ADR-796): an ADVANCED tool — collapsed OUT of the primary menu until the owner
+   *  turns it ON from the per-area control board (the Module Manager). Presentation only: the function stays
+   *  available (default-ON in the pure resolver); this governs only whether it shows UP FRONT. The manifest
+   *  drops an advanced module unless its id is in `ModuleManifestOptions.activated`. Defaults to false (a
+   *  primary, always-up-front module). Never set on a shell / Danger module (they must always show). */
+  advanced?: boolean
 }
 
 const base = (slug: string) => `/spaces/${slug}`
@@ -226,6 +232,33 @@ export function isModuleHideable(id: string): boolean {
   return !UNHIDEABLE_MODULE_IDS.includes(id)
 }
 
+/** ADVANCED modules (ADR-796 progressive disclosure): deeper tools that stay OFF the primary menu until the
+ *  owner activates them from the per-area control board. Chosen so every area keeps a sensible PRIMARY set
+ *  up front and only its deeper/nested tools fold away: the four nested CRM workspaces (Automation · Lead
+ *  capture · Capture links · Shared), the nested Email design + style, the nested Scans & insights, the
+ *  niche offerings (Enrollment · Check in), and the deeper media libraries (Airwaves · Loom). Presentation
+ *  only — never gates. A shell / Danger module is NEVER advanced (it must always show). */
+const ADVANCED_MODULE_IDS: ReadonlySet<string> = new Set([
+  'space.automation',
+  'space.leads',
+  'space.doors',
+  'space.shared',
+  'space.marketing',
+  'space.emailstyle',
+  'space.insights',
+  'space.enroll',
+  'space.checkin',
+  'space.airwaves',
+  'space.loom',
+])
+
+/** Whether a module is ADVANCED (collapsed until activated). An explicit `advanced` flag on the catalog row
+ *  wins; otherwise the curated set above. A shell / Danger / Module Manager module is never advanced. */
+export function isModuleAdvanced(module: SpaceModule): boolean {
+  if (UNHIDEABLE_MODULE_IDS.includes(module.id) || module.id === 'space.danger') return false
+  return module.advanced ?? ADVANCED_MODULE_IDS.has(module.id)
+}
+
 /** The menu families in their canonical display order (the Module Manager groups its rows by these). */
 export const SPACE_MODULE_FAMILY_ORDER: readonly SpaceModuleFamily[] = [
   'space',
@@ -269,12 +302,19 @@ export function isModuleEnabled(
   return module.gate.kind === 'always' || isFeatureEnabled(entitlements, module.gate.fn)
 }
 
-/** Options that let the Module Manager (P3) override the default menu: hide modules, and/or reorder them. */
+/** Options that let the Module Manager (P3) override the default menu: hide modules, reorder them, and/or
+ *  activate advanced ones (ADR-796 progressive disclosure). */
 export interface ModuleManifestOptions {
   /** Module ids the owner has hidden from the menu. */
   hidden?: readonly string[]
   /** Module ids in the owner's preferred order; unlisted modules keep their catalog order, after these. */
   order?: readonly string[]
+  /** ADVANCED module ids the owner has ACTIVATED (surfaced) from the control board. An `advanced` module is
+   *  collapsed out of the menu unless its id appears here. Omitting the field (undefined) means "no owner
+   *  override supplied" and, to keep the console/rail drift-guard comparing the FULL catalog, advanced
+   *  modules are NOT collapsed — the collapse applies only once a caller passes an `activated` list (every
+   *  production caller reads it from prefs, defaulting to []). */
+  activated?: readonly string[]
 }
 
 /**
@@ -287,7 +327,17 @@ export function spaceModuleManifest(
   opts: ModuleManifestOptions = {},
 ): SpaceModule[] {
   const hidden = new Set(opts.hidden ?? [])
-  const enabled = SPACE_MODULES.filter((m) => isModuleEnabled(m, entitlements) && !hidden.has(m.id))
+  // Progressive disclosure (ADR-796): collapse an ADVANCED module unless the owner has ACTIVATED it. A
+  // NULL set (opts.activated undefined) means "no override supplied" → do NOT collapse, so the un-overridden
+  // catalog the console/rail drift-guard compares stays whole. A supplied list (every production caller
+  // passes one from prefs, default []) collapses advanced modules not in it.
+  const activated = opts.activated ? new Set(opts.activated) : null
+  const enabled = SPACE_MODULES.filter(
+    (m) =>
+      isModuleEnabled(m, entitlements) &&
+      !hidden.has(m.id) &&
+      (!isModuleAdvanced(m) || activated === null || activated.has(m.id)),
+  )
   if (!opts.order || opts.order.length === 0) {
     return enabled.slice().sort((a, b) => a.order - b.order)
   }

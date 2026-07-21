@@ -74,7 +74,7 @@ export async function SpaceManageBoard({
   const menu = readModuleMenuPrefs(space.preferences)
   const modules = resolveSpaceMenu(
     { canUse: (fn) => usable.has(fn), canManageMenu: caps.canManageMembers },
-    { order: menu.order, hidden: menu.hidden },
+    { order: menu.order, hidden: menu.hidden, activated: menu.activated },
   )
 
   // MODE EMPHASIS (Space Modes M3, ADR-461/464): resolve the Space's Mode ONCE (no N+1) and hand the

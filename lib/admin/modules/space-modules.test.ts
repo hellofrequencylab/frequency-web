@@ -6,6 +6,7 @@ import {
   isModuleEnabled,
   spaceModuleManifest,
   isModuleHideable,
+  isModuleAdvanced,
   UNHIDEABLE_MODULE_IDS,
   SPACE_MODULE_FAMILY_ORDER,
   SPACE_MODULE_FAMILY_LABEL,
@@ -108,6 +109,40 @@ describe('spaceModuleManifest', () => {
     const ids = spaceModuleManifest({ qr: false }).map((m) => m.id)
     expect(ids).not.toContain('space.reach')
     expect(ids).not.toContain('space.insights')
+  })
+})
+
+// ADR-796: progressive disclosure — advanced modules are collapsed out of the primary menu until activated.
+describe('advanced modules (progressive disclosure)', () => {
+  it('isModuleAdvanced is true for a deeper tool, false for an essential and never for a shell/Danger', () => {
+    const advanced = spaceModuleById('space.automation')!
+    const essential = spaceModuleById('space.crm')!
+    expect(isModuleAdvanced(advanced)).toBe(true)
+    expect(isModuleAdvanced(essential)).toBe(false)
+    expect(isModuleAdvanced(spaceModuleById('space.basics')!)).toBe(false) // shell
+    expect(isModuleAdvanced(spaceModuleById('space.danger')!)).toBe(false) // Danger
+  })
+
+  it('with NO activated opt (undefined), advanced modules are NOT collapsed — the full catalog (drift parity)', () => {
+    const ids = spaceModuleManifest({}).map((m) => m.id)
+    expect(ids).toContain('space.automation')
+    expect(ids).toContain('space.airwaves')
+    expect(ids).toHaveLength(SPACE_MODULES.length)
+  })
+
+  it('with an activated list supplied, advanced modules are OFF unless listed; essentials always show', () => {
+    const ids = spaceModuleManifest({}, { activated: [] }).map((m) => m.id)
+    expect(ids).not.toContain('space.automation') // advanced, not activated
+    expect(ids).not.toContain('space.airwaves') // advanced, not activated
+    expect(ids).toContain('space.crm') // essential, always up front
+    expect(ids).toContain('space.booking') // essential
+    expect(ids).toContain('space.basics') // shell, always
+  })
+
+  it('activating an advanced module surfaces it while the others stay collapsed', () => {
+    const ids = spaceModuleManifest({}, { activated: ['space.automation'] }).map((m) => m.id)
+    expect(ids).toContain('space.automation') // activated → shown
+    expect(ids).not.toContain('space.airwaves') // still collapsed
   })
 })
 

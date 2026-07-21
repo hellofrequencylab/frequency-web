@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { ChevronUp, ChevronDown, Eye, EyeOff, Lock, Loader2 } from 'lucide-react'
+import { ChevronUp, ChevronDown, Eye, EyeOff, Lock, Loader2, Sparkles, Plus, Check } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { Dialog } from '@/components/ui/dialog'
 import {
@@ -66,6 +66,10 @@ export interface ModuleManagerRow {
   hideable: boolean
   /** Whether the owner has currently hidden it. */
   hidden: boolean
+  /** ADVANCED (ADR-796): a deeper tool collapsed out of the primary menu until activated here. */
+  advanced: boolean
+  /** Whether the owner has ACTIVATED (surfaced) this advanced module. Only meaningful when `advanced`. */
+  activated: boolean
 }
 
 export function ModuleManager({
@@ -86,6 +90,7 @@ export function ModuleManager({
     return out
   })
   const [hidden, setHidden] = useState<Set<string>>(() => new Set(rows.filter((r) => r.hidden).map((r) => r.id)))
+  const [activated, setActivated] = useState<Set<string>>(() => new Set(rows.filter((r) => r.activated).map((r) => r.id)))
   const [minRole, setMinRole] = useState<Record<string, SpaceRole>>(() => {
     const out: Record<string, SpaceRole> = {}
     for (const r of rows) out[r.id] = r.minRole
@@ -99,16 +104,26 @@ export function ModuleManager({
 
   const rowById = new Map(rows.map((r) => [r.id, r]))
 
-  /** Persist the current order + hidden set; roll the whole client state back on failure. */
-  function persistMenu(nextIds: string[], nextHidden: Set<string>, prev: { ids: string[]; hidden: Set<string> }) {
+  /** Persist the current order + hidden + activated sets; roll the whole client state back on failure. */
+  function persistMenu(
+    nextIds: string[],
+    nextHidden: Set<string>,
+    nextActivated: Set<string>,
+    prev: { ids: string[]; hidden: Set<string>; activated: Set<string> },
+  ) {
     setError(null)
     startTransition(async () => {
       try {
-        const res = await saveSpaceModuleMenu(slug, { order: nextIds, hidden: [...nextHidden] })
+        const res = await saveSpaceModuleMenu(slug, {
+          order: nextIds,
+          hidden: [...nextHidden],
+          activated: [...nextActivated],
+        })
         if (isError(res)) throw new Error(res.error)
       } catch (e) {
         setIds(prev.ids)
         setHidden(prev.hidden)
+        setActivated(prev.activated)
         setError(e instanceof Error ? e.message : 'Could not save your menu.')
       }
     })
@@ -120,20 +135,30 @@ export function ModuleManager({
     if (i < 0 || j < 0 || j >= ids.length) return
     // Only reorder within the same family (families stay coherent in the menu).
     if (rowById.get(ids[j])?.family !== rowById.get(id)?.family) return
-    const prev = { ids, hidden }
+    const prev = { ids, hidden, activated }
     const next = ids.slice()
     ;[next[i], next[j]] = [next[j], next[i]]
     setIds(next)
-    persistMenu(next, hidden, prev)
+    persistMenu(next, hidden, activated, prev)
   }
 
   function toggleHidden(id: string) {
-    const prev = { ids, hidden }
+    const prev = { ids, hidden, activated }
     const next = new Set(hidden)
     if (next.has(id)) next.delete(id)
     else next.add(id)
     setHidden(next)
-    persistMenu(ids, next, prev)
+    persistMenu(ids, next, activated, prev)
+  }
+
+  /** Activate / deactivate an ADVANCED module — surface it in the primary menu, or fold it back away. */
+  function toggleActivated(id: string) {
+    const prev = { ids, hidden, activated }
+    const next = new Set(activated)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setActivated(next)
+    persistMenu(ids, hidden, next, prev)
   }
 
   // The actual write: optimistic flip, server call, rollback + error on failure. Returns a promise so the
@@ -207,12 +232,18 @@ export function ModuleManager({
                 const Icon = spaceModuleById(id)?.Icon
                 const isHidden = hidden.has(id)
                 const isOn = enabled[id]
+                const isActivated = activated.has(id)
+                // An advanced module that hasn't been activated is collapsed from the primary menu: dim its
+                // row here and lead with the Activate control so the owner sees what to turn on.
+                const advancedOff = row.advanced && !isActivated
                 const canMoveUp = idx > 0
                 const canMoveDown = idx < familyIds.length - 1
                 return (
                   <li
                     key={id}
-                    className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                    className={`flex flex-col gap-3 rounded-2xl border bg-surface p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between ${
+                      advancedOff ? 'border-dashed border-primary/30' : 'border-border'
+                    }`}
                   >
                     <div className="flex min-w-0 items-start gap-3">
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
@@ -229,12 +260,36 @@ export function ModuleManager({
                               Hidden
                             </span>
                           )}
+                          {row.advanced && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">
+                              <Sparkles className="h-3 w-3" aria-hidden />
+                              {isActivated ? 'Advanced' : 'Advanced, off'}
+                            </span>
+                          )}
                         </div>
                         <p className="mt-0.5 text-xs text-muted">{row.desc}</p>
                       </div>
                     </div>
 
                     <div className="flex shrink-0 items-center justify-end gap-1.5">
+                      {/* Activate an advanced module (surface it in the primary menu) — leads the row's controls. */}
+                      {row.advanced && (
+                        <button
+                          type="button"
+                          aria-pressed={isActivated}
+                          aria-label={isActivated ? `Remove ${row.label} from the menu` : `Activate ${row.label}`}
+                          disabled={readOnly}
+                          onClick={() => toggleActivated(id)}
+                          className={`flex h-7 items-center gap-1 rounded-lg px-2 text-2xs font-semibold transition-colors disabled:opacity-40 motion-reduce:transition-none ${
+                            isActivated
+                              ? 'bg-primary-bg text-primary-strong hover:bg-primary-bg/70'
+                              : 'border border-primary/40 bg-surface text-primary-strong hover:bg-primary-bg/30'
+                          }`}
+                        >
+                          {isActivated ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Plus className="h-3.5 w-3.5" aria-hidden />}
+                          {isActivated ? 'In menu' : 'Activate'}
+                        </button>
+                      )}
                       {/* Reorder within the family */}
                       <div className="flex items-center">
                         <button
