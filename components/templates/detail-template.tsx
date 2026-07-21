@@ -74,7 +74,9 @@ export function DetailTemplate({
           `coverImage` treatment renders when the prop is provided (image, or a neutral gradient
           placeholder for an explicit null). Omitting both leaves no cover. */}
       {hero ? (
-        <div className="mb-4">{hero}</div>
+        // Tighter under a sticky-nav profile (the Space header): its identity sits ON the hero cover, so the
+        // band below is near-empty and a full mb here just wastes head space above the menu.
+        <div className={stickyNav ? 'mb-2' : 'mb-4'}>{hero}</div>
       ) : coverImage !== undefined ? (
         <div className="mb-4">
           {coverImage ? (
@@ -93,7 +95,7 @@ export function DetailTemplate({
           title is never crushed into a truncation; from sm up they sit inline right.
           No bottom border here: the rule is drawn by <PageAdminBar asDivider> below, with
           the "Settings" split sitting INLINE on it (one line, not two). */}
-      <header className="pb-4">
+      <header className={stickyNav ? 'pb-1' : 'pb-4'}>
         {back && (
           <Link
             href={back.href}

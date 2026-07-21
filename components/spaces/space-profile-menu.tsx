@@ -51,9 +51,9 @@ export function SpaceProfileMenu({
 
   return (
     <>
-      {/* The menu bar: pinned under the global header. A rule ABOVE it, and NONE under it (per design),
-          over an opaque canvas backdrop so content scrolls cleanly beneath. */}
-      <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 border-t border-border bg-canvas shadow-[0_8px_10px_2px_var(--color-canvas)]">
+      {/* The menu bar: pinned under the global header. A rule UNDER it (below the menu line), and none
+          above it, over an opaque canvas backdrop so content scrolls cleanly beneath. */}
+      <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 border-b border-border bg-canvas shadow-[0_8px_10px_2px_var(--color-canvas)]">
         <nav className="flex items-center gap-1 overflow-x-auto py-3 sm:py-2.5">
           {tabs.map((tab) => {
             const active = isActive(tab)
