@@ -18,6 +18,7 @@ import { recordPracticeStreak, recomputePracticeStreakAfterUnlog } from '@/lib/p
 import { ROLE_HIERARCHY } from '@/lib/core/roles'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { resolveMemberDay } from '@/lib/member-day'
+import { attributedLogDay } from '@/lib/practices/log-day'
 import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/practices/tiers'
 import {
   deriveDepthStreak,
@@ -1972,6 +1973,14 @@ export async function logPractice(input: {
    *  is unchanged, so no double count). Omitted by non-timer callers (check-ins, quick logs), which
    *  leave the context exactly as before. See lib/on-air/run-over.ts `airtimeVerification`. */
   attended?: boolean | null
+  /** When the sit STARTED (ISO instant), for a live On Air finalize. A run left going past midnight
+   *  finalizes on a later calendar day than it began; without this the log is attributed to the
+   *  finalize day, leaving the day the member actually practiced empty and (for a daily streak derived
+   *  from logged_for) opening a phantom gap that can collapse the streak (ADR-801). When present, the
+   *  log day is the member's LOCAL day of started_at, clamped to at most one day before the finalize
+   *  day (attributedLogDay). Omitted by non-timer callers (quick logs / check-ins), which are
+   *  same-instant and so behave exactly as before. */
+  startedAt?: string | null
 }): Promise<LogPracticeResult> {
   const {
     profileId,
@@ -1981,12 +1990,24 @@ export async function logPractice(input: {
     secondsDone = null,
     secondsTarget = null,
     attended = null,
+    startedAt = null,
   } = input
   // The log "day" is the member's LOCAL calendar day, resolved from their durable
   // home_timezone (then the client tz, then UTC). Server-resolved so the day that
   // keys the idempotency row + the practice_logs unique constraint can't be spoofed
   // to backdate; a member can only shift their OWN local day. yyyy-mm-dd.
-  const day = await resolveMemberDay(profileId, clientTimezone)
+  const finalizeDay = await resolveMemberDay(profileId, clientTimezone)
+  // Attribute an On Air sit to the day it STARTED (a run left going overnight belongs to the day the
+  // member began it, not the finalize day), clamped to at most one day back so a stale/forged
+  // started_at can never backdate further (ADR-801). Non-timer callers pass no startedAt -> finalizeDay.
+  let day = finalizeDay
+  if (startedAt) {
+    const startedMs = Date.parse(startedAt)
+    if (!Number.isNaN(startedMs)) {
+      const startedDay = await resolveMemberDay(profileId, clientTimezone, new Date(startedMs))
+      day = attributedLogDay(finalizeDay, startedDay)
+    }
+  }
 
   // The TIMER GATE (load-bearing): a practice with a set timer (uses_timer = timer_kind <> 'none')
   // can ONLY be logged from inside its session, which always carries a positive secondsTarget. A
@@ -2337,7 +2358,10 @@ export async function logPractice(input: {
   // rewards. Owns profiles.current_streak / longest_streak (lib/practice-streak.ts).
   // Pass the client tz so the streak's "today" resolves to the SAME member-local day
   // this log was written under (home_timezone wins; the client tz only fills a gap).
-  await recordPracticeStreak(profileId, clientTimezone).catch(() => {})
+  // Pass `day` — the day the log was ACTUALLY written for (attributed to the session's
+  // start for an overnight sit, ADR-801) — so the streak advances the right day and does
+  // not phantom-count the finalize day when the two differ.
+  await recordPracticeStreak(profileId, clientTimezone, day).catch(() => {})
   // Daily-streak achievement badges (practice_streak criteria) evaluate AFTER the
   // streak advances so today's log counts. Best-effort — a badge check must never
   // break the log (processGamificationEvent already swallows internally too).

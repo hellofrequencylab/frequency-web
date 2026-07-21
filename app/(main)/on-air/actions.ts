@@ -268,6 +268,9 @@ export async function completeSession(
         secondsTarget,
         // Present at finalize unless the client flagged an unattended auto-finalize (ADR-627).
         attended: input.attended ?? true,
+        // Attribute a run left going past midnight to the day it STARTED, not the finalize day, so an
+        // overnight/forgotten sit does not leave the practiced day empty and break the streak (ADR-801).
+        startedAt: input.startedAt,
       })
 
   // 3. Post-log state for the reveal. Today's airtime is a handful of rows;
