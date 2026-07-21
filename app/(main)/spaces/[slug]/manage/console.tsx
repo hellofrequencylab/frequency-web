@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Sparkles, Trash2 } from 'lucide-react'
+import { ArrowRight, SlidersHorizontal, Sparkles, Trash2 } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
 import { DangerDelete } from '@/components/admin/danger-delete'
 import { deleteSpace } from '@/lib/spaces/provision'
@@ -441,6 +441,26 @@ export function SpaceSettingsSurface({
   const danger = settingsModules.find((m) => m.id === 'space.danger')
   return (
     <div className="space-y-6">
+      {/* MENU & FEATURES (ADR-796): the discoverable entry to the Module Manager, where the owner turns on
+          the advanced tools (Enrollment, Check in, Airwaves, Loom, Automation, and the rest) that
+          progressive disclosure keeps folded by default, and tidies their menu. Without this card the
+          Module Manager was only reachable by typing /manage/modules by hand from the in-place console. */}
+      <Link
+        href={`/spaces/${slug}/manage/modules`}
+        className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-3 shadow-sm outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+          <SlidersHorizontal className="h-4 w-4" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-text">Menu and features</span>
+          <span className="mt-0.5 block text-xs text-muted">Turn on more tools or tidy which ones show in your menu.</span>
+        </span>
+        <ArrowRight
+          className="h-4 w-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
+          aria-hidden
+        />
+      </Link>
       <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {cards.map((module) => {
           const href = panelHrefForModule(module, slug)

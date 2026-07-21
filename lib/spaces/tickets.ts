@@ -442,8 +442,9 @@ export async function rsvpToTier(spaceId: string, tierId: string): Promise<Actio
     if (going >= tier.capacity) return fail('This ticket is full. Try another tier.')
   }
 
+  let rsvpRowId: string | null = null
   try {
-    const { error } = await rsvpsTable()
+    const { data, error } = await rsvpsTable()
       .insert([
         {
           space_id: spaceId,
@@ -459,17 +460,20 @@ export async function rsvpToTier(spaceId: string, tierId: string): Promise<Actio
       // translate the race into the friendly message rather than a raw DB error.
       return fail('You already have a spot here.')
     }
+    rsvpRowId = data?.id ?? null
   } catch {
     return fail('Could not reserve right now. Try again.')
   }
   // Log the reservation onto the member's Space timeline (event attendance shows on Resonance, ADR-796).
+  // Keyed to THIS rsvp row so a member who cancels and re-RSVPs to the same tier logs a fresh entry
+  // instead of being swallowed by a lifetime-stable key.
   await recordSpaceMemberActivity({
     spaceId,
     spaceOwnerProfileId: space.ownerProfileId,
     memberProfileId: profileId,
     channel: 'event',
     summary: `Reserved a spot: ${tier.name}`,
-    idempotencyKey: `rsvp:${spaceId}:${tierId}:${profileId}`,
+    idempotencyKey: `rsvp:${rsvpRowId ?? `${spaceId}:${tierId}:${profileId}`}`,
     metadata: { kind: 'ticket_rsvp', tierId, tierName: tier.name },
   })
   return ok()
@@ -493,14 +497,13 @@ export async function cancelRsvp(rsvpId: string): Promise<ActionResult> {
   }
   if (!row) return fail('RSVP not found.')
 
-  // The member may always cancel their own; otherwise the caller must be a space admin.
+  // The member may always cancel their own; otherwise the caller must be a space admin. Resolve the
+  // Space once here so the same handle serves both the admin check and the timeline log below.
+  const space = await getSpaceById(row.space_id)
   let allowed = row.member_profile_id === profileId
-  if (!allowed) {
-    const space = await getSpaceById(row.space_id)
-    if (space) {
-      const caps = await getSpaceCapabilities(space, profileId)
-      allowed = caps.isAdmin
-    }
+  if (!allowed && space) {
+    const caps = await getSpaceCapabilities(space, profileId)
+    allowed = caps.isAdmin
   }
   if (!allowed) return fail('You do not have permission to cancel this RSVP.')
 
@@ -509,6 +512,19 @@ export async function cancelRsvp(rsvpId: string): Promise<ActionResult> {
     if (error) return fail('Could not cancel the RSVP. Try again.')
   } catch {
     return fail('Could not cancel the RSVP. Try again.')
+  }
+  // Log the departure onto the member's Space timeline (ADR-796): the comms center records cancellations
+  // as well as reservations. Keyed to this rsvp row so it logs exactly once per cancel.
+  if (space) {
+    await recordSpaceMemberActivity({
+      spaceId: row.space_id,
+      spaceOwnerProfileId: space.ownerProfileId,
+      memberProfileId: row.member_profile_id,
+      channel: 'event',
+      summary: 'Cancelled their reservation',
+      idempotencyKey: `rsvp_cancel:${rsvpId}`,
+      metadata: { kind: 'ticket_rsvp_cancel', tierId: row.tier_id },
+    })
   }
   return ok()
 }

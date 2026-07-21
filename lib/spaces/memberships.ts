@@ -433,8 +433,9 @@ export async function joinTier(spaceId: string, tierId: string): Promise<ActionR
   const existing = await readMyActiveMembership(spaceId, profileId)
   if (existing) return fail('You are already a member here.')
 
+  let membershipRowId: string | null = null
   try {
-    const { error } = await membershipsTable()
+    const { data, error } = await membershipsTable()
       .insert([
         {
           space_id: spaceId,
@@ -450,6 +451,7 @@ export async function joinTier(spaceId: string, tierId: string): Promise<ActionR
       // race into the friendly message rather than a raw DB error.
       return fail('You are already a member here.')
     }
+    membershipRowId = data?.id ?? null
     // AUTOMATION TRIGGER (ADR-561): a member just joined a tier. Fire the 'member.joined' trigger so any
     // enabled rule enrolls this member (resolved to their Space contact by profile) into its drip
     // sequence. FIRE-SAFE + fire-and-forget: fireSpaceTrigger never throws and we do not await it, so a
@@ -458,14 +460,17 @@ export async function joinTier(spaceId: string, tierId: string): Promise<ActionR
   } catch {
     return fail('Could not join right now. Try again.')
   }
-  // Log the join onto the member's Space timeline (program adoption shows on Resonance, ADR-796).
+  // Log the join onto the member's Space timeline (program adoption shows on Resonance, ADR-796). The
+  // idempotency key is keyed to THIS membership row, not the member's lifetime: a member who cancels and
+  // rejoins (a win-back, the most valuable Resonance signal) gets a fresh row id and so a fresh timeline
+  // entry, instead of being silently swallowed by a stale lifetime-stable key.
   await recordSpaceMemberActivity({
     spaceId,
     spaceOwnerProfileId: space.ownerProfileId,
     memberProfileId: profileId,
     channel: 'event',
     summary: `Joined membership: ${tier.name}`,
-    idempotencyKey: `member_join:${spaceId}:${profileId}`,
+    idempotencyKey: `member_join:${membershipRowId ?? `${spaceId}:${profileId}`}`,
     metadata: { kind: 'membership_join', tierId, tierName: tier.name },
   })
   return ok()
@@ -492,14 +497,13 @@ export async function cancelMembership(membershipId: string): Promise<ActionResu
   }
   if (!row) return fail('Membership not found.')
 
-  // The member may always cancel their own; otherwise the caller must be a space admin.
+  // The member may always cancel their own; otherwise the caller must be a space admin. Resolve the
+  // Space once here so the same handle serves both the admin check and the timeline log below.
+  const space = await getSpaceById(row.space_id)
   let allowed = row.member_profile_id === profileId
-  if (!allowed) {
-    const space = await getSpaceById(row.space_id)
-    if (space) {
-      const caps = await getSpaceCapabilities(space, profileId)
-      allowed = caps.isAdmin
-    }
+  if (!allowed && space) {
+    const caps = await getSpaceCapabilities(space, profileId)
+    allowed = caps.isAdmin
   }
   if (!allowed) return fail('You do not have permission to cancel this membership.')
 
@@ -510,6 +514,20 @@ export async function cancelMembership(membershipId: string): Promise<ActionResu
     if (error) return fail('Could not cancel the membership. Try again.')
   } catch {
     return fail('Could not cancel the membership. Try again.')
+  }
+  // Log the departure onto the member's Space timeline (ADR-796): the comms center records arrivals AND
+  // departures, so an operator's "where this person is" read stays true. Keyed to this membership row so
+  // it logs exactly once per cancel.
+  if (space) {
+    await recordSpaceMemberActivity({
+      spaceId: row.space_id,
+      spaceOwnerProfileId: space.ownerProfileId,
+      memberProfileId: row.member_profile_id,
+      channel: 'event',
+      summary: 'Cancelled their membership',
+      idempotencyKey: `member_cancel:${membershipId}`,
+      metadata: { kind: 'membership_cancel', tierId: row.tier_id },
+    })
   }
   return ok()
 }
