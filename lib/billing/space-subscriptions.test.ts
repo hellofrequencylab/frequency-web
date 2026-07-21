@@ -1,14 +1,49 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Pricing P2 (ADR-363) — the PURE webhook-routing logic (no IO / no Stripe / no Supabase): how a
-// subscription's metadata.kind + Stripe status map to a payment_status and a Space plan. The IO
-// reconcilers (reconcileSpacePlanSubscription / reconcileSpaceMembershipSubscription) write through
-// the admin client and are exercised behind the signed webhook.
+// subscription's metadata.kind + Stripe status map to a payment_status and a Space plan. Plus an IO test
+// for reconcileSpaceMembershipSubscription's insert-if-absent path (the paid-membership money fix), over
+// a recording mock of the admin client.
+
+// A minimal recording mock: `activeRows` seeds the select() result (the member's current active row, or
+// none); `ops` records every update/insert so a test can assert what was written.
+const { state } = vi.hoisted(() => ({
+  state: {
+    activeRows: [] as { id: string }[],
+    ops: [] as Array<Record<string, unknown>>,
+    // Seed a write error to exercise the throw-on-failure / swallow-23505 paths.
+    writeError: null as { code?: string; message?: string } | null,
+  },
+}))
+vi.mock('@/lib/supabase/admin', () => {
+  const makeSelect = () => {
+    const chain: Record<string, unknown> = {}
+    chain.eq = () => chain
+    chain.limit = () => Promise.resolve({ data: state.activeRows })
+    return chain
+  }
+  return {
+    createAdminClient: () => ({
+      from: (table: string) => ({
+        select: () => makeSelect(),
+        update: (v: Record<string, unknown>) => {
+          state.ops.push({ op: 'update', table, v })
+          return { eq: () => Promise.resolve({ error: state.writeError }) }
+        },
+        insert: (rows: Record<string, unknown>[]) => {
+          state.ops.push({ op: 'insert', table, rows })
+          return Promise.resolve({ error: state.writeError })
+        },
+      }),
+    }),
+  }
+})
 
 import {
   paymentStatusForSubscription,
   subscriptionKind,
   planForSubscription,
+  reconcileSpaceMembershipSubscription,
 } from './space-subscriptions'
 
 describe('paymentStatusForSubscription', () => {
@@ -72,5 +107,88 @@ describe('planForSubscription', () => {
   it('an unknown plan label narrows to free (default-deny)', () => {
     expect(planForSubscription('nonsense', 'active')).toBe('free')
     expect(planForSubscription(null, 'active')).toBe('free')
+  })
+})
+
+// ── IO: reconcileSpaceMembershipSubscription records a PAID membership (ADR-363 money fix) ─────────────
+// createSpaceMembershipCheckout does not pre-create a space_memberships row, so before this fix the
+// reconcile's UPDATE matched zero rows and a paying member got nothing. The reconcile now inserts on the
+// first-payment case and updates an existing active row otherwise.
+function membershipSub(status: string, meta: Record<string, string>) {
+  return { id: 'sub_1', status, metadata: meta } as unknown as import('stripe').Stripe.Subscription
+}
+
+describe('reconcileSpaceMembershipSubscription (records a paid membership)', () => {
+  beforeEach(() => {
+    state.activeRows = []
+    state.ops = []
+    state.writeError = null
+  })
+
+  it('INSERTS the membership on first payment when none exists yet', async () => {
+    state.activeRows = []
+    await reconcileSpaceMembershipSubscription(membershipSub('active', { space_id: 's1', member_id: 'm1', tier_id: 't1' }))
+    const ins = state.ops.find((o) => o.op === 'insert') as { rows: Record<string, unknown>[] } | undefined
+    expect(ins, 'should insert a membership row on first payment').toBeTruthy()
+    expect(ins!.rows[0]).toMatchObject({
+      space_id: 's1',
+      member_profile_id: 'm1',
+      tier_id: 't1',
+      status: 'active',
+      payment_status: 'active',
+      stripe_subscription_id: 'sub_1',
+    })
+    expect(state.ops.find((o) => o.op === 'update')).toBeFalsy()
+  })
+
+  it('UPDATES the existing active membership instead of inserting', async () => {
+    state.activeRows = [{ id: 'mem1' }]
+    await reconcileSpaceMembershipSubscription(membershipSub('past_due', { space_id: 's1', member_id: 'm1', tier_id: 't1' }))
+    const upd = state.ops.find((o) => o.op === 'update') as { v: Record<string, unknown> } | undefined
+    expect(upd).toBeTruthy()
+    expect(upd!.v).toMatchObject({ payment_status: 'past_due', status: 'active', stripe_subscription_id: 'sub_1' })
+    expect(state.ops.find((o) => o.op === 'insert')).toBeFalsy()
+  })
+
+  it('does NOT create a membership from a cancel event for a member who never had one', async () => {
+    state.activeRows = []
+    await reconcileSpaceMembershipSubscription(membershipSub('canceled', { space_id: 's1', member_id: 'm1', tier_id: 't1' }))
+    expect(state.ops.length).toBe(0)
+  })
+
+  it('cancels the existing active membership on a canceled event', async () => {
+    state.activeRows = [{ id: 'mem1' }]
+    await reconcileSpaceMembershipSubscription(membershipSub('canceled', { space_id: 's1', member_id: 'm1', tier_id: 't1' }))
+    const upd = state.ops.find((o) => o.op === 'update') as { v: Record<string, unknown> } | undefined
+    expect(upd!.v).toMatchObject({ status: 'cancelled', payment_status: 'canceled' })
+  })
+
+  it('no-ops on missing space_id / member_id metadata', async () => {
+    await reconcileSpaceMembershipSubscription(membershipSub('active', {}))
+    expect(state.ops.length).toBe(0)
+  })
+
+  it('does NOT grant an active membership for an incomplete (unpaid) subscription', async () => {
+    state.activeRows = []
+    // 'incomplete' -> payment_status 'pending'; a new membership must not be inserted active before the
+    // first payment settles (it self-heals on the later .updated event once active).
+    await reconcileSpaceMembershipSubscription(membershipSub('incomplete', { space_id: 's1', member_id: 'm1', tier_id: 't1' }))
+    expect(state.ops.find((o) => o.op === 'insert')).toBeFalsy()
+  })
+
+  it('THROWS on a non-unique write error so the webhook retries (never silently drops a paid membership)', async () => {
+    state.activeRows = []
+    state.writeError = { code: '40001', message: 'deadlock detected' }
+    await expect(
+      reconcileSpaceMembershipSubscription(membershipSub('active', { space_id: 's1', member_id: 'm1', tier_id: 't1' })),
+    ).rejects.toThrow(/space_membership insert failed/)
+  })
+
+  it('SWALLOWS the benign 23505 unique-violation from the concurrent-events race', async () => {
+    state.activeRows = []
+    state.writeError = { code: '23505', message: 'duplicate key' }
+    await expect(
+      reconcileSpaceMembershipSubscription(membershipSub('active', { space_id: 's1', member_id: 'm1', tier_id: 't1' })),
+    ).resolves.toBeUndefined()
   })
 })

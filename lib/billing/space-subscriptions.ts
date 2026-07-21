@@ -143,29 +143,86 @@ export async function reconcileSpacePlanSubscription(sub: Stripe.Subscription): 
 export async function reconcileSpaceMembershipSubscription(sub: Stripe.Subscription): Promise<void> {
   const spaceId = sub.metadata?.space_id
   const memberId = sub.metadata?.member_id
+  const tierId = sub.metadata?.tier_id
   if (!spaceId || !memberId) return
   const payment = paymentStatusForSubscription(sub.status)
+  // status column is CHECK-constrained to active/cancelled; payment_status carries the finer Stripe state.
+  const status: 'active' | 'cancelled' = payment === 'canceled' ? 'cancelled' : 'active'
 
-  const db = createAdminClient()
-  // Bind the write to (space_id, member_profile_id) — the active membership row this checkout created.
-  await (db as unknown as {
+  const db = createAdminClient() as unknown as {
     from: (t: string) => {
-      update: (v: Record<string, unknown>) => {
-        eq: (c: string, val: string) => { eq: (c2: string, val2: string) => Promise<{ error: unknown }> }
+      select: (c: string) => {
+        eq: (c: string, v: string) => {
+          eq: (c: string, v: string) => {
+            eq: (c: string, v: string) => { limit: (n: number) => Promise<{ data: { id: string }[] | null }> }
+          }
+        }
       }
+      update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: WriteError }> }
+      insert: (rows: Record<string, unknown>[]) => Promise<{ error: WriteError }>
     }
-  })
+  }
+
+  // Find the member's CURRENT active membership in this Space (the partial one-active index means there is
+  // at most one). Scope to status='active' + limit(1) so a cancelled-history row can never make this throw.
+  const { data: activeRows } = await db
     .from('space_memberships')
-    .update({
-      stripe_subscription_id: sub.id,
-      payment_status: payment,
-      // Keep status symmetric with payment_status: a reactivated member must flip back to
-      // 'active' (not stay 'cancelled'), or memberships gated on .eq('status','active')
-      // would keep excluding a paying member.
-      status: payment === 'canceled' ? 'cancelled' : 'active',
-    })
+    .select('id')
     .eq('space_id', spaceId)
     .eq('member_profile_id', memberId)
+    .eq('status', 'active')
+    .limit(1)
+  const activeId = activeRows?.[0]?.id ?? null
+
+  if (activeId) {
+    // Update the existing active membership: payment-state change, reactivation, or a cancel (status flips
+    // to 'cancelled', releasing the one-active guard so a later re-subscribe can re-create it).
+    const { error } = await db
+      .from('space_memberships')
+      .update({
+        stripe_subscription_id: sub.id,
+        payment_status: payment,
+        status,
+        ...(tierId ? { tier_id: tierId } : {}),
+      })
+      .eq('id', activeId)
+    // A failed write must NOT ack the webhook 200 — throw so the route releases its event claim and Stripe
+    // retries (the member-tier path's contract). A silent swallow would lose a paid member's state forever.
+    if (error) throw new Error(`space_membership update failed: ${writeErrorMessage(error)}`)
+    return
+  }
+
+  // No active membership yet: this is the FIRST-PAYMENT case. createSpaceMembershipCheckout does NOT
+  // pre-create a row (unlike the free joinTier path), so before this the UPDATE matched zero rows and a
+  // paying member got nothing recorded. INSERT the membership now, keyed by the Stripe-signed metadata.
+  // Only on a CONFIRMED-active payment: an `incomplete`/`past_due`/`canceled` first state must NOT grant an
+  // active membership before payment settles (every consumer gates on status='active' and ignores
+  // payment_status). A subscription that later becomes active fires an `.updated` event that re-runs this
+  // and inserts then, so skipping loses nothing. Also skip if the tier is unknown.
+  if (payment !== 'active' || !tierId) return
+  const { error } = await db.from('space_memberships').insert([
+    {
+      space_id: spaceId,
+      member_profile_id: memberId,
+      tier_id: tierId,
+      status: 'active',
+      payment_status: payment,
+      stripe_subscription_id: sub.id,
+    },
+  ])
+  // Swallow ONLY the benign unique-violation (23505): the `.created` and `.updated` events are different
+  // event ids, so both run this; the partial one-active index serializes the two inserts and the loser's
+  // 23505 simply means the membership already exists (success). Surface any OTHER error by throwing, so the
+  // webhook retries instead of silently dropping a paid membership.
+  if (error && error.code !== '23505') {
+    throw new Error(`space_membership insert failed: ${writeErrorMessage(error)}`)
+  }
+}
+
+/** The shape of a supabase-js write error (subset). */
+type WriteError = { code?: string; message?: string } | null
+function writeErrorMessage(error: WriteError): string {
+  return error?.message ?? String(error)
 }
 
 /** Route a subscription event to the right reconciler by its kind. Returns true if handled (so the
