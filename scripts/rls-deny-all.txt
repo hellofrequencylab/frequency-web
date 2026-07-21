@@ -107,3 +107,4 @@ vera_autonomy_decisions
 event_placement_requests
 email_templates
 element_settings
+space_collaborations
