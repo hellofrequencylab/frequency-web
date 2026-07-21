@@ -25,7 +25,7 @@ export type SpaceHubSection = 'resonance' | 'marketing' | 'offerings' | 'program
 /** The hub tabs, in display order. Resonance leads (the default landing); Profile & Settings trails — it is
  *  a real tab now (ADR-788), NOT a header button, so Plan & Billing + Team + Reviews are one tap away. */
 export const SPACE_HUB_SECTIONS: readonly { key: SpaceHubSection; label: string; blurb: string }[] = [
-  { key: 'resonance', label: 'Community', blurb: 'Your people and every conversation: pipeline, contacts, the inbox, and connections.' },
+  { key: 'resonance', label: 'Resonance', blurb: 'Your people and every conversation: pipeline, contacts, the inbox, and connections.' },
   { key: 'marketing', label: 'Marketing', blurb: 'Reach and grow: email, QR codes, lead capture, and automation.' },
   { key: 'offerings', label: 'Offerings & Money', blurb: 'Everything your space sells: bookings, memberships, donations, tickets, and the shop.' },
   { key: 'programs', label: 'Content & Programs', blurb: 'What your space teaches and hosts: practices, journeys, and recordings.' },
@@ -85,7 +85,7 @@ export function isSettingsModule(module: SpaceModule): boolean {
 
 /** The display name for each section (including the header-level Profile & Settings surface). */
 export const SPACE_HUB_SECTION_LABEL: Record<SpaceHubSection, string> = {
-  resonance: 'Community',
+  resonance: 'Resonance',
   marketing: 'Marketing',
   offerings: 'Offerings & Money',
   programs: 'Content & Programs',
