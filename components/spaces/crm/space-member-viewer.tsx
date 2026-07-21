@@ -1,7 +1,6 @@
 import { EmptyState } from '@/components/ui/empty-state'
 import { MemberViewer } from '@/components/people/member-viewer'
 import {
-  loadMemberSummaries,
   MEMBER_SORT_OPTIONS,
   TIER_FACET,
   LIFECYCLE_FACET,
@@ -9,26 +8,27 @@ import {
   BUSINESS_FACET,
   ACTIVE_FACET,
 } from '@/app/(main)/admin/crm/member-summaries'
-import { loadSpaceMemberDetail } from '@/app/(main)/admin/crm/members/member-detail-actions'
+import { loadSpaceResonanceDetail } from '@/app/(main)/admin/crm/members/member-detail-actions'
+import { loadSpaceResonanceRoster } from '@/lib/spaces/resonance-roster'
 
-// THE SPACE RESONANCE CRM ROSTER (ADR-787). The space-scoped twin of the admin Resonance CRM's
-// CockpitMemberViewer: the SAME master-detail <MemberViewer> — a scored roster on the left, the full
-// member detail inline on the right ("pick a member to see everything about them") — but scoped to THIS
-// space's reachable members. It reads the same roster mapper with a `spaceId` (loadMemberSummaries), and
-// the same rich detail builder through the space-gated + tenancy-checked `loadSpaceMemberDetail` (bound to
-// the slug). So the space Resonance tab and the admin Resonance CRM read identically; only the scope + gate
-// differ. Server Component shell over the one client island. No em dashes.
+// THE SPACE RESONANCE CRM ROSTER (ADR-789). The space-scoped twin of the admin Resonance CRM's
+// CockpitMemberViewer: the SAME master-detail <MemberViewer> — a roster on the left, the full detail inline
+// on the right ("pick a member to see everything about them") — but showing THIS space's ACTUAL people:
+// EVERY active member (scored or not) PLUS every imported contact/lead (loadSpaceResonanceRoster). The
+// detail loader dispatches by row id — a `contact:<uuid>` id loads the contact detail, any other id a
+// member — through the space-gated + tenancy-checked loadSpaceResonanceDetail (bound to the slug). So in a
+// space page, this IS the CRM: all contacts and members appear here. Server Component shell over the one
+// client island. No em dashes.
 
 export async function SpaceMemberViewer({ spaceId, slug }: { spaceId: string; slug: string }) {
-  // Members-only by construction: { kind: 'all' } reads the scored roster matview, scoped to this space's
-  // reachable members. Leads / subscribers are handled by the CRM board's Contacts view.
-  const members = await loadMemberSummaries({ kind: 'all' }, { spaceId })
+  // ALL of the space's people: every active member (scored or not) + every imported contact, newest first.
+  const members = await loadSpaceResonanceRoster(spaceId)
   if (members.length === 0) {
     return (
       <EmptyState
         variant="first-use"
-        title="No members scored yet"
-        description="Bring contacts into this space and, once the overnight refresh scores them, your whole roster shows here, newest first."
+        title="No members or contacts yet"
+        description="Invite members or import contacts into this space and they show here, newest first, with everything about each one a click away."
       />
     )
   }
@@ -36,7 +36,7 @@ export async function SpaceMemberViewer({ spaceId, slug }: { spaceId: string; sl
   return (
     <MemberViewer
       members={members}
-      loadDetail={loadSpaceMemberDetail.bind(null, slug)}
+      loadDetail={loadSpaceResonanceDetail.bind(null, slug)}
       detailVariant="crm"
       messageScope={{ spaceId, slug }}
       defaultView="list"

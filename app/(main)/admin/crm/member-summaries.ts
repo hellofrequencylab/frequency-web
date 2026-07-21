@@ -1,6 +1,6 @@
 import { getProfileSummaries } from '@/lib/connections/matching'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { listMembersByFilter, type MemberFilter } from '@/lib/dashboard/scores'
+import { listMembersByFilter, type MemberFilter, type MemberListRow } from '@/lib/dashboard/scores'
 import { classifyMembers } from '@/lib/crm/classification'
 import { relationshipLabel } from '@/lib/crm/relationships'
 import { ROLE_LABEL } from '@/lib/community-roles'
@@ -119,6 +119,16 @@ export async function loadMemberSummaries(
   opts: { spaceId?: string | null } = {},
 ): Promise<MemberSummary[]> {
   const rows = await listMembersByFilter(filter, { spaceId: opts.spaceId })
+  return summariesFromRows(rows)
+}
+
+/**
+ * Map already-resolved scored rows (MemberListRow[]) into MemberSummary[]. Split out of
+ * loadMemberSummaries so a caller that builds its OWN rows — e.g. the space Resonance roster, which
+ * lists ALL active members (scored or not) instead of the scored matview — reuses the IDENTICAL batched
+ * mapping (profile summary + joined-at + classifier badges), so every roster reads the same.
+ */
+export async function summariesFromRows(rows: MemberListRow[]): Promise<MemberSummary[]> {
   if (rows.length === 0) return []
 
   const profileIds = rows.map((r) => r.profileId)
