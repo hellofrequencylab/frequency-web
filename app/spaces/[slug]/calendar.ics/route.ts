@@ -60,7 +60,10 @@ export async function GET(
   const admin = createAdminClient()
 
   // Resolve the space and gate: only a network-visible, active space has a public feed. A private or
-  // suspended/archived space returns 404 (never confirm it exists).
+  // suspended/archived space returns 404 (never confirm it exists). This is DEFENSE IN DEPTH + the 404
+  // + the calendar title — the authoritative gate is co-located in space_public_calendar_feed itself
+  // (it joins spaces on visibility='network' + status='active'), since that RPC is anon-callable
+  // directly via PostgREST and must not depend on this route to stay safe.
   const { data: spaceRaw } = await admin
     .from('spaces')
     .select('id, name, visibility, status')

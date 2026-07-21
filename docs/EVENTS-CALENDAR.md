@@ -88,7 +88,11 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
   DTSTART/DTEND from it, never from `new Date(row.starts_at)`. This is why the feed bug happened
   (the per-event route was fixed in isolation; the feed drifted).
 - **The public per-space feed exposes only what the public event page does** — published,
-  public/unlisted, non-cancelled — and only for a network-visible, active space.
+  public/unlisted, non-cancelled — and only for a network-visible, active space. The visibility/status
+  gate is co-located **inside** `space_public_calendar_feed` (it joins `spaces` on
+  `visibility='network' AND status='active'`), not only in the route: the RPC is `SECURITY DEFINER`
+  and anon-callable directly via PostgREST, so the model must be self-protecting. The route re-checks
+  for a clean 404 + the calendar title (defense in depth).
 - **Slug-keyed public feed, token-keyed private feed.** The space feed is public events, so the
   human-readable slug is the identifier (no token). The member feed stays token-gated (it contains
   the member's private RSVPs + venues).

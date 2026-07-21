@@ -22,6 +22,12 @@ describe('icsEscape', () => {
     expect(icsEscape('a, b; c\\d\ne')).toBe('a\\, b\\; c\\\\d\\ne')
     expect(icsEscape('carriage\r\nreturn')).toBe('carriage\\nreturn')
   })
+
+  it('collapses a lone CR as well as a lone LF (no raw line-ending smuggling)', () => {
+    // A lenient ICS parser can split on a bare CR; escaping it blocks property/VEVENT injection.
+    expect(icsEscape('Party\rSUMMARY:fake')).toBe('Party\\nSUMMARY:fake')
+    expect(icsEscape('a\nb\rc')).toBe('a\\nb\\nc')
+  })
 })
 
 describe('foldLine', () => {

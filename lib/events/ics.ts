@@ -29,13 +29,15 @@ export function icsStamp(d: Date): string {
   )
 }
 
-/** Escape a text value per RFC 5545 §3.3.11: backslash, semicolon, comma, newline. */
+/** Escape a text value per RFC 5545 §3.3.11: backslash, semicolon, comma, newline. Any line break
+ *  (CRLF, lone LF, OR lone CR) collapses to a literal `\n` so a malicious title/description can never
+ *  smuggle a raw line ending that a lenient parser would treat as a new property or VEVENT. */
 export function icsEscape(s: string): string {
   return s
     .replace(/\\/g, '\\\\')
     .replace(/;/g, '\\;')
     .replace(/,/g, '\\,')
-    .replace(/\r?\n/g, '\\n')
+    .replace(/\r\n|\r|\n/g, '\\n')
 }
 
 /** Fold a content line at 75 octets per RFC 5545 §3.1 (continuation lines start with a space).
