@@ -49,6 +49,8 @@ export interface ItemFormProduct {
   images: string[]
   category: string | null
   tags: string[]
+  /** Whether the item is listed in the global Market (cross-space browse), seeded into the toggle on edit. */
+  marketPublished?: boolean
   /** Existing variants (Etsy-Grade Phase 2), seeded into the optional variants editor on edit. */
   variants?: CommerceVariant[]
 }
@@ -134,6 +136,7 @@ export function ItemForm({
   const [category, setCategory] = useState(product?.category ?? '')
   const [tags, setTags] = useState<string[]>(product?.tags ?? [])
   const [tagDraft, setTagDraft] = useState('')
+  const [marketPublished, setMarketPublished] = useState(product?.marketPublished ?? false)
   const [pending, startTransition] = useTransition()
   const [drafting, setDrafting] = useState(false)
 
@@ -228,6 +231,8 @@ export function ItemForm({
     fd.set('tags', JSON.stringify(tags))
     // Variants are React state too; attach the set for the create action (a product only).
     fd.set('variants', JSON.stringify(kind === 'product' ? buildVariants() : []))
+    // Market opt-in is a controlled toggle (not a native checkbox), so attach it for the create action.
+    fd.set('marketPublished', marketPublished ? '1' : '')
     startTransition(async () => {
       if (mode === 'create') {
         await createSpaceProductAction(slug, fd)
@@ -239,6 +244,7 @@ export function ItemForm({
         setImages([])
         setCategory('')
         setTags([])
+        setMarketPublished(false)
         setOptName1('')
         setOptName2('')
         setVariantRows([])
@@ -258,6 +264,7 @@ export function ItemForm({
             images,
             tags,
             service: isService ? buildServiceConfig(fd) : undefined,
+            marketPublished,
           },
           // A product replaces its variant set; a service/ticket clears any variants ([]).
           kind === 'product' ? buildVariants() : [],
@@ -724,6 +731,28 @@ export function ItemForm({
           heading="Recordings on this product"
         />
       )}
+
+      {/* Marketplace opt-in (ADR-596). Off = on your Space page + Shop only; on = also listed in the global
+          Market for cross-space browse. Per item, so you choose listing by listing. */}
+      <label
+        htmlFor={`market-${mode}-${product?.id ?? 'new'}`}
+        className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/70 p-3"
+      >
+        <input
+          id={`market-${mode}-${product?.id ?? 'new'}`}
+          type="checkbox"
+          className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+          checked={marketPublished}
+          onChange={(e) => setMarketPublished(e.target.checked)}
+        />
+        <span>
+          <span className="block text-sm font-medium text-text">List in the marketplace</span>
+          <span className="mt-0.5 block text-xs text-subtle">
+            Off keeps it on your Space page and Shop only. On also lists it in the Frequency Market so people
+            browsing across Spaces can find it. You can change this anytime.
+          </span>
+        </span>
+      </label>
 
       <div className="flex justify-end">
         <button type="submit" disabled={busy} className={buttonClasses('primary', 'md')}>

@@ -162,6 +162,7 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
                         images: p.images,
                         category: p.category,
                         tags: p.tags,
+                        marketPublished: p.marketPublished,
                         variants: variantsByProduct.get(p.id) ?? [],
                       }}
                     />
