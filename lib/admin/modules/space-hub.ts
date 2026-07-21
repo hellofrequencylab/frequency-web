@@ -70,8 +70,8 @@ export function sectionForModule(module: SpaceModule): SpaceHubSection | null {
     return 'marketing'
   }
 
-  // Content & Programs — the practitioner content.
-  if (['space.practices', 'space.journeys', 'space.airwaves'].includes(module.id)) return 'programs'
+  // Content & Programs — the practitioner content + the space's media libraries (Airwaves + Loom Studio).
+  if (['space.practices', 'space.journeys', 'space.airwaves', 'space.loom'].includes(module.id)) return 'programs'
 
   // Offerings & Money — everything else is a commerce/offering surface (booking, memberships, donations,
   // enrollment, tickets, check-in, shop). Falls through here by elimination.

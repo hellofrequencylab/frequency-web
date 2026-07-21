@@ -172,6 +172,7 @@ export function SpaceSettingsForm({
             hint="Wide banner across the top of your page. About 1600 by 500."
             folder="space-covers"
             disabled={readOnly}
+            scopeKey={spaceId}
             uploadFn={(file) => {
               const fd = new FormData()
               fd.append('file', file)
@@ -189,6 +190,7 @@ export function SpaceSettingsForm({
               hint="Your profile image. Opens the Loom to pick a photo or an icon, or upload your own. A square reads best."
               folder="space-logos"
               disabled={readOnly}
+              scopeKey={spaceId}
               kinds={['image', 'icon']}
               noUrlPaste
               uploadFn={(file) => {
