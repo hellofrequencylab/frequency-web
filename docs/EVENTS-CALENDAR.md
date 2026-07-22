@@ -102,9 +102,13 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
   (`space_public_calendar_feed`'s UNION branch, `public_calendar_feed`) and the store
   (`listSpaceCalendarEvents` / `spaceHasPublicUpcomingEvents` UNION accepted shares, gated by the pure
   `passesCalendarGate`). So flipping a shared event to private/circle_only/draft, or cancelling it,
-  removes it from every co-host calendar immediately. `event_space_shares` is RLS-enabled with no
-  policies (service-role only, listed in `scripts/rls-deny-all.txt`); status transitions are atomic
-  (status-guarded `WHERE`).
+  removes it from every co-host calendar immediately. **The shared branch also re-gates the event's
+  HOME space** (network + active, platform events with `space_id IS NULL` excepted) — the same gate the
+  owned branch and the master feed enforce — so suspending or hiding the home space pulls its events off
+  every co-host calendar too, and an accepted share can never out-live its home space's walling (the
+  pure `filterSharedByHomeSpace` in the store mirrors the SQL shared-branch join).
+  `event_space_shares` is RLS-enabled with no policies (service-role only, listed in
+  `scripts/rls-deny-all.txt`); status transitions are atomic (status-guarded `WHERE`).
 
 ### EC4 — engagement polish
 - RRULE export for recurring series (currently materialized rows export as separate VEVENTs).

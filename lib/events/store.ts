@@ -106,10 +106,46 @@ export function mergeSpaceCalendarRows(
     .slice(0, limit)
 }
 
+/** A shared-event row carries its HOME space id so the reader can re-gate the home space (below). */
+export type SharedCalendarEventRow = SpaceCalendarEventRow & { space_id?: string | null }
+
+/** Keep only accepted-shared rows whose HOME space may surface events on a co-host calendar: a
+ *  network-visible + active space (`allowedHomeSpaceIds`), OR a platform event with no home space
+ *  (`space_id` null). This is the co-host equivalent of the owned branch's `spaces` join — without it,
+ *  a share out-lives its home space's walling (a suspended/hidden space's public event would keep
+ *  showing on co-hosts). Mirrors the `space_public_calendar_feed` shared-branch home-space gate. Pure. */
+export function filterSharedByHomeSpace(
+  sharedRows: SharedCalendarEventRow[],
+  allowedHomeSpaceIds: Set<string>,
+): SharedCalendarEventRow[] {
+  return sharedRows.filter((e) => e.space_id == null || allowedHomeSpaceIds.has(e.space_id))
+}
+
 /** Untyped admin handle — space_id / visibility / event_space_shares are newer than the generated
  *  types (ADR-246), so the reads below reach them through this loose handle. */
 function untypedAdmin(): SupabaseClient {
   return createAdminClient()
+}
+
+/** Which of `spaceIds` are network-visible + active — the home spaces allowed to surface events on a
+ *  co-host calendar (the shared branch's home-space gate). Platform events (null home) skip this and are
+ *  allowed by `filterSharedByHomeSpace` directly. FAIL-SAFE: empty set on any error (drops every
+ *  real-home shared event rather than risk surfacing a walled space's event). */
+async function networkActiveHomeSpaceIds(admin: SupabaseClient, spaceIds: string[]): Promise<Set<string>> {
+  const ids = [...new Set(spaceIds)]
+  if (ids.length === 0) return new Set()
+  try {
+    const { data, error } = await admin
+      .from('spaces')
+      .select('id')
+      .in('id', ids)
+      .eq('visibility', 'network')
+      .eq('status', 'active')
+    if (error) return new Set()
+    return new Set(((data ?? []) as Array<{ id: string }>).map((r) => r.id))
+  } catch {
+    return new Set()
+  }
 }
 
 /** Event ids ACCEPTED-shared TO this space (EC3). The share is NECESSARY here; the per-event
@@ -166,7 +202,7 @@ export async function listSpaceCalendarEvents(
     const sharedQ = shareIds.length
       ? admin
           .from('events')
-          .select(`${CALENDAR_COLS}, status, visibility`)
+          .select(`${CALENDAR_COLS}, status, visibility, space_id`)
           .in('id', shareIds)
           .eq('status', 'published')
           .in('visibility', ['public', 'unlisted'])
@@ -178,10 +214,21 @@ export async function listSpaceCalendarEvents(
     const [owned, shared] = await Promise.all([ownedQ, sharedQ])
     if (owned.error) return []
 
+    // Re-gate the HOME space of each shared event (network + active, platform events excepted) before the
+    // merge — a share is necessary, never sufficient, and it can't out-live its home space's walling.
+    const sharedRows: SharedCalendarEventRow[] = shared.error
+      ? []
+      : ((shared.data as SharedCalendarEventRow[] | null) ?? [])
+    const allowedHomes = await networkActiveHomeSpaceIds(
+      admin,
+      sharedRows.map((e) => e.space_id).filter((id): id is string => !!id),
+    )
+    const gatedShared = filterSharedByHomeSpace(sharedRows, allowedHomes)
+
     // UNION own + shared, re-gate each row (shared events MUST pass on their OWN row), dedupe, sort.
     return mergeSpaceCalendarRows(
       (owned.data as SpaceCalendarEventRow[] | null) ?? [],
-      shared.error ? [] : ((shared.data as SpaceCalendarEventRow[] | null) ?? []),
+      gatedShared,
       fromDayIso,
       limit,
     )
@@ -215,19 +262,26 @@ export async function spaceHasPublicUpcomingEvents(spaceId: string | null | unde
       .limit(1)
     if (!error && Array.isArray(owned) && owned.length > 0) return true
 
-    // No own upcoming event — does an accepted SHARE surface one (gated on the event's OWN row)?
+    // No own upcoming event — does an accepted SHARE surface one? Gate on the event's OWN row AND its
+    // HOME space (network + active, platform events excepted), so a suspended/hidden home space's event
+    // doesn't keep the tab alive. Fetch candidates (not limit(1)) since the first row's home may be walled.
     const shareIds = await acceptedShareEventIds(admin, sid)
     if (shareIds.length === 0) return false
     const { data: shared, error: sErr } = await admin
       .from('events')
-      .select('id')
+      .select('id, space_id')
       .in('id', shareIds)
       .eq('status', 'published')
       .eq('is_cancelled', false)
       .in('visibility', ['public', 'unlisted'])
       .gte('starts_at', fromDayIso)
-      .limit(1)
-    return !sErr && Array.isArray(shared) && shared.length > 0
+    if (sErr || !Array.isArray(shared) || shared.length === 0) return false
+    const sharedCandidates = shared as Array<{ id: string; space_id?: string | null }>
+    const allowedHomes = await networkActiveHomeSpaceIds(
+      admin,
+      sharedCandidates.map((e) => e.space_id).filter((id): id is string => !!id),
+    )
+    return sharedCandidates.some((e) => e.space_id == null || allowedHomes.has(e.space_id))
   } catch {
     return false
   }

@@ -104,13 +104,18 @@ as $$
 
   -- 2) Events ACCEPTED-shared TO this space (EC3). The share is necessary but NOT sufficient: the
   --    event's OWN visibility gate is re-applied here, so a private/circle_only/draft/cancelled event
-  --    never surfaces even with an accepted share.
+  --    never surfaces even with an accepted share. The event's HOME space is ALSO re-gated
+  --    (network + active, with the platform-event `space_id IS NULL` allowance from public_calendar_feed):
+  --    suspending or hiding the home space pulls its events from co-host feeds too, matching the owned
+  --    branch above and the master feed. Without this, a share could out-live its home space's walling.
   select e.id, e.title, e.description, e.location, e.starts_at, e.ends_at,
          e.slug, e.is_cancelled, e.time_zone
   from   public.event_space_shares sh
   join   public.events e on e.id = sh.event_id
+  left   join public.spaces home on home.id = e.space_id
   where  sh.space_id = _space_id
     and  sh.status = 'accepted'
+    and  (e.space_id is null or (home.visibility = 'network' and home.status = 'active'))
     and  e.is_cancelled = false
     and  coalesce(e.status, 'published') = 'published'
     and  e.visibility in ('public', 'unlisted')
@@ -123,4 +128,4 @@ $$;
 grant execute on function public.space_public_calendar_feed(uuid) to anon, authenticated;
 
 comment on function public.space_public_calendar_feed(uuid) is
-  'A space''s upcoming published public/unlisted events for its public subscribable .ics feed (Events EC1, ADR-800) UNIONed with events accepted-shared to it (EC3). Never lists circle_only/private/draft/cancelled: the event''s OWN visibility gate is re-applied in BOTH branches, so an accepted share is necessary but not sufficient. Owning space must be network+active; anon-callable, self-gated in-function.';
+  'A space''s upcoming published public/unlisted events for its public subscribable .ics feed (Events EC1, ADR-800) UNIONed with events accepted-shared to it (EC3). Never lists circle_only/private/draft/cancelled: the event''s OWN visibility gate is re-applied in BOTH branches, so an accepted share is necessary but not sufficient. The event''s HOME space must be network+active in BOTH branches too (platform events with space_id IS NULL excepted), so a suspended/hidden home space drops its events from co-host feeds. Anon-callable, self-gated in-function.';

@@ -52,7 +52,9 @@ import {
   passesCalendarGate,
   masterCalendarIncludes,
   mergeSpaceCalendarRows,
+  filterSharedByHomeSpace,
   type SpaceCalendarEventRow,
+  type SharedCalendarEventRow,
 } from './store'
 
 beforeEach(() => {
@@ -162,5 +164,24 @@ describe('mergeSpaceCalendarRows (EC3 UNION: own + accepted-shared, deduped + ga
     const b = row({ id: 'b', starts_at: '2026-07-06T19:00:00Z' })
     const c = row({ id: 'c', starts_at: '2026-07-07T19:00:00Z' })
     expect(mergeSpaceCalendarRows([a, b], [c], FROM, 2).map((e) => e.id)).toEqual(['a', 'b'])
+  })
+})
+
+describe('filterSharedByHomeSpace (EC3 leak gate: a share cannot out-live its home space walling)', () => {
+  const sharedRow = (over: Partial<SharedCalendarEventRow>): SharedCalendarEventRow => ({
+    ...row(over),
+    space_id: over.space_id ?? null,
+  })
+  it('keeps a shared event whose HOME space is network + active (in the allowed set)', () => {
+    const e = sharedRow({ id: 'live', space_id: 'home-active' })
+    expect(filterSharedByHomeSpace([e], new Set(['home-active'])).map((r) => r.id)).toEqual(['live'])
+  })
+  it('DROPS a shared event whose HOME space is suspended/hidden (not in the allowed set)', () => {
+    const e = sharedRow({ id: 'walled', space_id: 'home-suspended' })
+    expect(filterSharedByHomeSpace([e], new Set(['home-active']))).toEqual([])
+  })
+  it('keeps a platform event (null home space) without any lookup', () => {
+    const e = sharedRow({ id: 'platform', space_id: null })
+    expect(filterSharedByHomeSpace([e], new Set()).map((r) => r.id)).toEqual(['platform'])
   })
 })
