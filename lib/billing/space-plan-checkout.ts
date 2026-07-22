@@ -76,6 +76,28 @@ export async function operatorSeatsSellable(): Promise<boolean> {
   }
 }
 
+/** Open the Stripe billing portal for a Space's subscription so the OWNER can MANAGE it: update the
+ *  payment method, switch or cancel the plan, and adjust seats where the portal is configured to allow it.
+ *  Returns the hosted portal URL, or null when the Space has no Stripe customer yet (never went through
+ *  checkout) or Stripe is not configured. The portal is Stripe-hosted, so there is NO custom subscription
+ *  mutation here (Stripe owns proration + the payment UI); managing an existing subscription is allowed
+ *  even if `billing_live` is later toggled off, so a customer can always cancel. authz-delegated: the
+ *  caller (the owner-gated action) authorizes the Space. */
+export async function createSpaceBillingPortal(spaceId: string): Promise<string | null> {
+  if (!stripe) return null
+  const { data: space } = (await createAdminClient()
+    .from('spaces')
+    .select('slug, stripe_customer_id')
+    .eq('id', spaceId)
+    .maybeSingle()) as { data: { slug?: string | null; stripe_customer_id?: string | null } | null }
+  if (!space?.stripe_customer_id) return null // no customer => nothing to manage (never transacted)
+  const session = await stripe.billingPortal.sessions.create({
+    customer: space.stripe_customer_id,
+    return_url: `${appUrl()}/spaces/${space.slug ?? spaceId}/settings/billing`,
+  })
+  return session.url
+}
+
 /** Create a subscription Checkout session for a Space owner to buy a plan; returns the URL, or null
  *  when the plan isn't sellable / not synced / the space has no owner. GATED on spacePlanSellable.
  *  authz-delegated: caller-trusted operator/owner action authorizes the space; this binds the customer

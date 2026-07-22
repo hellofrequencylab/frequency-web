@@ -3,7 +3,7 @@
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
-import { createSpacePlanCheckout, createSpaceLoadoutCheckout } from '@/lib/billing/space-plan-checkout'
+import { createSpacePlanCheckout, createSpaceLoadoutCheckout, createSpaceBillingPortal } from '@/lib/billing/space-plan-checkout'
 import { asSpacePlanKey, type BillingInterval, type BillingPeriod } from '@/lib/billing/pricing-keys'
 import { asAddonKey } from '@/lib/pricing/plans'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -44,6 +44,17 @@ export async function startSpacePlanCheckout(
   }
   const url = await createSpacePlanCheckout(auth.spaceId, planKey, period)
   if (!url) return fail('Plan checkout is not available yet.')
+  return ok({ url })
+}
+
+/** Open the Stripe billing portal for a Space owner to MANAGE the Space's subscription (payment method,
+ *  plan change/cancel, seats where the portal allows). Owner-gated; returns a clean error when the Space
+ *  has no Stripe customer yet (nothing to manage) so the button never routes to a broken URL. */
+export async function openSpaceBillingPortal(slug: string): Promise<ActionResult<{ url: string }>> {
+  const auth = await authorizeOwner(slug)
+  if (!auth) return fail('You do not have access to manage this space.')
+  const url = await createSpaceBillingPortal(auth.spaceId)
+  if (!url) return fail('There is no subscription to manage yet.')
   return ok({ url })
 }
 
