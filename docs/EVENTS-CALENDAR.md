@@ -78,7 +78,9 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
   (confirmed RSVPs), and a **"show in my timezone" toggle** that reformats the true instant in the viewer's
   own zone via native `Intl` (still no project tz lib on the client). The going count + cover come from
   `listCalendarEngagement` (a display-only enrichment keyed by the grid's event ids, kept OUT of the feed
-  RPCs so the `.ics` contract is untouched). Follow-up: a list/map toggle.
+  RPCs so the `.ics` contract is untouched). **A grid/list view toggle shipped** (the list is the
+  soonest-first "what is next" scan over the whole loaded window, each row opening the same popup); a map
+  toggle remains the last follow-up.
 
 ### EC3 — the master Frequency calendar + shared events ✅ (shipped)
 - **Master Frequency calendar + feed.** `public_calendar_feed()` (migration `20261196000000`) — the
