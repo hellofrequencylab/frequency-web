@@ -298,6 +298,86 @@ export async function sendEventReminderEmail(params: {
 }
 
 
+// ── Space-follower event reminder (opt-in) ─────────────────────────────────────
+// A gentle heads-up about an upcoming PUBLIC event from a Space the member follows
+// and has NOT RSVP'd to. STRICTLY OPT-IN (space_event_reminders, default off); the
+// cron (lib/events/follower-reminders.ts) does all the gating before this is called.
+// Reuses the exact same enqueueEmail outbox + events-category unsubscribe headers +
+// suppression guard (in sendRawEmail) as every other event email. The copy is framing
+// this as a suggestion ("from a Space you follow"), never "your RSVP" — the reader has
+// no RSVP here. Voice: plain, camp-counselor, no em or en dashes.
+
+export async function sendSpaceFollowerEventReminderEmail(params: {
+  to:                 string
+  recipientName:      string
+  recipientProfileId: string
+  spaceName:          string
+  eventTitle:         string
+  whenLabel:          string
+  whenAbsolute:       string
+  location:           string | null
+  eventUrl:           string
+}) {
+  const { to, recipientName, recipientProfileId, spaceName, eventTitle, whenLabel, whenAbsolute, location, eventUrl } = params
+
+  const unsubscribeUrl = buildUnsubscribeUrl({
+    baseUrl:   BASE_URL,
+    profileId: recipientProfileId,
+    category:  'events',
+  })
+
+  await enqueueEmail({
+    to,
+    subject: `${whenLabel === 'in about a week' ? 'Coming up' : whenLabel === 'tomorrow' ? 'Tomorrow' : 'Soon'} at ${spaceName}: ${eventTitle}`,
+    headers: listUnsubscribeHeaders(unsubscribeUrl),
+    html: spaceFollowerReminderHtml({ recipientName, spaceName, eventTitle, whenLabel, whenAbsolute, location, eventUrl, unsubscribeUrl }),
+    text: spaceFollowerReminderText({ spaceName, eventTitle, whenLabel, whenAbsolute, location, eventUrl, unsubscribeUrl }),
+  })
+}
+
+function spaceFollowerReminderHtml({ recipientName, spaceName, eventTitle, whenLabel, whenAbsolute, location, eventUrl, unsubscribeUrl }: {
+  recipientName: string; spaceName: string; eventTitle: string; whenLabel: string; whenAbsolute: string; location: string | null; eventUrl: string; unsubscribeUrl: string
+}): string {
+  return emailShell(`
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+      From a Space you follow
+    </p>
+    <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+    <p style="${pStyle}">
+      Hi ${escapeHtml(recipientName)}, ${escapeHtml(spaceName)} has an event coming up ${escapeHtml(whenLabel)}.
+      You follow them, so we thought you might want to know. No pressure, take a look if it fits your week.
+    </p>
+    <p style="${pStyle}">
+      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#8F8675;">${escapeHtml(location)}</span>` : ''}
+    </p>
+    <a href="${eventUrl}" style="${btnStyle}">See the event &rarr;</a>
+    <hr style="${dividerStyle}">
+    <p style="font-size:13px;color:#8F8675;">
+      You're getting this because you follow ${escapeHtml(spaceName)} and asked to hear about their events.
+      <a href="${BASE_URL}/settings/notifications" style="color:#8F8675;">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe from event emails</a>.
+    </p>
+  `)
+}
+
+function spaceFollowerReminderText({ spaceName, eventTitle, whenLabel, whenAbsolute, location, eventUrl, unsubscribeUrl }: {
+  spaceName: string; eventTitle: string; whenLabel: string; whenAbsolute: string; location: string | null; eventUrl: string; unsubscribeUrl: string
+}): string {
+  return `From a Space you follow: ${eventTitle}
+
+${spaceName} has an event coming up ${whenLabel}. You follow them, so we thought you might want to know. No pressure, take a look if it fits your week.
+
+When: ${whenAbsolute}
+${location ? `Where: ${location}\n` : ''}
+See the event: ${eventUrl}
+
+You're getting this because you follow ${spaceName} and asked to hear about their events.
+Manage preferences: ${BASE_URL}/settings/notifications
+Unsubscribe from event emails: ${unsubscribeUrl}
+`
+}
+
+
 // ── Event RSVP confirmation email ──────────────────────────────────────────────
 // Sent the moment a member RSVPs (the 3-touch reminder cron only fires later, so
 // without this an RSVP got NO acknowledgement). Reuses the same enqueueEmail

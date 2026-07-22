@@ -66,6 +66,10 @@ export type NotificationPreferences = {
   push_mentions:    boolean
   push_lifecycle:   boolean
   push_comments:    boolean
+  // Opt-IN, default OFF (20261204000000): remind me about upcoming public events
+  // from Spaces I follow that I have not RSVP'd to. NOT part of the channel x
+  // category grid — a single email-only opt-in, read via wantsSpaceEventReminders().
+  space_event_reminders: boolean
 }
 
 export const DEFAULT_PREFERENCES: NotificationPreferences = {
@@ -84,6 +88,8 @@ export const DEFAULT_PREFERENCES: NotificationPreferences = {
   push_mentions:    false,
   push_lifecycle:   false,
   push_comments:    false,
+  // Strictly opt-in: OFF until the member turns it on in /settings/notifications.
+  space_event_reminders: false,
 }
 
 // Per-category frequency map (one `freq_<category>` per NotificationCategory). Kept
@@ -193,7 +199,24 @@ export async function shouldSend(
   try {
     const prefs = await getPreferences(profileId)
     const key = `${channel}_${category}` as keyof NotificationPreferences
-    return prefs[key]
+    return prefs[key] === true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Whether the member has OPTED IN to reminders about upcoming public events from Spaces
+ * they follow (the `space_event_reminders` column, 20261204000000). This is a strictly
+ * opt-in engagement channel, so the answer is FALSE by default and FALSE on any error /
+ * missing row (fail-closed: a broken read must never send an outbound email a member
+ * never asked for). Layered under this in the cron: the member must ALSO still have
+ * event email on (email_events) and not be suppressed. See lib/events/follower-reminders.ts.
+ */
+export async function wantsSpaceEventReminders(profileId: string): Promise<boolean> {
+  try {
+    const prefs = await getPreferences(profileId)
+    return prefs.space_event_reminders === true
   } catch {
     return false
   }

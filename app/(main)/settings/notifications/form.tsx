@@ -82,6 +82,10 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
     persist({ ...settings, [key]: freq }, settings)
   }
 
+  function toggleFollowerReminders() {
+    persist({ ...settings, space_event_reminders: !settings.space_event_reminders }, settings)
+  }
+
   return (
     <div className="space-y-3">
       {/* Guidance: topics vs frequency, in plain terms. */}
@@ -167,6 +171,36 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Events from Spaces you follow: a separate, opt-in email. Off by default. */}
+      <div className="flex items-start justify-between gap-4 rounded-2xl border border-border bg-surface px-4 py-3.5 shadow-sm">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-text">Events from Spaces you follow</p>
+          <p className="text-xs text-muted mt-0.5">
+            Remind me about upcoming events from Spaces I follow that I have not RSVP&apos;d to. Public
+            events only, by email. Off unless you turn it on.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={toggleFollowerReminders}
+          role="switch"
+          aria-checked={settings.space_event_reminders === true}
+          aria-label="Remind me about events from Spaces I follow"
+          className={`
+            relative inline-flex items-center justify-center shrink-0
+            w-10 h-6 rounded-full transition-colors
+            ${settings.space_event_reminders === true ? 'bg-primary' : 'bg-border hover:bg-border-strong'}
+          `}
+        >
+          <span
+            className={`
+              inline-block w-4 h-4 bg-white rounded-full shadow transform transition-transform
+              ${settings.space_event_reminders === true ? 'translate-x-2' : '-translate-x-2'}
+            `}
+          />
+        </button>
       </div>
 
       {/* Transactional carve-out: always-on, stated plainly. */}

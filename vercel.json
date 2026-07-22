@@ -61,6 +61,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/space-follower-event-reminders",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/weekly-digest",
       "schedule": "0 14 * * 0"
     },
