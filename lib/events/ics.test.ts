@@ -7,6 +7,9 @@ import {
   buildVevent,
   renderCalendar,
   rruleForRecurrence,
+  computeFeedExdates,
+  planCalendarFeed,
+  type FeedGroupRow,
 } from './ics'
 
 describe('icsStamp', () => {
@@ -128,6 +131,145 @@ describe('buildVevent', () => {
     // RRULE must sit inside the block (a client reads it as a property of this VEVENT).
     expect(withRule.indexOf('RRULE:FREQ=WEEKLY')).toBeGreaterThan(withRule.indexOf('DTEND:20260702T030000Z'))
     expect(buildVevent(base).some((l) => l.startsWith('RRULE:'))).toBe(false)
+  })
+
+  it('emits one EXDATE line per exdate, AFTER the RRULE, and skips an invalid Date', () => {
+    const block = buildVevent({
+      ...base,
+      rrule: 'FREQ=WEEKLY',
+      exdates: [new Date('2026-07-16T02:00:00Z'), new Date('not-a-date'), new Date('2026-07-30T02:00:00Z')],
+    })
+    expect(block).toContain('EXDATE:20260716T020000Z')
+    expect(block).toContain('EXDATE:20260730T020000Z')
+    // Only the two valid dates become lines (NaN is dropped, never emitted as EXDATE:Invalid).
+    expect(block.filter((l) => l.startsWith('EXDATE:'))).toHaveLength(2)
+    // EXDATE follows the RRULE it excepts.
+    expect(block.indexOf('EXDATE:20260716T020000Z')).toBeGreaterThan(block.indexOf('RRULE:FREQ=WEEKLY'))
+  })
+
+  it('emits no EXDATE lines when exdates is absent or empty', () => {
+    expect(buildVevent({ ...base, rrule: 'FREQ=WEEKLY' }).some((l) => l.startsWith('EXDATE:'))).toBe(false)
+    expect(buildVevent({ ...base, rrule: 'FREQ=WEEKLY', exdates: [] }).some((l) => l.startsWith('EXDATE:'))).toBe(false)
+  })
+})
+
+describe('computeFeedExdates (missing/cancelled occurrences the RRULE must not resurrect)', () => {
+  // A UTC series keeps stored wall-clock == true instant, so the expected occurrences are the anchor +7d
+  // steps at 19:00Z. `now`/`horizonDays` are injected so the expansion window is deterministic.
+  const anchor = {
+    starts_at: '2026-07-01T19:00:00Z',
+    recurrence_type: 'weekly' as const,
+    recurrence_until: null,
+    time_zone: 'UTC',
+  }
+  const NOW = new Date('2026-07-01T00:00:00Z')
+
+  it('returns [] for a non-recurring anchor (nothing to subtract)', () => {
+    expect(
+      computeFeedExdates(
+        { starts_at: '2026-07-01T19:00:00Z', recurrence_type: 'none', recurrence_until: null, time_zone: 'UTC' },
+        ['2026-07-01T19:00:00Z'],
+        { now: NOW, horizonDays: 30 },
+      ),
+    ).toEqual([])
+  })
+
+  it('returns [] when every expected occurrence is present', () => {
+    const present = [
+      '2026-07-01T19:00:00Z', '2026-07-08T19:00:00Z', '2026-07-15T19:00:00Z',
+      '2026-07-22T19:00:00Z', '2026-07-29T19:00:00Z',
+    ]
+    expect(computeFeedExdates(anchor, present, { now: NOW, horizonDays: 30 })).toEqual([])
+  })
+
+  it('EXDATEs a single cancelled middle occurrence (07-15 absent from the feed)', () => {
+    const present = ['2026-07-01T19:00:00Z', '2026-07-08T19:00:00Z', '2026-07-22T19:00:00Z', '2026-07-29T19:00:00Z']
+    const ex = computeFeedExdates(anchor, present, { now: NOW, horizonDays: 30 })
+    expect(ex.map(icsStamp)).toEqual(['20260715T190000Z'])
+  })
+
+  it('RESURRECTION GUARD: EXDATEs a cancelled TAIL — bound is the horizon, not the last present date', () => {
+    // Only the anchor is present; every later materialized occurrence was cancelled. All must be excluded
+    // or the RRULE would regenerate them. Bounding to maxPresent (the anchor) would wrongly emit none.
+    const ex = computeFeedExdates(anchor, ['2026-07-01T19:00:00Z'], { now: NOW, horizonDays: 30 })
+    expect(ex.map(icsStamp)).toEqual([
+      '20260708T190000Z', '20260715T190000Z', '20260722T190000Z', '20260729T190000Z',
+    ])
+  })
+
+  it('never EXDATEs past recurrence_until (the series end the RRULE UNTIL carries)', () => {
+    const ex = computeFeedExdates(
+      { ...anchor, recurrence_until: '2026-07-15T23:59:59Z' },
+      ['2026-07-01T19:00:00Z'],
+      { now: NOW, horizonDays: 60 },
+    )
+    // Only 07-08 and 07-15 are in-series; 07-22+ are past the end, so no EXDATE for them.
+    expect(ex.map(icsStamp)).toEqual(['20260708T190000Z', '20260715T190000Z'])
+  })
+
+  it('never EXDATEs beyond the materialization horizon (un-materialized future stays in the RRULE)', () => {
+    // horizon = now + 10 days -> only 07-08 is expected; 07-15+ are not materialized yet, so they are NOT
+    // subtracted (the client keeps generating the ongoing series).
+    const ex = computeFeedExdates(anchor, ['2026-07-01T19:00:00Z'], { now: NOW, horizonDays: 10 })
+    expect(ex.map(icsStamp)).toEqual(['20260708T190000Z'])
+  })
+
+  it('resolves EXDATE through the event zone (a 7pm-PT occurrence -> 02:00Z the next day)', () => {
+    // Wall-clock 19:00 stored as UTC parts, interpreted in LA (PDT, UTC-7) -> the true instant is 02:00Z
+    // the following day. Present rows are matched in the same true-instant space.
+    const pt = { ...anchor, time_zone: 'America/Los_Angeles' }
+    const present = ['2026-07-01T19:00:00Z', '2026-07-15T19:00:00Z'] // 07-08 cancelled
+    const ex = computeFeedExdates(pt, present, { now: NOW, horizonDays: 20 })
+    // 07-08 19:00 PT -> 07-09 02:00Z.
+    expect(ex.map(icsStamp)).toEqual(['20260709T020000Z'])
+  })
+})
+
+describe('planCalendarFeed (collapse a materialized series to one RRULE VEVENT)', () => {
+  const NOW = new Date('2026-07-01T00:00:00Z')
+
+  const rows: FeedGroupRow[] = [
+    { id: 'A', starts_at: '2026-07-01T19:00:00Z', time_zone: 'UTC', recurrence_type: 'weekly', recurrence_until: null, parent_event_id: null },
+    { id: 'C1', starts_at: '2026-07-08T19:00:00Z', time_zone: 'UTC', recurrence_type: 'none', recurrence_until: null, parent_event_id: 'A' },
+    { id: 'C2', starts_at: '2026-07-22T19:00:00Z', time_zone: 'UTC', recurrence_type: 'none', recurrence_until: null, parent_event_id: 'A' },
+    { id: 'N', starts_at: '2026-07-05T10:00:00Z', time_zone: 'UTC', recurrence_type: 'none', recurrence_until: null, parent_event_id: null },
+    { id: 'O', starts_at: '2026-07-10T12:00:00Z', time_zone: 'UTC', recurrence_type: 'none', recurrence_until: null, parent_event_id: 'ZZZ' },
+  ]
+
+  it('collapses the anchor + its in-feed children into ONE RRULE plan and skips the children', () => {
+    const plans = planCalendarFeed(rows, { now: NOW, horizonDays: 25 })
+    const ids = plans.map((p) => p.row.id)
+    // C1/C2 are folded into A's RRULE; A, N, O remain, IN INPUT ORDER.
+    expect(ids).toEqual(['A', 'N', 'O'])
+    const a = plans.find((p) => p.row.id === 'A')!
+    expect(a.rrule).toBe('FREQ=WEEKLY')
+  })
+
+  it('EXDATEs the anchor plan for a cancelled occurrence between present children (07-15)', () => {
+    const a = planCalendarFeed(rows, { now: NOW, horizonDays: 25 }).find((p) => p.row.id === 'A')!
+    // present = anchor 07-01, C1 07-08, C2 07-22; horizon (25d) -> 07-26, so expected 07-08/07-15/07-22.
+    expect(a.exdates.map(icsStamp)).toEqual(['20260715T190000Z'])
+  })
+
+  it('renders a non-recurring event and an ORPHAN child (anchor absent) as their own VEVENTs', () => {
+    const plans = planCalendarFeed(rows, { now: NOW, horizonDays: 25 })
+    const n = plans.find((p) => p.row.id === 'N')!
+    const o = plans.find((p) => p.row.id === 'O')!
+    expect(n.rrule).toBeNull()
+    expect(n.exdates).toEqual([])
+    // O's parent 'ZZZ' is not in the feed, so O is NOT dropped — it stays a standalone VEVENT.
+    expect(o.rrule).toBeNull()
+    expect(o.exdates).toEqual([])
+  })
+
+  it('leaves a feed with no recurring anchors entirely one-VEVENT-per-row', () => {
+    const flat: FeedGroupRow[] = [
+      { id: 'x', starts_at: '2026-07-02T10:00:00Z', recurrence_type: 'none', parent_event_id: null },
+      { id: 'y', starts_at: '2026-07-03T10:00:00Z', recurrence_type: null, parent_event_id: null },
+    ]
+    const plans = planCalendarFeed(flat, { now: NOW })
+    expect(plans.map((p) => p.row.id)).toEqual(['x', 'y'])
+    expect(plans.every((p) => p.rrule === null && p.exdates.length === 0)).toBe(true)
   })
 })
 

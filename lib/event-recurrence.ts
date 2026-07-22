@@ -71,6 +71,33 @@ function occurrenceAt(start: Date, type: RecurrenceType, step: number): Date {
   }
 }
 
+// Expand an anchor's occurrence start times (wall-clock-as-UTC-parts, EXCLUDING the anchor itself) up to
+// an EXPLICIT upper-bound instant (inclusive), stopping at recurrence_until if set. Pure and
+// Date.now()-independent — the seam computeOccurrenceDates (horizon = now + N days) and the .ics feed
+// EXDATE helper (bound = the materialization horizon) both delegate here so the series math lives once.
+export function expandOccurrenceInstants(
+  anchor: Pick<Anchor, 'starts_at' | 'recurrence_type' | 'recurrence_until'>,
+  untilInstant: Date,
+): Date[] {
+  if (anchor.recurrence_type === 'none') return []
+
+  const start = new Date(anchor.starts_at)
+  const limit = untilInstant.getTime()
+  const seriesEnd = anchor.recurrence_until ? new Date(anchor.recurrence_until) : null
+
+  const dates: Date[] = []
+  // Each occurrence is computed FROM the series start (not the previous cursor), so a
+  // clamped short-month day can never accumulate drift across the series.
+  for (let step = 1; step <= 365; step++) {
+    const cursor = occurrenceAt(start, anchor.recurrence_type, step)
+    if (cursor.getTime() > limit) break
+    if (seriesEnd && cursor > seriesEnd) break
+    dates.push(cursor)
+  }
+
+  return dates
+}
+
 // Compute occurrence start times for an anchor up to the window edge.
 // Excludes the anchor itself (it's already in the DB). Stops at
 // recurrence_until if set.
@@ -79,24 +106,8 @@ export function computeOccurrenceDates(
   horizonDays: number = HORIZON_DAYS,
 ): Date[] {
   if (anchor.recurrence_type === 'none') return []
-
-  const start = new Date(anchor.starts_at)
   const horizon = new Date(Date.now() + horizonDays * 24 * 60 * 60 * 1000)
-  const seriesEnd = anchor.recurrence_until
-    ? new Date(anchor.recurrence_until)
-    : null
-
-  const dates: Date[] = []
-  // Each occurrence is computed FROM the series start (not the previous cursor), so a
-  // clamped short-month day can never accumulate drift across the series.
-  for (let step = 1; step <= 365; step++) {
-    const cursor = occurrenceAt(start, anchor.recurrence_type, step)
-    if (cursor > horizon) break
-    if (seriesEnd && cursor > seriesEnd) break
-    dates.push(cursor)
-  }
-
-  return dates
+  return expandOccurrenceInstants(anchor, horizon)
 }
 
 // Materialise missing future occurrences for a single anchor. Idempotent.

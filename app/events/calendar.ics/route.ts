@@ -13,26 +13,33 @@
 
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { buildVevent, icsEventInstants, renderCalendar } from '@/lib/events/ics'
+import { buildVevent, icsEventInstants, planCalendarFeed, renderCalendar } from '@/lib/events/ics'
 
 export const dynamic = 'force-dynamic'
 
+// The feed RPC (public_calendar_feed) carries recurrence_type/recurrence_until/parent_event_id as of
+// 20261203000000, so the route collapses a recurring series to ONE RRULE VEVENT instead of one VEVENT per
+// materialized child (EC4).
 type FeedRow = {
-  id:           string
-  title:        string
-  description:  string | null
-  location:     string | null
-  starts_at:    string
-  ends_at:      string | null
-  slug:         string
-  is_cancelled: boolean
-  time_zone:    string | null
+  id:               string
+  title:            string
+  description:      string | null
+  location:         string | null
+  starts_at:        string
+  ends_at:          string | null
+  slug:             string
+  is_cancelled:     boolean
+  time_zone:        string | null
+  recurrence_type:  string | null
+  recurrence_until: string | null
+  parent_event_id:  string | null
 }
 
 // Build one VEVENT for a master-feed row — resolving the TRUE UTC instant through the event's zone
 // (icsEventInstants), the one timezone seam. These are PUBLIC events, so the venue is included exactly
-// as the public event page + per-event .ics already expose it.
-function vevent(ev: FeedRow, appUrl: string): string[] {
+// as the public event page + per-event .ics already expose it. `rrule`/`exdates` come from
+// planCalendarFeed: a recurring anchor gets the cadence + cancelled/missing occurrences subtracted.
+function vevent(ev: FeedRow, appUrl: string, rrule: string | null, exdates: Date[]): string[] {
   const { start, end } = icsEventInstants(ev.starts_at, ev.ends_at, ev.time_zone)
   return buildVevent({
     uid: ev.id,
@@ -42,6 +49,8 @@ function vevent(ev: FeedRow, appUrl: string): string[] {
     url: `${appUrl}/events/${ev.slug}`,
     location: ev.location,
     description: ev.description,
+    rrule,
+    exdates,
     cancelled: ev.is_cancelled,
   })
 }
@@ -65,7 +74,9 @@ export async function GET() {
   const body = renderCalendar({
     name: 'Frequency events',
     description: 'Upcoming public events across Frequency',
-    vevents: rows.map((ev) => vevent(ev, appUrl)),
+    // Group by series: a recurring anchor becomes one RRULE VEVENT (+ EXDATE for the missing/cancelled
+    // occurrences), its in-feed children are folded in, and a child whose anchor is absent stays its own.
+    vevents: planCalendarFeed(rows).map((p) => vevent(p.row, appUrl, p.rrule, p.exdates)),
   })
 
   return new NextResponse(body, {
