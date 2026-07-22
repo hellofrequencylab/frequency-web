@@ -82,14 +82,21 @@ turn `gamification_full_member` back off.
   enabled and billing is live. It includes a trial with a card upfront. Business is the full-depth tier;
   free is a usage state within Business, not a separate plan.
 
-## Known gaps (settable only in the database today)
+## Founding rates and beta controls (on the console)
 
-These are being moved to admin surfaces; until then they are edited in `pricing_settings` /
-`platform_flags` directly:
+All of these now have an editor at `/admin/pricing` (ADR-803). Nothing here charges: a founding rate is a
+locked display value, and the money flip is still the master switch.
 
-- The **operator seat** price + activation (the seat is a placeholder skipped by the catalog sync).
-- The **Founding Member $250** amount (a code constant; the display value reads the `founding`
-  `pricing_settings` key).
-- The **`founding` config** (member one-time, member cap, business monthly, business take bps, city cap).
-- The **8% member take-rate** (`take_rate.member_bps`).
-- **`beta_ends_at`**, **`beta_invite_only`**, **`beta_host_prompts`**.
+- **Founding rates** (`Founding rates` section). The one-time **Founding Member** rate and seat cap, and
+  the **Founding Business** locked monthly, bought-down marketplace fee, and per-city cap. Saved to the
+  `founding` `pricing_settings` key.
+- **Operator seat** (`Catalog` > `Operator seat`). Set the seat price, then flip **Seat activation** on.
+  While it is off, the seat is a placeholder the catalog sync skips (no Stripe price is minted). Turning
+  it on drops the placeholder so the next **Sync the catalog to Stripe** mints the live seat price from
+  the amount you set. Activation is audited in `platform_flag_events`.
+- **Member take-rate** (`Plans and prices` > `Take-rate`, the **Member %** field). The rate on an
+  individual member's Market sale (default 8%); a Business subscription buys it down.
+- **Beta controls** (`Beta controls` section). The **invite gate** (`beta_invite_only`) and **host
+  prompts** (`beta_host_prompts`) switches, both audited, plus the **countdown date** (`beta_ends_at`).
+  The countdown date is **display only**: it drives the "Summer of Frequency" banner and grants no
+  access on its own.

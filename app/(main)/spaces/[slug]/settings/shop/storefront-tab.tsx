@@ -66,8 +66,8 @@ export function StorefrontTab({
           Payouts run on Stripe Connect, straight to your account. Set up a payout account so you can take
           orders when payments turn on.
         </p>
-        <Link href={`/spaces/${slug}/settings/billing`} className={buttonClasses('secondary', 'md')}>
-          Payouts and billing
+        <Link href="/settings/billing" className={buttonClasses('secondary', 'md')}>
+          Set up payouts
         </Link>
       </div>
     </div>

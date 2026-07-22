@@ -3,10 +3,12 @@
 // read-only Stripe status. EVERYTHING reads FAIL-SAFE to the seeded code defaults, so the page
 // renders correct launch values even before the migration is applied / with billing OFF.
 
-import { getPricingValues, loadPricingFlags, type PricingDefaults, type PricingFlagKey } from '@/lib/pricing/settings'
+import { getPricingValues, loadPricingFlags, getFoundingConfig, type PricingDefaults, type PricingFlagKey } from '@/lib/pricing/settings'
 import { loadCatalogConfig, type CatalogConfig } from '@/lib/pricing/catalog-config'
+import { type FoundingConfig } from '@/lib/pricing/founding'
 import { FEATURE_GATES, loadFeatureGateOverrides, mergeGate, type FeatureGate } from '@/lib/pricing/gates'
 import { billingEnabled } from '@/lib/billing/stripe'
+import { getPlatformSetting, betaInviteOnly, betaHostPromptsFlag } from '@/lib/platform-flags'
 import { loadStripePriceMap, type StripePriceRow } from '@/lib/billing/pricing-prices'
 import { allPublicPriceKeys, allFounderPriceKeys, allCatalogPriceKeys } from '@/lib/billing/pricing-keys'
 
@@ -33,6 +35,15 @@ export interface PricingConsoleData {
   /** The Phase C clean catalog config (operator overrides over the code catalog, ADR-463). */
   catalog: CatalogConfig
   flags: Record<PricingFlagKey, boolean>
+  /** The founding config (member one-time + cap, business monthly + take + city cap · ADR-599/803). */
+  founding: FoundingConfig
+  /** The three beta controls (invite gate, host prompts, countdown date · ADR-803). */
+  beta: {
+    inviteOnly: boolean
+    hostPrompts: boolean
+    /** The raw `beta_ends_at` value (ISO string or empty). Display-only; grants no access. */
+    endsAt: string
+  }
   gates: FeatureGateRow[]
   stripe: {
     /** Stripe env keys present (billingEnabled). */
@@ -53,13 +64,18 @@ export interface PricingConsoleData {
 }
 
 export async function getPricingConsoleData(): Promise<PricingConsoleData> {
-  const [values, catalog, flags, overrides, priceMap] = await Promise.all([
-    getPricingValues(),
-    loadCatalogConfig(),
-    loadPricingFlags(),
-    loadFeatureGateOverrides(),
-    loadStripePriceMap(),
-  ])
+  const [values, catalog, flags, founding, overrides, priceMap, betaEndsAtRaw, betaInvite, betaPrompts] =
+    await Promise.all([
+      getPricingValues(),
+      loadCatalogConfig(),
+      loadPricingFlags(),
+      getFoundingConfig(),
+      loadFeatureGateOverrides(),
+      loadStripePriceMap(),
+      getPlatformSetting('beta_ends_at', ''),
+      betaInviteOnly(),
+      betaHostPromptsFlag(),
+    ])
 
   // The feature->entitlement matrix: every code-declared feature, merged with any DB override, plus
   // any DB-only feature rows (a feature added in the table without a code default).
@@ -111,6 +127,8 @@ export async function getPricingConsoleData(): Promise<PricingConsoleData> {
     values,
     catalog,
     flags,
+    founding,
+    beta: { inviteOnly: betaInvite, hostPrompts: betaPrompts, endsAt: betaEndsAtRaw },
     gates,
     stripe: {
       configured,

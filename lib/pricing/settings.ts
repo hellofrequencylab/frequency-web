@@ -146,6 +146,10 @@ export const PRICING_FLAG_KEYS = [
   'gamification_full_supporter',
   // Household / Circle multi-seat bundle (ADR-370, REMAINING-WORK #6). Default OFF (never sold while OFF).
   'bundle_household_enabled',
+  // Operator-seat ACTIVATION (ADR-803). Default OFF = the seat stays the inert PLACEHOLDER (catalog sync
+  // skips it, no Stripe price minted). Flipping it ON drops the placeholder so a re-sync mints the live
+  // seat price from the operator-set amount. Never charges on its own (billingLive() still gates money).
+  'catalog_operator_seat_active',
 ] as const
 
 export type PricingFlagKey = (typeof PRICING_FLAG_KEYS)[number]
@@ -162,6 +166,8 @@ const FLAG_DEFAULTS: Record<PricingFlagKey, boolean> = {
   gamification_full_crew: true,
   gamification_full_supporter: true,
   bundle_household_enabled: false,
+  // OFF = the operator seat is a placeholder, inert until an operator activates it (ADR-362/803).
+  catalog_operator_seat_active: false,
 }
 
 /** Read all pricing flags as a key -> boolean map, merged over the safe defaults. REQUEST-CACHED;
