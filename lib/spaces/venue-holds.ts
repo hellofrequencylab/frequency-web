@@ -116,20 +116,12 @@ async function loadHoldViews(spaceId: string, statuses?: VenueHoldStatus[]): Pro
   }
 }
 
-/** Every hold touching `spaceId` (as venue or requester), any state. Sorted soonest-first. FAIL-SAFE. */
+/** Every hold touching `spaceId` (as venue or requester), any state. Sorted soonest-first. FAIL-SAFE.
+ *  The panel derives the venue-owner inbox (pending + awaitingMyApproval) and the active list from THIS
+ *  one read client-side, so there is a single source of truth for the surface. */
 export async function listVenueHoldsForSpace(spaceId: string): Promise<VenueHoldView[]> {
   const views = await loadHoldViews(spaceId)
   return views.sort((a, b) => (a.startsAt < b.startsAt ? -1 : a.startsAt > b.startsAt ? 1 : 0))
-}
-
-/** The PENDING holds ON this space's venue that its owner/admin must approve. FAIL-SAFE. */
-export async function listIncomingVenueHoldRequests(spaceId: string): Promise<VenueHoldView[]> {
-  return (await loadHoldViews(spaceId, ['pending'])).filter((v) => v.awaitingMyApproval)
-}
-
-/** Accepted holds involving this space (either side), for the shared calendar. FAIL-SAFE. */
-export async function listAcceptedVenueHolds(spaceId: string): Promise<VenueHoldView[]> {
-  return loadHoldViews(spaceId, ['accepted'])
 }
 
 /** True when an ACCEPTED space_collaboration links the two spaces (the gate for creating a hold). Reuses
