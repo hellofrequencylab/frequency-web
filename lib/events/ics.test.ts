@@ -6,6 +6,7 @@ import {
   icsEventInstants,
   buildVevent,
   renderCalendar,
+  rruleForRecurrence,
 } from './ics'
 
 describe('icsStamp', () => {
@@ -119,6 +120,33 @@ describe('buildVevent', () => {
     expect(block).toContain('LOCATION:123 Main St\\, Ojai')
     expect(block).toContain('DESCRIPTION:Bring a blanket\\; tea provided')
     expect(block).toContain('STATUS:CANCELLED')
+  })
+
+  it('emits an RRULE line right after DTEND when rrule is set, and none when absent', () => {
+    const withRule = buildVevent({ ...base, rrule: 'FREQ=WEEKLY' })
+    expect(withRule).toContain('RRULE:FREQ=WEEKLY')
+    // RRULE must sit inside the block (a client reads it as a property of this VEVENT).
+    expect(withRule.indexOf('RRULE:FREQ=WEEKLY')).toBeGreaterThan(withRule.indexOf('DTEND:20260702T030000Z'))
+    expect(buildVevent(base).some((l) => l.startsWith('RRULE:'))).toBe(false)
+  })
+})
+
+describe('rruleForRecurrence (enum recurrence -> RFC 5545 RRULE)', () => {
+  it('maps each cadence to its FREQ', () => {
+    expect(rruleForRecurrence('daily')).toBe('FREQ=DAILY')
+    expect(rruleForRecurrence('weekly')).toBe('FREQ=WEEKLY')
+    expect(rruleForRecurrence('monthly')).toBe('FREQ=MONTHLY')
+  })
+  it('returns null for a one-time / unknown / absent cadence', () => {
+    expect(rruleForRecurrence('none')).toBeNull()
+    expect(rruleForRecurrence(null)).toBeNull()
+    expect(rruleForRecurrence('yearly')).toBeNull()
+  })
+  it('appends UNTIL as a UTC stamp when a valid series-end instant is given', () => {
+    expect(rruleForRecurrence('weekly', new Date('2026-09-01T02:00:00Z'))).toBe('FREQ=WEEKLY;UNTIL=20260901T020000Z')
+  })
+  it('ignores an invalid UNTIL instant (no UNTIL rather than NaN)', () => {
+    expect(rruleForRecurrence('daily', new Date('not-a-date'))).toBe('FREQ=DAILY')
   })
 })
 
