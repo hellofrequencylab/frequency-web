@@ -61,6 +61,7 @@ export type SpaceFunctionKey =
   | 'journeys'
   | 'loom'
   | 'collaborators'
+  | 'events'
 
 /** A Space type, or the wildcard '*' meaning "every type offers this function". */
 type FunctionTypeScope = SpaceType | '*'
@@ -201,6 +202,14 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     description: 'The member rating and review wall. Keeping it on builds trust with new members.',
     entitlement: null,
     defaultMinRole: 'admin',
+    types: ['*'],
+  },
+  {
+    key: 'events',
+    label: 'Calendar',
+    description: 'Your space calendar: create and see your events, and share a subscribe link.',
+    entitlement: null,
+    defaultMinRole: 'editor',
     types: ['*'],
   },
   {
