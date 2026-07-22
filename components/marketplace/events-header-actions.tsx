@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { EventCompose } from '@/app/(main)/events/event-compose'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
+import { CalendarSubscribe } from '@/components/events/calendar-subscribe'
 import { HERO_PRIMARY_BTN, HERO_SECONDARY_BTN } from './hero-buttons'
 
 // The member action cluster for the unified Events header, rendered IDENTICALLY on both /events and
@@ -33,6 +34,10 @@ export function EventsHeaderActions({
       <Link href="/events/calendar" className={HERO_SECONDARY_BTN}>
         Calendar
       </Link>
+      {/* The member's OWN calendar feed (Events B-4): subscribe the events they're going to into Google
+          or Apple. Resolves the member's private feed token server-side (ensure_calendar_token) and
+          renders nothing for signed-out visitors; safe to mount here for any signed-in member. */}
+      <CalendarSubscribe />
       {userHasEvents && (
         <>
           <Link href="/admin/events" className={HERO_SECONDARY_BTN}>
