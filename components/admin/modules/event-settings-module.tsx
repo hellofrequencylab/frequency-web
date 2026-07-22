@@ -28,6 +28,7 @@ import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
 import { EventHeaderControls } from '@/components/admin/modules/event-header-controls'
 import { EventCohostChooser } from '@/components/admin/modules/event-cohost-chooser'
 import { EventPlacementField } from '@/components/events/event-placement-field'
+import { EventShareField } from '@/components/events/event-share-field'
 import { readEventHeroHeight } from '@/lib/events/hero-height'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import type { PlaceResult } from '@/lib/geocode'
@@ -618,6 +619,10 @@ export function EventSettingsModule() {
       {/* WHERE IT LIVES — placement under a Space or Circle (steward-approved), plus Transfer host.
           Its own actions. */}
       <EventPlacementField eventId={data.id} slug={data.slug} />
+
+      {/* CO-HOST ELSEWHERE — share the event onto ANOTHER Space's calendar too (Events EC3), without
+          moving where it lives. Steward-approved on the other side. Its own actions. */}
+      <EventShareField eventId={data.id} slug={data.slug} />
     </div>
   )
 }

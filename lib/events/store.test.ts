@@ -46,7 +46,14 @@ vi.mock('@/lib/spaces/store', () => ({
   loadRootSpaceId: async () => ROOT_ID,
 }))
 
-import { stampEventSpaceId, listEventsForSpace } from './store'
+import {
+  stampEventSpaceId,
+  listEventsForSpace,
+  passesCalendarGate,
+  masterCalendarIncludes,
+  mergeSpaceCalendarRows,
+  type SpaceCalendarEventRow,
+} from './store'
 
 beforeEach(() => {
   store.rows = {}
@@ -83,5 +90,77 @@ describe('listEventsForSpace (by-space read)', () => {
     store.rows[SPACE_A] = [{ id: 'a1', space_id: SPACE_A, title: 'A only' }]
     await listEventsForSpace(SPACE_A, { upcomingOnly: true })
     expect(gteCalled).toBe(true)
+  })
+})
+
+// ── EC2/EC3 calendar gates + the shared-event UNION (the LEAK contract, applied on each event's OWN row).
+const FROM = '2026-07-01T00:00:00Z'
+function row(over: Partial<SpaceCalendarEventRow>): SpaceCalendarEventRow {
+  return {
+    id: over.id ?? 'e',
+    slug: over.slug ?? 'e',
+    title: over.title ?? 'Event',
+    starts_at: over.starts_at ?? '2026-07-10T19:00:00Z',
+    ends_at: over.ends_at ?? null,
+    location: over.location ?? null,
+    time_zone: over.time_zone ?? null,
+    is_cancelled: over.is_cancelled ?? false,
+    status: over.status ?? 'published',
+    visibility: over.visibility ?? 'public',
+  }
+}
+
+describe('passesCalendarGate (per-space feed: public + unlisted, never leaks)', () => {
+  it('admits published public and unlisted upcoming events', () => {
+    expect(passesCalendarGate(row({ visibility: 'public' }), FROM)).toBe(true)
+    expect(passesCalendarGate(row({ visibility: 'unlisted' }), FROM)).toBe(true)
+  })
+  it('rejects private / circle_only / draft / cancelled / past on the event OWN row', () => {
+    expect(passesCalendarGate(row({ visibility: 'private' }), FROM)).toBe(false)
+    expect(passesCalendarGate(row({ visibility: 'circle_only' }), FROM)).toBe(false)
+    expect(passesCalendarGate(row({ status: 'draft' }), FROM)).toBe(false)
+    expect(passesCalendarGate(row({ is_cancelled: true }), FROM)).toBe(false)
+    expect(passesCalendarGate(row({ starts_at: '2026-06-01T19:00:00Z' }), FROM)).toBe(false)
+  })
+})
+
+describe('masterCalendarIncludes (master feed: PUBLIC ONLY — excludes unlisted)', () => {
+  it('admits public, EXCLUDES unlisted (the discovery/link distinction)', () => {
+    expect(masterCalendarIncludes(row({ visibility: 'public' }), FROM)).toBe(true)
+    // The one difference from the per-space gate: unlisted is link-only, never surfaced in discovery.
+    expect(masterCalendarIncludes(row({ visibility: 'unlisted' }), FROM)).toBe(false)
+    expect(passesCalendarGate(row({ visibility: 'unlisted' }), FROM)).toBe(true)
+  })
+  it('still rejects private / draft / cancelled', () => {
+    expect(masterCalendarIncludes(row({ visibility: 'private' }), FROM)).toBe(false)
+    expect(masterCalendarIncludes(row({ status: 'draft' }), FROM)).toBe(false)
+    expect(masterCalendarIncludes(row({ is_cancelled: true }), FROM)).toBe(false)
+  })
+})
+
+describe('mergeSpaceCalendarRows (EC3 UNION: own + accepted-shared, deduped + gated)', () => {
+  it('dedupes an event present in BOTH own and shared, keeping one', () => {
+    const shared = row({ id: 'dup', starts_at: '2026-07-05T19:00:00Z' })
+    const merged = mergeSpaceCalendarRows([shared], [shared], FROM, 300)
+    expect(merged.map((e) => e.id)).toEqual(['dup'])
+  })
+  it('unions distinct own + shared events and sorts by starts_at', () => {
+    const own = row({ id: 'own', starts_at: '2026-07-20T19:00:00Z' })
+    const shared = row({ id: 'shared', starts_at: '2026-07-10T19:00:00Z' })
+    const merged = mergeSpaceCalendarRows([own], [shared], FROM, 300)
+    expect(merged.map((e) => e.id)).toEqual(['shared', 'own'])
+  })
+  it('LEAK GATE: a SHARED but private/draft/cancelled event never surfaces (gated on its OWN row)', () => {
+    const ownPublic = row({ id: 'own', visibility: 'public' })
+    const sharedPrivate = row({ id: 'leak', visibility: 'private' })
+    const sharedDraft = row({ id: 'leak2', status: 'draft' })
+    const merged = mergeSpaceCalendarRows([ownPublic], [sharedPrivate, sharedDraft], FROM, 300)
+    expect(merged.map((e) => e.id)).toEqual(['own'])
+  })
+  it('respects the limit after dedupe + sort', () => {
+    const a = row({ id: 'a', starts_at: '2026-07-05T19:00:00Z' })
+    const b = row({ id: 'b', starts_at: '2026-07-06T19:00:00Z' })
+    const c = row({ id: 'c', starts_at: '2026-07-07T19:00:00Z' })
+    expect(mergeSpaceCalendarRows([a, b], [c], FROM, 2).map((e) => e.id)).toEqual(['a', 'b'])
   })
 })
