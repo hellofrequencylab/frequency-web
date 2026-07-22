@@ -9,6 +9,7 @@ import { spaceFunctionDef, spaceFunctionEnabled } from '@/lib/spaces/functions'
 import { listPublicSpaceCatalog } from '@/lib/commerce/products'
 import { productRatingsFor } from '@/lib/commerce/reviews'
 import { marketGroupForKind, MARKET_GROUPS, type MarketGroup } from '@/lib/commerce/types'
+import Image from 'next/image'
 import { ProductCard } from '@/components/marketplace/product-card'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -48,9 +49,25 @@ export default async function SpaceShopTabPage({ params }: { params: Promise<{ s
     items: items.filter((p) => marketGroupForKind(p.productKind) === g),
   })).filter((s) => s.items.length > 0)
 
+  // Optional storefront banner across the top of the tab, at its saved focal crop.
+  const banner = storefront.bannerUrl ? (
+    <div className="relative mb-8 aspect-[16/6] w-full overflow-hidden rounded-2xl bg-surface-elevated">
+      <Image
+        fill
+        src={storefront.bannerUrl}
+        alt=""
+        className="object-cover"
+        style={{ objectPosition: storefront.bannerFocus }}
+        sizes="(min-width:768px) 56rem, 100vw"
+        priority
+      />
+    </div>
+  ) : null
+
   if (sections.length === 0) {
     return (
       <div className="mx-auto w-full max-w-4xl px-4 py-6">
+        {banner}
         <EmptyState
           icon={Store}
           title="Nothing here yet."
@@ -62,6 +79,7 @@ export default async function SpaceShopTabPage({ params }: { params: Promise<{ s
 
   return (
     <div className="@container mx-auto w-full max-w-4xl space-y-10 px-4 py-6">
+      {banner}
       {sections.map((s) => (
         <section key={s.group}>
           <h2 className="mb-4 text-lg font-bold text-text">{GROUP_LABEL[s.group]}</h2>
