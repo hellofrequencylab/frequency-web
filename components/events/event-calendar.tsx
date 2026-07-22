@@ -34,6 +34,9 @@ export interface CalendarEvent {
   goingCount: number
   /** Cover image URL (public bucket), or null. */
   coverUrl: string | null
+  /** Optional source label (e.g. the collaborator space this event belongs to in a combined calendar);
+   *  null/absent hides it. Shown as a small badge in the list row + popup, never on the compact grid chip. */
+  sourceLabel?: string | null
   isCancelled: boolean
 }
 
@@ -186,6 +189,11 @@ export function EventCalendar({
                   <span className={cn('block truncate font-semibold', ev.isCancelled ? 'text-subtle line-through' : 'text-text')}>
                     {ev.title}
                   </span>
+                  {ev.sourceLabel && (
+                    <span className="mt-0.5 inline-block rounded bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-subtle">
+                      {ev.sourceLabel}
+                    </span>
+                  )}
                   <span className="mt-0.5 block text-xs text-muted">{ev.whenLabel}</span>
                   {ev.location && <span className="mt-0.5 block truncate text-xs text-subtle">{ev.location}</span>}
                 </span>
@@ -288,6 +296,11 @@ export function EventCalendar({
               <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-danger">Cancelled</p>
             )}
             <h3 className="text-xl font-bold leading-tight text-text">{selected.title}</h3>
+            {selected.sourceLabel && (
+              <p className="mt-1 inline-block rounded bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-subtle">
+                {selected.sourceLabel}
+              </p>
+            )}
             <div className="mt-3 flex items-start gap-2 text-sm text-muted">
               <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               <span>{whenText}</span>
