@@ -121,9 +121,19 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
   (`app/events/[slug]/event.ics`) now emits ONE VEVENT carrying an `RRULE` (`rruleForRecurrence` maps the
   ADR-007 enum daily/weekly/monthly + `recurrence_until` to `FREQ=...;UNTIL=...`), so "add to calendar"
   adds the whole series instead of a single date. Masked (private/draft/cancelled) events never emit the
-  cadence. Follow-up: fold the same RRULE into the subscribable FEEDS (they still list materialized child
-  rows as separate VEVENTs; deduping to the anchor + RRULE needs the feed RPCs to carry
-  `recurrence_type`/`parent_event_id`).
+  cadence.
+- **RRULE FEEDS shipped (ADR-807).** The SPACE feed (`app/spaces/[slug]/calendar.ics`) and the MASTER
+  feed (`app/events/calendar.ics`) now collapse a recurring series to ONE `RRULE` VEVENT instead of one
+  VEVENT per materialized child. `20261203000000_calendar_feed_recurrence.sql` ADDS
+  `recurrence_type`/`recurrence_until`/`parent_event_id` to both feed RPCs (`space_public_calendar_feed`,
+  `public_calendar_feed`) with **zero change to any WHERE clause / visibility gate** (a leak-contract
+  surface). The pure `planCalendarFeed` (in `lib/events/ics.ts`) groups the flat rows: a recurring anchor
+  emits the cadence + `EXDATE` for every cancelled/missing occurrence (`computeFeedExdates`), its in-feed
+  children are folded in, and an ORPHAN child whose anchor left the feed (went private/cancelled/out of
+  window) stays its OWN VEVENT so it is never dropped. `EXDATE` is computed in absolute (true-instant)
+  space to the MATERIALIZATION HORIZON (not the last present date), so a cancelled TAIL occurrence can
+  never resurrect via the RRULE. The MEMBER feed (`event_calendar_feed`) is untouched: it is per-RSVP'd
+  occurrence and keeps one VEVENT per occurrence.
 - Reminders for feed subscribers who have not RSVP'd (opt-in), reusing the reminder cron.
 - Saved views / "add to my calendar" nudges. **"N going" social proof shipped** on the event popup (see
   EC2 popup polish above); a grid-cell count is a possible further touch.

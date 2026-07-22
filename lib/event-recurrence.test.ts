@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeOccurrenceDates } from './event-recurrence'
+import { computeOccurrenceDates, expandOccurrenceInstants } from './event-recurrence'
 
 // F1: monthly recurrence must NOT overflow for day-29/30/31 anchors. The old
 // setUTCMonth(+1) turned Jan 31 → Mar 3 (skipping Feb entirely). The fix counts
@@ -84,6 +84,33 @@ describe('computeOccurrenceDates — daily/weekly unchanged (regression)', () =>
   it('returns nothing for a non-recurring anchor', () => {
     expect(
       computeOccurrenceDates({ starts_at: '2027-01-01T08:00:00.000Z', recurrence_type: 'none', recurrence_until: null }),
+    ).toEqual([])
+  })
+})
+
+describe('expandOccurrenceInstants — Date.now()-independent expansion to an explicit bound', () => {
+  it('expands from step 1 up to and INCLUDING the untilInstant', () => {
+    const dates = expandOccurrenceInstants(
+      { starts_at: '2027-01-01T08:00:00.000Z', recurrence_type: 'daily', recurrence_until: null },
+      new Date('2027-01-04T08:00:00.000Z'),
+    )
+    expect(dates.map(day)).toEqual(['2027-01-02', '2027-01-03', '2027-01-04'])
+  })
+
+  it('stops at recurrence_until even when the bound is later', () => {
+    const dates = expandOccurrenceInstants(
+      { starts_at: '2027-01-01T08:00:00.000Z', recurrence_type: 'weekly', recurrence_until: '2027-01-15T23:59:59.000Z' },
+      new Date('2027-03-01T00:00:00.000Z'),
+    )
+    expect(dates.map(day)).toEqual(['2027-01-08', '2027-01-15'])
+  })
+
+  it('returns [] for a non-recurring anchor', () => {
+    expect(
+      expandOccurrenceInstants(
+        { starts_at: '2027-01-01T08:00:00.000Z', recurrence_type: 'none', recurrence_until: null },
+        new Date('2030-01-01T00:00:00.000Z'),
+      ),
     ).toEqual([])
   })
 })
