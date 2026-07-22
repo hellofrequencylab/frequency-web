@@ -2,8 +2,8 @@ import { notFound } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
-import { listSpaceCalendarEvents } from '@/lib/events/store'
-import { formatEventWhen } from '@/lib/time/zone'
+import { listSpaceCalendarEvents, listCalendarEngagement } from '@/lib/events/store'
+import { formatEventWhen, eventInstant } from '@/lib/time/zone'
 import { eventDayKey } from '@/lib/events/calendar-grid'
 import { SITE_URL } from '@/lib/site'
 import { EventCalendar, type CalendarEvent } from '@/components/events/event-calendar'
@@ -29,20 +29,27 @@ export default async function SpaceCalendarPage({ params }: { params: Promise<{ 
   const fromDay = `${initialYear}-${String(initialMonth1).padStart(2, '0')}-01`
 
   const rows = await listSpaceCalendarEvents(space.id, { fromDay })
+  // Enrich with "going" count + cover for the popup (kept out of the feed RPCs; display-only).
+  const engagement = await listCalendarEngagement(rows.map((r) => r.id))
 
   // Pre-format each event server-side (the timezone lib never ships to the client): the short chip time,
-  // the full popup when-line (both in the event's own zone), and the day key the grid buckets on.
+  // the full popup when-line (both in the event's own zone), and the day key the grid buckets on. The
+  // absolute instant is passed too, so the client can offer a "show in my timezone" toggle via native Intl.
   const events: CalendarEvent[] = rows
     .map((ev): CalendarEvent | null => {
       const dayKey = eventDayKey(ev.starts_at)
       if (!dayKey) return null
+      const eng = engagement.get(ev.id)
       return {
         slug: ev.slug,
         title: ev.title,
         dayKey,
         timeLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'time', withZone: false }),
         whenLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'full' }),
+        startInstantIso: eventInstant(ev.starts_at, ev.time_zone)?.toISOString() ?? null,
         location: ev.location,
+        goingCount: eng?.going ?? 0,
+        coverUrl: eng?.coverUrl ?? null,
         isCancelled: !!ev.is_cancelled,
       }
     })

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, MapPin, ArrowUpRight, CalendarDays } from 'lucide-react'
+import { ChevronLeft, ChevronRight, MapPin, ArrowUpRight, CalendarDays, Users } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { buttonClasses } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -23,10 +23,38 @@ export interface CalendarEvent {
   dayKey: string
   /** Short time for the day-cell chip, e.g. "7:00 PM" (no zone abbrev — the chip is compact). */
   timeLabel: string
-  /** Full when-line for the popup, e.g. "Mon, Jul 20, 7:00 PM PDT" (with zone). */
+  /** Full when-line for the popup, e.g. "Mon, Jul 20, 7:00 PM PDT" (with zone), in the EVENT's own zone. */
   whenLabel: string
+  /** The true instant as an absolute ISO (with offset), for the viewer-timezone toggle. The client
+   *  reformats THIS in the viewer's own zone via native Intl (no project tz lib on the client). Null when
+   *  the instant could not be resolved. */
+  startInstantIso: string | null
   location: string | null
+  /** Confirmed 'going' RSVP count (social proof); 0 hides the line. */
+  goingCount: number
+  /** Cover image URL (public bucket), or null. */
+  coverUrl: string | null
   isCancelled: boolean
+}
+
+/** Format an absolute instant in the VIEWER's local zone with native Intl (never the project tz lib, so
+ *  nothing tz-related ships to the client beyond a plain instant). Returns null on a bad/absent instant. */
+function viewerZoneLabel(instantIso: string | null): string | null {
+  if (!instantIso) return null
+  const d = new Date(instantIso)
+  if (Number.isNaN(d.getTime())) return null
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZoneName: 'short',
+    }).format(d)
+  } catch {
+    return null
+  }
 }
 
 /** The viewer's local calendar day as YYYY-MM-DD (for the "today" ring). Client-only; the grid itself is
@@ -50,6 +78,8 @@ export function EventCalendar({
 }) {
   const [{ year, month1 }, setMonth] = useState({ year: initialYear, month1: initialMonth1 })
   const [selected, setSelected] = useState<CalendarEvent | null>(null)
+  // Times default to the event's own zone (server-formatted whenLabel); the viewer can flip to their own.
+  const [inViewerTz, setInViewerTz] = useState(false)
 
   const weeks = useMemo(() => monthMatrix(year, month1), [year, month1])
   const byDay = useMemo(() => {
@@ -161,20 +191,52 @@ export function EventCalendar({
 
       {/* The truncated event popup with the Go to Event link. */}
       <Dialog open={selected !== null} onClose={() => setSelected(null)} ariaLabel="Event details" className="max-w-md">
-        {selected && (
-          <div className="rounded-2xl border border-border bg-surface p-6 shadow-xl">
+        {selected && (() => {
+          const viewerLabel = viewerZoneLabel(selected.startInstantIso)
+          const showViewer = inViewerTz && viewerLabel !== null
+          const whenText = showViewer ? viewerLabel : selected.whenLabel
+          return (
+          <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-xl">
+            {selected.coverUrl && (
+              // eslint-disable-next-line @next/next/no-img-element -- external public bucket URL, not a local asset
+              <img
+                src={selected.coverUrl}
+                alt=""
+                className="h-32 w-full object-cover"
+                loading="lazy"
+              />
+            )}
+            <div className="p-6">
             {selected.isCancelled && (
               <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-danger">Cancelled</p>
             )}
             <h3 className="text-xl font-bold leading-tight text-text">{selected.title}</h3>
             <div className="mt-3 flex items-start gap-2 text-sm text-muted">
               <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-              <span>{selected.whenLabel}</span>
+              <span>{whenText}</span>
             </div>
+            {viewerLabel !== null && (
+              <button
+                type="button"
+                onClick={() => setInViewerTz((v) => !v)}
+                className="mt-1 ml-6 text-2xs font-medium text-primary-strong underline-offset-2 hover:underline"
+              >
+                {showViewer ? 'Show in event timezone' : 'Show in my timezone'}
+              </button>
+            )}
             {selected.location && (
               <div className="mt-1.5 flex items-start gap-2 text-sm text-muted">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                 <span>{selected.location}</span>
+              </div>
+            )}
+            {selected.goingCount > 0 && (
+              <div className="mt-1.5 flex items-start gap-2 text-sm text-muted">
+                <Users className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                <span>
+                  <span className="font-semibold text-text tabular-nums">{selected.goingCount}</span>{' '}
+                  going
+                </span>
               </div>
             )}
             <div className="mt-5 flex items-center justify-end gap-2">
@@ -190,8 +252,9 @@ export function EventCalendar({
                 <ArrowUpRight className="h-4 w-4" aria-hidden />
               </Link>
             </div>
+            </div>
           </div>
-        )}
+        )})()}
       </Dialog>
     </div>
   )

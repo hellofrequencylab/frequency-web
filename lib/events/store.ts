@@ -307,6 +307,61 @@ export async function listPublicCalendarEvents(): Promise<SpaceCalendarEvent[]> 
   }
 }
 
+// ── Calendar engagement (Events EC2/EC4 polish): "N going" + cover, enriched OUTSIDE the feed RPCs ──
+
+/** Per-event engagement shown on the calendar popup: the confirmed 'going' count (social proof) and the
+ *  event's cover image URL. Kept separate from the calendar feed rows so the .ics feed contract and the
+ *  two feed RPCs are untouched — this is a display-only enrichment over the ids already on the grid. */
+export interface CalendarEngagement {
+  going: number
+  coverUrl: string | null
+}
+
+/** PURE: tally confirmed 'going' RSVP rows into a per-event count (ignores maybe/waitlist/cancelled). */
+export function tallyGoingByEvent(rows: Array<{ event_id: string; status?: string | null }>): Map<string, number> {
+  const out = new Map<string, number>()
+  for (const r of rows) {
+    if ((r.status ?? '') !== 'going' || !r.event_id) continue
+    out.set(r.event_id, (out.get(r.event_id) ?? 0) + 1)
+  }
+  return out
+}
+
+/** Engagement (going count + resolved cover URL) for a set of calendar event ids, in TWO reads
+ *  (event_rsvps + events.cover_image_path). FAIL-SAFE to an empty map (a read error just drops the
+ *  social-proof/cover, never the event). Cover URLs come from the public 'event-media' bucket (the same
+ *  the event page uses), so no signed-URL round-trip. Every requested id gets an entry (default 0/null).
+ *  `event_rsvps` / `cover_image_path` are reached untyped (ADR-246). */
+export async function listCalendarEngagement(eventIds: string[]): Promise<Map<string, CalendarEngagement>> {
+  const ids = [...new Set(eventIds)].filter(Boolean)
+  const out = new Map<string, CalendarEngagement>()
+  if (ids.length === 0) return out
+  try {
+    const admin = untypedAdmin()
+    const [rsvpRes, coverRes] = await Promise.all([
+      admin.from('event_rsvps').select('event_id, status').in('event_id', ids).eq('status', 'going'),
+      admin.from('events').select('id, cover_image_path').in('id', ids),
+    ])
+    const going = tallyGoingByEvent((rsvpRes.data as Array<{ event_id: string; status?: string | null }> | null) ?? [])
+    const coverPath = new Map<string, string | null>()
+    for (const r of ((coverRes.data as Array<{ id: string; cover_image_path?: string | null }> | null) ?? [])) {
+      coverPath.set(r.id, r.cover_image_path ?? null)
+    }
+    for (const id of ids) {
+      const path = coverPath.get(id) ?? null
+      let coverUrl: string | null = null
+      if (path) {
+        const { data: pub } = admin.storage.from('event-media').getPublicUrl(path)
+        coverUrl = pub?.publicUrl ?? null
+      }
+      out.set(id, { going: going.get(id) ?? 0, coverUrl })
+    }
+    return out
+  } catch {
+    return out
+  }
+}
+
 /**
  * The space_id to stamp on a NEW event: the explicit owning space, else the root space (so the
  * existing single-tenant create flows default to root and behave exactly as today). Returns null
