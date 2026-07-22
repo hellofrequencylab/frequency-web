@@ -108,3 +108,4 @@ event_placement_requests
 email_templates
 element_settings
 space_collaborations
+event_space_shares

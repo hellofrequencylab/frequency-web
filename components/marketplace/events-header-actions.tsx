@@ -28,6 +28,11 @@ export function EventsHeaderActions({
       >
         <EventCompose />
       </CrewGateButton>
+      {/* The master Frequency calendar (Events EC3) — every upcoming public event on one grid + a
+          subscribable feed. Shown to any signed-in member beside New Event. */}
+      <Link href="/events/calendar" className={HERO_SECONDARY_BTN}>
+        Calendar
+      </Link>
       {userHasEvents && (
         <>
           <Link href="/admin/events" className={HERO_SECONDARY_BTN}>

@@ -11,6 +11,7 @@
 // 20260711000000_object_space_id.sql; per the codebase pattern (ADR-246) it is reached with
 // untyped casts (the payload field + the `.eq('space_id', …)` filter), not a typed client.
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 
@@ -46,15 +47,133 @@ export interface SpaceCalendarEvent {
 
 const CALENDAR_COLS = 'id, slug, title, starts_at, ends_at, location, time_zone, is_cancelled'
 
+/** A calendar event row as read untyped (status/visibility/space_id aren't in the generated types). */
+export type SpaceCalendarEventRow = SpaceCalendarEvent & {
+  status?: string | null
+  visibility?: string | null
+}
+
+/** The PER-SPACE calendar gate, applied on the event's OWN row in every branch (the leak contract):
+ *  published + public/unlisted + non-cancelled + starting on/after `fromDay`. This is the exact set the
+ *  space feed RPC (space_public_calendar_feed) enforces in SQL; kept pure here so the store readers and
+ *  the shared-event UNION apply the identical gate on each event's OWN row. Pure + unit-tested. */
+export function passesCalendarGate(e: SpaceCalendarEventRow, fromDayIso: string): boolean {
+  return (
+    !e.is_cancelled &&
+    (e.status ?? 'published') === 'published' &&
+    (e.visibility === 'public' || e.visibility === 'unlisted') &&
+    startsOnOrAfter(e.starts_at, fromDayIso)
+  )
+}
+
+/** Instant compare that survives ISO offset-format differences (`Z` vs `+00:00`): parse both. A
+ *  missing/invalid start (NaN) fails closed. Pure. */
+function startsOnOrAfter(startsAt: string | null | undefined, fromDayIso: string): boolean {
+  if (!startsAt) return false
+  const t = new Date(startsAt).getTime()
+  return !Number.isNaN(t) && t >= new Date(fromDayIso).getTime()
+}
+
+/** The MASTER-calendar gate: like passesCalendarGate but PUBLIC ONLY — 'unlisted' is EXCLUDED (the
+ *  master feed is discovery, not link-reachable). Mirrors the `visibility = 'public'` clause of the
+ *  public_calendar_feed() RPC, which is the runtime authority; this pure mirror documents + tests the
+ *  exclusion so a regression is caught. Pure + unit-tested. */
+export function masterCalendarIncludes(e: SpaceCalendarEventRow, fromDayIso: string): boolean {
+  return (
+    !e.is_cancelled &&
+    (e.status ?? 'published') === 'published' &&
+    e.visibility === 'public' &&
+    startsOnOrAfter(e.starts_at, fromDayIso)
+  )
+}
+
+/** UNION the space's OWN calendar rows with rows accepted-SHARED to it: re-apply the per-event gate on
+ *  EACH row (the leak contract — a share is necessary, never sufficient), dedupe by id, sort by
+ *  starts_at, cap at `limit`. Pure over the already-fetched rows, so the merge is unit-tested. */
+export function mergeSpaceCalendarRows(
+  ownRows: SpaceCalendarEventRow[],
+  sharedRows: SpaceCalendarEventRow[],
+  fromDayIso: string,
+  limit: number,
+): SpaceCalendarEvent[] {
+  const byId = new Map<string, SpaceCalendarEvent>()
+  for (const e of [...ownRows, ...sharedRows]) {
+    if (!passesCalendarGate(e, fromDayIso)) continue
+    if (!byId.has(e.id)) byId.set(e.id, e)
+  }
+  return [...byId.values()]
+    .sort((a, b) => (a.starts_at < b.starts_at ? -1 : a.starts_at > b.starts_at ? 1 : 0))
+    .slice(0, limit)
+}
+
+/** A shared-event row carries its HOME space id so the reader can re-gate the home space (below). */
+export type SharedCalendarEventRow = SpaceCalendarEventRow & { space_id?: string | null }
+
+/** Keep only accepted-shared rows whose HOME space may surface events on a co-host calendar: a
+ *  network-visible + active space (`allowedHomeSpaceIds`), OR a platform event with no home space
+ *  (`space_id` null). This is the co-host equivalent of the owned branch's `spaces` join — without it,
+ *  a share out-lives its home space's walling (a suspended/hidden space's public event would keep
+ *  showing on co-hosts). Mirrors the `space_public_calendar_feed` shared-branch home-space gate. Pure. */
+export function filterSharedByHomeSpace(
+  sharedRows: SharedCalendarEventRow[],
+  allowedHomeSpaceIds: Set<string>,
+): SharedCalendarEventRow[] {
+  return sharedRows.filter((e) => e.space_id == null || allowedHomeSpaceIds.has(e.space_id))
+}
+
+/** Untyped admin handle — space_id / visibility / event_space_shares are newer than the generated
+ *  types (ADR-246), so the reads below reach them through this loose handle. */
+function untypedAdmin(): SupabaseClient {
+  return createAdminClient()
+}
+
+/** Which of `spaceIds` are network-visible + active — the home spaces allowed to surface events on a
+ *  co-host calendar (the shared branch's home-space gate). Platform events (null home) skip this and are
+ *  allowed by `filterSharedByHomeSpace` directly. FAIL-SAFE: empty set on any error (drops every
+ *  real-home shared event rather than risk surfacing a walled space's event). */
+async function networkActiveHomeSpaceIds(admin: SupabaseClient, spaceIds: string[]): Promise<Set<string>> {
+  const ids = [...new Set(spaceIds)]
+  if (ids.length === 0) return new Set()
+  try {
+    const { data, error } = await admin
+      .from('spaces')
+      .select('id')
+      .in('id', ids)
+      .eq('visibility', 'network')
+      .eq('status', 'active')
+    if (error) return new Set()
+    return new Set(((data ?? []) as Array<{ id: string }>).map((r) => r.id))
+  } catch {
+    return new Set()
+  }
+}
+
+/** Event ids ACCEPTED-shared TO this space (EC3). The share is NECESSARY here; the per-event
+ *  visibility gate (passesCalendarGate) is re-applied by the caller on each event's OWN row, so a
+ *  share never surfaces a private/draft/cancelled event. FAIL-SAFE: [] on any error. */
+async function acceptedShareEventIds(admin: SupabaseClient, spaceId: string): Promise<string[]> {
+  try {
+    const { data, error } = await admin
+      .from('event_space_shares')
+      .select('event_id')
+      .eq('space_id', spaceId)
+      .eq('status', 'accepted')
+    if (error) return []
+    return [...new Set(((data ?? []) as Array<{ event_id: string }>).map((r) => r.event_id))]
+  } catch {
+    return []
+  }
+}
+
 /**
- * A space's events for its calendar tab (Events EC2), from `fromDay` (YYYY-MM-DD, inclusive) forward,
- * soonest first. Same EVENT filters as the EC1 subscribe feed (space_public_calendar_feed): only
- * PUBLISHED, public/unlisted, non-cancelled events — so the on-page grid and the subscribed .ics show the
- * exact same event set, and neither leaks a draft, private, or circle_only event. (The EC1 RPC ALSO
- * gates the owning space on visibility='network' + status='active' in-function; here that space-level
- * gate is the calendar page's own getVisibleSpaceBySlug, so this reader must stay behind it.) Filtered by
- * space_id so space A never resolves space B's events. FAIL-SAFE: [] on any error / missing tenant.
- * `space_id`/`visibility` are not in the generated types (ADR-246), so the chain is reached untyped.
+ * A space's events for its calendar tab (Events EC2) + events accepted-SHARED to it (EC3), from
+ * `fromDay` (YYYY-MM-DD, inclusive) forward, soonest first, deduped by id. Same EVENT filters as the
+ * EC1 subscribe feed (space_public_calendar_feed): only PUBLISHED, public/unlisted, non-cancelled
+ * events — so the on-page grid and the subscribed .ics show the exact same event set, and neither leaks
+ * a draft, private, or circle_only event, EVEN via a share. The shared branch re-applies the gate on
+ * each event's OWN row (passesCalendarGate): an accepted share is necessary, never sufficient. Owned
+ * events are filtered by space_id so space A never resolves space B's OWN events. FAIL-SAFE: [] on any
+ * error / missing tenant. `space_id`/`visibility`/`event_space_shares` are reached untyped (ADR-246).
  */
 export async function listSpaceCalendarEvents(
   spaceId: string | null | undefined,
@@ -64,73 +183,127 @@ export async function listSpaceCalendarEvents(
   if (!sid) return []
   const limit = opts.limit ?? 300
   const fromDay = opts.fromDay ?? new Date().toISOString().slice(0, 10)
+  const fromDayIso = `${fromDay}T00:00:00Z`
   try {
-    const db = createAdminClient().from('events') as unknown as {
-      select: (cols: string) => {
-        eq: (col: string, val: string) => {
-          eq: (col: string, val: string) => {
-            in: (col: string, vals: string[]) => {
-              gte: (col: string, val: string) => {
-                order: (col: string, opts: { ascending: boolean }) => {
-                  limit: (n: number) => Promise<{ data: unknown; error: unknown }>
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    const { data, error } = await db
-      .select(CALENDAR_COLS)
+    const admin = untypedAdmin()
+    const shareIds = await acceptedShareEventIds(admin, sid)
+
+    // Owned events (by space_id) and, if any, shared events (by id) — each gated on the event's OWN
+    // row. Two reads unioned in-app; the DB feed does the same UNION server-side.
+    const ownedQ = admin
+      .from('events')
+      .select(`${CALENDAR_COLS}, status, visibility`)
       .eq('space_id', sid)
       .eq('status', 'published')
       .in('visibility', ['public', 'unlisted'])
-      .gte('starts_at', `${fromDay}T00:00:00Z`)
+      .gte('starts_at', fromDayIso)
       .order('starts_at', { ascending: true })
       .limit(limit)
-    if (error) return []
-    return ((data as SpaceCalendarEvent[] | null) ?? []).filter((e) => !e.is_cancelled)
+    const sharedQ = shareIds.length
+      ? admin
+          .from('events')
+          .select(`${CALENDAR_COLS}, status, visibility, space_id`)
+          .in('id', shareIds)
+          .eq('status', 'published')
+          .in('visibility', ['public', 'unlisted'])
+          .gte('starts_at', fromDayIso)
+          .order('starts_at', { ascending: true })
+          .limit(limit)
+      : Promise.resolve({ data: [], error: null })
+
+    const [owned, shared] = await Promise.all([ownedQ, sharedQ])
+    if (owned.error) return []
+
+    // Re-gate the HOME space of each shared event (network + active, platform events excepted) before the
+    // merge — a share is necessary, never sufficient, and it can't out-live its home space's walling.
+    const sharedRows: SharedCalendarEventRow[] = shared.error
+      ? []
+      : ((shared.data as SharedCalendarEventRow[] | null) ?? [])
+    const allowedHomes = await networkActiveHomeSpaceIds(
+      admin,
+      sharedRows.map((e) => e.space_id).filter((id): id is string => !!id),
+    )
+    const gatedShared = filterSharedByHomeSpace(sharedRows, allowedHomes)
+
+    // UNION own + shared, re-gate each row (shared events MUST pass on their OWN row), dedupe, sort.
+    return mergeSpaceCalendarRows(
+      (owned.data as SpaceCalendarEventRow[] | null) ?? [],
+      gatedShared,
+      fromDayIso,
+      limit,
+    )
   } catch {
     return []
   }
 }
 
 /**
- * True when a space has at least one upcoming event the CALENDAR would show (published, public/unlisted,
- * non-cancelled, from today forward) — the gate for the profile's Calendar tab. Uses the SAME filters as
- * listSpaceCalendarEvents so the tab never appears over an empty grid (a space whose only upcoming events
- * are drafts / private / circle_only must NOT get the tab). FAIL-SAFE: false on any error / missing tenant.
+ * True when a space has at least one upcoming event the CALENDAR would show — its OWN published,
+ * public/unlisted, non-cancelled upcoming event, OR one accepted-SHARED to it (EC3). Uses the SAME
+ * per-event gate as listSpaceCalendarEvents so the tab never appears over an empty grid (a space whose
+ * only upcoming events are drafts / private / circle_only, owned or shared, must NOT get the tab).
+ * FAIL-SAFE: false on any error / missing tenant.
  */
 export async function spaceHasPublicUpcomingEvents(spaceId: string | null | undefined): Promise<boolean> {
   const sid = spaceId ?? (await loadRootSpaceId())
   if (!sid) return false
   const today = new Date().toISOString().slice(0, 10)
+  const fromDayIso = `${today}T00:00:00Z`
   try {
-    const db = createAdminClient().from('events') as unknown as {
-      select: (cols: string) => {
-        eq: (col: string, val: string | boolean) => {
-          eq: (col: string, val: string | boolean) => {
-            eq: (col: string, val: string | boolean) => {
-              in: (col: string, vals: string[]) => {
-                gte: (col: string, val: string) => { limit: (n: number) => Promise<{ data: unknown; error: unknown }> }
-              }
-            }
-          }
-        }
-      }
-    }
-    const { data, error } = await db
+    const admin = untypedAdmin()
+    const { data: owned, error } = await admin
+      .from('events')
       .select('id')
       .eq('space_id', sid)
       .eq('status', 'published')
       .eq('is_cancelled', false)
       .in('visibility', ['public', 'unlisted'])
-      .gte('starts_at', `${today}T00:00:00Z`)
+      .gte('starts_at', fromDayIso)
       .limit(1)
-    if (error) return false
-    return Array.isArray(data) && data.length > 0
+    if (!error && Array.isArray(owned) && owned.length > 0) return true
+
+    // No own upcoming event — does an accepted SHARE surface one? Gate on the event's OWN row AND its
+    // HOME space (network + active, platform events excepted), so a suspended/hidden home space's event
+    // doesn't keep the tab alive. Fetch candidates (not limit(1)) since the first row's home may be walled.
+    const shareIds = await acceptedShareEventIds(admin, sid)
+    if (shareIds.length === 0) return false
+    const { data: shared, error: sErr } = await admin
+      .from('events')
+      .select('id, space_id')
+      .in('id', shareIds)
+      .eq('status', 'published')
+      .eq('is_cancelled', false)
+      .in('visibility', ['public', 'unlisted'])
+      .gte('starts_at', fromDayIso)
+    if (sErr || !Array.isArray(shared) || shared.length === 0) return false
+    const sharedCandidates = shared as Array<{ id: string; space_id?: string | null }>
+    const allowedHomes = await networkActiveHomeSpaceIds(
+      admin,
+      sharedCandidates.map((e) => e.space_id).filter((id): id is string => !!id),
+    )
+    return sharedCandidates.some((e) => e.space_id == null || allowedHomes.has(e.space_id))
   } catch {
     return false
+  }
+}
+
+/**
+ * The MASTER Frequency calendar (Events EC3): ALL upcoming published PUBLIC (never unlisted)
+ * non-cancelled events across the network — the one authoritative read behind both the /events/calendar
+ * grid and the master .ics feed. Delegates to public_calendar_feed(), which self-gates in-function
+ * (the same set the .ics route renders), so the grid and the subscribed feed can never drift.
+ * FAIL-SAFE: [] on any error. The RPC is newer than the generated types, so it's reached untyped.
+ */
+export async function listPublicCalendarEvents(): Promise<SpaceCalendarEvent[]> {
+  try {
+    const rpc = createAdminClient() as unknown as {
+      rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>
+    }
+    const { data, error } = await rpc.rpc('public_calendar_feed', {})
+    if (error || !Array.isArray(data)) return []
+    return (data as SpaceCalendarEvent[]).filter((e) => !e.is_cancelled)
+  } catch {
+    return []
   }
 }
 

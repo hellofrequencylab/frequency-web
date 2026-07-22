@@ -1,6 +1,7 @@
 # Events calendar — plan of record
 
-**Status:** Building (EC1 in progress). Decision: [ADR-800](DECISIONS.md#adr-800). Owner ask: a
+**Status:** EC1–EC3 shipped; EC4 (engagement polish) remaining. Decisions: [ADR-800](DECISIONS.md#adr-800),
+[ADR-802](DECISIONS.md#adr-802). Owner ask: a
 fully-featured per-space events calendar that ties into a primary Frequency-wide calendar, with a
 month grid, a click-to-preview popup, a "Go to Event" jump, and guest-subscribable feeds that drop
 into any calendar app.
@@ -75,11 +76,39 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
 - Times are pre-formatted server-side (via `formatEventWhen`) so the timezone lib never ships to the
   client. Follow-up: a viewer-zone toggle, RSVP counts + covers in the popup, and a list/map toggle.
 
-### EC3 — the master Frequency calendar + shared events
-- A primary all-public-events calendar + feed (`public_calendar_feed`), with filters (category,
-  energy tag, city).
-- **Shared / co-hosted events:** a co-host join (`event ↔ space`) so an event shared with another
-  space appears on both calendars. Converges with collaborator spaces **B2** ([ADR-799]).
+### EC3 — the master Frequency calendar + shared events ✅ (shipped)
+- **Master Frequency calendar + feed.** `public_calendar_feed()` (migration `20261196000000`) — the
+  network-wide discovery calendar: ALL upcoming published **public** (never `unlisted` — the master
+  feed is discovery, not link-reachable), non-cancelled events, and only from network-visible active
+  spaces (platform events with `space_id IS NULL` included). `SECURITY DEFINER`, anon-callable, and
+  **self-gated in-function** (it takes no argument, so the redaction contract lives entirely in the
+  RPC — there is no route gate to lean on). The `.ics` route is `app/events/calendar.ics` (a distinct
+  path from the token feed at `app/events/calendar/[token]`); the grid page is
+  `app/(main)/events/calendar` (composes `IndexTemplate`), and both share ONE read
+  (`listPublicCalendarEvents` → the same RPC) so grid and feed can never drift. A **Calendar** link
+  sits in the shared events header (`components/marketplace/events-header-actions.tsx`).
+- **Shared / co-hosted events (delivers collaborator B2).** `event_space_shares` (migration
+  `20261197000000`) — a request→approve handshake letting an event appear on ANOTHER space's calendar
+  without moving where it lives (`events.space_id` is unchanged; the row IS the relationship, like
+  `space_collaborations`). Two entry points: the event host **invites** a space (its stewards
+  approve), or a space steward asks to **feature** an event (the host approves). Either **auto-accepts**
+  when the caller already stewards the approving side, or an accepted `space_collaboration` already
+  links the two spaces. Reads/resolvers in `lib/events/event-share.ts`; writes in
+  `app/(main)/events/share-actions.ts`; host field `components/events/event-share-field.tsx` (beside
+  the placement field), approver surface `components/events/event-share-approvals.tsx` (in the space
+  manage console beside placement approvals).
+- **The leak contract.** An accepted share is a NECESSARY, never SUFFICIENT, condition to surface an
+  event. Every reader re-applies the event's OWN visibility gate on its OWN row — the two feed RPCs
+  (`space_public_calendar_feed`'s UNION branch, `public_calendar_feed`) and the store
+  (`listSpaceCalendarEvents` / `spaceHasPublicUpcomingEvents` UNION accepted shares, gated by the pure
+  `passesCalendarGate`). So flipping a shared event to private/circle_only/draft, or cancelling it,
+  removes it from every co-host calendar immediately. **The shared branch also re-gates the event's
+  HOME space** (network + active, platform events with `space_id IS NULL` excepted) — the same gate the
+  owned branch and the master feed enforce — so suspending or hiding the home space pulls its events off
+  every co-host calendar too, and an accepted share can never out-live its home space's walling (the
+  pure `filterSharedByHomeSpace` in the store mirrors the SQL shared-branch join).
+  `event_space_shares` is RLS-enabled with no policies (service-role only, listed in
+  `scripts/rls-deny-all.txt`); status transitions are atomic (status-guarded `WHERE`).
 
 ### EC4 — engagement polish
 - RRULE export for recurring series (currently materialized rows export as separate VEVENTs).

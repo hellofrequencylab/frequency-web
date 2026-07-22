@@ -7,6 +7,7 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { PlacementApprovals } from '@/components/events/placement-approvals'
+import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { hubSearchItems } from '@/lib/admin/modules/space-hub'
 import { HubSearch } from './hub-search'
 import { SpaceManageBoard } from './manage-board'
@@ -85,6 +86,13 @@ export default async function SpaceManagePage({
       {canManage && (
         <Suspense fallback={null}>
           <PlacementApprovals target={{ type: 'space', id: space.id }} />
+        </Suspense>
+      )}
+      {/* Pending co-hosted-event share requests (Events EC3) a Space steward can accept onto their
+          calendar. Same manager gate; the actions re-check steward caps server-side. */}
+      {canManage && (
+        <Suspense fallback={null}>
+          <EventShareApprovals spaceId={space.id} />
         </Suspense>
       )}
     </div>
