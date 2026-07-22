@@ -333,6 +333,9 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   revalidatePath('/events')
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
+  // A space event surfaces on its Space's Calendar console, public Calendar tab, and .ics
+  // feed — refresh those too so a create/edit/cancel/delete shows up there without a wait.
+  revalidatePath('/spaces', 'layout')
   // Navigation happens client-side off this result (a server redirect would
   // short-circuit returning the ActionResult).
   return ok({ slug })
@@ -482,6 +485,9 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   revalidatePath(`/events/${slug}/edit`)
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
+  // A space event surfaces on its Space's Calendar console, public Calendar tab, and .ics
+  // feed — refresh those too so a create/edit/cancel/delete shows up there without a wait.
+  revalidatePath('/spaces', 'layout')
   // Navigation happens client-side off this result (a server redirect would
   // short-circuit returning the ActionResult).
   return ok({ slug })
@@ -833,6 +839,9 @@ export async function toggleRSVP(eventId: string) {
   revalidatePath('/events', 'layout')
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
+  // A space event surfaces on its Space's Calendar console, public Calendar tab, and .ics
+  // feed — refresh those too so a create/edit/cancel/delete shows up there without a wait.
+  revalidatePath('/spaces', 'layout')
 }
 
 // Explicit RSVP intent (going / maybe / not_going). Unlike `toggleRSVP` (which
@@ -961,6 +970,9 @@ export async function setRsvpStatus(
   revalidatePath('/events', 'layout')
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
+  // A space event surfaces on its Space's Calendar console, public Calendar tab, and .ics
+  // feed — refresh those too so a create/edit/cancel/delete shows up there without a wait.
+  revalidatePath('/spaces', 'layout')
   // Reflect the change on the event's own detail page right away when we know its slug.
   if (opts?.slug) revalidatePath(`/events/${opts.slug}`)
 }
@@ -1001,6 +1013,9 @@ export async function setRsvpPlusOnes(eventId: string, plusOnes: number) {
   revalidatePath('/events', 'layout')
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
+  // A space event surfaces on its Space's Calendar console, public Calendar tab, and .ics
+  // feed — refresh those too so a create/edit/cancel/delete shows up there without a wait.
+  revalidatePath('/spaces', 'layout')
 }
 
 export interface CheckInResult {
@@ -1078,17 +1093,23 @@ export async function cancelEvent(eventId: string) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
 
+  // AUTHORIZATION: the host, platform staff, or whoever manages the event's parent
+  // scope (its circle or owning Space) may cancel — same authority that gates every
+  // other management action (event.editSettings). Gating on host_id alone silently
+  // no-op'd for a space/circle manager who is not the original host.
+  const caps = await getEventCapabilities(eventId)
+  if (!caps.has('event.editSettings')) return
+
   const supabase = await createClient()
-  // AUTHORIZATION + IDEMPOTENCY in one write: the `.eq('host_id', myProfileId)`
-  // guard means only the host can flip the flag, and `.eq('is_cancelled', false)`
-  // means a re-cancel affects zero rows. `.select('id')` returns the affected row,
-  // so `firstCancel` is true ONLY when THIS caller (the host) transitioned the event
-  // from live → cancelled — the sole condition under which we fan out refunds.
+  // IDEMPOTENCY in the write: `.eq('is_cancelled', false)` means a re-cancel affects
+  // zero rows, and `.select('id')` returns the affected row, so `firstCancel` is true
+  // ONLY on the live → cancelled transition — the sole condition under which we fan out
+  // refunds. Authorization is enforced by the capability check above, so this update is
+  // keyed on id (the manager need not be the host_id).
   const { data: flipped } = await supabase
     .from('events')
     .update(cancelAudit(myProfileId, null))
     .eq('id', eventId)
-    .eq('host_id', myProfileId)
     .eq('is_cancelled', false)
     .select('id')
 
@@ -1097,6 +1118,9 @@ export async function cancelEvent(eventId: string) {
   revalidatePath('/events')
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
+  // A space event surfaces on its Space's Calendar console, public Calendar tab, and .ics
+  // feed — refresh those too so a create/edit/cancel/delete shows up there without a wait.
+  revalidatePath('/spaces', 'layout')
 
   // Only refund paid tickets + notify attendees on the host-driven live → cancelled
   // transition. Mirrors the admin path (refundAndNotifyForCancelledEvent is idempotent

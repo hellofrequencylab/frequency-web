@@ -8,12 +8,14 @@ import { setActiveSpace } from '@/lib/spaces/active-space'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
-import { listSpaceCalendarEvents, listCalendarEngagement } from '@/lib/events/store'
+import { listSpaceCalendarEvents, listCalendarEngagement, listEventsForSpace } from '@/lib/events/store'
 import { formatEventWhen, eventInstant } from '@/lib/time/zone'
 import { eventDayKey } from '@/lib/events/calendar-grid'
 import { SITE_URL } from '@/lib/site'
 import { EventCalendar, type CalendarEvent } from '@/components/events/event-calendar'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
+import { SectionHeader } from '@/components/ui/section-header'
+import { SpaceEventsManager, type ManagedEvent } from './space-events-manager'
 
 // THE SPACE CALENDAR CONSOLE (Events EC2/EC3). The owner-facing home for a space's events: the month grid
 // of its events, a "New event" entry, and the public subscribe link to share. Gated on the `events`
@@ -68,6 +70,20 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
     })
     .filter((e): e is CalendarEvent => e !== null)
 
+  // The full management list: EVERY event under this space (past + upcoming, all statuses),
+  // unlike the month grid which shows only published/upcoming. This is where the owner edits,
+  // duplicates, cancels, and deletes — the actions the view-only calendar never exposed.
+  const nowIso = now.toISOString()
+  const managedRows = featureLocked ? [] : await listEventsForSpace(space.id, { limit: 100 })
+  const managedEvents: ManagedEvent[] = managedRows.map((ev) => ({
+    id: ev.id,
+    slug: ev.slug,
+    title: ev.title,
+    whenLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'full' }),
+    isPast: ev.starts_at < nowIso,
+    isCancelled: !!ev.is_cancelled,
+  }))
+
   const httpsUrl = `${SITE_URL}/spaces/${slug}/calendar.ics`
   const webcalUrl = httpsUrl.replace(/^https?:\/\//, 'webcal://')
 
@@ -103,7 +119,7 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
                 description={`Subscribe once and ${brandName}'s events show up in Google or Apple Calendar, and stay current on their own.`}
               />
               <Link
-                href="/events/new"
+                href={`/events/new?space=${space.id}`}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 <Plus className="h-4 w-4" aria-hidden /> New event
@@ -120,11 +136,18 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
                 Create an event and it shows up here, on your public Calendar tab, and in the subscribe feed.
               </p>
               <Link
-                href="/events/new"
+                href={`/events/new?space=${space.id}`}
                 className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 <Plus className="h-4 w-4" aria-hidden /> Create your first event
               </Link>
+            </div>
+          )}
+
+          {managedEvents.length > 0 && (
+            <div className="pt-2">
+              <SectionHeader title="Manage events" count={managedEvents.length} />
+              <SpaceEventsManager events={managedEvents} />
             </div>
           )}
         </div>

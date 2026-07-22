@@ -70,9 +70,9 @@ async function buildDuplicateInitial(sourceId: string): Promise<Partial<EventFor
 export default async function NewEventPage({
   searchParams,
 }: {
-  searchParams: Promise<{ circle?: string; duplicate?: string }>
+  searchParams: Promise<{ circle?: string; space?: string; duplicate?: string }>
 }) {
-  const { circle: circleParam, duplicate: duplicateParam } = await searchParams
+  const { circle: circleParam, space: spaceParam, duplicate: duplicateParam } = await searchParams
   const supabase = await createClient()
   const {
     data: { user },
@@ -148,9 +148,15 @@ export default async function NewEventPage({
     ...spaces.map((s) => ({ id: s.id, name: s.name, kind: 'space' as const, label: `In ${s.name} (space you run)` })),
   ]
 
-  // Honor the `?circle=` deep link (the circle-host "New event" affordance), but only when it
-  // names a circle the caller actually HOSTS — never let the param scope to someone else's.
-  const defaultGroupId = circles.some((c) => c.id === circleParam) ? circleParam : undefined
+  // Honor a scope deep link — `?circle=` (the circle-host affordance) or `?space=` (the space
+  // Calendar console "New event" affordance) — but only when it names a scope the caller actually
+  // controls (a circle they host or a space they run), never letting the param scope to someone
+  // else's. `?space=` wins when both are present since it is the more specific console entry point.
+  const defaultGroupId = spaces.some((s) => s.id === spaceParam)
+    ? spaceParam
+    : circles.some((c) => c.id === circleParam)
+      ? circleParam
+      : undefined
 
   // Duplicate flow (`?duplicate=<id>`): clone a source event into a prefilled manual form,
   // skipping Vera's wizard. The prefill is null when the source is missing or the viewer
