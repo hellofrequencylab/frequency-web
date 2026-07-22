@@ -414,6 +414,11 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   // Focus form that keeps the global rail beside its centered body); this catalog entry makes it an
   // explicitly managed surface an operator can reframe.
   { route: '/spaces/_/manage/layout', label: 'Space layout', area: 'Focus surfaces' },
+  // The Founding Business checkout (ADR-804): a centered Focus surface (the monthly/annual founding
+  // checkout) under the Space billing settings. Like the other space settings sub-pages it falls
+  // through to 'global' in railFor (a Focus form that keeps the global rail beside its centered body);
+  // this catalog entry makes it an explicitly managed surface an operator can reframe.
+  { route: '/spaces/_/settings/billing/founding', label: 'Founding Business checkout', area: 'Focus surfaces' },
   { route: '/practices', label: 'Practices', area: 'Member' },
   { route: '/practices/new', label: 'Practice builder', area: 'Member' },
   { route: '/journeys', label: 'Journeys', area: 'Member' },
