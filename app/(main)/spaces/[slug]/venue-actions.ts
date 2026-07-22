@@ -12,7 +12,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
-import { getSpaceById, getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getSpaceById } from '@/lib/spaces/store'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { listSpaceCollaborationApprovers } from '@/lib/spaces/collaborations'
 import { loadVenueHold, spacesHaveAcceptedCollaboration } from '@/lib/spaces/venue-holds'
@@ -106,19 +106,6 @@ export async function requestVenueHold(
 
   await revalidateSpaces(requesterSpaceId, venueSpaceId)
   return ok()
-}
-
-/** Invite by slug (the request form takes a partner's slug/URL). */
-export async function requestVenueHoldBySlug(
-  requesterSpaceId: string,
-  venueSlug: string,
-  input: { title: string; startsAt: string; endsAt: string },
-): Promise<ActionResult> {
-  const clean = (venueSlug ?? '').trim().replace(/^.*\/spaces\//, '').replace(/[/?#].*$/, '')
-  if (!clean) return fail('Choose the venue space.')
-  const partner = await getVisibleSpaceBySlug(clean, await getMyProfileId())
-  if (!partner) return fail('Could not find that space.')
-  return requestVenueHold(requesterSpaceId, partner.id, input)
 }
 
 /** Approve a pending hold. Caller must own/admin the VENUE side. */
