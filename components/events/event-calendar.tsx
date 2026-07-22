@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, MapPin, ArrowUpRight, CalendarDays, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, MapPin, ArrowUpRight, CalendarDays, Users, LayoutGrid, List } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { buttonClasses } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -80,8 +80,20 @@ export function EventCalendar({
   const [selected, setSelected] = useState<CalendarEvent | null>(null)
   // Times default to the event's own zone (server-formatted whenLabel); the viewer can flip to their own.
   const [inViewerTz, setInViewerTz] = useState(false)
+  // The grid is the mental model; the list is how people scan "what is next". Default to the grid.
+  const [view, setView] = useState<'grid' | 'list'>('grid')
 
   const weeks = useMemo(() => monthMatrix(year, month1), [year, month1])
+  // The whole loaded window, soonest first, for the list view (independent of the grid's month nav).
+  const chronological = useMemo(
+    () =>
+      [...events].sort((a, b) => {
+        const ak = a.startInstantIso ?? `${a.dayKey}T00:00:00Z`
+        const bk = b.startInstantIso ?? `${b.dayKey}T00:00:00Z`
+        return ak < bk ? -1 : ak > bk ? 1 : 0
+      }),
+    [events],
+  )
   const byDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>()
     for (const ev of events) {
@@ -95,37 +107,100 @@ export function EventCalendar({
 
   return (
     <div className="rounded-xl border border-border bg-surface">
-      {/* Header: month label + prev / today / next */}
+      {/* Header: month label (grid) or "Upcoming" (list) + the view toggle, and month nav in grid view. */}
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <h2 className="text-lg font-semibold text-text">{monthLabel(year, month1)}</h2>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setMonth(addMonth(year, month1, -1))}
-            aria-label="Previous month"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-          >
-            <ChevronLeft className="h-4 w-4" aria-hidden />
-          </button>
-          <button
-            type="button"
-            onClick={() => setMonth({ year: initialYear, month1: initialMonth1 })}
-            className="rounded-lg px-2.5 py-1 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-          >
-            Today
-          </button>
-          <button
-            type="button"
-            onClick={() => setMonth(addMonth(year, month1, 1))}
-            aria-label="Next month"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-          >
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          </button>
+        <h2 className="text-lg font-semibold text-text">{view === 'grid' ? monthLabel(year, month1) : 'Upcoming'}</h2>
+        <div className="flex items-center gap-2">
+          {view === 'grid' && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setMonth(addMonth(year, month1, -1))}
+                aria-label="Previous month"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                <ChevronLeft className="h-4 w-4" aria-hidden />
+              </button>
+              <button
+                type="button"
+                onClick={() => setMonth({ year: initialYear, month1: initialMonth1 })}
+                className="rounded-lg px-2.5 py-1 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                onClick={() => setMonth(addMonth(year, month1, 1))}
+                aria-label="Next month"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
+          )}
+          {/* Grid / list view toggle. */}
+          <div className="inline-flex items-center rounded-lg border border-border p-0.5" role="group" aria-label="Calendar view">
+            <button
+              type="button"
+              onClick={() => setView('grid')}
+              aria-pressed={view === 'grid'}
+              aria-label="Grid view"
+              className={cn(
+                'inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+                view === 'grid' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated hover:text-text',
+              )}
+            >
+              <LayoutGrid className="h-4 w-4" aria-hidden />
+            </button>
+            <button
+              type="button"
+              onClick={() => setView('list')}
+              aria-pressed={view === 'list'}
+              aria-label="List view"
+              className={cn(
+                'inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+                view === 'list' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated hover:text-text',
+              )}
+            >
+              <List className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Weekday header */}
+      {/* LIST VIEW: the whole loaded window, soonest first. Each row opens the same popup as the grid. */}
+      {view === 'list' && (
+        <div className="divide-y divide-border">
+          {chronological.length === 0 ? (
+            <p className="px-4 py-6 text-center text-sm text-muted">No upcoming events.</p>
+          ) : (
+            chronological.map((ev, i) => (
+              <button
+                key={`${ev.slug}-${i}`}
+                type="button"
+                onClick={() => setSelected(ev)}
+                className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-elevated"
+              >
+                <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className={cn('block truncate font-semibold', ev.isCancelled ? 'text-subtle line-through' : 'text-text')}>
+                    {ev.title}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-muted">{ev.whenLabel}</span>
+                  {ev.location && <span className="mt-0.5 block truncate text-xs text-subtle">{ev.location}</span>}
+                </span>
+                {ev.goingCount > 0 && (
+                  <span className="mt-0.5 shrink-0 text-xs text-subtle tabular-nums">{ev.goingCount} going</span>
+                )}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Weekday header + grid (grid view only). */}
+      {view === 'grid' && (
+      <>
       <div className="grid grid-cols-7 border-b border-border">
         {WEEKDAY_LABELS.map((label) => (
           <div key={label} className="px-2 py-2 text-center text-2xs font-semibold uppercase tracking-wide text-subtle">
@@ -188,6 +263,8 @@ export function EventCalendar({
           </div>
         ))}
       </div>
+      </>
+      )}
 
       {/* The truncated event popup with the Go to Event link. */}
       <Dialog open={selected !== null} onClose={() => setSelected(null)} ariaLabel="Event details" className="max-w-md">
