@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { buttonClasses } from '@/components/ui/button'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
+import { StorefrontBannerField } from './storefront-banner-field'
 import { saveStorefrontSettingsAction } from './shop-actions'
 
 // The Storefront tab of the Shop console (ADR-596). The settings for the public per-Space Shop tab:
@@ -14,10 +15,12 @@ const LABEL = 'mb-1 block text-sm font-medium text-text'
 
 export function StorefrontTab({
   slug,
+  spaceId,
   preferences,
   readOnly,
 }: {
   slug: string
+  spaceId: string
   preferences: unknown
   readOnly: boolean
 }) {
@@ -40,6 +43,15 @@ export function StorefrontTab({
             placeholder="Shop"
           />
           <p className="mt-1 text-xs text-subtle">This is the label members see for your storefront tab.</p>
+        </div>
+        <div>
+          <span className={LABEL}>Shop banner</span>
+          <StorefrontBannerField
+            spaceId={spaceId}
+            initialUrl={cfg.bannerUrl}
+            initialFocus={cfg.bannerFocus}
+            disabled={readOnly}
+          />
         </div>
         <div>
           <label className="flex items-center gap-2 text-sm text-text">

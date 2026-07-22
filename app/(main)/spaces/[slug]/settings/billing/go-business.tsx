@@ -14,11 +14,21 @@ import { startSpaceLoadoutCheckout } from './actions'
 /** Hard ceiling on extra operator seats bought in one go (a sane picker bound, not a plan limit). */
 const MAX_EXTRA_SEATS = 25
 
+/** Whole-dollar money label (no cents when even). Client-side, so no project money lib. */
+function usd(cents: number): string {
+  return (cents / 100).toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+  })
+}
+
 export function GoBusinessCta({
   slug,
   sellable,
   trialDays,
   seatsSellable = false,
+  seatMonthlyCents = 0,
 }: {
   slug: string
   /** Whether the Business checkout is live (billingLive AND the per-plan switch). False while OFF. */
@@ -26,6 +36,8 @@ export function GoBusinessCta({
   trialDays: number
   /** Whether operator SEATS can be bought (the seat is activated + priced). Hides the picker when false. */
   seatsSellable?: boolean
+  /** The resolved per-seat monthly price in cents, so the picker can show N x $X = $Y/mo. */
+  seatMonthlyCents?: number
 }) {
   const [error, setError] = useState<string | null>(null)
   const [extraSeats, setExtraSeats] = useState(0)
@@ -87,6 +99,13 @@ export function GoBusinessCta({
               </div>
               <span className="text-2xs text-subtle">Your own seat is included.</span>
             </div>
+          )}
+          {/* What the chosen seats cost, so the count is never priceless. Prorated on the first invoice. */}
+          {sellable && seatsSellable && seatMonthlyCents > 0 && extraSeats > 0 && (
+            <p className="mt-2 text-xs font-medium text-text">
+              {extraSeats} {extraSeats === 1 ? 'seat' : 'seats'} x {usd(seatMonthlyCents)} ={' '}
+              {usd(seatMonthlyCents * extraSeats)}/mo, prorated on your first invoice.
+            </p>
           )}
         </div>
         <div className="min-w-[12rem]">

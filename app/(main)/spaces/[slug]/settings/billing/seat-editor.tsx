@@ -14,14 +14,42 @@ import { setOperatorSeats } from './actions'
 
 const MAX = 25
 
-export function SeatEditor({ slug, initialSeats }: { slug: string; initialSeats: number }) {
+/** Whole-dollar money label (no cents when even). Client-side, so no project money lib. */
+function usd(cents: number): string {
+  return (cents / 100).toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+  })
+}
+
+export function SeatEditor({
+  slug,
+  initialSeats,
+  seatMonthlyCents = 0,
+  usedSeats = 0,
+  minSeats = 0,
+}: {
+  slug: string
+  initialSeats: number
+  /** The resolved per-seat monthly price in cents, to show the running total. */
+  seatMonthlyCents?: number
+  /** Active operators consuming a seat (for the downgrade warning copy). */
+  usedSeats?: number
+  /** The lowest seat count that still covers the active operators (used - the free base). Reducing below
+   *  it would leave operators over the licensed allowance, so the minus button floors here. */
+  minSeats?: number
+}) {
   const router = useRouter()
-  const [seats, setSeats] = useState(Math.max(0, Math.min(MAX, Math.floor(initialSeats))))
+  const floor = Math.max(0, Math.min(MAX, Math.floor(minSeats)))
+  const [seats, setSeats] = useState(Math.max(floor, Math.min(MAX, Math.floor(initialSeats))))
   const [saved, setSaved] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
   const dirty = seats !== (saved ?? Math.max(0, Math.min(MAX, Math.floor(initialSeats))))
+  // At the floor, dropping further would strand active operators over the licensed count.
+  const atFloor = seats <= floor && floor > 0
 
   function save() {
     setError(null)
@@ -51,8 +79,8 @@ export function SeatEditor({ slug, initialSeats }: { slug: string; initialSeats:
             <button
               type="button"
               aria-label="Remove a seat"
-              onClick={() => setSeats((n) => Math.max(0, n - 1))}
-              disabled={pending || seats <= 0}
+              onClick={() => setSeats((n) => Math.max(floor, n - 1))}
+              disabled={pending || seats <= floor}
               className="inline-flex h-8 w-8 items-center justify-center rounded-l-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-40"
             >
               <Minus className="h-4 w-4" aria-hidden />
@@ -81,6 +109,20 @@ export function SeatEditor({ slug, initialSeats }: { slug: string; initialSeats:
           </button>
         </div>
       </div>
+      {/* The running cost of the chosen seats, so the count is never priceless. */}
+      {seatMonthlyCents > 0 && (
+        <p className="mt-3 text-xs font-medium text-text">
+          {seats} {seats === 1 ? 'seat' : 'seats'} x {usd(seatMonthlyCents)} = {usd(seatMonthlyCents * seats)}/mo,
+          prorated on your next invoice.
+        </p>
+      )}
+      {/* Downgrade guard: at the floor, reducing further would strand active operators over the license. */}
+      {atFloor && (
+        <p className="mt-2 text-2xs font-medium text-warning">
+          {usedSeats} {usedSeats === 1 ? 'operator is' : 'operators are'} active. Remove operators in Members
+          before licensing fewer seats, or they stay over your licensed count.
+        </p>
+      )}
       {saved !== null && !dirty && !error && (
         <p className="mt-3 text-2xs font-medium text-success" role="status">
           Seats updated to {saved}. Your next invoice reflects the prorated change.

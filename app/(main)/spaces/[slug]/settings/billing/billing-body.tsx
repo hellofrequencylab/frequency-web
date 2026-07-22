@@ -7,6 +7,8 @@ import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { getPricingValues, billingLive } from '@/lib/pricing/settings'
 import { spaceLoadoutSellable, operatorSeatsSellable } from '@/lib/billing/space-plan-checkout'
+import { loadCatalogConfig, catalogConfigByKey } from '@/lib/pricing/catalog-config'
+import { BASE_SEAT_ALLOWANCE } from '@/lib/spaces/seats'
 import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import { getSeatUsage } from '@/lib/spaces/seats'
 import { SeatCounter } from '@/components/spaces/seat-counter'
@@ -77,17 +79,27 @@ export async function BillingBody({ slug }: { slug: string }) {
 
   // The Business checkout gate (billingLive AND the per-plan switch — both false while billing is OFF, so
   // the CTA renders as a disabled "Available soon" preview), plus the seat usage + billing-live flag.
-  const [values, businessSellable, seatsSellable, seatUsage, billingIsLive, trailingVolumeCents, verification] = await Promise.all([
-    getPricingValues(),
-    spaceLoadoutSellable('business'),
-    operatorSeatsSellable(),
-    getSeatUsage(space.id),
-    billingLive(),
-    spaceTrailingProcessedCents(space.id),
-    getSpaceVerification(space.id),
-  ])
+  const [values, businessSellable, seatsSellable, seatUsage, billingIsLive, trailingVolumeCents, verification, catalog] =
+    await Promise.all([
+      getPricingValues(),
+      spaceLoadoutSellable('business'),
+      operatorSeatsSellable(),
+      getSeatUsage(space.id),
+      billingLive(),
+      spaceTrailingProcessedCents(space.id),
+      getSpaceVerification(space.id),
+      loadCatalogConfig(),
+    ])
 
   const isPaid = currentPlan !== 'free'
+
+  // The resolved (operator-set) per-seat monthly price, so the seat pickers can show what a chosen
+  // quantity actually costs instead of leaving the count priceless. The FOUNDING amount is the one charged.
+  const seatMonthlyCents = catalogConfigByKey(catalog).operator_seat.monthlyFoundingCents
+  // Downgrade floor: the licensed total (base + seatQuantity) must cover the operators already active, so
+  // the minimum safe seatQuantity is used - the free base allowance. Reducing below it would leave active
+  // operators over the licensed count. `used` counts member-operators only (the owner rides the base seat).
+  const minSeats = Math.max(0, seatUsage.used - BASE_SEAT_ALLOWANCE)
 
   // The "you'd have saved $X" nudge (ADR-552, the self-funding trigger): the take-rate delta a free
   // space would get on paid Business, applied to its trailing monthly processed volume. Whole dollars,
@@ -143,7 +155,13 @@ export async function BillingBody({ slug }: { slug: string }) {
                 You&rsquo;d have saved ${savingsDollars.toLocaleString('en-US')} this month on Business.
               </p>
             )}
-            <GoBusinessCta slug={space.slug} sellable={businessSellable} seatsSellable={seatsSellable} trialDays={values.trial.days} />
+            <GoBusinessCta
+              slug={space.slug}
+              sellable={businessSellable}
+              seatsSellable={seatsSellable}
+              seatMonthlyCents={seatMonthlyCents}
+              trialDays={values.trial.days}
+            />
             {/* Founding Business (ADR-804): the per-city fee-buydown cohort. A locked founder rate and a
                 marketplace fee bought down to the lowest on the platform, grandfathered for life. The
                 linked checkout is GATED (inert until billing is live), so this is a preview link today. */}
@@ -170,7 +188,13 @@ export async function BillingBody({ slug }: { slug: string }) {
             hidden while seats are inert. Guarantees seat management even if the Stripe portal is not
             configured to expose seat quantities. */}
         {isPaid && !staffViewing && seatsSellable && (
-          <SeatEditor slug={space.slug} initialSeats={seatUsage?.seatQuantity ?? 0} />
+          <SeatEditor
+            slug={space.slug}
+            initialSeats={seatUsage?.seatQuantity ?? 0}
+            seatMonthlyCents={seatMonthlyCents}
+            usedSeats={seatUsage.used}
+            minSeats={minSeats}
+          />
         )}
 
         {/* Non Profit is the verified-501(c)(3) sibling of Business (same depth, discounted per seat). The

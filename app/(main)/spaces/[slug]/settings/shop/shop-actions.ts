@@ -317,7 +317,13 @@ export async function saveStorefrontSettingsAction(slug: string, formData: FormD
   const current = readStorefrontConfig(space.preferences)
   const tabLabel = String(formData.get('tabLabel') ?? '').trim().slice(0, 40) || current.tabLabel
   const published = formData.get('published') === 'on'
-  const next = withStorefrontConfig(space.preferences, { tabLabel, published })
+  // The banner image URL + focal point ride in from the client field. withStorefrontConfig re-sanitizes
+  // both (http(s)-only URL, "x% y%" focus), so a bad value falls back to null / centered rather than
+  // storing junk. An empty string clears the banner.
+  const rawBanner = String(formData.get('bannerUrl') ?? '').trim()
+  const bannerUrl = rawBanner === '' ? null : rawBanner
+  const bannerFocus = String(formData.get('bannerFocus') ?? '').trim() || current.bannerFocus
+  const next = withStorefrontConfig(space.preferences, { tabLabel, published, bannerUrl, bannerFocus })
   const db = createAdminClient() as unknown as {
     from: (t: string) => {
       update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
@@ -325,4 +331,5 @@ export async function saveStorefrontSettingsAction(slug: string, formData: FormD
   }
   await db.from('spaces').update({ preferences: next }).eq('id', space.id)
   revalidatePath(`/spaces/${slug}/settings/shop`)
+  revalidatePath(`/spaces/${slug}/shop`)
 }
