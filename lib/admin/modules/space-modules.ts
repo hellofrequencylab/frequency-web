@@ -9,6 +9,7 @@ import {
   Briefcase,
   Images,
   CalendarClock,
+  CalendarDays,
   BadgeCheck,
   HeartHandshake,
   GraduationCap,
@@ -165,6 +166,10 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   { id: 'space.collaborators', label: 'Collaborators', desc: 'The businesses that operate inside your space, and requests to collaborate.', Icon: Handshake, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'collaborators' }, featureKey: 'collaborators', render: 'link', deepLink: (s) => `${base(s)}/settings/collaborators`, order: 39.7, tier: 'primary', priority: 19.7, access: 'included' },
 
   // ── Offerings & money (independent modules) ──────────────────────────────────────────────────────────
+  // Calendar (Events EC2/EC3): the space's own events on a month grid + a subscribe link to share. The
+  // ONE place an owner reaches "create an event", the calendar view, and the public subscribe feed — so a
+  // new business space has calendar options from day one, not only after it already has events.
+  { id: 'space.calendar', label: 'Calendar', desc: 'Your events on a calendar, create a new one, and share a subscribe link.', Icon: CalendarDays, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'events' }, featureKey: 'events', render: 'link', deepLink: (s) => `${base(s)}/settings/calendar`, order: 39.8, tier: 'primary', priority: 29, access: 'included' },
   { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#availability`, order: 40, tier: 'primary', priority: 30, access: 'freemium', freeNote: '15 bookings/mo free, then unlimited' },
   { id: 'space.memberships', label: 'Memberships', desc: 'The tiers members can join, and who has joined.', Icon: BadgeCheck, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'memberships' }, featureKey: 'memberships', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#memberships`, order: 45, tier: 'primary', priority: 31, access: 'freemium', freeNote: '10 members, 1 tier free · 5% take-rate, 3% on a paid plan' },
   { id: 'space.donations', label: 'Donations', desc: 'The fund, a short description, and the amounts members can pick.', Icon: HeartHandshake, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'donations' }, featureKey: 'donations', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#donations`, order: 50, tier: 'primary', priority: 32, access: 'included', freeNote: '5% take-rate, 3% on a paid plan' },
