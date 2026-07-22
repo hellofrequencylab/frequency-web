@@ -4,7 +4,7 @@ import {
   listIncomingCollaborationRequests,
   listCollaborationsForSpace,
 } from '@/lib/spaces/collaborations'
-import { InviteCollaborator, RequestControls, RevokeControl } from './collaborator-controls'
+import { InviteCollaborator, RequestControls, RevokeControl, ReinviteControl } from './collaborator-controls'
 import type { CollaborationView } from '@/lib/spaces/collaborations'
 
 // The Collaborators management surface body (ADR-799 B1-UI). Chrome-free (the page wraps it in a
@@ -55,6 +55,9 @@ export async function CollaboratorsBody({ spaceId, manage }: { spaceId: string; 
   // Pending requests THIS space sent (awaiting the other side) — everything pending that is not incoming.
   const incomingIds = new Set(incoming.map((v) => v.id))
   const pendingSent = all.filter((v) => v.status === 'pending' && !incomingIds.has(v.id))
+  // Declined rows, so an invite that was turned down does not silently vanish — the initiator sees it
+  // and can re-send in one click (re-invite is allowed; the unique index covers only pending/accepted).
+  const declined = all.filter((v) => v.status === 'declined')
 
   return (
     <div className="space-y-6">
@@ -103,6 +106,24 @@ export async function CollaboratorsBody({ spaceId, manage }: { spaceId: string; 
                   <span className="text-xs font-medium text-subtle">Waiting for them to approve</span>
                   <RevokeControl collaborationId={v.id} label="Cancel" />
                 </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {declined.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-text">Declined</h2>
+          <ul className="space-y-2">
+            {declined.map((v) => (
+              <li key={v.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-surface p-4">
+                <PartnerRow view={v} />
+                <ReinviteControl
+                  spaceId={spaceId}
+                  partnerSlug={v.partner.slug}
+                  hostSide={v.role === 'host' ? 'initiator' : 'partner'}
+                />
               </li>
             ))}
           </ul>

@@ -124,6 +124,38 @@ export async function listVenueHoldsForSpace(spaceId: string): Promise<VenueHold
   return views.sort((a, b) => (a.startsAt < b.startsAt ? -1 : a.startsAt > b.startsAt ? 1 : 0))
 }
 
+/** Cancel every OPEN (pending/accepted) hold between two spaces, in BOTH directions (either can be the
+ *  venue). Called when the collaboration that authorized the holds ends, so an accepted hold never
+ *  outlives the relationship. The `.in('status', ...)` WHERE keeps it atomic + idempotent (a terminal
+ *  hold is untouched). Service-role only; the caller (revokeCollaboration) is the authz. FAIL-SAFE:
+ *  swallows errors so a hold-cleanup hiccup never blocks the collaboration revoke itself. */
+export async function cancelOpenHoldsBetween(
+  spaceA: string,
+  spaceB: string,
+  actorProfileId: string,
+): Promise<void> {
+  if (!spaceA || !spaceB || spaceA === spaceB) return
+  try {
+    const admin = untyped()
+    const patch = { status: 'cancelled', responded_at: new Date().toISOString(), responded_by: actorProfileId }
+    // Two directional updates (A→B venue and B→A venue) cover the unordered pair without an `.or()`.
+    await admin
+      .from('space_venue_holds')
+      .update(patch)
+      .eq('venue_space_id', spaceA)
+      .eq('requester_space_id', spaceB)
+      .in('status', ['pending', 'accepted'])
+    await admin
+      .from('space_venue_holds')
+      .update(patch)
+      .eq('venue_space_id', spaceB)
+      .eq('requester_space_id', spaceA)
+      .in('status', ['pending', 'accepted'])
+  } catch {
+    // A cleanup failure must not block the collaboration revoke; the stale hold is cosmetic.
+  }
+}
+
 /** True when an ACCEPTED space_collaboration links the two spaces (the gate for creating a hold). Reuses
  *  the collaboration read (checks from `spaceA`'s accepted partners), FAIL-SAFE false. */
 export async function spacesHaveAcceptedCollaboration(spaceA: string, spaceB: string): Promise<boolean> {

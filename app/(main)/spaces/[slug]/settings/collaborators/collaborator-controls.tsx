@@ -63,17 +63,59 @@ export function RevokeControl({ collaborationId, label = 'Remove' }: { collabora
       <button
         type="button"
         disabled={pending}
-        onClick={() =>
+        onClick={() => {
+          if (
+            !window.confirm(
+              'End this collaboration? They stop showing as a collaborator, their events leave your shared calendar, and any open venue holds between you are cancelled.',
+            )
+          )
+            return
           start(async () => {
             setError(null)
             const res = await revokeCollaboration(collaborationId)
             if (isError(res)) setError(res.error)
             else router.refresh()
           })
-        }
+        }}
         className="text-xs font-medium text-muted underline decoration-dashed underline-offset-4 transition-colors hover:text-danger"
       >
         {pending ? 'Working' : label}
+      </button>
+      {error && <span className="text-xs font-medium text-danger">{error}</span>}
+    </div>
+  )
+}
+
+/** Re-send a declined invite to the same partner, keeping the original host/collaborator side. */
+export function ReinviteControl({
+  spaceId,
+  partnerSlug,
+  hostSide,
+}: {
+  spaceId: string
+  partnerSlug: string
+  hostSide: 'initiator' | 'partner'
+}) {
+  const router = useRouter()
+  const [pending, start] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() =>
+          start(async () => {
+            setError(null)
+            const res = await requestCollaborationBySlug(spaceId, partnerSlug, hostSide)
+            if (isError(res)) setError(res.error)
+            else router.refresh()
+          })
+        }
+        className={buttonClasses('secondary', 'sm')}
+      >
+        {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <UserPlus className="h-4 w-4" aria-hidden />}
+        Send again
       </button>
       {error && <span className="text-xs font-medium text-danger">{error}</span>}
     </div>

@@ -18,6 +18,7 @@ import {
   listSpaceCollaborationApprovers,
   approverSideForRequest,
 } from '@/lib/spaces/collaborations'
+import { cancelOpenHoldsBetween } from '@/lib/spaces/venue-holds'
 
 /** True when the signed-in caller is an owner/admin of `spaceId`. Fail-closed (false on no session /
  *  read error, since the approver set is empty then). */
@@ -176,6 +177,11 @@ export async function revokeCollaboration(collaborationId: string): Promise<Acti
     .eq('id', collaborationId)
     .in('status', ['pending', 'accepted'])
   if (error) return fail('Could not end the collaboration. Try again.')
+
+  // Cascade: cancel any open venue holds between the pair so an accepted hold never outlives the
+  // relationship that authorized it (spacesHaveAcceptedCollaboration blocks NEW holds, but existing
+  // ones would otherwise keep rendering with a live Cancel). Fail-safe inside, so it never blocks.
+  await cancelOpenHoldsBetween(row.host_space_id, row.collaborator_space_id, profileId)
 
   await revalidateSpaces(row.host_space_id, row.collaborator_space_id)
   return ok()

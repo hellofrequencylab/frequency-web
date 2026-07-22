@@ -1100,13 +1100,17 @@ export async function cancelEvent(eventId: string) {
   const caps = await getEventCapabilities(eventId)
   if (!caps.has('event.editSettings')) return
 
-  const supabase = await createClient()
+  // Use the admin client (RLS-bypassing) AFTER the capability gate, mirroring the admin
+  // cancel path. The events UPDATE RLS policy only permits the host or a guide+ circle
+  // manager, so an RLS-bound update would silently flip zero rows for a legitimate non-host
+  // SPACE manager — the exact bug this change fixes. getEventCapabilities is the authority.
+  const admin = createAdminClient()
   // IDEMPOTENCY in the write: `.eq('is_cancelled', false)` means a re-cancel affects
   // zero rows, and `.select('id')` returns the affected row, so `firstCancel` is true
   // ONLY on the live → cancelled transition — the sole condition under which we fan out
   // refunds. Authorization is enforced by the capability check above, so this update is
   // keyed on id (the manager need not be the host_id).
-  const { data: flipped } = await supabase
+  const { data: flipped } = await admin
     .from('events')
     .update(cancelAudit(myProfileId, null))
     .eq('id', eventId)

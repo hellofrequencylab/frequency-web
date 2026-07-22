@@ -71,15 +71,15 @@ export function SpaceEventsManager({ events }: { events: ManagedEvent[] }) {
               dimmed={ev.isCancelled || ev.isPast}
               badge={
                 ev.isCancelled ? (
-                  <span className="rounded-full bg-danger-bg px-2 py-0.5 text-[11px] font-semibold text-danger">
+                  <span className="rounded-full bg-danger-bg px-2 py-0.5 text-2xs font-semibold text-danger">
                     Cancelled
                   </span>
                 ) : ev.isPast ? (
-                  <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-[11px] font-semibold text-subtle">
+                  <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
                     Past
                   </span>
                 ) : (
-                  <span className="rounded-full bg-primary-bg px-2 py-0.5 text-[11px] font-semibold text-primary-strong">
+                  <span className="rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
                     Upcoming
                   </span>
                 )

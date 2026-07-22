@@ -69,7 +69,26 @@ export function VenueHoldsPanel({
   const [endsAt, setEndsAt] = useState('')
 
   const incoming = holds.filter((h) => h.awaitingMyApproval)
-  const active = holds.filter((h) => h.status === 'pending' || h.status === 'accepted')
+  // Active = confirmed holds, plus pending ones I am NOT the approver of (my own outgoing
+  // requests). A pending request FOR my venue lives in `incoming` above, so excluding
+  // awaitingMyApproval here stops it rendering twice with two conflicting controls.
+  const active = holds.filter(
+    (h) => h.status === 'accepted' || (h.status === 'pending' && !h.awaitingMyApproval),
+  )
+  // Declined holds, so a requester sees their ask was turned down instead of it vanishing.
+  const declined = holds.filter((h) => h.status === 'declined')
+
+  // Local-time floor for the datetime inputs + client-side window validation (the server
+  // stays the authority; this just catches end-before-start and past times inline).
+  const nowLocal = (() => {
+    const d = new Date()
+    d.setSeconds(0, 0)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  })()
+  const endBeforeStart = !!startsAt && !!endsAt && endsAt <= startsAt
+  const startInPast = !!startsAt && startsAt < nowLocal
+  const windowInvalid = endBeforeStart || startInPast
 
   function run(fn: () => Promise<ActionResult<unknown>>, after?: () => void) {
     setError(null)
@@ -160,6 +179,7 @@ export function VenueHoldsPanel({
               <input
                 type="datetime-local"
                 value={startsAt}
+                min={nowLocal}
                 onChange={(e) => setStartsAt(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text"
               />
@@ -169,14 +189,20 @@ export function VenueHoldsPanel({
               <input
                 type="datetime-local"
                 value={endsAt}
+                min={startsAt || nowLocal}
                 onChange={(e) => setEndsAt(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text"
               />
             </label>
           </div>
+          {windowInvalid && (
+            <p className="mt-2 text-xs font-medium text-danger">
+              {endBeforeStart ? 'End time needs to be after the start.' : 'Pick a start time in the future.'}
+            </p>
+          )}
           <button
             type="button"
-            disabled={pending || !venueId || !title.trim() || !startsAt || !endsAt}
+            disabled={pending || !venueId || !title.trim() || !startsAt || !endsAt || windowInvalid}
             onClick={() =>
               run(
                 () => requestVenueHold(spaceId, venueId, { title: title.trim(), startsAt, endsAt }),
@@ -216,12 +242,38 @@ export function VenueHoldsPanel({
                   <button
                     type="button"
                     disabled={pending}
-                    onClick={() => run(() => cancelVenueHold(h.id))}
+                    onClick={() => {
+                      if (!window.confirm('Cancel this venue hold? The other space is notified it is off.')) return
+                      run(() => cancelVenueHold(h.id))
+                    }}
                     className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted hover:bg-surface-elevated disabled:opacity-50"
                   >
                     Cancel
                   </button>
                 </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Declined holds, so a turned-down request stays visible (re-send from the form above). */}
+      {declined.length > 0 && (
+        <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-text">Declined</h3>
+          <ul className="mt-3 space-y-3">
+            {declined.map((h) => (
+              <li key={h.id} className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-text">{h.title}</p>
+                  <p className="text-xs text-muted">
+                    {h.role === 'venue' ? `${h.partner.name} at your venue` : `Your hold at ${h.partner.name}`} ·{' '}
+                    {when(h.startsAt)} to {when(h.endsAt)}
+                  </p>
+                </div>
+                <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+                  {STATUS_LABEL[h.status]}
+                </span>
               </li>
             ))}
           </ul>
