@@ -40,8 +40,14 @@ describe('DEFAULT_PREFERENCES', () => {
     }
   })
 
-  it('has exactly 15 keys (5 categories × 3 channels)', () => {
-    expect(Object.keys(DEFAULT_PREFERENCES)).toHaveLength(15)
+  it('has the 15 category×channel grid keys, plus any standalone feature opt-ins', () => {
+    const gridKeys = categories.flatMap((c) => [`email_${c}`, `inapp_${c}`, `push_${c}`])
+    expect(gridKeys).toHaveLength(15)
+    for (const k of gridKeys) expect(k in DEFAULT_PREFERENCES).toBe(true)
+    // Standalone opt-ins that are not part of the channel grid (a specific email feature, off by default),
+    // e.g. space_event_reminders (space-follower event reminders, ADR-806).
+    const standalone = Object.keys(DEFAULT_PREFERENCES).filter((k) => !gridKeys.includes(k))
+    expect(standalone).toEqual(['space_event_reminders'])
   })
 
   it('all values are booleans', () => {
