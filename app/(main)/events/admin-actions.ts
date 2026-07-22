@@ -806,6 +806,8 @@ export async function deleteEvent(eventId: string, slug: string): Promise<{ erro
   revalidatePath('/events')
   revalidatePath('/admin/events')
   revalidatePath('/feed')
+  // A space event surfaces on its Space's Calendar console + public Calendar tab + .ics feed.
+  revalidatePath('/spaces', 'layout')
   return {}
 }
 

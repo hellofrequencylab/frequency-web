@@ -28,10 +28,11 @@ export interface SpaceEvent {
   scope_type: string | null
   is_cancelled: boolean | null
   space_id: string | null
+  time_zone: string | null
 }
 
 const COLS =
-  'id, slug, title, description, starts_at, ends_at, host_id, scope_id, scope_type, is_cancelled, space_id'
+  'id, slug, title, description, starts_at, ends_at, host_id, scope_id, scope_type, is_cancelled, space_id, time_zone'
 
 /** An event row for the per-space CALENDAR (Events EC2): the fields the month grid + popup need. */
 export interface SpaceCalendarEvent {

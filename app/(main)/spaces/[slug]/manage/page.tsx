@@ -8,6 +8,7 @@ import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { PlacementApprovals } from '@/components/events/placement-approvals'
 import { EventShareApprovals } from '@/components/events/event-share-approvals'
+import { FeatureEventField } from '@/components/events/feature-event-field'
 import { hubSearchItems } from '@/lib/admin/modules/space-hub'
 import { HubSearch } from './hub-search'
 import { SpaceManageBoard } from './manage-board'
@@ -95,6 +96,9 @@ export default async function SpaceManagePage({
           <EventShareApprovals spaceId={space.id} />
         </Suspense>
       )}
+      {/* The space-side entry into the co-host handshake: ask a public event's host to feature it here.
+          Manager-only; the action re-checks steward caps and routes to the event host for approval. */}
+      {canManage && <FeatureEventField spaceId={space.id} />}
     </div>
   )
 }

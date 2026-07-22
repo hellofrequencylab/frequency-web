@@ -28,6 +28,7 @@ import {
   type CommunityLevel,
 } from './stewardship'
 import { getStewardships } from '@/lib/stewardships'
+import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { countOpenCircleTasks } from '@/lib/crew/circle-tasks'
 import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spotlight-flags'
 
@@ -252,22 +253,47 @@ export async function getNexusCapabilities(nexusId: string): Promise<Set<Capabil
 }
 
 /** What the caller can do on a specific Event. event.editSettings goes to its
- *  host, platform staff, or whoever can edit the event's parent circle (delegated
- *  to getCircleCapabilities — "if you run the circle, you run its events"). */
+ *  host, platform staff, or whoever manages the event's parent scope — the circle
+ *  (getCircleCapabilities) for a circle event, or the owning Space (getSpaceCapabilities)
+ *  for a space event. "If you run the scope, you run its events." */
 export async function getEventCapabilities(eventId: string): Promise<Set<Capability>> {
   const viewer = await currentViewer()
   const admin = createAdminClient()
 
-  const { data: ev } = await admin
+  // space_id is the "lives under this Space" placement column (a space event is
+  // scope_type='public' + space_id); it is newer than the generated types, so the
+  // row is read untyped and the column pulled off the widened shape.
+  const { data: evRow } = await admin
     .from('events')
-    .select('host_id, scope_type, scope_id')
+    .select('host_id, scope_type, scope_id, space_id')
     .eq('id', eventId)
     .maybeSingle()
+  const ev = evRow as {
+    host_id: string | null
+    scope_type: string | null
+    scope_id: string | null
+    space_id: string | null
+  } | null
 
+  // "If you run the scope, you run its events." A circle event delegates to its circle;
+  // a space event delegates to whoever may edit its owning Space (owner / admin / editor).
   let viewerManagesScope = false
   if (ev?.scope_type === 'circle' && ev.scope_id) {
     const circleCaps = await getCircleCapabilities(ev.scope_id)
     viewerManagesScope = circleCaps.has('circle.editSettings')
+  } else if (ev?.space_id) {
+    const { data: space } = await admin
+      .from('spaces')
+      .select('id, owner_profile_id')
+      .eq('id', ev.space_id)
+      .maybeSingle()
+    if (space && viewer.profileId) {
+      const spaceCaps = await getSpaceCapabilities(
+        { id: space.id, ownerProfileId: (space as { owner_profile_id: string | null }).owner_profile_id },
+        viewer.profileId,
+      )
+      viewerManagesScope = spaceCaps.canEditProfile
+    }
   }
 
   return resolveCapabilities(viewer, {

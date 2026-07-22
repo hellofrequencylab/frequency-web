@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
 import { setPlatformFlag, setPlatformSetting } from '@/lib/platform-flags'
-import { setPricingSetting, type TierPrice } from '@/lib/pricing/settings'
+import { setPricingSetting, getFoundingConfig, type TierPrice } from '@/lib/pricing/settings'
 import { sanitizeFoundingConfig, type FoundingConfig } from '@/lib/pricing/founding'
 import {
   catalogConfigKey,
@@ -287,10 +287,15 @@ export async function setFoundingMember(profileId: string, value: boolean): Prom
  *  and clamps the take-rate to at most 100%, so a garbage/partial input can never store an impossible
  *  value. Nothing charges (ADR-362): a founding rate is a locked display value; the money flip is
  *  billingLive(). Amounts in cents, the take-rate in basis points (300 = 3%). */
-export async function saveFoundingConfig(config: FoundingConfig): Promise<ActionResult> {
+export async function saveFoundingConfig(config: Partial<FoundingConfig>): Promise<ActionResult> {
   const ctx = await requireAdmin('janitor')
-  const value = sanitizeFoundingConfig(config)
   try {
+    // READ-MODIFY-WRITE: merge the changed fields OVER the current stored config, so a row that
+    // sends only its own fields (the member row vs the business row) never overwrites the other
+    // row's fields with a stale client snapshot. Two operators — or one operator saving both rows
+    // back-to-back before revalidation propagates — can no longer clobber each other (ADR-803).
+    const current = await getFoundingConfig()
+    const value = sanitizeFoundingConfig({ ...current, ...config })
     await setPricingSetting('founding', value, ctx.profileId)
     revalidatePath(PATH)
     return ok()

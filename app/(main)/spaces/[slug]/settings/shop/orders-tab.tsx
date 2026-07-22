@@ -1,5 +1,6 @@
-import { Receipt } from 'lucide-react'
+import { Receipt, Wallet, Landmark, RotateCcw } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { StatCard } from '@/components/ui/stat-card'
 import { listSpaceOrders, spaceEarningsSummary } from '@/lib/commerce/orders'
 
 // The Orders tab of the Shop console (ADR-596). A Space's sales + earnings, scoped by owner_space_id
@@ -43,20 +44,11 @@ export async function OrdersTab({ spaceId }: { spaceId: string }) {
 
   return (
     <div className="mt-4 space-y-4">
-      <dl className="grid grid-cols-3 gap-3">
-        <div className="rounded-xl border border-border bg-surface p-3">
-          <dt className="text-xs text-muted">Net earned</dt>
-          <dd className="text-lg font-bold text-text">{usd(earnings.netCents)}</dd>
-        </div>
-        <div className="rounded-xl border border-border bg-surface p-3">
-          <dt className="text-xs text-muted">Platform fee</dt>
-          <dd className="text-lg font-bold text-text">{usd(earnings.feeCents)}</dd>
-        </div>
-        <div className="rounded-xl border border-border bg-surface p-3">
-          <dt className="text-xs text-muted">Refunded</dt>
-          <dd className="text-lg font-bold text-text">{usd(earnings.refundedCents)}</dd>
-        </div>
-      </dl>
+      <div className="grid grid-cols-3 gap-3">
+        <StatCard bordered size="sm" label="Net earned" value={usd(earnings.netCents)} icon={Wallet} />
+        <StatCard bordered size="sm" label="Platform fee" value={usd(earnings.feeCents)} icon={Landmark} />
+        <StatCard bordered size="sm" label="Refunded" value={usd(earnings.refundedCents)} icon={RotateCcw} />
+      </div>
 
       <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
         {orders.map((o) => (

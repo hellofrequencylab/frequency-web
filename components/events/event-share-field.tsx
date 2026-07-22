@@ -128,7 +128,16 @@ export function EventShareField({ eventId, slug }: { eventId: string; slug: stri
               ) : (
                 <button
                   type="button"
-                  onClick={() => run(revokeEventShare(s.id))}
+                  onClick={() => {
+                    // Confirm only the destructive case: stopping a live co-host removes the
+                    // event from their calendar. Cancelling your own pending request is low stakes.
+                    if (
+                      s.status === 'accepted' &&
+                      !window.confirm(`Stop ${s.space.name} from co-hosting this event? It leaves their calendar.`)
+                    )
+                      return
+                    run(revokeEventShare(s.id))
+                  }}
                   disabled={pending}
                   aria-label={s.status === 'accepted' ? 'Stop co-hosting' : 'Cancel request'}
                   className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-subtle transition-colors hover:text-danger disabled:opacity-40"

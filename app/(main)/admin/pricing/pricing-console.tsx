@@ -354,6 +354,16 @@ function OperatorSeatRow({ item, active }: { item: ResolvedCatalogItem; active: 
 
   function toggle() {
     const next = !on
+    if (next) {
+      // Guard against minting a live $0 seat price: the card says "set the price first," so enforce it.
+      if (item.monthlyFoundingCents <= 0) {
+        setError('Set the seat price above 0 before turning it on.')
+        return
+      }
+      if (!window.confirm('Turn the operator seat on? The next catalog sync mints its live Stripe price from the amount below.')) {
+        return
+      }
+    }
     setOn(next)
     setError(null)
     setSaved(false)
@@ -440,8 +450,9 @@ function FoundingMemberRow({ founding }: { founding: FoundingConfig }) {
     setError(null)
     setSaved(false)
     start(async () => {
+      // Send ONLY this row's fields; the action merges them over the current stored config, so this
+      // never clobbers the business row's fields (which the `...founding` prop snapshot could be stale on).
       const res = await saveFoundingConfig({
-        ...founding,
         member_one_time_cents: dollarsToCents(oneTime),
         member_cap: Math.max(0, Math.round(Number(cap) || 0)),
       })
@@ -485,8 +496,9 @@ function FoundingBusinessRow({ founding }: { founding: FoundingConfig }) {
     setError(null)
     setSaved(false)
     start(async () => {
+      // Send ONLY this row's fields; the action merges them over the current stored config, so this
+      // never clobbers the member row's fields (which the `...founding` prop snapshot could be stale on).
       const res = await saveFoundingConfig({
-        ...founding,
         business_monthly_cents: dollarsToCents(monthly),
         business_take_bps: Math.round((Number(takePct) || 0) * 100),
         business_city_cap: Math.max(0, Math.round(Number(cityCap) || 0)),
@@ -790,6 +802,15 @@ function FlagRow({
 
   function toggle() {
     const next = !on
+    // Turning billing ON is the single most consequential flip in the product: real charges can happen
+    // from that moment. Confirm it, matching the house pattern for far smaller destructive actions.
+    if (
+      flagKey === 'billing_live' &&
+      next &&
+      !window.confirm('Turn billing ON? Real charges can happen from this moment. Every priced, enabled plan becomes live.')
+    ) {
+      return
+    }
     setOn(next)
     setError(null)
     setSaved(false)
@@ -1308,6 +1329,11 @@ function SyncRow({
   const btnLabel = label ?? (action === 'catalog' ? 'Sync the catalog to Stripe' : 'Sync legacy products')
 
   function sync() {
+    // This writes real Products + Prices to the live Stripe account. Idempotent and safe while billing
+    // is off, but still an external mutation on click, so confirm it like every other write of this weight.
+    if (!window.confirm('Create or update Stripe products and prices now? This writes to your live Stripe account.')) {
+      return
+    }
     setError(null)
     setDone(null)
     start(async () => {

@@ -2,6 +2,7 @@ import { Package } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { ConfirmSubmitButton } from '@/components/ui/confirm-submit-button'
+import { ProductCover } from '@/components/marketplace/product-cover'
 import { listSpaceCatalog } from '@/lib/commerce/products'
 import { listVariantsForProducts } from '@/lib/commerce/variants'
 import { marketGroupForKind, type CommerceProduct, type ServiceConfig } from '@/lib/commerce/types'
@@ -61,6 +62,13 @@ const STATUS_LABEL: Record<CommerceProduct['status'], string> = {
   sold_out: 'Sold out',
   archived: 'Archived',
 }
+/** The status pill tone on the cover — Live reads confident, everything else recedes. */
+const STATUS_TONE: Record<CommerceProduct['status'], string> = {
+  draft: 'bg-surface text-subtle',
+  active: 'bg-success-bg text-success',
+  sold_out: 'bg-surface text-subtle',
+  archived: 'bg-surface text-subtle',
+}
 
 export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; spaceId: string; readOnly: boolean }) {
   const items = await listSpaceCatalog(spaceId)
@@ -91,87 +99,108 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
           description="Add your first product, service, or ticket. It shows up here and, once you publish your storefront, on your Shop tab."
         />
       ) : (
-        <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((p) => {
             const svc = serviceOf(p)
             const policy = svc ? servicePolicyLine(svc) : ''
+            const group = marketGroupForKind(p.productKind)
             return (
-              <li key={p.id} className="p-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-text">{p.title}</p>
-                    <p className="text-xs text-muted">
-                      {GROUP_LABEL[marketGroupForKind(p.productKind)]} · {priceLabel(p)} · {STATUS_LABEL[p.status]}
-                      {p.marketPublished ? ' · In Market' : ''}
-                    </p>
-                    {policy && <p className="mt-0.5 text-xs text-subtle">{policy}</p>}
+              <div
+                key={p.id}
+                className="flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
+              >
+                {/* Header image — the listing's first photo, or a branded gradient + type icon. */}
+                <div className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-surface-elevated">
+                  <ProductCover image={p.images[0]} group={group} sizes="(min-width:1024px) 33vw, 100vw" />
+                  <div className="absolute left-2 top-2 flex flex-wrap gap-1.5">
+                    <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold shadow-sm ${STATUS_TONE[p.status]}`}>
+                      {STATUS_LABEL[p.status]}
+                    </span>
+                    {p.marketPublished && (
+                      <span className="rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong shadow-sm">
+                        In Market
+                      </span>
+                    )}
                   </div>
+                </div>
+
+                <div className="flex flex-1 flex-col p-4">
+                  <div className="flex items-center gap-1.5">
+                    <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+                      {GROUP_LABEL[group]}
+                    </span>
+                    <span className="text-sm font-bold text-text">{priceLabel(p)}</span>
+                  </div>
+                  <p className="mt-1.5 line-clamp-2 font-semibold text-text">{p.title}</p>
+                  {policy && <p className="mt-0.5 line-clamp-1 text-xs text-subtle">{policy}</p>}
+
                   {!readOnly && (
-                    <div className="flex items-center gap-2">
-                      {p.marketPublished ? (
-                        <form action={setSpaceListingMarketPublishedAction.bind(null, slug, p.id, false)}>
+                    <div className="mt-auto pt-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {p.status === 'active' ? (
+                          <form action={setSpaceProductStatusAction.bind(null, slug, p.id, 'draft')}>
+                            <button type="submit" className={buttonClasses('secondary', 'sm')}>
+                              Hide
+                            </button>
+                          </form>
+                        ) : (
+                          <form action={setSpaceProductStatusAction.bind(null, slug, p.id, 'active')}>
+                            <button type="submit" className={buttonClasses('primary', 'sm')}>
+                              Publish
+                            </button>
+                          </form>
+                        )}
+                        {p.marketPublished ? (
+                          <form action={setSpaceListingMarketPublishedAction.bind(null, slug, p.id, false)}>
+                            <button type="submit" className={buttonClasses('ghost', 'sm')}>
+                              Remove from Market
+                            </button>
+                          </form>
+                        ) : (
+                          <form action={setSpaceListingMarketPublishedAction.bind(null, slug, p.id, true)}>
+                            <button type="submit" className={buttonClasses('ghost', 'sm')}>
+                              Add to Market
+                            </button>
+                          </form>
+                        )}
+                        <form action={duplicateSpaceProductAction.bind(null, slug, p.id)}>
                           <button type="submit" className={buttonClasses('ghost', 'sm')}>
-                            Remove from Market
+                            Duplicate
                           </button>
                         </form>
-                      ) : (
-                        <form action={setSpaceListingMarketPublishedAction.bind(null, slug, p.id, true)}>
-                          <button type="submit" className={buttonClasses('ghost', 'sm')}>
-                            Add to Market
-                          </button>
+                        <form action={deleteSpaceProductAction.bind(null, slug, p.id)}>
+                          <ConfirmSubmitButton confirm="Delete this item? This cannot be undone." label="Delete" />
                         </form>
-                      )}
-                      {p.status === 'active' ? (
-                        <form action={setSpaceProductStatusAction.bind(null, slug, p.id, 'draft')}>
-                          <button type="submit" className={buttonClasses('secondary', 'sm')}>
-                            Hide
-                          </button>
-                        </form>
-                      ) : (
-                        <form action={setSpaceProductStatusAction.bind(null, slug, p.id, 'active')}>
-                          <button type="submit" className={buttonClasses('secondary', 'sm')}>
-                            Publish
-                          </button>
-                        </form>
-                      )}
-                      <form action={duplicateSpaceProductAction.bind(null, slug, p.id)}>
-                        <button type="submit" className={buttonClasses('ghost', 'sm')}>
-                          Duplicate
-                        </button>
-                      </form>
-                      <form action={deleteSpaceProductAction.bind(null, slug, p.id)}>
-                        <ConfirmSubmitButton confirm="Delete this item? This cannot be undone." label="Delete" />
-                      </form>
+                      </div>
+
+                      <details className="mt-3 border-t border-border/60 pt-2">
+                        <summary className="cursor-pointer text-sm font-medium text-text">Edit</summary>
+                        <ItemForm
+                          slug={slug}
+                          mode="edit"
+                          product={{
+                            id: p.id,
+                            title: p.title,
+                            description: p.description,
+                            priceCents: p.priceCents,
+                            productKind: p.productKind,
+                            condition: p.condition,
+                            service: svc,
+                            images: p.images,
+                            category: p.category,
+                            tags: p.tags,
+                            marketPublished: p.marketPublished,
+                            variants: variantsByProduct.get(p.id) ?? [],
+                          }}
+                        />
+                      </details>
                     </div>
                   )}
                 </div>
-                {!readOnly && (
-                  <details className="mt-3 border-t border-border/60 pt-2">
-                    <summary className="cursor-pointer text-sm font-medium text-text">Edit</summary>
-                    <ItemForm
-                      slug={slug}
-                      mode="edit"
-                      product={{
-                        id: p.id,
-                        title: p.title,
-                        description: p.description,
-                        priceCents: p.priceCents,
-                        productKind: p.productKind,
-                        condition: p.condition,
-                        service: svc,
-                        images: p.images,
-                        category: p.category,
-                        tags: p.tags,
-                        marketPublished: p.marketPublished,
-                        variants: variantsByProduct.get(p.id) ?? [],
-                      }}
-                    />
-                  </details>
-                )}
-              </li>
+              </div>
             )
           })}
-        </ul>
+        </div>
       )}
     </div>
   )
