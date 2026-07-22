@@ -62,3 +62,16 @@ export function asFoundingConfig(raw: unknown): FoundingConfig {
 export function foundingBusinessSpotsRemaining(config: FoundingConfig, takenInCity: number): number {
   return Math.max(0, config.business_city_cap - Math.max(0, takenInCity))
 }
+
+/** The largest a basis-points field can be: 10000 = 100%. A take-rate above 100% is nonsense. */
+const MAX_BPS = 10000
+
+/** Sanitize an operator-supplied founding config for a WRITE: narrow every field fail-safe to the
+ *  default (asFoundingConfig floors negatives/garbage to the default and to whole non-negative ints),
+ *  then clamp the take-rate to at most 100% so a typo can never store an impossible fee. PURE. The
+ *  admin saveFoundingConfig action runs this before persisting the `founding` pricing_settings key, so
+ *  the stored value is always a well-formed FoundingConfig — nothing here charges (ADR-362). */
+export function sanitizeFoundingConfig(raw: unknown): FoundingConfig {
+  const base = asFoundingConfig(raw)
+  return { ...base, business_take_bps: Math.min(MAX_BPS, base.business_take_bps) }
+}

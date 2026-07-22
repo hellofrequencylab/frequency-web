@@ -26,7 +26,12 @@ import {
   saveSeatConfig,
   savePwywConfig,
   saveAddonEnabled,
+  saveFoundingConfig,
+  setOperatorSeatActive,
+  setBetaFlag,
+  saveBetaEndsAt,
 } from './actions'
+import type { FoundingConfig } from '@/lib/pricing/founding'
 
 // The /admin/pricing operator console (ADR-362/463, docs/PRICING.md). EVERYTHING SHIPS OFF: the master
 // switch defaults off, no tier/plan is enabled, and no value here charges anyone. Sections: the
@@ -59,8 +64,10 @@ export function PricingConsole({ data }: { data: PricingConsoleData }) {
       </Banner>
 
       <SwitchesSection flags={data.flags} />
-      <CatalogSection catalog={data.catalog} />
+      <CatalogSection catalog={data.catalog} operatorSeatActive={data.flags.catalog_operator_seat_active} />
       <PlansSection values={data.values} />
+      <FoundingConfigSection founding={data.founding} />
+      <BetaControlsSection beta={data.beta} />
       <FeatureGatesSection gates={data.gates} />
       <FounderSection />
       <StripeStatusSection stripe={data.stripe} />
@@ -73,7 +80,13 @@ export function PricingConsole({ data }: { data: PricingConsoleData }) {
 // amount the headline and the yearly derived two months free (overridable). Plus the per-add-on enable
 // toggles, the seat bundled floor, and the Supporter PWYW config.
 
-function CatalogSection({ catalog }: { catalog: CatalogConfig }) {
+function CatalogSection({
+  catalog,
+  operatorSeatActive,
+}: {
+  catalog: CatalogConfig
+  operatorSeatActive: boolean
+}) {
   const byKey = Object.fromEntries(catalog.items.map((i) => [i.key, i])) as Record<string, ResolvedCatalogItem>
   const addonItems = catalog.items.filter((i) => addonKeyForCatalogItem(i.key) !== null)
   return (
@@ -122,6 +135,13 @@ function CatalogSection({ catalog }: { catalog: CatalogConfig }) {
         description="The minimum licensed seats a seat plan bills. A Non Profit pays for at least this many seats even with fewer members."
       >
         <SeatConfigRow bundledFloor={catalog.seat.bundledFloor} seatItem={byKey.nonprofit_seat} />
+      </FormSection>
+
+      <FormSection
+        title="Operator seat"
+        description="Each operator beyond the owner (editor, moderator, admin) bills one seat on a paid plan. The seat ships as a placeholder that the catalog sync skips, so no price is minted. Set the price, then turn the seat on to mint the live Stripe price on the next sync. Nothing charges until billing goes live."
+      >
+        <OperatorSeatRow item={byKey.operator_seat} active={operatorSeatActive} />
       </FormSection>
 
       <FormSection
@@ -321,6 +341,348 @@ function PwywConfigRow({ minCents, suggestedCents }: { minCents: number; suggest
   )
 }
 
+// ── Operator seat (per-seat add-on · ADR-799/803) ──────────────────────────────────────────────────
+// The seat ships as a PLACEHOLDER: the catalog sync skips it so no Stripe price is minted. The operator
+// sets the seat price (the same monthly list + founding fields as any catalog item), then flips the
+// activation switch on to drop the placeholder. Only then does the next sync mint the live seat price.
+
+function OperatorSeatRow({ item, active }: { item: ResolvedCatalogItem; active: boolean }) {
+  const [on, setOn] = useState(active)
+  const [pending, start] = useTransition()
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  function toggle() {
+    const next = !on
+    setOn(next)
+    setError(null)
+    setSaved(false)
+    start(async () => {
+      const res = await setOperatorSeatActive(next)
+      if (isError(res)) {
+        setOn(!next)
+        setError(res.error)
+      } else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    })
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-text">Seat activation</span>
+            <StatusChip tone={on ? 'success' : 'neutral'} size="sm">
+              {on ? 'Active' : 'Placeholder'}
+            </StatusChip>
+          </div>
+          <p className="mt-1 text-2xs text-subtle">
+            {on
+              ? 'The seat is active. The next catalog sync will mint its Stripe price from the amount below.'
+              : 'The seat is a placeholder. The catalog sync skips it, so no Stripe price is minted. Set the price first, then turn it on.'}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {error && <span className="text-xs text-danger">{error}</span>}
+          <Toggle
+            checked={on}
+            onChange={toggle}
+            ariaLabel="Operator seat active"
+            disabled={pending}
+            saveState={pending ? 'saving' : saved ? 'saved' : 'idle'}
+          />
+        </div>
+      </div>
+      <CatalogItemRow item={item} />
+    </div>
+  )
+}
+
+// ── Founding config (Founders Round + Founding Businesses · ADR-599/803) ────────────────────────────
+// The one-time Founding MEMBER rate + cap, and the Founding BUSINESS locked monthly rate, bought-down
+// marketplace take-rate, and per-city cap. These are locked DISPLAY values: nothing here charges (the
+// money flip is the master switch). Amounts in dollars; the take-rate as a percent; caps as counts.
+
+function FoundingConfigSection({ founding }: { founding: FoundingConfig }) {
+  return (
+    <AdminSection
+      title="Founding rates"
+      description="The Founders Round (personal) and the Founding Businesses cohort. These are locked reference rates: a founder is grandfathered at their rate for life. Nothing here charges. The one-time Founding Member rate is the amount a member pays once, locked for life; the Founding Business rate is the locked monthly a Space pays."
+    >
+      <FormSection
+        title="Founding Members"
+        description="The one-time Founding Member rate (locked for life) and how many seats the round holds."
+      >
+        <FoundingMemberRow founding={founding} />
+      </FormSection>
+
+      <FormSection
+        title="Founding Businesses"
+        description="The locked monthly a Founding Business pays, its bought-down marketplace fee, and the per-city cap. The monthly matches the live Business plan; the fee is bought down from the standard ladder."
+      >
+        <FoundingBusinessRow founding={founding} />
+      </FormSection>
+    </AdminSection>
+  )
+}
+
+function FoundingMemberRow({ founding }: { founding: FoundingConfig }) {
+  const [oneTime, setOneTime] = useState(centsToDollars(founding.member_one_time_cents))
+  const [cap, setCap] = useState(String(founding.member_cap))
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, start] = useTransition()
+
+  function save() {
+    setError(null)
+    setSaved(false)
+    start(async () => {
+      const res = await saveFoundingConfig({
+        ...founding,
+        member_one_time_cents: dollarsToCents(oneTime),
+        member_cap: Math.max(0, Math.round(Number(cap) || 0)),
+      })
+      if (isError(res)) setError(res.error)
+      else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    })
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-end gap-3">
+        <Field label="One-time $" value={oneTime} onChange={setOneTime} />
+        <Field label="Seat cap" value={cap} onChange={setCap} />
+        <div className="flex items-center gap-2">
+          <SaveCue pending={pending} saved={saved} />
+          <Button size="sm" variant="secondary" onClick={save} disabled={pending}>
+            Save
+          </Button>
+        </div>
+      </div>
+      <p className="text-2xs text-subtle">
+        A Founding Member pays {formatDollars(oneTime)} once, locked for life. The round holds {cap || '0'} seats.
+      </p>
+      {error && <p className="text-xs text-danger">{error}</p>}
+    </div>
+  )
+}
+
+function FoundingBusinessRow({ founding }: { founding: FoundingConfig }) {
+  const [monthly, setMonthly] = useState(centsToDollars(founding.business_monthly_cents))
+  const [takePct, setTakePct] = useState(String(founding.business_take_bps / 100))
+  const [cityCap, setCityCap] = useState(String(founding.business_city_cap))
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, start] = useTransition()
+
+  function save() {
+    setError(null)
+    setSaved(false)
+    start(async () => {
+      const res = await saveFoundingConfig({
+        ...founding,
+        business_monthly_cents: dollarsToCents(monthly),
+        business_take_bps: Math.round((Number(takePct) || 0) * 100),
+        business_city_cap: Math.max(0, Math.round(Number(cityCap) || 0)),
+      })
+      if (isError(res)) setError(res.error)
+      else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    })
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-end gap-3">
+        <Field label="Monthly $" value={monthly} onChange={setMonthly} />
+        <Field label="Take-rate %" value={takePct} onChange={setTakePct} />
+        <Field label="Per-city cap" value={cityCap} onChange={setCityCap} />
+        <div className="flex items-center gap-2">
+          <SaveCue pending={pending} saved={saved} />
+          <Button size="sm" variant="secondary" onClick={save} disabled={pending}>
+            Save
+          </Button>
+        </div>
+      </div>
+      <p className="text-2xs text-subtle">
+        A Founding Business pays {formatDollars(monthly)} a month with a {takePct || '0'}% marketplace fee, up to{' '}
+        {cityCap || '0'} per city.
+      </p>
+      {error && <p className="text-xs text-danger">{error}</p>}
+    </div>
+  )
+}
+
+// ── Beta controls (invite gate, host prompts, countdown · ADR-803) ──────────────────────────────────
+// The invite gate and the host-prompt surface are audited platform flags. The countdown date is a text
+// setting that is DISPLAY-ONLY: it feeds the countdown banner and grants no access.
+
+function BetaControlsSection({ beta }: { beta: PricingConsoleData['beta'] }) {
+  return (
+    <AdminSection
+      title="Beta controls"
+      description="The beta switches. The invite gate and host prompts change behavior; the countdown date is display only and grants no access. All off or unset by default."
+    >
+      <FormSection
+        title="Invite gate"
+        description="When on, only an admitted beta contact or an existing member can create a new account. Existing members are never blocked. Off means signup is open exactly as today."
+      >
+        <BetaFlagRow flagKey="beta_invite_only" initial={beta.inviteOnly} label="Invite only" />
+      </FormSection>
+
+      <FormSection
+        title="Host prompts"
+        description="When on, the feed shows the graduation nudges that invite a ready member to start a Circle. Off keeps the feed quiet."
+      >
+        <BetaFlagRow flagKey="beta_host_prompts" initial={beta.hostPrompts} label="Host prompts" />
+      </FormSection>
+
+      <FormSection
+        title="Countdown date"
+        description="The date the in-product countdown banner (Summer of Frequency) counts down to. Display only: it changes no access on its own. Leave it blank to hide the banner."
+      >
+        <BetaEndsAtRow initial={beta.endsAt} />
+      </FormSection>
+    </AdminSection>
+  )
+}
+
+function BetaFlagRow({ flagKey, initial, label }: { flagKey: string; initial: boolean; label: string }) {
+  const [on, setOn] = useState(initial)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, start] = useTransition()
+
+  function toggle() {
+    const next = !on
+    setOn(next)
+    setError(null)
+    setSaved(false)
+    start(async () => {
+      const res = await setBetaFlag(flagKey, next)
+      if (isError(res)) {
+        setOn(!next)
+        setError(res.error)
+      } else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    })
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className={`text-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>{label}</span>
+      <div className="flex items-center gap-3">
+        {error && <span className="text-xs text-danger">{error}</span>}
+        <Toggle
+          checked={on}
+          onChange={toggle}
+          ariaLabel={`${label} enabled`}
+          disabled={pending}
+          saveState={pending ? 'saving' : saved ? 'saved' : 'idle'}
+        />
+      </div>
+    </div>
+  )
+}
+
+/** The days remaining until an ISO date, at UTC day granularity (matches the countdown banner). null when
+ *  unset/unparseable/past. Pure display math. */
+function daysUntil(iso: string): number | null {
+  const raw = iso.trim()
+  if (!raw) return null
+  const ms = Date.parse(raw)
+  if (Number.isNaN(ms)) return null
+  const days = Math.ceil((ms - Date.now()) / 86_400_000)
+  return days > 0 ? days : 0
+}
+
+function BetaEndsAtRow({ initial }: { initial: string }) {
+  // Prefill the date input with the calendar day (YYYY-MM-DD) of the stored ISO value.
+  const initialDay = (() => {
+    const ms = Date.parse(initial)
+    return Number.isNaN(ms) ? '' : new Date(ms).toISOString().slice(0, 10)
+  })()
+  const [value, setValue] = useState(initialDay)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, start] = useTransition()
+
+  const days = daysUntil(value ? `${value}T00:00:00.000Z` : '')
+
+  function save() {
+    setError(null)
+    setSaved(false)
+    start(async () => {
+      const res = await saveBetaEndsAt(value.trim() ? `${value.trim()}T00:00:00.000Z` : '')
+      if (isError(res)) setError(res.error)
+      else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    })
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
+          End date
+          <input
+            type="date"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            className="rounded-md border border-border bg-canvas px-2 py-1 text-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+          />
+        </label>
+        <div className="flex items-center gap-2">
+          <SaveCue pending={pending} saved={saved} />
+          <Button size="sm" variant="secondary" onClick={save} disabled={pending}>
+            Save
+          </Button>
+          {value.trim() && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setValue('')
+                start(async () => {
+                  const res = await saveBetaEndsAt('')
+                  if (isError(res)) setError(res.error)
+                  else {
+                    setSaved(true)
+                    setTimeout(() => setSaved(false), 2000)
+                  }
+                })
+              }}
+              disabled={pending}
+            >
+              Clear
+            </Button>
+          )}
+        </div>
+      </div>
+      <p className="text-2xs text-subtle">
+        {days == null
+          ? 'No date set. The countdown banner is hidden.'
+          : days === 0
+            ? 'The date is here or past. The banner is hidden.'
+            : `The banner counts down: ${days} day${days === 1 ? '' : 's'} left. Display only, no access changes.`}
+      </p>
+      {error && <p className="text-xs text-danger">{error}</p>}
+    </div>
+  )
+}
+
 /** A dollar string -> a clean "$X" / "$X.YY" label (for the helper lines). */
 function formatDollars(v: string): string {
   return formatCentsLabel(dollarsToCents(v))
@@ -508,7 +870,7 @@ function PlansSection({ values }: { values: PricingDefaults }) {
 
       <FormSection
         title="Take-rate"
-        description="The platform share of a space's sales, as a percent. Free usage pays the higher rate; a paying Business and Non Profit pay the lower one."
+        description="The platform share of a sale, as a percent. Free usage pays the higher rate; a paying Business and Non Profit pay the lower one. Member is the rate on an individual member's Market sale (a Business subscription buys it down)."
       >
         <TakeRateRow rate={values.take_rate} />
       </FormSection>
@@ -629,6 +991,7 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
   const [f, setF] = useState(String(rate.free_bps / 100))
   const [b, setB] = useState(String(rate.business_bps / 100))
   const [n, setN] = useState(String(rate.nonprofit_bps / 100))
+  const [m, setM] = useState(String(rate.member_bps / 100))
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
@@ -641,6 +1004,7 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
         free_bps: Math.round((Number(f) || 0) * 100),
         business_bps: Math.round((Number(b) || 0) * 100),
         nonprofit_bps: Math.round((Number(n) || 0) * 100),
+        member_bps: Math.round((Number(m) || 0) * 100),
       })
       if (isError(res)) setError(res.error)
       else {
@@ -656,6 +1020,7 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
         <Field label="Free %" value={f} onChange={setF} />
         <Field label="Business %" value={b} onChange={setB} />
         <Field label="Non Profit %" value={n} onChange={setN} />
+        <Field label="Member %" value={m} onChange={setM} />
         <div className="flex items-center gap-2">
           <SaveCue pending={pending} saved={saved} />
           <Button size="sm" variant="secondary" onClick={save} disabled={pending}>

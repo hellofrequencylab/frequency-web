@@ -2,8 +2,9 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
-import { setPlatformFlag } from '@/lib/platform-flags'
+import { setPlatformFlag, setPlatformSetting } from '@/lib/platform-flags'
 import { setPricingSetting, type TierPrice } from '@/lib/pricing/settings'
+import { sanitizeFoundingConfig, type FoundingConfig } from '@/lib/pricing/founding'
 import {
   catalogConfigKey,
   SEAT_CONFIG_KEY,
@@ -141,12 +142,15 @@ export async function saveAddonEnabled(addon: string, enabled: boolean): Promise
   }
 }
 
-/** Save the take-rate (basis points per paying-state · ADR-552: free usage / paying Business / Non
- *  Profit). Free-vs-paid is a usage state within Business, so free usage carries its own higher rate. */
+/** Save the take-rate (basis points per seller · ADR-552/596: free usage / paying Business / Non Profit,
+ *  plus the individual PAID-MEMBER Market seller rate `member_bps`, default 800 = 8%). Free-vs-paid is a
+ *  usage state within Business, so free usage carries its own higher rate. Every field is written so a
+ *  legacy row that lacked `member_bps` gains it (getPricingValues also merges over the code default). */
 export async function saveTakeRate(rate: {
   free_bps: number
   business_bps: number
   nonprofit_bps: number
+  member_bps: number
 }): Promise<ActionResult> {
   const ctx = await requireAdmin('janitor')
   const clamp = (n: unknown) => Math.min(10000, Math.max(0, Math.round(Number(n) || 0)))
@@ -157,6 +161,7 @@ export async function saveTakeRate(rate: {
         free_bps: clamp(rate.free_bps),
         business_bps: clamp(rate.business_bps),
         nonprofit_bps: clamp(rate.nonprofit_bps),
+        member_bps: clamp(rate.member_bps),
       },
       ctx.profileId,
     )
@@ -273,5 +278,87 @@ export async function setFoundingMember(profileId: string, value: boolean): Prom
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not update the member.')
+  }
+}
+
+/** Save the `founding` config (ADR-599/803): the one-time Founding MEMBER rate + cap, and the Founding
+ *  BUSINESS locked monthly rate + bought-down take-rate + per-city cap. Janitor-gated; persisted to the
+ *  `founding` pricing_settings key. sanitizeFoundingConfig narrows every field fail-safe to the default
+ *  and clamps the take-rate to at most 100%, so a garbage/partial input can never store an impossible
+ *  value. Nothing charges (ADR-362): a founding rate is a locked display value; the money flip is
+ *  billingLive(). Amounts in cents, the take-rate in basis points (300 = 3%). */
+export async function saveFoundingConfig(config: FoundingConfig): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  const value = sanitizeFoundingConfig(config)
+  try {
+    await setPricingSetting('founding', value, ctx.profileId)
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the founding config.')
+  }
+}
+
+/** Set the operator-seat ACTIVATION switch (ADR-803, platform flag `catalog_operator_seat_active`).
+ *  OFF (default) keeps the seat an inert placeholder the catalog sync skips; ON drops the placeholder so
+ *  the next sync mints the live seat price from the operator-set amount. Janitor-gated; audited in
+ *  platform_flag_events via setPlatformFlag. Nothing charges on its own (billingLive() still gates money). */
+export async function setOperatorSeatActive(value: boolean): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  try {
+    await setPlatformFlag('catalog_operator_seat_active', value, { changedBy: ctx.profileId, source: 'admin' })
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the switch.')
+  }
+}
+
+// ── Beta controls (ADR-803) ─────────────────────────────────────────────────────────────────────
+// The three beta switches that were database-only: the invite gate, the host-prompt surface, and the
+// countdown clock. The two booleans are audited platform flags; the countdown is a text setting and is
+// DISPLAY-ONLY (it grants no access — it only feeds the countdown banner). Janitor-gated.
+
+/** The beta boolean flags editable here (default-deny: any other key is rejected). */
+const BETA_FLAG_KEYS = ['beta_invite_only', 'beta_host_prompts'] as const
+type BetaFlagKey = (typeof BETA_FLAG_KEYS)[number]
+
+/** Set a beta boolean flag (`beta_invite_only` invite gate, `beta_host_prompts` feed nudges). Janitor-
+ *  gated; audited in platform_flag_events via setPlatformFlag. */
+export async function setBetaFlag(key: string, value: boolean): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  if (!(BETA_FLAG_KEYS as readonly string[]).includes(key)) return fail('Unknown beta switch.')
+  try {
+    await setPlatformFlag(key as BetaFlagKey, value, { changedBy: ctx.profileId, source: 'admin' })
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the switch.')
+  }
+}
+
+/** Save the beta countdown date (`beta_ends_at`, platform_settings text). DISPLAY-ONLY: it drives the
+ *  countdown banner and nothing else — it grants no access. Accepts an empty string (clears the banner)
+ *  or a parseable date (stored as an ISO string). Janitor-gated. */
+export async function saveBetaEndsAt(value: string): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  const raw = value.trim()
+  if (!raw) {
+    try {
+      await setPlatformSetting('beta_ends_at', '', ctx.profileId)
+      revalidatePath(PATH)
+      return ok()
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : 'Could not save the date.')
+    }
+  }
+  const ms = Date.parse(raw)
+  if (Number.isNaN(ms)) return fail('Enter a valid date (for example 2026-09-01).')
+  try {
+    await setPlatformSetting('beta_ends_at', new Date(ms).toISOString(), ctx.profileId)
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the date.')
   }
 }

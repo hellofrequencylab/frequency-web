@@ -15,7 +15,8 @@
 // at module load — keeping `pnpm test`/`pnpm build` free of any Stripe traffic.
 
 import { stripe, billingEnabled } from './stripe'
-import { getPricingValues, type TierPrice } from '@/lib/pricing/settings'
+import { getPricingValues, loadPricingFlags, type TierPrice } from '@/lib/pricing/settings'
+import { loadCatalogConfig, catalogConfigByKey } from '@/lib/pricing/catalog-config'
 import { loadStripePriceMap, upsertStripePrice } from './pricing-prices'
 import {
   MEMBER_TIER_KEYS,
@@ -27,7 +28,6 @@ import {
   type SpacePlanKey,
   BILLING_INTERVALS,
   catalogItems,
-  catalogAmounts,
   catalogPriceKey,
   RETIRED_CATALOG_KEYS,
   type BillingInterval,
@@ -197,6 +197,18 @@ export async function syncPricingProductsToStripe(changedBy?: string | null): Pr
 // configured, never a live call on import/boot/test. Idempotent: re-running reuses Products + matching
 // Prices and only creates a new Price when an amount changed (Stripe Prices are immutable).
 
+/** Whether a catalog item is an INERT placeholder for the sync (so it mints no Stripe product/price).
+ *  An item is inert when its code `placeholder` flag is set AND the operator has not activated it. Only
+ *  the operator seat (ADR-799/803) has an activation switch (`catalog_operator_seat_active`); every other
+ *  placeholder stays inert regardless. PURE — the sync reads the flag and passes it here. Keeping the
+ *  placeholder-skip is the ABSOLUTE INVARIANT (ADR-362): a routine sync never mints a seat price the
+ *  owner has not explicitly turned on. */
+export function isCatalogItemInertPlaceholder(item: CatalogItem, operatorSeatActive: boolean): boolean {
+  if (!item.placeholder) return false
+  if (item.key === 'operator_seat') return !operatorSeatActive
+  return true
+}
+
 /** Find/create the managed Product for a catalog item by its metadata key (idempotent). */
 async function ensureCatalogProduct(item: CatalogItem): Promise<string> {
   if (!stripe) throw new Error('Stripe is not configured.')
@@ -262,12 +274,19 @@ export async function syncPricingCatalogToStripe(changedBy?: string | null): Pro
 
   const result: SyncResult = { ok: true, synced: [], errors: [] }
 
+  // The operator-editable amounts (over the code defaults, ADR-463) and the operator-seat activation
+  // switch (ADR-803). Both fail-safe: a missing override reads the code amount, a missing flag reads OFF.
+  const [catalog, flags] = await Promise.all([loadCatalogConfig(), loadPricingFlags()])
+  const resolvedByKey = catalogConfigByKey(catalog)
+  const operatorSeatActive = flags.catalog_operator_seat_active
+
   for (const item of catalogItems()) {
     // A PLACEHOLDER item (operator_seat, ADR-799) carries a stand-in amount the owner has not approved.
     // Skip it entirely so the sync mints NO Stripe product/price for it — resolveLoadoutPriceId stays null
-    // and the item is inert until the owner sets the real amount and drops the flag. Without this, a routine
-    // sync of the live catalog would silently create a chargeable seat price the owner never set.
-    if (item.placeholder) continue
+    // and the item is inert until the owner sets the real amount and activates it. Without this, a routine
+    // sync of the live catalog would silently create a chargeable seat price the owner never set. The seat
+    // stays inert until `catalog_operator_seat_active` is flipped on (ADR-803).
+    if (isCatalogItemInertPlaceholder(item, operatorSeatActive)) continue
     let productId: string
     try {
       productId = await ensureCatalogProduct(item)
@@ -277,8 +296,12 @@ export async function syncPricingCatalogToStripe(changedBy?: string | null): Pro
       continue
     }
 
+    // Sync the OPERATOR-SET amounts (the console's "run this after you change a catalog price" contract),
+    // fail-safe to the code catalog when no override exists (ADR-463/803).
+    const resolved = resolvedByKey[item.key]
+
     for (const interval of BILLING_INTERVALS) {
-      const amounts = catalogAmounts(item.key, interval)
+      const amounts = interval === 'month' ? resolved.month : resolved.year
       // Two variants per interval: founding (the charged price, active) and list (the anchor, archived).
       const variants: { list: boolean; amountCents: number }[] = [
         { list: false, amountCents: amounts.foundingCents },
