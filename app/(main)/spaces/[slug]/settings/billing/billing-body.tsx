@@ -17,6 +17,7 @@ import { monthlyTakeRateSavingsCents } from '@/lib/billing/pricing-keys'
 import { spaceTrailingProcessedCents } from '@/lib/commerce/orders'
 import { getSpaceVerification } from '@/lib/spaces/nonprofit-verification'
 import { GoBusinessCta } from './go-business'
+import { ManageSubscriptionButton } from './manage-subscription'
 
 // BILLING BODY — the chrome-free plan-and-usage hub, lifted out of the standalone /settings/billing page
 // (Stage D2) so it renders in TWO places from one source: (1) that page, wrapped in its FocusTemplate
@@ -157,6 +158,11 @@ export async function BillingBody({ slug }: { slug: string }) {
             </p>
           </fieldset>
         )}
+
+        {/* Already paying: the self-serve subscription control. Opens the Stripe billing portal (payment
+            method, plan change/cancel, seats where the portal allows). Owner action; hidden in staff
+            preview (read-only). A paid space that has no Stripe customer yet just gets a clean error. */}
+        {isPaid && !staffViewing && <ManageSubscriptionButton slug={space.slug} />}
 
         {/* Non Profit is the verified-501(c)(3) sibling of Business (same depth, discounted per seat). The
             self-serve verification flow (ADR-552, AUDIT #6) lives at settings/billing/verify: the owner

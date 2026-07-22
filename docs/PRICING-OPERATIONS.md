@@ -81,6 +81,10 @@ turn `gamification_full_member` back off.
 - **Business plan (ongoing).** A Space owner buys it from their Space billing settings once the plan is
   enabled and billing is live. It includes a trial with a card upfront. Business is the full-depth tier;
   free is a usage state within Business, not a separate plan.
+- **Managing a paid plan.** A paying Space shows a "Manage subscription" button in its billing settings
+  that opens the Stripe billing portal, where the owner updates the payment method, changes or cancels the
+  plan, and adjusts seats where the portal allows. It is Stripe hosted, so cancellation and payment updates
+  always work, even if the master switch is later turned off.
 
 ## Founding rates and beta controls (on the console)
 
