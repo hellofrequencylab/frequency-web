@@ -18,6 +18,7 @@ import { spaceTrailingProcessedCents } from '@/lib/commerce/orders'
 import { getSpaceVerification } from '@/lib/spaces/nonprofit-verification'
 import { GoBusinessCta } from './go-business'
 import { ManageSubscriptionButton } from './manage-subscription'
+import { SeatEditor } from './seat-editor'
 
 // BILLING BODY — the chrome-free plan-and-usage hub, lifted out of the standalone /settings/billing page
 // (Stage D2) so it renders in TWO places from one source: (1) that page, wrapped in its FocusTemplate
@@ -163,6 +164,14 @@ export async function BillingBody({ slug }: { slug: string }) {
             method, plan change/cancel, seats where the portal allows). Owner action; hidden in staff
             preview (read-only). A paid space that has no Stripe customer yet just gets a clean error. */}
         {isPaid && !staffViewing && <ManageSubscriptionButton slug={space.slug} />}
+
+        {/* Direct operator-seat editor (A4/A5): change the licensed seat count on the live subscription
+            with proration. Only when paying AND seats are sellable (activated + priced), so it stays
+            hidden while seats are inert. Guarantees seat management even if the Stripe portal is not
+            configured to expose seat quantities. */}
+        {isPaid && !staffViewing && seatsSellable && (
+          <SeatEditor slug={space.slug} initialSeats={seatUsage?.seatQuantity ?? 0} />
+        )}
 
         {/* Non Profit is the verified-501(c)(3) sibling of Business (same depth, discounted per seat). The
             self-serve verification flow (ADR-552, AUDIT #6) lives at settings/billing/verify: the owner

@@ -85,6 +85,10 @@ turn `gamification_full_member` back off.
   that opens the Stripe billing portal, where the owner updates the payment method, changes or cancels the
   plan, and adjusts seats where the portal allows. It is Stripe hosted, so cancellation and payment updates
   always work, even if the master switch is later turned off.
+- **Operator seats.** Once the operator seat is activated and priced, a paying Space also gets a direct
+  seat editor on the same billing settings: the owner sets the licensed operator-seat count and the change
+  is applied to the live subscription with proration (independent of whether the Stripe portal exposes
+  seats). The owner's own seat is free; the count is the team beyond them.
 
 ## Founding rates and beta controls (on the console)
 

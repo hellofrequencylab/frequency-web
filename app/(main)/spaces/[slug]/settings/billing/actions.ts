@@ -4,6 +4,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { createSpacePlanCheckout, createSpaceLoadoutCheckout, createSpaceBillingPortal } from '@/lib/billing/space-plan-checkout'
+import { updateOperatorSeats } from '@/lib/billing/operator-seats'
 import { asSpacePlanKey, type BillingInterval, type BillingPeriod } from '@/lib/billing/pricing-keys'
 import { asAddonKey } from '@/lib/pricing/plans'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -56,6 +57,18 @@ export async function openSpaceBillingPortal(slug: string): Promise<ActionResult
   const url = await createSpaceBillingPortal(auth.spaceId)
   if (!url) return fail('There is no subscription to manage yet.')
   return ok({ url })
+}
+
+/** Set the Space's licensed operator-seat count directly on the live subscription (add / change / remove
+ *  the operator_seat item with proration). Owner-gated; GATED inside updateOperatorSeats on billingLive()
+ *  + seats-sellable + a live subscription, so this returns a clean error (never a broken charge) while
+ *  billing is OFF or seats are inactive. */
+export async function setOperatorSeats(slug: string, seats: number): Promise<ActionResult<{ seats: number }>> {
+  const auth = await authorizeOwner(slug)
+  if (!auth) return fail('You do not have access to manage this space.')
+  const res = await updateOperatorSeats(auth.spaceId, seats)
+  if (!res.ok) return fail(res.error)
+  return ok({ seats: res.seats })
 }
 
 /** The base tiers the multi-item loadout checkout sells (ADR-552): Business runs on the Business base +
