@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { ArrowRight, Loader2, Lock } from 'lucide-react'
+import { ArrowRight, Loader2, Lock, Minus, Plus } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { startSpaceLoadoutCheckout } from './actions'
 
@@ -11,24 +11,34 @@ import { startSpaceLoadoutCheckout } from './actions'
 // switch), so while billing is OFF this renders a tasteful disabled "Available soon" preview and nothing
 // charges. No em dashes (CONTENT-VOICE §10).
 
+/** Hard ceiling on extra operator seats bought in one go (a sane picker bound, not a plan limit). */
+const MAX_EXTRA_SEATS = 25
+
 export function GoBusinessCta({
   slug,
   sellable,
   trialDays,
+  seatsSellable = false,
 }: {
   slug: string
   /** Whether the Business checkout is live (billingLive AND the per-plan switch). False while OFF. */
   sellable: boolean
   trialDays: number
+  /** Whether operator SEATS can be bought (the seat is activated + priced). Hides the picker when false. */
+  seatsSellable?: boolean
 }) {
   const [error, setError] = useState<string | null>(null)
+  const [extraSeats, setExtraSeats] = useState(0)
   const [pending, start] = useTransition()
 
   function goBusiness() {
     if (!sellable) return
     setError(null)
     start(async () => {
-      const res = await startSpaceLoadoutCheckout(slug, { plan: 'business', interval: 'month' })
+      // seatQuantity is the LICENSED count (the owner's own seat is the free base, so the picker adds
+      // EXTRA operators). Only sent when seats are sellable; otherwise the seat item stays inert.
+      const seatQuantity = seatsSellable && extraSeats > 0 ? extraSeats : undefined
+      const res = await startSpaceLoadoutCheckout(slug, { plan: 'business', interval: 'month', seatQuantity })
       if (isError(res)) setError(res.error)
       else window.location.href = res.data.url
     })
@@ -47,6 +57,37 @@ export function GoBusinessCta({
           <p className="mt-2 text-xs text-subtle">
             Going Business keeps Frequency independent and funds the small team that builds it.
           </p>
+          {/* Operator-seat picker (A4/A5). Only shown when seats are actually sellable (activated + priced);
+              your own seat is free, so this buys EXTRA operators. Hidden until seats go live. */}
+          {sellable && seatsSellable && (
+            <div className="mt-3 flex items-center gap-3">
+              <span className="text-xs font-semibold text-text">Extra operator seats</span>
+              <div className="inline-flex items-center gap-1 rounded-lg border border-border">
+                <button
+                  type="button"
+                  aria-label="Remove a seat"
+                  onClick={() => setExtraSeats((n) => Math.max(0, n - 1))}
+                  disabled={pending || extraSeats <= 0}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-l-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-40"
+                >
+                  <Minus className="h-3.5 w-3.5" aria-hidden />
+                </button>
+                <span className="min-w-8 text-center text-sm font-semibold tabular-nums text-text" aria-live="polite">
+                  {extraSeats}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Add a seat"
+                  onClick={() => setExtraSeats((n) => Math.min(MAX_EXTRA_SEATS, n + 1))}
+                  disabled={pending || extraSeats >= MAX_EXTRA_SEATS}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-r-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-40"
+                >
+                  <Plus className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              </div>
+              <span className="text-2xs text-subtle">Your own seat is included.</span>
+            </div>
+          )}
         </div>
         <div className="min-w-[12rem]">
           {sellable ? (

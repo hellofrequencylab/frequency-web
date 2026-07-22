@@ -6,7 +6,7 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { getPricingValues, billingLive } from '@/lib/pricing/settings'
-import { spaceLoadoutSellable } from '@/lib/billing/space-plan-checkout'
+import { spaceLoadoutSellable, operatorSeatsSellable } from '@/lib/billing/space-plan-checkout'
 import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import { getSeatUsage } from '@/lib/spaces/seats'
 import { SeatCounter } from '@/components/spaces/seat-counter'
@@ -75,9 +75,10 @@ export async function BillingBody({ slug }: { slug: string }) {
 
   // The Business checkout gate (billingLive AND the per-plan switch — both false while billing is OFF, so
   // the CTA renders as a disabled "Available soon" preview), plus the seat usage + billing-live flag.
-  const [values, businessSellable, seatUsage, billingIsLive, trailingVolumeCents, verification] = await Promise.all([
+  const [values, businessSellable, seatsSellable, seatUsage, billingIsLive, trailingVolumeCents, verification] = await Promise.all([
     getPricingValues(),
     spaceLoadoutSellable('business'),
+    operatorSeatsSellable(),
     getSeatUsage(space.id),
     billingLive(),
     spaceTrailingProcessedCents(space.id),
@@ -140,8 +141,8 @@ export async function BillingBody({ slug }: { slug: string }) {
                 You&rsquo;d have saved ${savingsDollars.toLocaleString('en-US')} this month on Business.
               </p>
             )}
-            <GoBusinessCta slug={space.slug} sellable={businessSellable} trialDays={values.trial.days} />
-            {/* Founding Business (ADR-803): the per-city fee-buydown cohort. A locked founder rate and a
+            <GoBusinessCta slug={space.slug} sellable={businessSellable} seatsSellable={seatsSellable} trialDays={values.trial.days} />
+            {/* Founding Business (ADR-804): the per-city fee-buydown cohort. A locked founder rate and a
                 marketplace fee bought down to the lowest on the platform, grandfathered for life. The
                 linked checkout is GATED (inert until billing is live), so this is a preview link today. */}
             <p className="mt-2 text-xs text-subtle">
