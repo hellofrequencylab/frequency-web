@@ -6,6 +6,7 @@ import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/ent
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { CollaboratorsBody } from './collaborators-body'
 import { SharedCollaboratorCalendar } from './shared-collaborator-calendar'
+import { VenueHoldsSection } from './venue-holds-section'
 
 // COLLABORATORS — the owner back-end surface for hosting other businesses inside this space (ADR-799
 // B1-UI). A centered, no-rail Focus surface (the /spaces/<slug>/settings* rail pattern registers 'none'
@@ -39,6 +40,8 @@ export default async function SpaceCollaboratorsPage({ params }: { params: Promi
       {/* B3 first slice: the combined calendar of this space + its accepted collaborators (public events
           only, gated per source). Renders nothing when there are no accepted collaborators / events. */}
       {!featureLocked && <SharedCollaboratorCalendar spaceId={space.id} ownName={brandName} />}
+      {/* B3 booking coordination: request/approve advisory venue holds between accepted collaborators. */}
+      {!featureLocked && <VenueHoldsSection spaceId={space.id} />}
     </FocusTemplate>
   )
 }
