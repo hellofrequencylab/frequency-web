@@ -254,6 +254,28 @@ export async function requestFeatureEvent(spaceId: string, eventId: string): Pro
   return ok()
 }
 
+/**
+ * Feature an event by its link or slug (the space manage surface's "Feature an event" form). Resolves a
+ * VISIBLE, PUBLISHED event (public/unlisted only — never a draft or private one reachable by guessing a
+ * slug), then delegates to requestFeatureEvent, which re-checks that the caller stewards the space and
+ * routes the request to the event's host for approval. Accepts a bare slug or a full /events/<slug> URL.
+ */
+export async function requestFeatureEventBySlug(spaceId: string, eventSlug: string): Promise<ActionResult> {
+  const clean = (eventSlug ?? '').trim().replace(/^.*\/events\//, '').replace(/[/?#].*$/, '')
+  if (!clean) return fail('Paste an event link or slug to feature.')
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('events')
+    .select('id, status, visibility')
+    .eq('slug', clean)
+    .maybeSingle()
+  const ev = data as { id: string; status: string | null; visibility: string | null } | null
+  if (!ev || ev.status !== 'published' || !['public', 'unlisted'].includes(ev.visibility ?? '')) {
+    return fail('Could not find a public event with that link.')
+  }
+  return requestFeatureEvent(spaceId, ev.id)
+}
+
 /** True when the signed-in caller may act on the NON-initiating (approving) side of `row`. */
 async function viewerApprovesShare(row: ShareRow, profileId: string): Promise<boolean> {
   const homeSpaceId = await eventHomeSpaceId(row.event_id)
