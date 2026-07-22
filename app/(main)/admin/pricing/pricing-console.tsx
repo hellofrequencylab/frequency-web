@@ -354,6 +354,16 @@ function OperatorSeatRow({ item, active }: { item: ResolvedCatalogItem; active: 
 
   function toggle() {
     const next = !on
+    if (next) {
+      // Guard against minting a live $0 seat price: the card says "set the price first," so enforce it.
+      if (item.monthlyFoundingCents <= 0) {
+        setError('Set the seat price above 0 before turning it on.')
+        return
+      }
+      if (!window.confirm('Turn the operator seat on? The next catalog sync mints its live Stripe price from the amount below.')) {
+        return
+      }
+    }
     setOn(next)
     setError(null)
     setSaved(false)
