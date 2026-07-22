@@ -59,6 +59,23 @@ export async function spaceLoadoutSellable(plan: 'business' | 'nonprofit'): Prom
   }
 }
 
+/** Whether OPERATOR SEATS can actually be bought right now (A4/A5): billingLive() AND the seat is
+ *  activated (`catalog_operator_seat_active`, ADR-803) AND its founding price is synced to Stripe. Until
+ *  all three hold, `operator_seat` is an inert placeholder the loadout checkout skips (isCatalogItemInert
+ *  Placeholder / a null price), so the seat picker stays hidden rather than offering a silent no-op.
+ *  GATED, FAIL-SAFE FALSE. */
+export async function operatorSeatsSellable(): Promise<boolean> {
+  try {
+    if (!(await billingLive())) return false
+    const flags = await loadPricingFlags()
+    if (flags.catalog_operator_seat_active !== true) return false
+    const priceId = await resolveStripePriceId(catalogPriceKey('operator_seat', 'month', false))
+    return !!priceId
+  } catch {
+    return false
+  }
+}
+
 /** Create a subscription Checkout session for a Space owner to buy a plan; returns the URL, or null
  *  when the plan isn't sellable / not synced / the space has no owner. GATED on spacePlanSellable.
  *  authz-delegated: caller-trusted operator/owner action authorizes the space; this binds the customer
