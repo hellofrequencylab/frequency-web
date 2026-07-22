@@ -13,22 +13,26 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { buildVevent, icsEventInstants, renderCalendar } from '@/lib/events/ics'
+import { buildVevent, icsEventInstants, renderCalendar, rruleForRecurrence } from '@/lib/events/ics'
+import { eventInstant } from '@/lib/time/zone'
 
 export const dynamic = 'force-dynamic'
 
 type EventRow = {
-  id:            string
-  title:         string
-  description:   string | null
-  location:      string | null
-  starts_at:     string
-  ends_at:       string | null
-  slug:          string
-  is_cancelled:  boolean
-  status:        string | null
-  visibility:    string | null
-  time_zone:     string | null
+  id:                string
+  title:             string
+  description:       string | null
+  location:          string | null
+  starts_at:         string
+  ends_at:           string | null
+  slug:              string
+  is_cancelled:      boolean
+  status:            string | null
+  visibility:        string | null
+  time_zone:         string | null
+  recurrence_type:   string | null
+  recurrence_until:  string | null
+  parent_event_id:   string | null
 }
 
 export async function GET(
@@ -40,7 +44,7 @@ export async function GET(
 
   const { data: rawEvent } = await admin
     .from('events')
-    .select('id, title, description, location, starts_at, ends_at, slug, is_cancelled, status, visibility, time_zone')
+    .select('id, title, description, location, starts_at, ends_at, slug, is_cancelled, status, visibility, time_zone, recurrence_type, recurrence_until, parent_event_id')
     .eq('slug', slug)
     .maybeSingle()
 
@@ -64,6 +68,14 @@ export async function GET(
   // subscriber's client shows the event at the correct absolute moment in their own local zone.
   const { start, end } = icsEventInstants(ev.starts_at, ev.ends_at, ev.time_zone)
 
+  // A recurring ANCHOR (recurrence_type != none, no parent) exports as ONE VEVENT carrying an RRULE, so
+  // "add to calendar" adds the whole series instead of a single date. A materialized CHILD occurrence
+  // (parent_event_id set) stays a single dated VEVENT. Never emit the cadence for a masked event (a
+  // private/draft/cancelled event leaks nothing extra, matching the title/venue masking above).
+  const isRecurringAnchor = ev.parent_event_id == null && (ev.recurrence_type ?? 'none') !== 'none'
+  const untilInstant = ev.recurrence_until ? eventInstant(ev.recurrence_until, ev.time_zone) : null
+  const rrule = !masked && isRecurringAnchor ? rruleForRecurrence(ev.recurrence_type, untilInstant) : null
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 
   const body = renderCalendar({
@@ -77,6 +89,7 @@ export async function GET(
         // Venue + description are omitted entirely when masked (never leak them).
         location: masked ? null : ev.location,
         description: masked ? null : ev.description,
+        rrule,
         cancelled: ev.is_cancelled,
       }),
     ],

@@ -115,7 +115,13 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
   `scripts/rls-deny-all.txt`); status transitions are atomic (status-guarded `WHERE`).
 
 ### EC4 — engagement polish
-- RRULE export for recurring series (currently materialized rows export as separate VEVENTs).
+- **RRULE export (per-event `.ics` shipped).** A recurring ANCHOR event's own `.ics`
+  (`app/events/[slug]/event.ics`) now emits ONE VEVENT carrying an `RRULE` (`rruleForRecurrence` maps the
+  ADR-007 enum daily/weekly/monthly + `recurrence_until` to `FREQ=...;UNTIL=...`), so "add to calendar"
+  adds the whole series instead of a single date. Masked (private/draft/cancelled) events never emit the
+  cadence. Follow-up: fold the same RRULE into the subscribable FEEDS (they still list materialized child
+  rows as separate VEVENTs; deduping to the anchor + RRULE needs the feed RPCs to carry
+  `recurrence_type`/`parent_event_id`).
 - Reminders for feed subscribers who have not RSVP'd (opt-in), reusing the reminder cron.
 - Saved views / "add to my calendar" nudges. **"N going" social proof shipped** on the event popup (see
   EC2 popup polish above); a grid-cell count is a possible further touch.

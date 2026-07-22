@@ -67,8 +67,23 @@ export function icsEventInstants(
   return { start, end }
 }
 
+/** Map the simple enum recurrence (ADR-007: daily/weekly/monthly) to an RFC 5545 RRULE value, or null
+ *  for a one-time event. `untilInstant` is the TRUE instant of the series end — resolve `recurrence_until`
+ *  through the event's own zone (eventInstant) BEFORE passing it, since DTSTART here is a UTC date-time and
+ *  RFC 5545 §3.8.5.3 requires UNTIL to match (UTC). PURE. The enum has no BYDAY/INTERVAL, so the RRULE is
+ *  the plain cadence; a client expands it from DTSTART, matching the materialized occurrences. */
+export function rruleForRecurrence(type: string | null | undefined, untilInstant?: Date | null): string | null {
+  const freq =
+    type === 'daily' ? 'DAILY' : type === 'weekly' ? 'WEEKLY' : type === 'monthly' ? 'MONTHLY' : null
+  if (!freq) return null
+  let rule = `FREQ=${freq}`
+  if (untilInstant && !Number.isNaN(untilInstant.getTime())) rule += `;UNTIL=${icsStamp(untilInstant)}`
+  return rule
+}
+
 /** The fields one VEVENT block needs. `start`/`end` are already TRUE instants (via icsEventInstants);
- *  optional text fields are omitted when absent so a masked feed can drop the venue/description. */
+ *  optional text fields are omitted when absent so a masked feed can drop the venue/description. `rrule`
+ *  (from rruleForRecurrence) turns a single VEVENT into a recurring series a calendar client expands. */
 export interface VeventFields {
   uid: string
   start: Date
@@ -77,6 +92,7 @@ export interface VeventFields {
   url?: string | null
   location?: string | null
   description?: string | null
+  rrule?: string | null
   cancelled?: boolean
 }
 
@@ -91,6 +107,9 @@ export function buildVevent(ev: VeventFields, now: Date = new Date()): string[] 
     `DTEND:${icsStamp(ev.end)}`,
     foldLine(`SUMMARY:${icsEscape(ev.summary)}`),
   ]
+  // RRULE carries the recurrence cadence (structured value, no text escaping); a client expands the
+  // series from DTSTART, so the single VEVENT becomes the whole run.
+  if (ev.rrule) lines.push(`RRULE:${ev.rrule}`)
   if (ev.url) lines.push(foldLine(`URL:${icsEscape(ev.url)}`))
   if (ev.location) lines.push(foldLine(`LOCATION:${icsEscape(ev.location)}`))
   if (ev.description) lines.push(foldLine(`DESCRIPTION:${icsEscape(ev.description)}`))
