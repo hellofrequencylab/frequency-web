@@ -1,6 +1,6 @@
-import Image from 'next/image'
-import { Package, CalendarClock, Ticket, Star } from 'lucide-react'
+import { Star } from 'lucide-react'
 import { EntityCard } from '@/components/cards/entity-card'
+import { ProductCover } from '@/components/marketplace/product-cover'
 import { VerifiedBadge, CharterBadge } from '@/components/ui/verified-badge'
 import { marketGroupForKind, type MarketItem, type MarketGroup } from '@/lib/commerce/types'
 import type { ProductRating } from '@/lib/commerce/reviews'
@@ -34,10 +34,10 @@ function serviceDuration(product: MarketItem): string | null {
   return svc?.durationMin ? `${svc.durationMin} min` : null
 }
 
-const GROUP_META: Record<MarketGroup, { label: string; Icon: typeof Package }> = {
-  products: { label: 'Product', Icon: Package },
-  services: { label: 'Service', Icon: CalendarClock },
-  tickets: { label: 'Ticket', Icon: Ticket },
+const GROUP_META: Record<MarketGroup, { label: string }> = {
+  products: { label: 'Product' },
+  services: { label: 'Service' },
+  tickets: { label: 'Ticket' },
 }
 
 // Browse card for a commerce product (maker / Frequency Store / Space storefront). Every card leads with
@@ -64,25 +64,13 @@ export function ProductCard({
   const linkHref = href ?? product.href ?? `/market/${product.id}`
   const soldOut = product.status === 'sold_out' || product.stock === 0
   const group = marketGroupForKind(product.productKind)
-  const { label: groupLabel, Icon } = GROUP_META[group]
+  const { label: groupLabel } = GROUP_META[group]
   const duration = group === 'services' ? serviceDuration(product) : null
-
-  const cover = product.images[0] ? (
-    // focal-point: apply objectPosition here once products store a focal point. Add ImageFocalPicker
-    // (components/ui/image-focal-picker) to the product editor, store the value, then pass it as
-    // `style={{ objectPosition }}` on this <Image> — the reusable pattern from the event cover wiring
-    // (lib/images/focal-point.ts). Defaults to a centered crop until then.
-    <Image fill src={product.images[0]} alt="" className="object-cover" sizes="(min-width:1024px) 25vw, 100vw" />
-  ) : (
-    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-bg/40 via-surface-elevated to-surface-elevated">
-      <Icon className="h-10 w-10 text-primary/40" aria-hidden />
-    </div>
-  )
 
   return (
     <EntityCard
       href={linkHref}
-      cover={cover}
+      cover={<ProductCover image={product.images[0]} group={group} />}
       title={product.title}
       badge={
         <span className="flex items-center gap-1.5">
