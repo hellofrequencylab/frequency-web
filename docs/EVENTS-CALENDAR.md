@@ -74,7 +74,11 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
 - Mounted the subscribe affordance (`CalendarSubscribeMenu`) pointing at the EC1 public per-space feed
   `/spaces/<slug>/calendar.ics`.
 - Times are pre-formatted server-side (via `formatEventWhen`) so the timezone lib never ships to the
-  client. Follow-up: a viewer-zone toggle, RSVP counts + covers in the popup, and a list/map toggle.
+  client. **Popup polish (shipped):** the popup now shows the event cover, a "N going" social-proof line
+  (confirmed RSVPs), and a **"show in my timezone" toggle** that reformats the true instant in the viewer's
+  own zone via native `Intl` (still no project tz lib on the client). The going count + cover come from
+  `listCalendarEngagement` (a display-only enrichment keyed by the grid's event ids, kept OUT of the feed
+  RPCs so the `.ics` contract is untouched). Follow-up: a list/map toggle.
 
 ### EC3 — the master Frequency calendar + shared events ✅ (shipped)
 - **Master Frequency calendar + feed.** `public_calendar_feed()` (migration `20261196000000`) — the
@@ -113,7 +117,8 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
 ### EC4 — engagement polish
 - RRULE export for recurring series (currently materialized rows export as separate VEVENTs).
 - Reminders for feed subscribers who have not RSVP'd (opt-in), reusing the reminder cron.
-- Saved views / "add to my calendar" nudges, "N going" social proof on the grid.
+- Saved views / "add to my calendar" nudges. **"N going" social proof shipped** on the event popup (see
+  EC2 popup polish above); a grid-cell count is a possible further touch.
 
 ## 4. Key decisions
 

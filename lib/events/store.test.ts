@@ -53,6 +53,7 @@ import {
   masterCalendarIncludes,
   mergeSpaceCalendarRows,
   filterSharedByHomeSpace,
+  tallyGoingByEvent,
   type SpaceCalendarEventRow,
   type SharedCalendarEventRow,
 } from './store'
@@ -164,6 +165,25 @@ describe('mergeSpaceCalendarRows (EC3 UNION: own + accepted-shared, deduped + ga
     const b = row({ id: 'b', starts_at: '2026-07-06T19:00:00Z' })
     const c = row({ id: 'c', starts_at: '2026-07-07T19:00:00Z' })
     expect(mergeSpaceCalendarRows([a, b], [c], FROM, 2).map((e) => e.id)).toEqual(['a', 'b'])
+  })
+})
+
+describe('tallyGoingByEvent (calendar social proof: count only confirmed going)', () => {
+  it('counts only status=going, grouped per event, ignoring maybe/waitlist/blank', () => {
+    const tally = tallyGoingByEvent([
+      { event_id: 'a', status: 'going' },
+      { event_id: 'a', status: 'going' },
+      { event_id: 'a', status: 'maybe' },
+      { event_id: 'b', status: 'waitlist' },
+      { event_id: 'b', status: 'going' },
+      { event_id: 'c', status: null },
+    ])
+    expect(tally.get('a')).toBe(2)
+    expect(tally.get('b')).toBe(1)
+    expect(tally.has('c')).toBe(false)
+  })
+  it('is empty for no rows', () => {
+    expect(tallyGoingByEvent([]).size).toBe(0)
   })
 })
 
