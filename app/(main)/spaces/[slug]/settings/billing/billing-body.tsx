@@ -16,8 +16,10 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { FeatureMeterRange } from '@/components/pricing/feature-meter-range'
 import { FEATURE_METERS } from '@/lib/pricing/feature-meters'
 import { getSpaceVerification } from '@/lib/spaces/nonprofit-verification'
+import { spaceEarningsSummary } from '@/lib/commerce/orders'
 import { GoBusinessCta } from './go-business'
 import { PlanLadder } from './plan-ladder'
+import { NetworkReceipt } from './network-receipt'
 import { ManageSubscriptionButton } from './manage-subscription'
 import { SeatEditor } from './seat-editor'
 
@@ -78,7 +80,7 @@ export async function BillingBody({ slug }: { slug: string }) {
 
   // The Business checkout gate (billingLive AND the per-plan switch — both false while billing is OFF, so
   // the CTA renders as a disabled "Available soon" preview), plus the seat usage + billing-live flag.
-  const [values, businessSellable, seatsSellable, seatUsage, billingIsLive, verification, catalog] =
+  const [values, businessSellable, seatsSellable, seatUsage, billingIsLive, verification, catalog, earnings] =
     await Promise.all([
       getPricingValues(),
       spaceLoadoutSellable('business'),
@@ -87,6 +89,8 @@ export async function BillingBody({ slug }: { slug: string }) {
       billingLive(),
       getSpaceVerification(space.id),
       loadCatalogConfig(),
+      // The honest receipt (Phase 5): trailing 30-day earnings, split network-sourced vs self.
+      spaceEarningsSummary(space.id, 30),
     ])
 
   const isPaid = currentPlan !== 'free'
@@ -118,6 +122,10 @@ export async function BillingBody({ slug }: { slug: string }) {
         {/* The Community Collective ladder (ADR-811): where this Space sits + the buy-down-your-rate
             promise. Informational and OFF-safe; the one live upgrade action stays the Business CTA below. */}
         <PlanLadder currentPlan={currentPlan} />
+
+        {/* The honest receipt (Phase 5, ADR-811 §A): the real dollars the network sourced, proving promise
+            #4. Renders nothing until there is network-sourced business, so it never brags about zero. */}
+        <NetworkReceipt earnings={earnings} />
 
         {/* USAGE METERS (ADR-519 / ADR-520 P3): the ladder for every metered tool in one place, the
             current plan highlighted. Nothing charges or blocks (billing is on hold); the meters are
