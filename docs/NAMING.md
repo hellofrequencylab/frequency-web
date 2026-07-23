@@ -274,6 +274,29 @@
   `event_space`, `lab`, `partner`, `whitelabel` (as a tier). They may persist as archived catalog
   keys or Focus ids, but never as a member-facing type or plan name.
 
+## The Community Collective + the tier ladder (ADR-811, July 2026, AMENDS the two-designators lock above)
+
+- **Frequency IS a Community Collective** (brand essence + public positioning): a collaboration-first network
+  that exists to support every community effort and help everyone in it succeed. "Community Collective" is the
+  canonical descriptor for the whole platform. Full spec: [COMMUNITY-COLLECTIVE-STRATEGY.md](COMMUNITY-COLLECTIVE-STRATEGY.md).
+- **The tier ladder (named tiers are now canonical, superseding the ADR-552 "no tier names" clause):**
+  **Member** (free) · **Crew** ($9, personal) · **Business** ($29) · **Collective** ($79, beta $49) ·
+  **Non Profit** ($39) · **Independent** (white-label, ~$249). "Business" and "Non Profit" remain the two
+  space *designators* (the public chip); **Collective** and **Independent** are the higher space tiers.
+- **"Collective" (capitalized) means two things ON PURPOSE, and they nest:** the **brand** (Frequency, the
+  Community Collective) and the **$79 tier** (your own collective *within* the Collective, a collective of
+  collectives). Copy keeps them legible ("Frequency, the community collective" = the brand; "the Collective
+  plan" / "your Collective" = the tier).
+- **Collision guards for "collective":**
+  - **The Quest keeps its word.** The game's "collective standing" and `components/quest/collective-goal.tsx`
+    belong to **The Quest** (the game we are all on) and are UNCHANGED. Not brand/tier vocabulary.
+  - **The marketing "The Collective" paid-content label** (MARKETING-BRIEF §6, the Insight-Timer-style vertical)
+    is **renamed** in the marketing phase (e.g. "Premium Content") to free the word for the brand + tier.
+- **In-collective vs standalone.** Pricing rides `spaces.network_connected`: connected = in the Collective =
+  affordable; disconnected = **Independent** = standard SaaS. Leaving the collective is priced (loss-framed).
+- **Retired:** the ADR-552 "no third vocabulary / no tier names" lock (this ADR reintroduces named tiers);
+  the flat single-Business $49 model (ADR-590, grandfathered).
+
 ## Marketplace & Commerce (ADR-596, July 2026)
 
 The four consumer commerce surfaces. **Member-facing names + public routes are canonical; the

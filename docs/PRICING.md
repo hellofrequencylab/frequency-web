@@ -1,6 +1,16 @@
 # Pricing & entitlements
 
-> ## ⚠️ Current model: FLAT pricing (ADR-590). Everything below is historical.
+> ## ⚠️ SUPERSEDED by the Community Collective model (ADR-811, July 2026). Read this first.
+> The pricing direction is now the **Community Collective**: two-world pricing on `spaces.network_connected`
+> (in-collective = affordable, standalone = standard SaaS), six named tiers (Member $0 · Crew $9 · Business
+> $29 · Collective $79/beta $49 · Non Profit $39 · Independent ~$249), and a take-rate charged **only on
+> network-sourced business** (0% on own bookings). Source of truth:
+> [COMMUNITY-COLLECTIVE-STRATEGY.md](COMMUNITY-COLLECTIVE-STRATEGY.md) · plan:
+> [COMMUNITY-COLLECTIVE-BUILD-PLAN.md](COMMUNITY-COLLECTIVE-BUILD-PLAN.md) · [ADR-811](DECISIONS.md).
+> Ships behind `billing_live` OFF. The entitlement-partition / Stripe / grandfather plumbing below still
+> applies; the plan shape + prices do not. Everything under here is historical.
+
+> ## ⚠️ Prior model: FLAT pricing (ADR-590). Also historical.
 >
 > The live model is **flat, never per seat**: **Business $49/mo**, **Non Profit $29/mo flat** (everything in
 > Business, donations built in, verified 501(c)(3)), the **Resonance Engine** add-on **+$20/mo** (optional on

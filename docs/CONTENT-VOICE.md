@@ -41,6 +41,24 @@ The big frame (used RARELY, see Section 6): this is a movement of community
 connection. We never call ourselves a revolution in routine copy. The work says
 it; the copy doesn't.
 
+## 1a. The Community Collective positioning (ADR-811)
+
+Frequency is **a Community Collective**: we exist to support every community effort and to help everyone in
+it succeed, together. Collaboration and shared success are the through-line of all outward copy. Say it as
+invitation, never as guilt (guilt makes people leave, and it fails the skeptic test). The commercial story
+rests on **four brand promises**, stated plainly and only where they are true:
+
+1. **We never take a cut of your bookings.** (We earn only on the business the network brings you.)
+2. **One honest price, no surprise invoices.**
+3. **Month to month. Take your data and leave anytime.**
+4. **See exactly what the network earned you.**
+
+Pricing copy never nickel-and-dimes: talk in terms of belonging and shared success, frame a paid tier as
+*buying down your rate* (savings + power), and reserve the mission/"back the build" language for an opt-in
+Founding Steward, never a wall. The physical-spaces ambition is described concretely (what the money builds),
+never as a rescue plea. Naming defers to [NAMING.md](NAMING.md): "Community Collective" (brand) and "the
+Collective plan" (tier) stay legible; no em dashes.
+
 ---
 
 ## 2. The demographic: two people
