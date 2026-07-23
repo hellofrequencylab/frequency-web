@@ -263,8 +263,8 @@ describe('shell + compileEmailDoc', () => {
 
   it('renders a full CAN-SPAM legal footer (sender, address, copyright, real routes)', () => {
     const html = emailDocumentShell({ body: '<p>hi</p>', unsubscribeUrl: 'https://x/u' })
-    // Sender identity + one-line description.
-    expect(html).toContain('A place to be human')
+    // Sender identity + one-line description (the site tagline).
+    expect(html).toContain('The community collective')
     // Physical mailing-address line: the real CAN-SPAM postal address plus the legal org.
     expect(html).toContain('Frequency Labs Holdings')
     expect(html).toContain('802 Caminito Azul, Carlsbad, CA 92011')

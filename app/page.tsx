@@ -122,7 +122,7 @@ const HOME_FAQ = [
   },
   {
     q: 'What does it cost?',
-    a: 'The community is free, forever. Browsing, joining a Circle, and showing up never cost anything. Crew membership, which turns on the Quest and helps keep the physical spaces open, is $10 a month and free for the whole beta. There is no card today, and your founder pricing is locked in for life when paid memberships launch.',
+    a: 'The community is free, forever. Browsing, joining a Circle, and showing up never cost anything. Crew membership, which turns on the Quest and helps keep the physical spaces open, is $9 a month and free for the whole beta. There is no card today, and your founder pricing is locked in for life when paid memberships launch.',
   },
   {
     q: 'Is there a catch?',
@@ -227,22 +227,23 @@ function Splash({
       />
 
       <main id="main">
-      {/* ── Manifesto hero — the third place is gone; you can be the reason it
-          comes back. One primary CTA into /start. ─────────────────────────── */}
+      {/* ── Collective hero — everything a community needs in one place; the
+          collaboration-first Community Collective positioning (ADR-811). One
+          primary CTA into /start. ─────────────────────────────────────────── */}
       <PhotoHero
         minHeight="screen"
         image="/images/site/community-1.jpg"
         alt="A small circle of neighbors talking and laughing together on a sunny lawn"
         focal="object-center"
-        eyebrow="Not home. Not work. The third place."
+        eyebrow="Not home. Not work. Your community."
         title={
           <>
-            The place we all met
+            Everything a community needs,
             <br />
-            is <span className="text-primary">gone.</span> You can bring it back.
+            in <span className="text-primary">one place.</span>
           </>
         }
-        subtitle="The café, the square, the gathering ground all quietly closed, and a generation got lonely. Frequency hands ordinary people the tools to rebuild community where they already live. Pick how you start."
+        subtitle="Frequency is a community collective. We exist to support and create community. Start a circle, host events, grow a space, and share the work with people building the same thing."
         footer={
           <>
             <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/55">
@@ -585,7 +586,7 @@ function Splash({
           <Faq q="What does it cost?">
             The community is free, forever. Browsing, joining a Circle, and showing up never cost
             anything. Crew membership, which turns on the Quest and helps keep the physical spaces
-            open, is $10/mo and free for the whole beta. There&apos;s no card today: join now and
+            open, is $9/mo and free for the whole beta. There&apos;s no card today: join now and
             your founder pricing is locked in for life when paid memberships launch. Memberships
             exist to sustain the rooms and hold the door open for people who can&apos;t pay, never to
             extract from you.{' '}
