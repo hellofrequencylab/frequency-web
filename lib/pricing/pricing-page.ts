@@ -289,7 +289,7 @@ export function loadoutStrip(): LoadoutStripRow[] {
 /** The one mission-framing line (PRICING-LADDER-PLAN §1a). Plain, no guilt, skeptic-proof: it states
  *  what a paid plan funds, in concrete terms. No em dashes. */
 export const MISSION_FRAMING =
-  'A paid plan keeps Frequency independent. It pays the people and the infrastructure that run it, so a Space is funding the work, not just renting software.'
+  'Frequency is a community collective. We exist to support and create community. A paid plan keeps the collective independent and funds the people and infrastructure behind it, so a Space is funding the work, not just renting software.'
 
 /** The Crew (personal tier) note for the pricing page, from the catalog/settings code defaults. Crew is
  *  the personal tier (list $12, founding $9); the commercial page notes it and links to the upgrade page. */
