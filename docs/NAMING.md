@@ -259,7 +259,10 @@
   {business, nonprofit}`, plus the hidden platform `root`) AND the **plan** (how it bills,
   `spaces.plan ∈ {free, business, nonprofit}`). One word covers both layers on purpose — there
   is **no third vocabulary**: no "Pro", no "Organization", no "Practitioner" as a public type,
-  no tier names.
+  no tier names. **AMENDED (ADR-811, retired the "no tier names" clause):** named tiers are now
+  canonical (Member / Crew / Business / Collective / Non Profit / Independent). "Business" and "Non
+  Profit" remain the two designators; Collective + Independent are higher tiers. See "The Community
+  Collective + the tier ladder" section below.
 - **Free vs paid is not a different plan name.** A paid Business is just a free Business using
   more (usage + seats). Copy never says "upgrade to Pro" or names a second plan; it says "Go
   Business" and talks in terms of usage ("keep going", "you'd have saved $X"). Same for Non Profit.
