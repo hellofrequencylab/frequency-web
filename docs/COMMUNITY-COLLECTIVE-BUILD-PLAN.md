@@ -120,7 +120,7 @@ Dependency: Phase 2 (needs attribution). This is the surface that makes promise 
 
 ---
 
-## Phase 6 — Public rebrand & marketing · XL
+## Phase 6 — Public rebrand & marketing · XL · ✅ shipped (PR #1888, holds until go-live)
 
 Goal: the Community Collective narrative and the four promises, site-wide. See **§B** for the funnel-by-funnel nuance.
 
@@ -137,7 +137,7 @@ Dependency: can start after Phase 0; finalize prices after Phase 1. OFF note: ma
 
 ---
 
-## Phase 7 — SEO / AIO · M
+## Phase 7 — SEO / AIO · M · ✅ shipped (PR #1888)
 
 | Surface | Change | Tag |
 |---|---|---|
@@ -149,7 +149,11 @@ Dependency: Phase 6.
 
 ---
 
-## Phase 8 — Infographics & lead funnel · L
+## Phase 8 — Infographics & lead funnel · L · ⏳ partial
+
+**Status:** the funnel copy is rebranded (`lib/marketing/funnel-config.ts`: network-only rates, buy-down
+framing, repriced doors). The **eight infographics remain** — a bespoke inline-SVG design effort, best done
+as a focused pass (they are polish, not blocking, and hold until go-live with the rest of the rebrand).
 
 Eight infographics (house tokens, inline SVG, responsive, reduced-motion, registered as Loom elements):
 (1) the value ladder, (2) "we only earn when you do", (3) in-collective vs standalone, (4) the collaboration
@@ -165,14 +169,22 @@ Dependency: Phase 6.
 
 ---
 
-## Phase 9 — Help center & go-live · M
+## Phase 9 — Help center & go-live · M · ⏳ pending (help content verified clean on pricing)
 
-- Rewrite the ~22 help articles that mention pricing/plans/membership (load-bearing:
-  `content/help/membership/the-vault.md`, `the-gem-store.md`, `partners.md`, `spaces/space-crm.md`, plus the
-  getting-started + Quest-access mentions). Help content reflows into `llms-full.txt` automatically.
-- `docs/CHANGELOG.md` + member changelog.
-- **Go-live checklist:** sync the catalog to Stripe (admin, env-gated) → verify prices → flip `billing_live`
-  + the Collective beta flag + per-tier enables. Advisors clean, tests green.
+- Help articles: a sweep of `content/help/` found **no stale pricing numbers** to fix (they reference plans
+  abstractly, e.g. "with a paid plan", not hardcoded prices), so there is no correctness debt here today.
+  Any Community-Collective narrative polish to the ~22 articles reflows into `llms-full.txt` automatically
+  and can land with go-live.
+- `docs/CHANGELOG.md` + member changelog: pending.
+- **Go-live checklist (the ordered switch-on):**
+  1. Add `collective` + `independent` to the Stripe/code catalog (`lib/billing/pricing-keys.ts` CATALOG +
+     `SpacePlanKey` + the sellable flags) so they can be purchased, not just previewed.
+  2. Sync the catalog to Stripe (admin, env-gated) and verify every price in the dashboard.
+  3. Merge PR #1887 (OFF-safe in-product surfaces) if not already in.
+  4. Merge PR #1888 (public rebrand) so live copy and live pricing switch together.
+  5. Flip `billing_live` + the Collective beta flag + the per-tier enables.
+  6. Run the phase gate + advisors + full test suite; confirm green.
+  7. Post the member changelog.
 
 ---
 
