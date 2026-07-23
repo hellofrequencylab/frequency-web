@@ -31,25 +31,26 @@ import type { BillingInterval } from '@/lib/billing/pricing-keys'
 // intervals are rendered at build time and the toggle flips which is shown.
 export const revalidate = 3600
 
-// The flat pricing model (ADR-590): Business $49/mo, Nonprofit $29/mo flat, the Resonance Engine add-on
-// +$20/mo, a flat 3% plus card processing, never per seat. One price, five doors.
+// The Community Collective pricing model (ADR-811): a tier ladder (Business $29, Collective $79 with a $49
+// beta, Non Profit $39, Independent for standalone), and a take-rate ONLY on network-sourced business. You
+// keep 100% of your own bookings; we earn only on the business the collective sends you.
 export const metadata: Metadata = {
   title: 'Pricing for Spaces',
   description:
-    'One honest price. Business is $49 a month, the Nonprofit plan is $29 a month flat, and the Resonance Engine add-on is $20 a month, optional on any paid plan. Our fee is a flat 3% plus card processing, never per seat. Monthly or yearly, two months free.',
+    'Frequency is a community collective. You keep 100% of your own bookings. We earn only on the business the network sends you, at a rate that drops as your plan rises. Business is $29 a month, Collective is $49 in beta, Non Profit is $39. Monthly or yearly, two months free.',
   alternates: { canonical: '/pricing' },
   openGraph: {
-    title: 'Frequency pricing: one honest price, never per seat',
+    title: 'Frequency pricing: we never take a cut of your own bookings',
     description:
-      'Business $49 a month, the Nonprofit plan $29 a month flat, and the Resonance Engine add-on $20 a month. A flat 3% plus card processing, shown in full, with no surprise fees. Monthly or yearly, two months free.',
+      'A community collective, not a tax on your work. Keep 100% of what you bring in; we earn only on network-sourced sales, at a tier-declining rate. Business $29, Collective $49 beta, Non Profit $39. Two months free on yearly.',
     url: '/pricing',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Frequency pricing: one honest price, never per seat',
+    title: 'Frequency pricing: we never take a cut of your own bookings',
     description:
-      'Business $49, the Nonprofit plan $29 flat, the Resonance Engine add-on $20. A flat 3% plus card processing, no surprise fees. Two months free on yearly.',
+      'Keep 100% of your own bookings. We earn only on business the network sends you. Business $29, Collective $49 beta, Non Profit $39. Two months free on yearly.',
   },
 }
 
@@ -57,23 +58,23 @@ export const metadata: Metadata = {
 const PRICING_FAQ: { q: string; a: string }[] = [
   {
     q: 'How does Frequency pricing work?',
-    a: 'One price, presented by who you are. Business is $49 a month with the full depth: a branded Space site and custom domain, QR Studio, bookings, tickets, enrollment, check-in, donations, memberships, the full CRM, marketing automation, team roles, and analytics. The Nonprofit plan is $29 a month flat, everything in Business with donations built in, for verified 501(c)(3) organizations. The Resonance Engine add-on is $20 a month, optional on any paid plan. Flat, never per seat.',
+    a: 'A ladder, by what you run. Business is $29 a month: the full CRM, email, reporting, bookings, tickets, memberships, and your own website. Collective is $79 a month, and $49 in the founding beta: everything in Business plus automations, team roles, multiple pipelines, and hosting collaborators. Non Profit is $39 a month flat, the full Collective toolkit for verified 501(c)(3) organizations. Independent is the standalone tier for your own brand and domain, off the network.',
+  },
+  {
+    q: 'Do you take a cut of my sales?',
+    a: 'Not of your own. You keep 100% of the bookings and sales you bring in yourself, always. We earn a share only of the business the network sends you, a referral or a discovery inside the collective, and that rate drops as your plan rises: 5% on Business, 3% on Collective, and 0% for nonprofits. A paid plan buys down your rate.',
   },
   {
     q: 'What is the Resonance Engine?',
-    a: "The Resonance Engine turns your community's signals into live matches and next-best actions. It is an optional $20 a month add-on on any paid plan, has a 14-day trial, and you can turn it on or off anytime.",
-  },
-  {
-    q: 'What are the fees?',
-    a: 'Our fee is a flat 3% plus card processing, shown in full, with no surprise fees ever. That is 3% on what you sell, and 3% on what a nonprofit raises. There are no per-seat charges, on any plan.',
+    a: "The Resonance Engine turns your community's signals into live matches and next-best actions. It is an optional add-on on any paid plan, has a 14-day trial, and you can turn it on or off anytime.",
   },
   {
     q: 'What does yearly billing save?',
-    a: 'Yearly billing is two months free: you pay for ten months and get twelve. Monthly is the low-friction default; yearly is the way to save on either plan.',
+    a: 'Yearly billing is two months free: you pay for ten months and get twelve. Monthly is the low-friction default; yearly is the way to save on any plan.',
   },
   {
     q: 'Can I leave and take my people with me?',
-    a: 'Yes. Your people are yours. You can export your contacts and your data any time. We earn your stay, we do not trap it.',
+    a: 'Yes. Month to month, and your people are yours. You can export your contacts and your data any time. We earn your stay, we do not trap it.',
   },
   {
     q: 'Is there a personal plan?',
@@ -95,18 +96,22 @@ export default function PricingPage() {
         data={[
           breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]),
           faqSchema(PRICING_FAQ),
-          // One Product/Offer per commercial tier, priced at the monthly founding amount (the real
-          // price today). Built from the same catalog the table renders, so the schema never drifts.
-          ...tiers.map((t) =>
-            productSchema({
-              title: `Frequency ${t.name}`,
-              description: t.forWho,
-              priceCents: t.price.month.foundingCents,
-              currency: 'usd',
-              path: '/pricing',
-              sellerName: 'Frequency',
-            }),
-          ),
+          // One Product/Offer per SELLABLE tier, priced at the monthly founding amount (the real price
+          // today). Preview tiers (Collective / Independent, no catalog entry until go-live) are excluded
+          // so the structured data never advertises an Offer that cannot be purchased yet. Built from the
+          // same catalog the table renders, so the schema never drifts.
+          ...tiers
+            .filter((t) => !t.preview)
+            .map((t) =>
+              productSchema({
+                title: `Frequency ${t.name}`,
+                description: t.forWho,
+                priceCents: t.price.month.foundingCents,
+                currency: 'usd',
+                path: '/pricing',
+                sellerName: 'Frequency',
+              }),
+            ),
         ]}
       />
 
@@ -125,11 +130,11 @@ export default function PricingPage() {
         eyebrow="Pricing for Spaces"
         title={
           <>
-            One honest price.
-            <br className="hidden sm:block" /> Five doors.
+            We never take a cut
+            <br className="hidden sm:block" /> of <span className="text-primary">your bookings.</span>
           </>
         }
-        subtitle="Run your business on Frequency. Business is $49 a month, the Nonprofit plan is $29 a month flat, and the Resonance Engine add-on is $20 a month. A flat 3% plus card processing, never per seat. Monthly or yearly, two months free."
+        subtitle="Frequency is a community collective, not a tax on your work. You keep 100% of what you bring in yourself. We earn only on the business the network sends you, at a rate that drops as your plan rises. Business is $29 a month, Collective is $49 in beta, and Non Profit is $39."
       >
         <Button href="/spaces">
           Start a Space <ArrowRight className="h-5 w-5" />
@@ -145,7 +150,7 @@ export default function PricingPage() {
       <Section tone="surface" pad="pt-6 pb-20 sm:pb-24">
         <div className="mb-10 text-center">
           <p className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">
-            Two plans
+            The ladder
           </p>
           <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">
             Pick the plan that fits.
@@ -157,8 +162,8 @@ export default function PricingPage() {
         </PricingBillingToggle>
 
         <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-relaxed text-subtle">
-          Flat, never per seat. Yearly is two months free, and you can turn the Resonance Engine on or off
-          anytime, with a 14-day trial.
+          You keep 100% of your own bookings, always. The take-rate applies only to business the network
+          sends you, and it drops as your plan rises. Collective and Independent are coming soon.
         </p>
       </Section>
 
@@ -173,26 +178,30 @@ export default function PricingPage() {
         <PricingComparison />
       </Section>
 
-      {/* The three promises that make it a movement, not a SaaS (ADR-590). */}
+      {/* The four brand promises that make it a collective, not a SaaS (ADR-811 §1a). */}
       <Section tone="canvas">
         <SectionHeading
-          eyebrow="Three promises"
+          eyebrow="Four promises"
           title="Why people stay."
           kicker="The parts of the deal we will not move on."
         />
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           {[
             {
-              title: 'One honest price.',
-              body: 'Our 3% plus card processing, shown in full, with no surprise fees ever. You always know exactly what a sale costs.',
+              title: 'We never take a cut of your bookings.',
+              body: 'You keep 100% of the business you bring in yourself. We earn only on the business the network brings you.',
             },
             {
-              title: 'Your people are yours.',
-              body: 'Export your contacts and your data any time. We earn your stay, we do not trap it.',
+              title: 'One honest price, no surprise invoices.',
+              body: 'A plain monthly price and a fee you always see in full. No per-seat charges, no hidden line items.',
             },
             {
-              title: 'Bring your community in.',
-              body: 'The card scan and the referral loop turn every real-world introduction into a new person in Frequency, so aligned people lend each other their audiences.',
+              title: 'Month to month. Leave anytime.',
+              body: 'Your people are yours. Export your contacts and your data any time. We earn your stay, we do not trap it.',
+            },
+            {
+              title: 'See exactly what the network earned you.',
+              body: 'An honest receipt: the real dollars the collective sourced for you, and what our share of that was. Nothing hidden.',
             },
           ].map((p) => (
             <div key={p.title} className="rounded-2xl border border-border bg-surface p-6">
@@ -208,7 +217,7 @@ export default function PricingPage() {
         <SectionHeading
           eyebrow="By who you are"
           title="One system, five doors."
-          kicker="The same Frequency, presented by who you are: Business, Business plus the Resonance Engine, or the flat Nonprofit plan."
+          kicker="The same Frequency, presented by who you are. Start on Business and grow into Collective as your community and your team grow."
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {strip.map((row) => (
@@ -271,7 +280,7 @@ export default function PricingPage() {
 
       <BetaCTA
         heading="Run your Space on Frequency."
-        body="One honest price, never per seat. Turn the Resonance Engine on when you want live matches, and your people are always yours to export."
+        body="Keep 100% of your own bookings, and let the collective bring you more. Month to month, your people always yours to export."
       />
     </>
   )
@@ -310,6 +319,11 @@ function PricingTable({ tiers }: { tiers: PricingTier[] }) {
                     {t.featured && (
                       <span className="rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
                         Most chosen
+                      </span>
+                    )}
+                    {t.preview && (
+                      <span className="rounded-md border border-dashed border-border px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-subtle">
+                        Coming soon
                       </span>
                     )}
                   </div>
@@ -415,6 +429,11 @@ function TierCard({ tier }: { tier: PricingTier }) {
         {tier.featured && (
           <span className="rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
             Most chosen
+          </span>
+        )}
+        {tier.preview && (
+          <span className="rounded-md border border-dashed border-border px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-subtle">
+            Coming soon
           </span>
         )}
       </div>

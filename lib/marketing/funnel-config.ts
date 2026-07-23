@@ -54,7 +54,7 @@ export interface FunnelPriceRow {
   kind: 'free' | 'business' | 'nonprofit' | 'resonance'
   /** The plan name shown, e.g. "Free", "Business", "+ Resonance". */
   name: string
-  /** The right-hand descriptor, e.g. "5% on what you sell", "3% on what you sell", "AI that works for you". */
+  /** The right-hand descriptor, e.g. "10% on network sales", "5% on network sales", "AI that works for you". */
   detail: string
   /** Featured row (the one the niche is steered toward). */
   featured?: boolean
@@ -206,19 +206,19 @@ export const COACHES_FUNNEL: FunnelConfig = {
     header: 'One honest price.',
     intro: 'Start free, and stay free while you grow. When your practice takes off, one plan opens everything. No add-on menu, no surprise fees.',
     rows: [
-      { kind: 'free', name: 'Free', detail: '5% on what you sell' },
-      { kind: 'business', name: 'Business', detail: '3% on what you sell', featured: true },
+      { kind: 'free', name: 'Free', detail: '10% on network sales' },
+      { kind: 'business', name: 'Business', detail: '5% on network sales', featured: true },
       { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
     ],
     breakEvenCaption:
-      'Around $2,500 a month in sales, Business pays for itself on the fee saving alone. Before a single feature.',
-    note: "You always see the full number, our 3% plus card processing. And your contacts export any time, so you're never locked in.",
+      'You keep 100% of the bookings you bring in yourself. Business halves the rate on the business the network sends you.',
+    note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you're never locked in.",
   },
   faq: [
     { q: 'Do I need to be technical?', a: 'No. Most practitioners are taking bookings the same afternoon.' },
     {
       q: 'What does it actually cost?',
-      a: 'Free to start. Business is $49 a month, and most coaches add Resonance for $69 total. You always see the full fee, ours plus card processing, nothing hidden.',
+      a: 'Free to start. Business is $29 a month, and you keep 100% of your own bookings. We earn only on business the network sends you, at a rate that drops as your plan rises. You always see the full number, nothing hidden.',
     },
     { q: 'Can I take my contacts with me?', a: 'Yes, any time. Download a VCard or export your whole list.' },
     { q: 'Will my clients need to download anything?', a: 'No. They book and pay from a link.' },

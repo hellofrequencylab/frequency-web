@@ -12,6 +12,7 @@ import {
   PERSONA_LOADOUTS,
   pricingTiers,
   tierHeadline,
+  tierListAnchor,
   loadoutStrip,
   pricingLadderSummary,
   proAddonPrice,
@@ -140,10 +141,21 @@ describe('loadout-strip math (computed from the catalog, never hardcoded)', () =
 })
 
 describe('pricing table model', () => {
-  it('has the two commercial tiers with Business featured (ADR-552)', () => {
+  it('has the four commercial tiers, Business featured, Collective + Independent preview (ADR-811)', () => {
     const tiers = pricingTiers()
-    expect(tiers.map((t) => t.id)).toEqual(['business', 'nonprofit'])
+    expect(tiers.map((t) => t.id)).toEqual(['business', 'collective', 'nonprofit', 'independent'])
     expect(tiers.find((t) => t.id === 'business')!.featured).toBe(true)
+    // Business + Non Profit are sellable today; Collective + Independent are preview until go-live.
+    expect(tiers.find((t) => t.id === 'business')!.preview).toBeFalsy()
+    expect(tiers.find((t) => t.id === 'nonprofit')!.preview).toBeFalsy()
+    expect(tiers.find((t) => t.id === 'collective')!.preview).toBe(true)
+    expect(tiers.find((t) => t.id === 'independent')!.preview).toBe(true)
+  })
+
+  it('Collective preview reads a $49 beta struck under the $79 list (ADR-811)', () => {
+    const col = pricingTiers().find((t) => t.id === 'collective')!
+    expect(tierHeadline(col, 'month')).toBe('$49/mo')
+    expect(tierListAnchor(col, 'month')).toBe('$79')
   })
 
   it('Business headline reads $29/mo flat (ADR-811)', () => {
