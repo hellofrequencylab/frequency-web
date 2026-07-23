@@ -15,10 +15,9 @@ import { SeatCounter } from '@/components/spaces/seat-counter'
 import { SectionHeader } from '@/components/ui/section-header'
 import { FeatureMeterRange } from '@/components/pricing/feature-meter-range'
 import { FEATURE_METERS } from '@/lib/pricing/feature-meters'
-import { monthlyTakeRateSavingsCents } from '@/lib/billing/pricing-keys'
-import { spaceTrailingProcessedCents } from '@/lib/commerce/orders'
 import { getSpaceVerification } from '@/lib/spaces/nonprofit-verification'
 import { GoBusinessCta } from './go-business'
+import { PlanLadder } from './plan-ladder'
 import { ManageSubscriptionButton } from './manage-subscription'
 import { SeatEditor } from './seat-editor'
 
@@ -79,14 +78,13 @@ export async function BillingBody({ slug }: { slug: string }) {
 
   // The Business checkout gate (billingLive AND the per-plan switch — both false while billing is OFF, so
   // the CTA renders as a disabled "Available soon" preview), plus the seat usage + billing-live flag.
-  const [values, businessSellable, seatsSellable, seatUsage, billingIsLive, trailingVolumeCents, verification, catalog] =
+  const [values, businessSellable, seatsSellable, seatUsage, billingIsLive, verification, catalog] =
     await Promise.all([
       getPricingValues(),
       spaceLoadoutSellable('business'),
       operatorSeatsSellable(),
       getSeatUsage(space.id),
       billingLive(),
-      spaceTrailingProcessedCents(space.id),
       getSpaceVerification(space.id),
       loadCatalogConfig(),
     ])
@@ -101,13 +99,11 @@ export async function BillingBody({ slug }: { slug: string }) {
   // operators over the licensed count. `used` counts member-operators only (the owner rides the base seat).
   const minSeats = Math.max(0, seatUsage.used - BASE_SEAT_ALLOWANCE)
 
-  // The "you'd have saved $X" nudge (ADR-552, the self-funding trigger): the take-rate delta a free
-  // space would get on paid Business, applied to its trailing monthly processed volume. Whole dollars,
-  // shown only when it is a real, positive saving and they are not already paying. Plain voice, no
-  // "unlock", no em dashes (CONTENT-VOICE.md). Volume is sourced from settled commerce orders (the one
-  // per-space money read that exists); it undercounts ticket/tip/dues channels until those are wired.
-  const savingsCents = monthlyTakeRateSavingsCents(trailingVolumeCents, values.take_rate)
-  const savingsDollars = Math.floor(savingsCents / 100)
+  // The old "you'd have saved $X on Business" nudge is RETIRED (ADR-811): it applied the take-rate delta
+  // to a Space's WHOLE processed volume, which now misstates the promise (we take 0% on a Space's own
+  // bookings; the rate applies only to network-sourced business). The honest, per-dollar "the network
+  // earned you $X" readout is the Phase 5 receipt; here the PlanLadder carries the buy-down-your-rate
+  // framing instead. No stale total-volume dollar claim.
 
   return (
     <>
@@ -118,6 +114,10 @@ export async function BillingBody({ slug }: { slug: string }) {
           <p className="text-xs font-semibold uppercase tracking-widest text-subtle">Current plan</p>
           <p className="mt-1 text-lg font-bold text-text">{SPACE_PLAN_LABEL[currentPlan]}</p>
         </div>
+
+        {/* The Community Collective ladder (ADR-811): where this Space sits + the buy-down-your-rate
+            promise. Informational and OFF-safe; the one live upgrade action stays the Business CTA below. */}
+        <PlanLadder currentPlan={currentPlan} />
 
         {/* USAGE METERS (ADR-519 / ADR-520 P3): the ladder for every metered tool in one place, the
             current plan highlighted. Nothing charges or blocks (billing is on hold); the meters are
@@ -150,11 +150,6 @@ export async function BillingBody({ slug }: { slug: string }) {
             read-only (the fieldset disables it). Already-paid Business spaces do not see the CTA. */}
         {!isPaid && (
           <fieldset disabled={staffViewing} className="contents">
-            {savingsDollars > 0 && (
-              <p className="mb-3 text-sm font-medium text-text">
-                You&rsquo;d have saved ${savingsDollars.toLocaleString('en-US')} this month on Business.
-              </p>
-            )}
             <GoBusinessCta
               slug={space.slug}
               sellable={businessSellable}
