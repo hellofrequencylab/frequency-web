@@ -19,6 +19,11 @@ import {
   approverSideForRequest,
 } from '@/lib/spaces/collaborations'
 import { cancelOpenHoldsBetween } from '@/lib/spaces/venue-holds'
+import { spaceCanHostCollaborators } from '@/lib/spaces/function-access'
+
+// The upgrade line shown when a FREE space tries to host collaborators (ADR-810). Plain voice, no em
+// dash (CONTENT-VOICE §10). The venue/host needs a paid plan; the collaborator pays for their own space.
+const HOST_NEEDS_BUSINESS = 'Hosting collaborators is a Business feature. Upgrade this space to Business to invite and approve collaborators.'
 
 /** True when the signed-in caller is an owner/admin of `spaceId`. Fail-closed (false on no session /
  *  read error, since the approver set is empty then). */
@@ -60,9 +65,10 @@ async function revalidateSpaces(...spaceIds: string[]): Promise<void> {
 /**
  * Open a collaboration: `initiatingSpaceId` asks `partnerSpaceId` to collaborate, with `hostSide` saying
  * which of the two is the HOST (the venue/event) vs the collaborator (the guest business). Caller must be
- * an owner/admin of the INITIATING space. Both spaces must be `business` type + `active`. If the caller
- * ALSO approves the partner (one operator owns both), it auto-accepts. A duplicate active row (unique
- * index) is a no-op success. Fail-closed.
+ * an owner/admin of the INITIATING space. Both spaces must be `active`, and the HOST side must be on a
+ * paid Business/Non Profit plan (ADR-810 — the guest pays for its own space, so hosting is free per guest
+ * but needs a Business plan). If the caller ALSO approves the partner (one operator owns both), it
+ * auto-accepts. A duplicate active row (unique index) is a no-op success. Fail-closed.
  */
 export async function requestCollaboration(
   initiatingSpaceId: string,
@@ -84,6 +90,11 @@ export async function requestCollaboration(
 
   const hostSpaceId = hostSide === 'initiator' ? initiatingSpaceId : partnerSpaceId
   const collaboratorSpaceId = hostSide === 'initiator' ? partnerSpaceId : initiatingSpaceId
+  // FUNNEL GATE (ADR-810): the HOST (venue) side must be on a paid Business/Non Profit plan to host
+  // collaborators. The collaborator (guest) just needs an active space. Enforced here so the wall holds
+  // even if the actions are driven directly. While billing is OFF this grants (today's free behavior).
+  const hostSpace = hostSide === 'initiator' ? initiating : partner
+  if (!(await spaceCanHostCollaborators(hostSpace))) return fail(HOST_NEEDS_BUSINESS)
   // One operator owning both sides can skip the approval round-trip.
   const autoAccept = await viewerApprovesSpace(partnerSpaceId)
 
@@ -141,6 +152,13 @@ async function respondToRequest(collaborationId: string, next: 'accepted' | 'dec
   if (row.status !== 'pending') return fail('This request has already been handled.')
   // Only the side that did NOT initiate may approve/decline.
   if (!(await viewerApprovesSpace(approverSideForRequest(row)))) return fail('You cannot respond to this request.')
+
+  // FUNNEL GATE (ADR-810): re-check the HOST plan at ACCEPT time (a plan can lapse between request and
+  // approval). Declining is never gated. While billing is OFF this grants (today's free behavior).
+  if (next === 'accepted') {
+    const hostSpace = await getSpaceById(row.host_space_id)
+    if (!(await spaceCanHostCollaborators(hostSpace))) return fail(HOST_NEEDS_BUSINESS)
+  }
 
   // Guard the status in the WHERE too: the row updates only if it is STILL pending, so a concurrent
   // decline/accept (or a revoke) cannot be overwritten by a stale read (atomic transition).

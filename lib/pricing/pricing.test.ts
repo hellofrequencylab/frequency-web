@@ -31,21 +31,24 @@ import {
 import { PRICING_DEFAULTS } from './settings'
 import { formatCents, priceRow, memberTierRows, spacePlanRows } from './display'
 
-describe('space tiers (collapsed to free/business/nonprofit · ADR-552)', () => {
-  it('SPACE_PLANS is free < business ~ nonprofit', () => {
-    expect([...SPACE_PLANS]).toEqual(['free', 'business', 'nonprofit'])
+describe('space tiers (Community Collective ladder · ADR-811)', () => {
+  it('SPACE_PLANS is free < business < collective ~ nonprofit ~ independent (capability order)', () => {
+    expect([...SPACE_PLANS]).toEqual(['free', 'business', 'collective', 'nonprofit', 'independent'])
   })
 
   it('narrows unknown / null labels to free, and OLD labels to their new tier (transition shim)', () => {
-    // The two paid tiers (+ free) pass through unchanged.
+    // The first-class tiers (+ free) pass through unchanged.
     expect(asSpacePlan('business')).toBe('business')
+    expect(asSpacePlan('collective')).toBe('collective')
     expect(asSpacePlan('nonprofit')).toBe('nonprofit')
+    expect(asSpacePlan('independent')).toBe('independent')
     expect(asSpacePlan('free')).toBe('free')
-    // Retired legacy labels narrow forward: pro/practitioner/partner/whitelabel -> business; organization -> nonprofit.
+    // Retired legacy labels narrow forward: pro/practitioner/partner -> business; organization -> nonprofit;
+    // whitelabel -> independent (white-label is now the Independent tier, ADR-811).
     expect(asSpacePlan('pro')).toBe('business')
     expect(asSpacePlan('practitioner')).toBe('business')
     expect(asSpacePlan('partner')).toBe('business')
-    expect(asSpacePlan('whitelabel')).toBe('business')
+    expect(asSpacePlan('whitelabel')).toBe('independent')
     expect(asSpacePlan('organization')).toBe('nonprofit')
     // Unknown / null -> free (default-deny).
     expect(asSpacePlan('nonsense')).toBe('free')
@@ -60,22 +63,25 @@ describe('space tiers (collapsed to free/business/nonprofit · ADR-552)', () => 
     for (const plan of SPACE_PLANS) expect(planEntitlementKeys(plan)).not.toContain('crm.autonomy')
   })
 
-  it('Business and Nonprofit are FULL depth and IDENTICAL at the key level (no AI keys)', () => {
-    const full = ['crm', 'crm.playbooks', 'email', 'automation', 'multi_pipeline', 'reporting', 'team', 'whitelabel', 'space_full_website']
-    for (const plan of ['business', 'nonprofit'] as const) {
-      // exact set (order-independent)
-      expect([...planEntitlementKeys(plan)].sort()).toEqual([...full].sort())
-      const ents = planEntitlements(plan)
-      // includes the marketing, team, and branding (old whitelabel) keys
-      expect(ents.email).toBe(true)
-      expect(ents.team).toBe(true)
-      expect(ents.whitelabel).toBe(true)
-      // but NEITHER tier bundles the AI resonance keys (the metered add-on)
-      expect(ents['crm.resonance']).toBeUndefined()
-      expect(ents['crm.resonance_ai']).toBeUndefined()
+  it('Business = run-your-practice depth; Collective/Non Profit add automation+team; Independent adds branding (ADR-811)', () => {
+    const businessDepth = ['crm', 'crm.playbooks', 'email', 'reporting', 'space_full_website']
+    expect([...planEntitlementKeys('business')].sort()).toEqual([...businessDepth].sort())
+    // Collective (and Non Profit) = Business PLUS automation + multi_pipeline + team.
+    const collectiveDepth = [...businessDepth, 'automation', 'multi_pipeline', 'team']
+    expect([...planEntitlementKeys('collective')].sort()).toEqual([...collectiveDepth].sort())
+    expect(planEntitlementKeys('nonprofit')).toEqual(planEntitlementKeys('collective'))
+    // Independent = Collective depth PLUS branding (whitelabel), un-folded from Business.
+    expect([...planEntitlementKeys('independent')].sort()).toEqual([...collectiveDepth, 'whitelabel'].sort())
+    // Fences: white-label is NOT in Business/Collective; team is a Collective+ key, not Business.
+    expect(planEntitlements('business').whitelabel).toBeUndefined()
+    expect(planEntitlements('business').team).toBeUndefined()
+    expect(planEntitlements('collective').team).toBe(true)
+    expect(planEntitlements('independent').whitelabel).toBe(true)
+    // No tier bundles the AI resonance keys (the metered add-on).
+    for (const plan of SPACE_PLANS) {
+      expect(planEntitlements(plan)['crm.resonance']).toBeUndefined()
+      expect(planEntitlements(plan)['crm.resonance_ai']).toBeUndefined()
     }
-    // The two full tiers grant the EXACT same key set.
-    expect(planEntitlementKeys('nonprofit')).toEqual(planEntitlementKeys('business'))
   })
 
   it('AI is the SOLE metered add-on; its keys are the resonance depth and are in NO tier base', () => {
@@ -89,12 +95,12 @@ describe('space tiers (collapsed to free/business/nonprofit · ADR-552)', () => 
   })
 
   it('planKeysWithAddons layers the AI add-on keys onto a tier base (the set-to-target source)', () => {
-    // Business + AI: the full depth PLUS the resonance keys.
-    const bizAi = planKeysWithAddons('business', ['ai'])
-    expect(bizAi).toContain('email')
-    expect(bizAi).toContain('whitelabel')
-    expect(bizAi).toContain('crm.resonance')
-    expect(bizAi).toContain('crm.resonance_ai')
+    // Collective + AI: the Collective depth PLUS the resonance keys.
+    const collAi = planKeysWithAddons('collective', ['ai'])
+    expect(collAi).toContain('email')
+    expect(collAi).toContain('team')
+    expect(collAi).toContain('crm.resonance')
+    expect(collAi).toContain('crm.resonance_ai')
     // Unknown add-on keys are dropped (default-deny); the result is just the tier base.
     expect(planKeysWithAddons('business', ['nope' as never])).toEqual([...planEntitlementKeys('business')])
   })
@@ -188,6 +194,16 @@ describe('feature gate ladder math (meetsGate)', () => {
     expect(meetsGate({ ...tierGate, enabled: false }, { tier: 'free' })).toBe(true)
   })
 
+  it('collaborators is a Collective-plan gate (ADR-811): free + business are below; collective/nonprofit/independent clear it', () => {
+    const gate = FEATURE_GATES.space_collaborators
+    expect(gate).toEqual({ axis: 'plan', minEntitlement: 'collective', enabled: true })
+    expect(meetsGate(gate, { plan: 'free' })).toBe(false)
+    expect(meetsGate(gate, { plan: 'business' })).toBe(false) // Business is below Collective now
+    expect(meetsGate(gate, { plan: 'collective' })).toBe(true)
+    expect(meetsGate(gate, { plan: 'nonprofit' })).toBe(true)
+    expect(meetsGate(gate, { plan: 'independent' })).toBe(true)
+  })
+
   it('unknown / missing entitlement ranks lowest (default-deny)', () => {
     expect(meetsGate(tierGate, {})).toBe(false)
     expect(meetsGate(planGate, { plan: null })).toBe(false)
@@ -266,12 +282,13 @@ describe('seeded defaults are sane (mirror the migration)', () => {
     expect(PRICING_DEFAULTS.trial.days).toBe(14)
   })
 
-  it('plan defaults reflect the collapsed launch numbers (business + nonprofit · ADR-552)', () => {
+  it('plan defaults reflect the Community Collective launch numbers (ADR-811)', () => {
     const plan = PRICING_DEFAULTS.plan
-    expect(plan.business.monthly_cents).toBe(4900) // $49
-    expect(plan.business.annual_cents).toBe(49000) // $490
-    expect(plan.nonprofit.monthly_cents).toBe(2900) // $29 (verified 501c3)
-    expect(plan.nonprofit.annual_cents).toBe(29000) // $290
+    expect(plan.business.monthly_cents).toBe(2900) // $29 flat
+    expect(plan.business.annual_cents).toBe(29000) // $290
+    expect(plan.collective.monthly_cents).toBe(7900) // $79 list (beta $49 founding)
+    expect(plan.nonprofit.monthly_cents).toBe(3900) // $39 flat, verified 501c3
+    expect(plan.independent.monthly_cents).toBe(24900) // ~$249 white-label (standalone)
   })
 })
 
@@ -287,10 +304,10 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     const row = priceRow('business', 'Business', PRICING_DEFAULTS.plan.business)
     expect(row.key).toBe('business')
     expect(row.label).toBe('Business')
-    expect(row.monthly).toBe('$49')
-    expect(row.annual).toBe('$490')
-    expect(row.monthlyCents).toBe(4900)
-    expect(row.annualCents).toBe(49000)
+    expect(row.monthly).toBe('$29')
+    expect(row.annual).toBe('$290')
+    expect(row.monthlyCents).toBe(2900)
+    expect(row.annualCents).toBe(29000)
   })
 
   it('memberTierRows lists Crew then Supporter from the operator values', () => {
@@ -306,8 +323,8 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     expect(rows.map((r) => r.key)).toEqual(['business', 'nonprofit'])
     expect(rows[0].label).toBe('Business')
     expect(rows[1].label).toBe('Non Profit')
-    // both carry an annual line
-    expect(rows.find((r) => r.key === 'business')?.annual).toBe('$490')
-    expect(rows.find((r) => r.key === 'nonprofit')?.annual).toBe('$290')
+    // both carry an annual line (Community Collective prices, ADR-811)
+    expect(rows.find((r) => r.key === 'business')?.annual).toBe('$290')
+    expect(rows.find((r) => r.key === 'nonprofit')?.annual).toBe('$390')
   })
 })

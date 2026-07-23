@@ -55,7 +55,10 @@ Dark while `billingLive()` is off; nothing charges until billing is on AND the S
 - **Initiation: either side, the other approves** (a host invites a collaborator space, OR a business
   requests to join a host; the other side's owner/admin confirms). Gated on `getSpaceCapabilities` for
   both sides.
-- **Billing: FREE to host.** The collaborator pays for their own space; hosting costs the host nothing.
+- **Billing: FREE to host PER GUEST, but the host needs a Business plan (ADR-810).** The collaborator
+  pays for their own space and the host is never charged per collaborator, but hosting collaborators (and
+  co-hosting events) is a paid Business/Non Profit capability enforced server-side on the host side. A
+  free host sees a locked preview. Full funnel map: [COLLABORATION-AND-UPGRADE-FUNNEL.md](COLLABORATION-AND-UPGRADE-FUNNEL.md).
 
 **Data model:** a new `space_collaborations` join table:
 `host_space_id`, `collaborator_space_id`, `status` (pending/accepted/declined/revoked; SHIPPED B1-core, migration 20261195000000), `invited_by_space_id`

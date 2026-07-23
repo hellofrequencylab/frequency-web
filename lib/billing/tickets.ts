@@ -26,7 +26,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
 import { getConnectStatus, payoutsLive } from './connect'
 import { platformFeeCents, spaceTakeRateCents } from './fees'
-import { spaceIsPaying } from './space-subscription-items'
+import { classifyOrderSource } from '@/lib/commerce/order-source'
+import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
@@ -206,17 +207,25 @@ export async function createTicketCheckout(opts: {
   if (!status.accountId || !status.ready) return { error: 'Tickets aren’t available for this event yet.' }
 
   const gross = ticketTotalCents(unitCents, qty)
-  // Take-rate ladder (ADR-590/785): a SPACE-hosted event's tickets honor the space's paying-state rate
-  // (5% free usage → 3% paid Business / Non Profit), the same lever as space memberships + the storefront.
-  // A PERSONAL event (no owning space, or the platform root) keeps the flat platform fee. Fail-safe: the
-  // space resolution is best-effort; any miss falls back to the flat fee (never under-collect).
+  // Differential take-rate (ADR-811 §A): a SPACE-hosted event's tickets are 0% on a sale the host brings
+  // themselves (the hard promise) and the tier's NETWORK rate on a sale the collective sourced (referral /
+  // discovery), keyed on the space plan. A PERSONAL event (no owning space, or the platform root) keeps the
+  // flat platform fee. Fail-safe: the space resolution is best-effort; any miss falls back to the flat fee.
+  const { source } = await classifyOrderSource({ buyerProfileId: opts.buyerProfileId, sellerProfileId: event.host_id })
   let fee = platformFeeCents(gross)
   if (event.space_id) {
     const root = await loadRootSpaceId()
     if (event.space_id !== root) {
-      const { data: sp } = await db().from('spaces').select('plan').eq('id', event.space_id).maybeSingle()
-      const plan = (sp as { plan?: string | null } | null)?.plan ?? 'free'
-      fee = await spaceTakeRateCents(gross, plan, await spaceIsPaying(event.space_id))
+      const { data: sp } = await db()
+        .from('spaces')
+        .select('plan, network_connected')
+        .eq('id', event.space_id)
+        .maybeSingle()
+      const spRow = (sp as { plan?: string | null; network_connected?: boolean | null } | null) ?? null
+      const plan = spRow?.plan ?? 'free'
+      // A standalone (disconnected) Space has left the graph → no network-sourced revenue, source collapses
+      // to self (ADR-811 §3), so it pays 0% even here (independent price is billed on the subscription).
+      fee = await spaceTakeRateCents(gross, plan, effectiveOrderSource(source, spRow?.network_connected)) // self → 0, network → tier bps
     }
   }
   const tierLabel = tier ? ` (${tier.name})` : ''

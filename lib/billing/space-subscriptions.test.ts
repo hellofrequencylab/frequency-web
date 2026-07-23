@@ -86,10 +86,11 @@ describe('planForSubscription', () => {
   it('an active sub sets the metadata tier (narrowed through asSpacePlan · ADR-552)', () => {
     expect(planForSubscription('business', 'active')).toBe('business')
     expect(planForSubscription('nonprofit', 'trialing')).toBe('nonprofit')
-    // Retired legacy labels narrow forward: pro/practitioner/whitelabel -> business; organization -> nonprofit.
+    // Retired legacy labels narrow forward: pro/practitioner -> business; whitelabel -> independent
+    // (ADR-811 un-folds white-label into the Independent tier); organization -> nonprofit.
     expect(planForSubscription('pro', 'active')).toBe('business')
     expect(planForSubscription('practitioner', 'trialing')).toBe('business')
-    expect(planForSubscription('whitelabel', 'active')).toBe('business')
+    expect(planForSubscription('whitelabel', 'active')).toBe('independent')
     expect(planForSubscription('organization', 'active')).toBe('nonprofit')
   })
 

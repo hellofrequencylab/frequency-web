@@ -41,8 +41,10 @@ export const PLACEHOLDER_PRICING = true
  *  place to swap real Space prices when billing goes live. Preview only; never charged. */
 export const PLACEHOLDER_SPACE_PRICE_CENTS: Record<SpacePlan, number> = {
   free: 0,
-  business: 4900,
-  nonprofit: 2900,
+  business: 2900, // $29 flat, all-in (ADR-811)
+  collective: 7900, // $79 list (beta $49 founding is a separate anchor in the catalog)
+  nonprofit: 3900, // $39 flat, verified, full Collective toolkit
+  independent: 24900, // ~$249 white-label, network-disconnected (standard SaaS)
 }
 
 /** @placeholder Monthly price point per personal membership tier, in cents. Mirrors the code defaults
@@ -61,7 +63,7 @@ export const PLACEHOLDER_MEMBER_PRICE_CENTS: Record<EntitlementTier, number> = {
 
 /** The Space plan rungs the range selector shows, ascending. A clean upgrade path (Non Profit is sold
  *  separately, so it is not a rung here). */
-export const SPACE_LADDER_TIERS: readonly SpacePlan[] = ['free', 'business']
+export const SPACE_LADDER_TIERS: readonly SpacePlan[] = ['free', 'business', 'collective']
 
 /** The personal membership rungs the range selector shows, ascending (Supporter is retired). */
 export const MEMBER_LADDER_TIERS: readonly EntitlementTier[] = ['free', 'crew']
@@ -146,7 +148,7 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
   },
   space_automation: {
     axis: 'plan',
-    minTier: 'business',
+    minTier: 'collective',
     title: 'Automations',
     rungs: spaceRungs(
       'One pipeline, no automations.',
@@ -155,16 +157,25 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
   },
   space_team: {
     axis: 'plan',
-    minTier: 'business',
+    minTier: 'collective',
     title: 'Team roles',
     rungs: spaceRungs(
       'One operator seat.',
       'Add teammates with roles: editor, moderator, and admin.',
     ),
   },
+  space_collaborators: {
+    axis: 'plan',
+    minTier: 'collective',
+    title: 'Collaborator spaces',
+    rungs: spaceRungs(
+      'See how collaborators work, and preview the surface.',
+      'Host other businesses inside your space and co-host events. They keep their own page and pay for their own space.',
+    ),
+  },
   space_multi_pipeline: {
     axis: 'plan',
-    minTier: 'business',
+    minTier: 'collective',
     title: 'Multiple pipelines',
     rungs: spaceRungs(
       'One pipeline for your Space.',
@@ -173,7 +184,7 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
   },
   space_whitelabel: {
     axis: 'plan',
-    minTier: 'business',
+    minTier: 'independent',
     title: 'Your own brand and domain',
     rungs: spaceRungs(
       'Your accent and logo on a Frequency address.',

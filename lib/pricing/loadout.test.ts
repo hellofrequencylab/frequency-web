@@ -36,10 +36,10 @@ import {
 describe('resolveCatalogItem (override over the code default)', () => {
   it('falls back to the code catalog amounts when there is no override', () => {
     const biz = resolveCatalogItem('business_base', undefined)
-    expect(biz.month.listCents).toBe(7900) // $79 founding anchor (ADR-591)
-    expect(biz.month.foundingCents).toBe(4900) // $49 founding
-    expect(biz.year.listCents).toBe(79000) // two months free off the list
-    expect(biz.year.foundingCents).toBe(49000)
+    expect(biz.month.listCents).toBe(2900) // $29 flat (ADR-811)
+    expect(biz.month.foundingCents).toBe(2900)
+    expect(biz.year.listCents).toBe(29000) // two months free off the monthly
+    expect(biz.year.foundingCents).toBe(29000)
     expect(biz.perSeat).toBe(false)
   })
 
@@ -64,7 +64,7 @@ describe('resolveCatalogItem (override over the code default)', () => {
   it('is fail-safe per field: a partial / garbage override keeps the code default for the rest', () => {
     const biz = resolveCatalogItem('business_base', { monthlyFoundingCents: 1500, monthlyListCents: 'oops' })
     expect(biz.month.foundingCents).toBe(1500)
-    expect(biz.month.listCents).toBe(7900) // garbage -> code default (the $79 anchor)
+    expect(biz.month.listCents).toBe(2900) // garbage -> code default ($29 flat)
   })
 })
 
@@ -151,19 +151,19 @@ describe('addonCatalogKey + normalizeAddons (re-tiered · ADR-472)', () => {
 })
 
 describe('computeLoadoutTotal (collapsed · ADR-552)', () => {
-  it('Business base alone, monthly = $49 founding under a $79 list anchor (ADR-591)', () => {
+  it('Business base alone, monthly = $29 flat (ADR-811)', () => {
     const t = computeLoadoutTotal(ITEMS, [], 'month')
-    expect(t.foundingCents).toBe(4900)
-    expect(t.listCents).toBe(7900)
-    expect(t.savingsCents).toBe(3000) // $79 list - $49 founding
+    expect(t.foundingCents).toBe(2900)
+    expect(t.listCents).toBe(2900)
+    expect(t.savingsCents).toBe(0) // flat, no strike
     expect(t.lines).toHaveLength(1)
     expect(t.lines[0].isBase).toBe(true)
     expect(t.lines[0].key).toBe('business_base')
   })
 
-  it('Business + the AI add-on = $69 founding monthly ($49 base + $20 AI)', () => {
+  it('Business + the AI add-on = $49 founding monthly ($29 base + $20 AI)', () => {
     const t = computeLoadoutTotal(ITEMS, ['ai'], 'month')
-    expect(t.foundingCents).toBe(4900 + 2000) // $69
+    expect(t.foundingCents).toBe(2900 + 2000) // $49
     expect(t.lines).toHaveLength(2)
     expect(t.lines[1].key).toBe('addon_ai')
     expect(t.lines[1].quantity).toBe(1) // the AI add-on is not per-seat
@@ -171,7 +171,7 @@ describe('computeLoadoutTotal (collapsed · ADR-552)', () => {
 
   it('the retired add-on keys are ignored (only AI layers on the base)', () => {
     const t = computeLoadoutTotal(ITEMS, ['marketing', 'team', 'branding'] as string[], 'month')
-    expect(t.foundingCents).toBe(4900) // base only; the retired keys add nothing
+    expect(t.foundingCents).toBe(2900) // base only; the retired keys add nothing
     expect(t.lines).toHaveLength(1)
   })
 

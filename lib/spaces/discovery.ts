@@ -2,11 +2,13 @@
 // query the in-app directory at /spaces calls to list the NETWORKED entity Spaces a member can
 // browse: practitioners, businesses, organizations, coaching academies, event spaces.
 //
-// The discovery boundary is `spaces.visibility = 'network'` (ENTITY-SPACES-SYSTEM §1.3): only
-// networked Spaces appear; Private/White-Label ones are walled off. The seeded ROOT space (the
-// Frequency app itself) is excluded — it is the platform, not a listed entity. `visibility` is not
-// in the generated DB types yet, so it is reached through an untyped client (ADR-246, the codebase
-// pattern for not-yet-typed columns — see lib/spaces/membership.ts, lib/page-settings/store.ts).
+// The discovery boundary is TWO gates (ADR-811 §3): `spaces.visibility = 'network'`
+// (ENTITY-SPACES-SYSTEM §1.3, the operator's listed/walled choice) AND `spaces.network_connected = true`
+// (the Community Collective world switch — a standalone / Independent Space has left the graph, so it is
+// never surfaced in cross-network discovery even if it is otherwise "network"-visible). Both must hold.
+// The seeded ROOT space (the Frequency app itself) is excluded — it is the platform, not a listed entity.
+// `visibility` is not in the generated DB types yet, so it is reached through an untyped client (ADR-246,
+// the codebase pattern for not-yet-typed columns — see lib/spaces/membership.ts, lib/page-settings/store.ts).
 //
 // FAIL-SAFE by construction: any error (or a pre-migration column) yields `[]`, so the directory
 // degrades to an empty state rather than throwing. REQUEST-CACHED (React.cache) keyed on the
@@ -131,7 +133,7 @@ type SpaceDiscoveryRow = {
 
 type SpacesQuery = {
   select: (cols: string) => SpacesQuery
-  eq: (col: string, val: string) => SpacesQuery
+  eq: (col: string, val: string | boolean) => SpacesQuery
   neq: (col: string, val: string) => SpacesQuery
   or: (filter: string) => SpacesQuery
   order: (col: string, opts: { ascending: boolean }) => SpacesQuery
@@ -270,7 +272,8 @@ async function upcomingEventCountsFor(spaceIds: string[]): Promise<Map<string, n
 
 /**
  * List the NETWORKED entity Spaces for the in-app directory. Returns Spaces where
- * `visibility = 'network'` and `status = 'active'`, excluding the root space, optionally narrowed by
+ * `visibility = 'network'` AND `network_connected = true` (ADR-811 §3) and `status = 'active'`, excluding
+ * the root space, optionally narrowed by
  * `type` and a free-text `q` over name/brand/slug. Each row carries its brand anchor, type, tagline,
  * and a cheap active-member count. Ordered by `sort`: name (A–Z, default) / newest (created_at desc)
  * in the DB; members (member count desc) after the grouped count read (counts arrive separately, so
@@ -288,6 +291,7 @@ export const listNetworkedSpaces = cache(
       let query = spacesTable()
         .select(COLS)
         .eq('visibility', 'network')
+        .eq('network_connected', true) // the collective world gate (ADR-811 §3): standalone Spaces are walled off
         .eq('status', 'active')
         .neq('type', 'root')
 

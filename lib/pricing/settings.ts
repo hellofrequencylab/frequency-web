@@ -38,7 +38,9 @@ export interface PricingDefaults {
   tier: { crew: TierPrice; supporter: TierPrice }
   plan: {
     business: TierPrice
+    collective: TierPrice
     nonprofit: TierPrice
+    independent: TierPrice
   }
   /** Take-rate per seller state, in basis points (500 = 5%). A free space (no live paid subscription)
    *  pays the higher `free_bps`; a paying Business pays `business_bps`; Non Profit pays `nonprofit_bps`
@@ -46,7 +48,13 @@ export interface PricingDefaults {
    *  Market listing ladder charges a paid member 8% and a Business Space 3%, so the subscription buys
    *  down the fee (ADR-596). Free-vs-paid is a usage state within Business, so the space rate keys on
    *  paying-state (a live subscription item), not the plan label — see pricing-keys.ts takeRateBpsForPlan. */
-  take_rate: { free_bps: number; business_bps: number; nonprofit_bps: number; member_bps: number }
+  take_rate: {
+    // Legacy flat fields — kept for the "you'd have saved $X" nudge + the admin console during transition.
+    free_bps: number; business_bps: number; nonprofit_bps: number; member_bps: number
+    // NETWORK-sourced take-rate per space tier (ADR-811 §A). `self` orders are 0 by rule (not stored).
+    // The rate drops as the tier rises; the individual member seller rate rides `member_bps`.
+    network_bps: { free: number; business: number; collective: number; nonprofit: number; independent: number }
+  }
   /** Vera free-tier daily message cap. */
   vera_free_daily_cap: { messages: number }
   trial: { days: number }
@@ -59,12 +67,20 @@ export const PRICING_DEFAULTS: PricingDefaults = {
     supporter: { monthly_cents: 2400, annual_cents: 24000 }, // $24 / $240 (retired tier; kept for legacy resolve)
   },
   plan: {
-    business: { monthly_cents: 4900, annual_cents: 49000 }, // $49 / $490
-    nonprofit: { monthly_cents: 2900, annual_cents: 29000 }, // $29 / $290 (verified 501c3)
+    // Community Collective ladder (ADR-811). Annual = two months free (10x monthly).
+    business: { monthly_cents: 2900, annual_cents: 29000 }, // $29 flat, all-in
+    collective: { monthly_cents: 7900, annual_cents: 79000, list_cents: 7900 }, // $79 list (beta $49 founding, below)
+    nonprofit: { monthly_cents: 3900, annual_cents: 39000 }, // $39 flat, verified 501c3, full Collective toolkit
+    independent: { monthly_cents: 24900, annual_cents: 249000 }, // ~$249 white-label, network-disconnected (standard SaaS)
   },
   // Free usage → 5% (the self-funding trigger); paying Business → 3%; Non Profit → 3% (ADR-552 §3.2).
   // Individual paid-member seller → 8% (the Market listing ladder; Business buys it down to 3%, ADR-596).
-  take_rate: { free_bps: 500, business_bps: 300, nonprofit_bps: 300, member_bps: 800 },
+  take_rate: {
+    free_bps: 500, business_bps: 300, nonprofit_bps: 300, member_bps: 800,
+    // Network-sourced rates (ADR-811 §A): Member 10% → Business 5% → Collective 3% → Non Profit 0 →
+    // Independent 0 (left the graph). Launch low, earn the right to raise.
+    network_bps: { free: 1000, business: 500, collective: 300, nonprofit: 0, independent: 0 },
+  },
   vera_free_daily_cap: { messages: 10 },
   trial: { days: 14 }, // 14-day free trial on Space plans (card upfront; members get none, the free tier is their trial)
   annual_discount: { months_free: 2 },
@@ -121,7 +137,9 @@ export async function getPricingValues(): Promise<PricingDefaults> {
     },
     plan: {
       business: pick('plan.business', PRICING_DEFAULTS.plan.business),
+      collective: pick('plan.collective', PRICING_DEFAULTS.plan.collective),
       nonprofit: pick('plan.nonprofit', PRICING_DEFAULTS.plan.nonprofit),
+      independent: pick('plan.independent', PRICING_DEFAULTS.plan.independent),
     },
     // Merge each bps field over the default so a legacy DB row (written before `free_bps` existed) still
     // resolves a free rate instead of an undefined → NaN fee. The default is the code source of truth.

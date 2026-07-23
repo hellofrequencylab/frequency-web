@@ -18,7 +18,12 @@ import {
   monthlyTakeRateSavingsCents,
   memberCheckoutPriceKey,
   PERIODS_BY_KEY,
+  networkTakeRateBpsForPlan,
+  sourceAwareTakeRateCents,
+  sourceAwareMemberTakeRateCents,
+  NETWORK_TAKE_RATE_DEFAULT,
 } from './pricing-keys'
+import { SPACE_PLANS } from '@/lib/pricing/plans'
 
 // ADR-552 Phase 3: free usage 5% (500 bps) / paying Business 3% (300) / Non Profit 3% (300).
 // ADR-596: individual paid-member seller 8% (800 bps).
@@ -190,5 +195,58 @@ describe('founder-lock price-key selection', () => {
     expect(memberCheckoutPriceKey({ base: 'supporter', period: 'annual', isFoundingMember: true })).toBe(
       'supporter_annual_founder',
     )
+  })
+})
+
+// ── The differential (network-sourced) take-rate (Phase 2, ADR-811 §A) ───────────────────────────────
+describe('differential take-rate: 0% on own bookings, tier-declining on network-sourced sales', () => {
+  it('networkTakeRateBpsForPlan drops as the tier rises; legacy/unknown → free (never under-collect)', () => {
+    expect(networkTakeRateBpsForPlan('free')).toBe(1000)
+    expect(networkTakeRateBpsForPlan('business')).toBe(500)
+    expect(networkTakeRateBpsForPlan('collective')).toBe(300)
+    expect(networkTakeRateBpsForPlan('nonprofit')).toBe(0)
+    expect(networkTakeRateBpsForPlan('independent')).toBe(0)
+    // legacy labels narrow forward (whitelabel -> independent -> 0); unknown/null -> free (higher rate)
+    expect(networkTakeRateBpsForPlan('whitelabel')).toBe(0)
+    expect(networkTakeRateBpsForPlan('nonsense')).toBe(1000)
+    expect(networkTakeRateBpsForPlan(null)).toBe(1000)
+  })
+
+  it('the network rate is monotonically non-increasing across the ladder', () => {
+    const r = NETWORK_TAKE_RATE_DEFAULT
+    expect(r.free).toBeGreaterThanOrEqual(r.business)
+    expect(r.business).toBeGreaterThanOrEqual(r.collective)
+    expect(r.collective).toBeGreaterThanOrEqual(r.nonprofit)
+    expect(r.nonprofit).toBeGreaterThanOrEqual(r.independent)
+  })
+
+  it('sourceAwareTakeRateCents charges the tier network bps on a network sale', () => {
+    expect(sourceAwareTakeRateCents(10000, 'business', 'network')).toBe(500) // 5% of $100
+    expect(sourceAwareTakeRateCents(10000, 'collective', 'network')).toBe(300)
+    expect(sourceAwareTakeRateCents(10000, 'free', 'network')).toBe(1000)
+    expect(sourceAwareTakeRateCents(10000, 'nonprofit', 'network')).toBe(0)
+    expect(sourceAwareTakeRateCents(10000, 'independent', 'network')).toBe(0)
+    // floors fractional cents; invalid gross → 0
+    expect(sourceAwareTakeRateCents(333, 'business', 'network')).toBe(16) // floor(333*500/10000)
+    expect(sourceAwareTakeRateCents(0, 'business', 'network')).toBe(0)
+    expect(sourceAwareTakeRateCents(-5, 'business', 'network')).toBe(0)
+    expect(sourceAwareTakeRateCents(Number.NaN, 'business', 'network')).toBe(0)
+  })
+
+  it('sourceAwareMemberTakeRateCents charges the member (Crew) rate on a network sale', () => {
+    expect(sourceAwareMemberTakeRateCents(10000, 'network')).toBe(800) // 8%
+    expect(sourceAwareMemberTakeRateCents(0, 'network')).toBe(0)
+  })
+
+  it('ADVERSARIAL: a SELF order is NEVER billed a network rate, on any tier or gross', () => {
+    const grosses = [1, 99, 100, 333, 10000, 250000, 9999999]
+    for (const plan of SPACE_PLANS) {
+      for (const g of grosses) {
+        expect(sourceAwareTakeRateCents(g, plan, 'self')).toBe(0)
+      }
+    }
+    for (const g of grosses) {
+      expect(sourceAwareMemberTakeRateCents(g, 'self')).toBe(0)
+    }
   })
 })

@@ -54,6 +54,8 @@ jobs:
         run: pnpm check:headers
       - name: SEO/sitemap coherence
         run: pnpm check:seo
+      - name: Community Collective drift guard (ADR-811 rebuild)
+        run: pnpm check:collective
       - name: RLS coverage (static shift-left of the DB advisors)
         run: pnpm check:rls
       # NOTE: check:cron-freshness is intentionally NOT wired here — it is a runtime/ops

@@ -1,5 +1,10 @@
 # Business model plan — two programs, one simple system
 
+> ⚠️ **SUPERSEDED / historical (ADR-811, July 2026).** The pricing model is now the **Community
+> Collective** (six named tiers, in-collective-vs-standalone pricing, network-sourced-only take-rate).
+> Source of truth: [COMMUNITY-COLLECTIVE-STRATEGY.md](COMMUNITY-COLLECTIVE-STRATEGY.md). The
+> two-program / "no tier names" framing below is retired; kept for history.
+
 **Status:** Approved 2026‑07‑06. Decision of record: **ADR‑552** (`docs/DECISIONS.md`).
 Supersedes the multi‑tier framing of ADR‑458/460/472/475 and finalizes the
 universal‑functions + usage‑meter direction of ADR‑517/518/519/520 into a **two‑type,
