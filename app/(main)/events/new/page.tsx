@@ -89,10 +89,9 @@ export default async function NewEventPage({
 
   if (!profile) notFound()
 
-  // Paid (Crew/Supporter TIER) or stewards may create events — PB.1/ADR-207.
-  const paid = ['crew', 'supporter'].includes((profile as { membership_tier?: string | null }).membership_tier ?? '')
-  const steward = ['host', 'guide', 'mentor', 'admin', 'janitor'].includes(profile.community_role ?? '')
-  if (!paid && !steward) notFound()
+  // Event creation is open to any signed-in member (ADR-810): it is the freemium taste. The paid funnel
+  // lives downstream (co-hosting an event with another space needs a Business space; ADR-799 §B). The
+  // create action re-validates the caller + per-target stewardship server-side.
 
   // WHERE DOES IT LIVE — only the targets the caller actually OWNS/stewards (an owned target
   // places instantly, so it must be one they control; never "circles I'm merely a member of").

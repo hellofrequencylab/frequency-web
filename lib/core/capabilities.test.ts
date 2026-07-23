@@ -23,30 +23,39 @@ describe('resolveCapabilities · global (admin.access rides the STAFF axis, ADR-
   })
 })
 
-describe('resolveCapabilities · global creation gates (ADR-414 — real Crew to create)', () => {
-  const CREATES = ['event.create', 'circle.create', 'journey.create', 'practice.create'] as const
+describe('resolveCapabilities · global creation gates (ADR-414 · event opened ADR-810)', () => {
+  // The DEEPER creation gates stay real-Crew (ADR-414); event.create is open to any signed-in member
+  // (ADR-810 — creating an event is the freemium taste, the paid funnel is downstream co-hosting).
+  const CREATES = ['circle.create', 'journey.create', 'practice.create'] as const
   const hasAllCreates = (caps: ReturnType<typeof resolveCapabilities>) => CREATES.every((c) => caps.has(c))
   const hasNoCreates = (caps: ReturnType<typeof resolveCapabilities>) => CREATES.every((c) => !caps.has(c))
 
-  it('grants all four create gates to a real paid Crew (or Supporter) member', () => {
+  it('event.create is granted to ANY signed-in member (the free taste, ADR-810)', () => {
+    expect(resolveCapabilities({ profileId: 'p', role: 'member', tier: 'free', realTier: 'free' }, { kind: 'global' }).has('event.create')).toBe(true)
+    expect(resolveCapabilities({ profileId: 'p', role: 'member', realTier: 'crew' }, { kind: 'global' }).has('event.create')).toBe(true)
+  })
+
+  it('grants the deeper three create gates to a real paid Crew (or Supporter) member', () => {
     expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'member', realTier: 'crew' }, { kind: 'global' }))).toBe(true)
     expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'member', realTier: 'supporter' }, { kind: 'global' }))).toBe(true)
   })
 
-  it('denies all four to a genuinely free member EVEN under the beta tier override', () => {
+  it('denies the deeper three to a genuinely free member EVEN under the beta tier override', () => {
     // The beta override sets the effective `tier` to crew while the REAL tier stays free.
-    // The gates read realTier, so the upgrade popup still fires (the whole point of ADR-414).
+    // The deeper gates read realTier, so the upgrade popup still fires (the whole point of ADR-414).
     const betaFree = resolveCapabilities({ profileId: 'p', role: 'member', tier: 'crew', realTier: 'free' }, { kind: 'global' })
     expect(hasNoCreates(betaFree)).toBe(true)
+    // ...but event.create is open regardless of tier.
+    expect(betaFree.has('event.create')).toBe(true)
   })
 
-  it('grants to community stewards (crew+ on the trust ladder) regardless of billing', () => {
+  it('grants the deeper three to community stewards (crew+ on the trust ladder) regardless of billing', () => {
     expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'crew', realTier: 'free' }, { kind: 'global' }))).toBe(true)
     expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'host', realTier: 'free' }, { kind: 'global' }))).toBe(true)
     expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'mentor', realTier: 'free' }, { kind: 'global' }))).toBe(true)
   })
 
-  it('grants to platform staff (web_role) regardless of billing', () => {
+  it('grants the deeper three to platform staff (web_role) regardless of billing', () => {
     expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'member', webRole: 'admin', realTier: 'free' }, { kind: 'global' }))).toBe(true)
   })
 
@@ -55,13 +64,15 @@ describe('resolveCapabilities · global creation gates (ADR-414 — real Crew to
     expect(hasNoCreates(resolveCapabilities({ profileId: 'p', role: 'member', tier: 'free' }, { kind: 'global' }))).toBe(true)
   })
 
-  it('an anonymous viewer gets no create gates', () => {
-    expect(hasNoCreates(resolveCapabilities({ profileId: null, role: 'member' }, { kind: 'global' }))).toBe(true)
+  it('an anonymous viewer gets no create gates (event.create included)', () => {
+    const anon = resolveCapabilities({ profileId: null, role: 'member' }, { kind: 'global' })
+    expect(hasNoCreates(anon)).toBe(true)
+    expect(anon.has('event.create')).toBe(false)
   })
 
-  it('a free member can reach the gates via the paid rung (capabilityGaps → needs-paid-tier)', () => {
+  it('a free member reaches the deeper gates via the paid rung; event.create is already open', () => {
     const gaps = capabilityGaps({ profileId: 'p', role: 'member', tier: 'free', realTier: 'free' }, { kind: 'global' })
-    expect(gaps['event.create']).toBe('needs-paid-tier')
+    expect(gaps['event.create']).toBeUndefined() // open to members, not a gap (ADR-810)
     expect(gaps['circle.create']).toBe('needs-paid-tier')
     expect(gaps['journey.create']).toBe('needs-paid-tier')
     expect(gaps['practice.create']).toBe('needs-paid-tier')

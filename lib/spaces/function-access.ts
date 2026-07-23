@@ -86,6 +86,30 @@ export async function spaceFunctionAccessLive(
   }
 }
 
+// ── Collaborator hosting (ADR-799 §B / ADR-810) ──────────────────────────────────────────────────
+// The LIVE plan gate for HOSTING collaborator spaces + co-hosting events. The venue/host side needs a
+// paid space plan (Business or Non Profit); the collaborator (guest) just needs an active space. This is
+// the SERVER-SIDE authority the collaboration + event-share actions call before writing, so the free→paid
+// wall cannot be bypassed by driving the actions directly. While billing is OFF, featureAllowed
+// short-circuits to TRUE, so hosting stays free + universal (today's behavior) until go-live. FAIL-SAFE:
+// an error degrades to GRANTED, matching every other billing-OFF-preserving reader (never a lockout).
+
+/** May this space HOST collaborators / co-host events under its current plan, LIVE? Business/Non Profit
+ *  pass; a free space is gated once billing is live (and sees the locked preview meanwhile). Pass the
+ *  plan explicitly, or it reads space.plan. FAIL-SAFE to granted. */
+export async function spaceCanHostCollaborators(
+  space: ({ plan?: string | null } & SpaceLike) | null | undefined,
+  plan?: string | null,
+): Promise<boolean> {
+  try {
+    const live = await billingLive()
+    return await featureAllowed('space_collaborators', { plan: asSpacePlan(plan ?? space?.plan ?? null) }, { billingLive: live })
+  } catch {
+    // FAIL-SAFE: degrade to granted (billing-OFF-preserving), never a lockout on a read error.
+    return true
+  }
+}
+
 // ── AI-depth access (Resonance Engine Phase 6 · ADR-387) ─────────────────────────────────────────
 // The LIVE gate for the three AI-depth capabilities, the per-Space analog of spaceFunctionAccessLive
 // for the Resonance Engine's paid depth. Each AI-depth key maps to a pricing feature-gate so the same

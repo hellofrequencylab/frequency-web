@@ -184,15 +184,16 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
       // not the community ladder (host+ stewardship lives in per-scope caps below).
       if (isStaff) caps.add('admin.access')
 
-      // CREATION gates: who may author a new event / circle / journey / practice.
-      // Real-Crew (paid tier) OR a community steward (crew+ on the trust ladder).
-      // We read `realTier` (the DB tier BEFORE the beta open-access override) so a
-      // genuinely free member still meets the upgrade popup during the beta —
-      // "real Crew to create, free one-tap" (ADR-414). Staff create too (they run
-      // the platform). Plain free members get none of these, by design.
+      // CREATION gates. EVENTS are open to any signed-in member (ADR-810): creating an
+      // event is the freemium taste, and the paid funnel lives downstream (co-hosting
+      // with another space needs a Business space; see ADR-799 §B). The DEEPER creation
+      // gates — circle / journey / practice — stay Real-Crew (paid tier) OR a community
+      // steward (crew+ on the trust ladder). We read `realTier` (the DB tier BEFORE the
+      // beta open-access override) so a genuinely free member still meets the upgrade
+      // popup for those during the beta (ADR-414). Staff create everything.
+      if (profileId) caps.add('event.create')
       const realTier = viewer.realTier ?? viewer.tier
       if (isPaid(realTier) || atLeastRole(viewer.role, 'crew') || isStaff) {
-        caps.add('event.create')
         caps.add('circle.create')
         caps.add('journey.create')
         caps.add('practice.create')

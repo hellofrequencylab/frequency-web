@@ -22,7 +22,15 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { getSpaceById } from '@/lib/spaces/store'
+import { spaceCanHostCollaborators } from '@/lib/spaces/function-access'
 import { listAcceptedCollaborations } from '@/lib/spaces/collaborations'
+
+// Upgrade lines for the event↔space collaboration funnel gate (ADR-810). Plain voice, no em dash. The
+// space using the cross-space surface (the event's home venue, or the space featuring someone's event)
+// needs a paid Business/Non Profit plan; a member's personal event lives on the platform space and is
+// not a business venue, so it cannot bring on collaborators until it runs under a Business space.
+const EVENT_HOST_NEEDS_BUSINESS = 'Co-hosting an event with another space is a Business feature. Run this event under a Business space to invite collaborators.'
+const FEATURE_NEEDS_BUSINESS = 'Featuring another space’s event is a Business feature. Upgrade this space to Business to feature events.'
 import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
 import {
   loadShare,
@@ -184,6 +192,14 @@ export async function requestEventShare(
   const homeSpaceId = await eventHomeSpaceId(eventId)
   if (homeSpaceId && homeSpaceId === spaceId) return fail('This event already lives in that space.')
 
+  // FUNNEL GATE (ADR-810): the event's HOME space (the venue) must be on a paid Business/Non Profit plan
+  // to bring another space onto the event. A member's personal event lives on the platform space, which
+  // is not a business venue, so it is gated (run the event under a Business space to unlock co-hosting).
+  // While billing is OFF this grants (today's free behavior).
+  if (homeSpaceId && !(await spaceCanHostCollaborators(await getSpaceById(homeSpaceId)))) {
+    return fail(EVENT_HOST_NEEDS_BUSINESS)
+  }
+
   // Auto-accept: the host also stewards the target, or the two spaces already collaborate.
   const autoAccept = shouldAutoAcceptShare({
     callerStewardsApprovingSide: await viewerStewardsSpace(spaceId, profileId),
@@ -222,6 +238,9 @@ export async function requestFeatureEvent(spaceId: string, eventId: string): Pro
 
   const target = await getSpaceById(spaceId)
   if (!target) return fail('That space could not be found.')
+  // FUNNEL GATE (ADR-810): the featuring space is using the cross-space surface, so it needs a paid
+  // Business/Non Profit plan. While billing is OFF this grants (today's free behavior).
+  if (!(await spaceCanHostCollaborators(target))) return fail(FEATURE_NEEDS_BUSINESS)
 
   const homeSpaceId = await eventHomeSpaceId(eventId)
   if (homeSpaceId && homeSpaceId === spaceId) return fail('This event already lives in your space.')

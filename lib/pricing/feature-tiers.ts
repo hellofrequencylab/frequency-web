@@ -162,6 +162,15 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
       'Add teammates with roles: editor, moderator, and admin.',
     ),
   },
+  space_collaborators: {
+    axis: 'plan',
+    minTier: 'business',
+    title: 'Collaborator spaces',
+    rungs: spaceRungs(
+      'See how collaborators work, and preview the surface.',
+      'Host other businesses inside your space and co-host events. They keep their own page and pay for their own space.',
+    ),
+  },
   space_multi_pipeline: {
     axis: 'plan',
     minTier: 'business',

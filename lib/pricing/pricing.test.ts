@@ -188,6 +188,14 @@ describe('feature gate ladder math (meetsGate)', () => {
     expect(meetsGate({ ...tierGate, enabled: false }, { tier: 'free' })).toBe(true)
   })
 
+  it('collaborators is a Business-plan gate (ADR-810): free is below, business/nonprofit clear it', () => {
+    const gate = FEATURE_GATES.space_collaborators
+    expect(gate).toEqual({ axis: 'plan', minEntitlement: 'business', enabled: true })
+    expect(meetsGate(gate, { plan: 'free' })).toBe(false)
+    expect(meetsGate(gate, { plan: 'business' })).toBe(true)
+    expect(meetsGate(gate, { plan: 'nonprofit' })).toBe(true)
+  })
+
   it('unknown / missing entitlement ranks lowest (default-deny)', () => {
     expect(meetsGate(tierGate, {})).toBe(false)
     expect(meetsGate(planGate, { plan: null })).toBe(false)

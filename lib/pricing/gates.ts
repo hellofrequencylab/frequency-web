@@ -63,6 +63,14 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   space_team: { axis: 'plan', minEntitlement: 'business', enabled: true }, // Team seats
   space_whitelabel: { axis: 'plan', minEntitlement: 'business', enabled: true }, // Branding key 'whitelabel'
   space_multi_pipeline: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  // Collaborator spaces + event co-hosting (ADR-799 §B / ADR-810). Hosting other businesses inside your
+  // space, or bringing a collaborator space onto your event, is a Business+ capability: the venue/host
+  // needs a paid space plan, while the collaborator (guest) just needs an active space (they pay for
+  // their own). Free spaces get the LOCKED PREVIEW (the surface renders with an upgrade prompt); the
+  // server actions enforce this floor on the HOST side so the wall cannot be bypassed. Non Profit clears
+  // it via the shared full-depth set. While billing is OFF this short-circuits to granted (today's free
+  // universal behavior), so nothing changes until go-live.
+  space_collaborators: { axis: 'plan', minEntitlement: 'business', enabled: true },
   // Storefront (ADR-39X/Z) — available from the FREE plan (a free Space can sell; the plan
   // only buys the rake down + features). A per-Space toggle decides ON/OFF.
   space_storefront: { axis: 'plan', minEntitlement: 'free', enabled: true },

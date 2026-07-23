@@ -4,6 +4,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
+import { spaceCanHostCollaborators } from '@/lib/spaces/function-access'
 import { CollaboratorsBody } from './collaborators-body'
 import { SharedCollaboratorCalendar } from './shared-collaborator-calendar'
 import { VenueHoldsSection } from './venue-holds-section'
@@ -27,7 +28,15 @@ export default async function SpaceCollaboratorsPage({ params }: { params: Promi
 
   const brandName = space.brandName ?? space.name
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  const featureLocked = !staffViewing && !spaceFunctionAccess(space, 'collaborators', caps.role)
+  // Locked when the viewer lacks the role OR the space is on a plan below Business (ADR-810): a free
+  // space sees the surface + the value but the controls are the upgrade prompt (the tease pattern). While
+  // billing is OFF, spaceCanHostCollaborators grants, so this stays exactly today's behavior.
+  const planOk = await spaceCanHostCollaborators(space)
+  const roleOk = spaceFunctionAccess(space, 'collaborators', caps.role)
+  const featureLocked = !staffViewing && (!roleOk || !planOk)
+  // Which lock to explain: a plan lock routes to Go Business; a role/module lock routes to the Module
+  // Manager. The plan lock wins when both apply (the upgrade is the real blocker).
+  const lockedReason: 'plan' | 'module' = !planOk ? 'plan' : 'module'
 
   return (
     <FocusTemplate
@@ -36,7 +45,7 @@ export default async function SpaceCollaboratorsPage({ params }: { params: Promi
       description="The businesses that operate inside your space, and requests to collaborate. Invite another business space; they approve, and you both show as collaborators."
       width={featureLocked ? undefined : 'wide'}
     >
-      <CollaboratorsBody spaceId={space.id} slug={slug} manage={!featureLocked} />
+      <CollaboratorsBody spaceId={space.id} slug={slug} manage={!featureLocked} lockedReason={lockedReason} />
       {/* B3 first slice: the combined calendar of this space + its accepted collaborators (public events
           only, gated per source). Renders nothing when there are no accepted collaborators / events. */}
       {!featureLocked && <SharedCollaboratorCalendar spaceId={space.id} ownName={brandName} />}
