@@ -102,4 +102,4 @@ Keep it real. The reward is for people who actually RSVP, show up, or join, neve
 
 - New to a circle? An event is the easiest way in: say you're coming, then just show up.
 - You'll see events from the circles you've joined, plus public local events happening in your area.
-- Want to host? Any Crew member can create an event, in a circle or as a public local gathering. Crew is free during the beta.
+- Want to host? Any member can create an event, as a public local gathering or inside a circle you host. Adding another business as a co-host on your event is a Business space feature.
