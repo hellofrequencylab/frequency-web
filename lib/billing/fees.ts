@@ -42,18 +42,23 @@ export function platformFeeCents(grossCents: number): number {
 export async function spaceTakeRateCents(
   grossCents: number,
   plan: string | null | undefined,
-  isPaying = false,
+  source: import('./pricing-keys').OrderSource = 'self',
 ): Promise<number> {
+  // A member's OWN booking is always 0% (the hard promise, ADR-811). Short-circuit before any IO.
+  if (source === 'self') return 0
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
   try {
-    const [{ getPricingValues }, { takeRateCents }] = await Promise.all([
+    const [{ getPricingValues }, { sourceAwareTakeRateCents, NETWORK_TAKE_RATE_DEFAULT }] = await Promise.all([
       import('@/lib/pricing/settings'),
       import('./pricing-keys'),
     ])
-    const values = await getPricingValues()
-    return takeRateCents(grossCents, plan, values.take_rate, isPaying)
+    const t = (await getPricingValues()).take_rate
+    // Build a complete NetworkTakeRate: per-field fallback to the code default so a partial operator
+    // override can never leave a tier undefined (→ NaN fee).
+    const rate = { ...NETWORK_TAKE_RATE_DEFAULT, ...t.network_bps, member: t.member_bps ?? NETWORK_TAKE_RATE_DEFAULT.member }
+    return sourceAwareTakeRateCents(grossCents, plan, source, rate)
   } catch {
-    // Fail-safe to the platform default fee rather than 0 (never under-collect on an error).
+    // Fail-safe to the platform default fee rather than 0 (never under-collect on a network sale error).
     return platformFeeCents(grossCents)
   }
 }
@@ -62,15 +67,21 @@ export async function spaceTakeRateCents(
  *  the Market listing ladder rate (member_bps, 8% today — ADR-596). A member sells at this higher rate;
  *  upgrading to a Business Space buys it down to the space rate. Reads the operator pricing_settings
  *  (fail-safe to the seeded defaults, then to the platform default fee — never 0, never under-collect). */
-export async function memberTakeRateCents(grossCents: number): Promise<number> {
+export async function memberTakeRateCents(
+  grossCents: number,
+  source: import('./pricing-keys').OrderSource = 'self',
+): Promise<number> {
+  // A member's OWN sale is always 0% (the hard promise, ADR-811).
+  if (source === 'self') return 0
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
   try {
-    const [{ getPricingValues }, { memberTakeRateCents: pureMemberTakeRateCents }] = await Promise.all([
+    const [{ getPricingValues }, { sourceAwareMemberTakeRateCents, NETWORK_TAKE_RATE_DEFAULT }] = await Promise.all([
       import('@/lib/pricing/settings'),
       import('./pricing-keys'),
     ])
-    const values = await getPricingValues()
-    return pureMemberTakeRateCents(grossCents, values.take_rate)
+    const t = (await getPricingValues()).take_rate
+    const rate = { ...NETWORK_TAKE_RATE_DEFAULT, ...t.network_bps, member: t.member_bps ?? NETWORK_TAKE_RATE_DEFAULT.member }
+    return sourceAwareMemberTakeRateCents(grossCents, source, rate)
   } catch {
     return platformFeeCents(grossCents)
   }

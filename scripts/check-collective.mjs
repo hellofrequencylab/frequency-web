@@ -104,16 +104,20 @@ line('\nPhase 1 · Pricing engine — tier wiring')
 line('\nPhase 2 · Differential take-rate — attribution wiring')
 {
   const fees = read('lib/billing/fees.ts') ?? ''
-  const sourceAware = /source\s*[:?]\s*['"]?(self|network)/.test(fees) || /'network'\s*\|\s*'self'|'self'\s*\|\s*'network'/.test(fees)
+  const keys = read('lib/billing/pricing-keys.ts') ?? ''
+  // Source-aware = the pure math exists AND the fee wrappers take an OrderSource.
+  const sourceAware = /export function sourceAwareTakeRateCents/.test(keys) && /OrderSource/.test(fees)
   if (!sourceAware) pending('take-rate is not yet source-aware (self vs network) — Phase 2 not started')
   else {
-    ok('fees.ts is source-aware (self/network)')
-    const callSites = ['lib/commerce/checkout.ts', 'lib/commerce/orders.ts', 'lib/billing/tickets.ts', 'lib/billing/tips.ts']
-    const missing = callSites.filter((p) => { const t = read(p); return t && !/source\s*[:.]/.test(t) })
-    if (missing.length) fail(`take-rate source not threaded into: ${missing.join(', ')} (a self-booking could be billed a network rate)`)
-    else ok('all commerce call sites thread a source')
-    const orderMig = grepCount('supabase/migrations', /commerce_orders[\s\S]*\b(source|attribution)\b|add column[^\n]*\bsource\b/i, ['.sql'])
-    if (orderMig.n > 0) ok('order attribution migration present'); else fail('fees are source-aware but no order-attribution migration found')
+    ok('fees.ts is source-aware (self/network); network vector lives in pricing-keys.ts')
+    // Only the fee-BEARING seller paths must classify + thread a source. orders.ts is read/settlement
+    // only (fee comes from the stored column) and tips are flat (no space plan), so they are exempt.
+    const callSites = ['lib/commerce/checkout.ts', 'lib/billing/tickets.ts']
+    const missing = callSites.filter((p) => { const t = read(p); return t && !/classifyOrderSource|,\s*source\b/.test(t) })
+    if (missing.length) fail(`take-rate source not classified/threaded into: ${missing.join(', ')} (a self-booking could be billed a network rate)`)
+    else ok('the fee-bearing commerce paths (checkout, tickets) classify + thread a source')
+    const orderMig = grepCount('supabase/migrations', /commerce_orders[\s\S]*\bsource\b|add column[^\n]*\bsource\b/i, ['.sql'])
+    if (orderMig.n > 0) ok('order-attribution migration present'); else fail('fees are source-aware but no order-attribution migration found')
   }
 }
 

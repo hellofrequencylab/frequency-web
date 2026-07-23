@@ -12,8 +12,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from '@/lib/billing/stripe'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { spaceTakeRateCents, memberTakeRateCents } from '@/lib/billing/fees'
+import { classifyOrderSource } from './order-source'
+import type { OrderSource } from '@/lib/billing/pricing-keys'
 import { confirmBookingByOrder, cancelBookingByOrder } from '@/lib/spaces/booking'
-import { spaceIsPaying } from '@/lib/billing/space-subscription-items'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
 import { computeBookingRefundCents } from './cancellation'
@@ -53,16 +54,16 @@ type ResolvedCharge =
   | { platformFeeCents: number; sellerStripeAccountId: string | null }
   | { error: string }
 
-async function resolveCharge(seller: ProductRow, grossCents: number): Promise<ResolvedCharge> {
+async function resolveCharge(seller: ProductRow, grossCents: number, source: OrderSource): Promise<ResolvedCharge> {
   if (seller.owner_kind === 'platform') {
     return { platformFeeCents: 0, sellerStripeAccountId: null }
   }
   if (seller.owner_kind === 'profile') {
     const status = await getConnectStatus(seller.owner_profile_id ?? '')
     if (!status.accountId || !status.ready) return { error: 'This seller can’t take payment yet.' }
-    // An individual paid-member seller pays the Market listing ladder rate (member_bps, 8% — ADR-596),
-    // not a space plan rate. Upgrading to a Business Space buys the fee down (the space branch below).
-    return { platformFeeCents: await memberTakeRateCents(grossCents), sellerStripeAccountId: status.accountId }
+    // An individual paid-member seller: 0% on their OWN sale, the member (Crew) rate on a network-sourced
+    // one (ADR-811). Upgrading to a Business Space buys the network rate down (the space branch below).
+    return { platformFeeCents: await memberTakeRateCents(grossCents, source), sellerStripeAccountId: status.accountId }
   }
   const { data } = await db()
     .from('spaces')
@@ -74,13 +75,9 @@ async function resolveCharge(seller: ProductRow, grossCents: number): Promise<Re
   const status = await getConnectStatus(owner.owner_profile_id)
   if (!status.accountId || !status.ready) return { error: 'This storefront can’t take payment yet.' }
   return {
-    // A space store's take-rate keys on paying-state (ADR-552): a free space pays the higher free rate,
-    // a paying Business the lower rate. Resolve isPaying from its live subscription items.
-    platformFeeCents: await spaceTakeRateCents(
-      grossCents,
-      owner.plan ?? 'free',
-      await spaceIsPaying(seller.owner_space_id),
-    ),
+    // A space store's take-rate is 0% on its OWN booking (the hard promise) and the tier's network rate
+    // on a sale the collective sourced (ADR-811), keyed on the space plan (Business 5% → Collective 3% → …).
+    platformFeeCents: await spaceTakeRateCents(grossCents, owner.plan ?? 'free', source),
     sellerStripeAccountId: status.accountId,
   }
 }
@@ -141,7 +138,14 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   const gross = lines.reduce((sum, l) => sum + l.unitCents * l.qty, 0)
   if (gross <= 0) return { error: 'Nothing to charge.' }
 
-  const charge = await resolveCharge(seller, gross)
+  // Classify the order's source ONCE (ADR-811 §A): self = the operator's own booking (0% fee), network =
+  // the collective sourced the customer. Default-safe to self on any ambiguity.
+  const { source, attributionRef } = await classifyOrderSource({
+    entryPoint: input.entryPoint ?? null,
+    buyerProfileId: input.buyerProfileId,
+    sellerProfileId: seller.owner_profile_id,
+  })
+  const charge = await resolveCharge(seller, gross, source)
   if ('error' in charge) return charge
   if (charge.sellerStripeAccountId && !(await payoutsLive())) {
     return { error: 'Payments aren’t turned on yet.' }
@@ -186,6 +190,8 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
       entity_id: seller.entity_id,
       amount_cents: gross,
       platform_fee_cents: charge.platformFeeCents,
+      source,
+      attribution_ref: attributionRef,
       currency: seller.currency || 'usd',
       status: 'pending',
       shipping: input.shipping ?? {},

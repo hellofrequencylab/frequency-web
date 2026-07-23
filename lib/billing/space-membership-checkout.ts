@@ -14,7 +14,7 @@ import { billingLive } from '@/lib/pricing/settings'
 import { asSpacePlan } from '@/lib/pricing/plans'
 import { getConnectStatus } from './connect'
 import { spaceTakeRateCents } from './fees'
-import { spaceIsPaying } from './space-subscription-items'
+import { classifyOrderSource } from '@/lib/commerce/order-source'
 
 export interface SpaceMembershipCheckoutResult {
   url?: string
@@ -69,9 +69,11 @@ export async function createSpaceMembershipCheckout(
     const amount = Math.round(tier.price_cents ?? 0)
     if (!Number.isFinite(amount) || amount <= 0) return { reason: 'free_tier' } // a $0 tier takes no charge (v1 join path)
 
-    // The application fee is the SPACE's take-rate for its paying-state, read fail-safe from
-    // pricing_settings: a free space pays the higher free rate, a paying Business the lower rate (ADR-552).
-    const fee = await spaceTakeRateCents(amount, asSpacePlan(space.plan), await spaceIsPaying(spaceId))
+    // Differential take-rate (ADR-811 §A): a membership the space brings itself is 0% (the hard promise);
+    // one the collective sourced (referral / discovery) pays the space plan's NETWORK rate. Fail-safe:
+    // ambiguity classifies as self, so we never bill a network rate on an own booking.
+    const { source } = await classifyOrderSource({ buyerProfileId: memberId, sellerProfileId: space.owner_profile_id })
+    const fee = await spaceTakeRateCents(amount, asSpacePlan(space.plan), source) // self → 0, network → tier bps
     const interval: 'month' | 'year' = tier.interval === 'year' ? 'year' : 'month'
 
     const metadata = { kind: 'space_membership', space_id: spaceId, tier_id: tierId, member_id: memberId }

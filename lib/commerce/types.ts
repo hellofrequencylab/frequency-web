@@ -72,6 +72,10 @@ export interface CheckoutInput {
   buyerProfileId: string
   items: { productId: string; variantId?: string | null; qty: number }[]
   shipping?: Record<string, unknown>
+  /** An explicit network-sourced entry point (ADR-811 §A) a discovery / marketplace surface passes so
+   *  the order is classified `network` even without a referral cookie. Absent = classify from cookies,
+   *  default `self`. */
+  entryPoint?: 'discovery' | 'marketplace' | 'referral' | null
 }
 
 // ── Variants (Etsy-Grade Phase 2) ───────────────────────────────────────────

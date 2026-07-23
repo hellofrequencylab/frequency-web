@@ -8,7 +8,7 @@
 // founding member's profiles.locked_price_id at checkout.
 
 import type { EntitlementTier } from '@/lib/core/entitlement'
-import { type SpacePlan } from '@/lib/pricing/plans'
+import { type SpacePlan, asSpacePlan } from '@/lib/pricing/plans'
 
 /** A subscription billing period. */
 export type BillingPeriod = 'monthly' | 'annual'
@@ -137,6 +137,77 @@ export function memberTakeRateCents(
 ): number {
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
   return Math.floor((grossCents * memberTakeRateBps(takeRate)) / 10000)
+}
+
+// ── The DIFFERENTIAL (network-sourced) take-rate (Phase 2, ADR-811 §A) ───────────────────────────────
+// The Community Collective principle: we NEVER take a cut of the business a member brings themselves
+// (`self` orders = 0%, always, the hard promise), and we take a small, tier-declining cut ONLY of the
+// business the NETWORK sourced (referral / discovery / marketplace). The rate drops as the tier rises,
+// so a paid plan visibly buys down the fee. All PURE; the IO wrappers (lib/billing/fees.ts) resolve the
+// operator-set rates and thread the classified `source`.
+
+/** An order's commercial source: the operator's OWN booking (0% fee, always) vs a sale the NETWORK
+ *  sourced (referral / discovery / marketplace). PURE. */
+export type OrderSource = 'self' | 'network'
+
+/** NETWORK-sourced take-rate (bps) per SPACE plan tier (ADR-811 §4). `self` orders are 0 by rule, so this
+ *  vector holds only the network side. The rate DROPS as the tier rises; a disconnected Independent space
+ *  has left the graph, so its network revenue is 0 by definition. `member` = the individual paid-member
+ *  (profile) seller rate (the Crew rate). */
+export interface NetworkTakeRate {
+  free: number
+  business: number
+  collective: number
+  nonprofit: number
+  independent: number
+  member: number
+}
+
+/** The seeded default network take-rate: Member/free 1000 (10%) · Business 500 · Collective 300 ·
+ *  Non Profit 0 · Independent 0 · individual member seller 800. Launch low; earn the right to raise. */
+export const NETWORK_TAKE_RATE_DEFAULT: NetworkTakeRate = {
+  free: 1000,
+  business: 500,
+  collective: 300,
+  nonprofit: 0,
+  independent: 0,
+  member: 800,
+}
+
+/** The network-sourced take-rate bps for a space plan. `self` is 0 by rule and never reaches here. An
+ *  unknown / legacy label narrows through asSpacePlan (default-deny to 'free', the HIGHER rate — never
+ *  under-collect on a network sale). PURE. */
+export function networkTakeRateBpsForPlan(
+  plan: SpacePlan | string | null | undefined,
+  rate: NetworkTakeRate = NETWORK_TAKE_RATE_DEFAULT,
+): number {
+  const p = asSpacePlan(plan) // free | business | collective | nonprofit | independent
+  return rate[p]
+}
+
+/** Source-aware application-fee cents for a SPACE sale. `self` → 0 (the hard promise); `network` → the
+ *  tier's network bps. PURE (no I/O). Floors fractional cents so the recipient is never short. */
+export function sourceAwareTakeRateCents(
+  grossCents: number,
+  plan: SpacePlan | string | null | undefined,
+  source: OrderSource,
+  rate: NetworkTakeRate = NETWORK_TAKE_RATE_DEFAULT,
+): number {
+  if (source === 'self') return 0
+  if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
+  return Math.floor((grossCents * networkTakeRateBpsForPlan(plan, rate)) / 10000)
+}
+
+/** Source-aware application-fee cents for an individual PAID-MEMBER (profile) seller. `self` → 0;
+ *  `network` → the member (Crew) rate. PURE. Floors fractional cents. */
+export function sourceAwareMemberTakeRateCents(
+  grossCents: number,
+  source: OrderSource,
+  rate: NetworkTakeRate = NETWORK_TAKE_RATE_DEFAULT,
+): number {
+  if (source === 'self') return 0
+  if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
+  return Math.floor((grossCents * rate.member) / 10000)
 }
 
 /** The monthly take-rate saving (cents) a not-yet-paying space would get on paid Business: the bps
