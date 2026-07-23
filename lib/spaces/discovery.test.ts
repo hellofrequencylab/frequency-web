@@ -27,6 +27,8 @@ type SpaceRow = {
   brand_logo_url: string | null
   tagline: string | null
   visibility: string
+  /** The Community Collective world switch (ADR-811 §3): only connected Spaces are discoverable. */
+  network_connected: boolean
   created_at: string
   /** The preferences jsonb — carries profileData.category + headerCta for the app-code resolvers. */
   preferences?: unknown
@@ -46,7 +48,7 @@ function rowCategory(r: SpaceRow): string | null {
 }
 
 function spacesBuilder() {
-  const eqs: Record<string, string> = {}
+  const eqs: Record<string, string | boolean> = {}
   let neqType: string | null = null
   let categoryEq: string | null = null
   let categoryBusinessOrNull = false
@@ -56,9 +58,9 @@ function spacesBuilder() {
     select() {
       return api
     },
-    eq(col: string, val: string) {
+    eq(col: string, val: string | boolean) {
       // The category jsonb-path filter (a specific, non-business category) records separately.
-      if (col.includes('category')) categoryEq = val
+      if (col.includes('category')) categoryEq = String(val)
       else eqs[col] = val
       return api
     },
@@ -82,6 +84,7 @@ function spacesBuilder() {
       // sort is applied in app code AFTER counts, so the DB order there is name — exactly this.)
       const rows = store.spaces
         .filter((r) => (eqs.visibility ? r.visibility === eqs.visibility : true))
+        .filter((r) => (eqs.network_connected !== undefined ? r.network_connected === eqs.network_connected : true))
         .filter((r) => (eqs.status ? r.status === eqs.status : true))
         .filter((r) => (eqs.type ? r.type === eqs.type : true))
         .filter((r) => (neqType ? r.type !== neqType : true))
@@ -143,12 +146,16 @@ beforeEach(() => {
   store.upcoming = {}
   store.spaces = [
     // s1 stores an explicit 'studio' category; s2 stores 'maker'; s3 has NO category (reads as 'business').
-    { id: 's1', slug: 'river-yoga', name: 'River Yoga', type: 'practitioner', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'network', created_at: '2026-01-10T00:00:00Z', preferences: { profileData: { category: 'studio' } } },
-    { id: 's2', slug: 'sound-co', name: 'Sound Co', type: 'business', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'network', created_at: '2026-03-01T00:00:00Z', preferences: { profileData: { category: 'maker' } } },
-    { id: 's3', slug: 'forest-org', name: 'Forest Org', type: 'organization', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'network', created_at: '2026-02-15T00:00:00Z' },
+    // All three are connected (in the collective), so they list.
+    { id: 's1', slug: 'river-yoga', name: 'River Yoga', type: 'practitioner', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'network', network_connected: true, created_at: '2026-01-10T00:00:00Z', preferences: { profileData: { category: 'studio' } } },
+    { id: 's2', slug: 'sound-co', name: 'Sound Co', type: 'business', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'network', network_connected: true, created_at: '2026-03-01T00:00:00Z', preferences: { profileData: { category: 'maker' } } },
+    { id: 's3', slug: 'forest-org', name: 'Forest Org', type: 'organization', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'network', network_connected: true, created_at: '2026-02-15T00:00:00Z' },
     // Excluded by the discovery boundary: private + root, never listed.
-    { id: 's4', slug: 'private-one', name: 'Private One', type: 'practitioner', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'private', created_at: '2026-01-01T00:00:00Z' },
-    { id: 'root', slug: 'frequency', name: 'Frequency', type: 'root', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'network', created_at: '2025-01-01T00:00:00Z' },
+    { id: 's4', slug: 'private-one', name: 'Private One', type: 'practitioner', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'private', network_connected: true, created_at: '2026-01-01T00:00:00Z' },
+    { id: 'root', slug: 'frequency', name: 'Frequency', type: 'root', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'network', network_connected: true, created_at: '2025-01-01T00:00:00Z' },
+    // s5 is network-VISIBLE but DISCONNECTED (standalone / Independent, ADR-811 §3): walled off from
+    // discovery even though its visibility is 'network'. The new second gate must exclude it.
+    { id: 's5', slug: 'solo-standalone', name: 'Aardvark Standalone', type: 'business', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'network', network_connected: false, created_at: '2026-04-01T00:00:00Z' },
   ]
 })
 
@@ -156,6 +163,14 @@ describe('listNetworkedSpaces (no Following filter)', () => {
   it('lists networked, active, non-root spaces, ordered by name', async () => {
     const spaces = await listNetworkedSpaces({})
     expect(spaces.map((s) => s.id)).toEqual(['s3', 's1', 's2']) // Forest Org, River Yoga, Sound Co
+  })
+
+  it('excludes a DISCONNECTED Space even when its visibility is network (ADR-811 §3)', async () => {
+    // s5 is visibility=network but network_connected=false, and its name (Aardvark) would sort FIRST if
+    // it leaked in — so this locks the second discovery gate, not just an ordering coincidence.
+    const spaces = await listNetworkedSpaces({})
+    expect(spaces.map((s) => s.id)).not.toContain('s5')
+    expect(spaces.map((s) => s.name)).not.toContain('Aardvark Standalone')
   })
 })
 

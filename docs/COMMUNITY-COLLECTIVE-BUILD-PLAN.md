@@ -34,7 +34,7 @@ Dependency: owner approval (done). Unblocks every later phase.
 
 ---
 
-## Phase 1 — Pricing engine foundation · XL
+## Phase 1 — Pricing engine foundation · XL · ✅ shipped
 
 Goal: teach the entitlement/catalog engine the six tiers and the new prices. Behind OFF (grant-all preserved).
 
@@ -54,7 +54,7 @@ Dependency: Phase 0. OFF-safe: `featureAllowed` short-circuits to grant while OF
 
 ---
 
-## Phase 2 — The differential take-rate · XL · 🔴 critical path
+## Phase 2 — The differential take-rate · XL · 🔴 critical path · ✅ shipped
 
 Goal: charge the take-rate **only on network-sourced commerce**, 0% on a member's own bookings, rate dropping
 with tier. This is the one genuinely new subsystem (no attribution concept exists today). Full design in **§A**.
@@ -71,19 +71,20 @@ Dependency: Phase 1. Blocks Phase 5. **Correctness is the top risk** (see §A + 
 
 ---
 
-## Phase 3 — network_connected wiring (in-collective vs standalone) · L
+## Phase 3 — network_connected wiring (in-collective vs standalone) · L · ✅ shipped
 
 Goal: activate the dormant `spaces.network_connected` flag so it actually drives (a) which pricing world a
 space is in and (b) network inclusion (discovery/referrals/take-rate eligibility).
 
-| Surface | Change | Tag |
-|---|---|---|
-| `lib/pricing/*` (resolver) | Route pricing world off `network_connected`: connected → the affordable ladder; disconnected → Independent/standard SaaS. | ✏️ |
-| `lib/spaces/discovery.ts` | Include only `network_connected` spaces in cross-network discovery/referral surfaces (today it keys on `visibility` only). | ✏️ |
-| `lib/spaces/provision.ts` | Keep default `true`; Independent onboarding sets `false`. | 🔸 |
-| Take-rate eligibility | A disconnected space has no network-sourced revenue by definition (it left the graph), so §A returns `self`/0 for it and it pays the flat Independent price. | ✏️ |
+| Surface | Change | Tag | State |
+|---|---|---|---|
+| `lib/pricing/network-world.ts` (resolver) | New PURE two-world resolver: `pricingWorldFor` (connected → affordable ladder; disconnected → Independent/standard SaaS) + `effectiveOrderSource` (disconnected collapses every order to `self`/0%). | 🆕 | ✅ |
+| `lib/spaces/discovery.ts` | Second discovery gate: lists only `visibility='network'` **AND** `network_connected=true` spaces (standalone Spaces walled off). | ✏️ | ✅ |
+| `lib/spaces/provision.ts` | Default `true` already set on every create path (provision, importer, root seed); Independent onboarding will opt out in Phase 4. | 🔸 | ✅ (no change needed) |
+| Take-rate eligibility | `effectiveOrderSource` threaded into all three fee-bearing paths (checkout store, tickets, space memberships): a disconnected space returns `self`/0 regardless of any referral signal. | ✏️ | ✅ |
+| `supabase/migrations/20261206000000_spaces_network_connected_default.sql` | Flip column default to `true` + backfill listed spaces so activating the discovery gate drops nothing. | 🆕 | ✅ |
 
-Dependency: Phase 1.
+Dependency: Phase 1. OFF-safe: fee math already short-circuits to `self`/0 while billing is OFF; discovery gate is behavior-preserving because every listed space is already connected.
 
 ---
 

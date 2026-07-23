@@ -13,6 +13,7 @@ import { stripe, appUrl } from '@/lib/billing/stripe'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { spaceTakeRateCents, memberTakeRateCents } from '@/lib/billing/fees'
 import { classifyOrderSource } from './order-source'
+import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import type { OrderSource } from '@/lib/billing/pricing-keys'
 import { confirmBookingByOrder, cancelBookingByOrder } from '@/lib/spaces/booking'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -51,34 +52,42 @@ export interface CommerceCheckoutResult {
 }
 
 type ResolvedCharge =
-  | { platformFeeCents: number; sellerStripeAccountId: string | null }
+  // `source` is the EFFECTIVE source the fee was computed at: a disconnected space collapses it to `self`
+  // (ADR-811 §3), so the persisted attribution matches the 0% it was actually billed (the honest receipt).
+  | { platformFeeCents: number; sellerStripeAccountId: string | null; source: OrderSource }
   | { error: string }
 
 async function resolveCharge(seller: ProductRow, grossCents: number, source: OrderSource): Promise<ResolvedCharge> {
   if (seller.owner_kind === 'platform') {
-    return { platformFeeCents: 0, sellerStripeAccountId: null }
+    return { platformFeeCents: 0, sellerStripeAccountId: null, source }
   }
   if (seller.owner_kind === 'profile') {
     const status = await getConnectStatus(seller.owner_profile_id ?? '')
     if (!status.accountId || !status.ready) return { error: 'This seller can’t take payment yet.' }
     // An individual paid-member seller: 0% on their OWN sale, the member (Crew) rate on a network-sourced
     // one (ADR-811). Upgrading to a Business Space buys the network rate down (the space branch below).
-    return { platformFeeCents: await memberTakeRateCents(grossCents, source), sellerStripeAccountId: status.accountId }
+    return { platformFeeCents: await memberTakeRateCents(grossCents, source), sellerStripeAccountId: status.accountId, source }
   }
   const { data } = await db()
     .from('spaces')
-    .select('owner_profile_id, plan')
+    .select('owner_profile_id, plan, network_connected')
     .eq('id', seller.owner_space_id ?? '')
     .maybeSingle()
-  const owner = (data as { owner_profile_id?: string | null; plan?: string | null } | null) ?? null
+  const owner =
+    (data as { owner_profile_id?: string | null; plan?: string | null; network_connected?: boolean | null } | null) ??
+    null
   if (!owner?.owner_profile_id) return { error: 'This storefront has no owner to pay.' }
   const status = await getConnectStatus(owner.owner_profile_id)
   if (!status.accountId || !status.ready) return { error: 'This storefront can’t take payment yet.' }
+  // A standalone (disconnected) Space has left the graph, so it can have NO network-sourced revenue —
+  // its source collapses to self (ADR-811 §3), guaranteeing 0% even if a stray referral cookie was set.
+  const effective = effectiveOrderSource(source, owner.network_connected)
   return {
     // A space store's take-rate is 0% on its OWN booking (the hard promise) and the tier's network rate
     // on a sale the collective sourced (ADR-811), keyed on the space plan (Business 5% → Collective 3% → …).
-    platformFeeCents: await spaceTakeRateCents(grossCents, owner.plan ?? 'free', source),
+    platformFeeCents: await spaceTakeRateCents(grossCents, owner.plan ?? 'free', effective),
     sellerStripeAccountId: status.accountId,
+    source: effective,
   }
 }
 
@@ -190,8 +199,10 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
       entity_id: seller.entity_id,
       amount_cents: gross,
       platform_fee_cents: charge.platformFeeCents,
-      source,
-      attribution_ref: attributionRef,
+      // Persist the EFFECTIVE source the fee was billed at (a disconnected space collapses to self, ADR-811
+      // §3), and drop the provenance tag when it collapsed — a self order carries no network attribution.
+      source: charge.source,
+      attribution_ref: charge.source === 'network' ? attributionRef : null,
       currency: seller.currency || 'usd',
       status: 'pending',
       shipping: input.shipping ?? {},

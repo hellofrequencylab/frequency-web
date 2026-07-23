@@ -15,6 +15,7 @@ import { asSpacePlan } from '@/lib/pricing/plans'
 import { getConnectStatus } from './connect'
 import { spaceTakeRateCents } from './fees'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
+import { effectiveOrderSource } from '@/lib/pricing/network-world'
 
 export interface SpaceMembershipCheckoutResult {
   url?: string
@@ -44,10 +45,16 @@ export async function createSpaceMembershipCheckout(
     // Resolve the space (its plan drives the take-rate) and its owner (the payout recipient).
     const { data: space } = (await db
       .from('spaces')
-      .select('id, owner_profile_id, plan, slug')
+      .select('id, owner_profile_id, plan, slug, network_connected')
       .eq('id', spaceId)
       .maybeSingle()) as {
-      data: { id?: string; owner_profile_id?: string | null; plan?: string | null; slug?: string | null } | null
+      data: {
+        id?: string
+        owner_profile_id?: string | null
+        plan?: string | null
+        slug?: string | null
+        network_connected?: boolean | null
+      } | null
     }
     if (!space?.id || !space.owner_profile_id) return { reason: 'tier_not_found' }
 
@@ -73,7 +80,10 @@ export async function createSpaceMembershipCheckout(
     // one the collective sourced (referral / discovery) pays the space plan's NETWORK rate. Fail-safe:
     // ambiguity classifies as self, so we never bill a network rate on an own booking.
     const { source } = await classifyOrderSource({ buyerProfileId: memberId, sellerProfileId: space.owner_profile_id })
-    const fee = await spaceTakeRateCents(amount, asSpacePlan(space.plan), source) // self → 0, network → tier bps
+    // A standalone (disconnected) Space has left the graph → no network-sourced revenue (ADR-811 §3), so
+    // the source collapses to self and the fee is 0 regardless of any referral signal.
+    const effective = effectiveOrderSource(source, space.network_connected)
+    const fee = await spaceTakeRateCents(amount, asSpacePlan(space.plan), effective) // self → 0, network → tier bps
     const interval: 'month' | 'year' = tier.interval === 'year' ? 'year' : 'month'
 
     const metadata = { kind: 'space_membership', space_id: spaceId, tier_id: tierId, member_id: memberId }

@@ -125,8 +125,28 @@ line('\nPhase 2 · Differential take-rate — attribution wiring')
 line('\nPhase 3 · network_connected — in-collective vs standalone')
 {
   const discovery = read('lib/spaces/discovery.ts') ?? ''
-  if (/network_connected/.test(discovery)) ok('discovery reads network_connected')
-  else pending('network_connected not yet driving discovery/pricing — Phase 3 not started')
+  const world = read('lib/pricing/network-world.ts')
+  if (!/network_connected/.test(discovery)) {
+    pending('network_connected not yet gating discovery — Phase 3 not started')
+  } else {
+    ok('discovery gates on network_connected (standalone Spaces walled off)')
+    // The take-rate-eligibility half: the pure world resolver exists AND the fee-bearing paths collapse a
+    // disconnected sale to self (0%). If discovery is gated but the fee paths are not, a disconnected Space
+    // could still be billed a network rate — a half-wired state, so fail.
+    if (!world || !/export function effectiveOrderSource/.test(world)) {
+      fail('discovery gates network_connected but lib/pricing/network-world.ts effectiveOrderSource is missing')
+    } else {
+      ok('network-world resolver present (effectiveOrderSource: disconnected → self/0)')
+      const feePaths = ['lib/commerce/checkout.ts', 'lib/billing/tickets.ts', 'lib/billing/space-membership-checkout.ts']
+      const unguarded = feePaths.filter((p) => { const t = read(p); return t && !/effectiveOrderSource/.test(t) })
+      if (unguarded.length) fail(`network_connected not applied to the take-rate in: ${unguarded.join(', ')} (a disconnected Space could be billed a network rate)`)
+      else ok('every fee-bearing path collapses a disconnected sale to self (0%)')
+    }
+    // The default must be flipped to true so the connected world is the norm (Phase 3 migration).
+    const defMig = grepCount('supabase/migrations', /network_connected[\s\S]*set default true|alter column network_connected set default true/i, ['.sql'])
+    if (defMig.n > 0) ok('network_connected default flipped to true (connected is the norm)')
+    else warn('no migration flips network_connected default to true — raw inserts still default disconnected')
+  }
 }
 
 // ── 4 · Legacy / off-plan tripwires (don't rabbit-trail; keep the canon clean) ──
