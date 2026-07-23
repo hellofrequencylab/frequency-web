@@ -79,22 +79,24 @@ line('\nPhase 1 · Pricing engine — tier wiring')
   const plans = read('lib/pricing/plans.ts')
   if (!plans) { pending('lib/pricing/plans.ts not readable — skipping'); }
   else {
+    // The surfaces where a tier must appear as a bare token to resolve consistently: the label/entitlement
+    // map (plans), the display+ladder (feature-tiers), and the price defaults (settings). The Stripe catalog
+    // (pricing-keys) uses distinct item-key naming (business_base, nonprofit_seat), so it is checked as a
+    // separate sellability layer, not here.
     const surfaces = {
-      'plans.ts (SPACE_PLANS)': read('lib/pricing/plans.ts') ?? '',
-      'pricing-keys.ts (catalog)': read('lib/billing/pricing-keys.ts') ?? '',
-      'feature-tiers.ts (ladders)': read('lib/pricing/feature-tiers.ts') ?? '',
-      'settings.ts (defaults)': read('lib/pricing/settings.ts') ?? '',
+      'plans.ts': read('lib/pricing/plans.ts') ?? '',
+      'feature-tiers.ts': read('lib/pricing/feature-tiers.ts') ?? '',
+      'settings.ts': read('lib/pricing/settings.ts') ?? '',
     }
     for (const tier of NEW_SPACE_TIERS) {
-      const present = Object.entries(surfaces).filter(([, txt]) => new RegExp(`['"\`]${tier}['"\`]`).test(txt)).map(([k]) => k)
+      const present = Object.entries(surfaces).filter(([, txt]) => new RegExp(`\\b${tier}\\b`).test(txt)).map(([k]) => k)
       if (present.length === 0) pending(`tier "${tier}" not introduced yet`)
-      else if (present.length === Object.keys(surfaces).length) ok(`tier "${tier}" wired across all pricing surfaces`)
+      else if (present.length === Object.keys(surfaces).length) ok(`tier "${tier}" wired across the label + display + price surfaces`)
       else fail(`tier "${tier}" is HALF-WIRED — only in: ${present.join(', ')} (add it to the rest, or it will resolve inconsistently)`)
     }
-    // Reprice sanity: once billing goes live, Business must not still be flat $49 in the catalog default.
-    // (Informational until Phase 1 lands the reprice.)
-    const settings = surfaces['settings.ts (defaults)']
-    if (/business[^\n]*\b4900\b/.test(settings) || /\b49\b[^\n]*business/i.test(settings)) warn('settings.ts still shows Business at $49 — reprice to $29 in Phase 1')
+    // Reprice sanity: Business must not still read as flat $49 in the settings default.
+    const settings = surfaces['settings.ts']
+    if (/business:\s*\{[^}]*\b4900\b/.test(settings)) warn('settings.ts still shows Business at $49 — reprice to $29')
   }
 }
 

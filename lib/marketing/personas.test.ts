@@ -108,14 +108,14 @@ describe('persona copy is voice-compliant', () => {
 })
 
 describe('loadout-strip math (computed from the catalog, never hardcoded)', () => {
-  // ADR-590: the paid base is Business ($49); the Resonance Engine ($20) is the only add-on. Coaches/healers
-  // and community builders turn it on ($69); studios and event hosts run on Business alone ($49).
-  it('matches the doors: +Resonance personas $69, Business-only personas $49', () => {
+  // ADR-811: the paid base is Business ($29); the Resonance Engine ($20) is the only add-on. Coaches/healers
+  // and community builders turn it on ($49); studios and event hosts run on Business alone ($29).
+  it('matches the doors: +Resonance personas $49, Business-only personas $29', () => {
     const expected: Record<string, string> = {
-      'coaches-and-healers': '$69/mo',
-      'community-builders': '$69/mo',
-      studios: '$49/mo',
-      'event-hosts': '$49/mo',
+      'coaches-and-healers': '$49/mo',
+      'community-builders': '$49/mo',
+      studios: '$29/mo',
+      'event-hosts': '$29/mo',
     }
     const strip = loadoutStrip()
     for (const [slug, label] of Object.entries(expected)) {
@@ -125,9 +125,9 @@ describe('loadout-strip math (computed from the catalog, never hardcoded)', () =
     }
   })
 
-  it('renders the Nonprofit row as a flat $29/mo figure (ADR-590, never per seat)', () => {
+  it('renders the Nonprofit row as a flat $39/mo figure (ADR-811, never per seat)', () => {
     const np = loadoutStrip().find((r) => r.id === 'nonprofits')!
-    expect(np.totalLabel).toBe('$29/mo')
+    expect(np.totalLabel).toBe('$39/mo')
   })
 
   it('persona loadout total equals the strip total for the same slug', () => {
@@ -146,15 +146,15 @@ describe('pricing table model', () => {
     expect(tiers.find((t) => t.id === 'business')!.featured).toBe(true)
   })
 
-  it('Business headline reads $49/mo (list == founding today)', () => {
+  it('Business headline reads $29/mo flat (ADR-811)', () => {
     const biz = pricingTiers().find((t) => t.id === 'business')!
-    expect(tierHeadline(biz, 'month')).toBe('$49/mo')
-    expect(biz.price.month.listCents).toBe(7900) // $79 founding anchor (ADR-591)
+    expect(tierHeadline(biz, 'month')).toBe('$29/mo')
+    expect(biz.price.month.listCents).toBe(2900) // $29 flat, no strike
   })
 
-  it('Non Profit headline reads $29/mo flat (ADR-590)', () => {
+  it('Non Profit headline reads $39/mo flat (ADR-811)', () => {
     const np = pricingTiers().find((t) => t.id === 'nonprofit')!
-    expect(tierHeadline(np, 'month')).toBe('$29/mo')
+    expect(tierHeadline(np, 'month')).toBe('$39/mo')
   })
 
   it('the AI Engine add-on price matches the ladder (the only metered add-on, ADR-472)', () => {

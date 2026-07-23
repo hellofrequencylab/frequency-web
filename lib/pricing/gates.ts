@@ -57,12 +57,16 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // than a tier ladder. The fine-grained "does this space have email / the AI engine / branding" decision
   // is the entitlement-KEY union (spaceHasEntitlement), which the add-on resolver set-to-targets; this
   // plan-rank gate is only the coarse "is this a paid space" floor.
+  // §5 space plans (ADR-811 Community Collective ladder: free < business < collective ~ nonprofit ~
+  // independent). Business ($29) = run-your-practice depth; Collective ($79) adds automation + team +
+  // multi-pipeline + collaboration; Independent (~$249) adds white-label. Non Profit + Independent rank
+  // at/above Collective, so a 'collective' floor is cleared by all three.
   space_crm: { axis: 'plan', minEntitlement: 'business', enabled: true }, // the per-Space CRM
   space_email: { axis: 'plan', minEntitlement: 'business', enabled: true }, // key 'email'
-  space_automation: { axis: 'plan', minEntitlement: 'business', enabled: true },
-  space_team: { axis: 'plan', minEntitlement: 'business', enabled: true }, // Team seats
-  space_whitelabel: { axis: 'plan', minEntitlement: 'business', enabled: true }, // Branding key 'whitelabel'
-  space_multi_pipeline: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  space_automation: { axis: 'plan', minEntitlement: 'collective', enabled: true },
+  space_team: { axis: 'plan', minEntitlement: 'collective', enabled: true }, // Team seats
+  space_whitelabel: { axis: 'plan', minEntitlement: 'independent', enabled: true }, // Branding, Independent tier only
+  space_multi_pipeline: { axis: 'plan', minEntitlement: 'collective', enabled: true },
   // Collaborator spaces + event co-hosting (ADR-799 §B / ADR-810). Hosting other businesses inside your
   // space, or bringing a collaborator space onto your event, is a Business+ capability: the venue/host
   // needs a paid space plan, while the collaborator (guest) just needs an active space (they pay for
@@ -70,7 +74,7 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // server actions enforce this floor on the HOST side so the wall cannot be bypassed. Non Profit clears
   // it via the shared full-depth set. While billing is OFF this short-circuits to granted (today's free
   // universal behavior), so nothing changes until go-live.
-  space_collaborators: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  space_collaborators: { axis: 'plan', minEntitlement: 'collective', enabled: true },
   // Storefront (ADR-39X/Z) — available from the FREE plan (a free Space can sell; the plan
   // only buys the rake down + features). A per-Space toggle decides ON/OFF.
   space_storefront: { axis: 'plan', minEntitlement: 'free', enabled: true },

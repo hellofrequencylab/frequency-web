@@ -282,7 +282,7 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     // The single paid base, the full-depth tier (CRM, marketing, team roles, and branding folded in). No
     // separate founding anchor published today (founding == list); a future anchor is a one-line edit.
     // Per-seat Team billing rides this tier's seat machinery, not a separate add-on item (ADR-552).
-    ...amountsFromMonthly(7900, 4900), // $79 list / $49 founding (ADR-591)
+    ...amountsFromMonthly(2900, 2900), // $29 flat, all-in (ADR-811 Community Collective)
   },
   addon_ai: {
     key: 'addon_ai',
@@ -300,7 +300,7 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     key: 'nonprofit_seat',
     label: 'Frequency Non Profit',
     perSeat: false,
-    ...amountsFromMonthly(2900, 2900), // $29/mo flat (ADR-590), everything in Business, discounted for 501c3s
+    ...amountsFromMonthly(3900, 3900), // $39/mo flat (ADR-811), full Collective toolkit, verified 501c3
   },
   operator_seat: {
     // OPERATOR SEATS (ADR-799): a genuine per-seat add-on. The owner's seat is free (BASE_SEAT_ALLOWANCE);

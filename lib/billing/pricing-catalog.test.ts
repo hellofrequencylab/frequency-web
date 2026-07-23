@@ -44,10 +44,10 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
     expect(catalogItems()).toHaveLength(4)
   })
 
-  it('Business base: $49 base, the full-depth paid tier, not per seat', () => {
+  it('Business base: $29 flat, all-in, not per seat (ADR-811)', () => {
     const biz = catalogItem('business_base')
-    expect(biz.month.foundingCents).toBe(4900)
-    expect(biz.month.listCents).toBe(7900) // $79 founding anchor over the $49 charged price (ADR-591)
+    expect(biz.month.foundingCents).toBe(2900)
+    expect(biz.month.listCents).toBe(2900) // flat, no strike
     expect(biz.perSeat).toBe(false)
   })
 
@@ -76,10 +76,10 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
     }
   })
 
-  it('Nonprofit: $29/mo FLAT, never per seat (ADR-590)', () => {
+  it('Nonprofit: $39/mo FLAT, never per seat (ADR-811)', () => {
     const np = catalogItem('nonprofit_seat')
-    expect(np.month.listCents).toBe(2900)
-    expect(np.month.foundingCents).toBe(2900)
+    expect(np.month.listCents).toBe(3900)
+    expect(np.month.foundingCents).toBe(3900)
     expect(np.perSeat).toBe(false)
   })
 

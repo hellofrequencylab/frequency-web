@@ -67,17 +67,17 @@ beforeEach(() => {
   spaceRow = { id: 'space-1', entitlements: {} }
 })
 
-const FULL_DEPTH = {
+// Community Collective depth sets (ADR-811). Business = run-your-practice; Collective/Non Profit add
+// automation+multi_pipeline+team; Independent adds branding (whitelabel).
+const BUSINESS_DEPTH = {
   crm: true,
   'crm.playbooks': true,
   email: true,
-  automation: true,
-  multi_pipeline: true,
   reporting: true,
-  team: true,
-  whitelabel: true,
   space_full_website: true,
 }
+const COLLECTIVE_DEPTH = { ...BUSINESS_DEPTH, automation: true, multi_pipeline: true, team: true }
+const INDEPENDENT_DEPTH = { ...COLLECTIVE_DEPTH, whitelabel: true }
 
 describe('setSpacePlan, set-to-target the billing namespace (ADR-552)', () => {
   it('writes the plan + REPLACES entitlements.billing with the Business depth set', async () => {
@@ -86,23 +86,23 @@ describe('setSpacePlan, set-to-target the billing namespace (ADR-552)', () => {
     expect(res.plan).toBe('business')
     expect(lastUpdate?.plan).toBe('business')
     // Business depth = the full paid set, written ONLY under the billing namespace (no AI keys).
-    expect(writtenBilling()).toEqual(FULL_DEPTH)
+    expect(writtenBilling()).toEqual(BUSINESS_DEPTH)
     expect(writtenBilling()['crm.resonance']).toBeUndefined()
     expect(writtenBilling()['crm.resonance_ai']).toBeUndefined()
   })
 
-  it('narrows a retired legacy label to its new tier before writing (pro/whitelabel -> business)', async () => {
-    const res = await setSpacePlan('space-1', 'whitelabel') // retired legacy -> business (full depth)
-    expect(res.plan).toBe('business')
-    expect(lastUpdate?.plan).toBe('business')
-    expect(writtenBilling()).toEqual(FULL_DEPTH)
+  it('narrows a retired legacy label to its new tier before writing (whitelabel -> independent, ADR-811)', async () => {
+    const res = await setSpacePlan('space-1', 'whitelabel') // retired legacy -> independent (Collective depth + branding)
+    expect(res.plan).toBe('independent')
+    expect(lastUpdate?.plan).toBe('independent')
+    expect(writtenBilling()).toEqual(INDEPENDENT_DEPTH)
   })
 
-  it('nonprofit is the same full Business depth (organization narrows to nonprofit)', async () => {
+  it('nonprofit grants the Collective depth (organization narrows to nonprofit)', async () => {
     expect((await setSpacePlan('space-1', 'nonprofit')).plan).toBe('nonprofit')
-    expect(writtenBilling()).toEqual(FULL_DEPTH)
+    expect(writtenBilling()).toEqual(COLLECTIVE_DEPTH)
     expect((await setSpacePlan('space-1', 'organization')).plan).toBe('nonprofit')
-    expect(writtenBilling()).toEqual(FULL_DEPTH)
+    expect(writtenBilling()).toEqual(COLLECTIVE_DEPTH)
   })
 
   it('LEAVES top-level manual grants untouched; only the billing object changes', async () => {
@@ -111,7 +111,7 @@ describe('setSpacePlan, set-to-target the billing namespace (ADR-552)', () => {
     await setSpacePlan('space-1', 'business')
     const ents = lastUpdate?.entitlements as Blob
     expect(ents['crm.autonomy']).toBe('safe_auto') // operator dial preserved
-    expect(ents[BILLING_NAMESPACE]).toEqual(FULL_DEPTH)
+    expect(ents[BILLING_NAMESPACE]).toEqual(BUSINESS_DEPTH)
   })
 
   it('set-to-target: a plan change REPLACES (not merges) the billing object', async () => {
@@ -122,7 +122,7 @@ describe('setSpacePlan, set-to-target the billing namespace (ADR-552)', () => {
     }
     await setSpacePlan('space-1', 'business')
     // Set-to-target: the AI resonance key is GONE (business base has no AI), replaced by the full depth.
-    expect(writtenBilling()).toEqual(FULL_DEPTH)
+    expect(writtenBilling()).toEqual(BUSINESS_DEPTH)
     expect(spaceHasEntitlement(spaceRow, 'crm.resonance_ai')).toBe(false)
     expect(spaceHasEntitlement(spaceRow, 'email')).toBe(true)
   })
@@ -141,7 +141,7 @@ describe('setSpacePlan, set-to-target the billing namespace (ADR-552)', () => {
 
     const forced = await setSpacePlan('space-1', 'business', { force: true })
     expect(forced.ok).toBe(true)
-    expect(writtenBilling()).toEqual(FULL_DEPTH)
+    expect(writtenBilling()).toEqual(BUSINESS_DEPTH)
   })
 
   it('FAIL-SAFE: a missing space returns not_found; a DB error returns error', async () => {
@@ -154,14 +154,16 @@ describe('setSpacePlan, set-to-target the billing namespace (ADR-552)', () => {
 })
 
 describe('setSpaceAddons, the AI add-on layers on a tier; toggle-off removes only its keys (ADR-552)', () => {
-  it('Business + AI: the full Business depth PLUS the AI resonance keys', async () => {
+  it('Business + AI: the Business depth PLUS the AI resonance keys (no automation/team/branding)', async () => {
     const res = await setSpaceAddons('space-1', { plan: 'business', addons: ['ai'] })
     expect(res.ok).toBe(true)
     expect(res.plan).toBe('business')
     const billing = writtenBilling()
     expect(billing.email).toBe(true)
-    expect(billing.team).toBe(true)
-    expect(billing.whitelabel).toBe(true)
+    expect(billing.reporting).toBe(true)
+    // Business does NOT grant the Collective/Independent depth (team, automation, white-label).
+    expect(billing.team).toBeUndefined()
+    expect(billing.whitelabel).toBeUndefined()
     expect(billing['crm.resonance']).toBe(true)
     expect(billing['crm.resonance_ai']).toBe(true)
   })
@@ -173,7 +175,7 @@ describe('setSpaceAddons, the AI add-on layers on a tier; toggle-off removes onl
       id: 'space-1',
       entitlements: {
         'crm.resonance_ai': true, // manual top-level grant
-        [BILLING_NAMESPACE]: { ...FULL_DEPTH, 'crm.resonance': true, 'crm.resonance_ai': true },
+        [BILLING_NAMESPACE]: { ...BUSINESS_DEPTH, 'crm.resonance': true, 'crm.resonance_ai': true },
       },
     }
     // Recompute with AI toggled OFF (no add-ons active).
@@ -183,7 +185,7 @@ describe('setSpaceAddons, the AI add-on layers on a tier; toggle-off removes onl
     expect(billing['crm.resonance']).toBeUndefined()
     expect(billing['crm.resonance_ai']).toBeUndefined()
     // Business depth stays.
-    expect(billing).toEqual(FULL_DEPTH)
+    expect(billing).toEqual(BUSINESS_DEPTH)
     // The union reader: crm.resonance is GONE (only billing had it), but crm.resonance_ai SURVIVES via
     // the manual top-level grant.
     expect(spaceHasEntitlement(spaceRow, 'crm.resonance')).toBe(false)
@@ -194,7 +196,7 @@ describe('setSpaceAddons, the AI add-on layers on a tier; toggle-off removes onl
     // The former add-on keys no longer narrow to an AddonKey, so they are ignored: only AI layers on.
     await setSpaceAddons('space-1', { plan: 'business', addons: ['team' as never, 'marketing' as never, 'ai', 'ai', 'bogus' as never] })
     expect(writtenBilling()).toEqual({
-      ...FULL_DEPTH,
+      ...BUSINESS_DEPTH,
       'crm.resonance': true,
       'crm.resonance_ai': true,
     })
