@@ -329,7 +329,7 @@ function LegacyTheLab() {
           It&apos;s built from day one to be repeatable, so the version that
           works in {FOUNDING_PLACE} can open in your city next. The community
           always comes first; the Lab is simply where it gets a body. See{' '}
-          <a href="/what-is-a-third-space" className="text-primary-strong underline">
+          <a href="/loneliness" className="text-primary-strong underline">
             what a third space is
           </a>
           , back the build as a{' '}

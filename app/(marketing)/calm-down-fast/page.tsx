@@ -220,7 +220,7 @@ export default function CalmDownFastPage() {
           that has its hooks in you.
         </Body>
         <div className="mt-8">
-          <Button href="/life-after-the-feed" variant="secondary">
+          <Button href="/loneliness" variant="secondary">
             Read: life after the feed
           </Button>
         </div>

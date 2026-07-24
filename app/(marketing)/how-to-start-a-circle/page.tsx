@@ -18,13 +18,15 @@ import {
   Button,
 } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
-import { howToSchema, faqSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { articleSchema, howToSchema, faqSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { SITE_URL } from '@/lib/site'
 
 export const revalidate = 3600
 
-const TITLE = 'How to start a Circle'
+const PATH = '/how-to-start-a-circle'
+const TITLE = 'How to start a Circle (a group that lasts)'
 const DESCRIPTION =
-  'You do not have to build a community. Start one small Circle: pick one thing, set a standing time, invite a few people, and run the same simple format until the same faces keep coming back.'
+  'How to start a Circle: pick one thing, set a standing time, invite a few people, and run the same simple format until the same faces come back.'
 
 // Real-gathering photos double as the multimodal AIO signal (CONTENT-VOICE §8b)
 // and the E-E-A-T proof (§8e). Fed into the HowTo schema below so answer engines
@@ -37,12 +39,12 @@ export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: DESCRIPTION,
-    alternates: { canonical: '/how-to-start-a-circle' },
+    alternates: { canonical: PATH },
     openGraph: {
       title: 'How to start a Circle · Frequency',
       description:
         'You do not have to build a community. Start one small Circle: one thing, a standing time, a few people, the same simple format every week.',
-      url: '/how-to-start-a-circle',
+      url: PATH,
       images: [{ url: HERO_IMAGE }],
     },
   }
@@ -101,6 +103,10 @@ const FAQ = [
     q: 'Do I have to be an extrovert to host a Circle?',
     a: 'No. Hosting is mostly logistics and consistency, not performance. If you can pick a time, send a few invites, and keep showing up, you can hold a Circle. Quiet, reliable hosts often build the steadiest groups, because the room feels safe rather than run.',
   },
+  {
+    q: 'What does it cost to start a Circle?',
+    a: 'Nothing. Starting a Circle and gathering a few people is free, and it stays free. Frequency is a Community Collective built to support every community effort, so you never pay to host and we never take a cut of your own bookings. If your Circle grows into something you sell tickets or services through, there is one honest price and you see exactly what the network earned you.',
+  },
 ]
 
 export default function HowToStartACirclePage() {
@@ -108,19 +114,27 @@ export default function HowToStartACirclePage() {
     <>
       <JsonLd
         data={[
+          articleSchema({
+            title: TITLE,
+            description: DESCRIPTION,
+            path: PATH,
+            published: '2026-06-24',
+            updated: '2026-07-24',
+            image: [HERO_IMAGE, ROOM_IMAGE, TABLE_IMAGE],
+          }),
           howToSchema({
-            name: TITLE,
+            name: 'How to start a Circle',
             description: DESCRIPTION,
             image: [HERO_IMAGE, ROOM_IMAGE, TABLE_IMAGE],
             steps: HOW_TO_STEPS.map((s) => ({
               name: s.name,
               text: s.text,
-              url: '/how-to-start-a-circle',
+              url: `${SITE_URL}${PATH}`,
             })),
           }),
           faqSchema(FAQ.map((f) => ({ q: f.q, a: f.a }))),
           breadcrumbSchema([
-            { name: 'How to start a Circle', path: '/how-to-start-a-circle' },
+            { name: 'How to start a Circle', path: PATH },
           ]),
         ]}
       />
@@ -266,6 +280,28 @@ export default function HowToStartACirclePage() {
         </p>
       </ZigZag>
 
+      {/* One concept per section: the cost question, answered plainly. Weaves the
+          Community Collective positioning + the /pricing spoke where intent is real. */}
+      <Section tone="canvas">
+        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+          What does it cost to start a Circle?
+        </h2>
+        <Lead>
+          Nothing. Starting a Circle and gathering a few people is free, and it
+          stays free.
+        </Lead>
+        <Body>
+          Frequency is a Community Collective, built to support every community
+          effort and help everyone in it succeed. So you never pay to host, and we
+          never take a cut of your own bookings. If your Circle later grows into
+          something you sell tickets or services through, there is one honest{' '}
+          <a className="text-primary-strong font-semibold hover:underline" href="/pricing">
+            price
+          </a>
+          , and you see exactly what the network earned you.
+        </Body>
+      </Section>
+
       {/* Soft CTA into the product. Two honest doors. */}
       <Section tone="canvas">
         <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
@@ -275,7 +311,15 @@ export default function HowToStartACirclePage() {
           Look at the Circles already meeting near you to see the shape of it, then
           pick one thing, one time, and a few people, and hold your first one. If
           you would rather find your people before you host, start there instead.
-          Both doors lead to the same room.
+          Both doors lead to the same room. For the longer builder&rsquo;s guide,
+          from a first gathering to a group that runs itself, read{' '}
+          <a
+            className="text-primary-strong font-semibold hover:underline"
+            href="/how-to-build-community"
+          >
+            how to build community
+          </a>
+          .
         </Body>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Button href="/the-community">

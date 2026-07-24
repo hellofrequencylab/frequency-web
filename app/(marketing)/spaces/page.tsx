@@ -240,12 +240,12 @@ function LegacySpaces() {
         />
         <div className="grid gap-4 sm:grid-cols-2">
           <GuideLink
-            href="/what-is-a-third-space"
+            href="/loneliness"
             title="What a third space is"
             body="The definition, why they got rare, and how to build one today."
           />
           <GuideLink
-            href="/how-to-run-a-community-space"
+            href="/how-to-build-community"
             title="How to run a community space"
             body="The operator playbook: a rhythm, a room, a few regulars, light tooling."
           />
@@ -255,7 +255,7 @@ function LegacySpaces() {
             body="The four jobs a builder needs, and how one Space covers them."
           />
           <GuideLink
-            href="/host-a-recurring-gathering"
+            href="/how-to-build-community"
             title="Host a recurring gathering"
             body="The logistics of recurrence: cadence, a run-of-show, and reminders."
           />
