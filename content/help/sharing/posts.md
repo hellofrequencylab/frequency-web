@@ -34,4 +34,4 @@ From home, whatever you capture lands on your wall and the community feed. From 
 ## Tips
 
 - New to a Circle? A short intro post is a great first move.
-- Where a post lands depends on where you wrote it: home posts go to your wall and the community feed, Circle posts stay scoped to that Circle, so you can be yourself with your group. (Hosts can broadcast wider; see [Broadcasts](/help/sharing/broadcasts).)
+- Where a post lands depends on where you wrote it: home posts go to your wall and the community feed, Circle posts stay scoped to that Circle, so you can be yourself with your group. (Hosts can reach wider; see [Dispatches](/help/sharing/broadcasts).)

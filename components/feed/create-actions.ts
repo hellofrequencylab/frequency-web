@@ -30,7 +30,7 @@ export const CREATE_ITEMS: CreateItem[] = [
   // The canonical circle builder (CircleWizard) lives at /circles/new — every other
   // "start a circle" affordance already targets it.
   { href: '/circles/new', label: 'New Circle', hint: 'Place-based practice group', Icon: Users, roles: HOST_PLUS },
-  { href: '/broadcast', label: 'New Broadcast', hint: 'Dispatch to the wider community', Icon: Radio, roles: HOST_PLUS },
+  { href: '/broadcast', label: 'New Dispatch', hint: 'Reach the wider community', Icon: Radio, roles: HOST_PLUS },
 ]
 
 export function createItemsForRole(role: CommunityRole): CreateItem[] {
