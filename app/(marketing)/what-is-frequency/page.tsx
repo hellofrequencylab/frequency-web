@@ -26,7 +26,7 @@ export const revalidate = 3600
 
 const TITLE = 'What is Frequency?'
 const DESCRIPTION =
-  "Frequency rebuilds the third place: small local Circles, nearby Events, and a physical space to gather, connecting neighborhoods into real-world community. Here's what it is, how it works, and why it exists."
+  "Frequency is a Community Collective: small local Circles, nearby Events, and a physical space to gather, plus the tools creators and businesses need to grow together. You keep 100% of your own bookings. Here's what it is, how it works, and why it exists."
 
 // The hero photo, fed to the Article schema for richer-result eligibility.
 const HERO_IMAGE = '/images/site/community-1.jpg'
@@ -39,7 +39,7 @@ export function generateMetadata(): Metadata {
     openGraph: {
       title: 'What is Frequency? · Frequency',
       description:
-        'Frequency rebuilds the third place: small local Circles, nearby Events, and a real space to gather. What it is, how it works, and why it exists.',
+        'Frequency is a Community Collective: small local Circles, nearby Events, a real space to gather, and the tools to grow together. What it is, how it works, and why it exists.',
       url: '/what-is-frequency',
     },
   }
@@ -51,7 +51,7 @@ export function generateMetadata(): Metadata {
 const FAQ = [
   {
     q: 'What is Frequency?',
-    a: 'Frequency is a movement to rebuild the third place: the spaces that are not home and not work where you are known by name. It connects neighborhoods into real-world community through small local Circles, nearby Events, and a physical space to gather, so connection happens in person instead of on a feed.',
+    a: 'Frequency is a Community Collective built to rebuild the third place: the spaces that are not home and not work where you are known by name. It gives a neighborhood everything it needs to gather in one place through small local Circles, nearby Events, and a physical space to meet, and gives the creators, coaches, and businesses who host them the tools to grow together, while everyone keeps 100% of their own bookings.',
   },
   {
     q: 'How does Frequency work?',
@@ -71,7 +71,11 @@ const FAQ = [
   },
   {
     q: 'How much does Frequency cost?',
-    a: 'Membership is free to join during the beta. The model is pay-it-forward: people who can give more keep the doors open for people who cannot, so nobody is priced out of belonging.',
+    a: 'Frequency keeps 0% of your own bookings, always. You keep 100% of what your own clients and classes earn you. We make our money only on the business the network sends you, a small network-only take-rate that shrinks as your plan rises: Business 5%, Collective 3%, Non Profit 0%, Independent 0%. Plans run Member (free), Crew ($9), Business ($29, beta $19), Collective ($79, beta $49), Non Profit ($39), and Independent ($249). See the full ladder at /pricing.',
+  },
+  {
+    q: 'What is the Community Collective?',
+    a: 'Frequency is a Community Collective: a network where independent creators, coaches, healers, and small businesses grow together, and eventually build real-world spaces together. You keep 100% of your own bookings and we earn only on what the network sends you. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
   },
   {
     q: 'Where is Frequency available?',
@@ -120,7 +124,7 @@ export default function WhatIsFrequencyPage() {
         focal="object-center"
         eyebrow="The short version"
         title="What is Frequency?"
-        subtitle="Frequency is a movement to rebuild the third place: small local Circles, nearby Events, and a real space to gather. Connection in person, with the same few faces, instead of one more feed."
+        subtitle="Frequency is a Community Collective. Small local Circles, nearby Events, a real space to gather, and the tools creators and businesses need to grow together. You keep 100% of your own bookings."
       >
         <Button href="/discover">
           See what&apos;s happening near you <ArrowRight className="h-5 w-5" />
@@ -130,16 +134,19 @@ export default function WhatIsFrequencyPage() {
       {/* Answer-first: the direct answer in the first two sentences. */}
       <Section tone="canvas" pad="pt-14 pb-16 sm:pt-16 sm:pb-20">
         <Lead>
-          Frequency is a movement to rebuild the third place: the spaces that are
-          not home and not work where you are known by name and missed when you
-          do not show up. It connects neighborhoods into real-world community.
+          Frequency is a Community Collective built to rebuild the third place:
+          the spaces that are not home and not work where you are known by name.
+          It gives a neighborhood everything it needs to gather in one place.
         </Lead>
         <Body>
           The corner cafe, the town square, the standing table: we traded them
-          for feeds and followers and ended up surrounded yet unseen. Frequency
-          is the deliberate rebuild. You find a few people near you, join a small
-          group that meets on a rhythm, and show up in person. The app is only
-          the thread that gets you into the room.
+          for feeds and followers and lost the room. Frequency is the deliberate
+          rebuild. You find a few people near you, join a small group that meets
+          on a rhythm, and show up in person. The creators, coaches, and
+          businesses who host those groups get the booking, payment, and
+          community tools to grow together, and keep 100% of their own bookings
+          while they do. The app is only the thread that gets everyone into the
+          room.
         </Body>
       </Section>
 
@@ -226,11 +233,12 @@ export default function WhatIsFrequencyPage() {
         </Lead>
         <Body>
           Frequency exists to rebuild the third place: a community designed to
-          last, real physical homes for connection, and a model that keeps the
-          door open to anyone regardless of what they can pay. It is built
-          guru-free and pay-it-forward, to outlast any one person. We are not
-          building a following. We are building infrastructure, the kind of thing
-          you can lean your whole weight on.
+          last, real physical homes for connection, and a business model that
+          stays honest. We never take a cut of your own bookings. We earn only on
+          the business the network sends you, a small take-rate that shrinks as
+          your plan rises. It is built guru-free, to outlast any one person. We
+          are not building a following. We are building infrastructure, the kind
+          of thing you can lean your whole weight on.
         </Body>
       </Section>
 
@@ -238,6 +246,32 @@ export default function WhatIsFrequencyPage() {
         We&apos;re not building a following. We&apos;re building{' '}
         <span className="text-primary">infrastructure</span>.
       </Statement>
+
+      {/* The Community Collective: who it serves and how the money works. */}
+      <Section tone="surface">
+        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+          Who is Frequency for?
+        </h2>
+        <Lead>
+          Anyone who wants to belong, and everyone who brings people together: the
+          creators, coaches, healers, and small businesses who host the Circles and
+          run the rooms.
+        </Lead>
+        <Body>
+          This is what makes Frequency a Community Collective. Independent hosts
+          grow together instead of alone, share a Space and Events, and keep 100% of
+          their own bookings. We earn only on what the network sends them. Plans
+          climb from Member to Crew, Business, Collective, Non Profit, and
+          Independent, and every step up lowers the small network-only take-rate
+          instead of adding a bill. Four promises hold it honest: we never take a
+          cut of your bookings, one honest price with no surprise invoices, month to
+          month so you can leave anytime with your data, and a live readout of
+          exactly what the network earned you.
+        </Body>
+        <Button href="/pricing" variant="secondary">
+          See the plans and take-rates <ArrowRight className="h-5 w-5" />
+        </Button>
+      </Section>
 
       {/* How it begins, with a real photo and an internal link into the cluster. */}
       <ZigZag

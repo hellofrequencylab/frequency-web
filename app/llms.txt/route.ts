@@ -24,7 +24,7 @@ const abs = (path: string) => `${SITE_URL}${path}`
 
 // The key public pages, each with a one-line description in the locked voice.
 const PAGES: { path: string; label: string; desc: string }[] = [
-  { path: '/', label: 'Home', desc: `${SITE_NAME}, the community collective. The short version of who it is for and how it works.` },
+  { path: '/', label: 'Home', desc: `${SITE_NAME}, the Community Collective. The short version of who it is for and how it works.` },
   { path: '/start', label: 'Start here', desc: 'Choose how you want to get involved, then join the beta.' },
   { path: '/the-community', label: 'The Community', desc: 'How you find your people, through Pillars, Channels, and Circles. For builders: host one Circle and we hand you the format and the first-night script.' },
   { path: '/the-quest', label: 'The Quest', desc: 'The light, in-person game: Zaps, Gems, season ranks, and Journeys.' },
@@ -140,10 +140,12 @@ export async function GET() {
   const out: string[] = [
     `# ${SITE_NAME}`,
     '',
-    `> ${SITE_NAME} is a Community Collective. It exists to support and create community: people find`,
-    `> their people by topic, join a Circle (a small standing local group), show up to nearby Events,`,
-    `> grow a Space (a business or organization), and gather at The Lab (a physical third space). The`,
-    `> Quest is a light, transparent game that rewards showing up in person, not scrolling. ${SITE_TAGLINE}.`,
+    `> ${SITE_NAME} is a Community Collective. It exists to support every community effort and help`,
+    `> everyone in it succeed, together. People find their people by topic, join a Circle (a small standing`,
+    `> local group), show up to nearby Events, grow a Space (a business or organization), and gather at The`,
+    `> Lab (a physical third space). You keep 100% of your own bookings; Frequency earns only a small,`,
+    `> shrinking network-only take-rate on the business the network sends you. The Quest is a light,`,
+    `> transparent game that rewards showing up in person, not scrolling. ${SITE_TAGLINE}.`,
     `> Free during the beta, taking root in ${FOUNDING_PLACE}.`,
     '',
     ...stats,
@@ -156,7 +158,7 @@ export async function GET() {
     '## How Frequency compares',
     ...COMPARE.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
     '',
-    '## Pricing for Spaces (a community collective, not a tax on your work)',
+    '## Pricing for Spaces (a Community Collective, not a tax on your work)',
     'The core promise: you keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective), and that rate drops as your plan rises. The tier ladder: Business $29/mo, Collective $79/mo, Non Profit $39/mo flat (verified 501c3), and Independent for a standalone brand off the network. Crew is the $9/mo personal tier. Monthly or yearly, two months free.',
     ...pricingLadderSummary(),
     'Network-sourced take-rate by plan: Business 5%, Collective 3%, Non Profit 0%, Independent 0% (off the network). Nothing is ever taken on a booking you bring in yourself.',

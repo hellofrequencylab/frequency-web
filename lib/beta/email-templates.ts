@@ -60,7 +60,7 @@ export const BETA_CAMPAIGN_TEMPLATES: BetaCampaignTemplate[] = [
 
 Your wave is up. You're invited to create your Frequency account and join the community near you.
 
-[Create my account]
+[Create my account](https://frequencylocal.com/onboarding/beta)
 
 Here's what to do first:
 1. Pick the Channels you actually care about.
@@ -84,7 +84,7 @@ You've been here since the early days, so we want to offer you something before 
 
 Founding Members lock in the lowest price we will ever set and keep it for good. You get a founding badge that says you were here first, and a direct line to shape what we build next.
 
-[Become a Founding Member]
+[Become a Founding Member](https://frequencylocal.com/founders/offer)
 
 This is for the Beta group only, and it closes when the Beta does. No pressure. If the timing is not right, you can join later at the regular price.
 
@@ -103,7 +103,7 @@ You run something local, and the people on Frequency are your neighbors. We woul
 
 A Founding Business gets its own Space to post events and offers, a founding badge, and the lowest rate we will ever set, kept for good. We will help you set the whole thing up ourselves.
 
-[Claim a Founding Business spot]
+[Claim a Founding Business spot](https://frequencylocal.com/founders/business)
 
 This is open to the Beta group only and closes when the Beta does. Want to talk it through first? Just reply to this email.
 
@@ -127,7 +127,7 @@ Here's how it works:
 
 The members who bring the most people and start the liveliest Circles win founding perks and a spot in the launch story. It runs for two weeks.
 
-[Get my invite link]
+[Get my invite link](https://frequencylocal.com/onboarding/beta)
 
 Go build the room you want to be in.
 The Frequency team`,
@@ -144,7 +144,7 @@ The Beta is wrapping up, and on September 1 founder pricing closes for good. Aft
 
 If you have been meaning to lock it in, now is the time.
 
-[Lock in founder pricing]
+[Lock in founder pricing](https://frequencylocal.com/founders)
 
 Either way, thank you for helping us get Frequency off the ground. The community you see today exists because you showed up early.
 
@@ -166,7 +166,7 @@ export const BETA_NURTURE_TEMPLATES: BetaNurtureTemplate[] = [
 
 You asked to join the Frequency Beta. One quick step: tap the button below to confirm it is really you, and you are on the list.
 
-[Confirm my spot]
+[Confirm my spot](https://frequencylocal.com/beta/confirm)
 
 We are opening the community in waves, city by city. Once your area is up, we will send your invite. That is it for now.
 

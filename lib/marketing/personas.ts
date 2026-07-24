@@ -34,7 +34,8 @@ import type { AddonKey } from '@/lib/pricing/plans'
  *  recommended loadout (and its founding price) are read from the shared PERSONA_LOADOUTS in
  *  lib/pricing/pricing-page.ts by the matching slug. */
 export interface Persona {
-  /** URL slug, e.g. "coaches". The page lives at /for/<slug>. */
+  /** URL slug, e.g. "coaches-and-healers". The canonical persona slug: the /for door, the pricing
+   *  "by who you are" strip, and this registry all share ONE vocabulary. The page lives at /for/<slug>. */
   slug: string
   /** The Mode (Space type) this persona maps to. */
   type: SpaceType

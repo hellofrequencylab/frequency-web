@@ -266,7 +266,7 @@ export const data: Data = {
       type: 'Text',
       props: {
         id: 'sp-deal-note',
-        body: "That's the whole shape of it. Plans run from a free listing to larger team tiers, each at a flat monthly price with a small cut only on what you sell. The full breakdown lives on the [pricing page](/pricing). Billing isn't turned on yet, so nothing charges today.",
+        body: "That's the whole shape of it. Plans run from a free listing to larger team tiers, one honest monthly price each. Your own bookings stay yours: 0% on what you book yourself, always. We earn a small, shrinking cut only on the business the network brings you, and you see exactly what the network earned you. The full breakdown lives on the [pricing page](/pricing). Billing isn't turned on yet, so nothing charges today.",
         size: 'base',
         tone: 'surface',
         width: 'default',

@@ -60,7 +60,7 @@ const WAITLIST_CONFIRM: BetaLaunchEmail = {
     { id: 'divider', content: {} },
     {
       id: 'button',
-      content: { label: 'Confirm my spot', url: 'https://frequencylocal.com/waitlist/confirm', align: 'center' },
+      content: { label: 'Confirm my spot', url: 'https://frequencylocal.com/beta/confirm', align: 'center' },
     },
     {
       id: 'text',
@@ -114,7 +114,7 @@ const INVITE: BetaLaunchEmail = {
         image: HERO,
         alt: 'People talking at a Frequency meetup',
         buttonLabel: 'Create my account',
-        buttonUrl: 'https://frequencylocal.com/signup',
+        buttonUrl: 'https://frequencylocal.com/onboarding/beta',
       },
     },
     { id: 'heading', content: { text: "Here's what to do first" } },
@@ -157,7 +157,7 @@ const FOUNDING_MEMBER: BetaLaunchEmail = {
         image: HERO,
         alt: 'A Frequency member at an early meetup',
         buttonLabel: 'Become a Founding Member',
-        buttonUrl: 'https://frequencylocal.com/founding-member',
+        buttonUrl: 'https://frequencylocal.com/founders/offer',
       },
     },
     {
@@ -181,7 +181,7 @@ const FOUNDING_MEMBER: BetaLaunchEmail = {
         title: 'Only for the Beta group',
         body: 'This is for the Beta group only, and it closes when the Beta does. No pressure. If the timing is not right, you can join later at the regular price.',
         buttonLabel: 'Become a Founding Member',
-        buttonUrl: 'https://frequencylocal.com/founding-member',
+        buttonUrl: 'https://frequencylocal.com/founders/offer',
       },
     },
     { id: 'text', content: { text: 'Thanks for being here,\nThe Frequency team' } },
@@ -206,7 +206,7 @@ const FOUNDING_BUSINESS: BetaLaunchEmail = {
         image: HERO,
         alt: 'A local business owner welcoming people through the door',
         buttonLabel: 'Claim a Founding Business spot',
-        buttonUrl: 'https://frequencylocal.com/founding-business',
+        buttonUrl: 'https://frequencylocal.com/founders/business',
       },
     },
     {
@@ -230,7 +230,7 @@ const FOUNDING_BUSINESS: BetaLaunchEmail = {
         title: 'Open to the Beta group only',
         body: 'This is open to the Beta group only and closes when the Beta does. Want to talk it through first? Just reply to this email.',
         buttonLabel: 'Claim a Founding Business spot',
-        buttonUrl: 'https://frequencylocal.com/founding-business',
+        buttonUrl: 'https://frequencylocal.com/founders/business',
       },
     },
     { id: 'text', content: { text: 'Talk soon,\nThe Frequency team' } },
@@ -277,7 +277,7 @@ const REFERRAL_CONTEST: BetaLaunchEmail = {
         title: 'Go build the room you want to be in.',
         body: 'The Frequency team',
         buttonLabel: 'Get my invite link',
-        buttonUrl: 'https://frequencylocal.com/invite-link',
+        buttonUrl: 'https://frequencylocal.com/onboarding/beta',
       },
     },
   ]),
@@ -303,7 +303,7 @@ const GRADUATION: BetaLaunchEmail = {
     { id: 'divider', content: {} },
     {
       id: 'button',
-      content: { label: 'Lock in founder pricing', url: 'https://frequencylocal.com/founder-pricing', align: 'center' },
+      content: { label: 'Lock in founder pricing', url: 'https://frequencylocal.com/founders', align: 'center' },
     },
     {
       id: 'quote',

@@ -91,7 +91,7 @@ const INSIDE: { icon: IconType; title: string; body: string }[] = [
   {
     icon: HeartHandshake,
     title: 'A door held open',
-    body: 'Pay-it-forward is built in. The people who can give more quietly cover the neighbors who cannot pay yet.',
+    body: 'Your people join free, always. You keep 100% of the bookings you bring yourself, and the network earns only on the business it sends you.',
   },
   {
     icon: LineChart,

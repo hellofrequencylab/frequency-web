@@ -122,11 +122,11 @@ const HOME_FAQ = [
   },
   {
     q: 'What does it cost?',
-    a: 'The community is free, forever. Browsing, joining a Circle, and showing up never cost anything. Crew membership, which turns on the Quest and helps keep the physical spaces open, is $9 a month and free for the whole beta. There is no card today, and your founder pricing is locked in for life when paid memberships launch.',
+    a: 'The community is free, forever. Browsing, joining a Circle, and showing up never cost anything. Crew is $9 a month, turns on The Quest, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only a small, shrinking network-only take-rate on the business the network sends you (Business 5%, Collective 3%, Non Profit 0%). There is no card today, and your founder pricing is locked in for life.',
   },
   {
     q: 'Is there a catch?',
-    a: 'None. Frequency is leaderful, not leader-dependent: it is built to outlast any one person, with no single figure to follow and no upsell funnel. Memberships fund the physical spaces rather than extract from members.',
+    a: 'None. Frequency is leaderful, not leader-dependent: it is built to outlast any one person, with no single figure to follow and no upsell funnel. We never take a cut of your own bookings, the price is one honest number with no surprise invoices, and you can take your data and leave anytime. Physical Spaces are funded by a separate, community-owned vehicle where members co-own the building, never by platform margin.',
   },
   {
     q: 'What if there are no Circles near me yet?',
@@ -235,7 +235,7 @@ function Splash({
         image="/images/site/community-1.jpg"
         alt="A small circle of neighbors talking and laughing together on a sunny lawn"
         focal="object-center"
-        eyebrow="Not home. Not work. Your community."
+        eyebrow="A Community Collective for creators, coaches, healers, and small businesses"
         title={
           <>
             Everything a community needs,
@@ -243,10 +243,35 @@ function Splash({
             in <span className="text-primary">one place.</span>
           </>
         }
-        subtitle="Frequency is a community collective. We exist to support and create community. Start a circle, host events, grow a space, and share the work with people building the same thing."
+        subtitle="Frequency is a Community Collective. Start a Circle, host Events, and grow a Space alongside people building the same thing. You keep 100% of your own bookings. We earn only on what the network sends you."
         footer={
           <>
-            <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/55">
+            <p className="mt-8 text-base font-semibold text-white/90">
+              0% on your own bookings, always. We earn only a small, shrinking network-only take-rate on what the network sends you.
+            </p>
+            <p className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-white/70">
+              <span>Never a cut of your bookings</span>
+              <span aria-hidden className="text-white/25">·</span>
+              <span>One honest price, no surprise invoices</span>
+              <span aria-hidden className="text-white/25">·</span>
+              <span>Leave anytime with your data</span>
+              <span aria-hidden className="text-white/25">·</span>
+              <span>See what the network earned you</span>
+            </p>
+            <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-sm text-white/55">
+              <span>Member free</span>
+              <span aria-hidden className="text-white/25">·</span>
+              <span>Crew $9</span>
+              <span aria-hidden className="text-white/25">·</span>
+              <span>Business $29</span>
+              <span aria-hidden className="text-white/25">·</span>
+              <span>Collective $79</span>
+              <span aria-hidden className="text-white/25">·</span>
+              <span>Non Profit $39</span>
+              <span aria-hidden className="text-white/25">·</span>
+              <span>Independent $249</span>
+            </p>
+            <p className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/55">
               <span className="font-semibold text-white/75">Free during the beta.</span>
               <span aria-hidden className="text-white/25">·</span>
               <span>No card. Founder pricing locked. Leave anytime.</span>
@@ -411,7 +436,7 @@ function Splash({
               },
               {
                 title: 'Show up',
-                body: 'Come back. Your people notice, the Quest rewards the real stuff, and you are missed when you are gone.',
+                body: 'Come back. Your people notice, The Quest rewards the real stuff, and you are missed when you are gone.',
               },
             ]}
           />
@@ -503,7 +528,7 @@ function Splash({
         <LiveProof />
       </Suspense>
 
-      {/* ── It grows on its own · leaderful, pay-it-forward ─────────────────── */}
+      {/* ── It grows on its own · leaderful, honest money model ─────────────── */}
       <Section tone="canvas">
         <Reveal>
           <SectionHeading
@@ -523,14 +548,19 @@ function Splash({
             next Lab gets a reason to open.
           </p>
           <p>
-            Membership keeps the rooms open, and those who can give more quietly hold the door for
-            those who can&apos;t. Belonging shouldn&apos;t depend on what you can afford.
+            The money model matches. You keep 100% of your own bookings on one honest price, no
+            surprise invoices, and we earn only a small, shrinking network-only take-rate on the
+            business the network sends you (Business 5%, Collective 3%, Non Profit 0%). Physical
+            Spaces get funded a different way: a separate, community-owned vehicle where members
+            co-own the building, never platform margin.
           </p>
         </Reveal>
       </Section>
 
-      <PullQuote tone="surface" cite="The rule we won't trade">
-        Circulation, <span className="text-primary">not exclusion.</span>
+      <PullQuote tone="surface" cite="The promise we won't trade">
+        0% on your own bookings.
+        <br />
+        <span className="text-primary">Always.</span>
       </PullQuote>
 
       {/* ── The honest "we are early" trust beat ───────────────────────────── */}
@@ -585,11 +615,10 @@ function Splash({
           </Faq>
           <Faq q="What does it cost?">
             The community is free, forever. Browsing, joining a Circle, and showing up never cost
-            anything. Crew membership, which turns on the Quest and helps keep the physical spaces
-            open, is $9/mo and free for the whole beta. There&apos;s no card today: join now and
-            your founder pricing is locked in for life when paid memberships launch. Memberships
-            exist to sustain the rooms and hold the door open for people who can&apos;t pay, never to
-            extract from you.{' '}
+            anything. Crew is $9/mo, turns on The Quest, and is free for the whole beta. If you run a
+            practice or a Space, you keep 100% of your own bookings on one honest price, and we earn
+            only a small, shrinking network-only take-rate on the business the network sends you.
+            There&apos;s no card today: join now and your founder pricing is locked in for life.{' '}
             <Link href="/pricing" className="font-semibold text-primary-strong hover:underline">
               See the full breakdown
             </Link>
@@ -599,8 +628,9 @@ function Splash({
             None. Frequency is leaderful, not leader-dependent: it&apos;s built to outlast any one
             person, with no single figure to follow and no upsell funnel hiding behind the free tier.
             Leaders rise from the people who simply keep showing up, and when someone moves on, the
-            Circle keeps going. The whole model is designed to sustain real places to gather, which is
-            why memberships fund the rooms rather than line anyone&apos;s pockets.
+            Circle keeps going. We never take a cut of your own bookings, and physical Spaces are
+            funded by a separate, community-owned vehicle where members co-own the building, never by
+            platform margin.
           </Faq>
           <Faq q="What if there are no Circles near me yet?">
             That&apos;s most places right now, and that&apos;s the point. We&apos;re recruiting the

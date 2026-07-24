@@ -29,7 +29,7 @@ export function generateMetadata(): Metadata {
   return {
     title: 'About',
     description:
-      'The story behind Frequency, born on a cliff at Moonlight Beach in 2020. We hand ordinary people the tools to rebuild the third place where they live. Guru-free, leaderful, pay-it-forward, built to outlast any one person.',
+      'The story behind Frequency, born on a cliff at Moonlight Beach in 2020. We hand ordinary people the tools to rebuild the third place where they live. You keep 100% of your own bookings; we earn only a small, shrinking cut on what the network sends you, and the physical Spaces are funded by a separate community-owned vehicle.',
     alternates: { canonical: '/about' },
     openGraph: {
       title: 'About Frequency',
@@ -221,8 +221,8 @@ function LegacyAbout() {
           />
           <Value
             icon={HandHeart}
-            title="Pay-it-forward"
-            body="Circulation, not exclusion. People who can give more keep the doors open for people who can&apos;t. Nobody is priced out of belonging."
+            title="One honest price"
+            body="Zero percent on your own bookings, always. We earn only a small, shrinking cut on the business the network sends you. One price, no surprise invoices, and your data leaves with you any month you want."
           />
           <Value
             icon={Home}
@@ -275,11 +275,13 @@ function LegacyAbout() {
         </Lead>
         <Body>
           Frequency exists to rebuild the third place: a community designed to
-          last, real physical homes for connection, and a model that keeps the
-          door open to anyone regardless of what they can pay. We&apos;re not
-          building a following. We&apos;re building infrastructure, the kind of
-          thing you can lean your whole weight on and trust to still be standing
-          next year.
+          last, real physical Spaces for connection, and a money model that
+          stays honest. You keep 100% of your own bookings, always. We earn only
+          a small, shrinking cut on the business the network sends you, and the
+          physical Spaces are funded by a separate, community-owned vehicle, not
+          platform margin. We&apos;re not building a following. We&apos;re
+          building infrastructure, the kind of thing you can lean your whole
+          weight on and trust to still be standing next year.
         </Body>
       </Section>
 
