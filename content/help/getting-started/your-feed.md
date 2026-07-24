@@ -14,7 +14,7 @@ Your feed is home: the running stream of what's happening in the Circles you're 
 ## What shows up
 
 - **Posts from your Circles**: updates, photos, and conversations from members.
-- **Events and broadcasts**: upcoming gatherings and announcements from your Hosts.
+- **Events and Dispatches**: upcoming gatherings and announcements from your Hosts.
 - **Moments worth noticing**, like a welcome when someone new joins.
 
 ## The lenses

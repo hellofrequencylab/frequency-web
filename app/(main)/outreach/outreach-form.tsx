@@ -39,7 +39,7 @@ export function OutreachForm({ scope }: { scope: string }) {
         className="w-full resize-none rounded-xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text placeholder:text-subtle outline-none focus:border-primary"
       />
       <div className="mt-3 flex items-center justify-between gap-3">
-        <p className="text-xs text-subtle">Sends through the same email + push spine as Broadcast.</p>
+        <p className="text-xs text-subtle">Sends through the same email + push spine as Dispatch.</p>
         <button
           type="button"
           onClick={submit}

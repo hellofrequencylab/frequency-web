@@ -105,7 +105,7 @@ export async function CommunityManage() {
     { label: 'Roles & permissions', desc: 'Assign roles and the permission grid.', stat: `${c.team}`, statLabel: 'team members', href: '/admin/roles', Icon: Shield },
     { label: 'Partner verification', desc: 'Vet and verify partner persona claims.', stat: `${c.verifyQueue}`, statLabel: c.verifyQueue === 1 ? 'claim to verify' : 'claims to verify', href: '/admin/personas', Icon: BadgeCheck },
     { label: 'Events', desc: 'Gatherings across your circles, plus posted events and claims.', stat: `${c.events}`, statLabel: 'upcoming events', href: '/admin/events', Icon: CalendarDays },
-    { label: 'Broadcasts', desc: 'Posts and polls to your people.', stat: `${c.dispatches}`, statLabel: 'broadcasts', href: '/admin/dispatches', Icon: Megaphone },
+    { label: 'Dispatches', desc: 'Posts and polls to your people.', stat: `${c.dispatches}`, statLabel: 'dispatches', href: '/admin/dispatches', Icon: Megaphone },
     { label: 'Moderation', desc: 'Review and resolve reports.', stat: `${c.reportsOpen}`, statLabel: c.reportsOpen === 1 ? 'open report' : 'open reports', href: '/admin/moderation', Icon: ShieldAlert },
     { label: 'Support', desc: 'Member support tickets and help requests.', stat: `${c.openTickets}`, statLabel: c.openTickets === 1 ? 'open ticket' : 'open tickets', href: '/admin/support', Icon: LifeBuoy },
   ]

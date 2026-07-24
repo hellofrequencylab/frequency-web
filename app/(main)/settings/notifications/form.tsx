@@ -14,8 +14,8 @@ import { isError } from '@/lib/action-result'
 const CATEGORIES: { key: NotificationCategory; label: string; description: string }[] = [
   {
     key:         'dispatches',
-    label:       'Broadcasts',
-    description: 'Broadcast posts from your hosts and the wider community.',
+    label:       'Dispatches',
+    description: 'Dispatch posts from your Hosts and the wider community.',
   },
   {
     key:         'events',

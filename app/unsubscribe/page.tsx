@@ -18,7 +18,7 @@ import { PreferenceCenter, type ContactTopicState } from './preference-center'
 export const metadata = { robots: { index: false } }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  dispatches: 'broadcasts',
+  dispatches: 'Dispatches',
   events:     'event reminders',
   mentions:   'mention notifications',
   lifecycle:  'onboarding nudges',

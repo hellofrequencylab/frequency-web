@@ -11,7 +11,7 @@ import { isError } from '@/lib/action-result'
 // The token in the URL is the authorisation (no login) and every action re-verifies it.
 
 const TOPIC_LABELS: Partial<Record<NotificationTopic, { label: string; help: string }>> = {
-  dispatches: { label: 'Broadcasts', help: 'General updates and posts from this space.' },
+  dispatches: { label: 'Dispatches', help: 'General updates and posts from this space.' },
   events:     { label: 'Event updates', help: 'RSVP changes and reminders before an event.' },
   marketing:  { label: 'Offers & news', help: 'Occasional promotions and announcements.' },
 }

@@ -91,7 +91,7 @@ export async function CommunityStructure() {
     <DashArea
       icon={Users}
       label="Structure & people"
-      blurb="The shape of the live site and who's in it: circles, channels, events, the regions and broadcasts that reach them, the roster, and the staff team. Counts read live."
+      blurb="The shape of the live site and who's in it: circles, channels, events, the regions and Dispatches that reach them, the roster, and the staff team. Counts read live."
       href="/admin/circles"
       hrefLabel="Open Circles"
       footnote="Members are real (non-system) profiles; In circles counts active memberships. Growth is cumulative new members over the window."
@@ -104,7 +104,7 @@ export async function CommunityStructure() {
             <MiniStat value={d.events.toLocaleString()} label="Upcoming events" />
             <MiniStat value={d.hubs.toLocaleString()} label="Hubs" />
             <MiniStat value={d.nexuses.toLocaleString()} label="Nexuses" />
-            <MiniStat value={d.dispatches.toLocaleString()} label="Broadcasts" />
+            <MiniStat value={d.dispatches.toLocaleString()} label="Dispatches" />
           </MiniGrid>
         </Tile>
         <Tile label="People">

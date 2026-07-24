@@ -21,7 +21,7 @@ Notifications keep you in the loop without you having to check constantly: a rep
 
 Head to **Settings → Notifications** to choose what you hear about and how it reaches you. You're in control:
 
-- **Pick topics.** Turn each kind on or off on its own, and per place (in-app, email, push): broadcasts, events, mentions, replies and comments on your own posts, and the occasional note about Frequency.
+- **Pick topics.** Turn each kind on or off on its own, and per place (in-app, email, push): Dispatches, events, mentions, replies and comments on your own posts, and the occasional note about Frequency.
 - **Pick how often.** For each topic, choose real-time, a daily digest, or a weekly digest. A digest gathers the quieter stuff into one summary instead of a stream.
 - **Mute one place.** Quiet a single Circle or Space without leaving it. You still see everything when you open the app.
 - Every email includes an unsubscribe link, and we honor it everywhere.

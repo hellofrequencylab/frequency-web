@@ -30,7 +30,7 @@ export function CircleHostMenu({ circleId }: { circleId: string }) {
     {
       href: `/broadcast?compose=true&scope=${circleId}`,
       label: 'New announcement',
-      hint: 'Broadcast to the wider hub',
+      hint: 'Dispatch to the wider Hub',
       Icon: Megaphone,
     },
   ]
