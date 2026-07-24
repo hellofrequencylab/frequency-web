@@ -253,7 +253,9 @@ export function LoomPicker({
     close()
   }
   const confirmMany = () => { if (selected.length) onSelectMany?.(selected); close() }
-  const rail = 'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors'
+  // Auto width + no-shrink on mobile (the rail is a horizontal scroll strip there); full-width vertical
+  // buttons on sm+ (the rail is a left column).
+  const rail = 'flex w-auto shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-sm transition-colors sm:w-full'
   const railOn = 'bg-primary-bg text-primary-strong font-semibold'
   const railOff = 'text-muted hover:bg-surface-elevated hover:text-text'
 
@@ -268,11 +270,12 @@ export function LoomPicker({
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1">
-          {/* Left rail: view categories + per-space scopes */}
-          <aside className="w-48 shrink-0 space-y-3 overflow-y-auto border-r border-border p-3">
-            <div className="space-y-0.5">
-              <p className="px-2.5 pb-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Browse</p>
+        <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
+          {/* Left rail on sm+, a horizontal scroll strip on mobile (a fixed 192px rail ate half a phone
+              screen and squeezed the grid). */}
+          <aside className="flex shrink-0 gap-3 overflow-x-auto border-b border-border p-3 sm:w-48 sm:flex-col sm:gap-0 sm:space-y-3 sm:overflow-x-visible sm:overflow-y-auto sm:border-b-0 sm:border-r">
+            <div className="flex shrink-0 gap-1 sm:block sm:space-y-0.5">
+              <p className="hidden px-2.5 pb-1 text-2xs font-semibold uppercase tracking-wide text-subtle sm:block">Browse</p>
               {showImages && (
                 <button type="button" onClick={() => { setView('images'); setTag(null) }} className={`${rail} ${activeView === 'images' && !tag ? railOn : railOff}`}>
                   <ImageIcon className="h-4 w-4 shrink-0" /> Images
@@ -298,8 +301,8 @@ export function LoomPicker({
             {/* Scope switcher — only in the multi-scope picker. When locked to a single scopeKey, the
                 caller has already chosen the context, so no switcher renders. */}
             {!scopeKey && config.tabs.spaces && (
-            <div className="space-y-0.5">
-              <p className="px-2.5 pb-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Library</p>
+            <div className="flex shrink-0 gap-1 sm:block sm:space-y-0.5">
+              <p className="hidden px-2.5 pb-1 text-2xs font-semibold uppercase tracking-wide text-subtle sm:block">Library</p>
               {scopes.map((s) => {
                 const on = s.key === scope
                 const Icon = s.kind === 'mine' ? User : Building2

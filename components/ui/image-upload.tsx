@@ -5,6 +5,8 @@ import Image from 'next/image'
 import { ImageIcon, Loader2, Upload, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { LoomPicker } from '@/components/loom/loom-picker'
+import { looksLikeImage } from '@/lib/library/upload-kinds'
+import { shrinkImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 
 // One reusable header/cover photo control for every Studio popup editor (Journey, Practice,
 // Circle, Event). Uploads the chosen file to a public Supabase Storage bucket under the signer's
@@ -87,75 +89,94 @@ export function ImageUpload({
   const previewSrc =
     value && mode === 'path' ? createClient().storage.from(bucket).getPublicUrl(value).data.publicUrl : value
 
-  async function pick(file: File) {
+  async function pick(raw: File) {
     setError(null)
-    if (!file.type.startsWith('image/')) {
+    // Accept by MIME OR by extension: iPhone .heic photos often arrive with a blank File.type, which
+    // `type.startsWith('image/')` wrongly rejected even though the bucket allows HEIC (mirrors the Loom
+    // picker's gate).
+    if (!looksLikeImage(raw.type, raw.name)) {
       setError('Choose an image file.')
       return
     }
-    // The direct browser path uploads into the event-media bucket, whose MIME
-    // allowlist Storage enforces server-side — reject a type it would bounce
-    // with a clear message here instead of a raw "Upload failed: 400". A custom
-    // uploadFn targets its own bucket and does its own validation, so it keeps
-    // the broad image/* gate above.
-    if (!uploadFn && !ALLOWED_MIME.has(file.type)) {
+    // The direct browser path uploads into the event-media bucket, whose MIME allowlist Storage enforces
+    // server-side — reject a type it would bounce with a clear message here instead of a raw
+    // "Upload failed: 400". Skip when the type is blank (a HEIC with no reported type): the bucket still
+    // gates it. A custom uploadFn targets its own bucket and does its own validation.
+    if (!uploadFn && raw.type && !ALLOWED_MIME.has(raw.type)) {
       setError(ALLOWED_MIME_MESSAGE)
       return
     }
-    if (file.size > MAX_BYTES) {
-      setError(`Image is ${(file.size / 1024 / 1024).toFixed(1)} MB. The limit is 10 MB.`)
+    if (raw.size > MAX_BYTES) {
+      setError(`Image is ${(raw.size / 1024 / 1024).toFixed(1)} MB. The limit is 10 MB.`)
       return
     }
 
     setBusy(true)
+    try {
+      // Downscale/re-encode a big photo in the browser first, so a large phone capture fits under the
+      // platform's ~4.3 MB serverless body limit. Above it, a server uploadFn is REJECTED (a thrown
+      // action, not a returned error) — which used to leave the spinner turning forever. Formats we can't
+      // rasterize here (HEIC/GIF/SVG) pass through untouched and are size-gated below.
+      const file = await shrinkImageForUpload(raw)
 
-    // Server-upload path (injected): run the upload as a gated server action, which returns the public
-    // URL. This bypasses the browser Storage client entirely, so it cannot fail on a stale/absent browser
-    // session token (the Space customize rail uses this).
-    if (uploadFn) {
-      const res = await uploadFn(file)
-      if ('error' in res) {
-        setError(`Upload failed: ${res.error}`)
-        setBusy(false)
+      // Server-upload path (injected): a gated server action that returns the public URL. Bypasses the
+      // browser Storage client entirely, so it cannot fail on a stale/absent browser session token (the
+      // Space customize rail uses this).
+      if (uploadFn) {
+        if (file.size > SERVER_MAX_BYTES) {
+          setError('That image is too large to upload (over 4 MB and could not be resized here). Save it as a smaller JPEG and try again.')
+          return
+        }
+        // WRAP the action: a rejection (framework body-limit, transient network) must show an inline
+        // message, never escape and hang the "Uploading…" spinner (the `finally` clears it regardless).
+        let res: Awaited<ReturnType<typeof uploadFn>>
+        try {
+          res = await uploadFn(file)
+        } catch {
+          setError('That upload did not go through. Try again in a moment.')
+          return
+        }
+        if ('error' in res) {
+          setError(`Upload failed: ${res.error}`)
+          return
+        }
+        // Cache-bust so a replace shows immediately.
+        onChange(`${res.url}?t=${Date.now()}`)
         return
       }
-      // Cache-bust so a replace shows immediately.
-      onChange(`${res.url}?t=${Date.now()}`)
-      setBusy(false)
-      return
-    }
 
-    const supabase = createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      setError('Sign in to upload a photo.')
-      setBusy(false)
-      return
-    }
-
-    const ext = (file.name.split('.').pop() ?? 'jpg').replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg'
-    const path = `${user.id}/${folder}/${Date.now()}.${ext}`
-    const { error: upErr } = await supabase.storage
-      .from(bucket)
-      .upload(path, file, { contentType: file.type, upsert: true })
-    if (upErr) {
-      setError(`Upload failed: ${upErr.message}`)
-      setBusy(false)
-      return
-    }
-
-    if (mode === 'path') {
-      onChange(path)
-    } else {
+      const supabase = createClient()
       const {
-        data: { publicUrl },
-      } = supabase.storage.from(bucket).getPublicUrl(path)
-      // Cache-bust so a replace shows immediately.
-      onChange(`${publicUrl}?t=${Date.now()}`)
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        setError('Sign in to upload a photo.')
+        return
+      }
+
+      const ext = (file.name.split('.').pop() ?? 'jpg').replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg'
+      const path = `${user.id}/${folder}/${Date.now()}.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from(bucket)
+        .upload(path, file, { contentType: file.type, upsert: true })
+      if (upErr) {
+        setError(`Upload failed: ${upErr.message}`)
+        return
+      }
+
+      if (mode === 'path') {
+        onChange(path)
+      } else {
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from(bucket).getPublicUrl(path)
+        // Cache-bust so a replace shows immediately.
+        onChange(`${publicUrl}?t=${Date.now()}`)
+      }
+    } finally {
+      // ALWAYS clear the spinner, whatever happened above (including a thrown server action).
+      setBusy(false)
     }
-    setBusy(false)
   }
 
   return (

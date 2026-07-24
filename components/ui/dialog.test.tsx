@@ -57,3 +57,31 @@ describe('Dialog portaling (escapes a transformed ancestor)', () => {
     expect(document.querySelector('[role="dialog"]')).toBeNull()
   })
 })
+
+describe('Dialog stacking (only the topmost reacts to ESC)', () => {
+  it('ESC closes only the topmost of two stacked dialogs', () => {
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    let outerClosed = 0
+    let innerClosed = 0
+    act(() => {
+      root!.render(
+        <>
+          <Dialog open onClose={() => { outerClosed++ }} ariaLabel="outer">
+            <div>outer</div>
+          </Dialog>
+          <Dialog open onClose={() => { innerClosed++ }} ariaLabel="inner">
+            <div>inner</div>
+          </Dialog>
+        </>,
+      )
+    })
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    })
+    // The inner dialog mounted last, so it is topmost: ESC dismisses it alone, never the one beneath it.
+    expect(innerClosed).toBe(1)
+    expect(outerClosed).toBe(0)
+  })
+})

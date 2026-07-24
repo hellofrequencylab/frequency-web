@@ -16,6 +16,12 @@ function useIsClient() {
   )
 }
 
+// A stack of the currently-open dialogs, innermost last. Only the TOPMOST dialog reacts to ESC / Tab, so a
+// stacked dialog (e.g. the Loom picker opened over the on-canvas photo popup — both portal to document.body,
+// so neither is a DOM descendant of the other) never also drives the one beneath it: one ESC closed BOTH,
+// and the outer's focus trap fought the inner's on every Tab. Module-scoped: shared across every instance.
+const dialogStack: symbol[] = []
+
 // Shared modal/overlay shell — one place for the backdrop, centering, ESC +
 // backdrop-click to close, body scroll-lock, focus trap + restore, and dialog
 // a11y. Replaces the per-modal hand-rolled overlays the audit flagged. The caller
@@ -41,12 +47,21 @@ export function Dialog({
   align?: 'top' | 'center'
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
+  // A stable identity for this instance, used to find it in the dialog stack (topmost check).
+  const idRef = useRef<symbol | null>(null)
+  if (idRef.current === null) idRef.current = Symbol('dialog')
+  // Was the pointer pressed down ON the backdrop itself (not the panel)? Backdrop dismissal fires only when
+  // BOTH the press and the release land on the backdrop, so a drag/scroll that starts inside the panel and
+  // ends on the backdrop (or a tap that starts on the backdrop margin during a touch-scroll) never closes.
+  const downOnBackdropRef = useRef(false)
   // Only portal on the client (createPortal needs document.body); the server + first hydration render null.
   const isClient = useIsClient()
 
   useEffect(() => {
     if (!open) return
     const panel = panelRef.current
+    const id = idRef.current!
+    dialogStack.push(id)
 
     // Remember what was focused before we opened (the trigger), so keyboard and
     // screen-reader users land back where they left off when the dialog closes.
@@ -68,6 +83,9 @@ export function Dialog({
     }
 
     function onKey(e: KeyboardEvent) {
+      // Only the topmost dialog handles keys, so ESC/Tab in a stacked dialog never also fires the one
+      // beneath it (which would double-close, and make the two focus traps fight over Tab).
+      if (dialogStack[dialogStack.length - 1] !== id) return
       if (e.key === 'Escape') {
         onClose()
         return
@@ -101,7 +119,11 @@ export function Dialog({
     document.body.style.overflow = 'hidden'
     return () => {
       document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prevOverflow
+      const i = dialogStack.lastIndexOf(id)
+      if (i !== -1) dialogStack.splice(i, 1)
+      // Only unlock the page when NO dialog remains open; a nested dialog closing must not release the
+      // scroll-lock while the one beneath it is still up (its own prevOverflow was captured as 'hidden').
+      document.body.style.overflow = dialogStack.length === 0 ? prevOverflow : 'hidden'
       // Restore focus to the trigger on close, if it is still in the document
       // and outside the (now-closing) panel.
       if (previouslyFocused && document.contains(previouslyFocused) && !panel?.contains(previouslyFocused)) {
@@ -132,7 +154,16 @@ export function Dialog({
         'fixed inset-0 z-[80] flex justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm sm:p-8',
         align === 'center' ? 'items-center' : 'items-start',
       )}
-      onMouseDown={onClose}
+      // Close on a true backdrop CLICK (press AND release both on the backdrop), not on mousedown. On touch,
+      // mousedown-to-close dismissed the dialog on the first tap/scroll that began near the panel edge; and a
+      // text-selection drag that ended on the backdrop closed it too. Tracking down+up fixes both.
+      onMouseDown={(e) => {
+        downOnBackdropRef.current = e.target === e.currentTarget
+      }}
+      onMouseUp={(e) => {
+        if (downOnBackdropRef.current && e.target === e.currentTarget) onClose()
+        downOnBackdropRef.current = false
+      }}
     >
       <div
         ref={panelRef}
@@ -140,7 +171,6 @@ export function Dialog({
         aria-modal="true"
         aria-label={ariaLabel}
         tabIndex={-1}
-        onMouseDown={(e) => e.stopPropagation()}
         className={cn('w-full outline-none motion-safe:animate-[slideUp_0.3s_ease-out]', align === 'center' ? 'my-auto' : 'mt-[6vh]', className)}
       >
         {children}
