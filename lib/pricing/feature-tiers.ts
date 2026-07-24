@@ -118,11 +118,14 @@ interface RawFeatureLadder {
   rungs: { tier: string; unlocks: string }[]
 }
 
-/** Build the two standard Space rungs (free → business) with per-feature copy (ADR-552). */
-function spaceRungs(free: string, business: string) {
+/** Build the two Space rungs (free → the tier that UNLOCKS the feature) with per-feature copy. The unlock
+ *  rung defaults to Business, but a deeper feature names its real floor (Collective for collaboration /
+ *  automation / team / multi-pipeline, Independent for white-label) so the display ladder shows the rung
+ *  where it actually turns on, never marking an intermediate paid rung as the unlock (ADR-552 / ADR-811). */
+function spaceRungs(free: string, unlock: string, unlockTier: SpacePlan = 'business') {
   return [
     { tier: 'free', unlocks: free },
-    { tier: 'business', unlocks: business },
+    { tier: unlockTier, unlocks: unlock },
   ]
 }
 
@@ -134,7 +137,7 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     title: 'CRM',
     rungs: spaceRungs(
       'A preview of the pipeline with a capped number of contacts.',
-      'The full CRM: pipeline, contacts, private notes, governed playbooks, multiple pipelines, and team roles.',
+      'The full CRM: pipeline, contacts, private notes, and governed playbooks. Multiple pipelines and team roles come with Collective.',
     ),
   },
   space_email: {
@@ -153,6 +156,7 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     rungs: spaceRungs(
       'One pipeline, no automations.',
       'Governed playbooks and multi-step sequences that run the safe, reversible moves for you.',
+      'collective',
     ),
   },
   space_team: {
@@ -162,6 +166,7 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     rungs: spaceRungs(
       'One operator seat.',
       'Add teammates with roles: editor, moderator, and admin.',
+      'collective',
     ),
   },
   space_collaborators: {
@@ -171,6 +176,7 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     rungs: spaceRungs(
       'See how collaborators work, and preview the surface.',
       'Host other businesses inside your space and co-host events. They keep their own page and pay for their own space.',
+      'collective',
     ),
   },
   space_multi_pipeline: {
@@ -180,6 +186,7 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     rungs: spaceRungs(
       'One pipeline for your Space.',
       'Multiple pipelines, one per segment or program.',
+      'collective',
     ),
   },
   space_whitelabel: {
@@ -189,6 +196,7 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     rungs: spaceRungs(
       'Your accent and logo on a Frequency address.',
       'Your own custom domain and full branding, badge off.',
+      'independent',
     ),
   },
   // ── Space AI depth (plan axis; the Resonance Engine paid depth · ADR-387) ────────────────────────

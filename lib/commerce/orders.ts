@@ -119,15 +119,31 @@ export interface SpaceEarnings {
   netCents: number
   refundedCents: number
   orderCount: number
+  // Phase 5 (ADR-811 §A, the honest receipt): the slice of settled gross the NETWORK sourced (orders with
+  // source='network'), the platform's take on ONLY that slice, and how many such orders. Pre-attribution
+  // rows default to 'self' (the migration backfill), so they never inflate the network figure. This makes
+  // brand promise #4 provable: "we earn only on the business the network brings you, and here it is".
+  networkGrossCents: number
+  networkFeeCents: number
+  networkOrderCount: number
 }
 
 export async function spaceEarningsSummary(spaceId: string, sinceDays?: number): Promise<SpaceEarnings> {
-  const empty: SpaceEarnings = { grossCents: 0, feeCents: 0, netCents: 0, refundedCents: 0, orderCount: 0 }
+  const empty: SpaceEarnings = {
+    grossCents: 0,
+    feeCents: 0,
+    netCents: 0,
+    refundedCents: 0,
+    orderCount: 0,
+    networkGrossCents: 0,
+    networkFeeCents: 0,
+    networkOrderCount: 0,
+  }
   if (!spaceId) return empty
   try {
     let query = db()
       .from('commerce_orders')
-      .select('amount_cents, platform_fee_cents, status')
+      .select('amount_cents, platform_fee_cents, status, source')
       .eq('owner_space_id', spaceId)
       .neq('status', 'pending')
     if (sinceDays && sinceDays > 0) {
@@ -135,7 +151,12 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number):
       query = query.gte('created_at', since)
     }
     const { data } = await query
-    const rows = (data ?? []) as { amount_cents?: number | null; platform_fee_cents?: number | null; status?: string }[]
+    const rows = (data ?? []) as {
+      amount_cents?: number | null
+      platform_fee_cents?: number | null
+      status?: string
+      source?: string | null
+    }[]
     const out = { ...empty }
     for (const r of rows) {
       const amt = Number(r.amount_cents) || 0
@@ -149,6 +170,13 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number):
         out.grossCents += amt
         out.feeCents += fee
         out.orderCount += 1
+        // The network-sourced split: only orders the collective attributed as 'network' (default-safe to
+        // self on null / anything else, so the 0%-fee promise is never overstated as network revenue).
+        if (r.source === 'network') {
+          out.networkGrossCents += amt
+          out.networkFeeCents += fee
+          out.networkOrderCount += 1
+        }
       }
     }
     out.netCents = out.grossCents - out.feeCents
