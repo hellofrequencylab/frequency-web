@@ -2,6 +2,7 @@ import { Check, Sparkles, ShieldCheck, Globe } from 'lucide-react'
 import { SPACE_PLAN_LABEL, type SpacePlan } from '@/lib/pricing/plans'
 import { PLACEHOLDER_SPACE_PRICE_CENTS, COLLECTIVE_BETA_CENTS } from '@/lib/pricing/feature-tiers'
 import { formatCents } from '@/lib/pricing/display'
+import { isBetaPricingActive } from '@/lib/pricing/beta'
 import { ChoosePlanButton } from './choose-plan'
 
 // THE COMMUNITY COLLECTIVE plan ladder (Phase 4, ADR-811) — the tier map on the Space billing surface.
@@ -92,6 +93,9 @@ export function PlanLadder({
   sellable?: Partial<Record<SpacePlan, boolean>>
   isFree?: boolean
 }) {
+  // The beta anchor note ("Beta $49/mo") only shows while the beta window is open; it auto-clears when
+  // beta ends (2026-09-01, lib/pricing/beta.ts), the same instant the checkout starts charging list.
+  const betaActive = isBetaPricingActive()
   return (
     <section aria-labelledby="collective-ladder-heading" className="rounded-2xl border border-border bg-surface px-5 py-5 shadow-sm">
       <h2 id="collective-ladder-heading" className="text-base font-bold text-text">
@@ -127,7 +131,7 @@ export function PlanLadder({
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                   <span className="text-sm font-bold text-text">{SPACE_PLAN_LABEL[rung.plan]}</span>
                   <span className="text-sm font-semibold text-text">{priceLabel(rung.plan)}</span>
-                  {rung.note && <span className="text-2xs font-medium text-primary-strong">{rung.note}</span>}
+                  {rung.note && betaActive && <span className="text-2xs font-medium text-primary-strong">{rung.note}</span>}
                 </div>
                 <p className="mt-0.5 text-xs leading-relaxed text-muted">{rung.blurb}</p>
               </div>

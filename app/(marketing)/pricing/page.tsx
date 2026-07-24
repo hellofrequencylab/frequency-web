@@ -32,18 +32,19 @@ import type { BillingInterval } from '@/lib/billing/pricing-keys'
 // intervals are rendered at build time and the toggle flips which is shown.
 export const revalidate = 3600
 
-// The Community Collective pricing model (ADR-811): a tier ladder (Business $29, Collective $79 with a $49
-// beta, Non Profit $39, Independent for standalone), and a take-rate ONLY on network-sourced business. You
-// keep 100% of your own bookings; we earn only on the business the collective sends you.
+// The Community Collective pricing model (ADR-811): a tier ladder (Business $29, Collective $79, Non Profit
+// $39, Independent for standalone) with BETA anchors ($19 Business, $49 Collective) that auto-revert to
+// list on 2026-09-01 (lib/pricing/beta.ts). A take-rate ONLY on network-sourced business. You keep 100% of
+// your own bookings; we earn only on the business the collective sends you.
 export const metadata: Metadata = {
   title: 'Pricing for Spaces',
   description:
-    'Frequency is a community collective. You keep 100% of your own bookings. We earn only on the business the network sends you, at a rate that drops as your plan rises. Business is $29 a month, Collective is $49 in beta, Non Profit is $39. Monthly or yearly, two months free.',
+    'Frequency is a community collective. You keep 100% of your own bookings. We earn only on the business the network sends you, at a rate that drops as your plan rises. Business is $29 a month, Collective is $79, Non Profit is $39. Monthly or yearly, two months free.',
   alternates: { canonical: '/pricing' },
   openGraph: {
     title: 'Frequency pricing: we never take a cut of your own bookings',
     description:
-      'A community collective, not a tax on your work. Keep 100% of what you bring in; we earn only on network-sourced sales, at a tier-declining rate. Business $29, Collective $49 beta, Non Profit $39. Two months free on yearly.',
+      'A community collective, not a tax on your work. Keep 100% of what you bring in; we earn only on network-sourced sales, at a tier-declining rate. Business $29, Collective $79, Non Profit $39. Two months free on yearly.',
     url: '/pricing',
     type: 'website',
   },
@@ -51,7 +52,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Frequency pricing: we never take a cut of your own bookings',
     description:
-      'Keep 100% of your own bookings. We earn only on business the network sends you. Business $29, Collective $49 beta, Non Profit $39. Two months free on yearly.',
+      'Keep 100% of your own bookings. We earn only on business the network sends you. Business $29, Collective $79, Non Profit $39. Two months free on yearly.',
   },
 }
 
@@ -59,7 +60,7 @@ export const metadata: Metadata = {
 const PRICING_FAQ: { q: string; a: string }[] = [
   {
     q: 'How does Frequency pricing work?',
-    a: 'A ladder, by what you run. Business is $29 a month: the full CRM, email, reporting, bookings, tickets, memberships, and your own website. Collective is $79 a month, and $49 in the founding beta: everything in Business plus automations, team roles, multiple pipelines, and hosting collaborators. Non Profit is $39 a month flat, the full Collective toolkit for verified 501(c)(3) organizations. Independent is the standalone tier for your own brand and domain, off the network.',
+    a: 'A ladder, by what you run. Business is $29 a month: the full CRM, email, reporting, bookings, tickets, memberships, and your own website. Collective is $79 a month: everything in Business plus automations, team roles, multiple pipelines, and hosting collaborators. Non Profit is $39 a month flat, the full Collective toolkit for verified 501(c)(3) organizations. Independent is the standalone tier for your own brand and domain, off the network.',
   },
   {
     q: 'Do you take a cut of my sales?',
@@ -135,7 +136,7 @@ export default function PricingPage() {
             <br className="hidden sm:block" /> of <span className="text-primary">your bookings.</span>
           </>
         }
-        subtitle="Frequency is a community collective, not a tax on your work. You keep 100% of what you bring in yourself. We earn only on the business the network sends you, at a rate that drops as your plan rises. Business is $29 a month, Collective is $49 in beta, and Non Profit is $39."
+        subtitle="Frequency is a community collective, not a tax on your work. You keep 100% of what you bring in yourself. We earn only on the business the network sends you, at a rate that drops as your plan rises. Business is $29 a month, Collective is $79, and Non Profit is $39."
       >
         <Button href="/spaces">
           Start a Space <ArrowRight className="h-5 w-5" />
@@ -405,11 +406,12 @@ function PriceCell({ tier }: { tier: PricingTier }) {
           </span>
         )
       })}
-      {/* "Founding price" only where an anchor actually exists (a list struck over a lower founding rate) —
-          i.e. Collective's $49-under-$79 beta. Business / Non Profit / Independent have list == founding,
-          so they must NOT claim a founding discount (skeptic test, CONTENT-VOICE). */}
+      {/* The beta caption shows ONLY where an anchor exists (a list struck over a lower beta rate) — i.e.
+          Business's $19-under-$29 and Collective's $49-under-$79. It auto-clears when the beta window ends
+          (effectiveCatalogAmounts collapses founding to list, so tierListAnchor returns null). Business /
+          Non Profit / Independent at list must NOT claim a discount (skeptic test, CONTENT-VOICE). */}
       {tierListAnchor(tier, 'month') && (
-        <span className="mt-1 block text-xs text-primary-strong">Founding beta price</span>
+        <span className="mt-1 block text-xs text-primary-strong">Beta price, ends September 1</span>
       )}
     </div>
   )

@@ -24,6 +24,7 @@ import {
   type SpacePlanKey,
 } from './pricing-keys'
 import { itemKeyForCatalogKey, readLockedPriceId } from './space-subscription-items'
+import { isBetaPricingActive } from '@/lib/pricing/beta'
 
 /** The per-plan enable flag for a space plan (must be ON, with billing live, to sell it). */
 const PLAN_FLAG: Record<SpacePlanKey, 'plan_business_enabled' | 'plan_nonprofit_enabled'> = {
@@ -203,10 +204,14 @@ async function resolveLoadoutPriceId(
   const itemKey = itemKeyForCatalogKey(catalogKey)
   if (itemKey) {
     const locked = await readLockedPriceId(spaceId, itemKey)
-    if (locked) return locked // re-bill the grandfathered founding price (the lock)
+    if (locked) return locked // re-bill the grandfathered founding price (the lock) — beta subscribers keep it
   }
-  // The founding price is the plain catalog key (the one charged); the list anchor is the _list variant.
-  return resolveStripePriceId(catalogPriceKey(catalogKey, interval, false))
+  // BETA AUTO-REVERT (ADR-811): during the beta window we charge the FOUNDING (beta) price — the plain
+  // catalog key; on/after the cutover we charge the LIST price — the _list variant. Both are minted active
+  // by the catalog sync and resolve the same way, so this is a pure key switch with no re-sync. A Space
+  // that already locked a beta price is grandfathered above and never reaches this line.
+  const chargeList = !isBetaPricingActive()
+  return resolveStripePriceId(catalogPriceKey(catalogKey, interval, chargeList))
 }
 
 /** The catalog item keys + their seat-ness a loadout maps to. PURE (ADR-552). Business -> business_base

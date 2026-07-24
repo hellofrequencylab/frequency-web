@@ -23,6 +23,7 @@ import {
   type LoadoutTotal,
 } from './loadout'
 import type { AddonKey } from './plans'
+import { isBetaPricingActive, effectiveCatalogAmounts } from './beta'
 import type { BillingInterval, CatalogAmounts, CatalogItemKey } from '@/lib/billing/pricing-keys'
 
 // ── A money amount rendered both intervals (the table + strip show monthly with a yearly toggle) ─────
@@ -110,18 +111,23 @@ export function proAddonPrice(addon: AddonKey): string {
  *  every one priced from the CODE catalog (collective_base / independent_base joined the catalog at
  *  go-live). PURE — no DB, no per-request read. The add-on cells carry only the AI Engine: metered on
  *  Business, available on every paid tier. */
-export function pricingTiers(): PricingTier[] {
+export function pricingTiers(betaActive: boolean = isBetaPricingActive()): PricingTier[] {
   const cat = pricingCatalog()
 
   // The AI Engine is the only metered add-on. It is priced on Business and available on every paid tier.
   const tierAddons: TierAddonCell[] = PRICING_ADDONS.map((a) => ({ addon: a.key, value: proAddonPrice(a.key) }))
+
+  // BETA AUTO-REVERT (ADR-811): during beta, Business/Collective show their beta anchor struck under the
+  // list; once beta ends the list becomes the price (no strike, no beta caption). effectiveCatalogAmounts
+  // mirrors what the checkout charges, so the table never quotes a price the checkout won't honor.
+  const eff = (a: { listCents: number; foundingCents: number }) => effectiveCatalogAmounts(a, betaActive)
 
   return [
     {
       id: 'business',
       name: 'Business',
       priceKind: 'flat',
-      price: { month: cat.business_base.month, year: cat.business_base.year },
+      price: { month: eff(cat.business_base.month), year: eff(cat.business_base.year) },
       featured: true,
       forWho: 'Coaches, service and product businesses, studios, and practitioners.',
       billing: 'Monthly or yearly. Yearly is two months free.',
@@ -136,7 +142,7 @@ export function pricingTiers(): PricingTier[] {
       name: 'Collective',
       priceKind: 'flat',
       // Priced from the code catalog (ADR-811 go-live): $79 list with the $49 beta founding anchor.
-      price: { month: cat.collective_base.month, year: cat.collective_base.year },
+      price: { month: eff(cat.collective_base.month), year: eff(cat.collective_base.year) },
       featured: false,
       forWho: 'Growing communities that collaborate and run a team.',
       billing: 'Monthly or yearly. Beta founding price locked for early Collectives.',

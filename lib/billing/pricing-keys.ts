@@ -341,8 +341,9 @@ function amountsFromMonthly(listMonthlyCents: number, foundingMonthlyCents: numb
 // The CLEAN catalog (ADR-460; Community Collective repricing ADR-811). Monthly amounts: Business $29/mo
 // (run-your-practice depth); the Resonance Engine add-on +$20/mo (optional on any paid plan); Non Profit
 // $39/mo FLAT (the full Collective toolkit, for verified 501(c)(3)s, donations built in). NEVER per seat.
-// Collective ($79, $49 beta) + Independent (~$249) are not in this sellable catalog yet (go-live task).
-// Yearly derives as two months free. An item carries the same list + founding when no separate
+// Collective ($79 list / $49 beta) + Independent ($249 flat) are sellable catalog bases (ADR-811 go-live).
+// The $19/$49 beta anchors auto-revert to list on 2026-09-01 (lib/pricing/beta.ts) via a checkout key
+// switch. Yearly derives as two months free. An item carries the same list + founding when no separate
 // anchor is published (founding == list reads flat today; the field still exists so a future anchor is a
 // one-line edit, never a schema change). The marketing/team/branding add-on items are RETIRED (their
 // depth folds into the Business base, ADR-472); only addon_ai (the Resonance Engine) remains as an add-on.
