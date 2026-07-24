@@ -149,7 +149,7 @@ export async function reopenConversationIfClosed(conversationId: string, current
   if (currentStatus !== 'resolved' && currentStatus !== 'closed') return
   try {
     await convTable('comms_conversations')
-      .update({ status: 'open', updated_at: new Date().toISOString() })
+      .update({ status: 'open', resolved_at: null, updated_at: new Date().toISOString() })
       .eq('id', conversationId)
   } catch (err) {
     console.error('[comms] reopenConversationIfClosed failed (non-fatal):', err)
@@ -169,6 +169,8 @@ export interface AppendMessageInput {
   inReplyTo?: string | null
   referencesIds?: string[] | null
   isInternal?: boolean
+  /** Per-message detail (e.g. `{ sender_mismatch: true }` from the inbound anti-spoof check). */
+  metadata?: Record<string, unknown> | null
   /** When set, the non-internal message is mirrored onto the CRM person-timeline (best-effort). */
   mirror?: {
     ownerProfileId: string
@@ -200,6 +202,7 @@ export async function appendConversationMessage(
         external_message_id: input.externalMessageId ?? null,
         in_reply_to: input.inReplyTo ?? null,
         references_ids: input.referencesIds ?? null,
+        ...(input.metadata ? { metadata: input.metadata } : {}),
       })
       .select('id')
       .single()
