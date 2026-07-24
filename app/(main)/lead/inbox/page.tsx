@@ -30,11 +30,19 @@ export default async function LeaderInboxPage({
   const status = sp.status || undefined
   const scope: ConversationScope = 'all'
 
-  const [rows, thread, reach] = await Promise.all([
+  const [rows, rawThread, reach] = await Promise.all([
     listWorkspaceConversations({ scope, viewerProfileId: profileId, ownedOrAssignedTo: profileId, status, limit: 300 }),
     sp.id ? getWorkspaceThread(sp.id) : Promise.resolve(null),
     leaderDownlineReach(profileId),
   ])
+
+  // AUTHORIZATION: getWorkspaceThread reads through the service-role client (no RLS) and takes the id
+  // straight from the URL, so it can resolve ANY conversation. The list is already scoped to the leader's
+  // own threads; scope the reader the same way (owner or assignee) so a leader can never open someone
+  // else's thread — or its internal notes — by guessing a ?id=. Operators (/admin) are staff-authorized to
+  // see every thread, so only the leader surface needs this gate.
+  const thread =
+    rawThread && (rawThread.ownerProfileId === profileId || rawThread.assignedTo === profileId) ? rawThread : null
 
   const awaiting = rows.filter((r) => r.awaitingReply).length
 
