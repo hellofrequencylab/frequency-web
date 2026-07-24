@@ -10,6 +10,7 @@ import {
   Button,
 } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
+import { Illustration } from '@/components/marketing/illustrations'
 import { breadcrumbSchema, faqSchema, productSchema } from '@/lib/jsonld'
 import { PricingBillingToggle } from '@/components/marketing/pricing-billing-toggle'
 import { PricingComparison } from '@/components/marketing/pricing-comparison'
@@ -141,8 +142,11 @@ export default function PricingPage() {
         </Button>
       </PhotoHero>
 
-      {/* Mission framing, stated plainly. */}
+      {/* Mission framing, stated plainly, with the "we only earn when you do" infographic. */}
       <Section tone="canvas" pad="pt-14 pb-10 sm:pt-16 sm:pb-12">
+        <div className="mx-auto mb-6 h-28 w-full max-w-xs">
+          <Illustration name="earn-together" className="h-full" />
+        </div>
         <p className="text-center text-lg leading-relaxed text-muted sm:text-xl">{MISSION_FRAMING}</p>
       </Section>
 
@@ -185,6 +189,9 @@ export default function PricingPage() {
           title="Why people stay."
           kicker="The parts of the deal we will not move on."
         />
+        <div className="mx-auto mb-8 h-28 w-full max-w-sm">
+          <Illustration name="four-promises" className="h-full" />
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {[
             {
