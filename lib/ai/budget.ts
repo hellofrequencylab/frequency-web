@@ -73,6 +73,10 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'listing-seed-extract': 5,     // extract a structured listing from one pasted block (Sonnet; forced tool, per paste)
   // ── Resonance CRM messaging generator (operator-facing, low-volume; drafts a campaign or a sequence) ─
   'messaging-generator': 4,      // draft a campaign email or a multi-step email sequence from the guided flow (Sonnet; forced tool, one call per build)
+  // ── Conversation workspace Vera seams (ADR-812; operator-facing, one-shot per thread, Haiku) ──
+  'conversation-draft': 2,       // draft a reply for one conversation, dropped into the composer for a human to send (Haiku)
+  'conversation-summarize': 1,   // one short summary of a conversation thread (Haiku; on-demand)
+  'conversation-triage': 1,      // classify a conversation's priority (Haiku; tiny, on-demand)
 }
 
 export function dailyCapFor(feature: string, fallbackUsd = 1): number {

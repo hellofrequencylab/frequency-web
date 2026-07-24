@@ -36,7 +36,7 @@ const LIB_DIR = 'lib'
 // noisy CI failure; the cost we actually care about is catching a mutation with NO check.
 const GUARD = new RegExp(
   [
-    'require(Admin|AdminFloor|Janitor|StaffCap|Auth|Member|Host|Founder)',
+    'require(Admin|AdminFloor|LeadFloor|Janitor|StaffCap|Auth|Member|Host|Founder)',
     'assert(Own\\w*|Founder)', // assertOwner, assertOwnPath, …
     'authorize[A-Z]\\w*',
     'get(Caller|My)Profile(Id)?\\b',

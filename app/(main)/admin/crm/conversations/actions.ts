@@ -21,6 +21,11 @@ import {
   recordAssignment,
   newConversationMessageId,
 } from '@/lib/comms/conversations'
+import { getWorkspaceThread } from '@/lib/comms/workspace'
+import { CONVERSATION_PRIORITIES, PRIORITY_LABELS, type ConversationPriority } from '@/lib/comms/labels'
+import { completeText, AiUnavailableError } from '@/lib/ai/complete'
+import { withVoice } from '@/lib/ai/voice'
+import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 
 const GATE = { min: 'janitor', staff: 'marketing' } as const
 
@@ -198,6 +203,125 @@ export async function setConversationTriage(input: {
 
   revalidatePath('/admin/crm/conversations')
   return ok()
+}
+
+// ── Vera seams (ADR-812 Phase 5) — quiet, optional AI affordances. Every output lands in a human-editable
+// field or a reversible field; a human still runs the gated Send / triage. Mirrors the support console's
+// draftReply / suggestTriage (lib/ai/complete + the aiAvailable / featureOverBudget / recordAiUsage guards).
+
+const DRAFT_SYSTEM = `You draft a reply to a member on behalf of a Frequency team member.
+Write a warm, plain, direct reply of 2 to 5 sentences. Answer what they actually asked.
+Do not invent facts, policies, prices, or dates you were not given. Output ONLY the reply body, no subject, no signature.`
+
+const SUMMARY_SYSTEM = `You summarize a support/CRM conversation for a team member skimming their inbox.
+One or two plain sentences: what the person wants and where the thread stands. Output ONLY the summary.`
+
+const TRIAGE_SYSTEM = `You classify a conversation's priority. Reply with ONE line: "<priority> — <one short reason>".
+Priority is one of: low, normal, high, urgent. Urgent = money, access loss, or an upset member about to churn.`
+
+/** Render the thread as an oldest-first transcript for a prompt (skips internal notes). */
+function transcript(messages: { direction: string; authorName: string; body: string; isInternal: boolean }[]): string {
+  return messages
+    .filter((m) => !m.isInternal)
+    .map((m) => `${m.direction === 'inbound' ? 'Them' : 'Us'} (${m.authorName}): ${m.body}`)
+    .join('\n')
+    .slice(0, 8000)
+}
+
+/** Draft a reply with Vera — the text lands in the composer for a human to review, edit, and send. */
+export async function draftConversationReply(
+  conversationId: string,
+): Promise<ActionResult<{ draft: string }>> {
+  const { profileId } = await requireAdmin(GATE.min, { staff: GATE.staff })
+  const id = (conversationId ?? '').trim()
+  if (!id) return fail('Pick a conversation first.')
+  if (!(await aiAvailable()) || (await featureOverBudget('conversation-draft'))) {
+    return fail('Vera drafting is unavailable right now. Write your reply and send it.')
+  }
+  const thread = await getWorkspaceThread(id)
+  if (!thread) return fail('That conversation no longer exists.')
+  try {
+    const res = await completeText({
+      system: withVoice(DRAFT_SYSTEM),
+      messages: [{ role: 'user', content: `Subject: ${thread.subject}\n\n${transcript(thread.messages)}\n\nDraft the next reply from us.` }],
+      tier: 'haiku',
+      maxTokens: 320,
+    })
+    await recordAiUsage({ feature: 'conversation-draft', model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId })
+    const draft = res.text.trim()
+    if (!draft) return fail('Vera had nothing to add. Write your reply and send it.')
+    return ok({ draft })
+  } catch (err) {
+    if (err instanceof AiUnavailableError) return fail('Vera drafting is unavailable right now.')
+    return fail('Could not draft a reply. Try again.')
+  }
+}
+
+/** One short summary of the thread (a skim aid; never sent). */
+export async function summarizeConversation(
+  conversationId: string,
+): Promise<ActionResult<{ summary: string }>> {
+  const { profileId } = await requireAdmin(GATE.min, { staff: GATE.staff })
+  const id = (conversationId ?? '').trim()
+  if (!id) return fail('Pick a conversation first.')
+  if (!(await aiAvailable()) || (await featureOverBudget('conversation-summarize'))) {
+    return fail('Summaries are unavailable right now.')
+  }
+  const thread = await getWorkspaceThread(id)
+  if (!thread) return fail('That conversation no longer exists.')
+  try {
+    const res = await completeText({
+      system: withVoice(SUMMARY_SYSTEM),
+      messages: [{ role: 'user', content: `Subject: ${thread.subject}\n\n${transcript(thread.messages)}` }],
+      tier: 'haiku',
+      maxTokens: 120,
+    })
+    await recordAiUsage({ feature: 'conversation-summarize', model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId })
+    const summary = res.text.trim()
+    return summary ? ok({ summary }) : fail('Nothing to summarize yet.')
+  } catch (err) {
+    if (err instanceof AiUnavailableError) return fail('Summaries are unavailable right now.')
+    return fail('Could not summarize. Try again.')
+  }
+}
+
+/** Suggest + apply a priority (mirrors support suggestTriage: it persists the priority, reversibly). */
+export async function suggestConversationTriage(
+  conversationId: string,
+): Promise<ActionResult<{ priority: ConversationPriority; reason: string }>> {
+  const { profileId } = await requireAdmin(GATE.min, { staff: GATE.staff })
+  const id = (conversationId ?? '').trim()
+  if (!id) return fail('Pick a conversation first.')
+  if (!(await aiAvailable()) || (await featureOverBudget('conversation-triage'))) {
+    return fail('Triage is unavailable right now.')
+  }
+  const thread = await getWorkspaceThread(id)
+  if (!thread) return fail('That conversation no longer exists.')
+  try {
+    const res = await completeText({
+      system: withVoice(TRIAGE_SYSTEM),
+      messages: [{ role: 'user', content: `Subject: ${thread.subject}\n\n${transcript(thread.messages)}` }],
+      tier: 'haiku',
+      maxTokens: 60,
+    })
+    await recordAiUsage({ feature: 'conversation-triage', model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId })
+    const parsed = parseTriage(res.text)
+    await updateConversationFields(id, { priority: parsed.priority })
+    revalidatePath('/admin/crm/conversations')
+    return ok(parsed)
+  } catch (err) {
+    if (err instanceof AiUnavailableError) return fail('Triage is unavailable right now.')
+    return fail('Could not triage. Try again.')
+  }
+}
+
+/** Pull a priority word + a short reason out of the model's one-line answer. Fail-safe to 'normal'. */
+function parseTriage(text: string): { priority: ConversationPriority; reason: string } {
+  const lower = (text ?? '').toLowerCase()
+  const priority = CONVERSATION_PRIORITIES.find((p) => lower.includes(p)) ?? 'normal'
+  const dash = text.indexOf('—') >= 0 ? text.indexOf('—') : text.indexOf('-')
+  const reason = (dash >= 0 ? text.slice(dash + 1) : text).trim().slice(0, 160) || PRIORITY_LABELS[priority]
+  return { priority, reason }
 }
 
 /** `Re:`-prefix the subject once (mirrors the CRM inbox composer). */

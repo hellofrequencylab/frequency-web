@@ -435,6 +435,7 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   // platform_flags.beta_referral_contest is off, so the rail decision is moot until it is live.
   { route: '/referral', label: 'Referral contest', area: 'Member' },
   { route: '/lead', label: 'Leadership', area: 'Member' },
+  { route: '/lead/inbox', label: 'Leader inbox', area: 'Member' },
   { route: '/lead/training-library', label: 'Leader Training', area: 'Member' },
   // Settings + the centered single-task surfaces now keep the GLOBAL community rail too
   // (owner directive, 2026-06-20: the right rail shows on every member page).
