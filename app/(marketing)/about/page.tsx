@@ -266,7 +266,7 @@ function LegacyAbout() {
       <Section tone="surface">
         <SectionHeading
           eyebrow="Why we exist"
-          title="A place to be human."
+          title="Somewhere to belong, near you."
           kicker="The mission, said plainly, once."
         />
         <Lead>

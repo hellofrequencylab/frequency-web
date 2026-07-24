@@ -56,4 +56,4 @@ Yes. Imported contacts go into your own address book, the same as a scanned card
 
 - You need to be signed in to import.
 - Prefer another way? You can also [scan someone's code](/help/connecting/save-by-scanning), import from Google, or add a contact by hand (see [Finding people](/help/connecting/find-people)).
-- Run a business on Frequency? Bringing a list into your [Space CRM](/help/spaces/space-crm) works the same way, and that list stays sealed to your Space.
+- Run a business on Frequency? Bringing a list into your [Space's Contacts](/help/spaces/space-crm) works the same way, and that list stays sealed to your Space.

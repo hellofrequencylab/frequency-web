@@ -39,6 +39,6 @@ A season runs for 13 weeks, then resets so everyone gets a fresh start. When it 
 
 ## Amplitude: the number that never resets
 
-Your season rank goes back to Ghost each reset, but every Zap you have ever earned feeds **Amplitude**, your lifetime total. It only ever goes up. Hosting-class acts (hosting, running a program, founding or activating a circle) count double toward it. Crossing big totals (1,000, then 5,000, and beyond) mints a permanent Award into your Vault.
+Your season rank goes back to Ghost each reset, but every Zap you have ever earned feeds **Amplitude**, your lifetime total. It only ever goes up. Hosting-class acts (hosting, running a program, founding or activating a Circle) count double toward it. Crossing big totals (1,000, then 5,000, and beyond) mints a permanent Award into your Vault.
 
 Want to know what counts? See [Zaps & Gems](/help/the-quest/zaps-and-gems).

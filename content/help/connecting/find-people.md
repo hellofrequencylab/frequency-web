@@ -1,5 +1,5 @@
 ---
-title: Finding people & circles
+title: Finding people & Circles
 description: Browse the directory and search by location.
 category: connecting
 order: 1
@@ -9,17 +9,17 @@ featureKeys: [people]
 status: published
 ---
 
-The directory is how you find members and circles: by topic, and by place.
+The directory is how you find members and Circles: by topic, and by place.
 
 ## Browsing
 
-- See members and circles, and open anyone's profile to learn a bit about them.
+- See members and Circles, and open anyone's profile to learn a bit about them.
 - Each profile shows who someone is in the community; from there you can send a [friend request](/help/connecting/friends).
 
 ## Finding people near you
 
 - The Community directory can put **people nearby first**, each one shown with a soft area label like "Nearby" or "Your area," never a distance or a pin.
-- Start typing a city or town and it autocompletes, then shows circles near that place. You can also search around your own location.
+- Start typing a city or town and it autocompletes, then shows Circles near that place. You can also search around your own location.
 - You control all of this under **Settings → Connections & Location**: who can find you, how precise it is, and your own findability radius (see [Your settings](/help/getting-started/your-settings)).
 
 ## My Contacts

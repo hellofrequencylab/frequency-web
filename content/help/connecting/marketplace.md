@@ -1,5 +1,5 @@
 ---
-title: Marketplace
+title: Buying, selling & sharing
 description: Swap and share with neighbors, plus housing, the community Market, and the Frequency Store.
 category: connecting
 order: 5
@@ -9,8 +9,8 @@ featureKeys: [marketplace]
 status: published
 ---
 
-The Marketplace is where the community trades, shares, and finds what it needs. It has a few
-areas: **Classifieds** to swap or give things away, **Housing** for rentals and roommates,
+Frequency has a few places where the community trades, shares, and finds what it needs. There
+are a few areas: **Classifieds** to swap or give things away, **Housing** for rentals and roommates,
 the **Market** where members and businesses sell, **Events** for paid and free gatherings
 nearby, and the **Frequency Store** for Frequency's own merch and passes. The area bar at the
 top moves you between them, and each area opens with a search bar right under the banner.
@@ -34,13 +34,13 @@ reach the person and arrange the rest offline.
   **Roommates** for matches. Narrow further by price and amenities in the filters.
 - **List housing** with the type, the rent, and the basics. Contact stays in messages, like
   Classifieds.
-- **Find a roommate** opens roommate matches. Tell us your budget and city, and the resonance
+- **Find a roommate** opens roommate matches. Tell us your budget and city, and the Resonance
   engine suggests members it thinks you'd click with, the same matching that powers
   introductions. It is opt-in, so you stay in control.
 
 ## Events
 
-- Open **Events** to see paid and free gatherings nearby, from community circles and hosts.
+- Open **Events** to see paid and free gatherings nearby, from community Circles and Hosts.
 - Search from the top, then filter by category, date, price, and more, and sort by soonest,
   most going, or nearest.
 - **RSVP** to a free event or grab a **ticket** for a paid one. It shows up in your account.

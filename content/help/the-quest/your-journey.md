@@ -54,8 +54,8 @@ you **Adept**, all three makes you **Master**. Finish all three and you also ear
 **Certificate**, the season capstone (a unique cosmetic plus 100 Gems). Finish the work and
 the rank follows. See [Season ranks](/help/the-quest/season-ranks) for the full ladder.
 
-## Doing it with your circle
+## Doing it with your Circle
 
 You can walk a Journey alongside the people in your Circle, practicing the same things
 over the same weeks and doing your Expression Challenges together at a gathering. Nobody
-is ranked against their circle, and the practices are better with company.
+is ranked against their Circle, and the practices are better with company.

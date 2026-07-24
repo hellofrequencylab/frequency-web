@@ -18,8 +18,8 @@ Frequency has a few ways to talk directly, beyond posting in your feed.
 ## Rooms (group chats)
 
 - A **group chat is a private room**: start one and add the people you want.
-- **Rooms** are ongoing group spaces, distinct from one-off DMs. Crew members (the membership) and community leaders (hosts and up) can also create open/shared rooms.
-- **Channel rooms.** Every [Channel](/help/groups/channels) has one open room. Anyone can read it; tune into the channel to post. You'll see the rooms you're tuned into in your Messages, and an **Open room** button on each Channel.
+- **Rooms** are ongoing group spaces, distinct from one-off DMs. Crew members (the membership) and community leaders (Hosts and up) can also create open/shared rooms.
+- **Channel rooms.** Every [Channel](/help/groups/channels) has one open room. Anyone can read it; tune into the Channel to post. You'll see the rooms you're tuned into in your Messages, and an **Open room** button on each Channel.
 
 ## Who's around
 
@@ -31,5 +31,5 @@ Open any room and tap **Search** in the header to find past messages. It searche
 
 ## Tips
 
-- Use DMs for the personal stuff and your feed/circle for things the whole group should see.
+- Use DMs for the personal stuff and your feed or Circle for things the whole group should see.
 - Notifications keep you on top of replies; tune them in [Settings](/help/getting-started/notifications).

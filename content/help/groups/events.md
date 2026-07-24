@@ -10,13 +10,13 @@ featureKeys: [events]
 status: published
 ---
 
-Events are the gatherings that make Frequency real: the in-person and online meetups your circles host. This is where showing up actually happens.
+Events are the gatherings that make Frequency real: the in-person and online meetups your Circles host. This is where showing up actually happens.
 
 ## RSVPing
 
 - Open an event to see the details and **RSVP** so the host knows you're coming. Not sure yet? Mark yourself **Interested** instead. It signals you're curious without claiming a spot.
 - Bringing people? On a "going" RSVP you can add **+1, +2 guests** so the host has an accurate headcount.
-- The event page shows **who's already going** (faces, the count, your guests, and anyone from your circles) so you can see the room before you arrive.
+- The event page shows **who's already going** (faces, the count, your guests, and anyone from your Circles) so you can see the room before you arrive.
 - Changed your plans? You can update your RSVP anytime.
 - When you RSVP, we **email you a confirmation** with the details and a one-tap calendar link (and a quick note if you land on the waitlist), then nudge you again as the date nears.
 - Your upcoming events surface in your feed so they don't sneak up on you.
@@ -29,7 +29,7 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 
 ## Recurring events & your calendar
 
-- Many circles run **recurring** gatherings (a weekly sit, a monthly walk), and each occurrence is its own event you can RSVP to.
+- Many Circles run **recurring** gatherings (a weekly sit, a monthly walk), and each occurrence is its own event you can RSVP to.
 - **Add to calendar in one tap.** Right where you RSVP, you can drop the event into Google Calendar or any app (it exports a standard calendar file). Putting it on your calendar is the single best way to actually make it.
 
 ## Finding events
@@ -65,7 +65,7 @@ When you **check in at the door** of an event you're going to, you earn your Zap
 Every event gives you a personal invite to share: a link and a QR code that point straight at the event with your name on them. Text the link, drop it in a group chat, or let someone scan the code off your phone.
 
 - **The person you invite does not need an account.** When someone who isn't on Frequency opens your link, they get a simple RSVP form: name, email, a phone number if they want, and going or maybe. That's it. They're in.
-- **Your guests are yours, and they're private.** Anyone who RSVPs through your link lands in your own contacts, stamped with the event. They are **not** added to any mailing list and nobody blasts them. It works like saving a name in your phone, not like handing out an email list.
+- **Your guests are yours, and they're private.** Anyone who RSVPs through your link lands in your own Contacts, stamped with the event. They are **not** added to any mailing list and nobody blasts them. It works like saving a name in your phone, not like handing out an email list.
 - **We keep the count straight.** If the same person RSVPs twice, it updates their card instead of making a duplicate.
 
 ## What you earn for bringing people
@@ -100,6 +100,6 @@ Keep it real. The reward is for people who actually RSVP, show up, or join, neve
 
 ## Tips
 
-- New to a circle? An event is the easiest way in: say you're coming, then just show up.
-- You'll see events from the circles you've joined, plus public local events happening in your area.
-- Want to host? Any member can create an event, as a public local gathering or inside a circle you host. Adding another business as a co-host on your event is a Business space feature.
+- New to a Circle? An event is the easiest way in: say you're coming, then just show up.
+- You'll see events from the Circles you've joined, plus public local events happening in your area.
+- Want to host? Any member can create an event, as a public local gathering or inside a Circle you host. Adding another business as a co-host on your event is a Business Space feature.

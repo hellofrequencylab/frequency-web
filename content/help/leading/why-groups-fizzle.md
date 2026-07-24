@@ -11,7 +11,7 @@ status: published
 ---
 
 Groups fizzle because of missing structure, not missing charisma. The fix is not a
-more magnetic host. It is a standing time people stop renegotiating, a format they
+more magnetic Host. It is a standing time people stop renegotiating, a format they
 can predict, and a load you do not carry alone. Get those three right and people
 come back. That is the whole game: the return.
 
@@ -22,7 +22,7 @@ whether it is even happening is up for grabs each week, the group dies by a
 thousand small "maybe next times." Nobody quits on purpose. The structure just
 quietly stops holding, and attendance drifts to zero.
 
-The other common killer is one heroic host doing everything until they burn out or
+The other common killer is one heroic Host doing everything until they burn out or
 get sick, and the group has no spine without them.
 
 ## What actually gets people to come back?
@@ -58,7 +58,7 @@ Treat the return as the thing you are actually building, and run these every wee
    makes people feel missed. When it fills, seed a new Circle nearby instead of
    growing into a crowd.
 
-## How do I not burn out as the host?
+## How do I not burn out as the Host?
 
 Share the load. The fastest way to kill a group is to make it depend entirely on
 you. Recruit a **co-host** so the Circle survives a week you are out, and let

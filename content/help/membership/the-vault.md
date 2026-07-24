@@ -22,7 +22,7 @@ As you take part, the Quest's rewards (Zaps, Gems, milestones) **accrue for ever
 
 ## Cashing in (membership)
 
-To **claim** what's in your Vault (spend Gems, compete in the live season, and show your rank publicly) you need an active membership. A low membership floor opens it as a member benefit, and you can give more if you want to support the mission. That's the **Supporter** tier, which adds a small Supporter badge to your profile as a thank-you (the access is the same either way). Hosts can also grant access to a circle member who can't pay, so cost never keeps someone out.
+To **claim** what's in your Vault (spend Gems, compete in the live season, and show your rank publicly) you need an active membership. That paid personal tier is **Crew**: one honest price, and Member joins free, so you take part long before you ever pay. Hosts can also grant access to a Circle member who can't pay, so cost never keeps someone out.
 
 Either way, everything you earn keeps building: your Gems, your season trophies, and your **Amplitude** (the lifetime total behind your rank that never resets). What Gems actually buy (cosmetics, titles, collectible badges, membership credits) is covered in [Spending Gems in the Vault Store](/help/membership/the-gem-store).
 

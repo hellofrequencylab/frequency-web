@@ -104,7 +104,7 @@ run by someone learning the thing right alongside everyone else.
 Share your personal invite link. Every gathering gives you a link and a QR with
 your name on them, and the people you invite can RSVP without an account. Text it
 to a few friends, one at a time, and ask them plainly to come. Guests who RSVP,
-show up, or join land in your contacts and earn you **Zaps** as a Connector, so the
+show up, or join land in your Contacts and earn you **Zaps** as a Connector, so the
 work of filling the room counts. See [Events & RSVPs](/help/groups/events).
 
 ### Does it have to meet in person?

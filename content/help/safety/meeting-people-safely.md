@@ -9,11 +9,11 @@ featureKeys: [connections, events, moderation]
 status: published
 ---
 
-Frequency is built so you meet people the natural way: at a circle or a public event, around something you both care about. That's not just how it's meant to feel, it's the safest way to meet someone new. You're never on your own, there are other people there, and you get to know someone over a few gatherings instead of a single cold meetup.
+Frequency is built so you meet people the natural way: at a Circle or a public event, around something you both care about. That's not just how it's meant to feel, it's the safest way to meet someone new. You're never on your own, there are other people there, and you get to know someone over a few gatherings instead of a single cold meetup.
 
 ## The easiest, safest first meeting
 
-- **Meet at a circle or a public event first.** When someone catches your interest, look for a gathering you can both show up to. A room full of people is the safest possible introduction.
+- **Meet at a Circle or a public event first.** When someone catches your interest, look for a gathering you can both show up to. A room full of people is the safest possible introduction.
 - **Keep early meetings public.** A cafe, a park, a class. Somewhere with other people around. There's no rush to make it private.
 - **Tell someone where you're going.** A friend, a housemate, anyone. Share the plan and when you expect to be back.
 - **Trust your gut.** If something feels off, you don't owe anyone an explanation. Leave.

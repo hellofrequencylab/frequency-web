@@ -28,7 +28,7 @@ they land, so a badge is often a bonus on top of the thing you already did.
 
 A few examples of the kind of thing that earns one:
 
-- **First Circle.** Join your first circle.
+- **First Circle.** Join your first Circle.
 - **First Gathering.** Attend your first event.
 - **First Journey.** Finish your first Journey of the season.
 - **Streak milestones.** Keep a daily practice streak going to 3, 7, 14, 30, 60, 100,
@@ -39,7 +39,7 @@ A few examples of the kind of thing that earns one:
 
 The collection is lean and deliberate. It is built from:
 
-- **Firsts**: your first circle, first gathering, first Journey.
+- **Firsts**: your first Circle, first gathering, first Journey.
 - **Streak milestones**: the checkpoints on your daily practice streak.
 - **Amplitude milestones**: crossing big lifetime Zap totals.
 - **Pillar Trophies**: one for each Journey you finish (Mind, Body, Spirit).

@@ -22,8 +22,8 @@ Frequency is meant to feel safe. If something's wrong, you have direct ways to a
 
 ## How moderation works here
 
-- Frequency is moderated by **people**: the roles ladder (hosts, guides, mentors, and platform admins) handles safety, escalating as needed.
+- Frequency is moderated by **people**: the roles ladder (Hosts, Guides, Mentors, and platform admins) handles safety, escalating as needed.
 - When action is taken, a member may receive a direct message from the official moderation account.
 - Repeated or serious harm can lead to a member being suspended.
 
-If you're ever worried about someone's safety, reach a human, a host or the platform team, rather than handling it alone.
+If you're ever worried about someone's safety, reach a human, a Host or the platform team, rather than handling it alone.
