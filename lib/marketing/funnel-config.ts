@@ -131,7 +131,7 @@ export const MISSION_COPY = {
 
 /** The minimal splash footer (logo + tagline + a minimal legal row; no other exits). */
 export const FUNNEL_FOOTER = {
-  tagline: 'A place to be human.',
+  tagline: 'The community collective.',
   links: [
     { label: 'Privacy', href: '/privacy' },
     { label: 'Terms', href: '/terms' },
@@ -151,7 +151,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
     subhead:
       "Bookings, payments, and every person you've met, together in one place. Frequency keeps your relationships close, so the people you meet come back, and bring the next ones. Start free.",
     microcopy: 'No card. Free while you grow.',
-    trustLine: 'A place to be human.',
+    trustLine: 'You keep 100% of what you bring in.',
   },
   metaDescription:
     'Frequency gives coaches and healers bookings, payments, and one contact list in one place, so clients rebook and refer. Free to start, no card.',

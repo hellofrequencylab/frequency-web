@@ -336,10 +336,11 @@ function amountsFromMonthly(listMonthlyCents: number, foundingMonthlyCents: numb
   }
 }
 
-// The CLEAN catalog (ADR-460; FLAT re-pricing ADR-590). Monthly amounts from the owner-approved flat
-// model: Business $49/mo (full depth); the Resonance Engine add-on +$20/mo (optional on any paid plan);
-// Non Profit $29/mo FLAT (everything in Business, for verified 501(c)(3)s, donations built in). NEVER per
-// seat. Yearly derives as two months free. An item carries the same list + founding when no separate
+// The CLEAN catalog (ADR-460; Community Collective repricing ADR-811). Monthly amounts: Business $29/mo
+// (run-your-practice depth); the Resonance Engine add-on +$20/mo (optional on any paid plan); Non Profit
+// $39/mo FLAT (the full Collective toolkit, for verified 501(c)(3)s, donations built in). NEVER per seat.
+// Collective ($79, $49 beta) + Independent (~$249) are not in this sellable catalog yet (go-live task).
+// Yearly derives as two months free. An item carries the same list + founding when no separate
 // anchor is published (founding == list reads flat today; the field still exists so a future anchor is a
 // one-line edit, never a schema change). The marketing/team/branding add-on items are RETIRED (their
 // depth folds into the Business base, ADR-472); only addon_ai (the Resonance Engine) remains as an add-on.
@@ -348,11 +349,10 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     key: 'business_base',
     label: 'Frequency Business',
     perSeat: false,
-    // FOUNDING anchor (ADR-591): $49 charged under a $79 list. The strike renders on every pricing surface
-    // (the funnel doors, /pricing, the persona table) from this one source, so it never drifts.
-    // The single paid base, the full-depth tier (CRM, marketing, team roles, and branding folded in). No
-    // separate founding anchor published today (founding == list); a future anchor is a one-line edit.
-    // Per-seat Team billing rides this tier's seat machinery, not a separate add-on item (ADR-552).
+    // Business is the run-your-practice base (ADR-811): CRM, email, reporting, your own website. Automation,
+    // team roles, multi-pipeline, and collaborators live at COLLECTIVE; white-label at INDEPENDENT. No
+    // separate founding anchor today (founding == list == $29); a future anchor is a one-line edit.
+    // Per-seat Team billing rides this tier's seat machinery, not a separate add-on item.
     ...amountsFromMonthly(2900, 2900), // $29 flat, all-in (ADR-811 Community Collective)
   },
   addon_ai: {

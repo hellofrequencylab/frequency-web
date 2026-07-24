@@ -34,8 +34,14 @@ export async function classifyOrderSource(opts?: {
   buyerProfileId?: string | null
   sellerProfileId?: string | null
 }): Promise<OrderSourceResult> {
-  // An explicit discovery/marketplace/referral entry point from the calling surface is authoritative.
-  if (opts?.entryPoint) return { source: 'network', attributionRef: `ep:${opts.entryPoint}` }
+  // A SELF-SCAN (the buyer IS the seller) is never network-sourced, even with an explicit network entry
+  // point. Guard this FIRST so an operator buying their own listing off a marketplace/discovery surface
+  // (or their own referral link) is never billed the network rate on their own booking (the hard promise).
+  const selfScan = !!opts?.buyerProfileId && opts.buyerProfileId === opts?.sellerProfileId
+  // An explicit discovery/marketplace/referral entry point from the calling surface is authoritative
+  // (unless it is a self-scan).
+  if (opts?.entryPoint && !selfScan) return { source: 'network', attributionRef: `ep:${opts.entryPoint}` }
+  if (selfScan) return { source: 'self', attributionRef: null }
   try {
     const jar = await cookies()
     const ref = jar.get(REF_COOKIE)?.value ?? null

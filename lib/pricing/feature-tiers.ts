@@ -37,15 +37,20 @@ import type { GateAxis } from './gates'
 export const PLACEHOLDER_PRICING = true
 
 /** @placeholder Monthly price point per Space plan, in cents. Mirrors the code catalog founding rates
- *  (lib/billing/pricing-keys.ts CATALOG): Business $49, Non Profit $29 flat (ADR-590); free at $0. THE ONE
+ *  (lib/billing/pricing-keys.ts CATALOG): Business $29, Non Profit $39 flat (ADR-811); free at $0. THE ONE
  *  place to swap real Space prices when billing goes live. Preview only; never charged. */
 export const PLACEHOLDER_SPACE_PRICE_CENTS: Record<SpacePlan, number> = {
   free: 0,
   business: 2900, // $29 flat, all-in (ADR-811)
-  collective: 7900, // $79 list (beta $49 founding is a separate anchor in the catalog)
+  collective: 7900, // $79 list (beta $49 founding is COLLECTIVE_BETA_CENTS below)
   nonprofit: 3900, // $39 flat, verified, full Collective toolkit
   independent: 24900, // ~$249 white-label, network-disconnected (standard SaaS)
 }
+
+/** The Collective founding-BETA monthly price (cents): $49 under the $79 list (ADR-811). The ONE source
+ *  both the marketing pricing page (pricing-page.ts) and the in-app plan ladder (plan-ladder.tsx) read, so
+ *  the beta anchor can never drift between the two surfaces. */
+export const COLLECTIVE_BETA_CENTS = 4900
 
 /** @placeholder Monthly price point per personal membership tier, in cents. Mirrors the code defaults
  *  (lib/pricing/settings.ts PRICING_DEFAULTS): Crew $9, Supporter $24. THE ONE place to swap real personal

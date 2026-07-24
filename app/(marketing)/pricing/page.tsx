@@ -223,7 +223,7 @@ export default function PricingPage() {
       <Section tone="canvas">
         <SectionHeading
           eyebrow="By who you are"
-          title="One system, five doors."
+          title="One system, presented by who you are."
           kicker="The same Frequency, presented by who you are. Start on Business and grow into Collective as your community and your team grow."
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -308,8 +308,9 @@ function PricingTable({ tiers }: { tiers: PricingTier[] }) {
         ))}
       </div>
 
-      {/* Desktop: the real table. */}
-      <div className="hidden overflow-hidden rounded-2xl border border-border lg:block">
+      {/* Desktop: the real table. Wide content scrolls inside its own container (PAGE-FRAMEWORK) so the
+          four tier columns never clip on a narrow desktop. */}
+      <div className="hidden overflow-x-auto rounded-2xl border border-border lg:block">
         <table className="w-full text-left">
           <caption className="sr-only">Frequency Space pricing by tier</caption>
           <thead>
@@ -404,8 +405,11 @@ function PriceCell({ tier }: { tier: PricingTier }) {
           </span>
         )
       })}
-      {tier.priceKind === 'flat' && (
-        <span className="mt-1 block text-xs text-primary-strong">Founding price</span>
+      {/* "Founding price" only where an anchor actually exists (a list struck over a lower founding rate) —
+          i.e. Collective's $49-under-$79 beta. Business / Non Profit / Independent have list == founding,
+          so they must NOT claim a founding discount (skeptic test, CONTENT-VOICE). */}
+      {tierListAnchor(tier, 'month') && (
+        <span className="mt-1 block text-xs text-primary-strong">Founding beta price</span>
       )}
     </div>
   )

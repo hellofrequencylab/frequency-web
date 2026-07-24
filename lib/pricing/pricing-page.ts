@@ -23,7 +23,7 @@ import {
   type LoadoutTotal,
 } from './loadout'
 import type { AddonKey } from './plans'
-import { PLACEHOLDER_SPACE_PRICE_CENTS } from './feature-tiers'
+import { PLACEHOLDER_SPACE_PRICE_CENTS, COLLECTIVE_BETA_CENTS } from './feature-tiers'
 import type { BillingInterval, CatalogAmounts, CatalogItemKey } from '@/lib/billing/pricing-keys'
 
 // ── A money amount rendered both intervals (the table + strip show monthly with a yearly toggle) ─────
@@ -91,10 +91,8 @@ export interface PricingTier {
 // ── Preview pricing for the not-yet-sellable tiers (Collective / Independent, ADR-811) ────────────────
 // These have no Stripe/code catalog entry until go-live, so the page prices them from the ONE placeholder
 // map (feature-tiers PLACEHOLDER_SPACE_PRICE_CENTS) and marks them preview. Yearly = two months free (10x
-// monthly), the same math the catalog uses. Collective carries a beta founding anchor under its list.
-
-/** The Collective beta founding price (cents): $49 under the $79 list (strategy). Preview only. */
-const COLLECTIVE_BETA_CENTS = 4900
+// monthly), the same math the catalog uses. Collective carries the beta founding anchor (COLLECTIVE_BETA_CENTS,
+// imported from feature-tiers so it never drifts from the in-app ladder) under its list.
 
 /** Build a DualPrice for a preview tier from a monthly LIST cents and an optional lower FOUNDING cents
  *  (the beta anchor). Yearly is two months free (10x monthly). PURE. */
@@ -124,10 +122,10 @@ export function proAddonPrice(addon: AddonKey): string {
   return item.perSeat ? `+${amount}/seat/mo` : `+${amount}/mo`
 }
 
-/** Build the two commercial tier columns from the CODE catalog (ADR-552). PURE — no DB, no per-request
- *  read. Business is the single paid base (full depth); Non Profit is the verified-501c3 per-seat sibling
- *  (same depth, discounted). The add-on cells carry only the AI Engine: metered on Business, available on
- *  every paid tier. Free-vs-paid is a usage state within Business, so there is no third column. */
+/** Build the FOUR commercial tier columns (ADR-811): Business + Non Profit are sellable from the CODE
+ *  catalog; Collective + Independent are PREVIEW rows priced from the placeholder map (no catalog entry
+ *  until go-live) and flagged `preview`. PURE — no DB, no per-request read. The add-on cells carry only the
+ *  AI Engine: metered on Business, available on every paid tier. */
 export function pricingTiers(): PricingTier[] {
   const cat = pricingCatalog()
 
@@ -235,7 +233,7 @@ export interface LoadoutStripRow {
   /** The plain monthly total label, e.g. "$59/mo" or "$12/seat/mo" for the Nonprofit row. */
   totalLabel: string
   /** When the total is the plan PLUS a metered add-on, the plain breakdown of where it comes from, e.g.
-   *  "$49 plan + $20 Resonance Engine". Null when the total already IS the plan price (a Business-only
+   *  "$29 plan + $20 Resonance Engine". Null when the total already IS the plan price (a Business-only
    *  door, or the flat Nonprofit plan), so no bare higher number ever reads as the plan price. */
   breakdownLabel: string | null
   /** A plain one-line note on what the loadout is for. */
@@ -263,7 +261,7 @@ export interface PersonaLoadout {
 
 /** The FIVE persona doors (ADR-590): one system, presented by who they are. Each resolves to Business,
  *  Business + Resonance, or the Nonprofit plan. Coaches/healers and community builders turn the Resonance
- *  Engine on (Business + Resonance = $69/mo); studios and event hosts run on Business ($49/mo); nonprofits
+ *  Engine on (Business + Resonance = $29 + $20/mo); studios and event hosts run on Business ($29/mo); nonprofits
  *  run the flat Nonprofit plan ($29/mo). The monthly totals come from the catalog, never hardcoded, so a
  *  catalog change reflows every figure. */
 export const PERSONA_LOADOUTS: readonly PersonaLoadout[] = [
@@ -300,10 +298,10 @@ function stripAddonLabel(addon: AddonKey): string {
   return PRICING_ADDONS.find((a) => a.key === addon)?.label ?? addon
 }
 
-/** The plain breakdown of a loadout total, e.g. "$49 plan + $20 Resonance Engine", so a door whose
+/** The plain breakdown of a loadout total, e.g. "$29 plan + $20 Resonance Engine", so a door whose
  *  recommended loadout adds a metered add-on shows WHERE the total comes from and never reads as a bare
  *  higher plan price. Returns null when there is nothing to break down: the flat Nonprofit plan, or a
- *  Business-only door with no add-on (the total already IS the $49 plan price). PURE. */
+ *  Business-only door with no add-on (the total already IS the $29 plan price). PURE. */
 export function stripBreakdownLabel(p: PersonaLoadout): string | null {
   if (p.perSeat || p.addons.length === 0) return null
   const cat = pricingCatalog()

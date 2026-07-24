@@ -75,17 +75,16 @@ export function isSpacePlanLabel(raw: string | null | undefined): boolean {
 // add-on. The keys here are the EXISTING `spaces.entitlements` capability keys the readers already gate
 // on (e.g. 'crm', 'email', 'crm.resonance'); a tier/add-on grant is one key, never a schema change.
 //
-// THE COLLAPSE (ADR-552, folding the former Pro core into Business). The former `pro`/`practitioner`
-// depth (['crm', 'crm.playbooks']) folds INTO Business, so a former practitioner keeps the CRM +
-// governed-playbooks depth (no regression). Business carries the FULL depth: CRM, governed playbooks,
-// marketing (email/automation/multi-pipeline/reporting), Team seats, and Branding (white-label). Nonprofit
-// is the same depth. The resonance DEPTH (crm.resonance / crm.resonance_ai) is the AI Engine METERED
-// add-on, in NO tier base.
+// THE DEPTH LADDER (ADR-811). The former `pro`/`practitioner` depth (['crm', 'crm.playbooks']) folds INTO
+// Business (no regression). Business = the run-your-practice depth: CRM, governed playbooks, email,
+// reporting, and your own website. COLLECTIVE adds the scale + collaboration tools (automation,
+// multi-pipeline, team); INDEPENDENT adds white-label branding. Non Profit grants the COLLECTIVE set. The
+// resonance DEPTH (crm.resonance / crm.resonance_ai) is the AI Engine METERED add-on, in NO tier base.
 
-/** Business tier depth keys = the FULL paid depth (CRM + governed playbooks + marketing + team +
- *  branding + the multi-page website). Business and Nonprofit both grant this exact set; free grants
- *  nothing. The former Pro core (['crm', 'crm.playbooks']) folds in here so a former practitioner does
- *  not regress (ADR-552).
+/** Business tier depth keys (ADR-811) = the run-your-practice depth: CRM, governed playbooks, email,
+ *  reporting, and the multi-page website. Collective + Independent EXTEND this set (below); Non Profit
+ *  grants the Collective set. Free grants nothing. The former Pro core (['crm', 'crm.playbooks']) folds
+ *  in here so a former practitioner does not regress.
  *
  *  `space_full_website` (the multi-page profile / full website upsell) rides this set so a paid tier
  *  actually GRANTS it (ADR-782). It is enforced by a PURE default-deny read (spaceCanUseFullWebsite),

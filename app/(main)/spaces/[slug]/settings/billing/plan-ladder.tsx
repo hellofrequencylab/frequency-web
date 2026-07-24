@@ -1,6 +1,6 @@
 import { Check, Sparkles, ShieldCheck, Globe } from 'lucide-react'
 import { SPACE_PLAN_LABEL, type SpacePlan } from '@/lib/pricing/plans'
-import { PLACEHOLDER_SPACE_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
+import { PLACEHOLDER_SPACE_PRICE_CENTS, COLLECTIVE_BETA_CENTS } from '@/lib/pricing/feature-tiers'
 import { formatCents } from '@/lib/pricing/display'
 
 // THE COMMUNITY COLLECTIVE plan ladder (Phase 4, ADR-811) — the informational tier map on the Space
@@ -13,10 +13,8 @@ import { formatCents } from '@/lib/pricing/display'
 // Independent have no catalog entry until go-live) read "Coming soon", which is truthful today, not a
 // dark pattern. Prices come from the ONE placeholder map (feature-tiers), never hardcoded here. Non
 // Profit points at the existing verify flow. No em dashes (CONTENT-VOICE §10); plain, no hype, no guilt.
-
-/** Beta founding price for the Collective tier (strategy: $79 list, $49 beta). Preview only; nothing
- *  charges while billing is off. Kept next to the placeholder list price it annotates. */
-const COLLECTIVE_BETA_CENTS = 4900
+// COLLECTIVE_BETA_CENTS ($49) is imported from feature-tiers, the ONE source shared with the marketing
+// pricing page, so the beta anchor never drifts between the two surfaces.
 
 type RungState = 'current' | 'available' | 'soon' | 'verify'
 
