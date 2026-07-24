@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { Loader2, Zap } from 'lucide-react'
 import { claimSpaceAction } from './actions'
 
-export function ClaimSpaceButton({ token }: { token: string }) {
+export function ClaimSpaceButton({ token, size = 'md' }: { token: string; size?: 'md' | 'lg' }) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -18,6 +18,8 @@ export function ClaimSpaceButton({ token }: { token: string }) {
     })
   }
 
+  const lg = size === 'lg'
+
   return (
     <div className="space-y-2">
       {error && (
@@ -27,9 +29,15 @@ export function ClaimSpaceButton({ token }: { token: string }) {
         type="button"
         onClick={handleClaim}
         disabled={pending}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+        className={`inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-40 ${
+          lg ? 'px-8 py-4 text-base' : 'px-5 py-2.5 text-sm'
+        }`}
       >
-        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" aria-hidden />}
+        {pending ? (
+          <Loader2 className={lg ? 'h-5 w-5 animate-spin' : 'h-4 w-4 animate-spin'} />
+        ) : (
+          <Zap className={lg ? 'h-5 w-5' : 'h-4 w-4'} aria-hidden />
+        )}
         {pending ? 'Claiming' : 'Claim this business'}
       </button>
     </div>

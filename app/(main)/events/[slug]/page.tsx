@@ -1405,25 +1405,28 @@ export default async function EventDetailPage({
             claims (the accidental-claim fix), and claiming is a deliberate button. Signed-in →
             one-tap claim; signed-out → the host setup funnel, which returns here to finish. */}
         {claim && isUnclaimedPosted && extra?.claim_token && claim === extra.claim_token && (
-          <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-primary/40 bg-primary-bg/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-5 flex flex-col gap-4 rounded-2xl border border-primary/40 bg-primary-bg/60 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <p className="text-base font-bold text-text">Is this your event?</p>
-              <p className="mt-0.5 text-sm text-muted">
-                Claim it to manage RSVPs, edit the details, and run it from your own account.
+              <p className="flex items-center gap-1.5 text-lg font-bold text-text">
+                <Zap className="h-5 w-5 shrink-0 text-primary" aria-hidden /> Is this your event?
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                Frequency built this page so people nearby could find it. Claim it to manage RSVPs, edit the
+                details, and run it from your own account. It takes one tap.
               </p>
             </div>
-            {myProfileId ? (
-              <div className="shrink-0">
-                <ClaimButton token={extra.claim_token} />
-              </div>
-            ) : (
-              <Link
-                href={`/onboarding/beta?seq=event-experience-hosts-copy&next=${encodeURIComponent(`/events/${event.slug}?claim=${extra.claim_token}`)}`}
-                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-              >
-                Claim This Event
-              </Link>
-            )}
+            <div className="shrink-0 sm:w-64">
+              {myProfileId ? (
+                <ClaimButton token={extra.claim_token} size="lg" />
+              ) : (
+                <Link
+                  href={`/onboarding/beta?seq=event-experience-hosts-copy&next=${encodeURIComponent(`/events/${event.slug}?claim=${extra.claim_token}`)}`}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-base font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+                >
+                  <Zap className="h-5 w-5" aria-hidden /> Claim This Event
+                </Link>
+              )}
+            </div>
           </div>
         )}
 
