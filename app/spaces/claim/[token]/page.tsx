@@ -62,7 +62,9 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
 
   return (
     <AccentScope vars={accentVars} theme={spaceTheme}>
-      <div className="min-h-screen bg-canvas pb-28">
+      {/* Generous bottom padding so the fixed claim bar never overlaps the last block. The bar is a
+          single row at sm+ but stacks (message + big button + helper line) on mobile, so it needs more. */}
+      <div className="min-h-screen bg-canvas pb-48 sm:pb-28">
         {/* Claim ribbon — sets the context above the page it introduces. */}
         <div className="border-b border-primary/20 bg-primary-bg/40">
           <div className="mx-auto flex max-w-4xl items-start gap-2 px-4 py-2.5 text-sm text-primary-strong">
