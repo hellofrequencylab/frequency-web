@@ -142,33 +142,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/loneliness`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/friendship-as-an-adult`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/how-to-build-community`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/life-after-the-feed`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/calm-down-fast`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/meet-people-new-city`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/feel-less-awkward-in-groups`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     // Leader-track pillar (CONTENT-VOICE §7b.2): the activation guide for the
     // natural connector — answer-first, HowTo + FAQ schema.
     { url: `${SITE_URL}/how-to-start-a-circle`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     // Seeker-track pillar (CONTENT-VOICE §7a): finding your people by shared
     // wavelength — answer-first, Article + FAQ schema.
-    { url: `${SITE_URL}/find-like-minded-people`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     // Seeker-track pillar (CONTENT-VOICE §7a): closing the gap between wanting
     // connection and the daily default of staying in — answer-first, Article + FAQ schema.
     { url: `${SITE_URL}/how-to-be-more-social`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     // Seeker-track pillar (CONTENT-VOICE §7a): a social life without drinking —
     // gather around an activity, not a bar. Answer-first, Article + FAQ schema.
-    { url: `${SITE_URL}/social-life-without-drinking`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     // Seeker-track pillar (CONTENT-VOICE §7a): reaching back to a friend you
     // drifted from — one warm message, one easy plan. Answer-first, HowTo + FAQ schema.
-    { url: `${SITE_URL}/how-to-reconnect-with-old-friends`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     // Labs-track SEO pillar cluster (CONTENT-VOICE §2b builder/operator track): the
     // community-builder pages that balance the Seeker pillars above (Labs = the
     // infrastructure that lets people build + run third spaces). Each funnels to
     // /spaces (+ The Lab). Answer-first; Article/HowTo + FAQ schema.
-    { url: `${SITE_URL}/what-is-a-third-space`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/how-to-run-a-community-space`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/tools-for-community-builders`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/host-a-recurring-gathering`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     // The four Pillar landing pages (fixed taxonomy — Mind · Body · Spirit · Expression).
     ...(["mind", "body", "spirit", "expression"] as const).map((slug) => ({
       url: `${SITE_URL}/discover/practices/pillar/${slug}`,

@@ -22,8 +22,8 @@ handle. You are not walking into a room of strangers expected to make small talk
 from nothing. There is a thing to do, and the thing gives everyone something to
 point at besides each other.
 
-You are also not the only nervous one. Most people in the room felt exactly this
-before their first gathering. Showing up at all is the whole ask.
+If you are nervous, you are not the only one. Most people in the room felt the
+same before their first gathering. Showing up at all is the whole ask.
 
 ## What actually happens, start to finish?
 

@@ -1,6 +1,6 @@
 ---
 title: The leaderboard
-description: One shared goal first. Where people stand sits below it, scoped to your circle and yours to opt out of.
+description: One shared goal first. Where people stand sits below it, scoped to your Circle and yours to opt out of.
 category: the-quest
 order: 8
 updated: 2026-06-18
@@ -9,7 +9,7 @@ featureKeys: [leaderboard, gamification]
 status: published
 ---
 
-The leaderboard leads with one thing: a goal your circle is filling **together**. Individual standings sit below it, start local, and are yours to step out of. You'll find it in **The Vault**, under your standing.
+The leaderboard leads with one thing: a goal your Circle is filling **together**. Individual standings sit below it, start local, and are yours to step out of. You'll find it in **The Vault**, under your standing.
 
 ## The shared goal comes first
 
@@ -22,7 +22,7 @@ Below the shared goal is the individual board. Two controls shape it.
 **Scope** decides who you're compared with. It stays local on purpose: the people you actually practice with, not the whole world. There is no global board.
 
 - **Circle** (the default): people in your circles.
-- **Hub**: everyone across your [hub](/help/groups/hubs), the cluster of nearby circles.
+- **Hub**: everyone across your [hub](/help/groups/hubs), the cluster of nearby Circles.
 
 **Track** decides what the board ranks by.
 

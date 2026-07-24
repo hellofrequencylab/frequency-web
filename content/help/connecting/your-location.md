@@ -80,5 +80,5 @@ never exposes you:
 
 ## What about maps?
 
-The map on a circle's page plots the **circle's public meeting spot and event
+The map on a Circle's page plots the **Circle's public meeting spot and event
 venues**, never member locations. There are no member pins, period.

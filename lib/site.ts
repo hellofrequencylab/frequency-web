@@ -8,9 +8,9 @@ export const SITE_URL =
   "https://frequencylocal.com";
 
 export const SITE_NAME = "Frequency";
-export const SITE_TAGLINE = "The community collective";
+export const SITE_TAGLINE = "The Community Collective";
 export const SITE_DESCRIPTION =
-  "Frequency is a community collective. We exist to support and create community: start a circle, host events near you, and grow a space alongside others building real-world connection.";
+  "Frequency is a Community Collective. Everything a community needs, in one place: start a Circle, host Events near you, and grow a Space. You keep 100% of your own bookings; we earn only a small, shrinking network-only take-rate on what the network sends you.";
 
 // ── Unified site navigation ───────────────────────────────────────────────────
 // One nav, used by every header (the in-app AppShell top bar, the marketing

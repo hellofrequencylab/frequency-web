@@ -49,7 +49,7 @@ personal code, and it does double duty.
 
 ## Space and page codes
 
-People are not the only thing with a code. A Space, event, journey, and other
+People are not the only thing with a code. A Space, event, Journey, and other
 pages each have their own. Open the page and use its **QR** action to share that
 page's code: whoever scans it lands on that page, the code carries the page's own
 image, and anyone who joins Frequency through your share is credited to you. A

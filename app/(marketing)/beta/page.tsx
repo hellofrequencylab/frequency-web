@@ -127,8 +127,8 @@ export default function BetaPage() {
             View pricing
           </Link>{' '}
           ·{' '}
-          <Link href="/the-community" className="font-semibold text-primary-strong hover:underline">
-            Take the tour
+          <Link href="/the-quest" className="font-semibold text-primary-strong hover:underline">
+            See The Quest
           </Link>
         </p>
       </Section>

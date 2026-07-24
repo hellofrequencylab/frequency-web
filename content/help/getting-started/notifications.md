@@ -9,7 +9,7 @@ featureKeys: [notifications]
 status: published
 ---
 
-Notifications keep you in the loop without you having to check constantly: a reply to your post, a new event in your circle, a friend request, an upcoming gathering.
+Notifications keep you in the loop without you having to check constantly: a reply to your post, a new event in your Circle, a friend request, an upcoming gathering.
 
 ## Where they show up
 
@@ -19,11 +19,11 @@ Notifications keep you in the loop without you having to check constantly: a rep
 
 ## Tuning them
 
-Head to **Settings → Notifications** to choose what you hear about and on which channels. You're in control:
+Head to **Settings → Notifications** to choose what you hear about and how it reaches you. You're in control:
 
-- **Pick topics.** Turn each kind on or off on its own, and per channel: broadcasts, events, mentions, replies and comments on your own posts, and the occasional note about Frequency.
+- **Pick topics.** Turn each kind on or off on its own, and per place (in-app, email, push): broadcasts, events, mentions, replies and comments on your own posts, and the occasional note about Frequency.
 - **Pick how often.** For each topic, choose real-time, a daily digest, or a weekly digest. A digest gathers the quieter stuff into one summary instead of a stream.
-- **Mute one place.** Quiet a single circle or Space without leaving it. You still see everything when you open the app.
+- **Mute one place.** Quiet a single Circle or Space without leaving it. You still see everything when you open the app.
 - Every email includes an unsubscribe link, and we honor it everywhere.
 - Prefer calm? Keep in-app on and email light; you'll still see everything when you open the app.
 

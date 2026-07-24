@@ -103,7 +103,7 @@ export const data: Data = {
       type: 'Text',
       props: {
         id: 'tq-why-b',
-        body: "A good game knows how to pull you back: something to climb, progress you can see, a reason to return tomorrow. Almost every game spends that pull on nothing. The Quest spends it on the things that build a life. Sit for ten minutes. Take the walk. Show up to the Circle on Tuesday.\n\nWe're not shy about it: a lot of the work is meditation and movement, the stuff people mean to do and never quite get to. Yes, it's meditation. We just made it a game so you'd actually do it. You do the real thing, the game keeps score of it, and the rest of us are right there with you. The Quest is a space where we can all exist together and back each other up, week after week.",
+        body: "A good game knows how to pull you back: something to reach for, progress you can see, a reason to return tomorrow. Almost every game spends that pull on nothing. The Quest spends it on the things that build a life. Sit for ten minutes. Take the walk. Show up to the Circle on Tuesday.\n\nWe're not shy about it: a lot of the work is meditation and movement, the stuff people mean to do and never quite get to. Yes, it's meditation. We just made it a game so you'd actually do it. You do the real thing, the game keeps score of it, and the rest of us are right there with you. The Quest is a space where we can all exist together and back each other up, week after week.",
         size: 'lg',
         tone: 'canvas',
         width: 'default',
@@ -230,7 +230,7 @@ export const data: Data = {
         kicker: 'Real acts earn Zaps. At season end they roll into Gems you can spend.',
         stages: [
           { label: 'Show up', blurb: 'Log a Practice, finish a Challenge, take on a Task. In person counts most.' },
-          { label: 'Earn Zaps', blurb: 'Every real act pays Zaps. No leaderboard to climb, no streak to perform for a crowd.' },
+          { label: 'Earn Zaps', blurb: 'Every real act pays Zaps. No leaderboard, no streak to perform for a crowd.' },
           { label: 'Roll into Gems', blurb: 'At season end your Zaps convert to Gems at a flat five to one.' },
           { label: 'Spend in the Vault', blurb: 'Gems are yours to spend in the Vault, the member treasury where rewards live.' },
         ],
@@ -287,7 +287,7 @@ export const data: Data = {
       props: {
         id: 'tq-ranks-h',
         eyebrow: 'Season ranks',
-        title: 'You rank up by finishing, not by farming.',
+        title: 'You rank up by finishing, not by piling up points.',
         titleAccent: 'finishing',
         kicker: 'Your rank is simply how many Journeys you finished this season.',
         size: 'default',
@@ -334,7 +334,7 @@ export const data: Data = {
       type: 'Statement',
       props: {
         id: 'tq-stmt-3',
-        text: 'Not points to grind. A person to become.',
+        text: 'Not a number to chase. A person to become.',
         accent: 'A person to become.',
         tone: 'surface',
         layout: L,
@@ -375,7 +375,7 @@ export const data: Data = {
         title: 'Most games waste your life. This one builds it.',
         titleAccent: 'builds it',
         kicker: '',
-        body: "Every mechanic in the Quest answers to one rule: does this pull you toward real people, or deeper into a screen? The biggest rewards live off the phone, because Zaps come from being in the room. Ranks reset each season so it stays an open invitation, never a ladder you missed.\n\nWe're not building a better way to scroll. We're using the only thing screens are good at, the pull, and aiming it at the door, the Circle, and the practice you've been meaning to start.",
+        body: "Every mechanic in the Quest answers to one rule: does this pull you toward real people, or deeper into a screen? The biggest rewards live off the phone, because Zaps come from being in the room. Ranks reset each season so it stays an open invitation, never a train that left without you.\n\nWe're not building a better way to scroll. We're using the only thing screens are good at, the pull, and aiming it at the door, the Circle, and the practice you've been meaning to start.",
         side: 'right',
         imgAspect: 'portrait',
         focal: 'center',

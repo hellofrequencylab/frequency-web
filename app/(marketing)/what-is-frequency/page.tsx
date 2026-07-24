@@ -20,13 +20,18 @@ import {
 } from '@/components/marketing/marketing-ui'
 import { FOUNDING_PLACE } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
-import { articleSchema, faqSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { articleSchema, faqSchema, howToSchema, breadcrumbSchema } from '@/lib/jsonld'
 
 export const revalidate = 3600
 
-const TITLE = 'What is Frequency?'
+const TITLE = 'What is Frequency and how does it work?'
+// META_DESCRIPTION is trimmed to ~155 chars for the SERP snippet and carries the
+// primary keywords. The longer DESCRIPTION feeds the Article schema, where length
+// is not penalized and the fuller Community Collective framing aids AIO citation.
+const META_DESCRIPTION =
+  'Frequency is a Community Collective: small local Circles, nearby Events, and a real space to gather. What it is, how it works, and what it costs.'
 const DESCRIPTION =
-  "Frequency rebuilds the third place: small local Circles, nearby Events, and a physical space to gather, connecting neighborhoods into real-world community. Here's what it is, how it works, and why it exists."
+  'Frequency is a Community Collective: small local Circles, nearby Events, and a real space to gather, plus the tools creators and businesses need to grow together. You keep 100% of your own bookings. Here is what it is, how it works, and what it costs.'
 
 // The hero photo, fed to the Article schema for richer-result eligibility.
 const HERO_IMAGE = '/images/site/community-1.jpg'
@@ -34,12 +39,12 @@ const HERO_IMAGE = '/images/site/community-1.jpg'
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
-    description: DESCRIPTION,
+    description: META_DESCRIPTION,
     alternates: { canonical: '/what-is-frequency' },
     openGraph: {
-      title: 'What is Frequency? · Frequency',
+      title: 'What is Frequency and how does it work? · Frequency',
       description:
-        'Frequency rebuilds the third place: small local Circles, nearby Events, and a real space to gather. What it is, how it works, and why it exists.',
+        'Frequency is a Community Collective: small local Circles, nearby Events, a real space to gather, and the tools to grow together. What it is, how it works, and what it costs.',
       url: '/what-is-frequency',
     },
   }
@@ -51,15 +56,27 @@ export function generateMetadata(): Metadata {
 const FAQ = [
   {
     q: 'What is Frequency?',
-    a: 'Frequency is a movement to rebuild the third place: the spaces that are not home and not work where you are known by name. It connects neighborhoods into real-world community through small local Circles, nearby Events, and a physical space to gather, so connection happens in person instead of on a feed.',
+    a: 'Frequency is a Community Collective built to rebuild the third place: the spaces that are not home and not work where you are known by name. It gives a neighborhood everything it needs to gather in one place through small local Circles, nearby Events, and a physical space to meet, and gives the creators, coaches, and businesses who host them the tools to grow together, while everyone keeps 100% of their own bookings.',
   },
   {
     q: 'How does Frequency work?',
-    a: 'You find your people by what you care about, join a Circle (a small standing local group that meets on a set rhythm), and show up to Events near you. The same handful of faces keep ending up in the same room, which is how strangers slowly become regulars and regulars become friends.',
+    a: 'Three steps. You pick what you practice (a Channel inside one of the four Pillars: Mind, Body, Spirit, Expression), join a Circle (a small standing local group that meets on a set rhythm), and show up to Events near you. The same handful of faces keep ending up in the same room, which is how strangers slowly become regulars and regulars become friends. The app handles the quiet logistics of who is meeting, where, and when, then gets out of the way.',
   },
   {
     q: 'What is a Circle?',
     a: 'A Circle is a small group around a shared interest that meets on a regular rhythm: a walk, a supper table, a breathwork sit, a book. It is leaderful, not leader-dependent, so it holds itself together instead of depending on one person to keep it alive.',
+  },
+  {
+    q: 'What are the four Pillars?',
+    a: 'The four Pillars are Mind, Body, Spirit, and Expression, the parts a whole life moves through. You start in the one calling you right now. Inside each Pillar are Channels, and inside each Channel are Circles near you.',
+  },
+  {
+    q: 'What is a Channel?',
+    a: 'A Channel is what you practice: a topic inside a Pillar, like breathwork, strength, supper clubs, or human relating. It connects you to people everywhere who care about the same thing, and it is the thread that leads you to a Circle near you.',
+  },
+  {
+    q: 'How does a Circle grow?',
+    a: 'Circles are built to divide, not to keep a waitlist. When one fills up it seeds a new Circle, led by someone ready to step up. A few neighboring Circles become a neighborhood, neighborhoods become a whole local community, and none of it is appointed from above.',
   },
   {
     q: 'What is The Lab?',
@@ -71,7 +88,15 @@ const FAQ = [
   },
   {
     q: 'How much does Frequency cost?',
-    a: 'Membership is free to join during the beta. The model is pay-it-forward: people who can give more keep the doors open for people who cannot, so nobody is priced out of belonging.',
+    a: 'Frequency keeps 0% of your own bookings, always. You keep 100% of what your own clients and classes earn you. We make our money only on the business the network sends you, a small network-only take-rate that shrinks as your plan rises: Business 5%, Collective 3%, Non Profit 0%, Independent 0%. Plans run Member (free), Crew ($9), Business ($29, beta $19), Collective ($79, beta $49), Non Profit ($39), and Independent ($249). See the full ladder at /pricing.',
+  },
+  {
+    q: 'How does Frequency make money?',
+    a: 'Only on the business the network sends you, never on the work you bring yourself. Your own bookings, clients, and classes are 0%, always. When the network refers a client or sells your work to someone you would not have reached alone, we take a small network-only slice that shrinks as your plan rises: Business 5%, Collective 3%, Non Profit 0%, Independent 0%. The physical spaces are funded separately, through a community-owned vehicle, not skimmed off your margin.',
+  },
+  {
+    q: 'What is the Community Collective?',
+    a: 'Frequency is a Community Collective: a network where independent creators, coaches, healers, and small businesses grow together, and eventually build real-world spaces together. You keep 100% of your own bookings and we earn only on what the network sends you. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
   },
   {
     q: 'Where is Frequency available?',
@@ -96,6 +121,18 @@ const STEPS = [
   },
 ] as const
 
+// The tier ladder, lifted for AIO so an answer engine can quote the whole shape
+// in one place. Take-rate shown is network-sourced only: your own bookings are
+// always 0%. Prices mirror /pricing and the FAQ; every step up buys down the rate.
+const TIERS = [
+  { name: 'Member', price: 'Free', take: '0% on your own bookings', who: 'Belong, be found, run a basic bookable page.' },
+  { name: 'Crew', price: '$9/mo', take: '0% on your own bookings', who: 'The full game, plus author your own Circles and Journeys.' },
+  { name: 'Business', price: '$29/mo (beta $19)', take: '5% network only', who: 'Run your whole practice on one honest price.' },
+  { name: 'Collective', price: '$79/mo (beta $49)', take: '3% network only', who: 'Host collaborators, a shared Space, and shared Events.' },
+  { name: 'Non Profit', price: '$39/mo', take: '0% network only', who: 'The full Collective toolkit, verified 501(c)(3).' },
+  { name: 'Independent', price: '~$249/mo', take: 'Off the network', who: 'White-label and standalone. Standard software, no network lift.' },
+] as const
+
 export default function WhatIsFrequencyPage() {
   return (
     <>
@@ -106,10 +143,20 @@ export default function WhatIsFrequencyPage() {
             description: DESCRIPTION,
             path: '/what-is-frequency',
             published: '2026-06-29',
-            updated: '2026-06-29',
+            updated: '2026-07-24',
             image: HERO_IMAGE,
           }),
           faqSchema(FAQ.map((f) => ({ q: f.q, a: f.a }))),
+          // HowTo mirrors the visible three-step "How does Frequency work?"
+          // section so answer engines can lift the steps directly. Derived from
+          // STEPS: schema and copy never drift.
+          howToSchema({
+            name: 'How does Frequency work?',
+            description:
+              'Find your people by what you care about, join a small local Circle, and gather in person.',
+            image: HERO_IMAGE,
+            steps: STEPS.map((s) => ({ name: s.title, text: s.body })),
+          }),
           breadcrumbSchema([{ name: 'What is Frequency', path: '/what-is-frequency' }]),
         ]}
       />
@@ -120,7 +167,7 @@ export default function WhatIsFrequencyPage() {
         focal="object-center"
         eyebrow="The short version"
         title="What is Frequency?"
-        subtitle="Frequency is a movement to rebuild the third place: small local Circles, nearby Events, and a real space to gather. Connection in person, with the same few faces, instead of one more feed."
+        subtitle="Frequency is a Community Collective. Small local Circles, nearby Events, a real space to gather, and the tools creators and businesses need to grow together. You keep 100% of your own bookings."
       >
         <Button href="/discover">
           See what&apos;s happening near you <ArrowRight className="h-5 w-5" />
@@ -130,16 +177,19 @@ export default function WhatIsFrequencyPage() {
       {/* Answer-first: the direct answer in the first two sentences. */}
       <Section tone="canvas" pad="pt-14 pb-16 sm:pt-16 sm:pb-20">
         <Lead>
-          Frequency is a movement to rebuild the third place: the spaces that are
-          not home and not work where you are known by name and missed when you
-          do not show up. It connects neighborhoods into real-world community.
+          Frequency is a Community Collective built to rebuild the third place:
+          the spaces that are not home and not work where you are known by name.
+          It gives a neighborhood everything it needs to gather in one place.
         </Lead>
         <Body>
           The corner cafe, the town square, the standing table: we traded them
-          for feeds and followers and ended up surrounded yet unseen. Frequency
-          is the deliberate rebuild. You find a few people near you, join a small
-          group that meets on a rhythm, and show up in person. The app is only
-          the thread that gets you into the room.
+          for feeds and followers and lost the room. Frequency is the deliberate
+          rebuild. You find a few people near you, join a small group that meets
+          on a rhythm, and show up in person. The creators, coaches, and
+          businesses who host those groups get the booking, payment, and
+          community tools to grow together, and keep 100% of their own bookings
+          while they do. The app is only the thread that gets everyone into the
+          room.
         </Body>
       </Section>
 
@@ -148,12 +198,37 @@ export default function WhatIsFrequencyPage() {
         <span className="text-primary">A few people who expect you on Thursday.</span>
       </PullQuote>
 
-      {/* How it works, at a glance. */}
+      {/* How it works, at a glance. Three steps, then the taxonomy that carries
+          them (absorbed from the retired /how-it-works explainer). */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-9">
+        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
           How does Frequency work?
         </h2>
-        <Steps steps={STEPS} />
+        <Lead>
+          In three steps: pick what you practice, join a Circle near you, and show
+          up in person. The same handful of faces keep landing in the same room.
+        </Lead>
+        <div className="mt-9">
+          <Steps steps={STEPS} />
+        </div>
+        <div className="mt-10">
+          <Body>
+            Underneath those steps is a simple shape: four Pillars, then Channels,
+            then Circles. The four Pillars are Mind, Body, Spirit, and Expression,
+            the parts a whole life moves through. Inside a Pillar are Channels
+            (breathwork, strength, supper clubs, sound), and a Channel is the thread
+            that leads you to a Circle near you. You do not fill out a form or wait
+            to be let in. You pick two words, Pillar and Channel, and you are in the
+            room. See the four Pillars and how they fit together on{' '}
+            <a
+              className="text-primary-strong font-semibold hover:underline"
+              href="/the-community"
+            >
+              The Community
+            </a>
+            .
+          </Body>
+        </div>
       </Section>
 
       {/* One concept per section. Question H2s in the reader's words. */}
@@ -175,7 +250,27 @@ export default function WhatIsFrequencyPage() {
         </Body>
       </Section>
 
+      {/* How it grows: absorbed from the retired /how-it-works explainer. */}
       <Section tone="surface">
+        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+          How does Frequency grow?
+        </h2>
+        <Lead>
+          It spreads like cells, not franchises. Circles are built to divide, so a
+          full one seeds a new one instead of keeping a waitlist.
+        </Lead>
+        <Body>
+          When a Circle fills up, someone who was ready to step up starts the next
+          one. A handful of neighboring Circles becomes a neighborhood, a few
+          neighborhoods become a whole local community, and none of it is handed
+          down from above. That is why it is built guru-free: leaderful, not
+          leader-dependent. Take the same structure away from any one person and it
+          keeps running, because the practices, the places, and the people were the
+          point all along.
+        </Body>
+      </Section>
+
+      <Section tone="canvas">
         <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
           What is The Lab?
         </h2>
@@ -192,7 +287,7 @@ export default function WhatIsFrequencyPage() {
         </Body>
       </Section>
 
-      <Section tone="canvas">
+      <Section tone="surface">
         <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
           Is Frequency a social media app?
         </h2>
@@ -209,7 +304,7 @@ export default function WhatIsFrequencyPage() {
         </Body>
       </Section>
 
-      <PullQuote tone="surface">
+      <PullQuote tone="canvas">
         We don&apos;t want to be{' '}
         <span className="text-primary">followed</span>. We want to be{' '}
         <span className="text-primary">joined</span>.
@@ -226,11 +321,12 @@ export default function WhatIsFrequencyPage() {
         </Lead>
         <Body>
           Frequency exists to rebuild the third place: a community designed to
-          last, real physical homes for connection, and a model that keeps the
-          door open to anyone regardless of what they can pay. It is built
-          guru-free and pay-it-forward, to outlast any one person. We are not
-          building a following. We are building infrastructure, the kind of thing
-          you can lean your whole weight on.
+          last, real physical homes for connection, and a business model that
+          stays honest. We never take a cut of your own bookings. We earn only on
+          the business the network sends you, a small take-rate that shrinks as
+          your plan rises. It is built guru-free, to outlast any one person. We
+          are not building a following. We are building infrastructure, the kind
+          of thing you can lean your whole weight on.
         </Body>
       </Section>
 
@@ -238,6 +334,116 @@ export default function WhatIsFrequencyPage() {
         We&apos;re not building a following. We&apos;re building{' '}
         <span className="text-primary">infrastructure</span>.
       </Statement>
+
+      {/* The Community Collective: who it serves and how the money works. */}
+      <Section tone="surface">
+        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+          Who is Frequency for?
+        </h2>
+        <Lead>
+          Anyone who wants to belong, and everyone who brings people together: the
+          creators, coaches, healers, and small businesses who host the Circles and
+          run the rooms.
+        </Lead>
+        <Body>
+          This is what makes Frequency a Community Collective. Independent hosts
+          grow together instead of alone, share a Space and Events, and keep 100% of
+          their own bookings. We earn only on what the network sends them. Plans
+          climb from Member to Crew, Business, Collective, Non Profit, and
+          Independent, and every step up lowers the small network-only take-rate
+          instead of adding a bill. Four promises hold it honest: we never take a
+          cut of your bookings, one honest price with no surprise invoices, month to
+          month so you can leave anytime with your data, and a live readout of
+          exactly what the network earned you.
+        </Body>
+        <Button href="/pricing" variant="secondary">
+          See the plans and take-rates <ArrowRight className="h-5 w-5" />
+        </Button>
+      </Section>
+
+      {/* The tier ladder, scannable, so answer engines can quote the whole shape. */}
+      <Section tone="canvas">
+        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+          How much does Frequency cost?
+        </h2>
+        <Lead>
+          Joining is free, forever, and you keep 100% of your own bookings on every
+          plan. We earn only on the business the network sends you, and each step up
+          the ladder buys that small rate down.
+        </Lead>
+        <ul className="mt-8 space-y-3">
+          {TIERS.map((t) => (
+            <li
+              key={t.name}
+              className="rounded-2xl border border-border bg-surface p-5 sm:flex sm:items-baseline sm:gap-5"
+            >
+              <div className="flex items-baseline gap-3 sm:w-64 sm:shrink-0">
+                <span className="font-display uppercase text-text text-xl leading-none">
+                  {t.name}
+                </span>
+                <span className="text-sm font-bold text-primary-strong">{t.price}</span>
+              </div>
+              <div className="mt-2 sm:mt-0 min-w-0">
+                <p className="text-base text-muted leading-relaxed">{t.who}</p>
+                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-subtle">
+                  {t.take}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-8">
+          <Button href="/pricing">
+            See the full pricing <ArrowRight className="h-5 w-5" />
+          </Button>
+        </div>
+      </Section>
+
+      {/* Hub-and-spoke: cross-link the three sibling pillars. This page is the
+          canonical explainer; the triptych goes deep on each part. */}
+      <Section tone="surface">
+        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+          Where can I go deeper?
+        </h2>
+        <Lead>
+          This page is the short answer. Three sibling pages go deep on each part of
+          Frequency.
+        </Lead>
+        <ul className="mt-8 grid gap-4 sm:grid-cols-3">
+          {[
+            {
+              href: '/the-community',
+              label: 'The Community',
+              text: 'The four Pillars, your Channels, and how Circles grow on their own.',
+            },
+            {
+              href: '/the-lab',
+              label: 'The Lab',
+              text: 'The physical third space: movement studios, a thermal circuit, a cold pool.',
+            },
+            {
+              href: '/the-quest',
+              label: 'The Quest',
+              text: 'The year-round game that turns practices into a rhythm you actually keep.',
+            },
+          ].map((p) => (
+            <li key={p.href}>
+              <a
+                href={p.href}
+                className="block h-full rounded-3xl border border-border bg-surface p-6 transition-colors hover:border-border-strong"
+              >
+                <p className="font-display uppercase text-text text-2xl leading-none">
+                  {p.label}
+                </p>
+                <p className="mt-3 text-sm text-muted leading-relaxed">{p.text}</p>
+                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong">
+                  Read more <ArrowRight className="h-4 w-4" />
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </Section>
 
       {/* How it begins, with a real photo and an internal link into the cluster. */}
       <ZigZag
@@ -263,7 +469,7 @@ export default function WhatIsFrequencyPage() {
       </ZigZag>
 
       {/* FAQ: answer-first pairs, mirrored into FAQPage schema above. */}
-      <Section tone="surface">
+      <Section tone="canvas">
         <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
           Common questions
         </h2>

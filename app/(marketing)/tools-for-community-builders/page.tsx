@@ -221,7 +221,7 @@ export default function ToolsForCommunityBuildersPage() {
         imgAspect="landscape"
         reverse
         tone="surface"
-        cta={{ label: 'The operator playbook', href: '/how-to-run-a-community-space' }}
+        cta={{ label: 'The operator playbook', href: '/how-to-build-community' }}
       >
         <p>
           Frequency Labs bundles the four jobs into a Space so you stop being the glue

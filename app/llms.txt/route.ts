@@ -24,7 +24,7 @@ const abs = (path: string) => `${SITE_URL}${path}`
 
 // The key public pages, each with a one-line description in the locked voice.
 const PAGES: { path: string; label: string; desc: string }[] = [
-  { path: '/', label: 'Home', desc: `${SITE_NAME}, the community collective. The short version of who it is for and how it works.` },
+  { path: '/', label: 'Home', desc: `${SITE_NAME}, the Community Collective. The short version of who it is for and how it works.` },
   { path: '/start', label: 'Start here', desc: 'Choose how you want to get involved, then join the beta.' },
   { path: '/the-community', label: 'The Community', desc: 'How you find your people, through Pillars, Channels, and Circles. For builders: host one Circle and we hand you the format and the first-night script.' },
   { path: '/the-quest', label: 'The Quest', desc: 'The light, in-person game: Zaps, Gems, season ranks, and Journeys.' },
@@ -50,17 +50,11 @@ const COMPARE: { path: string; label: string; desc: string }[] = [
 
 // Problem-aware guides (the SEO pillar pages). Answer-first, so an engine can cite them.
 const GUIDES: { path: string; label: string; desc: string }[] = [
-  { path: '/loneliness', label: 'Loneliness and third places', desc: 'High-functioning loneliness, why third places matter, and what to do about it.' },
-  { path: '/friendship-as-an-adult', label: 'Friendship as an adult', desc: 'Why it gets hard to make friends after 30, and how to start.' },
-  { path: '/how-to-build-community', label: 'How to build community', desc: 'How to start a community group that lasts, step by step.' },
-  { path: '/life-after-the-feed', label: 'Life after the feed', desc: 'How to quit doomscrolling and replace it with something real.' },
+  { path: '/loneliness', label: 'Loneliness and third places', desc: 'High-functioning loneliness, third places and third spaces, and life after the feed: why you can feel lonely with friends, why third places got rare, how to quit doomscrolling, and what to do about it.' },
+  { path: '/friendship-as-an-adult', label: 'How to make friends as an adult', desc: 'Why it gets hard to make friends after 30, how to meet people in a new city, how to find like-minded people, and how to reconnect with old friends.' },
+  { path: '/how-to-be-more-social', label: 'How to be more social', desc: 'How to be more social without a new personality: feel less awkward in groups and build a social life without drinking. Pick one recurring thing and become a regular.' },
   { path: '/calm-down-fast', label: 'How to calm down fast', desc: 'What to do when you are wired and cannot switch off, and the quiet fix underneath it.' },
-  { path: '/meet-people-new-city', label: 'How to meet people in a new city', desc: 'You moved and know no one. The fastest honest way to meet people: pick one recurring thing and become a regular.' },
-  { path: '/feel-less-awkward-in-groups', label: 'Feeling less awkward in groups', desc: 'How to feel less awkward around new people: return to one small room and let the activity carry you.' },
-  { path: '/find-like-minded-people', label: 'Find like-minded people', desc: 'How to find your people by leading with what you care about and becoming a regular where it happens.' },
-  { path: '/how-to-be-more-social', label: 'How to be more social', desc: 'How to be more social without a new personality: pick one recurring thing, put it on the calendar, and become a regular.' },
-  { path: '/social-life-without-drinking', label: 'Social life without drinking', desc: 'How to have a real social life without the bar: gather around an activity, pick rooms that repeat, and let the shared thing carry the night.' },
-  { path: '/how-to-reconnect-with-old-friends', label: 'Reconnect with old friends', desc: 'How to reach back to a friend you drifted from: send one short, warm message, keep it light, and offer one easy plan to meet.' },
+  { path: '/how-to-build-community', label: 'How to build community', desc: 'How to build community that lasts, step by step: host a recurring gathering and run a community space without burning out.' },
   { path: '/how-to-start-a-circle', label: 'How to start a Circle', desc: 'You do not have to build a community. Start one small Circle: one thing, a standing time, a few people, the same simple format each week.' },
 ]
 
@@ -140,10 +134,12 @@ export async function GET() {
   const out: string[] = [
     `# ${SITE_NAME}`,
     '',
-    `> ${SITE_NAME} is a Community Collective. It exists to support and create community: people find`,
-    `> their people by topic, join a Circle (a small standing local group), show up to nearby Events,`,
-    `> grow a Space (a business or organization), and gather at The Lab (a physical third space). The`,
-    `> Quest is a light, transparent game that rewards showing up in person, not scrolling. ${SITE_TAGLINE}.`,
+    `> ${SITE_NAME} is a Community Collective. It exists to support every community effort and help`,
+    `> everyone in it succeed, together. People find their people by topic, join a Circle (a small standing`,
+    `> local group), show up to nearby Events, grow a Space (a business or organization), and gather at The`,
+    `> Lab (a physical third space). You keep 100% of your own bookings; Frequency earns only a small,`,
+    `> shrinking network-only take-rate on the business the network sends you. The Quest is a light,`,
+    `> transparent game that rewards showing up in person, not scrolling. ${SITE_TAGLINE}.`,
     `> Free during the beta, taking root in ${FOUNDING_PLACE}.`,
     '',
     ...stats,
@@ -156,7 +152,7 @@ export async function GET() {
     '## How Frequency compares',
     ...COMPARE.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
     '',
-    '## Pricing for Spaces (a community collective, not a tax on your work)',
+    '## Pricing for Spaces (a Community Collective, not a tax on your work)',
     'The core promise: you keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective), and that rate drops as your plan rises. The tier ladder: Business $29/mo, Collective $79/mo, Non Profit $39/mo flat (verified 501c3), and Independent for a standalone brand off the network. Crew is the $9/mo personal tier. Monthly or yearly, two months free.',
     ...pricingLadderSummary(),
     'Network-sourced take-rate by plan: Business 5%, Collective 3%, Non Profit 0%, Independent 0% (off the network). Nothing is ever taken on a booking you bring in yourself.',

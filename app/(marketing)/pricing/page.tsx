@@ -98,10 +98,10 @@ export default function PricingPage() {
         data={[
           breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]),
           faqSchema(PRICING_FAQ),
-          // One Product/Offer per SELLABLE tier, priced at the monthly founding amount (the real price
-          // today). Preview tiers (Collective / Independent, no catalog entry until go-live) are excluded
-          // so the structured data never advertises an Offer that cannot be purchased yet. Built from the
-          // same catalog the table renders, so the schema never drifts.
+          // One Product/Offer per tier, priced at the monthly founding amount (the real price today). All
+          // four tiers are live and buyable from the code catalog (ADR-811 go-live), so every one gets an
+          // Offer; the `!t.preview` guard is a defensive no-op kept for a future not-yet-sellable tier.
+          // Built from the same catalog the table renders, so the schema never drifts.
           ...tiers
             .filter((t) => !t.preview)
             .map((t) =>
@@ -168,7 +168,7 @@ export default function PricingPage() {
 
         <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-relaxed text-subtle">
           You keep 100% of your own bookings, always. The take-rate applies only to business the network
-          sends you, and it drops as your plan rises. Collective and Independent are coming soon.
+          sends you, and it drops as your plan rises. Every plan here is live and buyable today.
         </p>
       </Section>
 
@@ -330,11 +330,6 @@ function PricingTable({ tiers }: { tiers: PricingTier[] }) {
                         Most chosen
                       </span>
                     )}
-                    {t.preview && (
-                      <span className="rounded-md border border-dashed border-border px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-subtle">
-                        Coming soon
-                      </span>
-                    )}
                   </div>
                 </th>
               ))}
@@ -442,11 +437,6 @@ function TierCard({ tier }: { tier: PricingTier }) {
         {tier.featured && (
           <span className="rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
             Most chosen
-          </span>
-        )}
-        {tier.preview && (
-          <span className="rounded-md border border-dashed border-border px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-subtle">
-            Coming soon
           </span>
         )}
       </div>

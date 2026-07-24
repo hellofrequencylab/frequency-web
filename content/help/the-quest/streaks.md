@@ -66,5 +66,5 @@ badge to chase on the **Leaderboard**, in the consistency section under the shar
 
 A streak is yours, but it is better with company. Walk a Journey alongside the people in
 your Circle, practice the same things over the same weeks, and do your Expression
-Challenges together at a gathering. Nobody is ranked against their circle. Showing up
+Challenges together at a gathering. Nobody is ranked against their Circle. Showing up
 together is the point.

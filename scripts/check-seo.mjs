@@ -46,11 +46,22 @@ const SITEMAP_FILE = join(APP_DIR, 'sitemap.ts')
 // Audited 2026-07-02 against the pages themselves.
 const INTENTIONALLY_EXCLUDED = new Map([
   ['/build', '308 permanentRedirect → /the-community (retired Mode page; old links + SEO consolidate onto canonical)'],
-  ['/how-it-works', '308 permanentRedirect → /the-community (retired; ranking signals consolidate on canonical)'],
+  ['/how-it-works', '308 permanentRedirect → /what-is-frequency (consolidated explainer, ADR-811 IA)'],
   ['/practice', '308 permanentRedirect → /the-quest (retired Mode page)'],
   ['/spread', '308 permanentRedirect → /the-community (retired Mode page)'],
   ['/demo', '308 permanentRedirect → /the-community (retired; no redirect chain for crawlers, SEO-1)'],
-  ['/lead-funnel-kit', 'robots noindex — operator-only funnel infographic, not a crawl target'],
+  ['/lead-funnel-kit', '308 permanentRedirect → /tools-for-community-builders (retired operator preview, ADR-811 IA)'],
+  // ── ADR-811 IA consolidation (2026-07-24): overlapping SEO guides merged into authoritative
+  //    pillars; each retired guide is a 308 redirect that transfers ranking equity to its pillar. ──
+  ['/life-after-the-feed', '308 permanentRedirect → /loneliness (absorbed into the loneliness/third-place pillar)'],
+  ['/what-is-a-third-space', '308 permanentRedirect → /loneliness (absorbed into the loneliness/third-place pillar)'],
+  ['/meet-people-new-city', '308 permanentRedirect → /friendship-as-an-adult (absorbed into the making-friends pillar)'],
+  ['/find-like-minded-people', '308 permanentRedirect → /friendship-as-an-adult (absorbed into the making-friends pillar)'],
+  ['/how-to-reconnect-with-old-friends', '308 permanentRedirect → /friendship-as-an-adult (absorbed into the making-friends pillar)'],
+  ['/feel-less-awkward-in-groups', '308 permanentRedirect → /how-to-be-more-social (absorbed into the social-confidence pillar)'],
+  ['/social-life-without-drinking', '308 permanentRedirect → /how-to-be-more-social (absorbed into the social-confidence pillar)'],
+  ['/host-a-recurring-gathering', '308 permanentRedirect → /how-to-build-community (absorbed into the builder pillar)'],
+  ['/how-to-run-a-community-space', '308 permanentRedirect → /how-to-build-community (absorbed into the builder pillar)'],
   ['/beta/confirm', 'robots noindex — double-opt-in confirmation landing (transactional)'],
   ['/subscribe/confirm', 'robots noindex — double-opt-in confirmation landing (transactional)'],
   ['/founders/checkout', 'robots noindex — Stripe checkout hand-off (gate lives in the action)'],

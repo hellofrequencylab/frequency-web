@@ -35,26 +35,53 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
-import { articleSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { articleSchema, breadcrumbSchema, faqSchema } from '@/lib/jsonld'
 
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'The Quest',
+  title: 'How does The Quest work? Zaps, Gems, Journeys',
   description:
-    'Showing up should count. Earn Zaps in person and Gems on platform, climb the season ranks, and choose a Quest. You level up by becoming someone your community misses.',
+    'The Quest is a light game where showing up counts. Earn Zaps in person and Gems online, finish three Journeys each season, and climb the ranks by being there.',
   alternates: { canonical: '/the-quest' },
   openGraph: {
     title: 'The Quest · Frequency',
     description:
-      'Real life is the high score. Zaps, Gems, season ranks, and Quests: a path that rewards showing up, not scrolling.',
+      'Real life is the reward. Zaps, Gems, season ranks, and Journeys: a path that rewards showing up, not scrolling.',
     url: '/the-quest',
   },
 }
 
+// Answer-first FAQ for AIO. Answers match the definitions the page ships (how the
+// game works, Zaps vs Gems, the season ranks, a Journey) so structured data and
+// visible copy agree. Canon: Ghost/Initiate/Adept/Master ranks, 5:1 Zap-to-Gem
+// rollover, three Journeys per season (docs/NAMING.md).
+const QUEST_FAQ = [
+  {
+    q: 'How does The Quest work?',
+    a: 'The Quest is a light game built into Frequency. You earn Zaps for showing up in person and Gems for keeping your Circle warm online, run three Journeys each season for Mind, Body, and Spirit, and rise through the ranks by finishing the work.',
+  },
+  {
+    q: 'What are Zaps and Gems?',
+    a: 'Zaps are earned in person for real acts like showing up, hosting, or bringing someone new. Gems are earned online for the small acts that keep a Circle alive between gatherings. At season end Zaps roll into Gems at five to one, and Gems are spent in the Vault.',
+  },
+  {
+    q: 'What are the season ranks?',
+    a: 'The ranks are Ghost, Initiate, Adept, and Master. Your rank is simply how many Journeys you finished this season: zero makes you a Ghost, one an Initiate, two an Adept, and all three a Master. There is no points threshold, and ranks reset each season.',
+  },
+  {
+    q: 'What is a Journey?',
+    a: 'A Journey is a focused track that runs about four weeks, one each for Mind, Body, and Spirit. Each closes with an Expression Challenge where you share what you practiced. Finish a Journey and you earn a Pillar Trophy; finish all three and you reach Master.',
+  },
+  {
+    q: 'Do I have to pay to play The Quest?',
+    a: 'No. The community and The Quest are free to play, and everyone earns at full rate. Membership keeps open the rooms The Quest fills, and you never pay a cut of your own bookings. You are not buying points.',
+  },
+]
+
 type IconType = React.ComponentType<{ className?: string }>
 
-// The season ranks — tied to how many Journeys you finish, not how many Zaps you
+// The season ranks: tied to how many Journeys you finish, not how many Zaps you
 // collect. Framed as what you've done this season, not a points tier.
 const RANKS: { icon: IconType; name: string; tag: string; body: string }[] = [
   {
@@ -105,6 +132,9 @@ export default async function TheQuestPage() {
             image: '/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg',
           }),
           breadcrumbSchema([{ name: 'The Quest', path: '/the-quest' }]),
+          // FAQPage so answer engines can lift how the game works, Zaps vs Gems,
+          // and the ranks directly (GE11-4). Matches the FAQ copy below.
+          faqSchema(QUEST_FAQ.map(({ q, a }) => ({ q, a }))),
         ]}
       />
       {data && <BlockDocJsonLd data={data} path="/the-quest" />}
@@ -127,7 +157,7 @@ function LegacyTheQuest() {
             <br className="hidden sm:block" /> should count.
           </>
         }
-        subtitle="Most apps reward the time you lose to them. The Quest rewards the time you give back to real people. Real life is the high score, and you climb it by becoming someone your community misses."
+        subtitle="Most apps reward the time you lose to them. The Quest rewards the time you give back to real people. You rise by becoming someone your community misses."
       >
         <Button href={BETA_CTA_HREF}>
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" />
@@ -161,7 +191,7 @@ function LegacyTheQuest() {
         <span className="text-primary">A person to become.</span>
       </Statement>
 
-      {/* Zaps + gems — the two currencies, in detail */}
+      {/* Zaps and Gems: the two currencies, in detail */}
       <ZigZag
         img="/images/site/PHOTO-2020-10-07-14-38-02.jpeg"
         alt="A Frequency circle gathered close together, laughing in golden afternoon light"
@@ -223,7 +253,7 @@ function LegacyTheQuest() {
         </div>
       </Section>
 
-      {/* Season ranks — tied to Journey completions */}
+      {/* Season ranks: tied to Journey completions */}
       <Section tone="canvas">
         <SectionHeading
           eyebrow="Season ranks"
@@ -265,11 +295,11 @@ function LegacyTheQuest() {
       </Section>
 
       <Statement tone="surface">
-        You level up by{' '}
+        You rise by{' '}
         <span className="text-primary">finishing the work.</span>
       </Statement>
 
-      {/* Quests — three Journeys per season */}
+      {/* Quests: three Journeys per season */}
       <ZigZag
         img="/images/site/PHOTO-2020-10-17-13-49-14.jpeg"
         alt="A Frequency music circle gathered on a cliffside at golden hour"
@@ -294,7 +324,7 @@ function LegacyTheQuest() {
         </p>
       </ZigZag>
 
-      {/* What the Quest is built to do — three guardrails */}
+      {/* What the Quest is built to do: three guardrails */}
       <Section tone="surface">
         <SectionHeading
           eyebrow="What it rewards"
@@ -320,7 +350,7 @@ function LegacyTheQuest() {
         </div>
       </Section>
 
-      {/* Rhythm band — marquee inside a dark slat band */}
+      {/* Rhythm band: marquee inside a dark slat band */}
       <div className="bg-slat">
         <Marquee
           items={[
@@ -334,7 +364,7 @@ function LegacyTheQuest() {
         />
       </div>
 
-      {/* Membership turns on the Quest — the dark beat */}
+      {/* Membership turns on the Quest: the dark beat */}
       <ZigZag
         img="/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg"
         alt="People dancing together with arms raised at golden hour, faces lit and joyful"
@@ -358,10 +388,10 @@ function LegacyTheQuest() {
 
       <Statement tone="ink">
         Real life is the{' '}
-        <span className="text-primary">high score.</span>
+        <span className="text-primary">reward.</span>
       </Statement>
 
-      {/* Where it starts — grounding in the real beta */}
+      {/* Where it starts: grounding in the real beta */}
       <Section tone="canvas">
         <SectionHeading
           eyebrow="Where it starts"
@@ -378,13 +408,43 @@ function LegacyTheQuest() {
         <p className="mt-7 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-primary-strong">
           <Trophy className="w-4 h-4" aria-hidden /> Season one is open
         </p>
+        <p className="mt-6 text-base text-muted leading-relaxed">
+          <a className="text-primary-strong font-semibold hover:underline" href="/discover">
+            Find a Circle near you
+          </a>{' '}
+          to start your first season, or see what membership opens on the{' '}
+          <a className="text-primary-strong font-semibold hover:underline" href="/pricing">
+            pricing page
+          </a>
+          .
+        </p>
+      </Section>
+
+      {/* Answer-first FAQ: mirrors the FAQPage schema so structured data and
+          visible copy agree (docs SEO/AIO mandate). */}
+      <Section tone="surface">
+        <SectionHeading
+          eyebrow="Questions"
+          title="The short answers."
+          kicker="How the game works, Zaps and Gems, the ranks, and a Journey."
+        />
+        <dl className="space-y-6">
+          {QUEST_FAQ.map((item) => (
+            <div key={item.q} className="rounded-2xl border border-border bg-canvas p-6">
+              <dt className="font-display uppercase text-text text-xl leading-tight mb-2">
+                {item.q}
+              </dt>
+              <dd className="text-base text-muted leading-relaxed">{item.a}</dd>
+            </div>
+          ))}
+        </dl>
       </Section>
 
       <PillarNav current="/the-quest" tone="surface" />
 
       <BetaCTA
         heading="Start your first season."
-        body="Pick a Circle, show up, and earn your first Zap. The high score is a life you're actually living."
+        body="Pick a Circle, show up, and earn your first Zap. The reward is a life you're actually living."
       />
     </>
   )

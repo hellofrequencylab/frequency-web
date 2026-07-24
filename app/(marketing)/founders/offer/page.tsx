@@ -172,12 +172,12 @@ export default function FoundersOfferPage() {
               The ask
             </p>
             <h2 className="font-display uppercase text-text text-4xl sm:text-5xl mb-7">
-              Help build it. Get in at the ground floor.
+              Help build it. Take a founding seat.
             </h2>
             <p className="text-lg text-muted leading-relaxed">
               If you&apos;ve ever wished for a real community where you live, somewhere
               to grow, play, and belong off-screen, this is the moment to help build
-              it and get in at the ground floor.
+              it and take a founding seat.
             </p>
           </div>
           <div className="lg:pt-1">

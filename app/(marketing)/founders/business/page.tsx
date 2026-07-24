@@ -13,12 +13,12 @@ import { getFoundingConfig } from '@/lib/pricing/settings'
 export const metadata: Metadata = {
   title: 'Founding Businesses',
   description:
-    'Be one of the first businesses in your city on Frequency. A locked founder rate, a marketplace fee bought down to 3 percent, and a permanent Founding badge. Reserve now, free, no card.',
+    'Be one of the first businesses in your city on Frequency. A locked founder rate and a bought-down network take-rate on the business the network brings you. Your own bookings are always 0%. Reserve now, free, no card.',
   alternates: { canonical: '/founders/business' },
   openGraph: {
     title: 'Founding Businesses · Frequency',
     description:
-      'A locked founder rate and a marketplace fee bought down to 3 percent. Capped per city. Reserve now, free, no card.',
+      'A locked founder rate and a bought-down network take-rate. Your own bookings stay 0%, always. Capped per city. Reserve now, free, no card.',
     url: '/founders/business',
   },
 }
@@ -35,7 +35,7 @@ const FAQS = [
   },
   {
     q: 'What is the fee buydown?',
-    a: 'A Founding Business locks the lowest marketplace take rate on the platform, 3 percent, instead of the standard 5 to 8 percent. That rate is grandfathered, so it stays yours.',
+    a: 'Your own bookings are always 0%. A Founding Business locks a bought-down network take-rate, the small cut on the business the network brings you, below standard Business pricing. That rate is grandfathered, so it stays yours.',
   },
   {
     q: 'Do I need a card to reserve?',
@@ -56,8 +56,8 @@ export default async function FoundingBusinessPage() {
   const OFFER = [
     {
       Icon: Percent,
-      label: `A ${takePct}% marketplace fee`,
-      body: `The lowest take rate on the platform, ${takePct} percent, bought down from the standard 5 to 8 percent. Locked and grandfathered, so it stays yours.`,
+      label: `A ${takePct}% network take-rate`,
+      body: `Your own bookings are always 0%. The ${takePct} percent applies only to business the network brings you, bought down for founders below standard Business pricing. Locked and grandfathered, so it stays yours.`,
     },
     {
       Icon: Store,
@@ -89,7 +89,7 @@ export default async function FoundingBusinessPage() {
         focal="object-center"
         eyebrow="Founding Businesses"
         title="Be the first business in your city."
-        subtitle="Frequency is a real-world community, built city by city. Founding businesses get the lowest fee on the platform, a locked rate, and a permanent place at the start."
+        subtitle="Frequency is a real-world community, built city by city. Founding businesses lock a founder rate and a bought-down network take-rate, while your own bookings stay 0%, and hold a permanent place at the start."
         footer={
           <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/60">
             <span className="font-semibold text-white/80">Free to reserve.</span>
@@ -103,7 +103,7 @@ export default async function FoundingBusinessPage() {
       <Section tone="surface" pad="py-20 sm:py-24">
         <SectionHeading
           eyebrow="The offer"
-          title="Lower fees, a locked rate, a permanent badge."
+          title="A bought-down network rate, a locked price, a permanent badge."
           kicker="The founder deal for the businesses who help build the market."
         />
         <div className="grid gap-4 sm:grid-cols-3">
@@ -162,7 +162,7 @@ export default async function FoundingBusinessPage() {
         <div className="rounded-2xl border border-border bg-surface p-7 sm:p-8 shadow-sm">
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-subtle mb-4">Fine print</p>
           <p className="text-sm text-muted leading-relaxed">
-            A founding business membership is a locked founder rate and a bought-down marketplace fee, a
+            A founding business membership is a locked founder rate and a bought-down network take-rate, a
             membership, not an investment or security. Reserving now is free, no card, no charge. When
             founding checkout opens, your founder rate is locked in. If we don&apos;t launch the founding
             cohort in your city, every reservation is released with nothing owed.

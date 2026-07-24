@@ -14,7 +14,7 @@ your practice is the heart of Frequency, it is how showing up turns into progres
 
 ## Two ways to have a practice
 
-- **Your Circle's practice.** A Circle host sets what the Circle is practicing.
+- **Your Circle's practice.** A Circle Host sets what the Circle is practicing.
   Open your Circle and you will see "This week's practice" with a button to log it.
 - **Your own practice.** Not in a Circle yet, or want something extra? Go to
   **Practices**, browse the library, and adopt one for yourself.

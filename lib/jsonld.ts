@@ -4,11 +4,17 @@
 // location is CITY-LEVEL ONLY (addressLocality), never a precise venue. When a
 // city isn't known we describe the location generically rather than leak it.
 
-import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/site'
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, SITE_TAGLINE } from '@/lib/site'
 import type { PublicCircle, PublicEvent, TopicalChannel } from '@/lib/discover'
 import type { JourneyPlan, JourneyPlanItem } from '@/lib/journey-plans'
 
 const abs = (path: string) => `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`
+
+// Stable entity URIs so search + answer engines resolve one Frequency Organization and one WebSite
+// node across every page, and can cite the WebSite back to its publisher (AIO entity resolution,
+// CONTENT-VOICE §8). Fragment @ids on the apex, the schema.org-recommended pattern.
+const ORG_ID = `${SITE_URL}/#organization`
+const WEBSITE_ID = `${SITE_URL}/#website`
 
 // ── Site-wide ─────────────────────────────────────────────────────────────────
 
@@ -29,7 +35,11 @@ export function organizationSchema(opts?: {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
+    '@id': ORG_ID,
     name: SITE_NAME,
+    // "Community Collective" is the locked descriptor for the whole platform (NAMING.md, ADR-811); the
+    // slogan carries it as an entity attribute so an answer engine resolves Frequency by its positioning.
+    slogan: SITE_TAGLINE,
     url: SITE_URL,
     logo: abs('/icons/icon-192.png'),
     description: SITE_DESCRIPTION,
@@ -51,9 +61,14 @@ export function websiteSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
+    '@id': WEBSITE_ID,
     name: SITE_NAME,
     url: SITE_URL,
     description: SITE_DESCRIPTION,
+    inLanguage: 'en-US',
+    // Tie the site back to its publisher entity so the WebSite and Organization resolve as one thing in
+    // the knowledge graph (a primary AIO lever); references the Organization node emitted in the root layout.
+    publisher: { '@id': ORG_ID },
   }
 }
 
@@ -714,9 +729,12 @@ export function articleSchema(article: {
     ...(article.published ? { datePublished: article.published } : {}),
     ...(article.updated ? { dateModified: article.updated } : {}),
     ...(images ? { image: images } : {}),
-    author: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+    // Author + publisher both resolve to the ONE Frequency Organization node (shared @id), so an answer
+    // engine attributes every help article to the same entity it resolved site-wide (E-E-A-T, AIO).
+    author: { '@type': 'Organization', '@id': ORG_ID, name: SITE_NAME, url: SITE_URL },
     publisher: {
       '@type': 'Organization',
+      '@id': ORG_ID,
       name: SITE_NAME,
       url: SITE_URL,
       logo: { '@type': 'ImageObject', url: abs('/icons/icon-192.png') },

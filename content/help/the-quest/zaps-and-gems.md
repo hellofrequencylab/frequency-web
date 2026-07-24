@@ -25,7 +25,7 @@ cap on Zaps.
 
 Roughly what things are worth (the biggest rewards live off the screen):
 
-- Found or start a circle: **100**
+- Found or start a Circle: **100**
 - Finish a Journey: **75** (plus a Trophy)
 - Host an event: **60**
 - Expression Challenge, in person at a Circle: **50**
@@ -34,7 +34,7 @@ Roughly what things are worth (the biggest rewards live off the screen):
 - Log a practice: **10**, **15**, or **25**, set by how often the practice is meant
   to be done (daily, three times a week, or weekly)
 
-**Every practice you log earns Zaps**, whether it is tied to a circle or it is just
+**Every practice you log earns Zaps**, whether it is tied to a Circle or it is just
 your own. The practice is the real-world doing; the log is the record of it. Zaps
 reset each season, so every season is a fresh climb.
 
@@ -46,7 +46,7 @@ and **capped per day** so they cannot be farmed, and they are the currency you
 **spend** in the Vault on titles, cosmetics, and more. For example:
 
 - Welcome a newcomer: **8** (up to 3 a day)
-- RSVP to an event, or join a circle: **5**
+- RSVP to an event, or join a Circle: **5**
 - Post: **3** (up to 5 a day)
 - Comment or reply: **2** (up to 8 a day)
 - Share: **2** (up to 5 a day)
@@ -80,7 +80,7 @@ spendable reward (Gems) over time.
 
 Your Zaps also feed **Amplitude**, your lifetime total. Season Zaps reset; Amplitude
 never does. Hosting-class acts (hosting an event, running a program, founding or
-activating a circle) count double toward it. You will see it next to your rank, like
+activating a Circle) count double toward it. You will see it next to your rank, like
 "Adept · 14,200".
 
 ## The one thing to remember

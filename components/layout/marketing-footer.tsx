@@ -36,8 +36,8 @@ export function MarketingFooter({ menu }: { menu?: ResolvedMenu }) {
           <div className="max-w-xs">
             <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-6 w-auto opacity-50 mb-3" />
             <p className="text-sm text-muted leading-relaxed">
-              Frequency is a community collective for real-world connection. Find local Circles and events
-              near you, keep a private contact book of the people you meet, and stay in touch. Not home,
+              Frequency is a Community Collective for real-world connection. Find local Circles and Events
+              near you, keep a private book of the Contacts you meet, and stay in touch. Not home,
               not work. Your community, together.
             </p>
           </div>

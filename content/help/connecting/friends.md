@@ -19,9 +19,9 @@ Friends are your direct connections on Frequency. Adding someone also opens priv
 
 ## Your orbit
 
-Frequency keeps your relationships alive instead of letting them pile up as a dead list. Your friends are grouped by how close you are right now (your **inner, middle, and outer orbit**) based on the real things you share, like circles you're both in and events you've both shown up to. When a friendship has drifted to your outer orbit, you'll see a gentle **"say hi"** nudge. None of this is a score anyone else can see. It's just your own private way of remembering who to reconnect with.
+Frequency keeps your relationships alive instead of letting them pile up as a dead list. Your friends are grouped by how close you are right now (your **Inner, Middle, and Outer orbit**) based on the real things you share, like Circles you're both in and events you've both shown up to. When a friendship has drifted to your Outer orbit, you'll see a gentle **"say hi"** nudge. None of this is a score anyone else can see. It's just your own private way of remembering who to reconnect with.
 
-You may also see **"People you keep crossing paths with"**: folks who share your circles or events but you haven't connected with yet. One tap sends them a request. (Your steward can turn these features on or off for the community.)
+You may also see **"People you keep crossing paths with"**: folks who share your Circles or events but you haven't connected with yet. One tap sends them a request. (Your steward can turn these features on or off for the community.)
 
 ## Introduce two friends
 

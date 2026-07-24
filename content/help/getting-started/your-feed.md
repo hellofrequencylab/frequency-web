@@ -9,17 +9,17 @@ featureKeys: [feed]
 status: published
 ---
 
-Your feed is home: the running stream of what's happening in the circles you're part of. It's not an endless algorithmic scroll of strangers; it's the people and groups you've actually joined.
+Your feed is home: the running stream of what's happening in the Circles you're part of. It's not an endless algorithmic scroll of strangers; it's the people and groups you've actually joined.
 
 ## What shows up
 
-- **Posts from your circles**: updates, photos, and conversations from members.
-- **Events and broadcasts**: upcoming gatherings and announcements from your hosts.
+- **Posts from your Circles**: updates, photos, and conversations from members.
+- **Events and broadcasts**: upcoming gatherings and announcements from your Hosts.
 - **Moments worth noticing**, like a welcome when someone new joins.
 
 ## The lenses
 
-- **Resonance** is the default. It blends what's near you, who you resonate with, and what's fresh, so the top of your feed is the activity most worth your time, never a single loud voice. Now and then it slips in a quiet **people you'd click with** row: a few members who share your circles or your people, so you can meet on the same wavelength.
+- **Resonance** is the default. It blends what's near you, who you resonate with, and what's fresh, so the top of your feed is the activity most worth your time, never a single loud voice. Now and then it slips in a quiet **people you'd click with** row: a few members who share your Circles or your people, so it is easy to say hi.
 - **Most recent** is the plain newest-first stream.
 - **Most popular** sorts by what the community is reacting to and talking about most right now.
 - **Nearby** shows the closest activity. When your area is quiet, it widens the net on its own so you still see something worth showing up to. We use your approximate neighborhood to do it, never your exact address.
@@ -27,12 +27,12 @@ Your feed is home: the running stream of what's happening in the circles you're 
 
 ## When your corner is quiet
 
-If nobody's around you yet, the feed shows a warm **be a founder in your neighborhood** prompt: start the first circle, host the first gathering, or invite a few people. An empty corner is the opening, not a dead end. And if you haven't set a location yet, you'll see a nudge to turn it on, with the same promise we always keep: your exact location is never shared.
+If nobody's around you yet, the feed shows a warm **be a founder in your neighborhood** prompt: start the first Circle, host the first gathering, or invite a few people. An empty corner is the opening, not a dead end. And if you haven't set a location yet, you'll see a nudge to turn it on, with the same promise we always keep: your exact location is never shared.
 
 ## Making it yours
 
-- Join more [circles](/help/getting-started/join-a-circle) to bring more life into your feed.
+- Join more [Circles](/help/getting-started/join-a-circle) to bring more life into your feed.
 - React and comment; reactions land the instant you tap, and the comment box is always there under a post. A feed gets good when people actually talk to each other.
-- Quiet feed? That usually means it's time to join another circle or show up to an event in person. Haven't joined one yet? The feed shows a **Find your first circle** prompt, or ask Vera to suggest one.
+- Quiet feed? That usually means it's time to join another Circle or show up to an event in person. Haven't joined one yet? The feed shows a **Find your first Circle** prompt, or ask Vera to suggest one.
 
 If you want to start something yourself, see [Posting & sharing](/help/sharing/posts).

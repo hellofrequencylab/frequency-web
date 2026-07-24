@@ -10,7 +10,7 @@ status: published
 ---
 
 **Partners** are local businesses that back the community: the café that hosts
-your circle's morning sits, the studio that gives members a discount. They support
+your Circle's morning sits, the studio that gives members a discount. They support
 the mission, and in return members get real, in-person perks.
 
 ## The directory

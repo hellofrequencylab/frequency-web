@@ -1,6 +1,6 @@
 ---
 title: Your first week on Frequency
-description: A quick welcome, then Vera points you to your first circle, and a six-task Founder's First Week to earn your first badge.
+description: A quick welcome, then Vera points you to your first Circle, and a six-task Founder's First Week to earn your first badge.
 category: getting-started
 order: 10
 updated: 2026-06-10
@@ -9,7 +9,7 @@ featureKeys: [onboarding]
 status: published
 ---
 
-When you join, a quick welcome gets your name, a photo, and a sense of what you're into: no long forms, no homework. Then **Vera**, your guide, points you toward a circle worth joining and steps back out of the way. A few gentle tips show up as you explore after that, never all at once, never blocking your way.
+When you join, a quick welcome gets your name, a photo, and a sense of what you're into: no long forms, no homework. Then **Vera**, your guide, points you toward a Circle worth joining and steps back out of the way. A few gentle tips show up as you explore after that, never all at once, never blocking your way.
 
 ## Meet Vera
 
@@ -24,7 +24,7 @@ Once you're set up, Vera hands you your **Founder's First Week**: six moves that
 - **Say something.** Your first post: a hello, a question, a photo from today.
 - **React to someone.** A heart or a +1 lets someone know you saw them.
 - **Make a friend.** Connect with one person.
-- **Join a second circle.** One circle is a foothold; two is a life.
+- **Join a second Circle.** One Circle is a foothold; two is a life.
 - **RSVP to something.** Say you'll be there. Showing up in person is the whole point.
 - **Build a 3-day streak.** Log a [practice](/help/getting-started/practices) three days running.
 
@@ -32,4 +32,4 @@ Each task you finish earns you **Gems**, and finishing all six earns a bonus plu
 
 ## You can't get it "wrong"
 
-Nothing here is permanent or high-stakes. Skip a tip and it won't nag you again. Join a circle and leave if it's not right. The point is to show up as yourself and find your people; everything else is just details you'll pick up along the way.
+Nothing here is permanent or high-stakes. Skip a tip and it won't nag you again. Join a Circle and leave if it's not right. The point is to show up as yourself and find your people; everything else is just details you'll pick up along the way.

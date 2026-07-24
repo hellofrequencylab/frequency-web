@@ -52,10 +52,10 @@ Finish all three Journeys and you reach **Master**, the highest rank for the sea
 earn the **Certificate**: a unique cosmetic plus 100 Gems. See
 [Season ranks](/help/the-quest/season-ranks) for the full picture.
 
-## Doing it with your circle
+## Doing it with your Circle
 
-If your circle is running the Journey together, the Expression Challenge can become a
-circle moment: everyone shares their work at the same gathering. Your personal completion
+If your Circle is running the Journey together, the Expression Challenge can become a
+Circle moment: everyone shares their work at the same gathering. Your personal completion
 still records to your own progress.
 
 ## Scavenger hunts

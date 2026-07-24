@@ -15,7 +15,7 @@ Settings is where you tune your account and how Frequency reaches you.
 
 - **Profile**: your display name, handle, photo, **header image** (the banner across the top of your profile), bio, and region. This is what other members see.
 - **Connections & Location**: control how you're found by people nearby (see below).
-- **Notifications**: choose what you're told about and how (in-app, email, push), pick how often, and mute a single circle or Space. See [Notifications](/help/getting-started/notifications) and "Choosing what reaches you" below.
+- **Notifications**: choose what you're told about and how (in-app, email, push), pick how often, and mute a single Circle or Space. See [Notifications](/help/getting-started/notifications) and "Choosing what reaches you" below.
 - **Account**: sign-in and account-level controls.
 - **Billing**: for membership. During the beta this is a placeholder; everything is free (see [Membership & the Vault](/help/membership/the-vault)).
 
@@ -34,9 +34,9 @@ Frequency helps you find people nearby, and you're always in control of how visi
 
 Under **Settings → Notifications** you decide exactly what Frequency sends and how often. Nothing here is all-or-nothing.
 
-- **Topics**: turn each kind on or off on its own, and per channel (in-app, email, push). Topics include broadcasts, events, mentions, replies and comments on your own posts, and the occasional marketing note about Frequency.
+- **Topics**: turn each kind on or off on its own, and per place (in-app, email, push). Topics include broadcasts, events, mentions, replies and comments on your own posts, and the occasional marketing note about Frequency.
 - **How often**: for each topic, pick real-time, a daily digest, or a weekly digest. Choose real-time for the things you want right away, and a digest for the rest, so a busy day arrives as one summary instead of a stream.
-- **Mute one circle or Space**: quiet a single [circle](/help/getting-started/what-is-a-circle) or Space without leaving it. You stay a member and see everything when you open the app; you just stop getting pinged about that one.
+- **Mute one Circle or Space**: quiet a single [Circle](/help/getting-started/what-is-a-circle) or Space without leaving it. You stay a member and see everything when you open the app; you just stop getting pinged about that one.
 - **Marketing and memory**: separate switches control marketing email and whether Vera remembers your details between chats. Both are yours to turn off any time.
 
 Account and security messages, like a password reset or a sign-in alert, always send. They're not marketing, so they aren't part of these choices.
@@ -46,6 +46,6 @@ Not a member of Frequency but still getting email from a business here? Every em
 ## Good to know
 
 - Your **handle** is how people @-mention and find you, so pick something you're happy to be known by.
-- Keeping your **region** current helps surface circles and events near you.
+- Keeping your **region** current helps surface Circles and events near you.
 - Notification preferences are always yours to change, and we honor them everywhere.
 - Your connection and location settings are always yours to change, and we honor them everywhere. Turn on **Ghost mode** any time you want to be invisible.

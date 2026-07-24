@@ -1,6 +1,6 @@
 ---
 title: Hubs
-description: How nearby circles cluster into a hub.
+description: How nearby Circles cluster into a Hub.
 category: groups
 order: 1
 updated: 2026-06-03
@@ -10,16 +10,16 @@ featureKeys: [hubs]
 status: published
 ---
 
-A **hub** is a small cluster of up to five circles in the same locale. Think of it as a neighborhood of circles: related groups in one area that can share momentum and people.
+A **Hub** is a small cluster of up to five Circles in the same locale. Think of it as a neighborhood of Circles: related groups in one area that can share momentum and people.
 
-## How hubs come about
+## How Hubs come about
 
-Hubs **emerge**; they're not handed down from the top. A circle can exist on its own first; when a few circles take root in the same place, they can crystallize into a hub. So you'll always find circles first, and hubs as they grow.
+Hubs **emerge**; they're not handed down from the top. A Circle can exist on its own first; when a few Circles take root in the same place, they can crystallize into a Hub. So you'll always find Circles first, and Hubs as they grow.
 
 ## What this means for you
 
-- You join **circles**, not hubs directly; the hub is the bigger picture around them.
-- A hub makes it easier to find sibling circles nearby if your first one fills up or you want more.
-- Hubs are stewarded by guides, who help coordinate across the circles in them.
+- You join **Circles**, not Hubs directly; the Hub is the bigger picture around them.
+- A Hub makes it easier to find sibling Circles nearby if your first one fills up or you want more.
+- Hubs are stewarded by Guides, who help coordinate across the Circles in them.
 
-New here? Start with [finding and joining a circle](/help/getting-started/join-a-circle).
+New here? Start with [finding and joining a Circle](/help/getting-started/join-a-circle).
