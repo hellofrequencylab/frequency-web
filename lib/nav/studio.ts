@@ -341,6 +341,12 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'crm-inbox', href: '/admin/crm/inbox', label: 'Inbox', desc: 'Every contact conversation in one place: read the thread and reply. Replies go out through the consent gate.', icon: 'Inbox', min: 'janitor', staffDomain: 'marketing',
     world: 'growth', worldLabel: 'CRM: Inbox', worldOrder: 15,
     adminGroups: [{ domain: 'crm', section: 'Resonance' }], adminNav: { section: 'crm', heading: 'Engine' } },
+  // Conversations (ADR-812) — the unified ticketed workspace over the comms_* spine: support, outreach,
+  // leader notes, and inbound replies as ONE assignable, status-tracked thread with a per-thread reply
+  // address so a reply comes straight back to it. Dormant until conversation-mode sends are switched on.
+  { id: 'crm-conversations', href: '/admin/crm/conversations', label: 'Conversations', desc: 'One ticketed inbox for support, outreach, and replies. Assign a thread, reply as yourself, and their reply comes back to the same place.', icon: 'MessagesSquare', min: 'janitor', staffDomain: 'marketing',
+    world: 'growth', worldLabel: 'CRM: Conversations', worldOrder: 15.5,
+    adminGroups: [{ domain: 'crm', section: 'Resonance' }], adminNav: { section: 'crm', heading: 'Engine' } },
   // Tasks (ADR-628) — the operator follow-up board (open/done/snoozed), optionally tied to a contact.
   // Distinct from member-facing crew_tasks (the volunteer economy); this is the staff to-do queue.
   { id: 'crm-tasks', href: '/admin/crm/tasks', label: 'Tasks', desc: 'Your CRM follow-up list: queue a call-back, mark it done, or snooze it for later.', icon: 'ListTodo', min: 'janitor', staffDomain: 'marketing',
@@ -554,7 +560,7 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     links: [
       // Mirror the sub-nav order (owner directive): Roster | Marketing | Inbox | Tasks | Contacts |
       // Intelligence | Pipeline, then Segments in its own Audiences bucket.
-      { leaf: 'crm' }, { leaf: 'crm-marketing' }, { leaf: 'crm-inbox' }, { leaf: 'crm-tasks' }, { leaf: 'crm-contacts' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' },
+      { leaf: 'crm' }, { leaf: 'crm-marketing' }, { leaf: 'crm-inbox' }, { leaf: 'crm-conversations' }, { leaf: 'crm-tasks' }, { leaf: 'crm-contacts' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' },
       { leaf: 'segments', section: 'Audiences' },
     ],
   },
@@ -655,7 +661,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
       // Order (owner directive): Resonance CRM (the section landing link) | Marketing | Inbox | Tasks |
       // Contacts | Intelligence | Pipeline. Marketing leads the Engine group so the compose-and-send door
       // sits first, right after the roster home.
-      { heading: 'Engine', leaves: [{ leaf: 'crm-marketing' }, { leaf: 'crm-inbox' }, { leaf: 'crm-tasks' }, { leaf: 'crm-contacts' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }] },
+      { heading: 'Engine', leaves: [{ leaf: 'crm-marketing' }, { leaf: 'crm-inbox' }, { leaf: 'crm-conversations' }, { leaf: 'crm-tasks' }, { leaf: 'crm-contacts' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }] },
     ],
   },
   {

@@ -66,6 +66,7 @@ import {
   ClipboardPaste,
   Send,
   Inbox,
+  MessagesSquare,
   ListTodo,
   Star,
 } from 'lucide-react'
@@ -88,7 +89,7 @@ const ICONS: Record<string, LucideIcon> = {
   Bot, HelpCircle, Users, Shield, QrCode, Power, FileText, BadgeCheck, Lightbulb, ScrollText,
   LifeBuoy, ShoppingBag, Map, CreditCard, Gamepad2, SlidersHorizontal, TrendingUp, Rocket,
   Layers, Contact, Briefcase, Menu, GraduationCap, ToggleRight, Share2, Palette,
-  LayoutPanelLeft, Workflow, Images, ClipboardPaste, Send, Inbox, ListTodo, Star,
+  LayoutPanelLeft, Workflow, Images, ClipboardPaste, Send, Inbox, MessagesSquare, ListTodo, Star,
 }
 function icon(name: string): LucideIcon {
   return ICONS[name] ?? LayoutDashboard
