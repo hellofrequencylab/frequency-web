@@ -5,6 +5,8 @@ import Image from 'next/image'
 import { ChevronLeft, ChevronRight, ImageIcon, Loader2, Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { LoomPicker } from '@/components/loom/loom-picker'
+import { looksLikeImage } from '@/lib/library/upload-kinds'
+import { shrinkImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 
 // Multi-image sibling of ImageUpload (components/ui/image-upload). Manages an ORDERED
 // array of storage PATHS in a public Supabase Storage bucket, under the signer's own
@@ -139,69 +141,90 @@ export function MultiImageUpload({
     }
 
     setBusy(true)
-    // The browser path needs the signer's uid for its owner-scoped storage prefix; the SERVER
-    // path (upload action) doesn't — the action derives + gates the path itself.
-    let userId: string | null = null
-    if (!upload) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        setError('Sign in to upload photos.')
-        setBusy(false)
-        return
-      }
-      userId = user.id
-    }
-
-    const added: string[] = []
-    for (const file of batch) {
-      if (!file.type.startsWith('image/')) {
-        setError('Choose image files only.')
-        continue
-      }
-      // Reject a type the bucket allowlist would bounce, with a clear message
-      // instead of a raw "Upload failed: 400" (this component always uploads
-      // straight into the event-media bucket).
-      if (!ALLOWED_MIME.has(file.type)) {
-        setError(ALLOWED_MIME_MESSAGE)
-        continue
-      }
-      if (file.size > MAX_BYTES) {
-        setError(`"${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB. The limit is 10 MB.`)
-        continue
+    try {
+      // The browser path needs the signer's uid for its owner-scoped storage prefix; the SERVER
+      // path (upload action) doesn't — the action derives + gates the path itself.
+      let userId: string | null = null
+      if (!upload) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) {
+          setError('Sign in to upload photos.')
+          return
+        }
+        userId = user.id
       }
 
-      // SERVER upload (admin client, bypasses the bucket INSERT RLS) — the event gallery path.
-      if (upload) {
-        const fd = new FormData()
-        fd.append('file', file)
-        const res = await upload(fd)
-        if ('error' in res) {
-          setError(`Upload failed: ${res.error}`)
+      const added: string[] = []
+      for (const raw of batch) {
+        // Accept by MIME OR by extension so a blank-type iPhone .heic is not wrongly rejected.
+        if (!looksLikeImage(raw.type, raw.name)) {
+          setError('Choose image files only.')
           continue
         }
-        added.push(res.path)
-        continue
+        // Reject a type the bucket allowlist would bounce, with a clear message instead of a raw
+        // "Upload failed: 400". Skip when the type is blank (HEIC with no reported type): the bucket
+        // still gates it. This component always uploads into the event-media bucket.
+        if (raw.type && !ALLOWED_MIME.has(raw.type)) {
+          setError(ALLOWED_MIME_MESSAGE)
+          continue
+        }
+        if (raw.size > MAX_BYTES) {
+          setError(`"${raw.name}" is ${(raw.size / 1024 / 1024).toFixed(1)} MB. The limit is 10 MB.`)
+          continue
+        }
+
+        // Downscale big photos in the browser first so they fit under the platform's ~4.3 MB serverless
+        // body limit (a server upload action otherwise REJECTS the request, which used to hang the
+        // spinner). HEIC/GIF/SVG pass through untouched and are size-gated below.
+        const file = await shrinkImageForUpload(raw)
+
+        // SERVER upload (admin client, bypasses the bucket INSERT RLS) — the event gallery path.
+        if (upload) {
+          if (file.size > SERVER_MAX_BYTES) {
+            setError(`"${raw.name}" is too large to upload (over 4 MB and could not be resized here). Save it as a smaller JPEG and try again.`)
+            continue
+          }
+          const fd = new FormData()
+          fd.append('file', file)
+          // WRAP the action: a rejection (body-limit, transient network) must show an inline message and
+          // let the loop continue, never escape and hang the spinner (the `finally` clears it regardless).
+          let res: Awaited<ReturnType<typeof upload>>
+          try {
+            res = await upload(fd)
+          } catch {
+            setError('That upload did not go through. Try again in a moment.')
+            continue
+          }
+          if ('error' in res) {
+            setError(`Upload failed: ${res.error}`)
+            continue
+          }
+          added.push(res.path)
+          continue
+        }
+
+        // BROWSER upload under the signer's own uid prefix (owner-scoped RLS).
+        const ext = (file.name.split('.').pop() ?? 'jpg').replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg'
+        // A random id per file keeps several picked at once collision-free (and keeps this
+        // out of the react-hooks/purity rule, which forbids Date.now()/Math.random()).
+        const path = `${userId}/${folder}/${crypto.randomUUID()}.${ext}`
+        const { error: upErr } = await supabase.storage
+          .from(bucket)
+          .upload(path, file, { contentType: file.type, upsert: true })
+        if (upErr) {
+          setError(`Upload failed: ${upErr.message}`)
+          continue
+        }
+        added.push(path)
       }
 
-      // BROWSER upload under the signer's own uid prefix (owner-scoped RLS).
-      const ext = (file.name.split('.').pop() ?? 'jpg').replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg'
-      // A random id per file keeps several picked at once collision-free (and keeps this
-      // out of the react-hooks/purity rule, which forbids Date.now()/Math.random()).
-      const path = `${userId}/${folder}/${crypto.randomUUID()}.${ext}`
-      const { error: upErr } = await supabase.storage
-        .from(bucket)
-        .upload(path, file, { contentType: file.type, upsert: true })
-      if (upErr) {
-        setError(`Upload failed: ${upErr.message}`)
-        continue
-      }
-      added.push(path)
+      if (added.length) onChange([...value, ...added])
+    } finally {
+      // ALWAYS clear the spinner, whatever happened above (including a thrown server action).
+      setBusy(false)
     }
-
-    if (added.length) onChange([...value, ...added])
-    setBusy(false)
   }
 
   function removeAt(i: number) {
