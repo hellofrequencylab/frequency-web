@@ -133,7 +133,7 @@ One-click unsubscribe on `broadcast` (and `leader` bulk) only — **never** on t
 | **0 — foundation** *(this PR)* | `lib/comms/reply-address.ts` + test, the `comms_conversations` spine migration, ADR-812, this doc. Additive, nothing wired. | none |
 | **1 — send** | `lib/comms/conversations.ts` spine lib; `reply_mode` branch in `sendCampaignNow`; outbound-from-thread (inbox reply + support). Behind the reply-mode toggle. | low |
 | **2 — inbound** | Light up the webhook (secrets + Resend MX); token routing + dedupe upgrade + anti-spoof/loop guards in `recordInboundEmail`. | med (external) |
-| **3 — workspace** | `<ConversationWorkspace>`, `<ConversationRow>`, `<ThreadReader>`, `<Composer>`, assign/status/trade, mobile drill-down. | med |
+| **3 — workspace** ✅ | `<ConversationWorkspace>` at `/admin/crm/conversations` (`lib/comms/workspace.ts` read model + `lib/comms/labels.ts`): segments rail (Mine / Unassigned / All · by status, URL-as-state), the conversation list, the RSC thread reader (attributed bubbles, internal notes distinct), the `<ConversationComposer>` (Reply / Note toggle) and `<ConversationTriage>` (status / priority / assignee, "Trade" with an optional handoff note → `comms_assignments` audit). Actions in `app/(main)/admin/crm/conversations/actions.ts`; nav leaf `crm-conversations`. Leader `/lead/inbox` + mobile-sheet polish are Phase 3b. | med |
 | **4 — leader→group** | `segmentForLeaderDownline`, the fan-out, the "sends as you / N conversations" preview, `/lead/inbox`. | low |
 | **5 — AI seams** | `<VeraDraftButton>`, summary/triage/sentiment. | low |
 

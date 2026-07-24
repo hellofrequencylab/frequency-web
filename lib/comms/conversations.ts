@@ -111,34 +111,48 @@ export interface ConversationRow {
   subject: string | null
 }
 
+const CONV_ROW_COLS =
+  'id, ref, status, kind, external_email, owner_profile_id, assigned_to, member_profile_id, contact_id, space_id, subject'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toConversationRow(row: any): ConversationRow {
+  return {
+    id: String(row.id),
+    ref: String(row.ref),
+    status: String(row.status),
+    kind: String(row.kind),
+    externalEmail: (row.external_email as string) ?? null,
+    ownerProfileId: (row.owner_profile_id as string) ?? null,
+    assignedTo: (row.assigned_to as string) ?? null,
+    memberProfileId: (row.member_profile_id as string) ?? null,
+    contactId: (row.contact_id as string) ?? null,
+    spaceId: (row.space_id as string) ?? null,
+    subject: (row.subject as string) ?? null,
+  }
+}
+
 /** Resolve a conversation by its public `ref` (the inbound routing key). FAIL-SAFE: null on miss/error. */
 export async function getConversationByRef(ref: string | number): Promise<ConversationRow | null> {
   const key = typeof ref === 'number' ? ref : parseInt(String(ref), 10)
   if (!Number.isFinite(key) || key <= 0) return null
   try {
-    const res = await convTable('comms_conversations')
-      .select(
-        'id, ref, status, kind, external_email, owner_profile_id, assigned_to, member_profile_id, contact_id, space_id, subject',
-      )
-      .eq('ref', key)
-      .maybeSingle()
-    const row = res?.data
-    if (!row) return null
-    return {
-      id: String(row.id),
-      ref: String(row.ref),
-      status: String(row.status),
-      kind: String(row.kind),
-      externalEmail: (row.external_email as string) ?? null,
-      ownerProfileId: (row.owner_profile_id as string) ?? null,
-      assignedTo: (row.assigned_to as string) ?? null,
-      memberProfileId: (row.member_profile_id as string) ?? null,
-      contactId: (row.contact_id as string) ?? null,
-      spaceId: (row.space_id as string) ?? null,
-      subject: (row.subject as string) ?? null,
-    }
+    const res = await convTable('comms_conversations').select(CONV_ROW_COLS).eq('ref', key).maybeSingle()
+    return res?.data ? toConversationRow(res.data) : null
   } catch (err) {
     console.error('[comms] getConversationByRef failed:', err)
+    return null
+  }
+}
+
+/** Resolve a conversation by its uuid `id` (the workspace action key). FAIL-SAFE: null on miss/error. */
+export async function getConversationById(id: string): Promise<ConversationRow | null> {
+  const key = typeof id === 'string' ? id.trim() : ''
+  if (!key) return null
+  try {
+    const res = await convTable('comms_conversations').select(CONV_ROW_COLS).eq('id', key).maybeSingle()
+    return res?.data ? toConversationRow(res.data) : null
+  } catch (err) {
+    console.error('[comms] getConversationById failed:', err)
     return null
   }
 }
@@ -153,6 +167,53 @@ export async function reopenConversationIfClosed(conversationId: string, current
       .eq('id', conversationId)
   } catch (err) {
     console.error('[comms] reopenConversationIfClosed failed (non-fatal):', err)
+  }
+}
+
+/** Triage fields an operator can change from the workspace. */
+export interface ConversationFieldPatch {
+  status?: string
+  priority?: string
+  assignedTo?: string | null
+}
+
+/** Update a conversation's status / priority / assignee (workspace triage). Stamps `resolved_at` when the
+ *  status becomes resolved/closed and clears it otherwise (mirrors support `updateTicketFields`). When the
+ *  assignee changes, the caller also records an assignment-audit row (see `recordAssignment`). FAIL-SAFE. */
+export async function updateConversationFields(id: string, patch: ConversationFieldPatch): Promise<boolean> {
+  const set: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (patch.status !== undefined) {
+    set.status = patch.status
+    set.resolved_at = patch.status === 'resolved' || patch.status === 'closed' ? new Date().toISOString() : null
+  }
+  if (patch.priority !== undefined) set.priority = patch.priority
+  if (patch.assignedTo !== undefined) set.assigned_to = patch.assignedTo
+  try {
+    const res = await convTable('comms_conversations').update(set).eq('id', id)
+    return !res?.error
+  } catch (err) {
+    console.error('[comms] updateConversationFields failed:', err)
+    return false
+  }
+}
+
+/** Append an assignment-audit row (the append-only "trade" trail). Best-effort; never throws. */
+export async function recordAssignment(input: {
+  conversationId: string
+  assignedTo: string | null
+  assignedBy: string | null
+  reason?: string | null
+}): Promise<void> {
+  try {
+    const db = createAdminClient() as unknown as { from: (n: string) => any } // eslint-disable-line @typescript-eslint/no-explicit-any
+    await db.from('comms_assignments').insert({
+      conversation_id: input.conversationId,
+      assigned_to: input.assignedTo,
+      assigned_by: input.assignedBy,
+      reason: input.reason ?? 'manual',
+    })
+  } catch (err) {
+    console.error('[comms] recordAssignment failed (non-fatal):', err)
   }
 }
 
