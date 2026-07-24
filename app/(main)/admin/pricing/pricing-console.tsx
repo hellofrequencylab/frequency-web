@@ -718,7 +718,9 @@ const TIER_FLAGS: { key: PricingFlagKey; label: string }[] = [
 ]
 const PLAN_FLAGS: { key: PricingFlagKey; label: string }[] = [
   { key: 'plan_business_enabled', label: 'Business' },
+  { key: 'plan_collective_enabled', label: 'Collective' },
   { key: 'plan_nonprofit_enabled', label: 'Non Profit' },
+  { key: 'plan_independent_enabled', label: 'Independent' },
 ]
 const GAMIFICATION_FLAGS: { key: PricingFlagKey; label: string }[] = [
   { key: 'gamification_full_member', label: 'Member (free)' },

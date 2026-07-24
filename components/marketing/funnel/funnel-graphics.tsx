@@ -402,10 +402,11 @@ export function BreakEvenGraphic({ className = '' }: { className?: string }) {
   // Plot area
   const x0 = 44, x1 = 396, y0 = 30, y1 = 196
   const cross = 210 // x of the crossing (dashed marker)
-  // Free line: 5% of sales, rising steeper from origin.
+  // Free line: 10% on network-sourced sales, rising steeper from origin (no fixed cost).
   const freeStart = { x: x0, y: 180 }
   const freeEnd = { x: x1, y: 44 }
-  // Business line: $49 + 3%, higher intercept, flatter slope, crossing Free at `cross`.
+  // Business line: $29/mo + 5% on network-sourced sales (half the rate), higher intercept, flatter slope,
+  // crossing Free where the halved rate covers the $29 (about $600/mo of network sales).
   const bizStart = { x: x0, y: 120 }
   const bizEnd = { x: x1, y: 78 }
   return (
@@ -422,20 +423,20 @@ export function BreakEvenGraphic({ className = '' }: { className?: string }) {
       {/* dashed crossing marker */}
       <g className="text-primary-strong">
         <line x1={cross} y1={y0} x2={cross} y2={y1} stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.8" />
-        <text x={cross} y={y1 + 18} textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="700">$2,500/mo</text>
+        <text x={cross} y={y1 + 18} textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="700">~$600/mo</text>
       </g>
       {/* Free line (quiet) */}
       <g className="text-subtle">
         <line x1={freeStart.x} y1={freeStart.y} x2={freeEnd.x} y2={freeEnd.y} stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" />
-        <text x={freeEnd.x} y={freeEnd.y - 8} textAnchor="end" fill="currentColor" fontSize="11" fontWeight="600">Free · 5%</text>
+        <text x={freeEnd.x} y={freeEnd.y - 8} textAnchor="end" fill="currentColor" fontSize="11" fontWeight="600">Free · 10% network</text>
       </g>
       {/* Business line (accent) */}
       <g className="text-primary-strong">
         <line x1={bizStart.x} y1={bizStart.y} x2={bizEnd.x} y2={bizEnd.y} stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" />
-        <text x={bizEnd.x} y={bizEnd.y - 8} textAnchor="end" fill="currentColor" fontSize="11" fontWeight="700">Business · $49 + 3%</text>
+        <text x={bizEnd.x} y={bizEnd.y - 8} textAnchor="end" fill="currentColor" fontSize="11" fontWeight="700">Business · $29 + 5% network</text>
       </g>
       {/* x-axis label */}
-      <text x={(x0 + x1) / 2} y={224} textAnchor="middle" className="text-subtle" fill="currentColor" fontSize="11">Monthly sales</text>
+      <text x={(x0 + x1) / 2} y={224} textAnchor="middle" className="text-subtle" fill="currentColor" fontSize="11">Monthly network sales</text>
     </svg>
   )
 }

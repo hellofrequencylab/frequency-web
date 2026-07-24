@@ -920,7 +920,7 @@ function escapeHtml(s: string): string {
 // mail (e.g. the scan intro) that must NOT claim membership and needs its own
 // unsubscribe line.
 function emailShell(content: string, footer?: string): string {
-  const foot = footer ?? `You're receiving this because you joined Frequency, a place to be human.`
+  const foot = footer ?? `You're receiving this because you joined Frequency, the community collective.`
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -928,7 +928,7 @@ function emailShell(content: string, footer?: string): string {
   <div style="${containerStyle}">
     <div style="${cardStyle}">
       <a href="${BASE_URL}" style="${logoStyle}">frequency</a>
-      <p style="${taglineStyle}">A place to be human</p>
+      <p style="${taglineStyle}">The community collective</p>
       ${content}
     </div>
     <div style="${footerStyle}">

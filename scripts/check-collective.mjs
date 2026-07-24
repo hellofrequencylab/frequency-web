@@ -169,19 +169,25 @@ line('\nGuardrails · Legacy & off-plan tripwires')
   if (badNoTierNames.length) fail(`"no tier names" asserted as live canon (retired by ADR-811): ${badNoTierNames.join(', ')}`)
   else ok('the retired "no tier names" lock is only referenced as history')
 
-  // Tracked (not a fail): STALE Business-$49 in member-facing prose. Business is $29 now (ADR-811), so a
-  // bare "$49" is stale UNLESS it names the Collective beta ($49 founding under the $79 list, legitimate)
-  // or lives in a test assertion (which locks real values: persona-with-add-on totals, the Collective beta).
-  const priceHits = [
-    ...grepCount('content', /\$49\b/, ['.md']).hits,
-    ...grepCount('lib/marketing', /\$49\b/, ['.ts', '.tsx']).hits,
-  ].filter((h) => {
-    const [file, ln] = h.split(':')
-    if (/\.test\.(ts|tsx)$/.test(file)) return false // tests assert real current values
-    const txt = read(file); if (!txt) return false
-    const context = txt.split('\n').slice(Math.max(0, +ln - 2), +ln + 1).join(' ')
-    return !/collective/i.test(context) // Collective's beta price is legitimately $49
-  })
+  // Tracked (not a fail): STALE Business-$49 in member-facing prose/UI. Business is $29 now (ADR-811), so a
+  // bare "$49" is stale UNLESS it is the Collective BETA/FOUNDING anchor ($49 under $79) or a test assertion.
+  // Scan BROADLY: the rebrand's surfaces span components + app + the page-editor templates + billing/pricing,
+  // not just lib/marketing (an earlier too-narrow scan let a live "$49" in the funnel graphic slip through).
+  const priceRoots = ['content', 'lib', 'components', 'app']
+  const seenHits = new Set()
+  const priceHits = priceRoots
+    .flatMap((root) => grepCount(root, /\$49\b/, ['.md', '.ts', '.tsx']).hits)
+    .filter((h) => {
+      if (seenHits.has(h)) return false // dedupe overlapping roots
+      seenHits.add(h)
+      const [file, ln] = h.split(':')
+      if (/\.test\.(ts|tsx)$/.test(file)) return false // tests assert real current values
+      const txt = read(file); if (!txt) return false
+      const context = txt.split('\n').slice(Math.max(0, +ln - 2), +ln + 1).join(' ')
+      // Legitimate ONLY when it is the Collective BETA/FOUNDING price — NOT merely near the brand word
+      // "collective" (which now appears on nearly every pricing sentence and would neuter the check).
+      return !/beta|founding/i.test(context)
+    })
   const oldHomeCrew = grepCount('app', /\$10 a month|\$10\/mo/, ['.tsx']).n
   if (priceHits.length) warn(`${priceHits.length} stale Business "$49" reference(s) in prose: ${priceHits.join(', ')}`); else ok('no stale $49 in marketing prose (Business is $29; Collective beta $49 is expected)')
   if (oldHomeCrew > 0) warn(`${oldHomeCrew} hardcoded Crew "$10" reference(s) in app copy (fix in Phase 6)`); else ok('no stale Crew "$10" in app copy')

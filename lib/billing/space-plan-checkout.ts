@@ -9,7 +9,7 @@
 
 import { stripe, appUrl } from './stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { billingLive, getPricingValues, loadPricingFlags } from '@/lib/pricing/settings'
+import { billingLive, getPricingValues, loadPricingFlags, type PricingFlagKey } from '@/lib/pricing/settings'
 import { asAddonKey, type AddonKey, type SpacePlan } from '@/lib/pricing/plans'
 import { resolveStripePriceId } from './pricing-prices'
 import {
@@ -24,6 +24,7 @@ import {
   type SpacePlanKey,
 } from './pricing-keys'
 import { itemKeyForCatalogKey, readLockedPriceId } from './space-subscription-items'
+import { isBetaPricingActive } from '@/lib/pricing/beta'
 
 /** The per-plan enable flag for a space plan (must be ON, with billing live, to sell it). */
 const PLAN_FLAG: Record<SpacePlanKey, 'plan_business_enabled' | 'plan_nonprofit_enabled'> = {
@@ -40,16 +41,20 @@ export async function spacePlanSellable(plan: SpacePlan | string): Promise<boole
   return flags[PLAN_FLAG[key]] === true
 }
 
-// ADR-552: the two paid tiers (business/nonprofit) map 1:1 onto their per-plan switches. Always GATED on
-// billingLive(), so this is FALSE while billing is OFF (no live loadout checkout today).
-const LOADOUT_FLAG: Record<'business' | 'nonprofit', 'plan_business_enabled' | 'plan_nonprofit_enabled'> = {
+// ADR-811: the paid loadout tiers map 1:1 onto their per-plan switches. Always GATED on billingLive(),
+// so this is FALSE while billing is OFF. Business/Collective/Independent buy the depth ladder; Nonprofit
+// is the flat per-mission plan. Collective + Independent bill via their own catalog bases (ADR-811).
+type LoadoutPlan = 'business' | 'collective' | 'nonprofit' | 'independent'
+const LOADOUT_FLAG: Record<LoadoutPlan, PricingFlagKey> = {
   business: 'plan_business_enabled',
+  collective: 'plan_collective_enabled',
   nonprofit: 'plan_nonprofit_enabled',
+  independent: 'plan_independent_enabled',
 }
 
-/** Is a tier (business/nonprofit) sellable right now? billingLive() AND its mapped per-plan switch.
- *  GATED, FAIL-SAFE FALSE. The loadout checkout gates on this. */
-export async function spaceLoadoutSellable(plan: 'business' | 'nonprofit'): Promise<boolean> {
+/** Is a loadout tier (business/collective/nonprofit/independent) sellable right now? billingLive() AND
+ *  its mapped per-plan switch. GATED, FAIL-SAFE FALSE. The loadout checkout gates on this. */
+export async function spaceLoadoutSellable(plan: LoadoutPlan): Promise<boolean> {
   try {
     if (!(await billingLive())) return false
     const flags = await loadPricingFlags()
@@ -176,9 +181,11 @@ export async function createSpacePlanCheckout(
 /** The loadout the caller selects: the base tier, the active add-ons, and the seat counts. Monthly or
  *  yearly via `interval`. */
 export interface SpaceLoadout {
-  /** The base tier the loadout is for. 'business' = the Business base (full depth); 'nonprofit' = the
-   *  per-seat item. The AI add-on layers on any paid tier. 'free' is not a checkout. */
-  plan: 'business' | 'nonprofit'
+  /** The base tier the loadout is for. 'business' = the run-your-practice base; 'collective' = the
+   *  network-depth base (automations, team, collaborators); 'independent' = the standalone white-label
+   *  base (off-network); 'nonprofit' = the flat per-mission item. The AI add-on layers on any paid tier.
+   *  'free' is not a checkout. */
+  plan: LoadoutPlan
   /** The active metered add-ons (only AI now, ADR-552). Ignored for nonprofit framing. */
   addons?: readonly (AddonKey | string)[]
   /** Licensed seat count for seat items (Nonprofit seat quantity; tier-level Team seats, Phase D). Min 1. */
@@ -197,10 +204,14 @@ async function resolveLoadoutPriceId(
   const itemKey = itemKeyForCatalogKey(catalogKey)
   if (itemKey) {
     const locked = await readLockedPriceId(spaceId, itemKey)
-    if (locked) return locked // re-bill the grandfathered founding price (the lock)
+    if (locked) return locked // re-bill the grandfathered founding price (the lock) — beta subscribers keep it
   }
-  // The founding price is the plain catalog key (the one charged); the list anchor is the _list variant.
-  return resolveStripePriceId(catalogPriceKey(catalogKey, interval, false))
+  // BETA AUTO-REVERT (ADR-811): during the beta window we charge the FOUNDING (beta) price — the plain
+  // catalog key; on/after the cutover we charge the LIST price — the _list variant. Both are minted active
+  // by the catalog sync and resolve the same way, so this is a pure key switch with no re-sync. A Space
+  // that already locked a beta price is grandfathered above and never reaches this line.
+  const chargeList = !isBetaPricingActive()
+  return resolveStripePriceId(catalogPriceKey(catalogKey, interval, chargeList))
 }
 
 /** The catalog item keys + their seat-ness a loadout maps to. PURE (ADR-552). Business -> business_base
@@ -217,7 +228,11 @@ function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; pe
     ? [{ key: 'operator_seat', perSeat: true }]
     : []
   if (loadout.plan === 'nonprofit') return [{ key: 'nonprofit_seat', perSeat: false }, ...operatorSeat]
-  const out: { key: CatalogItemKey; perSeat: boolean }[] = [{ key: 'business_base', perSeat: false }]
+  // Independent is a flat standalone white-label base, OFF the network — no metered add-ons layer on it.
+  if (loadout.plan === 'independent') return [{ key: 'independent_base', perSeat: false }, ...operatorSeat]
+  // Business + Collective share the depth ladder: a flat base plus the optional AI add-on (and seats).
+  const base: CatalogItemKey = loadout.plan === 'collective' ? 'collective_base' : 'business_base'
+  const out: { key: CatalogItemKey; perSeat: boolean }[] = [{ key: base, perSeat: false }]
   const addons = [...new Set((loadout.addons ?? []).map((a) => asAddonKey(typeof a === 'string' ? a : null)).filter((a): a is AddonKey => a !== null))]
   for (const addon of addons) {
     const catalogKey = asCatalogItemKey(`addon_${addon}`)
@@ -290,7 +305,7 @@ export async function createSpaceLoadoutCheckout(
     if (!priceId) {
       // The base item failing to resolve is fatal (no plan to sell); a missing add-on price just drops
       // that add-on from the loadout rather than blocking the whole checkout.
-      if (key === 'business_base' || key === 'nonprofit_seat') return null
+      if (key === 'business_base' || key === 'collective_base' || key === 'independent_base' || key === 'nonprofit_seat') return null
       continue
     }
     lineItems.push({ price: priceId, quantity: perSeat ? seatQuantity : 1 })

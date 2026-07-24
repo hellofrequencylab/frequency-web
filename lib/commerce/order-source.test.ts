@@ -19,9 +19,18 @@ import { classifyOrderSource } from './order-source'
 beforeEach(() => cookieStore.clear())
 
 describe('classifyOrderSource', () => {
-  it('an explicit network entry point (discovery/marketplace/referral) always wins', async () => {
+  it('an explicit network entry point (discovery/marketplace/referral) wins', async () => {
     expect(await classifyOrderSource({ entryPoint: 'marketplace' })).toEqual({ source: 'network', attributionRef: 'ep:marketplace' })
     expect(await classifyOrderSource({ entryPoint: 'discovery' })).toEqual({ source: 'network', attributionRef: 'ep:discovery' })
+  })
+
+  it('a self-scan (buyer IS the seller) overrides even an explicit network entry point → self', async () => {
+    // The hard promise: an operator buying their own listing off a marketplace/discovery surface is never
+    // billed the network rate. The self-scan guard must beat entryPoint.
+    expect(await classifyOrderSource({ entryPoint: 'marketplace', buyerProfileId: 'me', sellerProfileId: 'me' })).toEqual({
+      source: 'self',
+      attributionRef: null,
+    })
   })
 
   it('a referral cookie from a real other person → network', async () => {

@@ -34,6 +34,8 @@ import {
 export const ITEM_KEYS = [
   'base',
   'business',
+  'collective', // COLLECTIVE base (ADR-811): the network-depth tier (collective_base -> 'collective')
+  'independent', // INDEPENDENT base (ADR-811): the standalone white-label tier (independent_base -> 'independent')
   'ai',
   'nonprofit_seat',
   'operator_seat', // OPERATOR SEATS (ADR-799): a real per-seat add-on, quantity = extra operators
@@ -58,6 +60,8 @@ export function asItemKey(raw: string | null | undefined): ItemKey | null {
 export function itemKeyForCatalogKey(catalogKey: string | null | undefined): ItemKey | null {
   const key = asCatalogItemKey(catalogKey)
   if (key === 'business_base') return 'business'
+  if (key === 'collective_base') return 'collective' // the network-depth base (ADR-811)
+  if (key === 'independent_base') return 'independent' // the standalone white-label base (ADR-811)
   if (key) {
     const addon = addonKeyForCatalogItem(key)
     if (addon) return addon

@@ -217,4 +217,4 @@ export function yearlySaving(): number {
 
 /** The one honest caveat shown under the table (skeptic test). */
 export const COMPARISON_DISCLAIMER =
-  'Prices are typical entry-tier list prices and change often. Most of these tools also charge per seat and add their own transaction fees on top. Frequency is one flat price, plus a flat 3% and card processing, never per seat.'
+  'Prices are typical entry-tier list prices and change often. Most of these tools also charge per seat and add their own transaction fees on top. Frequency is one honest price, never per seat, and we take nothing on the bookings you bring in yourself. We earn only on the business the network sends you.'

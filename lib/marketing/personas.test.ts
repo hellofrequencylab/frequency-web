@@ -109,14 +109,15 @@ describe('persona copy is voice-compliant', () => {
 })
 
 describe('loadout-strip math (computed from the catalog, never hardcoded)', () => {
-  // ADR-811: the paid base is Business ($29); the Resonance Engine ($20) is the only add-on. Coaches/healers
-  // and community builders turn it on ($49); studios and event hosts run on Business alone ($29).
-  it('matches the doors: +Resonance personas $49, Business-only personas $29', () => {
+  // ADR-811: the paid base is Business at its $19 founding anchor; the Resonance Engine ($20) is the only
+  // add-on. Coaches/healers and community builders turn it on ($39); studios and event hosts run on
+  // Business alone ($19). The strip headlines the FOUNDING total (the charged price).
+  it('matches the doors: +Resonance personas $39, Business-only personas $19 (founding)', () => {
     const expected: Record<string, string> = {
-      'coaches-and-healers': '$49/mo',
-      'community-builders': '$49/mo',
-      studios: '$29/mo',
-      'event-hosts': '$29/mo',
+      'coaches-and-healers': '$39/mo',
+      'community-builders': '$39/mo',
+      studios: '$19/mo',
+      'event-hosts': '$19/mo',
     }
     const strip = loadoutStrip()
     for (const [slug, label] of Object.entries(expected)) {
@@ -141,32 +142,43 @@ describe('loadout-strip math (computed from the catalog, never hardcoded)', () =
 })
 
 describe('pricing table model', () => {
-  it('has the four commercial tiers, Business featured, Collective + Independent preview (ADR-811)', () => {
-    const tiers = pricingTiers()
+  it('has the four commercial tiers, Business featured, none preview at go-live (ADR-811)', () => {
+    const tiers = pricingTiers(true)
     expect(tiers.map((t) => t.id)).toEqual(['business', 'collective', 'nonprofit', 'independent'])
     expect(tiers.find((t) => t.id === 'business')!.featured).toBe(true)
-    // Business + Non Profit are sellable today; Collective + Independent are preview until go-live.
-    expect(tiers.find((t) => t.id === 'business')!.preview).toBeFalsy()
-    expect(tiers.find((t) => t.id === 'nonprofit')!.preview).toBeFalsy()
-    expect(tiers.find((t) => t.id === 'collective')!.preview).toBe(true)
-    expect(tiers.find((t) => t.id === 'independent')!.preview).toBe(true)
+    // GO-LIVE: all four tiers are sellable from the code catalog now; nothing is a preview row.
+    for (const t of tiers) expect(t.preview).toBeFalsy()
   })
 
-  it('Collective preview reads a $49 beta struck under the $79 list (ADR-811)', () => {
-    const col = pricingTiers().find((t) => t.id === 'collective')!
+  it('during beta: Collective reads a $49 beta struck under the $79 list (ADR-811)', () => {
+    const col = pricingTiers(true).find((t) => t.id === 'collective')!
     expect(tierHeadline(col, 'month')).toBe('$49/mo')
     expect(tierListAnchor(col, 'month')).toBe('$79')
   })
 
-  it('Business headline reads $29/mo flat (ADR-811)', () => {
-    const biz = pricingTiers().find((t) => t.id === 'business')!
-    expect(tierHeadline(biz, 'month')).toBe('$29/mo')
-    expect(biz.price.month.listCents).toBe(2900) // $29 flat, no strike
+  it('during beta: Business headline reads $19/mo struck under the $29 list (ADR-811)', () => {
+    const biz = pricingTiers(true).find((t) => t.id === 'business')!
+    expect(tierHeadline(biz, 'month')).toBe('$19/mo')
+    expect(biz.price.month.listCents).toBe(2900) // $29 list
+    expect(tierListAnchor(biz, 'month')).toBe('$29') // struck over the $19 beta anchor
   })
 
-  it('Non Profit headline reads $39/mo flat (ADR-811)', () => {
-    const np = pricingTiers().find((t) => t.id === 'nonprofit')!
-    expect(tierHeadline(np, 'month')).toBe('$39/mo')
+  it('after beta auto-revert: Business + Collective show list only, no strike (ADR-811)', () => {
+    const tiers = pricingTiers(false) // beta window closed
+    const biz = tiers.find((t) => t.id === 'business')!
+    const col = tiers.find((t) => t.id === 'collective')!
+    expect(tierHeadline(biz, 'month')).toBe('$29/mo')
+    expect(tierListAnchor(biz, 'month')).toBeNull() // no anchor once beta ends
+    expect(tierHeadline(col, 'month')).toBe('$79/mo')
+    expect(tierListAnchor(col, 'month')).toBeNull()
+  })
+
+  it('Non Profit headline reads $39/mo flat regardless of the beta window (ADR-811)', () => {
+    for (const beta of [true, false]) {
+      const np = pricingTiers(beta).find((t) => t.id === 'nonprofit')!
+      expect(tierHeadline(np, 'month')).toBe('$39/mo')
+      expect(tierListAnchor(np, 'month')).toBeNull() // flat, never a beta discount
+    }
   })
 
   it('the AI Engine add-on price matches the ladder (the only metered add-on, ADR-472)', () => {
