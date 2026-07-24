@@ -435,7 +435,7 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <span className="text-3xs font-black uppercase tracking-widest text-broadcast-strong">
-              {isEvent ? 'Dispatch' : `${d.audience_scope} broadcast`}
+              {isEvent ? 'Dispatch' : `${d.audience_scope} Dispatch`}
             </span>
             {/* Event badge: a lucide icon + "Event" chip in DAWN success tokens, so an
                 Event Dispatch reads as event-flavoured on the broadcast rail. */}

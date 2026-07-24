@@ -390,7 +390,7 @@ async function CommunityArea({
             <MiniStat value={(nexusesC.count ?? 0).toLocaleString()} label="Nexuses" />
             <MiniStat value={(hubsC.count ?? 0).toLocaleString()} label="Hubs" />
             <MiniStat value={circlesCount.toLocaleString()} label="Circles" />
-            <MiniStat value={broadcasts.toLocaleString()} label="Broadcasts" />
+            <MiniStat value={broadcasts.toLocaleString()} label="Dispatches" />
           </MiniGrid>
         </Tile>
         <Tile label="People & safety">

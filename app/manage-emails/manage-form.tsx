@@ -12,7 +12,7 @@ import { isError } from '@/lib/action-result'
 // plain, no em dashes.
 
 const CATEGORY_LABELS: { key: NotificationCategory; label: string; help: string }[] = [
-  { key: 'dispatches', label: 'Broadcasts', help: 'Broadcast posts from your hosts and the wider community.' },
+  { key: 'dispatches', label: 'Dispatches', help: 'Dispatch posts from your Hosts and the wider community.' },
   { key: 'events', label: 'Events', help: 'RSVP changes and reminders before an event starts.' },
   { key: 'comments', label: 'Replies', help: 'Replies and mentions on posts and comments you wrote.' },
   { key: 'mentions', label: 'Mentions', help: 'When someone @mentions you anywhere else.' },

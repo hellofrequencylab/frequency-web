@@ -34,7 +34,7 @@ Frequency helps you find people nearby, and you're always in control of how visi
 
 Under **Settings → Notifications** you decide exactly what Frequency sends and how often. Nothing here is all-or-nothing.
 
-- **Topics**: turn each kind on or off on its own, and per place (in-app, email, push). Topics include broadcasts, events, mentions, replies and comments on your own posts, and the occasional marketing note about Frequency.
+- **Topics**: turn each kind on or off on its own, and per place (in-app, email, push). Topics include Dispatches, events, mentions, replies and comments on your own posts, and the occasional marketing note about Frequency.
 - **How often**: for each topic, pick real-time, a daily digest, or a weekly digest. Choose real-time for the things you want right away, and a digest for the rest, so a busy day arrives as one summary instead of a stream.
 - **Mute one Circle or Space**: quiet a single [Circle](/help/getting-started/what-is-a-circle) or Space without leaving it. You stay a member and see everything when you open the app; you just stop getting pinged about that one.
 - **Marketing and memory**: separate switches control marketing email and whether Vera remembers your details between chats. Both are yours to turn off any time.

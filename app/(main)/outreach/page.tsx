@@ -49,7 +49,7 @@ export default async function OutreachPage() {
 
       <p className="mt-3 text-xs text-subtle">
         Outreach is a direct note to your members’ inbox + notifications. For a public,
-        community-wide post, use <strong className="text-text">Broadcast</strong>.
+        community-wide post, use <strong className="text-text">Dispatch</strong>.
       </p>
     </FocusTemplate>
   )

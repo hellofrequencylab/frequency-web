@@ -220,7 +220,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
     { q: 'Do I need to be technical?', a: 'No. Most practitioners are taking bookings the same afternoon.' },
     {
       q: 'What does it actually cost?',
-      a: 'Free to start. Business is $29 a month, and you keep 100% of your own bookings. We earn only on business the network sends you, at a rate that drops as your plan rises. You always see the full number, nothing hidden.',
+      a: 'Free to start. Business is $29 a month, or $19 in the founder window through September 1, 2026, and you keep 100% of your own bookings. We earn only on business the network sends you, at a rate that drops as your plan rises: 5% on Business, 3% on Collective. You always see the full number, nothing hidden.',
     },
     { q: 'Can I take my contacts with me?', a: 'Yes, any time. Download a VCard or export your whole list.' },
     { q: 'Will my clients need to download anything?', a: 'No. They book and pay from a link.' },
@@ -311,7 +311,7 @@ export const STUDIOS_FUNNEL: FunnelConfig = {
     { q: 'Do I need to be technical?', a: 'No. Most studios are taking bookings the same afternoon.' },
     {
       q: 'What does it actually cost?',
-      a: 'Free to start. Business is $29 a month, and you keep 100% of the memberships you sell. We earn only on business the network sends you, at a rate that drops as your plan rises. You always see the full number, nothing hidden.',
+      a: 'Free to start. Business is $29 a month, or $19 in the founder window through September 1, 2026, and you keep 100% of the memberships you sell. We earn only on business the network sends you, at a rate that drops as your plan rises: 5% on Business, 3% on Collective. You always see the full number, nothing hidden.',
     },
     { q: 'Can I take my members with me?', a: 'Yes, any time. Export your whole member list whenever you want.' },
     { q: 'Will my members need to download anything?', a: 'No. They book and pay from a link, and check in with a QR code.' },
@@ -402,7 +402,7 @@ export const EVENTS_FUNNEL: FunnelConfig = {
     { q: 'Do I need to be technical?', a: 'No. Most hosts are selling tickets the same afternoon.' },
     {
       q: 'What does it actually cost?',
-      a: 'Free to start. Business is $29 a month, and you keep 100% of the tickets you sell. We earn only on business the network sends you, at a rate that drops as your plan rises. You always see the full number, nothing hidden.',
+      a: 'Free to start. Business is $29 a month, or $19 in the founder window through September 1, 2026, and you keep 100% of the tickets you sell. We earn only on business the network sends you, at a rate that drops as your plan rises: 5% on Business, 3% on Collective. You always see the full number, nothing hidden.',
     },
     { q: 'Can I take my guest list with me?', a: 'Yes, any time. Export your whole list whenever you want.' },
     { q: 'Will my guests need to download anything?', a: 'No. They buy and check in from a link and a QR code.' },
@@ -494,7 +494,7 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
     { q: 'Do I need to be technical?', a: 'No. Most organizers have their community running the same afternoon.' },
     {
       q: 'What does it actually cost?',
-      a: 'Free to start. Business is $29 a month, and you keep 100% of the memberships you sell. We earn only on business the network sends you, at a rate that drops as your plan rises. You always see the full number, nothing hidden.',
+      a: 'Free to start. Business is $29 a month, or $19 in the founder window through September 1, 2026, and you keep 100% of the memberships you sell. When you grow a team and host collaborators, Collective adds that for $49 a month in the founder window under the $79 list, at a 3% network rate. We earn only on business the network sends you, at a rate that drops as your plan rises. You always see the full number, nothing hidden.',
     },
     { q: 'Can I take my members with me?', a: 'Yes, any time. Export your whole member list whenever you want.' },
     {

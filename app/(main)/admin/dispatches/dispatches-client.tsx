@@ -390,8 +390,8 @@ export function DispatchesClient({
         {dispatches.length === 0 && (
           <EmptyState
             variant="first-use"
-            title="No broadcasts yet"
-            description="Publish an announcement to reach your people. It appears on the Broadcasts page and drops into the main feed."
+            title="No Dispatches yet"
+            description="Publish an announcement to reach your people. It appears on the Dispatches page and drops into the main feed."
           />
         )}
 
@@ -484,13 +484,13 @@ export function DispatchesClient({
       <DangerModal
         open={confirmDelete !== null}
         onClose={() => setConfirmDelete(null)}
-        title="Delete this broadcast?"
+        title="Delete this Dispatch?"
         body={
           <>
             Deleting <span className="font-semibold text-text">{confirmDelete?.title}</span> removes it permanently. This cannot be undone.
           </>
         }
-        confirmLabel="Delete broadcast"
+        confirmLabel="Delete Dispatch"
         onConfirm={() => {
           if (confirmDelete) handleDelete(confirmDelete.id)
         }}

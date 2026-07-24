@@ -20,7 +20,7 @@ export interface SmsFormState {
 }
 
 const SMS_CATEGORIES: { key: 'sms_dispatches' | 'sms_events'; label: string; description: string }[] = [
-  { key: 'sms_dispatches', label: 'Broadcasts', description: 'Text the group updates from your hosts.' },
+  { key: 'sms_dispatches', label: 'Dispatches', description: 'Text the group updates from your hosts.' },
   { key: 'sms_events', label: 'Events', description: 'RSVP confirmations and reminders before an event.' },
 ]
 

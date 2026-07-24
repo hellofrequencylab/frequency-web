@@ -100,10 +100,17 @@
   BETWEEN the live and coming-soon rows: a door to the timer app, not a
   capture tile. On Air's other entries are the home JourneyBoard, practice
   pages, /on-air and the PWA shortcut (no header icon).
+- **Dispatch / Dispatches** = the host-and-above wider announcement (`dispatches`, route
+  `/broadcast`). **This is the sole member-facing name; every visible label, help article,
+  notification topic, and admin heading says Dispatch.** "Broadcast" is **retired from member
+  copy and RESERVED** for a future feature, so it must not appear in any user-facing string;
+  it survives only as the internal route (`/broadcast`), schema, `featureKeys: [broadcast]`, and
+  design token (`text-broadcast-*`). The verb "broadcast" as plain English (a contact is "never
+  broadcast") is fine; the product noun is always Dispatch.
 - **Dispatch from Vera** (ADR-229) = Vera's daily personal assignment, shown at the
   end of an On Air session (`vera_dispatches`; one per member per day, cached:
-  replays never regenerate). **Collision guard:** distinct from broadcast
-  **Dispatches** (`dispatches`, /broadcast). Both are transmissions in the same
+  replays never regenerate). **Collision guard:** distinct from the leader-ladder
+  **Dispatches** (`dispatches`, /broadcast) above. Both are transmissions in the same
   radio family; "Dispatch from Vera" / "Vera Dispatch" always carries the qualifier.
 - **Event Dispatch** (ADR-255) = a host's update about one event. The base action is
   **post an update to the event page**; at post time the host may also **send it as a

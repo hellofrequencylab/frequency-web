@@ -188,7 +188,7 @@ export async function DispatchesPanel({ profileId, circleIds }: { profileId: str
   if (dispatches.length === 0) return null
 
   return (
-    <WidgetCard tile title="Broadcasts">
+    <WidgetCard tile title="Dispatches">
       <div className="space-y-0.5">
         {dispatches.map((d) => (
           <Link
@@ -208,7 +208,7 @@ export async function DispatchesPanel({ profileId, circleIds }: { profileId: str
       </div>
       <div className="px-1 pt-3">
         <Link href="/broadcast" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
-          View all broadcasts →
+          View all Dispatches →
         </Link>
       </div>
     </WidgetCard>

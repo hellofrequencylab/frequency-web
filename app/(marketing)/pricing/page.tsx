@@ -19,6 +19,7 @@ import {
   tierHeadline,
   tierListAnchor,
   loadoutStrip,
+  proAddonPrice,
   PRICING_ADDONS,
   MISSION_FRAMING,
   CREW_NOTE,
@@ -86,6 +87,21 @@ const PRICING_FAQ: { q: string; a: string }[] = [
     q: 'Where does the money go?',
     a: MISSION_FRAMING,
   },
+]
+
+// The value ladder: the whole climb, made legible on the surface that lists tiers. Each rung adds depth
+// and buys down the network take-rate, from belonging for free to running standalone at zero. Member is
+// free and Independent/Non Profit are 0%; the paid-tier take-rates (5% / 3%) are the canonical
+// network-only rates (they match each tier's takeRate copy). Crew's price reads from the CREW_NOTE
+// constant so it never drifts from the Crew card below. No dollar amount here is one the catalog renders
+// beside it.
+const VALUE_LADDER: { name: string; line: string; fee: string }[] = [
+  { name: 'Member', line: 'Belong. The full community, free forever.', fee: 'Free' },
+  { name: 'Crew', line: 'The whole Quest, and author your own. The personal tier.', fee: `${CREW_NOTE.foundingLabel}/mo` },
+  { name: 'Business', line: 'Run your practice: the CRM, email, bookings, and your own website.', fee: '5% network' },
+  { name: 'Collective', line: 'Collaborate and host: automations, team roles, and collaborators.', fee: '3% network' },
+  { name: 'Non Profit', line: 'The full toolkit for verified 501(c)(3) organizations.', fee: '0%' },
+  { name: 'Independent', line: 'Your own brand and domain, standalone and off the network.', fee: '0%' },
 ]
 
 export default function PricingPage() {
@@ -170,6 +186,48 @@ export default function PricingPage() {
           You keep 100% of your own bookings, always. The take-rate applies only to business the network
           sends you, and it drops as your plan rises. Every plan here is live and buyable today.
         </p>
+
+        {/* Add-ons that ride on any paid plan: the Resonance Engine (priced from the catalog) and extra
+            operator seats. Seats are an OWNER-SET placeholder (CATALOG operator_seat is placeholder:true),
+            so we surface them as available and owner-priced WITHOUT locking a public per-seat number. */}
+        <p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-subtle">
+          Two add-ons ride on any paid plan. The Resonance Engine is optional at {proAddonPrice('ai')}. And
+          when your team grows, you can add operator seats: these are owner-priced today, so you bring on the
+          people you need without a locked public per-seat price.
+        </p>
+      </Section>
+
+      {/* The value ladder: the climb made legible, each rung adding depth and buying down the take-rate. */}
+      <Section tone="canvas" pad="py-14 sm:py-16">
+        <div className="mb-8 text-center">
+          <p className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">
+            The climb
+          </p>
+          <h2 className="font-display uppercase text-text text-3xl sm:text-4xl">
+            Every step buys down the fee.
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted">
+            Start where you are and climb as you grow. Each rung adds depth and lowers the network
+            take-rate, from belonging for free to running standalone at zero.
+          </p>
+        </div>
+        <ol className="mx-auto flex max-w-3xl flex-col gap-3">
+          {VALUE_LADDER.map((rung, i) => (
+            <li
+              key={rung.name}
+              className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-5"
+            >
+              <span className="font-display text-2xl leading-none text-subtle">{i + 1}</span>
+              <div className="flex-1">
+                <h3 className="font-display uppercase text-text text-xl">{rung.name}</h3>
+                <p className="text-sm leading-relaxed text-muted">{rung.line}</p>
+              </div>
+              <span className="shrink-0 rounded-md bg-primary-bg px-3 py-1 text-center font-display text-sm text-primary-strong">
+                {rung.fee}
+              </span>
+            </li>
+          ))}
+        </ol>
       </Section>
 
       {/* The value comparison: every Business feature vs the separate tool it replaces, totaled against the
@@ -201,7 +259,7 @@ export default function PricingPage() {
             },
             {
               title: 'One honest price, no surprise invoices.',
-              body: 'A plain monthly price and a fee you always see in full. No per-seat charges, no hidden line items.',
+              body: 'Your plan is one flat monthly price, and a fee you always see in full. Any add-on you turn on, like the Resonance Engine or extra operator seats, is shown up front, never a hidden line item.',
             },
             {
               title: 'Month to month. Leave anytime.',

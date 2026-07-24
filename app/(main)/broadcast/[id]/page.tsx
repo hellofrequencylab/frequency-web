@@ -142,7 +142,7 @@ export default async function DispatchDetailPage({ params }: Props) {
         className="inline-flex items-center gap-1.5 text-xs text-subtle hover:text-primary-strong transition-colors mb-8"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
-        Back to Broadcast
+        Back to Dispatches
       </Link>
 
       {/* ── DISPATCH HEADER (DetailTemplate) ────────────────── */}

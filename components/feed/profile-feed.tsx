@@ -317,7 +317,7 @@ function DispatchTimelineCard({ dispatch: d }: { dispatch: DispatchItem }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <span className="text-3xs font-black uppercase tracking-widest text-primary-strong">
-              {d.audience_scope} broadcast
+              {d.audience_scope} Dispatch
             </span>
             {d.linked_task && (
               <span className="text-3xs font-bold text-primary flex items-center gap-0.5">

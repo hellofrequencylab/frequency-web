@@ -130,7 +130,7 @@ const TIERS = [
   { name: 'Business', price: '$29/mo (beta $19)', take: '5% network only', who: 'Run your whole practice on one honest price.' },
   { name: 'Collective', price: '$79/mo (beta $49)', take: '3% network only', who: 'Host collaborators, a shared Space, and shared Events.' },
   { name: 'Non Profit', price: '$39/mo', take: '0% network only', who: 'The full Collective toolkit, verified 501(c)(3).' },
-  { name: 'Independent', price: '~$249/mo', take: 'Off the network', who: 'White-label and standalone. Standard software, no network lift.' },
+  { name: 'Independent', price: '$249/mo', take: 'Off the network', who: 'White-label and standalone. Standard software, no network lift.' },
 ] as const
 
 export default function WhatIsFrequencyPage() {

@@ -72,9 +72,9 @@ export default async function AdminDispatchesPage({ searchParams }: { searchPara
 
   return (
     <AdminTemplate
-      title="Broadcasts"
+      title="Dispatches"
       eyebrow="Community"
-      description="Publish announcements to your community. Broadcasts appear on the Broadcasts page and drop into the main feed."
+      description="Publish announcements to your community. Dispatches appear on the Dispatches page and drop into the main feed."
       actions={<BroadcastCompose circles={circles} hubs={hubs} nexuses={nexuses} />}
       width="default"
     >

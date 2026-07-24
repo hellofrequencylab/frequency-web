@@ -111,7 +111,7 @@ export async function AdminModerationQueue() {
     if (r.target_type === 'post' || r.target_type === 'comment') {
       preview = postPreviews[r.target_id] ?? '[Content not found]'
     } else if (r.target_type === 'dispatch') {
-      preview = dispatchPreviews[r.target_id] ?? '[Broadcast not found]'
+      preview = dispatchPreviews[r.target_id] ?? '[Dispatch not found]'
     } else if (r.target_type === 'member') {
       preview = memberPreviews[r.target_id] ?? '[Member not found]'
       priorReports = memberPriorCounts[r.target_id]
