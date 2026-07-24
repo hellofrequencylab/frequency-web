@@ -65,9 +65,10 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
       {/* Generous bottom padding so the fixed claim bar never overlaps the last block. The bar is a
           single row at sm+ but stacks (message + big button + helper line) on mobile, so it needs more. */}
       <div className="min-h-screen bg-canvas pb-48 sm:pb-28">
-        {/* Claim ribbon — sets the context above the page it introduces. */}
+        {/* Claim ribbon — sets the context above the page it introduces. Its inner content aligns to the
+            same column as the page below it. */}
         <div className="border-b border-primary/20 bg-primary-bg/40">
-          <div className="mx-auto flex max-w-4xl items-start gap-2 px-4 py-2.5 text-sm text-primary-strong">
+          <div className="mx-auto flex max-w-6xl items-start gap-2 px-4 py-2.5 text-sm text-primary-strong sm:px-6 lg:px-8">
             <Zap className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <span>
               Frequency built this page so people nearby could find you. If it is yours, claim it to make it your own.
@@ -75,16 +76,22 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
           </div>
         </div>
 
-        {/* Hero — a lightweight version of the real profile header (the DetailTemplate hero is shell-coupled). */}
-        <header>
-          {cover ? (
-            // eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset
-            <img src={cover} alt="" className="h-44 w-full object-cover sm:h-60" />
-          ) : (
-            <div className="h-24 w-full bg-surface-elevated sm:h-32" />
-          )}
-          <div className="mx-auto max-w-4xl px-4">
-            <div className="-mt-10 flex items-end gap-4">
+        {/* ONE content column, matching the business space page's boundaries: the cover, hero, and body all
+            sit inside the same max-width + shell padding, and the cover uses the SAME contained, rounded
+            16:6 treatment as DetailTemplate (not a full-bleed banner). */}
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+          <header>
+            {cover ? (
+              <div className="relative aspect-[16/6] w-full overflow-hidden rounded-2xl bg-surface-elevated">
+                {/* eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset */}
+                <img src={cover} alt="" className="h-full w-full object-cover" />
+              </div>
+            ) : (
+              <div className="flex aspect-[16/6] w-full items-center justify-center rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">
+                <Building2 className="h-8 w-8 opacity-60" aria-hidden />
+              </div>
+            )}
+            <div className="-mt-10 flex items-end gap-4 px-1">
               {logo ? (
                 // eslint-disable-next-line @next/next/no-img-element -- operator asset URL
                 <img
@@ -102,18 +109,18 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
                 {tagline && <p className="truncate text-sm text-muted">{tagline}</p>}
               </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        {/* The REAL public profile body — byte-for-byte the visitor render, minus the shell chrome. */}
-        <main className="mx-auto max-w-4xl px-4 py-8">
-          <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
-        </main>
+          {/* The REAL public profile body — byte-for-byte the visitor render, minus the shell chrome. */}
+          <main className="py-8">
+            <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
+          </main>
+        </div>
       </div>
 
       {/* The always-visible claim bar — the big button rides along the whole page. */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-pop backdrop-blur">
-        <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <p className="text-sm text-text">
             <span className="font-semibold">Is this your business?</span> Claim it to edit the page, post
             updates, take bookings, and run it from your own account. It takes one tap.
