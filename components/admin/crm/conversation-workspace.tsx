@@ -7,10 +7,26 @@
 import Link from 'next/link'
 import { Inbox, Lock } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import type { ActionResult } from '@/lib/action-result'
 import { ConversationComposer } from './conversation-composer'
 import { ConversationTriage, type TriageAgent } from './conversation-triage'
 import { STATUS_LABELS, statusTone, type ConversationStatus } from '@/lib/comms/labels'
 import type { ConversationListRow, ConversationThread, ConversationScope } from '@/lib/comms/workspace'
+
+/** The injectable action set — the operator inbox uses the defaults; the leader inbox passes its own. */
+export interface WorkspaceActions {
+  sendAction?: (input: { conversationId: string; body: string; isInternal?: boolean }) => Promise<ActionResult>
+  draftAction?: (conversationId: string) => Promise<ActionResult<{ draft: string }>>
+  triageAction?: (input: {
+    conversationId: string
+    status?: string
+    priority?: string
+    assignedTo?: string | null
+    handoffNote?: string | null
+  }) => Promise<ActionResult>
+  summarizeAction?: (conversationId: string) => Promise<ActionResult<{ summary: string }>>
+  aiTriageAction?: (conversationId: string) => Promise<ActionResult<{ priority: string; reason: string }>>
+}
 
 const SCOPES: { key: ConversationScope; label: string }[] = [
   { key: 'mine', label: 'Mine' },
@@ -24,11 +40,15 @@ function when(at: string): string {
   return new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-function hrefWith(base: Record<string, string | undefined>, patch: Record<string, string | undefined>): string {
+function hrefWith(
+  basePath: string,
+  base: Record<string, string | undefined>,
+  patch: Record<string, string | undefined>,
+): string {
   const params = new URLSearchParams()
   for (const [k, v] of Object.entries({ ...base, ...patch })) if (v) params.set(k, v)
   const q = params.toString()
-  return q ? `/admin/crm/conversations?${q}` : '/admin/crm/conversations'
+  return q ? `${basePath}?${q}` : basePath
 }
 
 function StatusPill({ status }: { status: string }) {
@@ -45,12 +65,21 @@ export function ConversationWorkspace({
   agents,
   scope,
   status,
+  basePath = '/admin/crm/conversations',
+  actions = {},
+  showScopes = true,
 }: {
   rows: ConversationListRow[]
   thread: ConversationThread | null
   agents: TriageAgent[]
   scope: ConversationScope
   status?: string
+  /** The route this workspace lives at (operator vs leader inbox). Drives every in-workspace link. */
+  basePath?: string
+  /** Injected server actions (reply / draft / triage / summarize). Defaults = the operator actions. */
+  actions?: WorkspaceActions
+  /** Hide the Mine/Unassigned/All scope tabs (the leader inbox is already scoped to their own threads). */
+  showScopes?: boolean
 }) {
   const baseParams = { scope, status, id: thread?.id }
 
@@ -58,20 +87,21 @@ export function ConversationWorkspace({
     <div className="space-y-3">
       {/* Segments rail: scope + status, URL-as-state. */}
       <div className="flex flex-wrap items-center gap-1.5">
-        {SCOPES.map((s) => (
-          <Link
-            key={s.key}
-            href={hrefWith({ status }, { scope: s.key })}
-            className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
-              scope === s.key ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:bg-surface-elevated'
-            }`}
-          >
-            {s.label}
-          </Link>
-        ))}
-        <span className="mx-1 h-4 w-px bg-border" aria-hidden />
+        {showScopes &&
+          SCOPES.map((s) => (
+            <Link
+              key={s.key}
+              href={hrefWith(basePath, { status }, { scope: s.key })}
+              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                scope === s.key ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:bg-surface-elevated'
+              }`}
+            >
+              {s.label}
+            </Link>
+          ))}
+        {showScopes && <span className="mx-1 h-4 w-px bg-border" aria-hidden />}
         <Link
-          href={hrefWith({ scope }, { status: undefined })}
+          href={hrefWith(basePath, { scope }, { status: undefined })}
           className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
             !status ? 'bg-surface-elevated text-text' : 'text-muted hover:bg-surface-elevated'
           }`}
@@ -81,7 +111,7 @@ export function ConversationWorkspace({
         {(['open', 'waiting', 'resolved'] as const).map((st) => (
           <Link
             key={st}
-            href={hrefWith({ scope }, { status: st })}
+            href={hrefWith(basePath, { scope }, { status: st })}
             className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
               status === st ? 'bg-surface-elevated text-text' : 'text-muted hover:bg-surface-elevated'
             }`}
@@ -106,7 +136,7 @@ export function ConversationWorkspace({
               return (
                 <li key={r.id}>
                   <Link
-                    href={hrefWith(baseParams, { id: r.id })}
+                    href={hrefWith(basePath, baseParams, { id: r.id })}
                     className={`block rounded-md px-3 py-2 ${active ? 'bg-surface-elevated' : 'hover:bg-surface-elevated'}`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -133,7 +163,7 @@ export function ConversationWorkspace({
 
           {/* Reader pane. */}
           {thread ? (
-            <ThreadReader thread={thread} agents={agents} />
+            <ThreadReader thread={thread} agents={agents} actions={actions} />
           ) : (
             <div className="hidden rounded-lg border border-border bg-surface lg:flex lg:items-center lg:justify-center">
               <p className="text-sm text-muted">Pick a conversation to read it.</p>
@@ -145,7 +175,15 @@ export function ConversationWorkspace({
   )
 }
 
-function ThreadReader({ thread, agents }: { thread: ConversationThread; agents: TriageAgent[] }) {
+function ThreadReader({
+  thread,
+  agents,
+  actions,
+}: {
+  thread: ConversationThread
+  agents: TriageAgent[]
+  actions: WorkspaceActions
+}) {
   return (
     <div className="flex min-h-[60vh] flex-col rounded-lg border border-border bg-surface">
       <div className="flex items-start justify-between gap-2 border-b border-border p-3">
@@ -192,8 +230,16 @@ function ThreadReader({ thread, agents }: { thread: ConversationThread; agents: 
         priority={thread.priority}
         assignedTo={thread.assignedTo}
         agents={agents}
+        triageAction={actions.triageAction}
+        summarizeAction={actions.summarizeAction}
+        aiTriageAction={actions.aiTriageAction}
       />
-      <ConversationComposer conversationId={thread.id} counterpartName={thread.counterpartName} />
+      <ConversationComposer
+        conversationId={thread.id}
+        counterpartName={thread.counterpartName}
+        sendAction={actions.sendAction}
+        draftAction={actions.draftAction}
+      />
     </div>
   )
 }

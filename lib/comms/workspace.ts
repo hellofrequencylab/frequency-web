@@ -28,6 +28,9 @@ export interface ConversationListFilter {
   status?: string | null
   /** email | sms | in_app | … */
   channel?: string | null
+  /** LEADER inbox scope: restrict to conversations this profile OWNS (their sender trail) or is assigned.
+   *  When set, it bounds the whole list to the leader's own threads (they never see the platform queue). */
+  ownedOrAssignedTo?: string | null
   limit?: number
 }
 
@@ -157,6 +160,10 @@ export async function listWorkspaceConversations(filter: ConversationListFilter)
   try {
     let q = db().from('comms_conversations').select(CONV_COLS).order('last_activity_at', { ascending: false }).limit(limit)
 
+    // LEADER inbox: bound to the leader's own threads (owner OR assignee) before any scope/status filter.
+    if (filter.ownedOrAssignedTo) {
+      q = q.or(`owner_profile_id.eq.${filter.ownedOrAssignedTo},assigned_to.eq.${filter.ownedOrAssignedTo}`)
+    }
     if (filter.scope === 'mine') q = q.eq('assigned_to', filter.viewerProfileId)
     else if (filter.scope === 'unassigned') q = q.is('assigned_to', null)
     if (filter.spaceId) q = q.eq('space_id', filter.spaceId)

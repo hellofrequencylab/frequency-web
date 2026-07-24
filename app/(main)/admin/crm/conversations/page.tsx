@@ -16,6 +16,7 @@ import {
 } from '@/lib/comms/workspace'
 import { OPEN_CONVERSATION_STATUSES } from '@/lib/comms/labels'
 import { ConversationWorkspace } from '@/components/admin/crm/conversation-workspace'
+import { draftConversationReply, summarizeConversation, suggestConversationTriage } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,6 +65,11 @@ export default async function CrmConversationsPage({
           agents={agents.map((a) => ({ id: a.id, name: a.name }))}
           scope={scope}
           status={status}
+          actions={{
+            draftAction: draftConversationReply,
+            summarizeAction: summarizeConversation,
+            aiTriageAction: suggestConversationTriage,
+          }}
         />
       </AdminSection>
     </AdminTemplate>

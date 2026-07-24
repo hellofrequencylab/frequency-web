@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ClipboardList, GraduationCap, BookOpen, ArrowUpRight, Send } from 'lucide-react'
+import { ClipboardList, GraduationCap, BookOpen, ArrowUpRight, Send, Inbox } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -36,14 +36,22 @@ export async function LeadTools(): Promise<React.ReactElement | null> {
           title="Role training"
           desc="The advancement curriculum for your role. Materials to start and run a circle well."
         />
-        {/* Outreach is host+ (it self-guards and redirects below that), so only surface the link
-            to stewards who can actually use it — otherwise it dead-ends back to the feed. */}
+        {/* Outreach + Inbox are host+ (they self-guard and redirect below that), so only surface the
+            links to stewards who can actually use them — otherwise they dead-end back to the feed. */}
         {atLeastRole(me.community_role, 'host') && (
           <ToolCard
             href="/outreach"
             Icon={Send}
             title="Outreach"
             desc="Message the members you steward, scoped to your circle, hub, or nexus."
+          />
+        )}
+        {atLeastRole(me.community_role, 'host') && (
+          <ToolCard
+            href="/lead/inbox"
+            Icon={Inbox}
+            title="Inbox"
+            desc="Message your whole group as yourself, then read and reply to everyone who writes back, all in one place."
           />
         )}
       </div>
