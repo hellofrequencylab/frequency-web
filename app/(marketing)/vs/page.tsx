@@ -12,9 +12,9 @@ import { COMPARISONS, comparisonPath } from '@/lib/marketing/comparisons'
 
 export const revalidate = 3600
 
-const TITLE = 'Frequency compared'
+const TITLE = 'Frequency vs the tools you know'
 const DESCRIPTION =
-  'How Frequency compares to the tools people use to gather others: Partiful, Linktree, Calendly, Eventbrite, and Mighty Networks. Frequency is a free local Circle that keeps meeting in person.'
+  'How Frequency compares to Partiful, Linktree, Calendly, Eventbrite, and Mighty Networks: a free local Circle that keeps meeting in person, with 0% on your own bookings. Here is every comparison.'
 
 export function generateMetadata(): Metadata {
   const canonical = '/vs'
@@ -64,7 +64,7 @@ export default function ComparisonsIndexPage() {
             How Frequency <span className="text-primary">compares</span>
           </>
         }
-        subtitle="Most tools help you throw one event or share one link. Frequency is the standing room underneath: a small Circle that keeps meeting in person. Here is how it stacks up against the tools you already know."
+        subtitle="Most tools help you throw one event, share one link, or sell one ticket. Frequency is the standing room underneath: a small Circle that keeps meeting in person, and 0% on your own bookings when you host. Here is how it stacks up against the tools you already know."
       />
 
       <Section tone="canvas" pad="pb-16 sm:pb-20">
@@ -85,9 +85,12 @@ export default function ComparisonsIndexPage() {
             </Link>
           ))}
         </div>
-        <div className="mt-10">
-          <Button href="/the-community" variant="secondary">
-            See how Circles work
+        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+          <Button href="/discover">
+            Find a Circle near you <ArrowRight className="h-5 w-5" />
+          </Button>
+          <Button href="/pricing" variant="secondary">
+            See the honest pricing
           </Button>
         </div>
       </Section>

@@ -32,22 +32,46 @@ import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { JsonLd } from '@/components/json-ld'
-import { breadcrumbSchema } from '@/lib/jsonld'
+import { breadcrumbSchema, faqSchema } from '@/lib/jsonld'
 
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'The Lab',
+  title: 'The Lab: the third space we are building',
   description:
-    'The Frequency Lab is a third space to move, gather, cool down, and switch off. Somewhere to come back to yourself in person, not on a screen.',
+    'The Lab is a third space the Frequency community is building: rooms to move, gather, warm up, cool down, and switch off in person. The first is taking root in North County San Diego. Not open yet.',
   alternates: { canonical: '/the-lab' },
   openGraph: {
     title: 'The Lab · Frequency',
     description:
-      'A real third space you can walk into: movement studios, a thermal circuit, a cold pool, a connection bar, and an events floor.',
+      'A third space the community is building, not open yet: movement studios, a thermal circuit, a cold pool, a connection bar, and an events floor. The first is taking root in North County San Diego.',
     url: '/the-lab',
   },
 }
+
+// Answer-first FAQ schema that matches the honest present: The Lab is a room the
+// community is building, not a live venue you can visit today. Kept in lockstep
+// with the visible copy below (CONTENT-VOICE §8b: schema must not out-claim the
+// page). "Third space" keyword carried in the first answer; the answers forward
+// to /founders (back the build) and /discover (the live community).
+const THE_LAB_FAQ = [
+  {
+    q: 'What is The Lab?',
+    a: "The Lab is a third space the Frequency community is building: not home, not work, a real room to move, warm up in the sauna, cool down in the plunge, gather, and switch off in person. The first one is taking root in North County San Diego. It is not open yet.",
+  },
+  {
+    q: 'Can I visit The Lab yet?',
+    a: 'Not yet. The first Lab is being built by the founding community. You can help shape the room before the doors open by joining the Beta or backing the build as a Founder.',
+  },
+  {
+    q: "What will be inside The Lab?",
+    a: 'Movement studios, a cedar thermal circuit, a cold plunge pool, a no-alcohol connection bar, and a flexible events floor. One building, tuned room by room.',
+  },
+  {
+    q: 'Where is the first Lab?',
+    a: 'The first Lab is taking root in North County San Diego, shaped by the people it serves, and built to repeat in other cities once the community is there.',
+  },
+]
 
 const INSIDE = [
   {
@@ -95,6 +119,7 @@ export default async function TheLabPage() {
       <JsonLd
         data={breadcrumbSchema([{ name: 'The Lab', path: '/the-lab' }])}
       />
+      <JsonLd data={faqSchema(THE_LAB_FAQ)} />
       {data && <BlockDocJsonLd data={data} path="/the-lab" />}
       {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheLab />}
     </>
@@ -109,8 +134,8 @@ function LegacyTheLab() {
         alt="Low amber light glowing across the cedar thermal circuit inside The Lab"
         focal="object-center"
         eyebrow="The Lab"
-        title="A third space with a front door."
-        subtitle="Not home, not work. A real place you can walk into, dark wood, warm light, steam and greenery, somewhere to finally switch off. The first one is taking root in North County San Diego."
+        title="The third space we are building."
+        subtitle="Not home, not work. A real room the community is building: dark wood, warm light, steam and greenery, somewhere to finally switch off in person. The first one is taking root in North County San Diego. Not open yet."
       >
         <Button href={BETA_CTA_HREF}>
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" />
@@ -303,7 +328,19 @@ function LegacyTheLab() {
         <Body>
           It&apos;s built from day one to be repeatable, so the version that
           works in {FOUNDING_PLACE} can open in your city next. The community
-          always comes first; the Lab is simply where it gets a body.
+          always comes first; the Lab is simply where it gets a body. See{' '}
+          <a href="/what-is-a-third-space" className="text-primary-strong underline">
+            what a third space is
+          </a>
+          , back the build as a{' '}
+          <a href="/founders" className="text-primary-strong underline">
+            Founder
+          </a>
+          , or meet the live community on{' '}
+          <a href="/discover" className="text-primary-strong underline">
+            Discover
+          </a>
+          .
         </Body>
         <p className="mt-7 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-primary-strong">
           <MapPin className="w-4 h-4" aria-hidden /> {FOUNDING_PLACE}

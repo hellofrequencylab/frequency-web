@@ -161,14 +161,23 @@ export default async function ComparisonPage({
           You can keep using {comparison.name} for what it does well. If you want the
           part it does not do, the small group that keeps meeting, look at the Circles
           already gathering near you, then join one or start your own.
+          {comparison.moneyBeat
+            ? ' And when you host, one honest price with 0% on your own bookings is the whole deal.'
+            : ''}
         </Body>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Button href="/discover">
             Find a Circle near you <ArrowRight className="h-5 w-5" />
           </Button>
-          <Button href="/the-community" variant="secondary">
-            See how Circles work
-          </Button>
+          {comparison.moneyBeat ? (
+            <Button href="/pricing" variant="secondary">
+              See the honest pricing
+            </Button>
+          ) : (
+            <Button href="/the-community" variant="secondary">
+              See how Circles work
+            </Button>
+          )}
         </div>
       </Section>
 

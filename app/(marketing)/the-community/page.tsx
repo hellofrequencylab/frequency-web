@@ -38,15 +38,15 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
-import { articleSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { articleSchema, breadcrumbSchema, faqSchema } from '@/lib/jsonld'
 import { ProductTour } from './tour'
 
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'The Community',
+  title: 'What is a Circle? Community with a shape',
   description:
-    'You don’t need another app. You need your people. Pillars, Channels, and Circles: small standing groups that grow on their own.',
+    'A Circle is a few people near you doing life on purpose. Frequency is a Community Collective: four Pillars, your Channels, and Circles that grow on their own.',
   alternates: { canonical: '/the-community' },
   openGraph: {
     title: 'The Community · Frequency',
@@ -56,7 +56,36 @@ export const metadata: Metadata = {
   },
 }
 
-const CHANNELS = [
+// Answer-first FAQ for AIO. Every answer matches the definitions the page ships
+// (Circle, Channel, the four Pillars, how growth works) so structured data and
+// visible copy never contradict.
+const COMMUNITY_FAQ = [
+  {
+    q: 'What is a Circle?',
+    a: 'A Circle is a few people near you doing life on purpose: a small standing group built around one Channel, with an always-on virtual space and a standing time to meet in person. It stays small enough that you are missed when you do not show up.',
+  },
+  {
+    q: 'What is a Channel?',
+    a: 'A Channel is what you practice, a topic inside a Pillar like breathwork, strength, or human relating. It connects you to people everywhere who care about the same thing, and it is the thread that leads you to a Circle near you.',
+  },
+  {
+    q: 'What are the four Pillars?',
+    a: 'The four Pillars are Mind, Body, Spirit, and Expression, the parts a whole life moves through. You pick the one calling you right now, and the Channels and Circles inside it are where you land.',
+  },
+  {
+    q: 'How much does it cost to join Frequency?',
+    a: 'Joining the community is free, forever. Membership is $0. Paid tiers start at Crew for $9, and you never pay a cut of your own bookings.',
+  },
+  {
+    q: 'How does a Circle grow?',
+    a: 'Circles are built to divide. When one fills up it seeds a new Circle, led by someone ready to step up. A few neighbouring Circles become a neighborhood, neighborhoods become a whole local community, and none of it is appointed from above.',
+  },
+]
+
+// The four Pillars (Mind / Body / Spirit / Expression). Named PILLARS, never
+// CHANNELS: the four are Pillars, and Channels are the topical layer below them
+// (docs/NAMING.md, "Pillars vs Channels").
+const PILLARS = [
   {
     icon: Brain,
     title: 'Mind',
@@ -101,6 +130,9 @@ export default async function TheCommunityPage() {
             image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
           }),
           breadcrumbSchema([{ name: 'The Community', path: '/the-community' }]),
+          // FAQPage so answer engines can lift the plain definitions of Circle,
+          // Channel, and the Pillars directly (GE11-4). Matches the copy below.
+          faqSchema(COMMUNITY_FAQ.map(({ q, a }) => ({ q, a }))),
         ]}
       />
       {data && <BlockDocJsonLd data={data} path="/the-community" />}
@@ -155,7 +187,7 @@ function LegacyTheCommunity() {
         <span className="text-primary">A few people who notice.</span>
       </Statement>
 
-      {/* The four Pillars — the parts a whole life moves through */}
+      {/* The four Pillars: the parts a whole life moves through */}
       <Section tone="surface">
         <SectionHeading
           eyebrow="The four Pillars"
@@ -168,7 +200,7 @@ function LegacyTheCommunity() {
           Channels and Circles inside it are where you actually land.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {CHANNELS.map((c) => (
+          {PILLARS.map((c) => (
             <Card
               key={c.title}
               tone="feature"
@@ -186,7 +218,7 @@ function LegacyTheCommunity() {
         </div>
       </Section>
 
-      {/* The three steps — how you actually get from curious to belonging */}
+      {/* The three steps: how you actually get from curious to belonging */}
       <Section tone="canvas">
         <SectionHeading
           eyebrow="From the people, not the org chart"
@@ -221,7 +253,7 @@ function LegacyTheCommunity() {
         Do things <span className="text-primary">on purpose.</span>
       </Statement>
 
-      {/* Channels + Circles — the core mechanic, in detail */}
+      {/* Channels + Circles: the core mechanic, in detail */}
       <ZigZag
         img="/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg"
         alt="A Frequency Circle gathered for breathwork outdoors"
@@ -245,7 +277,7 @@ function LegacyTheCommunity() {
         </p>
       </ZigZag>
 
-      {/* The app — an interactive look at what carries the thread day to day */}
+      {/* The app: an interactive look at what carries the thread day to day */}
       <Section tone="canvas">
         <SectionHeading
           eyebrow="The app"
@@ -260,7 +292,7 @@ function LegacyTheCommunity() {
         <span className="text-primary">belong</span>.
       </Statement>
 
-      {/* The growth loop — cells, not franchises */}
+      {/* The growth loop: cells, not franchises */}
       <ZigZag
         img="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
         alt="A large Frequency community practicing yoga together on a lawn"
@@ -308,7 +340,7 @@ function LegacyTheCommunity() {
         </div>
       </Section>
 
-      {/* Guru-free — the dark beat */}
+      {/* Guru-free: the dark beat */}
       <ZigZag
         img="/images/site/PHOTO-2020-10-17-13-49-14.jpeg"
         alt="A Frequency music circle gathered on a cliffside at golden hour"
@@ -330,7 +362,7 @@ function LegacyTheCommunity() {
         </p>
       </ZigZag>
 
-      {/* Rhythm band — marquee inside a dark slat band */}
+      {/* Rhythm band: marquee inside a dark slat band */}
       <div className="bg-slat">
         <Marquee
           items={[
@@ -339,12 +371,12 @@ function LegacyTheCommunity() {
             'Show up',
             'Be missed when you don’t',
             'Lead by showing up',
-            'Pay it forward',
+            'Hold the door',
           ]}
         />
       </div>
 
-      {/* What makes a Circle hold — the pay-it-forward heart */}
+      {/* What makes a Circle hold: what keeps it standing on its own */}
       <Section tone="surface">
         <SectionHeading
           eyebrow="What holds it together"
@@ -364,7 +396,7 @@ function LegacyTheCommunity() {
           />
           <Hold
             icon={HandHeart}
-            title="Pay it forward"
+            title="Hold the door"
             text="When you can give a little more, you hold the door for the next person. Circulation, not exclusion."
           />
         </div>
@@ -375,7 +407,7 @@ function LegacyTheCommunity() {
         <span className="text-primary">the people</span> are the point.
       </Statement>
 
-      {/* A day in Frequency — how the structure plays out in real life */}
+      {/* A day in Frequency: how the structure plays out in real life */}
       <Section tone="canvas">
         <SectionHeading
           eyebrow="A day in Frequency"
@@ -410,7 +442,7 @@ function LegacyTheCommunity() {
         </ol>
       </Section>
 
-      {/* Where it's happening now — grounding in the real beta */}
+      {/* Where it's happening now: grounding in the real beta */}
       <Section tone="canvas">
         <SectionHeading
           eyebrow="Where it starts"
@@ -424,6 +456,40 @@ function LegacyTheCommunity() {
           of the people this whole thing grows from. And you can start anywhere: a
           Circle only needs a few people and a standing time.
         </Body>
+        <p className="mt-6 text-base text-muted leading-relaxed">
+          <a className="text-primary-strong font-semibold hover:underline" href="/discover">
+            Find a Circle near you
+          </a>
+          , or{' '}
+          <a className="text-primary-strong font-semibold hover:underline" href={BETA_CTA_HREF}>
+            start your own
+          </a>
+          . See what membership opens on the{' '}
+          <a className="text-primary-strong font-semibold hover:underline" href="/pricing">
+            pricing page
+          </a>
+          .
+        </p>
+      </Section>
+
+      {/* Answer-first FAQ: mirrors the FAQPage schema so structured data and
+          visible copy agree (docs SEO/AIO mandate). */}
+      <Section tone="canvas">
+        <SectionHeading
+          eyebrow="Questions"
+          title="The short answers."
+          kicker="Circle, Channel, Pillars, and what it costs to join."
+        />
+        <dl className="space-y-6">
+          {COMMUNITY_FAQ.map((item) => (
+            <div key={item.q} className="rounded-2xl border border-border bg-surface p-6">
+              <dt className="font-display uppercase text-text text-xl leading-tight mb-2">
+                {item.q}
+              </dt>
+              <dd className="text-base text-muted leading-relaxed">{item.a}</dd>
+            </div>
+          ))}
+        </dl>
       </Section>
 
       <PillarNav current="/the-community" tone="surface" />

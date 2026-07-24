@@ -18,14 +18,22 @@ export interface Comparison {
   name: string
   /** The category an answer engine would file them under (for the H1 + meta). */
   category: string
-  /** One plain sentence on what the other tool is genuinely good at. No knock. */
+  /** Beat one of the two-beat contrast: the easy thing the competitor nails.
+   *  Plain, generous, no knock. Name what it is genuinely good at. */
   theyAreGoodAt: string
-  /** The honest difference: where Frequency is a different shape. Plain, no hype. */
+  /** Beat two: the harder thing Frequency is built for. Plain, no hype. Where the
+   *  money model is the sharpest edge (a booking or ticketing tool that taxes your
+   *  work), name it here: 0% on your own bookings vs their cut. */
   theDifference: string
   /** A short, scannable feature contrast. Each row: the dimension + each side. */
   contrast: ComparisonRow[]
   /** Who the page is for, in the reader's own words (Seeker or Latent Leader). */
   forReader: string
+  /** Optional: the money-model answer, set only when the competitor charges
+   *  against your own work (booking / ticketing / commerce). Plain and honest:
+   *  0% on your own bookings, one honest price, network-only take-rate. Drives an
+   *  extra FAQ (mirrored into schema) and the forward link to /pricing. */
+  moneyBeat?: string
 }
 
 export interface ComparisonRow {
@@ -46,9 +54,9 @@ export const COMPARISONS: Comparison[] = [
     name: 'Partiful',
     category: 'party and event invite app',
     theyAreGoodAt:
-      'Partiful makes one party easy. The invite looks good, the RSVPs land in one place, and the reminders go out for you. For a single event, it does the job well.',
+      'Partiful makes one party easy. The invite looks good, the RSVPs land in one place, and the reminders send themselves. For a single night, it does the job well.',
     theDifference:
-      'Frequency is for the part Partiful is not built for: what happens after the party. A Circle is a small group that keeps meeting, so the people you liked once become people you see on a Tuesday. The invite is the easy part. The standing room is the thing.',
+      'Frequency is built for the part after the party. A Circle is a small group that picks a day and keeps it, so the people you liked once become the people you see on a Tuesday. Sending the invite is the easy part. Holding the standing room is the harder part, and that is the whole point.',
     contrast: [
       { dimension: 'What it is', them: 'A one-off invite for a single event.', us: 'A standing Circle that meets again and again.' },
       { dimension: 'After the event', them: 'The thread goes quiet until the next party.', us: 'The same faces come back next week.' },
@@ -63,68 +71,80 @@ export const COMPARISONS: Comparison[] = [
     name: 'Linktree',
     category: 'link-in-bio page builder',
     theyAreGoodAt:
-      'Linktree gives you one tidy link for all your other links. It is fast to set up and clean to share, and for routing a follower to your stuff, it works.',
+      'Linktree gives you one clean link for all your other links. Fast to set up, tidy to share. For sending a follower to your stuff, it works.',
     theDifference:
-      'A Spotlight page on Frequency is a personal page too, but it sits inside a real community. The point is not to send people somewhere else. It is to bring people into the same rooms you are in, so a tap turns into a table you both show up to.',
+      'A Spotlight page on Frequency is a personal page too, but it points inward, not out. The goal is not one more click to somewhere else. It is to bring people into the same rooms you are in, so a tap turns into a table you both show up to. And when your page takes a booking or a sale, Frequency takes 0% on your own bookings. What your own work earns is yours.',
     contrast: [
       { dimension: 'What it is', them: 'A page of links to your other pages.', us: 'A personal page inside a real-world community.' },
       { dimension: 'Where it leads', them: 'Out, to your other profiles.', us: 'In, to Circles and events near you.' },
       { dimension: 'The goal', them: 'A click.', us: 'A face you see again in person.' },
+      { dimension: 'On what you sell', them: 'Fees can apply to tips and sales.', us: '0% on your own bookings, always.' },
       { dimension: 'Cost', them: 'Free, with paid tiers.', us: 'Free to join during the beta.' },
     ],
     forReader:
       'You have the followers and the links. You are missing the part where it turns into people you actually know.',
+    moneyBeat:
+      'When your Spotlight page takes a booking or a sale, Frequency takes 0% on your own bookings, always. What your own work earns is yours. Frequency runs on one honest price and earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
   },
   {
     slug: 'calendly',
     name: 'Calendly',
     category: 'scheduling and booking tool',
     theyAreGoodAt:
-      'Calendly removes the back-and-forth of finding a time. You send a link, someone picks a slot, and the meeting is on the calendar. For one-to-one scheduling, it is clean.',
+      'Calendly kills the back-and-forth of finding a time. Send a link, someone picks a slot, the meeting lands on both calendars. For one-to-one scheduling, it is clean.',
     theDifference:
-      'Frequency schedules the opposite of a meeting: a standing time a small group keeps without re-asking every week. A Circle picks one day and holds it, so the calendar fills with the same people, not a stream of new one-offs.',
+      'Frequency schedules the opposite of a one-off meeting: a standing time a small group keeps without re-asking every week. A Circle picks one day and holds it, so the calendar fills with the same faces, not a stream of new slots. And when a session you schedule is paid, Frequency takes 0% on your own bookings. The tool never taxes your work.',
     contrast: [
       { dimension: 'What it schedules', them: 'A one-to-one meeting, time by time.', us: 'A standing group time that repeats.' },
       { dimension: 'Who it is for', them: 'You and one other person.', us: 'A small group that meets as a Circle.' },
       { dimension: 'The pattern', them: 'A new slot every time.', us: 'The same day, every week or every other week.' },
+      { dimension: 'On a paid booking', them: 'Paid bookings sit behind paid tiers.', us: '0% on your own bookings, always.' },
       { dimension: 'Cost', them: 'Free, with paid tiers.', us: 'Free to join during the beta.' },
     ],
     forReader:
       'You can book a meeting in seconds. You still want a standing thing with a few people that does not need re-booking.',
+    moneyBeat:
+      'Frequency takes 0% on your own bookings, always. When a session you schedule is paid, what you charge is yours to keep. Frequency runs on one honest price and earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
   },
   {
     slug: 'eventbrite',
     name: 'Eventbrite',
     category: 'event listing and ticketing platform',
     theyAreGoodAt:
-      'Eventbrite is built for selling tickets to a real event. Listings, payments, and the door all work, and for a paid gathering at scale, it is the standard.',
+      'Eventbrite is built to sell tickets to a real event. The listing, the payments, the door: all handled, and for a big paid one-off, it is the standard.',
     theDifference:
-      'Frequency is for the small, free, repeating room, not the ticketed one-off. You do not buy a seat to a Circle. You find one near you, show up, and come back. The shared thing is the activity, not the ticket.',
+      'Frequency is built for the small, free, repeating room, not the ticketed one-off. Here is the sharpest line between them, and it is about money: Eventbrite charges a fee on every ticket you sell, while Frequency takes 0% on your own bookings, always. When you do charge for a gathering, what your work earns is yours. Frequency earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
     contrast: [
       { dimension: 'What it is', them: 'A ticketed event, often one time.', us: 'A free Circle that keeps meeting.' },
       { dimension: 'Getting in', them: 'You buy a ticket.', us: 'You find a Circle and show up.' },
       { dimension: 'After the event', them: 'It ends; the next one is unrelated.', us: 'The same group meets again.' },
+      { dimension: 'On what you sell', them: 'A fee on every ticket you sell.', us: '0% on your own bookings, always.' },
       { dimension: 'Cost', them: 'Free and paid listings; fees on tickets.', us: 'Free to join during the beta.' },
     ],
     forReader:
       'You have been to plenty of events. You want the few that turn into people you keep seeing, not another ticket stub.',
+    moneyBeat:
+      'Eventbrite charges a fee on every ticket you sell. Frequency takes 0% on your own bookings, always. When you charge for a gathering, what your work earns is yours. Frequency runs on one honest price and earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
   },
   {
     slug: 'mighty-networks',
     name: 'Mighty Networks',
     category: 'online community platform',
     theyAreGoodAt:
-      'Mighty Networks gives a creator a place to host an online community: courses, a feed, paid memberships, all in one app. For a digital membership, it is well built.',
+      'Mighty Networks gives a creator one place to host an online community: a feed, courses, paid memberships, all in one app. For a digital membership business, it is well built.',
     theDifference:
-      'Frequency points the other way: off the screen. The whole design pushes you toward a room, a table, a walk with neighbors, not more time in a feed. The app is the on-ramp. The Circle that meets in person is the product.',
+      'Frequency points the other way, off the screen and into a room. The whole design pushes toward a table, a walk, a Circle of neighbors, not more time in a feed. The money shapes differ too: where a platform can take a cut of the memberships and courses you sell, Frequency takes 0% on your own bookings. It earns only on the business the network brings you, never on your own work.',
     contrast: [
       { dimension: 'Where it happens', them: 'Online: a feed, courses, chat.', us: 'In person: Circles and events near you.' },
       { dimension: 'What it rewards', them: 'Posting and engagement.', us: 'Showing up in real life.' },
       { dimension: 'Who runs it', them: 'One creator and their audience.', us: 'Neighbors who host a Circle, with the format handed to them.' },
+      { dimension: 'On what you sell', them: 'Fees can apply to what you sell.', us: '0% on your own bookings, always.' },
       { dimension: 'Cost', them: 'Paid, per creator.', us: 'Free to join during the beta.' },
     ],
     forReader:
       'You are in a few online communities already. What you are short on is people you can sit across a table from.',
+    moneyBeat:
+      'Frequency takes 0% on your own bookings, always. When you sell a session, a class, or a membership through your own work, what it earns is yours. Frequency runs on one honest price and earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
   },
 ]
 
@@ -161,11 +181,19 @@ export interface ComparisonCopy {
   faq: { q: string; a: string }[]
 }
 
-/** Build the comparison page copy from a row. No I/O, fully testable. */
+/** Build the comparison page copy from a row. No I/O, fully testable. Titles and
+ *  meta own both "Frequency vs X" and "alternative to X"; where the competitor
+ *  taxes your work, the honest-money hook (0% on your own bookings) leads. */
 export function comparisonCopy(c: Comparison): ComparisonCopy {
   const h1 = `Frequency vs ${c.name}`
-  const metaTitle = `Frequency vs ${c.name}: a free alternative for real-world community`
-  const description = `Looking for an alternative to ${c.name}? ${c.name} is a great ${c.category}. Frequency is different: a free local Circle that keeps meeting in person. Here is how they compare.`
+  // Own the "alternative to X" query in every title, and lead with the money hook
+  // on the tools that charge against your work. Titles stay under ~60 chars.
+  const metaTitle = c.moneyBeat
+    ? `Frequency vs ${c.name}: 0% on your own bookings`
+    : `Frequency vs ${c.name}: a free alternative`
+  const description = c.moneyBeat
+    ? `An alternative to ${c.name}? Frequency is built for the small room that keeps meeting, and takes 0% on your own bookings. One honest price. See how they compare.`
+    : `An alternative to ${c.name}? ${c.name} is a great ${c.category}. Frequency is a free local Circle that keeps meeting in person. See how they compare.`
   const ogTitle = `Frequency vs ${c.name}`
   const lede = `${c.theyAreGoodAt} ${c.theDifference}`
 
@@ -178,9 +206,19 @@ export function comparisonCopy(c: Comparison): ComparisonCopy {
       q: `What is the difference between Frequency and ${c.name}?`,
       a: `${c.theDifference}`,
     },
+    // Money FAQ only where the competitor charges against your own work, so the
+    // schema never asserts a claim the page does not make.
+    ...(c.moneyBeat
+      ? [
+          {
+            q: `What does Frequency cost to host on, compared to ${c.name}?`,
+            a: `${c.moneyBeat}`,
+          },
+        ]
+      : []),
     {
       q: `Is Frequency free?`,
-      a: `Yes. Frequency is free to join during the beta. You can browse Circles and events near you, join one, and start showing up without paying anything.`,
+      a: `Yes. Frequency is free to join during the beta. You can browse Circles and events near you, join one, and start showing up without paying anything. And Frequency takes 0% on your own bookings, always.`,
     },
     {
       q: `Who is Frequency for?`,

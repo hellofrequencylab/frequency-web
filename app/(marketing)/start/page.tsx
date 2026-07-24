@@ -6,20 +6,24 @@ import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 
 // The role picker (ADR-180 keeps this a coded page, not a Puck slug). One decision:
-// Lead, Practice, or Spread. Each card routes to its landing and first action. The
-// onboarding flows live under /start/[flow] and are untouched by this front door.
+// Build, Practice, or Spread. Each card routes to a DISTINCT destination that keeps its
+// own promise and carries the reader's choice forward as a real signal the induction
+// consumes: `?persona=` pre-selects the picker, branches the tour reel, and is stamped
+// on the member; `?seq=` picks the playable-practice funnel. (Earlier all three cards
+// pointed at a param-less /onboarding/beta, so the door you picked was thrown away.)
+// The assignable lead flows still live under /start/[flow].
 export const revalidate = 3600
 
 export function generateMetadata(): Metadata {
   return {
     title: 'Where do you want to start?',
     description:
-      'Pick your way in. Lead a Circle, start a practice today, or take a small role in building community around you. Three ways into Frequency, one decision.',
+      'Three ways into Frequency: lead a Circle, do a practice today, or bring one person. Pick the door that fits and we point you at your first move.',
     alternates: { canonical: '/start' },
     openGraph: {
       title: 'Where do you want to start? · Frequency',
       description:
-        'Lead, Practice, or Spread. Pick the role that fits you and we will point you at your first move.',
+        'Build, Practice, or Spread. Pick the door that fits and we point you at your first move.',
       url: '/start',
     },
   }
@@ -33,27 +37,31 @@ type Role = {
   href: string
 }
 
+// Each door carries the choice forward. Build and Spread enter the induction pre-set
+// to the persona that keeps their promise (builder = lead a Circle, visitor = find and
+// gather your people). Practice opens the playable breathwork funnel, so "do one practice
+// today" is literal: you take a real breathing round before you ever sign up.
 const ROLES: Role[] = [
   {
     illustration: 'lead',
     label: 'Build',
     blurb: 'Be the reason your people have somewhere to go. Host one Circle and we hand you the format.',
     cta: 'Start one Circle',
-    href: '/onboarding/beta',
+    href: '/onboarding/beta?persona=builder&flow=welcome',
   },
   {
     illustration: 'practice',
     label: 'Practice',
-    blurb: 'Start where you are, today. Practices, Journeys, and the Mindless timer, all on your own.',
+    blurb: 'Start where you are, today. Take one breathing round now, on your own, before you sign up.',
     cta: 'Do one practice today',
-    href: '/onboarding/beta',
+    href: '/onboarding/beta?seq=breathwork',
   },
   {
     illustration: 'spread',
     label: 'Spread',
     blurb: 'Take a small role in building community around you. Bring one person, host once, or share the idea.',
     cta: 'Bring one person',
-    href: '/onboarding/beta',
+    href: '/onboarding/beta?persona=visitor&flow=welcome',
   },
 ]
 
