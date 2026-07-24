@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 import { useSettingsPanel, useIsDesktop } from '@/components/layout/settings-panel'
 import { AdminBarBody } from '@/components/layout/admin-bar/admin-bar-body'
+import { AdminBarMobile } from '@/components/layout/admin-bar/admin-bar-mobile'
 import { OPEN_ADMIN_BAR, type OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 
 // ── The panel TOP BAR (ADR-516 Phase E) ────────────────────────────────────────────────────────────────
@@ -359,7 +360,9 @@ export function AdminBar({
             search on scroll — the search is the top of the sheet (ADR-516 Phase E). */}
         <AdminBarTopBar query={query} onQueryChange={setQuery} onClose={() => setOpen(false)} />
         <div ref={bodyScrollRef} className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
-          <AdminBarBody key={resetKey} model={model} query={query} onQueryChange={setQuery} />
+          {/* Mobile renders the same model as a drill-down menu (see admin-bar-mobile), not the desktop
+              inline-first scroll. */}
+          <AdminBarMobile key={resetKey} model={model} query={query} onQueryChange={setQuery} scrollRef={bodyScrollRef} />
         </div>
       </div>
     </div>
