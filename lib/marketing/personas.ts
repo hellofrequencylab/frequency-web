@@ -88,7 +88,7 @@ export const PERSONAS: Persona[] = [
       'Tickets and passes, sold from your Space.',
       'Check-in at the door with a QR code.',
       'Dispatch to message everyone who has a ticket.',
-      'Everything is in Business at $49 a month, no add-ons required.',
+      'Everything is in Business at $29 a month, no add-ons required.',
     ],
   },
   {
@@ -114,7 +114,7 @@ export const PERSONAS: Persona[] = [
       'Donations and recurring giving, with a supporter CRM.',
       'Programs and enrollment when you run them.',
       'Everything in Business, with donations built in.',
-      'A 3% take-rate on what you raise, flat and never per seat, for verified 501(c)(3) organizations.',
+      'No take-rate on what you raise, ever, for verified 501(c)(3) organizations.',
     ],
   },
 ]
@@ -197,16 +197,16 @@ export function personaCopy(persona: Persona): PersonaCopy {
   const metaTitle = `Frequency for ${persona.audience}: ${persona.focus}`
   const description = `Frequency for ${persona.audience.toLowerCase()}: ${persona.focus} It runs ${total}, one honest price, never per seat.`
   const ogTitle = `Frequency for ${persona.audience}`
-  const lede = `${persona.focus} One honest price, and your people are always yours to export. Business is $49 a month with the full depth, the Nonprofit plan is $29 a month flat, and the Resonance Engine add-on is $20 a month when you want live matches. Yearly is two months free.`
+  const lede = `${persona.focus} You keep 100% of your own bookings, and your people are always yours to export. Business is $29 a month with the full depth, the Nonprofit plan is $39 a month flat, and the Resonance Engine add-on is optional when you want live matches. Yearly is two months free.`
 
   const loadoutLine = isNonprofit
-    ? `Nonprofits run on the Nonprofit plan at ${total}, flat and never per seat. It carries everything in Business with donations built in, and a 3% take-rate on what you raise, for verified 501(c)(3) organizations.`
+    ? `Nonprofits run on the Nonprofit plan at ${total}, flat and never per seat. It carries the full Collective toolkit with donations built in, and no take-rate on what you raise, for verified 501(c)(3) organizations.`
     : `The setup for ${persona.audience.toLowerCase()} is ${addonPhrase}, which runs ${total}. Yearly is two months free, and there are no per-seat fees.`
 
   const faq = [
     {
       q: `How much does Frequency cost for ${persona.audience.toLowerCase()}?`,
-      a: `${loadoutLine} Business is $49 a month, the Nonprofit plan is $29 a month flat, and the Resonance Engine add-on is $20 a month, optional on any paid plan. Our fee is a flat 3% plus card processing, shown in full, with no per-seat fees ever.`,
+      a: `${loadoutLine} Business is $29 a month, the Nonprofit plan is $39 a month flat, and the Resonance Engine add-on is optional on any paid plan. You keep 100% of your own bookings; we earn only on business the network sends you, at a rate that drops as your plan rises.`,
     },
     {
       q: `What is included for ${persona.audience.toLowerCase()}?`,

@@ -23,6 +23,7 @@ import {
   type LoadoutTotal,
 } from './loadout'
 import type { AddonKey } from './plans'
+import { PLACEHOLDER_SPACE_PRICE_CENTS } from './feature-tiers'
 import type { BillingInterval, CatalogAmounts, CatalogItemKey } from '@/lib/billing/pricing-keys'
 
 // ── A money amount rendered both intervals (the table + strip show monthly with a yearly toggle) ─────
@@ -60,8 +61,8 @@ export interface TierAddonCell {
 
 /** One commercial tier column of the pricing table. Pure data the page renders. */
 export interface PricingTier {
-  /** A stable id for keys + JSON-LD (`business` / `nonprofit`). */
-  id: 'business' | 'nonprofit'
+  /** A stable id for keys + JSON-LD (`business` / `nonprofit` / `collective` / `independent`). */
+  id: 'business' | 'nonprofit' | 'collective' | 'independent'
   /** The display name. */
   name: string
   /** How the headline price reads. */
@@ -78,10 +79,30 @@ export interface PricingTier {
   coreIncluded: string
   /** The add-on cells in this column (ADR-472: the AI Engine is the only metered add-on). */
   addons: TierAddonCell[]
-  /** The take-rate line (5% / 3% / custom). */
+  /** The take-rate line (the network-only story: 0% on your own, tier rate on network sales). */
   takeRate: string
   /** The CTA for this column: a label + href. */
   cta: { label: string; href: string }
+  /** True for a tier that is NOT yet sellable (Collective / Independent have no catalog entry until
+   *  go-live), so the page shows it as a "coming soon" preview row, never a live checkout (ADR-811). */
+  preview?: boolean
+}
+
+// ── Preview pricing for the not-yet-sellable tiers (Collective / Independent, ADR-811) ────────────────
+// These have no Stripe/code catalog entry until go-live, so the page prices them from the ONE placeholder
+// map (feature-tiers PLACEHOLDER_SPACE_PRICE_CENTS) and marks them preview. Yearly = two months free (10x
+// monthly), the same math the catalog uses. Collective carries a beta founding anchor under its list.
+
+/** The Collective beta founding price (cents): $49 under the $79 list (strategy). Preview only. */
+const COLLECTIVE_BETA_CENTS = 4900
+
+/** Build a DualPrice for a preview tier from a monthly LIST cents and an optional lower FOUNDING cents
+ *  (the beta anchor). Yearly is two months free (10x monthly). PURE. */
+function previewDualPrice(monthlyListCents: number, monthlyFoundingCents = monthlyListCents): DualPrice {
+  return {
+    month: { listCents: monthlyListCents, foundingCents: monthlyFoundingCents },
+    year: { listCents: monthlyListCents * 10, foundingCents: monthlyFoundingCents * 10 },
+  }
 }
 
 /** The metered add-ons in display order, with their plain marketing labels + the glyph the table prints
@@ -123,10 +144,26 @@ export function pricingTiers(): PricingTier[] {
       forWho: 'Coaches, service and product businesses, studios, and practitioners.',
       billing: 'Monthly or yearly. Yearly is two months free.',
       coreIncluded:
-        'Everything: branded multi-page site and custom domain, QR Studio, bookings, tickets, enrollment, check-in, donations, memberships, the full CRM, marketing automation, team roles, and analytics.',
+        'Run your practice: the full CRM, email, reporting, bookings, tickets, memberships, and your own website.',
       addons: tierAddons,
-      takeRate: '3% on what you sell',
+      takeRate: '0% on your own bookings, 5% on network-sourced sales',
       cta: { label: 'Start a Space', href: '/spaces' },
+    },
+    {
+      id: 'collective',
+      name: 'Collective',
+      priceKind: 'flat',
+      // Preview: no catalog entry until go-live. $79 list, $49 beta founding (strategy).
+      price: previewDualPrice(PLACEHOLDER_SPACE_PRICE_CENTS.collective, COLLECTIVE_BETA_CENTS),
+      featured: false,
+      forWho: 'Growing communities that collaborate and run a team.',
+      billing: 'Monthly or yearly. Beta founding price locked for early Collectives.',
+      coreIncluded:
+        'Everything in Business, plus automations, team roles, multiple pipelines, and hosting collaborators inside your space.',
+      addons: tierAddons,
+      takeRate: '0% on your own bookings, 3% on network-sourced sales',
+      cta: { label: 'Coming soon', href: '/spaces' },
+      preview: true,
     },
     {
       id: 'nonprofit',
@@ -137,10 +174,26 @@ export function pricingTiers(): PricingTier[] {
       forWho: 'Verified 501(c)(3) organizations.',
       billing: 'Monthly or yearly. Yearly is two months free.',
       coreIncluded:
-        'Everything in Business, with donations built in. The full CRM, marketing automation, team roles, and your own domain. Flat, never per seat.',
+        'The full Collective toolkit for verified nonprofits, with donations built in. Flat, never per seat.',
       addons: tierAddons,
-      takeRate: '3% on what you raise',
-      cta: { label: 'Start a Space', href: '/spaces' },
+      takeRate: '0%, always',
+      cta: { label: 'Get verified', href: '/spaces' },
+    },
+    {
+      id: 'independent',
+      name: 'Independent',
+      priceKind: 'flat',
+      // Preview: the standalone / white-label tier. Standard SaaS pricing (~$249), off the network.
+      price: previewDualPrice(PLACEHOLDER_SPACE_PRICE_CENTS.independent),
+      featured: false,
+      forWho: 'Teams that want their own brand and domain, standalone.',
+      billing: 'Monthly or yearly. Standalone, outside the collective.',
+      coreIncluded:
+        'Everything in Collective, plus your own brand and custom domain, badge off. Off the network, so standard pricing.',
+      addons: tierAddons,
+      takeRate: '0%. Standalone, off the network',
+      cta: { label: 'Coming soon', href: '/spaces' },
+      preview: true,
     },
   ]
 }
@@ -289,7 +342,7 @@ export function loadoutStrip(): LoadoutStripRow[] {
 /** The one mission-framing line (PRICING-LADDER-PLAN §1a). Plain, no guilt, skeptic-proof: it states
  *  what a paid plan funds, in concrete terms. No em dashes. */
 export const MISSION_FRAMING =
-  'A paid plan keeps Frequency independent. It pays the people and the infrastructure that run it, so a Space is funding the work, not just renting software.'
+  'Frequency is a community collective. We exist to support and create community. A paid plan keeps the collective independent and funds the people and infrastructure behind it, so a Space is funding the work, not just renting software.'
 
 /** The Crew (personal tier) note for the pricing page, from the catalog/settings code defaults. Crew is
  *  the personal tier (list $12, founding $9); the commercial page notes it and links to the upgrade page. */
@@ -311,7 +364,8 @@ export function pricingLadderSummary(): string[] {
     const headline = tierHeadline(t, 'month')
     const anchor = tierListAnchor(t, 'month')
     const price = anchor ? `${headline} (list ${anchor})` : headline
-    lines.push(`- ${t.name}: ${price}. For ${t.forWho.toLowerCase()} ${t.takeRate} take-rate.`)
+    const soon = t.preview ? ' (coming soon)' : ''
+    lines.push(`- ${t.name}${soon}: ${price}. For ${t.forWho.toLowerCase()} Fee: ${t.takeRate}.`)
   }
   for (const a of PRICING_ADDONS) {
     lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key)}, optional on any paid plan.`)

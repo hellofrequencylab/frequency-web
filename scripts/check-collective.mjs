@@ -169,10 +169,21 @@ line('\nGuardrails · Legacy & off-plan tripwires')
   if (badNoTierNames.length) fail(`"no tier names" asserted as live canon (retired by ADR-811): ${badNoTierNames.join(', ')}`)
   else ok('the retired "no tier names" lock is only referenced as history')
 
-  // Tracked (not a fail): old hardcoded prices in member-facing prose, expected until the Phase 6 rebrand.
-  const oldBusinessPrice = grepCount('content', /\$49\b/, ['.md']).n + grepCount('lib/marketing', /\$49\b/, ['.ts', '.tsx']).n
+  // Tracked (not a fail): STALE Business-$49 in member-facing prose. Business is $29 now (ADR-811), so a
+  // bare "$49" is stale UNLESS it names the Collective beta ($49 founding under the $79 list, legitimate)
+  // or lives in a test assertion (which locks real values: persona-with-add-on totals, the Collective beta).
+  const priceHits = [
+    ...grepCount('content', /\$49\b/, ['.md']).hits,
+    ...grepCount('lib/marketing', /\$49\b/, ['.ts', '.tsx']).hits,
+  ].filter((h) => {
+    const [file, ln] = h.split(':')
+    if (/\.test\.(ts|tsx)$/.test(file)) return false // tests assert real current values
+    const txt = read(file); if (!txt) return false
+    const context = txt.split('\n').slice(Math.max(0, +ln - 2), +ln + 1).join(' ')
+    return !/collective/i.test(context) // Collective's beta price is legitimately $49
+  })
   const oldHomeCrew = grepCount('app', /\$10 a month|\$10\/mo/, ['.tsx']).n
-  if (oldBusinessPrice > 0) warn(`${oldBusinessPrice} hardcoded "$49" reference(s) in prose (reprice in Phase 6 marketing)`); else ok('no stale $49 in marketing prose')
+  if (priceHits.length) warn(`${priceHits.length} stale Business "$49" reference(s) in prose: ${priceHits.join(', ')}`); else ok('no stale $49 in marketing prose (Business is $29; Collective beta $49 is expected)')
   if (oldHomeCrew > 0) warn(`${oldHomeCrew} hardcoded Crew "$10" reference(s) in app copy (fix in Phase 6)`); else ok('no stale Crew "$10" in app copy')
 }
 

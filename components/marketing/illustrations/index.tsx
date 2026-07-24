@@ -80,6 +80,16 @@ export const illustrationNames = [
   'deck-circles',
   'deck-practices',
   'deck-events',
+  // Community Collective infographics (Phase 8, ADR-811): the eight explainers of the model,
+  // house-token inline SVG, used across the pricing + marketing surfaces.
+  'collective-ladder', // the value ladder (free -> Business -> Collective)
+  'earn-together', // we only earn on the business the network brings you
+  'two-worlds', // in-collective (connected) vs standalone (walled off)
+  'flywheel', // the collaboration flywheel
+  'continuum', // solo to collective
+  'buildings', // the mission: community-owned rooms
+  'four-promises', // the four brand promises
+  'five-doors', // the five funnel doors
 ] as const
 
 export type IllustrationName = (typeof illustrationNames)[number]
@@ -598,6 +608,143 @@ const ART: Record<IllustrationName, ReactNode> = {
       <circle cx="122" cy="94" r="5" className="fill-primary" />
       <path d="M168 60a22 22 0 0 0-44 0c0 16 22 36 22 36s22-20 22-36z" className="fill-signal" />
       <circle cx="146" cy="60" r="8" className="fill-surface" />
+    </Svg>
+  ),
+
+  // ── Community Collective infographics (Phase 8, ADR-811) ──────────────────────
+  // House-token inline SVG. Decorative (role=img + aria-label); the heading and body
+  // around each one carry the specifics. Semantic tokens only, no hex.
+
+  // The value ladder: three rising rungs (free -> Business -> Collective), a figure stepping up.
+  'collective-ladder': (
+    <Svg label="A value ladder rising from free to Business to Collective">
+      {[
+        { x: 30, h: 34 },
+        { x: 96, h: 62 },
+        { x: 162, h: 92 },
+      ].map((b, i) => (
+        <g key={b.x}>
+          <rect x={b.x} y={128 - b.h} width="48" height={b.h} rx="7" className={i === 2 ? 'fill-primary' : 'fill-primary-bg'} />
+          <circle cx={b.x + 24} cy={128 - b.h - 10} r="6" className={i === 2 ? 'fill-primary-strong' : 'fill-primary'} />
+        </g>
+      ))}
+      <path d="M22 132h196" className="stroke-border-strong" strokeWidth="3" strokeLinecap="round" />
+    </Svg>
+  ),
+
+  // We only earn when you do: a tall stack that is all yours, and a small slice we take from
+  // the network-sourced part only.
+  'earn-together': (
+    <Svg label="You keep everything you bring in; we earn only a small share of network-sourced business">
+      <rect x="36" y="34" width="70" height="94" rx="10" className="fill-primary-bg" />
+      <path d="M36 44h70M36 58h70M36 72h70M36 86h70M36 100h70M36 114h70" className="stroke-primary/40" strokeWidth="2" />
+      <rect x="150" y="96" width="54" height="32" rx="10" className="fill-signal-bg" />
+      <rect x="150" y="88" width="54" height="10" rx="5" className="fill-signal" />
+      <path d="M63 24h16m-8-8v16" className="stroke-primary-strong" strokeWidth="4" strokeLinecap="round" />
+    </Svg>
+  ),
+
+  // Two worlds: a connected cluster (in the collective) on the left, a single walled node on the right.
+  'two-worlds': (
+    <Svg label="In the collective, spaces connect; standalone, a space stands alone">
+      <g className="stroke-primary" strokeWidth="3">
+        <path d="M52 48L84 88M84 88L44 100M84 88L96 52" />
+      </g>
+      <g className="fill-primary">
+        <circle cx="52" cy="48" r="9" />
+        <circle cx="44" cy="100" r="9" />
+        <circle cx="96" cy="52" r="9" />
+      </g>
+      <circle cx="84" cy="88" r="12" className="fill-primary-strong" />
+      <path d="M120 22v106" className="stroke-border-strong" strokeWidth="3" strokeDasharray="6 7" />
+      <circle cx="182" cy="80" r="13" className="fill-surface stroke-border-strong" strokeWidth="3" />
+      <rect x="150" y="44" width="64" height="72" rx="12" className="fill-none stroke-border" strokeWidth="2.5" />
+    </Svg>
+  ),
+
+  // The collaboration flywheel: circular arrows around a hub, nodes feeding each other.
+  'flywheel': (
+    <Svg label="A collaboration flywheel: spaces sending each other business, round and round">
+      <g className="stroke-primary" strokeWidth="4" fill="none" strokeLinecap="round">
+        <path d="M120 40a36 36 0 0 1 34 46" />
+        <path d="M154 96a36 36 0 0 1-58 14" />
+        <path d="M92 104a36 36 0 0 1 6-62" />
+      </g>
+      <g className="fill-primary-strong">
+        <path d="M150 78l8 10-13 2z" />
+        <path d="M104 118l-12-3 8-9z" />
+        <path d="M86 52l4-12 8 9z" />
+      </g>
+      <circle cx="120" cy="76" r="14" className="fill-primary" />
+      <path d="M114 76l4 4 8-9" className="stroke-on-primary" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </Svg>
+  ),
+
+  // Solo to collective: one dot growing into a connected cluster along a rightward path.
+  'continuum': (
+    <Svg label="From one person to a whole collective">
+      <path d="M28 96h184" className="stroke-border-strong" strokeWidth="3" strokeLinecap="round" strokeDasharray="2 10" />
+      <circle cx="34" cy="96" r="7" className="fill-primary" />
+      <g className="fill-primary">
+        <circle cx="110" cy="80" r="7" />
+        <circle cx="128" cy="102" r="7" />
+      </g>
+      <path d="M110 80l18 22" className="stroke-primary" strokeWidth="2.5" />
+      <g className="fill-primary-strong">
+        <circle cx="188" cy="62" r="8" />
+        <circle cx="210" cy="88" r="8" />
+        <circle cx="182" cy="106" r="8" />
+        <circle cx="206" cy="118" r="8" />
+      </g>
+      <path d="M188 62l22 26M188 62l-6 44M210 88l-4 30M182 106l24 12" className="stroke-primary/60" strokeWidth="2.5" />
+    </Svg>
+  ),
+
+  // The mission: community-owned rooms. A simple building with a warm interior and people.
+  'buildings': (
+    <Svg label="The mission: community-owned rooms, funded together">
+      <path d="M60 60l60-30 60 30" className="fill-none stroke-primary-strong" strokeWidth="4" strokeLinejoin="round" />
+      <rect x="70" y="60" width="100" height="64" rx="6" className="fill-primary-bg stroke-primary-strong" strokeWidth="3" />
+      <rect x="108" y="92" width="24" height="32" rx="3" className="fill-primary" />
+      <circle cx="92" cy="86" r="7" className="fill-signal" />
+      <circle cx="148" cy="86" r="7" className="fill-signal" />
+      <path d="M120 30v-12m0 0l-7 7m7-7l7 7" className="stroke-primary" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  ),
+
+  // The four promises: four rounded badges, each with a check.
+  'four-promises': (
+    <Svg label="The four promises: no cut of your bookings, one honest price, leave anytime, see what the network earned you">
+      {[
+        { x: 44, y: 34 },
+        { x: 132, y: 34 },
+        { x: 44, y: 86 },
+        { x: 132, y: 86 },
+      ].map((b) => (
+        <g key={`${b.x}-${b.y}`}>
+          <rect x={b.x} y={b.y} width="64" height="40" rx="12" className="fill-primary-bg" />
+          <circle cx={b.x + 20} cy={b.y + 20} r="11" className="fill-primary" />
+          <path d={`M${b.x + 15} ${b.y + 20}l4 4 7-8`} className="stroke-on-primary" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          <rect x={b.x + 38} y={b.y + 14} width="18" height="5" rx="2.5" className="fill-primary/50" />
+          <rect x={b.x + 38} y={b.y + 23} width="12" height="5" rx="2.5" className="fill-primary/30" />
+        </g>
+      ))}
+    </Svg>
+  ),
+
+  // The five funnel doors: five doorways with arrows converging into the collective.
+  'five-doors': (
+    <Svg label="Five doors into the collective: creators, studios, event hosts, communities, and nonprofits">
+      {[36, 74, 112, 150, 188].map((x, i) => (
+        <g key={x}>
+          <rect x={x} y="30" width="26" height="50" rx="10" className={i === 2 ? 'fill-primary' : 'fill-primary-bg'} />
+          <circle cx={x + 19} cy="55" r="2.5" className={i === 2 ? 'fill-on-primary' : 'fill-primary'} />
+          <path d={`M${x + 13} 92v14`} className="stroke-primary/60" strokeWidth="3" strokeLinecap="round" />
+        </g>
+      ))}
+      <path d="M40 118h160" className="stroke-border-strong" strokeWidth="3" strokeLinecap="round" />
+      <circle cx="120" cy="118" r="9" className="fill-primary-strong" />
+      <path d="M120 118m-4 0l4 4 6-7" className="stroke-on-primary" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </Svg>
   ),
 }

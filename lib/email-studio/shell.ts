@@ -15,7 +15,7 @@ export interface EmailBrand {
   wordmark?: string
   /** An absolute logo image URL. When present it renders instead of the wordmark text. */
   logoUrl?: string
-  /** Small uppercase tagline under the wordmark (default 'A place to be human'). Pass '' to hide. */
+  /** Small uppercase tagline under the wordmark (default 'The community collective'). Pass '' to hide. */
   tagline?: string
   /** The physical mailing address shown in the footer (CAN-SPAM). Falls back to the platform postal address. */
   address?: string
@@ -34,6 +34,10 @@ const ORG_LEGAL_NAME = 'Frequency Labs Holdings'
 /** The real CAN-SPAM physical postal address for the platform (Frequency Labs Holdings). A per-Space send can
  *  override it with EmailBrand.address; the default platform shell uses this. Kept subtle in the footer. */
 const POSTAL_ADDRESS = '802 Caminito Azul, Carlsbad, CA 92011'
+
+/** The default brand tagline / one-line sender description. Mirrors lib/site.ts SITE_TAGLINE (ADR-811);
+ *  kept LOCAL so the email shell stays framework-free (see ORG_LEGAL_NAME). A Space send can override it. */
+const DEFAULT_TAGLINE = 'The community collective'
 
 /** The brand + unsubscribe inputs shared by the full shell and the standalone footer builder, so the on-canvas
  *  editor and the sent email read from ONE footer source of truth. */
@@ -71,7 +75,7 @@ function header(brand: EmailBrand, colors: EmailColors, baseUrl: string): string
   const inner = logoUrl
     ? `<a href="${escapeHtml(baseUrl)}" style="text-decoration:none;"><img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(brand.wordmark ?? 'Frequency')}" width="168" height="30" style="display:block;border:0;width:168px;height:auto;font-family:${FONT_STACK};font-size:24px;font-weight:700;letter-spacing:-0.5px;color:${colors.primaryStrong};text-decoration:none;"></a>`
     : `<a href="${escapeHtml(baseUrl)}" style="font-family:${FONT_STACK};font-size:26px;font-weight:900;letter-spacing:-0.5px;color:${colors.primaryStrong};text-decoration:none;">${escapeHtml(brand.wordmark ?? 'Frequency')}</a>`
-  const tagline = brand.tagline ?? 'A place to be human'
+  const tagline = brand.tagline ?? DEFAULT_TAGLINE
   const tag = tagline
     ? `<p style="font-family:${FONT_STACK};font-size:11px;color:${colors.subtle};letter-spacing:1.5px;text-transform:uppercase;margin:3px 0 0;">${escapeHtml(tagline)}</p>`
     : ''
@@ -87,7 +91,7 @@ function footer(input: EmailFooterInput, colors: EmailColors, baseUrl: string): 
   const base = baseUrl.replace(/\/$/, '')
   const name = escapeHtml(brand.wordmark ?? 'Frequency')
   // One-line description under the name. The tagline field doubles as it; '' hides the line (matches header).
-  const desc = brand.tagline === undefined ? 'A place to be human' : brand.tagline
+  const desc = brand.tagline === undefined ? DEFAULT_TAGLINE : brand.tagline
   // Physical postal address (CAN-SPAM). A Space send may override with brand.address; else the real platform address.
   const addr = brand.address ? escapeHtml(brand.address) : escapeHtml(`${ORG_LEGAL_NAME}, ${POSTAL_ADDRESS}`)
   const year = new Date().getFullYear()

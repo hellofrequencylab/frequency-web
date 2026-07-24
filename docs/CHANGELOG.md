@@ -12,6 +12,15 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Frequency is a Community Collective**: we exist to support and create community, together. Two
+  things changed in how Spaces work. First, a clear plan ladder, so you pick what fits what you run:
+  **Business** ($29) for your practice, **Collective** ($79, and $49 in the founding beta) to add
+  automations, a team, and collaborators, **Non Profit** ($39) for verified 501(c)(3) organizations,
+  and **Independent** for your own standalone brand. Second, the promise we care most about: **we
+  never take a cut of the bookings and sales you bring in yourself.** We earn only on the business
+  the network sends you, and that rate drops as your plan rises. Your billing page shows you, in real
+  dollars, exactly what the network earned you. Month to month, and your people are always yours to
+  export.
 - **Import your contacts from a spreadsheet**: bring a CSV of people into **My Contacts** in
   four steps. Open **Import** from My Contacts, upload the file, and Frequency matches your
   columns to the right fields, suggests a match with Vera when it isn't sure, and shows a
