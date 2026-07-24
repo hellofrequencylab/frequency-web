@@ -25,17 +25,17 @@ history, one system of record.**
 
 ## Data model (ADR-812, migration `20261210000000_conversations_spine.sql`)
 
-- **`conversations`** — `ref` (bigint routing key from 1000), `kind` (support|crm|leader|broadcast|dm|…),
+- **`comms_conversations`** — `ref` (bigint routing key from 1000), `kind` (support|crm|leader|broadcast|dm|…),
   `status`, `priority`, `channel` (email|sms|in_app|whatsapp|…), the polymorphic counterparty
   (`subject_kind`/`subject_id` + resolved `member_profile_id`/`contact_id` + `external_email`),
   `owner_profile_id` (the sender-trail owner), `assigned_to` (agent), `space_id`, `support_ticket_id`
   (link during the additive phase), threading (`provider_thread_id`), the `ai` jsonb seam, and SLA/activity
   timestamps.
-- **`conversation_messages`** — polymorphic author (`author_id` profile OR `author_contact_id` external),
+- **`comms_messages`** — polymorphic author (`author_id` profile OR `author_contact_id` external),
   `author_kind`, `direction`, `channel`, `body`/`body_html`, `is_internal` (agent notes), threading
   identity (`external_message_id` UNIQUE = idempotency, `in_reply_to`, `references_ids`), attachments,
   `delivery_status`.
-- **`conversation_assignments`** — append-only "trade" audit (assigned_to, assigned_by, reason, at).
+- **`comms_assignments`** — append-only "trade" audit (assigned_to, assigned_by, reason, at).
 - **`campaigns.reply_mode`** — `broadcast` | `conversation` (the composer's per-send choice).
 
 **RLS** mirrors `support_tickets`: members governed by policies on `get_my_profile_id()` (see own thread,
@@ -48,7 +48,7 @@ reply-address router all use the **service-role admin client** (bypasses RLS), e
 'conv-msg:' + messageId`, so the CRM card + person-stitch keep reading their timeline with no change.
 
 **Unify path (later phase, additive-first):** support tickets link via `support_ticket_id` now; a later
-migration renames `support_tickets`→`conversations` with auto-updatable **compatibility views**
+migration renames `support_tickets`→`comms_conversations` with auto-updatable **compatibility views**
 (`security_invoker=on`) so `lib/support/store.ts` and `/support` keep working untouched.
 
 ## Reply routing — `lib/comms/reply-address.ts`
@@ -123,7 +123,7 @@ One-click unsubscribe on `broadcast` (and `leader` bulk) only — **never** on t
 
 | Phase | Scope | Risk |
 |---|---|---|
-| **0 — foundation** *(this PR)* | `lib/comms/reply-address.ts` + test, the `conversations` spine migration, ADR-812, this doc. Additive, nothing wired. | none |
+| **0 — foundation** *(this PR)* | `lib/comms/reply-address.ts` + test, the `comms_conversations` spine migration, ADR-812, this doc. Additive, nothing wired. | none |
 | **1 — send** | `lib/comms/conversations.ts` spine lib; `reply_mode` branch in `sendCampaignNow`; outbound-from-thread (inbox reply + support). Behind the reply-mode toggle. | low |
 | **2 — inbound** | Light up the webhook (secrets + Resend MX); token routing + dedupe upgrade + anti-spoof/loop guards in `recordInboundEmail`. | med (external) |
 | **3 — workspace** | `<ConversationWorkspace>`, `<ConversationRow>`, `<ThreadReader>`, `<Composer>`, assign/status/trade, mobile drill-down. | med |
