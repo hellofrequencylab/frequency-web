@@ -243,11 +243,11 @@ export default async function BroadcastPage({
       {/* ── Main: broadcasts (left) + happenings (right) ─────── */}
       <div className="flex flex-col items-start gap-6 lg:flex-row">
         <div className="min-w-0 flex-1">
-          <SectionHeader title="Latest broadcasts" count={dispatches.length > 0 ? dispatches.length : undefined} />
+          <SectionHeader title="Latest Dispatches" count={dispatches.length > 0 ? dispatches.length : undefined} />
           {dispatches.length === 0 ? (
             <EmptyState
               icon={Megaphone}
-              title="No broadcasts yet"
+              title="No Dispatches yet"
               description="Your hosts and guides post announcements, events, and challenges here."
             />
           ) : (

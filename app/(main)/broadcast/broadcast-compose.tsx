@@ -82,14 +82,14 @@ export function BroadcastCompose({
         className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap"
       >
         <Plus className="w-4 h-4" />
-        New Broadcast
+        New Dispatch
       </button>
 
       <CreateModal
         open={open}
         onClose={() => setOpen(false)}
         onSubmit={handleSubmit}
-        title="New Broadcast"
+        title="New Dispatch"
         titleIcon={Megaphone}
         titleIconColor="indigo"
         submitLabel="Publish now"
