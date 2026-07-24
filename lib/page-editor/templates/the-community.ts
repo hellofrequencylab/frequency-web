@@ -293,7 +293,7 @@ export const data: Data = {
           { text: 'Run one Circle' },
           { text: "Be missed when you're gone" },
           { text: 'Lead by showing up' },
-          { text: 'Pay it forward' },
+          { text: 'Widen the Circle' },
         ],
         layout: L,
       },

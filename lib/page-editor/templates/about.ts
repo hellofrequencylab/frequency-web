@@ -13,7 +13,7 @@ import {
 // people who will build it. The storyline runs: the problem (the loneliest era,
 // the feed, the third place gone), the bet (real-world third places, a folding
 // chair with your name on it), the origin (Moonlight Beach, 2020), the design
-// principle (leaderful not leader-dependent, guru-free, pay it forward), and the
+// principle (leaderful not leader-dependent, guru-free, one honest price), and the
 // invitation (we build it together; you don't need permission, you need rails).
 //
 // CONTRACT (copied from the-community.ts, the exemplar):
@@ -176,8 +176,8 @@ export const data: Data = {
       },
     },
 
-    // ── The design principle ── how it stays honest and lasts: leaderful, pay it
-    // forward, guru-free. The trust beat, said as three plain promises. ─────────
+    // ── The design principle ── how it stays honest and lasts: leaderful, one
+    // honest price, guru-free. The trust beat, said as three plain promises. ─────
     {
       type: 'Heading',
       props: {
@@ -213,8 +213,8 @@ export const data: Data = {
           {
             icon: '',
             image: '',
-            title: 'Pay it forward',
-            body: "People who can give more keep the doors open for people who can't. The Frequency Lab funds the free side, the money goes back into the room, and nobody's priced out of belonging.",
+            title: 'One honest price',
+            body: "You keep 100% of your own bookings, always. The only fee is a small network-only take-rate, and it drops by plan. Physical Spaces get funded by a separate community-owned vehicle, never a cut of your work. One honest price, and you leave anytime with your data.",
             href: '',
           },
           {
@@ -273,7 +273,7 @@ export const data: Data = {
         items: [
           { text: 'Guru-free' },
           { text: 'Leaderful, not leader-dependent' },
-          { text: 'Pay it forward' },
+          { text: 'Never a cut of your bookings' },
           { text: 'A real third place' },
           { text: 'Built to last' },
           { text: 'Joined, not followed' },
