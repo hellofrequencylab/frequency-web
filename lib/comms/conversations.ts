@@ -96,6 +96,66 @@ export async function openOrGetConversation(
   }
 }
 
+/** The conversation fields the inbound router needs to route, anti-spoof-check, reopen, and notify. */
+export interface ConversationRow {
+  id: string
+  ref: string
+  status: string
+  kind: string
+  externalEmail: string | null
+  ownerProfileId: string | null
+  assignedTo: string | null
+  memberProfileId: string | null
+  contactId: string | null
+  spaceId: string | null
+  subject: string | null
+}
+
+/** Resolve a conversation by its public `ref` (the inbound routing key). FAIL-SAFE: null on miss/error. */
+export async function getConversationByRef(ref: string | number): Promise<ConversationRow | null> {
+  const key = typeof ref === 'number' ? ref : parseInt(String(ref), 10)
+  if (!Number.isFinite(key) || key <= 0) return null
+  try {
+    const res = await convTable('comms_conversations')
+      .select(
+        'id, ref, status, kind, external_email, owner_profile_id, assigned_to, member_profile_id, contact_id, space_id, subject',
+      )
+      .eq('ref', key)
+      .maybeSingle()
+    const row = res?.data
+    if (!row) return null
+    return {
+      id: String(row.id),
+      ref: String(row.ref),
+      status: String(row.status),
+      kind: String(row.kind),
+      externalEmail: (row.external_email as string) ?? null,
+      ownerProfileId: (row.owner_profile_id as string) ?? null,
+      assignedTo: (row.assigned_to as string) ?? null,
+      memberProfileId: (row.member_profile_id as string) ?? null,
+      contactId: (row.contact_id as string) ?? null,
+      spaceId: (row.space_id as string) ?? null,
+      subject: (row.subject as string) ?? null,
+    }
+  } catch (err) {
+    console.error('[comms] getConversationByRef failed:', err)
+    return null
+  }
+}
+
+/** Reopen a resolved/closed conversation when a new inbound message arrives (mirrors support reopen).
+ *  A no-op for already-active statuses. Best-effort; never throws. */
+export async function reopenConversationIfClosed(conversationId: string, currentStatus: string): Promise<void> {
+  if (currentStatus !== 'resolved' && currentStatus !== 'closed') return
+  try {
+    await convTable('comms_conversations')
+      .update({ status: 'open', updated_at: new Date().toISOString() })
+      .eq('id', conversationId)
+  } catch (err) {
+    console.error('[comms] reopenConversationIfClosed failed (non-fatal):', err)
+  }
+}
+
 export interface AppendMessageInput {
   conversationId: string
   direction: MessageDirection
