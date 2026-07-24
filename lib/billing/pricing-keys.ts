@@ -254,7 +254,7 @@ export function memberCheckoutPriceKey(opts: {
 //   * The four old Pro add-ons (Marketing / Team / Branding) FOLD INTO TIER DEPTH (ADR-472): a Space
 //     buys a TIER (Pro base or Business base), not those add-ons. The Business base is the full-depth
 //     team tier. AI Engine is the SOLE remaining metered add-on item (addon_ai), toggled independently
-//     on any paid tier. Nonprofit is a FLAT $29/mo item (ADR-590), not per-seat; Organization is its own item.
+//     on any paid tier. Nonprofit is a FLAT $39/mo item (ADR-811), not per-seat; Organization is its own item.
 //   * TODO(ADR-472 surfaces): the marketing/team/branding add-on CATALOG items + their per-seat Team
 //     handling are RETIRED here (see RETIRED_CATALOG_KEYS). The loadout-picker / persona / pricing-page
 //     surfaces that still reference them are kept compiling but get their real rebuild in the surface PR.
@@ -386,7 +386,7 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     ...amountsFromMonthly(24900, 24900), // $249/mo flat, standalone white-label
   },
   nonprofit_seat: {
-    // FLAT nonprofit (ADR-590): $29/mo, never per seat. The internal key stays `nonprofit_seat` (a legacy
+    // FLAT nonprofit (ADR-811): $39/mo, never per seat. The internal key stays `nonprofit_seat` (a legacy
     // identifier; the DB item_key + retired-key plumbing key off it) but the plan is NOT per-seat anymore
     // — perSeat:false makes the seat machinery inert for it. Verified 501(c)(3), donations built in.
     key: 'nonprofit_seat',

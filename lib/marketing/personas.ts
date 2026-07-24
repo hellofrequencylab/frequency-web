@@ -63,7 +63,7 @@ export const PERSONAS: Persona[] = [
       'Sell packages and programs, with scheduling built in.',
       'A client CRM that follows each person from first call to renewal.',
       'The Resonance Engine reads your community and suggests who to reach out to next.',
-      'Marketing automation, team roles, and your own domain come with Business.',
+      'Marketing email, reporting, and your own website come with Business.',
     ],
   },
   {
@@ -76,7 +76,7 @@ export const PERSONAS: Persona[] = [
       'Memberships and class packs with recurring billing.',
       'Check-in at the door, with a QR code on the wall.',
       'A member CRM that flags who is lapsing.',
-      'Marketing automation, team roles, and your own domain come with Business.',
+      'Marketing email, reporting, and your own website come with Business.',
     ],
   },
   {
@@ -89,7 +89,7 @@ export const PERSONAS: Persona[] = [
       'Tickets and passes, sold from your Space.',
       'Check-in at the door with a QR code.',
       'Dispatch to message everyone who has a ticket.',
-      'Everything is in Business at $29 a month, no add-ons required.',
+      'Everything is in Business, $29 a month or $19 in the founder window, no add-ons required.',
     ],
   },
   {
@@ -102,7 +102,7 @@ export const PERSONAS: Persona[] = [
       'Circles, cohorts, and memberships in one place.',
       'A member CRM that keeps track of who is who.',
       'The Resonance Engine turns your community signals into live matches between the right people.',
-      'Marketing automation, team roles, and your own domain come with Business.',
+      'Grow into Collective when you add a team and host collaborators, at $49 a month in the founder window under the $79 list, with a 3% network rate.',
     ],
   },
   {
@@ -196,22 +196,26 @@ export function personaCopy(persona: Persona): PersonaCopy {
 
   const h1 = `Frequency for ${persona.audience}`
   const metaTitle = `Frequency for ${persona.audience}: ${persona.focus}`
-  const description = `Frequency for ${persona.audience.toLowerCase()}: ${persona.focus} It runs ${total}, one honest price, never per seat.`
+  const description = isNonprofit
+    ? `Frequency for ${persona.audience.toLowerCase()}: ${persona.focus} The Non Profit plan runs ${total} flat, with no take-rate on what you raise.`
+    : `Frequency for ${persona.audience.toLowerCase()}: ${persona.focus} The setup runs ${total}, and you keep 100% of your own bookings.`
   const ogTitle = `Frequency for ${persona.audience}`
-  const lede = `${persona.focus} You keep 100% of your own bookings, and your people are always yours to export. Business is $29 a month with the full depth, the Nonprofit plan is $39 a month flat, and the Resonance Engine add-on is optional when you want live matches. Yearly is two months free.`
+  const lede = `${persona.focus} You keep 100% of your own bookings, and your people are always yours to export. Business is $29 a month, or $19 in the founder window that runs through September 1, 2026, with the full depth. The Non Profit plan is $39 a month flat, and the Resonance Engine add-on is +$20 a month when you want live matches. Yearly is two months free.`
 
   const loadoutLine = isNonprofit
-    ? `Nonprofits run on the Nonprofit plan at ${total}, flat and never per seat. It carries the full Collective toolkit with donations built in, and no take-rate on what you raise, for verified 501(c)(3) organizations.`
-    : `The setup for ${persona.audience.toLowerCase()} is ${addonPhrase}, which runs ${total}. Yearly is two months free, and there are no per-seat fees.`
+    ? `Nonprofits run on the Non Profit plan at ${total}, flat and never per seat. It carries the full Collective toolkit with donations built in, and no take-rate on what you raise, for verified 501(c)(3) organizations.`
+    : `The setup for ${persona.audience.toLowerCase()} is ${addonPhrase}. Business is $29 a month, or $19 in the founder window through September 1, 2026${
+        addonNames.length ? ', and the Resonance Engine add-on is +$20 a month' : ''
+      }, so the loadout runs ${total} today. Yearly is two months free, and there are no per-seat fees.`
 
   const faq = [
     {
       q: `How much does Frequency cost for ${persona.audience.toLowerCase()}?`,
-      a: `${loadoutLine} Business is $29 a month, the Nonprofit plan is $39 a month flat, and the Resonance Engine add-on is optional on any paid plan. You keep 100% of your own bookings; we earn only on business the network sends you, at a rate that drops as your plan rises.`,
+      a: `${loadoutLine} You keep 100% of your own bookings, and we earn only on business the network sends you, at a rate that drops as your plan rises: 5% on Business, 3% on Collective, and 0% on the Non Profit plan.`,
     },
     {
       q: `What is included for ${persona.audience.toLowerCase()}?`,
-      a: `${persona.highlights.join(' ')} Every plan includes a branded Space site and custom domain, QR Studio, bookings, tickets, enrollment, check-in, donations, memberships, the full CRM, marketing automation, team roles, and analytics.`,
+      a: `${persona.highlights.join(' ')} Every plan includes a branded Space site, QR Studio, bookings, tickets, enrollment, check-in, donations, memberships, the full CRM, marketing email, and analytics. Automations, team roles, and multiple pipelines open at Collective.`,
     },
     {
       q: `Can I change my plan later?`,

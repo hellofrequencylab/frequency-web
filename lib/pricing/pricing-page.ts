@@ -268,16 +268,19 @@ export function personaPath(slug: string): string {
 /** The plain monthly total LABEL for a persona loadout, e.g. "$59/mo", or the per-seat headline for the
  *  Nonprofit row ("$12/seat/mo"). PURE — the strip and the persona page render this so the math never
  *  drifts between them. */
-export function stripTotalLabel(p: PersonaLoadout): string {
+export function stripTotalLabel(p: PersonaLoadout, betaActive: boolean = isBetaPricingActive()): string {
   if (p.perSeat) {
-    // The Nonprofit door: priced from the flat Non Profit plan ($29/mo, ADR-590), not a Business loadout.
+    // The Nonprofit door: priced from the flat Non Profit plan ($39/mo, ADR-811), not a Business loadout.
     // The `perSeat` field name is legacy (per-seat billing is retired); it now flags "the flat nonprofit
-    // sibling." Renders a FLAT figure, never per seat.
+    // sibling." Renders a FLAT figure, never per seat. No founder discount, so beta-invariant.
     const np = pricingCatalog().nonprofit_seat
     return `${formatLoadoutCents(np.month.foundingCents)}/mo`
   }
+  // BETA AUTO-REVERT (ADR-811): during the founder window the strip headlines the beta total; after the
+  // cutover it headlines the list total, matching the /pricing table + the checkout so no surface quotes a
+  // price another one won't honor.
   const total = computeLoadoutTotal(pricingCatalog(), p.addons, 'month', 1)
-  return `${formatLoadoutCents(total.foundingCents)}/mo`
+  return `${formatLoadoutCents(betaActive ? total.foundingCents : total.listCents)}/mo`
 }
 
 /** The plain add-on label for the strip breakdown, e.g. "Resonance Engine" (from PRICING_ADDONS). Local
@@ -290,10 +293,12 @@ function stripAddonLabel(addon: AddonKey): string {
  *  recommended loadout adds a metered add-on shows WHERE the total comes from and never reads as a bare
  *  higher plan price. Returns null when there is nothing to break down: the flat Nonprofit plan, or a
  *  Business-only door with no add-on (the total already IS the Business plan price). PURE. */
-export function stripBreakdownLabel(p: PersonaLoadout): string | null {
+export function stripBreakdownLabel(p: PersonaLoadout, betaActive: boolean = isBetaPricingActive()): string | null {
   if (p.perSeat || p.addons.length === 0) return null
   const cat = pricingCatalog()
-  const base = `${formatLoadoutCents(cat.business_base.month.foundingCents)} plan`
+  // The Business base carries the founder-window discount; the add-on (Resonance Engine) does not, so only
+  // the base flips to list after the cutover. Mirrors stripTotalLabel so the breakdown always sums to it.
+  const base = `${formatLoadoutCents(betaActive ? cat.business_base.month.foundingCents : cat.business_base.month.listCents)} plan`
   const addonParts = p.addons.map((addon) => {
     const item = cat[addonItemKey(addon)]
     return `${formatLoadoutCents(item.month.foundingCents)} ${stripAddonLabel(addon)}`
@@ -303,7 +308,7 @@ export function stripBreakdownLabel(p: PersonaLoadout): string | null {
 
 /** Build one "by who you are" strip row from a persona loadout, computing its live monthly total from
  *  the CODE catalog. PURE. */
-export function loadoutStripRow(p: PersonaLoadout): LoadoutStripRow {
+export function loadoutStripRow(p: PersonaLoadout, betaActive: boolean = isBetaPricingActive()): LoadoutStripRow {
   const total = computeLoadoutTotal(pricingCatalog(), p.addons, 'month', 1)
   return {
     id: p.slug,
@@ -311,16 +316,17 @@ export function loadoutStripRow(p: PersonaLoadout): LoadoutStripRow {
     href: personaPath(p.slug),
     addons: [...p.addons],
     total,
-    totalLabel: stripTotalLabel(p),
-    breakdownLabel: stripBreakdownLabel(p),
+    totalLabel: stripTotalLabel(p, betaActive),
+    breakdownLabel: stripBreakdownLabel(p, betaActive),
     note: p.note,
     perSeat: !!p.perSeat,
   }
 }
 
-/** Every "by who you are" strip row, in plan order. PURE. */
-export function loadoutStrip(): LoadoutStripRow[] {
-  return PERSONA_LOADOUTS.map(loadoutStripRow)
+/** Every "by who you are" strip row, in plan order. PURE. Beta-aware: the strip totals flip from the
+ *  founder-window price to list on the cutover, matching the /pricing table + checkout. */
+export function loadoutStrip(betaActive: boolean = isBetaPricingActive()): LoadoutStripRow[] {
+  return PERSONA_LOADOUTS.map((p) => loadoutStripRow(p, betaActive))
 }
 
 // ── Mission framing + the answer-engine ladder summary ──────────────────────────────────────────────
