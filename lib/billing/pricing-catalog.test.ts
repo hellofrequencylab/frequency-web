@@ -34,21 +34,37 @@ describe('yearlyFromMonthly (two months free)', () => {
 })
 
 describe('the clean catalog shape (collapsed · ADR-552)', () => {
-  it('holds exactly the four items (Business base, AI add-on, nonprofit seat, operator seat)', () => {
+  it('holds exactly the six items (Business/Collective/Independent bases, AI add-on, nonprofit seat, operator seat)', () => {
     expect([...CATALOG_ITEM_KEYS]).toEqual([
       'business_base',
+      'collective_base',
+      'independent_base',
       'addon_ai',
       'nonprofit_seat',
       'operator_seat',
     ])
-    expect(catalogItems()).toHaveLength(4)
+    expect(catalogItems()).toHaveLength(6)
   })
 
-  it('Business base: $29 flat, all-in, not per seat (ADR-811)', () => {
+  it('Business base: $29 list with a $19 founding anchor, not per seat (ADR-811)', () => {
     const biz = catalogItem('business_base')
-    expect(biz.month.foundingCents).toBe(2900)
-    expect(biz.month.listCents).toBe(2900) // flat, no strike
+    expect(biz.month.foundingCents).toBe(1900) // founding ladder: $19 under the $29 list
+    expect(biz.month.listCents).toBe(2900)
     expect(biz.perSeat).toBe(false)
+  })
+
+  it('Collective base: $79 list with a $49 beta founding anchor, not per seat (ADR-811)', () => {
+    const col = catalogItem('collective_base')
+    expect(col.month.foundingCents).toBe(4900) // beta founding
+    expect(col.month.listCents).toBe(7900)
+    expect(col.perSeat).toBe(false)
+  })
+
+  it('Independent base: $249/mo flat white-label, no founding discount (ADR-811)', () => {
+    const ind = catalogItem('independent_base')
+    expect(ind.month.foundingCents).toBe(24900)
+    expect(ind.month.listCents).toBe(24900) // flat, standalone off-network
+    expect(ind.perSeat).toBe(false)
   })
 
   it('Operator seat: a real per-seat add-on (ADR-799), the only perSeat item', () => {
@@ -98,11 +114,13 @@ describe('catalog price keys', () => {
     expect(catalogPriceKey('business_base', 'year', true)).toBe('business_base_year_list')
   })
 
-  it('allCatalogPriceKeys = 4 items x 2 intervals x 2 variants = 16 keys', () => {
+  it('allCatalogPriceKeys = 6 items x 2 intervals x 2 variants = 24 keys', () => {
     const keys = allCatalogPriceKeys()
-    expect(keys).toHaveLength(16)
+    expect(keys).toHaveLength(24)
     expect(keys).toContain('business_base_month')
     expect(keys).toContain('business_base_month_list')
+    expect(keys).toContain('collective_base_month')
+    expect(keys).toContain('independent_base_year_list')
     expect(keys).toContain('addon_ai_month')
     expect(keys).toContain('nonprofit_seat_year')
     // the retired items are NOT in the live catalog

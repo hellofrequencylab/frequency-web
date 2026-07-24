@@ -35,10 +35,11 @@ export interface FoundingConfig {
 export const FOUNDING_DEFAULT: FoundingConfig = {
   member_one_time_cents: 25000, // $250, locked for life (the Founders Round)
   member_cap: 150, // the first 150
-  business_monthly_cents: 2900, // $29 / mo, matching the live Business list (ADR-811 repriced Business to
-  //                               $29; the old $49 now EXCEEDS list, so founding was costing more than
-  //                               buying Business today). Owner may set a LOWER founder discount here + in
-  //                               the `founding` pricing_settings row; the take-rate buy-down (3%) stays.
+  business_monthly_cents: 1900, // $19 / mo founding anchor under the $29 Business list (ADR-811). The
+  //                               founding ladder runs $19 -> $29 -> $49 -> $79 (Business founding/list,
+  //                               Collective founding/list). Yearly derives as two months free ($190).
+  //                               Owner may edit this in the `founding` pricing_settings row; the
+  //                               take-rate buy-down (3%) stays regardless.
   business_take_bps: 300, // 3% (bought down from the 5-8% ladder, ADR-596)
   business_city_cap: 25, // 25 founding businesses per city
 }

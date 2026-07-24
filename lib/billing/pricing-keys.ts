@@ -277,6 +277,8 @@ export const BILLING_INTERVALS: readonly BillingInterval[] = ['month', 'year']
  *  into the Business tier); see RETIRED_CATALOG_KEYS. */
 export const CATALOG_ITEM_KEYS = [
   'business_base',
+  'collective_base',
+  'independent_base',
   'addon_ai',
   'nonprofit_seat',
   'operator_seat',
@@ -350,10 +352,12 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     label: 'Frequency Business',
     perSeat: false,
     // Business is the run-your-practice base (ADR-811): CRM, email, reporting, your own website. Automation,
-    // team roles, multi-pipeline, and collaborators live at COLLECTIVE; white-label at INDEPENDENT. No
-    // separate founding anchor today (founding == list == $29); a future anchor is a one-line edit.
+    // team roles, multi-pipeline, and collaborators live at COLLECTIVE; white-label at INDEPENDENT.
+    // FOUNDING ladder (owner, 2026-07-24): $19 founding under the $29 list. This makes the founding+list
+    // spread a clean progression: $19 -> $29 -> $49 -> $79 (Business founding/list, Collective founding/list),
+    // with +$10/+$20/+$30 gaps. Yearly derives as two months free ($190 founding / $290 list).
     // Per-seat Team billing rides this tier's seat machinery, not a separate add-on item.
-    ...amountsFromMonthly(2900, 2900), // $29 flat, all-in (ADR-811 Community Collective)
+    ...amountsFromMonthly(2900, 1900), // list $29, founding $19 (ADR-811 Community Collective)
   },
   addon_ai: {
     key: 'addon_ai',
@@ -363,6 +367,22 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     label: 'Frequency Resonance Engine (add-on)',
     perSeat: false,
     ...amountsFromMonthly(2000, 2000), // +$20, the sole cross-tier optional add-on (ADR-552/590)
+  },
+  collective_base: {
+    // Collective (ADR-811): everything in Business plus automations, team roles, multiple pipelines, and
+    // hosting collaborators. FOUNDING beta: $49/mo under the $79 list ($490 / $790 yearly, two months free).
+    key: 'collective_base',
+    label: 'Frequency Collective',
+    perSeat: false,
+    ...amountsFromMonthly(7900, 4900), // list $79, founding (beta) $49
+  },
+  independent_base: {
+    // Independent (ADR-811): everything in Collective plus your own brand + custom domain, standalone and
+    // OFF the network (standard SaaS pricing, no network take-rate). No founding discount (founding == list).
+    key: 'independent_base',
+    label: 'Frequency Independent',
+    perSeat: false,
+    ...amountsFromMonthly(24900, 24900), // $249/mo flat, standalone white-label
   },
   nonprofit_seat: {
     // FLAT nonprofit (ADR-590): $29/mo, never per seat. The internal key stays `nonprofit_seat` (a legacy

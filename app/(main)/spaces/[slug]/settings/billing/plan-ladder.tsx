@@ -2,19 +2,20 @@ import { Check, Sparkles, ShieldCheck, Globe } from 'lucide-react'
 import { SPACE_PLAN_LABEL, type SpacePlan } from '@/lib/pricing/plans'
 import { PLACEHOLDER_SPACE_PRICE_CENTS, COLLECTIVE_BETA_CENTS } from '@/lib/pricing/feature-tiers'
 import { formatCents } from '@/lib/pricing/display'
+import { ChoosePlanButton } from './choose-plan'
 
-// THE COMMUNITY COLLECTIVE plan ladder (Phase 4, ADR-811) — the informational tier map on the Space
-// billing surface. It shows where a Space sits in the collective and what each rung is for, leading with
-// the promise that matters most: you keep 100% of what you bring in; we earn only on the business the
-// network sends you, at a rate that drops as the tier rises (buying down your rate, never a wall).
+// THE COMMUNITY COLLECTIVE plan ladder (Phase 4, ADR-811) — the tier map on the Space billing surface.
+// It shows where a Space sits in the collective and what each rung is for, leading with the promise that
+// matters most: you keep 100% of what you bring in; we earn only on the business the network sends you, at
+// a rate that drops as the tier rises (buying down your rate, never a wall).
 //
-// PRESENTATIONAL + OFF-SAFE. It NEVER charges: the live upgrade action stays the Business CTA below it
-// (GoBusinessCta, itself gated on billingLive). Rungs the checkout cannot sell yet (Collective /
-// Independent have no catalog entry until go-live) read "Coming soon", which is truthful today, not a
-// dark pattern. Prices come from the ONE placeholder map (feature-tiers), never hardcoded here. Non
-// Profit points at the existing verify flow. No em dashes (CONTENT-VOICE §10); plain, no hype, no guilt.
-// COLLECTIVE_BETA_CENTS ($49) is imported from feature-tiers, the ONE source shared with the marketing
-// pricing page, so the beta anchor never drifts between the two surfaces.
+// GO-LIVE (ADR-811): the higher flat rungs the checkout can sell (Collective / Independent, gated on
+// billingLive + their per-plan switch) carry an inline Choose action for a FREE Space; Business keeps its
+// richer CTA below (GoBusinessCta, with the seat picker). A rung whose switch is still OFF reads "Coming
+// soon", truthful, not a dark pattern. Prices come from the ONE placeholder map (feature-tiers), never
+// hardcoded here. Non Profit points at the existing verify flow. No em dashes (CONTENT-VOICE §10); plain,
+// no hype, no guilt. COLLECTIVE_BETA_CENTS ($49) is imported from feature-tiers, the ONE source shared
+// with the marketing pricing page, so the beta anchor never drifts between the two surfaces.
 
 type RungState = 'current' | 'available' | 'soon' | 'verify'
 
@@ -57,12 +58,14 @@ const STATE_CHIP: Record<RungState, { label: string; className: string }> = {
   verify: { label: 'By verification', className: 'border border-border text-muted' },
 }
 
-/** Resolve the state chip for a rung given the Space's current plan. Business is the one live-sellable
- *  rung today (its CTA lives below); Collective / Independent are previews; Non Profit is by verification. */
-function rungState(plan: SpacePlan, currentPlan: SpacePlan): RungState {
+/** Resolve the state chip for a rung given the Space's current plan and which rungs are sellable now.
+ *  Business's live CTA lives below (always "available"); Collective / Independent are "available" once
+ *  their per-plan switch is on (else "Coming soon"); Non Profit is by verification. */
+function rungState(plan: SpacePlan, currentPlan: SpacePlan, sellable: Partial<Record<SpacePlan, boolean>>): RungState {
   if (plan === currentPlan) return 'current'
   if (plan === 'business') return 'available'
   if (plan === 'nonprofit') return 'verify'
+  if ((plan === 'collective' || plan === 'independent') && sellable[plan]) return 'available'
   return 'soon'
 }
 
@@ -73,10 +76,22 @@ function priceLabel(plan: SpacePlan): string {
 }
 
 /**
- * The informational Community Collective ladder for a Space's billing surface. Reads the Space's current
- * plan to mark its rung; everything else is a plain preview. PURE presentation (no I/O, no charge).
+ * The Community Collective ladder for a Space's billing surface. Reads the Space's current plan to mark
+ * its rung; a FREE Space gets an inline Choose action on each sellable higher rung (Collective /
+ * Independent), gated server-side. `sellable` is the resolved per-plan switch map (billingLive AND the
+ * per-plan flag); `slug` + `isFree` decide whether to render the action. No charge happens here.
  */
-export function PlanLadder({ currentPlan }: { currentPlan: SpacePlan }) {
+export function PlanLadder({
+  currentPlan,
+  slug,
+  sellable = {},
+  isFree = false,
+}: {
+  currentPlan: SpacePlan
+  slug?: string
+  sellable?: Partial<Record<SpacePlan, boolean>>
+  isFree?: boolean
+}) {
   return (
     <section aria-labelledby="collective-ladder-heading" className="rounded-2xl border border-border bg-surface px-5 py-5 shadow-sm">
       <h2 id="collective-ladder-heading" className="text-base font-bold text-text">
@@ -90,9 +105,16 @@ export function PlanLadder({ currentPlan }: { currentPlan: SpacePlan }) {
 
       <ul className="mt-4 space-y-2.5">
         {RUNGS.map((rung) => {
-          const state = rungState(rung.plan, currentPlan)
+          const state = rungState(rung.plan, currentPlan, sellable)
           const chip = STATE_CHIP[state]
           const Icon = rung.icon
+          // A FREE Space gets a one-click Choose on a sellable higher flat rung (Collective / Independent).
+          // Business keeps its richer CTA below; Non Profit routes through verification, not a direct buy.
+          const canChoose =
+            isFree &&
+            !!slug &&
+            state === 'available' &&
+            (rung.plan === 'collective' || rung.plan === 'independent')
           return (
             <li
               key={rung.plan}
@@ -109,9 +131,17 @@ export function PlanLadder({ currentPlan }: { currentPlan: SpacePlan }) {
                 </div>
                 <p className="mt-0.5 text-xs leading-relaxed text-muted">{rung.blurb}</p>
               </div>
-              <span className={`shrink-0 self-center rounded-md px-2 py-0.5 text-2xs font-bold uppercase tracking-wide ${chip.className}`}>
-                {chip.label}
-              </span>
+              {canChoose ? (
+                <ChoosePlanButton
+                  slug={slug}
+                  plan={rung.plan as 'collective' | 'independent'}
+                  label={`Choose ${SPACE_PLAN_LABEL[rung.plan]}`}
+                />
+              ) : (
+                <span className={`shrink-0 self-center rounded-md px-2 py-0.5 text-2xs font-bold uppercase tracking-wide ${chip.className}`}>
+                  {chip.label}
+                </span>
+              )}
             </li>
           )
         })}

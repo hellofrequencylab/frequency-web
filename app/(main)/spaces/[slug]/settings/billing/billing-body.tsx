@@ -80,18 +80,30 @@ export async function BillingBody({ slug }: { slug: string }) {
 
   // The Business checkout gate (billingLive AND the per-plan switch — both false while billing is OFF, so
   // the CTA renders as a disabled "Available soon" preview), plus the seat usage + billing-live flag.
-  const [values, businessSellable, seatsSellable, seatUsage, billingIsLive, verification, catalog, earnings] =
-    await Promise.all([
-      getPricingValues(),
-      spaceLoadoutSellable('business'),
-      operatorSeatsSellable(),
-      getSeatUsage(space.id),
-      billingLive(),
-      getSpaceVerification(space.id),
-      loadCatalogConfig(),
-      // The honest receipt (Phase 5): trailing 30-day earnings, split network-sourced vs self.
-      spaceEarningsSummary(space.id, 30),
-    ])
+  const [
+    values,
+    businessSellable,
+    collectiveSellable,
+    independentSellable,
+    seatsSellable,
+    seatUsage,
+    billingIsLive,
+    verification,
+    catalog,
+    earnings,
+  ] = await Promise.all([
+    getPricingValues(),
+    spaceLoadoutSellable('business'),
+    spaceLoadoutSellable('collective'),
+    spaceLoadoutSellable('independent'),
+    operatorSeatsSellable(),
+    getSeatUsage(space.id),
+    billingLive(),
+    getSpaceVerification(space.id),
+    loadCatalogConfig(),
+    // The honest receipt (Phase 5): trailing 30-day earnings, split network-sourced vs self.
+    spaceEarningsSummary(space.id, 30),
+  ])
 
   const isPaid = currentPlan !== 'free'
 
@@ -120,8 +132,14 @@ export async function BillingBody({ slug }: { slug: string }) {
         </div>
 
         {/* The Community Collective ladder (ADR-811): where this Space sits + the buy-down-your-rate
-            promise. Informational and OFF-safe; the one live upgrade action stays the Business CTA below. */}
-        <PlanLadder currentPlan={currentPlan} />
+            promise. A free Space gets a one-click Choose on each sellable higher flat rung (Collective /
+            Independent); Business keeps its richer CTA below. Each action is gated server-side. */}
+        <PlanLadder
+          currentPlan={currentPlan}
+          slug={space.slug}
+          isFree={!isPaid && !staffViewing}
+          sellable={{ collective: collectiveSellable, independent: independentSellable }}
+        />
 
         {/* The honest receipt (Phase 5, ADR-811 §A): the real dollars the network sourced, proving promise
             #4. Renders nothing until there is network-sourced business, so it never brags about zero. */}

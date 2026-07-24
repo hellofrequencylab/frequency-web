@@ -159,6 +159,10 @@ export const PRICING_FLAG_KEYS = [
   'tier_supporter_enabled',
   'plan_business_enabled',
   'plan_nonprofit_enabled',
+  // Collective ($79 list / $49 beta) + Independent ($249 white-label) sell via the loadout checkout
+  // (collective_base / independent_base catalog items). Default OFF; ON + billing_live to sell (ADR-811).
+  'plan_collective_enabled',
+  'plan_independent_enabled',
   'gamification_full_member',
   'gamification_full_crew',
   'gamification_full_supporter',
@@ -180,6 +184,8 @@ const FLAG_DEFAULTS: Record<PricingFlagKey, boolean> = {
   tier_supporter_enabled: false,
   plan_business_enabled: false,
   plan_nonprofit_enabled: false,
+  plan_collective_enabled: false,
+  plan_independent_enabled: false,
   gamification_full_member: false,
   gamification_full_crew: true,
   gamification_full_supporter: true,

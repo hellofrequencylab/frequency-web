@@ -23,7 +23,6 @@ import {
   type LoadoutTotal,
 } from './loadout'
 import type { AddonKey } from './plans'
-import { PLACEHOLDER_SPACE_PRICE_CENTS, COLLECTIVE_BETA_CENTS } from './feature-tiers'
 import type { BillingInterval, CatalogAmounts, CatalogItemKey } from '@/lib/billing/pricing-keys'
 
 // ── A money amount rendered both intervals (the table + strip show monthly with a yearly toggle) ─────
@@ -88,21 +87,6 @@ export interface PricingTier {
   preview?: boolean
 }
 
-// ── Preview pricing for the not-yet-sellable tiers (Collective / Independent, ADR-811) ────────────────
-// These have no Stripe/code catalog entry until go-live, so the page prices them from the ONE placeholder
-// map (feature-tiers PLACEHOLDER_SPACE_PRICE_CENTS) and marks them preview. Yearly = two months free (10x
-// monthly), the same math the catalog uses. Collective carries the beta founding anchor (COLLECTIVE_BETA_CENTS,
-// imported from feature-tiers so it never drifts from the in-app ladder) under its list.
-
-/** Build a DualPrice for a preview tier from a monthly LIST cents and an optional lower FOUNDING cents
- *  (the beta anchor). Yearly is two months free (10x monthly). PURE. */
-function previewDualPrice(monthlyListCents: number, monthlyFoundingCents = monthlyListCents): DualPrice {
-  return {
-    month: { listCents: monthlyListCents, foundingCents: monthlyFoundingCents },
-    year: { listCents: monthlyListCents * 10, foundingCents: monthlyFoundingCents * 10 },
-  }
-}
-
 /** The metered add-ons in display order, with their plain marketing labels + the glyph the table prints
  *  beside them. The price comes from the catalog (so a config change is one number). ADR-472: the AI
  *  Engine is now the SOLE metered add-on; Marketing, Team, and Branding folded into Business tier depth. */
@@ -122,10 +106,10 @@ export function proAddonPrice(addon: AddonKey): string {
   return item.perSeat ? `+${amount}/seat/mo` : `+${amount}/mo`
 }
 
-/** Build the FOUR commercial tier columns (ADR-811): Business + Non Profit are sellable from the CODE
- *  catalog; Collective + Independent are PREVIEW rows priced from the placeholder map (no catalog entry
- *  until go-live) and flagged `preview`. PURE — no DB, no per-request read. The add-on cells carry only the
- *  AI Engine: metered on Business, available on every paid tier. */
+/** Build the FOUR commercial tier columns (ADR-811): Business, Collective, Non Profit, and Independent,
+ *  every one priced from the CODE catalog (collective_base / independent_base joined the catalog at
+ *  go-live). PURE — no DB, no per-request read. The add-on cells carry only the AI Engine: metered on
+ *  Business, available on every paid tier. */
 export function pricingTiers(): PricingTier[] {
   const cat = pricingCatalog()
 
@@ -151,8 +135,8 @@ export function pricingTiers(): PricingTier[] {
       id: 'collective',
       name: 'Collective',
       priceKind: 'flat',
-      // Preview: no catalog entry until go-live. $79 list, $49 beta founding (strategy).
-      price: previewDualPrice(PLACEHOLDER_SPACE_PRICE_CENTS.collective, COLLECTIVE_BETA_CENTS),
+      // Priced from the code catalog (ADR-811 go-live): $79 list with the $49 beta founding anchor.
+      price: { month: cat.collective_base.month, year: cat.collective_base.year },
       featured: false,
       forWho: 'Growing communities that collaborate and run a team.',
       billing: 'Monthly or yearly. Beta founding price locked for early Collectives.',
@@ -160,8 +144,7 @@ export function pricingTiers(): PricingTier[] {
         'Everything in Business, plus automations, team roles, multiple pipelines, and hosting collaborators inside your space.',
       addons: tierAddons,
       takeRate: '0% on your own bookings, 3% on network-sourced sales',
-      cta: { label: 'Coming soon', href: '/spaces' },
-      preview: true,
+      cta: { label: 'Start a Space', href: '/spaces' },
     },
     {
       id: 'nonprofit',
@@ -181,8 +164,8 @@ export function pricingTiers(): PricingTier[] {
       id: 'independent',
       name: 'Independent',
       priceKind: 'flat',
-      // Preview: the standalone / white-label tier. Standard SaaS pricing (~$249), off the network.
-      price: previewDualPrice(PLACEHOLDER_SPACE_PRICE_CENTS.independent),
+      // Priced from the code catalog (ADR-811 go-live): the standalone / white-label tier at $249/mo flat.
+      price: { month: cat.independent_base.month, year: cat.independent_base.year },
       featured: false,
       forWho: 'Teams that want their own brand and domain, standalone.',
       billing: 'Monthly or yearly. Standalone, outside the collective.',
@@ -190,8 +173,7 @@ export function pricingTiers(): PricingTier[] {
         'Everything in Collective, plus your own brand and custom domain, badge off. Off the network, so standard pricing.',
       addons: tierAddons,
       takeRate: '0%. Standalone, off the network',
-      cta: { label: 'Coming soon', href: '/spaces' },
-      preview: true,
+      cta: { label: 'Start a Space', href: '/spaces' },
     },
   ]
 }
@@ -233,7 +215,7 @@ export interface LoadoutStripRow {
   /** The plain monthly total label, e.g. "$59/mo" or "$12/seat/mo" for the Nonprofit row. */
   totalLabel: string
   /** When the total is the plan PLUS a metered add-on, the plain breakdown of where it comes from, e.g.
-   *  "$29 plan + $20 Resonance Engine". Null when the total already IS the plan price (a Business-only
+   *  "$19 plan + $20 Resonance Engine". Null when the total already IS the plan price (a Business-only
    *  door, or the flat Nonprofit plan), so no bare higher number ever reads as the plan price. */
   breakdownLabel: string | null
   /** A plain one-line note on what the loadout is for. */
@@ -261,9 +243,9 @@ export interface PersonaLoadout {
 
 /** The FIVE persona doors (ADR-590): one system, presented by who they are. Each resolves to Business,
  *  Business + Resonance, or the Nonprofit plan. Coaches/healers and community builders turn the Resonance
- *  Engine on (Business + Resonance = $29 + $20/mo); studios and event hosts run on Business ($29/mo); nonprofits
- *  run the flat Nonprofit plan ($29/mo). The monthly totals come from the catalog, never hardcoded, so a
- *  catalog change reflows every figure. */
+ *  Engine on (Business + Resonance = $19 + $20/mo at founding); studios and event hosts run on Business
+ *  ($19/mo founding); nonprofits run the flat Nonprofit plan ($39/mo). The monthly totals come from the
+ *  catalog, never hardcoded, so a catalog change reflows every figure. */
 export const PERSONA_LOADOUTS: readonly PersonaLoadout[] = [
   { slug: 'coaches-and-healers', label: 'Coaches and healers', addons: ['ai'], note: 'Packages, scheduling, and a client CRM that suggests who to follow up with.' },
   { slug: 'studios', label: 'Studios', addons: [], note: 'Classes, memberships, and check-in at the door.' },
@@ -298,10 +280,10 @@ function stripAddonLabel(addon: AddonKey): string {
   return PRICING_ADDONS.find((a) => a.key === addon)?.label ?? addon
 }
 
-/** The plain breakdown of a loadout total, e.g. "$29 plan + $20 Resonance Engine", so a door whose
+/** The plain breakdown of a loadout total, e.g. "$19 plan + $20 Resonance Engine", so a door whose
  *  recommended loadout adds a metered add-on shows WHERE the total comes from and never reads as a bare
  *  higher plan price. Returns null when there is nothing to break down: the flat Nonprofit plan, or a
- *  Business-only door with no add-on (the total already IS the $29 plan price). PURE. */
+ *  Business-only door with no add-on (the total already IS the Business plan price). PURE. */
 export function stripBreakdownLabel(p: PersonaLoadout): string | null {
   if (p.perSeat || p.addons.length === 0) return null
   const cat = pricingCatalog()

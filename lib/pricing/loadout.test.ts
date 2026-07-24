@@ -36,10 +36,10 @@ import {
 describe('resolveCatalogItem (override over the code default)', () => {
   it('falls back to the code catalog amounts when there is no override', () => {
     const biz = resolveCatalogItem('business_base', undefined)
-    expect(biz.month.listCents).toBe(2900) // $29 flat (ADR-811)
-    expect(biz.month.foundingCents).toBe(2900)
+    expect(biz.month.listCents).toBe(2900) // $29 list (ADR-811)
+    expect(biz.month.foundingCents).toBe(1900) // $19 founding anchor
     expect(biz.year.listCents).toBe(29000) // two months free off the monthly
-    expect(biz.year.foundingCents).toBe(29000)
+    expect(biz.year.foundingCents).toBe(19000) // $190 founding yearly
     expect(biz.perSeat).toBe(false)
   })
 
@@ -151,19 +151,20 @@ describe('addonCatalogKey + normalizeAddons (re-tiered · ADR-472)', () => {
 })
 
 describe('computeLoadoutTotal (collapsed · ADR-552)', () => {
-  it('Business base alone, monthly = $29 flat (ADR-811)', () => {
+  it('Business base alone, monthly = $19 founding under the $29 list (ADR-811)', () => {
     const t = computeLoadoutTotal(ITEMS, [], 'month')
-    expect(t.foundingCents).toBe(2900)
-    expect(t.listCents).toBe(2900)
-    expect(t.savingsCents).toBe(0) // flat, no strike
+    expect(t.foundingCents).toBe(1900) // $19 founding anchor
+    expect(t.listCents).toBe(2900) // $29 list
+    expect(t.savingsCents).toBe(1000) // $10 off the list at founding
     expect(t.lines).toHaveLength(1)
     expect(t.lines[0].isBase).toBe(true)
     expect(t.lines[0].key).toBe('business_base')
   })
 
-  it('Business + the AI add-on = $49 founding monthly ($29 base + $20 AI)', () => {
+  it('Business + the AI add-on = $39 founding monthly ($19 base + $20 AI)', () => {
     const t = computeLoadoutTotal(ITEMS, ['ai'], 'month')
-    expect(t.foundingCents).toBe(2900 + 2000) // $49
+    expect(t.foundingCents).toBe(1900 + 2000) // $39 founding
+    expect(t.listCents).toBe(2900 + 2000) // $49 list
     expect(t.lines).toHaveLength(2)
     expect(t.lines[1].key).toBe('addon_ai')
     expect(t.lines[1].quantity).toBe(1) // the AI add-on is not per-seat
@@ -171,7 +172,7 @@ describe('computeLoadoutTotal (collapsed · ADR-552)', () => {
 
   it('the retired add-on keys are ignored (only AI layers on the base)', () => {
     const t = computeLoadoutTotal(ITEMS, ['marketing', 'team', 'branding'] as string[], 'month')
-    expect(t.foundingCents).toBe(2900) // base only; the retired keys add nothing
+    expect(t.foundingCents).toBe(1900) // base only; the retired keys add nothing
     expect(t.lines).toHaveLength(1)
   })
 

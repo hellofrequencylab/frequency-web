@@ -25,7 +25,7 @@ import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
 import { getConnectStatus, payoutsLive } from './connect'
-import { platformFeeCents, spaceTakeRateCents } from './fees'
+import { platformFeeCents, spaceTakeRateCents, memberTakeRateCents } from './fees'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import { loadRootSpaceId } from '@/lib/spaces/store'
@@ -207,15 +207,20 @@ export async function createTicketCheckout(opts: {
   if (!status.accountId || !status.ready) return { error: 'Tickets aren’t available for this event yet.' }
 
   const gross = ticketTotalCents(unitCents, qty)
-  // Differential take-rate (ADR-811 §A): a SPACE-hosted event's tickets are 0% on a sale the host brings
-  // themselves (the hard promise) and the tier's NETWORK rate on a sale the collective sourced (referral /
-  // discovery), keyed on the space plan. A PERSONAL event (no owning space, or the platform root) keeps the
-  // flat platform fee. Fail-safe: the space resolution is best-effort; any miss falls back to the flat fee.
+  // Differential take-rate (ADR-811 §A). The hard promise holds on EVERY seller channel: 0% on a sale the
+  // host brings themselves, a rate only on the business the network sourced.
+  //   • SPACE-hosted event  → the space plan's NETWORK rate (self → 0), keyed on the space plan.
+  //   • PERSONAL event       → the individual host keeps 100% of their own sales (self → 0) and pays the
+  //                            member (Crew) rate on a network-sourced sale (ADR-811, #4).
+  //   • ROOT / platform event → Frequency's OWN event: the flat platform fee (internal, not a member sale).
+  // Fail-safe: the space resolution is best-effort; any miss falls back to the flat fee (never under-collect).
   const { source } = await classifyOrderSource({ buyerProfileId: opts.buyerProfileId, sellerProfileId: event.host_id })
-  let fee = platformFeeCents(gross)
+  let fee: number
   if (event.space_id) {
     const root = await loadRootSpaceId()
-    if (event.space_id !== root) {
+    if (event.space_id === root) {
+      fee = platformFeeCents(gross) // the platform's own event
+    } else {
       const { data: sp } = await db()
         .from('spaces')
         .select('plan, network_connected')
@@ -227,6 +232,11 @@ export async function createTicketCheckout(opts: {
       // to self (ADR-811 §3), so it pays 0% even here (independent price is billed on the subscription).
       fee = await spaceTakeRateCents(gross, plan, effectiveOrderSource(source, spRow?.network_connected)) // self → 0, network → tier bps
     }
+  } else {
+    // A PERSONAL event (no owning space): the host is an individual seller. 0% on their own sale; the
+    // member (Crew) network rate on a sale the collective sourced. The 100%-of-your-own promise now holds
+    // here too, not just on Space channels.
+    fee = await memberTakeRateCents(gross, source)
   }
   const tierLabel = tier ? ` (${tier.name})` : ''
 
