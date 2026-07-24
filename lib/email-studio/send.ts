@@ -23,6 +23,8 @@ import { resolveSegment, sendCategoryForSegment, type SegmentKey } from '@/lib/s
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { isSuppressed } from '@/lib/suppression'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
+import { buildConversationReplyAddress } from '@/lib/comms/reply-address'
+import { openOrGetConversation, appendConversationMessage, newConversationMessageId } from '@/lib/comms/conversations'
 import { buildUnsubscribeUrl, buildSpaceUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { assertApproved } from '@/lib/beta/approvals'
@@ -166,6 +168,37 @@ export async function loadCampaignReplyTo(_campaignId: string): Promise<string |
   const override = process.env.EMAIL_REPLY_TO
   const addr = (override && override.trim()) || BRAND_REPLY_TO
   return addr.includes('@') ? addr : undefined
+}
+
+/**
+ * Best-effort read of a campaign's reply_mode (20261210000000_conversations_spine migration, ADR-812).
+ * FAIL-SAFE: before that migration the column does not exist and PostgREST errors — swallowed and treated
+ * as 'broadcast' (today's behavior), so an unmigrated DB never breaks a send. Selected via a string-typed
+ * variable (not a literal) so the not-yet-generated type never trips the compiler.
+ */
+export async function loadCampaignReplyMode(campaignId: string): Promise<'broadcast' | 'conversation'> {
+  try {
+    const db = createAdminClient()
+    const col: string = 'reply_mode'
+    const { data, error } = await db.from('campaigns').select(col).eq('id', campaignId).maybeSingle()
+    if (error || !data) return 'broadcast'
+    return (data as unknown as Record<string, unknown>)[col] === 'conversation' ? 'conversation' : 'broadcast'
+  } catch {
+    return 'broadcast'
+  }
+}
+
+/** The campaign creator profile id — the sender-trail owner for conversation mode. Fail-safe null. */
+async function loadCampaignCreatorProfileId(campaignId: string): Promise<string | null> {
+  try {
+    const db = createAdminClient()
+    const { data, error } = await db.from('campaigns').select('created_by').eq('id', campaignId).maybeSingle()
+    if (error || !data) return null
+    const v = (data as unknown as Record<string, unknown>).created_by
+    return typeof v === 'string' && v ? v : null
+  } catch {
+    return null
+  }
 }
 
 // ── Size guard (Gmail clips a message past ~102 KB) ─────────────────────────────
@@ -468,6 +501,19 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   // reply lands in their inbox with zero setup. Null when neither resolves (replies fall back to noreply).
   const replyTo = await loadCampaignReplyTo(campaignId)
 
+  // CONVERSATION mode (ADR-812): a ticketed 1:1 send. Each recipient gets a per-conversation Reply-To so
+  // their reply routes back to the exact thread, and the send is recorded as an outbound conversation
+  // message. DORMANT unless the composer set reply_mode='conversation' — the default 'broadcast' leaves
+  // the recipient enqueue byte-for-byte identical to today. Requires an owner (the campaign creator) to
+  // hang the sender trail on; if that cannot be resolved we fall back to broadcast so a send is never
+  // blocked. The conversational From is a display-name swap onto the verified conversational identity.
+  const replyMode = await loadCampaignReplyMode(campaignId)
+  const ownerProfileId = replyMode === 'conversation' ? await loadCampaignCreatorProfileId(campaignId) : null
+  const conversationMode = replyMode === 'conversation' && !!ownerProfileId
+  const conversationFrom = conversationMode
+    ? buildCampaignFrom(await loadCampaignFromName(campaignId), process.env.EMAIL_CONVERSATION_FROM ?? DEFAULT_FROM)
+    : fromHeader
+
   const db = createAdminClient()
 
   // ATOMIC CLAIM (not a bare update): flip → 'sending' ONLY while the row is still in the status we
@@ -543,14 +589,57 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
       // segment+window heuristic). It rides two channels Resend echoes back on the webhook: a
       // custom header and a tag. The recorder (lib/suppression.recordEmailEvent) writes whichever
       // it finds to email_events.campaign_id, and getCampaignMetrics counts by it.
+      // The send identity. BROADCAST (default) is unchanged: the campaign From, the brand Reply-To, and the
+      // one-click unsubscribe headers. CONVERSATION swaps in the conversational From, a per-recipient
+      // reply address that routes back to this recipient's thread, a Message-ID for client threading, and
+      // DROPS List-Unsubscribe (this is transactional 1:1 human mail, not bulk).
+      let emailFrom = fromHeader
+      let emailReplyTo: string | undefined = replyTo
+      let emailHeaders: Record<string, string> = { ...listUnsubscribeHeaders(unsubscribeUrl), 'X-Campaign-Id': campaignId }
+
+      if (conversationMode) {
+        const conv = await openOrGetConversation({
+          kind: 'crm',
+          externalEmail: r.email,
+          ownerProfileId: ownerProfileId!,
+          subject,
+          contactId: r.contactId,
+          memberProfileId: r.profileId ?? null,
+          metadata: { campaign_id: campaignId },
+        })
+        // A DB hiccup (or an unmigrated table) → conv is null; fall back to the broadcast identity for THIS
+        // recipient so the send still lands (the reply just won't thread).
+        if (conv) {
+          const messageId = newConversationMessageId(conv.ref)
+          emailFrom = conversationFrom
+          emailReplyTo = buildConversationReplyAddress(conv.ref)
+          emailHeaders = { 'Message-ID': messageId, 'X-Campaign-Id': campaignId }
+          await appendConversationMessage({
+            conversationId: conv.id,
+            direction: 'outbound',
+            authorKind: 'leader',
+            authorId: ownerProfileId!,
+            body: text,
+            bodyHtml: html,
+            externalMessageId: messageId,
+            mirror: {
+              ownerProfileId: ownerProfileId!,
+              subjectKind: r.profileId ? 'profile' : 'contact',
+              subjectId: r.profileId ?? r.contactId,
+              subject,
+            },
+          })
+        }
+      }
+
       await enqueueEmail({
         to: r.email,
-        from: fromHeader,
-        ...(replyTo ? { replyTo } : {}),
+        from: emailFrom,
+        ...(emailReplyTo ? { replyTo: emailReplyTo } : {}),
         subject,
         html,
         text,
-        headers: { ...listUnsubscribeHeaders(unsubscribeUrl), 'X-Campaign-Id': campaignId },
+        headers: emailHeaders,
         tags: [{ name: 'campaign_id', value: campaignId }],
       })
       count++
