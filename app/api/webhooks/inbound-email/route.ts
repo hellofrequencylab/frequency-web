@@ -55,8 +55,14 @@ export async function POST(req: Request) {
   // onto its exact conversation, deduped on the provider Message-ID. Best-effort — never throws.
   const routed = await routeInboundReply(parsed)
   if (routed.status !== 'no_token') {
-    // The message targeted one of our reply addresses (recorded, duplicate, forged, or dropped) — terminal
-    // for the conversation path; do NOT also run the contact-match fallback (would double-record).
+    // A TRANSIENT failure (DB blip while recording a matched reply) must NOT be acked, or the reply is
+    // lost forever — return 5xx so the provider redelivers. Every other outcome (recorded, duplicate,
+    // forged, dropped, unknown-ref) is terminal for the conversation path: 200-ack and do NOT run the
+    // contact-match fallback (it would double-record a message that already threaded).
+    if (routed.status === 'error') {
+      console.warn('[inbound-email] conversation route: transient error, requesting redelivery')
+      return NextResponse.json({ ok: false, status: 'error' }, { status: 503 })
+    }
     if (routed.status !== 'recorded' && routed.status !== 'duplicate') {
       // Log the status only — never the user-controlled from-address (log-injection sink, CodeQL).
       console.warn(`[inbound-email] conversation route: ${routed.status}`)
