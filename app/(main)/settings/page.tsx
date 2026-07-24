@@ -1,10 +1,10 @@
 'use client'
 
-import Link from 'next/link'
 import { useState } from 'react'
-import { Moon, Sun, Monitor, Check, User, Shield, Bell, CreditCard, MapPin, Palette } from 'lucide-react'
+import { Moon, Sun, Monitor, User, Shield, Bell, CreditCard, MapPin, Palette } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
+import { SettingsGroup, SettingsRow } from '@/components/ui/settings-row'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -58,92 +58,45 @@ export default function SettingsPage() {
       {/* Account — all of a member's settings reachable from one place. */}
       <section className="mb-8">
         <SectionHeader title="Account" />
-        <div className="space-y-3">
-          <SettingLink href="/settings/profile" Icon={User} title="Edit profile" description="Display name, handle, bio, and photo" />
-          <SettingLink href="/settings/account" Icon={Shield} title="Account & privacy" description="Blocked members, delete account" />
-          <SettingLink href="/settings/connections" Icon={MapPin} title="Connections & Location" description="Discovery, location precision, ghost mode" />
-          <SettingLink href="/settings/notifications" Icon={Bell} title="Notifications" description="Email and push preferences" />
-          <SettingLink href="/settings/billing" Icon={CreditCard} title="Billing" description="Membership and payment" />
-        </div>
+        <SettingsGroup>
+          <SettingsRow href="/settings/profile" icon={User} title="Edit profile" description="Display name, handle, bio, and photo" />
+          <SettingsRow href="/settings/account" icon={Shield} title="Account & privacy" description="Blocked members, delete account" />
+          <SettingsRow href="/settings/connections" icon={MapPin} title="Connections & Location" description="Discovery, location precision, ghost mode" />
+          <SettingsRow href="/settings/notifications" icon={Bell} title="Notifications" description="Email and push preferences" />
+          <SettingsRow href="/settings/billing" icon={CreditCard} title="Billing" description="Membership and payment" />
+        </SettingsGroup>
       </section>
 
       {/* Appearance — light/dark mode. */}
       <section>
         <SectionHeader title="Appearance" />
         <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">Mode</p>
-        <div className="rounded-2xl border border-border bg-surface shadow-sm divide-y divide-border/80 dark:divide-border/50 overflow-hidden">
-          {THEME_OPTIONS.map(({ value, label, description, Icon }) => {
-            const active = theme === value
-            return (
-              <button
-                key={value}
-                onClick={() => applyTheme(value)}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors ${
-                  active
-                    ? 'bg-primary-bg/60 dark:bg-primary-bg/40'
-                    : 'hover:bg-surface-elevated'
-                }`}
-              >
-                <div className={`flex items-center justify-center w-9 h-9 rounded-lg shrink-0 ${
-                  active
-                    ? 'bg-primary-bg'
-                    : 'bg-surface-elevated'
-                }`}>
-                  <Icon className={`w-4 h-4 ${active ? 'text-primary-strong' : 'text-muted'}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
-                    {label}
-                  </p>
-                  <p className="text-xs text-muted mt-0.5">{description}</p>
-                </div>
-                {active && (
-                  <Check className="w-4 h-4 text-primary-strong shrink-0" />
-                )}
-              </button>
-            )
-          })}
-        </div>
+        <SettingsGroup>
+          {THEME_OPTIONS.map(({ value, label, description, Icon }) => (
+            <SettingsRow
+              key={value}
+              icon={Icon}
+              title={label}
+              description={description}
+              selected={theme === value}
+              onClick={() => applyTheme(value)}
+            />
+          ))}
+        </SettingsGroup>
 
         {/* Theme — the palette, feel, and seasonal accent (the server-resolved fxtheme axes),
             on their own surface so the Mode card stays the quick light/dark switch. */}
         <div className="mt-3">
-          <SettingLink
-            href="/settings/appearance"
-            Icon={Palette}
-            title="Theme"
-            description="Palette, feel, and seasonal accent"
-          />
+          <SettingsGroup>
+            <SettingsRow
+              href="/settings/appearance"
+              icon={Palette}
+              title="Theme"
+              description="Palette, feel, and seasonal accent"
+            />
+          </SettingsGroup>
         </div>
       </section>
     </FocusTemplate>
-  )
-}
-
-function SettingLink({
-  href,
-  Icon,
-  title,
-  description,
-}: {
-  href: string
-  Icon: typeof Moon
-  title: string
-  description: string
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-3 rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
-    >
-      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-surface-elevated shrink-0">
-        <Icon className="w-4 h-4 text-muted" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-text">{title}</p>
-        <p className="text-xs text-muted mt-0.5">{description}</p>
-      </div>
-      <span className="text-subtle text-sm">→</span>
-    </Link>
   )
 }
