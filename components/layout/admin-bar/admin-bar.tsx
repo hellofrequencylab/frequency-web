@@ -362,7 +362,7 @@ export function AdminBar({
         <div ref={bodyScrollRef} className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
           {/* Mobile renders the same model as a drill-down menu (see admin-bar-mobile), not the desktop
               inline-first scroll. */}
-          <AdminBarMobile key={resetKey} model={model} query={query} onQueryChange={setQuery} />
+          <AdminBarMobile key={resetKey} model={model} query={query} onQueryChange={setQuery} scrollRef={bodyScrollRef} />
         </div>
       </div>
     </div>

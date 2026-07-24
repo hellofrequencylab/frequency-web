@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { ChevronLeft, Lock, Settings } from 'lucide-react'
 import { SPINE_META } from '@/lib/admin/modules/spine'
@@ -22,30 +22,56 @@ function sectionKey(s: AdminSection): string {
   return `${s.tier}:${s.slot}`
 }
 
-/** Fuzzy-ish match on label / description / category (a light mirror of the desktop body's search). */
+/** A tiny subsequence test — every char of `q` appears in order within `text` (cmdk-style fuzzy). */
+function isSubsequence(q: string, text: string): boolean {
+  if (!q) return true
+  let i = 0
+  for (const ch of text) {
+    if (ch === q[i]) i++
+    if (i === q.length) return true
+  }
+  return false
+}
+
+/** Fuzzy match on label / description / category — mirrors the desktop body's search so a compressed
+ *  query (subsequence) matches on mobile too, not just a literal substring. */
 function appMatches(app: SearchableApp, q: string): boolean {
   const categoryLabel = app.category !== 'element' ? SPINE_META[app.category]?.label ?? '' : ''
-  return `${app.label} ${app.description ?? ''} ${categoryLabel}`.toLowerCase().includes(q)
+  const hay = `${app.label} ${app.description ?? ''} ${categoryLabel}`.toLowerCase()
+  return hay.includes(q) || isSubsequence(q.replace(/\s+/g, ''), hay.replace(/\s+/g, ''))
 }
 
 export function AdminBarMobile({
   model,
   query,
   onQueryChange,
+  scrollRef,
 }: {
   model: SettingsPanelModel
   query: string
   onQueryChange: (value: string) => void
+  /** The sheet's scroll container (owned by the AdminBar chrome), reset to the top on each drill
+   *  transition so the detail screen never inherits the menu's scroll offset. */
+  scrollRef?: { current: HTMLElement | null }
 }) {
   const pathname = usePathname()
   // ADR-550: provide the Space rail bundle to every Space module below (same as the desktop body).
   const spaceSlug = pathname.match(/^\/spaces\/([^/]+)/)?.[1] ?? null
   const [activeKey, setActiveKey] = useState<string | null>(null)
+  const headingRef = useRef<HTMLHeadingElement>(null)
 
   const q = query.trim().toLowerCase()
   // A live search takes precedence over any drilled-in section, so typing from a detail screen surfaces
   // results across the whole scoped set.
   const active = !q && activeKey ? model.sections.find((s) => sectionKey(s) === activeKey) ?? null : null
+
+  // On every drill transition, reset the scroll container to the top (the detail screen must start at its
+  // back button / heading, not the menu's old offset) and move focus to the section heading for SR users.
+  useEffect(() => {
+    scrollRef?.current?.scrollTo({ top: 0 })
+    if (activeKey) headingRef.current?.focus({ preventScroll: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeKey])
 
   const openSection = (s: AdminSection) => {
     onQueryChange('')
@@ -66,7 +92,9 @@ export function AdminBarMobile({
           </button>
           <div className="flex items-center gap-2">
             <active.Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-            <h2 className="text-sm font-semibold text-text">{active.label}</h2>
+            <h2 ref={headingRef} tabIndex={-1} className="text-sm font-semibold text-text outline-none">
+              {active.label}
+            </h2>
           </div>
           <div className="space-y-4">
             {active.nodes.map((item) => (
