@@ -85,3 +85,25 @@ describe('Dialog stacking (only the topmost reacts to ESC)', () => {
     expect(outerClosed).toBe(0)
   })
 })
+
+describe('Dialog align="sheet" (edge-to-edge on mobile)', () => {
+  it('renders the overlay full-bleed (no padding, stretched) so the panel can fill the viewport', () => {
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    act(() => {
+      root!.render(
+        <Dialog open onClose={() => {}} ariaLabel="sheet" align="sheet">
+          <div data-testid="panel">sheet</div>
+        </Dialog>,
+      )
+    })
+    const overlay = document.querySelector('[role="dialog"]')!.parentElement!
+    // Full-bleed on mobile: no padding + stretch, so a full-height panel reaches every edge.
+    expect(overlay.className).toContain('p-0')
+    expect(overlay.className).toContain('items-stretch')
+    // Still reverts to a padded, centered card at sm+.
+    expect(overlay.className).toContain('sm:p-8')
+    expect(overlay.className).toContain('sm:items-center')
+  })
+})
