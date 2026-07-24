@@ -15,7 +15,8 @@
 
 import { NextResponse } from 'next/server'
 import { verifyResendSignature, isFreshTimestamp } from '@/lib/webhook-verify'
-import { parseInboundEmailPayload, recordInboundEmail } from '@/lib/crm/inbox'
+import { recordInboundEmail } from '@/lib/crm/inbox'
+import { parseInboundMessage, routeInboundReply } from '@/lib/comms/inbound'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -43,17 +44,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'bad body' }, { status: 400 })
   }
 
-  const parsed = parseInboundEmailPayload(payload)
+  const parsed = parseInboundMessage(payload)
   if (!parsed) {
     // Verified but unactionable (no from-address). 200-ack so the provider stops redelivering.
     console.warn('[inbound-email] skipped: no usable from-address')
     return NextResponse.json({ ok: true, skipped: 'no from-address' })
   }
 
-  // Best-effort record (never integrity-critical): a write blip should not force a redelivery.
-  const result = await recordInboundEmail(parsed)
+  // PRIMARY: route by the per-conversation reply-token (ADR-812 Phase 2). A ticketed reply threads back
+  // onto its exact conversation, deduped on the provider Message-ID. Best-effort — never throws.
+  const routed = await routeInboundReply(parsed)
+  if (routed.status !== 'no_token') {
+    // The message targeted one of our reply addresses (recorded, duplicate, forged, or dropped) — terminal
+    // for the conversation path; do NOT also run the contact-match fallback (would double-record).
+    if (routed.status !== 'recorded' && routed.status !== 'duplicate') {
+      // Log the status only — never the user-controlled from-address (log-injection sink, CodeQL).
+      console.warn(`[inbound-email] conversation route: ${routed.status}`)
+    }
+    return NextResponse.json({ ok: true, status: routed.status })
+  }
+
+  // FALLBACK: not a reply-token address ⇒ the legacy from-address contact-match onto the flat CRM
+  // timeline (unchanged behavior). Best-effort record; a write blip should not force a redelivery.
+  const result = await recordInboundEmail({ from: parsed.from, subject: parsed.subject, text: parsed.text })
   if (result.status !== 'recorded') {
-    // Log the status only — never the user-controlled from-address (log-injection sink, CodeQL).
     console.warn(`[inbound-email] not recorded (${result.status})`)
   }
   return NextResponse.json({ ok: true, status: result.status })

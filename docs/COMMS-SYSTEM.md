@@ -72,10 +72,17 @@ can guess `ref` but never its tag. Inbound order: parse → `verifyConversationT
   `!isInternal`) enqueue email with the conversation Reply-To + threading headers, drop List-Unsubscribe
   (1:1 human mail), and append the message. Keep `lib/support/store.ts` build-safe (enqueue via
   `enqueueEmail`, never import the studio send path).
-- **Inbound bridge** (`lib/crm/inbox.ts`, webhook already built): parse token → verify → append inbound
-  message (dedupe on `external_message_id`, retiring the minute-bucket) → bump status → notify assignee →
-  mirror to timeline. Fallbacks: header match, then contact match. Anti-spoof (envelope vs
-  `external_email`, DMARC verdict → quarantine lane), loop prevention (drop `Auto-Submitted`/bounce).
+- **Inbound bridge** (`lib/comms/inbound.ts`, wired into the existing `/api/webhooks/inbound-email`
+  route): `parseInboundMessage` (Resend `email.received` webhook — `to`/`received_for`/`message_id`, plus
+  `In-Reply-To`/`References`/`Auto-Submitted`/`Precedence` from `data.headers`) → `routeInboundReply`:
+  parse the plus-token off any recipient → `isAutomatedMessage` loop guard (drop `Auto-Submitted`/bulk/
+  daemon/bounce) → `verifyConversationToken` (a present-but-forged tag is dropped, never falls through) →
+  `getConversationByRef` → append inbound (dedupe on the provider `Message-ID`, retiring the minute-bucket)
+  → `reopenConversationIfClosed` → notify the assignee (else the trail owner). Anti-spoof: the token
+  authenticates the thread, so a from-address that differs from the counterpart's `external_email` is
+  recorded but **flagged** on the message (`metadata.sender_mismatch`) rather than dropped. When no
+  reply-token is present the router returns `no_token` and the webhook falls back to the legacy
+  from-address contact-match (`recordInboundEmail`) — today's CRM inbox is unchanged.
 
 ## The workspace UX (phase 3) — "Apple Mail wearing ticket chrome"
 
