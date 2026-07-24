@@ -123,7 +123,13 @@ export function Dialog({
   return createPortal(
     <div
       className={cn(
-        'fixed inset-0 z-[60] flex justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm sm:p-8',
+        // z-[80] puts the shared modal in the same tier as the app's other full-screen modals, ABOVE the
+        // mobile admin sheet + the page-editor bottom sheet (both z-[70]). At z-[60] a Dialog opened from
+        // inside the mobile admin menu (e.g. the Loom image picker off Identity & Branding) rendered BEHIND
+        // the opaque sheet while still scroll-locking the body and trapping focus off-screen — so uploading
+        // or editing a Space image from mobile looked completely dead. Lightboxes (z-[100]), drawers
+        // (z-[150]/[160]) and the impersonation banner (z-[200]) still sit above it, as intended.
+        'fixed inset-0 z-[80] flex justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm sm:p-8',
         align === 'center' ? 'items-center' : 'items-start',
       )}
       onMouseDown={onClose}
