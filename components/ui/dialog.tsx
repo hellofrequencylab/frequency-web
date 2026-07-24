@@ -42,9 +42,13 @@ export function Dialog({
   ariaLabel?: string
   /** Panel sizing / extras — pass a `max-w-*` (the panel is `w-full` otherwise). */
   className?: string
-  /** Vertical placement. `top` (default) pins the panel near the top (every existing caller). `center`
-   *  centers it in the viewport — for a big center-screen modal like the Loom picker. */
-  align?: 'top' | 'center'
+  /** Vertical placement.
+   *  - `top` (default): pins the panel near the top (every existing caller).
+   *  - `center`: centers it in the viewport.
+   *  - `sheet`: edge-to-edge full screen on mobile (no backdrop padding, the panel fills the viewport),
+   *    reverting to a centered card at `sm+`. For focused, complex mobile tasks like the media picker,
+   *    where a boxed center card wastes the screen. The panel supplies its own `h-full sm:h-auto` sizing. */
+  align?: 'top' | 'center' | 'sheet'
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
   // A stable identity for this instance, used to find it in the dialog stack (topmost check).
@@ -151,8 +155,11 @@ export function Dialog({
         // the opaque sheet while still scroll-locking the body and trapping focus off-screen — so uploading
         // or editing a Space image from mobile looked completely dead. Lightboxes (z-[100]), drawers
         // (z-[150]/[160]) and the impersonation banner (z-[200]) still sit above it, as intended.
-        'fixed inset-0 z-[80] flex justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm sm:p-8',
-        align === 'center' ? 'items-center' : 'items-start',
+        'fixed inset-0 z-[80] flex justify-center overflow-y-auto bg-black/60 backdrop-blur-sm',
+        // `sheet` goes edge-to-edge on mobile (panel fills the viewport), then a centered card at sm+.
+        align === 'sheet'
+          ? 'items-stretch p-0 sm:items-center sm:p-8'
+          : cn('p-4 sm:p-8', align === 'center' ? 'items-center' : 'items-start'),
       )}
       // Close on a true backdrop CLICK (press AND release both on the backdrop), not on mousedown. On touch,
       // mousedown-to-close dismissed the dialog on the first tap/scroll that began near the panel edge; and a
@@ -171,7 +178,11 @@ export function Dialog({
         aria-modal="true"
         aria-label={ariaLabel}
         tabIndex={-1}
-        className={cn('w-full outline-none motion-safe:animate-[slideUp_0.3s_ease-out]', align === 'center' ? 'my-auto' : 'mt-[6vh]', className)}
+        className={cn(
+          'w-full outline-none motion-safe:animate-[slideUp_0.3s_ease-out]',
+          align === 'sheet' ? 'sm:my-auto' : align === 'center' ? 'my-auto' : 'mt-[6vh]',
+          className,
+        )}
       >
         {children}
       </div>

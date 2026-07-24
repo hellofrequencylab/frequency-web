@@ -260,8 +260,10 @@ export function LoomPicker({
   const railOff = 'text-muted hover:bg-surface-elevated hover:text-text'
 
   return (
-    <Dialog open={open} onClose={close} ariaLabel={title} align="center" className="max-w-4xl">
-      <div className="flex max-h-[85vh] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xl">
+    <Dialog open={open} onClose={close} ariaLabel={title} align="sheet" className="sm:max-w-4xl">
+      {/* Full screen on mobile (a boxed center card left the grid ~150px wide and cramped); a centered
+          card at sm+. */}
+      <div className="flex h-full max-h-none flex-col overflow-hidden bg-surface pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:h-auto sm:max-h-[85vh] sm:rounded-2xl sm:border sm:border-border sm:pt-0 sm:pb-0 sm:shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-base font-bold text-text">{title}</h2>
@@ -323,8 +325,9 @@ export function LoomPicker({
             )}
           </aside>
 
-          {/* Main: upload box + grid (or tag list) */}
-          <div className="flex min-w-0 flex-1 flex-col">
+          {/* Main: upload box + grid (or tag list). min-h-0 so the grid body's own overflow-y-auto scrolls
+              inside the full-height mobile sheet instead of overflowing the clipped card. */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             {/* Upload box (click-multi + drag & drop) */}
             <div className="border-b border-border p-3">
               <div
@@ -410,7 +413,7 @@ export function LoomPicker({
                         : 'Nothing here yet. Upload an image to get started.'}
                     </p>
                   ) : (
-                    <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                    <ul className="grid grid-cols-3 gap-2 md:grid-cols-4">
                       {tiles.map((t) => {
                         const on = multiple && selected.includes(t.value)
                         return (
