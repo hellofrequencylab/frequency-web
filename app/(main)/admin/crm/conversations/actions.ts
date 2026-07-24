@@ -315,10 +315,20 @@ export async function suggestConversationTriage(
   }
 }
 
-/** Pull a priority word + a short reason out of the model's one-line answer. Fail-safe to 'normal'. */
+/** Pull a priority word + a short reason out of the model's one-line answer. The prompt asks for
+ *  "<priority> — <reason>", so pick the priority word that appears EARLIEST in the text (not first by
+ *  array order — otherwise "not low priority, this is urgent" would mis-read as low). Fail-safe to 'normal'. */
 function parseTriage(text: string): { priority: ConversationPriority; reason: string } {
   const lower = (text ?? '').toLowerCase()
-  const priority = CONVERSATION_PRIORITIES.find((p) => lower.includes(p)) ?? 'normal'
+  let priority: ConversationPriority = 'normal'
+  let firstAt = Infinity
+  for (const p of CONVERSATION_PRIORITIES) {
+    const at = lower.indexOf(p)
+    if (at >= 0 && at < firstAt) {
+      firstAt = at
+      priority = p
+    }
+  }
   const dash = text.indexOf('—') >= 0 ? text.indexOf('—') : text.indexOf('-')
   const reason = (dash >= 0 ? text.slice(dash + 1) : text).trim().slice(0, 160) || PRIORITY_LABELS[priority]
   return { priority, reason }

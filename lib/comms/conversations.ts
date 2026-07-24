@@ -242,12 +242,16 @@ export interface AppendMessageInput {
   } | null
 }
 
+/** The outcome of an append. `{ id }` = written. `{ duplicate: true }` = a unique(external_message_id)
+ *  replay (idempotent no-op, terminal). `null` = a transient/unknown failure the caller may retry.
+ *  Distinguishing the last two matters for the inbound webhook: a duplicate is acked, a transient failure
+ *  must be surfaced so the provider redelivers instead of the reply being silently lost. */
+export type AppendOutcome = { id: string } | { duplicate: true } | null
+
 /** Append a message to a conversation, bump its activity, and (best-effort) mirror to the timeline.
- *  Returns null on a unique(external_message_id) replay conflict or any error — callers treat null as a
- *  no-op, never a failure. */
-export async function appendConversationMessage(
-  input: AppendMessageInput,
-): Promise<{ id: string } | null> {
+ *  Returns `{ id }` on success, `{ duplicate: true }` on an external_message_id replay, or `null` on a
+ *  transient/unknown failure (callers that only care about success still treat any non-`{id}` as a no-op). */
+export async function appendConversationMessage(input: AppendMessageInput): Promise<AppendOutcome> {
   try {
     const ins = await convTable('comms_messages')
       .insert({
@@ -267,8 +271,12 @@ export async function appendConversationMessage(
       })
       .select('id')
       .single()
-    // A unique(external_message_id) conflict = a replayed inbound → treat as an idempotent no-op.
-    if (ins?.error || !ins?.data) return null
+    // A unique(external_message_id) conflict (Postgres 23505) = a replayed inbound → idempotent no-op.
+    // Any OTHER error is transient/unknown → return null so the inbound webhook can ask for redelivery.
+    if (ins?.error) {
+      return (ins.error as { code?: string } | null)?.code === '23505' ? { duplicate: true } : null
+    }
+    if (!ins?.data) return null
     const messageId = String(ins.data.id)
 
     // Bump the conversation's activity clock + the direction-specific timestamp.

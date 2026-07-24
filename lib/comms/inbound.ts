@@ -102,10 +102,13 @@ function headerValue(headers: unknown, name: string): string | null {
   return null
 }
 
-/** Split an RFC 5322 `References` chain into individual `<message-id>` tokens (whitespace-separated). */
+/** Split an RFC 5322 `References` chain into individual `<message-id>` tokens (whitespace-separated).
+ *  The header is attacker-controlled (anyone can email a reply address), so bound it before splitting —
+ *  we only keep the first 50 ids anyway, and a valid chain of 50 message-ids fits comfortably in 8 KB. */
 function parseReferences(raw: string | null): string[] | null {
   if (!raw) return null
   const ids = raw
+    .slice(0, 8000)
     .split(/\s+/)
     .map((s) => s.trim())
     .filter((s) => s.startsWith('<') && s.endsWith('>') && s.length > 2)
@@ -242,8 +245,11 @@ export async function routeInboundReply(parsed: ParsedInboundMessage): Promise<I
             }
           : null,
     })
-    // A unique(external_message_id) conflict ⇒ the provider redelivered ⇒ idempotent no-op.
-    if (!appended) return { status: 'duplicate', conversationId: conv.id, ref: conv.ref }
+    // Distinguish the two non-success outcomes: a unique(external_message_id) conflict is a provider
+    // REDELIVERY (idempotent no-op, ack it), but a null is a TRANSIENT failure — surface it as 'error' so
+    // the webhook returns 5xx and the provider redelivers, instead of the reply being silently lost.
+    if (appended === null) return { status: 'error', conversationId: conv.id, ref: conv.ref }
+    if ('duplicate' in appended) return { status: 'duplicate', conversationId: conv.id, ref: conv.ref }
 
     // 6) A new inbound message reopens a resolved/closed thread (mirrors support reopen).
     await reopenConversationIfClosed(conv.id, conv.status)

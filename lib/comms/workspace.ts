@@ -363,6 +363,11 @@ export async function conversationStatusCounts(
   const counts: Record<string, number> = {}
   try {
     let q = db().from('comms_conversations').select('status').limit(2000)
+    // Mirror listWorkspaceConversations' scoping so counts can never contradict a scoped list (a
+    // leader-scoped caller must not get platform-wide totals).
+    if (filter.ownedOrAssignedTo) {
+      q = q.or(`owner_profile_id.eq.${filter.ownedOrAssignedTo},assigned_to.eq.${filter.ownedOrAssignedTo}`)
+    }
     if (filter.scope === 'mine') q = q.eq('assigned_to', filter.viewerProfileId)
     else if (filter.scope === 'unassigned') q = q.is('assigned_to', null)
     if (filter.spaceId) q = q.eq('space_id', filter.spaceId)
