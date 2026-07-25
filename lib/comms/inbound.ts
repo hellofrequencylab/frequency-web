@@ -188,7 +188,16 @@ export async function loadInboundMessage(
   const root = payload as Record<string, unknown>
   const data = (root.data && typeof root.data === 'object' ? root.data : root) as Record<string, unknown>
   const hasBody = typeof data.text === 'string' || typeof data.html === 'string'
-  const emailId = firstString(data.email_id, data.id, root.email_id, root.id)
+  // The received-email id can arrive under a few shapes across provider payload versions — check them all.
+  const nested = data.email && typeof data.email === 'object' ? (data.email as Record<string, unknown>) : {}
+  const emailId = firstString(
+    data.email_id,
+    data.id,
+    data.received_email_id,
+    nested.id,
+    root.email_id,
+    root.id,
+  )
   if (emailId && !hasBody) {
     const full = await fetcher(emailId)
     // Merge the fetched body/headers over the webhook metadata (which may carry `received_for`).

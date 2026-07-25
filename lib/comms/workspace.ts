@@ -8,6 +8,7 @@
 // batch-loaded from profiles/contacts, exactly as lib/crm/inbox.ts and lib/support/store.ts already do.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { cleanConversationBody } from '@/lib/comms/message-body'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function db(): { from: (t: string) => any } {
@@ -274,7 +275,9 @@ async function loadLatestSnippets(conversationIds: string[]): Promise<Map<string
       .limit(conversationIds.length * 4)
     for (const m of (data as { conversation_id: string; body: string }[] | null) ?? []) {
       const key = String(m.conversation_id)
-      if (!map.has(key) && m.body) map.set(key, m.body.replace(/\s+/g, ' ').trim().slice(0, 140))
+      // Clean the email chrome (footer links, quoted history) out of the snippet, same as the thread.
+      const snippet = cleanConversationBody(m.body).replace(/\s+/g, ' ').trim().slice(0, 140)
+      if (!map.has(key) && snippet) map.set(key, snippet)
     }
   } catch {
     /* fail-safe */
@@ -318,7 +321,8 @@ export async function getWorkspaceThread(conversationId: string): Promise<Conver
       direction: m.direction as ConversationThreadMessage['direction'],
       authorKind: m.author_kind,
       authorName: authorNameFor(m, profiles, contacts, cp.name),
-      body: m.body,
+      // Chat view shows the human message only — strip the email footer + quoted history (raw stays stored).
+      body: cleanConversationBody(m.body),
       bodyHtml: m.body_html,
       isInternal: !!m.is_internal,
       channel: m.channel,
