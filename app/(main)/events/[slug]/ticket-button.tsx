@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Ticket, Loader2 } from 'lucide-react'
+import { Ticket, Loader2, Lock } from 'lucide-react'
 import { startTicket, refundTicketAction } from './ticket-actions'
 import { isError } from '@/lib/action-result'
 import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
@@ -19,6 +19,8 @@ export type TicketTierView = {
   spotsLeft: number | null
   soldOut: boolean
   memberOnly: boolean
+  /** ADR-823: restricted to active members of the hosting Space's membership program. */
+  spaceMembersOnly: boolean
 }
 
 const dollars = (cents: number | null | undefined) =>
@@ -62,12 +64,18 @@ export function TicketButton({
   eventId,
   priceLabel,
   tiers,
+  membershipSpace,
+  viewerIsSpaceMember,
 }: {
   eventId: string
   /** Used only for the implicit flat-price (no-tier) case. */
   priceLabel: string
   /** The event's ticket tiers; empty = implicit flat-price fixed tier. */
   tiers?: TicketTierView[]
+  /** The hosting Space (ADR-823) — names the members-only chip + the join pointer. */
+  membershipSpace?: { name: string; slug: string } | null
+  /** Does the viewer hold an active membership in the hosting Space? */
+  viewerIsSpaceMember?: boolean
 }) {
   const hasTiers = !!tiers && tiers.length > 0
   const [isPending, startTransition] = useTransition()
@@ -163,6 +171,12 @@ export function TicketButton({
                       Members
                     </span>
                   )}
+                  {t.spaceMembersOnly && (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
+                      <Lock className="h-2.5 w-2.5" />
+                      {membershipSpace ? `${membershipSpace.name} members` : 'Space members'}
+                    </span>
+                  )}
                 </p>
                 {t.description && <p className="mt-0.5 text-xs text-muted">{t.description}</p>}
                 {t.spotsLeft != null && !t.soldOut && (
@@ -176,6 +190,21 @@ export function TicketButton({
           )
         })}
       </div>
+
+      {/* Members-included ticket, viewer not (yet) a member (ADR-823): an honest lock with a join
+          pointer, instead of a surprise refusal at checkout. The server gate stays authoritative. */}
+      {selected && selected.spaceMembersOnly && !viewerIsSpaceMember && membershipSpace && (
+        <p className="rounded-lg bg-surface-elevated px-3 py-2 text-xs text-muted">
+          This ticket is included with a {membershipSpace.name} membership.{' '}
+          <a
+            href={`/spaces/${membershipSpace.slug}`}
+            className="font-semibold text-text underline underline-offset-2"
+          >
+            Join on their page
+          </a>{' '}
+          and come back.
+        </p>
+      )}
 
       {/* Buyer-chosen amount for pwyc / sliding_scale / donation tiers (Pricing Options P2): the shared
           PriceInput pre-fills the suggested anchor and enforces the floor. Keyed by tier so it re-seeds. */}

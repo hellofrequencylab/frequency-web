@@ -571,11 +571,13 @@ export default async function EventDetailPage({
     quantity: number | null
     sold: number
     member_only: boolean
+    space_members_only: boolean
+    space_tier_id: string | null
   }
   const { data: rawTiers } = await (admin)
     .from('event_ticket_types')
     .select(
-      'id, name, description, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, active, sort_order, created_at',
+      'id, name, description, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, space_members_only, space_tier_id, active, sort_order, created_at',
     )
     .eq('event_id', event.id)
     .eq('active', true)
@@ -598,9 +600,39 @@ export default async function EventDetailPage({
       spotsLeft,
       soldOut: spotsLeft != null && spotsLeft <= 0,
       memberOnly: t.member_only,
+      spaceMembersOnly: t.space_members_only || t.space_tier_id != null,
     }
   })
   const hasTiers = tiers.length > 0
+
+  // SPACE-MEMBERSHIP tickets (ADR-823): when a tier is restricted to the hosting Space's members,
+  // read the viewer's active membership there so the buy panel can show an honest lock + a join
+  // pointer instead of a surprise refusal at checkout (the server gate stays authoritative).
+  // space_memberships isn't in the generated types yet (ADR-246) — narrow untyped read.
+  let viewerIsSpaceMember = false
+  if (tiers.some((t) => t.spaceMembersOnly) && eventSpaceId && myProfileId) {
+    const mdb = admin as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (col: string, val: string) => {
+            eq: (col: string, val: string) => {
+              eq: (col: string, val: string) => {
+                maybeSingle: () => Promise<{ data: { id: string } | null }>
+              }
+            }
+          }
+        }
+      }
+    }
+    const { data: myMembership } = await mdb
+      .from('space_memberships')
+      .select('id')
+      .eq('space_id', eventSpaceId)
+      .eq('member_profile_id', myProfileId)
+      .eq('status', 'active')
+      .maybeSingle()
+    viewerIsSpaceMember = !!myMembership
+  }
 
   const flatPriceCents = event.price_cents ?? 0
   // The event "sells tickets" when it has active tiers (paid or free-claim) OR a
@@ -977,6 +1009,10 @@ export default async function EventDetailPage({
                   eventId={event.id}
                   priceLabel={priceLabel}
                   tiers={hasTiers ? tiers : undefined}
+                  membershipSpace={
+                    spaceHost ? { name: spaceHost.name, slug: spaceHost.slug } : null
+                  }
+                  viewerIsSpaceMember={viewerIsSpaceMember}
                 />
               ) : (
                 /* Host hasn't finished payout setup, so there is no one to pay yet.

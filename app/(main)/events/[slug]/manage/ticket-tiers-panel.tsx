@@ -30,6 +30,15 @@ import {
 
 const centsToDollars = (c: number | null | undefined) => (c != null ? (c / 100).toFixed(2) : '')
 
+/** Membership-linked access context (ADR-823): the event's hosting Space, its membership tiers,
+ *  and whether its plan clears the Collective gate for members-only tickets. */
+export type SpaceAccessContext = {
+  spaceName: string
+  /** Plan gate: false = show the locked upsell hint instead of the control. */
+  allowed: boolean
+  membershipTiers: { id: string; name: string }[]
+}
+
 const input =
   'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
 const lbl = 'block text-xs font-medium text-muted mb-1'
@@ -45,10 +54,13 @@ export function TicketTiersPanel({
   eventId,
   slug,
   tiers,
+  spaceAccess,
 }: {
   eventId: string
   slug: string
   tiers: TicketTierRow[]
+  /** Hosting-space membership context (ADR-823); null = no hosting space, control hidden. */
+  spaceAccess?: SpaceAccessContext | null
 }) {
   const router = useRouter()
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -99,6 +111,7 @@ export function TicketTiersPanel({
               <TierForm
                 key={t.id}
                 initial={t}
+                spaceAccess={spaceAccess}
                 disabled={isPending}
                 onCancel={() => setEditingId(null)}
                 onSubmit={(fd) =>
@@ -118,6 +131,15 @@ export function TicketTiersPanel({
                     {t.member_only && (
                       <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
                         Members
+                      </span>
+                    )}
+                    {(t.space_members_only || t.space_tier_id) && (
+                      <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
+                        {spaceAccess
+                          ? t.space_tier_id
+                            ? `${spaceAccess.membershipTiers.find((mt) => mt.id === t.space_tier_id)?.name ?? 'Membership'} only`
+                            : `${spaceAccess.spaceName} members`
+                          : 'Space members'}
                       </span>
                     )}
                     {!t.active && (
@@ -161,6 +183,7 @@ export function TicketTiersPanel({
 
       {adding && (
         <TierForm
+          spaceAccess={spaceAccess}
           disabled={isPending}
           onCancel={() => setAdding(false)}
           onSubmit={(fd) => run(() => hostCreateTicketTier(eventId, slug, fd), () => setAdding(false))}
@@ -172,11 +195,13 @@ export function TicketTiersPanel({
 
 function TierForm({
   initial,
+  spaceAccess,
   disabled,
   onSubmit,
   onCancel,
 }: {
   initial?: TicketTierRow
+  spaceAccess?: SpaceAccessContext | null
   disabled: boolean
   onSubmit: (fd: FormData) => void
   onCancel: () => void
@@ -185,6 +210,11 @@ function TierForm({
     price: initial ? ticketRowToPrice(initial) : { mode: 'fixed' },
   }))
   const [priceError, setPriceError] = useState<string | null>(null)
+  // "Who can buy" (ADR-823): '' = everyone, 'members' = any active membership of the hosting
+  // Space, else a specific space_membership_tiers id. Mapped onto the two form fields on submit.
+  const [audience, setAudience] = useState<string>(() =>
+    initial?.space_tier_id ? initial.space_tier_id : initial?.space_members_only ? 'members' : '',
+  )
 
   function handle(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -201,6 +231,13 @@ function TierForm({
     fd.set('price', cols.price_cents != null ? String(cols.price_cents / 100) : '')
     fd.set('min', cols.min_cents != null ? String(cols.min_cents / 100) : '')
     fd.set('suggested', cols.suggested_cents != null ? String(cols.suggested_cents / 100) : '')
+    if (audience === 'members') {
+      fd.set('space_members_only', 'on')
+      fd.set('space_tier_id', '')
+    } else {
+      fd.delete('space_members_only')
+      fd.set('space_tier_id', audience)
+    }
     onSubmit(fd)
   }
 
@@ -286,6 +323,41 @@ function TierForm({
         />
         Members only (Crew+)
       </label>
+
+      {/* Who can buy (ADR-823): restrict this ticket to the hosting Space's own membership.
+          Renders only for a Space-hosted event; locked below the Collective plan. */}
+      {spaceAccess &&
+        (spaceAccess.allowed ? (
+          <div>
+            <label className={lbl} htmlFor={`audience-${initial?.id ?? 'new'}`}>
+              Who can buy
+            </label>
+            <select
+              id={`audience-${initial?.id ?? 'new'}`}
+              value={audience}
+              onChange={(e) => setAudience(e.target.value)}
+              disabled={disabled}
+              className={input}
+            >
+              <option value="">Everyone</option>
+              <option value="members">{spaceAccess.spaceName} members (any tier)</option>
+              {spaceAccess.membershipTiers.map((mt) => (
+                <option key={mt.id} value={mt.id}>
+                  {spaceAccess.spaceName} · {mt.name} members
+                </option>
+              ))}
+            </select>
+            {audience !== '' && spaceAccess.membershipTiers.length === 0 && (
+              <p className="mt-1 text-xs text-muted">
+                Tip: publish membership tiers on your space page so people have something to join.
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="rounded-lg bg-surface px-3 py-2 text-xs text-muted">
+            Members-only tickets, linked to your space membership, come with the Collective plan.
+          </p>
+        ))}
 
       <div className="flex items-center gap-2 pt-1">
         <button

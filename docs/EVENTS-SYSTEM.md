@@ -384,3 +384,15 @@ security/SEO findings, founder action items, and process suggestions.
   path fix, meta-description truncation. (In-app `/events/*` stays robots-disallowed by design.)
 - ◑ **Honest gaps remain:** confirmation-on-RSVP email, cancel→bulk-refund, `event_posts`/`event_media`/
   `event_cohosts`, discovery polish, and SMS, tracked in EVENTS-AUDIT §3 with founder items in §5.
+
+### 2026-07-25: Membership-linked ticket access (ADR-823)
+
+A ticket tier can be restricted to ACTIVE members of the event's hosting Space
+(`event_ticket_types.space_members_only`), optionally to one specific membership tier
+(`space_tier_id → space_membership_tiers`, ON DELETE SET NULL degrades to any-member).
+Enforced in `createTicketCheckout` before the free-claim return (pure decision:
+`spaceMembershipGateError`, tested) and validated at write time in `lib/events/ticket-tiers`
+(hosting Space required; Collective plan floor via the `space_membership_tickets` gate; the
+named membership tier must belong to the hosting Space). Host editor gets a "Who can buy"
+select; the event page shows a lock chip + a join pointer for non-members. Composes with the
+platform `member_only` (Crew+) gate. Migration `20261220000000`.

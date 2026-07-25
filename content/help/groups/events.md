@@ -54,6 +54,7 @@ See a cool event poster around town, or one on Eventbrite or in a group chat? Ca
 ## Tickets & paying
 
 - Many gatherings are free; just RSVP. Some are **ticketed**, and hosts can price them however fits: a set price, **pay-what-you-can**, a **sliding scale**, or a **donation**. Pick the amount that works for you (within any minimum the host sets).
+- Some tickets are **reserved for members** of the Space hosting the event. You'll see a small lock naming the Space; join their membership from their page and the ticket unlocks. Hosts often pair one with a public ticket, so membership can include events that everyone else pays for.
 - Payment goes **straight to the host**. If plans change, hosts can **refund** a ticket, and if a host **cancels the event, everyone who paid is refunded automatically** and emailed to let you know.
 
 ## Checking in verifies you
@@ -98,6 +99,7 @@ Keep it real. The reward is for people who actually RSVP, show up, or join, neve
 - **Manage screen.** See your whole guest list, export it, move people off the waitlist, and check people in at the door. You reach it from the event's editor.
 - **Cohosts.** Add a cohost and they can help run the event right alongside you.
 - **Host as your Space.** Create an event from your Space's calendar and the Space is the host: the event page carries its name, and registrations and ticket payments run through it. You can switch any of your events between you and a Space you help run from the event's settings, under "Hosted by."
+- **Tickets for your members.** On the Collective plan, a Space-hosted event can reserve a ticket for its own members, or for one membership tier, under "Who can buy" in the ticket editor. Make it free next to a public paid ticket and your membership includes the event.
 - **Your Space calendar is a manager.** In your Space's Calendar console, flip between the month grid and a list, and click any event to edit it. Drafts and past events show there too, and co-host requests from other hosts wait there for your approval.
 
 ## Tips

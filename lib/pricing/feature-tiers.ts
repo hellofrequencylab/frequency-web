@@ -186,6 +186,16 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
       'collective',
     ),
   },
+  space_membership_tickets: {
+    axis: 'plan',
+    minTier: 'collective',
+    title: 'Membership-included event tickets',
+    rungs: spaceRungs(
+      'Sell tickets to everyone.',
+      'Reserve event tickets for your own members, or for one membership tier, so your membership includes your events.',
+      'collective',
+    ),
+  },
   space_multi_pipeline: {
     axis: 'plan',
     minTier: 'collective',
