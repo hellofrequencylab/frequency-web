@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { completeOnboarding } from './actions'
 import { getInitials } from '@/lib/utils'
@@ -46,6 +47,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
 
   // Step 3
   const [regionId, setRegionId] = useState('')
+  const [emailOptIn, setEmailOptIn] = useState(true)
 
   // Step 4
   const [submitting, setSubmitting] = useState(false)
@@ -156,6 +158,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
         bio,
         avatarUrl: finalAvatarUrl,
         regionId,
+        emailOptIn,
       })
       // completeOnboarding redirects to /feed on success; execution stops here.
     } catch (err) {
@@ -435,6 +438,35 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                     </div>
                   )}
                 </div>
+      )}
+
+      {/* Clear, compelling email opt-in (owner directive). A deliberate, visible choice: on by default with
+          honest copy + a real toggle, recorded to the consent ledger. Lifecycle email is always on; this is
+          the "good stuff" scope (news, invites, nearby circles). */}
+      {step === 4 && (
+        <button
+          type="button"
+          onClick={() => setEmailOptIn((v) => !v)}
+          aria-pressed={emailOptIn}
+          className={`mt-3 flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition-colors ${
+            emailOptIn ? 'border-primary bg-primary-bg/40' : 'border-border bg-surface hover:bg-surface-elevated'
+          }`}
+        >
+          <span
+            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+              emailOptIn ? 'border-primary bg-primary text-on-primary' : 'border-border-strong bg-canvas'
+            }`}
+          >
+            {emailOptIn && <Check className="h-3.5 w-3.5" />}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-text">Keep me in the loop</span>
+            <span className="mt-0.5 block text-sm text-muted">
+              New circles near you, events worth showing up for, and the occasional note from the team. No noise,
+              and you can turn it off anytime in Settings.
+            </span>
+          </span>
+        </button>
       )}
     </WizardShell>
   )

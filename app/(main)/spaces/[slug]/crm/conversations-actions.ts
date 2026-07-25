@@ -109,8 +109,9 @@ export async function sendSpaceConversationReplyAction(
 
   if (!conv.externalEmail) return fail('We have no email address for this conversation.')
   if (conv.memberProfileId) {
-    const gateResult = await resolveSendGate(conv.memberProfileId, 'email', 'marketing', { email: conv.externalEmail })
-    if (!gateResult.allowed) return fail('This member has email turned off, so this reply cannot go out.')
+    // A 1:1 reply in an active conversation is transactional — send unless the address is hard-suppressed.
+    const gateResult = await resolveSendGate(conv.memberProfileId, 'email', 'transactional', { email: conv.externalEmail })
+    if (!gateResult.allowed) return fail('This address has bounced or marked us as spam, so this reply cannot go out.')
   }
 
   const from = spaceConversationFrom(gate.brandName)

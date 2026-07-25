@@ -6,6 +6,7 @@ import type { Database } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase/server'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
+import { recordConsent } from '@/lib/consent/consent'
 import { applyReferralAttribution, applyEntryPointConversion } from '@/lib/qr/referral'
 import { postWelcomeForMember } from '@/lib/onboarding/welcome'
 import { ensureMemberCodes } from '@/lib/qr/member-codes'
@@ -24,6 +25,8 @@ export async function completeOnboarding(data: {
   bio: string
   avatarUrl: string
   regionId: string
+  /** The member's email opt-in choice from onboarding (defaults on). Recorded to the consent ledger. */
+  emailOptIn?: boolean
 }) {
   const { displayName, handle, bio, avatarUrl } = sanitizeProfileInput(data)
 
@@ -78,6 +81,12 @@ export async function completeOnboarding(data: {
   // Credit the referrer if this member arrived via a scanned referral code, and
   // snapshot first-touch acquisition (campaign / poster / code) onto the profile.
   if (updated?.id) {
+    // Record the member's email opt-in choice (ONLY on the first pass, so a later opt-out is never
+    // clobbered by a repeat onboarding). `email_lifecycle` already defaults granted; this captures the
+    // marketing/community-news scope they chose on the compelling opt-in card. Never blocks onboarding.
+    if (!onboarded) {
+      await recordConsent(updated.id, 'email_marketing', data.emailOptIn ?? true, 'onboarding').catch(() => {})
+    }
     await applyReferralAttribution(updated.id)
     await applyEntryPointConversion(updated.id).catch(() => {})
     await persistAcquisition(updated.id).catch(() => {})
