@@ -20,7 +20,9 @@ import {
   updateConversationFields,
   recordAssignment,
   newConversationMessageId,
+  type AppendMessageInput,
 } from '@/lib/comms/conversations'
+import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { getWorkspaceThread } from '@/lib/comms/workspace'
 import { CONVERSATION_PRIORITIES, PRIORITY_LABELS, type ConversationPriority } from '@/lib/comms/labels'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
@@ -105,42 +107,60 @@ export async function sendConversationReply(input: {
 
   const senderName = await profileName(operatorId)
   const subject = replySubject(conv.subject)
-  const messageId = newConversationMessageId(conv.ref)
+  const from = conversationFrom(senderName)
   const html = bodyToHtml(body)
-  try {
-    await enqueueEmail({
-      to: conv.externalEmail,
-      from: conversationFrom(senderName),
-      replyTo: buildConversationReplyAddress(conv.ref),
-      subject,
-      html,
-      text: body,
-      // No List-Unsubscribe: a 1:1 human reply is transactional, not bulk (ADR-812 deliverability).
-      headers: { 'Message-ID': messageId },
-    })
-  } catch {
-    return fail('Could not queue the reply. Try again.')
-  }
+  const mirror: AppendMessageInput['mirror'] =
+    conv.ownerProfileId && (conv.memberProfileId || conv.contactId)
+      ? {
+          ownerProfileId: conv.ownerProfileId,
+          subjectKind: conv.memberProfileId ? 'profile' : 'contact',
+          subjectId: (conv.memberProfileId ?? conv.contactId)!,
+          spaceId: conv.spaceId,
+          subject,
+        }
+      : null
 
-  await appendConversationMessage({
-    conversationId,
-    direction: 'outbound',
-    authorKind: 'staff',
-    authorId: operatorId,
-    body,
-    bodyHtml: html,
-    externalMessageId: messageId,
-    mirror:
-      conv.ownerProfileId && (conv.memberProfileId || conv.contactId)
-        ? {
-            ownerProfileId: conv.ownerProfileId,
-            subjectKind: conv.memberProfileId ? 'profile' : 'contact',
-            subjectId: (conv.memberProfileId ?? conv.contactId)!,
-            spaceId: conv.spaceId,
-            subject,
-          }
-        : null,
-  })
+  if (conversationBatchWindowMinutes() > 0) {
+    // BATCH MODE: hold this reply as a queued message; the flush cron coalesces the burst into one email.
+    const queued = await queueOutboundMessage({
+      conversationId,
+      from,
+      to: conv.externalEmail,
+      body,
+      html,
+      authorKind: 'staff',
+      authorId: operatorId,
+      mirror,
+    })
+    if (!queued) return fail('Could not queue the reply. Try again.')
+  } else {
+    // IMMEDIATE (default): enqueue the email now, then record the outbound message.
+    const messageId = newConversationMessageId(conv.ref)
+    try {
+      await enqueueEmail({
+        to: conv.externalEmail,
+        from,
+        replyTo: buildConversationReplyAddress(conv.ref),
+        subject,
+        html,
+        text: body,
+        // No List-Unsubscribe: a 1:1 human reply is transactional, not bulk (ADR-812 deliverability).
+        headers: { 'Message-ID': messageId },
+      })
+    } catch {
+      return fail('Could not queue the reply. Try again.')
+    }
+    await appendConversationMessage({
+      conversationId,
+      direction: 'outbound',
+      authorKind: 'staff',
+      authorId: operatorId,
+      body,
+      bodyHtml: html,
+      externalMessageId: messageId,
+      mirror,
+    })
+  }
 
   // A public reply moves an active thread to "waiting" (on the member), mirroring support.
   if (conv.status === 'open' || conv.status === 'in_progress') {

@@ -26,7 +26,9 @@ import {
   recordAssignment,
   newConversationMessageId,
   type ConversationRow,
+  type AppendMessageInput,
 } from '@/lib/comms/conversations'
+import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { listSpaceAssignableAgents } from '@/lib/comms/workspace'
 import { CONVERSATION_STATUSES, CONVERSATION_PRIORITIES } from '@/lib/comms/labels'
 
@@ -113,41 +115,57 @@ export async function sendSpaceConversationReplyAction(
 
   const from = spaceConversationFrom(gate.brandName)
   const subject = replySubject(conv.subject)
-  const messageId = newConversationMessageId(conv.ref)
   const html = bodyToHtml(body)
-  try {
-    await enqueueEmail({
-      to: conv.externalEmail,
-      from,
-      replyTo: buildConversationReplyAddress(conv.ref),
-      subject,
-      html,
-      text: body,
-      headers: { 'Message-ID': messageId },
-    })
-  } catch {
-    return fail('Could not queue the reply. Try again.')
-  }
+  const mirror: AppendMessageInput['mirror'] =
+    conv.memberProfileId || conv.contactId
+      ? {
+          ownerProfileId: gate.ownerProfileId ?? gate.viewerProfileId,
+          subjectKind: conv.memberProfileId ? 'profile' : 'contact',
+          subjectId: (conv.memberProfileId ?? conv.contactId)!,
+          spaceId: gate.spaceId,
+          subject,
+        }
+      : null
 
-  await appendConversationMessage({
-    conversationId: conv.id,
-    direction: 'outbound',
-    authorKind: 'staff',
-    authorId: gate.viewerProfileId,
-    body,
-    bodyHtml: html,
-    externalMessageId: messageId,
-    mirror:
-      conv.memberProfileId || conv.contactId
-        ? {
-            ownerProfileId: gate.ownerProfileId ?? gate.viewerProfileId,
-            subjectKind: conv.memberProfileId ? 'profile' : 'contact',
-            subjectId: (conv.memberProfileId ?? conv.contactId)!,
-            spaceId: gate.spaceId,
-            subject,
-          }
-        : null,
-  })
+  if (conversationBatchWindowMinutes() > 0) {
+    // BATCH MODE: hold this reply as a queued message; the flush cron coalesces the burst into one email.
+    const queued = await queueOutboundMessage({
+      conversationId: conv.id,
+      from,
+      to: conv.externalEmail,
+      body,
+      html,
+      authorKind: 'staff',
+      authorId: gate.viewerProfileId,
+      mirror,
+    })
+    if (!queued) return fail('Could not queue the reply. Try again.')
+  } else {
+    const messageId = newConversationMessageId(conv.ref)
+    try {
+      await enqueueEmail({
+        to: conv.externalEmail,
+        from,
+        replyTo: buildConversationReplyAddress(conv.ref),
+        subject,
+        html,
+        text: body,
+        headers: { 'Message-ID': messageId },
+      })
+    } catch {
+      return fail('Could not queue the reply. Try again.')
+    }
+    await appendConversationMessage({
+      conversationId: conv.id,
+      direction: 'outbound',
+      authorKind: 'staff',
+      authorId: gate.viewerProfileId,
+      body,
+      bodyHtml: html,
+      externalMessageId: messageId,
+      mirror,
+    })
+  }
 
   if (conv.status === 'open' || conv.status === 'in_progress') {
     await updateConversationFields(conv.id, { status: 'waiting' })

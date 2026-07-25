@@ -232,6 +232,9 @@ export interface AppendMessageInput {
   inReplyTo?: string | null
   referencesIds?: string[] | null
   isInternal?: boolean
+  /** Delivery state for an outbound message. Defaults to `'sent'` (the immediate-send path). The batch
+   *  path writes `'queued'` so the flush cron can coalesce a burst into one email, then flip it to `'sent'`. */
+  deliveryStatus?: string
   /** Per-message detail (e.g. `{ sender_mismatch: true }` from the inbound anti-spoof check). */
   metadata?: Record<string, unknown> | null
   /** When set, the non-internal message is mirrored onto the CRM person-timeline (best-effort). */
@@ -269,6 +272,7 @@ export async function appendConversationMessage(input: AppendMessageInput): Prom
         external_message_id: input.externalMessageId ?? null,
         in_reply_to: input.inReplyTo ?? null,
         references_ids: input.referencesIds ?? null,
+        ...(input.deliveryStatus ? { delivery_status: input.deliveryStatus } : {}),
         ...(input.metadata ? { metadata: input.metadata } : {}),
       })
       .select('id')

@@ -21,8 +21,10 @@ import {
   recordAssignment,
   newConversationMessageId,
   type ConversationRow,
+  type AppendMessageInput,
 } from '@/lib/comms/conversations'
 import { sendLeaderMessageToDownline } from '@/lib/comms/leader-send'
+import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 
 /** Load the conversation and confirm the leader owns it (their sender trail) or is assigned it. */
 async function ownedConversation(leaderId: string, conversationId: string): Promise<ConversationRow | null> {
@@ -94,41 +96,57 @@ export async function sendLeaderReply(input: {
 
   const from = leaderFrom(await profileName(leaderId))
   const subject = replySubject(conv.subject)
-  const messageId = newConversationMessageId(conv.ref)
   const html = bodyToHtml(body)
-  try {
-    await enqueueEmail({
-      to: conv.externalEmail,
-      from,
-      replyTo: buildConversationReplyAddress(conv.ref),
-      subject,
-      html,
-      text: body,
-      headers: { 'Message-ID': messageId },
-    })
-  } catch {
-    return fail('Could not queue the reply. Try again.')
-  }
+  const mirror: AppendMessageInput['mirror'] =
+    conv.memberProfileId || conv.contactId
+      ? {
+          ownerProfileId: leaderId,
+          subjectKind: conv.memberProfileId ? 'profile' : 'contact',
+          subjectId: (conv.memberProfileId ?? conv.contactId)!,
+          spaceId: conv.spaceId,
+          subject,
+        }
+      : null
 
-  await appendConversationMessage({
-    conversationId: conv.id,
-    direction: 'outbound',
-    authorKind: 'leader',
-    authorId: leaderId,
-    body,
-    bodyHtml: html,
-    externalMessageId: messageId,
-    mirror:
-      conv.memberProfileId || conv.contactId
-        ? {
-            ownerProfileId: leaderId,
-            subjectKind: conv.memberProfileId ? 'profile' : 'contact',
-            subjectId: (conv.memberProfileId ?? conv.contactId)!,
-            spaceId: conv.spaceId,
-            subject,
-          }
-        : null,
-  })
+  if (conversationBatchWindowMinutes() > 0) {
+    // BATCH MODE: hold this reply as a queued message; the flush cron coalesces the burst into one email.
+    const queued = await queueOutboundMessage({
+      conversationId: conv.id,
+      from,
+      to: conv.externalEmail,
+      body,
+      html,
+      authorKind: 'leader',
+      authorId: leaderId,
+      mirror,
+    })
+    if (!queued) return fail('Could not queue the reply. Try again.')
+  } else {
+    const messageId = newConversationMessageId(conv.ref)
+    try {
+      await enqueueEmail({
+        to: conv.externalEmail,
+        from,
+        replyTo: buildConversationReplyAddress(conv.ref),
+        subject,
+        html,
+        text: body,
+        headers: { 'Message-ID': messageId },
+      })
+    } catch {
+      return fail('Could not queue the reply. Try again.')
+    }
+    await appendConversationMessage({
+      conversationId: conv.id,
+      direction: 'outbound',
+      authorKind: 'leader',
+      authorId: leaderId,
+      body,
+      bodyHtml: html,
+      externalMessageId: messageId,
+      mirror,
+    })
+  }
   if (conv.status === 'open' || conv.status === 'in_progress') {
     await updateConversationFields(conv.id, { status: 'waiting' })
   }

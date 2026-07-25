@@ -146,6 +146,23 @@ seam is the `conversations.ai` jsonb (+ an optional `conversation_ai` history ta
 Per-subdomain SPF + DKIM; DMARC relaxed-alignment at the apex (`p=quarantine`, `rua` reporting).
 One-click unsubscribe on `broadcast` (and `leader` bulk) only — **never** on true 1:1.
 
+## Quiet-time coalescing — batch + digest (ADR-813, `lib/comms/outbound-batch.ts`)
+
+Both are **config-gated OFF by default** (window `0` = off), so the live 1:1 path is byte-for-byte unchanged
+until an operator opts in. A single cron `/api/cron/conversation-batches` (every 5 min, `withCronHeartbeat`)
+runs both passes.
+
+| Feature | Env (minutes, `0` = off) | What it does |
+|---|---|---|
+| **Outbound batch** | `CONVERSATION_BATCH_WINDOW_MINUTES` | A burst of replies typed into one thread inside the window is held as `delivery_status='queued'` messages (they still appear individually in the workspace). Once the burst has been quiet for the window, the cron sends **one** coalesced email under the same sender identity (`metadata.batch_from`) and flips them to `sent`. Debounce on the *newest* queued message. |
+| **Inbound digest** | `CONVERSATION_DIGEST_WINDOW_MINUTES` | Instead of surfacing every member reply the instant it lands, the cron rolls a recipient's newly-arrived replies (assignee first, else owner) into **one** summary email. Idempotent via a per-conversation `last_digested_at` watermark; a 24h recency floor stops a first-enable flood of ancient threads. The in-app `conversation_reply` notification still fires at receive time regardless. |
+
+Safety properties: the reply actions keep their exact immediate-send branch when the window is `0`; the batch
+flush **drains queued mail even when the window is later set back to `0`** (governs debounce, not draining), so
+disabling can never strand a queued reply. At-least-once by design (enqueue → mark-sent), matching the outbox.
+Schema: `comms_messages.delivery_status` (already in the spine) + `comms_conversations.last_digested_at`
+(migration `20261211000000_conversations_digest_marker.sql`) + partial indexes for both scans.
+
 ## Phased build
 
 | Phase | Scope | Risk |
@@ -157,7 +174,9 @@ One-click unsubscribe on `broadcast` (and `leader` bulk) only — **never** on t
 | **3b — leader inbox** ✅ | `/lead/inbox` (`DashboardTemplate`) reuses `<ConversationWorkspace>` scoped to the leader's own threads (`ownedOrAssignedTo`), leader-gated reply/triage actions injected (ownership-checked), mobile compose via `Dialog align="sheet"`. Workspace now takes `basePath` + injected `actions`. | low |
 | **4 — leader→group** ✅ | `lib/comms/leader-send.ts`: `segmentForLeaderDownline` (union of the leader's led circles via `resolveSegment('circle:<id>')`) + `sendLeaderMessageToDownline` (fans out into one `kind='leader'` conversation per member, as themselves, consent-gated). `<LeaderBroadcast>` "Message my group" with the reach preview + send tally; `sendLeaderBroadcast` action. | low |
 | **5 — AI seams** ✅ | Vera in the composer/triage: `draftConversationReply` (drafts into the composer), `summarizeConversation`, `suggestConversationTriage` (persists priority) in the workspace actions, mirroring support's `draftReply`/`suggestTriage` (`completeText` + `withVoice` + `aiAvailable`/`featureOverBudget`/`recordAiUsage`; budget keys `conversation-draft`/`-summarize`/`-triage`). Buttons render only when the actions are injected (operator inbox gets them). | low |
+| **6 — batch + digest** ✅ | Quiet-time coalescing (ADR-813, `lib/comms/outbound-batch.ts` + `/api/cron/conversation-batches`): outbound burst → one email, inbound replies → one digest per recipient. Config-gated OFF by default; see the section above. | none (dormant) |
 
 Nothing changes for existing sends until the reply-mode toggle is exposed and flipped. Config to turn it
 on: `CONVERSATION_TOKEN_SECRET`, `CONVERSATION_REPLY_DOMAIN`, `EMAIL_CONVERSATION_FROM`,
-`RESEND_INBOUND_WEBHOOK_SECRET`, `CRM_INBOX_OWNER_PROFILE_ID` + the DNS records above.
+`RESEND_INBOUND_WEBHOOK_SECRET`, `CRM_INBOX_OWNER_PROFILE_ID` + the DNS records above. Optional quiet-time
+coalescing (Phase 6, off by default): `CONVERSATION_BATCH_WINDOW_MINUTES`, `CONVERSATION_DIGEST_WINDOW_MINUTES`.
