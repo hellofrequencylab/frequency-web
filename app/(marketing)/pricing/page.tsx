@@ -198,9 +198,9 @@ export default function PricingPage() {
             seats. Seats are an OWNER-SET placeholder (CATALOG operator_seat is placeholder:true), so we
             surface them as available and owner-priced WITHOUT locking a public per-seat number. */}
         <p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-subtle">
-          Two add-ons ride on any paid plan. Vera AI is optional at {proAddonPrice('ai')}. And when your
-          team grows, you can add operator seats: these are owner-priced today, so you bring on the people
-          you need without a locked public per-seat price.
+          Two add-ons ride on any paid plan. Vera AI is optional at {proAddonPrice('ai')}, or $200 a
+          year. And when your team grows, you can add operator seats: these are owner-priced today, so
+          you bring on the people you need without a locked public per-seat price.
         </p>
       </Section>
 
