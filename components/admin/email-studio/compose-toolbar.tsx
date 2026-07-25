@@ -17,9 +17,11 @@ export function ComposeToolbar({
   subject,
   preheader,
   fromName,
+  replyMode,
   onSubject,
   onPreheader,
   onFromName,
+  onReplyMode,
   previewOpen,
   onTogglePreview,
   showPreviewToggle = true,
@@ -30,9 +32,13 @@ export function ComposeToolbar({
   preheader: string
   /** The friendly From display name recipients see. Blank sends as the default Frequency name. */
   fromName: string
+  /** How replies are handled. When paired with onReplyMode, a Broadcast/Conversation toggle shows. */
+  replyMode?: 'broadcast' | 'conversation'
   onSubject: (value: string) => void
   onPreheader: (value: string) => void
   onFromName: (value: string) => void
+  /** Provide to show the reply-mode toggle (the campaign composer). Omit on surfaces with a fixed mode. */
+  onReplyMode?: (value: 'broadcast' | 'conversation') => void
   previewOpen: boolean
   onTogglePreview: () => void
   /** The trio layout shows the preview permanently on the right, so it hides this toggle. */
@@ -116,6 +122,38 @@ export function ComposeToolbar({
             The name recipients see this email is from. Leave it blank to send as Frequency. The sending address stays the same.
           </span>
         </label>
+        {onReplyMode && (
+          <div className="block sm:col-span-2">
+            <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Replies</span>
+            <div className="inline-flex items-center gap-1 rounded-lg bg-surface-elevated p-0.5 text-xs">
+              <button
+                type="button"
+                onClick={() => onReplyMode('broadcast')}
+                aria-pressed={replyMode !== 'conversation'}
+                className={`rounded-md px-2.5 py-1 font-semibold transition-colors ${
+                  replyMode !== 'conversation' ? 'bg-surface text-primary-strong shadow-sm' : 'text-muted'
+                }`}
+              >
+                Broadcast
+              </button>
+              <button
+                type="button"
+                onClick={() => onReplyMode('conversation')}
+                aria-pressed={replyMode === 'conversation'}
+                className={`rounded-md px-2.5 py-1 font-semibold transition-colors ${
+                  replyMode === 'conversation' ? 'bg-surface text-primary-strong shadow-sm' : 'text-muted'
+                }`}
+              >
+                Conversation
+              </button>
+            </div>
+            <span className="mt-1 block text-2xs text-subtle">
+              {replyMode === 'conversation'
+                ? 'Reply-able: each send opens a tracked thread in your inbox, and replies come back to it.'
+                : 'A no-reply mass send. Best for newsletters and announcements.'}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
