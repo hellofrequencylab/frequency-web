@@ -34,7 +34,10 @@ const SURFACES = [
 const SHARED_IMPORTS = [
   { module: '@/lib/comms/vera-conversation', symbols: ['veraDraftReply', 'veraSummarize', 'veraSuggestTriage'], concern: 'Vera AI (draft / summarize / triage)' },
   { module: '@/lib/comms/email-template', symbols: ['renderReplyEmail'], concern: 'branded email body (header/footer)' },
-  { module: '@/lib/comms/signature', symbols: ['resolveSignature'], concern: 'per-sender editable signature' },
+  // anyOf: a surface signs as a PERSON (resolveSignature, the per-sender editable signature) or as the
+  // BRAND (brandSignature, e.g. a Space reply whose From is the brand) — either way the signature comes
+  // from the ONE shared module; importing neither is the fork this guard exists to catch.
+  { module: '@/lib/comms/signature', symbols: ['resolveSignature', 'brandSignature'], anyOf: true, concern: 'shared signature (per-sender or brand)' },
   { module: '@/lib/comms/outbound-batch', symbols: ['queueOutboundMessage'], concern: 'batched outbound send' },
 ]
 
@@ -70,8 +73,9 @@ function walkCodeFiles() {
   return out
 }
 
-/** Does `src` import ALL of `symbols` from `module`? (tolerant of multi-line import blocks). */
-function importsAll(src, module, symbols) {
+/** Does `src` import ALL of `symbols` from `module` (or ANY, when `anyOf`)? (tolerant of multi-line
+ *  import blocks). */
+function importsAll(src, module, symbols, anyOf = false) {
   // Grab every `import { ... } from '<module>'` block (single or multi-line) and union their symbols.
   const re = new RegExp(`import\\s*(?:type\\s*)?\\{([^}]*)\\}\\s*from\\s*['"]${module.replace(/[/\-]/g, (m) => '\\' + m)}['"]`, 'gs')
   const imported = new Set()
@@ -82,7 +86,7 @@ function importsAll(src, module, symbols) {
       if (name) imported.add(name)
     }
   }
-  return symbols.every((s) => imported.has(s))
+  return anyOf ? symbols.some((s) => imported.has(s)) : symbols.every((s) => imported.has(s))
 }
 
 /** Run every check. Returns { violations: string[] } — pure, so a test can assert on it. */
@@ -96,10 +100,10 @@ export function checkCrmParity() {
       violations.push(`Surface not found (did a path change? update SURFACES): ${surface}`)
       continue
     }
-    for (const { module, symbols, concern } of SHARED_IMPORTS) {
-      if (!importsAll(src, module, symbols)) {
+    for (const { module, symbols, anyOf, concern } of SHARED_IMPORTS) {
+      if (!importsAll(src, module, symbols, anyOf)) {
         violations.push(
-          `${surface}\n    ↳ must import { ${symbols.join(', ')} } from '${module}' (${concern}).\n` +
+          `${surface}\n    ↳ must import ${anyOf ? 'one of' : ''} { ${symbols.join(', ')} } from '${module}' (${concern}).\n` +
           `      A CRM surface that doesn't is re-implementing shared logic — route it through the shared module instead.`,
         )
       }
