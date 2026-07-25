@@ -97,11 +97,12 @@ export async function sendConversationReply(input: {
 
   // PUBLIC REPLY.
   if (!conv.externalEmail) return fail('We have no email address for this conversation.')
-  // Consent lives on a member profile. When the counterpart is a member, run the same gate the rest of
-  // the send paths use. A pure lead/contact in an ACTIVE conversation (they wrote to us, or we opened it)
-  // is the consent context itself, so we do not hard-block those — but a member opt-out is always honored.
+  // A 1:1 human reply inside an active conversation is TRANSACTIONAL, not a marketing blast — the member (or
+  // lead) is in a conversation with us, so they are opted in by that context. We gate it as `transactional`,
+  // which sends past preferences/consent and is stopped ONLY by the hard suppression list (a bounced or
+  // spam-flagged address is undeliverable — the one block we never override).
   if (conv.memberProfileId) {
-    const gate = await resolveSendGate(conv.memberProfileId, 'email', 'marketing', { email: conv.externalEmail })
+    const gate = await resolveSendGate(conv.memberProfileId, 'email', 'transactional', { email: conv.externalEmail })
     if (!gate.allowed) return fail(GATE_REASON_COPY[gate.reason] || 'This send is blocked.')
   }
 

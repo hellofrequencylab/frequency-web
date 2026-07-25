@@ -90,8 +90,9 @@ export async function sendLeaderReply(input: {
 
   if (!conv.externalEmail) return fail('We have no email address for this conversation.')
   if (conv.memberProfileId) {
-    const gate = await resolveSendGate(conv.memberProfileId, 'email', 'lifecycle', { email: conv.externalEmail })
-    if (!gate.allowed) return fail('This member has email turned off, so this reply cannot go out.')
+    // A 1:1 reply in an active conversation is transactional — send unless the address is hard-suppressed.
+    const gate = await resolveSendGate(conv.memberProfileId, 'email', 'transactional', { email: conv.externalEmail })
+    if (!gate.allowed) return fail('This address has bounced or marked us as spam, so this reply cannot go out.')
   }
 
   const from = leaderFrom(await profileName(leaderId))
