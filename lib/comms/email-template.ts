@@ -35,7 +35,7 @@ export function wrapEmailHtml(innerHtml: string): string {
 </div>`
 }
 
-const TEXT_FOOTER = `\n\n—\nA place to be human · ${APP}`
+const TEXT_FOOTER = `\n\nA place to be human · ${APP}`
 
 /** Render a single reply body (+ optional signature) as a full branded email. */
 export function renderReplyEmail(body: string, signature: string | null): { html: string; text: string } {

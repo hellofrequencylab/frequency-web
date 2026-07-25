@@ -10,14 +10,14 @@
 //                                     belongs to THIS Space, then GRANT the durable founder record
 //                                     (locked rate + 3% take-rate for life) via grantFoundingStatus().
 //
-// Both DOUBLE-GATE: authorizeOwner re-resolves the Space + checks canManage server-side (a non-owner
-// cannot start/confirm a checkout for someone else's Space), then the seam re-gates on billingLive().
-// No em dashes in copy (CONTENT-VOICE §10).
+// Both DOUBLE-GATE: authorizeOwner re-resolves the Space + checks the billing floor (ADMIN) server-side
+// (a non-admin, incl. an editor, cannot start/confirm a founding checkout that bills the owner), then the
+// seam re-gates on billingLive(). No em dashes in copy (CONTENT-VOICE §10).
 
 import type Stripe from 'stripe'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { stripe } from '@/lib/billing/stripe'
 import { billingLive } from '@/lib/pricing/settings'
 import { grantFoundingStatus } from '@/lib/founding/status'
@@ -27,13 +27,14 @@ import {
 } from '@/lib/founding/business-checkout'
 import type { BillingPeriod } from '@/lib/billing/pricing-keys'
 
-/** Authorize the caller as a manager of `slug`'s Space; returns { spaceId, slug } or null. */
+/** Authorize the caller as an ADMIN (or owner) of `slug`'s Space — the billing floor (this action bills
+ *  the owner; an editor must not reach it). Returns { spaceId, slug } or null. */
 async function authorizeOwner(slug: string): Promise<{ spaceId: string; slug: string } | null> {
   const caller = await getCallerProfile()
   const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
   if (!space) return null
-  const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
-  if (!canManage) return null
+  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
+  if (!caps.isAdmin) return null
   return { spaceId: space.id, slug: space.slug }
 }
 

@@ -2,7 +2,7 @@
 
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { createSpacePlanCheckout, createSpaceLoadoutCheckout, createSpaceBillingPortal } from '@/lib/billing/space-plan-checkout'
 import { updateOperatorSeats } from '@/lib/billing/operator-seats'
 import { asSpacePlanKey, type BillingInterval, type BillingPeriod } from '@/lib/billing/pricing-keys'
@@ -15,17 +15,20 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 //     plan (GATED on billingLive() + the per-plan switch inside the checkout; returns a clean error while
 //     billing is OFF, so the CTA never fires a broken checkout).
 //
-// Both re-resolve the space + gate on canManage (the owner/admin/editor write authority) so a
-// non-owner cannot start a checkout for someone else's space. No em dashes. The retired white-label lead
-// capture was removed with the multi-tier UI (ADR-552).
+// Both re-resolve the space + gate on the billing function's floor (ADMIN, matching functions.ts
+// defaultMinRole 'admin' and the billing page render's spaceFunctionAccess gate). These actions mutate
+// the OWNER's live Stripe subscription (checkout, portal, seats), so an EDITOR (the canManage/
+// canEditProfile level) must NOT reach them. No em dashes. The retired white-label lead capture was
+// removed with the multi-tier UI (ADR-552).
 
-/** Authorize the caller as a manager of `slug`'s space; returns { spaceId, brandName } or null. */
+/** Authorize the caller as an ADMIN (or owner) of `slug`'s space — the billing floor. Returns
+ *  { spaceId, brandName } or null. Billing is not an editor-level action (it changes the owner's bill). */
 async function authorizeOwner(slug: string): Promise<{ spaceId: string; brandName: string } | null> {
   const caller = await getCallerProfile()
   const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
   if (!space) return null
-  const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
-  if (!canManage) return null
+  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
+  if (!caps.isAdmin) return null
   return { spaceId: space.id, brandName: space.brandName ?? space.name }
 }
 

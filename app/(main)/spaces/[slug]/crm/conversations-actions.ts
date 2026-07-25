@@ -29,7 +29,7 @@ import {
   type AppendMessageInput,
 } from '@/lib/comms/conversations'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
-import { resolveSignature } from '@/lib/comms/signature'
+import { brandSignature } from '@/lib/comms/signature'
 import { renderReplyEmail } from '@/lib/comms/email-template'
 import { listSpaceAssignableAgents } from '@/lib/comms/workspace'
 import { CONVERSATION_STATUSES, CONVERSATION_PRIORITIES, type ConversationPriority } from '@/lib/comms/labels'
@@ -118,7 +118,9 @@ export async function sendSpaceConversationReplyAction(
   }
 
   const from = spaceConversationFrom(gate.brandName)
-  const signature = await resolveSignature(gate.viewerProfileId, gate.brandName)
+  // The Space reply's From is the BRAND, so the signature must be the brand's, not the acting manager's
+  // personal saved signature (which resolveSignature would return). Use the brand-scoped helper.
+  const signature = brandSignature(gate.brandName)
   const subject = replySubject(conv.subject)
   const storedHtml = bodyToHtml(body) // clean body for the thread + CRM mirror
   const mirror: AppendMessageInput['mirror'] =

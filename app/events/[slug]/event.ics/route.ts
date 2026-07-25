@@ -13,7 +13,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { buildVevent, icsEventInstants, renderCalendar, rruleForRecurrence } from '@/lib/events/ics'
+import { buildVevent, computeFeedExdates, icsEventInstants, renderCalendar, rruleForRecurrence } from '@/lib/events/ics'
 import { eventInstant } from '@/lib/time/zone'
 
 export const dynamic = 'force-dynamic'
@@ -76,6 +76,31 @@ export async function GET(
   const untilInstant = ev.recurrence_until ? eventInstant(ev.recurrence_until, ev.time_zone) : null
   const rrule = !masked && isRecurringAnchor ? rruleForRecurrence(ev.recurrence_type, untilInstant) : null
 
+  // EXDATE parity with the subscribable feeds (planCalendarFeed): subtract the anchor's cancelled/
+  // deleted occurrences so "add to calendar" from the event page never resurrects a date the member
+  // removed. Without this the per-event export re-generates every occurrence from the bare RRULE.
+  let exdates: Date[] = []
+  if (rrule) {
+    const { data: childRows } = await admin
+      .from('events')
+      .select('starts_at')
+      .eq('parent_event_id', ev.id)
+      .eq('is_cancelled', false)
+    const present = [
+      ev.starts_at,
+      ...(((childRows as { starts_at: string }[] | null) ?? []).map((c) => c.starts_at)),
+    ]
+    exdates = computeFeedExdates(
+      {
+        starts_at: ev.starts_at,
+        recurrence_type: ev.recurrence_type,
+        recurrence_until: ev.recurrence_until,
+        time_zone: ev.time_zone,
+      },
+      present,
+    )
+  }
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 
   const body = renderCalendar({
@@ -90,6 +115,7 @@ export async function GET(
         location: masked ? null : ev.location,
         description: masked ? null : ev.description,
         rrule,
+        exdates,
         cancelled: ev.is_cancelled,
       }),
     ],

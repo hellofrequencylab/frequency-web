@@ -92,14 +92,23 @@ function CatalogSection({
   return (
     <AdminSection
       title="Catalog"
-      description="The Business base, the AI Engine add-on, and the Non Profit seat. Each price shows a list anchor and a lower founding price. The founding price is what a member is charged today; the list price is the anchor it sits under. Set the monthly amounts; the yearly is two months free unless you override it."
+      description="The four sellable bases (Business, Collective, Non Profit, Independent) plus the AI Engine add-on and the seats. Each price shows a list anchor and a lower founding price. The founding price is what a member is charged today; the list price is the anchor it sits under. Set the monthly amounts; the yearly is two months free unless you override it."
     >
       <FormSection
         title="Business base"
-        description="The single paid base (the full-depth tier). CRM, marketing, team roles, and branding all come with Business. Free-vs-paid is a usage state within Business, not a separate plan."
+        description="The run-your-practice base (ADR-811): CRM, email, reporting, your own website. Free-vs-paid is a usage state within Business, not a separate plan."
       >
         <div className="space-y-4">
           <CatalogItemRow item={byKey.business_base} />
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Collective base"
+        description="Everything in Business plus automations, team roles, multiple pipelines, and hosting collaborators (ADR-811). The founding price is the beta anchor charged today; run the catalog sync after changing it."
+      >
+        <div className="space-y-4">
+          <CatalogItemRow item={byKey.collective_base} />
         </div>
       </FormSection>
 
@@ -123,10 +132,19 @@ function CatalogSection({
 
       <FormSection
         title="Non Profit"
-        description="The Non Profit licensed seat (per seat). Verified 501(c)(3) organizations get the full Business depth, discounted."
+        description="The flat Non Profit plan (never per seat, ADR-811). Verified 501(c)(3) organizations get the full Collective toolkit, discounted."
       >
         <div className="space-y-4">
           <CatalogItemRow item={byKey.nonprofit_seat} />
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Independent base"
+        description="The standalone white-label base, off the network (ADR-811). Standard SaaS pricing; no network take-rate and no metered add-ons layer on it."
+      >
+        <div className="space-y-4">
+          <CatalogItemRow item={byKey.independent_base} />
         </div>
       </FormSection>
 

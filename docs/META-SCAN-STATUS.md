@@ -4,6 +4,104 @@
 > 49 high / 117 medium / 83 low) and the follow-up work. This is the durable record of
 > what shipped and what is still open. Update it as items close.
 
+## 2026-07-25 re-scan (post Comms/Collective/Events era, #1867–#1919)
+
+Fresh deep pass over the ~50 PRs merged since 07-10 (Comms/CRM/Vera spine, Events/calendar/
+collaborator-spaces, Community Collective pricing/seats, practice timer). All 12 machine guards
+green at scan start; the real findings were in runtime wiring, which guards don't see.
+Four fix batches shipped on `claude/site-meta-scan-bugs-pgnw78`, each tsc/lint/test-green.
+
+**Shipped this pass:**
+- ✅ **Comms/CRM (HIGH)** — the anonymous live chat (ADR-816) was dead on arrival:
+  `startSupportChat` passed no counterparty, so the spine's CHECK made `openOrGetConversation`
+  return null and the widget always said "Live chat is unavailable." Now resolve-or-creates the
+  visitor's platform contact first. Plus: Space brand replies were signed with the acting
+  manager's PERSONAL `email_signature` (now the purpose-built, previously-orphaned
+  `brandSignature()`); the inbound-digest cron advanced `last_digested_at` with no resolvable
+  recipient email (digest silently lost — now retried); member-facing em-dash email footers
+  removed (voice canon) + a guard test.
+- ✅ **Practice timer (P0)** — a `'none'` (log-only) practice opened the Meditate/Free-Practice
+  sit and logged the WRONG practice on feed/journey/prompt surfaces (they pass `timer_kind`
+  raw). `LogPracticeButton` now screens `'none'` centrally. Full bug map + phased redesign in
+  **[PRACTICE-TIMER-CONTINUITY.md](PRACTICE-TIMER-CONTINUITY.md)** (double countdown root cause,
+  Just-Log routing, Get Moving free-config memory, authorable cues).
+- ✅ **Events** — the per-event `.ics` recurring export emitted an RRULE with NO EXDATE, so
+  cancelled occurrences resurrected on "Add to calendar" (the feeds already EXDATE via
+  `computeFeedExdates`; the route now reuses it — parity).
+- ✅ **Billing authz (MED-HIGH)** — the Space billing actions (seats, portal, plan/founding
+  checkouts) gated on `canManage` (owner/admin/**editor**), letting an editor mutate the owner's
+  live Stripe subscription. Now gated on `isAdmin`, matching the `billing` function floor and the
+  page render.
+
+**🔴 Open HIGH — pre-`billing_live` blockers (billing verified OFF, so latent not live):**
+- ✅ ~~**Founding Business checkout mispricing**~~ — FIXED (owner-confirmed ladder 2026-07-25:
+  Business $29/$19 beta · Collective $79/$49 beta · Non Profit $39). Two-part fix: ① the
+  checkout now charges the catalog **founding** key `business_base_<interval>` (the synced
+  $19/$190 beta price, verified live in `pricing_stripe_prices`), honoring a grandfathered
+  `locked_price_id` first, exactly like `resolveLoadoutPriceId` — it had charged
+  `business_monthly`, a Stripe price minted 06-23 from the stale `plan.business` row; ② migration
+  `20261212000000_adr811_plan_anchor_reconcile` (applied + verified; ledger `20260725174004`)
+  reconciled the two stale ADR-590-era anchor rows to the ADR-811 ladder — `plan.business`
+  $49/$490 → **$29/$290**, `plan.nonprofit` $29/$290 → **$39/$390** — guarded on the exact stale
+  pairs so operator-set rates are never clobbered.
+- 🧑 **Owner action — re-run the Stripe pricing syncs** (admin pricing console): ① the product
+  sync, so `business_monthly`/`nonprofit_*` re-mint at the corrected $29/$39 anchors (the live
+  Stripe prices still hold the stale $49/$29 amounts); ② the catalog sync — **no
+  `collective_base_*` or `independent_base_*` price rows exist at all** (verified live), so the
+  Collective/Independent checkouts (go-live #1889) currently dead-end on "Plan checkout is not
+  available yet."
+- ⚠️ **CORRECTION (2026-07-25, later the same day): billing is LIVE, not OFF.** The earlier
+  "billing verified OFF" note queried `pricing_settings` for the flag; it actually lives in
+  `platform_flags` (`billing_live` = true, all four plan switches + operator seat on, Stripe
+  configured). Verified **zero damage**: 0 spaces with subscriptions, 0 founding records, 0
+  profiles with a Stripe customer — nobody was ever charged the stale price. Until this PR's
+  founding-checkout fix deploys AND the syncs re-run, the live founding checkout still resolves
+  the old $49 `business_monthly` price, so merge + re-sync is the go-live path.
+- ✅ **Admin pricing console: Collective + Independent catalog cards** — the ADR-811 tiers were
+  sellable (switches, checkouts, sync keys all cover them) but the console's Catalog section never
+  rendered their `CatalogItemRow`s, so the operator could not see or edit Collective $79/$49 or
+  Independent $249 (the owner hit exactly this). Both cards added (`resolveCatalogConfig` already
+  loaded all six items; render-only gap). The owner's 07-24 catalog sync predated the deploy that
+  added those keys, which is why their Stripe prices never minted; the next sync mints them.
+- **Space plan/seat webhook has no event-ordering guard** — the member path uses
+  `apply_membership_event_atomic` (ignores stale `event.created`); the space path
+  (`lib/billing/space-subscriptions.ts` `reconcileSpacePlanSubscription`) set-to-targets seats/
+  plan/add-ons from any `subscription.updated`, so a late-delivered older event can revert a
+  newer seat count/tier. Mirror the atomic-event pattern.
+- **Seat-downgrade floor is client-only** — the editor floors minus at
+  `used - BASE_SEAT_ALLOWANCE` but `updateOperatorSeats` clamps only `0..MAX`; a direct action
+  call can license fewer seats than active operators (existing operators stay active; the wall
+  only blocks new invites). Re-derive the floor server-side.
+
+**🟠 Open MED (drafted, dedicated PRs):**
+- **ICS timezone rework (one PR, two bugs)** — (a) monthly series anchored on day 29/30/31 lose
+  their short-month occurrences in every collapsed feed (RRULE on a UTC day-31 DTSTART skips
+  short months per RFC 5545, the clamped child row is folded and NOT EXDATE'd); (b) any series
+  crossing a DST boundary renders post-transition occurrences one hour off (UTC DTSTART, no
+  TZID/VTIMEZONE — clients expand at a fixed offset; HOME_TZ observes DST). Both need
+  `DTSTART;TZID=<zone>` + a VTIMEZONE block (+ `BYMONTHDAY` for day-29/30/31 monthlies) in
+  `lib/events/ics.ts`; the EXDATE reconciliation cannot compensate for an RRULE generating the
+  wrong instants.
+- **Comms double-send edge** — inbound idempotency keys on `external_message_id`, whose unique
+  index is partial (`where … is not null`); an inbound with no Message-ID that gets redelivered
+  appends twice and (house path) re-emails the member. Fall back to a content-hash id.
+- **Practice timer P1–P5** — per PRACTICE-TIMER-CONTINUITY.md: the double countdown (every Get
+  Moving mode plays the 5s Warm-up ring THEN the plan's 3s PREPARE lead-in; Be Still doesn't;
+  owner call on approach, Option A recommended), Just-Log = note-capture (authored Just Log
+  currently routes to Meditate), Get Moving free-config memory, authorable breath/cues.
+
+**Verified sound this pass (no action):** reply-address codec + inbound webhook signature/replay
+handling; send-gate precedence + consent backfill (scope wider than the "~46" note but
+intentional per its header); calendar-feed RLS gates (no private leak); collaborator/venue-hold/
+event-share authz (both-space checks, status-guarded races); follower-reminder cron windows;
+differential take-rate 0% collapse on all three fee paths; fee rounding; server-side price
+re-derivation + `locked_price_id` honoring; operator_seat placeholder inertness; new-era
+migrations (`20261191`–`20261211200000`) additive/idempotent/RLS-correct.
+
+**Carried owner config:** set `CRON_HEARTBEAT_BASE_URL` (24 jobs paging-blind); Supabase
+leaked-password protection + disable anon sign-ins; submit sitemap to Search Console/Bing;
+the 3 stale "$49" prose strings flagged by `check:collective`.
+
 ## 2026-07-10 re-scan (post Shop-rework merge, #1647)
 
 Fresh pass on the merged `main` (base `3d9ca385`) once the marketplace build landed. Guard

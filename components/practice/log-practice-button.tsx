@@ -18,13 +18,17 @@ import type { MovementConfig } from '@/lib/movement'
 //   • No timerKind (the original path) → the one-tap server log. Idempotent per
 //     practice per day; paints "Logged today" after success. Every existing caller
 //     (the practices row, circle page, row-card) keeps this behavior untouched.
-//   • A timerKind → the smart action: the button OPENS the right timer/sheet
-//     pre-set to this practice instead of logging in place, since a timed practice
-//     is finished inside its session, not by a tap (WEBSITE-CHANGES-PLAN §4 C.8):
+//   • A TIMED timerKind ('movement' | 'mindless') → the smart action: the button
+//     OPENS the right timer/sheet pre-set to this practice instead of logging in
+//     place, since a timed practice is finished inside its session, not by a tap
+//     (WEBSITE-CHANGES-PLAN §4 C.8):
 //       - 'movement' → useMovement().open (the Movement timer, seeded to its mode)
 //       - 'mindless' → useMindless().open (the On Air sit, seeded to its mindless_mode)
-//       - 'none'     → useMindless().open too; the session detects mindless_mode='log'
-//                      and opens the Just Log screen + optional note.
+//   • 'none' (a log-only practice) → the one-tap check-off, NOT a timer. It must never
+//     open a session (doing so opens the Free-Practice sit and logs the WRONG practice).
+//     Callers may pass 'none' raw; the isTimer guard below screens it out centrally so no
+//     call site can miswire it. (An authored "Just Log" note-capture screen is a planned
+//     redesign — see docs/PRACTICE-TIMER-CONTINUITY.md — not this one-tap path.)
 //     Pass `resumeFromSec` + `secondsTarget` (from a partial log today) to resume:
 //     the row reads "Continue Practice" and the timer opens where the member left off.
 //
@@ -70,7 +74,9 @@ export function LogPracticeButton({
   const mindless = useMindless()
   const movement = useMovement()
 
-  const isTimer = timerKind != null
+  // A log-only practice ('none') is a one-tap check-off, never a session. Screen it out here so a
+  // call site passing timer_kind raw can't open the Free-Practice sit and log the wrong practice.
+  const isTimer = timerKind != null && timerKind !== 'none'
   const isResume = resumeFromSec != null && resumeFromSec > 0
   // A timed practice leads with "Start Practice" (a partial reads "Continue Practice"); a
   // no-timer practice is a one-tap check-off ("Log it"). An explicit `label` overrides both.
