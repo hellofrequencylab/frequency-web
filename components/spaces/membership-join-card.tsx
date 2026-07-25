@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { Check, Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Check, Loader2, Ticket } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { isError } from '@/lib/action-result'
 import { joinTier, startSpaceMembershipCheckout } from '@/lib/spaces/memberships-actions'
@@ -46,18 +47,29 @@ export function MembershipJoinCard({
   spaceId,
   tier,
   billingOn = false,
+  includedEvents = [],
 }: {
   spaceId: string
   tier: MembershipTier
   /** When true (billing live), a PAID tier joins via Stripe Checkout; otherwise the display-only
    *  joinTier path is used (unchanged OFF behavior). */
   billingOn?: boolean
+  /** Upcoming events whose members-only ticket THIS tier unlocks (ADR-823) — advertised on the
+   *  card so a configured ticket gate markets the membership by itself. */
+  includedEvents?: { slug: string; title: string }[]
 }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
   const free = tier.priceCents === 0
+  // Join-and-return (ADR-823): an event page's "join their membership" pointer carries
+  // ?return_to=/events/<slug>, so after joining the member lands back on the ticket they came
+  // for. SAFETY: only a same-origin absolute path is honored (a leading single slash) — anything
+  // else (full URLs, protocol-relative "//host") is dropped, so the param can never redirect off-site.
+  const rawReturn = searchParams.get('return_to')
+  const returnTo = rawReturn && /^\/(?!\/)/.test(rawReturn) ? rawReturn : null
 
   function join() {
     if (!tier.id) return
@@ -76,6 +88,10 @@ export function MembershipJoinCard({
       const result = await joinTier(spaceId, tierId)
       if (isError(result)) {
         setError(result.error)
+        return
+      }
+      if (returnTo) {
+        router.push(returnTo)
         return
       }
       router.refresh()
@@ -106,6 +122,23 @@ export function MembershipJoinCard({
             <li key={i} className="flex items-start gap-2 text-sm text-text">
               <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden />
               <span>{benefit}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {includedEvents.length > 0 && (
+        <ul className="mt-3 space-y-1.5">
+          {includedEvents.map((e) => (
+            <li key={e.slug} className="flex items-start gap-2 text-sm text-text">
+              <Ticket className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+              <span>
+                Member ticket to{' '}
+                <Link href={`/events/${e.slug}`} className="font-medium underline underline-offset-2">
+                  {e.title}
+                </Link>{' '}
+                included
+              </span>
             </li>
           ))}
         </ul>

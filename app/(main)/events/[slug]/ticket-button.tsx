@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Ticket, Loader2, Lock } from 'lucide-react'
+import { Ticket, Loader2, Lock, Check } from 'lucide-react'
 import { startTicket, refundTicketAction } from './ticket-actions'
 import { isError } from '@/lib/action-result'
 import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
@@ -21,6 +21,8 @@ export type TicketTierView = {
   memberOnly: boolean
   /** ADR-823: restricted to active members of the hosting Space's membership program. */
   spaceMembersOnly: boolean
+  /** The specific membership tier that unlocks this ticket; null = any active membership. */
+  spaceTierId: string | null
 }
 
 const dollars = (cents: number | null | undefined) =>
@@ -66,6 +68,8 @@ export function TicketButton({
   tiers,
   membershipSpace,
   viewerIsSpaceMember,
+  viewerSpaceTierId,
+  eventSlug,
   previewMode,
 }: {
   eventId: string
@@ -77,6 +81,10 @@ export function TicketButton({
   membershipSpace?: { name: string; slug: string } | null
   /** Does the viewer hold an active membership in the hosting Space? */
   viewerIsSpaceMember?: boolean
+  /** The viewer's membership tier id in the hosting Space (tier-specific gates compare on it). */
+  viewerSpaceTierId?: string | null
+  /** This event's slug — the join pointer carries it as return_to so joining loops back here. */
+  eventSlug?: string
   /** Manager-only payments preview: render the full buyer UI with checkout disabled (payouts not
    *  connected yet). The page gates who sees this; the server would refuse a checkout anyway. */
   previewMode?: boolean
@@ -148,6 +156,10 @@ export function TicketButton({
   // ── Tiered selector ──
   const buyerChosen = selected ? isBuyerChosen(selected.pricingMode) : false
   const ctaDisabled = isPending || !selected || selected.soldOut || previewMode
+  // Does the viewer's membership unlock a gated tier (ADR-823)? Tier-specific gates need THE
+  // named membership tier; a plain members gate takes any active membership.
+  const unlocked = (t: TicketTierView) =>
+    !!viewerIsSpaceMember && (t.spaceTierId == null || t.spaceTierId === viewerSpaceTierId)
 
   return (
     <div className="space-y-3">
@@ -175,12 +187,18 @@ export function TicketButton({
                       Members
                     </span>
                   )}
-                  {t.spaceMembersOnly && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
-                      <Lock className="h-2.5 w-2.5" />
-                      {membershipSpace ? `${membershipSpace.name} members` : 'Space members'}
-                    </span>
-                  )}
+                  {t.spaceMembersOnly &&
+                    (unlocked(t) ? (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
+                        <Check className="h-2.5 w-2.5" />
+                        Included with your membership
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
+                        <Lock className="h-2.5 w-2.5" />
+                        {membershipSpace ? `${membershipSpace.name} members` : 'Space members'}
+                      </span>
+                    ))}
                 </p>
                 {t.description && <p className="mt-0.5 text-xs text-muted">{t.description}</p>}
                 {t.spotsLeft != null && !t.soldOut && (
@@ -195,18 +213,19 @@ export function TicketButton({
         })}
       </div>
 
-      {/* Members-included ticket, viewer not (yet) a member (ADR-823): an honest lock with a join
-          pointer, instead of a surprise refusal at checkout. The server gate stays authoritative. */}
-      {selected && selected.spaceMembersOnly && !viewerIsSpaceMember && membershipSpace && (
+      {/* Members-included ticket the viewer's membership doesn't unlock (ADR-823): an honest lock
+          with a join pointer, instead of a surprise refusal at checkout. The link carries return_to
+          so joining loops straight back to this event. Server gate stays authoritative. */}
+      {selected && selected.spaceMembersOnly && !unlocked(selected) && membershipSpace && (
         <p className="rounded-lg bg-surface-elevated px-3 py-2 text-xs text-muted">
           This ticket is included with a {membershipSpace.name} membership.{' '}
           <a
-            href={`/spaces/${membershipSpace.slug}`}
+            href={`/spaces/${membershipSpace.slug}${eventSlug ? `?return_to=${encodeURIComponent(`/events/${eventSlug}`)}` : ''}`}
             className="font-semibold text-text underline underline-offset-2"
           >
             Join on their page
           </a>{' '}
-          and come back.
+          and it brings you back here.
         </p>
       )}
 

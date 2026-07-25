@@ -396,3 +396,10 @@ Enforced in `createTicketCheckout` before the free-claim return (pure decision:
 named membership tier must belong to the hosting Space). Host editor gets a "Who can buy"
 select; the event page shows a lock chip + a join pointer for non-members. Composes with the
 platform `member_only` (Crew+) gate. Migration `20261220000000`.
+
+**Cohesion glue (same day):** membership cards on the join surface automatically advertise the
+upcoming events their tier's ticket gate includes (`lib/events/membership-included.ts`, pure
+`includedEventCoversTier` tested); the event page shows members "Included with your membership"
+(tier-accurate) instead of the lock; and the join pointer carries `?return_to=/events/<slug>` —
+validated same-origin-path-only in the join card — so a free/billing-off join loops the member
+straight back to the ticket they came for.
