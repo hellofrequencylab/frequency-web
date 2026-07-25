@@ -163,6 +163,29 @@ disabling can never strand a queued reply. At-least-once by design (enqueue → 
 Schema: `comms_messages.delivery_status` (already in the spine) + `comms_conversations.last_digested_at`
 (migration `20261211000000_conversations_digest_marker.sql`) + partial indexes for both scans.
 
+## Email bridge — two-way from your own inbox (ADR-814, `CONVERSATION_EMAIL_BRIDGE`)
+
+Off by default; needs inbound receiving already live. Makes the whole loop run from a normal mail app, no
+console required:
+
+1. A member replies → the inbound webhook threads it (as today) **and** forwards a copy to the assigned
+   agent's (else owner's) real inbox, with `Reply-To` = a **house** address.
+2. The agent replies from Gmail / their phone → that lands on the house address → recorded as an outbound
+   message and sent onward to the member, with `Reply-To` = the **member** address. Loop closed.
+
+The safety hinge is the reply-address `role` (`lib/comms/reply-address.ts`): direction is decided by which
+**secret-derived** address the reply hits, never by the spoofable `From`.
+
+| Role | Signs | Address | A reply here routes |
+|---|---|---|---|
+| `member` (default, unchanged) | `conv:<ref>` | `reply+<ref>-<tag>@reply.` | INBOUND onto the thread |
+| `house` | `conv:<ref>:house` | `reply+<ref>.h-<tag>@reply.` | OUTBOUND to the member, as the house |
+
+The two tags are distinct HMACs, so a leaked member address can never send outbound and a spoofed From
+can't flip direction. A valid house token is always honored (it only exists because we emitted it), so an
+agent's reply to an in-flight forward survives the flag being turned off. Outbound is deduped on the agent's
+inbound `Message-ID`; the RFC 3834 loop guard runs before both roles.
+
 ## Phased build
 
 | Phase | Scope | Risk |
@@ -175,8 +198,10 @@ Schema: `comms_messages.delivery_status` (already in the spine) + `comms_convers
 | **4 — leader→group** ✅ | `lib/comms/leader-send.ts`: `segmentForLeaderDownline` (union of the leader's led circles via `resolveSegment('circle:<id>')`) + `sendLeaderMessageToDownline` (fans out into one `kind='leader'` conversation per member, as themselves, consent-gated). `<LeaderBroadcast>` "Message my group" with the reach preview + send tally; `sendLeaderBroadcast` action. | low |
 | **5 — AI seams** ✅ | Vera in the composer/triage: `draftConversationReply` (drafts into the composer), `summarizeConversation`, `suggestConversationTriage` (persists priority) in the workspace actions, mirroring support's `draftReply`/`suggestTriage` (`completeText` + `withVoice` + `aiAvailable`/`featureOverBudget`/`recordAiUsage`; budget keys `conversation-draft`/`-summarize`/`-triage`). Buttons render only when the actions are injected (operator inbox gets them). | low |
 | **6 — batch + digest** ✅ | Quiet-time coalescing (ADR-813, `lib/comms/outbound-batch.ts` + `/api/cron/conversation-batches`): outbound burst → one email, inbound replies → one digest per recipient. Config-gated OFF by default; see the section above. | none (dormant) |
+| **7 — email bridge** ✅ | Two-way from your own inbox (ADR-814, `CONVERSATION_EMAIL_BRIDGE`): forward member replies to the agent's mailbox; the agent's mailed-in reply routes back out to the member via a distinct secret-derived `house` reply-address. Off by default; see the section above. | none (dormant) |
 
 Nothing changes for existing sends until the reply-mode toggle is exposed and flipped. Config to turn it
 on: `CONVERSATION_TOKEN_SECRET`, `CONVERSATION_REPLY_DOMAIN`, `EMAIL_CONVERSATION_FROM`,
 `RESEND_INBOUND_WEBHOOK_SECRET`, `CRM_INBOX_OWNER_PROFILE_ID` + the DNS records above. Optional quiet-time
 coalescing (Phase 6, off by default): `CONVERSATION_BATCH_WINDOW_MINUTES`, `CONVERSATION_DIGEST_WINDOW_MINUTES`.
+Optional email bridge (Phase 7, off by default, needs inbound receiving live): `CONVERSATION_EMAIL_BRIDGE`.

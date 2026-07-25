@@ -33,18 +33,27 @@ function getSecret(): string {
   return fallback
 }
 
-/** HMAC over the conversation ref. 16 bytes (32 hex) — the first half of SHA-256; forging an 8-byte tag
- *  is 2^64 work. The ref is stringified so the signed input is stable regardless of caller number/string. */
-export function makeConversationToken(ref: string | number): string {
+/** Who a reply address belongs to. `member` = the counterpart's reply-to (routes INBOUND onto the thread) —
+ *  the default, and the ONLY role most of the system uses. `house` = the operator/leader's reply-to on a
+ *  FORWARDED copy (the email bridge, ADR-814): a reply to it routes OUTBOUND to the member, as the house.
+ *  Direction is decided by which secret-derived address the reply lands on, never by the (spoofable) From. */
+export type ReplyRole = 'member' | 'house'
+
+/** HMAC over the conversation ref (+ role). 16 bytes (32 hex) — the first half of SHA-256; forging an
+ *  8-byte tag is 2^64 work. The ref is stringified so the signed input is stable regardless of caller
+ *  number/string. The `member` role signs `conv:<ref>` (UNCHANGED — addresses already in the wild keep
+ *  validating); `house` signs a distinct `conv:<ref>:house`, so a member token can never pass as a house
+ *  token (which would let a leaked member address send outbound as the house). */
+export function makeConversationToken(ref: string | number, role: ReplyRole = 'member'): string {
   const hmac = createHmac('sha256', getSecret())
-  hmac.update(`conv:${ref}`)
+  hmac.update(role === 'house' ? `conv:${ref}:house` : `conv:${ref}`)
   return hmac.digest('hex').slice(0, 32)
 }
 
-/** Constant-time verify. Fail-closed on bad length / mismatch / non-hex. */
-export function verifyConversationToken(ref: string | number, token: string): boolean {
+/** Constant-time verify (role-aware). Fail-closed on bad length / mismatch / non-hex. */
+export function verifyConversationToken(ref: string | number, token: string, role: ReplyRole = 'member'): boolean {
   if (!token || token.length !== 32) return false
-  const expected = makeConversationToken(ref)
+  const expected = makeConversationToken(ref, role)
   try {
     return timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(token, 'hex'))
   } catch {
@@ -52,9 +61,11 @@ export function verifyConversationToken(ref: string | number, token: string): bo
   }
 }
 
-/** The per-conversation Reply-To address, e.g. `reply+1042-<tag>@reply.frequencylocal.com`. */
-export function buildConversationReplyAddress(ref: string | number): string {
-  return `reply+${ref}-${makeConversationToken(ref)}@${REPLY_DOMAIN}`
+/** The per-conversation Reply-To address. `member` (default): `reply+1042-<tag>@reply…` (UNCHANGED). `house`:
+ *  `reply+1042.h-<tag>@reply…` — a distinct local part so the parser can tell the two roles apart O(1). */
+export function buildConversationReplyAddress(ref: string | number, role: ReplyRole = 'member'): string {
+  const marker = role === 'house' ? `${ref}.h` : `${ref}`
+  return `reply+${marker}-${makeConversationToken(ref, role)}@${REPLY_DOMAIN}`
 }
 
 /** Pull a bare, lowercased address out of a header value that may be `Name <a@b>` or just `a@b`. No regex
@@ -90,7 +101,7 @@ function isDigits(s: string): boolean {
  *  array. Does NOT verify the token — the caller verifies, then resolves the conversation. */
 export function parseConversationReplyAddress(
   to: string | string[] | null | undefined,
-): { ref: string; token: string } | null {
+): { ref: string; token: string; role: ReplyRole } | null {
   const parts = Array.isArray(to) ? to : typeof to === 'string' ? to.split(',') : []
   const domain = REPLY_DOMAIN.toLowerCase()
   for (const part of parts) {
@@ -101,13 +112,20 @@ export function parseConversationReplyAddress(
     if (addr.slice(at + 1) !== domain) continue
     const local = addr.slice(0, at)
     if (!local.startsWith('reply+')) continue
-    const rest = local.slice('reply+'.length) // "<ref>-<token>"
+    const rest = local.slice('reply+'.length) // "<ref>-<token>" or "<ref>.h-<token>" (house)
     const dash = rest.lastIndexOf('-')
     if (dash <= 0 || dash === rest.length - 1) continue
-    const ref = rest.slice(0, dash)
+    let ref = rest.slice(0, dash)
     const token = rest.slice(dash + 1)
-    if (!isDigits(ref) || token.length !== 32) continue
-    return { ref, token }
+    if (token.length !== 32) continue
+    // A `.h` suffix on the ref segment marks the house role; strip it before the digits check.
+    let role: ReplyRole = 'member'
+    if (ref.endsWith('.h')) {
+      role = 'house'
+      ref = ref.slice(0, -2)
+    }
+    if (!isDigits(ref)) continue
+    return { ref, token, role }
   }
   return null
 }

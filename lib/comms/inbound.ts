@@ -17,11 +17,19 @@
 // lib + the notifications table. FAIL-SAFE throughout: a write blip returns a status, never throws.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { parseConversationReplyAddress, verifyConversationToken } from '@/lib/comms/reply-address'
+import { enqueueEmail } from '@/lib/email'
+import {
+  parseConversationReplyAddress,
+  verifyConversationToken,
+  buildConversationReplyAddress,
+} from '@/lib/comms/reply-address'
 import {
   getConversationByRef,
   appendConversationMessage,
   reopenConversationIfClosed,
+  updateConversationFields,
+  newConversationMessageId,
+  type ConversationRow,
 } from '@/lib/comms/conversations'
 
 /** The normalized inbound message the router works from — a superset of the legacy {from,subject,text}. */
@@ -175,6 +183,7 @@ export function isAutomatedMessage(parsed: ParsedInboundMessage): boolean {
 
 export type InboundRouteStatus =
   | 'recorded'
+  | 'recorded_outbound'
   | 'duplicate'
   | 'no_token'
   | 'bad_token'
@@ -202,23 +211,29 @@ export async function routeInboundReply(parsed: ParsedInboundMessage): Promise<I
     if (!token) return { status: 'no_token' }
 
     // 2) Automated mail never threads (checked after we know it targets a thread, so bounces to a reply
-    //    address are dropped rather than mis-recorded as the member replying).
+    //    address are dropped rather than mis-recorded as the member replying — and, on the house address,
+    //    an operator's vacation responder never fires an outbound to the member).
     if (isAutomatedMessage(parsed)) return { status: 'dropped_automated' }
 
-    // 3) VERIFY the token. A present-but-invalid tag is a forgery or a rotated secret — drop it, and do
-    //    NOT fall through to contact-match (the address clearly targeted our reply domain).
-    if (!verifyConversationToken(token.ref, token.token)) return { status: 'bad_token' }
+    // 3) VERIFY the token FOR ITS ROLE. A present-but-invalid tag is a forgery or a rotated secret — drop
+    //    it, and do NOT fall through to contact-match (the address clearly targeted our reply domain). The
+    //    role is authenticated by the address itself: a member token cannot pass as a house token.
+    if (!verifyConversationToken(token.ref, token.token, token.role)) return { status: 'bad_token' }
 
     // 4) Resolve the thread.
     const conv = await getConversationByRef(token.ref)
     if (!conv) return { status: 'no_conversation', ref: token.ref }
 
-    // Anti-spoof: the token authenticates the THREAD binding (unforgeable), so a from-address that differs
-    // from the counterpart we mailed is recorded but FLAGGED (a member may legitimately reply from an
-    // alias; dropping would lose real replies). An agent sees the flag in the message metadata.
-    const senderMismatch = !!conv.externalEmail && conv.externalEmail.toLowerCase() !== parsed.from
+    // 5) HOUSE role = an operator/leader replying to a FORWARDED copy from their own inbox (email bridge).
+    //    Route it OUTBOUND to the member, as the house. Direction is decided by the unforgeable address, so
+    //    a spoofed From cannot trigger this. We ALWAYS honor a valid house token (not flag-gated): a house
+    //    address can only exist because we emitted it while the bridge was on, so an agent's reply to an
+    //    in-flight forward is never dropped even if the bridge is later turned off. The flag gates only
+    //    whether we forward NEW member replies (below).
+    if (token.role === 'house') return await routeHouseReplyOutbound(conv, parsed)
 
-    // 5) Append the inbound message. author = the counterpart (member profile OR external contact).
+    // 6) MEMBER role = the counterpart replied. Append the inbound message. author = the counterpart.
+    const senderMismatch = !!conv.externalEmail && conv.externalEmail.toLowerCase() !== parsed.from
     const authorKind = conv.memberProfileId ? 'member' : 'contact'
     const subjectId = conv.memberProfileId ?? conv.contactId
     const appended = await appendConversationMessage({
@@ -251,17 +266,149 @@ export async function routeInboundReply(parsed: ParsedInboundMessage): Promise<I
     if (appended === null) return { status: 'error', conversationId: conv.id, ref: conv.ref }
     if ('duplicate' in appended) return { status: 'duplicate', conversationId: conv.id, ref: conv.ref }
 
-    // 6) A new inbound message reopens a resolved/closed thread (mirrors support reopen).
+    // A new inbound message reopens a resolved/closed thread (mirrors support reopen).
     await reopenConversationIfClosed(conv.id, conv.status)
 
-    // 7) Notify the agent a reply is owed (assignee first, else the sender-trail owner). Best-effort.
+    // Notify the agent a reply is owed (assignee first, else the sender-trail owner). Best-effort.
     await notifyConversationReply(conv.assignedTo ?? conv.ownerProfileId, conv.id, conv.ref, conv.subject)
+
+    // EMAIL BRIDGE: forward the reply to the agent's real inbox so they can answer from their mail app.
+    // Best-effort, and only on FIRST receipt (we are past the duplicate check), so a redelivery never
+    // double-forwards. Never blocks the recorded reply.
+    if (emailBridgeEnabled()) await forwardInboundToHouse(conv, parsed)
 
     return { status: 'recorded', conversationId: conv.id, ref: conv.ref, senderMismatch }
   } catch (err) {
     console.error('[comms] routeInboundReply failed:', err)
     return { status: 'error' }
   }
+}
+
+/** The email bridge (ADR-814): forward member replies to the agent's inbox and route the agent's mailed-in
+ *  reply back out to the member. OFF by default; needs inbound receiving already live. */
+function emailBridgeEnabled(): boolean {
+  const v = (process.env.CONVERSATION_EMAIL_BRIDGE ?? '').trim().toLowerCase()
+  return v === '1' || v === 'true' || v === 'on'
+}
+
+/** The conversational sending identity (matches the reply actions' From: "<Name> via Frequency <addr>"). */
+function conversationFrom(name: string | null): string {
+  const addr = process.env.EMAIL_CONVERSATION_FROM ?? process.env.EMAIL_FROM ?? 'people@people.frequencylocal.com'
+  const clean = (name ?? 'Frequency').replace(/["\\<>]/g, '').trim() || 'Frequency'
+  return `${clean} via Frequency <${addr}>`
+}
+
+/** `Re:`-prefix a subject once (mirrors the reply actions). */
+function bridgeReplySubject(subject: string | null): string {
+  const s = (subject ?? '').trim() || '(no subject)'
+  return s.toLowerCase().startsWith('re:') ? s.slice(0, 200) : `Re: ${s}`.slice(0, 200)
+}
+
+/** Plain-text → minimal safe HTML (mirrors the reply actions' bodyToHtml). */
+function bridgeBodyToHtml(text: string): string {
+  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  // token-ok: inline style in a server-rendered HTML message body (no CSS vars available in email)
+  return `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;color:#111">${escaped.replace(/\n/g, '<br>')}</div>`
+}
+
+/** Resolve an agent profile's login email + display name (for the forward To + the outbound From).
+ *  FAIL-SAFE: null on any miss. */
+async function resolveAgent(profileId: string | null): Promise<{ email: string; name: string | null } | null> {
+  if (!profileId) return null
+  try {
+    const admin = createAdminClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = admin as unknown as { from: (t: string) => any }
+    const { data: profile } = await db.from('profiles').select('display_name, auth_user_id').eq('id', profileId).maybeSingle()
+    if (!profile?.auth_user_id) return null
+    const { data } = await admin.auth.admin.getUserById(profile.auth_user_id as string)
+    const email = data?.user?.email ?? null
+    if (!email) return null
+    return { email, name: (profile.display_name as string) ?? null }
+  } catch {
+    return null
+  }
+}
+
+/** Forward a member's inbound reply to the assigned agent's (else owner's) real inbox. The forwarded copy's
+ *  Reply-To is the HOUSE address, so when the agent hits reply in their mail app it routes back OUTBOUND to
+ *  the member (routeHouseReplyOutbound). Best-effort; never throws. */
+async function forwardInboundToHouse(conv: ConversationRow, parsed: ParsedInboundMessage): Promise<void> {
+  try {
+    const agent = await resolveAgent(conv.assignedTo ?? conv.ownerProfileId)
+    if (!agent) return
+    const memberName = conv.externalEmail ?? 'A member'
+    const body = parsed.text ?? '(no message body)'
+    await enqueueEmail({
+      to: agent.email,
+      // Show the member as the sender so the agent's inbox reads like a normal thread.
+      from: conversationFrom(memberName),
+      replyTo: buildConversationReplyAddress(conv.ref, 'house'),
+      subject: bridgeReplySubject(conv.subject),
+      html: bridgeBodyToHtml(body),
+      text: body,
+      headers: { 'Message-ID': newConversationMessageId(conv.ref) },
+    })
+  } catch (err) {
+    console.error('[comms] forwardInboundToHouse failed (non-fatal):', err)
+  }
+}
+
+/** An agent replied to the house address from their own inbox → record it as an outbound message and send
+ *  it onward to the member (as the house), with the MEMBER reply address so the member's reply threads back
+ *  inbound. Deduped on the agent's inbound Message-ID so a provider redelivery never double-sends. */
+async function routeHouseReplyOutbound(conv: ConversationRow, parsed: ParsedInboundMessage): Promise<InboundRouteResult> {
+  if (!conv.externalEmail) return { status: 'no_conversation', conversationId: conv.id, ref: conv.ref }
+  const agentId = conv.assignedTo ?? conv.ownerProfileId
+  const agent = await resolveAgent(agentId)
+  const authorKind = conv.kind === 'leader' ? 'leader' : 'staff'
+  const body = parsed.text ?? '(no message body)'
+
+  // Record the outbound FIRST, keyed on the agent's inbound Message-ID: a redelivery hits the unique index
+  // and returns `duplicate`, so we never send the member a second copy.
+  const appended = await appendConversationMessage({
+    conversationId: conv.id,
+    direction: 'outbound',
+    authorKind,
+    authorId: agentId,
+    body,
+    externalMessageId: parsed.messageId,
+    mirror:
+      conv.ownerProfileId && (conv.memberProfileId || conv.contactId)
+        ? {
+            ownerProfileId: conv.ownerProfileId,
+            subjectKind: conv.memberProfileId ? 'profile' : 'contact',
+            subjectId: (conv.memberProfileId ?? conv.contactId)!,
+            spaceId: conv.spaceId,
+            subject: conv.subject,
+          }
+        : null,
+  })
+  if (appended === null) return { status: 'error', conversationId: conv.id, ref: conv.ref }
+  if ('duplicate' in appended) return { status: 'duplicate', conversationId: conv.id, ref: conv.ref }
+
+  // Send onward to the member. Reply-To = the MEMBER address so their reply comes back INBOUND.
+  try {
+    await enqueueEmail({
+      to: conv.externalEmail,
+      from: conversationFrom(agent?.name ?? null),
+      replyTo: buildConversationReplyAddress(conv.ref, 'member'),
+      subject: bridgeReplySubject(conv.subject),
+      html: bridgeBodyToHtml(body),
+      text: body,
+      headers: { 'Message-ID': newConversationMessageId(conv.ref) },
+    })
+  } catch (err) {
+    // The message is on the thread; the outbox is the retry layer for the actual send. Ack (200) rather
+    // than 5xx — a redelivery would dedupe on the append and never re-enqueue, so retrying here is futile.
+    console.error('[comms] routeHouseReplyOutbound enqueue failed (recorded on thread):', err)
+  }
+
+  // An outbound reply moves an active thread to "waiting" (mirrors the console reply).
+  if (conv.status === 'open' || conv.status === 'in_progress') {
+    await updateConversationFields(conv.id, { status: 'waiting' })
+  }
+  return { status: 'recorded_outbound', conversationId: conv.id, ref: conv.ref }
 }
 
 /** Ping the agent that a conversation has a new inbound reply. Best-effort; never throws. */

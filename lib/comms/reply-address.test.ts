@@ -17,16 +17,37 @@ describe('conversation reply-address codec', () => {
     const addr = buildConversationReplyAddress(1042)
     expect(addr).toBe(`reply+1042-${makeConversationToken(1042)}@${REPLY_DOMAIN}`)
     const parsed = parseConversationReplyAddress(addr)
-    expect(parsed).toEqual({ ref: '1042', token: makeConversationToken(1042) })
+    expect(parsed).toEqual({ ref: '1042', token: makeConversationToken(1042), role: 'member' })
     expect(verifyConversationToken(parsed!.ref, parsed!.token)).toBe(true)
   })
 
   it('rejects a forged token (right ref, wrong tag)', () => {
     const forged = `reply+1042-${'0'.repeat(32)}@${REPLY_DOMAIN}`
     const parsed = parseConversationReplyAddress(forged)
-    expect(parsed).toEqual({ ref: '1042', token: '0'.repeat(32) })
+    expect(parsed).toEqual({ ref: '1042', token: '0'.repeat(32), role: 'member' })
     // Parsing is permissive; verification is what gates. The forged tag must fail.
     expect(verifyConversationToken('1042', '0'.repeat(32))).toBe(false)
+  })
+
+  it('house address is a DISTINCT role + tag, and the two roles never cross-verify', () => {
+    const memberAddr = buildConversationReplyAddress(1042, 'member')
+    const houseAddr = buildConversationReplyAddress(1042, 'house')
+    // Same ref, different local part + different tag.
+    expect(houseAddr).toBe(`reply+1042.h-${makeConversationToken(1042, 'house')}@${REPLY_DOMAIN}`)
+    expect(makeConversationToken(1042, 'house')).not.toBe(makeConversationToken(1042, 'member'))
+    expect(memberAddr).not.toBe(houseAddr)
+
+    // Parse recovers the role.
+    expect(parseConversationReplyAddress(memberAddr)).toEqual({ ref: '1042', token: makeConversationToken(1042, 'member'), role: 'member' })
+    expect(parseConversationReplyAddress(houseAddr)).toEqual({ ref: '1042', token: makeConversationToken(1042, 'house'), role: 'house' })
+
+    // A house token must NOT verify as member and vice-versa (a leaked member address can't send outbound).
+    const houseTok = makeConversationToken(1042, 'house')
+    const memberTok = makeConversationToken(1042, 'member')
+    expect(verifyConversationToken(1042, houseTok, 'house')).toBe(true)
+    expect(verifyConversationToken(1042, houseTok, 'member')).toBe(false)
+    expect(verifyConversationToken(1042, memberTok, 'house')).toBe(false)
+    expect(verifyConversationToken(1042, memberTok, 'member')).toBe(true)
   })
 
   it('a token for one ref never verifies for another (non-transferable)', () => {
