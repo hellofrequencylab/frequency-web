@@ -56,3 +56,50 @@ export async function downloadStyledQrPng(apiBase: string, name: string, size = 
     window.location.href = `${apiBase}&format=png&download=${encodeURIComponent(safe)}`
   }
 }
+
+// ── In-memory styled-SVG downloads (the share dialogs' QR) ─────────────────────────────────────
+// The share buttons render their QR from an SVG STRING (renderStyledQrSvg), not a managed /api/qr
+// code, so their downloads inline the logo here: an SVG loaded as an <img> (for the PNG raster)
+// never fetches external resources, and a downloaded .svg opened elsewhere could not resolve a
+// root-relative logo path. Inlining as a data URL makes both self-contained.
+
+/** Fetch a same-origin image URL and return it as a data URL (null on any failure). */
+async function toDataUrl(src: string): Promise<string | null> {
+  try {
+    const res = await fetch(src)
+    if (!res.ok) return null
+    const blob = await res.blob()
+    return await new Promise((resolve) => {
+      const r = new FileReader()
+      r.onload = () => resolve(typeof r.result === 'string' ? r.result : null)
+      r.onerror = () => resolve(null)
+      r.readAsDataURL(blob)
+    })
+  } catch {
+    return null
+  }
+}
+
+/** A copy of `style` with its logo inlined as a data URL (self-contained SVG). A failed fetch
+ *  drops the logo rather than shipping a broken reference. */
+export async function inlineQrStyleLogo<T extends { logo: string | null }>(style: T): Promise<T> {
+  if (!style.logo || style.logo.startsWith('data:')) return style
+  return { ...style, logo: await toDataUrl(style.logo) }
+}
+
+/** Download an in-memory (self-contained) SVG string as a .svg file. */
+export function downloadQrSvgString(svg: string, name: string): void {
+  const safe = name.replace(/\.svg$/i, '')
+  triggerDownload(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), `${safe}.svg`)
+}
+
+/** Rasterize an in-memory (self-contained) SVG string to a PNG and download it. */
+export async function downloadQrSvgStringAsPng(svg: string, name: string, size = 1024): Promise<void> {
+  const safe = name.replace(/\.png$/i, '')
+  const blobUrl = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }))
+  try {
+    triggerDownload(await svgUrlToPngBlob(blobUrl, size), `${safe}.png`)
+  } finally {
+    URL.revokeObjectURL(blobUrl)
+  }
+}
