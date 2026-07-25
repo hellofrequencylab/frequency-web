@@ -61,18 +61,19 @@ real text.
 
 ## 4. Cohesion gaps (follow-ups, scoped)
 
-- **F6** — Space 1:1 console sends (`startSpaceConversationAction`) gate on the PLATFORM consent
-  scope + global-only suppression and skip the tenant's own `consent_state` / per-space suppression /
-  topic mute (which the Space *campaign* path checks). A per-space unsubscribe doesn't stop a 1:1
-  send. The two generations also disagree on the reply category (`marketing` vs `transactional`).
-- **F7** — Pre-tenancy stragglers that fail CLOSED (no leak, but degrade as tenancy data accrues):
-  `lib/ai/vera/today.ts`, `lib/dashboard/scores.ts` (subject_id→profile_id stitch empties for tenant
-  rows), and `spaces/[slug]/crm/inbox-actions.ts` (space flat-inbox reply requires `profileId`, which
-  tenant rows never carry → "isn't a member yet" for tenant contacts).
-- **Parity guard blind spot** — the two **flat-inbox** surfaces are an older generation (hand-rolled
-  `bodyToHtml`, no shared `renderReplyEmail`/signature/reply-address/batching, `marketing` category),
-  not covered by `check:crm-parity`. Migrating flat-inbox replies onto the spine reply-token would
-  also fix F1's root cause and F6's category divergence.
+- **F6 — ✅ CLOSED (both halves, ADR-821).** The tenant consent lane (contact `consent_state`,
+  per-space suppression, per-space topic mute) was added to the Space 1:1 send earlier in the day;
+  the category divergence closed with the shared compose primitive: a FRESH 1:1 runs the contact
+  lane as `transactional` (unsubscribe/suppression only) plus a member `lifecycle` platform gate,
+  and both compose surfaces (platform + Space) delegate to `startConversationMessage`
+  (`lib/comms/conversation-compose.ts`), the same pipeline replies use.
+- **F7 — ✅ CLOSED.** F7a (tenant-contact consent fallback on the space flat-inbox reply) shipped
+  earlier in the day and is now superseded by the flat-inbox retirement; F7b/c (Vera Today + the
+  Space lifecycle funnel) union the tenant contact lane (`lib/ai/vera/today.ts`,
+  `lib/dashboard/scores.ts`).
+- **Parity guard blind spot — ✅ CLOSED (ADR-820).** The two flat-inbox surfaces are RETIRED into
+  the Conversations workspace (redirects; open loops backfilled by migration `20261219000000` —
+  prod had zero). One reply pipeline remains, fully covered by `check:crm-parity`.
 
 ## 5. Safeties that hold (verified)
 
@@ -87,5 +88,6 @@ per-space topic mutes + intentional global STOP; campaign sends rigorously root-
 
 ---
 
-*Owner: Daniel (Vision Steward). Audit + fixes 2026-07-25. F2/F5 await an owner ruling; F6/F7 +
-the flat-inbox→spine migration are scoped follow-ups.*
+*Owner: Daniel (Vision Steward). Audit + fixes 2026-07-25. EVERY finding is now closed: F1–F4
+fixed, F2/F5 ruled + implemented, F6/F7 closed, and the flat-inbox generation retired (ADR-820) with
+new-outreach compose unified on the spine (ADR-821).*

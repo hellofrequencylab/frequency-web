@@ -118,7 +118,7 @@ export function SupportChatWidget() {
   )
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 print:hidden">
+    <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-50 print:hidden">
       {open && (
         <div className="mb-3 flex h-[32rem] max-h-[calc(100dvh-6rem)] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-pop">
           <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">

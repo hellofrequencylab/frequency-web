@@ -169,7 +169,7 @@ export async function recordInboundEmail(
  *  that tenant's timeline). The real fix for lane-precise routing is the conversation spine's
  *  reply-token (which carries the conversation, and with it the lane); flat-inbox replies should
  *  migrate onto it. FAIL-SAFE: null on miss. */
-async function matchContactByEmail(email: string): Promise<{
+export async function matchContactByEmail(email: string): Promise<{
   contactId: string
   email: string | null
   profileId: string | null

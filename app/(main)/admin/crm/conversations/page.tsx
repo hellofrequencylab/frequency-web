@@ -17,7 +17,13 @@ import {
 } from '@/lib/comms/workspace'
 import { OPEN_CONVERSATION_STATUSES } from '@/lib/comms/labels'
 import { ConversationWorkspace } from '@/components/admin/crm/conversation-workspace'
-import { draftConversationReply, summarizeConversation, suggestConversationTriage } from './actions'
+import { SpaceConversationCompose } from '@/components/spaces/crm/space-conversation-compose'
+import {
+  draftConversationReply,
+  summarizeConversation,
+  suggestConversationTriage,
+  startConversationAction,
+} from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,6 +63,15 @@ export default async function CrmConversationsPage({
       icon={Inbox}
       width="wide"
       description="Every ticketed conversation in one place: support, outreach, and replies. Read the thread, assign it, and reply. Their reply comes back to the same thread."
+      actions={
+        /* New-outreach compose (ADR-821): start a ticketed 1:1 from here. The rich, block-based
+           email editor lives one door over — the Message Member button on any member's detail pane
+           (the site-wide studio editor, which already lands as a conversation). */
+        <SpaceConversationCompose
+          startAction={startConversationAction}
+          description="Message a member or contact. It opens a tracked thread, and their reply comes back here. For a designed email, use Message Member on their detail pane."
+        />
+      }
     >
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatCard label="Open" value={openCount} icon={Inbox} bordered />

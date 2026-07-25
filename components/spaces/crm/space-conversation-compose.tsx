@@ -13,7 +13,14 @@ import { isError, type ActionResult } from '@/lib/action-result'
 
 type StartAction = (input: { email: string; subject: string; body: string }) => Promise<ActionResult<{ ref: string }>>
 
-export function SpaceConversationCompose({ startAction }: { startAction: StartAction }) {
+export function SpaceConversationCompose({
+  startAction,
+  description = 'Message one of your contacts as your space. It opens a tracked thread, and their reply comes back here.',
+}: {
+  startAction: StartAction
+  /** Override the explainer line (the platform workspace reuses this dialog with its own copy). */
+  description?: string
+}) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState('')
@@ -64,9 +71,7 @@ export function SpaceConversationCompose({ startAction }: { startAction: StartAc
         <div className="space-y-3 p-4">
           <div>
             <h2 className="text-base font-semibold text-text">New conversation</h2>
-            <p className="mt-0.5 text-xs text-muted">
-              Message one of your contacts as your space. It opens a tracked thread, and their reply comes back here.
-            </p>
+            <p className="mt-0.5 text-xs text-muted">{description}</p>
           </div>
 
           {done ? (

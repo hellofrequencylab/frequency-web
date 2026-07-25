@@ -882,10 +882,6 @@ const TIER_PRICE_ROWS: { key: string; label: string; list?: boolean }[] = [
   { key: 'tier.crew', label: 'Crew', list: true },
   { key: 'tier.supporter', label: 'Supporter' },
 ]
-const PLAN_PRICE_ROWS: { key: string; label: string; setup?: boolean }[] = [
-  { key: 'plan.business', label: 'Business' },
-  { key: 'plan.nonprofit', label: 'Non Profit' },
-]
 
 function PlansSection({ values }: { values: PricingDefaults }) {
   return (
