@@ -75,6 +75,12 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // it via the shared full-depth set. While billing is OFF this short-circuits to granted (today's free
   // universal behavior), so nothing changes until go-live.
   space_collaborators: { axis: 'plan', minEntitlement: 'collective', enabled: true },
+  // Membership-linked ticket access (ADR-823): restricting an event ticket tier to the hosting
+  // Space's own members (space_members_only / space_tier_id on event_ticket_types) is Collective
+  // depth — it sells the Space's membership program, which is the Collective offer. Enforced where
+  // the gate is WRITTEN (lib/events/ticket-tiers validateSpaceAccess); the checkout enforces the
+  // stored gate unconditionally.
+  space_membership_tickets: { axis: 'plan', minEntitlement: 'collective', enabled: true },
   // Storefront (ADR-39X/Z) — available from the FREE plan (a free Space can sell; the plan
   // only buys the rake down + features). A per-Space toggle decides ON/OFF.
   space_storefront: { axis: 'plan', minEntitlement: 'free', enabled: true },

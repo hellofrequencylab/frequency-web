@@ -3884,6 +3884,8 @@ export type Database = {
           quantity: number | null
           sold: number
           sort_order: number
+          space_members_only: boolean
+          space_tier_id: string | null
           suggested_cents: number | null
         }
         Insert: {
@@ -3900,6 +3902,8 @@ export type Database = {
           quantity?: number | null
           sold?: number
           sort_order?: number
+          space_members_only?: boolean
+          space_tier_id?: string | null
           suggested_cents?: number | null
         }
         Update: {
@@ -3916,6 +3920,8 @@ export type Database = {
           quantity?: number | null
           sold?: number
           sort_order?: number
+          space_members_only?: boolean
+          space_tier_id?: string | null
           suggested_cents?: number | null
         }
         Relationships: [

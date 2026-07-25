@@ -113,11 +113,32 @@ interface TicketTypeRow {
   quantity: number | null
   sold: number
   member_only: boolean
+  /** ADR-823: only active members of the event's hosting Space may buy this tier. */
+  space_members_only: boolean
+  /** ADR-823: narrows the gate to one space_membership_tiers row; null = any active membership. */
+  space_tier_id: string | null
   active: boolean
 }
 
 const TICKET_TYPE_COLS =
-  'id, event_id, name, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, active'
+  'id, event_id, name, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, space_members_only, space_tier_id, active'
+
+/** PURE (tested): does a buyer's membership state clear a tier's space-membership gate (ADR-823)?
+ *  `membership` is the buyer's ACTIVE space_memberships row in the event's hosting Space (or null).
+ *  Returns null when clear, else the member-readable refusal. A tier that names a specific
+ *  membership tier requires THAT tier; otherwise any active membership qualifies. */
+export function spaceMembershipGateError(
+  tier: Pick<TicketTypeRow, 'space_members_only' | 'space_tier_id'>,
+  membership: { tier_id: string } | null,
+  spaceName: string,
+): string | null {
+  if (!tier.space_members_only && !tier.space_tier_id) return null
+  if (!membership) return `This ticket is for ${spaceName} members. Join their membership first.`
+  if (tier.space_tier_id && membership.tier_id !== tier.space_tier_id) {
+    return `This ticket is for a different ${spaceName} membership tier.`
+  }
+  return null
+}
 
 /** Validate, record a pending ticket, and return the hosted Checkout URL.
  *
@@ -190,6 +211,47 @@ export async function createTicketCheckout(opts: {
       .maybeSingle()
     const t = (prof as { membership_tier?: string | null } | null)?.membership_tier ?? 'free'
     if (t === 'free') return { error: 'This ticket is for members only.' }
+  }
+
+  // SPACE-MEMBERSHIP gate (ADR-823): a tier restricted to the hosting Space's own members
+  // requires an ACTIVE space_memberships row for the buyer in that Space — the specific
+  // membership tier when the ticket names one. Runs BEFORE the free-claim return so a
+  // members-included free ticket is gated exactly like a paid one. Keys on the same space
+  // resolution attribution + fees use (host_space_id, else the placement space, ADR-819).
+  if (tier && (tier.space_members_only || tier.space_tier_id)) {
+    const membershipSpaceId = event.host_space_id ?? event.space_id
+    if (!membershipSpaceId) return { error: 'That ticket type isn’t available.' }
+    // space_memberships isn't in the generated types yet (ADR-246) — narrow untyped read.
+    const mdb = db() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (col: string, val: string) => {
+            eq: (col: string, val: string) => {
+              eq: (col: string, val: string) => {
+                maybeSingle: () => Promise<{ data: { tier_id: string } | null }>
+              }
+            }
+          }
+        }
+      }
+    }
+    const [{ data: membership }, { data: hsName }] = await Promise.all([
+      mdb
+        .from('space_memberships')
+        .select('tier_id')
+        .eq('space_id', membershipSpaceId)
+        .eq('member_profile_id', opts.buyerProfileId)
+        .eq('status', 'active')
+        .maybeSingle(),
+      db().from('spaces').select('name, brand_name').eq('id', membershipSpaceId).maybeSingle(),
+    ])
+    const hs = hsName as { name: string | null; brand_name: string | null } | null
+    const gateError = spaceMembershipGateError(
+      tier,
+      membership,
+      hs?.brand_name ?? hs?.name ?? 'the hosting space',
+    )
+    if (gateError) return { error: gateError }
   }
 
   // ── Inventory: never oversell. quantity NULL = unlimited. Sold-out routes the
