@@ -302,19 +302,20 @@ export async function flushConversationDigests(): Promise<{ recipients: number; 
   for (const [profileId, rows] of byRecipient) {
     const email = await resolveProfileEmail(admin, profileId)
     recipients++
-    if (email) {
-      try {
-        await enqueueEmail({
-          to: email,
-          subject: rows.length === 1 ? 'You have a new reply' : `You have ${rows.length} new replies`,
-          html: digestHtml(rows),
-          text: digestText(rows),
-        })
-        emails++
-      } catch (err) {
-        console.error('[comms] flushConversationDigests enqueue failed:', err)
-        continue // leave the watermark un-advanced → retried next pass
-      }
+    // No deliverable address → do NOT advance the watermark (else the digest is silently lost); a later
+    // pass retries once an email resolves. Mirrors the enqueue-failure branch below.
+    if (!email) continue
+    try {
+      await enqueueEmail({
+        to: email,
+        subject: rows.length === 1 ? 'You have a new reply' : `You have ${rows.length} new replies`,
+        html: digestHtml(rows),
+        text: digestText(rows),
+      })
+      emails++
+    } catch (err) {
+      console.error('[comms] flushConversationDigests enqueue failed:', err)
+      continue // leave the watermark un-advanced → retried next pass
     }
     // Advance each conversation's watermark to the reply we just summarized (NOT `now`, so a reply that
     // landed after our read still out-dates the watermark and rolls into the next digest).
@@ -351,7 +352,7 @@ async function resolveProfileEmail(
 function digestLine(r: DigestConvRow): { text: string; html: string } {
   const who = (r.external_email ?? '').trim() || 'A member'
   const subject = (r.subject ?? '').trim() || '(no subject)'
-  const text = `#${r.ref}  ${who} — ${subject}`
+  const text = `#${r.ref}  ${who} · ${subject}`
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   // token-ok: inline style in a server-rendered email body (no CSS vars available in email)
   const html = `<li style="margin:0 0 8px"><strong>#${r.ref}</strong> ${esc(who)} &middot; ${esc(subject)}</li>`

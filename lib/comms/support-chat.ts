@@ -16,10 +16,37 @@ import {
 } from '@/lib/comms/conversations'
 import { makeChatToken, verifyChatToken } from '@/lib/comms/chat-token'
 import { cleanConversationBody } from '@/lib/comms/message-body'
+import { escapeLike } from '@/lib/search-sanitize'
 
 /** The platform profile that owns an anonymous chat thread (same env the inbound webhook uses). */
 function inboxOwner(): string | null {
   return process.env.CRM_INBOX_OWNER_PROFILE_ID ?? null
+}
+
+/** Resolve-or-create the platform contact for a visitor email, so the chat threads onto a real contact card
+ *  and satisfies the spine's counterparty CHECK (openOrGetConversation returns null without a subject).
+ *  Mirrors matchContactByEmail (ilike, escaped) + a minimal insert. FAIL-SAFE: null on any error. */
+async function resolveOrCreateContactId(email: string, name: string): Promise<string | null> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = createAdminClient() as unknown as { from: (t: string) => any }
+    const existing = await db
+      .from('contacts')
+      .select('id')
+      .ilike('email', escapeLike(email))
+      .order('created_at', { ascending: false })
+      .limit(1)
+    const hit = existing?.data?.[0]?.id
+    if (hit) return String(hit)
+    const ins = await db
+      .from('contacts')
+      .insert({ email, display_name: name, source: 'support_chat' })
+      .select('id')
+      .single()
+    return ins?.data?.id ? String(ins.data.id) : null
+  } catch {
+    return null
+  }
 }
 
 export type ChatAuthor = 'visitor' | 'staff' | 'system'
@@ -49,10 +76,16 @@ export async function startSupportChat(input: {
   const name = (input.name ?? '').trim().slice(0, 120) || 'Visitor'
   if (!email || !email.includes('@') || email.length > 254) return null
 
+  // The spine requires a counterparty (subject_id) — resolve-or-create the visitor's contact first, else
+  // openOrGetConversation returns null and the whole chat is unavailable.
+  const contactId = await resolveOrCreateContactId(email, name)
+  if (!contactId) return null
+
   const conv = await openOrGetConversation({
     kind: 'crm',
     externalEmail: email,
     ownerProfileId: owner,
+    contactId,
     subject: `Live chat with ${name}`,
     channel: 'in_app',
     metadata: { source: 'support_chat', visitor_name: name },
