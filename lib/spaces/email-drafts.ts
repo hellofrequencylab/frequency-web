@@ -35,6 +35,13 @@ import {
   type AudienceFilter,
 } from '@/lib/spaces/audiences'
 import { sendSpaceCampaign as sendViaSeam, SPACE_UNSUBSCRIBE_PLACEHOLDER, type SpaceRecipient } from '@/lib/spaces/email'
+import { canEmailContact } from '@/lib/crm/contact-consent'
+import { isContactTopicMuted } from '@/lib/comms/contact-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
+import { brandSignature } from '@/lib/comms/signature'
+import { startConversationMessage, spaceConversationFrom } from '@/lib/comms/conversation-compose'
+import { buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
+import { SITE_URL } from '@/lib/site'
 import { campaignStatusToMessaging } from '@/lib/messaging/status'
 import type { MessagingCampaignItem } from '@/lib/messaging/console'
 import {
@@ -563,6 +570,139 @@ export async function sendSpaceEmailDraftToRecipients(
   }
 
   return ok({ recipientCount: res.data.sent })
+}
+
+/**
+ * SEND a block-email draft as TICKETED CONVERSATIONS (ADR-822) — the Space "Message Member" path.
+ * The owner's ruling: Space emails ride the ticketed system, shared by seat holders. Each recipient
+ * gets (or reuses) a SPACE-LANE conversation via the ONE shared compose primitive, so the designed
+ * email goes out brand-signed with the per-conversation Reply-To + Message-ID, the reply threads
+ * back into the Space's Conversations workspace, and every manager (seat holder) can read, assign,
+ * and answer it. Consent is the 1:1 stack (ADR-821), NOT the bulk marketing gate: the contact lane
+ * blocks only on unsubscribe/suppression, the per-space marketing topic mute applies, and a member's
+ * platform preference gates as lifecycle. A recipient with no contact row in THIS space is skipped
+ * (a conversation needs a counterparty; the composer only offers this space's own contacts).
+ * Editor-gated + space-scoped; stamps the draft sent when anything went out. Fail-closed.
+ */
+export async function sendSpaceEmailDraftAsConversations(
+  spaceId: string,
+  id: string,
+  recipients: SpaceRecipient[],
+): Promise<ActionResult<{ recipientCount: number; skippedCount: number }>> {
+  const gate = await requireSpaceEditor(spaceId)
+  if (!gate.ok) return fail(gate.error)
+  const { space } = gate
+  const actorProfileId = await getMyProfileId()
+  if (!actorProfileId) return fail('Sign in to send email for this space.')
+
+  if (!Array.isArray(recipients) || recipients.length === 0)
+    return fail('Add at least one recipient before sending.')
+
+  const row = await readDraft(id, spaceId)
+  if (!row) return fail('That email no longer exists.')
+  if ((row.status ?? 'draft') === 'sent') return fail('This email has already gone out.')
+  if (!(row.subject ?? '').trim()) return fail('Give your email a subject before sending.')
+
+  const brand = spaceBrand(space)
+  const layout = layoutFromBlockJson(row.block_json)
+  const compiled = compileEmailDoc(
+    { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
+    { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER },
+  )
+  if (!compiled.html.trim()) return fail('Add some content before sending.')
+
+  const fallbacks = MERGE_TAG_DEFAULT_FALLBACKS
+  const subject = applyMergeTags(compiled.subject || 'Your email', {}, { fallbacks, escape: false })
+  const baseHtml = applyMergeTags(compiled.html, {}, { fallbacks })
+  const baseText = applyMergeTags(compiled.text, {}, { fallbacks, escape: false })
+
+  // Resolve each recipient to THIS space's own contact row (id + linked profile), lane-pinned.
+  const emails = recipients.map((r) => r.email).filter(Boolean)
+  const byEmail = new Map<string, { contactId: string; profileId: string | null }>()
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (col: string, val: string) => {
+            in: (col: string, vals: string[]) => Promise<{
+              data: { id: string; email: string | null; profile_id: string | null }[] | null
+            }>
+          }
+        }
+      }
+    }
+    const { data } = await db.from('contacts').select('id, email, profile_id').eq('space_id', spaceId).in('email', emails)
+    for (const c of data ?? []) {
+      const e = (c.email ?? '').trim().toLowerCase()
+      if (e && c.id && !byEmail.has(e)) byEmail.set(e, { contactId: String(c.id), profileId: c.profile_id ?? null })
+    }
+  } catch {
+    // fall through: unmatched recipients are skipped below (fail-closed)
+  }
+
+  const brandName = space.brandName ?? space.name
+  const from = spaceConversationFrom(brandName)
+  const signature = brandSignature(brandName)
+
+  let sent = 0
+  let skipped = 0
+  for (const rec of recipients) {
+    const email = (rec.email ?? '').trim().toLowerCase()
+    const counterpart = email ? byEmail.get(email) : undefined
+    if (!counterpart) {
+      skipped++ // no contact in this space's lane: a conversation needs a counterparty
+      continue
+    }
+    // The 1:1 consent stack (ADR-821): contact lane transactional, per-space topic mute, member lifecycle.
+    const emailable = (await canEmailContact(email, 'transactional', spaceId)).allowed
+    const muted = emailable ? await isContactTopicMuted({ email, spaceId, topic: 'marketing' }) : false
+    let memberBlocked = false
+    if (emailable && !muted && counterpart.profileId) {
+      memberBlocked = !(await resolveSendGate(counterpart.profileId, 'email', 'lifecycle', { email })).allowed
+    }
+    if (!emailable || muted || memberBlocked) {
+      skipped++
+      continue
+    }
+
+    // Per-recipient unsubscribe link substituted into the compiled footer (the same placeholder the
+    // campaign seam substitutes), so the designed email keeps an honest opt-down even as a 1:1.
+    const unsubscribeUrl = buildSpaceUnsubscribeUrl({ baseUrl: SITE_URL, spaceId, email })
+    const html = baseHtml.split(SPACE_UNSUBSCRIBE_PLACEHOLDER).join(unsubscribeUrl)
+
+    const started = await startConversationMessage({
+      ownerProfileId: space.ownerProfileId ?? actorProfileId,
+      actorProfileId,
+      actorAuthorKind: 'staff',
+      from,
+      signature,
+      email,
+      contactId: counterpart.contactId,
+      profileId: counterpart.profileId,
+      spaceId,
+      subject,
+      body: baseText || subject,
+      bodyHtml: html,
+      metadata: { source: 'space_member_composer', campaign_id: id },
+    })
+    if (started) sent++
+    else skipped++
+  }
+
+  if (sent > 0) {
+    // Stamp the draft as sent (best-effort: the messages already went out).
+    try {
+      await campaignsTable()
+        .update({ status: 'sent', sent_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('space_id', spaceId)
+        .maybeSingle()
+    } catch {
+      // ignore: the send succeeded; the status stamp is non-critical.
+    }
+  }
+
+  return ok({ recipientCount: sent, skippedCount: skipped })
 }
 
 /**

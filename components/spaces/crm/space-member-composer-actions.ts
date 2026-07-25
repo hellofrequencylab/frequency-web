@@ -19,7 +19,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { spaceEmailColors } from '@/lib/spaces/email-colors'
 import { DEFAULT_EMAIL_COLORS, type EmailColors } from '@/lib/email-studio/render'
 import { normalizeEmail, type SpaceRecipient } from '@/lib/spaces/email'
-import { sendSpaceEmailDraftToRecipients } from '@/lib/spaces/email-drafts'
+import { sendSpaceEmailDraftAsConversations } from '@/lib/spaces/email-drafts'
 import { ok, fail, isError, type ActionResult } from '@/lib/action-result'
 import type { Space } from '@/lib/spaces/types'
 
@@ -142,12 +142,14 @@ export async function spaceMemberComposerColorsAction(slug: string): Promise<Ema
 }
 
 /**
- * Send the composed member message NOW (space-editor gated). `recipientKeys` are the chip emails; we normalize
- * + de-dupe them, resolve each to its Space contact (for the ledger link), and hand the resolved recipients to
- * the Space draft send seam (sendSpaceEmailDraftToRecipients), which compiles the draft's block body with the
- * Space brand palette and routes it through sendSpaceCampaign so consent, suppression, the daily cap, and the
- * per-recipient unsubscribe all apply. Returns how many actually went out. FAIL-CLOSED: an empty audience
- * sends to nobody.
+ * Send the composed member message NOW as TICKETED CONVERSATIONS (ADR-822, owner ruling: Space emails
+ * ride the ticketed system, shared by seat holders). `recipientKeys` are the chip emails; we normalize
+ * + de-dupe them and hand them to sendSpaceEmailDraftAsConversations, which compiles the draft's block
+ * body with the Space brand palette and opens (or reuses) a SPACE-LANE conversation per recipient via
+ * the shared compose primitive — brand-signed, per-conversation Reply-To, the reply threads back into
+ * the Space's Conversations workspace where every manager can read, assign, and answer it. The 1:1
+ * consent stack applies (contact-lane transactional + per-space topic mute + member lifecycle
+ * preference). Returns how many actually went out. FAIL-CLOSED: an empty audience sends to nobody.
  */
 export async function sendSpaceMemberMessageAction(
   slug: string,
@@ -171,16 +173,15 @@ export async function sendSpaceMemberMessageAction(
   ).slice(0, MAX_MEMBER_RECIPIENTS)
   if (emails.length === 0) return fail('Add at least one recipient.')
 
-  // Resolve each email to its Space contact so the outreach_sends ledger / unsubscribe map can link it. An
-  // email with no matching Space contact still sends as a bare recipient; the send seam's consent +
-  // suppression gate is the real authority on whether it goes out.
+  // Resolve each email to its Space contact (the conversation needs a counterparty; the send resolves
+  // profile links + consent per recipient itself, lane-pinned).
   const byEmail = await contactIdsByEmail(space.id, emails)
   const recipients: SpaceRecipient[] = emails.map((email) => {
     const contactId = byEmail.get(email)
     return contactId ? { contactId, email } : { email }
   })
 
-  const res = await sendSpaceEmailDraftToRecipients(space.id, campaignId, recipients)
+  const res = await sendSpaceEmailDraftAsConversations(space.id, campaignId, recipients)
   if (isError(res)) return res
   return ok({ recipientCount: res.data.recipientCount })
 }
