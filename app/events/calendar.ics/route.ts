@@ -13,7 +13,8 @@
 
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { buildVevent, icsEventInstants, planCalendarFeed, renderCalendar } from '@/lib/events/ics'
+import { buildVevent, icsEventInstants, icsLocalWallTimes, planCalendarFeed, renderCalendar } from '@/lib/events/ics'
+import { resolveZone } from '@/lib/time/zone'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,16 +36,23 @@ type FeedRow = {
   parent_event_id:  string | null
 }
 
-// Build one VEVENT for a master-feed row — resolving the TRUE UTC instant through the event's zone
-// (icsEventInstants), the one timezone seam. These are PUBLIC events, so the venue is included exactly
-// as the public event page + per-event .ics already expose it. `rrule`/`exdates` come from
-// planCalendarFeed: a recurring anchor gets the cadence + cancelled/missing occurrences subtracted.
+// Build one VEVENT for a master-feed row. A recurring anchor (rrule set) exports in LOCAL time —
+// DTSTART;TZID=zone + the stored wall-clock parts — so the client expands the series in the event's
+// zone: DST never shifts the hour and the EXDATEs/BYMONTHDAY idiom line up with the DB's materialized
+// occurrences (lib/events/ics.ts header). A one-off keeps the TRUE UTC instant (icsEventInstants), the
+// one timezone seam. These are PUBLIC events, so the venue is included exactly as the public event
+// page + per-event .ics already expose it. `rrule`/`exdates` come from planCalendarFeed: a recurring
+// anchor gets the cadence + cancelled/missing occurrences subtracted.
 function vevent(ev: FeedRow, appUrl: string, rrule: string | null, exdates: Date[]): string[] {
-  const { start, end } = icsEventInstants(ev.starts_at, ev.ends_at, ev.time_zone)
+  const tzid = rrule ? resolveZone(ev.time_zone) : null
+  const { start, end } = tzid
+    ? icsLocalWallTimes(ev.starts_at, ev.ends_at)
+    : icsEventInstants(ev.starts_at, ev.ends_at, ev.time_zone)
   return buildVevent({
     uid: ev.id,
     start,
     end,
+    tzid,
     summary: ev.title,
     url: `${appUrl}/events/${ev.slug}`,
     location: ev.location,
@@ -71,12 +79,15 @@ export async function GET() {
   const rows = data as unknown as FeedRow[]
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 
+  // Group by series: a recurring anchor becomes one RRULE VEVENT (+ EXDATE for the missing/cancelled
+  // occurrences), its in-feed children are folded in, and a child whose anchor is absent stays its own.
+  const plans = planCalendarFeed(rows)
   const body = renderCalendar({
     name: 'Frequency events',
     description: 'Upcoming public events across Frequency',
-    // Group by series: a recurring anchor becomes one RRULE VEVENT (+ EXDATE for the missing/cancelled
-    // occurrences), its in-feed children are folded in, and a child whose anchor is absent stays its own.
-    vevents: planCalendarFeed(rows).map((p) => vevent(p.row, appUrl, p.rrule, p.exdates)),
+    // One VTIMEZONE per distinct zone used by a recurring (TZID-form) VEVENT; renderCalendar dedupes.
+    tzids: plans.filter((p) => p.rrule).map((p) => resolveZone(p.row.time_zone)),
+    vevents: plans.map((p) => vevent(p.row, appUrl, p.rrule, p.exdates)),
   })
 
   return new NextResponse(body, {

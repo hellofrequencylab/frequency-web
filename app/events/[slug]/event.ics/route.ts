@@ -13,8 +13,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { buildVevent, computeFeedExdates, icsEventInstants, renderCalendar, rruleForRecurrence } from '@/lib/events/ics'
-import { eventInstant } from '@/lib/time/zone'
+import { buildVevent, computeFeedExdates, icsEventInstants, icsLocalWallTimes, renderCalendar, rruleForRecurrence } from '@/lib/events/ics'
+import { eventInstant, resolveZone } from '@/lib/time/zone'
 
 export const dynamic = 'force-dynamic'
 
@@ -62,19 +62,29 @@ export async function GET(
   const isPublicVisibility = vis === 'public' || vis === 'unlisted'
   const masked = !isPublished || !isPublicVisibility || ev.is_cancelled
 
-  // starts_at/ends_at store the event's wall-clock as UTC PARTS. icsEventInstants resolves the TRUE
-  // UTC instant through the event's own zone before stamping (the old code stamped the raw wall-clock
-  // digits with a Z, so a 7pm-PT event landed 7h off). Emitting the true instant means each
-  // subscriber's client shows the event at the correct absolute moment in their own local zone.
-  const { start, end } = icsEventInstants(ev.starts_at, ev.ends_at, ev.time_zone)
-
   // A recurring ANCHOR (recurrence_type != none, no parent) exports as ONE VEVENT carrying an RRULE, so
   // "add to calendar" adds the whole series instead of a single date. A materialized CHILD occurrence
   // (parent_event_id set) stays a single dated VEVENT. Never emit the cadence for a masked event (a
-  // private/draft/cancelled event leaks nothing extra, matching the title/venue masking above).
+  // private/draft/cancelled event leaks nothing extra, matching the title/venue masking above). The
+  // anchor's stored day-of-month drives the monthly short-month idiom (a day-31 series must not skip
+  // February); UNTIL stays the TRUE UTC instant, as RFC 5545 requires whenever DTSTART is zoned.
   const isRecurringAnchor = ev.parent_event_id == null && (ev.recurrence_type ?? 'none') !== 'none'
   const untilInstant = ev.recurrence_until ? eventInstant(ev.recurrence_until, ev.time_zone) : null
-  const rrule = !masked && isRecurringAnchor ? rruleForRecurrence(ev.recurrence_type, untilInstant) : null
+  const rrule = !masked && isRecurringAnchor
+    ? rruleForRecurrence(ev.recurrence_type, untilInstant, new Date(ev.starts_at).getUTCDate())
+    : null
+
+  // starts_at/ends_at store the event's wall-clock as UTC PARTS. A recurring series (rrule set)
+  // exports in LOCAL time — DTSTART;TZID=zone + those stored parts + a VTIMEZONE — so the client
+  // expands the RRULE in the event's zone and DST never shifts the hour (a bare UTC DTSTART expands
+  // at one fixed offset and rendered every post-transition occurrence an hour off). A one-off or
+  // masked VEVENT keeps the TRUE UTC instant via icsEventInstants (the old code stamped the raw
+  // wall-clock digits with a Z, so a 7pm-PT event landed 7h off); a single instant has no expansion
+  // to drift.
+  const tzid = rrule ? resolveZone(ev.time_zone) : null
+  const { start, end } = tzid
+    ? icsLocalWallTimes(ev.starts_at, ev.ends_at)
+    : icsEventInstants(ev.starts_at, ev.ends_at, ev.time_zone)
 
   // EXDATE parity with the subscribable feeds (planCalendarFeed): subtract the anchor's cancelled/
   // deleted occurrences so "add to calendar" from the event page never resurrects a date the member
@@ -95,7 +105,6 @@ export async function GET(
         starts_at: ev.starts_at,
         recurrence_type: ev.recurrence_type,
         recurrence_until: ev.recurrence_until,
-        time_zone: ev.time_zone,
       },
       present,
     )
@@ -104,11 +113,14 @@ export async function GET(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 
   const body = renderCalendar({
+    // The TZID-form recurring VEVENT needs its zone's VTIMEZONE in the same calendar (RFC 5545).
+    tzids: tzid ? [tzid] : [],
     vevents: [
       buildVevent({
         uid: ev.id,
         start,
         end,
+        tzid,
         summary: masked ? 'Private event' : ev.title,
         url: `${appUrl}/events/${ev.slug}`,
         // Venue + description are omitted entirely when masked (never leak them).
