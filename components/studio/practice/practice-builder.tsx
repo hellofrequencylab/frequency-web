@@ -23,7 +23,7 @@ import {
   MOVEMENT_MODES, STRENGTH_PRESETS, YOGA_PRESETS,
   WALK_DURATION_PRESETS, RUN_DURATION_PRESETS, STRETCH_DURATION_PRESETS,
   WALK_INTERVAL_PRESETS, RUN_INTERVAL_PRESETS, STRETCH_INTERVAL_PRESETS,
-  clampSeconds, clampRounds,
+  clampSeconds, clampRounds, timerPreview,
   type MovementConfig, type MovementMode, type StrengthPresetKind, type YogaPresetKind,
 } from '@/lib/movement'
 
@@ -760,6 +760,18 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         )}
 
         <p className="mt-1 text-xs text-subtle">On a Journey, a Mindless or Get Moving practice shows a Start Practice button; a Log it practice shows a Log it check-off.</p>
+
+        {/* LIVE LAUNCH PREVIEW (PRACTICE-TIMER-CONTINUITY P5): the exact summary line the member's
+            card + detail page render (the same pure timerPreview the cards call), recomputed live
+            as the creator edits. The creator sees what they are shipping, not an approximation. */}
+        <p className="mt-3 rounded-lg bg-surface-2 px-3 py-2 text-xs text-text">
+          <span className="font-semibold">Members will see:</span>{' '}
+          {timerPreview({
+            timerKind,
+            movementConfig: timerKind === 'movement' ? composeMovementConfig() : null,
+            durationMin: durationMin ? Number(durationMin) || null : null,
+          })}
+        </p>
       </fieldset>
 
       {/* Warm-up — a message + length shown during the timer pre-roll, before Start Practice

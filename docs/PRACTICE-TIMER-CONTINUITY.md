@@ -18,11 +18,11 @@ overlapping "get ready" moments into one and making Just Log a note, not a timer
 
 | # | Item | Kind | Where | State |
 |---|---|---|---|---|
-| 1 | Double countdown on ALL Get Moving modes (Walk/Run/Yoga/Stretch/Strength) | 🔴 bug | `lib/movement.ts` + `movement-session.tsx` | 📋 P1 (owner call on approach) |
-| 2 | Authored "Just Log" never opens the Just Log screen (routes to Meditate) | 🔴 bug | `session.tsx:341` + `lib/practices.ts:1486` | 📋 P2 |
+| 1 | Double countdown on ALL Get Moving modes (Walk/Run/Yoga/Stretch/Strength) | 🔴 bug | `lib/movement.ts` + `movement-session.tsx` | ✅ SHIPPED (P1 Option A) |
+| 2 | Authored "Just Log" never opens the Just Log screen (routes to Meditate) | 🔴 bug | `session.tsx:341` + `lib/practices.ts:1486` | ✅ SHIPPED (P2, explicitPracticeId routing) |
 | 3 | `'none'` practice opens Meditate + logs the WRONG practice on feed/journey/prompt | 🔴 bug | `log-practice-button.tsx` call sites | ✅ FIXED this pass |
-| 4 | Get Moving free/unattached timer ignores the last-known config | 🧩 gap | `movement-session.tsx` + `session-data.ts:224` | 📋 P3 |
-| 5 | Breath pattern / bell / ambient not authorable from the practice | 🧩 gap | `practice-builder.tsx` + `PRACTICE_COLS` | 📋 P4 (🧑) |
+| 4 | Get Moving free/unattached timer ignores the last-known config | 🧩 gap | `movement-session.tsx` + `session-data.ts:224` | ✅ SHIPPED (P3, fq_movement_setup) |
+| 5 | Breath pattern / bell / ambient not authorable from the practice | 🧩 gap | `practice-builder.tsx` + `PRACTICE_COLS` | ✅ SHIPPED (P4: breath pattern; bell/ambient stay member prefs by design) |
 | 6 | Lead-in inflates elapsed vs target; `timerPreview` counts it | 🟡 minor | `lib/movement.ts` | folds into P1 |
 | 7 | Just Log one-tap path captures no note | 🧩 gap | `log-practice-button.tsx:130` | 📋 P2 |
 
@@ -179,8 +179,9 @@ inflation (fixed by P1-A) and the two-engine pre-roll/persistence asymmetry (Be 
 | **P4** | Authorable breath pattern + cues (🧑 migration) | 🟡 med | creator sets pattern/bell/ambient; member-pref fallback |
 | **P5** | Seamless builder: progressive disclosure + live launch preview | 🟢 low | one edit surface, live preview, verbatim round-trip |
 
-Execution: P0 ✅ → P1 (own PR, owner picks A/B) → P2 → P3 → P4 (owner sign-off on the migration) → P5.
-P1 is fenced as its own manually-QA'd PR because it edits the running timer (REWORK §2).
+Execution: ALL PHASES SHIPPED 2026-07-25 (owner directed "fix everything"; Option A chosen for P1).
+P1-P5 landed as two commits (P1-P3, then P4+P5); the manual-QA checklist for P1 remains the
+Vercel-preview walk: Walk/Strength multi-round, resume-after-reload, Journey-step launch, all ONE countdown.
 
 ---
 
