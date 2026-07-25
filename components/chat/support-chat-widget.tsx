@@ -1,13 +1,22 @@
 'use client'
 
-// The anonymous live-chat widget (ADR-816) — a floating launcher + panel mounted platform-wide. A visitor
-// enters a name + email, and their chat becomes a conversation on the comms spine (so it lands in the
-// operator Conversations inbox). Live messages + a typing indicator ride Supabase Broadcast. The session
-// (ref + capability token) persists in localStorage so a reload resumes the same thread. Off unless
-// NEXT_PUBLIC_SUPPORT_CHAT is enabled (the mount point gates it).
+// The PUBLIC contact dock (chat consolidation P3+P4, on ADR-816's spine plumbing). One floating
+// launcher + panel on every public page, leading with CONTACT US: a send-us-a-message form (name +
+// email + message), form-first — submitting shows a confirmation, never auto-opens a live session
+// (the owner's directive: a support-request form, not a live-response widget). The request becomes a
+// ticketed conversation on the comms spine (the operator answers in CRM Conversations; a signed-in
+// sender is member-bound so it also shows in their in-app inbox). The visitor can explicitly open
+// "View conversation" — only THEN does the Broadcast live thread (typing, instant delivery) spin up.
+//
+// The SECOND section is the member doorway: signed-out visitors get a log in / register prompt
+// (magic-link sign-in IS registration); a signed-in member on a public page gets a pointer into the
+// app, where the full dock (Messages + Vera) lives. Auth detection mirrors the marketing header's
+// getSession() pattern (cookie read, no network). Off unless NEXT_PUBLIC_SUPPORT_CHAT is enabled.
 
 import { useEffect, useRef, useState } from 'react'
-import { MessageCircle, X, Send, Loader2 } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { MessageCircle, X, Send, Loader2, ArrowLeft, CheckCircle2, UserRound } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import { isError } from '@/lib/action-result'
 import {
   startSupportChatAction,
@@ -49,19 +58,36 @@ function readViewerId(): string {
   }
 }
 
+/** The views the panel can show: the contact form, the post-submit confirmation, or the open thread. */
+type View = 'form' | 'sent' | 'thread'
+
 export function SupportChatWidget() {
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const [view, setView] = useState<View>('form')
   const [hydrated, setHydrated] = useState<{ ready: boolean; session: Session | null; viewerId: string }>({
     ready: false,
     session: null,
     viewerId: 'v-anon',
   })
   const { ready, session, viewerId } = hydrated
+  // Signed-in? (cookie read, no network — the marketing-header pattern). Default signed-out.
+  const [authed, setAuthed] = useState(false)
 
   useEffect(() => {
     // One-time hydrate from localStorage (client-only; SSR renders the loader).
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setHydrated({ ready: true, session: readSession(), viewerId: readViewerId() })
+    let live = true
+    void createClient()
+      .auth.getSession()
+      .then(({ data }) => {
+        if (live) setAuthed(!!data.session)
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
   }, [])
 
   function onStarted(s: Session) {
@@ -71,7 +97,25 @@ export function SupportChatWidget() {
       /* ignore */
     }
     setHydrated((h) => ({ ...h, session: s }))
+    // FORM-FIRST (P4): a submitted request shows the confirmation. The live thread opens only on the
+    // explicit "View conversation" tap, so the entry is a message form, not a live-response widget.
+    setView('sent')
   }
+
+  const body = !ready ? (
+    <div className="flex flex-1 items-center justify-center">
+      <Loader2 className="h-5 w-5 animate-spin text-muted" />
+    </div>
+  ) : view === 'thread' && session ? (
+    <ChatSession session={session} viewerId={viewerId} onBack={() => setView('sent')} />
+  ) : view === 'sent' || (session && view === 'form') ? (
+    <SentConfirmation onView={() => setView('thread')} onNew={() => setView('form')} sessionExists={!!session} />
+  ) : (
+    <>
+      <StartForm onStarted={onStarted} />
+      <MemberDoorway authed={authed} nextPath={pathname ?? '/'} />
+    </>
+  )
 
   return (
     <div className="fixed bottom-4 right-4 z-50 print:hidden">
@@ -79,37 +123,94 @@ export function SupportChatWidget() {
         <div className="mb-3 flex h-[32rem] max-h-[calc(100dvh-6rem)] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-pop">
           <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-text">Chat with Frequency</p>
-              <p className="text-2xs text-muted">We usually reply within a few minutes.</p>
+              <p className="text-sm font-semibold text-text">Contact us</p>
+              <p className="text-2xs text-muted">Send us a message. We reply by email and right here.</p>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              aria-label="Close chat"
+              aria-label="Close"
               className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
-          {!ready ? (
-            <div className="flex flex-1 items-center justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-muted" />
-            </div>
-          ) : session ? (
-            <ChatSession session={session} viewerId={viewerId} />
-          ) : (
-            <StartForm onStarted={onStarted} />
-          )}
+          {body}
         </div>
       )}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? 'Close chat' : 'Open chat'}
+        aria-label={open ? 'Close contact panel' : 'Contact us'}
         className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-pop transition-transform hover:scale-105"
       >
         {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
       </button>
+    </div>
+  )
+}
+
+/** The post-submit confirmation (form-first): the request is in; the live thread is one tap away. */
+function SentConfirmation({
+  onView,
+  onNew,
+  sessionExists,
+}: {
+  onView: () => void
+  onNew: () => void
+  sessionExists: boolean
+}) {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+      <CheckCircle2 className="h-8 w-8 text-success" aria-hidden />
+      <p className="text-sm font-semibold text-text">Your message is in.</p>
+      <p className="text-xs text-muted">
+        We will reply to your email, and the conversation stays right here whenever you want to check it.
+      </p>
+      {sessionExists && (
+        <button
+          type="button"
+          onClick={onView}
+          className="mt-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        >
+          View conversation
+        </button>
+      )}
+      <button type="button" onClick={onNew} className="text-xs font-medium text-muted hover:text-text">
+        Send another message
+      </button>
+    </div>
+  )
+}
+
+/** The member doorway (second section): sign in / register for Messages + Vera; members get a pointer
+ *  into the app, where the full dock lives. */
+function MemberDoorway({ authed, nextPath }: { authed: boolean; nextPath: string }) {
+  return (
+    <div className="shrink-0 border-t border-border px-4 py-3">
+      {authed ? (
+        <a
+          href="/feed"
+          className="flex items-center gap-2.5 rounded-lg border border-border px-3 py-2 transition-colors hover:border-primary"
+        >
+          <UserRound className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+          <span className="min-w-0">
+            <span className="block text-sm font-medium text-text">Open the app</span>
+            <span className="block truncate text-xs text-muted">Your Messages and Vera live inside.</span>
+          </span>
+        </a>
+      ) : (
+        <a
+          href={`/sign-in?next=${encodeURIComponent(nextPath)}`}
+          className="flex items-center gap-2.5 rounded-lg border border-border px-3 py-2 transition-colors hover:border-primary"
+        >
+          <UserRound className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+          <span className="min-w-0">
+            <span className="block text-sm font-medium text-text">Log in or register</span>
+            <span className="block truncate text-xs text-muted">Message members and chat with Vera inside.</span>
+          </span>
+        </a>
+      )}
     </div>
   )
 }
@@ -140,7 +241,6 @@ function StartForm({ onStarted }: { onStarted: (s: { ref: string; token: string;
 
   return (
     <form onSubmit={submit} className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
-      <p className="text-sm text-muted">Tell us who you are and we&apos;ll pick it up right here.</p>
       <input className={input} placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required />
       <input
         className={input}
@@ -155,6 +255,7 @@ function StartForm({ onStarted }: { onStarted: (s: { ref: string; token: string;
         placeholder="How can we help?"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
+        required
       />
       {error && (
         <p role="alert" className="text-xs text-danger">
@@ -167,13 +268,13 @@ function StartForm({ onStarted }: { onStarted: (s: { ref: string; token: string;
         className="mt-auto inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-        Start chat
+        Send message
       </button>
     </form>
   )
 }
 
-function ChatSession({ session, viewerId }: { session: Session; viewerId: string }) {
+function ChatSession({ session, viewerId, onBack }: { session: Session; viewerId: string; onBack: () => void }) {
   const { messages, loading, error, send, typingNames, notifyTyping } = useSupportChat({
     token: session.token,
     viewerId,
@@ -198,10 +299,16 @@ function ChatSession({ session, viewerId }: { session: Session; viewerId: string
 
   return (
     <>
+      <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-1.5">
+        <button type="button" onClick={onBack} aria-label="Back" className="rounded-lg p-1 text-muted hover:bg-surface-elevated hover:text-text">
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+        </button>
+        <span className="text-xs font-medium text-muted">Your conversation</span>
+      </div>
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
         {loading && <p className="text-center text-2xs text-muted">Loading…</p>}
         {!loading && messages.length === 0 && (
-          <p className="text-center text-2xs text-muted">Say hello — a teammate will jump in.</p>
+          <p className="text-center text-2xs text-muted">Your messages show here, along with our replies.</p>
         )}
         {messages.map((m) => (
           <div key={m.id} className={m.author === 'visitor' ? 'flex justify-end' : 'flex justify-start'}>
