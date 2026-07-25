@@ -8,6 +8,7 @@ import { getPricingValues } from '@/lib/pricing/settings'
 import { memberTierSellable } from '@/lib/pricing/settings'
 import { loadCatalogConfig } from '@/lib/pricing/catalog-config'
 import { formatCents, memberTierRows } from '@/lib/pricing/display'
+import { confirmSupporterContribution } from './actions'
 import { UpgradeToggle } from './upgrade-toggle'
 import { CheckoutButton } from './checkout-button'
 import { SupporterBadge } from './supporter-badge'
@@ -22,10 +23,24 @@ import { SupporterBadge } from './supporter-badge'
 // When billing goes live, the CTA becomes a real Stripe checkout (CheckoutButton -> the existing
 // createMembershipCheckout, which already honors the founder lock). No em dashes (CONTENT-VOICE §10).
 
-export default async function UpgradePage() {
+export default async function UpgradePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ supporter?: string; session_id?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
+
+  // Webhook-independent supporter-contribution confirm (the Stripe success redirect lands here with
+  // ?supporter=success&session_id=...). Idempotent: the same recorder the webhook runs, so the
+  // contribution + badge land exactly once no matter which fires first.
+  const sp = (await searchParams) ?? {}
+  let supporterThanks: { amountCents: number } | null = null
+  if (sp.supporter === 'success' && sp.session_id) {
+    const confirmed = await confirmSupporterContribution(sp.session_id)
+    if (confirmed.ok) supporterThanks = { amountCents: confirmed.amountCents }
+  }
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -81,6 +96,16 @@ export default async function UpgradePage() {
       title="Membership"
       description="Your access to the Frequency community, free during beta."
     >
+      {/* Supporter-contribution thanks — the confirmed Stripe success redirect. Plain and concrete. */}
+      {supporterThanks && (
+        <div className="mb-8 rounded-2xl border border-success/30 bg-success-bg/30 px-5 py-4">
+          <p className="text-sm font-bold text-text">Thank you. Your contribution went through.</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted">
+            {formatCents(supporterThanks.amountCents)} to the Foundation, and your Supporter badge is on.
+          </p>
+        </div>
+      )}
+
       {/* Beta banner — shown while paid membership has not gone live. */}
       {!live && (
         <div className="rounded-2xl bg-primary-bg border border-primary-bg/50 px-5 py-4 mb-8">
