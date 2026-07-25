@@ -9,6 +9,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
+import { isStaff } from '@/lib/core/roles'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { enqueueEmail } from '@/lib/email'
@@ -29,6 +30,18 @@ import { type ConversationPriority } from '@/lib/comms/labels'
 import { veraDraftReply, veraSummarize, veraSuggestTriage } from '@/lib/comms/vera-conversation'
 
 const GATE = { min: 'janitor', staff: 'marketing' } as const
+
+/** F5 SEAL (owner ruling 2026-07-25): a tenant Space's conversation may be read/written through THIS
+ *  platform workspace only by web_role admin/janitor. A caller admitted via the marketing staff domain
+ *  is limited to the PLATFORM lane (space_id null or the root space). Returns true when sealed. */
+async function tenantLaneSealed(webRole: string | null | undefined, spaceId: string | null): Promise<boolean> {
+  if (!spaceId) return false
+  if (isStaff(webRole as Parameters<typeof isStaff>[0])) return false
+  const { loadRootSpaceId } = await import('@/lib/spaces/store')
+  return spaceId !== (await loadRootSpaceId())
+}
+const SEALED_COPY = "That conversation belongs to a Space's own CRM and needs the admin lens."
+
 
 const GATE_REASON_COPY: Record<SendGateReason, string> = {
   ok: '',
@@ -70,7 +83,7 @@ export async function sendConversationReply(input: {
   body: string
   isInternal?: boolean
 }): Promise<ActionResult> {
-  const { profileId: operatorId } = await requireAdmin(GATE.min, { staff: GATE.staff })
+  const { profileId: operatorId, webRole } = await requireAdmin(GATE.min, { staff: GATE.staff })
   const conversationId = (input.conversationId ?? '').trim()
   const body = (input.body ?? '').trim()
   if (!conversationId) return fail('Pick a conversation first.')
@@ -78,6 +91,7 @@ export async function sendConversationReply(input: {
 
   const conv = await getConversationById(conversationId)
   if (!conv) return fail('That conversation no longer exists.')
+  if (await tenantLaneSealed(webRole, conv.spaceId)) return fail(SEALED_COPY)
 
   // INTERNAL NOTE: staff-only, never emailed, never mirrored to the member timeline.
   if (input.isInternal) {
@@ -187,12 +201,13 @@ export async function setConversationTriage(input: {
   assignedTo?: string | null
   handoffNote?: string | null
 }): Promise<ActionResult> {
-  const { profileId: operatorId } = await requireAdmin(GATE.min, { staff: GATE.staff })
+  const { profileId: operatorId, webRole } = await requireAdmin(GATE.min, { staff: GATE.staff })
   const conversationId = (input.conversationId ?? '').trim()
   if (!conversationId) return fail('Pick a conversation first.')
 
   const conv = await getConversationById(conversationId)
   if (!conv) return fail('That conversation no longer exists.')
+  if (await tenantLaneSealed(webRole, conv.spaceId)) return fail(SEALED_COPY)
 
   const patch: { status?: string; priority?: string; assignedTo?: string | null } = {}
   if (input.status && input.status !== conv.status) patch.status = input.status
@@ -237,13 +252,17 @@ export async function setConversationTriage(input: {
 /** Draft a reply with Vera — thin wrapper over the shared conversation-AI (lib/comms/vera-conversation),
  *  so the platform and every Space call the exact same logic. Staff-gated. */
 export async function draftConversationReply(conversationId: string): Promise<ActionResult<{ draft: string }>> {
-  const { profileId } = await requireAdmin(GATE.min, { staff: GATE.staff })
+  const { profileId, webRole } = await requireAdmin(GATE.min, { staff: GATE.staff })
+  const conv = await getConversationById((conversationId ?? '').trim())
+  if (conv && (await tenantLaneSealed(webRole, conv.spaceId))) return fail(SEALED_COPY)
   return veraDraftReply((conversationId ?? '').trim(), profileId)
 }
 
 /** One short summary of the thread (shared logic). Staff-gated. */
 export async function summarizeConversation(conversationId: string): Promise<ActionResult<{ summary: string }>> {
-  const { profileId } = await requireAdmin(GATE.min, { staff: GATE.staff })
+  const { profileId, webRole } = await requireAdmin(GATE.min, { staff: GATE.staff })
+  const conv = await getConversationById((conversationId ?? '').trim())
+  if (conv && (await tenantLaneSealed(webRole, conv.spaceId))) return fail(SEALED_COPY)
   return veraSummarize((conversationId ?? '').trim(), profileId)
 }
 
@@ -251,7 +270,9 @@ export async function summarizeConversation(conversationId: string): Promise<Act
 export async function suggestConversationTriage(
   conversationId: string,
 ): Promise<ActionResult<{ priority: ConversationPriority; reason: string }>> {
-  const { profileId } = await requireAdmin(GATE.min, { staff: GATE.staff })
+  const { profileId, webRole } = await requireAdmin(GATE.min, { staff: GATE.staff })
+  const conv = await getConversationById((conversationId ?? '').trim())
+  if (conv && (await tenantLaneSealed(webRole, conv.spaceId))) return fail(SEALED_COPY)
   const r = await veraSuggestTriage((conversationId ?? '').trim(), profileId)
   revalidatePath('/admin/crm/conversations')
   return r
