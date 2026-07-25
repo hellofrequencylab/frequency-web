@@ -25,7 +25,13 @@ import { saveEmailCampaign, sendTestEmail, type LoadedEmailCampaign } from '@/ap
 /** The persist action shape the pane injects into the store + compose fields (matches saveEmailCampaign). */
 type SaveCampaign = (
   id: string,
-  patch: { layout?: BuilderLayout | EntityLayout; subject?: string; preheader?: string; fromName?: string },
+  patch: {
+    layout?: BuilderLayout | EntityLayout
+    subject?: string
+    preheader?: string
+    fromName?: string
+    replyMode?: 'broadcast' | 'conversation'
+  },
 ) => Promise<{ error?: string }>
 
 // EMAIL EDITOR PANE. The right pane's editor for ONE selected email. It REUSES the entity-blocks arranger
@@ -109,6 +115,7 @@ export function EmailEditorPane({
   const [subject, setSubject] = useState(campaign.subject)
   const [preheader, setPreheader] = useState(campaign.preheader)
   const [fromName, setFromName] = useState(campaign.fromName ?? '')
+  const [replyMode, setReplyMode] = useState<'broadcast' | 'conversation'>(campaign.replyMode ?? 'broadcast')
   const [previewOpen, setPreviewOpen] = useState(false)
 
   // The arranger's injected persist: the store hands the freshest BuilderLayout here (debounced), and this
@@ -155,6 +162,14 @@ export function EmailEditorPane({
     },
     [scheduleFieldSave],
   )
+  // Reply mode is a discrete toggle, so it saves immediately (no keystroke debounce).
+  const onReplyMode = useCallback(
+    (value: 'broadcast' | 'conversation') => {
+      setReplyMode(value)
+      void saveCampaign(id, { replyMode: value })
+    },
+    [id, saveCampaign],
+  )
 
   // The pre-fetched seed for the builder (skips its own rail fetch): matches this campaign so the owner/kind
   // gate opens. Rows/hidden come straight off the loaded layout; the LayoutSeeder above carries content/style.
@@ -194,6 +209,8 @@ export function EmailEditorPane({
             onSubject={onSubject}
             onPreheader={onPreheader}
             onFromName={onFromName}
+            replyMode={replyMode}
+            onReplyMode={onReplyMode}
             previewOpen
             onTogglePreview={() => {}}
             showPreviewToggle={false}
@@ -224,6 +241,8 @@ export function EmailEditorPane({
             onSubject={onSubject}
             onPreheader={onPreheader}
             onFromName={onFromName}
+            replyMode={replyMode}
+            onReplyMode={onReplyMode}
             previewOpen
             onTogglePreview={() => {}}
             showPreviewToggle={false}
@@ -259,6 +278,8 @@ export function EmailEditorPane({
           onSubject={onSubject}
           onPreheader={onPreheader}
           onFromName={onFromName}
+          replyMode={replyMode}
+          onReplyMode={onReplyMode}
           previewOpen={previewOpen}
           onTogglePreview={() => setPreviewOpen((v) => !v)}
           sendTest={sendTest}

@@ -60,6 +60,12 @@ can guess `ref` but never its tag. Inbound order: parse → `verifyConversationT
 
 ## Send + inbound wiring (phases 1–2)
 
+- **Reply-mode is exposed in the composer** (`components/admin/email-studio/compose-toolbar.tsx`, threaded
+  via `editor-pane.tsx` → `saveEmailCampaign`). A **1:1 member message is born `conversation`**
+  (`createEmailDraft('message')` in `app/(main)/admin/email-studio/actions.ts`), so every individual send
+  is a reply-able ticket by default; a **campaign defaults to `broadcast`** with a Broadcast ↔ Conversation
+  toggle to flip it. `reply_mode` rides its own additive column (fail-safe read via `loadCampaignReplyMode`,
+  best-effort write, same pattern as `from_name`).
 - **Reply-mode branch in `sendCampaignNow`** (`lib/email-studio/send.ts`): `broadcast` = `noreply@send.`,
   no Reply-To, List-Unsubscribe; `conversation` = display-name-swapped `people@people.` identity,
   per-recipient `Reply-To = buildConversationReplyAddress(ref)`, `Message-ID` set + stored, and

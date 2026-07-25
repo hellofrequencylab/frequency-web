@@ -30,7 +30,7 @@ import {
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { compileEmailDoc } from '@/lib/email-studio/shell'
 import { applyMergeTags, sanitizeEmailRichContent } from '@/lib/email-studio/render'
-import { sanitizeFromName, loadCampaignFromName, resolveCampaignFromHeader } from '@/lib/email-studio/send'
+import { sanitizeFromName, loadCampaignFromName, loadCampaignReplyMode, resolveCampaignFromHeader } from '@/lib/email-studio/send'
 import { buildUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
@@ -94,6 +94,10 @@ export interface LoadedEmailCampaign {
    *  the platform default. Optional so surfaces that do not offer a per-send name (per-Space, CRM 1:1) can
    *  omit it; the admin Email Studio populates it. */
   fromName?: string
+  /** How replies are handled: `broadcast` (no-reply mass mail) or `conversation` (a reply-able ticket).
+   *  Defaults to `broadcast`; a 1:1 member message defaults to `conversation`. Omitted where the surface
+   *  offers no toggle. */
+  replyMode?: 'broadcast' | 'conversation'
   layout: EntityLayout
   context: EmailEditorContext
 }
@@ -219,6 +223,10 @@ export async function createEmailDraft(
   if (!gate.ok) return fail(gate.error)
 
   const layout = starterEmailLayout(template)
+  // A 1:1 member message is born ticketed (reply-able conversation, ADR-812); a campaign stays broadcast
+  // by default and the composer toggle can flip it. reply_mode is an additive column absent from the
+  // generated types, so it rides a cast (mirrors from_name).
+  const replyMode: 'broadcast' | 'conversation' = template === 'message' ? 'conversation' : 'broadcast'
   const db = createAdminClient()
 
   // Reuse the caller's own pristine empty draft instead of minting another. Opening a composer (or
@@ -235,7 +243,7 @@ export async function createEmailDraft(
   if (reusable) {
     await db
       .from('campaigns')
-      .update({ block_json: layout as unknown as never })
+      .update({ block_json: layout as unknown as never, reply_mode: replyMode } as unknown as Database['public']['Tables']['campaigns']['Update'])
       .eq('id', reusable.id)
       .eq('status', 'draft')
       .eq('created_by', gate.profileId)
@@ -253,7 +261,8 @@ export async function createEmailDraft(
       preheader: '',
       status: 'draft',
       created_by: gate.profileId,
-    })
+      reply_mode: replyMode,
+    } as unknown as Database['public']['Tables']['campaigns']['Insert'])
     .select('id')
     .single()
   if (error || !data) return fail('Could not create a new email. Try again.')
@@ -297,12 +306,15 @@ export async function loadEmailCampaign(id: string): Promise<LoadedEmailCampaign
 
   // The friendly From name lives on its own additive column, read fail-safe (null pre-migration → default).
   const fromName = (await loadCampaignFromName(id)) ?? ''
+  // Reply mode rides its own additive column, read fail-safe (→ 'broadcast' pre-migration).
+  const replyMode = await loadCampaignReplyMode(id)
 
   return {
     id: data.id,
     subject,
     preheader: data.preheader ?? '',
     fromName,
+    replyMode,
     layout: layoutFromBlockJson(data.block_json),
     context: {
       kind: step ? 'sequence' : 'broadcast',
@@ -334,7 +346,13 @@ export async function loadEmailCampaign(id: string): Promise<LoadedEmailCampaign
  */
 export async function saveEmailCampaign(
   id: string,
-  patch: { layout?: BuilderLayout | EntityLayout; subject?: string; preheader?: string; fromName?: string },
+  patch: {
+    layout?: BuilderLayout | EntityLayout
+    subject?: string
+    preheader?: string
+    fromName?: string
+    replyMode?: 'broadcast' | 'conversation'
+  },
 ): Promise<{ error?: string }> {
   const gate = await writerGate()
   if (!gate.ok) return { error: gate.error }
@@ -353,6 +371,15 @@ export async function saveEmailCampaign(
     await db
       .from('campaigns')
       .update({ from_name: clean || null } as unknown as Database['public']['Tables']['campaigns']['Update'])
+      .eq('id', id)
+  }
+
+  // Reply mode (Broadcast vs Conversation) rides the same additive-column, best-effort write pattern: a
+  // failure here must never block the subject / preheader / layout save.
+  if (patch.replyMode === 'broadcast' || patch.replyMode === 'conversation') {
+    await db
+      .from('campaigns')
+      .update({ reply_mode: patch.replyMode } as unknown as Database['public']['Tables']['campaigns']['Update'])
       .eq('id', id)
   }
 
