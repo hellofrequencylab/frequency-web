@@ -70,7 +70,7 @@ export async function fetchReceivedEmail(id: string, attempts = 4): Promise<Rece
   // tool-recognized barrier against forged log lines — and caps length.
   // CodeQL: 132/133/134/135/136/137/138.
   const oneLine = (v: unknown) => String(v).replace(/[\r\n]+/g, ' ').slice(0, 300)
-  const safeId = oneLine(id).replace(/[^\w-]/g, '').slice(0, 64)
+  const logSafeId = String(id).replace(/[\r\n]/g, '').replace(/[^\w-]/g, '').slice(0, 64)
   for (let i = 0; i < attempts; i++) {
     try {
       const { data, error } = await client.emails.receiving.get(id)
@@ -88,11 +88,11 @@ export async function fetchReceivedEmail(id: string, attempts = 4): Promise<Rece
       }
       if (error) {
         const detail = oneLine(typeof error === 'string' ? error : JSON.stringify(error))
-        console.warn('[email] fetchReceivedEmail error (id=%s attempt %d/%d): %s', safeId, i + 1, attempts, detail)
+        console.warn('[email] fetchReceivedEmail error (id=%s attempt %d/%d): %s', logSafeId, i + 1, attempts, detail)
       }
     } catch (err) {
       const detail = oneLine(err instanceof Error ? err.message : err)
-      console.error('[email] fetchReceivedEmail threw (id=%s attempt %d/%d): %s', safeId, i + 1, attempts, detail)
+      console.error('[email] fetchReceivedEmail threw (id=%s attempt %d/%d): %s', logSafeId, i + 1, attempts, detail)
     }
     // Backoff before the next attempt (the API usually catches up within a second or two).
     if (i < attempts - 1) await new Promise((r) => setTimeout(r, 750))
