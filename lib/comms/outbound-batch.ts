@@ -15,6 +15,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail } from '@/lib/email'
 import { buildConversationReplyAddress } from '@/lib/comms/reply-address'
+import { renderCoalescedEmail } from '@/lib/comms/email-template'
 import {
   getConversationById,
   appendConversationMessage,
@@ -91,6 +92,8 @@ export async function queueOutboundMessage(input: {
   authorKind: MessageAuthorKind
   authorId?: string | null
   authorContactId?: string | null
+  /** The sender's email signature, stamped on the coalesced email at flush (not on the stored message). */
+  signature?: string | null
   mirror?: AppendMessageInput['mirror']
 }): Promise<boolean> {
   const appended = await appendConversationMessage({
@@ -102,7 +105,7 @@ export async function queueOutboundMessage(input: {
     body: input.body,
     bodyHtml: input.html,
     deliveryStatus: 'queued',
-    metadata: { batch_from: input.from, batch_to: input.to },
+    metadata: { batch_from: input.from, batch_to: input.to, batch_signature: input.signature ?? null },
     mirror: input.mirror ?? null,
   })
   return !!appended && 'id' in appended
@@ -179,6 +182,9 @@ export async function flushConversationBatches(): Promise<{ conversations: numbe
     const { text, html } = coalesceBodies(
       ordered.map((m) => ({ body: String(m.body ?? ''), bodyHtml: (m.body_html as string) ?? null })),
     )
+    // Brand + sign the coalesced EMAIL only (header/footer + signature); the stored messages stay clean.
+    const signature = firstBatchSignature(ordered)
+    const { html: signedHtml, text: signedText } = renderCoalescedEmail(text, html, signature)
     const from = firstBatchFrom(ordered) ?? defaultConversationFrom()
     const messageId = newConversationMessageId(conv.ref)
     try {
@@ -187,8 +193,8 @@ export async function flushConversationBatches(): Promise<{ conversations: numbe
         from,
         replyTo: buildConversationReplyAddress(conv.ref),
         subject: replySubject(conv.subject),
-        html,
-        text,
+        html: signedHtml,
+        text: signedText,
         // No List-Unsubscribe: a 1:1 human reply is transactional, not bulk (ADR-812 deliverability).
         headers: { 'Message-ID': messageId },
       })
@@ -208,6 +214,15 @@ export async function flushConversationBatches(): Promise<{ conversations: numbe
     messages += ids.length
   }
   return { conversations, emails, messages }
+}
+
+/** The signature stamped on the queued burst (first non-empty), appended to the coalesced email at flush. */
+function firstBatchSignature(ordered: QueuedRow[]): string | null {
+  for (const m of ordered) {
+    const s = m.metadata && typeof m.metadata === 'object' ? (m.metadata as Record<string, unknown>).batch_signature : null
+    if (typeof s === 'string' && s.trim()) return s
+  }
+  return null
 }
 
 /** The `batch_from` stamped on the oldest queued message (the sender identity to send the whole burst as). */
