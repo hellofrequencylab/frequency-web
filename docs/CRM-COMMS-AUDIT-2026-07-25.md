@@ -42,14 +42,14 @@ real text.
 | **F3 · MED-HIGH** | Anonymous support-chat contact resolution (`resolveOrCreateContactId`) was unscoped newest-first → a visitor whose email is a tenant lead got the platform chat bound to the tenant CRM row. | Pinned to the platform lane (root space id or NULL). `lib/comms/support-chat.ts`. |
 | **F4 · MED** | `contacts_space_read` RLS = `is_space_member` → any plain member could client-read their Space's whole contact book (emails, consent, at-risk scores). | Tightened to `can_write_space_content` (operator set) + platform staff. Migration `20261215000000` (applied + verified). Verified zero user-client `.from('contacts')` readers, so nothing legitimate breaks. |
 
-## 3. Needs an owner ruling (not code bugs — design decisions)
+## 3. Owner rulings
 
-- **F2 · DM bodies in the CRM timeline** — `recordDmTouch` copies full member-to-member DM `body`
-  into `contact_interactions` (NULL lane); platform staff person-view reads it. Space isolation
-  holds (NULL-lane rows never surface on a tenant card), but it contradicts "member-to-member
-  messaging is NOT CRM data." **Ruling needed:** strip the body (record "Messaged" only) or ratify
-  staff visibility (ADR-372 Phase 1 intentionally folded it).
-- **F5 · Platform-staff cross-lane lens** — the platform Resonance CRM intentionally lists/acts on
+- **F2 · DM bodies in the CRM timeline — ✅ RESOLVED (owner ruling 2026-07-25: STRIP).**
+  Member-to-member messaging is not CRM content. `recordDmTouch` now records the touch only
+  (summary "Messaged", `body: null`) and never the message text; migration
+  `20261216000000_scrub_dm_bodies_from_crm.sql` cleared the historical rows (applied + verified: 0
+  DM bodies remain). The person-timeline still shows THAT a message happened, never its contents.
+- **F5 · Platform-staff cross-lane lens — ⏳ still needs a ruling.** — the platform Resonance CRM intentionally lists/acts on
   ALL tenant lanes (conversations workspace, flat inbox, subscriber/analytics counts), staff-gated,
   documented as "the widest authorized lens." Correct IF the platform is the superset root; a gap
   IF tenants are promised privacy FROM platform staff. **Ruling needed.** (Note: a platform-staff
