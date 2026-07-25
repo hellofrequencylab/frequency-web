@@ -27,7 +27,7 @@ describe('sectionForModule (the hub IA)', () => {
   })
 
   it('routes the CRM relationship + inbox cluster to Resonance', () => {
-    for (const id of ['space.crm', 'space.inbox', 'space.leads', 'space.doors', 'space.shared']) {
+    for (const id of ['space.crm', 'space.leads', 'space.doors', 'space.shared']) {
       expect(sectionForModule(spaceModuleById(id)!)).toBe('resonance')
     }
   })

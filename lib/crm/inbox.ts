@@ -1,220 +1,21 @@
-// CRM 2-WAY INBOX — the threaded read model + the inbound-email seam behind the Resonance CRM Inbox
-// module (ADR-629, docs/DECISIONS.md). Turns the ONE `contact_interactions` timeline
-// (lib/crm/interactions.ts) into per-contact CONVERSATIONS (inbound + outbound, newest first), and
-// scaffolds the inbound-email receive seam that lands a received email back onto that timeline.
+// CRM INBOUND-EMAIL SEAM — the webhook fallback that lands a received email on the CRM timeline
+// when it carries NO conversation reply-token (ADR-629; the flat-inbox READ model that used to live
+// here is RETIRED, ADR-820 — the Conversations workspace over the comms spine is the one operator
+// inbox). What remains: the PURE payload parser (`parseInboundEmailPayload`), the from-address
+// contact matcher (`matchContactByEmail`), and `recordInboundEmail`, which writes the inbound touch
+// through recordContactInteraction (the one front door, lib/crm/interactions.ts). This fallback must
+// stay as long as any in-the-wild mail lacks a reply-token (old campaign broadcasts, replies to
+// hello@, replies to pre-migration flat-inbox sends).
 //
-// SHAPE (mirrors lib/crm/timeline.ts): the PURE shapers (`groupIntoThreads`, `parseInboundEmailPayload`)
-// have no Supabase/Next imports, so they are unit-testable in isolation. The IO (`listInboxThreads`,
-// `recordInboundEmail`) reaches the untyped admin client + the interaction seam.
-//
-// The inbox NEVER writes contact_interactions directly — every write goes through
-// recordContactInteraction (the one front door, lib/crm/interactions.ts). Reads are staff-gated at the
-// call site (the Studio surface / the signature-verified webhook), exactly like the rest of the CRM.
+// authz-delegated: the ONLY caller is the Svix-signature-verified inbound-email webhook
+// (app/api/webhooks/inbound-email/route.ts) — the provider signature is the gate; every write goes
+// through recordContactInteraction and is bound to the matched contact's own timeline.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { escapeLike } from '@/lib/search-sanitize'
-import {
-  listContactInteractions,
-  recordContactInteraction,
-  type ContactInteraction,
-  type InteractionChannel,
-} from '@/lib/crm/interactions'
-import { interactionTitle } from '@/lib/crm/timeline'
+import { recordContactInteraction } from '@/lib/crm/interactions'
 import { recordInboundReplyEvent } from '@/lib/spaces/email-tracking'
 import { loadRootSpaceId } from '@/lib/spaces/store'
-
-// ── Conversational channels ───────────────────────────────────────────────────────────────────────
-// The inbox is about MESSAGES, so it reads the channels a person and an operator actually converse on
-// (email / sms / in-app DM) and drops the ambient timeline noise (notes, system updates, events, scans).
-export const CONVERSATION_CHANNELS: readonly InteractionChannel[] = ['email', 'sms', 'in_app']
-
-/** One message in a contact conversation (a slimmed timeline entry). */
-export interface InboxMessage {
-  id: string
-  channel: InteractionChannel
-  direction: 'inbound' | 'outbound' | 'internal'
-  /** A short, plain one-line label (the row's summary, else the channel verb). */
-  title: string
-  /** The message body, when any. */
-  detail: string | null
-  /** ISO timestamp the touch happened. */
-  at: string
-}
-
-/** One contact's conversation: the contact's identity + its messages, newest first. */
-export interface InboxThread {
-  contactId: string
-  contactName: string | null
-  contactEmail: string | null
-  messages: InboxMessage[]
-  /** ISO timestamp of the most recent message (the thread sort key). */
-  lastAt: string
-  /** True when the most recent message is inbound (a reply is owed). */
-  awaitingReply: boolean
-  /** Total messages in the conversation. */
-  count: number
-}
-
-/** Minimal identity a thread needs for its header, keyed by contact id. */
-export interface ContactIdentity {
-  name: string | null
-  email: string | null
-}
-
-function toMessage(i: ContactInteraction): InboxMessage {
-  const summary = i.summary?.trim()
-  return {
-    id: i.id,
-    channel: i.channel,
-    direction: i.direction,
-    title: summary && summary.length ? summary : interactionTitle(i.channel, i.direction),
-    detail: i.body?.trim() || null,
-    at: i.occurredAt,
-  }
-}
-
-/**
- * Group a flat list of contact interactions into per-contact conversations, newest first. PURE and
- * deterministic: only `contact`-subject conversational rows are threaded (email/sms/in_app); everything
- * else is ignored. Within a thread, messages sort newest-first; threads sort by their most recent
- * message. A stable id tiebreak keeps equal timestamps deterministic. `identities` supplies each
- * contact's name/email (missing ⇒ nulls). Empty input yields [].
- */
-export function groupIntoThreads(
-  interactions: readonly ContactInteraction[],
-  identities: ReadonlyMap<string, ContactIdentity>,
-): InboxThread[] {
-  const byContact = new Map<string, InboxMessage[]>()
-  for (const i of interactions ?? []) {
-    if (i.subjectKind !== 'contact') continue
-    if (!CONVERSATION_CHANNELS.includes(i.channel)) continue
-    const list = byContact.get(i.subjectId) ?? []
-    list.push(toMessage(i))
-    byContact.set(i.subjectId, list)
-  }
-
-  const threads: InboxThread[] = []
-  for (const [contactId, messages] of byContact) {
-    messages.sort((a, b) => {
-      const ta = Date.parse(a.at) || 0
-      const tb = Date.parse(b.at) || 0
-      if (tb !== ta) return tb - ta
-      return a.id < b.id ? 1 : a.id > b.id ? -1 : 0
-    })
-    const identity = identities.get(contactId)
-    const latest = messages[0]
-    threads.push({
-      contactId,
-      contactName: identity?.name ?? null,
-      contactEmail: identity?.email ?? null,
-      messages,
-      lastAt: latest?.at ?? '',
-      awaitingReply: latest?.direction === 'inbound',
-      count: messages.length,
-    })
-  }
-
-  threads.sort((a, b) => {
-    const ta = Date.parse(a.lastAt) || 0
-    const tb = Date.parse(b.lastAt) || 0
-    if (tb !== ta) return tb - ta
-    return a.contactId < b.contactId ? 1 : a.contactId > b.contactId ? -1 : 0
-  })
-  return threads
-}
-
-// ── IO: gather the threads for the operator inbox ──────────────────────────────────────────────────
-
-/**
- * Load the operator inbox: recent contact conversations grouped by contact, newest first. Reads the
- * conversational slice of contact_interactions, then batch-loads each contact's identity (name/email)
- * from the contacts table, and threads them (groupIntoThreads). Staff-gated at the call site.
- * FAIL-SAFE: [] on any error. `spaceId` scopes to one Space's contacts; omit for the platform inbox
- * (platform touches carry a null space_id, so the default read is space-agnostic).
- */
-export async function listInboxThreads(opts: { spaceId?: string | null; limit?: number } = {}): Promise<InboxThread[]> {
-  const limit = Math.min(Math.max(opts.limit ?? 400, 1), 500)
-  try {
-    // Pull recent contact-subject interactions (the read is newest-first, capped). We over-fetch the
-    // flat stream and thread it in memory so a busy contact never crowds out others' latest message.
-    const interactions = await listContactInteractions({
-      subjectKind: 'contact',
-      ...(opts.spaceId ? { spaceId: opts.spaceId } : {}),
-      limit,
-    })
-    const conversational = interactions.filter((i) => CONVERSATION_CHANNELS.includes(i.channel))
-    const contactIds = [...new Set(conversational.map((i) => i.subjectId))]
-    const identities = await loadContactIdentities(contactIds)
-    return groupIntoThreads(conversational, identities)
-  } catch {
-    return []
-  }
-}
-
-/** Batch-load { name, email } for a set of contact ids (fail-safe: empty map on error). */
-async function loadContactIdentities(ids: string[]): Promise<Map<string, ContactIdentity>> {
-  const map = new Map<string, ContactIdentity>()
-  if (ids.length === 0) return map
-  try {
-    const db = createAdminClient() as unknown as {
-      from: (t: string) => {
-        select: (c: string) => {
-          in: (col: string, vals: string[]) => Promise<{ data: Record<string, unknown>[] | null; error: unknown }>
-        }
-      }
-    }
-    const { data, error } = await db.from('contacts').select('id, display_name, email').in('id', ids)
-    if (error || !data) return map
-    for (const r of data) {
-      map.set(String(r.id), {
-        name: (r.display_name as string) ?? null,
-        email: (r.email as string) ?? null,
-      })
-    }
-    return map
-  } catch {
-    return map
-  }
-}
-
-/** Resolve a contact's send identity (email + linked member profile + Space) for the reply gate. */
-export interface ContactSendTarget {
-  contactId: string
-  email: string | null
-  profileId: string | null
-  spaceId: string | null
-}
-
-/** Load the fields the reply action needs to gate + record a send. FAIL-SAFE: null on any miss. */
-export async function getContactSendTarget(contactId: string): Promise<ContactSendTarget | null> {
-  const id = typeof contactId === 'string' ? contactId.trim() : ''
-  if (!id) return null
-  try {
-    const db = createAdminClient() as unknown as {
-      from: (t: string) => {
-        select: (c: string) => {
-          eq: (col: string, val: string) => {
-            maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: unknown }>
-          }
-        }
-      }
-    }
-    const { data, error } = await db
-      .from('contacts')
-      .select('id, email, profile_id, space_id')
-      .eq('id', id)
-      .maybeSingle()
-    if (error || !data) return null
-    return {
-      contactId: String(data.id),
-      email: (data.email as string) ?? null,
-      profileId: (data.profile_id as string) ?? null,
-      spaceId: (data.space_id as string) ?? null,
-    }
-  } catch {
-    return null
-  }
-}
 
 // ── INBOUND EMAIL SEAM (scaffold) ───────────────────────────────────────────────────────────────────
 // The receive half of the 2-way inbox. Today the platform sends outbound and the Resend webhook records
@@ -368,7 +169,12 @@ export async function recordInboundEmail(
  *  that tenant's timeline). The real fix for lane-precise routing is the conversation spine's
  *  reply-token (which carries the conversation, and with it the lane); flat-inbox replies should
  *  migrate onto it. FAIL-SAFE: null on miss. */
-async function matchContactByEmail(email: string): Promise<ContactSendTarget | null> {
+async function matchContactByEmail(email: string): Promise<{
+  contactId: string
+  email: string | null
+  profileId: string | null
+  spaceId: string | null
+} | null> {
   const needle = (email ?? '').trim().toLowerCase()
   if (!needle) return null
   try {

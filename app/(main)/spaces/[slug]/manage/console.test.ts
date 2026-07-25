@@ -172,7 +172,7 @@ describe('Community (resonance) section coverage', () => {
 
   it('groups the CRM relationship + capture surfaces under Community', () => {
     expect(resonance.map((m) => m.id).sort()).toEqual(
-      ['space.crm', 'space.doors', 'space.inbox', 'space.leads', 'space.shared'].sort(),
+      ['space.crm', 'space.doors', 'space.leads', 'space.shared'].sort(),
     )
   })
 

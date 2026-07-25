@@ -40,7 +40,7 @@ export async function createTaskAction(input: {
   )
   if (!res) return fail('Could not save the task. Try again.')
   revalidatePath('/admin/crm/tasks')
-  if (input.contactId) revalidatePath('/admin/crm/inbox')
+  if (input.contactId) revalidatePath('/admin/crm/conversations')
   return ok(res)
 }
 

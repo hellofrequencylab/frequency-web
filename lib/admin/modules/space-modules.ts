@@ -143,9 +143,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // one CRM card with its four workspaces nested instead of five separate rows. Each stays a first-class
   // module (own gate + deepLink + rail row); only the console consolidates them.
   { id: 'space.crm', label: 'CRM', desc: 'Your pipeline, contacts, private notes, and Vera autonomy.', Icon: Briefcase, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'panel', deepLink: (s) => `${base(s)}/crm`, order: 35, tier: 'primary', priority: 15, access: 'freemium', freeNote: '250 contacts free, then unlimited' },
-  // Inbox (ADR-786): the space's 2-way conversation view — read a contact thread and reply through the
-  // consent gate. Same `crm` gate as the board; lives under /crm and clusters into Resonance on the hub.
-  { id: 'space.inbox', label: 'Inbox', desc: 'Read every contact conversation and reply, through the consent gate.', Icon: Mail, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/inbox`, order: 35.5, tier: 'primary', priority: 15.5, access: 'included' },
+  // The flat Inbox (ADR-786) is RETIRED (ADR-820): folded into Conversations; /crm/inbox redirects.
   // Conversations (ADR-812): the ticketed workspace over the comms_* spine, scoped to THIS space. Support,
   // outreach, and replies as one assignable, status-tracked thread with a per-thread reply address, so a
   // reply comes straight back to it. Same `crm` gate; sits beside Inbox under Resonance.
