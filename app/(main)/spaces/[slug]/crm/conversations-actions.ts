@@ -32,7 +32,8 @@ import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comm
 import { resolveSignature } from '@/lib/comms/signature'
 import { renderReplyEmail } from '@/lib/comms/email-template'
 import { listSpaceAssignableAgents } from '@/lib/comms/workspace'
-import { CONVERSATION_STATUSES, CONVERSATION_PRIORITIES } from '@/lib/comms/labels'
+import { CONVERSATION_STATUSES, CONVERSATION_PRIORITIES, type ConversationPriority } from '@/lib/comms/labels'
+import { veraDraftReply, veraSummarize, veraSuggestTriage } from '@/lib/comms/vera-conversation'
 
 interface SpaceGate {
   spaceId: string
@@ -237,6 +238,44 @@ export async function setSpaceConversationTriageAction(
   }
   revalidatePath(`/spaces/${slug}/crm/conversations`)
   return ok()
+}
+
+// ── Vera seams (ADR-812 Phase 5), space-scoped — thin wrappers over the ONE shared conversation-AI
+// (lib/comms/vera-conversation), the exact same logic the platform CRM calls. Each gates through
+// gateConversation (space-manage + hard tenancy on the thread's space_id) BEFORE handing the shared logic
+// the tenancy-checked conv.id, so a manager can only ask Vera about their own space's threads. An edit to
+// the shared module changes both surfaces at once.
+
+/** Draft a reply with Vera for a conversation this space owns (lands in the composer for a human to send). */
+export async function draftSpaceConversationReplyAction(
+  slug: string,
+  conversationId: string,
+): Promise<ActionResult<{ draft: string }>> {
+  const gated = await gateConversation(slug, conversationId)
+  if ('error' in gated) return fail(gated.error)
+  return veraDraftReply(gated.conv.id, gated.gate.viewerProfileId)
+}
+
+/** One short summary of a conversation this space owns (a skim aid; never sent). */
+export async function summarizeSpaceConversationAction(
+  slug: string,
+  conversationId: string,
+): Promise<ActionResult<{ summary: string }>> {
+  const gated = await gateConversation(slug, conversationId)
+  if ('error' in gated) return fail(gated.error)
+  return veraSummarize(gated.conv.id, gated.gate.viewerProfileId)
+}
+
+/** Suggest + apply a priority for a conversation this space owns (persists reversibly). */
+export async function suggestSpaceConversationTriageAction(
+  slug: string,
+  conversationId: string,
+): Promise<ActionResult<{ priority: ConversationPriority; reason: string }>> {
+  const gated = await gateConversation(slug, conversationId)
+  if ('error' in gated) return fail(gated.error)
+  const result = await veraSuggestTriage(gated.conv.id, gated.gate.viewerProfileId)
+  revalidatePath(`/spaces/${slug}/crm/conversations`)
+  return result
 }
 
 /** Resolve one of THIS space's own contacts by email (space_id-pinned). Returns the contact + linked

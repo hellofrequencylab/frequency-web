@@ -63,6 +63,14 @@ export interface ReceivedEmail {
 export async function fetchReceivedEmail(id: string, attempts = 4): Promise<ReceivedEmail | null> {
   const client = getClient()
   if (!client || !id) return null
+  // Everything we log here can derive from the externally controlled webhook `id` (directly, or via the
+  // API response/error it produces), so it is a log-injection sink. Neutralize it two ways: keep dynamic
+  // values OUT of the format string (static literal + %s placeholders ⇒ no externally-controlled format
+  // string), and pass every dynamic value through `oneLine`, which strips CR/LF — the canonical,
+  // tool-recognized barrier against forged log lines — and caps length.
+  // CodeQL: 132/133/134/135/136/137/138.
+  const oneLine = (v: unknown) => String(v).replace(/[\r\n]+/g, ' ').slice(0, 300)
+  const logSafeId = String(id).replace(/[\r\n]/g, '').replace(/[^\w-]/g, '').slice(0, 64)
   for (let i = 0; i < attempts; i++) {
     try {
       const { data, error } = await client.emails.receiving.get(id)
@@ -79,13 +87,12 @@ export async function fetchReceivedEmail(id: string, attempts = 4): Promise<Rece
         }
       }
       if (error) {
-        console.warn(
-          `[email] fetchReceivedEmail(${id}) attempt ${i + 1}/${attempts} error:`,
-          typeof error === 'string' ? error : JSON.stringify(error),
-        )
+        const detail = oneLine(typeof error === 'string' ? error : JSON.stringify(error))
+        console.warn('[email] fetchReceivedEmail error (id=%s attempt %d/%d): %s', logSafeId, i + 1, attempts, detail)
       }
     } catch (err) {
-      console.error(`[email] fetchReceivedEmail(${id}) attempt ${i + 1}/${attempts} threw:`, err)
+      const detail = oneLine(err instanceof Error ? err.message : err)
+      console.error('[email] fetchReceivedEmail threw (id=%s attempt %d/%d): %s', logSafeId, i + 1, attempts, detail)
     }
     // Backoff before the next attempt (the API usually catches up within a second or two).
     if (i < attempts - 1) await new Promise((r) => setTimeout(r, 750))
