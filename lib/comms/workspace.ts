@@ -52,6 +52,9 @@ export interface ConversationListRow {
   awaitingReply: boolean
   /** A short preview of the latest non-internal message. */
   snippet: string | null
+  /** The owning Space's name, when the thread belongs to one (null = platform-global). Lets the platform
+   *  operator inbox show which tenant a thread is from. */
+  spaceName?: string | null
 }
 
 /** One attributed message in the thread reader. */
@@ -118,6 +121,23 @@ async function loadProfileNames(ids: string[]): Promise<Map<string, string>> {
   return map
 }
 
+/** Batch-load Space display names for a set of space ids (fail-safe: empty map). */
+async function loadSpaceNames(ids: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>()
+  const unique = [...new Set(ids.filter(Boolean))]
+  if (!unique.length) return map
+  try {
+    const { data } = await db().from('spaces').select('id, name, brand_name').in('id', unique)
+    for (const s of (data as { id: string; name: string | null; brand_name: string | null }[] | null) ?? []) {
+      const label = s.brand_name || s.name
+      if (label) map.set(String(s.id), label)
+    }
+  } catch {
+    /* fail-safe */
+  }
+  return map
+}
+
 /** Batch-load { name, email } for a set of contact ids (fail-safe: empty map). */
 async function loadContactIdentities(ids: string[]): Promise<Map<string, Identity>> {
   const map = new Map<string, Identity>()
@@ -176,10 +196,14 @@ export async function listWorkspaceConversations(filter: ConversationListFilter)
 
     const profileIds = rows.flatMap((r) => [r.member_profile_id, r.assigned_to].filter(Boolean) as string[])
     const contactIds = rows.map((r) => r.contact_id).filter(Boolean) as string[]
-    const [profiles, contacts, snippets] = await Promise.all([
+    // Only resolve Space names for the PLATFORM view (no spaceId filter) — a Space-scoped list is already
+    // one tenant, so the label would be redundant noise there.
+    const spaceIds = filter.spaceId ? [] : (rows.map((r) => r.space_id).filter(Boolean) as string[])
+    const [profiles, contacts, snippets, spaceNames] = await Promise.all([
       loadProfileNames(profileIds),
       loadContactIdentities(contactIds),
       loadLatestSnippets(rows.map((r) => r.id)),
+      loadSpaceNames(spaceIds),
     ])
 
     return rows.map((r) => {
@@ -199,6 +223,7 @@ export async function listWorkspaceConversations(filter: ConversationListFilter)
         lastActivityAt: r.last_activity_at,
         awaitingReply: isAwaitingReply(r),
         snippet: snippets.get(String(r.id)) ?? null,
+        spaceName: r.space_id ? (spaceNames.get(r.space_id) ?? null) : null,
       }
     })
   } catch {
@@ -380,4 +405,30 @@ export async function conversationStatusCounts(
     /* fail-safe */
   }
   return counts
+}
+
+/** The people a Space can assign/trade a conversation to: its active operator team (editor+) plus the
+ *  owner, with display names. Mirrors listAssignableAgents (support) but scoped to ONE Space's team, so a
+ *  Space console never offers a foreign person as an assignee. FAIL-SAFE: [] on error. */
+export async function listSpaceAssignableAgents(
+  spaceId: string,
+  ownerProfileId: string | null,
+): Promise<{ id: string; name: string }[]> {
+  const id = typeof spaceId === 'string' ? spaceId.trim() : ''
+  if (!id) return []
+  try {
+    const { data } = await db()
+      .from('space_members')
+      .select('profile_id, role, status')
+      .eq('space_id', id)
+      .eq('status', 'active')
+      .in('role', ['editor', 'moderator', 'admin'])
+    const memberIds = ((data as { profile_id: string }[] | null) ?? []).map((r) => String(r.profile_id))
+    const ids = [...new Set([...(ownerProfileId ? [ownerProfileId] : []), ...memberIds])]
+    if (!ids.length) return []
+    const names = await loadProfileNames(ids)
+    return ids.map((pid) => ({ id: pid, name: names.get(pid) ?? 'Teammate' }))
+  } catch {
+    return []
+  }
 }

@@ -153,6 +153,11 @@ export function ConversationWorkspace({
                     </div>
                     <div className="mt-1 flex items-center gap-1.5">
                       <StatusPill status={r.status} />
+                      {r.spaceName && (
+                        <span className="truncate rounded-full bg-surface-elevated px-1.5 py-0.5 text-3xs font-medium text-muted">
+                          {r.spaceName}
+                        </span>
+                      )}
                       {r.assigneeName && <span className="truncate text-3xs text-subtle">{r.assigneeName}</span>}
                     </div>
                   </Link>

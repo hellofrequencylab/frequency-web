@@ -90,6 +90,20 @@ can guess `ref` but never its tag. Inbound order: parse → `verifyConversationT
   reply-token is present the router returns `no_token` and the webhook falls back to the legacy
   from-address contact-match (`recordInboundEmail`) — today's CRM inbox is unchanged.
 
+## Per-Space tenancy — every Business Space gets the same technology
+
+The spine is multi-tenant: `comms_conversations.space_id` scopes a thread to one Space (NULL = platform).
+`<ConversationWorkspace>` is mounted **per tenant** at `/spaces/[slug]/crm/conversations`
+(`app/(main)/spaces/[slug]/crm/conversations/page.tsx`), gated by `resolveSpaceManageAccess` (a platform
+staffer gets a read-only `StaffPreviewBanner`) and `isConsoleSpaceType`. The read model is scoped with the
+existing `spaceId` filter, and the thread reader is tenancy-checked (`thread.spaceId === space.id`, the same
+IDOR guard as `/lead/inbox`). Space actions (`.../crm/conversations-actions.ts`) mirror the platform reply/
+triage but swap `requireAdmin` for the space-manage gate + a hard `conv.space_id === space.id` check, and
+restrict assignment to the Space's own team (`listSpaceAssignableAgents` = active editor+ members + owner).
+A Space seeds its console via `startSpaceConversationAction` (opens a space-scoped conversation to one of
+its contacts and sends as the Space, on the `enqueueEmail` path). The Space menu row is `space.conversations`
+(`SPACE_MODULES`). The platform operator inbox is tenant-aware: each row shows its owning Space's name.
+
 ## The workspace UX (phase 3) — "Apple Mail wearing ticket chrome"
 
 - **One `<ConversationWorkspace scope>`** mounted at `/admin/crm/inbox` (operators) and a new
