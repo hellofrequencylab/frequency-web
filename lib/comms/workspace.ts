@@ -9,6 +9,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { cleanConversationBody } from '@/lib/comms/message-body'
+import { healMissingBodies } from '@/lib/comms/inbound'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function db(): { from: (t: string) => any } {
@@ -99,7 +100,7 @@ const CONV_COLS =
 
 const MSG_COLS =
   'id, conversation_id, direction, author_id, author_contact_id, author_kind, body, body_html, ' +
-  'is_internal, channel, delivery_status, occurred_at, created_at'
+  'is_internal, channel, delivery_status, occurred_at, created_at, external_message_id, metadata'
 
 interface Identity {
   name: string | null
@@ -306,6 +307,27 @@ export async function getWorkspaceThread(conversationId: string): Promise<Conver
       .limit(500)
     const msgs = (msgData as MsgRow[] | null) ?? []
 
+    // HEAL-ON-LOAD (best-effort): recover the bodies of inbound emails that recorded WITHOUT one
+    // (the degraded-hydration path, or the pre-fix "(no message body)" rows) by re-fetching from the
+    // provider — the stored resend_email_id first, else a receiving-list match by Message-ID. The
+    // update persists; the map patches this render so the operator sees the real message NOW.
+    const healed = await healMissingBodies(
+      msgs.map((m) => ({
+        id: String(m.id),
+        body: m.body,
+        channel: m.channel,
+        externalMessageId: m.external_message_id,
+        metadata: m.metadata,
+      })),
+    )
+    for (const m of msgs) {
+      const fix = healed.get(String(m.id))
+      if (fix) {
+        m.body = fix.body
+        if (fix.bodyHtml) m.body_html = fix.bodyHtml
+      }
+    }
+
     // Resolve every author + the counterpart + the assignee in two batch loads.
     const profileIds = [
       row.member_profile_id,
@@ -367,6 +389,8 @@ interface MsgRow {
   delivery_status: string
   occurred_at: string | null
   created_at: string
+  external_message_id: string | null
+  metadata: Record<string, unknown> | null
 }
 
 /** Name a message's author: a profile/contact display name, else the kind (Vera/System), else the

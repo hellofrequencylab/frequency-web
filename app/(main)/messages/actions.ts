@@ -9,12 +9,15 @@ import { recordContactInteraction } from '@/lib/crm/interactions'
 
 // ── In-app message → CRM timeline adapter (ADR-372 Phase 1) ────────────────────────────────────────
 // Fold a sent 1:1 DM onto the ONE interaction timeline (contact_interactions) so the contact card shows
-// every in-house message, not just email/SMS. FIRE-SAFE by contract: recordContactInteraction never
+// THAT a message happened, not just email/SMS. FIRE-SAFE by contract: recordContactInteraction never
 // throws, but we still wrap so a timeline write can NEVER break the send hot path (a failed fold just
-// means the touch is missing from the card, never a failed message). Idempotent on the message id, so a
-// retry/revalidation replay is a no-op. Recorded from the SENDER's book (owner) about the OTHER party
-// (subject = their profile), direction outbound, source 'system' (auto-captured, not hand-logged).
-async function recordDmTouch(senderProfileId: string, recipientProfileId: string, messageId: string, body: string) {
+// means the touch is missing from the card, never a failed message). Idempotent on the message id.
+//
+// PRIVACY (owner ruling, 2026-07-25, CRM-COMMS-AUDIT F2): member-to-member DMs are NOT CRM content, so
+// the timeline records the TOUCH ONLY (summary "Messaged") and NEVER the message body. The body used to
+// be stored here, which let platform staff read private DM contents on the person card (the global,
+// staff-gated person view reads NULL-lane interactions). The fold now carries no body at all.
+async function recordDmTouch(senderProfileId: string, recipientProfileId: string, messageId: string) {
   try {
     await recordContactInteraction({
       ownerProfileId: senderProfileId,
@@ -23,7 +26,7 @@ async function recordDmTouch(senderProfileId: string, recipientProfileId: string
       channel: 'in_app',
       direction: 'outbound',
       summary: 'Messaged',
-      body,
+      body: null, // never store DM content on the CRM timeline (F2)
       source: 'system',
       idempotencyKey: `in_app:${messageId}`,
       metadata: { messageId, kind: 'dm' },
@@ -152,7 +155,7 @@ export async function sendMessage(conversationId: string, formData: FormData) {
   // 1:1-only, so there is exactly one counterpart; a room (group) send is a separate path and is
   // intentionally not folded here (prioritize the 1:1 DM path per the Phase 1 plan).
   if (inserted?.id && others.length === 1) {
-    await recordDmTouch(myProfileId, others[0], inserted.id as string, body)
+    await recordDmTouch(myProfileId, others[0], inserted.id as string)
   }
 
   // Mark the sender as having read up to now

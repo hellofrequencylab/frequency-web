@@ -100,6 +100,24 @@ export async function fetchReceivedEmail(id: string, attempts = 4): Promise<Rece
   return null
 }
 
+/** Find a received email's PROVIDER id by its RFC Message-ID, via the receiving LIST endpoint (list
+ *  items carry id + message_id but no body — fetch the body with fetchReceivedEmail after matching).
+ *  The heal path for a message recorded WITHOUT a stored provider id (the pre-fix "(no message body)"
+ *  rows). Scans one page of the most recent received mail. FAIL-SAFE: null. */
+export async function findReceivedEmailIdByMessageId(messageId: string): Promise<string | null> {
+  const client = getClient()
+  const needle = (messageId ?? '').trim()
+  if (!client || !needle) return null
+  try {
+    const { data, error } = await client.emails.receiving.list({ limit: 100 })
+    if (error || !data) return null
+    const hit = data.data.find((e) => (e.message_id ?? '').trim() === needle)
+    return hit?.id ?? null
+  } catch {
+    return null
+  }
+}
+
 // ── The spine: queue all email, never send inline (ADR-026) ────────────────────
 
 export interface EmailPayload {

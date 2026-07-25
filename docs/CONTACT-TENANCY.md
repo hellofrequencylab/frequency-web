@@ -1,7 +1,11 @@
 # Per-Space (White-Label) Contact Tenancy
 
-> Status: ⏳ Prepared, NOT yet applied. Migration written; code rescope is a coordinated
-> migrate-then-deploy a human must greenlight. Source of truth: the migration
+> Status: ✅ APPLIED + LIVE (verified against prod 2026-07-25: the per-space unique index
+> `contacts_space_email_lower_idx (space_id, lower(email))` exists and the code rescope is
+> deployed). The 2026-07-25 CRM tenancy audit verified the lanes hold end to end (spine, campaigns,
+> timelines, directory) and tightened the last gap: `contacts_space_read` RLS is now operator-only
+> (`20261215000000_contacts_read_operator_only.sql`) — a plain member can no longer client-read
+> their Space's contact book. Source of truth: the migration
 > `supabase/migrations/20261164000000_contact_tenancy_per_space.sql` + this doc.
 > Related: [COMMS-CRM-ARCHITECTURE.md](COMMS-CRM-ARCHITECTURE.md) §3, the ADR-321/331
 > expand→dual-write→backfill→contract tenancy pattern.

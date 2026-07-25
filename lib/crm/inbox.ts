@@ -21,6 +21,7 @@ import {
 } from '@/lib/crm/interactions'
 import { interactionTitle } from '@/lib/crm/timeline'
 import { recordInboundReplyEvent } from '@/lib/spaces/email-tracking'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 // ── Conversational channels ───────────────────────────────────────────────────────────────────────
 // The inbox is about MESSAGES, so it reads the channels a person and an operator actually converse on
@@ -357,7 +358,16 @@ export async function recordInboundEmail(
   }
 }
 
-/** Find the contact whose email matches a from-address (most recent wins). FAIL-SAFE: null on miss. */
+/** Find the contact whose email matches a from-address. TENANCY (meta-scan CRM audit): under
+ *  per-space tenancy (ADR-624) one address can be a row in SEVERAL lanes (the root membrane + any
+ *  tenant Space that captured them). This fallback runs with NO reply-token context, so it cannot
+ *  know which lane the reply belongs to — the old "most recent row wins" bound a platform member's
+ *  reply to whichever tenant captured them last (cross-tenant timeline misattribution). The
+ *  deterministic rule now: the PRIMARY (root/platform) lane wins when it exists — the Resonance CRM
+ *  is the primary system of record — else the newest tenant row (a tenant-only lead still lands on
+ *  that tenant's timeline). The real fix for lane-precise routing is the conversation spine's
+ *  reply-token (which carries the conversation, and with it the lane); flat-inbox replies should
+ *  migrate onto it. FAIL-SAFE: null on miss. */
 async function matchContactByEmail(email: string): Promise<ContactSendTarget | null> {
   const needle = (email ?? '').trim().toLowerCase()
   if (!needle) return null
@@ -380,9 +390,12 @@ async function matchContactByEmail(email: string): Promise<ContactSendTarget | n
       // bind to `axb@x.com` (wrong contact's timeline + wrong owner notified).
       .ilike('email', escapeLike(needle))
       .order('created_at', { ascending: false })
-      .limit(1)
+      .limit(20)
     if (error || !data || data.length === 0) return null
-    const r = data[0]
+    const rows = data as Record<string, unknown>[]
+    const rootId = await loadRootSpaceId()
+    const primary = rows.find((r) => r.space_id == null || (rootId != null && r.space_id === rootId))
+    const r = primary ?? rows[0]
     return {
       contactId: String(r.id),
       email: (r.email as string) ?? null,
