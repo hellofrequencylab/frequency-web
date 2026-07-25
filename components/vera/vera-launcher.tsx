@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sparkles, Search, BookOpen, Mail, X, MessageSquare, LifeBuoy, Bug, Ticket } from 'lucide-react'
+import { Sparkles, Search, BookOpen, Mail, X, MessageSquare, LifeBuoy, Bug, Ticket, ArrowLeft } from 'lucide-react'
 import type { HelpSearchEntry } from '@/lib/help/content'
 import { searchHelp } from '@/lib/help/search'
 import { CONTACT_EMAIL } from '@/lib/site'
@@ -14,24 +14,27 @@ import { openSupport } from '@/components/support/support-launcher'
 import { EdgePill } from '@/components/layout/edge-pill'
 import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 
-// The persistent dock (ADR-086 + messaging MVP, docs/MESSAGING-PLATFORM.md). ONE
-// floating tab on every member page that opens a panel with THREE modes:
-//   • Chat — member-to-member messaging (DMs + rooms), inbox-first.
-//   • Vera — the AI companion (live loop + propose-and-confirm writes).
-//   • Help — the deterministic tiers: article search → help center → a human.
-// Mounted in the (main) layout, so it persists across navigation. It remembers the
-// last mode (localStorage) and shows an unread badge for messages. Deterministic-first:
-// with AI off, Vera degrades to the scripted concierge and Chat + Help still work, so
-// the product is whole (the bridge doctrine, AI-VERA §3).
+// The persistent dock (ADR-086 + messaging MVP; unified shell per docs/CHAT-SHELL-PLAN.md C1).
+// ONE floating tab on every member page that opens a panel in the site's popup-shell language:
+//   • Messages — member-to-member messaging (DMs + rooms), inbox-first. THE FRONT TAB.
+//   • Vera — the AI companion (live loop + propose-and-confirm writes). The second tab.
+//   • Help & support — NOT a tab: a full-panel SECTION pushed by the footer link (owner
+//     directive: direct support is one tap away, never up front). Holds the help search,
+//     Ask Vera, Report a bug / tickets / help center / email.
+// Mounted in the (main) layout, so it persists across navigation. It remembers the last tab
+// (localStorage) and shows an unread badge for messages. Deterministic-first: with AI off,
+// Vera degrades to the scripted concierge and Messages + Help still work (AI-VERA §3).
 
-type Tab = 'chat' | 'vera' | 'help'
+type Tab = 'chat' | 'vera'
 
 const TAB_KEY = 'fq_dock_tab'
 function initialTab(): Tab {
   if (typeof window === 'undefined') return 'chat'
   try {
     const v = localStorage.getItem(TAB_KEY)
-    if (v === 'vera' || v === 'help' || v === 'chat') return v
+    if (v === 'vera' || v === 'chat') return v
+    // MIGRATION (CHAT-SHELL-PLAN C1): 'help' was a top-level tab in the old dock; it is now the
+    // link-opened section, so a remembered 'help' lands on Messages (the front tab).
   } catch {}
   return 'chat'
 }
@@ -42,6 +45,8 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
   const onAdmin = usePathname().startsWith('/admin')
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<Tab>(initialTab)
+  // The Help & support SECTION overlays the tabs when open (a pushed view with Back).
+  const [helpOpen, setHelpOpen] = useState(false)
   const [q, setQ] = useState('')
   // Vera's own "unclosed chat" pulse (set by vera-chat, cleared when the panel opens).
   const [pulse, setPulse] = useState(() => typeof window !== 'undefined' && localStorage.getItem('fq_vera_unread') === '1')
@@ -62,25 +67,29 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
     return () => { alive = false }
   }, [open])
 
-  // Warm the messages summary once on mount so opening the Chat tab is instant
+  // Warm the messages summary once on mount so opening the Messages tab is instant
   // (the summary is a few RPCs — this is what felt slow on first open).
   useEffect(() => { prefetchDockSummary() }, [])
 
   useEffect(() => {
     const onActivity = () => setPulse(true)
-    // Other surfaces open a specific mode via these events.
+    // Other surfaces open a specific mode via these events (the site-wide open API,
+    // CHAT-SHELL-PLAN §2): open-chat → Messages; open-vera → Vera; open-help → the section.
     const onOpenVera = () => {
-      setTab('vera'); setOpen(true); setPulse(false)
+      setTab('vera'); setHelpOpen(false); setOpen(true); setPulse(false)
       try { localStorage.removeItem('fq_vera_unread') } catch {}
     }
-    const onOpenChat = () => { setTab('chat'); setOpen(true) }
+    const onOpenChat = () => { setTab('chat'); setHelpOpen(false); setOpen(true) }
+    const onOpenHelp = () => { setHelpOpen(true); setOpen(true) }
     window.addEventListener('vera-activity', onActivity)
     window.addEventListener('open-vera', onOpenVera)
     window.addEventListener('open-chat', onOpenChat)
+    window.addEventListener('open-help', onOpenHelp)
     return () => {
       window.removeEventListener('vera-activity', onActivity)
       window.removeEventListener('open-vera', onOpenVera)
       window.removeEventListener('open-chat', onOpenChat)
+      window.removeEventListener('open-help', onOpenHelp)
     }
   }, [])
 
@@ -106,18 +115,18 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
 
   function close() {
     setOpen(false)
+    setHelpOpen(false)
     setQ('')
   }
 
-  const showInstant = tab === 'help' && q.trim().length >= 2
-  const headerTitle = tab === 'vera' ? 'Vera' : tab === 'help' ? 'Help' : 'Messages'
-  const headerSub =
-    tab === 'vera'
+  const showInstant = helpOpen && q.trim().length >= 2
+  const headerTitle = helpOpen ? 'Help & support' : tab === 'vera' ? 'Vera' : 'Messages'
+  const headerSub = helpOpen
+    ? 'Find an answer, or reach a human.'
+    : tab === 'vera'
       ? 'Vera is AI. Ask anything, or find your way.'
-      : tab === 'help'
-        ? 'Find an answer, or reach a human.'
-        : 'Chat with members and your rooms.'
-  const HeaderIcon = tab === 'vera' ? Sparkles : tab === 'help' ? LifeBuoy : MessageSquare
+      : 'Chat with members and your rooms.'
+  const HeaderIcon = helpOpen ? LifeBuoy : tab === 'vera' ? Sparkles : MessageSquare
 
   return (
     <>
@@ -134,75 +143,76 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           waiting={pulse || unread > 0}
           badgeCount={unread}
           onOpen={openPanel}
-          ariaLabel="Open chat, Vera, and help"
+          ariaLabel="Open messages, Vera, and help"
         />
       )}
 
-      {/* Non-modal floating dock: NO page overlay, so members keep navigating and using
-          the site while chatting. Bottom sheet on mobile, anchored card on desktop.
-          Persists across navigation (mounted in the (main) layout). Close via X or ESC. */}
+      {/* Non-modal floating dock in the site popup-shell language (CHAT-SHELL-PLAN §1): NO page
+          overlay, so members keep navigating while chatting. Bottom sheet on mobile, anchored
+          card on desktop. Persists across navigation (mounted in the (main) layout). */}
       {open && (
         <div
           ref={panelRef}
           tabIndex={-1}
           role="dialog"
-          aria-label="Chat, Vera and help"
-          className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[68vh] max-h-[640px] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-border bg-surface shadow-pop outline-none md:inset-x-auto md:bottom-6 md:right-6 md:h-[600px] md:rounded-2xl motion-safe:animate-[slideUp_0.25s_ease-out]"
+          aria-label="Messages, Vera and help"
+          className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[68vh] max-h-[640px] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-border bg-surface shadow-pop outline-none print:hidden md:inset-x-auto md:bottom-6 md:right-6 md:h-[600px] md:w-[24rem] md:rounded-2xl motion-safe:animate-[slideUp_0.25s_ease-out]"
         >
-            {/* Header — reflects the active mode */}
+            {/* Header — reflects the active view; the Help section gets a Back affordance. */}
             <div className="flex shrink-0 items-center gap-2.5 border-b border-border px-4 py-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
-                <HeaderIcon className="h-4 w-4" aria-hidden />
-              </span>
+              {helpOpen ? (
+                <button
+                  type="button"
+                  onClick={() => { setHelpOpen(false); setQ('') }}
+                  aria-label="Back"
+                  className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                >
+                  <ArrowLeft className="h-4 w-4" aria-hidden />
+                </button>
+              ) : (
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
+                  <HeaderIcon className="h-4 w-4" aria-hidden />
+                </span>
+              )}
               <div className="min-w-0 flex-1">
                 <p id="vera-launcher-title" className="text-sm font-bold text-text">{headerTitle}</p>
                 <p className="truncate text-xs text-subtle">{headerSub}</p>
               </div>
-              <button type="button" onClick={close} aria-label="Close" className="rounded-lg p-1 text-muted transition-colors hover:text-text">
+              <button type="button" onClick={close} aria-label="Close" className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-elevated hover:text-text">
                 <X className="h-4 w-4" aria-hidden />
               </button>
             </div>
 
-            {/* Tabs */}
-            <div className="flex shrink-0 gap-1 border-b border-border px-2 py-1.5" role="tablist" aria-label="Dock modes">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={tab === 'chat'}
-                onClick={() => setTab('chat')}
-                className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${tab === 'chat' ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:text-text'}`}
-              >
-                <MessageSquare className="h-4 w-4" aria-hidden /> Chat
-                {unread > 0 && (
-                  <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-3xs font-bold text-on-primary">{unread > 9 ? '9+' : unread}</span>
-                )}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={tab === 'vera'}
-                onClick={() => setTab('vera')}
-                className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${tab === 'vera' ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:text-text'}`}
-              >
-                <Sparkles className="h-4 w-4" aria-hidden /> Vera
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={tab === 'help'}
-                onClick={() => setTab('help')}
-                className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${tab === 'help' ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:text-text'}`}
-              >
-                <LifeBuoy className="h-4 w-4" aria-hidden /> Help
-              </button>
-            </div>
+            {/* Tabs — Messages front, Vera second. Hidden while the Help section is pushed. */}
+            {!helpOpen && (
+              <div className="flex shrink-0 gap-1 border-b border-border px-2 py-1.5" role="tablist" aria-label="Dock modes">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === 'chat'}
+                  onClick={() => setTab('chat')}
+                  className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${tab === 'chat' ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:text-text'}`}
+                >
+                  <MessageSquare className="h-4 w-4" aria-hidden /> Messages
+                  {unread > 0 && (
+                    <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-3xs font-bold text-on-primary">{unread > 9 ? '9+' : unread}</span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === 'vera'}
+                  onClick={() => setTab('vera')}
+                  className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${tab === 'vera' ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:text-text'}`}
+                >
+                  <Sparkles className="h-4 w-4" aria-hidden /> Vera
+                </button>
+              </div>
+            )}
 
-            {tab === 'chat' ? (
-              <DockChat onNavigate={close} />
-            ) : tab === 'vera' ? (
-              <VeraChat opening={COMPANION_OPENING} veraTease={veraTease} />
-            ) : (
-              /* ── Help tab — the deterministic tiers (no AI needed) ───────────── */
+            {helpOpen ? (
+              /* ── Help & support SECTION (link-opened, never a tab) — the deterministic
+                    tiers: article search → Ask Vera → the help center → a human. ─────────── */
               <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
@@ -235,7 +245,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
 
                 <button
                   type="button"
-                  onClick={() => setTab('vera')}
+                  onClick={() => { setHelpOpen(false); setTab('vera') }}
                   className="mt-3 flex w-full items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition-colors hover:border-primary"
                 >
                   <Sparkles className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
@@ -253,6 +263,13 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                   >
                     <Bug className="h-4 w-4 text-muted" aria-hidden /> Report a bug
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => { close(); openSupport('question') }}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated"
+                  >
+                    <LifeBuoy className="h-4 w-4 text-muted" aria-hidden /> Contact support
+                  </button>
                   <Link href="/support" onClick={close} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-text hover:bg-surface-elevated">
                     <Ticket className="h-4 w-4 text-muted" aria-hidden /> Your support tickets
                   </Link>
@@ -264,6 +281,21 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                   </a>
                 </div>
               </div>
+            ) : tab === 'chat' ? (
+              <DockChat onNavigate={close} />
+            ) : (
+              <VeraChat opening={COMPANION_OPENING} veraTease={veraTease} />
+            )}
+
+            {/* Footer link — the ONE doorway to Help & support (owner: support is never a tab). */}
+            {!helpOpen && (
+              <button
+                type="button"
+                onClick={() => setHelpOpen(true)}
+                className="flex shrink-0 items-center justify-center gap-1.5 border-t border-border px-4 py-2 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                <LifeBuoy className="h-3.5 w-3.5" aria-hidden /> Help &amp; support
+              </button>
             )}
         </div>
       )}
