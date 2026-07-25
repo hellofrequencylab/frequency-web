@@ -306,18 +306,24 @@ export default async function EventDetailPage({
   // attribution never breaks the page.
   const eventSpaceId = extra?.host_space_id ?? extra?.space_id ?? null
   let spaceHost: SpaceHostLite | null = null
+  // The HOSTING space's owner: for an explicitly space-hosted event (host_space_id set) this is
+  // the payee whose Connect account tickets pay into (ADR-819) — the payout-readiness check below
+  // must key on it, not on the personal organizer.
+  let hostSpaceOwnerId: string | null = null
   if (eventSpaceId) {
     const { data: rawSpace } = await admin
       .from('spaces')
-      .select('id, slug, name, brand_name, brand_logo_url, status')
+      .select('id, slug, name, brand_name, brand_logo_url, status, owner_profile_id')
       .eq('id', eventSpaceId)
       .maybeSingle()
     const s = rawSpace as {
       id: string; slug: string; name: string | null
       brand_name: string | null; brand_logo_url: string | null; status: string | null
+      owner_profile_id: string | null
     } | null
     if (s && s.status === 'active') {
       spaceHost = { id: s.id, slug: s.slug, name: s.brand_name ?? s.name ?? 'Space', logoUrl: s.brand_logo_url }
+      if (extra?.host_space_id === s.id) hostSpaceOwnerId = s.owner_profile_id
     }
   }
 
@@ -641,12 +647,16 @@ export default async function EventDetailPage({
   const isPaidEvent = hasTiers || flatPriceCents > 0
   let hostPayoutReady = false
   let ownsTicket = false
-  const hostId = event.host?.id
-  if (isPaidEvent && hostId) {
+  // PAYEE (ADR-819): a space-hosted event pays the hosting space's owner; a personal event pays
+  // the host. Readiness must check the SAME account createTicketCheckout charges into — checking
+  // the personal organizer would keep the buy panel hidden after the space owner connects Stripe
+  // (and vice versa).
+  const payoutProfileId = hostSpaceOwnerId ?? event.host?.id
+  if (isPaidEvent && payoutProfileId) {
     // The payout chain (payoutsLive → getConnectStatus) is sequential within itself,
     // but it's independent of the viewer's hasTicket lookup — run them concurrently.
     const [payoutReady, owns] = await Promise.all([
-      (async () => ((await payoutsLive()) ? (await getConnectStatus(hostId)).ready : false))(),
+      (async () => ((await payoutsLive()) ? (await getConnectStatus(payoutProfileId)).ready : false))(),
       myProfileId ? hasTicket(event.id, myProfileId) : Promise.resolve(false),
     ])
     hostPayoutReady = payoutReady
@@ -1014,6 +1024,30 @@ export default async function EventDetailPage({
                   }
                   viewerIsSpaceMember={viewerIsSpaceMember}
                 />
+              ) : canManage ? (
+                /* PAYMENTS PREVIEW (manager-only): payouts aren't connected, so checkout is off —
+                   but the manager sees exactly what buyers will see once it is, instead of a blank.
+                   The real TicketButton renders with the CTA disabled; nothing can reach Stripe. */
+                <div className="space-y-2">
+                  <span className="inline-flex items-center rounded-md bg-surface-elevated px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+                    Payments preview
+                  </span>
+                  <TicketButton
+                    eventId={event.id}
+                    priceLabel={priceLabel}
+                    tiers={hasTiers ? tiers : undefined}
+                    membershipSpace={
+                      spaceHost ? { name: spaceHost.name, slug: spaceHost.slug } : null
+                    }
+                    viewerIsSpaceMember={viewerIsSpaceMember}
+                    previewMode
+                  />
+                  <p className="text-xs text-subtle">
+                    Only you and your team see this. Buyers see it live once{' '}
+                    {spaceHost ? `${spaceHost.name}'s owner connects` : 'you connect'} payouts in
+                    Settings → Billing.
+                  </p>
+                </div>
               ) : (
                 /* Host hasn't finished payout setup, so there is no one to pay yet.
                    Honest to the buyer, no dead "not available" phrasing. */
