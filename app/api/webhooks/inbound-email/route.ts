@@ -16,7 +16,7 @@
 import { NextResponse } from 'next/server'
 import { verifyResendSignature, isFreshTimestamp } from '@/lib/webhook-verify'
 import { recordInboundEmail } from '@/lib/crm/inbox'
-import { parseInboundMessage, routeInboundReply } from '@/lib/comms/inbound'
+import { loadInboundMessage, routeInboundReply } from '@/lib/comms/inbound'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -44,7 +44,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'bad body' }, { status: 400 })
   }
 
-  const parsed = parseInboundMessage(payload)
+  // Resend's `email.received` webhook is metadata-only, so hydrate the body/headers from the Received
+  // Emails API when the payload carries a received-email id but no body (ADR-815). Falls back to the raw
+  // payload otherwise (a provider that inlines the body still works).
+  const parsed = await loadInboundMessage(payload)
   if (!parsed) {
     // Verified but unactionable (no from-address). 200-ack so the provider stops redelivering.
     console.warn('[inbound-email] skipped: no usable from-address')

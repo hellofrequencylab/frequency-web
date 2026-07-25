@@ -78,6 +78,11 @@ can guess `ref` but never its tag. Inbound order: parse → `verifyConversationT
   `!isInternal`) enqueue email with the conversation Reply-To + threading headers, drop List-Unsubscribe
   (1:1 human mail), and append the message. Keep `lib/support/store.ts` build-safe (enqueue via
   `enqueueEmail`, never import the studio send path).
+- **Inbound is metadata-only → hydrate first** (ADR-815). Resend's `email.received` webhook carries only the
+  received-email `id` + `from`/`to`/`subject` — **no body, no headers**. `loadInboundMessage` (the route calls
+  this, not the bare parser) fetches the full content via `fetchReceivedEmail` (`GET /emails/receiving/{id}`)
+  and merges `text`/`html`/`headers`/`message_id` in before parsing; without it a reply would thread empty,
+  with no loop-guard headers and no dedupe key. Fail-safe: falls back to metadata if the fetch fails.
 - **Inbound bridge** (`lib/comms/inbound.ts`, wired into the existing `/api/webhooks/inbound-email`
   route): `parseInboundMessage` (Resend `email.received` webhook — `to`/`received_for`/`message_id`, plus
   `In-Reply-To`/`References`/`Auto-Submitted`/`Precedence` from `data.headers`) → `routeInboundReply`:
