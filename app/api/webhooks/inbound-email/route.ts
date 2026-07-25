@@ -16,7 +16,7 @@
 import { NextResponse } from 'next/server'
 import { verifyResendSignature, isFreshTimestamp } from '@/lib/webhook-verify'
 import { recordInboundEmail } from '@/lib/crm/inbox'
-import { loadInboundMessage, routeInboundReply } from '@/lib/comms/inbound'
+import { loadInboundMessage, routeInboundReply, InboundHydrationError } from '@/lib/comms/inbound'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -47,7 +47,18 @@ export async function POST(req: Request) {
   // Resend's `email.received` webhook is metadata-only, so hydrate the body/headers from the Received
   // Emails API when the payload carries a received-email id but no body (ADR-815). Falls back to the raw
   // payload otherwise (a provider that inlines the body still works).
-  const parsed = await loadInboundMessage(payload)
+  let parsed
+  try {
+    parsed = await loadInboundMessage(payload)
+  } catch (err) {
+    if (err instanceof InboundHydrationError) {
+      // The body wasn't fetchable yet (Received-Emails API lag). 5xx so the provider redelivers, rather than
+      // recording an empty reply.
+      console.warn('[inbound-email] body hydration failed, requesting redelivery')
+      return NextResponse.json({ ok: false, status: 'hydration_pending' }, { status: 503 })
+    }
+    throw err
+  }
   if (!parsed) {
     // Verified but unactionable (no from-address). 200-ack so the provider stops redelivering.
     console.warn('[inbound-email] skipped: no usable from-address')
