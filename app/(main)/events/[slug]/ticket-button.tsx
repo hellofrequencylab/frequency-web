@@ -66,6 +66,7 @@ export function TicketButton({
   tiers,
   membershipSpace,
   viewerIsSpaceMember,
+  previewMode,
 }: {
   eventId: string
   /** Used only for the implicit flat-price (no-tier) case. */
@@ -76,6 +77,9 @@ export function TicketButton({
   membershipSpace?: { name: string; slug: string } | null
   /** Does the viewer hold an active membership in the hosting Space? */
   viewerIsSpaceMember?: boolean
+  /** Manager-only payments preview: render the full buyer UI with checkout disabled (payouts not
+   *  connected yet). The page gates who sees this; the server would refuse a checkout anyway. */
+  previewMode?: boolean
 }) {
   const hasTiers = !!tiers && tiers.length > 0
   const [isPending, startTransition] = useTransition()
@@ -130,7 +134,7 @@ export function TicketButton({
       <div className="space-y-2">
         <button
           onClick={go}
-          disabled={isPending}
+          disabled={isPending || previewMode}
           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ticket className="h-4 w-4" />}
@@ -143,7 +147,7 @@ export function TicketButton({
 
   // ── Tiered selector ──
   const buyerChosen = selected ? isBuyerChosen(selected.pricingMode) : false
-  const ctaDisabled = isPending || !selected || selected.soldOut
+  const ctaDisabled = isPending || !selected || selected.soldOut || previewMode
 
   return (
     <div className="space-y-3">
