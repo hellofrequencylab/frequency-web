@@ -28,6 +28,9 @@ import { resolveSignature } from '@/lib/comms/signature'
 import { renderReplyEmail } from '@/lib/comms/email-template'
 import { type ConversationPriority } from '@/lib/comms/labels'
 import { veraDraftReply, veraSummarize, veraSuggestTriage } from '@/lib/comms/vera-conversation'
+import { startConversationMessage } from '@/lib/comms/conversation-compose'
+import { matchContactByEmail } from '@/lib/crm/inbox'
+import { canEmailContact } from '@/lib/crm/contact-consent'
 
 const GATE = { min: 'janitor', staff: 'marketing' } as const
 
@@ -289,4 +292,63 @@ function bodyToHtml(text: string): string {
   const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   // token-ok: inline style in a server-rendered HTML message body (no CSS vars available in email)
   return `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;color:#111">${escaped.replace(/\n/g, '<br>')}</div>`
+}
+
+/**
+ * Start a NEW ticketed conversation with a member or contact and send the first message (the
+ * new-outreach compose, ADR-821). The platform twin of startSpaceConversationAction: resolves the
+ * PLATFORM-lane contact for the address (root lane wins), gates the send as LIFECYCLE (a fresh 1:1
+ * operator note is relationship mail — not marketing, and not transactional, which is reserved for
+ * replies inside an active thread), then delegates to the ONE shared compose primitive so the first
+ * message rides the same pipeline replies do (reply-token, Message-ID, renderReplyEmail + signature,
+ * batching). Staff-gated; the F5 seal is inherent (the platform lane is the only lane composed here).
+ */
+export async function startConversationAction(input: {
+  email: string
+  subject: string
+  body: string
+  /** Optional studio-compiled HTML from the site-wide email editor (Message Member path). */
+  bodyHtml?: string | null
+}): Promise<ActionResult<{ ref: string }>> {
+  const { profileId: operatorId } = await requireAdmin(GATE.min, { staff: GATE.staff })
+  const email = (input.email ?? '').trim().toLowerCase()
+  const subject = (input.subject ?? '').trim().slice(0, 200)
+  const body = (input.body ?? '').trim()
+  if (!email || !email.includes('@')) return fail('Add a valid recipient email.')
+  if (!subject) return fail('Add a subject line.')
+  if (!body) return fail('Write your message first.')
+
+  const counterpart = await matchContactByEmail(email)
+  if (!counterpart) return fail("That email isn't a contact yet. Add them to the CRM first.")
+
+  // Consent, two vocabularies composed: the CONTACT lane runs as 'transactional' (allowed unless
+  // unsubscribed/suppressed; 'marketing' would demand an explicit opt-in and block legitimate
+  // operator outreach), while a MEMBER's platform preference gates as 'lifecycle'. FAIL-CLOSED.
+  const consent = await canEmailContact(email, 'transactional')
+  if (!consent.allowed) return fail('This contact has unsubscribed, so this message cannot go out.')
+  if (counterpart.profileId) {
+    const gateResult = await resolveSendGate(counterpart.profileId, 'email', 'lifecycle', { email })
+    if (!gateResult.allowed) return fail('This member has email turned off, so this message cannot go out.')
+  }
+
+  const senderName = await profileName(operatorId)
+  const started = await startConversationMessage({
+    ownerProfileId: operatorId,
+    actorProfileId: operatorId,
+    actorAuthorKind: 'staff',
+    from: conversationFrom(senderName),
+    signature: await resolveSignature(operatorId, senderName),
+    email,
+    contactId: counterpart.contactId,
+    profileId: counterpart.profileId,
+    spaceId: null,
+    subject,
+    body,
+    bodyHtml: input.bodyHtml ?? null,
+    metadata: { source: 'admin_console' },
+  })
+  if (!started) return fail('Could not send that. Try again.')
+
+  revalidatePath('/admin/crm/conversations')
+  return ok({ ref: started.ref })
 }

@@ -39,6 +39,13 @@ const SHARED_IMPORTS = [
   // from the ONE shared module; importing neither is the fork this guard exists to catch.
   { module: '@/lib/comms/signature', symbols: ['resolveSignature', 'brandSignature'], anyOf: true, concern: 'shared signature (per-sender or brand)' },
   { module: '@/lib/comms/outbound-batch', symbols: ['queueOutboundMessage'], concern: 'batched outbound send' },
+  // New-outreach compose (ADR-821): the two operator consoles that can START a conversation must open
+  // it through the ONE shared primitive. The leader inbox is reply-only, so it is exempt (`surfaces`).
+  {
+    module: '@/lib/comms/conversation-compose', symbols: ['startConversationMessage'],
+    concern: 'new-outreach compose (open conversation + first outbound)',
+    surfaces: ['app/(main)/admin/crm/conversations/actions.ts', 'app/(main)/spaces/[slug]/crm/conversations-actions.ts'],
+  },
 ]
 
 // ── Logic that must live in EXACTLY ONE file (re-inlining it elsewhere = drift). Each sentinel is a stable
@@ -47,6 +54,7 @@ const SINGLE_SOURCE = [
   { sentinel: 'You draft a reply to a member on behalf of a Frequency team member', owner: 'lib/comms/vera-conversation.ts', what: 'Vera draft prompt' },
   { sentinel: 'You summarize a support/CRM conversation', owner: 'lib/comms/vera-conversation.ts', what: 'Vera summary prompt' },
   { sentinel: "You classify a conversation's priority", owner: 'lib/comms/vera-conversation.ts', what: 'Vera triage prompt' },
+  { sentinel: 'sentinel:conversation-compose-pipeline', owner: 'lib/comms/conversation-compose.ts', what: 'conversation-compose pipeline (ADR-821)' },
 ]
 
 const SEARCH_DIRS = ['app', 'lib', 'components']
@@ -100,7 +108,8 @@ export function checkCrmParity() {
       violations.push(`Surface not found (did a path change? update SURFACES): ${surface}`)
       continue
     }
-    for (const { module, symbols, anyOf, concern } of SHARED_IMPORTS) {
+    for (const { module, symbols, anyOf, concern, surfaces } of SHARED_IMPORTS) {
+      if (surfaces && !surfaces.includes(surface)) continue // concern scoped to specific surfaces
       if (!importsAll(src, module, symbols, anyOf)) {
         violations.push(
           `${surface}\n    ↳ must import ${anyOf ? 'one of' : ''} { ${symbols.join(', ')} } from '${module}' (${concern}).\n` +

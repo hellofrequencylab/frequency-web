@@ -22,7 +22,6 @@ import { isContactTopicMuted } from '@/lib/comms/contact-preferences'
 import { buildConversationReplyAddress } from '@/lib/comms/reply-address'
 import {
   getConversationById,
-  openOrGetConversation,
   appendConversationMessage,
   updateConversationFields,
   recordAssignment,
@@ -32,6 +31,7 @@ import {
 } from '@/lib/comms/conversations'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { brandSignature } from '@/lib/comms/signature'
+import { startConversationMessage } from '@/lib/comms/conversation-compose'
 import { renderReplyEmail } from '@/lib/comms/email-template'
 import { listSpaceAssignableAgents } from '@/lib/comms/workspace'
 import { CONVERSATION_STATUSES, CONVERSATION_PRIORITIES, type ConversationPriority } from '@/lib/comms/labels'
@@ -328,69 +328,45 @@ export async function startSpaceConversationAction(
   const counterpart = await resolveSpaceCounterpart(gate.spaceId, email)
   if (!counterpart) return fail("That email isn't a contact in this space yet. Add them to your contacts first.")
 
-  // Consent (CRM audit F6): a Space starting outreach must honor THIS SPACE's own consent lane — the
-  // tenant contact's consent_state, the per-space suppression, and the per-space topic mute — exactly
-  // like the Space campaign path (lib/spaces/email.ts). Previously only a MEMBER's platform preference
-  // was checked and a pure lead got NO check, so a per-space unsubscribe never stopped a 1:1 send.
-  // FAIL-CLOSED: canEmailContact denies on any read error. Applies to every recipient (member or lead).
-  const spaceConsent = await canEmailContact(email, 'marketing', gate.spaceId)
+  // Consent (CRM audit F6, both halves): a Space starting outreach honors THIS SPACE's own consent
+  // lane — the tenant contact's consent_state, the per-space suppression, and the per-space topic
+  // mute — exactly like the Space campaign path (lib/spaces/email.ts). Two vocabularies compose
+  // here: the CONTACT lane check runs as 'transactional' (allowed unless unsubscribed/suppressed —
+  // 'marketing' would demand an explicit opt-in and silently block legitimate operator outreach to a
+  // known contact), while a MEMBER's platform preference gates as 'lifecycle' (relationship mail, the
+  // same classification leader-send uses — never 'transactional', which is reserved for replies
+  // inside an active thread). The per-space 'marketing' topic mute still applies. FAIL-CLOSED.
+  const spaceConsent = await canEmailContact(email, 'transactional', gate.spaceId)
   if (!spaceConsent.allowed) return fail('This contact has unsubscribed from this space, so this message cannot go out.')
   if (await isContactTopicMuted({ email, spaceId: gate.spaceId, topic: 'marketing' })) {
     return fail('This contact muted this kind of message, so it cannot go out.')
   }
   // A member who has turned email off entirely (their platform-level preference) is also honored.
   if (counterpart.profileId) {
-    const gateResult = await resolveSendGate(counterpart.profileId, 'email', 'marketing', { email })
+    const gateResult = await resolveSendGate(counterpart.profileId, 'email', 'lifecycle', { email })
     if (!gateResult.allowed) return fail('This member has email turned off, so this message cannot go out.')
   }
 
-  const conv = await openOrGetConversation({
-    kind: 'crm',
-    externalEmail: email,
+  // The shared compose primitive (ADR-821): open the ticket + send the first message through the ONE
+  // pipeline replies use — reply-token, Message-ID, renderReplyEmail + brand signature, batching.
+  const started = await startConversationMessage({
     ownerProfileId: gate.ownerProfileId ?? gate.viewerProfileId,
-    subject,
+    actorProfileId: gate.viewerProfileId,
+    actorAuthorKind: 'staff',
+    from: spaceConversationFrom(gate.brandName),
+    signature: brandSignature(gate.brandName),
+    email,
     contactId: counterpart.contactId,
-    memberProfileId: counterpart.profileId,
+    profileId: counterpart.profileId,
     spaceId: gate.spaceId,
+    subject,
+    body,
     metadata: { source: 'space_console' },
   })
-  if (!conv) return fail('Could not open the conversation. Try again.')
-
-  const messageId = newConversationMessageId(conv.ref)
-  const html = bodyToHtml(body)
-  try {
-    await enqueueEmail({
-      to: email,
-      from: spaceConversationFrom(gate.brandName),
-      replyTo: buildConversationReplyAddress(conv.ref),
-      subject,
-      html,
-      text: body,
-      headers: { 'Message-ID': messageId },
-    })
-  } catch {
-    return fail('Could not queue the message. Try again.')
-  }
-
-  await appendConversationMessage({
-    conversationId: conv.id,
-    direction: 'outbound',
-    authorKind: 'staff',
-    authorId: gate.viewerProfileId,
-    body,
-    bodyHtml: html,
-    externalMessageId: messageId,
-    mirror: {
-      ownerProfileId: gate.ownerProfileId ?? gate.viewerProfileId,
-      subjectKind: counterpart.profileId ? 'profile' : 'contact',
-      subjectId: counterpart.profileId ?? counterpart.contactId,
-      spaceId: gate.spaceId,
-      subject,
-    },
-  })
+  if (!started) return fail('Could not send that. Try again.')
 
   revalidatePath(`/spaces/${slug}/crm/conversations`)
-  return ok({ ref: conv.ref })
+  return ok({ ref: started.ref })
 }
 
 /** `Re:`-prefix the subject once. */

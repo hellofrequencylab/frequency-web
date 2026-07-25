@@ -172,7 +172,11 @@ export function renderStyledQrSvg(
         `</clipPath>`,
     )
 
-    const img = `<image href="${escapeXml(style.logo)}" x="${lx}" y="${ly}" width="${lwR}" height="${lwR}" preserveAspectRatio="xMidYMid ${circle ? 'slice' : 'meet'}"/>`
+    // BOTH href forms: `href` is SVG 2 (browsers), `xlink:href` is SVG 1.1 — design tools
+    // (Illustrator, older Inkscape) only honor the xlink form, so a downloaded .svg opened there
+    // would silently drop the logo without it. The root <svg> declares xmlns:xlink to match.
+    const logoHref = escapeXml(style.logo)
+    const img = `<image href="${logoHref}" xlink:href="${logoHref}" x="${lx}" y="${ly}" width="${lwR}" height="${lwR}" preserveAspectRatio="xMidYMid ${circle ? 'slice' : 'meet'}"/>`
 
     if (style.logoTint === 'none') {
       parts.push(`<g clip-path="url(#${clipId})">${img}</g>`)
@@ -197,7 +201,7 @@ export function renderStyledQrSvg(
 
   const height = Math.round((size * H) / W)
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${size}" height="${height}" shape-rendering="geometricPrecision">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${W} ${H}" width="${size}" height="${height}" shape-rendering="geometricPrecision">` +
     parts.join('') +
     `</svg>`
   )

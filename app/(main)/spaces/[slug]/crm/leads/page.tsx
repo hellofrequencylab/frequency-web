@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { Gauge, Lock, QrCode, UserPlus, CircleCheck, Mail } from 'lucide-react'
+import { Gauge, Lock, UserPlus, CircleCheck, Mail } from 'lucide-react'
 import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
