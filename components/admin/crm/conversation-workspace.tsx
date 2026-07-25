@@ -131,9 +131,11 @@ export function ConversationWorkspace({
           description="When a ticketed send goes out or a reply comes in, the thread shows up in this view."
         />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,16rem)_1fr]">
+        // Bound the whole workspace to the viewport so the thread scrolls INSIDE the reader instead of
+        // growing the page — the composer stays docked no matter how long the conversation runs.
+        <div className="grid gap-4 lg:h-[calc(100dvh-13rem)] lg:grid-cols-[minmax(0,16rem)_1fr]">
           {/* List pane. */}
-          <ul className="max-h-[72vh] space-y-1 overflow-y-auto rounded-lg border border-border bg-surface p-1">
+          <ul className="max-h-[72vh] space-y-1 overflow-y-auto rounded-lg border border-border bg-surface p-1 lg:max-h-none lg:h-full">
             {rows.map((r) => {
               const active = r.id === thread?.id
               return (
@@ -173,7 +175,7 @@ export function ConversationWorkspace({
           {thread ? (
             <ThreadReader thread={thread} agents={agents} actions={actions} readOnly={readOnly} />
           ) : (
-            <div className="hidden rounded-lg border border-border bg-surface lg:flex lg:items-center lg:justify-center">
+            <div className="hidden rounded-lg border border-border bg-surface lg:flex lg:h-full lg:items-center lg:justify-center">
               <p className="text-sm text-muted">Pick a conversation to read it.</p>
             </div>
           )}
@@ -195,7 +197,7 @@ function ThreadReader({
   readOnly?: boolean
 }) {
   return (
-    <div className="flex min-h-[60vh] flex-col rounded-lg border border-border bg-surface">
+    <div className="flex min-h-[60vh] flex-col rounded-lg border border-border bg-surface lg:h-full lg:min-h-0">
       <div className="flex items-start justify-between gap-2 border-b border-border p-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-text">{thread.counterpartName || 'Unknown'}</p>
@@ -207,7 +209,7 @@ function ThreadReader({
         <StatusPill status={thread.status} />
       </div>
 
-      <div className="flex-1 space-y-2 overflow-y-auto p-3">
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
         {thread.messages.length === 0 && <p className="text-sm text-muted">No messages yet.</p>}
         {thread.messages.map((m) =>
           m.isInternal ? (
