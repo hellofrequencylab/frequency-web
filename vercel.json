@@ -25,6 +25,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/conversation-batches",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/embed-help",
       "schedule": "20 3 * * *"
     },
