@@ -1,6 +1,7 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound, redirect } from 'next/navigation'
-import { Building2, Zap } from 'lucide-react'
+import { Zap } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { resolveSpaceClaimAny } from '@/lib/spaces/claim'
 import { getSpaceById } from '@/lib/spaces/store'
@@ -8,9 +9,14 @@ import { setActiveSpace } from '@/lib/spaces/active-space'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { parseEntityLayout } from '@/lib/entity-blocks/layout'
 import { resolveAccentVars } from '@/lib/spaces/accent'
-import { defaultAccentForType } from '@/lib/spaces/profile-config'
+import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
+import { readHeroConfig, resolveHero, heroHeightClass } from '@/lib/spaces/hero-config'
+import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
+import { readCoverScrim, readCoverFocus } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { parseSpaceTheme } from '@/lib/theme/space-themes'
+import { cn } from '@/lib/utils'
 import { AccentScope } from '@/components/spaces/accent-scope'
+import { BrandAnchor } from '@/components/spaces/brand-anchor'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 import { ClaimSpaceButton } from './claim-button'
 
@@ -43,9 +49,30 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
   setActiveSpace(space)
 
   const name = space.brandName || space.name || claim.name || 'Your business'
-  const cover = space.coverImageUrl ?? null
-  const logo = space.brandLogoUrl ?? null
-  const tagline = space.tagline ?? null
+
+  // The HERO + cover resolved EXACTLY as the live (profile) layout does, so the claim page reads as the real
+  // page: the operator's hero copy (eyebrow / heading / tagline), their chosen cover scrim + focal point, and
+  // the shared deterministic placeholder when no cover is uploaded. (ADR-526: Space covers are always Hero
+  // size, so the claim page renders that one variant — the cover with the identity overlaid on a scrim.)
+  const hero = resolveHero({
+    config: readHeroConfig(space.preferences),
+    preferences: space.preferences,
+    base: `/spaces/${space.slug}`,
+    brandName: name,
+    tagline: space.tagline ?? null,
+    defaultCtaLabel: defaultPrimaryCtaLabel(space.type),
+  })
+  const coverSrc = space.coverImageUrl || coverPlaceholderFor(space.id)
+  const coverH = heroHeightClass(hero.height)
+  const coverFocus = readCoverFocus(space.preferences)
+  const coverScrim = readCoverScrim(space.preferences)
+  const heroOnInk = coverScrim !== 'blend'
+  const heroScrimGradient =
+    coverScrim === 'none'
+      ? null
+      : heroOnInk
+        ? 'from-ink/80 via-ink/30 to-transparent'
+        : 'from-canvas via-canvas/40 to-transparent'
 
   // The public grid: read the operator's saved arrangement (preferences.profileLayout) and resolve it the
   // SAME way the live visitor page does (parseEntityLayout -> resolveRows), fail-safe to the kind starter.
@@ -76,37 +103,53 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
           </div>
         </div>
 
-        {/* ONE content column, matching the business space page's boundaries: the cover, hero, and body all
-            sit inside the same max-width + shell padding, and the cover uses the SAME contained, rounded
-            16:6 treatment as DetailTemplate (not a full-bleed banner). */}
+        {/* ONE content column, matching the business space page's boundaries: hero + body sit inside the
+            same max-width + padding. */}
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-          <header>
-            {cover ? (
-              <div className="relative aspect-[16/6] w-full overflow-hidden rounded-2xl bg-surface-elevated">
-                {/* eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset */}
-                <img src={cover} alt="" className="h-full w-full object-cover" />
-              </div>
-            ) : (
-              <div className="flex aspect-[16/6] w-full items-center justify-center rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">
-                <Building2 className="h-8 w-8 opacity-60" aria-hidden />
-              </div>
-            )}
-            <div className="-mt-10 flex items-end gap-4 px-1">
-              {logo ? (
-                // eslint-disable-next-line @next/next/no-img-element -- operator asset URL
-                <img
-                  src={logo}
-                  alt=""
-                  className="h-20 w-20 shrink-0 rounded-2xl border-4 border-canvas bg-surface object-cover shadow-sm"
-                />
-              ) : (
-                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-canvas bg-primary-bg text-primary-strong shadow-sm">
-                  <Building2 className="h-8 w-8" aria-hidden />
+          {/* The REAL live hero — the SAME node the (profile) page renders: the operator's Hero-size cover
+              with the identity (logo + eyebrow + name + tagline) overlaid on a bottom scrim. Visitor view:
+              no Follow / owner actions. Mirrors layout.tsx `heroCoverNode`. */}
+          <header className={cn('relative w-full overflow-hidden rounded-xl bg-surface-elevated', coverH)}>
+            <Image
+              src={coverSrc}
+              alt=""
+              fill
+              sizes="(max-width: 1024px) 100vw, 1344px"
+              preload
+              className="object-cover"
+              style={{ objectPosition: coverFocus }}
+            />
+            {heroScrimGradient && <div className={cn('absolute inset-0 bg-gradient-to-t', heroScrimGradient)} />}
+            <div className={cn('absolute inset-x-0 bottom-0 p-6 sm:p-8', coverScrim === 'none' && 'on-image-text')}>
+              <div className="flex min-w-0 items-end gap-4">
+                <div className="shrink-0">
+                  <BrandAnchor name={name} logoUrl={space.brandLogoUrl} />
                 </div>
-              )}
-              <div className="min-w-0 pb-1">
-                <h1 className="truncate text-2xl font-bold text-text sm:text-3xl">{name}</h1>
-                {tagline && <p className="truncate text-sm text-muted">{tagline}</p>}
+                <div className="min-w-0 pb-1">
+                  {hero.eyebrow && (
+                    <p
+                      className={cn(
+                        'mb-1 text-2xs font-semibold uppercase tracking-wide',
+                        heroOnInk ? 'text-on-ink-muted' : 'text-primary-strong',
+                      )}
+                    >
+                      {hero.eyebrow}
+                    </p>
+                  )}
+                  <h1
+                    className={cn(
+                      'min-w-0 break-words text-2xl font-bold leading-tight sm:text-3xl',
+                      heroOnInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : 'text-text',
+                    )}
+                  >
+                    {hero.heading}
+                  </h1>
+                  {hero.tagline && (
+                    <p className={cn('mt-1 max-w-2xl text-base font-medium', heroOnInk ? 'text-on-ink' : 'text-muted')}>
+                      {hero.tagline}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </header>
