@@ -233,11 +233,41 @@ function writeErrorMessage(error: WriteError): string {
   return error?.message ?? String(error)
 }
 
+/** EVENT-ORDERING GUARD (meta-scan 2026-07-25, mirrors the member path's
+ *  apply_membership_event_atomic): claim the event's `created` against the space's watermark
+ *  (spaces.last_plan_event_at) in ONE conditional UPDATE. Returns false for a STALE event (an older
+ *  event delivered after a newer one already applied), which the caller must skip — otherwise the
+ *  set-to-target reconcile would revert plan/add-ons/seats to stale values. FAIL-OPEN on any RPC
+ *  error (e.g. the migration not applied yet): proceeding is exactly today's unguarded behavior. */
+async function claimSpacePlanEvent(spaceId: string, eventCreatedSec: number): Promise<boolean> {
+  try {
+    const db = createAdminClient() as unknown as {
+      rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>
+    }
+    const { data, error } = await db.rpc('claim_space_plan_event', {
+      _space_id: spaceId,
+      _event_created: new Date(eventCreatedSec * 1000).toISOString(),
+    })
+    if (error) return true // fail-open: guard unavailable -> today's behavior
+    return data === true
+  } catch {
+    return true
+  }
+}
+
 /** Route a subscription event to the right reconciler by its kind. Returns true if handled (so the
- *  caller knows the member Crew/Supporter path should be skipped). No-ops for an unknown kind. */
-export async function routeSpaceSubscription(sub: Stripe.Subscription): Promise<boolean> {
+ *  caller knows the member Crew/Supporter path should be skipped). No-ops for an unknown kind.
+ *  `eventCreatedSec` (Stripe event.created, unix seconds) drives the space_plan ordering guard: a
+ *  stale event is claimed-and-skipped but still reported handled (it IS a space event; the member
+ *  path must not run). space_membership events are per-member and deliberately not gated on the
+ *  per-space watermark. */
+export async function routeSpaceSubscription(sub: Stripe.Subscription, eventCreatedSec?: number): Promise<boolean> {
   const kind = subscriptionKind(sub.metadata)
   if (kind === 'space_plan') {
+    const spaceId = sub.metadata?.space_id
+    if (spaceId && typeof eventCreatedSec === 'number' && !(await claimSpacePlanEvent(spaceId, eventCreatedSec))) {
+      return true // stale event: skip the reconcile, keep the newer applied state
+    }
     await reconcileSpacePlanSubscription(sub)
     return true
   }

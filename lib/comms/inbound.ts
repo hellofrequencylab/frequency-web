@@ -16,6 +16,7 @@
 // Supabase/Next imports and are unit-tested in isolation; the IO (`routeInboundReply`) reaches the spine
 // lib + the notifications table. FAIL-SAFE throughout: a write blip returns a status, never throws.
 
+import { createHash } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, fetchReceivedEmail, type ReceivedEmail } from '@/lib/email'
 import {
@@ -129,6 +130,23 @@ function parseReferences(raw: string | null): string[] | null {
  * `data.received_for[]`, `data.message_id`, `data.subject`) and the fuller received-email resource
  * (`data.text`/`data.html`, `data.headers` object) without trusting any field. Deterministic; tested.
  */
+/** A deterministic, valid-shaped Message-ID for an inbound email the provider delivered WITHOUT one,
+ *  so the external_message_id dedup index still catches a redelivery. Hash of sender + subject + body
+ *  + the UTC day: a same-day redelivery of the identical payload collides (treated as a duplicate),
+ *  while the same text sent fresh on a later day still records. PURE. */
+export function synthesizeInboundMessageId(
+  from: string,
+  subject: string | null,
+  text: string | null,
+): string {
+  const day = new Date().toISOString().slice(0, 10)
+  const hash = createHash('sha256')
+    .update(`${from}\n${subject ?? ''}\n${text ?? ''}\n${day}`)
+    .digest('hex')
+    .slice(0, 32)
+  return `<synth.${hash}@inbound.frequencylocal.com>`
+}
+
 export function parseInboundMessage(payload: unknown): ParsedInboundMessage | null {
   if (!payload || typeof payload !== 'object') return null
   const root = payload as Record<string, unknown>
@@ -152,7 +170,15 @@ export function parseInboundMessage(payload: unknown): ParsedInboundMessage | nu
   const text = typeof textRaw === 'string' && textRaw.trim() ? textRaw.trim().slice(0, 20_000) : null
 
   const messageIdRaw = data.message_id ?? root.message_id ?? headerValue(data.headers, 'Message-ID')
-  const messageId = typeof messageIdRaw === 'string' && messageIdRaw.trim() ? messageIdRaw.trim().slice(0, 998) : null
+  const providerMessageId =
+    typeof messageIdRaw === 'string' && messageIdRaw.trim() ? messageIdRaw.trim().slice(0, 998) : null
+  // FALLBACK ID (meta-scan 2026-07-25): inbound dedup rides the PARTIAL unique index on
+  // external_message_id ("where ... is not null"), which a null id skips entirely — so a provider
+  // REDELIVERY of a Message-ID-less inbound (odd automations; nearly all real mailers set one) would
+  // append twice and, on the house path, re-email the member. Synthesize a deterministic id from the
+  // content plus the UTC DAY, so a same-day redelivery collides (23505 -> 'duplicate' -> clean ack)
+  // while a genuinely new, identical message on a later day still records. Shaped as a valid msg-id.
+  const messageId = providerMessageId ?? synthesizeInboundMessageId(from, subject, text)
 
   const headers = data.headers ?? root.headers
   const inReplyToRaw = headerValue(headers, 'In-Reply-To')

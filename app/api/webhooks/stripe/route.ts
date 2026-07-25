@@ -163,8 +163,9 @@ export async function POST(req: Request) {
       case 'customer.subscription.updated': {
         const sub = event.data.object as Stripe.Subscription
         // Pricing P2 (ADR-363): route Space subscriptions to their reconcilers first; if it
-        // was a Space sub, the member tier path is skipped.
-        if (await routeSpaceSubscription(sub)) break
+        // was a Space sub, the member tier path is skipped. event.created drives the space_plan
+        // ordering guard (a stale out-of-order event is skipped, mirroring the member path).
+        if (await routeSpaceSubscription(sub, event.created)) break
         const profileId = sub.metadata?.profile_id
         if (profileId) {
           // Resolve the paid tier from the VALIDATED subscription metadata first (stamped at
@@ -195,7 +196,8 @@ export async function POST(req: Request) {
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription
         // Pricing P2: a deleted Space subscription reverts the plan to free / cancels the membership.
-        if (await routeSpaceSubscription(sub)) break
+        // event.created keeps the deletion in the same ordering stream as the updates.
+        if (await routeSpaceSubscription(sub, event.created)) break
         const profileId = sub.metadata?.profile_id
         if (profileId) await setTier(profileId, 'free', null, 'canceled', event.created)
         break
