@@ -183,19 +183,6 @@ export async function BillingBody({ slug }: { slug: string }) {
               seatMonthlyCents={seatMonthlyCents}
               trialDays={values.trial.days}
             />
-            {/* Founding Business (ADR-804): the per-city fee-buydown cohort. A locked founder rate and a
-                marketplace fee bought down to the lowest on the platform, grandfathered for life. The
-                linked checkout is GATED (inert until billing is live), so this is a preview link today. */}
-            <p className="mt-2 text-xs text-subtle">
-              First business in your city?{' '}
-              <a
-                href={`/spaces/${space.slug}/settings/billing/founding`}
-                className="font-semibold text-primary-strong underline"
-              >
-                See the Founding Business rate
-              </a>
-              , a locked founder price and a lower marketplace fee for life.
-            </p>
           </fieldset>
         )}
 

@@ -33,19 +33,20 @@ import type { BillingInterval } from '@/lib/billing/pricing-keys'
 // intervals are rendered at build time and the toggle flips which is shown.
 export const revalidate = 3600
 
-// The Community Collective pricing model (ADR-811): a tier ladder (Business $29, Collective $79, Non Profit
-// $39, Independent for standalone) with BETA anchors ($19 Business, $49 Collective) that auto-revert to
-// list on 2026-09-01 (lib/pricing/beta.ts). A take-rate ONLY on network-sourced business. You keep 100% of
-// your own bookings; we earn only on the business the collective sends you.
+// The Community Collective pricing model (ADR-811, owner overhaul 2026-07): a tier ladder that starts
+// FREE (Free Space, the first level of Space) and climbs Business $29, Collective $79, Non Profit $39,
+// with Opening Beta anchors ($19 Business, $49 Collective) that auto-revert to list on 2026-09-01
+// (lib/pricing/beta.ts). A take-rate ONLY on network-sourced business. You keep 100% of your own
+// bookings; we earn only on the business the collective sends you.
 export const metadata: Metadata = {
   title: 'Pricing for Spaces',
   description:
-    'Frequency is a community collective. You keep 100% of your own bookings. We earn only on the business the network sends you, at a rate that drops as your plan rises. Business is $29 a month, Collective is $79, Non Profit is $39. Monthly or yearly, two months free.',
+    'Frequency is a community collective. Start a Space free. You keep 100% of your own bookings; we earn only on the business the network sends you. Business is $29 a month ($19 at the Opening Beta price), Collective is $79 ($49 Opening Beta), Non Profit is $39. Two months free on yearly.',
   alternates: { canonical: '/pricing' },
   openGraph: {
     title: 'Frequency pricing: we never take a cut of your own bookings',
     description:
-      'A community collective, not a tax on your work. Keep 100% of what you bring in; we earn only on network-sourced sales, at a tier-declining rate. Business $29, Collective $79, Non Profit $39. Two months free on yearly.',
+      'A community collective, not a tax on your work. Start a Space free, keep 100% of what you bring in; we earn only on network-sourced sales. Business $29 ($19 Opening Beta), Collective $79 ($49 Opening Beta), Non Profit $39.',
     url: '/pricing',
     type: 'website',
   },
@@ -53,7 +54,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Frequency pricing: we never take a cut of your own bookings',
     description:
-      'Keep 100% of your own bookings. We earn only on business the network sends you. Business $29, Collective $79, Non Profit $39. Two months free on yearly.',
+      'Start a Space free. Keep 100% of your own bookings; we earn only on business the network sends you. Business $29 ($19 Opening Beta), Collective $79 ($49 Opening Beta), Non Profit $39.',
   },
 }
 
@@ -61,15 +62,19 @@ export const metadata: Metadata = {
 const PRICING_FAQ: { q: string; a: string }[] = [
   {
     q: 'How does Frequency pricing work?',
-    a: 'A ladder, by what you run. Business is $29 a month: the full CRM, email, reporting, bookings, tickets, memberships, and your own website. Collective is $79 a month: everything in Business plus automations, team roles, multiple pipelines, and hosting collaborators. Non Profit is $39 a month flat, the full Collective toolkit for verified 501(c)(3) organizations. Independent is the standalone tier for your own brand and domain, off the network.',
+    a: 'A ladder, by what you run. A Free Space is the first level: your page, events, posts, and members, free for as long as you want. Business is $29 a month ($19 at the Opening Beta price): the full CRM, email, reporting, bookings, tickets, memberships, and your own website. Collective is $79 a month ($49 Opening Beta): everything in Business plus automations, team roles, multiple pipelines, and hosting collaborators. Non Profit is $39 a month flat, the full Collective toolkit for verified 501(c)(3) organizations.',
+  },
+  {
+    q: 'Can I run a Space for free?',
+    a: 'Yes. A Free Space is a real Space, not a trial: your page, events, posts, members, and a place for your people to gather. No card, no clock. Upgrade to Business when you want payments and the full business toolkit.',
   },
   {
     q: 'Do you take a cut of my sales?',
     a: 'Not of your own. You keep 100% of the bookings and sales you bring in yourself, always. We earn a share only of the business the network sends you, a referral or a discovery inside the collective, and that rate drops as your plan rises: 5% on Business, 3% on Collective, and 0% for nonprofits. A paid plan buys down your rate.',
   },
   {
-    q: 'What is the Resonance Engine?',
-    a: "The Resonance Engine turns your community's signals into live matches and next-best actions. It is an optional add-on on any paid plan, has a 14-day trial, and you can turn it on or off anytime.",
+    q: 'What is the Vera AI add-on?',
+    a: "Vera AI turns your community's signals into live matches and next-best actions. It is an optional add-on on any paid plan at $20 a month, has a 14-day trial, and you can turn it on or off anytime.",
   },
   {
     q: 'What does yearly billing save?',
@@ -81,7 +86,7 @@ const PRICING_FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'Is there a personal plan?',
-    a: 'Yes. Crew is the personal tier for individuals, at $9 a month under a $12 list price. It lives on the personal upgrade page, not on this commercial page.',
+    a: 'Yes, two. Crew is the personal tier at $9 a month or $90 a year at the Opening Beta price, under a $12 list. Supporter is $12 a month: everything in Crew, plus the Supporter badge for backing the Foundation. Both live on the personal upgrade page, not on this commercial page.',
   },
   {
     q: 'Where does the money go?',
@@ -98,10 +103,11 @@ const PRICING_FAQ: { q: string; a: string }[] = [
 const VALUE_LADDER: { name: string; line: string; fee: string }[] = [
   { name: 'Member', line: 'Belong. The full community, free forever.', fee: 'Free' },
   { name: 'Crew', line: 'The whole Quest, and author your own. The personal tier.', fee: `${CREW_NOTE.foundingLabel}/mo` },
-  { name: 'Business', line: 'Run your practice: the CRM, email, bookings, and your own website.', fee: '5% network' },
-  { name: 'Collective', line: 'Collaborate and host: automations, team roles, and collaborators.', fee: '3% network' },
+  { name: 'Supporter', line: 'Everything in Crew, plus the Supporter badge for backing the Foundation.', fee: `${CREW_NOTE.supporterLabel}/mo` },
+  { name: 'Free Space', line: 'The first level of Space: your page, events, posts, and members.', fee: 'Free' },
+  { name: 'Business', line: 'Run your practice: the CRM, email, bookings, payments, and your own website.', fee: '5% network' },
+  { name: 'Collective', line: 'Collaborate and host: automations, team roles, and shared events.', fee: '3% network' },
   { name: 'Non Profit', line: 'The full toolkit for verified 501(c)(3) organizations.', fee: '0%' },
-  { name: 'Independent', line: 'Your own brand and domain, standalone and off the network.', fee: '0%' },
 ]
 
 export default function PricingPage() {
@@ -114,12 +120,13 @@ export default function PricingPage() {
         data={[
           breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]),
           faqSchema(PRICING_FAQ),
-          // One Product/Offer per tier, priced at the monthly founding amount (the real price today). All
-          // four tiers are live and buyable from the code catalog (ADR-811 go-live), so every one gets an
-          // Offer; the `!t.preview` guard is a defensive no-op kept for a future not-yet-sellable tier.
-          // Built from the same catalog the table renders, so the schema never drifts.
+          // One Product/Offer per PAID tier, priced at the monthly founding amount (the real price
+          // today). The Free Space column is not an Offer (a $0 Product reads as spam to answer
+          // engines; the FAQ carries the free story instead). The `!t.preview` guard is a defensive
+          // no-op kept for a future not-yet-sellable tier. Built from the same catalog the table
+          // renders, so the schema never drifts.
           ...tiers
-            .filter((t) => !t.preview)
+            .filter((t) => !t.preview && t.price.month.foundingCents > 0)
             .map((t) =>
               productSchema({
                 title: `Frequency ${t.name}`,
@@ -152,7 +159,7 @@ export default function PricingPage() {
             <br className="hidden sm:block" /> of <span className="text-primary">your bookings.</span>
           </>
         }
-        subtitle="Frequency is a community collective, not a tax on your work. You keep 100% of what you bring in yourself. We earn only on the business the network sends you, at a rate that drops as your plan rises. Business is $29 a month, Collective is $79, and Non Profit is $39."
+        subtitle="Frequency is a community collective, not a tax on your work. Start a Space free. You keep 100% of what you bring in yourself; we earn only on the business the network sends you, at a rate that drops as your plan rises. Business is $29 a month, Collective is $79, and Non Profit is $39."
       >
         <Button href="/spaces">
           Start a Space <ArrowRight className="h-5 w-5" />
@@ -167,7 +174,7 @@ export default function PricingPage() {
         <p className="text-center text-lg leading-relaxed text-muted sm:text-xl">{MISSION_FRAMING}</p>
       </Section>
 
-      {/* The pricing table: Business + Nonprofit, with the monthly/yearly toggle island. */}
+      {/* The pricing table: Free Space, Business, Collective, Non Profit, with the monthly/yearly toggle island. */}
       <Section tone="surface" pad="pt-6 pb-20 sm:pb-24">
         <div className="mb-10 text-center">
           <p className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">
@@ -187,13 +194,13 @@ export default function PricingPage() {
           sends you, and it drops as your plan rises. Every plan here is live and buyable today.
         </p>
 
-        {/* Add-ons that ride on any paid plan: the Resonance Engine (priced from the catalog) and extra
-            operator seats. Seats are an OWNER-SET placeholder (CATALOG operator_seat is placeholder:true),
-            so we surface them as available and owner-priced WITHOUT locking a public per-seat number. */}
+        {/* Add-ons that ride on any paid plan: Vera AI (priced from the catalog) and extra operator
+            seats. Seats are an OWNER-SET placeholder (CATALOG operator_seat is placeholder:true), so we
+            surface them as available and owner-priced WITHOUT locking a public per-seat number. */}
         <p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-subtle">
-          Two add-ons ride on any paid plan. The Resonance Engine is optional at {proAddonPrice('ai')}. And
-          when your team grows, you can add operator seats: these are owner-priced today, so you bring on the
-          people you need without a locked public per-seat price.
+          Two add-ons ride on any paid plan. Vera AI is optional at {proAddonPrice('ai')}. And when your
+          team grows, you can add operator seats: these are owner-priced today, so you bring on the people
+          you need without a locked public per-seat price.
         </p>
       </Section>
 
@@ -208,7 +215,7 @@ export default function PricingPage() {
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted">
             Start where you are and climb as you grow. Each rung adds depth and lowers the network
-            take-rate, from belonging for free to running standalone at zero.
+            take-rate, from belonging for free to a verified nonprofit at zero.
           </p>
         </div>
         <ol className="mx-auto flex max-w-3xl flex-col gap-3">
@@ -259,7 +266,7 @@ export default function PricingPage() {
             },
             {
               title: 'One honest price, no surprise invoices.',
-              body: 'Your plan is one flat monthly price, and a fee you always see in full. Any add-on you turn on, like the Resonance Engine or extra operator seats, is shown up front, never a hidden line item.',
+              body: 'Your plan is one flat monthly price, and a fee you always see in full. Any add-on you turn on, like Vera AI or extra operator seats, is shown up front, never a hidden line item.',
             },
             {
               title: 'Month to month. Leave anytime.',
@@ -309,13 +316,13 @@ export default function PricingPage() {
         </div>
       </Section>
 
-      {/* Crew, the personal tier, noted plainly with a link to the upgrade page. */}
+      {/* Member pricing (Crew + Supporter), noted plainly with a link to the upgrade page. */}
       <Section tone="surface" pad="py-12 sm:py-16">
         <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 rounded-2xl border border-border bg-surface-elevated/60 px-6 py-8 text-center">
           <h3 className="font-display uppercase text-text text-2xl">{CREW_NOTE.name}</h3>
           <p className="text-base leading-relaxed text-muted">{CREW_NOTE.line}</p>
           <Button href={CREW_NOTE.href} variant="secondary">
-            See Crew
+            See member pricing
           </Button>
         </div>
       </Section>
@@ -459,12 +466,12 @@ function PriceCell({ tier }: { tier: PricingTier }) {
           </span>
         )
       })}
-      {/* The beta caption shows ONLY where an anchor exists (a list struck over a lower beta rate) — i.e.
-          Business's $19-under-$29 and Collective's $49-under-$79. It auto-clears when the beta window ends
-          (effectiveCatalogAmounts collapses founding to list, so tierListAnchor returns null). Business /
-          Non Profit / Independent at list must NOT claim a discount (skeptic test, CONTENT-VOICE). */}
+      {/* The Opening Beta caption shows ONLY where an anchor exists (a list struck over a lower beta
+          rate) — i.e. Business's $19-under-$29 and Collective's $49-under-$79. It auto-clears when the
+          beta window ends (effectiveCatalogAmounts collapses founding to list, so tierListAnchor returns
+          null). Free / Non Profit at list must NOT claim a discount (skeptic test, CONTENT-VOICE). */}
       {tierListAnchor(tier, 'month') && (
-        <span className="mt-1 block text-xs text-primary-strong">Beta price, ends September 1</span>
+        <span className="mt-1 block text-xs text-primary-strong">Opening Beta price, ends September 1</span>
       )}
     </div>
   )
@@ -472,7 +479,8 @@ function PriceCell({ tier }: { tier: PricingTier }) {
 
 function AddonCell({ tier, addon }: { tier: PricingTier; addon: string }) {
   const cell = tier.addons.find((a) => a.addon === addon)
-  if (!cell) return null
+  // The Free Space column carries no add-on cells: add-ons ride paid plans only.
+  if (!cell) return <span className="text-subtle">On paid plans</span>
   const included = cell.value === 'Included'
   return (
     <span className={`inline-flex items-center gap-1.5 ${included ? 'text-success' : 'text-text'}`}>

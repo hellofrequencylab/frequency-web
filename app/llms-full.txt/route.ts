@@ -22,11 +22,13 @@ const usd = (cents: number) => `$${Math.round(cents / 100)}`
  *  and Crew are the two personal tiers (not space tiers), so they are stated from their own catalog rows. */
 function tierLadderLines(): string[] {
   const crew = PRICING_DEFAULTS.tier.crew
+  const supporter = PRICING_DEFAULTS.tier.supporter
   const lines: string[] = [
     `- Member: free. Join, show up to a Circle or Event, and use the community. You keep 100% of your own bookings.`,
-    `- Crew: ${usd(crew.monthly_cents)} a month${
-      crew.list_cents ? ` (under a ${usd(crew.list_cents)} list)` : ''
+    `- Crew: ${usd(crew.monthly_cents)} a month (or ${usd(crew.annual_cents ?? crew.monthly_cents * 10)} a year) at the Opening Beta price${
+      crew.list_cents ? `, under a ${usd(crew.list_cents)} list` : ''
     }. The personal tier for individuals: participation and leadership training tracks.`,
+    `- Supporter: ${usd(supporter.monthly_cents)} a month. Everything in Crew, plus the Supporter badge for backing the Foundation.`,
   ]
   for (const t of pricingTiers()) {
     const price = tierHeadline(t, 'month')
@@ -63,7 +65,6 @@ export async function GET() {
     `- Business: ${pct(net.business)} on network-sourced sales.`,
     `- Collective: ${pct(net.collective)} on network-sourced sales.`,
     `- Non Profit: ${pct(net.nonprofit)}, always.`,
-    `- Independent: ${pct(net.independent)}. Standalone, off the network.`,
     '',
     'Physical Spaces (Outposts and Frequency Labs) are funded by a separate community-owned vehicle, never out of platform margin.',
     '',

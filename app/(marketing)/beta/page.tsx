@@ -10,7 +10,7 @@ import { breadcrumbSchema } from '@/lib/jsonld'
 export const metadata: Metadata = {
   title: 'Join the Beta',
   description:
-    "Request your spot in the Frequency community Beta. We're opening it to a small group at a time, free during the beta, no card, founder pricing locked.",
+    "Request your spot in the Frequency community Beta. We're opening it to a small group at a time, free during the beta, no card, your Opening Beta price locked.",
   alternates: { canonical: '/beta' },
   openGraph: {
     title: 'Join the Frequency Beta',
@@ -24,8 +24,8 @@ export const revalidate = 3600
 const WHAT_YOU_GET = [
   { Icon: Users, label: 'A local Circle near you', body: "A small group of neighbors built around what you practice, small enough to be missed when you don't show." },
   { Icon: CalendarHeart, label: 'Real gatherings, in person', body: 'Standing times to actually show up, on the bluff, at The Lab, around a table.' },
-  { Icon: Sparkles, label: 'A say in what it becomes', body: 'Founding members shape the Circles, the rituals, and the room from day one.' },
-  { Icon: ShieldCheck, label: 'Founder pricing, locked', body: 'Free for the whole beta, no card. Lock your founder rate for when paid memberships launch.' },
+  { Icon: Sparkles, label: 'A say in what it becomes', body: 'Early members shape the Circles, the rituals, and the room from day one.' },
+  { Icon: ShieldCheck, label: 'Opening Beta price, locked', body: 'Free for the whole beta, no card. Lock your Opening Beta price for when paid memberships launch.' },
 ]
 
 export default function BetaPage() {
@@ -45,7 +45,7 @@ export default function BetaPage() {
           <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/60">
             <span className="font-semibold text-white/80">Free during the beta.</span>
             <span aria-hidden className="text-white/30">·</span>
-            <span>No card · Founder pricing locked · Leave anytime</span>
+            <span>No card · Opening Beta price locked · Leave anytime</span>
           </p>
         }
       />

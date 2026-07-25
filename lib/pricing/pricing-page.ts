@@ -61,8 +61,8 @@ export interface TierAddonCell {
 
 /** One commercial tier column of the pricing table. Pure data the page renders. */
 export interface PricingTier {
-  /** A stable id for keys + JSON-LD (`business` / `nonprofit` / `collective` / `independent`). */
-  id: 'business' | 'nonprofit' | 'collective' | 'independent'
+  /** A stable id for keys + JSON-LD (`free` / `business` / `collective` / `nonprofit`). */
+  id: 'free' | 'business' | 'nonprofit' | 'collective'
   /** The display name. */
   name: string
   /** How the headline price reads. */
@@ -92,7 +92,9 @@ export interface PricingTier {
  *  beside them. The price comes from the catalog (so a config change is one number). ADR-472: the AI
  *  Engine is now the SOLE metered add-on; Marketing, Team, and Branding folded into Business tier depth. */
 export const PRICING_ADDONS: readonly { key: AddonKey; glyph: string; label: string; turnsOn: string }[] = [
-  { key: 'ai', glyph: '🧠', label: 'Resonance Engine', turnsOn: "Turns your community's signals into live matches and next-best actions." },
+  // Listed as "Vera AI" (owner, 2026-07 pricing overhaul): Vera is the one system voice (ADR-231); the
+  // Resonance Engine machinery powers it under the hood. The catalog key stays addon_ai.
+  { key: 'ai', glyph: '🧠', label: 'Vera AI', turnsOn: "Turns your community's signals into live matches and next-best actions." },
 ]
 
 /** The catalog item key for a metered add-on (ai -> addon_ai). PURE. */
@@ -107,22 +109,41 @@ export function proAddonPrice(addon: AddonKey): string {
   return item.perSeat ? `+${amount}/seat/mo` : `+${amount}/mo`
 }
 
-/** Build the FOUR commercial tier columns (ADR-811): Business, Collective, Non Profit, and Independent,
- *  every one priced from the CODE catalog (collective_base / independent_base joined the catalog at
- *  go-live). PURE — no DB, no per-request read. The add-on cells carry only the AI Engine: metered on
- *  Business, available on every paid tier. */
+/** Build the FOUR public tier columns (owner overhaul, 2026-07): Free Space FIRST (the first level of
+ *  Space, where the core value lives), then Business, Collective, and Non Profit, the paid ones priced
+ *  from the CODE catalog. Independent is NOT displayed (the machinery stays dormant; plan_independent
+ *  flag OFF). PURE — no DB, no per-request read. The add-on cells carry only Vera AI: priced on the paid
+ *  tiers, not sold on Free. */
 export function pricingTiers(betaActive: boolean = isBetaPricingActive()): PricingTier[] {
   const cat = pricingCatalog()
 
-  // The AI Engine is the only metered add-on. It is priced on Business and available on every paid tier.
+  // Vera AI is the only metered add-on. It is priced on, and available on, every paid tier.
   const tierAddons: TierAddonCell[] = PRICING_ADDONS.map((a) => ({ addon: a.key, value: proAddonPrice(a.key) }))
 
-  // BETA AUTO-REVERT (ADR-811): during beta, Business/Collective show their beta anchor struck under the
-  // list; once beta ends the list becomes the price (no strike, no beta caption). effectiveCatalogAmounts
-  // mirrors what the checkout charges, so the table never quotes a price the checkout won't honor.
+  // BETA AUTO-REVERT (ADR-811): during beta, Business/Collective show their Opening Beta anchor struck
+  // under the list; once beta ends the list becomes the price (no strike, no beta caption).
+  // effectiveCatalogAmounts mirrors what the checkout charges, so the table never quotes a price the
+  // checkout won't honor.
   const eff = (a: { listCents: number; foundingCents: number }) => effectiveCatalogAmounts(a, betaActive)
 
+  // Free has no catalog item ($0 is not a Stripe price); a zeroed DualPrice renders as "Free".
+  const zero: CatalogAmounts = { listCents: 0, foundingCents: 0 }
+
   return [
+    {
+      id: 'free',
+      name: 'Free Space',
+      priceKind: 'flat',
+      price: { month: zero, year: zero },
+      featured: false,
+      forWho: 'Anyone starting out, for as long as you want.',
+      billing: 'Free. No card, no clock.',
+      coreIncluded:
+        'The core of running a Space: your page, events, posts, members, and a place for your people to gather.',
+      addons: [],
+      takeRate: '0% on your own bookings, 10% on network-sourced sales',
+      cta: { label: 'Start free', href: '/spaces' },
+    },
     {
       id: 'business',
       name: 'Business',
@@ -145,7 +166,7 @@ export function pricingTiers(betaActive: boolean = isBetaPricingActive()): Prici
       price: { month: eff(cat.collective_base.month), year: eff(cat.collective_base.year) },
       featured: false,
       forWho: 'Growing communities that collaborate and run a team.',
-      billing: 'Monthly or yearly. Beta founding price locked for early Collectives.',
+      billing: 'Monthly or yearly. Opening Beta price locked for early Collectives.',
       coreIncluded:
         'Everything in Business, plus automations, team roles, multiple pipelines, and hosting collaborators inside your space.',
       addons: tierAddons,
@@ -166,21 +187,6 @@ export function pricingTiers(betaActive: boolean = isBetaPricingActive()): Prici
       takeRate: '0%, always',
       cta: { label: 'Get verified', href: '/spaces' },
     },
-    {
-      id: 'independent',
-      name: 'Independent',
-      priceKind: 'flat',
-      // Priced from the code catalog (ADR-811 go-live): the standalone / white-label tier at $249/mo flat.
-      price: { month: cat.independent_base.month, year: cat.independent_base.year },
-      featured: false,
-      forWho: 'Teams that want their own brand and domain, standalone.',
-      billing: 'Monthly or yearly. Standalone, outside the collective.',
-      coreIncluded:
-        'Everything in Collective, plus your own brand and custom domain, badge off. Off the network, so standard pricing.',
-      addons: tierAddons,
-      takeRate: '0%. Standalone, off the network',
-      cta: { label: 'Start a Space', href: '/spaces' },
-    },
   ]
 }
 
@@ -188,6 +194,8 @@ export function pricingTiers(betaActive: boolean = isBetaPricingActive()): Prici
  *  PURE. The page renders the list anchor struck through over this separately. */
 export function tierHeadline(tier: PricingTier, interval: BillingInterval): string {
   const amounts = interval === 'month' ? tier.price.month : tier.price.year
+  // The Free Space column: $0 is not a price, it is the absence of one.
+  if (amounts.foundingCents <= 0) return 'Free'
   const amount = formatLoadoutCents(amounts.foundingCents)
   const suffix = interval === 'month' ? '/mo' : '/yr'
   if (tier.priceKind === 'perSeat') return `${amount}/seat${suffix}`
@@ -221,7 +229,7 @@ export interface LoadoutStripRow {
   /** The plain monthly total label, e.g. "$59/mo" or "$12/seat/mo" for the Nonprofit row. */
   totalLabel: string
   /** When the total is the plan PLUS a metered add-on, the plain breakdown of where it comes from, e.g.
-   *  "$19 plan + $20 Resonance Engine". Null when the total already IS the plan price (a Business-only
+   *  "$19 plan + $20 Vera AI". Null when the total already IS the plan price (a Business-only
    *  door, or the flat Nonprofit plan), so no bare higher number ever reads as the plan price. */
   breakdownLabel: string | null
   /** A plain one-line note on what the loadout is for. */
@@ -283,20 +291,20 @@ export function stripTotalLabel(p: PersonaLoadout, betaActive: boolean = isBetaP
   return `${formatLoadoutCents(betaActive ? total.foundingCents : total.listCents)}/mo`
 }
 
-/** The plain add-on label for the strip breakdown, e.g. "Resonance Engine" (from PRICING_ADDONS). Local
+/** The plain add-on label for the strip breakdown, e.g. "Vera AI" (from PRICING_ADDONS). Local
  *  to this module so the breakdown never pulls in the personas layer (which imports this one). PURE. */
 function stripAddonLabel(addon: AddonKey): string {
   return PRICING_ADDONS.find((a) => a.key === addon)?.label ?? addon
 }
 
-/** The plain breakdown of a loadout total, e.g. "$19 plan + $20 Resonance Engine", so a door whose
+/** The plain breakdown of a loadout total, e.g. "$19 plan + $20 Vera AI", so a door whose
  *  recommended loadout adds a metered add-on shows WHERE the total comes from and never reads as a bare
  *  higher plan price. Returns null when there is nothing to break down: the flat Nonprofit plan, or a
  *  Business-only door with no add-on (the total already IS the Business plan price). PURE. */
 export function stripBreakdownLabel(p: PersonaLoadout, betaActive: boolean = isBetaPricingActive()): string | null {
   if (p.perSeat || p.addons.length === 0) return null
   const cat = pricingCatalog()
-  // The Business base carries the founder-window discount; the add-on (Resonance Engine) does not, so only
+  // The Business base carries the founder-window discount; the add-on (Vera AI) does not, so only
   // the base flips to list after the cutover. Mirrors stripTotalLabel so the breakdown always sums to it.
   const base = `${formatLoadoutCents(betaActive ? cat.business_base.month.foundingCents : cat.business_base.month.listCents)} plan`
   const addonParts = p.addons.map((addon) => {
@@ -336,13 +344,16 @@ export function loadoutStrip(betaActive: boolean = isBetaPricingActive()): Loado
 export const MISSION_FRAMING =
   'Frequency is a community collective. We exist to support and create community. A paid plan keeps the collective independent and funds the people and infrastructure behind it, so a Space is funding the work, not just renting software.'
 
-/** The Crew (personal tier) note for the pricing page, from the catalog/settings code defaults. Crew is
- *  the personal tier (list $12, founding $9); the commercial page notes it and links to the upgrade page. */
+/** The member (personal) pricing note for the pricing page, from the settings code defaults. Crew is the
+ *  personal tier ($9 a month or $90 a year at the Opening Beta price, under a $12 list); Supporter is $12
+ *  a month, everything in Crew plus the Supporter badge for backing the Foundation. Both live on the
+ *  personal upgrade page; the commercial page notes them and links there. */
 export const CREW_NOTE = {
-  name: 'Crew',
+  name: 'Member pricing',
   listLabel: '$12',
   foundingLabel: '$9',
-  line: 'Crew is the personal tier for individuals, at $9 a month under a $12 list price. It lives on the personal upgrade page.',
+  supporterLabel: '$12',
+  line: 'Crew is the personal tier: $9 a month or $90 a year at the Opening Beta price, under a $12 list. Supporter is $12 a month, everything in Crew plus the Supporter badge for backing the Foundation. Both live on the personal upgrade page.',
   href: '/upgrade',
 } as const
 
@@ -362,6 +373,10 @@ export function pricingLadderSummary(): string[] {
   for (const a of PRICING_ADDONS) {
     lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key)}, optional on any paid plan.`)
   }
-  lines.push(`- ${CREW_NOTE.name}: ${CREW_NOTE.foundingLabel}/mo, the personal tier (list ${CREW_NOTE.listLabel}).`)
+  lines.push('- Operator seats: add-on seats for your team on any paid plan, owner-priced.')
+  lines.push(
+    `- Crew: ${CREW_NOTE.foundingLabel}/mo or $90/yr at the Opening Beta price, the personal tier (list ${CREW_NOTE.listLabel}).`,
+  )
+  lines.push(`- Supporter: ${CREW_NOTE.supporterLabel}/mo, everything in Crew plus the Supporter badge.`)
   return lines
 }

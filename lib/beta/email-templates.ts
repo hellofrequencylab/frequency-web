@@ -84,7 +84,7 @@ You've been here since the early days, so we want to offer you something before 
 
 Founding Members lock in the lowest price we will ever set and keep it for good. You get a founding badge that says you were here first, and a direct line to shape what we build next.
 
-[Become a Founding Member](https://frequencylocal.com/founders/offer)
+[Become a Founding Member](https://frequencylocal.com/pricing)
 
 This is for the Beta group only, and it closes when the Beta does. No pressure. If the timing is not right, you can join later at the regular price.
 
@@ -103,7 +103,7 @@ You run something local, and the people on Frequency are your neighbors. We woul
 
 A Founding Business gets its own Space to post events and offers, a founding badge, and the lowest rate we will ever set, kept for good. We will help you set the whole thing up ourselves.
 
-[Claim a Founding Business spot](https://frequencylocal.com/founders/business)
+[Claim a Founding Business spot](https://frequencylocal.com/pricing)
 
 This is open to the Beta group only and closes when the Beta does. Want to talk it through first? Just reply to this email.
 
@@ -134,17 +134,17 @@ The Frequency team`,
   },
   {
     key: 'graduation',
-    label: 'Sept 1 graduation (founder pricing closes)',
+    label: 'Sept 1 graduation (Opening Beta pricing closes)',
     phaseKey: 'P4',
     segment: 'members',
-    subject: 'Founder pricing closes September 1',
+    subject: 'Opening Beta pricing closes September 1',
     body: `Hi,
 
-The Beta is wrapping up, and on September 1 founder pricing closes for good. After that, Founding Member and Founding Business spots are gone, and the regular price takes over.
+The Beta is wrapping up. The Opening Beta price holds through September 1, and after that the list price takes over.
 
 If you have been meaning to lock it in, now is the time.
 
-[Lock in founder pricing](https://frequencylocal.com/founders)
+[Lock in the Opening Beta price](https://frequencylocal.com/pricing)
 
 Either way, thank you for helping us get Frequency off the ground. The community you see today exists because you showed up early.
 

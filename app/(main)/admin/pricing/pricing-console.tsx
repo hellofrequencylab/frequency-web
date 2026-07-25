@@ -92,7 +92,7 @@ function CatalogSection({
   return (
     <AdminSection
       title="Catalog"
-      description="The four sellable bases (Business, Collective, Non Profit, Independent) plus the AI Engine add-on and the seats. Each price shows a list anchor and a lower founding price. The founding price is what a member is charged today; the list price is the anchor it sits under. Set the monthly amounts; the yearly is two months free unless you override it."
+      description="Every base (Business, Collective, Non Profit, Independent) plus the Vera AI add-on and the seats. Each price shows a list anchor and the Opening Beta price under it. The Opening Beta price is what is charged today; the list price is the anchor it sits under (where there is no beta discount, the two match). Set the monthly amounts; the yearly is two months free unless you override it."
     >
       <FormSection
         title="Business base"
@@ -105,7 +105,7 @@ function CatalogSection({
 
       <FormSection
         title="Collective base"
-        description="Everything in Business plus automations, team roles, multiple pipelines, and hosting collaborators (ADR-811). The founding price is the beta anchor charged today; run the catalog sync after changing it."
+        description="Everything in Business plus automations, team roles, multiple pipelines, and hosting collaborators (ADR-811). The Opening Beta price is the anchor charged today; run the catalog sync after changing it."
       >
         <div className="space-y-4">
           <CatalogItemRow item={byKey.collective_base} />
@@ -115,8 +115,8 @@ function CatalogSection({
       {/* TODO(ADR-472 surfaces): the catalog editor still lists add-ons generically; only AI Engine
           remains a metered add-on. The full Tier x Mode console rebuild lands in the surface PR. */}
       <FormSection
-        title="AI Engine (metered add-on)"
-        description="The sole cross-tier add-on. Toggle it off here to hide it from the picker entirely. It is usage-priced and available on any paid tier."
+        title="Vera AI (metered add-on)"
+        description="The sole cross-tier add-on, listed publicly as Vera AI. Toggle it off here to hide it from the picker entirely. It is usage-priced and available on any paid tier."
       >
         <div className="space-y-4">
           {addonItems.map((item) => (
@@ -141,7 +141,7 @@ function CatalogSection({
 
       <FormSection
         title="Independent base"
-        description="The standalone white-label base, off the network (ADR-811). Standard SaaS pricing; no network take-rate and no metered add-ons layer on it."
+        description="The standalone white-label base, off the network (ADR-811). NOT sold or listed publicly right now (its plan switch is off); the price stays editable so the machinery is ready if it ever opens."
       >
         <div className="space-y-4">
           <CatalogItemRow item={byKey.independent_base} />
@@ -231,9 +231,9 @@ function CatalogItemRow({
 
       <div className={`flex flex-wrap items-end gap-3 ${enabled ? '' : 'opacity-50'}`}>
         <Field label="List $ / mo" value={monthlyList} onChange={setMonthlyList} />
-        <Field label="Founding $ / mo" value={monthlyFounding} onChange={setMonthlyFounding} />
+        <Field label="Opening Beta $ / mo" value={monthlyFounding} onChange={setMonthlyFounding} />
         <Field label="List $ / yr" value={yearlyList} onChange={setYearlyList} placeholder="2 mo free" />
-        <Field label="Founding $ / yr" value={yearlyFounding} onChange={setYearlyFounding} placeholder="2 mo free" />
+        <Field label="Opening Beta $ / yr" value={yearlyFounding} onChange={setYearlyFounding} placeholder="2 mo free" />
         <div className="flex items-center gap-2">
           <SaveCue pending={pending} saved={saved} />
           <Button size="sm" variant="secondary" onClick={save} disabled={pending}>
@@ -867,11 +867,11 @@ function FlagRow({
 
 // ── Plans & prices ────────────────────────────────────────────────────────────────────
 
-// Crew shows a MONTHLY list anchor (the founding price sits under it, ADR-463). Supporter is retired as
-// a tier (now the PWYW badge) but its row stays editable so a legacy price-locked member still resolves.
+// Crew shows a MONTHLY list anchor (the Opening Beta price sits under it, ADR-463). Supporter is sold
+// again at $12 (2026-07 pricing overhaul): everything in Crew plus the Supporter badge, no list anchor.
 const TIER_PRICE_ROWS: { key: string; label: string; list?: boolean }[] = [
   { key: 'tier.crew', label: 'Crew', list: true },
-  { key: 'tier.supporter', label: 'Supporter (retired tier)' },
+  { key: 'tier.supporter', label: 'Supporter' },
 ]
 const PLAN_PRICE_ROWS: { key: string; label: string; setup?: boolean }[] = [
   { key: 'plan.business', label: 'Business' },
@@ -881,7 +881,7 @@ const PLAN_PRICE_ROWS: { key: string; label: string; setup?: boolean }[] = [
 function PlansSection({ values }: { values: PricingDefaults }) {
   return (
     <AdminSection title="Plans and prices" description="Every price in dollars. Leave an annual price blank for a monthly only plan.">
-      <FormSection title="Member plans" description="The personal membership tiers.">
+      <FormSection title="Member plans" description="The personal membership tiers: Crew ($9 Opening Beta under the $12 list) and Supporter ($12, Crew plus the badge).">
         <div className="space-y-4">
           {TIER_PRICE_ROWS.map((r) => (
             <PriceRow

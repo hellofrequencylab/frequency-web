@@ -2,12 +2,19 @@
 
 > ## ⚠️ SUPERSEDED by the Community Collective model (ADR-811, July 2026). Read this first.
 > The pricing direction is now the **Community Collective**: two-world pricing on `spaces.network_connected`
-> (in-collective = affordable, standalone = standard SaaS), six named tiers (Member $0 · Crew $9 · Business
-> $29 · Collective $79/beta $49 · Non Profit $39 · Independent ~$249), and a take-rate charged **only on
+> (in-collective = affordable, standalone = standard SaaS) and a take-rate charged **only on
 > network-sourced business** (0% on own bookings). Source of truth:
 > [COMMUNITY-COLLECTIVE-STRATEGY.md](COMMUNITY-COLLECTIVE-STRATEGY.md) · plan:
 > [COMMUNITY-COLLECTIVE-BUILD-PLAN.md](COMMUNITY-COLLECTIVE-BUILD-PLAN.md) · [ADR-811](DECISIONS.md).
-> **Billing went LIVE 2026-07-25** (owner flipped `billing_live` + all four plan switches; Stripe
+>
+> **The PUBLIC ladder (owner overhaul 2026-07-25, ADR-818):** Member $0 · Crew $9 Opening Beta ($90/yr)
+> under a $12 list · **Supporter $12** (Crew + the badge, sold again) · **Free Space** (the first level of
+> Space) · Business $29 ($19 Opening Beta) · Collective $79 ($49 Opening Beta) · Non Profit $39 flat ·
+> the **Vera AI** add-on +$20 (catalog key `addon_ai`) · operator seats owner-priced. **Independent
+> (~$249) is NOT listed or sold** (`plan_independent_enabled` OFF; machinery dormant, grandfathered
+> spaces keep resolving). All founder-vocabulary surfaces read "Opening Beta price."
+>
+> **Billing went LIVE 2026-07-25** (owner flipped `billing_live` + the plan switches; Stripe
 > configured). After any price change here or in code, re-run BOTH Stripe syncs in the admin pricing
 > console (products + catalog) so the live Stripe prices match the anchors. The entitlement-partition /
 > Stripe / grandfather plumbing below still applies; the plan shape + prices do not. Everything under
@@ -259,9 +266,9 @@ amount is the real price charged today (Pro $19). **Yearly = two months free = 1
 **Price-row keys.** The founding (charged) price is `<item>_<interval>` (e.g. `pro_base_month`,
 `addon_marketing_year`, `nonprofit_seat_month`, `organization_year`); the **list anchor** is the same
 key plus `_list` (`pro_base_month_list`), synced `archived=true` (read only for the anchor amount, never
-sold). Retired legacy keys (`practitioner_*`, `business_*`, `whitelabel_*`, `supporter_*`) are **kept
+sold). Retired legacy keys (`practitioner_*`, `business_*`, `whitelabel_*`) are **kept
 resolvable but archived, never deleted** (`RETIRED_CATALOG_KEYS`), so a grandfathered locked price id
-still resolves.
+still resolves. (`supporter_*` was retired here too until the 2026-07 overhaul un-retired it, ADR-818.)
 
 **Catalog sync.** `lib/billing/pricing-products.ts` `syncPricingCatalogToStripe()` walks the catalog:
 one Product per item (looked up by the same `frequency_pricing_key` metadata, idempotent) with its four

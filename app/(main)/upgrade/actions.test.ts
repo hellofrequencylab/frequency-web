@@ -4,8 +4,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 // most is the DORMANT-WHEN-OFF invariant: while billingLive() is false the action turns the badge
 // on and NEVER touches Stripe (no session, no charge, no card), exactly like toggleSupporterBadge.
 // When billingLive() is true it creates a mode:'payment' PWYW session tagged with the contribution
-// kind + profile metadata, records the pending ledger row, and returns the URL. Mirrors
-// app/(marketing)/founders/checkout/actions.test.ts.
+// kind + profile metadata, records the pending ledger row, and returns the URL.
 
 const {
   sessionsCreate,

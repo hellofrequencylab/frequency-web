@@ -362,10 +362,11 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
   },
   addon_ai: {
     key: 'addon_ai',
-    // The Resonance Engine: turns the community's signals into live matches + next-best actions. The
-    // internal key stays `addon_ai` (an identifier; renaming it buys only grandfather/webhook churn) —
-    // only the label is user-facing (ADR-590).
-    label: 'Frequency Resonance Engine (add-on)',
+    // Vera AI (the owner's 2026-07 pricing overhaul name; Vera is the ONE system voice, ADR-231): the
+    // AI add-on that turns the community's signals into live matches + next-best actions (the Resonance
+    // Engine machinery under the hood). The internal key stays `addon_ai` (an identifier; renaming it
+    // buys only grandfather/webhook churn); only the label is user-facing (ADR-590).
+    label: 'Frequency Vera AI (add-on)',
     perSeat: false,
     ...amountsFromMonthly(2000, 2000), // +$20, the sole cross-tier optional add-on (ADR-552/590)
   },
@@ -464,8 +465,10 @@ export function addonKeyForCatalogItem(key: CatalogItemKey): 'ai' | null {
 // ── RETIRED legacy catalog keys (kept resolvable for legacy rows · ADR-460/472; collapsed ADR-552) ─
 // Every retired key is kept RESOLVABLE (never deleted) so a legacy `pricing_stripe_prices` row + a member
 // already locked to one of those price ids still RESOLVE:
-//   1. The pre-ladder per-plan tiers (practitioner / organization / whitelabel / supporter) on the legacy
-//      KEY axis (practitioner_monthly, organization_monthly, whitelabel_monthly, supporter_*).
+//   1. The pre-ladder per-plan tiers (practitioner / organization / whitelabel) on the legacy
+//      KEY axis (practitioner_monthly, organization_monthly, whitelabel_monthly). Supporter WAS here
+//      (retired to a PWYW badge, ADR-458) and is SOLD AGAIN at $12 (2026-07 pricing overhaul), so its
+//      keys left this list and the member-tier sync mints them like Crew's.
 //   2. The retired CATALOG items whose depth folded into the Business tier (ADR-552): the former Pro base
 //      and Organization plan, plus the ADR-472 Marketing / Team / Branding add-on items
 //      (pro_base_*, organization_*, addon_marketing_*, addon_team_*, addon_branding_* on the catalog KEY
@@ -501,11 +504,6 @@ export const RETIRED_CATALOG_KEYS: readonly string[] = (() => {
       keys.push(`${base}_${period}`)
       keys.push(`${base}_${period}_founder`)
     }
-  }
-  // Supporter is retired as a sold tier (becomes a PWYW badge), so its catalog keys retire too.
-  for (const period of PERIODS_BY_KEY.supporter) {
-    keys.push(priceKey('supporter', period))
-    keys.push(priceKey('supporter', period, true))
   }
   // The retired CATALOG items (Pro base, Organization, and the Marketing/Team/Branding add-ons), both
   // intervals + both the founding and the _list anchor variant (matching catalogPriceKey's namespace).

@@ -35,15 +35,16 @@ export default async function UpgradePage() {
 
   if (!profile) redirect('/onboarding')
 
-  // Membership is the entitlement axis (orthogonal to the community role). Paid = Crew. Supporter is
-  // RETIRED as a tier (ADR-463) and is now the PWYW badge below (profiles.is_supporter).
+  // Membership is the entitlement axis (orthogonal to the community role). Paid = Crew. Supporter
+  // ($12) is sold again (2026-07 overhaul): the same Crew entitlement plus the Supporter badge
+  // (the checkout writes crew + is_supporter); the PWYW badge below stays for existing Crew members.
   const tier = (profile.membership_tier ?? 'free') as string
   const isCrew = tier !== 'free'
 
   // The founder lock + the Supporter badge are now TYPED (is_founding_member / is_supporter, regenerated
   // in Phase C). crewSellable is billingLive() AND the tier switch: false while billing is OFF, so the
   // page degrades to the beta toggle + a disabled preview. The catalog config carries the PWYW amounts.
-  const [founder, values, catalog, crewSellable] = await Promise.all([
+  const [founder, values, catalog, crewSellable, supporterSellable] = await Promise.all([
     createAdminClient()
       .from('profiles')
       .select('is_founding_member, is_supporter')
@@ -52,6 +53,7 @@ export default async function UpgradePage() {
     getPricingValues(),
     loadCatalogConfig(),
     memberTierSellable('crew'),
+    memberTierSellable('supporter'),
   ])
   const founderRow = founder.data
   const isFounder = founderRow?.is_founding_member === true
@@ -62,6 +64,7 @@ export default async function UpgradePage() {
   const live = crewSellable
   const rows = memberTierRows(values)
   const crew = rows.find((r) => r.key === 'crew')!
+  const supporter = rows.find((r) => r.key === 'supporter')!
 
   const benefits = [
     { icon: MessageSquare, label: 'Full community feed access' },
@@ -91,7 +94,7 @@ export default async function UpgradePage() {
           </div>
           <p className="text-sm text-primary-strong/70 dark:text-primary-strong/70 leading-relaxed">
             Frequency is in free beta. All features are unlocked for everyone.
-            Early members will get Founder pricing when paid memberships launch.
+            Early members will get the Opening Beta price when paid memberships launch.
           </p>
         </div>
       )}
@@ -139,7 +142,7 @@ export default async function UpgradePage() {
             )}
           </div>
           {live && crew.list && (
-            <p className="mt-1 text-xs text-primary-strong/80">Founding price. {crew.annual ? `Or ${crew.annual} a year, two months free.` : ''}</p>
+            <p className="mt-1 text-xs text-primary-strong/80">Opening Beta price. {crew.annual ? `Or ${crew.annual} a year, two months free.` : ''}</p>
           )}
           {live && !crew.list && crew.annual && (
             <p className="mt-1 text-xs text-primary-strong/80">or {crew.annual} a year</p>
@@ -187,9 +190,31 @@ export default async function UpgradePage() {
         it, so the work stays member-funded instead of sold to advertisers.
       </p>
 
-      {/* Supporter is RETIRED as a tier (ADR-463). It is now an opt-in pay-what-you-want BADGE on Crew
-          (profiles.is_supporter). The toggle writes the badge; the contribution charge is dormant until
-          billing goes live. The operator-set PWYW amounts frame it. */}
+      {/* Supporter, sold again at $12 (owner pricing overhaul, 2026-07): a subscription that grants
+          everything in Crew plus the Supporter badge (the checkout writes crew + is_supporter, ADR-458
+          plumbing unchanged). Shown to a member who has not paid yet, when the tier switch is on. */}
+      {live && supporterSellable && !isCrew && (
+        <div className="mt-6 rounded-2xl border border-signal/30 bg-surface px-6 py-6">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-base font-bold text-text">Or become a Supporter</p>
+            <p className="text-lg font-black text-text">
+              {supporter.monthly}
+              <span className="text-xs font-semibold text-subtle"> / month</span>
+            </p>
+          </div>
+          <p className="mt-1 text-sm leading-relaxed text-muted">
+            Everything in Crew, plus the Supporter badge. The extra funds the Foundation and holds the
+            door for the next person.{supporter.annual ? ` Or ${supporter.annual} a year.` : ''}
+          </p>
+          <div className="mt-4">
+            <CheckoutButton tier="supporter" />
+          </div>
+        </div>
+      )}
+
+      {/* The pay-what-you-want SUPPORTER BADGE on Crew (ADR-463/495): an existing Crew member can back
+          the Foundation with a one-time contribution instead of switching subscriptions. The toggle
+          writes the badge; the contribution charge is gated by billing_live. */}
       <SupporterBadge
         initialOn={isSupporter}
         minLabel={formatCents(catalog.pwyw.minCents)}
@@ -200,8 +225,8 @@ export default async function UpgradePage() {
       {!live && !isFounder && (
         <div className="mt-8 text-center px-4">
           <p className="text-xs text-subtle leading-relaxed">
-            When paid memberships launch, beta members will be offered exclusive
-            Founder pricing. You can switch between the free tier and Crew freely
+            When paid memberships launch, beta members will be offered the
+            Opening Beta price. You can switch between the free tier and Crew freely
             during the beta period.
           </p>
         </div>

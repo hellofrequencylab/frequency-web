@@ -38,19 +38,22 @@ const RUNGS: Rung[] = [
     plan: 'collective',
     icon: Sparkles,
     blurb: 'Everything in Business, plus automations, team roles, multiple pipelines, and hosting collaborators.',
-    note: `Beta ${formatCents(COLLECTIVE_BETA_CENTS)}/mo`,
+    note: `Opening Beta ${formatCents(COLLECTIVE_BETA_CENTS)}/mo`,
   },
   {
     plan: 'nonprofit',
     icon: ShieldCheck,
     blurb: 'The full Collective toolkit for verified 501(c)(3) organizations.',
   },
-  {
-    plan: 'independent',
-    icon: Globe,
-    blurb: 'Your own brand and domain, standalone. Outside the collective, standard pricing.',
-  },
 ]
+
+// Independent is NOT offered (owner pricing overhaul, 2026-07): its rung renders ONLY for a Space
+// already on the plan (grandfathered), never as an upgrade path.
+const INDEPENDENT_RUNG: Rung = {
+  plan: 'independent',
+  icon: Globe,
+  blurb: 'Your own brand and domain, standalone. Outside the collective, standard pricing.',
+}
 
 const STATE_CHIP: Record<RungState, { label: string; className: string }> = {
   current: { label: 'Your plan', className: 'bg-primary text-on-primary' },
@@ -96,6 +99,8 @@ export function PlanLadder({
   // The beta anchor note ("Beta $49/mo") only shows while the beta window is open; it auto-clears when
   // beta ends (2026-09-01, lib/pricing/beta.ts), the same instant the checkout starts charging list.
   const betaActive = isBetaPricingActive()
+  // The Independent rung only appears for a Space already on it (grandfathered); it is not sold.
+  const rungs = currentPlan === 'independent' ? [...RUNGS, INDEPENDENT_RUNG] : RUNGS
   return (
     <section aria-labelledby="collective-ladder-heading" className="rounded-2xl border border-border bg-surface px-5 py-5 shadow-sm">
       <h2 id="collective-ladder-heading" className="text-base font-bold text-text">
@@ -108,7 +113,7 @@ export function PlanLadder({
       </p>
 
       <ul className="mt-4 space-y-2.5">
-        {RUNGS.map((rung) => {
+        {rungs.map((rung) => {
           const state = rungState(rung.plan, currentPlan, sellable)
           const chip = STATE_CHIP[state]
           const Icon = rung.icon

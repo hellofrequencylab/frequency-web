@@ -53,7 +53,7 @@ export const metadata: Metadata = {
 // community is building, not a live venue you can visit today. Kept in lockstep
 // with the visible copy below (CONTENT-VOICE §8b: schema must not out-claim the
 // page). "Third space" keyword carried in the first answer; the answers forward
-// to /founders (back the build) and /discover (the live community).
+// to /pricing (the plans) and /discover (the live community).
 const THE_LAB_FAQ = [
   {
     q: 'What is The Lab?',
@@ -61,7 +61,7 @@ const THE_LAB_FAQ = [
   },
   {
     q: 'Can I visit The Lab yet?',
-    a: 'Not yet. The first Lab is being built by the founding community. You can help shape the room before the doors open by joining the Beta or backing the build as a Founder.',
+    a: 'Not yet. The first Lab is being built by the founding community. You can help shape the room before the doors open by joining the Beta.',
   },
   {
     q: "What will be inside The Lab?",
@@ -332,9 +332,9 @@ function LegacyTheLab() {
           <a href="/loneliness" className="text-primary-strong underline">
             what a third space is
           </a>
-          , back the build as a{' '}
-          <a href="/founders" className="text-primary-strong underline">
-            Founder
+          , see the{' '}
+          <a href="/pricing" className="text-primary-strong underline">
+            plans
           </a>
           , or meet the live community on{' '}
           <a href="/discover" className="text-primary-strong underline">

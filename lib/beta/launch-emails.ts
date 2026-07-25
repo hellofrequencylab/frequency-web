@@ -157,7 +157,7 @@ const FOUNDING_MEMBER: BetaLaunchEmail = {
         image: HERO,
         alt: 'A Frequency member at an early meetup',
         buttonLabel: 'Become a Founding Member',
-        buttonUrl: 'https://frequencylocal.com/founders/offer',
+        buttonUrl: 'https://frequencylocal.com/pricing',
       },
     },
     {
@@ -181,7 +181,7 @@ const FOUNDING_MEMBER: BetaLaunchEmail = {
         title: 'Only for the Beta group',
         body: 'This is for the Beta group only, and it closes when the Beta does. No pressure. If the timing is not right, you can join later at the regular price.',
         buttonLabel: 'Become a Founding Member',
-        buttonUrl: 'https://frequencylocal.com/founders/offer',
+        buttonUrl: 'https://frequencylocal.com/pricing',
       },
     },
     { id: 'text', content: { text: 'Thanks for being here,\nThe Frequency team' } },
@@ -195,7 +195,7 @@ const FOUNDING_BUSINESS: BetaLaunchEmail = {
   phaseKey: 'P2',
   segment: 'members',
   subject: 'Put your business on Frequency as a Founding Business',
-  preheader: 'Your own Space, a founding rate, and we set it up with you.',
+  preheader: 'Your own Space, the Opening Beta rate, and we set it up with you.',
   blockJson: emailLayout([
     {
       id: 'photoHero',
@@ -206,7 +206,7 @@ const FOUNDING_BUSINESS: BetaLaunchEmail = {
         image: HERO,
         alt: 'A local business owner welcoming people through the door',
         buttonLabel: 'Claim a Founding Business spot',
-        buttonUrl: 'https://frequencylocal.com/founders/business',
+        buttonUrl: 'https://frequencylocal.com/pricing',
       },
     },
     {
@@ -230,7 +230,7 @@ const FOUNDING_BUSINESS: BetaLaunchEmail = {
         title: 'Open to the Beta group only',
         body: 'This is open to the Beta group only and closes when the Beta does. Want to talk it through first? Just reply to this email.',
         buttonLabel: 'Claim a Founding Business spot',
-        buttonUrl: 'https://frequencylocal.com/founders/business',
+        buttonUrl: 'https://frequencylocal.com/pricing',
       },
     },
     { id: 'text', content: { text: 'Talk soon,\nThe Frequency team' } },
@@ -283,27 +283,27 @@ const REFERRAL_CONTEST: BetaLaunchEmail = {
   ]),
 }
 
-// ── 7. Sept 1 graduation, founder pricing closes (P4) ─────────────────────────────────────────────────────
+// ── 7. Sept 1 graduation, Opening Beta pricing closes (P4) ────────────────────────────────────────────────
 const GRADUATION: BetaLaunchEmail = {
   key: 'graduation',
-  label: 'Sept 1 graduation (founder pricing closes)',
+  label: 'Sept 1 graduation (Opening Beta pricing closes)',
   phaseKey: 'P4',
   segment: 'members',
-  subject: 'Founder pricing closes September 1',
-  preheader: 'On September 1 founder pricing closes for good.',
+  subject: 'Opening Beta pricing closes September 1',
+  preheader: 'The Opening Beta price holds through September 1, then it is gone.',
   blockJson: emailLayout([
-    { id: 'displayHeading', content: { text: 'Founder pricing closes September 1', font: 'display' } },
+    { id: 'displayHeading', content: { text: 'Opening Beta pricing closes September 1', font: 'display' } },
     {
       id: 'prose',
       content: {
-        text: 'Hi,\n\nThe Beta is wrapping up, and on September 1 founder pricing closes for good. After that, Founding Member and Founding Business spots are gone, and the regular price takes over.',
+        text: 'Hi,\n\nThe Beta is wrapping up. The Opening Beta price holds through September 1, and after that the list price takes over.',
       },
     },
     { id: 'text', content: { text: 'If you have been meaning to lock it in, now is the time.' } },
     { id: 'divider', content: {} },
     {
       id: 'button',
-      content: { label: 'Lock in founder pricing', url: 'https://frequencylocal.com/founders', align: 'center' },
+      content: { label: 'Lock in the Opening Beta price', url: 'https://frequencylocal.com/pricing', align: 'center' },
     },
     {
       id: 'quote',
