@@ -14,9 +14,11 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
-import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
+import { buildUnsubscribeUrl, buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
 import { resolveSendGate, type SendGateReason } from '@/lib/comms/send-gate'
+import { canEmailContact } from '@/lib/crm/contact-consent'
+import { isContactTopicMuted } from '@/lib/comms/contact-preferences'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { getContactSendTarget } from '@/lib/crm/inbox'
 
@@ -66,15 +68,25 @@ export async function sendSpaceInboxReplyAction(
   if (!target || !target.email) return fail('We have no email address for this contact.')
   // TENANCY: never let a manager reply into a contact that is not in this space.
   if (target.spaceId !== space.id) return fail('That conversation is not in this space.')
-  // Consent lives on the member profile. A pure lead has no profile and no consent record, so fail-closed.
-  if (!target.profileId) {
-    return fail("This contact isn't a member yet, so we can't check their email consent. Reach them another way.")
+
+  // Consent (CRM audit F7): a tenant contact usually has NO member profile (the membrane law), so the
+  // old profile-only gate refused virtually every Space CRM contact ("isn't a member yet"). Gate on THIS
+  // SPACE's own consent lane instead (per-space suppression + consent_state + topic mute), exactly like
+  // the Space campaign path, and use a contact-scoped (email+space) unsubscribe URL that needs no profile.
+  // A member ALSO gets their platform-level preference honored. FAIL-CLOSED throughout.
+  const spaceConsent = await canEmailContact(target.email, 'marketing', space.id)
+  if (!spaceConsent.allowed) return fail("This contact has unsubscribed from this space, so we can't email them.")
+  if (await isContactTopicMuted({ email: target.email, spaceId: space.id, topic: 'marketing' })) {
+    return fail('This contact muted this kind of message, so it cannot go out.')
+  }
+  if (target.profileId) {
+    const gate = await resolveSendGate(target.profileId, 'email', 'marketing', { email: target.email })
+    if (!gate.allowed) return fail(GATE_REASON_COPY[gate.reason] || 'This send is blocked.')
   }
 
-  const gate = await resolveSendGate(target.profileId, 'email', 'marketing', { email: target.email })
-  if (!gate.allowed) return fail(GATE_REASON_COPY[gate.reason] || 'This send is blocked.')
-
-  const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: target.profileId, category: 'lifecycle' })
+  const unsubscribeUrl = target.profileId
+    ? buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: target.profileId, category: 'lifecycle' })
+    : buildSpaceUnsubscribeUrl({ baseUrl: SITE_URL, spaceId: space.id, email: target.email })
   const html = bodyToHtml(body)
   try {
     await enqueueEmail({

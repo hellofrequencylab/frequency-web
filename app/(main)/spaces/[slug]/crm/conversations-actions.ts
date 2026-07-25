@@ -17,6 +17,8 @@ import { escapeLike } from '@/lib/search-sanitize'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { enqueueEmail } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
+import { canEmailContact } from '@/lib/crm/contact-consent'
+import { isContactTopicMuted } from '@/lib/comms/contact-preferences'
 import { buildConversationReplyAddress } from '@/lib/comms/reply-address'
 import {
   getConversationById,
@@ -326,8 +328,17 @@ export async function startSpaceConversationAction(
   const counterpart = await resolveSpaceCounterpart(gate.spaceId, email)
   if (!counterpart) return fail("That email isn't a contact in this space yet. Add them to your contacts first.")
 
-  // Consent: honor a member's email preferences; a pure contact/lead in a 1:1 the space is starting is the
-  // consent context itself (mirrors the platform Message-Member path).
+  // Consent (CRM audit F6): a Space starting outreach must honor THIS SPACE's own consent lane — the
+  // tenant contact's consent_state, the per-space suppression, and the per-space topic mute — exactly
+  // like the Space campaign path (lib/spaces/email.ts). Previously only a MEMBER's platform preference
+  // was checked and a pure lead got NO check, so a per-space unsubscribe never stopped a 1:1 send.
+  // FAIL-CLOSED: canEmailContact denies on any read error. Applies to every recipient (member or lead).
+  const spaceConsent = await canEmailContact(email, 'marketing', gate.spaceId)
+  if (!spaceConsent.allowed) return fail('This contact has unsubscribed from this space, so this message cannot go out.')
+  if (await isContactTopicMuted({ email, spaceId: gate.spaceId, topic: 'marketing' })) {
+    return fail('This contact muted this kind of message, so it cannot go out.')
+  }
+  // A member who has turned email off entirely (their platform-level preference) is also honored.
   if (counterpart.profileId) {
     const gateResult = await resolveSendGate(counterpart.profileId, 'email', 'marketing', { email })
     if (!gateResult.allowed) return fail('This member has email turned off, so this message cannot go out.')
