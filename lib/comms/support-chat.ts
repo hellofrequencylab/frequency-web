@@ -17,25 +17,30 @@ import {
 import { makeChatToken, verifyChatToken } from '@/lib/comms/chat-token'
 import { cleanConversationBody } from '@/lib/comms/message-body'
 import { escapeLike } from '@/lib/search-sanitize'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 /** The platform profile that owns an anonymous chat thread (same env the inbound webhook uses). */
 function inboxOwner(): string | null {
   return process.env.CRM_INBOX_OWNER_PROFILE_ID ?? null
 }
 
-/** Resolve-or-create the platform contact for a visitor email, so the chat threads onto a real contact card
- *  and satisfies the spine's counterparty CHECK (openOrGetConversation returns null without a subject).
- *  Mirrors matchContactByEmail (ilike, escaped) + a minimal insert. FAIL-SAFE: null on any error. */
+/** Resolve-or-create the PLATFORM-lane contact for a visitor email, so the chat threads onto a real
+ *  contact card and satisfies the spine's counterparty CHECK (openOrGetConversation returns null
+ *  without a subject). TENANCY (meta-scan CRM audit): the lookup is pinned to the platform lane
+ *  (space_id NULL — the ADR-624 root membrane) so a visitor whose address also exists as some
+ *  tenant Space's lead never gets the platform chat bound to that tenant's CRM row. FAIL-SAFE: null. */
 async function resolveOrCreateContactId(email: string, name: string): Promise<string | null> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = createAdminClient() as unknown as { from: (t: string) => any }
-    const existing = await db
+    // The platform lane = the ROOT space row (the tenancy trigger stamps root) or a legacy NULL row.
+    const rootId = await loadRootSpaceId()
+    let q = db
       .from('contacts')
       .select('id')
       .ilike('email', escapeLike(email))
-      .order('created_at', { ascending: false })
-      .limit(1)
+    q = rootId ? q.or(`space_id.is.null,space_id.eq.${rootId}`) : q.is('space_id', null)
+    const existing = await q.order('created_at', { ascending: false }).limit(1)
     const hit = existing?.data?.[0]?.id
     if (hit) return String(hit)
     const ins = await db

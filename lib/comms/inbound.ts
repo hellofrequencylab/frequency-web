@@ -18,7 +18,7 @@
 
 import { createHash } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { enqueueEmail, fetchReceivedEmail, type ReceivedEmail } from '@/lib/email'
+import { enqueueEmail, fetchReceivedEmail, findReceivedEmailIdByMessageId, type ReceivedEmail } from '@/lib/email'
 import {
   parseConversationReplyAddress,
   verifyConversationToken,
@@ -49,6 +49,9 @@ export interface ParsedInboundMessage {
   autoSubmitted: string | null
   /** `Precedence` header, lowercased (`bulk`/`list`/`junk` mark automated mail). */
   precedence: string | null
+  /** Set when the body fetch failed PAST the redelivery grace window: the message records without a
+   *  body, carrying the provider received-email id so healMissingBodies can recover it later. */
+  hydration?: { emailId: string; failed: true }
 }
 
 /** Pull a lowercased bare address out of a string (`Name <a@b>` or `a@b`) or a `{address}`/`{email}` object.
@@ -242,11 +245,74 @@ export async function loadInboundMessage(
     // Merge the fetched body/headers over the webhook metadata (which may carry `received_for`).
     if (full) return parseInboundMessage({ data: { ...data, ...full } })
     // The webhook told us there's a body to fetch (it carried an id) but the fetch came back empty after
-    // retries. Do NOT silently record "(no message body)" — signal a transient failure so the route asks
-    // the provider to redeliver (the Received-Emails API is eventually consistent, so a retry succeeds).
-    throw new InboundHydrationError(emailId)
+    // retries. Signal a transient failure so the route asks the provider to redeliver (the
+    // Received-Emails API is eventually consistent, so a retry usually succeeds) — but ONLY within the
+    // grace window. A PERSISTENT fetch failure (e.g. an API key without receiving scope) would otherwise
+    // 503 every redelivery until the provider gives up and the reply is LOST FOREVER (the #1002 case).
+    // Past the grace window we record the message DEGRADED (no body) carrying the received-email id in
+    // `hydration`, so the operator thread loader can heal the body later (healMissingBodies).
+    const createdRaw = firstString(root.created_at, data.created_at)
+    const createdAt = createdRaw ? Date.parse(createdRaw) : Number.NaN
+    const withinGrace = !Number.isFinite(createdAt) || Date.now() - createdAt < HYDRATION_GRACE_MS
+    if (withinGrace) throw new InboundHydrationError(emailId)
+    const parsed = parseInboundMessage(payload)
+    return parsed ? { ...parsed, hydration: { emailId, failed: true } } : parsed
   }
   return parseInboundMessage(payload)
+}
+
+/** How long we keep 503-ing for a redelivery before degrading to a body-less record (heal-on-load
+ *  recovers the body once the fetch works again). Long enough for eventual consistency, short enough
+ *  that a persistent failure never exhausts the provider's retry schedule and drops the message. */
+const HYDRATION_GRACE_MS = 10 * 60 * 1000
+
+/** The literal placeholder a body-less inbound records with (also the pre-fix rows' body). */
+export const MISSING_BODY_PLACEHOLDER = '(no message body)'
+
+/**
+ * HEAL missing inbound bodies (best-effort, operator-read path). For each email message recorded with
+ * the placeholder body: resolve the provider received-email id (the stored `metadata.resend_email_id`
+ * from a degraded record, else a receiving-LIST match by the RFC Message-ID for pre-fix rows), fetch
+ * the full body, and UPDATE the stored message. Returns a map of message id → healed body so the
+ * caller can patch its in-memory rows without a re-read. Caps the fetches per call (an operator
+ * opening a thread must never wait on a long scan); a failed heal leaves the row unchanged and is
+ * retried on the next load. Server-only (admin client).
+ */
+export async function healMissingBodies(
+  rows: { id: string; body: string | null; channel: string | null; externalMessageId?: string | null; metadata?: Record<string, unknown> | null }[],
+  maxHeals = 3,
+): Promise<Map<string, { body: string; bodyHtml: string | null }>> {
+  const healed = new Map<string, { body: string; bodyHtml: string | null }>()
+  const candidates = rows
+    .filter((r) => (r.body ?? '').trim() === MISSING_BODY_PLACEHOLDER && (r.channel ?? 'email') === 'email')
+    .slice(0, maxHeals)
+  if (candidates.length === 0) return healed
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = createAdminClient() as unknown as { from: (t: string) => any }
+    for (const row of candidates) {
+      const storedId = typeof row.metadata?.resend_email_id === 'string' ? row.metadata.resend_email_id : null
+      const providerId = storedId ?? (row.externalMessageId ? await findReceivedEmailIdByMessageId(row.externalMessageId) : null)
+      if (!providerId) continue
+      const full = await fetchReceivedEmail(providerId, 1)
+      const text = full?.text?.trim() || null
+      const html = full?.html?.trim() || null
+      if (!text && !html) continue
+      const body = text ?? html ?? ''
+      const { error } = await db
+        .from('comms_messages')
+        .update({
+          body,
+          ...(html ? { body_html: html } : {}),
+          metadata: { ...(row.metadata ?? {}), resend_email_id: providerId, hydration_healed: true },
+        })
+        .eq('id', row.id)
+      if (!error) healed.set(row.id, { body, bodyHtml: html })
+    }
+  } catch (err) {
+    console.warn('[comms] healMissingBodies failed (non-fatal):', err)
+  }
+  return healed
 }
 
 /**
@@ -331,8 +397,15 @@ export async function routeInboundReply(parsed: ParsedInboundMessage): Promise<I
       externalMessageId: parsed.messageId,
       inReplyTo: parsed.inReplyTo,
       referencesIds: parsed.referencesIds,
-      // Persist the anti-spoof flag on the message so an agent sees "replied from a different address".
-      metadata: senderMismatch ? { sender_mismatch: true, from: parsed.from } : null,
+      // Persist the anti-spoof flag ("replied from a different address") + the degraded-hydration
+      // marker (the provider email id healMissingBodies re-fetches the body by).
+      metadata:
+        senderMismatch || parsed.hydration
+          ? {
+              ...(senderMismatch ? { sender_mismatch: true, from: parsed.from } : {}),
+              ...(parsed.hydration ? { resend_email_id: parsed.hydration.emailId, hydration_failed: true } : {}),
+            }
+          : null,
       // Mirror to the CRM person-timeline only when we have an owner + a subject to hang it on.
       mirror:
         conv.ownerProfileId && subjectId

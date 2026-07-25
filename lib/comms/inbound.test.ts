@@ -247,3 +247,24 @@ describe('synthesizeInboundMessageId (Message-ID-less dedup fallback)', () => {
     expect(parsed?.messageId).toBe('<real-id@mail.example.com>')
   })
 })
+
+describe('loadInboundMessage degraded hydration (persistent fetch failure past grace)', () => {
+  it('throws (redeliver) while the event is young, degrades to a body-less record once stale', async () => {
+    const addr = buildConversationReplyAddress(4096)
+    const young = {
+      type: 'email.received',
+      created_at: new Date().toISOString(),
+      data: { id: 'rme_x', from: 'ada@example.com', received_for: [addr], subject: 'Re' },
+    }
+    await expect(loadInboundMessage(young, async () => null)).rejects.toBeInstanceOf(InboundHydrationError)
+
+    const stale = {
+      ...young,
+      created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 min old redelivery
+    }
+    const parsed = await loadInboundMessage(stale, async () => null)
+    expect(parsed).not.toBeNull()
+    expect(parsed!.text).toBeNull()
+    expect(parsed!.hydration).toEqual({ emailId: 'rme_x', failed: true })
+  })
+})
