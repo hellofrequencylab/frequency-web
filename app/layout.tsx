@@ -17,7 +17,6 @@ import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, FOUNDING_PLACE } f
 import { JsonLd } from "@/components/json-ld";
 import { organizationSchema, websiteSchema } from "@/lib/jsonld";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
-import { SupportChatWidget } from "@/components/chat/support-chat-widget";
 
 // Nunito: closest Google Font to the Frequency brand logo's rounded, bold letterforms.
 // Weights: 400 body, 600 semibold, 700 bold, 800 extrabold, 900 black (headings/branding).
@@ -167,8 +166,10 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         {children}
-        {/* Anonymous live-chat widget (ADR-816) — off unless NEXT_PUBLIC_SUPPORT_CHAT is enabled. */}
-        {process.env.NEXT_PUBLIC_SUPPORT_CHAT === '1' && <SupportChatWidget />}
+        {/* The anonymous live-chat widget (ADR-816) no longer mounts here: corner arbitration
+            (docs/CHAT-SHELL-PLAN.md §2) gives each surface ONE bottom-right owner. The widget
+            mounts in the PUBLIC layouts ((marketing), (help), /discover); the member (main)
+            shell's corner belongs to the dock (VeraLauncher), so the two can never stack. */}
       </body>
     </html>
   );
