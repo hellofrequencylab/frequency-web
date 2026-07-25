@@ -6,6 +6,7 @@
 
 import { headers } from 'next/headers'
 import { rateLimitOk } from '@/lib/rate-limit'
+import { getCallerProfile } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
   startSupportChat,
@@ -27,8 +28,11 @@ export async function startSupportChatAction(input: {
   if (!(await rateLimitOk('support_chat_start', await callerIp(), 5, '1 m'))) {
     return fail('Too many attempts. Please wait a moment and try again.')
   }
-  const started = await startSupportChat(input)
-  if (!started) return fail('Live chat is unavailable right now. Please email us instead.')
+  // Optional auth: a SIGNED-IN sender binds the support conversation to their profile, so it lands in
+  // their own inbox (getCallerProfile returns null for an anonymous visitor — safe in a public action).
+  const me = await getCallerProfile().catch(() => null)
+  const started = await startSupportChat({ ...input, memberProfileId: me?.id ?? null })
+  if (!started) return fail('Support is unavailable right now. Please email us instead.')
   return ok(started)
 }
 
