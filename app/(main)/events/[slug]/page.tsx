@@ -51,7 +51,7 @@ import { ZAP_AMOUNTS } from '@/lib/zaps'
 // page builds the Join/warm-proof/facts data once and stamps it into the event context for the
 // modules to render (lib/events/active-event.ts), so no module re-derives the ticketing/RSVP logic.
 import { PageModules } from '@/components/widgets/page-modules'
-import { setEventContext } from '@/lib/events/active-event'
+import { setEventContext, type SpaceHostLite } from '@/lib/events/active-event'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { nextOccurrence } from '@/lib/events/recurrence'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
@@ -258,6 +258,9 @@ export default async function EventDetailPage({
     // Event's IANA zone (newer than the generated types → untyped read). Drives every
     // is-past / check-in gate and the when-line abbrev via lib/time/zone.
     time_zone: string | null
+    // The Space that hosts the event (ADR-800). Set ⇒ the event was posted from a Space and is
+    // attributed to it (the Space brand is the displayed host). Newer than the generated types → cast.
+    space_id: string | null
     // Presentation bag (jsonb). Carries the host-picked hero height (heroHeight key).
     theme: unknown
     // PostgREST returns a PostGIS `geography` as an EWKB hex string (or, in some setups, a
@@ -271,7 +274,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, theme, geog',
+        'posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, space_id, theme, geog',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -292,6 +295,27 @@ export default async function EventDetailPage({
   const onlineUrl = extra?.online_url ?? null
   const ticketedCents: number | null = ticketedCentsResolved
   const canManage = eventCaps.has('event.editSettings')
+
+  // SPACE ATTRIBUTION (ADR-800): when the event was posted from a Space (events.space_id), the Space is the
+  // displayed host — its brand + logo, linking to the Space page. The person in host_id stays the
+  // operational organizer (edit rights, rewards, cohost management). Best-effort: a missing or non-active
+  // Space just falls back to the person host, so attribution never breaks the page.
+  const eventSpaceId = extra?.space_id ?? null
+  let spaceHost: SpaceHostLite | null = null
+  if (eventSpaceId) {
+    const { data: rawSpace } = await admin
+      .from('spaces')
+      .select('id, slug, name, brand_name, brand_logo_url, status')
+      .eq('id', eventSpaceId)
+      .maybeSingle()
+    const s = rawSpace as {
+      id: string; slug: string; name: string | null
+      brand_name: string | null; brand_logo_url: string | null; status: string | null
+    } | null
+    if (s && s.status === 'active') {
+      spaceHost = { id: s.id, slug: s.slug, name: s.brand_name ?? s.name ?? 'Space', logoUrl: s.brand_logo_url }
+    }
+  }
 
   // Draft guard (ADR poster-events): an unpublished draft must never render on its
   // public slug. The admin read above bypasses RLS, so re-apply the status gate the
@@ -1077,6 +1101,9 @@ export default async function EventDetailPage({
           avatar_url: event.host.avatar_url,
         }
       : null,
+    // The Space that hosts the event (posted from a Space) → attributed to the Space (null for a personal
+    // / circle / standalone event, where the person host above is shown as today).
+    spaceHost,
     myProfileId,
     canManage,
     isHost,
@@ -1345,7 +1372,20 @@ export default async function EventDetailPage({
               </div>
             )}
 
-            {event.host ? (
+            {spaceHost ? (
+              // Space-hosted event: the Space is the attribution — its brand links to the Space page. The
+              // person in host_id stays the organizer, shown as a subtle secondary credit so they're still
+              // visible without being the headline host.
+              <p>
+                Hosted by{' '}
+                <Link href={`/spaces/${spaceHost.slug}`} className="font-semibold hover:underline">
+                  {spaceHost.name}
+                </Link>
+                {event.host ? (
+                  <span className="text-subtle"> · organized by {event.host.display_name}</span>
+                ) : null}
+              </p>
+            ) : event.host ? (
               // In-network host: bold, clickable, with a hover/focus profile-preview popover
               // (items 2 + 3). An out-of-network organizer stays plain text below.
               <p>
