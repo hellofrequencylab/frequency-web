@@ -56,27 +56,41 @@ export interface ReceivedEmail {
 }
 
 /** Fetch a received email's full content by id (GET /emails/receiving/{id}). Returns null when sending is
- *  disabled / not found / on any error — the caller falls back to the metadata it already has. */
-export async function fetchReceivedEmail(id: string): Promise<ReceivedEmail | null> {
+ *  disabled / not found / on error AFTER retries. The Received-Emails API is EVENTUALLY CONSISTENT with the
+ *  `email.received` webhook — the webhook can fire before the body is queryable — so we retry a few times
+ *  with a short backoff before giving up, and log the reason (a null here otherwise silently degrades a
+ *  reply to an empty body). */
+export async function fetchReceivedEmail(id: string, attempts = 4): Promise<ReceivedEmail | null> {
   const client = getClient()
   if (!client || !id) return null
-  try {
-    const { data, error } = await client.emails.receiving.get(id)
-    if (error || !data) return null
-    return {
-      from: data.from,
-      to: data.to ?? [],
-      received_for: data.received_for ?? [],
-      subject: data.subject,
-      text: data.text ?? null,
-      html: data.html ?? null,
-      headers: data.headers ?? null,
-      message_id: data.message_id,
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const { data, error } = await client.emails.receiving.get(id)
+      if (!error && data) {
+        return {
+          from: data.from,
+          to: data.to ?? [],
+          received_for: data.received_for ?? [],
+          subject: data.subject,
+          text: data.text ?? null,
+          html: data.html ?? null,
+          headers: data.headers ?? null,
+          message_id: data.message_id,
+        }
+      }
+      if (error) {
+        console.warn(
+          `[email] fetchReceivedEmail(${id}) attempt ${i + 1}/${attempts} error:`,
+          typeof error === 'string' ? error : JSON.stringify(error),
+        )
+      }
+    } catch (err) {
+      console.error(`[email] fetchReceivedEmail(${id}) attempt ${i + 1}/${attempts} threw:`, err)
     }
-  } catch (err) {
-    console.error('[email] fetchReceivedEmail failed:', err)
-    return null
+    // Backoff before the next attempt (the API usually catches up within a second or two).
+    if (i < attempts - 1) await new Promise((r) => setTimeout(r, 750))
   }
+  return null
 }
 
 // ── The spine: queue all email, never send inline (ADR-026) ────────────────────

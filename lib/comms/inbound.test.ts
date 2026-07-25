@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { parseInboundMessage, isAutomatedMessage, loadInboundMessage, type ParsedInboundMessage } from './inbound'
+import {
+  parseInboundMessage,
+  isAutomatedMessage,
+  loadInboundMessage,
+  InboundHydrationError,
+  type ParsedInboundMessage,
+} from './inbound'
 import type { ReceivedEmail } from '@/lib/email'
 import { buildConversationReplyAddress, parseConversationReplyAddress } from './reply-address'
 
@@ -144,16 +150,38 @@ describe('loadInboundMessage (metadata-only webhook hydration)', () => {
     expect(parsed!.text).toBe('inline body')
   })
 
-  it('falls back to metadata when the API fetch fails (reply still records, body empty)', async () => {
+  it('THROWS a transient error when the webhook has an id but the body fetch fails (redelivery, not empty)', async () => {
+    const addr = buildConversationReplyAddress(4096)
+    await expect(
+      loadInboundMessage(
+        { type: 'email.received', data: { id: 'rme_abc', from: 'ada@example.com', received_for: [addr], subject: 'Re' } },
+        async () => null,
+      ),
+    ).rejects.toBeInstanceOf(InboundHydrationError)
+  })
+
+  it('falls back to metadata WITHOUT throwing when there is no id to hydrate from', async () => {
+    const addr = buildConversationReplyAddress(4096)
+    let called = false
+    const parsed = await loadInboundMessage(
+      { data: { from: 'ada@example.com', received_for: [addr], subject: 'Re' } },
+      async () => {
+        called = true
+        return null
+      },
+    )
+    expect(called).toBe(false)
+    expect(parsed!.text).toBeNull()
+    expect(parseConversationReplyAddress(parsed!.recipients)?.ref).toBe('4096')
+  })
+
+  it('hydrates when the webhook inlines an EMPTY text (empty string must not suppress the fetch)', async () => {
     const addr = buildConversationReplyAddress(4096)
     const parsed = await loadInboundMessage(
-      { type: 'email.received', data: { id: 'rme_abc', from: 'ada@example.com', received_for: [addr], subject: 'Re' } },
-      async () => null,
+      { type: 'email.received', data: { id: 'rme_abc', text: '', from: 'ada@example.com', received_for: [addr], subject: 'Re' } },
+      async () => fullBody(addr),
     )
-    expect(parsed).not.toBeNull()
-    expect(parsed!.text).toBeNull()
-    // The reply address is still visible so the thread can be reopened + the agent notified.
-    expect(parseConversationReplyAddress(parsed!.recipients)?.ref).toBe('4096')
+    expect(parsed!.text).toBe('the actual reply text')
   })
 })
 

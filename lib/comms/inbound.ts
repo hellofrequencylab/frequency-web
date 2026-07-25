@@ -170,6 +170,16 @@ function firstString(...vals: unknown[]): string | null {
   return null
 }
 
+/** Thrown when a metadata-only webhook carried a received-email id but the body fetch failed after retries.
+ *  The webhook route maps this to a 5xx so the provider REDELIVERS, instead of silently recording an empty
+ *  body — the Received-Emails API is eventually consistent, so a later redelivery usually succeeds. */
+export class InboundHydrationError extends Error {
+  constructor(public readonly emailId: string) {
+    super(`inbound body hydration failed for ${emailId}`)
+    this.name = 'InboundHydrationError'
+  }
+}
+
 /**
  * Load a normalized inbound message from a provider webhook payload, HYDRATING the body when needed.
  *
@@ -187,7 +197,10 @@ export async function loadInboundMessage(
   if (!payload || typeof payload !== 'object') return parseInboundMessage(payload)
   const root = payload as Record<string, unknown>
   const data = (root.data && typeof root.data === 'object' ? root.data : root) as Record<string, unknown>
-  const hasBody = typeof data.text === 'string' || typeof data.html === 'string'
+  // Require a NON-EMPTY body — a provider that inlines `text: ""` must not suppress the fetch.
+  const hasBody =
+    (typeof data.text === 'string' && data.text.trim().length > 0) ||
+    (typeof data.html === 'string' && data.html.trim().length > 0)
   // The received-email id can arrive under a few shapes across provider payload versions — check them all.
   const nested = data.email && typeof data.email === 'object' ? (data.email as Record<string, unknown>) : {}
   const emailId = firstString(
@@ -202,6 +215,10 @@ export async function loadInboundMessage(
     const full = await fetcher(emailId)
     // Merge the fetched body/headers over the webhook metadata (which may carry `received_for`).
     if (full) return parseInboundMessage({ data: { ...data, ...full } })
+    // The webhook told us there's a body to fetch (it carried an id) but the fetch came back empty after
+    // retries. Do NOT silently record "(no message body)" — signal a transient failure so the route asks
+    // the provider to redeliver (the Received-Emails API is eventually consistent, so a retry succeeds).
+    throw new InboundHydrationError(emailId)
   }
   return parseInboundMessage(payload)
 }
