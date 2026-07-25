@@ -40,7 +40,7 @@ function readViewerId(): string {
   try {
     let id = localStorage.getItem(VIEWER_KEY)
     if (!id) {
-      id = `v-${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`
+      id = `v-${crypto.randomUUID()}`
       localStorage.setItem(VIEWER_KEY, id)
     }
     return id

@@ -75,7 +75,7 @@ export function useSupportChat({
       if (!body) return
       setError(null)
       stopTyping()
-      const optimisticId = `tmp-${viewerId}-${Math.random().toString(36).slice(2)}`
+      const optimisticId = `tmp-${viewerId}-${crypto.randomUUID()}`
       const optimistic: ChatMessage = { id: optimisticId, author: role, body, at: new Date().toISOString() }
       setMessages((prev) => [...prev, optimistic])
       const r = await persist(body)

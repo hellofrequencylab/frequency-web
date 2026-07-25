@@ -11,7 +11,7 @@ import { useSupportChat } from '@/components/chat/use-support-chat'
 import { sendOperatorChatReplyAction, loadOperatorChatHistoryAction } from '@/app/support-chat/operator-actions'
 
 export function LiveChatBridge({ chatRef, token }: { chatRef: string; token: string }) {
-  const [viewerId] = useState(() => `op-${Math.random().toString(36).slice(2)}`)
+  const [viewerId] = useState(() => `op-${crypto.randomUUID()}`)
   const { messages, loading, error, send, typingNames, notifyTyping } = useSupportChat({
     token,
     viewerId,
