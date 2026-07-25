@@ -41,6 +41,44 @@ function getClient(): Resend | null {
   return new Resend(apiKey)
 }
 
+/** The full content of a RECEIVED (inbound) email. Resend's `email.received` webhook is METADATA-ONLY (no
+ *  body, no headers), so the inbound router must fetch the body + headers from the Received Emails API
+ *  before it can thread the reply, run the loop guard, or dedupe on Message-ID (ADR-815). */
+export interface ReceivedEmail {
+  from: string
+  to: string[]
+  received_for: string[]
+  subject: string
+  text: string | null
+  html: string | null
+  headers: Record<string, string> | null
+  message_id: string
+}
+
+/** Fetch a received email's full content by id (GET /emails/receiving/{id}). Returns null when sending is
+ *  disabled / not found / on any error — the caller falls back to the metadata it already has. */
+export async function fetchReceivedEmail(id: string): Promise<ReceivedEmail | null> {
+  const client = getClient()
+  if (!client || !id) return null
+  try {
+    const { data, error } = await client.emails.receiving.get(id)
+    if (error || !data) return null
+    return {
+      from: data.from,
+      to: data.to ?? [],
+      received_for: data.received_for ?? [],
+      subject: data.subject,
+      text: data.text ?? null,
+      html: data.html ?? null,
+      headers: data.headers ?? null,
+      message_id: data.message_id,
+    }
+  } catch (err) {
+    console.error('[email] fetchReceivedEmail failed:', err)
+    return null
+  }
+}
+
 // ── The spine: queue all email, never send inline (ADR-026) ────────────────────
 
 export interface EmailPayload {

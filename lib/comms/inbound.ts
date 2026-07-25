@@ -17,7 +17,7 @@
 // lib + the notifications table. FAIL-SAFE throughout: a write blip returns a status, never throws.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { enqueueEmail } from '@/lib/email'
+import { enqueueEmail, fetchReceivedEmail, type ReceivedEmail } from '@/lib/email'
 import {
   parseConversationReplyAddress,
   verifyConversationToken,
@@ -162,6 +162,39 @@ export function parseInboundMessage(payload: unknown): ParsedInboundMessage | nu
   const precedence = headerValue(headers, 'Precedence')?.toLowerCase() ?? null
 
   return { from, recipients, subject, text, messageId, inReplyTo, referencesIds, autoSubmitted, precedence }
+}
+
+/** First non-empty trimmed string among the candidates, else null. */
+function firstString(...vals: unknown[]): string | null {
+  for (const v of vals) if (typeof v === 'string' && v.trim()) return v.trim()
+  return null
+}
+
+/**
+ * Load a normalized inbound message from a provider webhook payload, HYDRATING the body when needed.
+ *
+ * Resend's `email.received` webhook is METADATA-ONLY (from / to / subject / id — no body, no headers). So
+ * when the payload carries a received-email id but no body, we fetch the full content (text / html / headers
+ * / message_id) from the Received Emails API and merge it in before parsing. Without this the reply would
+ * thread with an empty body, no loop-guard headers (Auto-Submitted / Precedence), and no dedupe key
+ * (Message-ID). Falls back to the raw payload when there is nothing to hydrate or the fetch fails (so a
+ * provider that DOES inline the body, and every unit test, keep working). The fetcher is injectable for tests.
+ */
+export async function loadInboundMessage(
+  payload: unknown,
+  fetcher: (id: string) => Promise<ReceivedEmail | null> = fetchReceivedEmail,
+): Promise<ParsedInboundMessage | null> {
+  if (!payload || typeof payload !== 'object') return parseInboundMessage(payload)
+  const root = payload as Record<string, unknown>
+  const data = (root.data && typeof root.data === 'object' ? root.data : root) as Record<string, unknown>
+  const hasBody = typeof data.text === 'string' || typeof data.html === 'string'
+  const emailId = firstString(data.email_id, data.id, root.email_id, root.id)
+  if (emailId && !hasBody) {
+    const full = await fetcher(emailId)
+    // Merge the fetched body/headers over the webhook metadata (which may carry `received_for`).
+    if (full) return parseInboundMessage({ data: { ...data, ...full } })
+  }
+  return parseInboundMessage(payload)
 }
 
 /**
