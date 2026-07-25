@@ -194,9 +194,18 @@ export function EventForm({
   const [title, setTitle] = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [location, setLocation] = useState(initial?.location ?? '')
+  // A `?space=` deep link (the Space Calendar console "New event" button) passes the BARE space id as
+  // defaultGroupId, but the space <option> values are SPACE_PREFIX-encoded so the submit handler can tell a
+  // space from a circle. Encode a space default to match its option — otherwise the <select> can't
+  // preselect it and the event silently falls back to Public (attributed to the person, not the Space).
+  // A circle default (`?circle=`) and the Duplicate prefill already pass a bare circle id, which matches.
+  const encodedDefaultGroupId =
+    defaultGroupId && groups.some((g) => g.id === defaultGroupId && g.kind === 'space')
+      ? SPACE_PREFIX + defaultGroupId
+      : defaultGroupId
   // Default to PUBLIC on create (any member can post a local event); a circle/space is opt-in.
-  // A deep-link circle or a Duplicate prefill wins when present.
-  const [scopeId, setScopeId] = useState(initial?.scopeId ?? defaultGroupId ?? PUBLIC_SCOPE)
+  // A deep-link circle/space or a Duplicate prefill wins when present.
+  const [scopeId, setScopeId] = useState(initial?.scopeId ?? encodedDefaultGroupId ?? PUBLIC_SCOPE)
   // PART 2: on create, the date field defaults to the viewer's current (active) local day at a
   // sensible hour, so it is never blank or tz-shifted to yesterday. Edit keeps the event's real
   // stored time. `localToday()` is read once at mount (a stable seed).
