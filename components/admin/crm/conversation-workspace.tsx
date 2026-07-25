@@ -10,7 +10,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import type { ActionResult } from '@/lib/action-result'
 import { ConversationComposer } from './conversation-composer'
 import { ConversationTriage, type TriageAgent } from './conversation-triage'
+import { LiveChatBridge } from './live-chat-bridge'
 import { STATUS_LABELS, statusTone, type ConversationStatus } from '@/lib/comms/labels'
+import { makeChatToken } from '@/lib/comms/chat-token'
 import type { ConversationListRow, ConversationThread, ConversationScope } from '@/lib/comms/workspace'
 
 /** The injectable action set — the operator inbox uses the defaults; the leader inbox passes its own. */
@@ -173,7 +175,14 @@ export function ConversationWorkspace({
 
           {/* Reader pane. */}
           {thread ? (
-            <ThreadReader thread={thread} agents={agents} actions={actions} readOnly={readOnly} />
+            <ThreadReader
+              thread={thread}
+              agents={agents}
+              actions={actions}
+              readOnly={readOnly}
+              // A live in-app chat gets the capability token so the reader can join the visitor's Broadcast channel.
+              chatToken={thread.channel === 'in_app' ? makeChatToken(thread.ref) : null}
+            />
           ) : (
             <div className="hidden rounded-lg border border-border bg-surface lg:flex lg:h-full lg:items-center lg:justify-center">
               <p className="text-sm text-muted">Pick a conversation to read it.</p>
@@ -190,12 +199,18 @@ function ThreadReader({
   agents,
   actions,
   readOnly,
+  chatToken,
 }: {
   thread: ConversationThread
   agents: TriageAgent[]
   actions: WorkspaceActions
   readOnly?: boolean
+  /** For a live in-app chat: the capability token to join the visitor's Broadcast channel. */
+  chatToken?: string | null
 }) {
+  // A live in-app chat swaps the static transcript + email composer for the real-time bridge (own message
+  // list + typing + live composer). Read-only previewers still get the static transcript.
+  const liveChat = thread.channel === 'in_app' && !readOnly && !!chatToken
   return (
     <div className="flex min-h-[60vh] flex-col rounded-lg border border-border bg-surface lg:h-full lg:min-h-0">
       <div className="flex items-start justify-between gap-2 border-b border-border p-3">
@@ -209,6 +224,40 @@ function ThreadReader({
         <StatusPill status={thread.status} />
       </div>
 
+      {liveChat ? (
+        <>
+          <ConversationTriage
+            conversationId={thread.id}
+            status={thread.status}
+            priority={thread.priority}
+            assignedTo={thread.assignedTo}
+            agents={agents}
+            triageAction={actions.triageAction}
+            summarizeAction={actions.summarizeAction}
+            aiTriageAction={actions.aiTriageAction}
+          />
+          <LiveChatBridge chatRef={thread.ref} token={chatToken!} />
+        </>
+      ) : (
+        <ThreadStatic thread={thread} agents={agents} actions={actions} readOnly={readOnly} />
+      )}
+    </div>
+  )
+}
+
+function ThreadStatic({
+  thread,
+  agents,
+  actions,
+  readOnly,
+}: {
+  thread: ConversationThread
+  agents: TriageAgent[]
+  actions: WorkspaceActions
+  readOnly?: boolean
+}) {
+  return (
+    <>
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
         {thread.messages.length === 0 && <p className="text-sm text-muted">No messages yet.</p>}
         {thread.messages.map((m) =>
@@ -260,6 +309,6 @@ function ThreadReader({
           />
         </>
       )}
-    </div>
+    </>
   )
 }

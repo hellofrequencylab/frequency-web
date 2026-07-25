@@ -1,0 +1,261 @@
+'use client'
+
+// The anonymous live-chat widget (ADR-816) — a floating launcher + panel mounted platform-wide. A visitor
+// enters a name + email, and their chat becomes a conversation on the comms spine (so it lands in the
+// operator Conversations inbox). Live messages + a typing indicator ride Supabase Broadcast. The session
+// (ref + capability token) persists in localStorage so a reload resumes the same thread. Off unless
+// NEXT_PUBLIC_SUPPORT_CHAT is enabled (the mount point gates it).
+
+import { useEffect, useRef, useState } from 'react'
+import { MessageCircle, X, Send, Loader2 } from 'lucide-react'
+import { isError } from '@/lib/action-result'
+import {
+  startSupportChatAction,
+  postSupportChatMessageAction,
+  loadSupportChatHistoryAction,
+} from '@/app/support-chat/actions'
+import { useSupportChat } from './use-support-chat'
+
+interface Session {
+  ref: string
+  token: string
+  name: string
+}
+
+const SESSION_KEY = 'freq.support-chat.session'
+const VIEWER_KEY = 'freq.support-chat.viewer'
+
+function readSession(): Session | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY)
+    if (!raw) return null
+    const s = JSON.parse(raw)
+    return s?.ref && s?.token ? (s as Session) : null
+  } catch {
+    return null
+  }
+}
+
+function readViewerId(): string {
+  try {
+    let id = localStorage.getItem(VIEWER_KEY)
+    if (!id) {
+      id = `v-${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`
+      localStorage.setItem(VIEWER_KEY, id)
+    }
+    return id
+  } catch {
+    return 'v-anon'
+  }
+}
+
+export function SupportChatWidget() {
+  const [open, setOpen] = useState(false)
+  const [hydrated, setHydrated] = useState<{ ready: boolean; session: Session | null; viewerId: string }>({
+    ready: false,
+    session: null,
+    viewerId: 'v-anon',
+  })
+  const { ready, session, viewerId } = hydrated
+
+  useEffect(() => {
+    // One-time hydrate from localStorage (client-only; SSR renders the loader).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHydrated({ ready: true, session: readSession(), viewerId: readViewerId() })
+  }, [])
+
+  function onStarted(s: Session) {
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(s))
+    } catch {
+      /* ignore */
+    }
+    setHydrated((h) => ({ ...h, session: s }))
+  }
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50 print:hidden">
+      {open && (
+        <div className="mb-3 flex h-[32rem] max-h-[calc(100dvh-6rem)] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-pop">
+          <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-text">Chat with Frequency</p>
+              <p className="text-2xs text-muted">We usually reply within a few minutes.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Close chat"
+              className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          {!ready ? (
+            <div className="flex flex-1 items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-muted" />
+            </div>
+          ) : session ? (
+            <ChatSession session={session} viewerId={viewerId} />
+          ) : (
+            <StartForm onStarted={onStarted} />
+          )}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label={open ? 'Close chat' : 'Open chat'}
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-pop transition-transform hover:scale-105"
+      >
+        {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
+      </button>
+    </div>
+  )
+}
+
+function StartForm({ onStarted }: { onStarted: (s: { ref: string; token: string; name: string }) => void }) {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [message, setMessage] = useState('')
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (pending) return
+    setError(null)
+    setPending(true)
+    const r = await startSupportChatAction({ name, email, message })
+    setPending(false)
+    if (isError(r)) {
+      setError(r.error)
+      return
+    }
+    onStarted({ ref: r.data.ref, token: r.data.token, name: name.trim() || 'Visitor' })
+  }
+
+  const input =
+    'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none'
+
+  return (
+    <form onSubmit={submit} className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
+      <p className="text-sm text-muted">Tell us who you are and we&apos;ll pick it up right here.</p>
+      <input className={input} placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required />
+      <input
+        className={input}
+        type="email"
+        placeholder="Your email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+      />
+      <textarea
+        className={`${input} min-h-[5rem] resize-none`}
+        placeholder="How can we help?"
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+      />
+      {error && (
+        <p role="alert" className="text-xs text-danger">
+          {error}
+        </p>
+      )}
+      <button
+        type="submit"
+        disabled={pending}
+        className="mt-auto inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+      >
+        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+        Start chat
+      </button>
+    </form>
+  )
+}
+
+function ChatSession({ session, viewerId }: { session: Session; viewerId: string }) {
+  const { messages, loading, error, send, typingNames, notifyTyping } = useSupportChat({
+    token: session.token,
+    viewerId,
+    viewerName: session.name,
+    role: 'visitor',
+    persist: (body) => postSupportChatMessageAction({ ref: session.ref, token: session.token, body }),
+    loadHistory: () => loadSupportChatHistoryAction({ ref: session.ref, token: session.token }),
+  })
+  const [draft, setDraft] = useState('')
+  const endRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages.length, typingNames.length])
+
+  function onSend() {
+    const body = draft.trim()
+    if (!body) return
+    setDraft('')
+    void send(body)
+  }
+
+  return (
+    <>
+      <div className="flex-1 space-y-2 overflow-y-auto p-3">
+        {loading && <p className="text-center text-2xs text-muted">Loading…</p>}
+        {!loading && messages.length === 0 && (
+          <p className="text-center text-2xs text-muted">Say hello — a teammate will jump in.</p>
+        )}
+        {messages.map((m) => (
+          <div key={m.id} className={m.author === 'visitor' ? 'flex justify-end' : 'flex justify-start'}>
+            <div
+              className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${
+                m.author === 'visitor' ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-text'
+              }`}
+            >
+              {m.body}
+            </div>
+          </div>
+        ))}
+        {typingNames.length > 0 && (
+          <div className="flex justify-start">
+            <div className="inline-flex items-center gap-1 rounded-2xl bg-surface-elevated px-3 py-2">
+              <span className="size-1.5 animate-bounce rounded-full bg-muted [animation-delay:-0.2s]" />
+              <span className="size-1.5 animate-bounce rounded-full bg-muted [animation-delay:-0.1s]" />
+              <span className="size-1.5 animate-bounce rounded-full bg-muted" />
+            </div>
+          </div>
+        )}
+        <div ref={endRef} />
+      </div>
+      {error && (
+        <p role="alert" className="px-3 pb-1 text-2xs text-danger">
+          {error}
+        </p>
+      )}
+      <div className="flex items-end gap-2 border-t border-border p-2">
+        <textarea
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value)
+            notifyTyping()
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              onSend()
+            }
+          }}
+          rows={1}
+          placeholder="Write a message…"
+          className="max-h-24 flex-1 resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={onSend}
+          aria-label="Send"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-on-primary transition-colors hover:bg-primary-hover"
+        >
+          <Send className="h-4 w-4" />
+        </button>
+      </div>
+    </>
+  )
+}
