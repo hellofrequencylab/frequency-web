@@ -23,7 +23,7 @@ import { relativeTime } from '@/lib/utils'
 import { spaceEarningsSummary } from '@/lib/commerce/orders'
 import { getSpaceHealth, getWorklist } from '@/lib/dashboard/scores'
 import { listActiveSpaceMemberIds } from '@/lib/spaces/resonance-roster'
-import { listInboxThreads } from '@/lib/crm/inbox'
+import { listWorkspaceConversations } from '@/lib/comms/workspace'
 import { listContactInteractions, type ContactInteraction } from '@/lib/crm/interactions'
 import { listEventsForSpace } from '@/lib/events/store'
 
@@ -130,11 +130,13 @@ async function DashboardStats({ spaceId, slug }: { spaceId: string; slug: string
 
 // ── Needs attention: the worklist + the unanswered-messages count ────────────────────────────────────
 async function DashboardNeedsAttention({ spaceId, slug }: { spaceId: string; slug: string }) {
-  const [worklist, threads] = await Promise.all([
+  // Unanswered = the space's spine conversations awaiting a reply (ADR-820: the flat inbox is
+  // retired; the Conversations workspace is the one queue).
+  const [worklist, rows] = await Promise.all([
     getWorklist({ spaceId }),
-    listInboxThreads({ spaceId, limit: 50 }),
+    listWorkspaceConversations({ scope: 'all', viewerProfileId: '', spaceId, limit: 100 }),
   ])
-  const unanswered = threads.filter((t) => t.awaitingReply).length
+  const unanswered = rows.filter((r) => r.awaitingReply).length
   const boardHref = `/spaces/${slug}/crm`
 
   return (
@@ -142,7 +144,7 @@ async function DashboardNeedsAttention({ spaceId, slug }: { spaceId: string; slu
       <SectionHeader title="Needs attention" />
       {unanswered > 0 && (
         <Link
-          href={`/spaces/${slug}/crm/inbox`}
+          href={`/spaces/${slug}/crm/conversations`}
           className="flex items-center gap-3 rounded-2xl border border-warning/40 bg-warning-bg/40 px-4 py-3 text-sm font-medium text-text transition-colors hover:bg-warning-bg/60"
         >
           <Inbox className="h-4 w-4 shrink-0 text-warning" aria-hidden />

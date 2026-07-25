@@ -904,18 +904,14 @@ function PlansSection({ values }: { values: PricingDefaults }) {
         </div>
       </FormSection>
 
-      <FormSection title="Space plans" description="The plans a space (Business, Non Profit) pays for.">
-        <div className="space-y-4">
-          {PLAN_PRICE_ROWS.map((r) => (
-            <PriceRow
-              key={r.key}
-              settingKey={r.key}
-              label={r.label}
-              showSetup={r.setup}
-              price={values.plan[r.key.split('.')[1] as 'business' | 'nonprofit']}
-            />
-          ))}
-        </div>
+      <FormSection
+        title="Space plans"
+        description="Space plans are priced in the Catalog section above (Business, Collective, Non Profit, Independent), which is what the checkout charges. This legacy per-plan store is retired from editing here so there is exactly one place to set a Space price."
+      >
+        <p className="text-sm text-muted">
+          Edit Business, Collective, Non Profit, and Independent in the Catalog above, then run the
+          catalog sync. Member plans (Crew, Supporter) stay here.
+        </p>
       </FormSection>
 
       <FormSection

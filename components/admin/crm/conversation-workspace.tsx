@@ -9,6 +9,7 @@ import { Inbox, Lock } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { ActionResult } from '@/lib/action-result'
 import { ConversationComposer } from './conversation-composer'
+import { FollowUpButton } from './follow-up-button'
 import { ConversationTriage, type TriageAgent } from './conversation-triage'
 import { LiveChatBridge } from './live-chat-bridge'
 import { STATUS_LABELS, statusTone, type ConversationStatus } from '@/lib/comms/labels'
@@ -221,7 +222,14 @@ function ThreadReader({
             #{thread.ref} · {thread.subject}
           </p>
         </div>
-        <StatusPill status={thread.status} />
+        <div className="flex shrink-0 items-center gap-2">
+          {/* Ported from the retired flat inbox (ADR-820): one tap files a follow-up task on the
+              contact behind this thread. Only when a CRM contact is attached and the viewer can act. */}
+          {thread.contactId && !readOnly && (
+            <FollowUpButton contactId={thread.contactId} contactName={thread.counterpartName} />
+          )}
+          <StatusPill status={thread.status} />
+        </div>
       </div>
 
       {liveChat ? (
