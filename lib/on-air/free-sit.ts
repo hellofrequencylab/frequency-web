@@ -14,6 +14,14 @@ export function findFreeSit(practices: OnAirPractice[]): OnAirPractice | undefin
   return practices.find((p) => !!p.logsAs && p.timerKind === 'mindless')
 }
 
+/** The Get Moving Free Practice fallback (the movement counterpart of findFreeSit): the open,
+ *  unattached run the loader appends, detected the same way (`logsAs` chip + timer_kind
+ *  'movement'). Used to decide when the movement setup should seed from the member's LAST-SAVED
+ *  free configuration instead of an authored preset (PRACTICE-TIMER-CONTINUITY P3). */
+export function findFreeMove(practices: OnAirPractice[]): OnAirPractice | undefined {
+  return practices.find((p) => !!p.logsAs && p.timerKind === 'movement')
+}
+
 /** Whether a Be Still Begin should run the Free Practice fallback rather than the resolved practice.
  *  True only when the member has picked a TIMED mode (not Just Log), the resolved practice is
  *  log-only (cannot time), and a Free Practice fallback exists to run. This is what guarantees the

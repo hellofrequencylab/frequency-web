@@ -126,6 +126,10 @@ type OverlayState =
       data: OnAirSessionData
       /** The mode the door is showing (auto-routed from the practice / entry; member-togglable). */
       mode: TimerMode
+      /** The practice this open EXPLICITLY requested (a practice-button launch), if any. The sit
+       *  routes an explicit log-only ('none') practice to the Just Log note screen; a generic open
+       *  still lands on Meditate (owner directive). */
+      practiceId?: string
       /** A Movement sub-mode forced by the entry (a movement practice / the Movement door). */
       movementMode?: MovementMode
       resume?: ResumeInfo
@@ -288,6 +292,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
         phase: 'ready',
         data: result.data,
         mode,
+        practiceId: requestedPracticeId,
         movementMode: forcedMovementMode,
         resume: requestedResume,
         autoStart: requestedAutoStart,
@@ -431,6 +436,9 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
           <OnAirSession
             practices={state.data.practices}
             defaultPracticeId={state.data.defaultPracticeId}
+            // The explicitly-requested practice (a practice-button launch): an explicit log-only
+            // practice opens the Just Log note screen; a generic open still lands on Meditate.
+            explicitPracticeId={state.practiceId}
             prefs={state.data.prefs}
             practicedToday={state.data.practicedToday}
             resumeFromSec={state.resume?.resumeFromSec}

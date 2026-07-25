@@ -240,6 +240,7 @@ const MODE_ICON: Record<SessionMode, React.ElementType> = {
 export function OnAirSession({
   practices,
   defaultPracticeId,
+  explicitPracticeId,
   prefs,
   practicedToday = 0,
   resumeFromSec,
@@ -256,6 +257,10 @@ export function OnAirSession({
 }: {
   practices: OnAirPractice[]
   defaultPracticeId: string | null
+  /** The practice this open EXPLICITLY requested (a practice-button launch), if any. An explicit
+   *  log-only ('none') practice opens the Just Log note screen; a generic/daily open still lands
+   *  on Meditate (owner directive) even when a log-only practice is due. */
+  explicitPracticeId?: string
   prefs: OnAirPrefs
   /** Distinct members with a practice log today (presence line, shown at ≥3). */
   practicedToday?: number
@@ -344,14 +349,22 @@ export function OnAirSession({
     // with no authored flavour opens Meditate — never Just Log, and no longer the sticky
     // saved/prefs mode. The member can still switch tabs.
     if (!p) return 'timer'
-    // A log-only practice normally opens Just Log — but the owner wants a generic/daily open to land
-    // on Meditate, not defer to a due log-only practice's Just Log. When a Free sit exists, open
-    // Meditate (it runs a Free Practice sit); fall back to Just Log only if there is no sit to run.
-    if (p.timerKind === 'none') return findFreeSit(practices) ? 'timer' : 'log'
-    // The practice's authored flavour still wins; the fallback for an unflavoured/Free sit is
-    // Meditate. Just Log is only ever the opener for a 'none' practice.
+    // An EXPLICITLY launched log-only practice opens Just Log — the note-capture screen, no
+    // countdown (owner, 2026-07-25: "Just Log should prompt a short note, not a time"). A
+    // GENERIC/daily open still lands on Meditate rather than deferring to a due log-only
+    // practice (the earlier owner directive); Just Log is then the fallback only when there is
+    // no sit to run at all.
+    const explicit = explicitPracticeId != null && explicitPracticeId === id
+    if (p.timerKind === 'none') {
+      if (explicit) return 'log'
+      return findFreeSit(practices) ? 'timer' : 'log'
+    }
+    // The practice's authored flavour still wins; an authored Be Still "Just Log" flavour opens
+    // the note screen when explicitly launched (same rule as 'none'), else Meditate. The fallback
+    // for an unflavoured/Free sit is Meditate.
     const resolved = modeForMindless(p.mindlessMode, 'timer')
-    return resolved === 'log' ? 'timer' : resolved
+    if (resolved === 'log') return explicit ? 'log' : 'timer'
+    return resolved
   }
   const [practiceId, setPracticeId] = useState(initialId)
   // Last-saved setup (localStorage) seeds the initial choices, falling back to the prefs prop.
