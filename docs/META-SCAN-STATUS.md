@@ -50,6 +50,19 @@ Four fix batches shipped on `claude/site-meta-scan-bugs-pgnw78`, each tsc/lint/t
   `collective_base_*` or `independent_base_*` price rows exist at all** (verified live), so the
   Collective/Independent checkouts (go-live #1889) currently dead-end on "Plan checkout is not
   available yet."
+- ⚠️ **CORRECTION (2026-07-25, later the same day): billing is LIVE, not OFF.** The earlier
+  "billing verified OFF" note queried `pricing_settings` for the flag; it actually lives in
+  `platform_flags` (`billing_live` = true, all four plan switches + operator seat on, Stripe
+  configured). Verified **zero damage**: 0 spaces with subscriptions, 0 founding records, 0
+  profiles with a Stripe customer — nobody was ever charged the stale price. Until this PR's
+  founding-checkout fix deploys AND the syncs re-run, the live founding checkout still resolves
+  the old $49 `business_monthly` price, so merge + re-sync is the go-live path.
+- ✅ **Admin pricing console: Collective + Independent catalog cards** — the ADR-811 tiers were
+  sellable (switches, checkouts, sync keys all cover them) but the console's Catalog section never
+  rendered their `CatalogItemRow`s, so the operator could not see or edit Collective $79/$49 or
+  Independent $249 (the owner hit exactly this). Both cards added (`resolveCatalogConfig` already
+  loaded all six items; render-only gap). The owner's 07-24 catalog sync predated the deploy that
+  added those keys, which is why their Stripe prices never minted; the next sync mints them.
 - **Space plan/seat webhook has no event-ordering guard** — the member path uses
   `apply_membership_event_atomic` (ignores stale `event.created`); the space path
   (`lib/billing/space-subscriptions.ts` `reconcileSpacePlanSubscription`) set-to-targets seats/

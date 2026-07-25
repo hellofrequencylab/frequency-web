@@ -7,8 +7,11 @@
 > network-sourced business** (0% on own bookings). Source of truth:
 > [COMMUNITY-COLLECTIVE-STRATEGY.md](COMMUNITY-COLLECTIVE-STRATEGY.md) · plan:
 > [COMMUNITY-COLLECTIVE-BUILD-PLAN.md](COMMUNITY-COLLECTIVE-BUILD-PLAN.md) · [ADR-811](DECISIONS.md).
-> Ships behind `billing_live` OFF. The entitlement-partition / Stripe / grandfather plumbing below still
-> applies; the plan shape + prices do not. Everything under here is historical.
+> **Billing went LIVE 2026-07-25** (owner flipped `billing_live` + all four plan switches; Stripe
+> configured). After any price change here or in code, re-run BOTH Stripe syncs in the admin pricing
+> console (products + catalog) so the live Stripe prices match the anchors. The entitlement-partition /
+> Stripe / grandfather plumbing below still applies; the plan shape + prices do not. Everything under
+> here is historical.
 
 > ## ⚠️ Prior model: FLAT pricing (ADR-590). Also historical.
 >
