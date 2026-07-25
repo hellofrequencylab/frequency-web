@@ -25,6 +25,8 @@ import {
 } from '@/lib/comms/conversations'
 import { sendLeaderMessageToDownline } from '@/lib/comms/leader-send'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
+import { resolveSignature } from '@/lib/comms/signature'
+import { renderReplyEmail } from '@/lib/comms/email-template'
 
 /** Load the conversation and confirm the leader owns it (their sender trail) or is assigned it. */
 async function ownedConversation(leaderId: string, conversationId: string): Promise<ConversationRow | null> {
@@ -95,9 +97,11 @@ export async function sendLeaderReply(input: {
     if (!gate.allowed) return fail('This address has bounced or marked us as spam, so this reply cannot go out.')
   }
 
-  const from = leaderFrom(await profileName(leaderId))
+  const leaderName = await profileName(leaderId)
+  const signature = await resolveSignature(leaderId, leaderName)
+  const from = leaderFrom(leaderName)
   const subject = replySubject(conv.subject)
-  const html = bodyToHtml(body)
+  const storedHtml = bodyToHtml(body) // clean body for the thread + CRM mirror
   const mirror: AppendMessageInput['mirror'] =
     conv.memberProfileId || conv.contactId
       ? {
@@ -116,13 +120,15 @@ export async function sendLeaderReply(input: {
       from,
       to: conv.externalEmail,
       body,
-      html,
+      html: storedHtml,
+      signature,
       authorKind: 'leader',
       authorId: leaderId,
       mirror,
     })
     if (!queued) return fail('Could not queue the reply. Try again.')
   } else {
+    const { html: emailHtml, text: emailText } = renderReplyEmail(body, signature)
     const messageId = newConversationMessageId(conv.ref)
     try {
       await enqueueEmail({
@@ -130,8 +136,8 @@ export async function sendLeaderReply(input: {
         from,
         replyTo: buildConversationReplyAddress(conv.ref),
         subject,
-        html,
-        text: body,
+        html: emailHtml,
+        text: emailText,
         headers: { 'Message-ID': messageId },
       })
     } catch {
@@ -143,7 +149,7 @@ export async function sendLeaderReply(input: {
       authorKind: 'leader',
       authorId: leaderId,
       body,
-      bodyHtml: html,
+      bodyHtml: storedHtml,
       externalMessageId: messageId,
       mirror,
     })

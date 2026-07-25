@@ -29,6 +29,8 @@ import {
   type AppendMessageInput,
 } from '@/lib/comms/conversations'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
+import { resolveSignature } from '@/lib/comms/signature'
+import { renderReplyEmail } from '@/lib/comms/email-template'
 import { listSpaceAssignableAgents } from '@/lib/comms/workspace'
 import { CONVERSATION_STATUSES, CONVERSATION_PRIORITIES } from '@/lib/comms/labels'
 
@@ -115,8 +117,9 @@ export async function sendSpaceConversationReplyAction(
   }
 
   const from = spaceConversationFrom(gate.brandName)
+  const signature = await resolveSignature(gate.viewerProfileId, gate.brandName)
   const subject = replySubject(conv.subject)
-  const html = bodyToHtml(body)
+  const storedHtml = bodyToHtml(body) // clean body for the thread + CRM mirror
   const mirror: AppendMessageInput['mirror'] =
     conv.memberProfileId || conv.contactId
       ? {
@@ -135,13 +138,15 @@ export async function sendSpaceConversationReplyAction(
       from,
       to: conv.externalEmail,
       body,
-      html,
+      html: storedHtml,
+      signature,
       authorKind: 'staff',
       authorId: gate.viewerProfileId,
       mirror,
     })
     if (!queued) return fail('Could not queue the reply. Try again.')
   } else {
+    const { html: emailHtml, text: emailText } = renderReplyEmail(body, signature)
     const messageId = newConversationMessageId(conv.ref)
     try {
       await enqueueEmail({
@@ -149,8 +154,8 @@ export async function sendSpaceConversationReplyAction(
         from,
         replyTo: buildConversationReplyAddress(conv.ref),
         subject,
-        html,
-        text: body,
+        html: emailHtml,
+        text: emailText,
         headers: { 'Message-ID': messageId },
       })
     } catch {
@@ -162,7 +167,7 @@ export async function sendSpaceConversationReplyAction(
       authorKind: 'staff',
       authorId: gate.viewerProfileId,
       body,
-      bodyHtml: html,
+      bodyHtml: storedHtml,
       externalMessageId: messageId,
       mirror,
     })
