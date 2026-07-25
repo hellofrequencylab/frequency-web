@@ -26,6 +26,9 @@ import {
   sendSpaceConversationReplyAction,
   setSpaceConversationTriageAction,
   startSpaceConversationAction,
+  draftSpaceConversationReplyAction,
+  summarizeSpaceConversationAction,
+  suggestSpaceConversationTriageAction,
 } from '../conversations-actions'
 
 export const dynamic = 'force-dynamic'
@@ -98,6 +101,9 @@ export default async function SpaceConversationsPage({
         actions={{
           sendAction: sendSpaceConversationReplyAction.bind(null, space.slug),
           triageAction: setSpaceConversationTriageAction.bind(null, space.slug),
+          draftAction: draftSpaceConversationReplyAction.bind(null, space.slug),
+          summarizeAction: summarizeSpaceConversationAction.bind(null, space.slug),
+          aiTriageAction: suggestSpaceConversationTriageAction.bind(null, space.slug),
         }}
       />
     </DashboardTemplate>

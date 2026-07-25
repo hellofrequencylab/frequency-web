@@ -16,7 +16,13 @@ import {
 import { leaderDownlineReach } from '@/lib/comms/leader-send'
 import { ConversationWorkspace } from '@/components/admin/crm/conversation-workspace'
 import { LeaderBroadcast } from '@/components/lead/leader-broadcast'
-import { sendLeaderReply, setLeaderTriage } from './actions'
+import {
+  sendLeaderReply,
+  setLeaderTriage,
+  draftLeaderReply,
+  summarizeLeaderConversation,
+  suggestLeaderTriage,
+} from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -69,7 +75,13 @@ export default async function LeaderInboxPage({
         status={status}
         basePath="/lead/inbox"
         showScopes={false}
-        actions={{ sendAction: sendLeaderReply, triageAction: setLeaderTriage }}
+        actions={{
+          sendAction: sendLeaderReply,
+          triageAction: setLeaderTriage,
+          draftAction: draftLeaderReply,
+          summarizeAction: summarizeLeaderConversation,
+          aiTriageAction: suggestLeaderTriage,
+        }}
       />
     </DashboardTemplate>
   )

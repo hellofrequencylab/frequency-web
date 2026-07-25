@@ -63,6 +63,10 @@ export interface ReceivedEmail {
 export async function fetchReceivedEmail(id: string, attempts = 4): Promise<ReceivedEmail | null> {
   const client = getClient()
   if (!client || !id) return null
+  // `id` arrives from the inbound webhook payload (externally controlled). Keep it OUT of the log format
+  // string (static literal + %s placeholders ⇒ no externally-controlled format string) and strip it to the
+  // safe id charset so it can't carry CRLF into a log line (no log injection). CodeQL: 132/133/134/135.
+  const safeId = id.replace(/[^\w-]/g, '').slice(0, 64)
   for (let i = 0; i < attempts; i++) {
     try {
       const { data, error } = await client.emails.receiving.get(id)
@@ -79,13 +83,12 @@ export async function fetchReceivedEmail(id: string, attempts = 4): Promise<Rece
         }
       }
       if (error) {
-        console.warn(
-          `[email] fetchReceivedEmail(${id}) attempt ${i + 1}/${attempts} error:`,
-          typeof error === 'string' ? error : JSON.stringify(error),
-        )
+        // JSON.stringify escapes newlines inside the error, so the detail can't inject a log line either.
+        const detail = typeof error === 'string' ? error : JSON.stringify(error)
+        console.warn('[email] fetchReceivedEmail error (id=%s attempt %d/%d): %s', safeId, i + 1, attempts, detail)
       }
     } catch (err) {
-      console.error(`[email] fetchReceivedEmail(${id}) attempt ${i + 1}/${attempts} threw:`, err)
+      console.error('[email] fetchReceivedEmail threw (id=%s attempt %d/%d):', safeId, i + 1, attempts, err)
     }
     // Backoff before the next attempt (the API usually catches up within a second or two).
     if (i < attempts - 1) await new Promise((r) => setTimeout(r, 750))

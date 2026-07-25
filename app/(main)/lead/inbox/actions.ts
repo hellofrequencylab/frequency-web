@@ -27,6 +27,8 @@ import { sendLeaderMessageToDownline } from '@/lib/comms/leader-send'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { resolveSignature } from '@/lib/comms/signature'
 import { renderReplyEmail } from '@/lib/comms/email-template'
+import { type ConversationPriority } from '@/lib/comms/labels'
+import { veraDraftReply, veraSummarize, veraSuggestTriage } from '@/lib/comms/vera-conversation'
 
 /** Load the conversation and confirm the leader owns it (their sender trail) or is assigned it. */
 async function ownedConversation(leaderId: string, conversationId: string): Promise<ConversationRow | null> {
@@ -199,6 +201,38 @@ export async function setLeaderTriage(input: {
   }
   revalidatePath('/lead/inbox')
   return ok()
+}
+
+// ── Vera seams (ADR-812 Phase 5), leader-scoped — thin wrappers over the ONE shared conversation-AI
+// (lib/comms/vera-conversation), the same logic the platform + Space CRMs call. Gated by requireLeadFloor
+// + the ownership check, so a leader can only ask Vera about a thread on their own sender trail.
+
+/** Draft a reply with Vera for a conversation the leader owns (lands in the composer to review + send). */
+export async function draftLeaderReply(conversationId: string): Promise<ActionResult<{ draft: string }>> {
+  const { profileId: leaderId } = await requireLeadFloor()
+  const conv = await ownedConversation(leaderId, conversationId)
+  if (!conv) return fail('That conversation is not one of yours.')
+  return veraDraftReply(conv.id, leaderId)
+}
+
+/** One short summary of a conversation the leader owns (a skim aid; never sent). */
+export async function summarizeLeaderConversation(conversationId: string): Promise<ActionResult<{ summary: string }>> {
+  const { profileId: leaderId } = await requireLeadFloor()
+  const conv = await ownedConversation(leaderId, conversationId)
+  if (!conv) return fail('That conversation is not one of yours.')
+  return veraSummarize(conv.id, leaderId)
+}
+
+/** Suggest + apply a priority for a conversation the leader owns (persists reversibly). */
+export async function suggestLeaderTriage(
+  conversationId: string,
+): Promise<ActionResult<{ priority: ConversationPriority; reason: string }>> {
+  const { profileId: leaderId } = await requireLeadFloor()
+  const conv = await ownedConversation(leaderId, conversationId)
+  if (!conv) return fail('That conversation is not one of yours.')
+  const result = await veraSuggestTriage(conv.id, leaderId)
+  revalidatePath('/lead/inbox')
+  return result
 }
 
 /** Broadcast a message to the leader's whole downline, as themselves. Fans out into one tracked
