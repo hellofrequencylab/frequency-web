@@ -138,6 +138,9 @@ export interface OnAirPractice {
   warmupMessage?: string | null
   /** Creator's warm-up (pre-roll) length in seconds. Null = the member's personal pre-roll length. */
   warmupSec?: number | null
+  /** Creator-authored breath pattern slug for a Breathe practice (P4). Null = the member's own
+   *  saved pattern, then the default. */
+  breathPattern?: string | null
 }
 
 type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
@@ -388,7 +391,12 @@ export function OnAirSession({
   // kept across the session; persistence rides a later completeSession field (the action is owned
   // elsewhere). Never required.
   const [note, setNote] = useState('')
-  const [patternSlug, setPatternSlug] = useState(saved?.patternSlug ?? prefs.pattern)
+  // The breath pattern: the launched practice's CREATOR-authored pattern wins (a Box-breathing
+  // practice ships Box, P4), then the member's last-saved choice, then their pref. The member can
+  // still switch patterns in setup.
+  const [patternSlug, setPatternSlug] = useState(
+    practices.find((p) => p.id === initialId)?.breathPattern ?? saved?.patternSlug ?? prefs.pattern,
+  )
   const [customIn, setCustomIn] = useState(saved?.customIn ?? prefs.customIn ?? 4)
   const [customHold, setCustomHold] = useState(saved?.customHold ?? prefs.customHold ?? 4)
   const [customOut, setCustomOut] = useState(saved?.customOut ?? prefs.customOut ?? 6)

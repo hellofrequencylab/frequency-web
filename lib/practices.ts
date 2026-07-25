@@ -20,6 +20,7 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 import { resolveMemberDay } from '@/lib/member-day'
 import { attributedLogDay } from '@/lib/practices/log-day'
 import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/practices/tiers'
+import { BREATH_PATTERNS } from '@/lib/on-air'
 import {
   deriveDepthStreak,
   lastDepthSession,
@@ -96,6 +97,10 @@ export interface Practice {
   /** Creator's recommended warm-up (pre-roll) length in seconds. NULL = use the member's
    *  personal pre-roll length (profiles.meta.onAir.warmupSec, default 5). See ADR-592. */
   warmup_sec: number | null
+  /** Creator-authored breath pattern slug for a Breathe practice (BREATH_PATTERNS in lib/on-air.ts,
+   *  e.g. 'box' | 'cohere'). NULL = the member's own pattern pref (PRACTICE-TIMER-CONTINUITY P4).
+   *  Only meaningful when timer_kind='mindless'; cleared when the kind switches away. */
+  breath_pattern: string | null
   /** The explicit per-log Zap VALUE. When set, it OVERRIDES weight_class (the Quest library
    *  values practices by cadence: Daily 10 / 3x-week 15 / Weekly 25). Null → weight-class default. */
   reward_zaps: number | null
@@ -144,7 +149,7 @@ export type PracticeSort = 'trending' | 'top' | 'new' | 'az'
 
 const PRACTICE_COLS =
   'id, title, description, created_by, is_public, is_template, created_at, ' +
-  'category, icon, summary, header_image, body, cadence, duration_min, uses_timer, timer_kind, movement_config, mindless_mode, duration_locked, warmup_message, warmup_sec, reward_zaps, reward_note, weight_class, domain_id, focus_details, subcategory_id, status, slug'
+  'category, icon, summary, header_image, body, cadence, duration_min, uses_timer, timer_kind, movement_config, mindless_mode, duration_locked, warmup_message, warmup_sec, breath_pattern, reward_zaps, reward_note, weight_class, domain_id, focus_details, subcategory_id, status, slug'
 
 // The same columns MINUS the table-only ones, for reads against the `practices_ranked`
 // VIEW. The view predates `slug` and does not expose it (selecting it errors and returns
@@ -156,7 +161,7 @@ const PRACTICE_COLS =
 const RANKED_COLS = PRACTICE_COLS
   .replace(/,\s*slug$/, '')
   .replace(
-    /,\s*timer_kind,\s*movement_config,\s*mindless_mode,\s*duration_locked,\s*warmup_message,\s*warmup_sec/,
+    /,\s*timer_kind,\s*movement_config,\s*mindless_mode,\s*duration_locked,\s*warmup_message,\s*warmup_sec,\s*breath_pattern/,
     '',
   )
 
@@ -1418,6 +1423,9 @@ export interface PracticeEdit {
   /** Creator's recommended warm-up (pre-roll) length in seconds. Null = the member's personal
    *  pre-roll length. Clamped to WARMUP_SEC_MAX server-side. */
   warmup_sec?: number | null
+  /** Creator-authored breath pattern slug for a Breathe practice (P4). Null = the member's own
+   *  pattern pref. Validated against BREATH_PATTERNS; cleared when the kind isn't mindless. */
+  breath_pattern?: string | null
   category?: string | null
   icon?: string | null
   header_image?: string | null
@@ -1480,10 +1488,13 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   if (patch.timer_kind !== undefined) {
     const kind: TimerKind = TIMER_KINDS.includes(patch.timer_kind) ? patch.timer_kind : 'mindless'
     update.timer_kind = kind
-    // A 'movement' kind carries its config; a 'mindless' kind carries its flavour. Switching away
-    // clears the one that no longer applies so a stale config/flavour never lingers.
+    // A 'movement' kind carries its config; a 'mindless' kind carries its flavour + breath pattern.
+    // Switching away clears the ones that no longer apply so a stale config/flavour never lingers.
     if (kind !== 'movement') update.movement_config = null
-    if (kind !== 'mindless') update.mindless_mode = null
+    if (kind !== 'mindless') {
+      update.mindless_mode = null
+      update.breath_pattern = null
+    }
   }
   if (patch.movement_config !== undefined)
     update.movement_config = patch.movement_config
@@ -1506,6 +1517,13 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   if (patch.warmup_sec !== undefined)
     update.warmup_sec =
       patch.warmup_sec == null ? null : Math.max(0, Math.min(WARMUP_SEC_MAX, Math.round(patch.warmup_sec)))
+  // Creator-authored breath pattern (P4): validated against the known pattern slugs; anything
+  // unknown stores null (= the member's own pref), so a bad value can never break the sit.
+  if (patch.breath_pattern !== undefined)
+    update.breath_pattern =
+      patch.breath_pattern && BREATH_PATTERNS.some((p) => p.slug === patch.breath_pattern)
+        ? patch.breath_pattern
+        : null
   if (patch.category !== undefined) update.category = STR(patch.category, 40)
   if (patch.icon !== undefined) update.icon = STR(patch.icon, 40)
   if (patch.header_image !== undefined) update.header_image = STR(patch.header_image, 500)
