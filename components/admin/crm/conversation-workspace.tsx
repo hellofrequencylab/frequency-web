@@ -131,7 +131,7 @@ export function ConversationWorkspace({
           description="When a ticketed send goes out or a reply comes in, the thread shows up in this view."
         />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_1fr]">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,16rem)_1fr]">
           {/* List pane. */}
           <ul className="max-h-[72vh] space-y-1 overflow-y-auto rounded-lg border border-border bg-surface p-1">
             {rows.map((r) => {
