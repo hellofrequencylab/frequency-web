@@ -64,8 +64,6 @@ const INTENTIONALLY_EXCLUDED = new Map([
   ['/how-to-run-a-community-space', '308 permanentRedirect → /how-to-build-community (absorbed into the builder pillar)'],
   ['/beta/confirm', 'robots noindex — double-opt-in confirmation landing (transactional)'],
   ['/subscribe/confirm', 'robots noindex — double-opt-in confirmation landing (transactional)'],
-  ['/founders/checkout', 'robots noindex — Stripe checkout hand-off (gate lives in the action)'],
-  ['/founders/checkout/success', 'robots noindex — post-payment founding-membership confirm'],
 ])
 
 // ── Route helpers ─────────────────────────────────────────────────────────────
@@ -91,7 +89,7 @@ function collectRouteFiles(dir, kinds) {
 /**
  * Map an app-router file to its URL route, dropping route-group segments like `(marketing)`
  * and `(main)`. Dynamic segments (`[slug]`, `[...all]`, `[[...opt]]`) are left intact so the
- * caller can tell static from dynamic. Returns e.g. '/', '/founders/offer', '/events/[slug]'.
+ * caller can tell static from dynamic. Returns e.g. '/', '/pricing', '/events/[slug]'.
  */
 function routeForFile(file) {
   const rel = relative(APP_DIR, file)

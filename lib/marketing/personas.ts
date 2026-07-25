@@ -62,7 +62,7 @@ export const PERSONAS: Persona[] = [
     highlights: [
       'Sell packages and programs, with scheduling built in.',
       'A client CRM that follows each person from first call to renewal.',
-      'The Resonance Engine reads your community and suggests who to reach out to next.',
+      'Vera AI reads your community and suggests who to reach out to next.',
       'Marketing email, reporting, and your own website come with Business.',
     ],
   },
@@ -89,7 +89,7 @@ export const PERSONAS: Persona[] = [
       'Tickets and passes, sold from your Space.',
       'Check-in at the door with a QR code.',
       'Dispatch to message everyone who has a ticket.',
-      'Everything is in Business, $29 a month or $19 in the founder window, no add-ons required.',
+      'Everything is in Business, $29 a month or $19 at the Opening Beta price, no add-ons required.',
     ],
   },
   {
@@ -101,8 +101,8 @@ export const PERSONAS: Persona[] = [
     highlights: [
       'Circles, cohorts, and memberships in one place.',
       'A member CRM that keeps track of who is who.',
-      'The Resonance Engine turns your community signals into live matches between the right people.',
-      'Grow into Collective when you add a team and host collaborators, at $49 a month in the founder window under the $79 list, with a 3% network rate.',
+      'Vera AI turns your community signals into live matches between the right people.',
+      'Grow into Collective when you add a team and host collaborators, at $49 a month at the Opening Beta price under the $79 list, with a 3% network rate.',
     ],
   },
   {
@@ -200,12 +200,12 @@ export function personaCopy(persona: Persona): PersonaCopy {
     ? `Frequency for ${persona.audience.toLowerCase()}: ${persona.focus} The Non Profit plan runs ${total} flat, with no take-rate on what you raise.`
     : `Frequency for ${persona.audience.toLowerCase()}: ${persona.focus} The setup runs ${total}, and you keep 100% of your own bookings.`
   const ogTitle = `Frequency for ${persona.audience}`
-  const lede = `${persona.focus} You keep 100% of your own bookings, and your people are always yours to export. Business is $29 a month, or $19 in the founder window that runs through September 1, 2026, with the full depth. The Non Profit plan is $39 a month flat, and the Resonance Engine add-on is +$20 a month when you want live matches. Yearly is two months free.`
+  const lede = `${persona.focus} You keep 100% of your own bookings, and your people are always yours to export. Business is $29 a month, or $19 at the Opening Beta price that holds through September 1, 2026, with the full depth. The Non Profit plan is $39 a month flat, and the Vera AI add-on is +$20 a month when you want live matches. Yearly is two months free.`
 
   const loadoutLine = isNonprofit
     ? `Nonprofits run on the Non Profit plan at ${total}, flat and never per seat. It carries the full Collective toolkit with donations built in, and no take-rate on what you raise, for verified 501(c)(3) organizations.`
-    : `The setup for ${persona.audience.toLowerCase()} is ${addonPhrase}. Business is $29 a month, or $19 in the founder window through September 1, 2026${
-        addonNames.length ? ', and the Resonance Engine add-on is +$20 a month' : ''
+    : `The setup for ${persona.audience.toLowerCase()} is ${addonPhrase}. Business is $29 a month, or $19 at the Opening Beta price through September 1, 2026${
+        addonNames.length ? ', and the Vera AI add-on is +$20 a month' : ''
       }, so the loadout runs ${total} today. Yearly is two months free, and there are no per-seat fees.`
 
   const faq = [
@@ -219,7 +219,7 @@ export function personaCopy(persona: Persona): PersonaCopy {
     },
     {
       q: `Can I change my plan later?`,
-      a: `Yes. Turn the Resonance Engine on or off anytime; it has a 14-day trial and prorates, so you only pay for what you have on. Yearly billing is two months free. Your people are yours: export any time, we earn your stay.`,
+      a: `Yes. Turn Vera AI on or off anytime; it has a 14-day trial and prorates, so you only pay for what you have on. Yearly billing is two months free. Your people are yours: export any time, we earn your stay.`,
     },
     {
       q: `Where does the money go?`,

@@ -122,7 +122,7 @@ const HOME_FAQ = [
   },
   {
     q: 'What does it cost?',
-    a: 'The community is free, forever. Browsing, joining a Circle, and showing up never cost anything. Crew is $9 a month, turns on The Quest, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only a small, shrinking network-only take-rate on the business the network sends you (Business 5%, Collective 3%, Non Profit 0%). There is no card today, and your founder pricing is locked in for life.',
+    a: 'The community is free, forever. Browsing, joining a Circle, and showing up never cost anything. Crew is $9 a month, turns on The Quest, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only a small, shrinking network-only take-rate on the business the network sends you (Business 5%, Collective 3%, Non Profit 0%). There is no card today, and your Opening Beta price is locked in for life.',
   },
   {
     q: 'Is there a catch?',
@@ -274,7 +274,7 @@ function Splash({
             <p className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/55">
               <span className="font-semibold text-white/75">Free during the beta.</span>
               <span aria-hidden className="text-white/25">·</span>
-              <span>No card. Founder pricing locked. Leave anytime.</span>
+              <span>No card. Opening Beta price locked. Leave anytime.</span>
             </p>
             <p className="mt-2 text-sm text-white/40">
               The first Lab is taking root in {FOUNDING_PLACE}.{' '}
@@ -618,7 +618,7 @@ function Splash({
             anything. Crew is $9/mo, turns on The Quest, and is free for the whole beta. If you run a
             practice or a Space, you keep 100% of your own bookings on one honest price, and we earn
             only a small, shrinking network-only take-rate on the business the network sends you.
-            There&apos;s no card today: join now and your founder pricing is locked in for life.{' '}
+            There&apos;s no card today: join now and your Opening Beta price is locked in for life.{' '}
             <Link href="/pricing" className="font-semibold text-primary-strong hover:underline">
               See the full breakdown
             </Link>
@@ -722,7 +722,7 @@ async function LiveProof() {
           ) : (
             <Reveal delay={100}>
               <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto">
-                The first Circles are forming in {FOUNDING_PLACE}. The founding members are shaping what
+                The first Circles are forming in {FOUNDING_PLACE}. The early members are shaping what
                 this becomes. Come be one of them.
               </p>
             </Reveal>

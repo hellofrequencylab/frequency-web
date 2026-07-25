@@ -103,16 +103,16 @@ describe('persona copy is voice-compliant', () => {
     }
   })
 
-  it('addonLabel maps the add-on to its display label (Resonance Engine)', () => {
-    expect(addonLabel('ai')).toBe('Resonance Engine')
+  it('addonLabel maps the add-on to its display label (Vera AI, 2026-07 overhaul)', () => {
+    expect(addonLabel('ai')).toBe('Vera AI')
   })
 })
 
 describe('loadout-strip math (computed from the catalog, never hardcoded)', () => {
-  // ADR-811: the paid base is Business at its $19 founding anchor; the Resonance Engine ($20) is the only
+  // ADR-811: the paid base is Business at its $19 founding anchor; Vera AI ($20) is the only
   // add-on. Coaches/healers and community builders turn it on ($39); studios and event hosts run on
   // Business alone ($19). The strip headlines the FOUNDING total (the charged price).
-  it('matches the doors: +Resonance personas $39, Business-only personas $19 (founding)', () => {
+  it('matches the doors: +Vera AI personas $39, Business-only personas $19 (founding)', () => {
     const expected: Record<string, string> = {
       'coaches-and-healers': '$39/mo',
       'community-builders': '$39/mo',
@@ -142,12 +142,20 @@ describe('loadout-strip math (computed from the catalog, never hardcoded)', () =
 })
 
 describe('pricing table model', () => {
-  it('has the four commercial tiers, Business featured, none preview at go-live (ADR-811)', () => {
+  it('leads with Free Space, then Business/Collective/Non Profit; no Independent (2026-07 overhaul)', () => {
     const tiers = pricingTiers(true)
-    expect(tiers.map((t) => t.id)).toEqual(['business', 'collective', 'nonprofit', 'independent'])
+    expect(tiers.map((t) => t.id)).toEqual(['free', 'business', 'collective', 'nonprofit'])
     expect(tiers.find((t) => t.id === 'business')!.featured).toBe(true)
-    // GO-LIVE: all four tiers are sellable from the code catalog now; nothing is a preview row.
+    // GO-LIVE: every paid tier is sellable from the code catalog; nothing is a preview row.
     for (const t of tiers) expect(t.preview).toBeFalsy()
+  })
+
+  it('the Free Space column reads Free at both intervals, with no anchor and no add-on cells', () => {
+    const free = pricingTiers(true).find((t) => t.id === 'free')!
+    expect(tierHeadline(free, 'month')).toBe('Free')
+    expect(tierHeadline(free, 'year')).toBe('Free')
+    expect(tierListAnchor(free, 'month')).toBeNull()
+    expect(free.addons).toEqual([])
   })
 
   it('during beta: Collective reads a $49 beta struck under the $79 list (ADR-811)', () => {
@@ -191,11 +199,15 @@ describe('pricing table model', () => {
     }
   })
 
-  it('the answer-engine ladder summary has no em dashes and lists every tier + add-on + Crew', () => {
+  it('the answer-engine ladder summary has no em dashes and lists every tier + add-on + member prices', () => {
     const lines = pricingLadderSummary()
+    expect(lines.some((l) => l.includes('Free Space:'))).toBe(true)
     expect(lines.some((l) => l.includes('Business:'))).toBe(true)
     expect(lines.some((l) => l.includes('Non Profit:'))).toBe(true)
     expect(lines.some((l) => l.includes('Crew:'))).toBe(true)
+    expect(lines.some((l) => l.includes('Supporter:'))).toBe(true)
+    expect(lines.some((l) => l.includes('Vera AI'))).toBe(true)
+    expect(lines.some((l) => l.includes('Operator seats:'))).toBe(true)
     for (const l of lines) expect(hasEmDash(l)).toBe(false)
   })
 })

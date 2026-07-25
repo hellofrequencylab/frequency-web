@@ -53,24 +53,26 @@ export const PLACEHOLDER_SPACE_PRICE_CENTS: Record<SpacePlan, number> = {
 export const COLLECTIVE_BETA_CENTS = 4900
 
 /** @placeholder Monthly price point per personal membership tier, in cents. Mirrors the code defaults
- *  (lib/pricing/settings.ts PRICING_DEFAULTS): Crew $9, Supporter $24. THE ONE place to swap real personal
+ *  (lib/pricing/settings.ts PRICING_DEFAULTS): Crew $9, Supporter $12. THE ONE place to swap real personal
  *  prices when billing goes live. Preview only; never charged. */
 export const PLACEHOLDER_MEMBER_PRICE_CENTS: Record<EntitlementTier, number> = {
   free: 0,
   crew: 900,
-  supporter: 2400,
+  supporter: 1200,
 }
 
 // ── The ascending display ladders per axis (a clean upgrade path) ───────────────────────────────────
 // The RANGE the selector moves across. Space uses free → business (ADR-552: free-vs-paid is a usage
 // state within Business; Non Profit is a sibling verified-501c3 plan, sold separately, not a rung here).
-// Personal uses free → crew (Supporter is retired to a pay-what-you-want badge, not a sold rung).
+// Personal uses free → crew (Supporter is Crew plus the Supporter badge — same feature entitlements,
+// so it is not a separate unlock rung here even though it is sold at $12).
 
 /** The Space plan rungs the range selector shows, ascending. A clean upgrade path (Non Profit is sold
  *  separately, so it is not a rung here). */
 export const SPACE_LADDER_TIERS: readonly SpacePlan[] = ['free', 'business', 'collective']
 
-/** The personal membership rungs the range selector shows, ascending (Supporter is retired). */
+/** The personal membership rungs the range selector shows, ascending (Supporter unlocks nothing beyond
+ *  Crew, so it is not a rung). */
 export const MEMBER_LADDER_TIERS: readonly EntitlementTier[] = ['free', 'crew']
 
 // ── Rank + price-label helpers (pure) ───────────────────────────────────────────────────────────────

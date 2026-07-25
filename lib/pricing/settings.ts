@@ -63,8 +63,8 @@ export interface PricingDefaults {
 
 export const PRICING_DEFAULTS: PricingDefaults = {
   tier: {
-    crew: { monthly_cents: 900, annual_cents: 9000, list_cents: 1200 }, // $9 founding under a $12 list (ADR-463)
-    supporter: { monthly_cents: 2400, annual_cents: 24000 }, // $24 / $240 (retired tier; kept for legacy resolve)
+    crew: { monthly_cents: 900, annual_cents: 9000, list_cents: 1200 }, // $9 Opening Beta under a $12 list (ADR-463)
+    supporter: { monthly_cents: 1200, annual_cents: 12000 }, // $12 / $120: Crew plus the Supporter badge (sold again, 2026-07 pricing overhaul)
   },
   plan: {
     // Community Collective ladder (ADR-811). Annual = two months free (10x monthly).

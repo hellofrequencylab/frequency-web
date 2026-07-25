@@ -315,7 +315,7 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     expect(rows.map((r) => r.key)).toEqual(['crew', 'supporter'])
     expect(rows[0].monthly).toBe('$9')
     expect(rows[0].annual).toBe('$90')
-    expect(rows[1].monthly).toBe('$24')
+    expect(rows[1].monthly).toBe('$12') // Supporter, sold again at $12 (2026-07 overhaul)
   })
 
   it('spacePlanRows lists the paid ladder Business -> Non Profit (not free · ADR-552)', () => {

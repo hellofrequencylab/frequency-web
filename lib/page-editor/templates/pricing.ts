@@ -18,10 +18,11 @@ import {
 // HOW TO READ THIS FILE (the contract, same as the-community.ts):
 //  • One `const L` layout literal, reused on every block so the spacing rhythm is
 //    consistent. Override per-block only with intent.
-//  • Honest at day zero: billing is gated OFF by the `billing_live` master flag, so
-//    nothing charges today. Plans that are built-but-not-yet-buyable show their REAL
-//    price with a "Coming soon" (or "Invite only") badge and a disabled CTA. No
-//    countdowns, no fake scarcity.
+//  • Honest, live numbers: billing is ON (billing_live), so every plan shows its real
+//    price with a live CTA. The ladder is the owner's 2026-07 overhaul: Member free,
+//    Crew $9 / Supporter $12 personal, then Free Space, Business $29 ($19 Opening
+//    Beta), Collective $79 ($49 Opening Beta), Non Profit $39. Independent and
+//    Partner are not listed (not sold from this page). No countdowns, no fake scarcity.
 //  • Tone beat alternates (surface → canvas → surface …) with a `Statement`
 //    interstitial and exactly ONE dark (`ink`) beat at the close.
 //  • Compose ONLY from registered blocks (lib/page-editor/config.tsx). Canon terms
@@ -80,10 +81,10 @@ export const data: Data = {
             ctaLabel: 'Start free', ctaHref: '/sign-in', ctaStyle: 'primary',
           },
           {
-            name: 'Crew', price: '$9', strikePrice: '', cadence: '/mo',
-            priceNote: 'Or $90 a year. Two months free on annual.',
+            name: 'Crew', price: '$9', strikePrice: '$12', cadence: '/mo',
+            priceNote: 'Opening Beta price: $9 a month or $90 a year, under a $12 list.',
             tagline: 'The full community and the full game. Author your own Quest. Your dues keep the lights on.',
-            highlight: 'normal', badge: 'comingSoon',
+            highlight: 'normal', badge: 'none',
             features: [
               { text: 'Everything in Member' },
               { text: 'Full community access' },
@@ -92,59 +93,73 @@ export const data: Data = {
               { text: 'Vera, unlimited' },
               { text: 'The leaderboard' },
             ],
-            ctaLabel: 'Coming soon', ctaHref: '', ctaStyle: 'disabled',
+            ctaLabel: 'Upgrade', ctaHref: '/upgrade', ctaStyle: 'secondary',
+          },
+          {
+            name: 'Supporter', price: '$12', strikePrice: '', cadence: '/mo',
+            priceNote: 'Or $120 a year. Everything in Crew, plus the Supporter badge.',
+            tagline: 'Back the Foundation and hold the door for the next person.',
+            highlight: 'normal', badge: 'none',
+            features: [
+              { text: 'Everything in Crew' },
+              { text: 'The Supporter badge' },
+              { text: 'Your extra dues fund the Foundation' },
+            ],
+            ctaLabel: 'Become a Supporter', ctaHref: '/upgrade', ctaStyle: 'secondary',
           },
         ],
-        footnote: 'Crew shows its real price so you know what it will cost. Nothing charges today.',
+        footnote: 'Crew holds its Opening Beta price: $9 a month or $90 a year, under the $12 list.',
         tone: 'surface', width: 'wide', align: 'left', layout: L,
       },
     },
 
     // ── Section 2: For Spaces (practitioners, businesses, orgs) ──────────────────
-    // Seven plans, so two Tiers blocks (three + four) keep the cards readable.
+    // Four plans (Free Space, Business, Collective, Non Profit), so two Tiers blocks
+    // (three + one) keep the cards readable. Independent and Partner are not sold here.
     {
       type: 'Tiers',
       props: {
         id: 'pr-spaces-a',
         eyebrow: 'For Spaces',
         title: 'For practitioners and businesses.', titleAccent: '',
-        kicker: 'Run your community as a Space. You keep 100% of your own bookings, always. The only take-rate is on business the network sends you, and each step up buys it down: Business 5%, Collective 3%, Non Profit and Independent 0%.',
+        kicker: 'Run your community as a Space. You keep 100% of your own bookings, always. The only take-rate is on business the network sends you, and each step up buys it down: Business 5%, Collective 3%, Non Profit 0%.',
         items: [
           {
-            name: 'Free', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
-            tagline: 'A simple front door for your Space.',
+            name: 'Free Space', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
+            tagline: 'The first level of Space. A real Space, free for as long as you want.',
             highlight: 'normal', badge: 'none',
             features: [
-              { text: 'A basic Space listing' },
+              { text: 'Your page, events, posts, and members' },
               { text: 'Show up in Discover' },
+              { text: 'A place for your people to gather' },
             ],
             ctaLabel: 'Start free', ctaHref: '/sign-in', ctaStyle: 'secondary',
           },
           {
             name: 'Business', price: '$19', strikePrice: '$29', cadence: '/mo',
-            priceNote: 'Founder price through 2026-09-01, then $29. Or $190 a year. 0% on your own bookings, 5% only on business the network sends you.',
+            priceNote: 'Opening Beta price through 2026-09-01, then $29. Or $190 a year. 0% on your own bookings, 5% only on business the network sends you.',
             tagline: 'Run your practice.',
-            highlight: 'featured', badge: 'founder',
+            highlight: 'featured', badge: 'none',
             features: [
               { text: 'Everything in Free' },
               { text: 'The full CRM, email, and reporting' },
               { text: 'Bookings, tickets, and memberships' },
               { text: 'Your own website' },
             ],
-            ctaLabel: 'Coming soon', ctaHref: '', ctaStyle: 'disabled',
+            ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'primary',
           },
           {
             name: 'Collective', price: '$49', strikePrice: '$79', cadence: '/mo',
-            priceNote: 'Founder price through 2026-09-01, then $79. Or $490 a year. 0% on your own, 3% only on business the network sends you.',
+            priceNote: 'Opening Beta price through 2026-09-01, then $79. Or $490 a year. 0% on your own, 3% only on business the network sends you.',
             tagline: 'Collaborate and host.',
-            highlight: 'normal', badge: 'founder',
+            highlight: 'normal', badge: 'none',
             features: [
               { text: 'Everything in Business' },
               { text: 'Automations and multiple pipelines' },
               { text: 'Team roles' },
-              { text: 'Host collaborators inside your Space' },
+              { text: 'Host collaborators and shared events' },
             ],
-            ctaLabel: 'Coming soon', ctaHref: '', ctaStyle: 'disabled',
+            ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'secondary',
           },
         ],
         footnote: '',
@@ -161,41 +176,18 @@ export const data: Data = {
         items: [
           {
             name: 'Non Profit', price: '$39', strikePrice: '', cadence: '/mo',
-            priceNote: 'Flat, no founder discount. Or $390 a year. 0% take-rate, always. Verified 501(c)(3).',
+            priceNote: 'Flat, no beta discount. Or $390 a year. 0% take-rate, always. Verified 501(c)(3).',
             tagline: 'The full Collective toolkit for a verified 501(c)(3).',
-            highlight: 'normal', badge: 'comingSoon',
+            highlight: 'normal', badge: 'none',
             features: [
               { text: 'The full Collective feature set' },
               { text: 'Donations built in' },
               { text: 'For verified 501(c)(3) nonprofits' },
             ],
-            ctaLabel: 'Coming soon', ctaHref: '', ctaStyle: 'disabled',
-          },
-          {
-            name: 'Partner', price: 'Comped', strikePrice: '', cadence: '+ revenue share',
-            priceNote: 'Assigned by our team. This one is not for sale.',
-            tagline: 'For partners we build with directly.',
-            highlight: 'normal', badge: 'inviteOnly',
-            features: [
-              { text: 'The full Business feature set' },
-              { text: 'Operator-assigned, not sold' },
-            ],
-            ctaLabel: 'Invite only', ctaHref: '', ctaStyle: 'disabled',
-          },
-          {
-            name: 'Independent', price: '$249', strikePrice: '', cadence: '/mo',
-            priceNote: 'Flat, no founder discount. Or $2,490 a year. Standalone and off the network, so 0% take-rate.',
-            tagline: 'Everything in Collective, standalone, with your brand on everything.',
-            highlight: 'normal', badge: 'comingSoon',
-            features: [
-              { text: 'Everything in Collective' },
-              { text: 'Your own brand and custom domain, badge off' },
-              { text: 'Standalone and off the network' },
-            ],
-            ctaLabel: 'Coming soon', ctaHref: '', ctaStyle: 'disabled',
+            ctaLabel: 'Get verified', ctaHref: '/spaces', ctaStyle: 'secondary',
           },
         ],
-        footnote: 'Business and Collective show their founder price, locked in through 2026-09-01, then they revert to list. Billing is not turned on yet, so nothing charges today.',
+        footnote: 'Business and Collective hold their Opening Beta price through 2026-09-01, then they revert to list. A plan you start during the beta keeps its rate.',
         tone: 'canvas', width: 'wide', align: 'left', layout: { spaceTop: 'sm', spaceBottom: 'default', visibility: 'all' },
       },
     },
@@ -210,16 +202,16 @@ export const data: Data = {
         kicker: 'Flat, never a percentage. Add them to any paid Space plan.',
         items: [
           {
-            name: 'Resonance Engine', price: '+$20', strikePrice: '', cadence: '/mo',
+            name: 'Vera AI', price: '+$20', strikePrice: '', cadence: '/mo',
             priceNote: 'A flat add-on on any paid plan.',
             tagline: 'The AI add-on. It turns the community signals into live matches and next-best actions.',
-            highlight: 'normal', badge: 'comingSoon',
+            highlight: 'normal', badge: 'none',
             features: [
               { text: 'Live matches from the community signals' },
               { text: 'Next-best actions for you and your members' },
               { text: 'Works on any paid Space plan' },
             ],
-            ctaLabel: 'Coming soon', ctaHref: '', ctaStyle: 'disabled',
+            ctaLabel: 'Add it from your Space billing', ctaHref: '/spaces', ctaStyle: 'secondary',
           },
           {
             name: 'Operator seats', price: 'from $9', strikePrice: '', cadence: '/seat/mo',
@@ -252,37 +244,37 @@ export const data: Data = {
             name: 'Space Memberships', price: 'Owner-set', strikePrice: '', cadence: '',
             priceNote: 'For example, $25 to $100 a month.',
             tagline: 'Paid member tiers a Space owner defines.',
-            highlight: 'normal', badge: 'comingSoon',
+            highlight: 'normal', badge: 'none',
             features: [
               { text: 'Set your own tiers and prices' },
               { text: 'Recurring monthly support from members' },
             ],
-            ctaLabel: 'Coming soon', ctaHref: '', ctaStyle: 'disabled',
+            ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'secondary',
           },
           {
             name: 'Bookings', price: 'Owner-set', strikePrice: '', cadence: 'per slot',
             priceNote: 'You set the price for each slot.',
             tagline: 'Paid one-on-one sessions on your calendar.',
-            highlight: 'normal', badge: 'comingSoon',
+            highlight: 'normal', badge: 'none',
             features: [
               { text: 'Sell time on your Space calendar' },
               { text: 'One-on-one sessions, your rate' },
             ],
-            ctaLabel: 'Coming soon', ctaHref: '', ctaStyle: 'disabled',
+            ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'secondary',
           },
           {
             name: 'Donations', price: 'Suggested', strikePrice: '', cadence: 'amounts',
             priceNote: 'You set the suggested amounts.',
             tagline: 'Let people chip in to support your Space.',
-            highlight: 'normal', badge: 'comingSoon',
+            highlight: 'normal', badge: 'none',
             features: [
               { text: 'Suggested amounts you choose' },
               { text: 'Support your Space fund directly' },
             ],
-            ctaLabel: 'Coming soon', ctaHref: '', ctaStyle: 'disabled',
+            ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'secondary',
           },
         ],
-        footnote: 'Add-ons are shown so you can see what is coming. They are display-only today.',
+        footnote: 'Each one is set by the Space owner, from their own settings.',
         tone: 'surface', width: 'wide', align: 'left', layout: L,
       },
     },
@@ -354,11 +346,11 @@ export const data: Data = {
         id: 'pr-faq', eyebrow: 'Straight answers', title: 'Questions, answered plainly.', titleAccent: '',
         items: [
           { q: 'Is being a Member really free?', a: 'Yes. The Member tier is free, forever. You can browse Circles and Events, attend gatherings in person, earn Zaps, and message Vera up to 10 times a day, all without paying.' },
-          { q: 'What does "Coming soon" mean?', a: 'It means we have built the plan and set its price, but you cannot buy it yet. We show the real numbers so you know what to expect. Nothing charges until we turn billing on and you choose a paid plan.' },
-          { q: 'What is the difference between Member and Crew?', a: 'Member is the free tier, forever. Crew adds the full community and the full game, with Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for $9 a month or $90 a year.' },
-          { q: 'What is the founder window on Space plans?', a: 'Business and Collective are open at a founder price during our beta: Business at $19 a month under the $29 list, and Collective at $49 a month under the $79 list. Both hold through 2026-09-01, then revert to list. Non Profit ($39) and Independent ($249) are flat, with no founder discount.' },
-          { q: 'How does the take-rate work?', a: 'You keep 100% of your own bookings, always. There is a small take-rate only on business the network sends you, and it shrinks as your plan grows: Business is 5%, Collective is 3%, and Non Profit and Independent are 0%. Independent runs standalone and off the network, so there is no network take-rate at all.' },
-          { q: 'What about refunds?', a: 'There is nothing to refund today, since nothing is charged. When paid plans go live, we will publish clear billing and refund terms before you ever enter a card, and you can cancel at any time.' },
+          { q: 'What is the Opening Beta price?', a: 'The Opening Beta price is the lower rate every early plan holds while we are in beta: Crew at $9 a month or $90 a year under the $12 list, Business at $19 under the $29 list, and Collective at $49 under the $79 list. A plan you start during the beta keeps its rate.' },
+          { q: 'What is the difference between Member and Crew?', a: 'Member is the free tier, forever. Crew adds the full community and the full game, with Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for $9 a month or $90 a year at the Opening Beta price, under a $12 list. Supporter is $12 a month: everything in Crew, plus the Supporter badge.' },
+          { q: 'What is the Opening Beta price on Space plans?', a: 'Business and Collective are open at an Opening Beta price during our beta: Business at $19 a month under the $29 list, and Collective at $49 a month under the $79 list. Both hold through 2026-09-01, then revert to list. Non Profit ($39) is flat, with no beta discount.' },
+          { q: 'How does the take-rate work?', a: 'You keep 100% of your own bookings, always. There is a small take-rate only on business the network sends you, and it shrinks as your plan grows: a Free Space is 10%, Business is 5%, Collective is 3%, and Non Profit is 0%.' },
+          { q: 'What about refunds?', a: 'Every plan is month to month, and you can cancel at any time. Cancel and your plan simply runs out its paid period. No contracts, no lock-in.' },
           { q: 'Can I buy my way into a Host or Guide role?', a: 'No, and that is on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Those roles come from the community, never from a checkout page.' },
           { q: 'Where does the money go?', a: 'Into keeping the room open. A membership sustains the physical spaces, the lights, the insurance, the thermal circuit, and the community that gathers in them. People who pay more hold the door for neighbors who cannot pay yet, so connection keeps circulating instead of sitting behind a paywall.' },
         ],

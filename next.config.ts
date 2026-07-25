@@ -116,6 +116,12 @@ const nextConfig: NextConfig = {
       { source: '/for/event-spaces', destination: '/pricing', permanent: false },
       { source: '/for/service-businesses', destination: '/pricing', permanent: false },
       { source: '/for/product-businesses', destination: '/pricing', permanent: false },
+      // Founder-pricing retirement: the founders marketing funnel is gone and the beta
+      // price framing is "Opening Beta" on /pricing. Permanent — the routes are deleted
+      // for good, so inbound links + old emails should transfer straight to /pricing.
+      { source: '/founders', destination: '/pricing', permanent: true },
+      { source: '/founders/offer', destination: '/pricing', permanent: true },
+      { source: '/founders/business', destination: '/pricing', permanent: true },
     ]
   },
   images: {
