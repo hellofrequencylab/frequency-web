@@ -29,10 +29,13 @@ export interface SpaceEvent {
   is_cancelled: boolean | null
   space_id: string | null
   time_zone: string | null
+  /** 'draft' | 'published' — the manage calendar badges drafts; public readers filter on it. */
+  status: string | null
+  location: string | null
 }
 
 const COLS =
-  'id, slug, title, description, starts_at, ends_at, host_id, scope_id, scope_type, is_cancelled, space_id, time_zone'
+  'id, slug, title, description, starts_at, ends_at, host_id, scope_id, scope_type, is_cancelled, space_id, time_zone, status, location'
 
 /** An event row for the per-space CALENDAR (Events EC2): the fields the month grid + popup need. */
 export interface SpaceCalendarEvent {

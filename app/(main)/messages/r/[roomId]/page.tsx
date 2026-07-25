@@ -38,14 +38,24 @@ export default async function RoomPage({
 
   const myProfileId = myProfile.id as string
 
-  // The room row, my membership, and the visible member roster are mutually independent (each keyed
-  // on roomId/myProfileId), so fetch them in one wave. The notFound / private-room guards and the
-  // canRead-gated message read follow, off these results.
+  // The room row, my membership, the visible member roster, AND the recent messages are all keyed on
+  // roomId/myProfileId alone, so fetch them in ONE wave (D3: the message read used to run as a second
+  // round-trip after the membership resolved; RLS (room_messages_read = am_room_member, channel rooms
+  // read-open) already returns nothing to a non-member, so reading optimistically leaks nothing — the
+  // canRead gate below still decides what renders).
   type MemberProfile = { id: string; display_name: string; handle: string; avatar_url: string | null }
-  const [roomRes, membershipRes, memberRowsRes] = await Promise.all([
+  const [roomRes, membershipRes, memberRowsRes, rawMessagesRes] = await Promise.all([
     supabase.from('rooms').select('id, name, description, visibility, member_count, created_at').eq('id', roomId).maybeSingle(),
     supabase.from('room_members').select('room_id, is_admin').eq('room_id', roomId).eq('profile_id', myProfileId).maybeSingle(),
     (supabase).rpc('visible_room_member_profiles', { _room_id: roomId }),
+    // Newest 100 descending (reversed to chronological below) — ascending + limit would pin busy
+    // rooms to their first-ever 100 and never show recent conversation (matches the DM thread).
+    supabase
+      .from('room_messages')
+      .select('id, room_id, author_id, body, created_at')
+      .eq('room_id', roomId)
+      .order('created_at', { ascending: false })
+      .limit(100),
   ])
 
   // rooms_read: public/cluster-visibility OR member; a private room is hidden from
@@ -89,22 +99,12 @@ export default async function RoomPage({
 
   const memberProfileMap = new Map(members.map(m => [m.profile.id, m.profile]))
 
-  // Recent messages — members-only (room_messages_read = am_room_member). For a
-  // non-member previewing a public room this returns nothing; the page shows the
-  // join panel instead, so we skip the read entirely for them.
+  // Recent messages — fetched in the first wave above (RLS-gated); rendered only when canRead
+  // (a non-member previewing a public room sees the join panel instead).
   type RoomMessageRow = { id: string; room_id: string; author_id: string; body: string; created_at: string }
   let messages: (RoomMessageRow & { author: MemberProfile | null })[] = []
   if (canRead) {
-    // Fetch the NEWEST 100 (descending), then reverse to chronological order for
-    // render. Ordering ascending + limit would pin busy rooms to their first-ever
-    // 100 messages and never show recent conversation (matches the DM thread).
-    const { data: rawMessages } = await supabase
-      .from('room_messages')
-      .select('id, room_id, author_id, body, created_at')
-      .eq('room_id', roomId)
-      .order('created_at', { ascending: false })
-      .limit(100)
-    const rawMsgs = ((rawMessages ?? []) as RoomMessageRow[]).reverse()
+    const rawMsgs = (((rawMessagesRes.data ?? []) as RoomMessageRow[])).reverse()
 
     // Channel rooms have no member roster, so resolve message authors directly
     // (public fields) rather than from the room-member map.

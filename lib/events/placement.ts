@@ -130,6 +130,19 @@ export async function getPlacementView(eventId: string): Promise<PlacementView> 
 
 /** Profile ids that may approve placement into a Space: the owner plus every ACTIVE admin member. */
 export async function listSpaceStewardIds(spaceId: string): Promise<string[]> {
+  return listSpaceIdsByRoles(spaceId, ['admin'])
+}
+
+/** Profile ids that may CREATE an event under a Space: the owner plus every ACTIVE editor+ member.
+ *  Wider than the steward (approval) set on purpose — the space Calendar console admits editors
+ *  (lib/spaces/functions.ts events defaultMinRole 'editor'), so its "New event" affordance must be
+ *  honored by the create authority too, or the space attribution is silently dropped (the Royal
+ *  Temple bug: an event created from a Business Space calendar landed root-attributed + personal). */
+export async function listSpaceEventCreatorIds(spaceId: string): Promise<string[]> {
+  return listSpaceIdsByRoles(spaceId, ['editor', 'moderator', 'admin'])
+}
+
+async function listSpaceIdsByRoles(spaceId: string, roles: string[]): Promise<string[]> {
   const admin = untyped()
   const ids = new Set<string>()
 
@@ -137,13 +150,13 @@ export async function listSpaceStewardIds(spaceId: string): Promise<string[]> {
   const ownerId = (space as { owner_profile_id: string | null } | null)?.owner_profile_id
   if (ownerId) ids.add(ownerId)
 
-  const { data: admins } = await admin
+  const { data: members } = await admin
     .from('space_members')
     .select('profile_id, role, status')
     .eq('space_id', spaceId)
-    .eq('role', 'admin')
+    .in('role', roles)
     .eq('status', 'active')
-  for (const m of (admins ?? []) as Array<{ profile_id: string }>) ids.add(m.profile_id)
+  for (const m of (members ?? []) as Array<{ profile_id: string }>) ids.add(m.profile_id)
 
   return [...ids]
 }

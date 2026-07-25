@@ -125,12 +125,18 @@ async function resolveSpaces(admin: SupabaseClient, ids: string[]): Promise<Map<
   return map
 }
 
-/** The event's home space id (events.space_id), for the pure approver decision + auto-accept check.
- *  FAIL-SAFE: null on any error. */
+/** The event's home space id, for the pure approver decision + auto-accept check + the co-host
+ *  Business gate. The explicit HOSTING entity (events.host_space_id, ADR-819) wins; else the
+ *  placement space (events.space_id). FAIL-SAFE: null on any error. */
 export async function eventHomeSpaceId(eventId: string): Promise<string | null> {
   try {
-    const { data } = await untyped().from('events').select('space_id').eq('id', eventId).maybeSingle()
-    return (data as { space_id: string | null } | null)?.space_id ?? null
+    const { data } = await untyped()
+      .from('events')
+      .select('space_id, host_space_id')
+      .eq('id', eventId)
+      .maybeSingle()
+    const row = data as { space_id: string | null; host_space_id: string | null } | null
+    return row?.host_space_id ?? row?.space_id ?? null
   } catch {
     return null
   }

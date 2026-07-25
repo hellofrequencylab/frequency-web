@@ -49,12 +49,15 @@ real text.
   (summary "Messaged", `body: null`) and never the message text; migration
   `20261216000000_scrub_dm_bodies_from_crm.sql` cleared the historical rows (applied + verified: 0
   DM bodies remain). The person-timeline still shows THAT a message happened, never its contents.
-- **F5 · Platform-staff cross-lane lens — ⏳ still needs a ruling.** — the platform Resonance CRM intentionally lists/acts on
-  ALL tenant lanes (conversations workspace, flat inbox, subscriber/analytics counts), staff-gated,
-  documented as "the widest authorized lens." Correct IF the platform is the superset root; a gap
-  IF tenants are promised privacy FROM platform staff. **Ruling needed.** (Note: a platform-staff
-  reply into a tenant thread signs with Frequency branding + the staff member's personal signature —
-  if ratified, at least route it through the Space's brand signature.)
+- **F5 · Platform-staff cross-lane lens — ✅ RULED + implemented (owner, 2026-07-25).** The ruling:
+  tenant lanes stay SEALED except to **web_role admin and janitor**. Implemented in the platform
+  Conversations workspace: a caller admitted via the marketing team-staff domain now sees the
+  PLATFORM lane only (`platformLaneOnly` in `lib/comms/workspace.ts` — list, counts, and the
+  by-id thread read all collapse to `space_id` null/root), and every write action
+  (reply/triage/Vera seams) re-checks the seal server-side (`tenantLaneSealed`,
+  `app/(main)/admin/crm/conversations/actions.ts`). Web_role admin/janitor keep the full
+  cross-lane lens, ratified as the superset root. The legacy flat inbox rides the
+  flat-inbox→spine migration (below) rather than growing its own seal.
 
 ## 4. Cohesion gaps (follow-ups, scoped)
 

@@ -37,6 +37,11 @@ export interface CalendarEvent {
   /** Optional source label (e.g. the collaborator space this event belongs to in a combined calendar);
    *  null/absent hides it. Shown as a small badge in the list row + popup, never on the compact grid chip. */
   sourceLabel?: string | null
+  /** Optional status badge for MANAGE surfaces ("Draft", "Past"); null/absent hides it. */
+  statusLabel?: string | null
+  /** MANAGE mode: the edit page for this event. When set, the popup leads with "Edit event" and the
+   *  list row's affordance is the editor — the space Calendar console's click-to-edit contract. */
+  editHref?: string | null
   isCancelled: boolean
 }
 
@@ -74,17 +79,20 @@ export function EventCalendar({
   events,
   initialYear,
   initialMonth1,
+  initialView = 'grid',
 }: {
   events: CalendarEvent[]
   initialYear: number
   initialMonth1: number
+  /** Which view opens first: the month grid (default) or the chronological list. */
+  initialView?: 'grid' | 'list'
 }) {
   const [{ year, month1 }, setMonth] = useState({ year: initialYear, month1: initialMonth1 })
   const [selected, setSelected] = useState<CalendarEvent | null>(null)
   // Times default to the event's own zone (server-formatted whenLabel); the viewer can flip to their own.
   const [inViewerTz, setInViewerTz] = useState(false)
   // The grid is the mental model; the list is how people scan "what is next". Default to the grid.
-  const [view, setView] = useState<'grid' | 'list'>('grid')
+  const [view, setView] = useState<'grid' | 'list'>(initialView)
 
   const weeks = useMemo(() => monthMatrix(year, month1), [year, month1])
   // The whole loaded window, soonest first, for the list view (independent of the grid's month nav).
@@ -189,9 +197,18 @@ export function EventCalendar({
                   <span className={cn('block truncate font-semibold', ev.isCancelled ? 'text-subtle line-through' : 'text-text')}>
                     {ev.title}
                   </span>
-                  {ev.sourceLabel && (
-                    <span className="mt-0.5 inline-block rounded bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-subtle">
-                      {ev.sourceLabel}
+                  {(ev.sourceLabel || ev.statusLabel) && (
+                    <span className="mt-0.5 flex flex-wrap items-center gap-1">
+                      {ev.statusLabel && (
+                        <span className="inline-block rounded bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-subtle">
+                          {ev.statusLabel}
+                        </span>
+                      )}
+                      {ev.sourceLabel && (
+                        <span className="inline-block rounded bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-subtle">
+                          {ev.sourceLabel}
+                        </span>
+                      )}
                     </span>
                   )}
                   <span className="mt-0.5 block text-xs text-muted">{ev.whenLabel}</span>
@@ -296,9 +313,18 @@ export function EventCalendar({
               <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-danger">Cancelled</p>
             )}
             <h3 className="text-xl font-bold leading-tight text-text">{selected.title}</h3>
-            {selected.sourceLabel && (
-              <p className="mt-1 inline-block rounded bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-subtle">
-                {selected.sourceLabel}
+            {(selected.sourceLabel || selected.statusLabel) && (
+              <p className="mt-1 flex flex-wrap items-center gap-1">
+                {selected.statusLabel && (
+                  <span className="inline-block rounded bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+                    {selected.statusLabel}
+                  </span>
+                )}
+                {selected.sourceLabel && (
+                  <span className="inline-block rounded bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-subtle">
+                    {selected.sourceLabel}
+                  </span>
+                )}
               </p>
             )}
             <div className="mt-3 flex items-start gap-2 text-sm text-muted">
@@ -337,10 +363,24 @@ export function EventCalendar({
               >
                 Close
               </button>
-              <Link href={`/events/${selected.slug}`} className={buttonClasses('primary', 'sm')}>
-                Go to event
-                <ArrowUpRight className="h-4 w-4" aria-hidden />
-              </Link>
+              {/* MANAGE mode (editHref set): editing is the primary action; the public page demotes to
+                  secondary. Public calendars keep the single "Go to event" primary. */}
+              {selected.editHref ? (
+                <>
+                  <Link href={`/events/${selected.slug}`} className={buttonClasses('secondary', 'sm')}>
+                    View
+                    <ArrowUpRight className="h-4 w-4" aria-hidden />
+                  </Link>
+                  <Link href={selected.editHref} className={buttonClasses('primary', 'sm')}>
+                    Edit event
+                  </Link>
+                </>
+              ) : (
+                <Link href={`/events/${selected.slug}`} className={buttonClasses('primary', 'sm')}>
+                  Go to event
+                  <ArrowUpRight className="h-4 w-4" aria-hidden />
+                </Link>
+              )}
             </div>
             </div>
           </div>

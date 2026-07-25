@@ -1,11 +1,16 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { QrCode, Link2, Check, ExternalLink, Share2, Send } from 'lucide-react'
+import { QrCode, Link2, Check, ExternalLink, Share2, Send, Download } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { DEFAULT_STYLE } from '@/lib/qr/style'
 import { publicShareUrl } from '@/lib/qr/public-url'
+import {
+  inlineQrStyleLogo,
+  downloadQrSvgString,
+  downloadQrSvgStringAsPng,
+} from '@/lib/qr/client-download'
 
 // The event "QR & Share" affordance — the header control that lets any viewer send an event on.
 // It encodes the event's OWN public page (`/events/<slug>`) so a scan or a copied link lands right
@@ -51,6 +56,16 @@ export function EventShareButton({
   const { path: sharePath, url } = publicShareUrl(origin, `/events/${slug}`, { ref: sharerProfileId })
 
   const svg = useMemo(() => renderStyledQrSvg(url, { ...DEFAULT_STYLE }, 240), [url])
+
+  // QR file downloads: re-render at print size with the logo INLINED (a data URL), so the .svg is
+  // self-contained anywhere and the PNG raster carries the logo (an SVG-as-image never fetches
+  // external resources). PNG at 1024 prints crisply on a flyer.
+  async function downloadQr(format: 'png' | 'svg') {
+    const style = await inlineQrStyleLogo({ ...DEFAULT_STYLE })
+    const big = renderStyledQrSvg(url, style, 1024)
+    if (format === 'svg') downloadQrSvgString(big, `${slug}-qr`)
+    else await downloadQrSvgStringAsPng(big, `${slug}-qr`, 1024)
+  }
 
   function copy() {
     navigator.clipboard?.writeText(url).then(() => {
@@ -101,6 +116,23 @@ export function EventShareButton({
                 className="mx-auto aspect-square w-40 rounded-xl border border-border bg-white p-2 shadow-sm [&>svg]:h-full [&>svg]:w-full"
                 dangerouslySetInnerHTML={{ __html: svg }}
               />
+              {/* Take the code with you: PNG for flyers and socials, SVG for print at any size. */}
+              <div className="mt-2 flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void downloadQr('png')}
+                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2 py-1 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                >
+                  <Download className="h-3 w-3" /> PNG
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void downloadQr('svg')}
+                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2 py-1 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                >
+                  <Download className="h-3 w-3" /> SVG
+                </button>
+              </div>
             </div>
             <div className="w-full min-w-0 space-y-3">
               <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">

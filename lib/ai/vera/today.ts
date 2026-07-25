@@ -396,15 +396,20 @@ export async function buildTodayCards(opts: { spaceId?: string | null } = {}): P
       .select('id, profile_id, display_name, email')
       .in('profile_id', topProfileIds)
     if (opts.spaceId) {
-      // Per-Space scope: only contacts whose touches/ownership are in this Space. The
-      // contacts table has no space_id; the per-Space contact set is the on-board CRM
-      // contacts (ADR-376). We bind via the space-scoped contact ids when scoped.
-      const { data: spaceContactRows } = await admin
-        .from('contact_interactions')
-        .select('subject_id')
-        .eq('space_id', opts.spaceId)
-        .eq('subject_kind', 'contact')
+      // Per-Space scope: only contacts whose touches/ownership are in this Space — the on-board CRM
+      // interaction lane (ADR-376) UNIONED with the Space's OWN tenant contact rows (contacts.space_id,
+      // ADR-624). The tenancy union is the F7b stitch: without it, a contact living only in the tenant
+      // lane silently vanished from a Space's Today cards as tenancy data accrued.
+      const [{ data: spaceContactRows }, { data: tenantContactRows }] = await Promise.all([
+        admin
+          .from('contact_interactions')
+          .select('subject_id')
+          .eq('space_id', opts.spaceId)
+          .eq('subject_kind', 'contact'),
+        admin.from('contacts').select('id').eq('space_id', opts.spaceId),
+      ])
       const allowed = new Set(((spaceContactRows ?? []) as { subject_id: string }[]).map((r) => r.subject_id))
+      for (const r of (tenantContactRows ?? []) as { id: string }[]) allowed.add(r.id)
       // When a Space has no scoped contacts yet, there is nothing to show (fail-closed).
       if (allowed.size === 0) return { cards: [], laterCount: ranked.later.length + suppressed }
       const { data: contactData } = await contactQuery

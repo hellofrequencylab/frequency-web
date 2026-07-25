@@ -7,6 +7,7 @@ import { Inbox, MailQuestion, UserCheck } from 'lucide-react'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { requireAdmin } from '@/lib/admin/guard'
+import { isStaff } from '@/lib/core/roles'
 import { listAssignableAgents } from '@/lib/support/store'
 import {
   listWorkspaceConversations,
@@ -27,17 +28,22 @@ export default async function CrmConversationsPage({
 }: {
   searchParams: Promise<{ scope?: string; status?: string; id?: string }>
 }) {
-  const { profileId } = await requireAdmin('janitor', { staff: 'marketing' })
+  const { profileId, webRole } = await requireAdmin('janitor', { staff: 'marketing' })
   const sp = await searchParams
   const scope: ConversationScope = SCOPES.includes(sp.scope as ConversationScope) ? (sp.scope as ConversationScope) : 'all'
   const status = sp.status || undefined
 
-  const filter = { scope, viewerProfileId: profileId, status, limit: 300 }
+  // F5 SEAL (owner ruling 2026-07-25): tenant Space lanes open ONLY to web_role admin/janitor. A
+  // caller admitted via the marketing staff domain sees the platform lane alone; tenant threads
+  // stay sealed even by deep link.
+  const platformLaneOnly = !isStaff(webRole)
+
+  const filter = { scope, viewerProfileId: profileId, status, limit: 300, platformLaneOnly }
   const [rows, counts, agents, thread] = await Promise.all([
     listWorkspaceConversations(filter),
-    conversationStatusCounts({ scope, viewerProfileId: profileId }),
+    conversationStatusCounts({ scope, viewerProfileId: profileId, platformLaneOnly }),
     listAssignableAgents(),
-    sp.id ? getWorkspaceThread(sp.id) : Promise.resolve(null),
+    sp.id ? getWorkspaceThread(sp.id, { platformLaneOnly }) : Promise.resolve(null),
   ])
 
   const openCount = OPEN_CONVERSATION_STATUSES.reduce((n, s) => n + (counts[s] ?? 0), 0)

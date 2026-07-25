@@ -353,7 +353,7 @@ export const CREW_NOTE = {
   listLabel: '$12',
   foundingLabel: '$9',
   supporterLabel: '$12',
-  line: 'Crew is the personal tier: $9 a month or $90 a year at the Opening Beta price, under a $12 list. Supporter is $12 a month, everything in Crew plus the Supporter badge for backing the Foundation. Both live on the personal upgrade page.',
+  line: 'Crew is the personal tier: $9 a month or $90 a year at the Opening Beta price, under a $12 list. Supporter is $12 a month or $120 a year, everything in Crew plus the Supporter badge for backing the Foundation. Both live on the personal upgrade page.',
   href: '/upgrade',
 } as const
 
@@ -377,6 +377,6 @@ export function pricingLadderSummary(): string[] {
   lines.push(
     `- Crew: ${CREW_NOTE.foundingLabel}/mo or $90/yr at the Opening Beta price, the personal tier (list ${CREW_NOTE.listLabel}).`,
   )
-  lines.push(`- Supporter: ${CREW_NOTE.supporterLabel}/mo, everything in Crew plus the Supporter badge.`)
+  lines.push(`- Supporter: ${CREW_NOTE.supporterLabel}/mo or $120/yr, everything in Crew plus the Supporter badge.`)
   return lines
 }

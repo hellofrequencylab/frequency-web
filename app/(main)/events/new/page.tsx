@@ -118,21 +118,25 @@ export default async function NewEventPage({
     spaceById.set(s.id, spaceName(s))
   }
 
-  const { data: adminMemberships } = await admin
+  // Editor+ managers create events too — the Calendar console that links here is gated at
+  // editor (lib/spaces/functions.ts events defaultMinRole), so the list must match or the
+  // console's own "New event" affordance silently loses the space (the Royal Temple bug:
+  // the dropped ?space= fell through to a public root-attributed event).
+  const { data: managerMemberships } = await admin
     .from('space_members')
     .select('space_id')
     .eq('profile_id', profile.id)
-    .eq('role', 'admin')
+    .in('role', ['editor', 'moderator', 'admin'])
     .eq('status', 'active')
-  const adminSpaceIds = ((adminMemberships ?? []) as { space_id: string }[])
+  const managerSpaceIds = ((managerMemberships ?? []) as { space_id: string }[])
     .map((m) => m.space_id)
     .filter((id) => !spaceById.has(id))
-  if (adminSpaceIds.length > 0) {
-    const { data: adminSpaces } = await admin
+  if (managerSpaceIds.length > 0) {
+    const { data: managerSpaces } = await admin
       .from('spaces')
       .select('id, name, brand_name')
-      .in('id', adminSpaceIds)
-    for (const s of (adminSpaces ?? []) as { id: string; name: string | null; brand_name: string | null }[]) {
+      .in('id', managerSpaceIds)
+    for (const s of (managerSpaces ?? []) as { id: string; name: string | null; brand_name: string | null }[]) {
       spaceById.set(s.id, spaceName(s))
     }
   }
@@ -149,8 +153,10 @@ export default async function NewEventPage({
 
   // Honor a scope deep link — `?circle=` (the circle-host affordance) or `?space=` (the space
   // Calendar console "New event" affordance) — but only when it names a scope the caller actually
-  // controls (a circle they host or a space they run), never letting the param scope to someone
-  // else's. `?space=` wins when both are present since it is the more specific console entry point.
+  // helps run (a circle they host or a space where they are editor+), never letting the param scope
+  // to someone else's. `?space=` wins when both are present since it is the more specific console
+  // entry point. A param that FAILS the check is surfaced (droppedSpaceLink below), never silently
+  // swallowed — a silent drop is how a Business Space's event ended up root-attributed + personal.
   const defaultGroupId = spaces.some((s) => s.id === spaceParam)
     ? spaceParam
     : circles.some((c) => c.id === circleParam)
@@ -174,8 +180,18 @@ export default async function NewEventPage({
   // Null for a viewer with no saved home; the device's own geolocation still wins when granted.
   const viewerHome = await getViewerHome()
 
+  // The deep link named a space the caller does not help run (or that does not exist). Say so
+  // instead of quietly building a personal public event they thought was the space's.
+  const droppedSpaceLink = !!spaceParam && !spaces.some((s) => s.id === spaceParam)
+
   return (
     <EventEditorWindow backHref="/events">
+      {droppedSpaceLink && (
+        <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-sm leading-relaxed text-text">
+          You opened this from a space you do not help run, so the event below will be a personal
+          event. To create it for the space, ask its owner to make you an editor first.
+        </p>
+      )}
       <EventSpark
         groups={scopeOptions}
         defaultGroupId={defaultGroupId}

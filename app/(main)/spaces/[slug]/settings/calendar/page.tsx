@@ -14,14 +14,16 @@ import { eventDayKey } from '@/lib/events/calendar-grid'
 import { SITE_URL } from '@/lib/site'
 import { EventCalendar, type CalendarEvent } from '@/components/events/event-calendar'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
+import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { SectionHeader } from '@/components/ui/section-header'
 import { SpaceEventsManager, type ManagedEvent } from './space-events-manager'
 
-// THE SPACE CALENDAR CONSOLE (Events EC2/EC3). The owner-facing home for a space's events: the month grid
-// of its events, a "New event" entry, and the public subscribe link to share. Gated on the `events`
-// function (universal, editor+). This is the surface that was missing — a space had a PUBLIC Calendar tab
-// only once it already had events, and no console entry at all, so a new business space saw no calendar
-// options. Mirrors the offerings/collaborators pattern: a no-rail Focus surface, gated server-side.
+// THE SPACE CALENDAR CONSOLE (Events EC2/EC3/EC5, upgraded 2026-07-25). The MANAGEMENT calendar for a
+// space's events: the month grid AND the chronological list (the calendar's own toggle), every item
+// clickable through to the editor, drafts and past events included, co-hosted events labeled, and the
+// pending co-host requests inline. Gated on the `events` function (universal, editor+). The public
+// Calendar tab stays the view-only surface; THIS one is where a Collective or studio actually runs its
+// calendar. Mirrors the offerings/collaborators pattern: a no-rail Focus surface, gated server-side.
 
 export const metadata = { title: 'Calendar' }
 
@@ -44,14 +46,48 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
   const now = new Date()
   const initialYear = now.getUTCFullYear()
   const initialMonth1 = now.getUTCMonth() + 1
-  const fromDay = `${initialYear}-${String(initialMonth1).padStart(2, '0')}-01`
+  const nowIso = now.toISOString()
 
-  // The space's own upcoming events (published, public/unlisted). Engagement + times pre-formatted
-  // server-side (the timezone lib never ships to the client), same mapping as the public Calendar tab.
-  const rows = featureLocked ? [] : await listSpaceCalendarEvents(space.id, { fromDay })
-  const engagement = rows.length ? await listCalendarEngagement(rows.map((r) => r.id)) : new Map()
-  const events: CalendarEvent[] = rows
-    .map((ev): CalendarEvent | null => {
+  // The MANAGEMENT set: every event under this space (drafts, past, cancelled included), plus the
+  // co-hosted events other hosts share onto this calendar (view-only here; their editor lives with
+  // their own host). Engagement resolves per-event; the tz lib stays server-side (pre-formatted).
+  const ownedRows = featureLocked ? [] : await listEventsForSpace(space.id, { limit: 200 })
+  const ownedIds = new Set(ownedRows.map((r) => r.id))
+  const sharedRows = featureLocked
+    ? []
+    : (await listSpaceCalendarEvents(space.id, { fromDay: `${initialYear - 1}-01-01` })).filter(
+        (r) => !ownedIds.has(r.id),
+      )
+  const engagement =
+    ownedRows.length || sharedRows.length
+      ? await listCalendarEngagement([...ownedRows.map((r) => r.id), ...sharedRows.map((r) => r.id)])
+      : new Map()
+
+  // Only a manager gets the click-to-edit affordance; a staff preview stays read-only.
+  const editHrefFor = (evSlug: string) => (canManage ? `/events/${evSlug}/edit` : null)
+
+  const events: CalendarEvent[] = [
+    ...ownedRows.map((ev): CalendarEvent | null => {
+      const dayKey = eventDayKey(ev.starts_at)
+      if (!dayKey) return null
+      const eng = engagement.get(ev.id)
+      const isPast = ev.starts_at < nowIso
+      return {
+        slug: ev.slug,
+        title: ev.title,
+        dayKey,
+        timeLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'time', withZone: false }),
+        whenLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'full' }),
+        startInstantIso: eventInstant(ev.starts_at, ev.time_zone)?.toISOString() ?? null,
+        location: ev.location,
+        goingCount: eng?.going ?? 0,
+        coverUrl: eng?.coverUrl ?? null,
+        statusLabel: ev.status === 'draft' ? 'Draft' : isPast ? 'Past' : null,
+        editHref: editHrefFor(ev.slug),
+        isCancelled: !!ev.is_cancelled,
+      }
+    }),
+    ...sharedRows.map((ev): CalendarEvent | null => {
       const dayKey = eventDayKey(ev.starts_at)
       if (!dayKey) return null
       const eng = engagement.get(ev.id)
@@ -65,17 +101,16 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
         location: ev.location,
         goingCount: eng?.going ?? 0,
         coverUrl: eng?.coverUrl ?? null,
+        sourceLabel: 'Co-hosted here',
         isCancelled: !!ev.is_cancelled,
       }
-    })
-    .filter((e): e is CalendarEvent => e !== null)
+    }),
+  ].filter((e): e is CalendarEvent => e !== null)
 
-  // The full management list: EVERY event under this space (past + upcoming, all statuses),
-  // unlike the month grid which shows only published/upcoming. This is where the owner edits,
-  // duplicates, cancels, and deletes — the actions the view-only calendar never exposed.
-  const nowIso = now.toISOString()
-  const managedRows = featureLocked ? [] : await listEventsForSpace(space.id, { limit: 100 })
-  const managedEvents: ManagedEvent[] = managedRows.map((ev) => ({
+  const upcomingCount = ownedRows.filter((r) => r.starts_at >= nowIso && !r.is_cancelled).length
+
+  // The deep-management table below the calendar: duplicate / cancel / delete per event.
+  const managedEvents: ManagedEvent[] = ownedRows.map((ev) => ({
     id: ev.id,
     slug: ev.slug,
     title: ev.title,
@@ -91,7 +126,7 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
     <FocusTemplate
       eyebrow={brandName}
       title="Calendar"
-      description="Your space's events on one calendar. Create an event, see what's upcoming, and share a subscribe link so anyone can follow along."
+      description="Run your space's calendar. Calendar and list views, click any event to edit it, and approve co-hosted events other hosts bring you."
       width={featureLocked ? undefined : 'wide'}
     >
       {featureLocked ? (
@@ -107,8 +142,8 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted">
-              {events.length > 0
-                ? `${events.length} upcoming event${events.length === 1 ? '' : 's'}.`
+              {upcomingCount > 0
+                ? `${upcomingCount} upcoming event${upcomingCount === 1 ? '' : 's'}.`
                 : 'No upcoming events yet. Create your first one.'}
             </p>
             <div className="flex items-center gap-2">
@@ -126,6 +161,9 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
               </Link>
             </div>
           </div>
+
+          {/* Pending co-host requests (renders nothing when the inbox is empty). */}
+          <EventShareApprovals spaceId={space.id} />
 
           {events.length > 0 ? (
             <EventCalendar events={events} initialYear={initialYear} initialMonth1={initialMonth1} />

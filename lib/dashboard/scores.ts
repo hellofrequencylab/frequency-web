@@ -166,26 +166,30 @@ export async function getSpaceFunnel(spaceId: string): Promise<LifecycleFunnel> 
   try {
     const admin = createAdminClient()
 
-    // The profiles reachable from this Space's CRM (the profile behind a contact whose touches sit
-    // in this space_id). Mirrors listMembersByFilter / lib/resonance/surface scoping.
-    const { data: spaceRows } = await admin
-      .from('contact_interactions')
-      .select('subject_id')
-      .eq('space_id', spaceId)
-      .eq('subject_kind', 'contact')
+    // The profiles reachable from this Space's CRM: the interaction lane (a contact whose touches
+    // sit in this space_id) UNIONED with the Space's OWN tenant contact rows (contacts.space_id,
+    // ADR-624 — the F7c stitch, so a tenant-lane contact still counts once it links a profile).
+    // Mirrors listMembersByFilter / lib/resonance/surface scoping.
+    const [{ data: spaceRows }, { data: tenantContacts }] = await Promise.all([
+      admin.from('contact_interactions').select('subject_id').eq('space_id', spaceId).eq('subject_kind', 'contact'),
+      admin.from('contacts').select('profile_id').eq('space_id', spaceId),
+    ])
     const subjectIds = ((spaceRows ?? []) as { subject_id: string }[]).map((r) => r.subject_id)
-    if (subjectIds.length === 0) return ZERO_FUNNEL
+    const tenantProfileIds = ((tenantContacts ?? []) as { profile_id: string | null }[])
+      .map((c) => c.profile_id)
+      .filter((p): p is string => !!p)
+    if (subjectIds.length === 0 && tenantProfileIds.length === 0) return ZERO_FUNNEL
 
-    const { data: spaceContacts } = await admin
-      .from('contacts')
-      .select('profile_id')
-      .in('id', subjectIds)
+    const { data: spaceContacts } = subjectIds.length
+      ? await admin.from('contacts').select('profile_id').in('id', subjectIds)
+      : { data: [] }
     const profileIds = [
-      ...new Set(
-        ((spaceContacts ?? []) as { profile_id: string | null }[])
+      ...new Set([
+        ...((spaceContacts ?? []) as { profile_id: string | null }[])
           .map((c) => c.profile_id)
           .filter((p): p is string => !!p),
-      ),
+        ...tenantProfileIds,
+      ]),
     ]
     if (profileIds.length === 0) return ZERO_FUNNEL
 

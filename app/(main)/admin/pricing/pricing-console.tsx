@@ -92,7 +92,7 @@ function CatalogSection({
   return (
     <AdminSection
       title="Catalog"
-      description="Every base (Business, Collective, Non Profit, Independent) plus the Vera AI add-on and the seats. Each price shows a list anchor and the Opening Beta price under it. The Opening Beta price is what is charged today; the list price is the anchor it sits under (where there is no beta discount, the two match). Set the monthly amounts; the yearly is two months free unless you override it."
+      description="Every base (Business, Collective, Non Profit, Independent) plus the Vera AI add-on and the seats. Each price shows a list anchor and the Opening Beta price under it, monthly AND yearly, every field populated. The Opening Beta price is what is charged today; the list price is the anchor it sits under (where there is no beta discount, the two match). The yearly stays two months free as you change the monthly, unless you type a different yearly."
     >
       <FormSection
         title="Business base"
@@ -183,15 +183,17 @@ function CatalogItemRow({
 }) {
   const [monthlyList, setMonthlyList] = useState(centsToDollars(item.monthlyListCents))
   const [monthlyFounding, setMonthlyFounding] = useState(centsToDollars(item.monthlyFoundingCents))
-  const [yearlyList, setYearlyList] = useState(item.yearlyListCents == null ? '' : centsToDollars(item.yearlyListCents))
-  const [yearlyFounding, setYearlyFounding] = useState(
-    item.yearlyFoundingCents == null ? '' : centsToDollars(item.yearlyFoundingCents),
-  )
+  // The yearly fields show the EFFECTIVE charged numbers, always populated (owner directive
+  // 2026-07-25: every price visible, including yearly). item.year is the resolved amount (the
+  // explicit override when one is stored, else the derived two months free), so the field never
+  // sits empty. Save keeps the derive-unless-changed semantics below.
+  const [yearlyList, setYearlyList] = useState(centsToDollars(item.year.listCents))
+  const [yearlyFounding, setYearlyFounding] = useState(centsToDollars(item.year.foundingCents))
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
-  // The yearly we would charge for display: the explicit override, else the derived two months free.
+  // The yearly we would charge for display: the field's number, else the derived two months free.
   const derivedYearlyFounding =
     yearlyFounding.trim() === '' ? Math.round(dollarsToCents(monthlyFounding) * 10) : dollarsToCents(yearlyFounding)
 
@@ -199,11 +201,18 @@ function CatalogItemRow({
     setError(null)
     setSaved(false)
     start(async () => {
+      // Derive-unless-changed: a yearly equal to the two-months-free derivation of the SAVED monthly
+      // stores NO override (null), so a later monthly edit keeps reflowing the yearly. Only a yearly
+      // that genuinely differs is pinned as an explicit override.
+      const ml = dollarsToCents(monthlyList)
+      const mf = dollarsToCents(monthlyFounding)
+      const yl = yearlyList.trim() === '' ? null : dollarsToCents(yearlyList)
+      const yf = yearlyFounding.trim() === '' ? null : dollarsToCents(yearlyFounding)
       const res = await saveCatalogItem(item.key, {
-        monthlyListCents: dollarsToCents(monthlyList),
-        monthlyFoundingCents: dollarsToCents(monthlyFounding),
-        yearlyListCents: yearlyList.trim() === '' ? null : dollarsToCents(yearlyList),
-        yearlyFoundingCents: yearlyFounding.trim() === '' ? null : dollarsToCents(yearlyFounding),
+        monthlyListCents: ml,
+        monthlyFoundingCents: mf,
+        yearlyListCents: yl === Math.round(ml * 10) ? null : yl,
+        yearlyFoundingCents: yf === Math.round(mf * 10) ? null : yf,
       })
       if (isError(res)) setError(res.error)
       else {

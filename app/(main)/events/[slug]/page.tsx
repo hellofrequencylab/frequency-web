@@ -261,6 +261,9 @@ export default async function EventDetailPage({
     // The Space that hosts the event (ADR-800). Set ⇒ the event was posted from a Space and is
     // attributed to it (the Space brand is the displayed host). Newer than the generated types → cast.
     space_id: string | null
+    // The explicit HOSTING entity (ADR-819): when set, this Space is the billed + displayed host,
+    // regardless of placement. Wins over space_id for attribution. Newer than the generated types.
+    host_space_id: string | null
     // Presentation bag (jsonb). Carries the host-picked hero height (heroHeight key).
     theme: unknown
     // PostgREST returns a PostGIS `geography` as an EWKB hex string (or, in some setups, a
@@ -274,7 +277,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, space_id, theme, geog',
+        'posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, space_id, host_space_id, theme, geog',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -296,11 +299,12 @@ export default async function EventDetailPage({
   const ticketedCents: number | null = ticketedCentsResolved
   const canManage = eventCaps.has('event.editSettings')
 
-  // SPACE ATTRIBUTION (ADR-800): when the event was posted from a Space (events.space_id), the Space is the
-  // displayed host — its brand + logo, linking to the Space page. The person in host_id stays the
-  // operational organizer (edit rights, rewards, cohost management). Best-effort: a missing or non-active
-  // Space just falls back to the person host, so attribution never breaks the page.
-  const eventSpaceId = extra?.space_id ?? null
+  // SPACE ATTRIBUTION (ADR-800/819): the explicit HOSTING entity (events.host_space_id) wins; else the
+  // placement Space (events.space_id) is the displayed host — its brand + logo, linking to the Space
+  // page. The person in host_id stays the operational organizer (edit rights, rewards, cohost
+  // management). Best-effort: a missing or non-active Space just falls back to the person host, so
+  // attribution never breaks the page.
+  const eventSpaceId = extra?.host_space_id ?? extra?.space_id ?? null
   let spaceHost: SpaceHostLite | null = null
   if (eventSpaceId) {
     const { data: rawSpace } = await admin

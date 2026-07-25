@@ -7,6 +7,9 @@ import {
   loadEventPlacement,
   requestEventPlacement,
   clearEventPlacement,
+  loadEventHostEntity,
+  setEventHostEntity,
+  listMyHostableSpaces,
 } from '@/app/(main)/events/placement-actions'
 import { transferEventHost } from '@/app/(main)/events/[slug]/social-actions'
 import { isError } from '@/lib/action-result'
@@ -93,12 +96,97 @@ export function EventPlacementField({ eventId, slug }: { eventId: string; slug: 
 
       {error && <p className="text-xs text-danger">{error}</p>}
 
+      {/* WHO HOSTS IT (ADR-819) — the hosting entity: you personally, or a Space you help run.
+          Space-hosted = the space is the billed + displayed host ("Hosted by <space>"), and ticket
+          money routes through it. Distinct from placement above (where it shows up). */}
+      <div className="border-t border-border pt-2">
+        <HostEntityControl eventId={eventId} slug={slug} />
+      </div>
+
       {/* Transfer host — hand the event to another member. Kept in this box because "where the event
           lives" and "who owns it" are the same stewardship decision. Reuses the transferEventHost
           action; the outgoing host stays on as a cohost. */}
       <div className="border-t border-border pt-2">
         <TransferHostControl eventId={eventId} slug={slug} />
       </div>
+    </div>
+  )
+}
+
+// The hosting entity switch: personal, or one of the spaces the caller helps run (editor+). The
+// server re-validates both the event capability and the space authority, so this list is a
+// convenience only. Small and in-flow like everything else in this box.
+function HostEntityControl({ eventId, slug }: { eventId: string; slug: string }) {
+  const [hostSpace, setHostSpace] = useState<{ id: string; slug: string; name: string } | null>(null)
+  const [options, setOptions] = useState<{ id: string; slug: string; name: string }[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
+
+  useEffect(() => {
+    let active = true
+    Promise.all([loadEventHostEntity(eventId), listMyHostableSpaces()])
+      .then(([entity, spaces]) => {
+        if (!active) return
+        setHostSpace(entity.hostSpace)
+        setOptions(spaces)
+      })
+      .catch(() => {
+        if (active) setOptions([])
+      })
+    return () => {
+      active = false
+    }
+  }, [eventId])
+
+  function choose(value: string) {
+    setError(null)
+    startTransition(async () => {
+      const res = await setEventHostEntity(
+        eventId,
+        slug,
+        value === 'personal' ? { kind: 'profile' } : { kind: 'space', spaceId: value },
+      )
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
+      setHostSpace(res.data.hostSpace)
+    })
+  }
+
+  if (options === null) return null
+
+  return (
+    <div>
+      <p className="flex items-center gap-1.5 text-xs font-semibold text-text">
+        <Building2 className="h-3.5 w-3.5 text-subtle" /> Hosted by
+      </p>
+      <p className="mt-0.5 text-2xs text-subtle">
+        {hostSpace
+          ? `${hostSpace.name} is the host. Registrations and ticket payments run through it.`
+          : 'You host this personally. Pick a space to run it through the space instead.'}
+      </p>
+      {options.length > 0 ? (
+        <select
+          value={hostSpace?.id ?? 'personal'}
+          onChange={(e) => choose(e.target.value)}
+          disabled={pending}
+          className="mt-1.5 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text outline-none focus:border-border-strong disabled:opacity-60"
+        >
+          <option value="personal">You (personal event)</option>
+          {options.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+          {hostSpace && !options.some((s) => s.id === hostSpace.id) && (
+            <option value={hostSpace.id}>{hostSpace.name}</option>
+          )}
+        </select>
+      ) : hostSpace ? (
+        <p className="mt-1 text-2xs text-subtle">Only someone who helps run {hostSpace.name} can change this.</p>
+      ) : null}
+      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
     </div>
   )
 }

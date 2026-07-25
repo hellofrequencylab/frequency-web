@@ -6,6 +6,24 @@
 
 ## 2026-07-25 re-scan (post Comms/Collective/Events era, #1867–#1919)
 
+### 2026-07-25 late-day close-out (PRs #1926 merged, #1927 open)
+
+- ✅ **Pricing overhaul (ADR-818)** — Free Space leads /pricing, Supporter sold again at $12,
+  Independent hidden (flag OFF), "Vera AI" listing, Opening Beta vocabulary everywhere, admin
+  console lists every price monthly + yearly (effective yearly always populated).
+- ✅ **Event hosting entity (ADR-819)** — events.host_space_id; space-calendar + wizard creates are
+  space-hosted; "Hosted by" picker; ticket payee + take-rate follow the hosting space; manage
+  calendar (grid/list, click-to-edit, co-host approvals); QR PNG/SVG downloads. MELD re-homed.
+- ✅ **F5 sealed** (owner ruling): tenant CRM lanes visible only to web_role admin/janitor.
+- ✅ **F7b/c stitched**: Vera Today + Space funnel union the tenant contact lane.
+- ✅ **Supporter-contribution confirm wired** into the /upgrade success redirect (was dormant).
+- ✅ **D3 closed**: room thread reads in one wave; /messages index + DM thread already batched.
+- ✅ Royal Temple comped to Collective (owner grant); Resend key re-scoped to full access (owner).
+- ⏳ Remaining tail: flat-inbox → spine migration (own PR; also retires F1-root-cause + F6 category
+  divergence), chat shell C3/C4 mobile polish, pre-`20260923` ledger history (cosmetic), operator
+  em dashes, 26 raw `<img>` → next/image.
+
+
 Fresh deep pass over the ~50 PRs merged since 07-10 (Comms/CRM/Vera spine, Events/calendar/
 collaborator-spaces, Community Collective pricing/seats, practice timer). All 12 machine guards
 green at scan start; the real findings were in runtime wiring, which guards don't see.

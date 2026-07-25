@@ -263,6 +263,10 @@ export interface DraftInput {
   posterPath?: string | null
   /** The rich, flexible poster harvest. Persisted as the events.details JSONB. */
   details?: EventDetails | null
+  /** The Space this draft belongs to (already AUTHZ-checked by the action: the caller is an
+   *  editor+ of it). Stamps space_id (placement) AND host_space_id (the hosting entity), so a
+   *  wizard-drafted space event publishes as the space's event, not a personal one. */
+  spaceId?: string | null
 }
 
 /** Insert a poster-scanned event as a DRAFT, owned by the poster. host_id stays
@@ -299,6 +303,9 @@ export async function createEventDraft(
       organizer_contact: emptyToNull(input.organizerContact),
       details: input.details ?? {},
       slug: await mintSlug(title, input.startsAt ?? null),
+      // Space attribution (already authz-checked by the caller): placement + hosting entity.
+      // host_space_id / space_id are newer than the generated types — the cast below reaches them.
+      ...(input.spaceId ? { space_id: input.spaceId, host_space_id: input.spaceId } : {}),
     } as Database['public']['Tables']['events']['Insert'])
     .select('id')
     .maybeSingle()

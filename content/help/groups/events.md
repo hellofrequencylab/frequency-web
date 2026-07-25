@@ -97,6 +97,8 @@ Keep it real. The reward is for people who actually RSVP, show up, or join, neve
 - **Announce to your guests.** Send a note to everyone who's coming, across in-app, push, and email. Anyone who muted the event or turned off event notifications is skipped.
 - **Manage screen.** See your whole guest list, export it, move people off the waitlist, and check people in at the door. You reach it from the event's editor.
 - **Cohosts.** Add a cohost and they can help run the event right alongside you.
+- **Host as your Space.** Create an event from your Space's calendar and the Space is the host: the event page carries its name, and registrations and ticket payments run through it. You can switch any of your events between you and a Space you help run from the event's settings, under "Hosted by."
+- **Your Space calendar is a manager.** In your Space's Calendar console, flip between the month grid and a list, and click any event to edit it. Drafts and past events show there too, and co-host requests from other hosts wait there for your approval.
 
 ## Tips
 

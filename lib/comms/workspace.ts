@@ -33,6 +33,10 @@ export interface ConversationListFilter {
   /** LEADER inbox scope: restrict to conversations this profile OWNS (their sender trail) or is assigned.
    *  When set, it bounds the whole list to the leader's own threads (they never see the platform queue). */
   ownedOrAssignedTo?: string | null
+  /** F5 SEAL (owner ruling 2026-07-25): tenant Space lanes are visible ONLY to web_role admin/janitor.
+   *  Set for a caller admitted via a team staff domain instead — the list collapses to the PLATFORM lane
+   *  (space_id null or the root space) and every tenant thread stays sealed. */
+  platformLaneOnly?: boolean
   limit?: number
 }
 
@@ -172,6 +176,14 @@ function counterpartOf(
   return { name: null, email: row.external_email }
 }
 
+/** The PLATFORM-lane OR clause (space_id null OR the root space) for the F5 seal. Null root (a
+ *  pre-tenancy DB) degrades to null-lane only, which is strictly narrower — fail closed. */
+async function platformLaneClause(): Promise<string> {
+  const { loadRootSpaceId } = await import('@/lib/spaces/store')
+  const rootId = await loadRootSpaceId()
+  return rootId ? `space_id.is.null,space_id.eq.${rootId}` : 'space_id.is.null'
+}
+
 /**
  * List the conversations for the workspace, newest activity first, scoped + filtered. Batch-loads the
  * assignee name, the counterpart identity, and the latest non-internal message snippet. Staff-gated at the
@@ -189,6 +201,7 @@ export async function listWorkspaceConversations(filter: ConversationListFilter)
     if (filter.scope === 'mine') q = q.eq('assigned_to', filter.viewerProfileId)
     else if (filter.scope === 'unassigned') q = q.is('assigned_to', null)
     if (filter.spaceId) q = q.eq('space_id', filter.spaceId)
+    else if (filter.platformLaneOnly) q = q.or(await platformLaneClause())
     if (filter.status) q = q.eq('status', filter.status)
     if (filter.channel) q = q.eq('channel', filter.channel)
 
@@ -291,13 +304,22 @@ async function loadLatestSnippets(conversationIds: string[]): Promise<Map<string
  * notes included — this is the staff view), oldest first, each attributed to its real sender. Staff-gated
  * at the call site. FAIL-SAFE: null on miss/error.
  */
-export async function getWorkspaceThread(conversationId: string): Promise<ConversationThread | null> {
+export async function getWorkspaceThread(
+  conversationId: string,
+  opts: { platformLaneOnly?: boolean } = {},
+): Promise<ConversationThread | null> {
   const id = typeof conversationId === 'string' ? conversationId.trim() : ''
   if (!id) return null
   try {
     const { data: conv } = await db().from('comms_conversations').select(CONV_COLS).eq('id', id).maybeSingle()
     if (!conv) return null
     const row = conv as ConvRow
+    // F5 SEAL: a tenant Space's thread never opens for a caller without the web_role lens, even by id.
+    if (opts.platformLaneOnly && row.space_id) {
+      const { loadRootSpaceId } = await import('@/lib/spaces/store')
+      const rootId = await loadRootSpaceId()
+      if (row.space_id !== rootId) return null
+    }
 
     const { data: msgData } = await db()
       .from('comms_messages')
@@ -424,6 +446,7 @@ export async function conversationStatusCounts(
     if (filter.scope === 'mine') q = q.eq('assigned_to', filter.viewerProfileId)
     else if (filter.scope === 'unassigned') q = q.is('assigned_to', null)
     if (filter.spaceId) q = q.eq('space_id', filter.spaceId)
+    else if (filter.platformLaneOnly) q = q.or(await platformLaneClause())
     if (filter.channel) q = q.eq('channel', filter.channel)
     const { data } = await q
     for (const r of (data as { status: string }[] | null) ?? []) {
