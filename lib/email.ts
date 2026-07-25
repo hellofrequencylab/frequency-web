@@ -63,10 +63,13 @@ export interface ReceivedEmail {
 export async function fetchReceivedEmail(id: string, attempts = 4): Promise<ReceivedEmail | null> {
   const client = getClient()
   if (!client || !id) return null
-  // `id` arrives from the inbound webhook payload (externally controlled). Keep it OUT of the log format
-  // string (static literal + %s placeholders ⇒ no externally-controlled format string) and strip it to the
-  // safe id charset so it can't carry CRLF into a log line (no log injection). CodeQL: 132/133/134/135.
-  const safeId = id.replace(/[^\w-]/g, '').slice(0, 64)
+  // Everything we log here can derive from the externally controlled webhook `id` (directly, or via the
+  // API response/error it produces), so it is a log-injection sink. Neutralize it two ways: keep dynamic
+  // values OUT of the format string (static literal + %s placeholders ⇒ no externally-controlled format
+  // string), and pass every dynamic value through `oneLine`, which strips CR/LF + control chars — the
+  // recognized barrier against forged log lines. CodeQL: 132/133/134/135/136/137.
+  const oneLine = (v: unknown) => String(v).replace(/\p{Cc}+/gu, ' ').slice(0, 300)
+  const safeId = oneLine(id).replace(/[^\w-]/g, '').slice(0, 64)
   for (let i = 0; i < attempts; i++) {
     try {
       const { data, error } = await client.emails.receiving.get(id)
@@ -83,12 +86,12 @@ export async function fetchReceivedEmail(id: string, attempts = 4): Promise<Rece
         }
       }
       if (error) {
-        // JSON.stringify escapes newlines inside the error, so the detail can't inject a log line either.
-        const detail = typeof error === 'string' ? error : JSON.stringify(error)
+        const detail = oneLine(typeof error === 'string' ? error : JSON.stringify(error))
         console.warn('[email] fetchReceivedEmail error (id=%s attempt %d/%d): %s', safeId, i + 1, attempts, detail)
       }
     } catch (err) {
-      console.error('[email] fetchReceivedEmail threw (id=%s attempt %d/%d):', safeId, i + 1, attempts, err)
+      const detail = oneLine(err instanceof Error ? err.message : err)
+      console.error('[email] fetchReceivedEmail threw (id=%s attempt %d/%d): %s', safeId, i + 1, attempts, detail)
     }
     // Backoff before the next attempt (the API usually catches up within a second or two).
     if (i < attempts - 1) await new Promise((r) => setTimeout(r, 750))
