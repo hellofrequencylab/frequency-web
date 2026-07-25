@@ -3,6 +3,7 @@ import {
   parseInboundMessage,
   isAutomatedMessage,
   loadInboundMessage,
+  synthesizeInboundMessageId,
   InboundHydrationError,
   type ParsedInboundMessage,
 } from './inbound'
@@ -209,5 +210,40 @@ describe('isAutomatedMessage (loop guard)', () => {
   it('lets a normal human reply through', () => {
     expect(isAutomatedMessage(base({ from: 'ada@example.com', autoSubmitted: 'no' }))).toBe(false)
     expect(isAutomatedMessage(base())).toBe(false)
+  })
+})
+
+describe('synthesizeInboundMessageId (Message-ID-less dedup fallback)', () => {
+  it('is deterministic for the same payload (a redelivery collides)', () => {
+    const a = synthesizeInboundMessageId('ada@example.com', 'Hi', 'the body')
+    const b = synthesizeInboundMessageId('ada@example.com', 'Hi', 'the body')
+    expect(a).toBe(b)
+    expect(a).toMatch(/^<synth\.[0-9a-f]{32}@inbound\.frequencylocal\.com>$/)
+  })
+
+  it('differs for different content (a new message still records)', () => {
+    const a = synthesizeInboundMessageId('ada@example.com', 'Hi', 'the body')
+    const b = synthesizeInboundMessageId('ada@example.com', 'Hi', 'another body')
+    expect(a).not.toBe(b)
+  })
+
+  it('a Message-ID-less parse gets the synthetic id instead of null', () => {
+    const parsed = parseInboundMessage({
+      data: { from: 'ada@example.com', to: ['reply+conv-x@in.example.com'], subject: 'Hi', text: 'hello' },
+    })
+    expect(parsed?.messageId).toMatch(/^<synth\./)
+  })
+
+  it('a provider Message-ID always wins over the synthetic', () => {
+    const parsed = parseInboundMessage({
+      data: {
+        from: 'ada@example.com',
+        to: ['reply+conv-x@in.example.com'],
+        subject: 'Hi',
+        text: 'hello',
+        message_id: '<real-id@mail.example.com>',
+      },
+    })
+    expect(parsed?.messageId).toBe('<real-id@mail.example.com>')
   })
 })

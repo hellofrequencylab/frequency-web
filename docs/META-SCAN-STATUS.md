@@ -73,6 +73,15 @@ Four fix batches shipped on `claude/site-meta-scan-bugs-pgnw78`, each tsc/lint/t
   call can license fewer seats than active operators (existing operators stay active; the wall
   only blocks new invites). Re-derive the floor server-side.
 
+**✅ Fix-everything pass (2026-07-25, later the same day — owner directive):** every drafted item
+above shipped on the follow-up branch: timer P1–P5 (one countdown / Just-Log note / free-config
+memory / authored breath pattern / live builder preview, per PRACTICE-TIMER-CONTINUITY.md), the ICS
+timezone rework (TZID + VTIMEZONE + BYMONTHDAY clamp idiom; 35→58 ICS tests), the comms
+null-Message-ID dedup fallback, the server-side seat-downgrade floor, and the space-plan webhook
+event-ordering guard (`claim_space_plan_event`, migration `20261213000000`, applied). Migration
+`20261214000000` (practice_breath_pattern) also applied. Remaining owner action: the two Stripe
+pricing syncs after deploy.
+
 **🟠 Open MED (drafted, dedicated PRs):**
 - **ICS timezone rework (one PR, two bugs)** — (a) monthly series anchored on day 29/30/31 lose
   their short-month occurrences in every collapsed feed (RRULE on a UTC day-31 DTSTART skips

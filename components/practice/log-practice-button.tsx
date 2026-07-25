@@ -24,11 +24,12 @@ import type { MovementConfig } from '@/lib/movement'
 //     (WEBSITE-CHANGES-PLAN §4 C.8):
 //       - 'movement' → useMovement().open (the Movement timer, seeded to its mode)
 //       - 'mindless' → useMindless().open (the On Air sit, seeded to its mindless_mode)
-//   • 'none' (a log-only practice) → the one-tap check-off, NOT a timer. It must never
-//     open a session (doing so opens the Free-Practice sit and logs the WRONG practice).
-//     Callers may pass 'none' raw; the isTimer guard below screens it out centrally so no
-//     call site can miswire it. (An authored "Just Log" note-capture screen is a planned
-//     redesign — see docs/PRACTICE-TIMER-CONTINUITY.md — not this one-tap path.)
+//   • 'none' (a log-only practice) → opens the sit sheet's JUST LOG note screen for THIS
+//     practice: no countdown, a short note/journal field, one "Log it" action (owner,
+//     2026-07-25 + PRACTICE-TIMER-CONTINUITY P2). The session routes an explicitly
+//     launched 'none' practice to 'log' mode (explicitPracticeId), so the sheet can no
+//     longer log the wrong practice (the old Free-Practice mislog this button once guarded
+//     against by one-tapping instead).
 //     Pass `resumeFromSec` + `secondsTarget` (from a partial log today) to resume:
 //     the row reads "Continue Practice" and the timer opens where the member left off.
 //
@@ -74,9 +75,11 @@ export function LogPracticeButton({
   const mindless = useMindless()
   const movement = useMovement()
 
-  // A log-only practice ('none') is a one-tap check-off, never a session. Screen it out here so a
-  // call site passing timer_kind raw can't open the Free-Practice sit and log the wrong practice.
-  const isTimer = timerKind != null && timerKind !== 'none'
+  // Any provided timerKind routes through the sit/timer sheet: timed kinds auto-start their
+  // countdown; 'none' opens the sheet's Just Log NOTE screen for this practice (no countdown, no
+  // auto-start — the note is the interaction). Callers that omit timerKind keep the plain one-tap.
+  const isTimer = timerKind != null
+  const isLogOnly = timerKind === 'none'
   const isResume = resumeFromSec != null && resumeFromSec > 0
   // A timed practice leads with "Start Practice" (a partial reads "Continue Practice"); a
   // no-timer practice is a one-tap check-off ("Log it"). An explicit `label` overrides both.
@@ -108,10 +111,10 @@ export function LogPracticeButton({
         }
         ;(movement.open as TimerOpen)(opts)
       } else {
-        // 'mindless' AND 'none' both go to the On Air sit; the session derives the
-        // real flavour from the practice's mindless_mode (a 'none' practice carries
-        // 'log' → the Just Log screen), so no mindlessMode is forwarded here.
-        const opts: TimerResumeOptions = { practiceId, autoStart: true }
+        // 'mindless' AND 'none' both go to the On Air sit. The session routes the explicitly
+        // launched practice: a 'none' (or authored Just Log flavour) opens the NOTE screen —
+        // no auto-start, the note is the interaction — while a timed sit auto-starts.
+        const opts: TimerResumeOptions = { practiceId, autoStart: !isLogOnly }
         if (isResume) {
           opts.resumeFromSec = resumeFromSec
           opts.secondsTarget = secondsTarget
@@ -119,15 +122,17 @@ export function LogPracticeButton({
         ;(mindless.open as TimerOpen)(opts)
       }
     }
-    // A timed practice always shows the timer icon + "Start Practice" (a resume reads
-    // "Continue Practice"), matching PracticeTimerButton so the two never diverge.
+    // A timed practice shows the timer icon + "Start Practice" (a resume reads "Continue
+    // Practice"), matching PracticeTimerButton so the two never diverge. A log-only practice
+    // keeps the check + "Log it" affordance — the tap opens the note screen, not a countdown.
     return (
       <button
         type="button"
         onClick={openTimer}
         className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary px-3 py-1.5 text-sm font-semibold transition-colors"
       >
-        <Timer className="w-4 h-4" /> {timedLabel}
+        {isLogOnly ? <Check className="w-4 h-4" strokeWidth={2.5} /> : <Timer className="w-4 h-4" />}{' '}
+        {isLogOnly ? logLabel : timedLabel}
       </button>
     )
   }

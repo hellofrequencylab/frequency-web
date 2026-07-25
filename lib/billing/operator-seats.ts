@@ -18,6 +18,7 @@ import { resolveStripePriceId } from './pricing-prices'
 import { catalogPriceKey, type BillingInterval } from './pricing-keys'
 import { reconciledItemsFromSubscription } from './space-subscription-items'
 import { operatorSeatsSellable } from './space-plan-checkout'
+import { usedSeats, BASE_SEAT_ALLOWANCE } from '@/lib/spaces/seats'
 
 /** The largest licensed operator-seat count this editor will set in one change (mirrors the checkout
  *  picker's bound; a sane ceiling, not a plan limit). */
@@ -66,6 +67,20 @@ export async function updateOperatorSeats(spaceId: string, targetSeats: number):
   if (!(await operatorSeatsSellable())) return { ok: false, error: 'Operator seats are not available yet.' }
 
   const target = Math.max(0, Math.min(MAX_OPERATOR_SEATS, Math.floor(Number.isFinite(targetSeats) ? targetSeats : 0)))
+
+  // SERVER-SIDE DOWNGRADE FLOOR (meta-scan 2026-07-25): the seat editor floors the minus button at
+  // `used - BASE_SEAT_ALLOWANCE` client-side, but a 'use server' action is directly invokable, so
+  // re-derive the same floor here. Without it a direct call could license fewer seats than there are
+  // ACTIVE operators — existing operators stay active (the seat wall only blocks new invites), so the
+  // Space would under-pay indefinitely. Same wording as the editor: remove operators first.
+  const activeOperators = await usedSeats(spaceId)
+  const floorSeats = Math.max(0, activeOperators - BASE_SEAT_ALLOWANCE)
+  if (target < floorSeats) {
+    return {
+      ok: false,
+      error: `You have ${activeOperators} active operator${activeOperators === 1 ? '' : 's'}, so you need at least ${floorSeats} licensed seat${floorSeats === 1 ? '' : 's'}. Remove operators in Members first, then lower your seats.`,
+    }
+  }
 
   const { data: space } = (await createAdminClient()
     .from('spaces')

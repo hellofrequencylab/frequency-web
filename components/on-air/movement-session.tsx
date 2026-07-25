@@ -48,6 +48,7 @@ import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { chime, endChime, countBeep } from '@/lib/timer-audio'
 import { bellToneBySlug, clampWarmupSec, resolveWarmupSec } from '@/lib/on-air'
+import { findFreeMove } from '@/lib/on-air/free-sit'
 import type { OnAirPractice } from './session'
 import {
   MOVEMENT_MODES,
@@ -94,6 +95,36 @@ interface MovementSetup {
 }
 
 type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
+
+// FREE PRACTICE MEMORY (PRACTICE-TIMER-CONTINUITY P3, mirrors the sit's fq_mindless_setup): the
+// member's last-run movement configuration. Written on every start; read only when the launch is
+// the UNATTACHED Free Practice, so a bare Get Moving open pops back up in the last known
+// configuration while an authored practice still opens on its creator's preset.
+const SAVED_MOVEMENT_SETUP_KEY = 'fq_movement_setup'
+
+/** Read the last-saved movement config once. Null when absent, on the server, or unparsable. */
+function readSavedMovementSetup(): MovementConfig | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = window.localStorage.getItem(SAVED_MOVEMENT_SETUP_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<MovementConfig> | null
+    if (!parsed || typeof parsed !== 'object') return null
+    if (!MOVEMENT_MODES.some((m) => m.mode === parsed.mode)) return null
+    return parsed as MovementConfig
+  } catch {
+    return null
+  }
+}
+
+/** Persist the movement config a run just started with. Best-effort; never throws. */
+function writeSavedMovementSetup(config: MovementConfig): void {
+  try {
+    window.localStorage.setItem(SAVED_MOVEMENT_SETUP_KEY, JSON.stringify(config))
+  } catch {
+    // storage full / privacy mode: memory is a nicety, never a blocker
+  }
+}
 
 // The bell voice is fixed to the tuned default for Movement (the sit's voice
 // picker is the place to choose one; here the cues are functional beats).
@@ -267,7 +298,15 @@ export function MovementSession({
   // author set it (Tabata 20/10 x8, a 30 min walk, a Yin flow), not the generic defaults. The
   // member can still adjust before starting. A resume still overrides the LENGTH to the remaining
   // time; the preset supplies everything else.
-  const initialCfg = practices.find((p) => p.id === initialId)?.movementConfig ?? null
+  //
+  // FREE PRACTICE MEMORY (PRACTICE-TIMER-CONTINUITY P3, mirrors the sit's readSavedSetup): an
+  // UNATTACHED launch (the Free Practice — the loader's synthetic `{ mode: 'walk' }` stand-in)
+  // seeds from the member's last-saved movement setup instead, so a bare Get Moving open pops
+  // back up in the last known configuration. Authored practices keep the creator's preset.
+  const launched = practices.find((p) => p.id === initialId)
+  const isFreeLaunch = launched != null && launched.id === findFreeMove(practices)?.id
+  const savedSetup = useState(() => (isFreeLaunch ? readSavedMovementSetup() : null))[0]
+  const initialCfg = (isFreeLaunch ? (savedSetup ?? launched?.movementConfig) : launched?.movementConfig) ?? null
 
   const [practiceId, setPracticeId] = useState(initialId)
   const [mode, setMode] = useState<MovementMode>(defaultMode ?? initialCfg?.mode ?? 'walk')
@@ -782,6 +821,8 @@ export function MovementSession({
     const now = Date.now()
     setStartedAt(now)
     setElapsed(0)
+    // Remember this run's configuration (P3): the next UNATTACHED Free Practice open seeds from it.
+    writeSavedMovementSetup(config)
     // Open ARMED with the warm-up pre-roll (item #10): paused from the first millisecond, the
     // countdown ticks, then begin() unpauses. Same shape as the sit.
     setPausedAt(now)

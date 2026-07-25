@@ -41,7 +41,8 @@ get a say over how you do it:
     countdowns that frame the sit a little differently. *Breathe* gives you a
     guided breathing pattern with a visual to follow (see the patterns below).
     *Journal* runs the same quiet timer with a note field, so you can write while
-    you sit. *Just Log* skips straight to the rewards; the timer is never required.
+    you sit. *Just Log* has no timer at all: jot a quick note about what you did,
+    tap Log it, and you're done.
   - **Get Moving** is for moving. *Walk* and *Run* are timed blocks, with optional
     nudges every few minutes if you want them. *Yoga* and *Stretch* hold and
     transition with a cue when it's time to move, so you can keep your eyes closed
@@ -91,7 +92,9 @@ time; everything you finished is already banked.
 
 ## Breathing patterns (Be Still)
 
-When you pick *Breathe*, choose a pattern:
+When you pick *Breathe*, choose a pattern. A Breathe practice can also come with
+its pattern already chosen by whoever built it, so it opens ready to go; you can
+still switch to your own.
 
 - **Box**: four counts in, hold, out, hold. Steady under pressure.
 - **3X**: a big breath in, sip a little more, then one long letting go (the

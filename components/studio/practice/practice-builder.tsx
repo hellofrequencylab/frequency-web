@@ -18,12 +18,12 @@ import { isError } from '@/lib/action-result'
 import { updatePracticeAction, setPracticeTagsAction, setPracticeRewardAction, deleteOwnPracticeAction } from '@/app/(main)/practices/actions'
 import type { PracticeEdit, WeightClass, FocusDetail, TimerKind, MindlessMode } from '@/lib/practices'
 import { isTierAllowed, clampTierToDuration, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
-import { AUTHORED_WARMUP_PRESETS, WARMUP_MESSAGE_MAX } from '@/lib/on-air'
+import { AUTHORED_WARMUP_PRESETS, BREATH_PATTERNS, WARMUP_MESSAGE_MAX } from '@/lib/on-air'
 import {
   MOVEMENT_MODES, STRENGTH_PRESETS, YOGA_PRESETS,
   WALK_DURATION_PRESETS, RUN_DURATION_PRESETS, STRETCH_DURATION_PRESETS,
   WALK_INTERVAL_PRESETS, RUN_INTERVAL_PRESETS, STRETCH_INTERVAL_PRESETS,
-  clampSeconds, clampRounds,
+  clampSeconds, clampRounds, timerPreview,
   type MovementConfig, type MovementMode, type StrengthPresetKind, type YogaPresetKind,
 } from '@/lib/movement'
 
@@ -89,6 +89,8 @@ export interface PracticeBuilderProps {
   warmupMessage: string | null
   /** Creator's warm-up (pre-roll) length in seconds; null = the member's personal pre-roll. */
   warmupSec: number | null
+  /** Creator-authored breath pattern slug for a Breathe practice (P4); null = the member's own. */
+  breathPattern?: string | null
   icon: string | null
   domainId: string | null
   /** Per-Focus instructions + timing, keyed by pillar id. The keys are the selected
@@ -136,6 +138,8 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
   // The Be Still flavour when timerKind = 'mindless' (null = derive from the Pillar), and whether
   // the length is locked. Full author control over every practice x timer combo (P7).
   const [mindlessMode, setMindlessMode] = useState<MindlessMode | null>(props.mindlessMode ?? null)
+  // The creator-authored breath pattern for a Breathe practice (P4). Null = the member's own pref.
+  const [breathPattern, setBreathPattern] = useState<string | null>(props.breathPattern ?? null)
   const [durationLocked, setDurationLocked] = useState<boolean>(props.durationLocked ?? false)
   // Full per-mode tuning the CREATOR presets, so the timer opens ready (ADR-592, P2). Seeded
   // from the saved movement_config; each mode reads only its own fields, mirroring the member
@@ -717,10 +721,57 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             <p className="mt-1 text-2xs text-subtle">
               {mindlessMode ? BE_STILL_MODES.find((m) => m.value === mindlessMode)?.hint : 'Picks a fitting mode from the practice’s Pillar.'}
             </p>
+
+            {/* Breath pattern (P4): a Breathe practice can SHIP its pattern, so a Box-breathing
+                practice opens on Box. "Member's choice" (null) keeps their own saved pattern. */}
+            {mindlessMode === 'breathe' && (
+              <div className="mt-3">
+                <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Breath pattern</p>
+                <StudioNote className="mt-1.5">
+                  The pattern this practice opens with. Pick one to make it part of the practice, or
+                  leave it on <strong>Member&rsquo;s choice</strong> to use each person&rsquo;s own saved pattern.
+                </StudioNote>
+                <div role="radiogroup" aria-label="Breath pattern" className="mt-2 flex flex-wrap gap-2">
+                  <MoveChip
+                    active={breathPattern === null}
+                    onClick={() => { setBreathPattern(null); queueSave({ breath_pattern: null }) }}
+                  >
+                    Member&rsquo;s choice
+                  </MoveChip>
+                  {BREATH_PATTERNS.map((p) => (
+                    <MoveChip
+                      key={p.slug}
+                      active={breathPattern === p.slug}
+                      title={p.blurb}
+                      onClick={() => { setBreathPattern(p.slug); queueSave({ breath_pattern: p.slug }) }}
+                    >
+                      {p.name}
+                    </MoveChip>
+                  ))}
+                </div>
+                <p className="mt-1 text-2xs text-subtle">
+                  {breathPattern
+                    ? BREATH_PATTERNS.find((p) => p.slug === breathPattern)?.blurb
+                    : 'Each member breathes their own way.'}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
         <p className="mt-1 text-xs text-subtle">On a Journey, a Mindless or Get Moving practice shows a Start Practice button; a Log it practice shows a Log it check-off.</p>
+
+        {/* LIVE LAUNCH PREVIEW (PRACTICE-TIMER-CONTINUITY P5): the exact summary line the member's
+            card + detail page render (the same pure timerPreview the cards call), recomputed live
+            as the creator edits. The creator sees what they are shipping, not an approximation. */}
+        <p className="mt-3 rounded-lg bg-surface-2 px-3 py-2 text-xs text-text">
+          <span className="font-semibold">Members will see:</span>{' '}
+          {timerPreview({
+            timerKind,
+            movementConfig: timerKind === 'movement' ? composeMovementConfig() : null,
+            durationMin: durationMin ? Number(durationMin) || null : null,
+          })}
+        </p>
       </fieldset>
 
       {/* Warm-up — a message + length shown during the timer pre-roll, before Start Practice

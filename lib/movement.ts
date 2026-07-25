@@ -56,7 +56,8 @@ export interface MovementPlan {
 
 // --- helpers ----------------------------------------------------------------
 
-const PREPARE = (s: number, label = 'Get ready'): MovementPhase => ({ kind: 'prepare', seconds: s, label })
+// (The PREPARE phase helper was removed with the plan-level lead-in — see the note below. The
+// 'prepare' PhaseKind survives in the type + the runtime readers for old persisted plans.)
 const WORK = (s: number, label = 'Work'): MovementPhase => ({ kind: 'work', seconds: s, label })
 const REST = (s: number, label = 'Rest'): MovementPhase => ({ kind: 'rest', seconds: s, label })
 
@@ -73,9 +74,12 @@ export function clampRounds(r: number): number {
   return Math.min(99, Math.max(1, Math.round(r)))
 }
 
-/** The standard 3s lead-in every guided plan opens with, so a 3-2-1 lands before
- *  the first work phase. Walk/Run/Yoga/Strength/Stretch share it; Play has no countdown. */
-const PREPARE_SECONDS = 3
+// The 3s PREPARE lead-in the guided plans used to open with was REMOVED (ADR-566 / the timer
+// continuity pass, docs/PRACTICE-TIMER-CONTINUITY.md P1 Option A): the live engine already plays the
+// unified pre-roll "Warm up" countdown (member 3/5/10s pref, creator warmup_sec override, message),
+// so the plan-level lead-in stacked a SECOND countdown on every launch (the reported "5s then 3s in
+// another color" bug) and inflated elapsed-vs-target by 3s. The 'prepare' PhaseKind + the lead-in
+// handling in phaseAt/totalSeconds are KEPT so an old persisted plan (crash-resume) still resolves.
 
 // --- Strength presets (the interval engine) ---------------------------------
 
@@ -176,28 +180,28 @@ export const RUN_INTERVAL_PRESETS = [
 
 // --- builders ---------------------------------------------------------------
 
-/** Walk = a single timed block (one work phase) plus the 3s lead-in. Interval
- *  reminders are a cue the live screen fires on the minute (intervalMin), not extra
+/** Walk = a single timed block (one work phase); the shared pre-roll warm-up is the count-in.
+ *  Interval reminders are a cue the live screen fires on the minute (intervalMin), not extra
  *  phases, so the block stays one clean countdown. */
 export function buildWalk(opts: { minutes: number; intervalMin?: number }): MovementPlan {
   const seconds = clampSeconds(opts.minutes * 60)
   return {
     mode: 'walk',
-    phases: [PREPARE(PREPARE_SECONDS, 'Get going'), WORK(seconds, 'Walk')],
+    phases: [WORK(seconds, 'Walk')],
     rounds: 1,
     label: `${Math.round(seconds / 60)} min walk`,
     openEnded: false,
   }
 }
 
-/** Run = a single brisk timed block (one work phase) plus the 3s lead-in. Same
- *  shape as Walk; split cues fire on the minute (intervalMin) as a live-screen cue,
+/** Run = a single brisk timed block (one work phase); the shared pre-roll warm-up is the count-in.
+ *  Same shape as Walk; split cues fire on the minute (intervalMin) as a live-screen cue,
  *  not extra phases, so the block stays one clean countdown. */
 export function buildRun(opts: { minutes: number; intervalMin?: number }): MovementPlan {
   const seconds = clampSeconds(opts.minutes * 60)
   return {
     mode: 'run',
-    phases: [PREPARE(PREPARE_SECONDS, 'Get going'), WORK(seconds, 'Run')],
+    phases: [WORK(seconds, 'Run')],
     rounds: 1,
     label: `${Math.round(seconds / 60)} min run`,
     openEnded: false,
@@ -205,12 +209,12 @@ export function buildRun(opts: { minutes: number; intervalMin?: number }): Movem
 }
 
 /** Yoga = a hold/transition loop, pre-expanded into one flat pass (rounds = 1) so
- *  each pose can carry its own count in the phase list. Opens with the 3s lead-in. */
+ *  each pose can carry its own count in the phase list. The pre-roll warm-up is the count-in. */
 export function buildYoga(preset: YogaPreset): MovementPlan {
   const hold = clampSeconds(preset.holdSec)
   const transition = clampSeconds(preset.transitionSec)
   const poses = clampRounds(preset.poses)
-  const phases: MovementPhase[] = [PREPARE(PREPARE_SECONDS, 'Find your mat')]
+  const phases: MovementPhase[] = []
   for (let i = 0; i < poses; i++) {
     phases.push(WORK(hold, `Pose ${i + 1}`))
     // No transition trailing the last pose — the flow ends on a hold.
@@ -225,14 +229,14 @@ export function buildYoga(preset: YogaPreset): MovementPlan {
   }
 }
 
-/** Stretch = a steady, gentle mobility block: one timed work phase plus the 3s
- *  lead-in. Soft "switch sides" cues fire on the minute (intervalMin) as a
+/** Stretch = a steady, gentle mobility block: one timed work phase; the pre-roll warm-up is
+ *  the count-in. Soft "switch sides" cues fire on the minute (intervalMin) as a
  *  live-screen cue, not extra phases, so the block stays one calm countdown. */
 export function buildStretch(opts: { minutes: number; intervalMin?: number }): MovementPlan {
   const seconds = clampSeconds(opts.minutes * 60)
   return {
     mode: 'stretch',
-    phases: [PREPARE(PREPARE_SECONDS, 'Settle in'), WORK(seconds, 'Stretch')],
+    phases: [WORK(seconds, 'Stretch')],
     rounds: 1,
     label: `${Math.round(seconds / 60)} min stretch`,
     openEnded: false,
@@ -251,9 +255,9 @@ export function buildPlay(): MovementPlan {
   }
 }
 
-/** Strength = the prepare -> (work -> rest) x rounds interval engine. The block is
- *  ONE work (+ rest when restSec > 0) repeated `rounds` times by phaseAt; the lead-in
- *  is its own one-shot phase outside the loop, so it never repeats. */
+/** Strength = the (work -> rest) x rounds interval engine. The block is
+ *  ONE work (+ rest when restSec > 0) repeated `rounds` times by phaseAt; the shared
+ *  pre-roll warm-up is the count-in before round 1. */
 export function buildStrength(preset: StrengthPreset): MovementPlan {
   const work = clampSeconds(preset.workSec)
   const rest = Math.max(0, Math.round(preset.restSec))
@@ -262,9 +266,7 @@ export function buildStrength(preset: StrengthPreset): MovementPlan {
   if (rest > 0) block.push(REST(clampSeconds(rest), 'Rest'))
   return {
     mode: 'strength',
-    // The lead-in rides as round 0's prepare; the repeating block is work(+rest).
-    // phaseAt below treats index 0 as the one-shot prepare and loops the rest.
-    phases: [PREPARE(PREPARE_SECONDS, 'Get ready'), ...block],
+    phases: block,
     rounds,
     label:
       preset.kind === 'amrap'

@@ -66,15 +66,14 @@ describe('clamps', () => {
 })
 
 describe('buildWalk', () => {
-  it('is one timed block behind a 3s lead-in', () => {
+  it('is one timed block with no plan-level lead-in (the pre-roll warm-up is the count-in)', () => {
     const plan = buildWalk({ minutes: 20 })
     expect(plan.mode).toBe('walk')
     expect(plan.rounds).toBe(1)
     expect(plan.openEnded).toBe(false)
-    expect(plan.phases.map((p) => p.kind)).toEqual(['prepare', 'work'])
-    expect(plan.phases[0].seconds).toBe(3)
-    expect(plan.phases[1].seconds).toBe(20 * 60)
-    expect(totalSeconds(plan)).toBe(3 + 20 * 60)
+    expect(plan.phases.map((p) => p.kind)).toEqual(['work'])
+    expect(plan.phases[0].seconds).toBe(20 * 60)
+    expect(totalSeconds(plan)).toBe(20 * 60)
   })
 })
 
@@ -83,12 +82,12 @@ describe('buildYoga', () => {
     const plan = buildYoga({ kind: 'vinyasa', label: 'Vinyasa', blurb: '', holdSec: 40, transitionSec: 10, poses: 3 })
     expect(plan.mode).toBe('yoga')
     expect(plan.rounds).toBe(1)
-    // prepare, hold, transition, hold, transition, hold  → ends on a hold (work)
+    // hold, transition, hold, transition, hold  → ends on a hold (work)
     expect(plan.phases.map((p) => p.kind)).toEqual([
-      'prepare', 'work', 'rest', 'work', 'rest', 'work',
+      'work', 'rest', 'work', 'rest', 'work',
     ])
     expect(plan.phases[plan.phases.length - 1].kind).toBe('work')
-    expect(totalSeconds(plan)).toBe(3 + 40 * 3 + 10 * 2)
+    expect(totalSeconds(plan)).toBe(40 * 3 + 10 * 2)
   })
 })
 
@@ -104,36 +103,36 @@ describe('buildPlay', () => {
 })
 
 describe('buildStrength', () => {
-  it('is prepare then a repeating work+rest block over rounds', () => {
+  it('is a repeating work+rest block over rounds (no plan-level lead-in)', () => {
     const plan = buildStrength({ kind: 'tabata', label: 'Tabata', blurb: '', workSec: 20, restSec: 10, rounds: 8 })
     expect(plan.mode).toBe('strength')
     expect(plan.rounds).toBe(8)
-    // The stored block is the one-shot prepare + the single work/rest pair.
-    expect(plan.phases.map((p) => p.kind)).toEqual(['prepare', 'work', 'rest'])
-    // Total = 3 lead-in + (20 + 10) x 8.
-    expect(totalSeconds(plan)).toBe(3 + (20 + 10) * 8)
+    // The stored block is the single work/rest pair, looped by phaseAt.
+    expect(plan.phases.map((p) => p.kind)).toEqual(['work', 'rest'])
+    // Total = (20 + 10) x 8; the pre-roll warm-up lives outside the plan.
+    expect(totalSeconds(plan)).toBe((20 + 10) * 8)
   })
 
   it('drops the rest phase when restSec is 0 (EMOM)', () => {
     const plan = buildStrength({ kind: 'emom', label: 'EMOM', blurb: '', workSec: 60, restSec: 0, rounds: 10 })
-    expect(plan.phases.map((p) => p.kind)).toEqual(['prepare', 'work'])
-    expect(totalSeconds(plan)).toBe(3 + 60 * 10)
+    expect(plan.phases.map((p) => p.kind)).toEqual(['work'])
+    expect(totalSeconds(plan)).toBe(60 * 10)
   })
 })
 
 describe('buildPlan front door', () => {
   it('routes each mode and honours custom strength overrides', () => {
-    expect(buildPlan({ mode: 'walk', walkMinutes: 30 }).phases[1].seconds).toBe(30 * 60)
-    expect(buildPlan({ mode: 'run', runMinutes: 25 }).phases[1].seconds).toBe(25 * 60)
+    expect(buildPlan({ mode: 'walk', walkMinutes: 30 }).phases[0].seconds).toBe(30 * 60)
+    expect(buildPlan({ mode: 'run', runMinutes: 25 }).phases[0].seconds).toBe(25 * 60)
     expect(buildPlan({ mode: 'run' }).mode).toBe('run')
     expect(buildPlan({ mode: 'yoga', yogaKind: 'yin' }).mode).toBe('yoga')
-    expect(buildPlan({ mode: 'stretch', stretchMinutes: 12 }).phases[1].seconds).toBe(12 * 60)
+    expect(buildPlan({ mode: 'stretch', stretchMinutes: 12 }).phases[0].seconds).toBe(12 * 60)
     expect(buildPlan({ mode: 'stretch' }).mode).toBe('stretch')
     expect(buildPlan({ mode: 'play' }).openEnded).toBe(true)
     const custom = buildPlan({ mode: 'strength', strengthKind: 'tabata', workSec: 30, restSec: 15, rounds: 5 })
     expect(custom.mode).toBe('strength')
     expect(custom.rounds).toBe(5)
-    expect(totalSeconds(custom)).toBe(3 + (30 + 15) * 5)
+    expect(totalSeconds(custom)).toBe((30 + 15) * 5)
   })
 
   it('maps a legacy stored "workout" mode to strength (no DB migration)', () => {
@@ -141,31 +140,24 @@ describe('buildPlan front door', () => {
     // the type no longer admits that literal, so cast as a stored row would arrive.
     const legacy = buildPlan({ mode: 'workout', workoutKind: 'tabata' } as unknown as Parameters<typeof buildPlan>[0])
     expect(legacy.mode).toBe('strength')
-    expect(legacy.phases.map((p) => p.kind)).toEqual(['prepare', 'work', 'rest'])
+    expect(legacy.phases.map((p) => p.kind)).toEqual(['work', 'rest'])
   })
 })
 
 describe('phaseAt', () => {
   const tabata = buildStrength({ kind: 'tabata', label: 'Tabata', blurb: '', workSec: 20, restSec: 10, rounds: 8 })
 
-  it('reports the lead-in at the very start', () => {
+  it('starts straight in round 1 work (the pre-roll warm-up lives outside the plan)', () => {
     const pos = phaseAt(tabata, 0)
-    expect(pos.phase.kind).toBe('prepare')
-    expect(pos.round).toBe(1)
-    expect(pos.remaining).toBe(3)
-    expect(pos.nextLabel).toBe('Work')
-  })
-
-  it('enters round 1 work after the 3s lead-in', () => {
-    const pos = phaseAt(tabata, 3) // exactly at the boundary → first work second
     expect(pos.phase.kind).toBe('work')
     expect(pos.round).toBe(1)
     expect(pos.remaining).toBe(20)
+    expect(pos.nextLabel).toBe('Rest')
   })
 
   it('lands in round 1 rest mid-rest', () => {
-    // 3 lead-in + 20 work = 23s in; +5 into the 10s rest.
-    const pos = phaseAt(tabata, 28)
+    // 20 work; +5 into the 10s rest.
+    const pos = phaseAt(tabata, 25)
     expect(pos.phase.kind).toBe('rest')
     expect(pos.round).toBe(1)
     expect(pos.remaining).toBe(5)
@@ -173,10 +165,30 @@ describe('phaseAt', () => {
   })
 
   it('advances the round counter across blocks', () => {
-    // Round 1 = 30s (after the 3s lead-in). Round 2 work starts at 3 + 30 = 33s.
-    const pos = phaseAt(tabata, 34)
+    // Round 1 = 30s. Round 2 work starts at 30s.
+    const pos = phaseAt(tabata, 31)
     expect(pos.phase.kind).toBe('work')
     expect(pos.round).toBe(2)
+  })
+
+  it('still honours a persisted legacy plan carrying the old prepare lead-in', () => {
+    // A crash-resume can rehydrate a plan built BEFORE the lead-in removal; the
+    // one-shot-prepare handling must keep resolving it.
+    const legacy = {
+      mode: 'strength' as const,
+      phases: [
+        { kind: 'prepare' as const, seconds: 3, label: 'Get ready' },
+        { kind: 'work' as const, seconds: 20, label: 'Work' },
+        { kind: 'rest' as const, seconds: 10, label: 'Rest' },
+      ],
+      rounds: 2,
+      label: 'Tabata, 2 rounds',
+      openEnded: false,
+    }
+    expect(phaseAt(legacy, 1).phase.kind).toBe('prepare')
+    expect(phaseAt(legacy, 4).phase.kind).toBe('work')
+    expect(phaseAt(legacy, 4).round).toBe(1)
+    expect(totalSeconds(legacy)).toBe(3 + (20 + 10) * 2)
   })
 
   it('reports done past the end', () => {
@@ -199,21 +211,19 @@ describe('phaseAt', () => {
 
   it('walks a Yoga flow hold by hold', () => {
     const yoga = buildYoga({ kind: 'gentle', label: 'Gentle', blurb: '', holdSec: 30, transitionSec: 10, poses: 3 })
-    // prepare 3 | hold 30 | trans 10 | hold 30 | trans 10 | hold 30
-    expect(phaseAt(yoga, 1).phase.kind).toBe('prepare')
-    expect(phaseAt(yoga, 4).phase.label).toBe('Pose 1')
-    expect(phaseAt(yoga, 35).phase.kind).toBe('rest') // first transition (3+30=33..43)
-    expect(phaseAt(yoga, 44).phase.label).toBe('Pose 2')
+    // hold 30 | trans 10 | hold 30 | trans 10 | hold 30
+    expect(phaseAt(yoga, 1).phase.label).toBe('Pose 1')
+    expect(phaseAt(yoga, 32).phase.kind).toBe('rest') // first transition (30..40)
+    expect(phaseAt(yoga, 41).phase.label).toBe('Pose 2')
     const total = totalSeconds(yoga)!
     expect(phaseAt(yoga, total + 1).done).toBe(true)
   })
 
-  it('handles a Walk: lead-in then one long block to the end', () => {
+  it('handles a Walk: one long block to the end', () => {
     const walk = buildWalk({ minutes: 10 })
-    expect(phaseAt(walk, 1).phase.kind).toBe('prepare')
-    expect(phaseAt(walk, 100).phase.kind).toBe('work')
-    expect(phaseAt(walk, 100).remaining).toBe(10 * 60 - (100 - 3))
-    expect(phaseAt(walk, 10 * 60 + 3 + 1).done).toBe(true)
+    expect(phaseAt(walk, 1).phase.kind).toBe('work')
+    expect(phaseAt(walk, 100).remaining).toBe(10 * 60 - 100)
+    expect(phaseAt(walk, 10 * 60 + 1).done).toBe(true)
   })
 })
 
