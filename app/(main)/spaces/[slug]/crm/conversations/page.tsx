@@ -94,6 +94,7 @@ export default async function SpaceConversationsPage({
         scope={scope}
         status={status}
         basePath={`/spaces/${space.slug}/crm/conversations`}
+        readOnly={!canManage}
         actions={{
           sendAction: sendSpaceConversationReplyAction.bind(null, space.slug),
           triageAction: setSpaceConversationTriageAction.bind(null, space.slug),

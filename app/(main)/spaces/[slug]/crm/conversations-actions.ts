@@ -28,6 +28,7 @@ import {
   type ConversationRow,
 } from '@/lib/comms/conversations'
 import { listSpaceAssignableAgents } from '@/lib/comms/workspace'
+import { CONVERSATION_STATUSES, CONVERSATION_PRIORITIES } from '@/lib/comms/labels'
 
 interface SpaceGate {
   spaceId: string
@@ -170,6 +171,14 @@ export async function setSpaceConversationTriageAction(
   const gated = await gateConversation(slug, input.conversationId)
   if ('error' in gated) return fail(gated.error)
   const { gate, conv } = gated
+
+  // Validate status/priority against the known enums so a crafted request can't reach the DB check.
+  if (input.status && !CONVERSATION_STATUSES.includes(input.status as (typeof CONVERSATION_STATUSES)[number])) {
+    return fail('Unknown status.')
+  }
+  if (input.priority && !CONVERSATION_PRIORITIES.includes(input.priority as (typeof CONVERSATION_PRIORITIES)[number])) {
+    return fail('Unknown priority.')
+  }
 
   const patch: { status?: string; priority?: string; assignedTo?: string | null } = {}
   if (input.status && input.status !== conv.status) patch.status = input.status

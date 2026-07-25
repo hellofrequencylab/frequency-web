@@ -57,15 +57,17 @@ export async function openOrGetConversation(
   if (!subjectId) return null
 
   try {
-    const existing = await convTable('comms_conversations')
+    // Reuse the open thread for (kind, counterpart, owner) WITHIN the same Space — a NULL space is the
+    // platform lane. Scoping by space_id keeps one owner's two Spaces from ever sharing a thread to the
+    // same address (PostgREST `.eq` never matches NULL, so a platform lookup must use `.is`).
+    let q = convTable('comms_conversations')
       .select('id, ref')
       .eq('kind', input.kind)
       .eq('external_email', email)
       .eq('owner_profile_id', input.ownerProfileId)
       .neq('status', 'closed')
-      .order('last_activity_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    q = input.spaceId ? q.eq('space_id', input.spaceId) : q.is('space_id', null)
+    const existing = await q.order('last_activity_at', { ascending: false }).limit(1).maybeSingle()
     if (existing?.data) {
       return { id: String(existing.data.id), ref: String(existing.data.ref), created: false }
     }

@@ -68,6 +68,7 @@ export function ConversationWorkspace({
   basePath = '/admin/crm/conversations',
   actions = {},
   showScopes = true,
+  readOnly = false,
 }: {
   rows: ConversationListRow[]
   thread: ConversationThread | null
@@ -80,6 +81,8 @@ export function ConversationWorkspace({
   actions?: WorkspaceActions
   /** Hide the Mine/Unassigned/All scope tabs (the leader inbox is already scoped to their own threads). */
   showScopes?: boolean
+  /** Read-only view (a staff previewer of a Space): render the thread but no composer / triage controls. */
+  readOnly?: boolean
 }) {
   const baseParams = { scope, status, id: thread?.id }
 
@@ -168,7 +171,7 @@ export function ConversationWorkspace({
 
           {/* Reader pane. */}
           {thread ? (
-            <ThreadReader thread={thread} agents={agents} actions={actions} />
+            <ThreadReader thread={thread} agents={agents} actions={actions} readOnly={readOnly} />
           ) : (
             <div className="hidden rounded-lg border border-border bg-surface lg:flex lg:items-center lg:justify-center">
               <p className="text-sm text-muted">Pick a conversation to read it.</p>
@@ -184,10 +187,12 @@ function ThreadReader({
   thread,
   agents,
   actions,
+  readOnly,
 }: {
   thread: ConversationThread
   agents: TriageAgent[]
   actions: WorkspaceActions
+  readOnly?: boolean
 }) {
   return (
     <div className="flex min-h-[60vh] flex-col rounded-lg border border-border bg-surface">
@@ -229,22 +234,30 @@ function ThreadReader({
         )}
       </div>
 
-      <ConversationTriage
-        conversationId={thread.id}
-        status={thread.status}
-        priority={thread.priority}
-        assignedTo={thread.assignedTo}
-        agents={agents}
-        triageAction={actions.triageAction}
-        summarizeAction={actions.summarizeAction}
-        aiTriageAction={actions.aiTriageAction}
-      />
-      <ConversationComposer
-        conversationId={thread.id}
-        counterpartName={thread.counterpartName}
-        sendAction={actions.sendAction}
-        draftAction={actions.draftAction}
-      />
+      {readOnly ? (
+        <p className="border-t border-border p-3 text-2xs text-muted">
+          You are previewing this space. Replying and triage are available to the space owner.
+        </p>
+      ) : (
+        <>
+          <ConversationTriage
+            conversationId={thread.id}
+            status={thread.status}
+            priority={thread.priority}
+            assignedTo={thread.assignedTo}
+            agents={agents}
+            triageAction={actions.triageAction}
+            summarizeAction={actions.summarizeAction}
+            aiTriageAction={actions.aiTriageAction}
+          />
+          <ConversationComposer
+            conversationId={thread.id}
+            counterpartName={thread.counterpartName}
+            sendAction={actions.sendAction}
+            draftAction={actions.draftAction}
+          />
+        </>
+      )}
     </div>
   )
 }
