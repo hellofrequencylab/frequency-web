@@ -1,7 +1,8 @@
 // FOUNDING BUSINESS CHECKOUT — the LIVE, gated checkout seam for a Space to become a Founding
 // Business (the per-city fee-buydown cohort, ADR-599/803). It creates a Stripe SUBSCRIPTION Checkout
-// for the Space owner at the locked founding Business rate ($49/mo or $490/yr, read from
-// getFoundingConfig — never hardcoded), stamped so the EXISTING space-plan webhook reconciles the
+// for the Space owner at the locked founding Business rate (the ADR-811 founding anchor, $19/mo / $190/yr;
+// displayed from getFoundingConfig, charged via the catalog business_base FOUNDING price key so the
+// display and the charge share the founding anchor — never hardcoded), stamped so the EXISTING space-plan webhook reconciles the
 // Space to Business; the durable, grandfathered founder record (locked rate + 3% take-rate for life)
 // is written on the success confirm via the reused grantFoundingStatus() hook (lib/founding/status.ts).
 //
@@ -23,7 +24,8 @@
 import { stripe, appUrl } from '@/lib/billing/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveStripePriceId } from '@/lib/billing/pricing-prices'
-import { priceKey, offersPeriod, type BillingPeriod } from '@/lib/billing/pricing-keys'
+import { catalogPriceKey, offersPeriod, type BillingPeriod } from '@/lib/billing/pricing-keys'
+import { readLockedPriceId } from '@/lib/billing/space-subscription-items'
 import { asSpacePlan } from '@/lib/pricing/plans'
 import { billingLive, getFoundingConfig, getPricingValues } from '@/lib/pricing/settings'
 import { foundingBusinessSpotsRemaining } from '@/lib/pricing/founding'
@@ -195,11 +197,19 @@ export async function createFoundingBusinessCheckout(input: {
   const taken = await foundingBusinessTakenInCity(city)
   if (foundingBusinessSpotsRemaining(config, taken) <= 0) return { ok: false, state: 'sold_out' }
 
-  // Both periods are offered for Business; resolve the SYNCED price for the chosen one (the same
-  // founding Business price the standard plan checkout charges). Not synced -> clean no-op, never an
-  // inline-price fallback (mirrors createSpacePlanCheckout).
+  // Both periods are offered for Business; resolve the SYNCED catalog FOUNDING price for the chosen one
+  // (business_base_<interval> — the $19/$190 beta anchor the page displays and ADR-811 charges), honoring
+  // an existing grandfathered lock first, exactly like resolveLoadoutPriceId. The old resolution here read
+  // priceKey('business', period) = the business_monthly LIST product minted from plan.business, so the
+  // checkout charged the list price ($49 in the stale prod row) against the promised locked founding rate
+  // ($19) — the meta-scan HIGH mispricing. The founding cohort is per-city capped and "locked for life",
+  // so it always charges the plain founding key (no beta-window list switch — that governs the general
+  // loadout, not the capped founder offer). Not synced -> clean no-op, never an inline-price fallback.
   if (!offersPeriod('business', period)) return { ok: false, error: 'That billing period is not available.' }
-  const priceId = await resolveStripePriceId(priceKey('business', period))
+  const interval = period === 'annual' ? 'year' : 'month'
+  const priceId =
+    (await readLockedPriceId(spaceId, 'business')) ?? // the DB item_key for business_base (grandfather lock)
+    (await resolveStripePriceId(catalogPriceKey('business_base', interval)))
   if (!priceId) return { ok: false, error: 'Founding checkout is not available yet.' }
 
   // The customer is the Space owner; reuse their Stripe customer id if the Space already has one.

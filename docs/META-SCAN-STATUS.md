@@ -34,14 +34,22 @@ Four fix batches shipped on `claude/site-meta-scan-bugs-pgnw78`, each tsc/lint/t
   page render.
 
 **🔴 Open HIGH — pre-`billing_live` blockers (billing verified OFF, so latent not live):**
-- **Founding Business checkout mispricing** — `createFoundingBusinessCheckout`
-  (`lib/founding/business-checkout.ts:202`) charges `priceKey('business', period)` =
-  `business_monthly`, minted from `plan.business.monthly_cents` (**$49 live**, verified in prod
-  `pricing_settings`), while the page displays + promises `founding.business_monthly_cents`
-  (**$19, "locked for life"**; the `20261207000000` reprice touched only the founding row).
-  Three disagreeing sources exist (founding config $19 / catalog `business_base` founding /
-  `plan.business` $49). Fix before flipping `billing_live`: charge the founding-config amount
-  (or the catalog founding key), and reconcile `plan.business` to the ADR-811 $29 list.
+- ✅ ~~**Founding Business checkout mispricing**~~ — FIXED (owner-confirmed ladder 2026-07-25:
+  Business $29/$19 beta · Collective $79/$49 beta · Non Profit $39). Two-part fix: ① the
+  checkout now charges the catalog **founding** key `business_base_<interval>` (the synced
+  $19/$190 beta price, verified live in `pricing_stripe_prices`), honoring a grandfathered
+  `locked_price_id` first, exactly like `resolveLoadoutPriceId` — it had charged
+  `business_monthly`, a Stripe price minted 06-23 from the stale `plan.business` row; ② migration
+  `20261212000000_adr811_plan_anchor_reconcile` (applied + verified; ledger `20260725174004`)
+  reconciled the two stale ADR-590-era anchor rows to the ADR-811 ladder — `plan.business`
+  $49/$490 → **$29/$290**, `plan.nonprofit` $29/$290 → **$39/$390** — guarded on the exact stale
+  pairs so operator-set rates are never clobbered.
+- 🧑 **Owner action — re-run the Stripe pricing syncs** (admin pricing console): ① the product
+  sync, so `business_monthly`/`nonprofit_*` re-mint at the corrected $29/$39 anchors (the live
+  Stripe prices still hold the stale $49/$29 amounts); ② the catalog sync — **no
+  `collective_base_*` or `independent_base_*` price rows exist at all** (verified live), so the
+  Collective/Independent checkouts (go-live #1889) currently dead-end on "Plan checkout is not
+  available yet."
 - **Space plan/seat webhook has no event-ordering guard** — the member path uses
   `apply_membership_event_atomic` (ignores stale `event.created`); the space path
   (`lib/billing/space-subscriptions.ts` `reconcileSpacePlanSubscription`) set-to-targets seats/
