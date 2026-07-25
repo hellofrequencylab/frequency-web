@@ -31,7 +31,7 @@ import {
 } from '@/lib/comms/conversations'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { brandSignature } from '@/lib/comms/signature'
-import { startConversationMessage } from '@/lib/comms/conversation-compose'
+import { startConversationMessage, spaceConversationFrom } from '@/lib/comms/conversation-compose'
 import { renderReplyEmail } from '@/lib/comms/email-template'
 import { listSpaceAssignableAgents } from '@/lib/comms/workspace'
 import { CONVERSATION_STATUSES, CONVERSATION_PRIORITIES, type ConversationPriority } from '@/lib/comms/labels'
@@ -79,12 +79,8 @@ async function gateConversation(
   return { gate: gated.gate, conv }
 }
 
-/** The Space's conversational sending identity: the brand name on the verified conversational address. */
-function spaceConversationFrom(brandName: string): string {
-  const addr = process.env.EMAIL_CONVERSATION_FROM ?? process.env.EMAIL_FROM ?? 'people@people.frequencylocal.com'
-  const clean = (brandName || 'Frequency').replace(/["\\<>]/g, '').trim() || 'Frequency'
-  return `${clean} <${addr}>`
-}
+// spaceConversationFrom moved to the shared compose module (ADR-822): one From identity for every
+// space-side compose surface.
 
 /** Reply to (or add an internal note on) a conversation this space owns. */
 export async function sendSpaceConversationReplyAction(

@@ -28,6 +28,14 @@ import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comm
 // address + first outbound — must never be re-inlined into a surface.
 // sentinel:conversation-compose-pipeline
 
+/** The Space's conversational sending identity: the brand name on the verified conversational
+ *  address. Shared by every space-side compose surface (the console dialog + the member composer). */
+export function spaceConversationFrom(brandName: string): string {
+  const addr = process.env.EMAIL_CONVERSATION_FROM ?? process.env.EMAIL_FROM ?? 'people@people.frequencylocal.com'
+  const clean = (brandName || 'Frequency').replace(/["\\<>]/g, '').trim() || 'Frequency'
+  return `${clean} <${addr}>`
+}
+
 export interface StartConversationMessageInput {
   /** The CRM timeline owner (the operator/leader whose book this thread belongs to). */
   ownerProfileId: string
