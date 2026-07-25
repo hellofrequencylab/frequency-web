@@ -16,6 +16,8 @@ import { resolveTierTeaseGate } from '@/lib/pricing/tease-gate'
 import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { ProfileActivationWelcome } from '@/components/settings/profile-activation-welcome'
 import { LocationTimezoneCard } from '@/components/settings/location-timezone-card'
+import { EmailSignatureCard } from '@/components/settings/email-signature-card'
+import { defaultSignature } from '@/lib/comms/signature'
 
 export default async function ProfileSettingsPage() {
   const supabase = await createClient()
@@ -24,7 +26,7 @@ export default async function ProfileSettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, display_name, handle, bio, avatar_url, phone, city, website, meta, profile_theme, home_timezone')
+    .select('id, display_name, handle, bio, avatar_url, phone, city, website, meta, profile_theme, home_timezone, email_signature')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -109,6 +111,10 @@ export default async function ProfileSettingsPage() {
           canEnableSpotlight,
           profileTheme: (profile as { profile_theme?: string | null }).profile_theme ?? null,
         }}
+      />
+      <EmailSignatureCard
+        initial={(profile as { email_signature: string | null }).email_signature ?? ''}
+        autoDefault={defaultSignature(profile.display_name ?? null)}
       />
       {connect && qrSvg && <ProfileQrCard svg={qrSvg} link={qrLink} codeId={connect.id} studioTease={studioTease} />}
     </FocusTemplate>

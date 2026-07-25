@@ -9138,6 +9138,7 @@ export type Database = {
           home_lat: number | null
           home_lng: number | null
           home_timezone: string | null
+          email_signature: string | null
           household_bundle_id: string | null
           id: string
           is_active: boolean | null
@@ -9217,6 +9218,7 @@ export type Database = {
           home_lat?: number | null
           home_lng?: number | null
           home_timezone?: string | null
+          email_signature?: string | null
           household_bundle_id?: string | null
           id?: string
           is_active?: boolean | null
@@ -9296,6 +9298,7 @@ export type Database = {
           home_lat?: number | null
           home_lng?: number | null
           home_timezone?: string | null
+          email_signature?: string | null
           household_bundle_id?: string | null
           id?: string
           is_active?: boolean | null

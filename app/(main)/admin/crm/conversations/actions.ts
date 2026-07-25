@@ -23,6 +23,8 @@ import {
   type AppendMessageInput,
 } from '@/lib/comms/conversations'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
+import { resolveSignature } from '@/lib/comms/signature'
+import { renderReplyEmail } from '@/lib/comms/email-template'
 import { getWorkspaceThread } from '@/lib/comms/workspace'
 import { CONVERSATION_PRIORITIES, PRIORITY_LABELS, type ConversationPriority } from '@/lib/comms/labels'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
@@ -107,9 +109,10 @@ export async function sendConversationReply(input: {
   }
 
   const senderName = await profileName(operatorId)
+  const signature = await resolveSignature(operatorId, senderName)
   const subject = replySubject(conv.subject)
   const from = conversationFrom(senderName)
-  const html = bodyToHtml(body)
+  const storedHtml = bodyToHtml(body) // clean body for the thread + CRM mirror (no header/footer/signature)
   const mirror: AppendMessageInput['mirror'] =
     conv.ownerProfileId && (conv.memberProfileId || conv.contactId)
       ? {
@@ -128,14 +131,17 @@ export async function sendConversationReply(input: {
       from,
       to: conv.externalEmail,
       body,
-      html,
+      html: storedHtml,
+      signature,
       authorKind: 'staff',
       authorId: operatorId,
       mirror,
     })
     if (!queued) return fail('Could not queue the reply. Try again.')
   } else {
-    // IMMEDIATE (default): enqueue the email now, then record the outbound message.
+    // IMMEDIATE (default): send the branded, signed email now (header/footer + signature), then record the
+    // CLEAN outbound message (no chrome) on the thread + CRM timeline.
+    const { html: emailHtml, text: emailText } = renderReplyEmail(body, signature)
     const messageId = newConversationMessageId(conv.ref)
     try {
       await enqueueEmail({
@@ -143,8 +149,8 @@ export async function sendConversationReply(input: {
         from,
         replyTo: buildConversationReplyAddress(conv.ref),
         subject,
-        html,
-        text: body,
+        html: emailHtml,
+        text: emailText,
         // No List-Unsubscribe: a 1:1 human reply is transactional, not bulk (ADR-812 deliverability).
         headers: { 'Message-ID': messageId },
       })
@@ -157,7 +163,7 @@ export async function sendConversationReply(input: {
       authorKind: 'staff',
       authorId: operatorId,
       body,
-      bodyHtml: html,
+      bodyHtml: storedHtml,
       externalMessageId: messageId,
       mirror,
     })
