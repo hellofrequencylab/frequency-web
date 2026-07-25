@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sparkles, Search, BookOpen, Mail, X, MessageSquare, LifeBuoy, Bug, Ticket, ArrowLeft } from 'lucide-react'
+import { Sparkles, Search, BookOpen, X, MessageSquare, LifeBuoy, Bug, ArrowLeft } from 'lucide-react'
 import type { HelpSearchEntry } from '@/lib/help/content'
 import { searchHelp } from '@/lib/help/search'
-import { CONTACT_EMAIL } from '@/lib/site'
 import { VeraChat, COMPANION_OPENING } from '@/components/vera/vera-chat'
+import { SupportConversationsPanel } from '@/components/support/support-conversations-panel'
 import { DockChat, prefetchDockSummary } from '@/components/messages/dock-chat'
 import { getMessagesUnreadCount } from '@/app/(main)/messages/popover-actions'
 import { openSupport } from '@/components/support/support-launcher'
@@ -255,7 +255,13 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                   </span>
                 </button>
 
-                <div className="mt-auto space-y-1 pt-3">
+                {/* The member's own support CONVERSATIONS (chat consolidation): send us a message, and it
+                    threads back here as a ticketed conversation. Report-a-bug + help center stay below. */}
+                <div className="mt-3 -mx-4 border-t border-border">
+                  <SupportConversationsPanel />
+                </div>
+
+                <div className="mt-auto space-y-1 border-t border-border pt-3">
                   <button
                     type="button"
                     onClick={() => { close(); openSupport('bug') }}
@@ -263,22 +269,9 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                   >
                     <Bug className="h-4 w-4 text-muted" aria-hidden /> Report a bug
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => { close(); openSupport('question') }}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated"
-                  >
-                    <LifeBuoy className="h-4 w-4 text-muted" aria-hidden /> Contact support
-                  </button>
-                  <Link href="/support" onClick={close} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-text hover:bg-surface-elevated">
-                    <Ticket className="h-4 w-4 text-muted" aria-hidden /> Your support tickets
-                  </Link>
                   <Link href="/help" onClick={close} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-text hover:bg-surface-elevated">
                     <BookOpen className="h-4 w-4 text-muted" aria-hidden /> Browse the help center
                   </Link>
-                  <a href={`mailto:${CONTACT_EMAIL}`} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-text hover:bg-surface-elevated">
-                    <Mail className="h-4 w-4 text-muted" aria-hidden /> Talk to a human
-                  </a>
                 </div>
               </div>
             ) : tab === 'chat' ? (
