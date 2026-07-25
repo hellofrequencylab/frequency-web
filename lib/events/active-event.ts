@@ -39,6 +39,17 @@ export interface HostLite {
   avatar_url: string | null
 }
 
+/** The Space that HOSTS the event, when it was posted from a Space (events.space_id). Present ⇒ the event
+ *  is attributed to the Space (its brand is the displayed host, linking to the Space page); the individual
+ *  in host_id stays the operational organizer (edit rights / rewards / cohost management). Null for a
+ *  personal / circle / standalone event, in which case the person host (HostLite) is shown as today. */
+export interface SpaceHostLite {
+  id: string
+  slug: string
+  name: string
+  logoUrl: string | null
+}
+
 /** A succeeded ticket sale, for the host Sales module. */
 export interface SoldTicket {
   id: string
@@ -87,6 +98,9 @@ export interface EventDetailContext {
   event: EventLite
   /** The event host's public profile, for the `event-lineup` Host profile module (null → self-hide). */
   host: HostLite | null
+  /** The Space that hosts the event (events.space_id), when posted from a Space. Present ⇒ the Space is the
+   *  displayed host; the `host` profile above stays the operational organizer. Null for non-Space events. */
+  spaceHost: SpaceHostLite | null
   myProfileId: string | null
   /** Holds event.editSettings — host, cohost-with-manage, circle manager, or admin. */
   canManage: boolean
