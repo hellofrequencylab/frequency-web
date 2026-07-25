@@ -66,9 +66,10 @@ export async function fetchReceivedEmail(id: string, attempts = 4): Promise<Rece
   // Everything we log here can derive from the externally controlled webhook `id` (directly, or via the
   // API response/error it produces), so it is a log-injection sink. Neutralize it two ways: keep dynamic
   // values OUT of the format string (static literal + %s placeholders ⇒ no externally-controlled format
-  // string), and pass every dynamic value through `oneLine`, which strips CR/LF + control chars — the
-  // recognized barrier against forged log lines. CodeQL: 132/133/134/135/136/137.
-  const oneLine = (v: unknown) => String(v).replace(/\p{Cc}+/gu, ' ').slice(0, 300)
+  // string), and pass every dynamic value through `oneLine`, which strips CR/LF — the canonical,
+  // tool-recognized barrier against forged log lines — and caps length.
+  // CodeQL: 132/133/134/135/136/137/138.
+  const oneLine = (v: unknown) => String(v).replace(/[\r\n]+/g, ' ').slice(0, 300)
   const safeId = oneLine(id).replace(/[^\w-]/g, '').slice(0, 64)
   for (let i = 0; i < attempts; i++) {
     try {
