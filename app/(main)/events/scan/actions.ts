@@ -111,6 +111,9 @@ export interface DraftFormInput {
   posterPath?: string | null
   /** EventDetailsWithMedia from the client — fully re-validated here. */
   details?: unknown
+  /** The Space this draft belongs to (the space Calendar console wizard path). Re-validated
+   *  server-side: kept only when the caller helps run the space (editor+). */
+  spaceId?: string | null
 }
 
 /**
@@ -187,7 +190,18 @@ export async function saveDraft(input: DraftFormInput): Promise<{ id: string } |
   const posterPath =
     input.posterPath && isOwnedStoragePath(input.posterPath, userId) ? input.posterPath : null
 
+  // AUTHZ: a client-sent space id counts only when the caller actually helps run that space
+  // (editor+ — the same authority as createEvent's 'space' scope). Anything else drops to a
+  // personal draft rather than letting a POST attribute an event to someone else's space.
+  let spaceId: string | null = null
+  if (input.spaceId) {
+    const { listSpaceEventCreatorIds } = await import('@/lib/events/placement')
+    const creators = await listSpaceEventCreatorIds(input.spaceId)
+    if (creators.includes(profileId)) spaceId = input.spaceId
+  }
+
   const created = await createEventDraft(profileId, {
+    spaceId,
     title: input.title,
     description: input.description,
     startsAt: cleanIso(input.startsAt),

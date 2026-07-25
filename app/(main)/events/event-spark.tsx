@@ -28,7 +28,7 @@ const SCAN_BUCKET = 'network-contacts'
 const FIELD =
   'w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
-type Group = { id: string; name: string }
+type Group = { id: string; name: string; kind?: 'circle' | 'space' }
 
 export function EventSpark({
   groups,
@@ -171,6 +171,10 @@ export function EventSpark({
         details: draft.details,
         // The uploaded flyer photo (if any) becomes the draft's cover.
         posterPath,
+        // Keep the space Calendar console's attribution through the WIZARD path too (the manual
+        // form already carries it): a draft opened from a space's "New event" stays that space's
+        // event, hosted by the space. Server re-validates the caller helps run it.
+        spaceId: groups.find((g) => g.id === defaultGroupId)?.kind === 'space' ? defaultGroupId ?? null : null,
       })
       if ('id' in res) router.push(`/events/drafts/${res.id}`)
       else setError(res.error)

@@ -15,7 +15,7 @@ import { markVerifiedByAttendance } from '@/lib/verification/attendance'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 import { validateRecurrenceUntil } from '@/lib/events/recurrence'
 import { resolveRegionScopeId } from '@/lib/events/event-drafts'
-import { listCircleStewardIds, listSpaceStewardIds } from '@/lib/events/placement'
+import { listCircleStewardIds, listSpaceEventCreatorIds } from '@/lib/events/placement'
 import { cancelAudit } from '@/lib/events/event-lifecycle'
 import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
@@ -226,9 +226,11 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
       return fail('You can only add an event to a circle you host.')
     }
   } else if (scopeChoice === 'space') {
-    const stewards = await listSpaceStewardIds(formScopeId as string)
-    if (!stewards.includes(myProfileId)) {
-      return fail('You can only add an event to a space you run.')
+    // Editor+ managers create under the space (the Calendar console admits editors); the narrower
+    // admin-only steward set stays the approval authority for external placement requests.
+    const creators = await listSpaceEventCreatorIds(formScopeId as string)
+    if (!creators.includes(myProfileId)) {
+      return fail('You can only add an event to a space you help run.')
     }
     spaceIdForPlacement = formScopeId
   }
@@ -289,6 +291,10 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
       // space_id is newer than the generated DB types — cast the payload to reach the column
       // (ADR-246); omit when the root row is missing (the backfill sweeps the NULL to root).
       ...(spaceId ? { space_id: spaceId } : {}),
+      // HOSTING ENTITY: an event created under a space is HOSTED by that space (billed + displayed
+      // host; registrations and ticket money route through it). host_id stays the personal operator
+      // axis (edit rights, notifications). Distinct from space_id, which is pure tenancy/placement.
+      ...(scopeChoice === 'space' && spaceIdForPlacement ? { host_space_id: spaceIdForPlacement } : {}),
     } as never).select('id').single()
 
   if (error || !inserted) {

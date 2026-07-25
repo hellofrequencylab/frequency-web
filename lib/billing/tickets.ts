@@ -97,6 +97,9 @@ interface EventRow {
   starts_at: string
   host_id: string | null
   space_id: string | null
+  /** The explicit HOSTING entity (ADR-819): when set, ticket money routes through this space
+   *  (its owner's Connect account) and the take-rate keys on its plan. */
+  host_space_id: string | null
 }
 
 interface TicketTypeRow {
@@ -137,15 +140,29 @@ export async function createTicketCheckout(opts: {
 
   const { data } = await db()
     .from('events')
-    .select('id, title, slug, price_cents, is_cancelled, ends_at, starts_at, host_id, space_id')
+    .select('id, title, slug, price_cents, is_cancelled, ends_at, starts_at, host_id, space_id, host_space_id')
     .eq('id', opts.eventId)
     .maybeSingle()
   const event = data as EventRow | null
   if (!event) return { error: 'Event not found.' }
   if (event.is_cancelled) return { error: 'This event has been cancelled.' }
   if (new Date(event.ends_at ?? event.starts_at) < new Date()) return { error: 'This event has already ended.' }
-  if (!event.host_id) return { error: 'This event has no host to pay.' }
-  if (event.host_id === opts.buyerProfileId) return { error: 'You’re hosting this event.' }
+
+  // PAYEE (ADR-819): a SPACE-hosted event pays the space — through the space owner's Connect
+  // account, the same resolution commerce uses (lib/commerce/checkout.ts resolveCharge). A
+  // personal event pays the host. The self-purchase guard keys on the resolved payee, so a space
+  // manager who merely ORGANIZES the event can still buy a ticket to it.
+  let payeeProfileId: string | null = event.host_id
+  if (event.host_space_id) {
+    const { data: hs } = await db()
+      .from('spaces')
+      .select('owner_profile_id')
+      .eq('id', event.host_space_id)
+      .maybeSingle()
+    payeeProfileId = (hs as { owner_profile_id: string | null } | null)?.owner_profile_id ?? null
+  }
+  if (!payeeProfileId) return { error: 'This event has no host to pay.' }
+  if (payeeProfileId === opts.buyerProfileId) return { error: 'You’re hosting this event.' }
 
   // ── Resolve the tier (or the implicit flat-price tier) ────────────────────────
   let tier: TicketTypeRow | null = null
@@ -202,8 +219,8 @@ export async function createTicketCheckout(opts: {
     return { error: 'This event is free. No ticket needed.' }
   }
 
-  // The host must be able to actually receive money.
-  const status = await getConnectStatus(event.host_id)
+  // The payee (the hosting space's owner, else the personal host) must be able to receive money.
+  const status = await getConnectStatus(payeeProfileId)
   if (!status.accountId || !status.ready) return { error: 'Tickets aren’t available for this event yet.' }
 
   const gross = ticketTotalCents(unitCents, qty)
@@ -214,17 +231,20 @@ export async function createTicketCheckout(opts: {
   //                            member (Crew) rate on a network-sourced sale (ADR-811, #4).
   //   • ROOT / platform event → Frequency's OWN event: the flat platform fee (internal, not a member sale).
   // Fail-safe: the space resolution is best-effort; any miss falls back to the flat fee (never under-collect).
-  const { source } = await classifyOrderSource({ buyerProfileId: opts.buyerProfileId, sellerProfileId: event.host_id })
+  const { source } = await classifyOrderSource({ buyerProfileId: opts.buyerProfileId, sellerProfileId: payeeProfileId })
   let fee: number
-  if (event.space_id) {
+  // The fee keys on the same entity the money routes to: the explicit hosting space when set,
+  // else the placement space, else the personal host — so fee and payee always agree (ADR-819).
+  const feeSpaceId = event.host_space_id ?? event.space_id
+  if (feeSpaceId) {
     const root = await loadRootSpaceId()
-    if (event.space_id === root) {
+    if (feeSpaceId === root) {
       fee = platformFeeCents(gross) // the platform's own event
     } else {
       const { data: sp } = await db()
         .from('spaces')
         .select('plan, network_connected')
-        .eq('id', event.space_id)
+        .eq('id', feeSpaceId)
         .maybeSingle()
       const spRow = (sp as { plan?: string | null; network_connected?: boolean | null } | null) ?? null
       const plan = spRow?.plan ?? 'free'

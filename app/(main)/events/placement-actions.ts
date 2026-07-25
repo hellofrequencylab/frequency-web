@@ -12,6 +12,7 @@ import {
   getPlacementView,
   resolvePlacementTarget,
   listSpaceStewardIds,
+  listSpaceEventCreatorIds,
   listCircleStewardIds,
   NO_PLACEMENT,
   type PlacementView,
@@ -316,7 +317,9 @@ export async function clearEventPlacement(
   const admin = untyped()
   const actorId = await getMyProfileId()
 
-  await admin.from('events').update({ space_id: null, scope_circle_id: null }).eq('id', eventId)
+  // Clearing where it lives also clears the HOSTING entity (ADR-819): an event that no longer
+  // lives under any space cannot stay billed/displayed as that space's event.
+  await admin.from('events').update({ space_id: null, scope_circle_id: null, host_space_id: null }).eq('id', eventId)
   await admin
     .from('event_placement_requests')
     .update({ status: 'declined', responded_at: new Date().toISOString(), responded_by: actorId })
@@ -326,4 +329,110 @@ export async function clearEventPlacement(
   revalidatePath(`/events/${slug}`)
   revalidatePath('/events')
   return ok(NO_PLACEMENT)
+}
+
+// ── The HOSTING ENTITY (ADR-819): who hosts this event — the operator personally, or a Space ──────
+
+/** The hosting entity as the editor field renders it. */
+export interface HostEntityView {
+  /** The hosting Space (billed + displayed host), or null for a personal event. */
+  hostSpace: { id: string; slug: string; name: string } | null
+}
+
+/** Read the event's hosting entity. Gated on event.editSettings (managers only). */
+export async function loadEventHostEntity(eventId: string): Promise<HostEntityView> {
+  const caps = await getEventCapabilities(eventId)
+  if (!caps.has('event.editSettings')) return { hostSpace: null }
+  const admin = untyped()
+  const { data } = await admin.from('events').select('host_space_id').eq('id', eventId).maybeSingle()
+  const hostSpaceId = (data as { host_space_id: string | null } | null)?.host_space_id ?? null
+  if (!hostSpaceId) return { hostSpace: null }
+  const ref = await resolvePlacementTarget({ type: 'space', id: hostSpaceId })
+  return { hostSpace: ref ? { id: ref.id, slug: ref.slug, name: ref.name } : null }
+}
+
+/**
+ * Set WHO HOSTS the event: the operator personally (kind 'profile'), or a Space (kind 'space').
+ * Space-hosted means the space is the billed + displayed host — "Hosted by <space>", ticket money
+ * through the space owner's Connect account, the space plan's take-rate (ADR-819).
+ *
+ * Gates: the caller manages the event (event.editSettings), AND for a space target they help run
+ * it (editor+, the same authority that creates events under the space). Making a space the host
+ * also makes the event LIVE under it when it does not already (placement follows hosting, so the
+ * page, the space calendar, and the money all agree).
+ */
+export async function setEventHostEntity(
+  eventId: string,
+  slug: string,
+  host: { kind: 'profile' } | { kind: 'space'; spaceId: string },
+): Promise<ActionResult<HostEntityView>> {
+  const caps = await getEventCapabilities(eventId)
+  if (!caps.has('event.editSettings')) return fail('You do not manage this event.')
+  const actorId = await getMyProfileId()
+  if (!actorId) return fail('You need to be signed in.')
+
+  const admin = untyped()
+
+  if (host.kind === 'profile') {
+    await admin.from('events').update({ host_space_id: null }).eq('id', eventId)
+    revalidatePath(`/events/${slug}`)
+    revalidatePath('/events')
+    return ok({ hostSpace: null })
+  }
+
+  const creators = await listSpaceEventCreatorIds(host.spaceId)
+  if (!creators.includes(actorId)) {
+    return fail('Only someone who helps run that space can make it the host.')
+  }
+  const ref = await resolvePlacementTarget({ type: 'space', id: host.spaceId })
+  if (!ref) return fail('That space could not be found.')
+
+  await admin.from('events').update({ host_space_id: host.spaceId, space_id: host.spaceId }).eq('id', eventId)
+
+  revalidatePath(`/events/${slug}`)
+  revalidatePath('/events')
+  revalidatePath(`/spaces/${ref.slug}`)
+  return ok({ hostSpace: { id: ref.id, slug: ref.slug, name: ref.name } })
+}
+
+/** The spaces the CALLER can host an event as (owner or active editor+ member), for the
+ *  "Hosted by" picker. Small list, name-sorted. FAIL-SAFE: []. */
+export async function listMyHostableSpaces(): Promise<{ id: string; slug: string; name: string }[]> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return []
+  const admin = untyped()
+  try {
+    const byId = new Map<string, { id: string; slug: string; name: string }>()
+    const put = (rows: unknown) => {
+      for (const s of (rows ?? []) as Array<{ id: string; slug: string; name: string | null; brand_name: string | null }>) {
+        byId.set(s.id, { id: s.id, slug: s.slug, name: s.brand_name ?? s.name ?? 'Space' })
+      }
+    }
+    const { data: owned } = await admin
+      .from('spaces')
+      .select('id, slug, name, brand_name')
+      .eq('owner_profile_id', profileId)
+      .eq('status', 'active')
+    put(owned)
+    const { data: memberships } = await admin
+      .from('space_members')
+      .select('space_id')
+      .eq('profile_id', profileId)
+      .in('role', ['editor', 'moderator', 'admin'])
+      .eq('status', 'active')
+    const ids = ((memberships ?? []) as Array<{ space_id: string }>)
+      .map((m) => m.space_id)
+      .filter((id) => !byId.has(id))
+    if (ids.length > 0) {
+      const { data: managed } = await admin
+        .from('spaces')
+        .select('id, slug, name, brand_name')
+        .in('id', ids)
+        .eq('status', 'active')
+      put(managed)
+    }
+    return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name))
+  } catch {
+    return []
+  }
 }
