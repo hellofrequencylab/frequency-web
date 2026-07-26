@@ -16,6 +16,7 @@ import {
   type DispatchViewerContext,
 } from '@/lib/events/dispatch-audience'
 import { getMyOrbit } from '@/lib/connections/resonance'
+import { buildScopeContextResolver } from '@/lib/feed/post-origin'
 import { PostCard, type FeedPost, type RawPost } from './post-card'
 
 // Day bucketing for the Story lens (matches /journal's grouping voice).
@@ -242,46 +243,13 @@ export async function FeedList({
   }
   const posts: FeedPost[] = ranked.map((p) => ({ ...p, replyCount: p.comment_count ?? 0 })) as FeedPost[]
 
-  // ── Resolve scope context (wall, circle, channel, event) ──────────────────
+  // ── Resolve scope context (wall, circle, channel, event, space) ───────────
   // The main feed shows posts from everywhere, so each one names its destination
-  // (the chip + the stacked second indicator on the author avatar). Precedence
-  // mirrors buildPostOriginResolver: circle → event → channel → wall.
-  const scopeIds = [...new Set(posts.map(p => p.scope_id).filter(Boolean) as string[])]
-  const scopeMap: Record<string, { type: 'wall' | 'circle' | 'channel' | 'event'; name: string; href: string; avatar_url?: string | null; handle?: string }> = {}
-
-  if (scopeIds.length > 0) {
-    const [profileScopes, circleScopes, channelScopes, eventScopes] = await Promise.all([
-      admin.from('profiles').select('id, display_name, handle, avatar_url').in('id', scopeIds),
-      admin.from('circles').select('id, name, slug').in('id', scopeIds),
-      admin.from('channels').select('id, name').in('id', scopeIds),
-      admin.from('events').select('id, title, slug').in('id', scopeIds),
-    ])
-    for (const c of (circleScopes.data ?? []) as { id: string; name: string; slug: string }[]) {
-      scopeMap[c.id] = { type: 'circle', name: c.name, href: `/circles/${c.slug}` }
-    }
-    for (const e of (eventScopes.data ?? []) as { id: string; title: string; slug: string }[]) {
-      if (!scopeMap[e.id]) scopeMap[e.id] = { type: 'event', name: e.title, href: `/events/${e.slug}` }
-    }
-    for (const ch of (channelScopes.data ?? []) as { id: string; name: string }[]) {
-      if (!scopeMap[ch.id]) scopeMap[ch.id] = { type: 'channel', name: ch.name, href: `/channels/${ch.id}` }
-    }
-    for (const p of (profileScopes.data ?? []) as { id: string; display_name: string; handle: string; avatar_url: string | null }[]) {
-      if (!scopeMap[p.id]) scopeMap[p.id] = { type: 'wall', name: p.display_name, href: `/people/${p.handle}`, avatar_url: p.avatar_url, handle: p.handle }
-    }
-  }
-
+  // in the card's attribution header (author › context). ONE resolver serves the
+  // feed and the profile timeline, so the read never drifts between surfaces.
+  const resolveScope = await buildScopeContextResolver(posts.map((p) => p.scope_id))
   for (const post of posts) {
-    const sid = post.scope_id as string | undefined
-    if (sid && scopeMap[sid]) {
-      const scope = scopeMap[sid]
-      if (scope.type === 'wall') {
-        if (post.author.id !== sid) {
-          post.scopeContext = scope
-        }
-      } else {
-        post.scopeContext = scope
-      }
-    }
+    post.scopeContext = resolveScope(post.scope_id, post.author.id)
   }
 
   // ── Dispatches + nearest event ──────────────────────────────────────────
@@ -412,9 +380,9 @@ export async function FeedList({
   )
 }
 
-// Dispatch banner. Azure broadcast palette. Reads as "broadcast / official"
-// and stays visually distinct from the green event card and the amber
-// announcement post type further down the feed.
+// Dispatch card. Sits on the SAME neutral card chrome as posts (one cohesive
+// stream); the azure broadcast palette lives in the icon tile + kicker only, so
+// it still reads as "broadcast / official" without shouting a tinted banner.
 //
 // An Event Dispatch (ADR-255, dispatch_type='event') is the third member of the
 // Dispatch family: same broadcast rail, but it carries an inline EVENT badge and
@@ -426,7 +394,7 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
   return (
     <Link
       href={href}
-      className="group block rounded-2xl border border-broadcast-bg bg-broadcast-bg/60 dark:bg-broadcast-bg/40 shadow-sm px-4 py-3.5 hover:border-broadcast transition-colors"
+      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 shadow-sm transition-colors hover:border-broadcast dark:border-border/60 dark:bg-surface-elevated/80"
     >
       <div className="flex items-start gap-3">
         <div className="shrink-0 w-7 h-7 rounded-lg bg-broadcast-bg flex items-center justify-center mt-0.5">
@@ -472,9 +440,9 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
   )
 }
 
-// Event banner. Green success palette. Reads as "happening / alive / show
-// up" and stays visually distinct from the teal dispatch above and the
-// amber announcement below.
+// Event card. Same neutral card chrome as posts; the teal success palette
+// lives in the date tile + kicker, so "happening / show up" still reads at a
+// glance without a full tinted banner competing with the stream.
 function EventFeedCard({ event: e }: { event: { id: string; title: string; starts_at: string; location: string | null; slug: string } }) {
   const { month, day } = eventDateBadge(e.starts_at)
   const dateStr = formatEventDate(e.starts_at)
@@ -482,7 +450,7 @@ function EventFeedCard({ event: e }: { event: { id: string; title: string; start
   return (
     <Link
       href={`/events/${e.slug}`}
-      className="group block rounded-2xl border border-success-bg bg-success-bg/60 dark:bg-success-bg/40 shadow-sm px-4 py-3.5 hover:border-success transition-colors"
+      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 shadow-sm transition-colors hover:border-success dark:border-border/60 dark:bg-surface-elevated/80"
     >
       <div className="flex items-center gap-3">
         <div className="shrink-0 w-10 h-10 rounded-lg bg-success-bg flex flex-col items-center justify-center">

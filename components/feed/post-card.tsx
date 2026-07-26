@@ -1,6 +1,16 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Megaphone, ArrowRight, Zap, NotebookPen, CalendarDays } from 'lucide-react'
+import {
+  Megaphone,
+  ChevronRight,
+  Zap,
+  NotebookPen,
+  Pin,
+  CalendarDays,
+  Users,
+  Hash,
+  Building2,
+} from 'lucide-react'
 import { PostReplies } from './post-replies'
 import { ContextActions } from '@/components/context-actions'
 import { DemoBadge } from '@/components/ui/demo-badge'
@@ -10,6 +20,22 @@ import { PostBody } from './post-body'
 import { SystemLine } from './system-line'
 
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
+
+/** WHERE a post lives — the wall / Circle / Channel / event / Space it was posted
+ *  to. Rendered as the linked context half of the header's one attribution line
+ *  ("author › context"), with the scope's own image when it has one (member
+ *  avatar, circle image, event cover, space logo) and a small icon fallback.
+ *  Resolved by `buildScopeContextResolver` (lib/feed/post-origin.ts) on every
+ *  surface, so the feed and the profile timeline read identically. A post on the
+ *  author's own profile carries NO context (the author link IS the where). */
+export type PostScopeContext = {
+  type: 'wall' | 'circle' | 'channel' | 'event' | 'space'
+  name: string
+  href: string
+  /** The scope's own image (may carry an avatar-focus fragment, ADR-829). */
+  image_url?: string | null
+  handle?: string
+}
 
 export type FeedPost = {
   id: string
@@ -25,13 +51,7 @@ export type FeedPost = {
   reaction_count?: number
   comment_count?: number
   engagement_score?: number
-  scopeContext?: {
-    type: 'wall' | 'circle' | 'channel' | 'event'
-    name: string
-    href: string
-    avatar_url?: string | null
-    handle?: string
-  }
+  scopeContext?: PostScopeContext
   author: {
     id: string
     display_name: string
@@ -89,6 +109,38 @@ export interface RawPost {
   }>
 }
 
+/** The context half's thumbnail: the scope's own image when it has one, else a
+ *  small typed icon (people get initials) so the destination reads at a glance. */
+function ScopeThumb({ scope }: { scope: PostScopeContext }) {
+  const shape = scope.type === 'wall' ? 'rounded-full' : 'rounded'
+  if (scope.image_url) {
+    return (
+      <Image
+        src={avatarSrc(scope.image_url)}
+        alt=""
+        width={16}
+        height={16}
+        style={avatarFocusStyle(scope.image_url)}
+        className={`h-4 w-4 shrink-0 object-cover ${shape}`}
+      />
+    )
+  }
+  if (scope.type === 'wall') {
+    return (
+      <span className="flex h-4 w-4 shrink-0 select-none items-center justify-center rounded-full bg-primary-bg text-3xs font-bold text-primary-strong">
+        {getInitials(scope.name)}
+      </span>
+    )
+  }
+  const Icon =
+    scope.type === 'event' ? CalendarDays : scope.type === 'space' ? Building2 : scope.type === 'channel' ? Hash : Users
+  return (
+    <span className={`flex h-4 w-4 shrink-0 items-center justify-center bg-surface-elevated text-subtle dark:bg-canvas/60 ${shape}`}>
+      <Icon className="h-3 w-3" />
+    </span>
+  )
+}
+
 export function PostCard({
   post,
   myProfileId,
@@ -118,153 +170,143 @@ export function PostCard({
   // Zaps this post has earned: each reaction is worth 1, each reply 2. One clean
   // number replaces the old per-post stats ledger (date/scope/earn-rates column).
   const zapsEarned = totalReactions + replyCount * 2
+  // Role chips only where they carry signal: leadership roles and the system
+  // voice. A plain Member chip on every post was repeated noise, not information.
+  const showRoleChip = author.is_system || (role !== 'member' && role !== 'crew')
+  const scope = post.scopeContext
+
+  // ONE card chrome for every post: white surface on the warm canvas, hairline
+  // border, soft shadow. Announcement / pinned tint only the hairline, never the
+  // whole card, so special posts stay in the same visual family.
+  const cardBorder = isAnnouncement
+    ? 'border-warning/40'
+    : post.is_pinned
+    ? 'border-primary/40'
+    : 'border-border/70 dark:border-border/60'
 
   return (
     <article
-      className={`rounded-2xl shadow-sm hover:shadow-md transition-shadow ${
-        isAnnouncement
-          ? 'bg-warning-bg/20 dark:bg-warning-bg/10 ring-1 ring-warning/40'
-          : post.is_pinned
-          ? 'bg-surface-post dark:bg-surface-elevated/70 ring-1 ring-primary-bg/60 dark:ring-primary/40'
-          : 'bg-surface-post dark:bg-surface-elevated/60 ring-1 ring-border/50 dark:ring-border/30'
-      }`}
+      className={`rounded-2xl border bg-surface shadow-sm transition-shadow hover:shadow-md dark:bg-surface-elevated/80 ${cardBorder}`}
     >
-      {/* ── Main content ──────────────────────────── */}
-      <div className="p-3.5">
-          {isAnnouncement && (
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <Megaphone className="w-3 h-3 text-primary" />
-              <p className="text-2xs font-bold uppercase tracking-wider text-warning">
-                Announcement
-              </p>
-            </div>
-          )}
-          {!isAnnouncement && post.is_pinned && (
-            <p className="text-2xs font-medium text-primary-strong mb-2.5">
-              📌 Pinned
-            </p>
-          )}
-          {isNote && (
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <NotebookPen className="w-3 h-3 text-subtle" />
-              <p className="text-2xs font-semibold uppercase tracking-wider text-subtle">
-                Note
-              </p>
-            </div>
-          )}
+      <div className="p-4">
+        {/* Kicker — the ONE slot for a post's special state (announcement / pinned /
+            note), a single quiet uppercase line instead of three banner treatments. */}
+        {(isAnnouncement || post.is_pinned || isNote) && (
+          <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {isAnnouncement && (
+              <span className="inline-flex items-center gap-1 text-2xs font-semibold uppercase tracking-wider text-warning">
+                <Megaphone className="h-3 w-3" /> Announcement
+              </span>
+            )}
+            {post.is_pinned && (
+              <span className="inline-flex items-center gap-1 text-2xs font-semibold uppercase tracking-wider text-primary-strong">
+                <Pin className="h-3 w-3" /> Pinned
+              </span>
+            )}
+            {isNote && (
+              <span className="inline-flex items-center gap-1 text-2xs font-semibold uppercase tracking-wider text-subtle">
+                <NotebookPen className="h-3 w-3" /> Note
+              </span>
+            )}
+          </div>
+        )}
 
-          {/* Author row */}
-          <div className="flex items-start gap-2.5 mb-2.5">
-            {/* Avatars. Stacked for wall posts, single for everything else */}
-            <div className="shrink-0 relative">
-              <Link href={`/people/${author.handle}`} className="block">
-                {author.avatar_url ? (
-                  <Image src={avatarSrc(author.avatar_url)} alt={author.display_name} width={32} height={32} style={avatarFocusStyle(author.avatar_url)} className="w-8 h-8 rounded-full object-cover" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center select-none">
-                    {getInitials(author.display_name)}
-                  </div>
-                )}
-              </Link>
-              {post.scopeContext?.type === 'wall' && (
-                <Link href={post.scopeContext.href} className="absolute -bottom-1 -right-1.5 ring-2 ring-surface rounded-full">
-                  {post.scopeContext.avatar_url ? (
-                    <Image src={avatarSrc(post.scopeContext.avatar_url)} alt={post.scopeContext.name} width={20} height={20} style={avatarFocusStyle(post.scopeContext.avatar_url)} className="w-5 h-5 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full bg-border-strong text-muted text-3xs font-bold flex items-center justify-center">
-                      {getInitials(post.scopeContext.name)}
-                    </div>
-                  )}
-                </Link>
-              )}
-              {/* An event-scoped post stacks a small calendar badge (the event has no
-                  avatar), so its destination still reads at a glance like a wall post. */}
-              {post.scopeContext?.type === 'event' && (
-                <Link
-                  href={post.scopeContext.href}
-                  aria-label={post.scopeContext.name}
-                  className="absolute -bottom-1 -right-1.5 ring-2 ring-surface rounded-full w-5 h-5 bg-success-bg text-success flex items-center justify-center"
-                >
-                  <CalendarDays className="w-3 h-3" />
-                </Link>
-              )}
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <Link
-                  href={`/people/${author.handle}`}
-                  className="text-sm font-semibold text-text hover:underline"
-                >
-                  {author.display_name}
-                </Link>
-                <RoleBadge role={chipRole} className="text-2xs leading-tight" />
-                {post.is_demo && <DemoBadge />}
-                {post.scopeContext && (
-                  <>
-                    <ArrowRight className="w-3 h-3 text-subtle shrink-0" />
-                    <Link
-                      href={post.scopeContext.href}
-                      className="text-sm text-muted hover:underline truncate"
-                    >
-                      {post.scopeContext.type === 'wall'
-                        ? `${post.scopeContext.name}'s wall`
-                        : post.scopeContext.name}
-                    </Link>
-                  </>
-                )}
+        {/* Attribution header — WHO posted, then WHERE it lives, on one line:
+            author avatar + name (→ their profile) › context image + name (→ the
+            wall / Circle / Channel / event / Space). Time + earned Zaps below. */}
+        <div className="mb-2.5 flex items-start gap-2.5">
+          <Link href={`/people/${author.handle}`} className="block shrink-0">
+            {author.avatar_url ? (
+              <Image
+                src={avatarSrc(author.avatar_url)}
+                alt={author.display_name}
+                width={36}
+                height={36}
+                style={avatarFocusStyle(author.avatar_url)}
+                className="h-9 w-9 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-9 w-9 select-none items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong">
+                {getInitials(author.display_name)}
               </div>
-              <p className="text-xs text-subtle mt-0.5 flex items-center gap-1.5">
-                <span className="truncate">@{author.handle} · {relativeTime(post.created_at)}</span>
-                {/* Zaps this post has earned, by the author's identity (not down in
-                    the action row) — a small calm chip, shown only once it's earned. */}
-                {zapsEarned > 0 && (
-                  <span
-                    title={`Earned ${zapsEarned} zap${zapsEarned !== 1 ? 's' : ''} from reactions and replies`}
-                    className="inline-flex items-center gap-0.5 text-2xs font-semibold text-primary-strong shrink-0"
-                  >
-                    <Zap className="w-3 h-3 fill-current" />
-                    {zapsEarned}
-                  </span>
-                )}
-              </p>
-            </div>
+            )}
+          </Link>
 
-            <ContextActions
-              role={(viewerRole ?? 'member') as CommunityRole}
-              context={{ type: 'post', id: post.id, isPinned: post.is_pinned, isOwn, postType: post.post_type }}
-            />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 leading-snug">
+              <Link
+                href={`/people/${author.handle}`}
+                className="text-sm font-semibold text-text hover:underline"
+              >
+                {author.display_name}
+              </Link>
+              {showRoleChip && <RoleBadge role={chipRole} className="text-2xs leading-tight" />}
+              {post.is_demo && <DemoBadge />}
+              {scope && (
+                <>
+                  <ChevronRight className="h-3 w-3 shrink-0 text-subtle" aria-hidden />
+                  <Link
+                    href={scope.href}
+                    className="flex min-w-0 items-center gap-1 text-sm text-muted transition-colors hover:text-text"
+                  >
+                    <ScopeThumb scope={scope} />
+                    <span className="truncate font-medium">
+                      {scope.type === 'wall' ? `${scope.name}’s wall` : scope.name}
+                    </span>
+                  </Link>
+                </>
+              )}
+            </div>
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-subtle">
+              <span className="truncate">{relativeTime(post.created_at)}</span>
+              {/* Zaps this post has earned, by the author's identity (not down in
+                  the action row) — a small calm chip, shown only once it's earned. */}
+              {zapsEarned > 0 && (
+                <span
+                  title={`Earned ${zapsEarned} zap${zapsEarned !== 1 ? 's' : ''} from reactions and replies`}
+                  className="inline-flex shrink-0 items-center gap-0.5 text-2xs font-semibold text-primary-strong"
+                >
+                  <Zap className="h-3 w-3 fill-current" />
+                  {zapsEarned}
+                </span>
+              )}
+            </p>
           </div>
 
-          {/* Body */}
-          {post.body && (
-            <PostBody body={post.body} className="mb-2.5 text-sm leading-relaxed text-text dark:text-subtle/60" />
-          )}
-
-          {/* Post image */}
-          {post.media_urls?.length > 0 && (
-            <div className="relative h-96 w-full rounded-xl overflow-hidden mb-2.5">
-              <Image
-                src={post.media_urls[0]}
-                alt="Post attachment"
-                fill
-                sizes="(min-width: 768px) 36rem, 100vw"
-                className="object-cover"
-              />
-            </div>
-          )}
-
-          {/* PostReplies owns the whole reaction + comment surface: the reaction
-              COUNTS sit beside the comment count on the action line, and the inline
-              emoji PICKER shares the comment composer row below. */}
-          <PostReplies
-            postId={post.id}
-            initialCount={replyCount}
-            myProfileId={myProfileId}
-            postReactions={reactions}
+          <ContextActions
+            role={(viewerRole ?? 'member') as CommunityRole}
+            context={{ type: 'post', id: post.id, isPinned: post.is_pinned, isOwn, postType: post.post_type }}
           />
+        </div>
+
+        {/* Body */}
+        {post.body && (
+          <PostBody body={post.body} className="mb-2.5 text-sm leading-relaxed text-text" />
+        )}
+
+        {/* Post image — inset media, no second frame around it. */}
+        {post.media_urls?.length > 0 && (
+          <div className="relative mb-2.5 h-96 w-full overflow-hidden rounded-xl">
+            <Image
+              src={post.media_urls[0]}
+              alt="Post attachment"
+              fill
+              sizes="(min-width: 768px) 36rem, 100vw"
+              className="object-cover"
+            />
+          </div>
+        )}
+
+        {/* PostReplies owns the whole reaction + comment surface: the reaction
+            COUNTS sit beside the comment count on the action line, and the inline
+            emoji PICKER shares the comment composer row below. */}
+        <PostReplies
+          postId={post.id}
+          initialCount={replyCount}
+          myProfileId={myProfileId}
+          postReactions={reactions}
+        />
       </div>
     </article>
   )
 }
-

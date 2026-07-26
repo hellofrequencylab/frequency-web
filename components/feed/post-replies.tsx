@@ -48,9 +48,9 @@ function CommentRow({
 
   return (
     <div>
-      {/* Warmer, tighter, less-boxy row: a soft surface tint instead of a hard
-          card border, so the thread reads as a quiet conversation. */}
-      <div className="flex items-start gap-2.5 rounded-xl bg-surface/50 px-2.5 py-2">
+      {/* Warmer, tighter, less-boxy row: a soft inset tint (a step off the white
+          card, no border), so the thread reads as a quiet conversation. */}
+      <div className="flex items-start gap-2.5 rounded-xl bg-surface-elevated/60 px-2.5 py-2 dark:bg-canvas/40">
         <Link href={author ? `/people/${author.handle}` : '#'} className="shrink-0">
           {author?.avatar_url ? (
             <Image
@@ -156,7 +156,7 @@ function ReplyComposer({
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) onSubmit(e)
         }}
-        className="flex-1 resize-none rounded-xl bg-surface shadow-sm px-3.5 py-2 text-xs leading-relaxed text-text placeholder-subtle ring-1 ring-border/60 focus:outline-none focus:ring-1 focus:ring-border-strong/40 disabled:opacity-50"
+        className="flex-1 resize-none rounded-xl bg-surface-elevated/50 px-3.5 py-2 text-xs leading-relaxed text-text placeholder-subtle ring-1 ring-border/50 focus:outline-none focus:ring-1 focus:ring-border-strong/50 disabled:opacity-50 dark:bg-canvas/40"
       />
       <button
         type="submit"
