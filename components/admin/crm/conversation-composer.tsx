@@ -41,7 +41,20 @@ export function ConversationComposer({
     if (!text || pending) return
     setError(null)
     start(async () => {
-      const res = await sendAction({ conversationId, body: text, isInternal: internal })
+      // A rejected action promise (server timeout, a redeploy invalidating the action reference, a
+      // dropped connection) must NOT escape this transition — an uncaught rejection here bubbles to
+      // the admin error boundary and takes down the whole workspace. Catch it and fail inline.
+      let res: ActionResult
+      try {
+        res = await sendAction({ conversationId, body: text, isInternal: internal })
+      } catch {
+        setError(
+          internal
+            ? 'Could not save the note. Your text is still here. Try again.'
+            : 'Could not send the reply. Your text is still here. Try again.',
+        )
+        return
+      }
       if (isError(res)) {
         setError(res.error)
         return
@@ -56,7 +69,15 @@ export function ConversationComposer({
     if (!draftAction || drafting) return
     setError(null)
     startDraft(async () => {
-      const res = await draftAction(conversationId)
+      // Same guard as submit(): drafting calls a model server-side, so this is the request most
+      // likely to time out. A rejection renders inline; the thread and the page stay up.
+      let res: ActionResult<{ draft: string }>
+      try {
+        res = await draftAction(conversationId)
+      } catch {
+        setError('Vera could not draft a reply right now. The thread is fine. Try again in a moment.')
+        return
+      }
       if (isError(res)) {
         setError(res.error)
         return

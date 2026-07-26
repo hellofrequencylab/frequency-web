@@ -253,32 +253,51 @@ export async function setConversationTriage(input: {
 // a human still runs the gated Send / triage.
 
 /** Draft a reply with Vera — thin wrapper over the shared conversation-AI (lib/comms/vera-conversation),
- *  so the platform and every Space call the exact same logic. Staff-gated. */
+ *  so the platform and every Space call the exact same logic. Staff-gated.
+ *  GUARDED past the gate: an error thrown out of a server action trips the admin error boundary
+ *  ("This view didn't load") and takes down the whole workspace (see email-studio's test-send catch for
+ *  the same convention), so anything unexpected comes back as a typed fail() the composer renders inline.
+ *  requireAdmin stays OUTSIDE the try — its redirect is control flow and must propagate. */
 export async function draftConversationReply(conversationId: string): Promise<ActionResult<{ draft: string }>> {
   const { profileId, webRole } = await requireAdmin(GATE.min, { staff: GATE.staff })
-  const conv = await getConversationById((conversationId ?? '').trim())
-  if (conv && (await tenantLaneSealed(webRole, conv.spaceId))) return fail(SEALED_COPY)
-  return veraDraftReply((conversationId ?? '').trim(), profileId)
+  try {
+    const conv = await getConversationById((conversationId ?? '').trim())
+    if (conv && (await tenantLaneSealed(webRole, conv.spaceId))) return fail(SEALED_COPY)
+    return await veraDraftReply((conversationId ?? '').trim(), profileId)
+  } catch (err) {
+    console.error('[conversations] draftConversationReply failed:', err)
+    return fail('Vera could not draft a reply right now. The thread is fine. Try again in a moment.')
+  }
 }
 
-/** One short summary of the thread (shared logic). Staff-gated. */
+/** One short summary of the thread (shared logic). Staff-gated; guarded like the draft. */
 export async function summarizeConversation(conversationId: string): Promise<ActionResult<{ summary: string }>> {
   const { profileId, webRole } = await requireAdmin(GATE.min, { staff: GATE.staff })
-  const conv = await getConversationById((conversationId ?? '').trim())
-  if (conv && (await tenantLaneSealed(webRole, conv.spaceId))) return fail(SEALED_COPY)
-  return veraSummarize((conversationId ?? '').trim(), profileId)
+  try {
+    const conv = await getConversationById((conversationId ?? '').trim())
+    if (conv && (await tenantLaneSealed(webRole, conv.spaceId))) return fail(SEALED_COPY)
+    return await veraSummarize((conversationId ?? '').trim(), profileId)
+  } catch (err) {
+    console.error('[conversations] summarizeConversation failed:', err)
+    return fail('Could not summarize right now. Try again in a moment.')
+  }
 }
 
-/** Suggest + apply a priority (shared logic; persists reversibly). Staff-gated. */
+/** Suggest + apply a priority (shared logic; persists reversibly). Staff-gated; guarded like the draft. */
 export async function suggestConversationTriage(
   conversationId: string,
 ): Promise<ActionResult<{ priority: ConversationPriority; reason: string }>> {
   const { profileId, webRole } = await requireAdmin(GATE.min, { staff: GATE.staff })
-  const conv = await getConversationById((conversationId ?? '').trim())
-  if (conv && (await tenantLaneSealed(webRole, conv.spaceId))) return fail(SEALED_COPY)
-  const r = await veraSuggestTriage((conversationId ?? '').trim(), profileId)
-  revalidatePath('/admin/crm/conversations')
-  return r
+  try {
+    const conv = await getConversationById((conversationId ?? '').trim())
+    if (conv && (await tenantLaneSealed(webRole, conv.spaceId))) return fail(SEALED_COPY)
+    const r = await veraSuggestTriage((conversationId ?? '').trim(), profileId)
+    revalidatePath('/admin/crm/conversations')
+    return r
+  } catch (err) {
+    console.error('[conversations] suggestConversationTriage failed:', err)
+    return fail('Could not suggest a priority right now. Try again in a moment.')
+  }
 }
 
 /** `Re:`-prefix the subject once (mirrors the CRM inbox composer). */

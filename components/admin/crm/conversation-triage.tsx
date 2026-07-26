@@ -61,7 +61,16 @@ export function ConversationTriage({
     if (pending) return
     setError(null)
     start(async () => {
-      const r = await triageAction({ conversationId, ...p })
+      // A rejected action promise (server timeout, a redeploy invalidating the action reference, a
+      // dropped connection) must NOT escape this transition — an uncaught rejection here bubbles to
+      // the admin error boundary and takes down the whole workspace. Catch it and fail inline.
+      let r: ActionResult
+      try {
+        r = await triageAction({ conversationId, ...p })
+      } catch {
+        setError('That change did not save. Try again.')
+        return
+      }
       if (isError(r)) {
         setError(r.error)
         return
@@ -76,7 +85,13 @@ export function ConversationTriage({
     if (!summarizeAction || aiPending) return
     setError(null)
     startAi(async () => {
-      const r = await summarizeAction(conversationId)
+      // Same guard as patch(): the summary calls a model server-side, the slowest kind of action.
+      let r: ActionResult<{ summary: string }>
+      try {
+        r = await summarizeAction(conversationId)
+      } catch {
+        return setError('Could not summarize right now. Try again in a moment.')
+      }
       if (isError(r)) return setError(r.error)
       setNote(r.data.summary)
     })
@@ -86,7 +101,13 @@ export function ConversationTriage({
     if (!aiTriageAction || aiPending) return
     setError(null)
     startAi(async () => {
-      const r = await aiTriageAction(conversationId)
+      // Same guard as patch(): a rejection renders inline; the thread and the page stay up.
+      let r: ActionResult<{ priority: string; reason: string }>
+      try {
+        r = await aiTriageAction(conversationId)
+      } catch {
+        return setError('Could not suggest a priority right now. Try again in a moment.')
+      }
       if (isError(r)) return setError(r.error)
       setNote(`Priority set to ${r.data.priority}. ${r.data.reason}`)
       router.refresh()
