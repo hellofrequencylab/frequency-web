@@ -13,6 +13,7 @@ import {
   type Offering,
 } from '@/lib/commerce/types'
 import { PriceModeEditor } from '@/components/commerce/price-mode-editor'
+import type { SpaceAccessContext } from '@/lib/events/ticket-space-access'
 import {
   hostCreateTicketTier,
   hostUpdateTicketTier,
@@ -29,15 +30,6 @@ import {
 // priceToTicketPricingMode adapter onto the existing columns (NO migration).
 
 const centsToDollars = (c: number | null | undefined) => (c != null ? (c / 100).toFixed(2) : '')
-
-/** Membership-linked access context (ADR-823): the event's hosting Space, its membership tiers,
- *  and whether its plan clears the Collective gate for members-only tickets. */
-export type SpaceAccessContext = {
-  spaceName: string
-  /** Plan gate: false = show the locked upsell hint instead of the control. */
-  allowed: boolean
-  membershipTiers: { id: string; name: string }[]
-}
 
 const input =
   'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'

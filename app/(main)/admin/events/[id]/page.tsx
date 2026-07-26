@@ -9,6 +9,7 @@ import { PageHeading } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
 import { EventEditClient, type TierEditRow } from './event-edit-client'
+import { loadSpaceAccessContext } from '@/lib/events/ticket-space-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +35,7 @@ async function loadTiers(eventId: string) {
   const { data } = await admin
     .from('event_ticket_types')
     .select(
-      'id, name, description, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, sort_order, active',
+      'id, name, description, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, space_members_only, space_tier_id, sort_order, active',
     )
     .eq('event_id', eventId)
     .order('sort_order', { ascending: true })
@@ -47,7 +48,13 @@ export default async function AdminEventEditPage({ params }: { params: Promise<{
   await requireAdmin('host', { staff: 'community' })
 
   // Verify the caller can edit this event before rendering the form.
-  const [event, caps, tiers] = await Promise.all([loadEvent(id), getEventCapabilities(id), loadTiers(id)])
+  const [event, caps, tiers, spaceAccess] = await Promise.all([
+    loadEvent(id),
+    getEventCapabilities(id),
+    loadTiers(id),
+    // Membership-linked ticket access (ADR-823): the "Who can buy" control's context.
+    loadSpaceAccessContext(id),
+  ])
   if (!event) notFound()
   // Can't edit this event's settings — send them home rather than to a dead end.
   if (!caps.has('event.editSettings')) redirect('/feed')
@@ -101,6 +108,7 @@ export default async function AdminEventEditPage({ params }: { params: Promise<{
           price_cents:  (event as { price_cents?: number | null }).price_cents ?? null,
         }}
         tiers={tiers}
+        spaceAccess={spaceAccess}
       />
     </EventEditorWindow>
   )

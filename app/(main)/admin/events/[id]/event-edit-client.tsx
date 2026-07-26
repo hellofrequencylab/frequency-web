@@ -12,6 +12,7 @@ import {
   setTicketTierActive,
 } from '../actions'
 import { DangerModal } from '@/components/admin/danger-modal'
+import type { SpaceAccessContext } from '@/lib/events/ticket-space-access'
 
 type EventData = {
   id: string
@@ -38,6 +39,10 @@ export type TierEditRow = {
   quantity: number | null
   sold: number
   member_only: boolean
+  /** ADR-823: only active members of the hosting Space may buy this tier. */
+  space_members_only: boolean
+  /** ADR-823: narrows the gate to one space_membership_tiers row; null = any active membership. */
+  space_tier_id: string | null
   sort_order: number
   active: boolean
 }
@@ -64,7 +69,16 @@ function toLocalInput(iso: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-export function EventEditClient({ event, tiers }: { event: EventData; tiers: TierEditRow[] }) {
+export function EventEditClient({
+  event,
+  tiers,
+  spaceAccess,
+}: {
+  event: EventData
+  tiers: TierEditRow[]
+  /** Hosting-space membership context (ADR-823); null = no hosting space, control hidden. */
+  spaceAccess?: SpaceAccessContext | null
+}) {
   const router = useRouter()
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -257,7 +271,13 @@ export function EventEditClient({ event, tiers }: { event: EventData; tiers: Tie
       </div>
 
       {/* Ticket tiers (EVENTS-SYSTEM §2.2) */}
-      <TierManager eventId={event.id} slug={event.slug} tiers={tiers} flatPriceCents={event.price_cents} />
+      <TierManager
+        eventId={event.id}
+        slug={event.slug}
+        tiers={tiers}
+        flatPriceCents={event.price_cents}
+        spaceAccess={spaceAccess}
+      />
     </div>
   )
 }
@@ -289,11 +309,13 @@ function TierManager({
   slug,
   tiers,
   flatPriceCents,
+  spaceAccess,
 }: {
   eventId: string
   slug: string
   tiers: TierEditRow[]
   flatPriceCents: number | null
+  spaceAccess?: SpaceAccessContext | null
 }) {
   const router = useRouter()
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -350,6 +372,7 @@ function TierManager({
               <TierForm
                 key={t.id}
                 initial={t}
+                spaceAccess={spaceAccess}
                 disabled={isPending}
                 onCancel={() => setEditingId(null)}
                 onSubmit={(fd) =>
@@ -369,6 +392,15 @@ function TierManager({
                     {t.member_only && (
                       <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
                         Members
+                      </span>
+                    )}
+                    {(t.space_members_only || t.space_tier_id) && (
+                      <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
+                        {spaceAccess
+                          ? t.space_tier_id
+                            ? `${spaceAccess.membershipTiers.find((mt) => mt.id === t.space_tier_id)?.name ?? 'Membership'} only`
+                            : `${spaceAccess.spaceName} members`
+                          : 'Space members'}
                       </span>
                     )}
                     {!t.active && (
@@ -413,6 +445,7 @@ function TierManager({
       {/* Add new tier */}
       {adding && (
         <TierForm
+          spaceAccess={spaceAccess}
           disabled={isPending}
           onCancel={() => setAdding(false)}
           onSubmit={(fd) => run(() => createTicketTier(eventId, slug, fd), () => setAdding(false))}
@@ -424,21 +457,37 @@ function TierManager({
 
 function TierForm({
   initial,
+  spaceAccess,
   disabled,
   onSubmit,
   onCancel,
 }: {
   initial?: TierEditRow
+  spaceAccess?: SpaceAccessContext | null
   disabled: boolean
   onSubmit: (fd: FormData) => void
   onCancel: () => void
 }) {
   const [mode, setMode] = useState<PricingMode>(initial?.pricing_mode ?? 'fixed')
   const buyerChosen = mode === 'pwyc' || mode === 'sliding_scale' || mode === 'donation'
+  // "Who can buy" (ADR-823), mirroring the host Manage panel: '' = everyone, 'members' = any
+  // active membership of the hosting Space, else a specific space_membership_tiers id. Seeded
+  // from the row so an admin SAVE preserves an existing gate instead of silently wiping it.
+  const [audience, setAudience] = useState<string>(() =>
+    initial?.space_tier_id ? initial.space_tier_id : initial?.space_members_only ? 'members' : '',
+  )
 
   function handle(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    onSubmit(new FormData(e.currentTarget))
+    const fd = new FormData(e.currentTarget)
+    if (audience === 'members') {
+      fd.set('space_members_only', 'on')
+      fd.set('space_tier_id', '')
+    } else {
+      fd.delete('space_members_only')
+      fd.set('space_tier_id', audience)
+    }
+    onSubmit(fd)
   }
 
   return (
@@ -506,6 +555,36 @@ function TierForm({
         <input name="member_only" type="checkbox" defaultChecked={initial?.member_only ?? false} disabled={disabled} className="h-4 w-4 rounded border-border" />
         Members only (Crew+)
       </label>
+
+      {/* Who can buy (ADR-823): parity with the host Manage panel. Space-hosted events only; the
+          shared writers validate the gate (hosting space + Collective floor + tier ownership). */}
+      {spaceAccess &&
+        (spaceAccess.allowed ? (
+          <div>
+            <label className={tLbl} htmlFor={`admin-audience-${initial?.id ?? 'new'}`}>
+              Who can buy
+            </label>
+            <select
+              id={`admin-audience-${initial?.id ?? 'new'}`}
+              value={audience}
+              onChange={(e) => setAudience(e.target.value)}
+              disabled={disabled}
+              className={tInput}
+            >
+              <option value="">Everyone</option>
+              <option value="members">{spaceAccess.spaceName} members (any tier)</option>
+              {spaceAccess.membershipTiers.map((mt) => (
+                <option key={mt.id} value={mt.id}>
+                  {spaceAccess.spaceName} · {mt.name} members
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <p className="rounded-lg bg-surface px-3 py-2 text-xs text-muted">
+            Members-only tickets, linked to the space membership, come with the Collective plan.
+          </p>
+        ))}
 
       <div className="flex items-center gap-2 pt-1">
         <button
