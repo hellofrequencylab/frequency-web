@@ -1,29 +1,12 @@
 import { getEventContext } from '@/lib/events/active-event'
-import { EventFactPanel } from '@/components/events/event-fact-panel'
 
-// The movable FACTS block (the `event-facts` layout module): the critical-info card — when, how
-// full, and who's going — an operator places anywhere on the event page. A zero-prop self-fetching
-// RSC reading the request-scoped event context (lib/events/active-event.ts); the page resolves every
-// input once and stamps it, so there's no re-fetch or prop-drilling. The venue line + map are now
-// their OWN movable block (`event-location`), so they're not here. Renders for both live and
-// cancelled events (the facts still help a guest).
+// RETIRED into the unified RSVP box (ADR-826): the when-line + online join link now lead the
+// `event-join` card and the who's-coming pile lives there too, so this standalone block returns
+// null everywhere — including event pages with a SAVED layout still listing `event-facts`, which
+// double-rendered the date and "who's going" (owner report 2026-07-26). The module id stays
+// registered so saved layouts keep resolving; it simply contributes nothing.
 export const EventFacts = async () => {
   const ctx = getEventContext()
   if (!ctx) return null
-  const { facts } = ctx
-
-  return (
-    <EventFactPanel
-      whenLine={facts.whenLine}
-      isOnline={facts.isOnline}
-      onlineUrl={facts.onlineUrl}
-      going={facts.going}
-      nearFull={facts.nearFull}
-      spotsLeft={facts.spotsLeft}
-      guests={facts.guests}
-      guestsAreVisible={facts.guestsAreVisible}
-      viewerSignedIn={facts.viewerSignedIn}
-      signInHref={facts.signInHref}
-    />
-  )
+  return null
 }

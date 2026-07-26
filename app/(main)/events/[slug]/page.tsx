@@ -25,6 +25,8 @@ import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { updateEventField } from '../admin-actions'
 import { RsvpControls } from '@/components/events/rsvp-controls'
 import { WarmProof } from '@/components/events/warm-proof'
+import { safeHttpUrl } from '@/lib/safe-url'
+import { MembershipCheckoutFold } from '@/components/events/membership-checkout-fold'
 import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { HOME_TZ, resolveZone, isEventPast, zoneAbbrev } from '@/lib/time/zone'
 import { type ActivityPost } from '@/components/events/event-activity'
@@ -622,9 +624,19 @@ export default async function EventDetailPage({
   // MEMBERSHIP PRICE on a gated tier (ADR-823 polish): a non-member sees what the membership
   // costs instead of a bare "Free" — the named tier's price when the ticket names one, else the
   // cheapest active tier. Members see the ticket's own price (Free) via the unlocked state.
+  // The tier LIST + billing state also feed the tap-to-join popup on the membership row.
+  let hostMembershipTiers: import('@/lib/spaces/memberships').MembershipTier[] = []
+  let membershipBillingOn = false
   if (tiers.some((t) => t.spaceMembersOnly) && eventSpaceId) {
-    const { listMembershipTiers } = await import('@/lib/spaces/memberships')
-    const membershipTiers = await listMembershipTiers(eventSpaceId)
+    const [{ listMembershipTiers }, { billingLive }] = await Promise.all([
+      import('@/lib/spaces/memberships'),
+      import('@/lib/pricing/settings'),
+    ])
+    ;[hostMembershipTiers, membershipBillingOn] = await Promise.all([
+      listMembershipTiers(eventSpaceId),
+      billingLive(),
+    ])
+    const membershipTiers = hostMembershipTiers
     const fmt = (cents: number, interval: 'month' | 'year' | 'once') => {
       if (cents <= 0) return 'Free membership'
       const dollars = cents / 100
@@ -1047,13 +1059,67 @@ export default async function EventDetailPage({
           )}
         </div>
 
+        {/* Event details lead the box (owner spec): the when-line, and for an online event the
+            join link (the venue line + map stay in the event-location block). */}
+        <div className="space-y-1.5">
+          <p className="flex items-start gap-2 text-sm text-text">
+            <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
+            <span>{whenLine}</span>
+          </p>
+          {isOnline && (
+            <p className="flex items-start gap-2 text-sm text-text">
+              <Video className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
+              {safeHttpUrl(onlineUrl) ? (
+                <a
+                  href={onlineUrl ?? undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="break-all text-primary-strong hover:underline"
+                >
+                  Join link
+                </a>
+              ) : (
+                <span className="text-muted">Online. Link shows once you RSVP.</span>
+              )}
+            </p>
+          )}
+        </div>
+
         {/* RSVP mode with pricing: the tiers as INFORMATION (no buy CTA) — what it costs at the
             door and what a membership includes, next to the one join function below. The row that
             APPLIES to the viewer highlights: a member's included tier, else the general rate —
             so a signed-in member lands on their rate with the RSVP switch ready below. */}
         {!ticketsMode && isPaidEvent && hasTiers && (
           <div className="space-y-2">
-            {tiers.map((t) => (
+            {tiers.map((t) => {
+              // A membership row a non-member can act on: selecting the package folds the full
+              // checkout experience open right here in the column (ADR-826, owner spec).
+              const unlocking = t.spaceTierId
+                ? hostMembershipTiers.filter((mt) => mt.id === t.spaceTierId)
+                : hostMembershipTiers
+              if (
+                t.spaceMembersOnly &&
+                !memberUnlocks(t) &&
+                eventSpaceId &&
+                spaceHost &&
+                unlocking.length > 0
+              ) {
+                return (
+                  <MembershipCheckoutFold
+                    key={t.id}
+                    rowName={t.name}
+                    priceLabel={t.membershipPriceLabel ?? 'Members'}
+                    spaceId={eventSpaceId}
+                    spaceName={spaceHost.name}
+                    tiers={unlocking}
+                    includedEvent={{ slug: event.slug, title: event.title }}
+                    billingOn={membershipBillingOn}
+                    signedIn={!!myProfileId}
+                    signInHref={`/sign-in?next=/events/${event.slug}`}
+                  />
+                )
+              }
+              return (
               <div
                 key={t.id}
                 className={`flex items-start justify-between gap-3 rounded-xl border px-3.5 py-2.5 ${
@@ -1088,7 +1154,8 @@ export default async function EventDetailPage({
                         : 'Pay what you can'}
                 </span>
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
