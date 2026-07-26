@@ -101,4 +101,23 @@ describe('startConversationMessage', () => {
     expect(await startConversationMessage(BASE)).toBeNull()
     expect(appendConversationMessage).not.toHaveBeenCalled()
   })
+
+  it('scope spine (ADR-827): a scoped compose passes the scope to the open AND the mirror', async () => {
+    const scope = { kind: 'event' as const, id: 'ev-7' }
+    await startConversationMessage({ ...BASE, scope })
+    const opened = openOrGetConversation.mock.calls[0][0] as Record<string, unknown>
+    expect(opened.scopeKind).toBe('event')
+    expect(opened.scopeId).toBe('ev-7')
+    const appended = appendConversationMessage.mock.calls[0][0] as Record<string, unknown>
+    expect((appended.mirror as Record<string, unknown>).scope).toEqual(scope)
+  })
+
+  it('scope spine: an unscoped compose opens with null scope keys (never inherits one)', async () => {
+    await startConversationMessage(BASE)
+    const opened = openOrGetConversation.mock.calls[0][0] as Record<string, unknown>
+    expect(opened.scopeKind).toBeNull()
+    expect(opened.scopeId).toBeNull()
+    const appended = appendConversationMessage.mock.calls[0][0] as Record<string, unknown>
+    expect((appended.mirror as Record<string, unknown>).scope).toBeNull()
+  })
 })

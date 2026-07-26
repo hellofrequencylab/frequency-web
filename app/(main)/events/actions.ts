@@ -640,6 +640,9 @@ async function sendRsvpConfirmationSms(
         summary: body,
         source: 'engagement',
         metadata: { kind: 'event_rsvp_confirmation', event_id: eventId, status },
+        // Scope spine (ADR-827): first-class event scope, dual-written next to the legacy
+        // metadata.kind + event_id convention.
+        scope: { kind: 'event', id: eventId },
       })
     }
   } catch (e) {

@@ -54,6 +54,26 @@ describe('recordSpaceMemberActivity', () => {
     })
   })
 
+  it('stamps scope + engagement_event_id onto the row (ADR-827 scope spine)', async () => {
+    await recordSpaceMemberActivity({
+      spaceId: 'space-1',
+      spaceOwnerProfileId: 'owner-1',
+      memberProfileId: 'member-1',
+      channel: 'event',
+      summary: 'Booked: Sound Bath',
+      idempotencyKey: 'booking:b-1',
+      scope: { kind: 'booking', id: 'b-1' },
+      engagementEventId: 'ee-1',
+    })
+    const write = calls.find((c) => c.op === 'insert' || c.op === 'upsert')
+    expect(write!.row).toMatchObject({
+      scope_kind: 'booking',
+      scope_id: 'b-1',
+      engagement_event_id: 'ee-1',
+      space_id: 'space-1',
+    })
+  })
+
   it('no-ops (no DB write) when the space owner or member is missing', async () => {
     await recordSpaceMemberActivity({ spaceId: 'space-1', spaceOwnerProfileId: null, memberProfileId: 'm', channel: 'event', summary: 's', idempotencyKey: 'k' })
     await recordSpaceMemberActivity({ spaceId: 'space-1', spaceOwnerProfileId: 'o', memberProfileId: null, channel: 'event', summary: 's', idempotencyKey: 'k' })

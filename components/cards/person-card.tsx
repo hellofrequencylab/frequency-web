@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { EntityCard } from '@/components/cards/entity-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
 
@@ -45,10 +46,11 @@ export function PersonCard({
         <div className="relative">
           {avatarUrl ? (
             <Image
-              src={avatarUrl}
+              src={avatarSrc(avatarUrl)}
               alt={displayName}
               width={44}
               height={44}
+              style={avatarFocusStyle(avatarUrl)}
               className="h-11 w-11 rounded-full object-cover"
             />
           ) : (

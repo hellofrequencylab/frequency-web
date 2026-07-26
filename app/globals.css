@@ -47,6 +47,15 @@
   --color-on-ink-muted:     #B5A893;
   --color-on-ink-subtle:    #857A66;
 
+  /* Text over MEDIA (member photos: profile/space/event covers). Unlike on-ink, the tone
+     follows the IMAGE, not the theme: `light` is the light copy for dark imagery, `dark`
+     the dark copy for bright imagery (both aliases, so they retheme with ink/on-ink).
+     `--color-on-media` is the LIVE value — light copy by default, flipped per photo by the
+     content-aware hero (`.hero-adaptive-text`, ADR-830). */
+  --color-on-media-light:   var(--color-on-ink);
+  --color-on-media-dark:    var(--color-ink);
+  --color-on-media:         var(--color-on-media-light);
+
   /* Brand. Primary (amber-gold) */
   --color-primary:          #E2912F;
   --color-primary-hover:    #CE8023;
@@ -739,6 +748,7 @@
   --color-on-ink:           var(--color-on-ink);
   --color-on-ink-muted:     var(--color-on-ink-muted);
   --color-on-ink-subtle:    var(--color-on-ink-subtle);
+  --color-on-media:         var(--color-on-media);
 
   --color-primary:          var(--color-primary);
   --color-primary-hover:    var(--color-primary-hover);
@@ -1273,6 +1283,44 @@ h1, h2, h3, h4, h5, h6 {
   text-shadow:
     0 1px 2px color-mix(in srgb, var(--color-canvas) 70%, transparent),
     0 2px 12px color-mix(in srgb, var(--color-canvas) 55%, transparent);
+}
+
+/* ── Content-aware hero text (ADR-830) ─────────────────────────────────────────
+   A PageHero with `adaptiveText` drops the text-shadow glow entirely and renders its
+   overlaid copy in `text-on-media`. The HeroAdaptiveText sensor samples the cover pixels
+   behind the lockup (plus the active overlay) and stamps the section:
+     data-media-tone="light"  → the backdrop is BRIGHT, flip to the dark copy;
+     data-media-scrim="on"    → neither tone clears the readability floor, fade in the
+                                subtle gradient scrim (always the OPPOSITE tone to the
+                                text, theme-independent: ink behind light copy, on-ink
+                                behind dark copy). Tokens only, no raw hex.               */
+.hero-adaptive-text {
+  --hero-text-backdrop: var(--color-ink);
+}
+.hero-adaptive-text[data-media-tone="light"] {
+  --color-on-media: var(--color-on-media-dark);
+  --hero-text-backdrop: var(--color-on-ink);
+}
+.hero-adaptive-text .hero-text-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 42%,
+    color-mix(in srgb, var(--hero-text-backdrop) 48%, transparent) 100%
+  );
+}
+.hero-adaptive-text[data-media-scrim="on"] .hero-text-scrim {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-adaptive-text .hero-text-scrim {
+    transition: none;
+  }
 }
 
 /* Soft amber radial glow backdrop, e.g. behind a hero CTA or within a dark band.

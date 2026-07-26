@@ -27,6 +27,7 @@ import {
 } from './load'
 import { loadEventCoreStats } from '@/lib/events/event-stats'
 import { EventCoreStatsCards } from '@/components/events/event-core-stats'
+import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { ApproveButton } from './approve-button'
 import { CsvExportButton } from './csv-export-button'
 import { QuestionEditor } from './question-editor'
@@ -257,28 +258,41 @@ export async function QuestionnaireSection({
 }
 
 // ── Section A: the Home at-a-glance strip ─────────────────────────────────────
-// ONE dense row of compact tiles (StatCard size "xs") on the hub's Home tab: the shared
-// core-stats set (sold/revenue when paid, going, interested, waitlist, checked in, capacity)
-// plus page views folded in — replacing both the full-size DashboardTemplate stats row and
-// the separate Reach section (owner directive: smaller stat boxes, one strip).
+// Labeled clusters of soft compact tiles (StatCard size "xs", no white cards — owner
+// directive) on the hub's Home tab: Tickets (paid only) and Guests from the shared
+// core-stats set, plus a Reach cluster with page views. Every tile links into its
+// relevant area (guests/tickets sections; page views → the public event page).
 
 export async function HomeStatsStrip({ eventId, slug }: { eventId: string; slug: string }) {
   const [coreStats, views] = await Promise.all([loadEventCoreStats(eventId), loadPageViews(slug)])
+  const manage = `/events/${slug}/manage`
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
-      <EventCoreStatsCards stats={coreStats} variant="strip" />
-      <StatCard
-        bordered
-        size="xs"
-        icon={Eye}
-        label="Page views"
-        value={views.total.toLocaleString()}
-        detail={
-          views.last7 > 0
-            ? `${views.last7.toLocaleString()} in the last 7 days`
-            : 'None in the last 7 days'
-        }
+    <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
+      <EventCoreStatsCards
+        stats={coreStats}
+        variant="strip"
+        links={{
+          tickets: TICKETING_ENABLED ? `${manage}?section=tickets` : `${manage}?section=guests`,
+          guests: `${manage}?section=guests`,
+        }}
       />
+      <div>
+        <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Reach</p>
+        <div className="flex flex-wrap gap-1.5">
+          <StatCard
+            size="xs"
+            icon={Eye}
+            label="Page views"
+            value={views.total.toLocaleString()}
+            detail={
+              views.last7 > 0
+                ? `${views.last7.toLocaleString()} in the last 7 days`
+                : 'None in the last 7 days'
+            }
+            href={`/events/${slug}`}
+          />
+        </div>
+      </div>
     </div>
   )
 }

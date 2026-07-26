@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { avatarSrc, readAvatarFocus } from '@/lib/images/avatar-focus'
 
 // The identity avatar shown in a profile's Detail title row (the brand mark for an
 // entity space, the member's photo for a person). Inline beside the name, sized to
@@ -19,16 +20,18 @@ export function ProfileAvatar({
   initials: string
   /** Demo profiles desaturate their photo so they read as not-quite-real. */
   dimmed?: boolean
-  /** The chosen focal point ("x% y%") so the photo keeps its subject in the round crop. Centered default. */
+  /** The chosen focal point ("x% y%") so the photo keeps its subject in the round crop.
+   *  Falls back to the URL's own #fp fragment (ADR-829), then to a centered default. */
   focus?: string | null
 }) {
+  const resolvedFocus = focus ?? readAvatarFocus(src)
   return src ? (
     <Image
-      src={src}
+      src={avatarSrc(src)}
       alt={name}
       width={112}
       height={112}
-      style={focus ? { objectPosition: focus } : undefined}
+      style={resolvedFocus ? { objectPosition: resolvedFocus } : undefined}
       className={`h-16 w-16 shrink-0 rounded-full object-cover ring-4 ring-surface sm:h-20 sm:w-20 ${
         dimmed ? 'dimmed' : ''
       }`}

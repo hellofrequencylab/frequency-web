@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { fieldClasses } from '@/components/ui/field'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { isError } from '@/lib/action-result'
 import {
   setMemberRole,
@@ -63,10 +64,11 @@ function Avatar({ row }: { row: RosterRow }) {
   if (row.avatarUrl) {
     return (
       <Image
-        src={row.avatarUrl}
+        src={avatarSrc(row.avatarUrl)}
         alt=""
         width={36}
         height={36}
+        style={avatarFocusStyle(row.avatarUrl)}
         className="h-9 w-9 shrink-0 rounded-full object-cover"
         aria-hidden
       />

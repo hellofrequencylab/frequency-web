@@ -17,6 +17,7 @@ import {
   CalendarDays, MapPin, Lightbulb, Link2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import type { ExtractedEvent, EventLink } from '@/lib/events/types'
 import type { DetailsMedia, EventDetailsWithMedia } from '@/lib/events/details-media'
 import { decodePosterLinks } from '@/lib/events/qr-scan'
@@ -53,15 +54,27 @@ export function Creator({ userId }: { userId: string }) {
   const cameraRef = useRef<HTMLInputElement>(null)
   const galleryRef = useRef<HTMLInputElement>(null)
 
-  function addFiles(list: FileList | null) {
+  async function addFiles(list: FileList | null) {
     const incoming = list ? Array.from(list) : []
-    if (incoming.length) {
-      setFiles((prev) => [...prev, ...incoming].slice(0, 4))
-      setThumbs((prev) => [...prev, ...incoming.map((f) => URL.createObjectURL(f))].slice(0, 4))
-      setMsg(null)
-    }
     if (cameraRef.current) cameraRef.current.value = ''
     if (galleryRef.current) galleryRef.current.value = ''
+    if (!incoming.length) return
+    setMsg(null)
+    // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG so the thumbs
+    // render and the on-device downscale/deskew/QR steps can decode it (none work on a raw HEIC
+    // outside Safari). A HEIC this browser cannot convert gets an inline message and is skipped.
+    const ready: File[] = []
+    for (const raw of incoming) {
+      const prepared = await prepareImageForUpload(raw)
+      if ('error' in prepared) {
+        setMsg({ kind: 'err', text: prepared.error })
+        continue
+      }
+      ready.push(prepared.file)
+    }
+    if (!ready.length) return
+    setFiles((prev) => [...prev, ...ready].slice(0, 4))
+    setThumbs((prev) => [...prev, ...ready.map((f) => URL.createObjectURL(f))].slice(0, 4))
   }
 
   function removeFile(i: number) {
@@ -473,8 +486,8 @@ export function Creator({ userId }: { userId: string }) {
         </button>
       </div>
 
-      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => addFiles(e.target.files)} />
-      <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => addFiles(e.target.files)} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => void addFiles(e.target.files)} />
+      <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => void addFiles(e.target.files)} />
     </div>
   )
 }

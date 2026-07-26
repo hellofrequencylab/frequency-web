@@ -27,6 +27,8 @@ import type {
   MemberQuery,
 } from '@/lib/people/member-viewer'
 import type { MemberNetwork, Milestone } from '@/lib/crm/member-network'
+// Type-only, from the PURE assembler module (no server imports), so the client bundle stays clean.
+import type { MessagePath } from '@/lib/crm/message-path'
 import type { ActionResult } from '@/lib/action-result'
 
 /** How the right pane reads. `full` = the rich detail card (contact, activity, stats, actions);
@@ -75,10 +77,14 @@ export interface CrmMemberDetail extends MemberDetail {
   engagement?: CrmEngagement
   /** What they manage + what they are part of. */
   network?: MemberNetwork
-  /** The "Path" rail: MAJOR milestones only, newest first. */
+  /** The milestone strip inside The Path fold: MAJOR milestones only, newest first. */
   milestones?: Milestone[]
   /** Steward notes captured about this person. */
   notes?: { id: string; body: string }[]
+  /** The Path (ADR-827 ruling 3): the thread-grouped message history through the viewer's lane,
+   *  each entry naming the website event it was tied to. Undefined = no lane (fold shows
+   *  milestones only). */
+  path?: MessagePath
 }
 
 /** The initial list presentation, with a visible toggle. `card` = PersonCard tiles in a grid;

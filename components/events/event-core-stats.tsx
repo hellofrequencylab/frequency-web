@@ -10,9 +10,12 @@ import { formatEventMoney, type EventCoreStats } from '@/lib/events/event-stats'
 //
 //   variant="cards"  → bare <StatCard> tiles for the DashboardTemplate `stats` slot, which
 //                      supplies the responsive grid.
-//   variant="strip"  → bare COMPACT tiles (StatCard size "xs", bordered) for the Manage hub's
-//                      dense at-a-glance strip; the caller supplies the grid so it can append
-//                      its own extra tiles (e.g. page views) to the same row.
+//   variant="strip"  → labeled GROUP clusters of soft compact tiles (StatCard size "xs",
+//                      unbordered — no white card, owner directive) for the Manage hub's Home
+//                      strip: Tickets (sold/revenue, paid only) and Guests (RSVP set +
+//                      capacity), each tile linking into its hub section via `links`. The
+//                      caller lays the groups in its own flex row so it can append siblings
+//                      (e.g. a Reach group with page views).
 //   variant="panel"  → a self-contained 2-up grid of bordered tiles for the narrow admin
 //                      rail (event-settings-module), replacing its former inline divs.
 
@@ -59,17 +62,33 @@ function tilesFor(stats: EventCoreStats): Tile[] {
 export function EventCoreStatsCards({
   stats,
   variant = 'cards',
+  links,
 }: {
   stats: EventCoreStats
   variant?: 'cards' | 'strip' | 'panel'
+  /** strip only: where a tile drills into — sold/revenue → `tickets`, everything else → `guests`. */
+  links?: { tickets?: string; guests?: string }
 }) {
   const tiles = tilesFor(stats)
 
   if (variant === 'strip') {
+    const money = tiles.filter((t) => t.key === 'sold' || t.key === 'revenue')
+    const guests = tiles.filter((t) => t.key !== 'sold' && t.key !== 'revenue')
+    const groups = [
+      ...(money.length ? [{ label: 'Tickets', tiles: money, href: links?.tickets }] : []),
+      { label: 'Guests', tiles: guests, href: links?.guests },
+    ]
     return (
       <>
-        {tiles.map((t) => (
-          <StatCard key={t.key} bordered size="xs" label={t.label} value={t.value} icon={t.Icon} detail={t.detail} />
+        {groups.map((g) => (
+          <div key={g.label}>
+            <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-subtle">{g.label}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {g.tiles.map((t) => (
+                <StatCard key={t.key} size="xs" label={t.label} value={t.value} icon={t.Icon} detail={t.detail} href={g.href} />
+              ))}
+            </div>
+          </div>
         ))}
       </>
     )

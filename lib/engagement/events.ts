@@ -37,6 +37,10 @@ export interface RecordEngagementInput {
 export interface RecordEngagementResult {
   /** false = duplicate idempotency_key; no reward granted this time. */
   recorded: boolean
+  /** The ledger row's id — fresh on first insert, resolved by key on a duplicate (best-effort:
+   *  null if the lookup fails). Callers stamp it onto related timeline touches as
+   *  contact_interactions.engagement_event_id (ADR-827 scope spine). */
+  id: string | null
 }
 
 /**
@@ -71,6 +75,23 @@ export async function recordEngagementEvent(
   if (error) throw error
   const recorded = (data?.length ?? 0) > 0
 
+  // The ledger row id (ADR-827): a fresh insert returns it; a duplicate returns zero rows, so
+  // resolve the EXISTING row by its exactly-once key. Best-effort — a lookup failure yields null,
+  // never an error (linking a touch to its site event is additive, not integrity-critical).
+  let id: string | null = recorded ? ((data?.[0]?.id as string | undefined) ?? null) : null
+  if (!recorded) {
+    try {
+      const { data: existing } = await db
+        .from('engagement_events')
+        .select('id')
+        .eq('idempotency_key', idempotencyKey)
+        .maybeSingle()
+      id = existing?.id ?? null
+    } catch {
+      id = null
+    }
+  }
+
   // Run the existing rules engine only on the first insert, when supplied.
   if (recorded && gamificationEvent) await processGamificationEvent(gamificationEvent)
 
@@ -86,5 +107,5 @@ export async function recordEngagementEvent(
     }
   }
 
-  return { recorded }
+  return { recorded, id }
 }

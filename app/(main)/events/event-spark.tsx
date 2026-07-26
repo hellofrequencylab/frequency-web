@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Sparkles, ArrowLeft, Loader2, ScanLine, ImagePlus, X, CalendarDays, MapPin, Tag } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
 import { createClient } from '@/lib/supabase/client'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import type { ExtractedEvent } from '@/lib/events/types'
 import { sparkEventAction } from './create-actions'
 import { saveDraft, scanPoster } from './scan/actions'
@@ -136,15 +137,23 @@ export function EventSpark({
     })
   }
 
-  const onPickPhoto = (file: File) => {
+  const onPickPhoto = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setError('That is not an image. Upload a photo of the flyer or poster.')
       return
     }
     setError(null)
+    // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG so the staged
+    // thumbnail renders and the scan downscale can decode it (neither works on a raw HEIC outside
+    // Safari). An unconvertible HEIC gets an inline message instead of a broken scan.
+    const prepared = await prepareImageForUpload(file)
+    if ('error' in prepared) {
+      setError(prepared.error)
+      return
+    }
     if (thumbUrl) URL.revokeObjectURL(thumbUrl)
-    setStagedFile(file)
-    setThumbUrl(URL.createObjectURL(file))
+    setStagedFile(prepared.file)
+    setThumbUrl(URL.createObjectURL(prepared.file))
   }
 
   const removePhoto = () => {
@@ -268,7 +277,7 @@ export function EventSpark({
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickPhoto(f); e.target.value = '' }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) void onPickPhoto(f); e.target.value = '' }}
               />
             </div>
           )}

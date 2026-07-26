@@ -605,6 +605,10 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
           subject,
           contactId: r.contactId,
           memberProfileId: r.profileId ?? null,
+          // Scope spine (ADR-827): first-class campaign scope, dual-written next to the legacy
+          // metadata.campaign_id convention the workspace/webhook readers still consume.
+          scopeKind: 'campaign',
+          scopeId: campaignId,
           metadata: { campaign_id: campaignId },
         })
         // A DB hiccup (or an unmigrated table) → conv is null; fall back to the broadcast identity for THIS
@@ -627,6 +631,8 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
               subjectKind: r.profileId ? 'profile' : 'contact',
               subjectId: r.profileId ?? r.contactId,
               subject,
+              // The mirrored touch carries the campaign lane too (ADR-827 scope spine).
+              scope: { kind: 'campaign', id: campaignId },
             },
           })
         }

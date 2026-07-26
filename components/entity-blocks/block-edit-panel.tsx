@@ -43,6 +43,7 @@ import {
   type ShadowValue,
 } from './controls/field-controls'
 import { RecordingPickerControl } from '@/components/airwaves/recording-picker-control'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { useProfileLayout } from './profile-layout-context'
 
 /** A gated server upload: returns the uploaded image's public URL, or a plain error. Injected by the
@@ -1144,11 +1145,33 @@ function UploadButton({
   async function handle(files: FileList) {
     setBusy(true)
     setError(null)
-    const all = Array.from(files)
-    const oversize = all.filter((f) => f.size > MAX_UPLOAD_BYTES).length
-    const list = all.filter((f) => f.type.startsWith('image/') && f.size <= MAX_UPLOAD_BYTES)
+    const all = Array.from(files).filter((f) => f.type.startsWith('image/'))
+    if (!all.length) {
+      setError('Choose an image file.')
+      setBusy(false)
+      return
+    }
+    // Prep each in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw
+    // HEIC stores fine but renders broken in every browser but Safari), then big photos are
+    // downscaled. The size cap applies to the CONVERTED file; an unconvertible HEIC is skipped with
+    // an inline message.
+    const list: File[] = []
+    let prepError: string | null = null
+    let oversize = 0
+    for (const raw of all) {
+      const prepared = await prepareImageForUpload(raw)
+      if ('error' in prepared) {
+        prepError ??= prepared.error
+        continue
+      }
+      if (prepared.file.size > MAX_UPLOAD_BYTES) {
+        oversize++
+        continue
+      }
+      list.push(prepared.file)
+    }
     if (!list.length) {
-      setError(oversize ? 'Those images are over 9 MB. Use smaller versions.' : 'Choose an image file.')
+      setError(prepError ?? (oversize ? 'Those images are over 9 MB. Use smaller versions.' : 'Choose an image file.'))
       setBusy(false)
       return
     }
@@ -1177,6 +1200,7 @@ function UploadButton({
     const urls = results.filter((u): u is string => !!u)
     if (urls.length) onUploaded(urls)
     if (oversize && !firstError) firstError = 'Some images were over 9 MB and skipped. Use smaller versions.'
+    if (prepError && !firstError) firstError = prepError
     if (firstError) setError(firstError)
     setProgress(null)
     setBusy(false)

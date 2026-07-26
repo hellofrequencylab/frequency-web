@@ -9,7 +9,11 @@
 
 import { randomUUID } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { recordContactInteraction } from '@/lib/crm/interactions'
+import {
+  recordContactInteraction,
+  normalizeInteractionScope,
+  type InteractionScopeRef,
+} from '@/lib/crm/interactions'
 
 export type ConversationKind =
   | 'support' | 'crm' | 'leader' | 'broadcast' | 'dm' | 'announcement' | 'system'
@@ -44,6 +48,13 @@ export interface OpenConversationInput {
   spaceId?: string | null
   channel?: string
   metadata?: Record<string, unknown>
+  /** The lane this thread belongs to (ADR-827 scope spine, migration 20261226000000): an event /
+   *  circle / hub / nexus / campaign / dispatch / booking / membership. Scope NARROWS WITHIN the
+   *  space_id tenancy lane, never replaces it. The reuse-lookup includes it, so an event thread
+   *  never absorbs an unrelated send to the same address. Callers keep the legacy metadata
+   *  convention too (dual-write) until the read side migrates. */
+  scopeKind?: InteractionScopeRef['kind'] | null
+  scopeId?: string | null
 }
 
 /** Find the open conversation for (kind, counterpart, owner), else create one. FAIL-SAFE: null on error. */
@@ -56,10 +67,19 @@ export async function openOrGetConversation(
   const subjectId = input.memberProfileId ?? input.contactId ?? null
   if (!subjectId) return null
 
+  // Scope spine (ADR-827): fail-safe normalization — a bad scope falls back to unscoped rather than
+  // failing the open (the paired-null CHECK is satisfied either way).
+  const scope = normalizeInteractionScope(
+    input.scopeKind && input.scopeId ? { kind: input.scopeKind, id: input.scopeId } : null,
+  )
+
   try {
     // Reuse the open thread for (kind, counterpart, owner) WITHIN the same Space — a NULL space is the
     // platform lane. Scoping by space_id keeps one owner's two Spaces from ever sharing a thread to the
     // same address (PostgREST `.eq` never matches NULL, so a platform lookup must use `.is`).
+    // The SCOPE is part of the thread key too (ADR-827): a scoped open only reuses a thread in the
+    // SAME scope, and an unscoped open never grabs a scoped thread — an event thread can never absorb
+    // an unrelated send to the same address.
     let q = convTable('comms_conversations')
       .select('id, ref')
       .eq('kind', input.kind)
@@ -67,6 +87,7 @@ export async function openOrGetConversation(
       .eq('owner_profile_id', input.ownerProfileId)
       .neq('status', 'closed')
     q = input.spaceId ? q.eq('space_id', input.spaceId) : q.is('space_id', null)
+    q = scope ? q.eq('scope_kind', scope.kind).eq('scope_id', scope.id) : q.is('scope_kind', null)
     const existing = await q.order('last_activity_at', { ascending: false }).limit(1).maybeSingle()
     if (existing?.data) {
       return { id: String(existing.data.id), ref: String(existing.data.ref), created: false }
@@ -85,6 +106,8 @@ export async function openOrGetConversation(
         owner_profile_id: input.ownerProfileId,
         created_by: input.ownerProfileId,
         space_id: input.spaceId ?? null,
+        scope_kind: scope?.kind ?? null,
+        scope_id: scope?.id ?? null,
         metadata: input.metadata ?? {},
         last_activity_at: new Date().toISOString(),
       })
@@ -111,13 +134,23 @@ export interface ConversationRow {
   contactId: string | null
   spaceId: string | null
   subject: string | null
+  /** ADR-827 scope spine: the thread's lane (both null or both set; see conversationScopeRef). */
+  scopeKind: InteractionScopeRef['kind'] | null
+  scopeId: string | null
 }
 
 const CONV_ROW_COLS =
-  'id, ref, status, kind, external_email, owner_profile_id, assigned_to, member_profile_id, contact_id, space_id, subject'
+  'id, ref, status, kind, external_email, owner_profile_id, assigned_to, member_profile_id, contact_id, space_id, subject, scope_kind, scope_id'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toConversationRow(row: any): ConversationRow {
+  // Fail-closed scope mapping: an unknown scope_kind (a future vocab value this build doesn't know)
+  // surfaces as unscoped rather than mislabeled.
+  const scope = normalizeInteractionScope(
+    row.scope_kind && row.scope_id
+      ? { kind: row.scope_kind as InteractionScopeRef['kind'], id: String(row.scope_id) }
+      : null,
+  )
   return {
     id: String(row.id),
     ref: String(row.ref),
@@ -130,7 +163,15 @@ function toConversationRow(row: any): ConversationRow {
     contactId: (row.contact_id as string) ?? null,
     spaceId: (row.space_id as string) ?? null,
     subject: (row.subject as string) ?? null,
+    scopeKind: scope?.kind ?? null,
+    scopeId: scope?.id ?? null,
   }
+}
+
+/** The thread's scope as a mirror-ready ref, or null when unscoped. Reply/inbound paths pass this
+ *  into `mirror.scope` so a scoped thread's timeline touches inherit the thread's lane (ADR-827). */
+export function conversationScopeRef(conv: ConversationRow): InteractionScopeRef | null {
+  return conv.scopeKind && conv.scopeId ? { kind: conv.scopeKind, id: conv.scopeId } : null
 }
 
 /** Resolve a conversation by its public `ref` (the inbound routing key). FAIL-SAFE: null on miss/error. */
@@ -244,6 +285,11 @@ export interface AppendMessageInput {
     subjectId: string
     spaceId?: string | null
     subject?: string | null
+    /** The thread's lane (ADR-827 scope spine) — stamped onto the mirrored timeline touch. Callers
+     *  with the conversation row in hand pass `conversationScopeRef(conv)`. */
+    scope?: InteractionScopeRef | null
+    /** The engagement_events ledger row the message is tied to, when the caller has it. */
+    engagementEventId?: string | null
   } | null
 }
 
@@ -306,6 +352,8 @@ export async function appendConversationMessage(input: AppendMessageInput): Prom
             body: input.body,
             source: 'crm_activity' as never,
             idempotencyKey: `conv-msg:${messageId}`,
+            scope: input.mirror.scope ?? null,
+            engagementEventId: input.mirror.engagementEventId ?? null,
           },
           input.mirror.spaceId ?? null,
         )

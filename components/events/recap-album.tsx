@@ -4,8 +4,7 @@ import { useState, useTransition, useRef } from 'react'
 import Image from 'next/image'
 import { ImagePlus, X, Trash2 } from 'lucide-react'
 import { uploadEventMedia, deleteEventMedia } from '@/app/(main)/events/[slug]/social-actions'
-
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB
+import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 
 export type RecapPhoto = {
   id: string
@@ -38,16 +37,27 @@ export function RecapAlbum({
   const [pending, startTransition] = useTransition()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  function pickImage(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!file.type.startsWith('image/')) {
+  async function pickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.files?.[0]
+    if (!raw) return
+    if (!raw.type.startsWith('image/')) {
       setError('Only image files work here.')
       if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
-    if (file.size > MAX_IMAGE_BYTES) {
-      setError(`That image is ${(file.size / 1024 / 1024).toFixed(1)} MB. Keep it under 10 MB.`)
+    // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
+    // previews and stores broken in every browser but Safari), then a big photo is downscaled so the
+    // server-action upload stays under the platform body limit. An unconvertible HEIC gets an inline
+    // message instead of a broken upload. Size gates apply to the CONVERTED file.
+    const prepared = await prepareImageForUpload(raw)
+    if ('error' in prepared) {
+      setError(prepared.error)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    const file = prepared.file
+    if (file.size > SERVER_MAX_BYTES) {
+      setError(`That image is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Try a smaller one.`)
       if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
@@ -128,7 +138,7 @@ export function RecapAlbum({
 
           {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
 
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={pickImage} />
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => void pickImage(e)} />
 
           {imageFile && (
             <div className="mt-2 flex items-center gap-2">

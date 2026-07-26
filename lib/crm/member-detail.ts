@@ -9,6 +9,8 @@ import { getSpaceContactDetail } from '@/lib/crm/space-contact-detail'
 import { getMemberNetwork, filterMajorMilestones, type Milestone } from '@/lib/crm/member-network'
 import { resolvePerson, type Person } from '@/lib/crm/person'
 import { buildJourney } from '@/lib/crm/journey'
+import { loadMessagePath } from '@/lib/crm/message-path-io'
+import { EMPTY_MESSAGE_PATH, type MessagePath, type PathScope } from '@/lib/crm/message-path'
 import { tierLabel } from '@/lib/dashboard/verdict'
 import { ROLE_LABEL } from '@/lib/community-roles'
 import type {
@@ -41,6 +43,14 @@ import type {
 
 /** Who is reading: platform staff (everything) or a scope leader (the trimmed detail). */
 export type MemberDetailAudience = 'staff' | 'leader'
+
+/**
+ * The lane The Path fold reads through (ADR-827 ruling 3). Derived when omitted: a `spaceId` call
+ * reads the Space lane, a staff call reads the platform lane (all lanes), and a LEADER call with no
+ * scope gets NO message path at all (fail closed — a leader lane must name its scope). The event /
+ * circle / hub / nexus loaders pass their own scope so the fold shows exactly that scope's comms.
+ */
+export type MemberDetailScope = PathScope
 
 const LIFECYCLE_LABELS: Record<string, string> = {
   new: 'New',
@@ -254,13 +264,19 @@ function milestonesFromPerson(person: Person | null): Milestone[] {
  * everything; 'leader' OMITS the pipeline, funnels, steward notes, and the global interactions
  * timeline (empty/undefined in the same shape) while keeping identity, scores, the engagement rollup,
  * the network, and milestones — so a scope leader's pane never shows staff CRM internals.
+ * `opts.scope` names the lane The Path fold reads (see MemberDetailScope): omit it and the lane is
+ * derived (space / platform), except for a leader, who fails closed to an empty path.
  */
 export async function buildMemberDetail(
   profileId: string,
-  opts?: { spaceId?: string; audience?: MemberDetailAudience },
+  opts?: { spaceId?: string; audience?: MemberDetailAudience; scope?: MemberDetailScope },
 ): Promise<CrmMemberDetail> {
   const spaceId = opts?.spaceId
   const leader = opts?.audience === 'leader'
+  // The Path lane: an explicit scope wins; a Space call derives its Space lane; staff derive the
+  // platform lane. A LEADER with no scope gets null — never a global read (plan invariant 4).
+  const pathScope: PathScope | null =
+    opts?.scope ?? (spaceId ? { kind: 'space', id: spaceId } : leader ? null : { kind: 'platform' })
 
   // Identity is the floor — resolve it first so we can always return something.
   const summaries = await getProfileSummaries([profileId])
@@ -298,7 +314,7 @@ export async function buildMemberDetail(
         })
       : getContactEngagementStats(subjectIds, email)
     // The LEADER trim skips the staff-only reads entirely (never fetched, not just hidden).
-    const [scores, interactions, roles, funnels, pipeline, network, engagement] = await Promise.all([
+    const [scores, interactions, roles, funnels, pipeline, network, engagement, path] = await Promise.all([
       getMemberScores(profileId),
       // Member-360 timeline (ADR-796). For a SPACE member view (spaceId set) STRICTLY scope to this Space
       // so it never surfaces the member's touches from OTHER spaces / private platform DMs (the same tenancy
@@ -312,6 +328,17 @@ export async function buildMemberDetail(
       leader ? Promise.resolve(null as MemberPipeline | null) : pipelineForProfile(profileId),
       getMemberNetwork(profileId),
       engagementP,
+      // The Path fold-down (ADR-827 ruling 3): the thread-grouped message history through the
+      // viewer's lane, assembled in parallel with the rest so the pane stays exactly as fast.
+      // Fail-safe (the reader degrades to the empty path) and fail-closed (no lane, no read).
+      pathScope
+        ? loadMessagePath({
+            subjectIds,
+            memberName: displayName,
+            scope: pathScope,
+            audience: leader ? 'leader' : 'staff',
+          }).catch(() => EMPTY_MESSAGE_PATH)
+        : Promise.resolve(null as MessagePath | null),
     ])
 
     // Everything is inline now, so "view all" points back at this member on the CRM home (no separate
@@ -381,6 +408,7 @@ export async function buildMemberDetail(
       network,
       milestones: milestones.length ? milestones : undefined,
       notes: notes.length ? notes : undefined,
+      path: path ?? undefined,
     }
   } catch {
     return base

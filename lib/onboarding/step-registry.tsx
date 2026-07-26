@@ -16,6 +16,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { z } from 'zod'
 import { getInitials } from '@/lib/utils'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { type StepType } from './step-types'
 
 // ── The draft the flow accumulates + the per-request context the steps read ────────────────
@@ -254,12 +255,21 @@ function ProfileStep({ content, draft, patch, report, ctx }: StepViewProps) {
   const [uploadError, setUploadError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0]
-    if (!f) return
-    setFile(f)
-    setPreview(URL.createObjectURL(f))
+  async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.files?.[0]
+    if (!raw) return
     setUploadError('')
+    // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
+    // previews and stores broken in every browser but Safari), then big photos are downscaled. An
+    // unconvertible HEIC gets an inline message instead of a broken avatar.
+    const prepared = await prepareImageForUpload(raw)
+    if ('error' in prepared) {
+      setUploadError(prepared.error)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    setFile(prepared.file)
+    setPreview(URL.createObjectURL(prepared.file))
     patch({ avatarUrl: '' }) // reset any previously uploaded URL
   }
 
@@ -332,7 +342,7 @@ function ProfileStep({ content, draft, patch, report, ctx }: StepViewProps) {
           )}
           <p className="text-xs text-subtle">JPG, PNG, or GIF up to 5 MB</p>
         </div>
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => void onFileChange(e)} />
       </div>
       {uploadError && <p className="text-xs text-danger">{uploadError}</p>}
 

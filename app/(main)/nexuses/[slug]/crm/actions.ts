@@ -22,7 +22,8 @@ export async function loadNexusCrmDetail(slug: string, profileId: string): Promi
   if (!nexus) throw new Error('You cannot manage this nexus.')
   const memberIds = await listPlaceTreeMemberIds({ kind: 'nexus', id: nexus.id })
   if (!memberIds.has(profileId)) throw new Error('That person is not in this nexus.')
-  return buildMemberDetail(profileId, { audience: 'leader' })
+  // The Path lane (ADR-827 ruling 3): this nexus's comms only, fail-closed in the assembler.
+  return buildMemberDetail(profileId, { audience: 'leader', scope: { kind: 'nexus', id: nexus.id } })
 }
 
 /** Open (or reuse) the 1:1 thread with a nexus member, then land in it. A refusal (blocked pair,

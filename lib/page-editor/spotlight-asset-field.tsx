@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { Upload, X } from 'lucide-react'
 import { uploadSpotlightImage } from '@/app/(main)/settings/profile/spotlight-actions'
+import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 
 // A custom Puck field for the Spotlight IMAGE / GALLERY blocks: upload an image and
 // store its owner-pinned storage PATH (never a URL). Spotlight assets live in the public
@@ -33,22 +34,39 @@ export function SpotlightAssetField({
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
-  async function pick(file: File) {
+  async function pick(raw: File) {
     setErr(null)
-    if (!file.type.startsWith('image/')) {
+    if (!raw.type.startsWith('image/')) {
       setErr('Choose an image file.')
       return
     }
     setBusy(true)
-    const fd = new FormData()
-    fd.set('file', file)
-    const res = await uploadSpotlightImage(fd)
-    setBusy(false)
-    if (res.error || !res.path) {
-      setErr(res.error ?? 'Upload failed.')
-      return
+    try {
+      // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
+      // stores fine but renders broken in every browser but Safari), then a big photo is downscaled
+      // so the server action stays under the platform body limit. An unconvertible HEIC gets an
+      // inline message instead of a broken upload.
+      const prepared = await prepareImageForUpload(raw)
+      if ('error' in prepared) {
+        setErr(prepared.error)
+        return
+      }
+      const file = prepared.file
+      if (file.size > SERVER_MAX_BYTES) {
+        setErr(`That image is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Try a smaller one.`)
+        return
+      }
+      const fd = new FormData()
+      fd.set('file', file)
+      const res = await uploadSpotlightImage(fd)
+      if (res.error || !res.path) {
+        setErr(res.error ?? 'Upload failed.')
+        return
+      }
+      onChange(res.path)
+    } finally {
+      setBusy(false)
     }
-    onChange(res.path)
   }
 
   const previewSrc = value ? `${PUBLIC_BASE}${value}` : null
@@ -64,7 +82,7 @@ export function SpotlightAssetField({
         disabled={busy}
         onChange={(e) => {
           const f = e.target.files?.[0]
-          if (f) pick(f)
+          if (f) void pick(f)
           e.target.value = '' // let the same file be re-picked after a remove
         }}
       />

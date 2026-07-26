@@ -12,6 +12,7 @@ import {
   withSpotlightPublished,
 } from '@/lib/profile/spotlight-flags'
 import { writeProfileHeaderFocus, writeProfileAvatarFocus, writeProfileOverlay } from '@/lib/profile/header-focus'
+import { withAvatarFocusFragment } from '@/lib/images/avatar-focus'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 
 // Owner-only: publish or unpublish your own Spotlight page (the public mini-site).
@@ -126,7 +127,9 @@ export async function setProfileHeaderFocus(focus: string): Promise<void> {
 
 // The AVATAR focal point — where the profile photo sits inside its round crop. Same debounced, self-scoped
 // read-modify-write as setProfileHeaderFocus, but on the `avatarFocal` meta key. Lets a member drag to
-// reframe an EXISTING photo (not only a fresh upload). Mirrors setProfileHeaderFocus exactly.
+// reframe an EXISTING photo (not only a fresh upload). Mirrors setProfileHeaderFocus exactly. The focus is
+// ALSO mirrored into avatar_url's #fp fragment (ADR-829), so every surface that only selects avatar_url
+// (nav chips, PersonCard, post authors, rosters, CRM lists) renders the chosen crop with no extra join.
 export async function setProfileAvatarFocus(focus: string): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -134,17 +137,20 @@ export async function setProfileAvatarFocus(focus: string): Promise<void> {
 
   const { data: me } = await supabase
     .from('profiles')
-    .select('id, handle, meta')
+    .select('id, handle, meta, avatar_url')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!me) throw new Error('Profile not found')
 
   const meta = (me as { meta?: unknown }).meta
   const nextMeta = writeProfileAvatarFocus(meta, focus)
+  const update: Record<string, unknown> = { meta: nextMeta }
+  const currentAvatar = (me as { avatar_url?: string | null }).avatar_url
+  if (currentAvatar) update.avatar_url = withAvatarFocusFragment(currentAvatar, focus)
 
   const { error } = await supabase
     .from('profiles')
-    .update({ meta: nextMeta as never })
+    .update(update as never)
     .eq('auth_user_id', user.id)
   if (error) throw new Error(error.message)
 
@@ -252,7 +258,7 @@ export async function updateProfile(data: {
   if (data.headerFocal !== undefined || data.avatarFocal !== undefined || data.headerOverlayStyle !== undefined) {
     const { data: cur } = await supabase
       .from('profiles')
-      .select('meta')
+      .select('meta, avatar_url')
       .eq('auth_user_id', user.id)
       .maybeSingle()
     let nextMeta: unknown = (cur as { meta?: unknown } | null)?.meta
@@ -260,6 +266,17 @@ export async function updateProfile(data: {
     if (data.avatarFocal !== undefined) nextMeta = writeProfileAvatarFocus(nextMeta, data.avatarFocal)
     if (data.headerOverlayStyle !== undefined) nextMeta = writeProfileOverlay(nextMeta, data.headerOverlayStyle, data.headerOverlayColor ?? null)
     ;(update as Record<string, unknown>).meta = nextMeta
+    // Mirror the avatar focal into the stored URL's #fp fragment (ADR-829): the base is the
+    // URL this save is setting, else the stored one. Cleared avatars (null) carry nothing.
+    if (data.avatarFocal !== undefined) {
+      const baseUrl =
+        typeof update.avatar_url === 'string'
+          ? update.avatar_url
+          : update.avatar_url === null
+            ? null
+            : ((cur as { avatar_url?: string | null } | null)?.avatar_url ?? null)
+      if (baseUrl) update.avatar_url = withAvatarFocusFragment(baseUrl, data.avatarFocal)
+    }
   }
 
   const { error } = await supabase

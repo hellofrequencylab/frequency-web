@@ -26,6 +26,7 @@ import {
   updateConversationFields,
   recordAssignment,
   newConversationMessageId,
+  conversationScopeRef,
   type ConversationRow,
   type AppendMessageInput,
 } from '@/lib/comms/conversations'
@@ -129,6 +130,8 @@ export async function sendSpaceConversationReplyAction(
           subjectId: (conv.memberProfileId ?? conv.contactId)!,
           spaceId: gate.spaceId,
           subject,
+          // A reply inherits the thread's lane (ADR-827 scope spine).
+          scope: conversationScopeRef(conv),
         }
       : null
 

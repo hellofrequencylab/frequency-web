@@ -39,7 +39,8 @@ export async function loadEventCrmDetail(slug: string, id: string): Promise<CrmM
   const event = await resolveManagedEvent(slug)
   const attendeeIds = await listEventCrmMemberIds(event.id)
   if (!attendeeIds.has(id)) throw new Error('That person is not an attendee of this event.')
-  return buildMemberDetail(id, { audience: 'leader' })
+  // The Path lane (ADR-827 ruling 3): this event's comms only, fail-closed in the assembler.
+  return buildMemberDetail(id, { audience: 'leader', scope: { kind: 'event', id: event.id } })
 }
 
 /**

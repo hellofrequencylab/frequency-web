@@ -1574,6 +1574,8 @@ async function afterBookingPlaced(
     summary: placed.serviceName ? `Booked: ${placed.serviceName}` : 'Booked a time',
     idempotencyKey: `booking:${placed.bookingId}`,
     metadata: { kind: 'booking', bookingId: placed.bookingId, serviceName: placed.serviceName, startsAt: placed.startsAt },
+    // Scope spine (ADR-827): first-class booking scope, dual-written next to the legacy metadata.
+    scope: { kind: 'booking', id: placed.bookingId },
   })
 }
 
@@ -1752,6 +1754,8 @@ export async function cancelBooking(bookingId: string, reason?: string): Promise
       summary: 'Cancelled a booking',
       idempotencyKey: `booking_cancel:${bookingId}`,
       metadata: { kind: 'booking_cancel', bookingId, startsAt: row.starts_at, reason: cleanReason },
+      // Scope spine (ADR-827): first-class booking scope, dual-written next to the legacy metadata.
+      scope: { kind: 'booking', id: bookingId },
     })
   }
   return ok()

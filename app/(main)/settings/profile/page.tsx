@@ -11,6 +11,7 @@ import { ProfileForm } from './profile-form'
 import { ProfileQrCard } from '@/components/settings/profile-qr-card'
 import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spotlight-flags'
 import { readProfileHeaderFocus, readProfileAvatarFocus, readProfileOverlayStyle, readProfileOverlayColor } from '@/lib/profile/header-focus'
+import { avatarSrc } from '@/lib/images/avatar-focus'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 import { resolveTierTeaseGate } from '@/lib/pricing/tease-gate'
 import { getOnboardingStatus } from '@/lib/onboarding/status'
@@ -96,7 +97,9 @@ export default async function ProfileSettingsPage() {
           displayName: profile.display_name ?? '',
           handle:      profile.handle ?? '',
           bio:         profile.bio ?? '',
-          avatarUrl:   profile.avatar_url ?? '',
+          // Fragment-stripped (ADR-829): the form edits the clean URL; the #fp focus fragment
+          // is re-mirrored on save from avatarFocal below.
+          avatarUrl:   profile.avatar_url ? avatarSrc(profile.avatar_url) : '',
           avatarFocal: readProfileAvatarFocus((profile as { meta?: unknown }).meta),
           headerImageUrl,
           headerFocal: readProfileHeaderFocus((profile as { meta?: unknown }).meta),
