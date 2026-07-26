@@ -1,10 +1,11 @@
 'use server'
 
-import { redirect } from 'next/navigation'
+import { redirect, unstable_rethrow } from 'next/navigation'
 import { resolveHubCrm } from '@/lib/crm/leader-crm-access'
 import { listPlaceTreeMemberIds } from '@/lib/circles/crm-roster'
 import { buildMemberDetail } from '@/lib/crm/member-detail'
 import { openScopedDm } from '@/lib/messages/scoped-dm'
+import { fail, type ActionResult } from '@/lib/action-result'
 import type { CrmMemberDetail } from '@/components/people/member-viewer'
 
 // HUB member-CRM server actions (CRM Everywhere plan Phase 4 sibling / ADR-827). Both actions
@@ -24,13 +25,21 @@ export async function loadHubCrmDetail(slug: string, profileId: string): Promise
   return buildMemberDetail(profileId, { audience: 'leader' })
 }
 
-/** Open (or reuse) the 1:1 thread with a hub member, then land in it. */
-export async function openHubMemberDm(slug: string, profileId: string): Promise<void> {
-  const hub = await resolveHubCrm(slug)
-  if (!hub) throw new Error('You cannot manage this hub.')
-  const { conversationId } = await openScopedDm({
-    scope: { kind: 'hub', id: hub.id },
-    targetProfileId: profileId,
-  })
+/** Open (or reuse) the 1:1 thread with a hub member, then land in it. A refusal (blocked pair,
+ *  rate limit, not-in-scope) returns the ActionResult error for the dm button to render inline —
+ *  never a throw into the route error boundary; unstable_rethrow keeps NEXT_REDIRECT flowing. */
+export async function openHubMemberDm(slug: string, profileId: string): Promise<ActionResult> {
+  let conversationId: string
+  try {
+    const hub = await resolveHubCrm(slug)
+    if (!hub) return fail('You cannot manage this hub.')
+    ;({ conversationId } = await openScopedDm({
+      scope: { kind: 'hub', id: hub.id },
+      targetProfileId: profileId,
+    }))
+  } catch (err) {
+    unstable_rethrow(err)
+    return fail(err instanceof Error ? err.message : 'Something went wrong. Try again.')
+  }
   redirect(`/messages/${conversationId}`)
 }

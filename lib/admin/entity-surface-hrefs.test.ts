@@ -35,6 +35,21 @@ describe('hrefForEntitySurface', () => {
     }
   })
 
+  it('resolves the four communication modules (*.crm, ADR-827) to their /crm pages', () => {
+    expect(hrefForEntitySurface('event.crm', { kind: 'event', id: 'summer-social' })).toBe('/events/summer-social/manage/crm')
+    expect(hrefForEntitySurface('circle.crm', { kind: 'circle', id: 'sunrise-sit' })).toBe('/circles/sunrise-sit/crm')
+    expect(hrefForEntitySurface('hub.crm', { kind: 'hub', id: 'north' })).toBe('/hubs/north/crm')
+    expect(hrefForEntitySurface('nexus.crm', { kind: 'nexus', id: 'core' })).toBe('/nexuses/core/crm')
+  })
+
+  it('regression: a slug-corrected scope yields the slug href (a raw DB-id scope would 404)', () => {
+    // Detail pages hand the rail a scope whose id is the DB uuid; the rail must resolve link-row
+    // hrefs through the slug-corrected scope (settings-panel slugScope), never the raw uuid scope.
+    const uuid = '3b1f5c2e-8a44-4f4e-9c37-0d2f6b7a1e90'
+    expect(hrefForEntitySurface('circle.crm', { kind: 'circle', id: uuid })).toBe(`/circles/${uuid}/crm`)
+    expect(hrefForEntitySurface('circle.crm', { kind: 'circle', id: 'sunrise-sit' })).toBe('/circles/sunrise-sit/crm')
+  })
+
   it('resolves event/hub/nexus core-entity surfaces to their owner manage console (ADR-515 bank seam)', () => {
     // These consoles are full owner workspaces, so a `placement: 'bank'` surface resolves its bank href here.
     expect(hrefForEntitySurface('event.people', { kind: 'event', id: 'x' })).toBe('/events/x/manage')

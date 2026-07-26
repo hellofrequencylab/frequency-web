@@ -171,8 +171,10 @@ describe('Community (resonance) section coverage', () => {
   const resonance = SPACE_MODULES.filter((m) => sectionForModule(m) === 'resonance')
 
   it('groups the CRM relationship + capture surfaces under Community', () => {
+    // space.conversations joined the set when the stale space.inbox id was corrected in
+    // sectionForModule (the ticketed workspace files under Resonance, not the Offerings catch-all).
     expect(resonance.map((m) => m.id).sort()).toEqual(
-      ['space.crm', 'space.doors', 'space.leads', 'space.shared'].sort(),
+      ['space.conversations', 'space.crm', 'space.doors', 'space.leads', 'space.shared'].sort(),
     )
   })
 

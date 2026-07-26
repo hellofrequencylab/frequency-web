@@ -1,11 +1,12 @@
 'use server'
 
-import { redirect } from 'next/navigation'
+import { redirect, unstable_rethrow } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { buildMemberDetail } from '@/lib/crm/member-detail'
 import { listEventCrmMemberIds } from '@/lib/events/crm-roster'
 import { openScopedDm } from '@/lib/messages/scoped-dm'
+import { fail, type ActionResult } from '@/lib/action-result'
 import type { CrmMemberDetail } from '@/components/people/member-viewer'
 
 // MESSAGE ATTENDEES server actions (CRM Everywhere plan 3.3 + 3.4 / ADR-827). The event twin of
@@ -22,9 +23,9 @@ async function resolveManagedEvent(slug: string): Promise<{ id: string }> {
   const admin = createAdminClient()
   const { data } = await admin.from('events').select('id').eq('slug', slug).maybeSingle()
   const event = data as { id: string } | null
-  if (!event) throw new Error('Event not found')
+  if (!event) throw new Error('You cannot manage this event.')
   const caps = await getEventCapabilities(event.id)
-  if (!caps.has('event.editSettings')) throw new Error('Not authorized')
+  if (!caps.has('event.editSettings')) throw new Error('You cannot manage this event.')
   return event
 }
 
@@ -37,7 +38,7 @@ async function resolveManagedEvent(slug: string): Promise<{ id: string }> {
 export async function loadEventCrmDetail(slug: string, id: string): Promise<CrmMemberDetail> {
   const event = await resolveManagedEvent(slug)
   const attendeeIds = await listEventCrmMemberIds(event.id)
-  if (!attendeeIds.has(id)) throw new Error('Not an attendee of this event')
+  if (!attendeeIds.has(id)) throw new Error('That person is not an attendee of this event.')
   return buildMemberDetail(id, { audience: 'leader' })
 }
 
@@ -46,13 +47,24 @@ export async function loadEventCrmDetail(slug: string, id: string): Promise<CrmM
  * the same UX as the Manage page's follow-up Message button. openScopedDm owns the policy
  * (leads-the-event gate, going/maybe audience, block check, rate limits); the capability check
  * here keeps this action's front door consistent with the rest of the surface.
+ *
+ * A refusal (blocked pair, rate limit, not-in-scope) comes back as the ActionResult error — never
+ * a throw, so the dm button renders it inline instead of tripping the route error boundary (where
+ * production redacts the message). unstable_rethrow keeps NEXT_REDIRECT (and any framework
+ * control-flow error) flowing to Next.
  */
-export async function openEventAttendeeDm(slug: string, profileId: string): Promise<void> {
-  const event = await resolveManagedEvent(slug)
-  const { conversationId } = await openScopedDm({
-    scope: { kind: 'event', id: event.id },
-    targetProfileId: profileId,
-  })
-  // redirect throws, so it sits outside any try/catch (Next server-action rule).
+export async function openEventAttendeeDm(slug: string, profileId: string): Promise<ActionResult> {
+  let conversationId: string
+  try {
+    const event = await resolveManagedEvent(slug)
+    ;({ conversationId } = await openScopedDm({
+      scope: { kind: 'event', id: event.id },
+      targetProfileId: profileId,
+    }))
+  } catch (err) {
+    unstable_rethrow(err)
+    return fail(err instanceof Error ? err.message : 'Something went wrong. Try again.')
+  }
+  // redirect throws NEXT_REDIRECT, so it sits outside the try/catch (Next server-action rule).
   redirect(`/messages/${conversationId}`)
 }

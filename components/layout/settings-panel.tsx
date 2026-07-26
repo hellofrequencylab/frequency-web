@@ -348,6 +348,14 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   })
   const bankSurfaceApps = apps.filter(isBankPlacement)
 
+  // The core-entity href maps are URL-slug-keyed, but an OpenAdminBarButton carries the entity's DB
+  // id on `scope.id` (the slug≠id detail contract), so `/{section}/<uuid>/crm` would 404. Read the
+  // slug from the LIVE PATH (adminScopeFor's id IS the URL segment; spaceSlug for a Space) and build
+  // ONE slug-corrected scope that BOTH the link-row/summary-card hrefs (nodeForApp below) and the
+  // bottom bank resolve through. Global/profile scopes have no path slug and pass through unchanged.
+  const pathSlug: string | null = spaceSlug ?? adminScopeFor(pathname)?.id ?? null
+  const slugScope: AdminScope | null = scope && pathSlug ? { ...scope, id: pathSlug } : scope
+
   // THE single render decision point (inline-first rail, ADR-514). Per app, branch on its editor
   // `render` classification, NOT on the entity kind: a `link` surface is a feature workflow drawn as a
   // compact link-row OUT to its own page; an `inline` surface mounts its editor component in the bar.
@@ -364,12 +372,14 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
       // `/spaces/<slug>?panel=<id>` so it renders in the profile body without navigating away (the Stage-D5
       // no-regression); every other module (Insights) falls through to its deep route; Danger has no panel
       // + no deepLink and falls back to the /manage console, so every row is a working link. Core/personal
-      // link surfaces resolve via hrefForEntitySurface (ADR-514 Phase C/D): today that is the personal
-      // "You" feature workflows (Account and privacy, Billing) → their /settings/* page; every core entity
-      // stays `inline`, so no core-entity id resolves here yet. An unresolved href draws nothing (fail-safe).
+      // link surfaces resolve via hrefForEntitySurface (ADR-514 Phase C/D): the personal "You" feature
+      // workflows (Account and privacy, Billing) → their /settings/* page, and the core-entity
+      // communication modules (*.crm, ADR-827) → their /crm pages — resolved through the SLUG-corrected
+      // scope (slugScope above), because a detail page's scope.id is the DB id, not the URL slug. An
+      // unresolved href draws nothing (fail-safe).
       const href = spaceSlug
         ? panelHrefForModuleId(id, spaceSlug) ?? `/spaces/${spaceSlug}/manage`
-        : hrefForEntitySurface(id, scope)
+        : hrefForEntitySurface(id, slugScope)
       if (!href) return null
       // "Keep it in the rail" (Phase 2, ADR-514): a link surface with a glanceable stat draws a compact
       // SUMMARY CARD (inline count + a "View more" affordance into its page); every other link surface —
@@ -564,17 +574,12 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   //    any `placement: 'bank'` surface, resolved to its href via the same maps the body uses (Space →
   //    hrefForSurface; core/personal → hrefForEntitySurface). Empty-safe; nothing is tagged `bank` yet, so
   //    `bankSurfaceLinks` is empty and the bank is purely the fixed per-scope areas (additive, non-breaking).
-  // The bank's console/settings hrefs are URL-slug-keyed, but an OpenAdminBarButton carries the entity's
-  // DB id on `scope.id` (the slug≠id detail contract), so `/{section}/<id>/manage` would 404. Read the
-  // slug from the LIVE PATH (adminScopeFor's id IS the URL segment; spaceSlug for a Space) and pass it to
-  // the bank for EVERY entity scope. A slug-corrected scope also feeds hrefForEntitySurface so a future
-  // core-entity `placement:'bank'` surface resolves correctly. Global/profile scopes have no path slug.
-  const pathSlug: string | null = spaceSlug ?? adminScopeFor(pathname)?.id ?? null
-  const bankScope: AdminScope | null = scope && pathSlug ? { ...scope, id: pathSlug } : scope
+  // The bank's console/settings hrefs are URL-slug-keyed too, so they resolve through the SAME
+  // slug-corrected scope (slugScope, hoisted above nodeForApp) the link-rows use.
   const bankSurfaceLinks: BankLink[] = bankSurfaceApps.flatMap((a) => {
     const Icon = a.surfaces.editor?.Icon
     if (!Icon) return []
-    const href = spaceSlug ? hrefForSurface(a.id, spaceSlug) : hrefForEntitySurface(a.id, bankScope)
+    const href = spaceSlug ? hrefForSurface(a.id, spaceSlug) : hrefForEntitySurface(a.id, slugScope)
     return href ? [{ label: a.label, icon: Icon, href }] : []
   })
   const bank: BankLink[] = bankForScope(scope, { isStaff: isOperator }, bankSurfaceLinks, pathSlug)

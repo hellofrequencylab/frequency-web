@@ -1,8 +1,10 @@
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { resolveCircleCrm } from '@/lib/crm/leader-crm-access'
 import { loadCircleCrmRoster } from '@/lib/circles/crm-roster'
 import { DashboardTemplate } from '@/components/templates'
+import { Skeleton } from '@/components/ui/skeleton'
 import { StatCard } from '@/components/ui/stat-card'
 import { LeaderCrmViewer } from '@/components/people/leader-crm-viewer'
 import { loadCircleCrmDetail, openCircleMemberDm } from './actions'
@@ -16,6 +18,9 @@ import { loadCircleCrmDetail, openCircleMemberDm } from './actions'
 // (lib/crm/leader-crm-access — the same slug resolution + capability path the colocated actions
 // re-run per request). A viewer who cannot moderate this circle gets notFound(); we never reveal
 // the route. The admin client bypasses RLS, so this gate — not RLS — is the authority.
+//
+// Speed is structural (PAGE-FRAMEWORK §5): the shell renders immediately; the roster read (and
+// its roster-count StatCard) streams behind <Suspense>, same as Message Attendees.
 
 export const metadata: Metadata = {
   title: 'Message Circle',
@@ -33,32 +38,40 @@ export default async function CircleCrmPage({
   const circle = await resolveCircleCrm(slug)
   if (!circle) notFound()
 
-  // The audience per the owner ruling: active members of the circle (plus its host).
-  const members = await loadCircleCrmRoster(circle.id)
-
   return (
     <DashboardTemplate
       eyebrow="Manage"
       title="Message Circle"
-      description={`Everyone in ${circle.name} in one place. Pick a member to see their story, then send them a message.`}
+      description={`Everyone in ${circle.name} in one place. Pick a person to see their story, then send them a message.`}
       back={{ href: `/circles/${circle.slug}/manage`, label: 'Back to manage' }}
-      width="wide"
-      stats={
-        <>
-          <StatCard label="Members" value={String(members.length)} />
-          <StatCard label="Capacity" value={circle.memberCap > 0 ? `${circle.memberCount} of ${circle.memberCap}` : String(circle.memberCount)} />
-        </>
-      }
+      width="default"
     >
+      <Suspense fallback={<Skeleton className="h-96 rounded-2xl" />}>
+        <CircleRosterSection circleId={circle.id} slug={circle.slug} />
+      </Suspense>
+    </DashboardTemplate>
+  )
+}
+
+/** The suspended roster child: awaits the audience (active members plus the host, the owner
+ *  ruling), then renders the roster-count StatCard and the ONE shared LeaderCrmViewer. */
+async function CircleRosterSection({ circleId, slug }: { circleId: string; slug: string }) {
+  const members = await loadCircleCrmRoster(circleId)
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <StatCard label="Members" value={String(members.length)} />
+      </div>
       <LeaderCrmViewer
         members={members}
-        loadDetail={loadCircleCrmDetail.bind(null, circle.slug)}
-        openDm={openCircleMemberDm.bind(null, circle.slug)}
+        loadDetail={loadCircleCrmDetail.bind(null, slug)}
+        openDm={openCircleMemberDm.bind(null, slug)}
         empty={{
           title: 'No members yet',
           description: 'When people join this circle they show up here, with everything about each one a click away.',
         }}
       />
-    </DashboardTemplate>
+    </>
   )
 }

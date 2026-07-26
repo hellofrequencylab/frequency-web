@@ -1,14 +1,13 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { MessageSquare, Pencil } from 'lucide-react'
+import { MessageCircle, Pencil } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { DashboardTemplate } from '@/components/templates'
 import { Button } from '@/components/ui/button'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Skeleton } from '@/components/ui/skeleton'
-import { EntityCard } from '@/components/cards/entity-card'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { loadEventCoreStats } from '@/lib/events/event-stats'
 import { EventCoreStatsCards } from '@/components/events/event-core-stats'
@@ -84,7 +83,7 @@ export default async function ManageEventPage({
               everyone going or maybe, with a direct thread one click away. */}
           <Button asChild>
             <Link href={`/events/${event.slug}/manage/crm`}>
-              <MessageSquare className="h-4 w-4" />
+              <MessageCircle className="h-4 w-4" />
               Message Attendees
             </Link>
           </Button>
@@ -103,22 +102,6 @@ export default async function ManageEventPage({
       }
       stats={<EventCoreStatsCards stats={coreStats} />}
     >
-      {/* Message Attendees up front (CRM Everywhere plan 3.5): the whole card links to the
-          event CRM subroute; a distinct destination earns the EntityCard surface. */}
-      <section>
-        <EntityCard
-          href={`/events/${event.slug}/manage/crm`}
-          anchor={
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
-              <MessageSquare className="h-5 w-5" />
-            </span>
-          }
-          title="Message Attendees"
-          context="Everyone going or maybe, in one place"
-          description="Pick a person to see their story, then open a direct thread without leaving the event."
-        />
-      </section>
-
       <section>
         <SectionHeader title="Reach" />
         <Suspense fallback={<SectionFallback />}>

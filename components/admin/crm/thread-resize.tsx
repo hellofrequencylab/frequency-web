@@ -6,7 +6,7 @@
 // compose them: `ResizableReader` (the reader container, owns the height) and `ThreadResizeHandle` (the
 // grab bar at the bottom edge of the thread scroll area). Double-click resets.
 
-import { useRef, useSyncExternalStore, type ReactNode } from 'react'
+import { useRef, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react'
 
 const STORAGE_KEY = 'crm-thread-height'
 const MIN_HEIGHT = 360
@@ -62,28 +62,48 @@ function setStoredHeight(next: number | null, persist: boolean): void {
 
 export function ResizableReader({ children, className = '' }: { children: ReactNode; className?: string }) {
   const height = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+  // The stored height applies ONLY at lg (a CSS variable consumed by an lg: class): on mobile the
+  // reader keeps its flowing min-h layout, so a tall desktop choice never pins a phone to 2000px.
   return (
     <div
       data-thread-reader
-      className={`${className} ${height === null ? 'lg:h-[calc(100dvh-13rem)]' : ''}`}
-      style={height !== null ? { height, minHeight: height } : undefined}
+      className={`${className} ${height === null ? 'lg:h-[calc(100dvh-13rem)]' : 'lg:h-[var(--reader-h)]'}`}
+      style={height !== null ? ({ '--reader-h': `${height}px` } as CSSProperties) : undefined}
     >
       {children}
     </div>
   )
 }
 
-/** The grab bar. Sits at the bottom edge of the thread scroll area; drag to resize, double-click to reset. */
+/** The grab bar. Sits at the bottom edge of the thread scroll area; drag to resize, double-click to
+ *  reset. Keyboard-operable: focus it, Arrow Down/Up nudges the height 24px either way, Enter or
+ *  Home resets to the default. */
 export function ThreadResizeHandle() {
   const dragRef = useRef<{ startY: number; startHeight: number } | null>(null)
+  const height = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
   return (
     <div
       role="separator"
       aria-orientation="horizontal"
-      aria-label="Drag to resize the conversation area. Double-click to reset."
+      aria-label="Resize the conversation area. Arrow keys resize; Enter resets. Drag to resize, double-click to reset."
+      aria-valuemin={MIN_HEIGHT}
+      aria-valuemax={MAX_HEIGHT}
+      aria-valuenow={height ?? undefined}
+      tabIndex={0}
       title="Drag to resize. Double-click to reset."
-      className="flex h-3 shrink-0 cursor-row-resize touch-none items-center justify-center border-t border-border hover:bg-surface-elevated"
+      className="flex h-3 shrink-0 cursor-row-resize touch-none items-center justify-center border-t border-border hover:bg-surface-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          e.preventDefault()
+          const reader = e.currentTarget.closest<HTMLElement>('[data-thread-reader]')
+          const current = getSnapshot() ?? reader?.getBoundingClientRect().height ?? MIN_HEIGHT
+          setStoredHeight(clampHeight(current + (e.key === 'ArrowDown' ? 24 : -24)), true)
+        } else if (e.key === 'Enter' || e.key === 'Home') {
+          e.preventDefault()
+          setStoredHeight(null, true)
+        }
+      }}
       onPointerDown={(e) => {
         e.preventDefault()
         e.currentTarget.setPointerCapture(e.pointerId)

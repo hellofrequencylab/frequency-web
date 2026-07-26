@@ -27,6 +27,7 @@ import type {
   MemberQuery,
 } from '@/lib/people/member-viewer'
 import type { MemberNetwork, Milestone } from '@/lib/crm/member-network'
+import type { ActionResult } from '@/lib/action-result'
 
 /** How the right pane reads. `full` = the rich detail card (contact, activity, stats, actions);
  *  `quick-stats` = a compact stat grid topped by a prominent Open Profile button. Default `full`. */
@@ -91,12 +92,14 @@ export type ListView = 'list' | 'card'
  *                 typed twin of the legacy `messageScope` prop.
  *  - `dm`       — a leader surface (event / circle / hub / nexus): the big Message button calls the
  *                 host-bound server action (e.g. open a scoped DM thread) instead of the email
- *                 composer, so NO email on file is required. `label` defaults to "Message".
+ *                 composer, so NO email on file is required. `label` defaults to "Message". On
+ *                 success the action redirects into the thread (the promise resolves void); a
+ *                 refusal comes back as an `ActionResult` error the pane renders inline.
  *  - `none`     — contact links only; no messaging affordance at all. */
 export type MemberMessaging =
   | { kind: 'platform' }
   | { kind: 'space'; spaceId: string; slug: string }
-  | { kind: 'dm'; open: (profileId: string) => Promise<void>; label?: string }
+  | { kind: 'dm'; open: (profileId: string) => Promise<ActionResult | void>; label?: string }
   | { kind: 'none' }
 
 /** The block's full prop surface. All optional but `members`; a host wires only what it needs. */

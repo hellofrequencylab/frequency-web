@@ -24,8 +24,10 @@ import {
   Route as RouteIcon,
   X,
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { StatCard } from '@/components/ui/stat-card'
+import { isError } from '@/lib/action-result'
 import { getInitials, cn } from '@/lib/utils'
 // Type-only import: never pull the server-only network reader into the client bundle.
 import type { MemberNetwork, NetworkItem } from '@/lib/crm/member-network'
@@ -225,6 +227,9 @@ export function CrmMemberDetailPane({
   // The dm-kind transition: the Message button disables while the bound server action runs (it
   // usually ends in a redirect into the thread, so a double-tap would mint a duplicate call).
   const [dmPending, startDmTransition] = useTransition()
+  // A dm refusal (blocked pair, rate limit, not-in-scope) comes back as an ActionResult error the
+  // pane renders inline — never a throw into the route error boundary.
+  const [dmError, setDmError] = useState<string | null>(null)
   // The effective messaging mode: the explicit prop wins; the legacy messageScope maps to `space`;
   // the platform composer stays the default so every existing mount is byte-identical.
   const messaging: MemberMessaging =
@@ -312,18 +317,28 @@ export function CrmMemberDetailPane({
           server action (open a scoped DM thread) — no email on file required, disabled while the
           action runs. The `none` kind renders no messaging affordance at all (contact links only). */}
       {dm && (
-        <button
-          type="button"
-          onClick={() =>
-            startDmTransition(async () => {
-              await dm.open(detail.profileId)
-            })
-          }
-          disabled={dmPending}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <MessageCircle className="h-4 w-4" aria-hidden /> {dm.label ?? 'Message'}
-        </button>
+        <div>
+          <Button
+            type="button"
+            onClick={() =>
+              startDmTransition(async () => {
+                setDmError(null)
+                const res = await dm.open(detail.profileId)
+                // Success redirects into the thread (void); a refusal reads out inline.
+                if (res && isError(res)) setDmError(res.error)
+              })
+            }
+            disabled={dmPending}
+            className="w-full"
+          >
+            <MessageCircle className="h-4 w-4" aria-hidden /> {dm.label ?? 'Message'}
+          </Button>
+          {dmError && (
+            <p role="alert" className="mt-1 text-xs text-danger">
+              {dmError}
+            </p>
+          )}
+        </div>
       )}
 
       {/* (b) Compose (platform / space): a "Message Member" button opens the FULL email editor in a

@@ -3,7 +3,7 @@ title: How do I RSVP to a Circle?
 description: Open the next gathering, tap RSVP, and add it to your calendar. That is the whole first action, and it takes under a minute.
 category: getting-started
 order: 6
-updated: 2026-07-17
+updated: 2026-07-26
 audience: member
 featureKeys: [events, circles]
 status: published
@@ -19,6 +19,10 @@ On the gathering's page. Open a Circle you have joined, find its next gathering
 (it shows the date, time, and place), and open it. The **RSVP** button is right
 there. You will also see your Circle's upcoming gatherings in your feed, so they
 do not sneak up on you.
+
+Events also show up on Space pages. Tap one there and a small window opens with
+the basics and the same RSVP button, so you can answer without leaving the page.
+Want the full details? Tap **View full event**.
 
 ## What do my RSVP choices mean?
 
