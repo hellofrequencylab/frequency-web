@@ -20,6 +20,7 @@ import {
   setMembershipTiers as setMembershipTiersImpl,
   joinTier as joinTierImpl,
   cancelMembership as cancelMembershipImpl,
+  promoteMembership as promoteMembershipImpl,
   type MembershipTier,
 } from '@/lib/spaces/memberships'
 import { getMyProfileId } from '@/lib/auth'
@@ -34,14 +35,23 @@ export async function setMembershipTiers(
   return setMembershipTiersImpl(spaceId, tiers)
 }
 
-/** Join a tier. Any authenticated member; v1 records the membership and takes no charge. */
-export async function joinTier(spaceId: string, tierId: string): Promise<ActionResult> {
+/** Join a tier. Any authenticated member; v1 records the membership and takes no charge. A FULL
+ *  tier with the waitlist on records a waitlist spot instead ({ waitlisted: true }, ADR-824). */
+export async function joinTier(
+  spaceId: string,
+  tierId: string,
+): Promise<ActionResult<{ waitlisted: boolean }>> {
   return joinTierImpl(spaceId, tierId)
 }
 
-/** Cancel a membership. The member who joined or a space admin only (gated in the implementation). */
+/** Cancel a membership (or leave a waitlist). The member who joined or a space admin only. */
 export async function cancelMembership(membershipId: string): Promise<ActionResult> {
   return cancelMembershipImpl(membershipId)
+}
+
+/** Promote a waitlist spot to an active membership (space admin only; ADR-824). */
+export async function promoteMembership(membershipId: string): Promise<ActionResult> {
+  return promoteMembershipImpl(membershipId)
 }
 
 /** Start a PAID space-membership checkout (Pricing P3). GATED inside createSpaceMembershipCheckout

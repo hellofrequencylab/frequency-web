@@ -2,8 +2,14 @@ import { Suspense } from 'react'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listAllMembershipTiers } from '@/lib/spaces/memberships'
+import { listSpaceEventAccess } from '@/lib/events/space-event-access'
+import { featureAllowed } from '@/lib/pricing/gates'
+import { billingLive } from '@/lib/pricing/settings'
+import { asSpacePlan } from '@/lib/pricing/plans'
+import { isError } from '@/lib/action-result'
 import { MembershipTierForm } from '@/components/spaces/membership-tier-form'
 import { MembershipOwnerList } from '@/components/spaces/membership-owner-list'
+import { MembershipEventAccess } from '@/components/spaces/membership-event-access'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { SectionHeader } from '@/components/ui/section-header'
 import type { Space } from '@/lib/spaces/types'
@@ -51,6 +57,18 @@ export async function MembershipsSection({
         <MembershipTierForm spaceId={space.id} slug={space.slug} initialTiers={tiers} />
       </fieldset>
 
+      {/* EVENT ACCESS (ADR-824): which upcoming events a membership includes. Writes the ADR-823
+          members-ticket gate on the event, the same rows the event's own ticket editor manages. */}
+      <section>
+        <SectionHeader title="Event access" />
+        <p className="mb-3 text-sm text-muted">
+          Include your events with a membership. Pick who gets the free Members ticket on each.
+        </p>
+        <Suspense fallback={<MembersSkeleton />}>
+          <EventAccessLoader space={space} tiers={tiers} staffViewing={staffViewing} />
+        </Suspense>
+      </section>
+
       <section>
         <SectionHeader title="Members" />
         <Suspense fallback={<MembersSkeleton />}>
@@ -58,6 +76,39 @@ export async function MembershipsSection({
         </Suspense>
       </section>
     </div>
+  )
+}
+
+// Self-fetching loader for the Event access panel: the upcoming events + their current audience
+// (manager-gated read) and the Collective plan gate the selects need.
+async function EventAccessLoader({
+  space,
+  tiers,
+  staffViewing,
+}: {
+  space: Space
+  tiers: { id?: string; name: string }[]
+  staffViewing: boolean
+}) {
+  const [access, allowed] = await Promise.all([
+    listSpaceEventAccess(space.id),
+    (async () =>
+      featureAllowed(
+        'space_membership_tickets',
+        { plan: asSpacePlan(space.plan) },
+        { billingLive: await billingLive() },
+      ))(),
+  ])
+  const rows = isError(access) ? [] : access.data.rows
+  return (
+    <fieldset disabled={staffViewing} className="contents">
+      <MembershipEventAccess
+        spaceId={space.id}
+        rows={rows}
+        membershipTiers={tiers.filter((t) => t.id).map((t) => ({ id: t.id!, name: t.name }))}
+        allowed={allowed}
+      />
+    </fieldset>
   )
 }
 

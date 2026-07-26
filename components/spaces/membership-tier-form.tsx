@@ -33,6 +33,8 @@ interface TierDraft {
   interval: MembershipInterval
   description: string
   benefitsText: string // one benefit per line
+  capacity: string // whole number; blank = unlimited (ADR-824)
+  waitlist: boolean
   isActive: boolean
 }
 
@@ -61,12 +63,23 @@ function toDrafts(tiers: MembershipTier[]): TierDraft[] {
     interval: t.interval,
     description: t.description ?? '',
     benefitsText: t.benefits.join('\n'),
+    capacity: t.capacity != null ? String(t.capacity) : '',
+    waitlist: t.waitlist,
     isActive: t.isActive,
   }))
 }
 
 function emptyDraft(): TierDraft {
-  return { name: '', price: '', interval: 'month', description: '', benefitsText: '', isActive: true }
+  return {
+    name: '',
+    price: '',
+    interval: 'month',
+    description: '',
+    benefitsText: '',
+    capacity: '',
+    waitlist: false,
+    isActive: true,
+  }
 }
 
 export function MembershipTierForm({
@@ -133,6 +146,11 @@ export function MembershipTierForm({
         .split('\n')
         .map((b) => b.trim())
         .filter(Boolean)
+      const capTrim = r.capacity.trim()
+      if (capTrim && !/^\d+$/.test(capTrim)) {
+        setError('Capacity is a whole number of spots (or blank for unlimited).')
+        return
+      }
       tiers.push({
         id: r.id,
         name,
@@ -140,6 +158,8 @@ export function MembershipTierForm({
         interval: r.interval,
         description: r.description.trim() || null,
         benefits,
+        capacity: capTrim ? Number(capTrim) : null,
+        waitlist: r.waitlist,
         sort: tiers.length,
         isActive: r.isActive,
       })
@@ -290,6 +310,37 @@ export function MembershipTierForm({
                 rows={3}
                 className="mt-1"
               />
+              <p className="mt-1 text-xs text-subtle">
+                Events this tier includes are set below under Event access and show on the join card
+                automatically.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-muted">
+                  Capacity <span className="font-normal text-subtle">(blank = unlimited)</span>
+                </span>
+                <input
+                  inputMode="numeric"
+                  value={r.capacity}
+                  onChange={(e) => update(i, { capacity: e.target.value })}
+                  placeholder="Unlimited"
+                  className={cn(fieldClasses, 'w-32')}
+                />
+              </label>
+              <label className="flex flex-col justify-end gap-1">
+                <span className="text-xs font-medium text-muted">When full</span>
+                <span className="flex h-[38px] items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={r.waitlist}
+                    onChange={(e) => update(i, { waitlist: e.target.checked })}
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
+                  />
+                  <span className="text-sm text-muted">Take a waitlist</span>
+                </span>
+              </label>
             </div>
           </div>
         ))}

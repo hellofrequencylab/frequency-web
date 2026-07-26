@@ -269,6 +269,8 @@ export default async function EventDetailPage({
     // PostgREST returns a PostGIS `geography` as an EWKB hex string (or, in some setups, a
     // GeoJSON object) — decode it with pointFromGeog, never read `.coordinates` directly.
     geog: unknown
+    // ADR-825: hide the exact address until the viewer registers (going/waitlist RSVP or ticket).
+    hide_address: boolean | null
   }
   // These three only depend on already-resolved values (event.id / session_id) and
   // not on each other, so resolve them concurrently: the extra-meta read, the
@@ -277,7 +279,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, space_id, host_space_id, theme, geog',
+        'posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, space_id, host_space_id, theme, geog, hide_address',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -608,9 +610,33 @@ export default async function EventDetailPage({
       memberOnly: t.member_only,
       spaceMembersOnly: t.space_members_only || t.space_tier_id != null,
       spaceTierId: t.space_tier_id,
+      membershipPriceLabel: null as string | null,
     }
   })
   const hasTiers = tiers.length > 0
+
+  // MEMBERSHIP PRICE on a gated tier (ADR-823 polish): a non-member sees what the membership
+  // costs instead of a bare "Free" — the named tier's price when the ticket names one, else the
+  // cheapest active tier. Members see the ticket's own price (Free) via the unlocked state.
+  if (tiers.some((t) => t.spaceMembersOnly) && eventSpaceId) {
+    const { listMembershipTiers } = await import('@/lib/spaces/memberships')
+    const membershipTiers = await listMembershipTiers(eventSpaceId)
+    const fmt = (cents: number, interval: 'month' | 'year' | 'once') => {
+      if (cents <= 0) return 'Free membership'
+      const dollars = cents / 100
+      const amount = Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`
+      return interval === 'month' ? `${amount}/mo` : interval === 'year' ? `${amount}/yr` : amount
+    }
+    for (const t of tiers) {
+      if (!t.spaceMembersOnly) continue
+      const named = t.spaceTierId ? membershipTiers.find((mt) => mt.id === t.spaceTierId) : null
+      const cheapest =
+        named ??
+        [...membershipTiers].sort((a, b) => a.priceCents - b.priceCents)[0] ??
+        null
+      t.membershipPriceLabel = cheapest ? fmt(cheapest.priceCents, cheapest.interval) : null
+    }
+  }
 
   // SPACE-MEMBERSHIP tickets (ADR-823): when a tier is restricted to the hosting Space's members,
   // read the viewer's active membership there so the buy panel can show an honest lock + a join
@@ -908,6 +934,13 @@ export default async function EventDetailPage({
     handle: profile.handle,
   }))
 
+  // HIDDEN ADDRESS (ADR-825): when the host hides the address, the exact venue (venue name,
+  // street, postal, precise pin, maps link, and the free-text location line, which often carries
+  // the street) renders only for a REGISTERED viewer — a going/waitlist RSVP or a ticket — or a
+  // manager. Everyone else gets city-level location plus an honest share-after-RSVP note.
+  const viewerRegistered = myRsvpStatus === 'going' || myRsvpStatus === 'waitlist' || ownsTicket
+  const addressHidden = extra?.hide_address === true && !canManage && !viewerRegistered
+
   // Exact-venue point (§5): the event's OWN geog, shown as a precise mini-map. Only
   // for a PUBLISHED, in-person event that actually has a geocoded point — drafts and
   // online events never get it, and without a point we render nothing (no regression).
@@ -915,7 +948,7 @@ export default async function EventDetailPage({
   // decoded — `pointFromGeog` handles both forms. This is why the map was never showing.
   const isPublished = (extra?.status ?? 'published') === 'published'
   const venuePoint: { lat: number; lng: number } | null =
-    !isOnline && isPublished ? pointFromGeog(extra?.geog) : null
+    !isOnline && isPublished && !addressHidden ? pointFromGeog(extra?.geog) : null
 
   // Mini-map pin (city-level circle area). Only in-person events with a circle that
   // has public coordinates get a map.
@@ -939,7 +972,7 @@ export default async function EventDetailPage({
   // Maps deep link for the venue: the structured address when the host entered one,
   // else the free-text location line. One https URL opens native Maps on a phone and
   // the map site on desktop. Null for online events or when there is no address.
-  const mapsHref = isOnline
+  const mapsHref = isOnline || addressHidden
     ? null
     : mapsSearchUrl(
         eventMapsQuery({
@@ -961,8 +994,11 @@ export default async function EventDetailPage({
     .map((p) => p?.trim())
     .filter(Boolean)
     .join(', ')
-  const headerLocation =
-    venueName && addressLine
+  // Hidden address (ADR-825): city-level only — no venue name, no street, no free-text line.
+  const cityLine = [extra?.city, extra?.region].map((p) => p?.trim()).filter(Boolean).join(', ')
+  const headerLocation = addressHidden
+    ? cityLine || null
+    : venueName && addressLine
       ? `${venueName} · ${addressLine}`
       : venueName || addressLine || (event.location?.trim() || null)
 
@@ -1225,7 +1261,8 @@ export default async function EventDetailPage({
     facts: {
       whenLine,
       isOnline,
-      location: event.location,
+      // Hidden address (ADR-825): the free-text location line often carries the street.
+      location: addressHidden ? cityLine || null : event.location,
       mapsHref,
       onlineUrl,
       mapPin,
@@ -1415,6 +1452,9 @@ export default async function EventDetailPage({
                   </a>
                 ) : (
                   <span>{headerLocation}</span>
+                )}
+                {addressHidden && (
+                  <span className="text-subtle">· Exact address shared after you RSVP</span>
                 )}
               </div>
             )}

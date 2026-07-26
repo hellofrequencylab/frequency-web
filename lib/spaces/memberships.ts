@@ -48,12 +48,17 @@ export interface MembershipTier {
   interval: MembershipInterval
   description: string | null
   benefits: string[]
+  /** Max ACTIVE members (ADR-824); null = unlimited. */
+  capacity: number | null
+  /** When true, a FULL tier takes waitlist joins instead of closing (ADR-824). */
+  waitlist: boolean
   sort: number
   isActive: boolean
 }
 
 /** One of the owner's members (the owner-only list). Carries the member id + display name plus the
- *  tier they joined and when, so the owner sees who is a member. */
+ *  tier they joined and when, so the owner sees who is a member. Includes WAITLIST rows (ADR-824)
+ *  so the owner can promote as spots open — `status` says which is which. */
 export interface SpaceMembership {
   id: string
   spaceId: string
@@ -61,14 +66,17 @@ export interface SpaceMembership {
   memberName: string
   tierId: string
   tierName: string
+  status: 'active' | 'waitlist'
   startedAt: string
 }
 
-/** The viewer's OWN active membership (or null), for the join surface to show their current tier. */
+/** The viewer's OWN open membership (or null), for the join surface to show their current tier.
+ *  `status` distinguishes a live membership from a waitlist spot (ADR-824). */
 export interface MyMembership {
   id: string
   tierId: string
   tierName: string
+  status: 'active' | 'waitlist'
   startedAt: string
 }
 
@@ -118,6 +126,8 @@ export function normalizeTier(raw: {
   interval?: unknown
   description?: unknown
   benefits?: unknown
+  capacity?: unknown
+  waitlist?: unknown
   sort?: unknown
   isActive?: unknown
 }): MembershipTier | null {
@@ -136,12 +146,22 @@ export function normalizeTier(raw: {
   const sortNum = Number(raw.sort)
   const sort = Number.isFinite(sortNum) ? Math.max(0, Math.min(32767, Math.round(sortNum))) : 0
 
+  // Capacity (ADR-824): a non-negative integer, or null for unlimited. Malformed/negative → null
+  // (fail-open to unlimited, matching the DB default — never to an accidental 0-member lockout).
+  const capNum = Math.round(Number(raw.capacity))
+  const capacity =
+    raw.capacity != null && Number.isFinite(capNum) && capNum >= 0
+      ? Math.min(capNum, 1_000_000)
+      : null
+
   const tier: MembershipTier = {
     name,
     priceCents: normalizePriceCents(raw.priceCents),
     interval,
     description,
     benefits: normalizeBenefits(raw.benefits),
+    capacity,
+    waitlist: raw.waitlist === true,
     sort,
     // Default-active: only an explicit `false` turns a tier off.
     isActive: raw.isActive !== false,
@@ -150,8 +170,36 @@ export function normalizeTier(raw: {
   return tier
 }
 
+/** The write plan for a tier save (ADR-824 upsert-by-id): which incoming tiers UPDATE an existing
+ *  row (id preserved — event-access gates and memberships keep pointing at it), which INSERT, and
+ *  which existing rows DELETE. An incoming id that isn't a current row of this Space is treated as
+ *  an insert (id dropped), so a stale/cross-space id can never hijack a row. Pure; tested. */
+export function planTierSetOps(
+  existingIds: string[],
+  tiers: MembershipTier[],
+): {
+  updates: (MembershipTier & { id: string })[]
+  inserts: MembershipTier[]
+  deleteIds: string[]
+} {
+  const existing = new Set(existingIds)
+  const updates: (MembershipTier & { id: string })[] = []
+  const inserts: MembershipTier[] = []
+  const kept = new Set<string>()
+  for (const t of tiers) {
+    if (t.id && existing.has(t.id) && !kept.has(t.id)) {
+      kept.add(t.id)
+      updates.push({ ...t, id: t.id })
+    } else {
+      const { id: _dropped, ...rest } = t
+      inserts.push(rest)
+    }
+  }
+  return { updates, inserts, deleteIds: existingIds.filter((id) => !kept.has(id)) }
+}
+
 /** Normalize + drop invalid tiers from a raw list, capping the count and re-numbering `sort` to the
- *  list order so the saved order is stable. Pure: the replace-set action and the test share it. */
+ *  list order so the saved order is stable. Pure: the upsert action and the test share it. */
 export function normalizeTierSet(raw: unknown): MembershipTier[] {
   const list = Array.isArray(raw) ? raw.slice(0, MAX_TIERS) : []
   // Number `sort` by OUTPUT position (after dropping invalid tiers), so the saved order is dense
@@ -175,6 +223,8 @@ type TierRow = {
   interval: string
   description: string | null
   benefits: unknown
+  capacity: number | null
+  waitlist: boolean
   sort: number
   is_active: boolean
 }
@@ -190,14 +240,17 @@ type MembershipRow = {
 type TierQuery = {
   select: (cols: string) => TierQuery
   eq: (col: string, val: string) => TierQuery
+  in: (col: string, vals: string[]) => TierQuery
   order: (col: string, opts: { ascending: boolean }) => TierQuery
   delete: () => TierQuery
+  update: (patch: Record<string, unknown>) => TierQuery
   insert: (rows: Record<string, unknown>[]) => Promise<{ error: unknown }>
   then: (resolve: (r: { data: TierRow[] | null; error: unknown }) => unknown) => Promise<unknown>
 }
 type MembershipQuery = {
   select: (cols: string) => MembershipQuery
   eq: (col: string, val: string) => MembershipQuery
+  in: (col: string, vals: string[]) => MembershipQuery
   order: (col: string, opts: { ascending: boolean }) => MembershipQuery
   update: (patch: Record<string, unknown>) => MembershipQuery
   insert: (rows: Record<string, unknown>[]) => MembershipQuery
@@ -216,7 +269,8 @@ function membershipsTable(): MembershipQuery {
   return db.from('space_memberships')
 }
 
-const TIER_COLS = 'id, space_id, name, price_cents, interval, description, benefits, sort, is_active'
+const TIER_COLS =
+  'id, space_id, name, price_cents, interval, description, benefits, capacity, waitlist, sort, is_active'
 const MEMBERSHIP_COLS = 'id, space_id, member_profile_id, tier_id, status, started_at'
 
 /** Map a DB tier row to the app's MembershipTier (benefits re-normalized; a malformed row's name is
@@ -232,6 +286,8 @@ function mapTierRow(r: TierRow): MembershipTier {
     interval,
     description: r.description ?? null,
     benefits: normalizeBenefits(r.benefits),
+    capacity: typeof r.capacity === 'number' && r.capacity >= 0 ? r.capacity : null,
+    waitlist: r.waitlist === true,
     sort: typeof r.sort === 'number' ? r.sort : 0,
     isActive: r.is_active !== false,
   }
@@ -253,13 +309,13 @@ async function readTiers(spaceId: string, activeOnly: boolean): Promise<Membersh
   }
 }
 
-/** Read a Space's active memberships (service-role; FAIL-SAFE to []). */
-async function readActiveMemberships(spaceId: string): Promise<MembershipRow[]> {
+/** Read a Space's OPEN memberships — active + waitlist (service-role; FAIL-SAFE to []). */
+async function readOpenMemberships(spaceId: string): Promise<MembershipRow[]> {
   try {
     const { data, error } = await membershipsTable()
       .select(MEMBERSHIP_COLS)
       .eq('space_id', spaceId)
-      .eq('status', 'active')
+      .in('status', ['active', 'waitlist'])
       .order('started_at', { ascending: false })
     if (error || !data) return []
     return data
@@ -268,8 +324,9 @@ async function readActiveMemberships(spaceId: string): Promise<MembershipRow[]> 
   }
 }
 
-/** The viewer's active membership row for a Space, or null (service-role; FAIL-SAFE to null). */
-async function readMyActiveMembership(
+/** The viewer's OPEN membership row (active or waitlist) for a Space, or null (service-role;
+ *  FAIL-SAFE to null). The one-open unique index guarantees at most one row. */
+async function readMyOpenMembership(
   spaceId: string,
   profileId: string,
 ): Promise<MembershipRow | null> {
@@ -278,12 +335,24 @@ async function readMyActiveMembership(
       .select(MEMBERSHIP_COLS)
       .eq('space_id', spaceId)
       .eq('member_profile_id', profileId)
-      .eq('status', 'active')
+      .in('status', ['active', 'waitlist'])
       .maybeSingle()
     return data
   } catch {
     return null
   }
+}
+
+/** Count ACTIVE members per tier for a Space (service-role; FAIL-SAFE to an empty map). Drives the
+ *  capacity check in joinTier and the spots-left display on the join surface (ADR-824). */
+export async function countActiveMembersByTier(spaceId: string): Promise<Map<string, number>> {
+  const out = new Map<string, number>()
+  const rows = await readOpenMemberships(spaceId)
+  for (const r of rows) {
+    if (r.status !== 'active') continue
+    out.set(r.tier_id, (out.get(r.tier_id) ?? 0) + 1)
+  }
+  return out
 }
 
 /** Batch-read display names for a set of profile ids (service-role; FAIL-SAFE to an empty map). */
@@ -312,13 +381,14 @@ async function readMemberNames(ids: string[]): Promise<Map<string, string>> {
 // ── PUBLIC SERVER ACTIONS (all gated / validated server-side) ──────────────────────────────────
 
 /**
- * Replace a Space's membership tiers with `tiers` (replace-set, like setSpaceAvailability). Gated on
- * canEditProfile (owner / admin / editor). Validates + normalizes every tier (a nameless / malformed
- * one is dropped, sort re-numbered to list order); an EMPTY list clears all tiers (a valid "no
- * memberships" state). Replaces (delete then insert) through the admin client. Existing memberships
- * reference deleted tier rows by id, so a future-safe note: v1 deletes-and-reinserts, which orphans
- * a membership's tier_id if a tier is removed; listSpaceMemberships fails safe to a generic tier name
- * for an orphaned membership (the integrator should switch to upsert-by-id before billing ships).
+ * Save a Space's membership tiers as an UPSERT-BY-ID (ADR-824; replaces the v1 delete-and-reinsert).
+ * Gated on canEditProfile (owner / admin / editor). Validates + normalizes every tier (a nameless /
+ * malformed one is dropped, sort re-numbered to list order); an EMPTY list clears all tiers (a valid
+ * "no memberships" state). A tier that carries its existing id is UPDATED IN PLACE, so everything
+ * that references it — memberships' tier_id, members-only event tickets (event_ticket_types
+ * .space_tier_id, ADR-823) — keeps pointing at the same row across edits. Only genuinely removed
+ * tiers are deleted (their event gates degrade to any-member via ON DELETE SET NULL, and
+ * listSpaceMemberships falls back to a generic tier name for their memberships).
  * Returns ActionResult. Fail-closed on permission.
  */
 export async function setMembershipTiers(
@@ -341,26 +411,39 @@ export async function setMembershipTiers(
   // Normalize + drop anything invalid. An empty result is a valid "no tiers" state.
   const clean = normalizeTierSet(tiers)
 
+  const toRow = (t: MembershipTier) => ({
+    name: t.name,
+    price_cents: t.priceCents,
+    interval: t.interval,
+    description: t.description,
+    benefits: t.benefits,
+    capacity: t.capacity,
+    waitlist: t.waitlist,
+    sort: t.sort,
+    is_active: t.isActive,
+  })
+
   try {
-    // Clear the existing tiers, then insert the new set. The member surface re-reads these, so a
-    // clean replace keeps the tier list the single source of truth.
-    const del = await tiersTable().delete().eq('space_id', spaceId)
-    if ((del as unknown as { error?: unknown }).error) {
-      return fail('Could not save your tiers. Try again.')
+    const { data: existing, error: readErr } = (await tiersTable()
+      .select('id')
+      .eq('space_id', spaceId)) as unknown as { data: { id: string }[] | null; error: unknown }
+    if (readErr) return fail('Could not save your tiers. Try again.')
+
+    const plan = planTierSetOps((existing ?? []).map((r) => r.id), clean)
+
+    for (const t of plan.updates) {
+      const upd = await (tiersTable().update(toRow(t)).eq('id', t.id).eq('space_id', spaceId) as unknown as Promise<{ error: unknown }>)
+      if (upd.error) return fail('Could not save your tiers. Try again.')
     }
-    if (clean.length > 0) {
-      const rows = clean.map((t) => ({
-        space_id: spaceId,
-        name: t.name,
-        price_cents: t.priceCents,
-        interval: t.interval,
-        description: t.description,
-        benefits: t.benefits,
-        sort: t.sort,
-        is_active: t.isActive,
-      }))
-      const { error } = await tiersTable().insert(rows)
+    if (plan.inserts.length > 0) {
+      const { error } = await tiersTable().insert(
+        plan.inserts.map((t) => ({ space_id: spaceId, ...toRow(t) })),
+      )
       if (error) return fail('Could not save your tiers. Try again.')
+    }
+    if (plan.deleteIds.length > 0) {
+      const del = await (tiersTable().delete().eq('space_id', spaceId).in('id', plan.deleteIds) as unknown as Promise<{ error: unknown }>)
+      if (del.error) return fail('Could not save your tiers. Try again.')
     }
   } catch {
     return fail('Could not save your tiers. Try again.')
@@ -396,7 +479,7 @@ export async function getMyMembership(spaceId: string): Promise<MyMembership | n
   const profileId = await getMyProfileId()
   if (!profileId) return null
   try {
-    const row = await readMyActiveMembership(spaceId, profileId)
+    const row = await readMyOpenMembership(spaceId, profileId)
     if (!row) return null
     const tiers = await readTiers(spaceId, false)
     const tier = tiers.find((t) => t.id === row.tier_id)
@@ -404,6 +487,7 @@ export async function getMyMembership(spaceId: string): Promise<MyMembership | n
       id: row.id,
       tierId: row.tier_id,
       tierName: tier?.name ?? 'Member',
+      status: row.status === 'waitlist' ? 'waitlist' : 'active',
       startedAt: row.started_at,
     }
   } catch {
@@ -414,11 +498,15 @@ export async function getMyMembership(spaceId: string): Promise<MyMembership | n
 /**
  * Join a tier. Any authenticated member (resolved via getMyProfileId). v1 RECORDS the membership;
  * it does NOT take a payment (billing is Phase 4). The server re-validates that the tier is real +
- * active in this Space, then inserts an active membership. A friendly fail if the member already has
- * an active membership here (the partial unique index is the final guard against a race). Returns
- * ActionResult.
+ * active in this Space, then inserts an active membership — or, when the tier is FULL (ADR-824)
+ * and takes a waitlist, a `waitlist` row instead. A friendly fail if the member already holds an
+ * open row here (the one-open unique index is the final guard against a race). Returns
+ * ActionResult<{ waitlisted }> so the join card can say which outcome happened.
  */
-export async function joinTier(spaceId: string, tierId: string): Promise<ActionResult> {
+export async function joinTier(
+  spaceId: string,
+  tierId: string,
+): Promise<ActionResult<{ waitlisted: boolean }>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to become a member.')
 
@@ -430,9 +518,27 @@ export async function joinTier(spaceId: string, tierId: string): Promise<ActionR
   const tier = tiers.find((t) => t.id === tierId)
   if (!tier) return fail('That tier is no longer available. Pick another.')
 
-  // Already a member? (A fast pre-check for a friendly message; the unique index is the real guard.)
-  const existing = await readMyActiveMembership(spaceId, profileId)
-  if (existing) return fail('You are already a member here.')
+  // Already in? (A fast pre-check for a friendly message; the unique index is the real guard.)
+  const existing = await readMyOpenMembership(spaceId, profileId)
+  if (existing) {
+    return fail(
+      existing.status === 'waitlist'
+        ? 'You are already on the waitlist here.'
+        : 'You are already a member here.',
+    )
+  }
+
+  // CAPACITY (ADR-824): a full tier takes a waitlist join when the owner turned that on, else it
+  // closes with an honest message. The count is a pre-check; the insert below is the racy edge and
+  // a rare over-join is corrected by the owner (promote/cancel), never a crash.
+  let waitlisted = false
+  if (tier.capacity != null) {
+    const counts = await countActiveMembersByTier(spaceId)
+    if ((counts.get(tierId) ?? 0) >= tier.capacity) {
+      if (!tier.waitlist) return fail('This tier is full.')
+      waitlisted = true
+    }
+  }
 
   let membershipRowId: string | null = null
   try {
@@ -442,45 +548,122 @@ export async function joinTier(spaceId: string, tierId: string): Promise<ActionR
           space_id: spaceId,
           member_profile_id: profileId,
           tier_id: tierId,
-          status: 'active',
+          status: waitlisted ? 'waitlist' : 'active',
         },
       ])
       .select(MEMBERSHIP_COLS)
       .maybeSingle()
     if (error) {
-      // The partial unique index rejects a second active row for the same member: translate the
+      // The one-open unique index rejects a second open row for the same member: translate the
       // race into the friendly message rather than a raw DB error.
       return fail('You are already a member here.')
     }
     membershipRowId = data?.id ?? null
-    // AUTOMATION TRIGGER (ADR-561 + ADR-797): a member just joined a tier. First materialize a mailable
-    // Space contact for them (a join opts them into this Space's member emails, honoring any prior
-    // unsubscribe), THEN fire 'member.joined' with the RESOLVED contactId. This is required because a
-    // tenant Space's contacts carry profile_id NULL (the membrane law), so the trigger cannot resolve the
-    // member's Space contact by profile_id alone — welcome / onboarding would reach no one. Both steps are
-    // fail-safe and run in the background (not awaited), so neither can break or slow the join.
-    void (async () => {
-      const contactId = await ensureSpaceMemberContact(spaceId, profileId)
-      await fireSpaceTrigger(spaceId, 'member.joined', { contactId: contactId ?? undefined, profileId })
-    })().catch(() => {
-      // Both callees are contractually non-throwing; this is cheap insurance against a future contract
-      // break, so an automation error can never surface as an unhandled rejection off the join.
-    })
+    // AUTOMATION TRIGGER (ADR-561 + ADR-797): a member just joined a tier — ACTIVE joins only (a
+    // waitlist spot is not a membership; the trigger fires on promotion instead). First materialize
+    // a mailable Space contact for them (a join opts them into this Space's member emails, honoring
+    // any prior unsubscribe), THEN fire 'member.joined' with the RESOLVED contactId. This is
+    // required because a tenant Space's contacts carry profile_id NULL (the membrane law), so the
+    // trigger cannot resolve the member's Space contact by profile_id alone — welcome / onboarding
+    // would reach no one. Both steps are fail-safe and run in the background (not awaited).
+    if (!waitlisted) {
+      void (async () => {
+        const contactId = await ensureSpaceMemberContact(spaceId, profileId)
+        await fireSpaceTrigger(spaceId, 'member.joined', { contactId: contactId ?? undefined, profileId })
+      })().catch(() => {
+        // Both callees are contractually non-throwing; this is cheap insurance against a future
+        // contract break, so an automation error can never surface as an unhandled rejection.
+      })
+    }
   } catch {
     return fail('Could not join right now. Try again.')
   }
-  // Log the join onto the member's Space timeline (program adoption shows on Resonance, ADR-796). The
-  // idempotency key is keyed to THIS membership row, not the member's lifetime: a member who cancels and
-  // rejoins (a win-back, the most valuable Resonance signal) gets a fresh row id and so a fresh timeline
-  // entry, instead of being silently swallowed by a stale lifetime-stable key.
+  // Log onto the member's Space timeline (program adoption shows on Resonance, ADR-796). The
+  // idempotency key is keyed to THIS membership row, not the member's lifetime: a member who cancels
+  // and rejoins (a win-back, the most valuable Resonance signal) gets a fresh row id and so a fresh
+  // timeline entry, instead of being silently swallowed by a stale lifetime-stable key.
   await recordSpaceMemberActivity({
     spaceId,
     spaceOwnerProfileId: space.ownerProfileId,
     memberProfileId: profileId,
     channel: 'event',
-    summary: `Joined membership: ${tier.name}`,
+    summary: waitlisted ? `Joined waitlist: ${tier.name}` : `Joined membership: ${tier.name}`,
     idempotencyKey: `member_join:${membershipRowId ?? `${spaceId}:${profileId}`}`,
-    metadata: { kind: 'membership_join', tierId, tierName: tier.name },
+    metadata: {
+      kind: waitlisted ? 'membership_waitlist' : 'membership_join',
+      tierId,
+      tierName: tier.name,
+    },
+  })
+  return ok({ waitlisted })
+}
+
+/**
+ * Promote a WAITLIST membership to ACTIVE (ADR-824). Allowed for a space admin (the same bar as
+ * cancelling someone else's membership). Re-checks capacity so a promotion can't overfill the tier;
+ * stamps started_at to the promotion moment (that's when the membership actually starts) and fires
+ * the member.joined automation exactly like a direct join. Fail-closed on permission.
+ */
+export async function promoteMembership(membershipId: string): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in.')
+
+  let row: MembershipRow | null = null
+  try {
+    const { data } = await membershipsTable()
+      .select(MEMBERSHIP_COLS)
+      .eq('id', membershipId)
+      .maybeSingle()
+    row = data
+  } catch {
+    row = null
+  }
+  if (!row) return fail('Membership not found.')
+  if (row.status !== 'waitlist') return fail('Only a waitlist spot can be promoted.')
+
+  const space = await getSpaceById(row.space_id)
+  if (!space) return fail('Space not found.')
+  const caps = await getSpaceCapabilities(space, profileId)
+  if (!caps.isAdmin) return fail('You do not have permission to promote members here.')
+
+  // Capacity re-check: promoting must not overfill (the spot may have refilled since).
+  const tiers = await readTiers(row.space_id, false)
+  const tier = tiers.find((t) => t.id === row.tier_id)
+  if (tier?.capacity != null) {
+    const counts = await countActiveMembersByTier(row.space_id)
+    if ((counts.get(row.tier_id) ?? 0) >= tier.capacity) {
+      return fail('This tier is full. Open a spot (or raise the capacity) first.')
+    }
+  }
+
+  try {
+    const upd = await (membershipsTable()
+      .update({ status: 'active', started_at: new Date().toISOString() })
+      .eq('id', membershipId)
+      .eq('status', 'waitlist') as unknown as Promise<{ error: unknown }>)
+    if (upd.error) return fail('Could not promote. Try again.')
+  } catch {
+    return fail('Could not promote. Try again.')
+  }
+
+  const memberProfileId = row.member_profile_id
+  void (async () => {
+    const contactId = await ensureSpaceMemberContact(row.space_id, memberProfileId)
+    await fireSpaceTrigger(row.space_id, 'member.joined', {
+      contactId: contactId ?? undefined,
+      profileId: memberProfileId,
+    })
+  })().catch(() => {
+    /* fail-safe: the promotion is recorded regardless of the automation */
+  })
+  await recordSpaceMemberActivity({
+    spaceId: row.space_id,
+    spaceOwnerProfileId: space.ownerProfileId,
+    memberProfileId,
+    channel: 'event',
+    summary: `Joined membership: ${tier?.name ?? 'Member'} (from the waitlist)`,
+    idempotencyKey: `member_promote:${membershipId}`,
+    metadata: { kind: 'membership_promote', tierId: row.tier_id },
   })
   return ok()
 }
@@ -554,7 +737,7 @@ export async function listSpaceMemberships(spaceId: string): Promise<SpaceMember
   if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return []
 
   try {
-    const rows = await readActiveMemberships(spaceId)
+    const rows = await readOpenMemberships(spaceId)
     if (rows.length === 0) return []
 
     // Batch-resolve member display names + tier names (one query each).
@@ -568,8 +751,9 @@ export async function listSpaceMemberships(spaceId: string): Promise<SpaceMember
       memberProfileId: r.member_profile_id,
       memberName: names.get(r.member_profile_id) ?? 'A member',
       tierId: r.tier_id,
-      // An orphaned tier_id (its tier was removed in a replace-set) falls back to a generic label.
+      // An orphaned tier_id (its tier was truly removed) falls back to a generic label.
       tierName: tierName.get(r.tier_id) ?? 'Member',
+      status: r.status === 'waitlist' ? 'waitlist' : 'active',
       startedAt: r.started_at,
     }))
   } catch {

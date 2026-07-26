@@ -21,6 +21,7 @@ Frequency is built so you meet people the natural way: at a Circle or a public e
 ## What we do, and don't, share
 
 - **We never share your exact location.** Others only ever see your approximate neighborhood or your city, never your address. You control all of this in **Settings, Connections & Location**.
+- **Hosts can protect their address too.** Some events show only the city until you RSVP or get a ticket; the exact address appears once you register. Hosts running gatherings at a home or studio can turn this on in the event's settings.
 - **You decide who can find you.** Ghost mode hides you entirely; you can limit who discovers you to your connections, or no one.
 
 ## Invites and saved contacts

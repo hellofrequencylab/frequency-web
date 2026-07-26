@@ -11,7 +11,14 @@ import { cancelMembership } from '@/lib/spaces/memberships-actions'
 // to the join cards (or drops the member from the owner list). A confirm step guards an accidental
 // tap. No em/en dashes (CONTENT-VOICE §10).
 
-export function MembershipCancelButton({ membershipId }: { membershipId: string }) {
+export function MembershipCancelButton({
+  membershipId,
+  label = 'Cancel membership',
+}: {
+  membershipId: string
+  /** Override for a waitlist row ("Leave the waitlist", ADR-824). */
+  label?: string
+}) {
   const router = useRouter()
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -61,7 +68,7 @@ export function MembershipCancelButton({ membershipId }: { membershipId: string 
         onClick={() => setConfirming(true)}
         className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-muted transition-colors hover:border-danger/40 hover:text-danger"
       >
-        <X className="h-3.5 w-3.5" aria-hidden /> Cancel membership
+        <X className="h-3.5 w-3.5" aria-hidden /> {label}
       </button>
       {error && <span className="text-2xs font-medium text-danger">{error}</span>}
     </span>

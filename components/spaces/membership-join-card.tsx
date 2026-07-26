@@ -48,6 +48,7 @@ export function MembershipJoinCard({
   tier,
   billingOn = false,
   includedEvents = [],
+  spotsLeft = null,
 }: {
   spaceId: string
   tier: MembershipTier
@@ -57,6 +58,8 @@ export function MembershipJoinCard({
   /** Upcoming events whose members-only ticket THIS tier unlocks (ADR-823) — advertised on the
    *  card so a configured ticket gate markets the membership by itself. */
   includedEvents?: { slug: string; title: string }[]
+  /** Remaining capacity (ADR-824); null = unlimited. 0 = full (waitlist or closed). */
+  spotsLeft?: number | null
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -64,6 +67,7 @@ export function MembershipJoinCard({
   const [pending, start] = useTransition()
 
   const free = tier.priceCents === 0
+  const full = spotsLeft != null && spotsLeft <= 0
   // Join-and-return (ADR-823): an event page's "join their membership" pointer carries
   // ?return_to=/events/<slug>, so after joining the member lands back on the ticket they came
   // for. SAFETY: only a same-origin absolute path is honored (a leading single slash) — anything
@@ -77,8 +81,9 @@ export function MembershipJoinCard({
     const tierId = tier.id
     start(async () => {
       // Paid tier with billing live: try secure checkout first. If it no-ops (owner not payout-ready,
-      // billing off, etc.) fall back to the free join path so the button is never broken.
-      if (billingOn && !free) {
+      // billing off, etc.) fall back to the free join path so the button is never broken. A FULL tier
+      // skips checkout entirely: a waitlist spot is not a purchase (ADR-824).
+      if (billingOn && !free && !full) {
         const checkout = await startSpaceMembershipCheckout(spaceId, tierId)
         if (!isError(checkout)) {
           window.location.href = checkout.data.url
@@ -145,16 +150,37 @@ export function MembershipJoinCard({
       )}
 
       <div className="mt-auto pt-4">
-        <Button type="button" onClick={join} disabled={pending} className="w-full justify-center">
-          {pending ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Joining
-            </>
-          ) : (
-            'Join'
-          )}
-        </Button>
-        {!free && (
+        {/* Capacity states (ADR-824): open (spots shown when limited), full-with-waitlist, or
+            closed. The server re-checks on join, so these are honest hints, not the gate. */}
+        {spotsLeft != null && spotsLeft > 0 && (
+          <p className="mb-2 text-2xs text-subtle">
+            {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
+          </p>
+        )}
+        {full && !tier.waitlist ? (
+          <Button type="button" disabled className="w-full justify-center">
+            Full
+          </Button>
+        ) : (
+          <Button type="button" onClick={join} disabled={pending} className="w-full justify-center">
+            {pending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Joining
+              </>
+            ) : full ? (
+              'Join the waitlist'
+            ) : (
+              'Join'
+            )}
+          </Button>
+        )}
+        {full && tier.waitlist && (
+          <p className="mt-2 text-2xs text-subtle">
+            This tier is full. Joining adds you to the waitlist; you become a member when a spot
+            opens.
+          </p>
+        )}
+        {!free && !full && (
           <p className="mt-2 text-2xs text-subtle">
             {billingOn
               ? 'Join opens secure checkout. You can cancel any time.'

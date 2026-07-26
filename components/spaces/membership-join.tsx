@@ -1,5 +1,9 @@
 import { BadgeCheck, Users } from 'lucide-react'
-import { listMembershipTiers, getMyMembership } from '@/lib/spaces/memberships'
+import {
+  listMembershipTiers,
+  getMyMembership,
+  countActiveMembersByTier,
+} from '@/lib/spaces/memberships'
 import { listMembershipIncludedEvents, includedEventCoversTier } from '@/lib/events/membership-included'
 import { billingLive } from '@/lib/pricing/settings'
 import { viewerManagesSpace } from '@/lib/spaces/operator'
@@ -28,7 +32,7 @@ export async function MembershipJoin({
   slug: string
   ownerProfileId: string | null
 }) {
-  const [tiers, mine, billingOn, includedEvents] = await Promise.all([
+  const [tiers, mine, billingOn, includedEvents, activeCounts] = await Promise.all([
     listMembershipTiers(spaceId),
     getMyMembership(spaceId),
     // When billing is live, a PAID tier joins through Stripe Checkout; while OFF this is false and
@@ -37,15 +41,32 @@ export async function MembershipJoin({
     // Members-only event tickets this Space configured (ADR-823): each card advertises the
     // upcoming events its tier's members get a ticket to, automatically.
     listMembershipIncludedEvents(spaceId),
+    // Active counts per tier drive the spots-left / full / waitlist states (ADR-824).
+    countActiveMembersByTier(spaceId),
   ])
 
-  // Already a member: show the current tier + a Cancel, never the join cards.
+  // Already in: show the current state + a Cancel, never the join cards. A WAITLIST spot
+  // (ADR-824) reads honestly as waiting, not as membership.
   if (mine) {
     const since = new Intl.DateTimeFormat('en-US', {
       month: 'long',
       day: 'numeric',
       year: 'numeric',
     }).format(new Date(mine.startedAt))
+    if (mine.status === 'waitlist') {
+      return (
+        <div className="rounded-2xl border border-border bg-surface-elevated px-6 py-8 text-center">
+          <Users className="mx-auto mb-3 h-8 w-8 text-muted" aria-hidden />
+          <p className="text-sm font-semibold text-text">You are on the waitlist.</p>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
+            {mine.tierName}, waiting since {since}. You become a member when a spot opens.
+          </p>
+          <div className="mt-4 flex justify-center">
+            <MembershipCancelButton membershipId={mine.id} label="Leave the waitlist" />
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="rounded-2xl border border-success/30 bg-success-bg px-6 py-8 text-center">
         <BadgeCheck className="mx-auto mb-3 h-8 w-8 text-success" aria-hidden />
@@ -107,6 +128,11 @@ export async function MembershipJoin({
             includedEvents={includedEvents
               .filter((e) => includedEventCoversTier(e, tier.id))
               .map((e) => ({ slug: e.slug, title: e.title }))}
+            spotsLeft={
+              tier.capacity != null && tier.id
+                ? Math.max(0, tier.capacity - (activeCounts.get(tier.id) ?? 0))
+                : null
+            }
           />
         ))}
       </div>

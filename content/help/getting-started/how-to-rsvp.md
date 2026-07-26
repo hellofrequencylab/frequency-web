@@ -60,7 +60,8 @@ Most gatherings are free; you just RSVP. Some are ticketed, and Hosts can price
 them as a set amount, pay-what-you-can, a sliding scale, or a donation. If there
 is a cost, it is shown clearly before you commit. A few tickets are reserved for
 members of the Space hosting the event; those show a small lock, and the page
-points you to where you can join.
+points you to where you can join. Some events also show only the city until you
+RSVP; the exact address appears once you register.
 
 ### I RSVP and then chicken out. Is that bad?
 

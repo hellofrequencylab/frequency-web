@@ -1826,8 +1826,10 @@ export default function AppShell({
             <HoverTip label="Notifications">
               <NotificationBell initialUnread={unreadCount} />
             </HoverTip>
-            {/* Daily check-in streak — links to your Quest dashboard. */}
-            {Number((profile.meta as { daily_checkin_streak?: number } | null)?.daily_checkin_streak ?? 0) >= 1 && (
+            {/* Streak — the SAME practice streak the activity panel and Your stats show
+                (profiles.current_streak). The old meta.daily_checkin_streak froze when the
+                auto-popups flag turned the check-in off, so the header read a dead counter. */}
+            {Number((profile as { current_streak?: number | null }).current_streak ?? 0) >= 1 && (
               <HoverTip label="Daily Streak" className="hidden sm:inline-flex">
                 <Link
                   href="/crew"
@@ -1835,7 +1837,7 @@ export default function AppShell({
                   className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-1 text-xs font-bold text-primary-strong transition-colors hover:bg-primary-bg/70"
                 >
                   <Flame className="w-3.5 h-3.5" />
-                  {Number((profile.meta as { daily_checkin_streak?: number } | null)?.daily_checkin_streak ?? 0)}
+                  {Number((profile as { current_streak?: number | null }).current_streak ?? 0)}
                 </Link>
               </HoverTip>
             )}

@@ -4,17 +4,18 @@ import { useEffect, useState } from 'react'
 import { Gem, Flame } from 'lucide-react'
 import { dailyCheckIn, type DailyCheckInResult } from '@/app/(main)/checkin-actions'
 
-// Fires the once-a-day check-in on first load and celebrates it. The reward itself
-// is granted + guarded server-side (checkin-actions); this only surfaces feedback,
-// which is the point — seeing the reward is what builds the return habit.
-export function DailyCheckIn() {
+// Fires the once-a-day check-in on first load and (optionally) celebrates it. The reward is
+// granted + guarded server-side (checkin-actions). The ACTION always fires — it pays the daily
+// gems and ticks the visit streak; `celebrate` only controls the toast (the auto-popups flag),
+// so turning popups off can never freeze the reward loop again.
+export function DailyCheckIn({ celebrate = true }: { celebrate?: boolean }) {
   const [res, setRes] = useState<DailyCheckInResult | null>(null)
 
   useEffect(() => {
     let live = true
     dailyCheckIn(Intl.DateTimeFormat().resolvedOptions().timeZone)
       .then((r) => {
-        if (live && r && r.gems > 0) {
+        if (live && celebrate && r && r.gems > 0) {
           setRes(r)
           setTimeout(() => {
             if (live) setRes(null)
@@ -25,7 +26,7 @@ export function DailyCheckIn() {
     return () => {
       live = false
     }
-  }, [])
+  }, [celebrate])
 
   if (!res) return null
 
