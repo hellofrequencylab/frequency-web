@@ -108,6 +108,11 @@ export const EventWhenWhere = async () => {
   const startTime = formatWall(schedule.startsAt, TIME_OPTS)
   const endTime = formatWall(schedule.endsAt, TIME_OPTS)
 
+  // Calendar links are RSVP-state-free but NOT lifecycle-free: never invite someone to calendar a
+  // cancelled event, or one that already ended with no upcoming occurrence (the RSVP box's old
+  // calendar rows were gated the same way — cancelled nulled the box, and every branch was pre-end).
+  const showCalendar = !ctx.event.is_cancelled && (!ctx.hasEnded || !!schedule.nextOccurrenceIso)
+
   return (
     <div className="@container rounded-2xl border border-border bg-surface p-4">
       <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-text">
@@ -159,10 +164,13 @@ export const EventWhenWhere = async () => {
           )}
         </ul>
       )}
-      {/* The relocated calendar buttons — same links the RSVP box carried, now RSVP-state-free. */}
-      <div className="mt-3 border-t border-border pt-3">
-        <AddToCalendar icsHref={schedule.icsHref} googleUrl={schedule.googleUrl} emphasis />
-      </div>
+      {/* The relocated calendar buttons — same links the RSVP box carried, now RSVP-state-free
+          (but still lifecycle-gated: see showCalendar above). */}
+      {showCalendar && (
+        <div className="mt-3 border-t border-border pt-3">
+          <AddToCalendar icsHref={schedule.icsHref} googleUrl={schedule.googleUrl} emphasis />
+        </div>
+      )}
     </div>
   )
 }

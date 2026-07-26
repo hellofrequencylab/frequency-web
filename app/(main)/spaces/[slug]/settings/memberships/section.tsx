@@ -104,6 +104,7 @@ async function EventAccessLoader({
     <fieldset disabled={staffViewing} className="contents">
       <MembershipEventAccess
         spaceId={space.id}
+        slug={space.slug}
         rows={rows}
         membershipTiers={tiers.filter((t) => t.id).map((t) => ({ id: t.id!, name: t.name }))}
         allowed={allowed}

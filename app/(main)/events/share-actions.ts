@@ -392,11 +392,15 @@ async function respondToShare(shareId: string, next: 'accepted' | 'declined'): P
   }
 
   // Guard the status in the WHERE too: the row updates only if STILL pending (atomic transition).
-  const { error } = await sharesTable()
+  // Select the affected row back so a LOST race (someone else resolved it between the read above
+  // and this write) reports honestly instead of returning ok() and sending a false notification.
+  const { data: updated, error } = await sharesTable()
     .update({ status: next, responded_at: new Date().toISOString(), responded_by: profileId })
     .eq('id', shareId)
     .eq('status', 'pending')
+    .select('id')
   if (error) return fail('Could not update the request. Try again.')
+  if (!updated || updated.length === 0) return fail('That request has already been handled.')
 
   const admin = createAdminClient()
   const { title, slug } = await eventTitleSlug(admin, row.event_id)

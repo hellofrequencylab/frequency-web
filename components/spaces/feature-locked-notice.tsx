@@ -26,6 +26,7 @@ export function FeatureLockedNotice({
   canManageMembers,
   featureKey,
   currentPlan,
+  planLine,
 }: {
   brandName: string
   /** The Space slug, for the Features-and-access / billing link. */
@@ -43,6 +44,10 @@ export function FeatureLockedNotice({
   featureKey?: string
   /** The Space's current plan, for the meter range highlight. */
   currentPlan?: string | null
+  /** Optional override for the 'plan' description: one plain sentence naming the plan that carries the
+   *  feature (e.g. "Automations come with the Collective plan."). Use it for an on/off tier unlock,
+   *  where the default "available on every plan, move up for a higher limit" line would be wrong. */
+  planLine?: string
 }) {
   const title =
     reason === 'disabled'
@@ -57,9 +62,10 @@ export function FeatureLockedNotice({
         ? `${label} is off for this space. Turn it on under Menu and features, then it shows here.`
         : `${label} is off for this space. Ask an admin to turn it on under Menu and features.`
       : reason === 'plan'
-        ? canManageMembers
-          ? `${label} is available on every plan. You are on the free allowance for this space. Move up a plan for a higher limit.`
-          : `${label} is available on every plan. You are on the free allowance. Ask an admin to move up a plan for more.`
+        ? (planLine ??
+          (canManageMembers
+            ? `${label} is available on every plan. You are on the free allowance for this space. Move up a plan for a higher limit.`
+            : `${label} is available on every plan. You are on the free allowance. Ask an admin to move up a plan for more.`))
         : `${label} is set for a higher role on this space. Ask whoever runs ${brandName} to give you access, or set the role under Menu and features.`
 
   // The next step depends on the reason: a plan gap points at billing, a universal-off / role gap points

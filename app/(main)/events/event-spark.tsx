@@ -67,6 +67,9 @@ export function EventSpark({
   const [stagedFile, setStagedFile] = useState<File | null>(null)
   const [thumbUrl, setThumbUrl] = useState<string | null>(null)
   const [posterPath, setPosterPath] = useState<string | null>(null)
+  // LATEST-PICK guard: prepareImageForUpload can take seconds (heic2any + wasm), so a user can
+  // pick again or hit Remove while an earlier conversion is in flight. Stale completions drop.
+  const pickEpoch = useRef(0)
 
   // Vera's drafted event (review step). title/description are the editable surface here; the
   // rest (date, place, price, lineup, tickets, links…) carries through to the draft editor.
@@ -143,20 +146,27 @@ export function EventSpark({
       return
     }
     setError(null)
+    const epoch = ++pickEpoch.current
     // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG so the staged
     // thumbnail renders and the scan downscale can decode it (neither works on a raw HEIC outside
     // Safari). An unconvertible HEIC gets an inline message instead of a broken scan.
     const prepared = await prepareImageForUpload(file)
+    // A newer pick (or Remove) superseded this one while it converted — drop it.
+    if (epoch !== pickEpoch.current) return
     if ('error' in prepared) {
       setError(prepared.error)
       return
     }
-    if (thumbUrl) URL.revokeObjectURL(thumbUrl)
     setStagedFile(prepared.file)
-    setThumbUrl(URL.createObjectURL(prepared.file))
+    // Functional swap so the PREVIOUS thumb is revoked even if this closure's thumbUrl is stale.
+    setThumbUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return URL.createObjectURL(prepared.file)
+    })
   }
 
   const removePhoto = () => {
+    pickEpoch.current++ // invalidate any conversion still in flight
     if (thumbUrl) URL.revokeObjectURL(thumbUrl)
     setStagedFile(null)
     setThumbUrl(null)

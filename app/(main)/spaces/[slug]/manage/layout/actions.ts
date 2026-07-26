@@ -635,7 +635,7 @@ function addPageError(reason: AddPageReason): string {
     case 'cap':
       return `You can have up to ${MAX_PROFILE_PAGES} pages. Delete one to add another.`
     case 'locked':
-      return 'Add more pages with your own website. Upgrade your plan to unlock it.'
+      return 'Add more pages with your own website. It comes with the Business plan.'
   }
 }
 

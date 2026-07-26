@@ -16,11 +16,14 @@ import { fieldClasses } from '@/components/ui/field'
 
 export function MembershipEventAccess({
   spaceId,
+  slug,
   rows,
   membershipTiers,
   allowed,
 }: {
   spaceId: string
+  /** The Space slug, for the locked hint's plans link. */
+  slug: string
   rows: SpaceEventAccessRow[]
   membershipTiers: { id: string; name: string }[]
   /** Collective plan gate; false renders the locked hint instead of the selects. */
@@ -41,9 +44,13 @@ export function MembershipEventAccess({
   }
 
   if (!allowed) {
+    // One plain sentence, one link (the house upsell pattern). Never a modal, never urgency.
     return (
       <p className="rounded-lg bg-surface px-3 py-2 text-sm text-muted">
-        Including events with your membership comes with the Collective plan.
+        Including events with your membership comes with the Collective plan.{' '}
+        <Link href={`/spaces/${slug}/settings/billing`} className="font-medium text-primary hover:underline">
+          See plans
+        </Link>
       </p>
     )
   }

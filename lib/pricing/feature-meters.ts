@@ -157,8 +157,9 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Active automations',
     unit: 'automations',
     period: null,
-    // Free: no automations (§2: "1 pipeline, no automations"). Business: unlimited.
-    allowances: { free: 0, business: null },
+    // Free: no automations (§2: "1 pipeline, no automations"). Collective floor (ADR-811, mirrors
+    // FEATURE_GATES.space_automation): unlimited.
+    allowances: { free: 0, collective: null },
   },
   space_team: {
     axis: 'plan',
@@ -166,8 +167,9 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Team seats',
     unit: 'seats',
     period: null,
-    // Free: 1 seat (§2). Business: unlimited, billed per seat (§2: +$9 / seat / mo).
-    allowances: { free: 1, business: null },
+    // Free: 1 seat (§2). Collective floor (ADR-811, mirrors FEATURE_GATES.space_team): unlimited,
+    // billed per seat (§2: +$9 / seat / mo).
+    allowances: { free: 1, collective: null },
   },
   space_multi_pipeline: {
     axis: 'plan',
@@ -175,8 +177,9 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Pipelines',
     unit: 'pipelines',
     period: null,
-    // Free: 1 pipeline (§2). Business: unlimited.
-    allowances: { free: 1, business: null },
+    // Free: 1 pipeline (§2). Collective floor (ADR-811, mirrors FEATURE_GATES.space_multi_pipeline):
+    // unlimited.
+    allowances: { free: 1, collective: null },
   },
   // ── Space AI depth (plan axis; the Resonance Engine metered usage · ADR-387) ─────────────────────
   space_vera: {

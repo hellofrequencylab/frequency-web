@@ -67,17 +67,17 @@ collaboration**, so the free tier stays a genuine taste.
 | Author Journeys / Practices / Circles | 🔴 | 🔴 (Crew+) | ✅ | ✅ | ✅ |
 | **Create a Space** | 🔴 | 🔴 (go Crew) | ✅ 1 space | — | ✅ unlimited |
 | Take money (bookings/tickets/donations) | 🔴 | via a Space | via a Space | ✅ (higher take-rate) | ✅ (lower take-rate) |
-| **Host collaborators / co-host events** | 🔴 | 🔴 | 🔴 | 🔴 preview + *Go Business* | ✅ |
+| **Host collaborators / co-host events** | 🔴 | 🔴 | 🔴 | 🔴 preview | ✅ Non Profit; Business previews (Collective floor, ADR-835) |
 | Team seats, full CRM/email/automation, custom domain | 🔴 | 🔴 | 🔴 | 🔴 preview | ✅ |
 
 Legend: ✅ available · 🔴 gated (upgrade prompt) · earn-only = plays but cannot cash in.
 
 ## 5. How it is enforced (and why OFF is safe)
 
-- **Collaboration host gate** — `space_collaborators` feature gate (Business floor,
+- **Collaboration host gate** — `space_collaborators` feature gate (Collective floor since ADR-835,
   `lib/pricing/gates.ts`), read by `spaceCanHostCollaborators` (`lib/spaces/function-access.ts`) and
   enforced in the write actions (`collaborations-actions.ts` request + accept; `share-actions.ts`
-  request/feature). The settings surface shows a locked preview for a free host.
+  request/feature). The settings surface shows a locked preview for a lower-plan host.
 - **Space-count cap** — the pure rule `canCreateSpace` (`lib/pricing/space-limits.ts`) enforced in
   `createSpace` (`lib/spaces/provision.ts`): free → 0, Crew → 1, owning a paid space → unlimited.
 - **Event creation** — opened to any signed-in member (`event.create` capability in

@@ -49,8 +49,9 @@ export async function CollaboratorsBody({
   lockedReason?: 'plan' | 'module'
 }) {
   if (!manage) {
-    // Plan lock (ADR-810): a free space sees the value + the Go Business path. Hosting collaborators is a
-    // Business feature; the collaborator pays for their own space, so the host pays nothing extra per guest.
+    // Plan lock (ADR-810, Collective floor per ADR-835): a lower-plan space sees the value + the plans
+    // path. Hosting collaborators is Collective depth; the collaborator pays for their own space, so the
+    // host pays nothing extra per guest.
     if (lockedReason === 'plan') {
       return (
         <div className="rounded-xl border border-dashed border-border bg-surface px-4 py-6 text-sm text-muted">
@@ -60,14 +61,14 @@ export async function CollaboratorsBody({
             collaborators.
           </p>
           <p className="mt-3">
-            Hosting collaborators is a Business feature. The businesses you host pay for their own space, so
-            it costs you nothing extra per collaborator.
+            Hosting collaborators comes with the Collective plan. The businesses you host pay for their own
+            space, so it costs you nothing extra per collaborator.
           </p>
           <Link
             href={`/spaces/${slug}/settings/billing`}
             className="mt-4 inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
           >
-            Go Business
+            See plans
           </Link>
         </div>
       )

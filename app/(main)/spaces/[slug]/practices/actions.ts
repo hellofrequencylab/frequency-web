@@ -104,7 +104,7 @@ export async function submitSpacePracticeToLibraryAction(slug: string, practiceI
   if ('error' in gate) return fail(gate.error)
 
   if (!(await canCreate('practice.create')))
-    return fail('Listing a practice in the library is a paid feature. Upgrade to Crew to submit it.')
+    return fail('Listing a practice in the library comes with Crew. Upgrade your membership to submit it.')
 
   const practice = await getPractice(practiceId)
   if (!practice || (await practiceSpaceId(practiceId)) !== gate.spaceId) return fail('Not allowed.')
