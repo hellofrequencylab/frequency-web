@@ -38,10 +38,19 @@ rewrites.**
 | **0 — Scope spine** | Every comm queryable by lane (event/circle/campaign/…); unified send ledger; SMS delivery persisted | nothing |
 | **1 — Member box rework** | Network engagement band on top; stats byte-identical; leader-safe detail | nothing (ships alone) |
 | **2 — The Path fold-down** | Threaded message path under the member, each message tagged with its website event | 0 (full fidelity), 1 |
-| **3 — Event CRM** | The member viewer + comm log on `/events/[slug]/manage/crm` | 1 (2 enriches it) |
-| **4 — Circle CRM** | The member viewer + comm log at `/circles/[slug]/crm` via the menu contract | 1, 3 patterns |
+| **3 — Message Attendees (Event CRM)** | The member viewer + comm log on `/events/[slug]/manage/crm` | 1 (2 enriches it) |
+| **4 — Message Circle (Circle CRM)** | The member viewer + comm log at `/circles/[slug]/crm` via the menu contract | 1, 3 patterns |
 | **5 — Multi-channel composer** | One compose, channels Email / DM / Text / Dispatch, per-channel eligibility + one result banner | 0 |
 | **A — Ops track (parallel)** | SMS live (A2P), email replies live in prod (inbound secret + MX) | humans, not code |
+
+### Surface names + audiences (owner ruling 2026-07-26; in NAMING.md)
+
+| Scope | Surface name | Audience |
+|---|---|---|
+| Platform | **Resonance CRM** | everyone in the network |
+| Space | **Community Resonance** | members of the Space + followers |
+| Event | **Message Attendees** | everyone RSVP'd going or maybe |
+| Circle | **Message Circle** | active members of the Circle |
 
 ## 1. Invariants (locked; the guards enforce most of them)
 
@@ -94,6 +103,7 @@ new Event/Circle surfaces.
 | 1.3 | `NetworkEngagementBand` at the TOP of the pane: two chip rows — **Manages / hosts** (circles hosted, events hosted, Spaces owned, practices created, Journeys authored) and **Part of** (Circles, Spaces, Practices, Journeys, upcoming Events) — chips expand inline to the named lists (the `NetworkGroup` lists move up from the bottom; one home, not two). **SCORES + ENGAGEMENT stay byte-identical** | `components/people/member-viewer/network-engagement-band.tsx` (new), `crm-member-detail.tsx` | M |
 | 1.4 | Roster helper extraction: `rosterFromProfileIds(profileIds) → MemberSummary[]` (batched scores, neutral defaults) out of the space resonance roster, for event/circle reuse | `lib/spaces/resonance-roster.ts` → `lib/people/roster-from-ids.ts` | S |
 | 1.5 | Messaging prop generalization: `messaging?: { kind: 'platform' \| 'space' \| 'dm' \| 'none' }` (back-compatible with `messageScope`); `dm` renders the Message button as a bound server action, no email requirement | `components/people/member-viewer/types.ts`, `crm-member-detail.tsx`, `member-viewer.tsx` | M |
+| 1.6 | Community Resonance audience per ruling: the Space roster grows a **followers** leg (`space_follows`) alongside active members + imported contacts, badged (`follows:space`) so operators can facet members vs followers | `lib/spaces/resonance-roster.ts` | S |
 
 ## 4. Phase 2 — The Path fold-down (threaded message path + website-event ties)
 
@@ -121,28 +131,30 @@ entry. Every entry carries a `⚑` badge naming its tied website event, linked.
 | 2.5 | `components/people/member-viewer/message-path.tsx`: `MessagePathFold` (deferred fetch on open, skeleton, Show older) + `PathTimeline` (threaded renderer, `compact` prop) + `MilestoneStrip` (current rail markup, extracted) | new | L |
 | 2.6 | Reuse: `ComposeContextRail`'s past-communication list becomes `<PathTimeline compact>` over already-loaded interactions (zero extra fetch; no duplicate timeline markup) | `crm-member-detail.tsx` | S |
 
-## 5. Phase 3 — Event CRM
+## 5. Phase 3 — Message Attendees (Event CRM)
 
 Event manage stays bespoke (menu contract) — the viewer gets a subroute, linked from the
-dashboard.
+dashboard. Surface name **Message Attendees**; audience per owner ruling = **RSVP'd going
+or maybe**.
 
 | # | Work | Files | Size |
 |---|---|---|---|
-| 3.1 | Route `app/(main)/events/[slug]/manage/crm/page.tsx` — same gate as manage (`event.editSettings`: host / cohost / staff / parent-scope manager), `DashboardTemplate`, mounts `MemberViewer` with `detailVariant="crm"`, RSVP facet | new | M |
-| 3.2 | Roster `lib/events/crm-roster.ts` — three legs: all `event_rsvps` (every status, ignore `muted` — a management view, not a push fan-out; badges `rsvp:going/maybe/waitlist/not_going`), hosting-circle members minus RSVPs (`rsvp:circle`), and invited non-member guests (`event_guests` → `guest:<id>` rows, the space `contact:` convention). Caps: RSVPs 1000, guests 500. Exports `listEventCrmMemberIds` (the tenancy set) | new | M |
-| 3.3 | Detail action with the verbatim gate → tenancy → build triple; members via `buildMemberDetail(id, { audience: 'leader' })`, guests via the minimal contact-shaped detail | `app/(main)/events/[slug]/manage/crm/event-detail-actions.ts` | M |
-| 3.4 | Messaging: `messaging={{ kind: 'dm' }}` bound to the existing host↔guest DM (`openFollowUpDm`); guests get `mailto:`. (Phase 5 upgrades this to the full channel picker) | wiring | S |
+| 3.1 | Route `app/(main)/events/[slug]/manage/crm/page.tsx` — same gate as manage (`event.editSettings`: host / cohost / staff / parent-scope manager), `DashboardTemplate` titled "Message Attendees", mounts `MemberViewer` with `detailVariant="crm"`, RSVP facet | new | M |
+| 3.2 | Roster `lib/events/crm-roster.ts` — `event_rsvps` where `status in ('going','maybe')`, ignore `muted` (a management view, not a push fan-out), badges `rsvp:going/maybe`. Cap 1000. Exports `listEventCrmMemberIds` (the tenancy set). Waitlist/declined rows, hosting-circle non-RSVPs, and invited non-member guests are EXCLUDED per the ruling (the existing Roster/Invited sections still show them; revisit as facets only if asked) | new | M |
+| 3.3 | Detail action with the verbatim gate → tenancy → build triple; members via `buildMemberDetail(id, { audience: 'leader' })` | `app/(main)/events/[slug]/manage/crm/event-detail-actions.ts` | M |
+| 3.4 | Messaging: `messaging={{ kind: 'dm' }}` bound to the existing host↔guest DM (`openFollowUpDm`). (Phase 5 upgrades this to the full channel picker) | wiring | S |
 | 3.5 | Dashboard link "Open guest CRM" + optional `event.crm` catalog row (`slot: 'comms'`, `render: 'link'`) with an explicit `hrefForEntitySurface` case BEFORE the `event.*` prefix fallback | `app/(main)/events/[slug]/manage/page.tsx`, `lib/admin/modules/registry.ts`, `lib/admin/entity-surface-hrefs.ts` | S |
 | 3.6 | Event Conversations tab (can trail v1): leader-inbox clone gated on `event.editSettings`, list filtered to the event's people (v1 participant filter; scope-eq once Phase 0 rows exist). **Register in `SURFACES` + import every shared module** (ADR-817) | `app/(main)/events/[slug]/manage/crm/conversations/` | L |
 | 3.7 | Fix `requireLeadFloor`'s "leads something" probe to also check `events.host_id` (3 lines, correct regardless) | `lib/admin/guard.ts` | S |
 
-## 6. Phase 4 — Circle CRM
+## 6. Phase 4 — Message Circle (Circle CRM)
 
-The pure catalog path: one row + one page.
+The pure catalog path: one row + one page. Surface name **Message Circle**; audience =
+active members of the Circle.
 
 | # | Work | Files | Size |
 |---|---|---|---|
-| 4.1 | Catalog row `circle.crm` (scopes `['circle']`, `requiredCapability: 'circle.moderate'`, `slot: 'comms'` — its first non-space use, `render: 'link'`) + explicit `hrefForEntitySurface` case → `/circles/[slug]/crm`; `check:menu` + registry/console test updates | `lib/admin/modules/registry.ts`, `lib/admin/entity-surface-hrefs.ts` | S |
+| 4.1 | Catalog row `circle.crm`, label **"Message Circle"** (scopes `['circle']`, `requiredCapability: 'circle.moderate'`, `slot: 'comms'` — its first non-space use, `render: 'link'`) + explicit `hrefForEntitySurface` case → `/circles/[slug]/crm`; `check:menu` + registry/console test updates | `lib/admin/modules/registry.ts`, `lib/admin/entity-surface-hrefs.ts` | S |
 | 4.2 | Route `app/(main)/circles/[slug]/crm/page.tsx` — `circle.moderate` gate (host / stewardship edge / staff / parent leader), mounts the viewer | new | M |
 | 4.3 | Roster `lib/circles/crm-roster.ts` — active `memberships` ∪ `circles.host_id` via `rosterFromProfileIds`; exports `listActiveCircleMemberIds` | new | S |
 | 4.4 | Detail action (gate → tenancy → `audience: 'leader'`) + DM action `openCircleMemberDm` | `app/(main)/circles/[slug]/crm/member-detail-actions.ts` | S |
@@ -211,8 +223,10 @@ Every PR runs the standing guards: `pnpm check:menu`, `pnpm check:crm-parity`,
 
 ## 11. Open questions for the owner
 
-1. **Naming:** "Community CRM" for the circle module label, and does "The Path" (now the
-   message path) need a NAMING.md entry to disambiguate from the milestone strip?
+1. ~~Naming~~ **RULED (2026-07-26):** Resonance CRM (platform) · Community Resonance
+   (Space, members + followers) · Message Attendees (event, going/maybe) · Message Circle
+   (circle, active members). Recorded in NAMING.md + ADR-827 addendum. Still open: does
+   "The Path" need a NAMING.md entry to disambiguate from the milestone strip?
 2. **Member-facing inbox copy:** rename the support surface "Messages from the team"?
 3. **Dispatch-from-composer scope:** v1 allows exactly one led circle/event chip — is
    hub/nexus (Guide/Mentor downline) wanted in v1 or a follow-up?

@@ -249,6 +249,19 @@
   longer a member-facing economy construct. (See the Retired list and the cut
   circle-collaborative mechanics under Co-op / Run.)
 
+## CRM / messaging surfaces (ADR-827, July 2026)
+
+One CRM engine, four scoped surfaces; each has ONE operator-facing name and a locked audience:
+
+- **Resonance CRM** = the platform CRM (`/admin/crm`): everyone in the network.
+- **Community Resonance** = a Space's CRM tab: the Space's members + followers.
+- **Message Attendees** = an event's CRM/messaging surface: everyone RSVP'd **going or
+  maybe** (not waitlist, not declined, not invited-only guests).
+- **Message Circle** = a Circle's CRM/messaging surface: the Circle's active members.
+
+Never "resident CRM" (no "resident" entity exists), never "Event CRM" / "Circle CRM" in
+operator-facing copy (internal shorthand only).
+
 ## Profile pages
 
 - **Spotlight** = a member's opt-in public mini-site (a linktree/personal page themed
