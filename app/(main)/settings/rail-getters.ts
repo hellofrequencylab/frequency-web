@@ -26,6 +26,7 @@ import {
   readSpotlightBackgroundRaw,
 } from '@/lib/profile/spotlight-flags'
 import { readProfileHeaderFocus, readProfileAvatarFocus, readProfileOverlayStyle, readProfileOverlayColor } from '@/lib/profile/header-focus'
+import { avatarSrc } from '@/lib/images/avatar-focus'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
 import { validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
 import type { SpotlightBackground } from '@/lib/spotlight/blocks/schema'
@@ -99,7 +100,9 @@ export async function getProfileRailData(): Promise<ProfileRailData | null> {
       displayName: profile.display_name ?? '',
       handle: profile.handle ?? '',
       bio: profile.bio ?? '',
-      avatarUrl: profile.avatar_url ?? '',
+      // Fragment-stripped (ADR-829): the form edits the clean URL; the #fp focus fragment
+      // is re-mirrored on save from avatarFocal below.
+      avatarUrl: profile.avatar_url ? avatarSrc(profile.avatar_url) : '',
       avatarFocal: readProfileAvatarFocus((profile as { meta?: unknown }).meta),
       headerImageUrl,
       headerFocal: readProfileHeaderFocus((profile as { meta?: unknown }).meta),

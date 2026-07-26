@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { HEADER_MIN_H, type HeaderSize } from '@/lib/layout/header-sizes'
+import { HeroAdaptiveText } from './hero-adaptive-text'
 
 // PAGE HERO — the ONE canonical header band for the whole site (THEME-PROTOCOL, the "structure" layer),
 // and the render side of the `header` embeddable element (docs/EMBEDDABLE-ELEMENTS.md, ADR-792). ONE
@@ -60,6 +61,12 @@ export interface PageHeroProps {
   /** CSS color for the shadow/fade overlay (from the editor's color picker). Defaults: shadow →
    *  var(--color-ink); fade → var(--color-canvas) (the page background). */
   overlayColor?: string
+  /** Content-aware overlaid text (ADR-830): drop the text-shadow glow and let a client sensor
+   *  sample the cover pixels behind the lockup (factoring the overlay mode/color) to pick light
+   *  or dark copy — the on-media token pair — with a subtle token scrim only when even the
+   *  better tone misses the readability floor. Wired on the profile header; Space/event heroes
+   *  can opt in with this one prop. Default off (the shipped halo treatment). */
+  adaptiveText?: boolean
 }
 
 // The overlay gradients, parameterized by color (tokens by default) so they theme + dark-mode. `shadow`
@@ -96,6 +103,7 @@ export function PageHero({
   overlay = true,
   overlayStyle,
   overlayColor,
+  adaptiveText = false,
 }: PageHeroProps) {
   const focalStyle = coverFocus ? { objectPosition: coverFocus } : undefined
   const dim = dimmed ? ' dimmed' : ''
@@ -116,12 +124,16 @@ export function PageHero({
   //  • fade   — the cover melts into the PAGE background, so overlaid copy must contrast with THAT (not be
   //             light-on-light in light mode). Use the theme foreground `text` + a canvas-colored halo
   //             (always the opposite tone to `text`, so it reads in both light and dark mode).
+  // ADAPTIVE (ADR-830) replaces all of that: NO halo/glow — the copy renders in the on-media
+  // token (flipped light/dark by the HeroAdaptiveText sensor from the pixels + overlay behind
+  // it), backed by the .hero-text-scrim gradient only when contrast demands it.
   const fade = oStyle === 'fade'
-  const legible = oStyle === 'shadow' ? '' : fade ? ' on-fade-text' : ' on-image-text'
-  const titleTone = fade ? 'text-text' : 'text-on-ink'
+  const legible = adaptiveText ? '' : oStyle === 'shadow' ? '' : fade ? ' on-fade-text' : ' on-image-text'
+  const titleTone = adaptiveText ? 'text-on-media' : fade ? 'text-text' : 'text-on-ink'
+  const subtitleTone = adaptiveText ? 'text-on-media/85' : fade ? 'text-text/80' : 'text-on-ink/85'
 
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-border">
+    <section className={`relative overflow-hidden rounded-3xl border border-border${adaptiveText ? ' hero-adaptive-text' : ''}`}>
       {/* Cover: a real photo, or the neutral gradient placeholder when null/absent. */}
       {coverImage ? (
         rawImg ? (
@@ -136,6 +148,17 @@ export function PageHero({
       {/* The overlay (tokens only): a colorable shadow/fade scrim; the amber glow rides the shadow style. */}
       {scrimBg && <div className="absolute inset-0" style={{ background: scrimBg }} aria-hidden />}
       {oStyle === 'shadow' && <div className="amber-glow pointer-events-none absolute inset-0" aria-hidden />}
+      {/* Adaptive text (ADR-830): the readability scrim (token gradient, faded in only when the
+          sensor asks) + the invisible sensor that stamps data-media-tone / data-media-scrim. */}
+      {adaptiveText && <div className="hero-text-scrim" aria-hidden />}
+      {adaptiveText && (
+        <HeroAdaptiveText
+          coverImage={coverImage ?? null}
+          coverFocus={coverFocus ?? null}
+          overlayStyle={oStyle}
+          overlayColor={overlayColor ?? null}
+        />
+      )}
 
       {variant === 'minimal' ? (
         // Cover + scrim only. The page still needs its heading, so keep an sr-only h1 (a11y + SEO).
@@ -158,7 +181,7 @@ export function PageHero({
                   {title}
                 </h1>
                 {subtitle && (
-                  <div className={`mt-1.5 max-w-xl text-sm leading-relaxed ${fade ? 'text-text/80' : 'text-on-ink/85'}`}>{subtitle}</div>
+                  <div className={`mt-1.5 max-w-xl text-sm leading-relaxed ${subtitleTone}`}>{subtitle}</div>
                 )}
               </div>
             </div>
@@ -178,7 +201,7 @@ export function PageHero({
             {title}
           </h1>
           {subtitle && (
-            <p className={`mx-auto mt-3 max-w-2xl text-base leading-relaxed ${fade ? 'text-text/80' : 'text-on-ink/80'} sm:mt-5 sm:text-lg`}>{subtitle}</p>
+            <p className={`mx-auto mt-3 max-w-2xl text-base leading-relaxed ${adaptiveText ? 'text-on-media/85' : fade ? 'text-text/80' : 'text-on-ink/80'} sm:mt-5 sm:text-lg`}>{subtitle}</p>
           )}
           {search && <div className="mt-4 w-full max-w-lg sm:mt-6">{search}</div>}
           {actions && <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:mt-6 sm:gap-3">{actions}</div>}

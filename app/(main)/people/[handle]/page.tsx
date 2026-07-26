@@ -392,9 +392,9 @@ export default async function ProfilePage({
   // it never cramps against that rail, stacking the info column up top below xl.
   // The header is the standardized `header` element (ADR-793), identity layout — the Space-page
   // treatment with a ROUND profile photo: avatar + role badge + name + @handle + actions all ride the
-  // cover, stats/gamification read below. Scrim OFF by default (a clean photo; PageHero's on-image-text
-  // keeps the overlaid identity + buttons legible), unless an operator turns it on. layout / height /
-  // scrim resolve from the master config (retune site-wide).
+  // cover, stats/gamification read below. Scrim OFF by default (a clean photo; the adaptive on-media
+  // text below keeps the overlaid identity legible, ADR-830), unless an operator turns it on. layout /
+  // height / scrim resolve from the master config (retune site-wide).
   // The owner's picked overlay (profiles.meta) is the surface default — an operator master value in
   // /admin/elements can still override it site-wide (resolveHeaderElement precedence).
   const overlayStyle = readProfileOverlayStyle((profile as { meta?: unknown }).meta)
@@ -424,10 +424,14 @@ export default async function ProfilePage({
             coverImage={headerImageUrl}
             coverFocus={headerFocus}
             dimmed={isDemo}
+            // Content-aware overlaid text (ADR-830): no glow — the name/@handle pick light or
+            // dark copy from the pixels behind them (and the overlay setting), live as the rail
+            // edits the photo / focus / overlay.
+            adaptiveText
             leading={<ProfileAvatar src={profile.avatar_url} name={profile.display_name} initials={initials} dimmed={isDemo} focus={avatarFocus} />}
             eyebrow={roleBadge}
             title={profile.display_name}
-            subtitle={<span className="font-medium text-on-ink/90">@{profile.handle as string}</span>}
+            subtitle={<span className="font-medium text-on-media/90">@{profile.handle as string}</span>}
             actions={
               <>
                 {isOwner ? ownerActions : viewerActions}

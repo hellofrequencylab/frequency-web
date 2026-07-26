@@ -7,6 +7,7 @@ import { Loader2, Send } from 'lucide-react'
 import { createReply, fetchReplies } from '@/app/(main)/feed/actions'
 import { isError } from '@/lib/action-result'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { ProfileFlair } from '@/components/profile-flair'
 import { isEndorsed } from '@/lib/season-ranks'
 import { PostBody } from './post-body'
@@ -53,10 +54,11 @@ function CommentRow({
         <Link href={author ? `/people/${author.handle}` : '#'} className="shrink-0">
           {author?.avatar_url ? (
             <Image
-              src={author.avatar_url}
+              src={avatarSrc(author.avatar_url)}
               alt={author.display_name}
               width={avatar}
               height={avatar}
+              style={avatarFocusStyle(author.avatar_url)}
               className={`${avatarBox} rounded-full object-cover`}
             />
           ) : (

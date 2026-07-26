@@ -5,6 +5,7 @@ import { PostReplies } from './post-replies'
 import { ContextActions } from '@/components/context-actions'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { PostBody } from './post-body'
 import { SystemLine } from './system-line'
 
@@ -158,7 +159,7 @@ export function PostCard({
             <div className="shrink-0 relative">
               <Link href={`/people/${author.handle}`} className="block">
                 {author.avatar_url ? (
-                  <Image src={author.avatar_url} alt={author.display_name} width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
+                  <Image src={avatarSrc(author.avatar_url)} alt={author.display_name} width={32} height={32} style={avatarFocusStyle(author.avatar_url)} className="w-8 h-8 rounded-full object-cover" />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center select-none">
                     {getInitials(author.display_name)}
@@ -168,7 +169,7 @@ export function PostCard({
               {post.scopeContext?.type === 'wall' && (
                 <Link href={post.scopeContext.href} className="absolute -bottom-1 -right-1.5 ring-2 ring-surface rounded-full">
                   {post.scopeContext.avatar_url ? (
-                    <Image src={post.scopeContext.avatar_url} alt={post.scopeContext.name} width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
+                    <Image src={avatarSrc(post.scopeContext.avatar_url)} alt={post.scopeContext.name} width={20} height={20} style={avatarFocusStyle(post.scopeContext.avatar_url)} className="w-5 h-5 rounded-full object-cover" />
                   ) : (
                     <div className="w-5 h-5 rounded-full bg-border-strong text-muted text-3xs font-bold flex items-center justify-center">
                       {getInitials(post.scopeContext.name)}

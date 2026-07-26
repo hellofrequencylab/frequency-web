@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { User, LogOut, ChevronDown } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { defaultMenu } from '@/lib/menus/defaults'
 import { canSeeMenuItem } from '@/components/layout/menu-role'
@@ -107,10 +108,11 @@ export function UserMenu({
       >
         {profile.avatar_url ? (
           <Image
-            src={profile.avatar_url}
+            src={avatarSrc(profile.avatar_url)}
             alt={profile.display_name}
             width={28}
             height={28}
+            style={avatarFocusStyle(profile.avatar_url)}
             className="w-7 h-7 rounded-full object-cover"
           />
         ) : (

@@ -26,6 +26,7 @@ import {
   Gift,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { NotificationBell } from '@/components/layout/notification-bell'
 import { HoverTip } from '@/components/ui/hover-tip'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
@@ -449,10 +450,11 @@ function ProfileCard({
         <Link href={profileHref} className="shrink-0" data-tour-anchor="avatar">
           {profile.avatar_url ? (
             <Image
-              src={profile.avatar_url}
+              src={avatarSrc(profile.avatar_url)}
               alt={profile.display_name}
               width={44}
               height={44}
+              style={avatarFocusStyle(profile.avatar_url)}
               className="w-11 h-11 rounded-full object-cover"
             />
           ) : (
@@ -1142,10 +1144,11 @@ function MobileLeftDrawer({
           >
             {profile.avatar_url ? (
               <Image
-                src={profile.avatar_url}
+                src={avatarSrc(profile.avatar_url)}
                 alt={profile.display_name}
                 width={40}
                 height={40}
+                style={avatarFocusStyle(profile.avatar_url)}
                 className="h-10 w-10 rounded-full object-cover shrink-0"
               />
             ) : (
