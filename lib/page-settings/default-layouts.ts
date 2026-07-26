@@ -71,10 +71,13 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
       },
       side: {
         order: [
-          // Warm proof (the who's-coming pile) and the facts card (when + online link) now live
-          // INSIDE the unified event-join RSVP box (ADR-826); their standalone modules stay
-          // registered but render null, so the default lists neither.
+          // Warm proof (the who's-coming pile) lives INSIDE the unified event-join RSVP box
+          // (ADR-826); its standalone module (and the retired facts card) stays registered but
+          // renders null, so the default lists neither. The Event Details card (event-when-where:
+          // date · time · recurrence · add-to-calendar) sits right under the RSVP box — it now
+          // carries the when facts + calendar links the RSVP box used to hold (owner spec).
           'event-join',
+          'event-when-where',
           'event-schedule',
           'event-cohosts',
         ],

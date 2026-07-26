@@ -28,7 +28,7 @@ import { WarmProof } from '@/components/events/warm-proof'
 import { safeHttpUrl } from '@/lib/safe-url'
 import { MembershipCheckoutFold } from '@/components/events/membership-checkout-fold'
 import { RsvpPaymentFlow, type FlowRate } from '@/components/events/rsvp-payment-flow'
-import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
+import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { HOME_TZ, resolveZone, isEventPast, zoneAbbrev } from '@/lib/time/zone'
 import { type ActivityPost } from '@/components/events/event-activity'
 import { EventRewardStrip } from '@/components/events/event-reward-strip'
@@ -93,12 +93,13 @@ const RECURRENCE_LABEL: Record<string, string> = {
   monthly: 'Repeats monthly',
 }
 
-// Attendance-mode chip (EVENTS-DESIGN §2.4) — one chip in the DetailTemplate
-// `badges` slot. DAWN tokens only.
+// Attendance-mode PILL (EVENTS-DESIGN §2.4) — one bordered rounded-full chip in the
+// DetailTemplate `badges` slot, so it reads as a tag beside the title rather than plain
+// inline text. DAWN tokens only.
 const MODE_CHIP: Record<AttendanceMode, { Icon: typeof Video; cls: string; label: string }> = {
-  in_person: { Icon: MapPin, cls: 'bg-surface-elevated text-muted', label: 'In person' },
-  online:    { Icon: Video, cls: 'bg-broadcast-bg text-broadcast-strong', label: 'Online' },
-  hybrid:    { Icon: Globe, cls: 'bg-primary-bg text-primary-strong', label: 'In person + online' },
+  in_person: { Icon: MapPin, cls: 'border-border bg-surface-elevated text-muted', label: 'In person' },
+  online:    { Icon: Video, cls: 'border-broadcast/30 bg-broadcast-bg text-broadcast-strong', label: 'Online' },
+  hybrid:    { Icon: Globe, cls: 'border-primary/30 bg-primary-bg text-primary-strong', label: 'In person + online' },
 }
 
 type RSVPRow = {
@@ -1095,31 +1096,27 @@ export default async function EventDetailPage({
           )}
         </div>
 
-        {/* Event details lead the box (owner spec): the when-line, and for an online event the
-            join link (the venue line + map stay in the event-location block). */}
-        <div className="space-y-1.5">
+        {/* The when-line + calendar links moved OUT of this box into the Event Details card
+            (the `event-when-where` module) — owner spec. Only the online join link stays here:
+            it's the action a remote guest needs at RSVP time (the venue line + map stay in the
+            event-location block). */}
+        {isOnline && (
           <p className="flex items-start gap-2 text-sm text-text">
-            <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
-            <span>{whenLine}</span>
+            <Video className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
+            {safeHttpUrl(onlineUrl) ? (
+              <a
+                href={onlineUrl ?? undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all text-primary-strong hover:underline"
+              >
+                Join link
+              </a>
+            ) : (
+              <span className="text-muted">Online. Link shows once you RSVP.</span>
+            )}
           </p>
-          {isOnline && (
-            <p className="flex items-start gap-2 text-sm text-text">
-              <Video className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
-              {safeHttpUrl(onlineUrl) ? (
-                <a
-                  href={onlineUrl ?? undefined}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="break-all text-primary-strong hover:underline"
-                >
-                  Join link
-                </a>
-              ) : (
-                <span className="text-muted">Online. Link shows once you RSVP.</span>
-              )}
-            </p>
-          )}
-        </div>
+        )}
 
         {/* RSVP + PAYMENT FLOW (live RSVP-mode priced event): the progressive experience —
             pick a rate, answer, and the payment area slides open under Going when the rate
@@ -1304,35 +1301,21 @@ export default async function EventDetailPage({
         {/* Your answer — RSVP mode only (first come, first served; never Crew-gated; a host
             counts themselves in like anyone else). In TICKETS mode the ticket IS the answer, so
             the switch doesn't render; on a priced RSVP event the FLOW above already carries it.
-            Answers change any time. */}
+            Answers change any time. The add-to-calendar buttons moved to the Event Details card
+            (the `event-when-where` module), where they're available regardless of RSVP state —
+            so the going / ticket-holder branches here carry no calendar row anymore. */}
         {!ticketsMode && myProfileId && !isPast ? (
-          <div className="space-y-3">
-            {!(isPaidEvent && hasTiers) && (
-              <RsvpControls
-                eventId={event.id}
-                slug={event.slug}
-                status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
-                plusOnes={myPlusOnes}
-                isFull={capacityInfo.isFull}
-                initialNote={myRsvpNote}
-              />
-            )}
-            {/* At-RSVP calendar — the highest-ROI lever, emphasised once going. */}
-            {isGoing ? (
-              <div className="rounded-xl border border-border bg-surface-elevated/40 px-4 py-3">
-                <p className="mb-2 text-xs font-medium text-muted">
-                  You&rsquo;re going. Lock it in so you don&rsquo;t miss it.
-                </p>
-                <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} emphasis />
-              </div>
-            ) : (
-              <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} />
-            )}
-          </div>
-        ) : ticketsMode && ownsTicket && !isPast ? (
-          /* Ticket holder before the event: their ticket is their answer — offer the calendar. */
-          <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} emphasis />
-        ) : myProfileId && isGoing && isPast ? (
+          !(isPaidEvent && hasTiers) ? (
+            <RsvpControls
+              eventId={event.id}
+              slug={event.slug}
+              status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
+              plusOnes={myPlusOnes}
+              isFull={capacityInfo.isFull}
+              initialNote={myRsvpNote}
+            />
+          ) : null
+        ) : ticketsMode && ownsTicket && !isPast ? null : myProfileId && isGoing && isPast ? (
           /* Event time, going: Check in is the primary action; Cancel RSVP is quiet. */
           <div className="flex flex-wrap items-center gap-4">
             {alreadyCheckedIn ? (
@@ -1489,6 +1472,20 @@ export default async function EventDetailPage({
       viewerSignedIn: !!myProfileId,
       signInHref: `/sign-in?next=/events/${event.slug}`,
     },
+    // The Event Details card (the `event-when-where` module): the date/time facts plus the SAME
+    // calendar links the RSVP box used to carry (built once above), relocated so the calendar
+    // affordance is available regardless of RSVP state.
+    schedule: {
+      startsAt: event.starts_at,
+      endsAt: event.ends_at,
+      tzAbbrev: zoneAbbrev(event.starts_at, eventTz),
+      recurrenceType: event.recurrence_type,
+      recurrenceUntil: event.recurrence_until,
+      partOfSeries: !!event.parent_event_id,
+      nextOccurrenceIso: nextRecurrence ? nextRecurrence.toISOString() : null,
+      icsHref,
+      googleUrl,
+    },
   })
 
   // Event structured data (schema.org) for SEO + AI answer engines, built from the shared
@@ -1591,12 +1588,15 @@ export default async function EventDetailPage({
             </div>
           )
         }
+        // The event title renders at the DISPLAY scale (a step up from the default Detail h1) —
+        // this is the page's marquee fact, so it leads at destination-page stature.
+        titleScale="display"
         title={
           canManage ? (
             <InlineText
               value={event.title}
               save={updateEventField.bind(null, event.id, slug, 'title')}
-              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-xl sm:text-2xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
+              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-2xl sm:text-3xl lg:text-4xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
             />
           ) : (
             event.title
@@ -1637,17 +1637,19 @@ export default async function EventDetailPage({
             )}
           </div>
         }
-        // [A2] attendance-mode chip.
+        // [A2] attendance-mode pill.
         badges={
-          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold ${mode.cls}`}>
-            <mode.Icon className="h-3 w-3" /> {mode.label}
+          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${mode.cls}`}>
+            <mode.Icon className="h-3.5 w-3.5" /> {mode.label}
           </span>
         }
         subtitle={
           <div className="space-y-1.5">
+            {/* The when-line is the key fact under the title — it renders a step stronger
+                (size, weight, and full text color) than the rest of the subtitle stack. */}
             <div className="flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-subtle shrink-0" />
-              <span>{whenLine}</span>
+              <CalendarDays className="w-4 h-4 text-primary-strong shrink-0" />
+              <span className="text-base font-semibold text-text">{whenLine}</span>
             </div>
 
             {headerLocation && !isOnline && (

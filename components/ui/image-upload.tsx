@@ -6,7 +6,7 @@ import { ImageIcon, Loader2, Upload, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
-import { shrinkImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
+import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 
 // One reusable header/cover photo control for every Studio popup editor (Journey, Practice,
 // Circle, Event). Uploads the chosen file to a public Supabase Storage bucket under the signer's
@@ -113,11 +113,17 @@ export function ImageUpload({
 
     setBusy(true)
     try {
-      // Downscale/re-encode a big photo in the browser first, so a large phone capture fits under the
-      // platform's ~4.3 MB serverless body limit. Above it, a server uploadFn is REJECTED (a thrown
-      // action, not a returned error) — which used to leave the spinner turning forever. Formats we can't
-      // rasterize here (HEIC/GIF/SVG) pass through untouched and are size-gated below.
-      const file = await shrinkImageForUpload(raw)
+      // Prep in the browser first: an iPhone HEIC is converted to JPEG (a raw HEIC stores fine but
+      // renders as a broken image in every browser but Safari), then a big photo is downscaled so it
+      // fits under the platform's ~4.3 MB serverless body limit. Above it, a server uploadFn is
+      // REJECTED (a thrown action, not a returned error) — which used to leave the spinner turning
+      // forever. A HEIC this browser cannot convert gets an inline message instead of a broken upload.
+      const prepared = await prepareImageForUpload(raw)
+      if ('error' in prepared) {
+        setError(prepared.error)
+        return
+      }
+      const file = prepared.file
 
       // Server-upload path (injected): a gated server action that returns the public URL. Bypasses the
       // browser Storage client entirely, so it cannot fail on a stale/absent browser session token (the

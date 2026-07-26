@@ -94,6 +94,27 @@ export interface EventFactsData {
   signInHref: string
 }
 
+/** Inputs for the `event-when-where` "Event Details" card: the date/time facts plus the
+ *  add-to-calendar links, built ONCE by the page (the same URLs the RSVP box used to carry,
+ *  relocated here so the calendar affordance no longer depends on RSVP state). */
+export interface EventScheduleData {
+  /** The event's wall-clock start/end, stored as UTC parts (render with timeZone:'UTC'). */
+  startsAt: string
+  endsAt: string | null
+  /** The event zone's abbreviation for the time line (e.g. "PDT"), resolved by the page. */
+  tzAbbrev: string
+  recurrenceType: 'none' | 'daily' | 'weekly' | 'monthly'
+  recurrenceUntil: string | null
+  /** This instance belongs to a recurring series (parent_event_id set). */
+  partOfSeries: boolean
+  /** For a recurring anchor whose start has passed: the next upcoming occurrence, ISO. */
+  nextOccurrenceIso: string | null
+  /** The event's `.ics` route (Apple Calendar, Outlook, any iCal app). */
+  icsHref: string
+  /** The Google Calendar template URL (see buildGoogleCalendarUrl). */
+  googleUrl: string
+}
+
 export interface EventDetailContext {
   event: EventLite
   /** The event host's public profile, for the `event-lineup` Host profile module (null → self-hide). */
@@ -134,6 +155,8 @@ export interface EventDetailContext {
   warmProof: WarmProofData
   /** Inputs for the `event-facts` module's <EventFactPanel> card (incl. the exact-venue map). */
   facts: EventFactsData
+  /** Inputs for the `event-when-where` "Event Details" card (dates, times, calendar links). */
+  schedule: EventScheduleData
 }
 
 interface Holder {

@@ -40,7 +40,9 @@ editing a row in one of them. That is the "little tweak" path: safe, local, data
   (`lib/admin/entity-console.ts`) → the same `appsForScope` the rail uses, rendered by the shared
   `EntityManageConsole` (`components/admin/modules/entity-manage-console.tsx`).
 - Event keeps its bespoke `/events/<slug>/manage` host dashboard (intentional; it is not a
-  catalog surface).
+  catalog surface). Since ADR‑828 it is a `?section=` hub on the Space console model; its
+  section registry (`manage/hub.ts`) is a route‑local grouping, not a module catalog, and its
+  Settings tab mounts the SAME `event.settings` catalog module the rail does.
 
 ## What is enforced, and how
 

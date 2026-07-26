@@ -9,7 +9,10 @@ import { formatEventMoney, type EventCoreStats } from '@/lib/events/event-stats'
 // (StatCard has no hooks), so the rail's client module can use it too.
 //
 //   variant="cards"  → bare <StatCard> tiles for the DashboardTemplate `stats` slot, which
-//                      supplies the responsive grid (manage page).
+//                      supplies the responsive grid.
+//   variant="strip"  → bare COMPACT tiles (StatCard size "xs", bordered) for the Manage hub's
+//                      dense at-a-glance strip; the caller supplies the grid so it can append
+//                      its own extra tiles (e.g. page views) to the same row.
 //   variant="panel"  → a self-contained 2-up grid of bordered tiles for the narrow admin
 //                      rail (event-settings-module), replacing its former inline divs.
 
@@ -58,9 +61,19 @@ export function EventCoreStatsCards({
   variant = 'cards',
 }: {
   stats: EventCoreStats
-  variant?: 'cards' | 'panel'
+  variant?: 'cards' | 'strip' | 'panel'
 }) {
   const tiles = tilesFor(stats)
+
+  if (variant === 'strip') {
+    return (
+      <>
+        {tiles.map((t) => (
+          <StatCard key={t.key} bordered size="xs" label={t.label} value={t.value} icon={t.Icon} detail={t.detail} />
+        ))}
+      </>
+    )
+  }
 
   if (variant === 'panel') {
     // TIGHT tile grid for the narrow admin rail — a dense stat strip, NOT the full-size StatCard (which

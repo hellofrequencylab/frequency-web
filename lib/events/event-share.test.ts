@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { approverSideForShare, roleFor, shouldAutoAcceptShare } from './event-share'
+import { approverSideForShare, roleFor, shouldAutoAcceptShare, shareWriteFailureMessage } from './event-share'
 
 // The PURE authz/shaping helpers behind shared / co-hosted events (Events EC3). The IO reads/writes run
 // behind the service-role admin client; these decide WHO approves a pending share, WHICH side a space
@@ -48,5 +48,41 @@ describe('shouldAutoAcceptShare (the auto-accept predicate)', () => {
   })
   it('stays PENDING when neither holds (a real approval round-trip is required)', () => {
     expect(shouldAutoAcceptShare({ callerStewardsApprovingSide: false, collaborationLinksSpaces: false })).toBe(false)
+  })
+})
+
+describe('shareWriteFailureMessage (failed insert -> actionable member copy)', () => {
+  it('a missing table (unapplied EC3 migration) tells the host an operator must finish setup, not "try again"', () => {
+    // PGRST205 = PostgREST schema-cache miss; 42P01 = undefined_table. Both mean the
+    // event_space_shares migration band never applied here, so retrying cannot help.
+    for (const code of ['PGRST205', '42P01']) {
+      const msg = shareWriteFailureMessage(code)
+      expect(msg).toContain('operator')
+      expect(msg).not.toContain('Try again')
+    }
+  })
+
+  it('a permission failure (service role not writing) maps to the same operator line', () => {
+    expect(shareWriteFailureMessage('42501')).toBe(shareWriteFailureMessage('42P01'))
+  })
+
+  it('a vanished event/space (23503) asks for a refresh', () => {
+    expect(shareWriteFailureMessage('23503')).toContain('Refresh')
+  })
+
+  it('a non-uuid target (22P02) says the pick was not a Space', () => {
+    expect(shareWriteFailureMessage('22P02')).toContain('not a Space')
+  })
+
+  it('anything unrecognized keeps the plain retry line', () => {
+    expect(shareWriteFailureMessage('XX000')).toBe('Could not share this event. Try again.')
+    expect(shareWriteFailureMessage(undefined)).toBe('Could not share this event. Try again.')
+    expect(shareWriteFailureMessage(null)).toBe('Could not share this event. Try again.')
+  })
+
+  it('never emits an em dash (brand copy hard rule)', () => {
+    for (const code of ['PGRST205', '42P01', '42501', '23503', '22P02', 'XX000', undefined]) {
+      expect(shareWriteFailureMessage(code)).not.toContain('—')
+    }
   })
 })

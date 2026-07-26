@@ -52,16 +52,18 @@ function parseTriage(text: string): { priority: ConversationPriority; reason: st
   return { priority, reason }
 }
 
-/** Draft a reply with Vera — the text lands in the composer for a human to review, edit, and send. */
+/** Draft a reply with Vera — the text lands in the composer for a human to review, edit, and send.
+ *  The WHOLE body is guarded: a thrown error out of a server action escapes to the caller's error
+ *  boundary and takes down the workspace, so every failure here must come back as a typed fail(). */
 export async function veraDraftReply(conversationId: string, profileId: string): Promise<ActionResult<{ draft: string }>> {
   const id = (conversationId ?? '').trim()
   if (!id) return fail('Pick a conversation first.')
-  if (!(await aiAvailable()) || (await featureOverBudget('conversation-draft'))) {
-    return fail('Vera drafting is unavailable right now. Write your reply and send it.')
-  }
-  const thread = await getWorkspaceThread(id)
-  if (!thread) return fail('That conversation no longer exists.')
   try {
+    if (!(await aiAvailable()) || (await featureOverBudget('conversation-draft'))) {
+      return fail('Vera drafting is unavailable right now. Write your reply and send it.')
+    }
+    const thread = await getWorkspaceThread(id)
+    if (!thread) return fail('That conversation no longer exists.')
     const res = await completeText({
       system: withVoice(DRAFT_SYSTEM),
       messages: [{ role: 'user', content: `Subject: ${thread.subject}\n\n${transcript(thread.messages)}\n\nDraft the next reply from us.` }],
@@ -74,20 +76,21 @@ export async function veraDraftReply(conversationId: string, profileId: string):
     return ok({ draft })
   } catch (err) {
     if (err instanceof AiUnavailableError) return fail('Vera drafting is unavailable right now.')
+    console.error('[vera-conversation] draft failed:', err)
     return fail('Could not draft a reply. Try again.')
   }
 }
 
-/** One short summary of the thread (a skim aid; never sent). */
+/** One short summary of the thread (a skim aid; never sent). Fully guarded, same as the draft. */
 export async function veraSummarize(conversationId: string, profileId: string): Promise<ActionResult<{ summary: string }>> {
   const id = (conversationId ?? '').trim()
   if (!id) return fail('Pick a conversation first.')
-  if (!(await aiAvailable()) || (await featureOverBudget('conversation-summarize'))) {
-    return fail('Summaries are unavailable right now.')
-  }
-  const thread = await getWorkspaceThread(id)
-  if (!thread) return fail('That conversation no longer exists.')
   try {
+    if (!(await aiAvailable()) || (await featureOverBudget('conversation-summarize'))) {
+      return fail('Summaries are unavailable right now.')
+    }
+    const thread = await getWorkspaceThread(id)
+    if (!thread) return fail('That conversation no longer exists.')
     const res = await completeText({
       system: withVoice(SUMMARY_SYSTEM),
       messages: [{ role: 'user', content: `Subject: ${thread.subject}\n\n${transcript(thread.messages)}` }],
@@ -99,23 +102,25 @@ export async function veraSummarize(conversationId: string, profileId: string): 
     return summary ? ok({ summary }) : fail('Nothing to summarize yet.')
   } catch (err) {
     if (err instanceof AiUnavailableError) return fail('Summaries are unavailable right now.')
+    console.error('[vera-conversation] summarize failed:', err)
     return fail('Could not summarize. Try again.')
   }
 }
 
-/** Suggest + apply a priority (persists it, reversibly). The CALLER revalidates its own inbox path after. */
+/** Suggest + apply a priority (persists it, reversibly). The CALLER revalidates its own inbox path
+ *  after. Fully guarded, same as the draft. */
 export async function veraSuggestTriage(
   conversationId: string,
   profileId: string,
 ): Promise<ActionResult<{ priority: ConversationPriority; reason: string }>> {
   const id = (conversationId ?? '').trim()
   if (!id) return fail('Pick a conversation first.')
-  if (!(await aiAvailable()) || (await featureOverBudget('conversation-triage'))) {
-    return fail('Triage is unavailable right now.')
-  }
-  const thread = await getWorkspaceThread(id)
-  if (!thread) return fail('That conversation no longer exists.')
   try {
+    if (!(await aiAvailable()) || (await featureOverBudget('conversation-triage'))) {
+      return fail('Triage is unavailable right now.')
+    }
+    const thread = await getWorkspaceThread(id)
+    if (!thread) return fail('That conversation no longer exists.')
     const res = await completeText({
       system: withVoice(TRIAGE_SYSTEM),
       messages: [{ role: 'user', content: `Subject: ${thread.subject}\n\n${transcript(thread.messages)}` }],
@@ -128,6 +133,7 @@ export async function veraSuggestTriage(
     return ok(parsed)
   } catch (err) {
     if (err instanceof AiUnavailableError) return fail('Triage is unavailable right now.')
+    console.error('[vera-conversation] triage failed:', err)
     return fail('Could not triage. Try again.')
   }
 }

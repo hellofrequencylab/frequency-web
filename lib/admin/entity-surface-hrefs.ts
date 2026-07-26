@@ -62,8 +62,11 @@ export function hrefForEntitySurface(appId: string, scope: EntitySurfaceScope | 
     // The communication modules (ADR-827) are `render: 'link'` with their OWN pages, so their explicit
     // cases must precede the manage-console prefix fallbacks below (else 'event.crm' would resolve to
     // /manage). Circle has no prefix fallback, so its case here is what makes the row resolve at all.
-    if (appId === 'event.crm') return `/events/${entitySlug}/manage/crm`
-    if (appId === 'circle.crm') return `/circles/${entitySlug}/crm`
+    // Message Attendees / Message Circle live at the TOP of their Manage hubs' Home tab now
+    // (the message center, ADR-828), so those communication modules deep-link to the hub
+    // itself, not a standalone page. Hub + nexus keep their standalone /crm pages.
+    if (appId === 'event.crm') return `/events/${entitySlug}/manage`
+    if (appId === 'circle.crm') return `/circles/${entitySlug}/manage`
     if (appId === 'hub.crm') return `/hubs/${entitySlug}/crm`
     if (appId === 'nexus.crm') return `/nexuses/${entitySlug}/crm`
     if (appId.startsWith('event.')) return `/events/${entitySlug}/manage`

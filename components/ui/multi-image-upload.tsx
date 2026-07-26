@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, ImageIcon, Loader2, Plus, X } from 'lucide-r
 import { createClient } from '@/lib/supabase/client'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
-import { shrinkImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
+import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 
 // Multi-image sibling of ImageUpload (components/ui/image-upload). Manages an ORDERED
 // array of storage PATHS in a public Supabase Storage bucket, under the signer's own
@@ -175,10 +175,16 @@ export function MultiImageUpload({
           continue
         }
 
-        // Downscale big photos in the browser first so they fit under the platform's ~4.3 MB serverless
-        // body limit (a server upload action otherwise REJECTS the request, which used to hang the
-        // spinner). HEIC/GIF/SVG pass through untouched and are size-gated below.
-        const file = await shrinkImageForUpload(raw)
+        // Prep in the browser first: an iPhone HEIC is converted to JPEG (a raw HEIC stores fine but
+        // renders broken in every browser but Safari), then big photos are downscaled so they fit under
+        // the platform's ~4.3 MB serverless body limit (a server upload action otherwise REJECTS the
+        // request, which used to hang the spinner). An unconvertible HEIC gets an inline message.
+        const prepared = await prepareImageForUpload(raw)
+        if ('error' in prepared) {
+          setError(`"${raw.name}" could not be converted for upload. Save it as a JPEG and try again.`)
+          continue
+        }
+        const file = prepared.file
 
         // SERVER upload (admin client, bypasses the bucket INSERT RLS) — the event gallery path.
         if (upload) {

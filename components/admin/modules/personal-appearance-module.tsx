@@ -18,6 +18,7 @@ import { SPOTLIGHT_FONTS, type SpotlightTheme } from '@/lib/spotlight/theme'
 import type { SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import type { TopFriend } from '@/lib/spotlight/top-friends.types'
 import { SPOTLIGHT_PUBLIC_BASE } from '@/lib/spotlight/puck/resolve'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { SectionHeader } from '@/components/ui/section-header'
 import { getInitials } from '@/lib/utils'
 
@@ -107,12 +108,19 @@ export function PersonalAppearanceModule() {
     setBackground(next)
     void run(() => setSpotlightBackground(next))
   }
-  async function onPickFile(file: File) {
+  async function onPickFile(raw: File) {
     setUploading(true)
     setError('')
     try {
+      // Convert an iPhone HEIC to JPEG + downscale big photos in the browser first — the server action
+      // only accepts JPEG/PNG/GIF/WebP, and a raw HEIC renders broken in every browser but Safari.
+      const prepared = await prepareImageForUpload(raw)
+      if ('error' in prepared) {
+        setError(prepared.error)
+        return
+      }
       const fd = new FormData()
-      fd.append('file', file)
+      fd.append('file', prepared.file)
       const res = await uploadSpotlightImage(fd)
       if (res.error || !res.path) {
         setError(res.error ?? 'Upload failed.')
@@ -293,7 +301,7 @@ export function PersonalAppearanceModule() {
           <input
             ref={fileRef}
             type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp"
+            accept="image/*"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0]
