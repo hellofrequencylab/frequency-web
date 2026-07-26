@@ -10,8 +10,9 @@
 //     not a single reusable form). These carry `render: 'link'` and resolve to a STATIC /settings/* URL
 //     (no entity id needed — a signed-in viewer edits their OWN account).
 //   • CORE-ENTITY COMMUNICATION MODULES (ADR-827): circle.crm / hub.crm / nexus.crm / event.crm are
-//     `render: 'link'` — each resolves to its scope's /crm member viewer, keyed on the URL slug the
-//     scope carries (`scope.id`). Callers on a detail page must pass a SLUG-corrected scope (the
+//     `render: 'link'` — event + circle resolve to their Manage hubs (the message center leads the
+//     Home tab, ADR-828), hub + nexus to their standalone /crm member viewers, keyed on the URL slug
+//     the scope carries (`scope.id`). Callers on a detail page must pass a SLUG-corrected scope (the
 //     AdminBar detail's scope.id is the DB id): settings-panel's `slugScope` / the manage console's
 //     path-derived scope both do.
 //   • Every OTHER core-entity surface (circle / hub / nexus / event / practice / channel) stays

@@ -448,6 +448,57 @@ export async function declineCohostInvite(
   return ok()
 }
 
+/** One row of the editor rail's cohost list (relation A, ADR-834): who the host has added or
+ *  invited, so they can also REMOVE them from the same place they add them. */
+export interface EditorCohostRow {
+  profileId: string
+  handle: string | null
+  displayName: string
+  avatarUrl: string | null
+  status: 'invited' | 'accepted'
+}
+
+/** The current cohosts + pending invites for the editor rail (declined rows stay hidden; a
+ *  re-invite resurrects them through inviteCohost). Host-gated like every cohost write; anyone
+ *  else gets an empty list, and removeCohost re-checks the gate on the actual delete. */
+export async function listEventCohostsForEditor(eventId: string): Promise<EditorCohostRow[]> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return []
+
+  const admin = createAdminClient()
+  if (!(await isEventHost(admin, eventId, profileId))) return []
+
+  const { data: rows } = await admin
+    .from('event_cohosts')
+    .select('profile_id, status')
+    .eq('event_id', eventId)
+    .in('status', ['invited', 'accepted'])
+    .order('invited_at', { ascending: true })
+  const list = (rows ?? []) as { profile_id: string; status: 'invited' | 'accepted' }[]
+  if (list.length === 0) return []
+
+  const { data: profiles } = await admin
+    .from('profiles')
+    .select('id, handle, display_name, avatar_url')
+    .in('id', list.map((r) => r.profile_id))
+  const byId = new Map(
+    ((profiles ?? []) as { id: string; handle: string | null; display_name: string | null; avatar_url: string | null }[]).map(
+      (p) => [p.id, p],
+    ),
+  )
+
+  return list.map((r) => {
+    const p = byId.get(r.profile_id)
+    return {
+      profileId: r.profile_id,
+      handle: p?.handle ?? null,
+      displayName: p?.display_name || 'A member',
+      avatarUrl: p?.avatar_url ?? null,
+      status: r.status,
+    }
+  })
+}
+
 export async function removeCohost(eventId: string, slug: string, cohostProfileId: string) {
   const profileId = await getMyProfileId()
   if (!profileId) return

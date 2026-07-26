@@ -20,7 +20,9 @@ type EventData = {
   slug: string
   description: string | null
   location: string | null
-  starts_at: string
+  // Nullable since drafts (20261191): a draft event may have no start yet; the
+  // datetime input renders empty (toLocalInput already handles null).
+  starts_at: string | null
   ends_at: string | null
   is_cancelled: boolean | null
   price_cents: number | null

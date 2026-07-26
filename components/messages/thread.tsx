@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { sendMessage } from '@/app/(main)/messages/actions'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { useTypingIndicator } from '@/lib/realtime/use-typing'
 import { TypingIndicator } from '@/components/messages/typing-indicator'
 
@@ -189,10 +190,11 @@ export function MessageThread({
                 {!isMine && (
                   sender?.avatar_url ? (
                     <Image
-                      src={sender.avatar_url}
+                      src={avatarSrc(sender.avatar_url)}
                       alt={sender.display_name}
                       width={28}
                       height={28}
+                      style={avatarFocusStyle(sender.avatar_url)}
                       className="w-7 h-7 rounded-full object-cover"
                     />
                   ) : (

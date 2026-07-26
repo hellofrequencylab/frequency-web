@@ -1,13 +1,19 @@
 'use client'
 
-import { useCallback, useRef, useState, useTransition } from 'react'
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { UserPlus, Check } from 'lucide-react'
-import { inviteCohost } from '@/app/(main)/events/[slug]/social-actions'
+import { UserPlus, Check, X } from 'lucide-react'
+import {
+  inviteCohost,
+  listEventCohostsForEditor,
+  removeCohost,
+  type EditorCohostRow,
+} from '@/app/(main)/events/[slug]/social-actions'
 import { isError } from '@/lib/action-result'
 import { labelClasses } from '@/components/ui/field'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 type HandleHit = { id: string; handle: string; display_name: string; avatar_url: string | null }
 
@@ -23,15 +29,38 @@ type HandleHit = { id: string; handle: string; display_name: string; avatar_url:
 // `@container` wrapper sets container-type, which clips a `top-full` overlay (see cohost-manager /
 // placement).
 //
-// This is invite-only by design: the accepted/pending cohost list and removal already live on the
-// public event page's Cohosts box. Here the host just needs a fast "add someone" from the editor.
+// Invite AND remove live here (owner directive): the list below the field shows every current
+// cohost and pending invite with a remove control, so the host manages the whole relation from
+// the editor without hunting for the event page's Cohosts box (which keeps its own removal too).
 export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: string }) {
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<HandleHit[]>([])
   const [error, setError] = useState<string | null>(null)
   const [invited, setInvited] = useState<string | null>(null)
+  const [current, setCurrent] = useState<EditorCohostRow[]>([])
   const [pending, startTransition] = useTransition()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const reload = useCallback(() => {
+    listEventCohostsForEditor(eventId).then(setCurrent).catch(() => {})
+  }, [eventId])
+  useEffect(reload, [reload])
+
+  function remove(row: EditorCohostRow) {
+    // A pending invite cancels quietly; removing a live cohost drops their management access,
+    // so that one confirms first.
+    if (
+      row.status === 'accepted' &&
+      !window.confirm(`Remove ${row.displayName} as a cohost? They lose access to manage this event.`)
+    ) {
+      return
+    }
+    setError(null)
+    startTransition(async () => {
+      await removeCohost(eventId, slug, row.profileId)
+      reload()
+    })
+  }
 
   const search = useCallback((q: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -61,6 +90,7 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
       setInvited(handle)
       setQuery('')
       setHits([])
+      reload()
     })
   }
 
@@ -93,6 +123,47 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
         </p>
       )}
       {error && <p className="text-xs text-danger">{error}</p>}
+
+      {/* Current cohosts + pending invites, each removable (owner directive). Removal re-checks
+          the host gate server-side; a pending invite cancels without a confirm. */}
+      {current.length > 0 && (
+        <ul className="space-y-1">
+          {current.map((c) => (
+            <li key={c.profileId} className="flex items-center gap-2 rounded-lg bg-surface px-2 py-1.5">
+              {c.avatarUrl ? (
+                <Image
+                  src={avatarSrc(c.avatarUrl)}
+                  alt={c.displayName}
+                  width={24}
+                  height={24}
+                  className="h-6 w-6 shrink-0 rounded-full object-cover"
+                  style={avatarFocusStyle(c.avatarUrl)}
+                />
+              ) : (
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-bg text-3xs font-bold text-primary-strong">
+                  {getInitials(c.displayName)}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-semibold text-text">{c.displayName}</p>
+                {c.handle && <p className="truncate text-2xs text-subtle">@{c.handle}</p>}
+              </div>
+              <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
+                {c.status === 'accepted' ? 'Cohost' : 'Invited'}
+              </span>
+              <button
+                type="button"
+                onClick={() => remove(c)}
+                disabled={pending}
+                aria-label={c.status === 'accepted' ? `Remove ${c.displayName}` : `Cancel invite to ${c.displayName}`}
+                className="shrink-0 rounded-md p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-danger disabled:opacity-40"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {/* The one quiet upgrade pointer (ADR-834): a cohost is a personal credit; a business gets the
           featured Collaborator billing, which needs a Business Space. One line, one link, hosts only

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Search, X, Users, FileText, CalendarDays, Loader2, ArrowRight, ScanLine, Compass } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { paletteDestinations, type NavViewer } from '@/lib/nav/registry'
 import { railIconFor } from '@/components/layout/nav-icons'
 
@@ -265,7 +266,7 @@ function ResultRow({
           <span className="text-sm font-bold leading-tight">{new Date(dateIso).getDate()}</span>
         </span>
       ) : avatar ? (
-        <Image src={avatar} alt="" width={40} height={40} className="h-10 w-10 shrink-0 rounded-full object-cover" />
+        <Image src={avatarSrc(avatar)} alt="" width={40} height={40} style={avatarFocusStyle(avatar)} className="h-10 w-10 shrink-0 rounded-full object-cover" />
       ) : (
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong select-none">
           {getInitials(fallback ?? '?')}

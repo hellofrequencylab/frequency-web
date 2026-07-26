@@ -140,10 +140,14 @@ async function eventTitleSlug(admin: SupabaseClient, eventId: string): Promise<{
   return { title: ev?.title ?? 'this event', slug: ev?.slug ?? null }
 }
 
-/** Revalidate every surface an accepted/changed share can appear on: the event page, the master events
- *  calendar, and the target space's calendar + profile. */
+/** Revalidate every surface an accepted/changed share can appear on: the event page, the event Manage
+ *  hub (the Settings tab mounts the share field), the master events calendar, and the target space's
+ *  calendar + profile. */
 async function revalidateShare(eventSlug: string | null, targetSpaceId: string): Promise<void> {
-  if (eventSlug) revalidatePath(`/events/${eventSlug}`)
+  if (eventSlug) {
+    revalidatePath(`/events/${eventSlug}`)
+    revalidatePath(`/events/${eventSlug}/manage`)
+  }
   revalidatePath('/events')
   revalidatePath('/events/calendar')
   const space = await getSpaceById(targetSpaceId)

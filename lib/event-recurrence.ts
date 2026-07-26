@@ -142,8 +142,10 @@ export async function generateOccurrencesForAnchor(anchorId: string): Promise<nu
     .eq('parent_event_id', anchor.id)
 
   const existingDays = new Set(
-    (existing ?? []).map((e: { starts_at: string }) =>
-      new Date(e.starts_at).toISOString().slice(0, 10),
+    // starts_at is nullable since drafts (20261191); a child occurrence always has one,
+    // but the read is typed nullable, so skip any null defensively.
+    (existing ?? []).flatMap((e: { starts_at: string | null }) =>
+      e.starts_at ? [new Date(e.starts_at).toISOString().slice(0, 10)] : [],
     ),
   )
 

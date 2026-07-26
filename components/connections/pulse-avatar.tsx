@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 // Small round avatar anchor for the compact pulse rows — links to the person's
 // profile. Plain presentational (no hooks), so it's usable from both the server
@@ -18,10 +19,11 @@ export function PulseAvatar({
     <Link href={href} className="shrink-0">
       {avatarUrl ? (
         <Image
-          src={avatarUrl}
+          src={avatarSrc(avatarUrl)}
           alt={displayName}
           width={36}
           height={36}
+          style={avatarFocusStyle(avatarUrl)}
           className="h-9 w-9 rounded-full object-cover"
         />
       ) : (
