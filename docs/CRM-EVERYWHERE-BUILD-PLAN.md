@@ -179,10 +179,10 @@ bell notification). Personal member↔member DMs are untouched and stay body-str
 | 5.2 | `lib/comms/composer-send.ts` (new): the multi-channel fan-out — audience in, per-channel gates per recipient (`resolveSendGate` email/inapp, `sendSms` for text), per-recipient skip ledger, per-channel counts + reasons out | new | L |
 | 5.3 | Migration `composer_sends` — per-recipient channel ledger (`send_id, channel, profile_id, status sent/queued/skipped/failed, reason`); control panel reader. (Not `outreach_sends` — space-shaped; not `dispatch_recipients` — needs a dispatch id) | `supabase/migrations/`, `lib/messaging/control-panel.ts` | M |
 | 5.4 | SMS plumbing: `SmsCategory` + `'lifecycle'`; `EnqueueSmsArgs` gains `ownerProfileId`/`spaceId`/`idempotencyKey` so the timeline touch lands in the operator's lane (today it lands in the recipient's own book — a real bug); SMS char/segment counter + server-appended STOP suffix | `lib/comms/sms.ts`, `lib/comms/sms-send.ts`, `lib/queue/handlers.ts` | M |
-| 5.5 | Composer UI + actions, both lanes: toggle row, `previewChannelEligibilityAction`, branch — 1 recipient email → `startConversationMessage` (threads back); N ad-hoc → campaign path; DM ≤25 recipients (the group-DM cap) as individual spine threads; Dispatch only when the audience is exactly one led circle/event chip (then email rides the Dispatch fan-out — one email per person, one ledger, no double-send) | `components/admin/crm/member-composer*.tsx/ts`, `components/spaces/crm/space-member-composer*.tsx/ts` | L |
+| 5.5 | Composer UI + actions, **on every admin surface** (owner ruling: platform, Space, event, circle, hub, nexus — the Message Attendees / Message Circle panes and the Guide/Mentor downline included in v1): toggle row, `previewChannelEligibilityAction`, branch — 1 recipient email → `startConversationMessage` (threads back); N ad-hoc → campaign path; DM ≤25 recipients (the group-DM cap) as individual spine threads; Dispatch when the audience is exactly one led scope chip the sender leads (circle / hub / nexus / event — then email rides the Dispatch fan-out — one email per person, one ledger, no double-send) | `components/admin/crm/member-composer*.tsx/ts`, `components/spaces/crm/space-member-composer*.tsx/ts` | L |
 | 5.6 | Dispatch core extraction: `publishDispatchCore` out of `createAndPublishDispatch` (FormData decoupling); event chips delegate to `composeEventDispatch` | `app/(main)/broadcast/actions.ts` | M |
 | 5.7 | Scoped personal-DM policy module `lib/messages/scoped-dm.ts`: `canDmEventGuest` / `canDmSpaceMember` / `canDmCircleMember` + one `sendScopedDm` wrapper (scope gate → block check → rate limits 30 threads/day, 20 msg/min → ungated seam → `recordDmTouch` body-null). Refactor the two existing event callers onto it | new + `app/(main)/events/[slug]/manage/actions.ts`, `social-actions.ts` | M |
-| 5.8 | Member-facing surface: thread-view copy "Messages from the team", kind badges (Frequency team vs Space name), bell type `operator_message` + href | `app/(main)/support/`, `components/layout/notification-bell.tsx`, `lib/notifications-map.ts` | S |
+| 5.8 | Member-facing surface (owner ruling: name threads by WHERE the message comes from): each thread is labeled by its source scope — "Frequency" for platform staff, the Space's name, the event's title, the Circle's name — resolved from the conversation's lane + scope columns; bell type `operator_message` + href. No blanket "team" rename | `app/(main)/support/`, `components/layout/notification-bell.tsx`, `lib/notifications-map.ts` | S |
 | 5.9 | Channel-aware replies in all three parity surfaces via one shared helper (an `in_app` conversation replies `in_app` + bell) — lock-step, guard-covered | the three `actions.ts` surfaces | M |
 
 ## 8. Track A — ops (parallel, human tasks)
@@ -223,12 +223,17 @@ Every PR runs the standing guards: `pnpm check:menu`, `pnpm check:crm-parity`,
 
 ## 11. Open questions for the owner
 
-1. ~~Naming~~ **RULED (2026-07-26):** Resonance CRM (platform) · Community Resonance
-   (Space, members + followers) · Message Attendees (event, going/maybe) · Message Circle
-   (circle, active members). Recorded in NAMING.md + ADR-827 addendum. Still open: does
-   "The Path" need a NAMING.md entry to disambiguate from the milestone strip?
-2. **Member-facing inbox copy:** rename the support surface "Messages from the team"?
-3. **Dispatch-from-composer scope:** v1 allows exactly one led circle/event chip — is
-   hub/nexus (Guide/Mentor downline) wanted in v1 or a follow-up?
-4. **Circle co-member DMs:** this plan deliberately does NOT open member↔member DMs
-   beyond friendship; leaders message their scope. Confirm.
+All four ruled (owner, 2026-07-26; recorded in the ADR-827 addenda):
+
+1. **Naming:** Resonance CRM (platform) · Community Resonance (Space, members +
+   followers) · Message Attendees (event, going/maybe) · Message Circle (circle, active
+   members). In NAMING.md. (Minor loose end: whether "The Path" gets its own NAMING.md
+   entry to disambiguate from the milestone strip.)
+2. **Member-facing inbox:** threads are named by WHERE the message comes from —
+   "Frequency" / the Space / the event / the Circle — resolved from the conversation's
+   lane + scope. No blanket "team" label. (Plan item 5.8.)
+3. **Composer availability:** the multi-channel composer ships on ALL admin surfaces in
+   v1, including the Guide/Mentor hub/nexus downlines. (Plan item 5.5.)
+4. **DM permission:** leaders can message the members of scopes they lead; members
+   message each other only through the existing contact/friend gate. (Plan item 5.7 —
+   confirmed as designed.)
