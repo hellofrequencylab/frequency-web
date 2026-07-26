@@ -916,6 +916,14 @@ export default async function EventDetailPage({
       ? { id: d.author.id, displayName: d.author.display_name, handle: d.author.handle, avatarUrl: d.author.avatar_url }
       : null,
   }))
+  // The viewer's OWN RSVP note (their kind='rsvp' activity entry): the note box starts
+  // COLLAPSED ("Shared with the group") when one already exists, instead of re-offering the
+  // composer on every load; Edit reopens it prefilled.
+  const myRsvpNote =
+    (myProfileId &&
+      commentPosts.find((p) => p.kind === 'rsvp' && p.author?.id === myProfileId)?.body?.trim()) ||
+    ''
+
   // Merge comments + Dispatches into one newest-first stream.
   const activityPosts: ActivityPost[] = [...dispatchPosts, ...commentPosts].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -1185,6 +1193,7 @@ export default async function EventDetailPage({
               status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
               plusOnes={myPlusOnes}
               isFull={capacityInfo.isFull}
+              initialNote={myRsvpNote}
             />
             {/* At-RSVP calendar — the highest-ROI lever, emphasised once going. */}
             {isGoing ? (
