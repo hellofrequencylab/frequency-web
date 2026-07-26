@@ -455,8 +455,10 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'standard',
     priority: 5,
   },
-  // The communication module (ADR-827): Message Attendees (NAMING.md, owner-ruled), the event's CRM
-  // at /events/<slug>/manage/crm. Leads the primary band so messaging sits up front on the event rail.
+  // The communication module (ADR-827): Message Attendees (NAMING.md, owner-ruled), the event's CRM.
+  // It leads the Manage hub's Home tab as the message center (Events manage overhaul), so the link
+  // resolves to /events/<slug>/manage (entity-surface-hrefs). Leads the primary band so messaging
+  // sits up front on the event rail.
   {
     id: 'event.crm',
     label: 'Message Attendees',

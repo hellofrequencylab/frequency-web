@@ -35,8 +35,10 @@ describe('hrefForEntitySurface', () => {
     }
   })
 
-  it('resolves the four communication modules (*.crm, ADR-827) to their /crm pages', () => {
-    expect(hrefForEntitySurface('event.crm', { kind: 'event', id: 'summer-social' })).toBe('/events/summer-social/manage/crm')
+  it('resolves the four communication modules (*.crm, ADR-827) to their message-center homes', () => {
+    // The event message center leads the Manage hub's Home tab (Events manage overhaul), so
+    // event.crm deep-links to the hub; the other three keep their standalone /crm pages.
+    expect(hrefForEntitySurface('event.crm', { kind: 'event', id: 'summer-social' })).toBe('/events/summer-social/manage')
     expect(hrefForEntitySurface('circle.crm', { kind: 'circle', id: 'sunrise-sit' })).toBe('/circles/sunrise-sit/crm')
     expect(hrefForEntitySurface('hub.crm', { kind: 'hub', id: 'north' })).toBe('/hubs/north/crm')
     expect(hrefForEntitySurface('nexus.crm', { kind: 'nexus', id: 'core' })).toBe('/nexuses/core/crm')

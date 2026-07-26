@@ -25,6 +25,8 @@ import {
   loadFollowUps,
   type ManageGuest,
 } from './load'
+import { loadEventCoreStats } from '@/lib/events/event-stats'
+import { EventCoreStatsCards } from '@/components/events/event-core-stats'
 import { ApproveButton } from './approve-button'
 import { CsvExportButton } from './csv-export-button'
 import { QuestionEditor } from './question-editor'
@@ -254,14 +256,20 @@ export async function QuestionnaireSection({
   )
 }
 
-// ── Section A: page views ─────────────────────────────────────────────────────
+// ── Section A: the Home at-a-glance strip ─────────────────────────────────────
+// ONE dense row of compact tiles (StatCard size "xs") on the hub's Home tab: the shared
+// core-stats set (sold/revenue when paid, going, interested, waitlist, checked in, capacity)
+// plus page views folded in — replacing both the full-size DashboardTemplate stats row and
+// the separate Reach section (owner directive: smaller stat boxes, one strip).
 
-export async function EngagementSection({ slug }: { slug: string }) {
-  const views = await loadPageViews(slug)
+export async function HomeStatsStrip({ eventId, slug }: { eventId: string; slug: string }) {
+  const [coreStats, views] = await Promise.all([loadEventCoreStats(eventId), loadPageViews(slug)])
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+      <EventCoreStatsCards stats={coreStats} variant="strip" />
       <StatCard
         bordered
+        size="xs"
         icon={Eye}
         label="Page views"
         value={views.total.toLocaleString()}
@@ -299,9 +307,9 @@ export async function RsvpBreakdownSection({ eventId }: { eventId: string }) {
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
       {tiles.map((t) => (
-        <StatCard key={t.label} bordered icon={t.icon} label={t.label} value={t.value} />
+        <StatCard key={t.label} bordered size="xs" icon={t.icon} label={t.label} value={t.value} />
       ))}
     </div>
   )
