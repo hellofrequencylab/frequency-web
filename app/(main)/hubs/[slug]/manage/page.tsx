@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getHubCapabilities } from '@/lib/core/load-capabilities'
 import { resolveEntityConsole } from '@/lib/admin/entity-console'
 import { DashboardTemplate } from '@/components/templates'
+import { Button } from '@/components/ui/button'
 import { StatCard } from '@/components/ui/stat-card'
 import { EntityManageConsole } from '@/components/admin/modules/entity-manage-console'
 
@@ -63,12 +64,11 @@ export default async function HubManagePage({
         // gate the /crm route enforces server-side.
         // NAMING: provisional. "Message Members" is not canon-ruled for hubs yet.
         caps.has('hub.manage') ? (
-          <Link
-            href={`/hubs/${hub.slug}/crm`}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-          >
-            <MessageCircle className="h-3.5 w-3.5" aria-hidden /> Message Members
-          </Link>
+          <Button asChild size="sm">
+            <Link href={`/hubs/${hub.slug}/crm`}>
+              <MessageCircle className="h-3.5 w-3.5" aria-hidden /> Message Members
+            </Link>
+          </Button>
         ) : undefined
       }
       stats={<StatCard label="Status" value={statusLabel} />}

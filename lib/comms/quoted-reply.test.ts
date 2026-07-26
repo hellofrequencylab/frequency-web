@@ -23,10 +23,34 @@ describe('splitQuotedReply', () => {
     expect(out.quoted).toContain('wrote:')
   })
 
-  it('splits at a bare "> " quoted block with no attribution', () => {
+  it('splits at a bare "> " quoted block with no attribution (pure trailing quote)', () => {
     const out = splitQuotedReply('Got it, thanks.\n\n> Original announcement text\n> continues here')
     expect(out.visible).toBe('Got it, thanks.')
     expect(out.quoted).toBe('> Original announcement text\n> continues here')
+  })
+
+  it('keeps an interleaved bottom-posted answer visible (quote block followed by content)', () => {
+    // The answer sits BELOW the quoted question — the quote block does not run to the end of the
+    // message, so nothing is a trail; the whole exchange stays visible.
+    const raw = 'Thanks!\n> can you make Friday?\nYes, Friday works'
+    const out = splitQuotedReply(raw)
+    expect(out.visible).toBe(raw)
+    expect(out.quoted).toBeNull()
+  })
+
+  it('still collapses a trailing quote below an interleaved exchange', () => {
+    // Interleaved answer, then a FINAL quote block with nothing after it: only that last block is
+    // the trail; the answered exchange above stays visible.
+    const raw = '> can you make Friday?\nYes, Friday works.\n\n> see you then\n> bring snacks'
+    const out = splitQuotedReply(raw)
+    expect(out.visible).toBe('> can you make Friday?\nYes, Friday works.')
+    expect(out.quoted).toBe('> see you then\n> bring snacks')
+  })
+
+  it('treats a trailing quote followed only by whitespace or a "-- " signature as a trail', () => {
+    const out = splitQuotedReply('Got it.\n\n> the original\n\n-- \nDaniel\n')
+    expect(out.visible).toBe('Got it.')
+    expect(out.quoted).toContain('> the original')
   })
 
   it('splits at an Outlook "-----Original Message-----" divider', () => {

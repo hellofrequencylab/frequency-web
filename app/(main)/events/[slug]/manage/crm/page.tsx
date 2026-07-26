@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { DashboardTemplate } from '@/components/templates'
@@ -16,8 +17,9 @@ import { EventMemberViewer } from './event-member-viewer'
 // Speed is structural (PAGE-FRAMEWORK §5): the shell renders immediately; the roster read
 // streams behind <Suspense>.
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Message Attendees',
+  description: 'See everyone going or maybe to your event and message any of them.',
 }
 
 export default async function MessageAttendeesPage({
@@ -47,7 +49,7 @@ export default async function MessageAttendeesPage({
     <DashboardTemplate
       eyebrow="Manage"
       title="Message Attendees"
-      description={`Everyone who said going or maybe to ${event.title}. Pick a person to see their story and open a direct thread.`}
+      description={`Everyone who said going or maybe to ${event.title}. Pick a person to see their story, then send them a message.`}
       back={{ href: `/events/${event.slug}/manage`, label: 'Back to manage' }}
       width="default"
     >

@@ -109,6 +109,7 @@ export function ConversationTriage({
         <button
           type="button"
           onClick={() => setOpen(true)}
+          aria-expanded={false}
           className="inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-2xs font-semibold text-muted hover:bg-surface-elevated hover:text-text"
         >
           <SlidersHorizontal className="h-3 w-3" /> Manage
@@ -125,6 +126,7 @@ export function ConversationTriage({
         <button
           type="button"
           onClick={() => setOpen(false)}
+          aria-expanded={true}
           className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-2xs font-semibold text-muted hover:bg-surface-elevated hover:text-text"
         >
           <ChevronUp className="h-3 w-3" /> Done

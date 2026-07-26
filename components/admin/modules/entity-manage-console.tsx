@@ -16,10 +16,11 @@ import type { AppViewer } from '@/lib/apps/types'
 // standardized rail shows for the scope — `resolveEntityConsole` wraps `appsForScope(scope, viewer,
 // 'editor')`, the exact seam settings-panel's `settingsAppsFor` uses — so the console and the rail can
 // never drift (entity-console.test.ts locks it). Modeled on the Space /manage console (a resolved module
-// list rendered in place); the ONE difference is that a core-entity module is `render: 'inline'` (a
+// list rendered in place); the ONE difference is that most core-entity modules are `render: 'inline'` (a
 // self-contained editor that self-fetches + self-gates and renders its OWN header), so the console mounts
-// the module's component in a card rather than a headerless link-row. A `link` module (none on a core
-// entity today) draws a SurfaceLinkRow, mirroring the rail's own render decision.
+// the module's component in a card rather than a headerless link-row. A `link` module — the communication
+// modules (*.crm, ADR-827), which live on their own /crm pages — draws a SurfaceLinkRow, mirroring the
+// rail's own render decision.
 //
 // The page (a Server Component) resolves the entity + the viewer's REAL capabilities for its scope and
 // hands them here as a plain `Capability[]` (serializable — an `App`'s Lucide `Icon` is a function and

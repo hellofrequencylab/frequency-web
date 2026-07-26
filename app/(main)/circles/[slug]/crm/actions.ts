@@ -1,10 +1,11 @@
 'use server'
 
-import { redirect } from 'next/navigation'
+import { redirect, unstable_rethrow } from 'next/navigation'
 import { resolveCircleCrm } from '@/lib/crm/leader-crm-access'
 import { listActiveCircleMemberIds } from '@/lib/circles/crm-roster'
 import { buildMemberDetail } from '@/lib/crm/member-detail'
 import { openScopedDm } from '@/lib/messages/scoped-dm'
+import { fail, type ActionResult } from '@/lib/action-result'
 import type { CrmMemberDetail } from '@/components/people/member-viewer'
 
 // MESSAGE CIRCLE server actions (CRM Everywhere plan 4.4 / ADR-827). Both actions re-run the FULL
@@ -24,13 +25,21 @@ export async function loadCircleCrmDetail(slug: string, profileId: string): Prom
   return buildMemberDetail(profileId, { audience: 'leader' })
 }
 
-/** Open (or reuse) the 1:1 thread with a circle member, then land in it. */
-export async function openCircleMemberDm(slug: string, profileId: string): Promise<void> {
-  const circle = await resolveCircleCrm(slug)
-  if (!circle) throw new Error('You cannot manage this circle.')
-  const { conversationId } = await openScopedDm({
-    scope: { kind: 'circle', id: circle.id },
-    targetProfileId: profileId,
-  })
+/** Open (or reuse) the 1:1 thread with a circle member, then land in it. A refusal (blocked pair,
+ *  rate limit, not-in-scope) returns the ActionResult error for the dm button to render inline —
+ *  never a throw into the route error boundary; unstable_rethrow keeps NEXT_REDIRECT flowing. */
+export async function openCircleMemberDm(slug: string, profileId: string): Promise<ActionResult> {
+  let conversationId: string
+  try {
+    const circle = await resolveCircleCrm(slug)
+    if (!circle) return fail('You cannot manage this circle.')
+    ;({ conversationId } = await openScopedDm({
+      scope: { kind: 'circle', id: circle.id },
+      targetProfileId: profileId,
+    }))
+  } catch (err) {
+    unstable_rethrow(err)
+    return fail(err instanceof Error ? err.message : 'Something went wrong. Try again.')
+  }
   redirect(`/messages/${conversationId}`)
 }

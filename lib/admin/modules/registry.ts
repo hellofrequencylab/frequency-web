@@ -266,7 +266,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   {
     id: 'hub.crm',
     label: 'Message Members',
-    desc: 'Everyone in your hub, across every circle: their story and a direct line.',
+    desc: 'Everyone in your hub, across every circle: their story, their stats, and a direct line.',
     Icon: MessageCircle,
     scopes: ['hub'],
     requiredCapability: 'hub.manage',
@@ -363,7 +363,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   {
     id: 'nexus.crm',
     label: 'Message Members',
-    desc: 'Everyone in your nexus, across every hub and circle: their story and a direct line.',
+    desc: 'Everyone in your nexus, across every hub and circle: their story, their stats, and a direct line.',
     Icon: MessageCircle,
     scopes: ['nexus'],
     requiredCapability: 'nexus.manage',

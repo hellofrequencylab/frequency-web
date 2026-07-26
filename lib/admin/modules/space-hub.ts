@@ -65,8 +65,9 @@ export function sectionForModule(module: SpaceModule): SpaceHubSection | null {
   if (HUB_EXCLUDED_IDS.has(module.id)) return null
   if (SETTINGS_MODULE_IDS.has(module.id)) return 'settings'
 
-  // Resonance — the CRM relationship + capture surfaces (people + communication).
-  if (['space.crm', 'space.inbox', 'space.leads', 'space.doors', 'space.shared'].includes(module.id)) return 'resonance'
+  // Resonance — the CRM relationship + capture surfaces (people + communication). `space.conversations`
+  // is the ticketed inbox (it replaced the retired `space.inbox`).
+  if (['space.crm', 'space.conversations', 'space.leads', 'space.doors', 'space.shared'].includes(module.id)) return 'resonance'
 
   // Marketing — outbound reach + growth (email trio, QR + scans, automation/drip).
   if (['space.comms', 'space.marketing', 'space.emailstyle', 'space.reach', 'space.insights', 'space.automation'].includes(module.id)) {

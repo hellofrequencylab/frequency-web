@@ -200,8 +200,13 @@ export function ConversationWorkspace({
               chatToken={thread.channel === 'in_app' ? makeChatToken(thread.ref) : null}
             />
           ) : (
-            <div className="hidden rounded-lg border border-border bg-surface lg:flex lg:h-[calc(100dvh-13rem)] lg:items-center lg:justify-center">
-              <p className="text-sm text-muted">Pick a conversation to read it.</p>
+            <div className="hidden lg:flex lg:h-[calc(100dvh-13rem)] lg:flex-col lg:justify-center">
+              <EmptyState
+                variant="first-use"
+                icon={Inbox}
+                title="Pick a conversation"
+                description="Choose a thread from the list to read it and reply."
+              />
             </div>
           )}
         </div>
@@ -262,6 +267,8 @@ function ThreadReader({
             aiTriageAction={actions.aiTriageAction}
           />
           <LiveChatBridge chatRef={thread.ref} token={chatToken!} />
+          {/* The same pull handle ThreadStatic gets: drag (or arrow-key) the live chat taller too. */}
+          <ThreadResizeHandle />
         </>
       ) : (
         <ThreadStatic thread={thread} agents={agents} actions={actions} readOnly={readOnly} />

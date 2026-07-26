@@ -30,6 +30,12 @@ const mocks = vi.hoisted(() => ({
   isBlockedBetween: vi.fn<() => Promise<boolean>>(),
   rateLimitOk: vi.fn<(bucket: string, id: string, limit: number, window: string) => Promise<boolean>>(),
   findOrCreateDirectConversation: vi.fn<() => Promise<string>>(),
+  // The page-gate capability loaders (the leadership leg's fallback): default to an empty set so
+  // every existing FK-walk case still exercises the fast path alone.
+  getEventCapabilities: vi.fn<() => Promise<Set<string>>>(),
+  getCircleCapabilities: vi.fn<() => Promise<Set<string>>>(),
+  getHubCapabilities: vi.fn<() => Promise<Set<string>>>(),
+  getNexusCapabilities: vi.fn<() => Promise<Set<string>>>(),
 }))
 
 vi.mock('@/lib/supabase/admin', () => ({
@@ -40,6 +46,12 @@ vi.mock('@/lib/blocking', () => ({ isBlockedBetween: mocks.isBlockedBetween }))
 vi.mock('@/lib/rate-limit', () => ({ rateLimitOk: mocks.rateLimitOk }))
 vi.mock('@/lib/messages/direct-conversation', () => ({
   findOrCreateDirectConversation: mocks.findOrCreateDirectConversation,
+}))
+vi.mock('@/lib/core/load-capabilities', () => ({
+  getEventCapabilities: mocks.getEventCapabilities,
+  getCircleCapabilities: mocks.getCircleCapabilities,
+  getHubCapabilities: mocks.getHubCapabilities,
+  getNexusCapabilities: mocks.getNexusCapabilities,
 }))
 
 import {
@@ -59,6 +71,10 @@ beforeEach(() => {
   mocks.isBlockedBetween.mockResolvedValue(false)
   mocks.rateLimitOk.mockResolvedValue(true)
   mocks.findOrCreateDirectConversation.mockResolvedValue('conv-1')
+  mocks.getEventCapabilities.mockResolvedValue(new Set())
+  mocks.getCircleCapabilities.mockResolvedValue(new Set())
+  mocks.getHubCapabilities.mockResolvedValue(new Set())
+  mocks.getNexusCapabilities.mockResolvedValue(new Set())
 })
 
 describe('canDmEventAttendee', () => {
@@ -92,6 +108,21 @@ describe('canDmEventAttendee', () => {
 
   it('refuses a non-leader even when the target RSVP is valid', async () => {
     tables = { events: [{ id: 'ev-1', host_id: 'someone-else' }], event_rsvps: [goingRsvp] }
+    expect(await canDmEventAttendee(SENDER, TARGET, 'ev-1')).toBe(false)
+  })
+
+  it('allows a page-gate manager (event.editSettings via the capability fallback)', async () => {
+    // Not host, not cohost, not staff — but the page gate admits them (e.g. a circle-scope manager
+    // or a hosting-space operator). The DM audience must equal the page-gate audience.
+    tables = { events: [{ id: 'ev-1', host_id: 'someone-else' }], event_rsvps: [goingRsvp] }
+    mocks.getEventCapabilities.mockResolvedValue(new Set(['event.editSettings']))
+    expect(await canDmEventAttendee(SENDER, TARGET, 'ev-1')).toBe(true)
+  })
+
+  it('fails closed on the capability leg when the sender is not the signed-in caller', async () => {
+    tables = { events: [{ id: 'ev-1', host_id: 'someone-else' }], event_rsvps: [goingRsvp] }
+    mocks.getEventCapabilities.mockResolvedValue(new Set(['event.editSettings']))
+    mocks.getMyProfileId.mockResolvedValue('somebody-else')
     expect(await canDmEventAttendee(SENDER, TARGET, 'ev-1')).toBe(false)
   })
 
@@ -133,8 +164,28 @@ describe('canDmCircleMember', () => {
 
     // Same walk one tier up: guide is someone else, the sender mentors the nexus above.
     tables.hubs = [{ id: 'hub-1', guide_id: 'someone-else', nexus_id: 'nx-1' }]
-    tables.nexus_regions = [{ id: 'nx-1', mentor_id: SENDER }]
+    tables.nexuses = [{ id: 'nx-1', mentor_id: SENDER }]
     expect(await canDmCircleMember(SENDER, TARGET, 'ci-1')).toBe(true)
+  })
+
+  it('allows a page-gate moderator (circle.moderate via the capability fallback)', async () => {
+    // Not the host, no hub walk, not staff — but the page gate admits them (a stewardship edge).
+    tables = {
+      circles: [{ id: 'ci-1', host_id: 'someone-else', hub_id: null }],
+      memberships: [activeMembership],
+    }
+    mocks.getCircleCapabilities.mockResolvedValue(new Set(['circle.moderate']))
+    expect(await canDmCircleMember(SENDER, TARGET, 'ci-1')).toBe(true)
+  })
+
+  it('accepts the circle HOST as a target (the roster includes them via unionRosterIds)', async () => {
+    // The hub guide messages the circle's host, who has no membership row of their own.
+    tables = {
+      circles: [{ id: 'ci-1', host_id: 'host-9', hub_id: 'hub-1' }],
+      hubs: [{ id: 'hub-1', guide_id: SENDER, nexus_id: null }],
+      memberships: [],
+    }
+    expect(await canDmCircleMember(SENDER, 'host-9', 'ci-1')).toBe(true)
   })
 
   it('refuses a non-leader, and a leader reaching an inactive member', async () => {
@@ -174,11 +225,31 @@ describe('canDmPlaceTreeMember', () => {
 
   it('allows the nexus mentor across the full subtree walk', async () => {
     tables = {
-      nexus_regions: [{ id: 'nx-1', mentor_id: SENDER }],
+      nexuses: [{ id: 'nx-1', mentor_id: SENDER }],
       hubs: [{ id: 'hub-1', guide_id: 'someone-else', nexus_id: 'nx-1' }],
       circles: [{ id: 'ci-1', hub_id: 'hub-1' }],
       memberships: [{ id: 'm1', circle_id: 'ci-1', profile_id: TARGET, status: 'active' }],
     }
+    expect(await canDmPlaceTreeMember(SENDER, TARGET, { kind: 'nexus', id: 'nx-1' })).toBe(true)
+  })
+
+  it('allows page-gate managers (hub.manage / nexus.manage via the capability fallback)', async () => {
+    // No FK leadership, not staff — but the page gate admits them (a stewardship edge).
+    tables = {
+      hubs: [{ id: 'hub-1', guide_id: 'someone-else', nexus_id: null }],
+      circles: [{ id: 'ci-1', hub_id: 'hub-1' }],
+      memberships: [{ id: 'm1', circle_id: 'ci-1', profile_id: TARGET, status: 'active' }],
+    }
+    mocks.getHubCapabilities.mockResolvedValue(new Set(['hub.manage']))
+    expect(await canDmPlaceTreeMember(SENDER, TARGET, { kind: 'hub', id: 'hub-1' })).toBe(true)
+
+    tables = {
+      nexuses: [{ id: 'nx-1', mentor_id: 'someone-else' }],
+      hubs: [{ id: 'hub-1', guide_id: 'someone-else', nexus_id: 'nx-1' }],
+      circles: [{ id: 'ci-1', hub_id: 'hub-1' }],
+      memberships: [{ id: 'm1', circle_id: 'ci-1', profile_id: TARGET, status: 'active' }],
+    }
+    mocks.getNexusCapabilities.mockResolvedValue(new Set(['nexus.manage']))
     expect(await canDmPlaceTreeMember(SENDER, TARGET, { kind: 'nexus', id: 'nx-1' })).toBe(true)
   })
 

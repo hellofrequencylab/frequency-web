@@ -9,12 +9,15 @@
 //     (a feature workflow) and Account and privacy (blocked-members + data export + account deletion,
 //     not a single reusable form). These carry `render: 'link'` and resolve to a STATIC /settings/* URL
 //     (no entity id needed — a signed-in viewer edits their OWN account).
-//   • CORE ENTITIES (circle / hub / nexus / event / practice / channel) are ALL `render: 'inline'`: each
-//     entity's inline module IS its dedicated editor (the /manage + /settings consoles merely re-compose
-//     the SAME module components), and where a deeper feature-workflow page exists (e.g. the event guest
-//     dashboard) the inline module already deep-links to it. So no core-entity id is classified `link`,
-//     and there is no core-entity branch here yet. When one is warranted, add a case keyed on the URL
-//     slug the scope carries (`scope.id`), mirroring the Space map.
+//   • CORE-ENTITY COMMUNICATION MODULES (ADR-827): circle.crm / hub.crm / nexus.crm / event.crm are
+//     `render: 'link'` — each resolves to its scope's /crm member viewer, keyed on the URL slug the
+//     scope carries (`scope.id`). Callers on a detail page must pass a SLUG-corrected scope (the
+//     AdminBar detail's scope.id is the DB id): settings-panel's `slugScope` / the manage console's
+//     path-derived scope both do.
+//   • Every OTHER core-entity surface (circle / hub / nexus / event / practice / channel) stays
+//     `render: 'inline'`: the entity's inline module IS its dedicated editor (the /manage + /settings
+//     consoles merely re-compose the SAME module components); the manage-console prefix fallbacks
+//     below only feed the ADR-515 bottom bank.
 
 /** The minimal scope shape this resolver reads — the page's admin scope (lib/layout/page-chrome
  *  AdminScope). `id` is the entity's URL slug on an entity-detail scope, absent on the global scope. */
