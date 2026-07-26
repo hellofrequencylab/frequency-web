@@ -18,7 +18,7 @@ import {
 import { loomScopes, loomScope as loomScopeAction, loomImages, uploadLoomImage, type LoomScope, type LoomPickerConfig } from '@/lib/loom/picker-actions'
 import { searchSiteIcons, type SiteIcon } from '@/lib/loom/site-icons'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
-import { shrinkImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
+import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import type { LoomPickAsset } from '@/lib/library/store'
 
 // Fallback config until the resolved one loads (matches the registry defaults). The real config comes
@@ -205,11 +205,15 @@ export function LoomPicker({
       let skipped = 0
       try {
         for (const raw of images) {
-          // A big header photo exceeds Vercel's ~4.5 MB serverless body limit; the platform then REJECTS the
-          // request (a thrown server action, not a returned error) — which previously left the spinner turning
-          // forever. Downscale/re-encode large photos in the browser first so they fit; a format we can't
-          // safely rasterize (SVG/GIF/HEIC in this browser) is left as-is and size-gated below.
-          const file = await shrinkImageForUpload(raw)
+          // Prep in the browser first: an iPhone HEIC is converted to JPEG (a raw HEIC would store fine
+          // but render as a broken tile in every browser but Safari — including this grid and the
+          // crop/focus preview), then a big photo is downscaled so it fits under Vercel's ~4.5 MB
+          // serverless body limit (over it, the platform REJECTS the request as a thrown server action,
+          // which previously left the spinner turning forever). A HEIC this browser cannot convert gets
+          // an inline message instead of a broken upload.
+          const prepared = await prepareImageForUpload(raw)
+          if ('error' in prepared) { setError(prepared.error); continue }
+          const file = prepared.file
           if (file.size > SERVER_MAX_BYTES) { skipped++; continue }
           const fd = new FormData()
           fd.append('file', file)

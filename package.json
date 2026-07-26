@@ -42,6 +42,7 @@
     "@types/papaparse": "^5.5.2",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
+    "heic2any": "^0.0.4",
     "jsqr": "^1.4.0",
     "lucide-react": "^1.25.0",
     "mammoth": "^1.12.0",

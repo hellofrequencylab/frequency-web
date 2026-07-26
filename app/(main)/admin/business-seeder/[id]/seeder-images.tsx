@@ -24,7 +24,7 @@ import {
   setPrimarySeederImage,
   reorderSeederImages,
 } from '../actions'
-import { shrinkImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
+import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 
 export function SeederImages({
   intakeId,
@@ -77,11 +77,15 @@ export function SeederImages({
     if (!files.length) return
 
     startBusy(async () => {
-      // Shrink large photos in the browser FIRST: uploads post through a Vercel serverless function whose
-      // request-body limit (~4.5 MB) sits under next.config's bodySizeLimit, so an over-limit batch is
-      // rejected by the platform BEFORE the action runs. Downscaling a big camera photo (routinely 7–12 MB)
-      // makes it fit; anything still too large after that (e.g. a HEIC Chrome can't decode) is dropped.
-      const shrunk = await Promise.all(files.map((f) => shrinkImageForUpload(f)))
+      // Prep in the browser FIRST: an iPhone HEIC is converted to JPEG (a raw one renders broken in every
+      // browser but Safari), then large photos are shrunk — uploads post through a Vercel serverless
+      // function whose request-body limit (~4.5 MB) sits under next.config's bodySizeLimit, so an
+      // over-limit batch is rejected by the platform BEFORE the action runs. Downscaling a big camera
+      // photo (routinely 7–12 MB) makes it fit; anything still too large after that is dropped, and an
+      // unconvertible HEIC is dropped with its own message below.
+      const prepared = await Promise.all(files.map((f) => prepareImageForUpload(f)))
+      const unreadable = prepared.filter((p) => 'error' in p).length
+      const shrunk = prepared.flatMap((p) => ('file' in p ? [p.file] : []))
       const tooBig = shrunk.filter((f) => f.size > SERVER_MAX_BYTES)
       const okFiles = shrunk.filter((f) => f.size <= SERVER_MAX_BYTES)
 
@@ -127,6 +131,10 @@ export function SeederImages({
       if (tooBig.length > 0) {
         setError(
           `${tooBig.length} image${tooBig.length === 1 ? ' is' : 's are'} too large to upload (over 4 MB and could not be resized here). Save a smaller version and try again.`,
+        )
+      } else if (unreadable > 0) {
+        setError(
+          `${unreadable} photo${unreadable === 1 ? '' : 's'} could not be converted for upload. Save ${unreadable === 1 ? 'it' : 'them'} as JPEG and try again.`,
         )
       } else if (failed === 0) {
         setNote(`Added ${okFiles.length} image${okFiles.length === 1 ? '' : 's'}.`)

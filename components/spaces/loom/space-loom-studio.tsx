@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { Upload, Loader2, Search, Trash2, ImageIcon, X } from 'lucide-react'
 import { loomImages, uploadLoomImage, deleteSpaceLoomImage } from '@/lib/loom/picker-actions'
-import { shrinkImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
+import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
 import type { LoomPickAsset } from '@/lib/library/store'
 
@@ -74,7 +74,11 @@ export function SpaceLoomStudio({
       let skipped = 0
       try {
         for (const raw of images) {
-          const file = await shrinkImageForUpload(raw)
+          // Convert an iPhone HEIC to JPEG + downscale big photos in the browser first (see
+          // prepareImageForUpload); an unconvertible HEIC gets an inline message, never a broken upload.
+          const prepared = await prepareImageForUpload(raw)
+          if ('error' in prepared) { setError(prepared.error); continue }
+          const file = prepared.file
           if (file.size > SERVER_MAX_BYTES) { skipped++; continue }
           const fd = new FormData()
           fd.append('file', file)
