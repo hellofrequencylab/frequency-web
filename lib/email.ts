@@ -591,6 +591,78 @@ Unsubscribe from event emails: ${unsubscribeUrl}
 }
 
 
+// ── Event update email (host Dispatch → guests, ADR-255 email channel) ────────
+// A host update that goes on the event wall AND out to guests by email. Rides the
+// 'dispatches' preference category (the same one push + SMS use), so a guest's
+// email preference + suppression both hold; the caller runs shouldSend per guest.
+
+export async function sendEventUpdateEmail(params: {
+  to:                 string
+  recipientName:      string
+  recipientProfileId: string
+  eventTitle:         string
+  updateTitle:        string | null
+  body:               string
+  eventUrl:           string
+}) {
+  const { to, recipientName, recipientProfileId, eventTitle, updateTitle, body, eventUrl } = params
+
+  const unsubscribeUrl = buildUnsubscribeUrl({
+    baseUrl:   BASE_URL,
+    profileId: recipientProfileId,
+    category:  'dispatches',
+  })
+
+  await enqueueEmail({
+    to,
+    subject: updateTitle ? `${eventTitle}: ${updateTitle}` : `Update from ${eventTitle}`,
+    headers: listUnsubscribeHeaders(unsubscribeUrl),
+    html: eventUpdateHtml({ recipientName, eventTitle, updateTitle, body, eventUrl, unsubscribeUrl }),
+    text: eventUpdateText({ recipientName, eventTitle, updateTitle, body, eventUrl, unsubscribeUrl }),
+  })
+}
+
+function eventUpdateHtml({ recipientName, eventTitle, updateTitle, body, eventUrl, unsubscribeUrl }: {
+  recipientName: string; eventTitle: string; updateTitle: string | null; body: string
+  eventUrl: string; unsubscribeUrl: string
+}): string {
+  return emailShell(`
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#8F8675;margin:28px 0 8px;">
+      Event update
+    </p>
+    <h1 style="${h1Style}">${escapeHtml(updateTitle ?? eventTitle)}</h1>
+    ${updateTitle ? `<p style="${pStyle}"><strong>${escapeHtml(eventTitle)}</strong></p>` : ''}
+    <p style="${pStyle}">Hi ${escapeHtml(recipientName)},</p>
+    <p style="${pStyle}">${escapeHtml(body).replace(/\n/g, '<br>')}</p>
+    <a href="${eventUrl}" style="${btnStyle}">View event →</a>
+    <hr style="${dividerStyle}">
+    <p style="font-size:13px;color:#8F8675;">
+      You're receiving this because you RSVP'd to this event.
+      <a href="${BASE_URL}/settings/notifications" style="color:#8F8675;">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe from dispatch emails</a>.
+    </p>
+  `)
+}
+
+function eventUpdateText({ recipientName, eventTitle, updateTitle, body, eventUrl, unsubscribeUrl }: {
+  recipientName: string; eventTitle: string; updateTitle: string | null; body: string
+  eventUrl: string; unsubscribeUrl: string
+}): string {
+  return `Event update: ${updateTitle ? `${eventTitle}: ${updateTitle}` : eventTitle}
+
+Hi ${recipientName},
+
+${body}
+
+View event: ${eventUrl}
+
+You're receiving this because you RSVP'd to this event.
+Manage preferences: ${BASE_URL}/settings/notifications
+Unsubscribe from dispatch emails: ${unsubscribeUrl}
+`
+}
+
+
 // ── Booking emails (1:1 booking lifecycle, ADR-605 P3) ─────────────────────────
 // Confirmation (to the member + the owner, with an .ics attachment), reminder, and
 // cancellation. Same enqueueEmail outbox + suppression guard as every other send.

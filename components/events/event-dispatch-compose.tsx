@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Radio, MessageSquare, Smartphone, Megaphone } from 'lucide-react'
+import { Radio, MessageSquare, Smartphone, Megaphone, Mail } from 'lucide-react'
 import { postEventDispatch } from '@/app/(main)/events/[slug]/social-actions'
 
 // EventDispatchCompose (ADR-255 / EVENTS-DESIGN B2) — the host's "post an update"
@@ -35,6 +35,7 @@ export function EventDispatchCompose({
   const [body, setBody] = useState('')
   const [toDispatch, setToDispatch] = useState(false)
   const [toSms, setToSms] = useState(false)
+  const [toEmail, setToEmail] = useState(false)
   const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
 
@@ -51,6 +52,7 @@ export function EventDispatchCompose({
         // Records intent on the Event Dispatch. The send is gated behind sendSms()
         // (ADR-256): nothing texts until SMS is enabled. Honest copy below.
         toSms,
+        toEmail,
       })
       // Surface a failure instead of clearing the box as if it sent (the host would
       // lose their text + think it posted).
@@ -63,6 +65,7 @@ export function EventDispatchCompose({
       setBody('')
       setToDispatch(false)
       setToSms(false)
+      setToEmail(false)
     })
   }
 
@@ -116,6 +119,22 @@ export function EventDispatchCompose({
           Send as a Dispatch
         </button>
 
+        <button
+          type="button"
+          onClick={() => setToEmail((v) => !v)}
+          disabled={pending}
+          aria-pressed={toEmail}
+          title="Also email this update to your guest list."
+          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
+            toEmail
+              ? 'bg-primary-bg text-primary-strong'
+              : 'border border-border text-muted hover:border-border-strong hover:text-text'
+          }`}
+        >
+          <Mail className="h-3.5 w-3.5" />
+          Email guests
+        </button>
+
         {/* SMS — only a real toggle once the channel is provisioned (ADR-256). Until
             then, a disabled "Coming soon" chip: never offer a toggle that does nothing. */}
         {smsProvisioned ? (
@@ -163,6 +182,12 @@ export function EventDispatchCompose({
       {toDispatch && (
         <p className="mt-2 text-2xs text-subtle">
           Guests who RSVP&rsquo;d get this in their Dispatches, unless they muted this event.
+        </p>
+      )}
+
+      {toEmail && (
+        <p className="mt-2 text-2xs text-subtle">
+          Emails everyone on your guest list who accepts event emails.
         </p>
       )}
 

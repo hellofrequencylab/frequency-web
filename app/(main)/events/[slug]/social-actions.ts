@@ -578,7 +578,14 @@ export async function approveEventRsvp(eventId: string, slug: string, guestProfi
 export async function postEventDispatch(
   eventId: string,
   slug: string,
-  args: { title?: string | null; body: string; toDispatch?: boolean; toSms?: boolean },
+  args: {
+    title?: string | null
+    body: string
+    toDispatch?: boolean
+    toSms?: boolean
+    /** Email the guest list too (ADR-255 email channel; per-guest preference-gated). */
+    toEmail?: boolean
+  },
 ): Promise<ActionResult<void>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to post an update.')
@@ -600,6 +607,7 @@ export async function postEventDispatch(
       toPage: true,
       toDispatch: !!args.toDispatch,
       toSms: !!args.toSms,
+      toEmail: !!args.toEmail,
       eventUrl: `/events/${slug}`,
     })
   } catch (e) {
