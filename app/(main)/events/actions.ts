@@ -29,6 +29,8 @@ import { sendEventRsvpConfirmationEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 import { sendSms } from '@/lib/comms/sms'
 import { recordContactInteraction } from '@/lib/crm/interactions'
+import { captureEventLead } from '@/lib/crm/lead-capture'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 import { rewardConnectorAttendanceForCheckin } from '@/lib/rewards/connector'
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -757,6 +759,56 @@ async function syncRsvpActivityPost(
   }
 }
 
+// SEGMENT the guest into the HOSTING Space's CRM (owner directive 2026-07-26): an RSVP to a
+// space-hosted event captures the guest through the 'event' lead door, labeled with the event
+// and tiered going-vs-maybe — so the Space can segment guests for future marketing + follow-up
+// and the guest shows on its Resonance timeline. Consent-honest by the door's own rule
+// (attendance is NOT mail consent; bulk marketing still needs an opt-in; 1:1 outreach works).
+// Never captures into the ROOT space (its lane is the platform CRM). Fire-and-forget, fail-safe.
+async function captureRsvpLead(
+  eventId: string,
+  profileId: string,
+  tier: 'rsvp' | 'rsvp_maybe',
+): Promise<void> {
+  try {
+    const admin = createAdminClient()
+    const { data: ev } = await admin
+      .from('events')
+      .select('title, space_id, host_space_id')
+      .eq('id', eventId)
+      .maybeSingle()
+    const evRow = ev as unknown as {
+      title: string
+      space_id: string | null
+      host_space_id: string | null
+    } | null
+    const spaceId = evRow?.host_space_id ?? evRow?.space_id ?? null
+    if (!evRow || !spaceId) return
+    const root = await loadRootSpaceId()
+    if (root && spaceId === root) return
+
+    const { data: prof } = await admin
+      .from('profiles')
+      .select('display_name, auth_user_id')
+      .eq('id', profileId)
+      .maybeSingle()
+    if (!prof?.auth_user_id) return
+    const { data: { user } } = await admin.auth.admin.getUserById(prof.auth_user_id)
+    if (!user?.email) return
+
+    await captureEventLead({
+      spaceId,
+      email: user.email,
+      displayName: prof.display_name,
+      eventTitle: evRow.title,
+      tier,
+      capturedByProfileId: profileId,
+    })
+  } catch (e) {
+    console.error('[events rsvp lead capture]', e)
+  }
+}
+
 export async function toggleRSVP(eventId: string) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
@@ -823,6 +875,8 @@ export async function toggleRSVP(eventId: string) {
       sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
         console.error('[events rsvp confirmation email]', e)
       )
+      // Segment into the hosting Space's CRM for follow-up (fire-and-forget).
+      void captureRsvpLead(eventId, myProfileId, 'rsvp')
     }
   } else {
     const { isFull } = await getCapacityInfo(eventId)
@@ -840,6 +894,8 @@ export async function toggleRSVP(eventId: string) {
     sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
       console.error('[events rsvp confirmation email]', e)
     )
+    // Segment into the hosting Space's CRM for follow-up (fire-and-forget).
+    void captureRsvpLead(eventId, myProfileId, 'rsvp')
   }
 
   revalidatePath('/events', 'layout')
@@ -938,6 +994,8 @@ export async function setRsvpStatus(
       sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
         console.error('[events rsvp confirmation email]', e)
       )
+      // Segment into the hosting Space's CRM for follow-up (fire-and-forget).
+      void captureRsvpLead(eventId, myProfileId, 'rsvp')
     } else if (opts?.message !== undefined) {
       // Already confirmed (going/waitlist) and just adding or editing the note — no
       // status transition, so skip the email/gems above but still sync the feed entry.
@@ -971,6 +1029,9 @@ export async function setRsvpStatus(
     if (heldSeat) {
       await promoteFromWaitlist(eventId).catch((e) => { console.error('[events waitlist]', e); return null })
     }
+    // A MAYBE is buying intent: segment into the hosting Space's CRM for the follow-up
+    // funnel (fire-and-forget). An explicit Can't go just files — no capture.
+    if (intent === 'maybe') void captureRsvpLead(eventId, myProfileId, 'rsvp_maybe')
   }
 
   revalidatePath('/events', 'layout')

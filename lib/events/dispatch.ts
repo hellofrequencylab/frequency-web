@@ -3,6 +3,8 @@ import type { PushPayload } from '@/lib/push'
 import { routeNotification } from '@/lib/notifications/router'
 import { resolveEventDispatchAudience } from '@/lib/events/dispatch-audience'
 import { sendSms, isSmsProvisioned } from '@/lib/comms/sms'
+import { sendEventUpdateEmail } from '@/lib/email'
+import { shouldSend } from '@/lib/notification-preferences'
 
 // Event Dispatches data layer (ADR-255 / EVENTS-REWORK A2).
 //
@@ -32,6 +34,9 @@ export interface ComposeEventDispatchArgs {
   toPage?: boolean
   toDispatch?: boolean
   toSms?: boolean
+  /** Email the guest list (ADR-255 email channel): per-guest 'dispatches' email preference +
+   *  suppression enforced at send. */
+  toEmail?: boolean
   /** Where the in-app/push notification should land (the event page). */
   eventUrl?: string
 }
@@ -47,6 +52,8 @@ export interface ComposeEventDispatchResult {
   smsRequested: boolean
   /** How many audience members were texted (allowed by sendSms). 0 while gated. */
   smsSent: number
+  /** How many guests were emailed (past their dispatches email preference + suppression). */
+  emailSent: number
 }
 
 /**
@@ -61,6 +68,7 @@ export async function composeEventDispatch(
   const toPage = args.toPage ?? true
   const toDispatch = args.toDispatch ?? false
   const toSms = args.toSms ?? false
+  const toEmail = args.toEmail ?? false
   const title = args.title?.trim() || null
   const body = args.body.trim()
 
@@ -70,6 +78,7 @@ export async function composeEventDispatch(
     enqueued: 0,
     smsRequested: toSms,
     smsSent: 0,
+    emailSent: 0,
   }
 
   if (!body) return result
@@ -116,6 +125,7 @@ export async function composeEventDispatch(
         to_page: toPage,
         to_dispatch: toDispatch,
         to_sms: toSms,
+        to_email: toEmail,
       })
       .select('id')
       .maybeSingle()
@@ -132,7 +142,14 @@ export async function composeEventDispatch(
     })
   }
 
-  // 4. "Text the group" (ADR-255). Recorded on the row above. When the legal track is
+  // 4. "Email guests" (ADR-255 email channel): the same audience the push fan-out reaches,
+  //    each guest gated by their 'dispatches' EMAIL preference + the suppression guard inside
+  //    the send. Best-effort; a bad recipient never aborts the batch.
+  if (toEmail) {
+    result.emailSent = await fanOutEventEmail(args.eventId, title, body)
+  }
+
+  // 5. "Text the group" (ADR-255). Recorded on the row above. When the legal track is
   //    live (provisioned), text each consented audience member; sendSms enforces consent
   //    + SMS prefs + quiet hours PER member, so this only resolves WHO. When NOT
   //    provisioned this is a no-op log — fully fail-closed (ADR-256).
@@ -147,6 +164,62 @@ export async function composeEventDispatch(
   }
 
   return result
+}
+
+/**
+ * Email the guest list for an Event Dispatch (ADR-255 email channel). Resolves the SAME
+ * audience as the push fan-out (guests going/maybe/waitlist, unmuted, + the hosting Circle's
+ * members), then per guest: the 'dispatches' EMAIL preference gate (shouldSend), the address
+ * from the auth record, and the branded event-update template (which carries the dispatches
+ * unsubscribe link; the outbox suppression guard also holds). Returns how many were emailed.
+ * Best-effort: one bad recipient never aborts the batch.
+ */
+export async function fanOutEventEmail(
+  eventId: string,
+  title: string | null,
+  body: string,
+): Promise<number> {
+  const recipients = await resolveEventDispatchAudience(eventId)
+  if (recipients.length === 0) return 0
+
+  const admin = createAdminClient()
+  const { data: ev } = await admin
+    .from('events')
+    .select('title, slug')
+    .eq('id', eventId)
+    .maybeSingle()
+  if (!ev) return 0
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
+  const eventUrl = `${appUrl}/events/${ev.slug}`
+
+  const { data: profs } = await admin
+    .from('profiles')
+    .select('id, display_name, auth_user_id')
+    .in('id', recipients)
+  const profiles = (profs ?? []) as { id: string; display_name: string | null; auth_user_id: string | null }[]
+
+  let sent = 0
+  for (const p of profiles) {
+    try {
+      if (!p.auth_user_id) continue
+      if (!(await shouldSend(p.id, 'email', 'dispatches'))) continue
+      const { data: { user } } = await admin.auth.admin.getUserById(p.auth_user_id)
+      if (!user?.email) continue
+      await sendEventUpdateEmail({
+        to: user.email,
+        recipientName: p.display_name ?? 'there',
+        recipientProfileId: p.id,
+        eventTitle: ev.title,
+        updateTitle: title,
+        body,
+        eventUrl,
+      })
+      sent++
+    } catch {
+      // skip a bad recipient; the rest of the fan-out still goes out
+    }
+  }
+  return sent
 }
 
 /**

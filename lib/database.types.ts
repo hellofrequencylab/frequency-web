@@ -3435,6 +3435,7 @@ export type Database = {
           id: string
           title: string | null
           to_dispatch: boolean
+          to_email: boolean
           to_page: boolean
           to_sms: boolean
         }
@@ -3447,6 +3448,7 @@ export type Database = {
           id?: string
           title?: string | null
           to_dispatch?: boolean
+          to_email?: boolean
           to_page?: boolean
           to_sms?: boolean
         }
@@ -3459,6 +3461,7 @@ export type Database = {
           id?: string
           title?: string | null
           to_dispatch?: boolean
+          to_email?: boolean
           to_page?: boolean
           to_sms?: boolean
         }
