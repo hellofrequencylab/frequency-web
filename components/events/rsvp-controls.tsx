@@ -41,6 +41,7 @@ export function RsvpControls({
   requiresApproval = false,
   approvalStatus = 'none',
   allowGoing = true,
+  initialNote = '',
 }: {
   eventId: string
   /** Needed for revalidation on the depth actions; optional for the lean toggle. */
@@ -63,6 +64,9 @@ export function RsvpControls({
    *  ADR-826): the Going segment hides — buying/claiming the ticket IS "going" — while Maybe
    *  and Can't go stay answerable, and a guest can still change their answer any time. */
   allowGoing?: boolean
+  /** The viewer's already-shared RSVP note (server-loaded). Non-empty → the note box starts
+   *  COLLAPSED as "Shared with the group" instead of re-offering the composer every load. */
+  initialNote?: string
 }) {
   const [pending, startTransition] = useTransition()
   const [names, setNames] = useState<string[]>(plusOneNames)
@@ -285,7 +289,7 @@ export function RsvpControls({
       {/* An optional note the member leaves when they RSVP — it rides along as the
           body of their "RSVP'd" entry in the event conversation. Only a confirmed
           attendee posts to the feed, so the note field shows only when going. */}
-      {isGoing && <RsvpNote eventId={eventId} slug={slug} />}
+      {isGoing && <RsvpNote eventId={eventId} slug={slug} initialNote={initialNote} />}
 
       {questionnaireBlock}
     </div>
@@ -298,9 +302,18 @@ export function RsvpControls({
 // spam. Left untouched, it never fires, so a plain RSVP keeps any earlier note.
 // Once shared, the whole box COLLAPSES to the single "Shared with the group" line
 // (owner spec) with a quiet Edit to reopen it.
-function RsvpNote({ eventId, slug }: { eventId: string; slug?: string }) {
-  const [note, setNote] = useState('')
-  const [saved, setSaved] = useState(false)
+function RsvpNote({
+  eventId,
+  slug,
+  initialNote = '',
+}: {
+  eventId: string
+  slug?: string
+  /** An already-shared note (server-loaded): starts the box collapsed, and Edit prefills it. */
+  initialNote?: string
+}) {
+  const [note, setNote] = useState(initialNote)
+  const [saved, setSaved] = useState(initialNote.trim().length > 0)
   const [pending, startTransition] = useTransition()
 
   const save = () =>
