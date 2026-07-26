@@ -190,16 +190,18 @@ export function TicketButton({
                       Members
                     </span>
                   )}
-                  {t.spaceMembersOnly && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
-                      {unlocked(t) ? (
+                  {t.spaceMembersOnly &&
+                    (unlocked(t) ? (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
                         <Check className="h-2.5 w-2.5" />
-                      ) : (
+                        Member
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
                         <Lock className="h-2.5 w-2.5" />
-                      )}
-                      Included
-                    </span>
-                  )}
+                        Membership
+                      </span>
+                    ))}
                 </p>
                 {t.description && <p className="mt-0.5 text-xs text-muted">{t.description}</p>}
                 {t.spotsLeft != null && !t.soldOut && (
@@ -210,9 +212,12 @@ export function TicketButton({
                 {t.soldOut ? (
                   <span className="text-subtle">Sold out</span>
                 ) : t.spaceMembersOnly && !unlocked(t) && t.membershipPriceLabel ? (
-                  // Non-member on a members-included ticket: the price of ACCESS is the
+                  // Non-member (or signed out) on a members ticket: the price of ACCESS is the
                   // membership, so show that instead of a misleading bare "Free".
                   t.membershipPriceLabel
+                ) : t.spaceMembersOnly && unlocked(t) && t.pricingMode === 'free' ? (
+                  // A member's free members ticket costs them nothing more: it's Included.
+                  'Included'
                 ) : (
                   modeLabel(t)
                 )}
