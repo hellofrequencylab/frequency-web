@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildInteractionInsert, type RecordInteractionInput } from './interactions'
+import { buildInteractionInsert, normalizeInteractionScope, type RecordInteractionInput } from './interactions'
 
 const base: RecordInteractionInput = {
   ownerProfileId: 'owner-1',
@@ -95,5 +95,65 @@ describe('buildInteractionInsert — normalization (fail-closed)', () => {
   it('accepts the import source (import pipeline, Phase 1)', () => {
     const row = buildInteractionInsert({ ...base, source: 'import' })
     expect(row!.source).toBe('import')
+  })
+})
+
+describe('buildInteractionInsert — scope spine (ADR-827)', () => {
+  it('defaults to unscoped (paired nulls) when no scope is supplied', () => {
+    const row = buildInteractionInsert(base)
+    expect(row!.scope_kind).toBeNull()
+    expect(row!.scope_id).toBeNull()
+    expect(row!.engagement_event_id).toBeNull()
+  })
+
+  it('stamps a valid scope pair', () => {
+    const row = buildInteractionInsert({ ...base, scope: { kind: 'event', id: 'ev-1' } })
+    expect(row!.scope_kind).toBe('event')
+    expect(row!.scope_id).toBe('ev-1')
+  })
+
+  it('accepts every vocab kind', () => {
+    for (const kind of ['event', 'circle', 'hub', 'nexus', 'campaign', 'dispatch', 'booking', 'membership'] as const) {
+      const row = buildInteractionInsert({ ...base, scope: { kind, id: 'x-1' } })
+      expect(row!.scope_kind).toBe(kind)
+    }
+  })
+
+  it('FAIL-SAFE: an unknown kind or blank id drops to unscoped without rejecting the row', () => {
+    const badKind = buildInteractionInsert({ ...base, scope: { kind: 'galaxy' as never, id: 'x' } })
+    expect(badKind).not.toBeNull()
+    expect(badKind!.scope_kind).toBeNull()
+    expect(badKind!.scope_id).toBeNull()
+
+    const blankId = buildInteractionInsert({ ...base, scope: { kind: 'event', id: '   ' } })
+    expect(blankId).not.toBeNull()
+    expect(blankId!.scope_kind).toBeNull()
+    expect(blankId!.scope_id).toBeNull()
+  })
+
+  it('never writes a half-set pair (the paired-null CHECK holds)', () => {
+    for (const scope of [null, undefined, { kind: 'event' as const, id: '' }, { kind: 'nope' as never, id: 'x' }]) {
+      const row = buildInteractionInsert({ ...base, scope })
+      expect(row!.scope_kind === null).toBe(row!.scope_id === null)
+    }
+  })
+
+  it('keeps a trimmed engagement_event_id and nulls a blank one', () => {
+    const row = buildInteractionInsert({ ...base, engagementEventId: ' ee-1 ' })
+    expect(row!.engagement_event_id).toBe('ee-1')
+    const blank = buildInteractionInsert({ ...base, engagementEventId: '   ' })
+    expect(blank!.engagement_event_id).toBeNull()
+  })
+})
+
+describe('normalizeInteractionScope', () => {
+  it('passes a valid ref through trimmed', () => {
+    expect(normalizeInteractionScope({ kind: 'circle', id: ' c-1 ' })).toEqual({ kind: 'circle', id: 'c-1' })
+  })
+  it('returns null for null/undefined/unknown kind/blank id', () => {
+    expect(normalizeInteractionScope(null)).toBeNull()
+    expect(normalizeInteractionScope(undefined)).toBeNull()
+    expect(normalizeInteractionScope({ kind: 'space' as never, id: 'x' })).toBeNull()
+    expect(normalizeInteractionScope({ kind: 'event', id: '' })).toBeNull()
   })
 })

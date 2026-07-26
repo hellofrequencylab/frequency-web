@@ -488,6 +488,9 @@ async function deliverSpaceCampaign(
                 source: 'engagement',
                 metadata: { provider: 'resend', resend_id: id, campaign_id: input.campaignId ?? null },
                 idempotencyKey: input.campaignId ? `campaign:${input.campaignId}:${rec.contactId}` : null,
+                // Scope spine (ADR-827): first-class campaign scope, dual-written next to the
+                // legacy metadata.campaign_id convention.
+                scope: input.campaignId ? { kind: 'campaign', id: input.campaignId } : null,
               },
               spaceId,
             )

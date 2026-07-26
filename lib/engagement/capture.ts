@@ -55,7 +55,7 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
 
   // 2) Ledger, exactly-once. (Verifier already enforced once-per-user via the
   //    captures table; this is the second guard against retries.)
-  const { recorded } = await recordEngagementEvent({
+  const { recorded, id: engagementEventId } = await recordEngagementEvent({
     idempotencyKey: `node:${attempt.nodeId}:${attempt.actorProfileId}`,
     source,
     eventType: 'node_capture',
@@ -92,6 +92,10 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
         summary: 'Checked in',
         idempotencyKey: `checkin:${attempt.nodeId}:${attempt.actorProfileId}`,
         metadata: { kind: 'event_checkin', nodeId: attempt.nodeId },
+        // ADR-827: hard-link the touch to the ledger row that triggered it (the site event The
+        // Path names). No scope: a check-in node id has no scope-vocabulary lane; the space_id
+        // tenancy stamp above already places it.
+        engagementEventId,
       })
     } catch {
       /* best-effort: a timeline write never breaks the capture */

@@ -32,6 +32,35 @@ const DIRECTIONS: readonly InteractionDirection[] = ['inbound', 'outbound', 'int
 const SUBJECT_KINDS: readonly InteractionSubjectKind[] = ['contact', 'network_contact', 'profile']
 const SOURCES: readonly InteractionSource[] = ['manual', 'engagement', 'resend', 'twilio', 'crm_activity', 'ai', 'playbook', 'system', 'import']
 
+// ── The scope spine (ADR-827 ruling 1, migration 20261226000000) ─────────────────────────────────
+// A touch's LANE: the event/circle/hub/nexus/campaign/dispatch/booking/membership it belongs to.
+// Scope NARROWS WITHIN the space_id tenancy lane, never replaces it. Kept in lock-step with the
+// CHECK constraints; callers keep dual-writing the legacy metadata convention (metadata.kind +
+// event_id/campaign_id/bookingId/tierId) until the read side migrates.
+export type InteractionScopeKind =
+  | 'event' | 'circle' | 'hub' | 'nexus' | 'campaign' | 'dispatch' | 'booking' | 'membership'
+
+/** A first-class scope reference: WHICH lane entity a touch (or conversation) belongs to. */
+export interface InteractionScopeRef {
+  kind: InteractionScopeKind
+  id: string
+}
+
+const SCOPE_KINDS: readonly InteractionScopeKind[] =
+  ['event', 'circle', 'hub', 'nexus', 'campaign', 'dispatch', 'booking', 'membership']
+
+/** Normalize a caller-supplied scope, FAIL-SAFE: an unknown kind or blank id yields null (the row
+ *  still writes, unscoped) — recording a touch must never break the caller's hot path. Exported for
+ *  the conversation mirror (lib/comms/conversations.ts), which runs the same normalization. */
+export function normalizeInteractionScope(
+  scope: InteractionScopeRef | null | undefined,
+): InteractionScopeRef | null {
+  if (!scope) return null
+  if (!SCOPE_KINDS.includes(scope.kind)) return null
+  const id = typeof scope.id === 'string' ? scope.id.trim() : ''
+  return id ? { kind: scope.kind, id } : null
+}
+
 // Generous caps so a hostile/automated write can never store an unbounded blob.
 const MAX_SUMMARY_LEN = 280
 const MAX_BODY_LEN = 20_000
@@ -52,6 +81,11 @@ export interface RecordInteractionInput {
   occurredAt?: string | null
   /** Exactly-once key for folded events (an email open delivered twice). Omit for ad-hoc rows. */
   idempotencyKey?: string | null
+  /** The lane this touch belongs to (ADR-827 scope spine). Callers with a known scope pass it AND
+   *  keep the legacy metadata convention (dual-write) until the read side migrates. */
+  scope?: InteractionScopeRef | null
+  /** The engagement_events ledger row that triggered this touch (the site event The Path names). */
+  engagementEventId?: string | null
 }
 
 /** One timeline row as the app consumes it (camelCase). */
@@ -85,6 +119,9 @@ export interface InteractionInsert {
   metadata: Record<string, unknown>
   source: InteractionSource
   occurred_at: string
+  scope_kind: InteractionScopeKind | null
+  scope_id: string | null
+  engagement_event_id: string | null
 }
 
 function oneLine(raw: unknown, cap: number): string | null {
@@ -139,6 +176,14 @@ export function buildInteractionInsert(
       ? input.idempotencyKey.trim()
       : null
 
+  // Scope spine (ADR-827): fail-safe — a bad scope drops to unscoped, never rejects the row (the
+  // paired-null CHECK is satisfied either way: both set or both null).
+  const scope = normalizeInteractionScope(input.scope)
+  const engagementEventId =
+    typeof input.engagementEventId === 'string' && input.engagementEventId.trim().length
+      ? input.engagementEventId.trim()
+      : null
+
   return {
     idempotency_key: idempotencyKey,
     owner_profile_id: ownerProfileId,
@@ -152,6 +197,9 @@ export function buildInteractionInsert(
     metadata,
     source,
     occurred_at: occurredAt,
+    scope_kind: scope?.kind ?? null,
+    scope_id: scope?.id ?? null,
+    engagement_event_id: engagementEventId,
   }
 }
 
@@ -326,6 +374,11 @@ export async function recordSpaceMemberActivity(input: {
   idempotencyKey: string
   direction?: InteractionDirection
   metadata?: Record<string, unknown>
+  /** The lane this activity belongs to (ADR-827 scope spine) — dual-written next to the legacy
+   *  metadata convention the caller keeps. */
+  scope?: InteractionScopeRef | null
+  /** The engagement_events ledger row that triggered this activity, when the caller has it. */
+  engagementEventId?: string | null
 }): Promise<void> {
   if (!input.spaceId || !input.spaceOwnerProfileId || !input.memberProfileId) return
   try {
@@ -340,6 +393,8 @@ export async function recordSpaceMemberActivity(input: {
         source: 'engagement',
         idempotencyKey: input.idempotencyKey,
         metadata: input.metadata ?? null,
+        scope: input.scope ?? null,
+        engagementEventId: input.engagementEventId ?? null,
       },
       input.spaceId,
     )

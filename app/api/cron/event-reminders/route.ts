@@ -279,6 +279,9 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
             summary: smsBody,
             source: 'engagement',
             metadata: { kind: 'event_reminder', event_id: ev.id, lead },
+            // Scope spine (ADR-827): first-class event scope, dual-written next to the legacy
+            // metadata.kind + event_id convention.
+            scope: { kind: 'event', id: ev.id },
           })
         }
       } catch (e) {

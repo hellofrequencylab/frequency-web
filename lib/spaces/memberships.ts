@@ -594,6 +594,9 @@ export async function joinTier(
       tierId,
       tierName: tier.name,
     },
+    // Scope spine (ADR-827): first-class membership scope (the tier), dual-written next to the
+    // legacy metadata.kind + tierId convention.
+    scope: { kind: 'membership', id: tierId },
   })
   return ok({ waitlisted })
 }
@@ -664,6 +667,8 @@ export async function promoteMembership(membershipId: string): Promise<ActionRes
     summary: `Joined membership: ${tier?.name ?? 'Member'} (from the waitlist)`,
     idempotencyKey: `member_promote:${membershipId}`,
     metadata: { kind: 'membership_promote', tierId: row.tier_id },
+    // Scope spine (ADR-827): first-class membership scope (the tier), dual-written.
+    scope: row.tier_id ? { kind: 'membership', id: row.tier_id } : null,
   })
   return ok()
 }
@@ -719,6 +724,8 @@ export async function cancelMembership(membershipId: string): Promise<ActionResu
       summary: 'Cancelled their membership',
       idempotencyKey: `member_cancel:${membershipId}`,
       metadata: { kind: 'membership_cancel', tierId: row.tier_id },
+      // Scope spine (ADR-827): first-class membership scope (the tier), dual-written.
+      scope: row.tier_id ? { kind: 'membership', id: row.tier_id } : null,
     })
   }
   return ok()

@@ -20,6 +20,7 @@ import {
   newConversationMessageId,
   type AppendMessageInput,
 } from '@/lib/comms/conversations'
+import type { InteractionScopeRef } from '@/lib/crm/interactions'
 import { buildConversationReplyAddress } from '@/lib/comms/reply-address'
 import { renderReplyEmail } from '@/lib/comms/email-template'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
@@ -60,6 +61,10 @@ export interface StartConversationMessageInput {
    *  wraps the plain body. Pass the compiled document WITHOUT double-wrapping chrome. */
   bodyHtml?: string | null
   metadata?: Record<string, unknown>
+  /** The lane this compose belongs to (ADR-827 scope spine). Rides the conversation's thread key
+   *  (a scoped compose opens/reuses a thread IN that scope) and stamps the timeline mirror. Callers
+   *  with a scope keep the legacy metadata convention too (dual-write). */
+  scope?: InteractionScopeRef | null
 }
 
 export interface StartConversationMessageResult {
@@ -86,6 +91,8 @@ export async function startConversationMessage(
     contactId: input.contactId,
     memberProfileId: input.profileId,
     spaceId: input.spaceId ?? null,
+    scopeKind: input.scope?.kind ?? null,
+    scopeId: input.scope?.id ?? null,
     metadata: input.metadata ?? { source: 'compose' },
   })
   if (!conv) return null
@@ -96,6 +103,7 @@ export async function startConversationMessage(
     subjectId: (input.profileId ?? input.contactId)!,
     spaceId: input.spaceId ?? null,
     subject,
+    scope: input.scope ?? null,
   }
 
   // The shared render: the studio-compiled document when the caller composed one, else the plain

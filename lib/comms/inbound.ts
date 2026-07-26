@@ -30,6 +30,7 @@ import {
   reopenConversationIfClosed,
   updateConversationFields,
   newConversationMessageId,
+  conversationScopeRef,
   type ConversationRow,
 } from '@/lib/comms/conversations'
 
@@ -407,6 +408,8 @@ export async function routeInboundReply(parsed: ParsedInboundMessage): Promise<I
             }
           : null,
       // Mirror to the CRM person-timeline only when we have an owner + a subject to hang it on.
+      // An inbound reply INHERITS the thread's scope (ADR-827): the touch lands in the same lane
+      // the conversation lives in.
       mirror:
         conv.ownerProfileId && subjectId
           ? {
@@ -415,6 +418,7 @@ export async function routeInboundReply(parsed: ParsedInboundMessage): Promise<I
               subjectId,
               spaceId: conv.spaceId,
               subject: conv.subject,
+              scope: conversationScopeRef(conv),
             }
           : null,
     })
@@ -539,6 +543,8 @@ async function routeHouseReplyOutbound(conv: ConversationRow, parsed: ParsedInbo
             subjectId: (conv.memberProfileId ?? conv.contactId)!,
             spaceId: conv.spaceId,
             subject: conv.subject,
+            // A bridged house reply inherits the thread's scope too (ADR-827).
+            scope: conversationScopeRef(conv),
           }
         : null,
   })

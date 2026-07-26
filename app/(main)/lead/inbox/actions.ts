@@ -20,6 +20,7 @@ import {
   updateConversationFields,
   recordAssignment,
   newConversationMessageId,
+  conversationScopeRef,
   type ConversationRow,
   type AppendMessageInput,
 } from '@/lib/comms/conversations'
@@ -112,6 +113,8 @@ export async function sendLeaderReply(input: {
           subjectId: (conv.memberProfileId ?? conv.contactId)!,
           spaceId: conv.spaceId,
           subject,
+          // A reply inherits the thread's lane (ADR-827 scope spine).
+          scope: conversationScopeRef(conv),
         }
       : null
 
