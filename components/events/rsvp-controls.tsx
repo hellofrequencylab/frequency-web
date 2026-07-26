@@ -42,6 +42,7 @@ export function RsvpControls({
   approvalStatus = 'none',
   allowGoing = true,
   initialNote = '',
+  onGoingIntercept = null,
 }: {
   eventId: string
   /** Needed for revalidation on the depth actions; optional for the lean toggle. */
@@ -67,6 +68,10 @@ export function RsvpControls({
   /** The viewer's already-shared RSVP note (server-loaded). Non-empty → the note box starts
    *  COLLAPSED as "Shared with the group" instead of re-offering the composer every load. */
   initialNote?: string
+  /** RSVP + payment flow (ADR-826): when set and the viewer is not already going, tapping
+   *  Going calls this instead of recording — the parent slides its payment phase open and
+   *  records the RSVP as part of completing it. Maybe / Can't go record normally. */
+  onGoingIntercept?: (() => void) | null
 }) {
   const [pending, startTransition] = useTransition()
   const [names, setNames] = useState<string[]>(plusOneNames)
@@ -143,8 +148,15 @@ export function RsvpControls({
         : 'Going'
   const GoingIcon = isWaitlisted || goingIsWaitlist ? Clock : Check
 
-  // Tapping the active segment again steps back out (toggle off) to 'not_going'.
-  const onGoing = () => go(isGoing || isWaitlisted ? 'not_going' : 'going')
+  // Tapping the active segment again steps back out (toggle off) to 'not_going'. With an
+  // intercept installed, a FRESH Going hands off to the parent's payment phase instead.
+  const onGoing = () => {
+    if (onGoingIntercept && !isGoing && !isWaitlisted) {
+      onGoingIntercept()
+      return
+    }
+    go(isGoing || isWaitlisted ? 'not_going' : 'going')
+  }
   const onMaybe = () => go(isMaybe ? 'not_going' : 'maybe')
   // Can't go is an explicit decline; tapping it just records 'not_going' (idempotent).
   const onCantGo = () => go('not_going')
