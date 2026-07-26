@@ -1,5 +1,6 @@
 import { BadgeCheck, Users } from 'lucide-react'
 import { listMembershipTiers, getMyMembership } from '@/lib/spaces/memberships'
+import { listMembershipIncludedEvents, includedEventCoversTier } from '@/lib/events/membership-included'
 import { billingLive } from '@/lib/pricing/settings'
 import { viewerManagesSpace } from '@/lib/spaces/operator'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -27,12 +28,15 @@ export async function MembershipJoin({
   slug: string
   ownerProfileId: string | null
 }) {
-  const [tiers, mine, billingOn] = await Promise.all([
+  const [tiers, mine, billingOn, includedEvents] = await Promise.all([
     listMembershipTiers(spaceId),
     getMyMembership(spaceId),
     // When billing is live, a PAID tier joins through Stripe Checkout; while OFF this is false and
     // the join card keeps the EXACT display-only behavior (joinTier records a membership, no charge).
     billingLive(),
+    // Members-only event tickets this Space configured (ADR-823): each card advertises the
+    // upcoming events its tier's members get a ticket to, automatically.
+    listMembershipIncludedEvents(spaceId),
   ])
 
   // Already a member: show the current tier + a Cancel, never the join cards.
@@ -95,7 +99,15 @@ export async function MembershipJoin({
       </p>
       <div className="grid gap-4 @lg:grid-cols-2">
         {tiers.map((tier) => (
-          <MembershipJoinCard key={tier.id} spaceId={spaceId} tier={tier} billingOn={billingOn} />
+          <MembershipJoinCard
+            key={tier.id}
+            spaceId={spaceId}
+            tier={tier}
+            billingOn={billingOn}
+            includedEvents={includedEvents
+              .filter((e) => includedEventCoversTier(e, tier.id))
+              .map((e) => ({ slug: e.slug, title: e.title }))}
+          />
         ))}
       </div>
     </div>

@@ -607,6 +607,7 @@ export default async function EventDetailPage({
       soldOut: spotsLeft != null && spotsLeft <= 0,
       memberOnly: t.member_only,
       spaceMembersOnly: t.space_members_only || t.space_tier_id != null,
+      spaceTierId: t.space_tier_id,
     }
   })
   const hasTiers = tiers.length > 0
@@ -616,6 +617,7 @@ export default async function EventDetailPage({
   // pointer instead of a surprise refusal at checkout (the server gate stays authoritative).
   // space_memberships isn't in the generated types yet (ADR-246) — narrow untyped read.
   let viewerIsSpaceMember = false
+  let viewerSpaceTierId: string | null = null
   if (tiers.some((t) => t.spaceMembersOnly) && eventSpaceId && myProfileId) {
     const mdb = admin as unknown as {
       from: (t: string) => {
@@ -623,7 +625,7 @@ export default async function EventDetailPage({
           eq: (col: string, val: string) => {
             eq: (col: string, val: string) => {
               eq: (col: string, val: string) => {
-                maybeSingle: () => Promise<{ data: { id: string } | null }>
+                maybeSingle: () => Promise<{ data: { tier_id: string } | null }>
               }
             }
           }
@@ -632,12 +634,13 @@ export default async function EventDetailPage({
     }
     const { data: myMembership } = await mdb
       .from('space_memberships')
-      .select('id')
+      .select('tier_id')
       .eq('space_id', eventSpaceId)
       .eq('member_profile_id', myProfileId)
       .eq('status', 'active')
       .maybeSingle()
     viewerIsSpaceMember = !!myMembership
+    viewerSpaceTierId = myMembership?.tier_id ?? null
   }
 
   const flatPriceCents = event.price_cents ?? 0
@@ -1023,6 +1026,8 @@ export default async function EventDetailPage({
                     spaceHost ? { name: spaceHost.name, slug: spaceHost.slug } : null
                   }
                   viewerIsSpaceMember={viewerIsSpaceMember}
+                  viewerSpaceTierId={viewerSpaceTierId}
+                  eventSlug={event.slug}
                 />
               ) : canManage ? (
                 /* PAYMENTS PREVIEW (manager-only): payouts aren't connected, so checkout is off —
@@ -1040,6 +1045,8 @@ export default async function EventDetailPage({
                       spaceHost ? { name: spaceHost.name, slug: spaceHost.slug } : null
                     }
                     viewerIsSpaceMember={viewerIsSpaceMember}
+                    viewerSpaceTierId={viewerSpaceTierId}
+                    eventSlug={event.slug}
                     previewMode
                   />
                   <p className="text-xs text-subtle">
