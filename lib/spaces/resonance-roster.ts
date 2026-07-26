@@ -1,9 +1,7 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { summariesFromRows } from '@/app/(main)/admin/crm/member-summaries'
 import { completenessScore, isRealName } from '@/lib/crm/completeness'
-import type { MemberListRow } from '@/lib/dashboard/scores'
-import type { ResonanceTier } from '@/lib/traits/compute'
+import { rosterFromProfileIds } from '@/lib/people/roster-from-ids'
 import type { MemberSummary } from '@/components/people/member-viewer'
 
 // THE SPACE RESONANCE ROSTER (Community Resonance = the space CRM). The admin Resonance CRM roster reads
@@ -13,17 +11,14 @@ import type { MemberSummary } from '@/components/people/member-viewer'
 // the member-viewer renders — so "all contacts and members appear here", newest first. Service-role reads
 // behind the caller's space-manage gate (the callers gate first). FAIL-SAFE: any read degrades to [].
 //
+// The ids -> scores -> summaries pipeline itself is the scope-neutral lib/people/roster-from-ids
+// (CRM Everywhere plan 1.4), shared with the event/circle rosters; this module owns only the SPACE
+// walk (who is in the set) and the space-specific contact/lead rows.
+//
 // Dedupe: a contact stitched to a member (contacts.profile_id in the member set) is dropped so a person
 // never appears twice. A pure lead (profile_id null, or not a member) is kept as a `contact:<id>` row.
 
 const CONTACT_ID_PREFIX = 'contact:'
-
-// Neutral defaults for a member with NO score row yet, matching the codebase's synthetic-row convention
-// (lib/dashboard/scores listMembersByFilter): not flagged as needs-help, not buried.
-const UNSCORED_HEALTH = 60
-const UNSCORED_TIER: ResonanceTier = 'cooling'
-const UNSCORED_LIFECYCLE = 'new'
-const TIER_VALUES: readonly string[] = ['resonant', 'cooling', 'at_risk']
 
 // A permissive chainable query type for the untyped admin handle (space_members / contacts aren't in the
 // generated types — ADR-246). Every builder method returns the same chainable, which is itself awaitable to
@@ -69,52 +64,11 @@ export async function listActiveSpaceMemberIds(spaceId: string): Promise<string[
   return [...ids]
 }
 
-/** Batch-read each member's platform resonance scores (health/tier/lifecycle) for a set of profile ids.
- *  One read for the whole roster (no N+1). Missing rows simply aren't in the map. FAIL-SAFE to empty. */
-async function scoresByProfileId(
-  profileIds: string[],
-): Promise<Map<string, { health: number | null; tier: string | null; lifecycle: string | null }>> {
-  const map = new Map<string, { health: number | null; tier: string | null; lifecycle: string | null }>()
-  if (profileIds.length === 0) return map
-  try {
-    const { data } = await db()
-      .from('member_engagement_scores')
-      .select('profile_id, resonance_health, resonance_tier, lifecycle_stage')
-      .in('profile_id', profileIds)
-    for (const r of data ?? []) {
-      const pid = r.profile_id
-      if (typeof pid !== 'string') continue
-      map.set(pid, {
-        health: typeof r.resonance_health === 'number' ? r.resonance_health : null,
-        tier: typeof r.resonance_tier === 'string' ? r.resonance_tier : null,
-        lifecycle: typeof r.lifecycle_stage === 'string' ? r.lifecycle_stage : null,
-      })
-    }
-  } catch {
-    /* fall through */
-  }
-  return map
-}
-
 /** ALL active members of a space as MemberSummary[] — scored where a score row exists, neutral defaults
- *  where not — via the shared roster mapper, so it reads identically to the admin Resonance CRM. */
+ *  where not — via the shared scope-neutral pipeline, so it reads identically to the admin Resonance CRM. */
 export async function loadSpaceResonanceMembers(spaceId: string): Promise<MemberSummary[]> {
   const profileIds = await listActiveSpaceMemberIds(spaceId)
-  if (profileIds.length === 0) return []
-  const scores = await scoresByProfileId(profileIds)
-  const rows: MemberListRow[] = profileIds.map((profileId) => {
-    const s = scores.get(profileId)
-    const tier = s?.tier && TIER_VALUES.includes(s.tier) ? (s.tier as ResonanceTier) : UNSCORED_TIER
-    return {
-      contactId: null,
-      profileId,
-      name: '',
-      resonanceHealth: typeof s?.health === 'number' ? s.health : UNSCORED_HEALTH,
-      resonanceTier: tier,
-      lifecycleStage: s?.lifecycle ?? UNSCORED_LIFECYCLE,
-    }
-  })
-  return summariesFromRows(rows)
+  return rosterFromProfileIds(profileIds)
 }
 
 /** The space's imported CONTACTS/leads as MemberSummary rows, id-prefixed `contact:` so they never collide

@@ -69,6 +69,7 @@ export function MemberViewer({
   onQueryChange,
   emptyState,
   messageScope,
+  messaging,
 }: MemberViewerProps) {
   const options = useMemo(() => sortOptions ?? [], [sortOptions])
 
@@ -273,6 +274,7 @@ export function MemberViewer({
         key={(detail as CrmMemberDetail).profileId}
         detail={detail as CrmMemberDetail}
         messageScope={messageScope}
+        messaging={messaging}
       />
     ) : (
       <MemberDetailCard detail={detail} mode={detailMode} />

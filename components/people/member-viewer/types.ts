@@ -84,6 +84,21 @@ export interface CrmMemberDetail extends MemberDetail {
  *  `list` = compact rows. Default `list`. */
 export type ListView = 'list' | 'card'
 
+/** How the CRM pane's messaging affordance behaves (CRM Everywhere plan 1.5) — ONE prop for every
+ *  mount instead of a per-surface fork:
+ *  - `platform` — the unchanged platform admin composer popup (the default when nothing is given).
+ *  - `space`    — the Space-scoped composer popup (Space email path, Space contacts only); the
+ *                 typed twin of the legacy `messageScope` prop.
+ *  - `dm`       — a leader surface (event / circle / hub / nexus): the big Message button calls the
+ *                 host-bound server action (e.g. open a scoped DM thread) instead of the email
+ *                 composer, so NO email on file is required. `label` defaults to "Message".
+ *  - `none`     — contact links only; no messaging affordance at all. */
+export type MemberMessaging =
+  | { kind: 'platform' }
+  | { kind: 'space'; spaceId: string; slug: string }
+  | { kind: 'dm'; open: (profileId: string) => Promise<void>; label?: string }
+  | { kind: 'none' }
+
 /** The block's full prop surface. All optional but `members`; a host wires only what it needs. */
 export interface MemberViewerProps {
   members: MemberSummary[]
@@ -123,6 +138,11 @@ export interface MemberViewerProps {
   emptyState?: React.ReactNode
   /** Re-scope the CRM pane's "Message Member" composer to a Space (detailVariant `crm` only). When set, the
    *  composer sends via the SPACE email path and searches only that Space's contacts, with no crossover to
-   *  the platform CRM. Omit (default) = the unchanged platform composer. */
+   *  the platform CRM. Omit (default) = the unchanged platform composer. Superseded by `messaging`
+   *  (kind `space`), kept working for existing hosts; `messaging` wins when both are given. */
   messageScope?: { spaceId: string; slug: string }
+  /** The CRM pane's messaging affordance (detailVariant `crm` only): platform / space composer popup,
+   *  a leader `dm` button bound to a server action, or `none`. Omit = `messageScope` mapped to kind
+   *  `space` when set, else the platform default. */
+  messaging?: MemberMessaging
 }

@@ -14,6 +14,7 @@ export type {
   CrmScores,
   CrmEngagement,
   ListView,
+  MemberMessaging,
   Facet,
   MemberSummary,
   MemberDetail,
