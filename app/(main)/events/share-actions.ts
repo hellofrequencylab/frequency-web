@@ -25,12 +25,22 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { spaceCanHostCollaborators } from '@/lib/spaces/function-access'
 import { listAcceptedCollaborations } from '@/lib/spaces/collaborations'
 
-// Upgrade lines for the event↔space collaboration funnel gate (ADR-810). Plain voice, no em dash. The
-// space using the cross-space surface (the event's home venue, or the space featuring someone's event)
-// needs a paid Business/Non Profit plan; a member's personal event lives on the platform space and is
-// not a business venue, so it cannot bring on collaborators until it runs under a Business space.
-const EVENT_HOST_NEEDS_BUSINESS = 'Co-hosting an event with another space is a Business feature. Run this event under a Business space to invite collaborators.'
-const FEATURE_NEEDS_BUSINESS = 'Featuring another space’s event is a Business feature. Upgrade this space to Business to feature events.'
+// COLLABORATOR HOSTING — the Collective-plan gate on the HOST side (ADR-835, superseding the ADR-810
+// Business framing here). Hosting an event WITH Collaborators is a capability of the event's HOME
+// SPACE (feature key `space_collaborators`, Collective floor, via spaceCanHostCollaborators); BEING a
+// Collaborator on someone else's event is free for any Business / Non Profit Space. A member-hosted
+// (platform) event has no host Space, so it can never take on Collaborators at all — a person's event
+// has Cohosts. Plain voice, no em dash. While billing is OFF (open beta) spaceCanHostCollaborators
+// grants, so nothing hard-blocks before go-live; the pricing surfaces preview the Collective badge
+// meanwhile (ADR-782).
+const HOSTING_NEEDS_COLLECTIVE =
+  'Collaborator hosting comes with the Collective plan. Upgrade the event’s home Space to bring Collaborators on.'
+const HOST_SPACE_NEEDS_COLLECTIVE =
+  'Collaborator hosting comes with the Collective plan. The event’s host Space needs it before this event can take on Collaborators.'
+const MEMBER_HOSTED_NO_COLLABORATORS =
+  'A member-hosted event can have Cohosts, not Collaborators. Run this event under a Space to bring Collaborators on.'
+const MEMBER_HOSTED_NO_COLLABORATORS_FEATURE =
+  'This event is hosted by a member, not a Space, so it cannot take on Collaborators.'
 import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
 import {
   loadShare,
@@ -40,6 +50,7 @@ import {
   approverSideForShare,
   shouldAutoAcceptShare,
   shareWriteFailureMessage,
+  collaboratorSpaceGateError,
   describeMissingShareTarget,
   type ShareRow,
   type EventShareView,
@@ -204,8 +215,18 @@ export async function requestEventShare(
   if (!target) return fail(await describeMissingShareTarget(spaceId))
   if (target.status !== 'active') return fail('That space is not active.')
 
+  // COLLABORATOR GATE (ADR-835): only a real Business / Non Profit Space can be a Collaborator. The
+  // distinction from a person is STRUCTURAL (this id resolved to a spaces row, not a profile) — an
+  // owner-named Space is a valid target. The picker filters the same way; this is the authority.
+  const gateError = collaboratorSpaceGateError(target)
+  if (gateError) return fail(gateError)
+
+  // STRUCTURAL RULE (ADR-835): only an event with a HOME SPACE can take on Collaborators. A
+  // member-hosted (platform) event has no host Space to do the Collaborator hosting, so it can only
+  // have Cohosts. This is structure, not a plan gate, so it holds during the beta too.
   const homeSpaceId = await eventHomeSpaceId(eventId)
-  if (homeSpaceId && homeSpaceId === spaceId) return fail('This event already lives in that space.')
+  if (!homeSpaceId) return fail(MEMBER_HOSTED_NO_COLLABORATORS)
+  if (homeSpaceId === spaceId) return fail('This event already lives in that space.')
 
   // Already on file for this pair: say where it stands instead of failing generically. (A concurrent
   // double-submit that races past this read still lands on the 23505 idempotent-success path below.)
@@ -218,12 +239,11 @@ export async function requestEventShare(
     return fail(`You already invited ${target.name}. A steward there still needs to approve it.`)
   }
 
-  // FUNNEL GATE (ADR-810): the event's HOME space (the venue) must be on a paid Business/Non Profit plan
-  // to bring another space onto the event. A member's personal event lives on the platform space, which
-  // is not a business venue, so it is gated (run the event under a Business space to unlock co-hosting).
-  // While billing is OFF this grants (today's free behavior).
-  if (homeSpaceId && !(await spaceCanHostCollaborators(await getSpaceById(homeSpaceId)))) {
-    return fail(EVENT_HOST_NEEDS_BUSINESS)
+  // COLLECTIVE GATE (ADR-835): inviting a Collaborator is Collaborator hosting, a capability of the
+  // event's HOME space's plan (feature `space_collaborators`, Collective floor). Beta-soft: while
+  // billing is OFF this grants (today's free behavior); the badge previews the post-launch model.
+  if (!(await spaceCanHostCollaborators(await getSpaceById(homeSpaceId)))) {
+    return fail(HOSTING_NEEDS_COLLECTIVE)
   }
 
   // Auto-accept: the host also stewards the target, or the two spaces already collaborate.
@@ -264,12 +284,26 @@ export async function requestFeatureEvent(spaceId: string, eventId: string): Pro
 
   const target = await getSpaceById(spaceId)
   if (!target) return fail('That space could not be found.')
-  // FUNNEL GATE (ADR-810): the featuring space is using the cross-space surface, so it needs a paid
-  // Business/Non Profit plan. While billing is OFF this grants (today's free behavior).
-  if (!(await spaceCanHostCollaborators(target))) return fail(FEATURE_NEEDS_BUSINESS)
+  // COLLABORATOR GATE (ADR-835): same structural rule as the invite side — any real Business / Non
+  // Profit Space may BE a Collaborator (that side is free on every plan; the featuring space is the
+  // guest here, not the host, so no plan gate applies to it).
+  const gateError = collaboratorSpaceGateError(target)
+  if (gateError) return fail(gateError)
 
+  // STRUCTURAL RULE (ADR-835): a member-hosted (platform) event has no host Space to take on
+  // Collaborators, so a feature request can never target it. Holds during the beta too.
   const homeSpaceId = await eventHomeSpaceId(eventId)
-  if (homeSpaceId && homeSpaceId === spaceId) return fail('This event already lives in your space.')
+  if (!homeSpaceId) return fail(MEMBER_HOSTED_NO_COLLABORATORS_FEATURE)
+  if (homeSpaceId === spaceId) return fail('This event already lives in your space.')
+
+  // COLLECTIVE GATE (ADR-835): taking on a Collaborator is Collaborator hosting, a capability of the
+  // EVENT HOST side's plan (feature `space_collaborators`, Collective floor) — checked here so a
+  // request the host could never accept fails fast instead of sitting pending (mirrors
+  // collaborations-actions.ts, which gates the host side at request time too). Beta-soft: while
+  // billing is OFF this grants (today's free behavior).
+  if (!(await spaceCanHostCollaborators(await getSpaceById(homeSpaceId)))) {
+    return fail(HOST_SPACE_NEEDS_COLLECTIVE)
+  }
 
   const admin = createAdminClient()
   const { title, slug } = await eventTitleSlug(admin, eventId)
@@ -337,6 +371,21 @@ async function respondToShare(shareId: string, next: 'accepted' | 'declined'): P
   if (!row) return fail('That request could not be found.')
   if (row.status !== 'pending') return fail('That request has already been handled.')
   if (!(await viewerApprovesShare(row, profileId))) return fail('You cannot respond to this request.')
+
+  // COLLECTIVE GATE (ADR-835): ACCEPTING brings a Collaborator onto the event, which is Collaborator
+  // hosting by the event's HOME space (feature `space_collaborators`, Collective floor) — so every
+  // accept re-checks the host side's plan, whichever side approves (a host accepting a feature
+  // request, or a target steward accepting an invite after the host's plan lapsed). Declining is
+  // never gated. Mirrors collaborations-actions.ts respondToCollaboration. Beta-soft: while billing
+  // is OFF spaceCanHostCollaborators grants, so this never blocks before go-live.
+  if (next === 'accepted') {
+    const homeSpaceId = await eventHomeSpaceId(row.event_id)
+    if (!homeSpaceId) return fail(MEMBER_HOSTED_NO_COLLABORATORS_FEATURE)
+    if (!(await spaceCanHostCollaborators(await getSpaceById(homeSpaceId)))) {
+      const side = approverSideForShare(row, homeSpaceId)
+      return fail(side === 'event-host' ? HOSTING_NEEDS_COLLECTIVE : HOST_SPACE_NEEDS_COLLECTIVE)
+    }
+  }
 
   // Guard the status in the WHERE too: the row updates only if STILL pending (atomic transition).
   const { error } = await sharesTable()

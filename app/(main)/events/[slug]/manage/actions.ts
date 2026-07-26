@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { isEventCohost } from '@/lib/events/cohosts'
+import { loadEventCrmAccess } from '@/lib/events/crm-access'
 import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
 import {
   createQuestion,
@@ -144,6 +145,12 @@ export async function approveEventRsvpFromManage(
 export async function openFollowUpDm(eventId: string, memberProfileId: string) {
   const hostProfileId = await authorizeManager(eventId)
   if (!hostProfileId || hostProfileId === memberProfileId) return
+
+  // The access-tier seam (ADR-836): a personal-tier viewer's DM paths lock once the event
+  // ends (re-invite only). Mirrors the Message Attendees action; the section hides the
+  // button in the same state, so this server check is the backstop.
+  const access = await loadEventCrmAccess(eventId)
+  if (!access.canMessage) return
 
   const admin = createAdminClient()
   const conversationId = await findOrCreateDirectConversation(

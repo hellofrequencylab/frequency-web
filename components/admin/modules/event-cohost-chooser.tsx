@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { UserPlus, Check } from 'lucide-react'
 import { inviteCohost } from '@/app/(main)/events/[slug]/social-actions'
 import { isError } from '@/lib/action-result'
@@ -10,11 +11,17 @@ import { getInitials } from '@/lib/utils'
 
 type HandleHit = { id: string; handle: string; display_name: string; avatar_url: string | null }
 
-// The Event Admin cohost chooser — invite a co-host straight from the editor rail. Reuses the same
-// handle-search + inviteCohost path as the public CohostManager's Add control (the /api/search-handles
-// typeahead → the invite server action), so an invite from here is identical to one sent from the
-// event page. Results render IN FLOW (not an absolute dropdown): the admin rail's `@container`
-// wrapper sets container-type, which clips a `top-full` overlay (see cohost-manager / placement).
+// PERSONAL COHOSTS (relation A, ADR-834) — invite a MEMBER to help host, straight from the editor
+// rail. A cohost gets management access on the event (isEventCohost in the action gates) and a quiet
+// avatar credit on the event page. The OTHER relation is COLLABORATORS (relation B, the
+// EventShareField below): a Business / Non Profit SPACE co-hosting the event on its calendar, with a
+// featured credit and NO management access. Keep the two legible.
+//
+// Reuses the same handle-search + inviteCohost path as the public CohostManager's Add control (the
+// /api/search-handles typeahead → the invite server action), so an invite from here is identical to
+// one sent from the event page. Results render IN FLOW (not an absolute dropdown): the admin rail's
+// `@container` wrapper sets container-type, which clips a `top-full` overlay (see cohost-manager /
+// placement).
 //
 // This is invite-only by design: the accepted/pending cohost list and removal already live on the
 // public event page's Cohosts box. Here the host just needs a fast "add someone" from the editor.
@@ -86,6 +93,16 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
         </p>
       )}
       {error && <p className="text-xs text-danger">{error}</p>}
+
+      {/* The one quiet upgrade pointer (ADR-834): a cohost is a personal credit; a business gets the
+          featured Collaborator billing, which needs a Business Space. One line, one link, hosts only
+          (this rail is already host-gated). */}
+      <p className="text-2xs text-subtle">
+        Run a business?{' '}
+        <Link href="/spaces/new" className="underline underline-offset-2 hover:text-text">
+          Feature it on events as a Collaborator.
+        </Link>
+      </p>
 
       {/* In-flow results — never an absolute overlay (the rail's @container clips a top-full list). */}
       {hits.length > 0 && (

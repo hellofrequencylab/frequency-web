@@ -1,11 +1,24 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listSpaceStewardIds } from '@/lib/events/placement'
+import { normalizeSpaceType, isConsoleSpaceType } from '@/lib/spaces/types'
 
 // Shared / co-hosted events (Events EC3, delivers collaborator B2) — the service-role READS + PURE
 // resolvers behind the event↔space share relationship. The WRITES (request / feature / approve /
 // decline / revoke) live in the 'use server' module app/(main)/events/share-actions.ts (a server-action
 // module may export only async functions, so these types + pure helpers cannot live there).
+//
+// TWO DISTINCT EVENT RELATIONS live near each other and must never blur (ADR-834):
+//   A. COHOSTS (people)        — event_cohosts (lib/events/cohosts.ts): a MEMBER who helps RUN the
+//      event. Management access (the action gates compose isEventCohost). Quiet avatar credit.
+//   B. COLLABORATORS (Spaces)  — event_space_shares (this module): a Business / Non Profit SPACE the
+//      event is shared with. Calendar visibility + a featured credit on the event page. NO management
+//      access — an accepted share never enters getEventCapabilities or any action gate.
+// The A/B split is STRUCTURAL, not name-based (ADR-835, reversing part of ADR-834): a PROFILE can only
+// ever be a cohost; a SPACE can only ever be a Collaborator — including a Space named after its owner
+// (the owner's own "Daniel Tyack" business Space is a valid Collaborator). The picker and the rows
+// badge every result with the Space's type + logo so an owner-named Space never reads as a person
+// (collaboratorTypeLabel below).
 //
 // Mirrors lib/events/placement.ts + lib/spaces/collaborations.ts. The ASYMMETRY vs a space↔space
 // collaboration: a share has TWO different kinds of side — the TARGET SPACE (event_space_shares.space_id,
@@ -41,7 +54,9 @@ export interface ShareRow {
 export interface EventShareView {
   id: string
   status: ShareStatus
-  space: { id: string; slug: string; name: string; logoUrl: string | null }
+  /** `typeLabel` is the disambiguation badge (collaboratorTypeLabel) so an owner-named Space never
+   *  reads as a person in the Settings rows (ADR-835). */
+  space: { id: string; slug: string; name: string; logoUrl: string | null; typeLabel: string }
   /** True when this pending row awaits the EVENT HOST (a space initiated a "feature" request). */
   awaitingHostApproval: boolean
   createdAt: string | null
@@ -130,13 +145,87 @@ export function shareWriteFailureMessage(code?: string | null): string {
   }
 }
 
+// ── The Collaborator gate: which Spaces an event may be shared with (ADR-834 + ADR-835) ─────────────
+
+/**
+ * The ONE rule for who can be an event Collaborator (ADR-835, owner-ruled): any real console-type
+ * Space — Business or Non Profit, never the platform root. The distinction between a person and a
+ * Space is STRUCTURAL (a profiles row vs a spaces row), never name-based: a Space named after its
+ * owner ("Daniel Tyack" owned by Daniel Tyack) is a valid Collaborator. ADR-834's identity-mirroring
+ * heuristic (isPersonalMemberSpace) is retired — if a structural personal-space marker ever lands on
+ * `spaces` (none exists today), the personal rejection re-enters HERE, keyed on that marker only.
+ * Returns the member-facing error line, or null when the Space is a valid target. Pure. Enforced in
+ * requestEventShare + requestFeatureEvent (server-side, the authority) and mirrored by the picker
+ * (/api/search-scopes?for=event-share).
+ */
+export function collaboratorSpaceGateError(target: { type: string | null }): string | null {
+  if (!isConsoleSpaceType(normalizeSpaceType(target.type))) {
+    return 'Events can only be co-hosted with a Business or Non Profit Space.'
+  }
+  return null
+}
+
+/**
+ * The disambiguation badge for a Collaborator picker result or Settings row: the Space's TYPE, worded
+ * so an owner-named Space never reads as a person (ADR-835 — the badge replaces the retired
+ * name-mirroring gate as the person/Space distinction the member SEES). "Business Space" spells out
+ * the entity kind; "Non Profit" already reads as an organization (NAMING: the two public
+ * designators). Pure; legacy raw types normalize first, so an unmigrated row still badges correctly.
+ */
+export function collaboratorTypeLabel(type: string | null | undefined): string {
+  return normalizeSpaceType(type) === 'nonprofit' ? 'Non Profit' : 'Business Space'
+}
+
+// ── The retired identity-mirroring heuristic (ADR-834 → retired from the gates by ADR-835) ──────────
+// isPersonalMemberSpace NO LONGER gates Collaborator eligibility anywhere: the owner ruled the
+// person/Space distinction is STRUCTURAL (profiles vs spaces), so an owner-named business Space is a
+// valid Collaborator and the type badge does the disambiguation. The helper stays exported ONLY for
+// the event CRM tier resolver (lib/events/crm-access.ts, ADR-836), which reads it for a different
+// question (does this Space confer the business CRM tier). Do not wire it back into any share path.
+
+/** The identity facts the personal-space check compares. All optional-safe: unknown fields never match. */
+export interface ShareTargetIdentity {
+  /** spaces.type, raw or normalized. */
+  type: string | null
+  name: string | null
+  brandName?: string | null
+  slug: string | null
+  ownerDisplayName: string | null
+  ownerHandle: string | null
+}
+
+/** Collapse a display string to a comparable identity key (lowercase, alphanumerics only), so
+ *  "Audrey DeWitt" / "audrey-dewitt" / "audreydewitt" all read as the same identity. Pure. */
+function identityKey(value: string | null | undefined): string {
+  return (value ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+/**
+ * Does this Space READ AS its owner (display identity — name / brand name / slug — mirroring the
+ * owner's member display name / handle)? Pure; fail-open (no owner facts → not personal). RETIRED
+ * from the Collaborator gates (ADR-835 — never use this to block a share); consumed only by the
+ * ADR-836 event CRM tier resolver.
+ */
+export function isPersonalMemberSpace(target: ShareTargetIdentity): boolean {
+  const ownerKeys = [target.ownerDisplayName, target.ownerHandle]
+    .map(identityKey)
+    .filter((k) => k.length > 0)
+  if (ownerKeys.length === 0) return false
+  const spaceKeys = [target.name, target.brandName ?? null, target.slug]
+    .map(identityKey)
+    .filter((k) => k.length > 0)
+  return spaceKeys.some((k) => ownerKeys.includes(k))
+}
+
 // ── IO: untyped admin handle (event_space_shares isn't in the generated types yet, ADR-246) ───────────
 
 function untyped(): SupabaseClient {
   return createAdminClient()
 }
 
-type TargetSpace = { id: string; slug: string; name: string; logoUrl: string | null }
+type TargetSpace = {
+  id: string; slug: string; name: string; logoUrl: string | null; typeLabel: string; status: string | null
+}
 
 /** Batch-resolve target spaces for a set of ids (one query), keyed by id. */
 async function resolveSpaces(admin: SupabaseClient, ids: string[]): Promise<Map<string, TargetSpace>> {
@@ -145,14 +234,59 @@ async function resolveSpaces(admin: SupabaseClient, ids: string[]): Promise<Map<
   if (unique.length === 0) return map
   const { data } = await admin
     .from('spaces')
-    .select('id, name, brand_name, slug, brand_logo_url')
+    .select('id, name, brand_name, slug, brand_logo_url, type, status')
     .in('id', unique)
   for (const r of (data ?? []) as Array<{
     id: string; name: string | null; brand_name: string | null; slug: string; brand_logo_url: string | null
+    type: string | null; status: string | null
   }>) {
-    map.set(r.id, { id: r.id, slug: r.slug, name: r.brand_name ?? r.name ?? 'Space', logoUrl: r.brand_logo_url })
+    map.set(r.id, {
+      id: r.id,
+      slug: r.slug,
+      name: r.brand_name ?? r.name ?? 'Space',
+      logoUrl: r.brand_logo_url,
+      typeLabel: collaboratorTypeLabel(r.type),
+      status: r.status,
+    })
   }
   return map
+}
+
+/** A Space credited as a Collaborator on the public event page (accepted share, active Space). */
+export interface CollaboratorSpace {
+  id: string
+  slug: string
+  name: string
+  logoUrl: string | null
+}
+
+/**
+ * The Spaces co-hosting an event, for the PUBLIC "Collaborators" credit on the event page (ADR-834).
+ * ACCEPTED shares only — a pending/declined/revoked share NEVER renders publicly (the EC3 leak
+ * contract), and a suspended/archived Space drops out too. Oldest acceptance first, so the credit
+ * order is stable. FAIL-SAFE: [].
+ */
+export async function listCollaboratorSpacesForEvent(eventId: string): Promise<CollaboratorSpace[]> {
+  if (!eventId) return []
+  try {
+    const admin = untyped()
+    const { data } = await admin
+      .from('event_space_shares')
+      .select('*')
+      .eq('event_id', eventId)
+      .eq('status', 'accepted')
+      .order('created_at', { ascending: true })
+    const rows = (data ?? []) as ShareRow[]
+    if (rows.length === 0) return []
+    const spaces = await resolveSpaces(admin, rows.map((r) => r.space_id))
+    return rows.flatMap((r) => {
+      const space = spaces.get(r.space_id)
+      if (!space || space.status !== 'active') return []
+      return [{ id: space.id, slug: space.slug, name: space.name, logoUrl: space.logoUrl }]
+    })
+  } catch {
+    return []
+  }
 }
 
 /** The event's home space id, for the pure approver decision + auto-accept check + the co-host

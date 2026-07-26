@@ -67,13 +67,15 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   space_team: { axis: 'plan', minEntitlement: 'collective', enabled: true }, // Team seats
   space_whitelabel: { axis: 'plan', minEntitlement: 'independent', enabled: true }, // Branding, Independent tier only
   space_multi_pipeline: { axis: 'plan', minEntitlement: 'collective', enabled: true },
-  // Collaborator spaces + event co-hosting (ADR-799 §B / ADR-810). Hosting other businesses inside your
-  // space, or bringing a collaborator space onto your event, is a Business+ capability: the venue/host
-  // needs a paid space plan, while the collaborator (guest) just needs an active space (they pay for
-  // their own). Free spaces get the LOCKED PREVIEW (the surface renders with an upgrade prompt); the
-  // server actions enforce this floor on the HOST side so the wall cannot be bypassed. Non Profit clears
-  // it via the shared full-depth set. While billing is OFF this short-circuits to granted (today's free
-  // universal behavior), so nothing changes until go-live.
+  // COLLABORATOR HOSTING (ADR-799 §B / ADR-810 / ADR-835). Hosting other businesses inside your space,
+  // or hosting an EVENT with Collaborator Spaces, is a Collective capability of the HOST side only:
+  // the venue / the event's home Space needs the plan, while BEING a collaborator (the guest, incl. an
+  // event Collaborator) is free for any active Business / Non Profit Space (they pay for their own).
+  // Enforced where hosting is granted — collaborations-actions.ts (venue grain) and events/
+  // share-actions.ts (event grain: invite, feature-request, and every accept) — so the wall cannot be
+  // bypassed. Free spaces get the LOCKED PREVIEW (the surface renders with an upgrade prompt). Non
+  // Profit clears it via the shared full-depth set. While billing is OFF this short-circuits to
+  // granted (today's free universal behavior), so nothing changes until go-live.
   space_collaborators: { axis: 'plan', minEntitlement: 'collective', enabled: true },
   // Membership-linked ticket access (ADR-823): restricting an event ticket tier to the hosting
   // Space's own members (space_members_only / space_tier_id on event_ticket_types) is Collective

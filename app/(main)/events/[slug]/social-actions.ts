@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { isEventCohost } from '@/lib/events/cohosts'
+import { loadEventCrmAccess, eventCrmLockedError } from '@/lib/events/crm-access'
 import {
   setRsvp,
   approveRsvp,
@@ -597,6 +598,15 @@ export async function postEventDispatch(
 
   const body = (args.body ?? '').trim()
   if (!body) return fail('Write something to send first.')
+
+  // The access-tier seam (ADR-836): once a personally-hosted event ends, the OUTREACH
+  // channels (Dispatch rail + push, email, SMS) lock for a personal-tier author, or the
+  // event page composer would bypass the Message Attendees lock. A plain page post stays
+  // allowed in every state: it is content on the event page, not a send to the list.
+  if (args.toDispatch || args.toSms || args.toEmail) {
+    const access = await loadEventCrmAccess(eventId)
+    if (!access.canMessage) return fail(eventCrmLockedError())
+  }
 
   try {
     await composeEventDispatch({

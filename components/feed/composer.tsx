@@ -442,10 +442,10 @@ export function Composer({
   const editor = (
     <div
       data-tour-anchor="composer"
-      className={`relative bg-surface transition-shadow ${
+      className={`relative bg-surface transition-shadow dark:bg-surface-elevated/80 ${
         expanded
           ? 'rounded-3xl border border-border p-5 shadow-2xl'
-          : 'rounded-2xl p-4 shadow-md focus-within:shadow-lg'
+          : 'rounded-2xl border border-border/70 p-4 shadow-sm focus-within:shadow-md dark:border-border/60'
       }`}
     >
       {expanded && (

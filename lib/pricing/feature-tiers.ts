@@ -179,10 +179,10 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
   space_collaborators: {
     axis: 'plan',
     minTier: 'collective',
-    title: 'Collaborator spaces',
+    title: 'Collaborator hosting',
     rungs: spaceRungs(
-      'See how collaborators work, and preview the surface.',
-      'Host other businesses inside your space and co-host events. They keep their own page and pay for their own space.',
+      'Be a Collaborator on other Spaces and events, and preview the hosting surface.',
+      'Host other businesses inside your space, and host events with Collaborator Spaces. They keep their own page and pay for their own space.',
       'collective',
     ),
   },

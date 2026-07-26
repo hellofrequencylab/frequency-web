@@ -16,6 +16,12 @@ Members and Spaces pay Frequency for a plan.
 
 All of this bills through Stripe subscriptions and one-time payments.
 
+### Plan capabilities to know when members ask
+
+| Capability | Plan floor | The rule |
+|---|---|---|
+| Collaborator hosting | Collective (Non Profit clears it) | Hosting an event or a venue WITH Collaborator Spaces needs the HOST Space on Collective (feature gate `space_collaborators`, ADR-835). Being a Collaborator on someone else's event stays free on every plan. A member-hosted event has no host Space, so it can never take on Collaborators; a person helping run an event is a Cohost. During open beta the gate is soft (billing off means nothing blocks); the Collective badge previews the post-launch model. |
+
 ## 2. Payouts (money through)
 
 When a member tips a host, buys an event ticket, or buys from a Space storefront, the money goes to that

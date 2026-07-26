@@ -1,10 +1,9 @@
 import Link from 'next/link'
-import { CalendarDays, MapPin, AtSign, Megaphone, Zap, ArrowRight, MessageSquare, PenLine } from 'lucide-react'
+import { CalendarDays, MapPin, AtSign, Megaphone, Zap, ArrowRight, MessageSquare } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
 import { PostCard, type FeedPost, type RawPost } from './post-card'
-import { buildPostOriginResolver, type PostOrigin } from '@/lib/feed/post-origin'
-import { PostOriginHeader, PostOriginLabel } from './post-origin'
+import { buildScopeContextResolver } from '@/lib/feed/post-origin'
 
 interface DispatchItem {
   id: string
@@ -34,7 +33,7 @@ const POST_SELECT = `
 `
 
 type TimelineItem =
-  | { kind: 'post'; data: FeedPost; date: number; context?: 'wall' | 'mention'; origin: PostOrigin }
+  | { kind: 'post'; data: FeedPost; date: number; context?: 'mention' }
   | { kind: 'dispatch'; data: DispatchItem; date: number }
   | { kind: 'event'; data: EventItem; date: number }
 
@@ -128,12 +127,14 @@ export async function ProfileFeed({
     mentionPosts = (data ?? []) as unknown as RawPost[]
   }
 
-  // ── Post origin (where each post was posted) ─────────────────────────────
-  const resolveOrigin = await buildPostOriginResolver(
+  // ── Post scope (where each post was posted) ──────────────────────────────
+  // The card's attribution header carries the where (author › context), so no
+  // separate origin line rides above the card anymore. A wall post by someone
+  // else resolves to THIS member's wall; the member's own posts to their own
+  // profile resolve to no context (just posting).
+  const resolveScope = await buildScopeContextResolver(
     [...ownPosts, ...wallPosts, ...mentionPosts].map(p => p.scope_id),
-    profileId,
   )
-  const originFor = (p: RawPost): PostOrigin => resolveOrigin(p.scope_id)
 
   // ── Events ──────────────────────────────────────────────────────────────
 
@@ -216,7 +217,8 @@ export async function ProfileFeed({
 
   // ── Build unified timeline ────────────────────────────────────────────
 
-  const toFeedPost = (p: RawPost): FeedPost => ({ ...p, replyCount: p.comment_count ?? 0 }) as FeedPost
+  const toFeedPost = (p: RawPost): FeedPost =>
+    ({ ...p, replyCount: p.comment_count ?? 0, scopeContext: resolveScope(p.scope_id, p.author.id) }) as FeedPost
 
   const latestDispatch = dispatches[0] ?? null
 
@@ -225,21 +227,17 @@ export async function ProfileFeed({
       kind: 'post' as const,
       data: toFeedPost(p),
       date: new Date(p.created_at).getTime(),
-      origin: originFor(p),
     })),
     ...wallPosts.map(p => ({
       kind: 'post' as const,
       data: toFeedPost(p),
       date: new Date(p.created_at).getTime(),
-      context: 'wall' as const,
-      origin: originFor(p),
     })),
     ...mentionPosts.map(p => ({
       kind: 'post' as const,
       data: toFeedPost(p),
       date: new Date(p.created_at).getTime(),
       context: 'mention' as const,
-      origin: originFor(p),
     })),
     ...dispatches.slice(1).map(d => ({
       kind: 'dispatch' as const,
@@ -268,25 +266,15 @@ export async function ProfileFeed({
 
       {items.map(item => {
         if (item.kind === 'post') {
-          const postItem = item as TimelineItem & { kind: 'post'; context?: 'wall' | 'mention'; origin: PostOrigin }
+          // The card's own header carries who + where; only a MENTION still needs
+          // one quiet line to explain why the post is on this timeline.
           return (
             <div key={item.data.id}>
-              {postItem.context === 'wall' ? (
-                <p className="text-xs text-subtle mb-1.5 flex flex-wrap items-center gap-1.5 px-1">
-                  <PenLine className="w-3 h-3" />
-                  <Link href={`/people/${item.data.author.handle}`} className="font-medium text-muted hover:underline">
-                    {item.data.author.display_name}
-                  </Link>
-                  {' '}wrote on this wall
-                </p>
-              ) : postItem.context === 'mention' ? (
-                <p className="text-xs text-subtle mb-1.5 flex flex-wrap items-center gap-1.5 px-1">
-                  <AtSign className="w-3 h-3" />
+              {item.context === 'mention' && (
+                <p className="mb-1.5 flex flex-wrap items-center gap-1.5 px-1 text-xs text-subtle">
+                  <AtSign className="h-3 w-3" />
                   Mentioned <span className="font-medium text-muted">@{profileHandle}</span>
-                  <PostOriginLabel origin={postItem.origin} prefix="in" />
                 </p>
-              ) : (
-                <PostOriginHeader origin={postItem.origin} />
               )}
               <PostCard post={item.data} myProfileId={myProfileId} viewerRole={viewerRole} />
             </div>
@@ -304,11 +292,13 @@ export async function ProfileFeed({
   )
 }
 
+// Dispatch + event timeline cards share the posts' neutral card chrome (one
+// cohesive stream); their palettes live in the icon/date tile + kicker only.
 function DispatchTimelineCard({ dispatch: d }: { dispatch: DispatchItem }) {
   return (
     <Link
       href={`/broadcast/${d.id}`}
-      className="group block rounded-2xl border border-primary-bg/60 bg-primary-bg/50 dark:bg-primary-bg/10 shadow-sm px-4 py-3.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
+      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 shadow-sm transition-colors hover:border-primary dark:border-border/60 dark:bg-surface-elevated/80"
     >
       <div className="flex items-start gap-3">
         <div className="shrink-0 w-7 h-7 rounded-lg bg-primary-bg flex items-center justify-center mt-0.5">
@@ -350,7 +340,7 @@ function EventTimelineCard({ event: e }: { event: EventItem }) {
   return (
     <Link
       href={`/events/${e.slug}`}
-      className="group block rounded-2xl border border-warning-bg bg-warning-bg/30 dark:bg-warning-bg/10 shadow-sm px-4 py-3.5 hover:border-warning transition-colors"
+      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 shadow-sm transition-colors hover:border-warning dark:border-border/60 dark:bg-surface-elevated/80"
     >
       <div className="flex items-center gap-3">
         <div className="shrink-0 w-10 h-10 rounded-lg bg-warning-bg dark:bg-warning-bg flex flex-col items-center justify-center">

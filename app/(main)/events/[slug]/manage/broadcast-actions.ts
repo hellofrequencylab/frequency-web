@@ -12,6 +12,11 @@ import { shouldSend } from '@/lib/notification-preferences'
 import { sendEventUpdateEmail } from '@/lib/email'
 import { composeEventDispatch } from '@/lib/events/dispatch'
 import { listEventCrmMemberIds } from '@/lib/events/crm-roster'
+import {
+  loadEventCrmAccess,
+  resolveReinviteTarget,
+  eventCrmLockedError,
+} from '@/lib/events/crm-access'
 import { resolveEventBroadcastAudience } from '@/lib/events/broadcast-audience'
 import { sendSpaceCampaignSystem } from '@/lib/spaces/email'
 import { renderCampaignHtml } from '@/lib/spaces/campaigns'
@@ -324,8 +329,13 @@ async function sendDmChannel(args: {
   body: string
   audience: string[]
   recipients: Map<string, { displayName: string; email: string | null }>
+  /** The thread/touch metadata convention. Defaults to the broadcast stamp; the re-invite
+   *  path passes kind 'event_reinvite' plus the target event id (ADR-836). The SCOPE stays
+   *  the ORIGINAL event either way, so The Path shows the send in this event's lane. */
+  metadata?: Record<string, unknown>
 }): Promise<BroadcastChannelResult> {
   const { event, actorId, body } = args
+  const metadata = args.metadata ?? { kind: 'event_broadcast', event_id: event.id }
 
   // Audience leg, policy parity with lib/messages/scoped-dm canDmEventAttendee: the DM lane
   // reaches the Message Attendees audience ONLY (going or maybe, the owner ruling). A picked
@@ -382,7 +392,7 @@ async function sendDmChannel(args: {
         spaceId: event.hostSpaceId,
         scopeKind: 'event',
         scopeId: event.id,
-        metadata: { kind: 'event_broadcast', event_id: event.id },
+        metadata,
       })
       if (!conv) {
         skipped++
@@ -433,6 +443,12 @@ export async function sendEventBroadcast(
 
   const event = await resolveManagedEvent(slug)
   if (!event) return fail('You cannot manage this event.')
+
+  // The access-tier seam (ADR-836): once a personally-hosted event ends, a personal-tier
+  // viewer's free-form sends lock on EVERY channel (email/dm/dispatch/sms). The one action
+  // left is the re-invite path (sendEventReinvite below). Business/staff never lock.
+  const access = await loadEventCrmAccess(event.id)
+  if (!access.canMessage) return fail(eventCrmLockedError())
 
   const subject = (input.subject ?? '').trim().slice(0, MAX_SUBJECT)
   const body = (input.body ?? '').trim().slice(0, MAX_BODY)
@@ -495,4 +511,91 @@ export async function sendEventBroadcast(
   revalidatePath(`/events/${event.slug}/manage`)
   if (dispatched) revalidatePath(`/events/${event.slug}`)
   return ok({ results })
+}
+
+// ── RE-INVITE (ADR-836): the one post-lock action for a personal-tier viewer ─────────────
+
+/** The wall-clock date of an event (starts_at stores wall-clock as UTC parts, so format in UTC;
+ *  the same convention lib/events/follower-reminders documents). Empty on a missing date. */
+function reinviteDateLabel(startsAt: string | null): string {
+  if (!startsAt) return ''
+  const t = Date.parse(startsAt)
+  if (!Number.isFinite(t)) return ''
+  return new Date(t).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' })
+}
+
+/**
+ * Invite this event's attendee list to ANOTHER upcoming event the caller hosts or cohosts.
+ * The v1 re-invite path (ADR-836): a server-authored event invite, never free text, delivered
+ * through the EXISTING operator-DM spine lane (sendDmChannel above, exactly the machinery the
+ * broadcast's Direct Message channel uses). Available to every tier that can open the surface;
+ * for a locked personal-tier viewer it is the ONLY send left.
+ *
+ * GATE: 'event.editSettings' (resolveManagedEvent) + canReinvite from the access seam; the
+ * TARGET is re-validated server-side (resolveReinviteTarget: published, upcoming, not
+ * cancelled, hosted/cohosted by the caller), never trusted from the picker.
+ * LOGGING: the scope spine stamps the ORIGINAL event (scope_kind 'event' + this event's id),
+ * with metadata kind 'event_reinvite' + reinvite_event_id naming the target, so Message
+ * Attendees' The Path shows the send in this event's lane.
+ */
+export async function sendEventReinvite(
+  slug: string,
+  targetEventId: string,
+): Promise<ActionResult<{ results: BroadcastChannelResult[] }>> {
+  const actorId = await getMyProfileId()
+  if (!actorId) return fail('Sign in to invite your guests.')
+
+  const event = await resolveManagedEvent(slug)
+  if (!event) return fail('You cannot manage this event.')
+
+  const access = await loadEventCrmAccess(event.id)
+  if (!access.canReinvite) return fail('You cannot message this list.')
+
+  const target = await resolveReinviteTarget(actorId, typeof targetEventId === 'string' ? targetEventId : '')
+  if (!target || target.id === event.id) {
+    return fail('Pick an upcoming event you host or cohost.')
+  }
+
+  // The same blast bucket as the broadcast action, so a locked list cannot become a loop.
+  if (!(await rateLimitOk('event-broadcast:send', actorId, 10, '1 h'))) {
+    return fail('You have sent a lot of broadcasts recently. Try again in a bit.')
+  }
+
+  // The list = the Message Attendees roster (going/maybe, the owner ruling), re-resolved
+  // server-side. sendDmChannel re-intersects with the same set, so nothing widens it.
+  const audience = [...(await listEventCrmMemberIds(event.id))]
+  if (audience.length === 0) return fail('No one is on this list yet.')
+
+  const admin = createAdminClient()
+  const { data: actorRow } = await admin
+    .from('profiles')
+    .select('display_name')
+    .eq('id', actorId)
+    .maybeSingle()
+  const actorName = (actorRow as { display_name: string | null } | null)?.display_name ?? 'Your host'
+
+  // Server-authored invite copy (no free-text outreach on this path). Plain voice, no em dashes.
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
+  const when = reinviteDateLabel(target.startsAt)
+  const subject = `You're invited: ${target.title}`.slice(0, MAX_SUBJECT)
+  const body = [
+    `${actorName} is inviting everyone from ${event.title} to their next event: ${target.title}${when ? ` on ${when}` : ''}.`,
+    `See the details and RSVP here: ${appUrl}/events/${target.slug}`,
+  ]
+    .join('\n\n')
+    .slice(0, MAX_BODY)
+
+  const recipients = await resolveRecipients(audience)
+  const result = await sendDmChannel({
+    event,
+    actorId,
+    subject,
+    body,
+    audience,
+    recipients,
+    metadata: { kind: 'event_reinvite', event_id: event.id, reinvite_event_id: target.id },
+  })
+
+  revalidatePath(`/events/${event.slug}/manage`)
+  return ok({ results: [result] })
 }
