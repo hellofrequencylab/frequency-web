@@ -40,6 +40,7 @@ import { EventShareButton } from '@/components/events/event-share-button'
 import { type CohostView } from '@/components/events/cohost-manager'
 import { CohostInviteBanner } from '@/components/events/cohost-invite-banner'
 import { listCohosts, listCohostInvites, getMyCohostInvite } from '@/lib/events/cohosts'
+import { listCollaboratorSpacesForEvent } from '@/lib/events/event-share'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { pointFromGeog } from '@/lib/events/geo'
 import { eventHeroHeightClass, readEventHeroHeight } from '@/lib/events/hero-height'
@@ -860,6 +861,7 @@ export default async function EventDetailPage({
     cohostsRaw,
     cohostInvitesRaw,
     myCohostInvite,
+    collaboratorSpaces,
     { data: rawActivity },
     { data: rawDispatches },
     rawMediaRes,
@@ -877,6 +879,9 @@ export default async function EventDetailPage({
       isHost ? listCohostInvites(event.id) : Promise.resolve([]),
       // The viewer's own pending invite, if any — drives the Accept/Decline banner.
       myProfileId ? getMyCohostInvite(event.id, myProfileId) : Promise.resolve(null),
+      // COLLABORATORS (ADR-834): Spaces co-hosting via an ACCEPTED share (EC3) — public credit under
+      // the Host box + the "with …" mention on the hosted-by line. Accepted-only by contract.
+      listCollaboratorSpacesForEvent(event.id),
       // Untyped read (event_posts.kind is newer than the generated types, migration
       // 20261125000000) + migration-safe fallback. Map below casts to RawActivityPost.
       loadActivityPosts(),
@@ -902,6 +907,15 @@ export default async function EventDetailPage({
   const cohosts = cohostsRaw as CohostView[]
   const cohostInvites = cohostInvitesRaw as CohostView[]
   const isCohost = myProfileId != null && cohosts.some((c) => c.profileId === myProfileId)
+
+  // The minimal "with …" mention for the hosted-by line: up to two Collaborator names, then a count.
+  // The full featured credit (logo cards) is the Collaborators box in the host column.
+  const collaboratorNames =
+    collaboratorSpaces.length === 0
+      ? null
+      : collaboratorSpaces.length <= 2
+        ? collaboratorSpaces.map((s) => s.name).join(' and ')
+        : `${collaboratorSpaces[0].name}, ${collaboratorSpaces[1].name} and ${collaboratorSpaces.length - 2} more`
   // Who may add a comment / photo: ANY signed-in member (the old RSVP-holder
   // requirement was dropped so the event wall reads as open conversation; the
   // server action createEventPost applies the same gate). Dispatches stay
@@ -1427,6 +1441,8 @@ export default async function EventDetailPage({
     // The Space that hosts the event (posted from a Space) → attributed to the Space (null for a personal
     // / circle / standalone event, where the person host above is shown as today).
     spaceHost,
+    // Spaces co-hosting via an accepted share (ADR-834) — the featured Collaborators credit.
+    collaboratorSpaces,
     myProfileId,
     canManage,
     isHost,
@@ -1721,12 +1737,14 @@ export default async function EventDetailPage({
             {spaceHost ? (
               // Space-hosted event: the Space is the attribution — its brand links to the Space page. The
               // person in host_id stays the organizer, shown as a subtle secondary credit so they're still
-              // visible without being the headline host.
+              // visible without being the headline host. Collaborating Spaces (accepted shares, ADR-834)
+              // get a minimal "with …" mention here; their featured credit is the Collaborators box.
               <p>
                 Hosted by{' '}
                 <Link href={`/spaces/${spaceHost.slug}`} className="font-semibold hover:underline">
                   {spaceHost.name}
                 </Link>
+                {collaboratorNames ? <span> with {collaboratorNames}</span> : null}
                 {event.host ? (
                   <span className="text-subtle"> · organized by {event.host.display_name}</span>
                 ) : null}
@@ -1736,6 +1754,7 @@ export default async function EventDetailPage({
               // (items 2 + 3). An out-of-network organizer stays plain text below.
               <p>
                 Hosted by <HostHovercard host={event.host} />
+                {collaboratorNames ? <span> with {collaboratorNames}</span> : null}
               </p>
             ) : isPostedEvent ? (
               <p className="text-subtle">

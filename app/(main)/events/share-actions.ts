@@ -40,6 +40,7 @@ import {
   approverSideForShare,
   shouldAutoAcceptShare,
   shareWriteFailureMessage,
+  shareTargetGateError,
   describeMissingShareTarget,
   type ShareRow,
   type EventShareView,
@@ -204,6 +205,13 @@ export async function requestEventShare(
   if (!target) return fail(await describeMissingShareTarget(spaceId))
   if (target.status !== 'active') return fail('That space is not active.')
 
+  // COLLABORATOR GATE (ADR-834): only a real Business / Non Profit Space can co-host an event. A
+  // member's PERSONAL space reads as a person in the picker and collides with the cohost relation
+  // (event_cohosts), so it is rejected with the cohost pointer instead of creating a share that
+  // renders like a person co-hosting. The picker filters the same way; this is the authority.
+  const gateError = await shareTargetGateError(target, 'invite')
+  if (gateError) return fail(gateError)
+
   const homeSpaceId = await eventHomeSpaceId(eventId)
   if (homeSpaceId && homeSpaceId === spaceId) return fail('This event already lives in that space.')
 
@@ -267,6 +275,10 @@ export async function requestFeatureEvent(spaceId: string, eventId: string): Pro
   // FUNNEL GATE (ADR-810): the featuring space is using the cross-space surface, so it needs a paid
   // Business/Non Profit plan. While billing is OFF this grants (today's free behavior).
   if (!(await spaceCanHostCollaborators(target))) return fail(FEATURE_NEEDS_BUSINESS)
+  // COLLABORATOR GATE (ADR-834): same rule as the invite side — a personal space cannot collaborate
+  // on an event through either entry point, or the picker restriction would have a back door.
+  const gateError = await shareTargetGateError(target, 'feature')
+  if (gateError) return fail(gateError)
 
   const homeSpaceId = await eventHomeSpaceId(eventId)
   if (homeSpaceId && homeSpaceId === spaceId) return fail('This event already lives in your space.')

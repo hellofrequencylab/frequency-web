@@ -262,6 +262,34 @@ One CRM engine, four scoped surfaces; each has ONE operator-facing name and a lo
 Never "resident CRM" (no "resident" entity exists), never "Event CRM" / "Circle CRM" in
 operator-facing copy (internal shorthand only).
 
+## Events: Cohosts (people) vs Collaborators (Spaces) (ADR-834, July 2026, owner-ruled)
+
+Two distinct event relations, one word each. They must never blur:
+
+- **Cohost** (one word, always a PERSON) = a member the host invites to help RUN an event
+  (`event_cohosts`). Gets management access (the `isEventCohost` action gates). Renders as a
+  quiet avatar chip credit (name + handle), never featured. Copy: "invite a cohost",
+  "Cohosts". Never a Space, never hyphenated as the noun.
+- **Collaborator** (always a SPACE) = a Business or Non Profit Space co-hosting an event
+  through an ACCEPTED `event_space_shares` row (Events EC3). Gets calendar visibility (the
+  event appears on that Space's calendar) plus a FEATURED credit on the event page (logo card
+  under the Host box) and a "with …" mention on the hosted-by line. Gets NO management access,
+  ever. Accepted rows display as "Collaborator(s)"; a pending row is "Pending their approval".
+- **Relationship to ADR-799 "collaborator spaces" (deliberate extension, same brand):**
+  `space_collaborations` = the STANDING space↔space relation (a venue hosting collaborator
+  businesses); an event Collaborator = the PER-EVENT share. Same word on purpose, two grains.
+  When the grain matters, qualify: "venue collaborator" vs "event Collaborator". Neither ever
+  means a person.
+- **A member's personal space is never a Collaborator.** The share picker offers only Business /
+  Non Profit Spaces, and the server rejects a Space whose identity mirrors its owner's member
+  identity with the pointer "That is a member's personal space. Invite them as a cohost
+  instead." The tension is intentional and free of dark patterns: the Collaborator display
+  itself costs nothing with an accepted share, but BEING a Collaborator requires having a
+  Business Space (the one quiet upsell line lives under the Cohosts field in event Settings).
+- **Hyphenation guard:** "co-host" (hyphenated) survives only as the VERB for what a
+  Collaborator Space does ("co-host it on their calendar"). The person noun is always
+  "cohost"; the Space noun is always "Collaborator".
+
 ## Profile pages
 
 - **Spotlight** = a member's opt-in public mini-site (a linktree/personal page themed

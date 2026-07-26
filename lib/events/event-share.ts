@@ -1,11 +1,22 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listSpaceStewardIds } from '@/lib/events/placement'
+import { normalizeSpaceType, isConsoleSpaceType } from '@/lib/spaces/types'
 
 // Shared / co-hosted events (Events EC3, delivers collaborator B2) — the service-role READS + PURE
 // resolvers behind the event↔space share relationship. The WRITES (request / feature / approve /
 // decline / revoke) live in the 'use server' module app/(main)/events/share-actions.ts (a server-action
 // module may export only async functions, so these types + pure helpers cannot live there).
+//
+// TWO DISTINCT EVENT RELATIONS live near each other and must never blur (ADR-834):
+//   A. COHOSTS (people)        — event_cohosts (lib/events/cohosts.ts): a MEMBER who helps RUN the
+//      event. Management access (the action gates compose isEventCohost). Quiet avatar credit.
+//   B. COLLABORATORS (Spaces)  — event_space_shares (this module): a Business / Non Profit SPACE the
+//      event is shared with. Calendar visibility + a featured credit on the event page. NO management
+//      access — an accepted share never enters getEventCapabilities or any action gate.
+// A member's PERSONAL space (a Space that reads as the member themselves) is NEVER a valid share
+// target: the picker and requestEventShare both reject it and point at relation A instead
+// (collaboratorSpaceGateError below).
 //
 // Mirrors lib/events/placement.ts + lib/spaces/collaborations.ts. The ASYMMETRY vs a space↔space
 // collaboration: a share has TWO different kinds of side — the TARGET SPACE (event_space_shares.space_id,
@@ -130,13 +141,77 @@ export function shareWriteFailureMessage(code?: string | null): string {
   }
 }
 
+// ── The Collaborator gate: which Spaces an event may be shared with (ADR-834) ───────────────────────
+
+/** The identity facts the personal-space check compares. All optional-safe: unknown fields never match. */
+export interface ShareTargetIdentity {
+  /** spaces.type, raw or normalized ('root' is the platform host and is never a share target). */
+  type: string | null
+  name: string | null
+  brandName?: string | null
+  slug: string | null
+  ownerDisplayName: string | null
+  ownerHandle: string | null
+}
+
+/** Collapse a display string to a comparable identity key (lowercase, alphanumerics only), so
+ *  "Audrey DeWitt" / "audrey-dewitt" / "audreydewitt" all read as the same identity. Pure. */
+function identityKey(value: string | null | undefined): string {
+  return (value ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+/**
+ * Does this Space read as a MEMBER'S PERSONAL SPACE rather than a business? True when the Space's
+ * display identity (name / brand name / slug) mirrors its OWNER'S member identity (display name /
+ * handle). There is no structural personal-space marker in the schema (every provisionable Space is
+ * business/nonprofit), so identity mirroring is the signal: a picker row like "Daniel Tyack" backed
+ * by a Space owned by Daniel Tyack IS the collision the gate exists for. Pure; fail-open (no owner
+ * facts → not personal) because this is a UX guard, not a security boundary — the share still needs
+ * a steward's approval either way.
+ */
+export function isPersonalMemberSpace(target: ShareTargetIdentity): boolean {
+  const ownerKeys = [target.ownerDisplayName, target.ownerHandle]
+    .map(identityKey)
+    .filter((k) => k.length > 0)
+  if (ownerKeys.length === 0) return false
+  const spaceKeys = [target.name, target.brandName ?? null, target.slug]
+    .map(identityKey)
+    .filter((k) => k.length > 0)
+  return spaceKeys.some((k) => ownerKeys.includes(k))
+}
+
+/** Which entry point is asking: the event host picking a Space ('invite'), or a steward featuring an
+ *  event on their own Space ('feature'). Only the copy differs — the rule is the same. */
+export type ShareGateSide = 'invite' | 'feature'
+
+/**
+ * The ONE rule for who can be an event Collaborator (ADR-834): a real Business / Non Profit Space,
+ * never the platform root and never a member's personal space. Returns the member-facing error line,
+ * or null when the Space is a valid target. Pure. Enforced in requestEventShare + requestFeatureEvent
+ * (server-side, the authority) and mirrored by the picker (/api/search-scopes?for=event-share).
+ */
+export function collaboratorSpaceGateError(
+  target: ShareTargetIdentity,
+  side: ShareGateSide = 'invite',
+): string | null {
+  if (!isConsoleSpaceType(normalizeSpaceType(target.type))) {
+    return 'Events can only be co-hosted with a Business or Non Profit Space.'
+  }
+  if (isPersonalMemberSpace(target)) {
+    return side === 'feature'
+      ? 'This is your personal space. Ask the event host to invite you as a cohost instead.'
+      : "That is a member's personal space. Invite them as a cohost instead."
+  }
+  return null
+}
+
 // ── IO: untyped admin handle (event_space_shares isn't in the generated types yet, ADR-246) ───────────
 
 function untyped(): SupabaseClient {
   return createAdminClient()
 }
 
-type TargetSpace = { id: string; slug: string; name: string; logoUrl: string | null }
+type TargetSpace = { id: string; slug: string; name: string; logoUrl: string | null; status: string | null }
 
 /** Batch-resolve target spaces for a set of ids (one query), keyed by id. */
 async function resolveSpaces(admin: SupabaseClient, ids: string[]): Promise<Map<string, TargetSpace>> {
@@ -145,14 +220,97 @@ async function resolveSpaces(admin: SupabaseClient, ids: string[]): Promise<Map<
   if (unique.length === 0) return map
   const { data } = await admin
     .from('spaces')
-    .select('id, name, brand_name, slug, brand_logo_url')
+    .select('id, name, brand_name, slug, brand_logo_url, status')
     .in('id', unique)
   for (const r of (data ?? []) as Array<{
     id: string; name: string | null; brand_name: string | null; slug: string; brand_logo_url: string | null
+    status: string | null
   }>) {
-    map.set(r.id, { id: r.id, slug: r.slug, name: r.brand_name ?? r.name ?? 'Space', logoUrl: r.brand_logo_url })
+    map.set(r.id, {
+      id: r.id,
+      slug: r.slug,
+      name: r.brand_name ?? r.name ?? 'Space',
+      logoUrl: r.brand_logo_url,
+      status: r.status,
+    })
   }
   return map
+}
+
+/** A Space credited as a Collaborator on the public event page (accepted share, active Space). */
+export interface CollaboratorSpace {
+  id: string
+  slug: string
+  name: string
+  logoUrl: string | null
+}
+
+/**
+ * The Spaces co-hosting an event, for the PUBLIC "Collaborators" credit on the event page (ADR-834).
+ * ACCEPTED shares only — a pending/declined/revoked share NEVER renders publicly (the EC3 leak
+ * contract), and a suspended/archived Space drops out too. Oldest acceptance first, so the credit
+ * order is stable. FAIL-SAFE: [].
+ */
+export async function listCollaboratorSpacesForEvent(eventId: string): Promise<CollaboratorSpace[]> {
+  if (!eventId) return []
+  try {
+    const admin = untyped()
+    const { data } = await admin
+      .from('event_space_shares')
+      .select('*')
+      .eq('event_id', eventId)
+      .eq('status', 'accepted')
+      .order('created_at', { ascending: true })
+    const rows = (data ?? []) as ShareRow[]
+    if (rows.length === 0) return []
+    const spaces = await resolveSpaces(admin, rows.map((r) => r.space_id))
+    return rows.flatMap((r) => {
+      const space = spaces.get(r.space_id)
+      if (!space || space.status !== 'active') return []
+      return [{ id: space.id, slug: space.slug, name: space.name, logoUrl: space.logoUrl }]
+    })
+  } catch {
+    return []
+  }
+}
+
+/**
+ * The IO wrapper around collaboratorSpaceGateError: resolves the target Space's OWNER identity and
+ * runs the pure gate. Called by requestEventShare / requestFeatureEvent before any row is written.
+ * FAIL-OPEN on the owner lookup (a read blip must not block a legitimate business share — the
+ * approval round-trip still guards the relation).
+ */
+export async function shareTargetGateError(
+  space: { type: string; name: string; brandName?: string | null; slug: string; ownerProfileId: string | null },
+  side: ShareGateSide,
+): Promise<string | null> {
+  let ownerDisplayName: string | null = null
+  let ownerHandle: string | null = null
+  if (space.ownerProfileId) {
+    try {
+      const { data } = await untyped()
+        .from('profiles')
+        .select('display_name, handle')
+        .eq('id', space.ownerProfileId)
+        .maybeSingle()
+      const owner = data as { display_name: string | null; handle: string | null } | null
+      ownerDisplayName = owner?.display_name ?? null
+      ownerHandle = owner?.handle ?? null
+    } catch {
+      /* fail-open: gate on what we know */
+    }
+  }
+  return collaboratorSpaceGateError(
+    {
+      type: space.type,
+      name: space.name,
+      brandName: space.brandName ?? null,
+      slug: space.slug,
+      ownerDisplayName,
+      ownerHandle,
+    },
+    side,
+  )
 }
 
 /** The event's home space id, for the pure approver decision + auto-accept check + the co-host

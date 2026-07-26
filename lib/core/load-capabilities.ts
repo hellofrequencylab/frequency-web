@@ -255,7 +255,13 @@ export async function getNexusCapabilities(nexusId: string): Promise<Set<Capabil
 /** What the caller can do on a specific Event. event.editSettings goes to its
  *  host, platform staff, or whoever manages the event's parent scope — the circle
  *  (getCircleCapabilities) for a circle event, or the owning Space (getSpaceCapabilities)
- *  for a space event. "If you run the scope, you run its events." */
+ *  for a space event. "If you run the scope, you run its events."
+ *
+ *  AUDITED (ADR-834): an accepted event_space_shares row (a Collaborator Space, EC3) grants
+ *  NOTHING here — this resolver reads only host_id, the circle scope, and the PLACEMENT space
+ *  (events.space_id), and a share never writes any of those. Co-hosting on another Space's
+ *  calendar is visibility + credit, never management. Personal cohosts (event_cohosts) get their
+ *  management through isEventCohost in the event action gates, also not through a share. */
 export async function getEventCapabilities(eventId: string): Promise<Set<Capability>> {
   const viewer = await currentViewer()
   const admin = createAdminClient()

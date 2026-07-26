@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { approverSideForShare, roleFor, shouldAutoAcceptShare, shareWriteFailureMessage } from './event-share'
+import {
+  approverSideForShare,
+  roleFor,
+  shouldAutoAcceptShare,
+  shareWriteFailureMessage,
+  isPersonalMemberSpace,
+  collaboratorSpaceGateError,
+} from './event-share'
 
 // The PURE authz/shaping helpers behind shared / co-hosted events (Events EC3). The IO reads/writes run
 // behind the service-role admin client; these decide WHO approves a pending share, WHICH side a space
@@ -83,6 +90,144 @@ describe('shareWriteFailureMessage (failed insert -> actionable member copy)', (
   it('never emits an em dash (brand copy hard rule)', () => {
     for (const code of ['PGRST205', '42P01', '42501', '23503', '22P02', 'XX000', undefined]) {
       expect(shareWriteFailureMessage(code)).not.toContain('—')
+    }
+  })
+})
+
+// ── The Collaborator gate (ADR-834): who can be shared with ─────────────────────────────────────────
+
+/** A real business, owned by someone whose member identity does NOT mirror the Space's. */
+const ROYAL_TEMPLE = {
+  type: 'business',
+  name: 'Royal Temple',
+  brandName: 'Royal Temple',
+  slug: 'royaltemple',
+  ownerDisplayName: 'Meghan Riley',
+  ownerHandle: 'meghanriley',
+}
+
+describe('isPersonalMemberSpace (a Space that reads as its owner, not a business)', () => {
+  it('flags a Space named exactly after its owner (the "Daniel Tyack" screenshot case)', () => {
+    expect(
+      isPersonalMemberSpace({
+        type: 'business',
+        name: 'Daniel Tyack',
+        brandName: 'Daniel Tyack',
+        slug: 'danieltyack',
+        ownerDisplayName: 'Daniel Tyack',
+        ownerHandle: 'danieltyack',
+      }),
+    ).toBe(true)
+  })
+
+  it('matches through punctuation/casing differences (slug "audrey-dewitt" vs handle "audreydewitt")', () => {
+    expect(
+      isPersonalMemberSpace({
+        type: 'business',
+        name: 'Audrey DeWitt',
+        brandName: null,
+        slug: 'audrey-dewitt',
+        ownerDisplayName: 'Audrey DeWitt',
+        ownerHandle: 'audreydewitt',
+      }),
+    ).toBe(true)
+  })
+
+  it('flags a brand_name that mirrors the owner even when name/slug differ', () => {
+    expect(
+      isPersonalMemberSpace({
+        type: 'business',
+        name: 'Studio 7',
+        brandName: 'Danny Kenduck',
+        slug: 'studio-7',
+        ownerDisplayName: 'Danny Kenduck',
+        ownerHandle: 'dannyk',
+      }),
+    ).toBe(true)
+  })
+
+  it('a real business named differently from its owner is NOT personal', () => {
+    expect(isPersonalMemberSpace(ROYAL_TEMPLE)).toBe(false)
+  })
+
+  it('fails OPEN with no owner identity (a UX guard, not a security boundary)', () => {
+    expect(
+      isPersonalMemberSpace({
+        type: 'business',
+        name: 'Daniel Tyack',
+        brandName: null,
+        slug: 'danieltyack',
+        ownerDisplayName: null,
+        ownerHandle: null,
+      }),
+    ).toBe(false)
+  })
+})
+
+describe('collaboratorSpaceGateError (the one pickable-Space rule)', () => {
+  it('a real Business Space passes', () => {
+    expect(collaboratorSpaceGateError(ROYAL_TEMPLE, 'invite')).toBeNull()
+  })
+
+  it('a nonprofit passes too (both console designators are valid Collaborators)', () => {
+    expect(collaboratorSpaceGateError({ ...ROYAL_TEMPLE, type: 'nonprofit' }, 'invite')).toBeNull()
+  })
+
+  it('the platform root is never a share target', () => {
+    const msg = collaboratorSpaceGateError({ ...ROYAL_TEMPLE, type: 'root', name: 'Frequency', slug: 'frequency' })
+    expect(msg).toContain('Business or Non Profit Space')
+  })
+
+  it("a member's personal space is rejected with the cohost pointer (invite side)", () => {
+    const msg = collaboratorSpaceGateError(
+      {
+        type: 'business',
+        name: 'Daniel Tyack',
+        brandName: 'Daniel Tyack',
+        slug: 'danieltyack',
+        ownerDisplayName: 'Daniel Tyack',
+        ownerHandle: 'danieltyack',
+      },
+      'invite',
+    )
+    expect(msg).toBe("That is a member's personal space. Invite them as a cohost instead.")
+  })
+
+  it('the feature side speaks to the personal-space steward, still pointing at the cohost path', () => {
+    const msg = collaboratorSpaceGateError(
+      {
+        type: 'business',
+        name: 'Daniel Tyack',
+        brandName: null,
+        slug: 'danieltyack',
+        ownerDisplayName: 'Daniel Tyack',
+        ownerHandle: 'danieltyack',
+      },
+      'feature',
+    )
+    expect(msg).toContain('cohost')
+    expect(msg).not.toBe("That is a member's personal space. Invite them as a cohost instead.")
+  })
+
+  it('a legacy raw type (pre-ADR-552 rows) normalizes to business and passes', () => {
+    expect(collaboratorSpaceGateError({ ...ROYAL_TEMPLE, type: 'event_space' }, 'invite')).toBeNull()
+  })
+
+  it('never emits an em dash (brand copy hard rule)', () => {
+    const personal = {
+      type: 'business',
+      name: 'Daniel Tyack',
+      brandName: null,
+      slug: 'danieltyack',
+      ownerDisplayName: 'Daniel Tyack',
+      ownerHandle: 'danieltyack',
+    }
+    for (const msg of [
+      collaboratorSpaceGateError({ ...ROYAL_TEMPLE, type: 'root' }),
+      collaboratorSpaceGateError(personal, 'invite'),
+      collaboratorSpaceGateError(personal, 'feature'),
+    ]) {
+      expect(msg).not.toContain('—')
     }
   })
 })
