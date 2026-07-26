@@ -116,6 +116,7 @@ export function EventSettingsModule() {
   const [location, setLocation] = useState('')
   const [venueName, setVenueName] = useState('')
   const [street, setStreet] = useState('')
+  const [hideAddress, setHideAddress] = useState(false)
   const [city, setCity] = useState('')
   const [region, setRegion] = useState('')
   const [postalCode, setPostalCode] = useState('')
@@ -167,6 +168,7 @@ export function EventSettingsModule() {
             setLocation(d.location ?? '')
             setVenueName(d.venue_name ?? '')
             setStreet(d.street ?? '')
+            setHideAddress(d.hide_address === true)
             setCity(d.city ?? '')
             setRegion(d.region ?? '')
             setPostalCode(d.postal_code ?? '')
@@ -557,6 +559,29 @@ export function EventSettingsModule() {
                 <input name="postal_code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="Postal code" className={`${input} min-w-0`} />
                 <input name="country" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" className={`${input} min-w-0`} />
               </div>
+
+              {/* Hidden address (ADR-825). A controlled HIDDEN input ('on'/'off') so the field is
+                  ALWAYS present in the autosave snapshot — the action only writes when present, so
+                  no other form can silently reset it. */}
+              <label className="flex items-start gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  checked={hideAddress}
+                  onChange={(e) => {
+                    setHideAddress(e.target.checked)
+                    requestAnimationFrame(saveNow)
+                  }}
+                  className="mt-0.5 h-4 w-4 rounded border-border"
+                />
+                <span className="text-sm text-text">
+                  Hide the address until someone registers
+                  <span className="block text-2xs font-normal text-subtle">
+                    People browsing see the city only. The venue, street, map pin, and directions
+                    show after they RSVP or get a ticket.
+                  </span>
+                </span>
+              </label>
+              <input type="hidden" name="hide_address" value={hideAddress ? 'on' : 'off'} />
             </div>
 
             <div className="space-y-1.5">

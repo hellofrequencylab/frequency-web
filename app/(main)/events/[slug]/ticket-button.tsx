@@ -23,6 +23,9 @@ export type TicketTierView = {
   spaceMembersOnly: boolean
   /** The specific membership tier that unlocks this ticket; null = any active membership. */
   spaceTierId: string | null
+  /** What the unlocking membership costs (e.g. "$44/mo") — shown as the price to NON-members so
+   *  the row communicates the real cost of access; members see the ticket's own price. */
+  membershipPriceLabel: string | null
 }
 
 const dollars = (cents: number | null | undefined) =>
@@ -187,18 +190,16 @@ export function TicketButton({
                       Members
                     </span>
                   )}
-                  {t.spaceMembersOnly &&
-                    (unlocked(t) ? (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
+                  {t.spaceMembersOnly && (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
+                      {unlocked(t) ? (
                         <Check className="h-2.5 w-2.5" />
-                        Included with your membership
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
+                      ) : (
                         <Lock className="h-2.5 w-2.5" />
-                        {membershipSpace ? `${membershipSpace.name} members` : 'Space members'}
-                      </span>
-                    ))}
+                      )}
+                      Included
+                    </span>
+                  )}
                 </p>
                 {t.description && <p className="mt-0.5 text-xs text-muted">{t.description}</p>}
                 {t.spotsLeft != null && !t.soldOut && (
@@ -206,7 +207,15 @@ export function TicketButton({
                 )}
               </div>
               <span className="shrink-0 text-sm font-semibold text-text">
-                {t.soldOut ? <span className="text-subtle">Sold out</span> : modeLabel(t)}
+                {t.soldOut ? (
+                  <span className="text-subtle">Sold out</span>
+                ) : t.spaceMembersOnly && !unlocked(t) && t.membershipPriceLabel ? (
+                  // Non-member on a members-included ticket: the price of ACCESS is the
+                  // membership, so show that instead of a misleading bare "Free".
+                  t.membershipPriceLabel
+                ) : (
+                  modeLabel(t)
+                )}
               </span>
             </button>
           )

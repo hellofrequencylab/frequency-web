@@ -205,7 +205,7 @@ export default async function MainLayout({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, display_name, handle, avatar_url, community_role, web_role, current_season_zaps, lifetime_gems, meta')
+    .select('id, display_name, handle, avatar_url, community_role, web_role, current_season_zaps, lifetime_gems, current_streak, meta')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -700,18 +700,19 @@ async function CoachOverlaySlot({ profileId, realRole }: { profileId: string; re
 // they have). Only pay for the status lookup when a task-cue is still unseen.
 const TASK_CUES = ['profile_face', 'circles_find', 'practice_adopt']
 
-// Daily check-in + onboarding tour. Gated on autoPopupsEnabled() (ships OFF) → returns null after
-// one flag read in the shipped state. When ON, tourSatisfied (getOnboardingStatus) streams in
-// behind this slot. Mirrors the prior inline logic.
+// Daily check-in + onboarding tour. The TOUR is gated on autoPopupsEnabled() (ships OFF). The
+// daily CHECK-IN always mounts — its server action pays the daily gems and ticks the visit
+// streak, so gating it behind the popups flag silently froze both (the header streak stuck at
+// its last value for weeks); the flag now only decides whether the celebration TOAST shows.
 async function AutoPopupsSlot({ profileId, tourState }: { profileId: string; tourState: TourState }) {
   const autoPopups = await autoPopupsEnabled()
-  if (!autoPopups) return null
+  if (!autoPopups) return <DailyCheckIn celebrate={false} />
   const tourSatisfied: string[] = TASK_CUES.some((id) => !tourState.seen.includes(id))
     ? (await getOnboardingStatus(profileId)).steps.filter((s) => s.done).map((s) => s.key)
     : []
   return (
     <>
-      <DailyCheckIn />
+      <DailyCheckIn celebrate />
       <TourProvider initialState={tourState} satisfied={tourSatisfied} />
     </>
   )

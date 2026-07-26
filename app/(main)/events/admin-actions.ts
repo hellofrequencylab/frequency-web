@@ -94,7 +94,7 @@ export async function getEventAdminData(slug: string) {
   })
     .from('events')
     .select(
-      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, details, geog',
+      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, details, geog, hide_address',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -183,6 +183,8 @@ type EventAdminRow = {
   recurrence_until: string | null
   details: Record<string, unknown> | null
   geog: unknown
+  /** ADR-825: exact address renders only for registered viewers / managers. */
+  hide_address: boolean | null
 }
 
 /** Cancel or reinstate the event — the host control that used to live in the
@@ -284,6 +286,11 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
       ...(timeZone ? { time_zone: timeZone } : {}),
       ...(category ? { category } : {}),
       ...(visibility ? { visibility } : {}),
+      // Hidden address (ADR-825): written ONLY when the form carries the field (a controlled
+      // hidden input, 'on'/'off'), so a form without the control can never silently reset it.
+      ...(fd.get('hide_address') != null
+        ? { hide_address: fd.get('hide_address') === 'on' }
+        : {}),
     })
     .eq('id', id)
   if (error) throw new Error(error.message)

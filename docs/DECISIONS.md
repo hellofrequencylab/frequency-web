@@ -14587,3 +14587,15 @@ Both A and B management surfaces live under the console's **Profile & Settings**
 **Alternatives.** A separate waitlist table — rejected: a waitlist spot is a membership lifecycle state, and one status column + the widened unique index gives ordering (started_at), promotion, and leave-the-waitlist for free. Auto-promotion on cancel — deferred: the owner should choose who comes off the list (tiers may be priced; billing lands later).
 
 **Consequences.** Tier edits no longer break membership/event links (the id churn that bit Royal Temple's Social Member price change is gone). Operators configure "membership includes this event" from either side and the join cards advertise it automatically. Data note: MELD's Members ticket opened to any active membership (owner: "Open both Tiers").
+
+## ADR-825 — Hide an event's address until registration (2026-07-26)
+
+**Context.** Owner directive: "create a function where the address of an event can be hidden until they register." Royal Temple had been faking this by typing "RSVP for Address" into the venue name. The public /discover surface was already city-level only (ADR-186) and the event JSON-LD never carried the venue, so the event page was the single leak surface.
+
+**Decision.** `events.hide_address boolean` (migration `20261222000000`). When true, the event page renders the exact venue — venue name, street, postal code, the free-text location line (which usually carries the street), the maps deep link, and the precise `geog` pin — only for a REGISTERED viewer (a going/waitlist RSVP or a ticket) or an event manager. Everyone else sees city-level location (`city, region`) with "Exact address shared after you RSVP." The editor control lives in the event Settings address box; the field is a controlled hidden input ('on'/'off') and the shared `updateEventSettings` action writes it ONLY when present, so a form without the control can never silently reset it (the lesson from the admin tier-form gate wipe).
+
+**Consequences.** RSVP'ing or claiming a ticket reveals the address in place. City-level discovery (map circle, city hubs, JSON-LD) is unchanged, so SEO doesn't regress. The interested/"maybe" state deliberately does NOT reveal (registering means committing).
+
+## Bug fix — header streak read a dead counter (2026-07-26)
+
+The header flame read `profiles.meta.daily_checkin_streak`, which froze (at 7) when the auto-popups flag turned OFF — the flag unmounted the DailyCheckIn component whose server action was the ONLY writer of that counter (and of the daily login gems). Two fixes: the header now shows `profiles.current_streak`, the same practice streak the activity panel and Your stats show (one number everywhere); and the check-in ACTION now always mounts, with the popups flag controlling only the celebration toast — a UI flag can never freeze a reward loop again.

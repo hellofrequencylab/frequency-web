@@ -146,10 +146,15 @@ export async function setSpaceEventAccess(
 
   // Opening/narrowing access is the Collective-depth capability (same gate as the event-side
   // writers). Checked only when GRANTING access, so retiring always works.
-  const { data: sp } = await admin.from('spaces').select('plan').eq('id', spaceId).maybeSingle()
+  const { data: sp } = await admin
+    .from('spaces')
+    .select('plan, name, brand_name')
+    .eq('id', spaceId)
+    .maybeSingle()
+  const spRow = sp as { plan: string | null; name: string | null; brand_name: string | null } | null
   const allowed = await featureAllowed(
     'space_membership_tickets',
-    { plan: asSpacePlan((sp as { plan: string | null } | null)?.plan) },
+    { plan: asSpacePlan(spRow?.plan) },
     { billingLive: await billingLive() },
   )
   if (!allowed) return fail('Membership-only tickets are part of the Collective plan.')
@@ -185,10 +190,11 @@ export async function setSpaceEventAccess(
     if (error) return fail('Could not update event access. Try again.')
     return ok()
   }
+  const brand = spRow?.brand_name ?? spRow?.name
   const { error } = await admin.from('event_ticket_types').insert({
     event_id: eventId,
-    name: 'Members',
-    description: 'Included with your membership',
+    name: brand ? `${brand} Member` : 'Members',
+    description: null,
     pricing_mode: 'free',
     sort_order: 1,
     active: true,
