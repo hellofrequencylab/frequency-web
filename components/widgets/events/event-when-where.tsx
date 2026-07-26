@@ -1,19 +1,20 @@
-import { CalendarClock, Repeat } from 'lucide-react'
+import { CalendarClock } from 'lucide-react'
 import { getEventContext } from '@/lib/events/active-event'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { recurrenceLabel, type RecurrenceType } from '@/lib/events/recurrence'
+import { recurrenceLabel } from '@/lib/events/recurrence'
+import { AddToCalendar } from '@/components/events/add-to-calendar'
 
-// The movable WHEN block (the `event-when-where` layout module, paired with the Place & Time
-// editor). A zero-prop self-fetching RSC: it reads the active event id from the request-scoped
-// context (lib/events/active-event.ts), then self-fetches the two facts no other event block
-// surfaces — the repeat cadence and the booking window (when RSVPs open and close). It returns
-// null for a plain one-off with no window, so it never leaves an empty slot or duplicates the
-// facts card. DAWN tokens only; container-query themed so it fits any slot.
+// The EVENT DETAILS card (the `event-when-where` layout module, paired with the Place & Time
+// editor). Owner spec: the one place the schedule facts live — the date and time each on their
+// OWN labeled row (never one run-on line), the repeat cadence for a recurring series, the booking
+// window (when RSVPs open and close), and the add-to-calendar links relocated out of the RSVP box
+// so they're available regardless of RSVP state. A zero-prop RSC: the date/time facts + calendar
+// URLs come pre-built from the request-scoped context (lib/events/active-event.ts `schedule` —
+// the SAME links the RSVP box used to carry), and only the RSVP window is self-fetched (no other
+// block surfaces it). Always renders on an event page. DAWN tokens only; container-query themed
+// so it fits any slot.
 
 type Row = {
-  time_zone: string | null
-  recurrence_type: string | null
-  recurrence_until: string | null
   details: Record<string, unknown> | null
 }
 
@@ -25,19 +26,25 @@ function formatWall(iso: string | null, opts: Intl.DateTimeFormatOptions): strin
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return null
   try {
-    return new Intl.DateTimeFormat(undefined, { ...opts, timeZone: 'UTC' }).format(d)
+    return new Intl.DateTimeFormat('en-US', { ...opts, timeZone: 'UTC' }).format(d)
   } catch {
     return null
   }
 }
 
 const DATE_OPTS: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric' }
-const FULL_OPTS: Intl.DateTimeFormatOptions = {
-  weekday: 'short',
-  month: 'short',
+const LONG_DATE_OPTS: Intl.DateTimeFormatOptions = {
+  weekday: 'long',
+  month: 'long',
   day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
+  year: 'numeric',
+}
+const TIME_OPTS: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' }
+const FULL_OPTS: Intl.DateTimeFormatOptions = { ...DATE_OPTS, ...TIME_OPTS }
+
+// Same-calendar-day check on the stored UTC parts (a multi-day event splits into Starts/Ends rows).
+function sameWallDay(aIso: string, bIso: string): boolean {
+  return aIso.slice(0, 10) === bIso.slice(0, 10)
 }
 
 function readWindow(details: Record<string, unknown> | null): { opensAt: string | null; closesAt: string | null } {
@@ -50,13 +57,26 @@ function readWindow(details: Record<string, unknown> | null): { opensAt: string 
   }
 }
 
+// One labeled fact row — the label column is what keeps dates and times unmistakably apart.
+function FactRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline gap-3">
+      <dt className="w-14 shrink-0 text-2xs font-semibold uppercase tracking-wide text-subtle">
+        {label}
+      </dt>
+      <dd className="min-w-0 text-sm font-medium text-text">{children}</dd>
+    </div>
+  )
+}
+
 export const EventWhenWhere = async () => {
   const ctx = getEventContext()
   if (!ctx) return null
+  const { schedule } = ctx
 
   const admin = createAdminClient()
-  // time_zone / recurrence_* / details sit outside the generated types → untyped read (repo
-  // convention; the event data layer does the same).
+  // details sits outside the generated types → untyped read (repo convention; the event data
+  // layer does the same). Only the RSVP window is read here — everything else rides the context.
   const { data } = await (admin as unknown as {
     from: (t: string) => {
       select: (cols: string) => {
@@ -65,51 +85,84 @@ export const EventWhenWhere = async () => {
     }
   })
     .from('events')
-    .select('time_zone, recurrence_type, recurrence_until, details')
+    .select('details')
     .eq('id', ctx.event.id)
     .maybeSingle()
-  if (!data) return null
 
-  const repeats =
-    data.recurrence_type && data.recurrence_type !== 'none'
-      ? recurrenceLabel(data.recurrence_type as RecurrenceType)
-      : null
-  const until = repeats ? formatWall(data.recurrence_until, DATE_OPTS) : null
-
-  const { opensAt, closesAt } = readWindow(data.details)
+  const { opensAt, closesAt } = readWindow(data?.details ?? null)
   const opensLine = formatWall(opensAt, FULL_OPTS)
   const closesLine = formatWall(closesAt, FULL_OPTS)
 
-  // Nothing additive to show → render nothing (the facts card already carries the one-off when).
-  if (!repeats && !opensLine && !closesLine) return null
+  const repeats =
+    schedule.recurrenceType !== 'none'
+      ? recurrenceLabel(schedule.recurrenceType)
+      : schedule.partOfSeries
+        ? 'Part of a recurring series'
+        : null
+  const until = schedule.recurrenceType !== 'none' ? formatWall(schedule.recurrenceUntil, DATE_OPTS) : null
+  const nextLine = formatWall(schedule.nextOccurrenceIso, DATE_OPTS)
+
+  // A multi-day event gets explicit Starts/Ends rows (date + time each); a same-day event keeps
+  // the cleaner Date row + Time row split.
+  const multiDay = !!schedule.endsAt && !sameWallDay(schedule.startsAt, schedule.endsAt)
+  const startTime = formatWall(schedule.startsAt, TIME_OPTS)
+  const endTime = formatWall(schedule.endsAt, TIME_OPTS)
 
   return (
     <div className="@container rounded-2xl border border-border bg-surface p-4">
       <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-text">
         <CalendarClock className="h-4 w-4 shrink-0 text-primary-strong" />
-        When it runs
+        Event Details
       </h3>
-      <ul className="space-y-2 text-sm text-muted">
+      <dl className="space-y-2">
+        {multiDay ? (
+          <>
+            <FactRow label="Starts">
+              {formatWall(schedule.startsAt, LONG_DATE_OPTS)}
+              <span className="text-muted"> at {startTime} {schedule.tzAbbrev}</span>
+            </FactRow>
+            <FactRow label="Ends">
+              {formatWall(schedule.endsAt, LONG_DATE_OPTS)}
+              <span className="text-muted"> at {endTime} {schedule.tzAbbrev}</span>
+            </FactRow>
+          </>
+        ) : (
+          <>
+            <FactRow label="Date">{formatWall(schedule.startsAt, LONG_DATE_OPTS)}</FactRow>
+            <FactRow label="Time">
+              {startTime}
+              {endTime && <> to {endTime}</>} {schedule.tzAbbrev}
+            </FactRow>
+          </>
+        )}
         {repeats && (
-          <li className="flex items-start gap-2">
-            <Repeat className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
-            <span>
-              {repeats}
-              {until && <span className="text-subtle"> until {until}</span>}
-            </span>
-          </li>
+          <FactRow label="Series">
+            {repeats}
+            {until && <span className="text-muted"> until {until}</span>}
+          </FactRow>
         )}
-        {opensLine && (
-          <li>
-            <span className="font-medium text-text">RSVPs open</span> {opensLine}
-          </li>
-        )}
-        {closesLine && (
-          <li>
-            <span className="font-medium text-text">RSVPs close</span> {closesLine}
-          </li>
-        )}
-      </ul>
+        {/* Recurring anchor whose date has passed: the next upcoming occurrence, so the series
+            never reads as a one-off that already happened. */}
+        {nextLine && <FactRow label="Next">{nextLine}</FactRow>}
+      </dl>
+      {(opensLine || closesLine) && (
+        <ul className="mt-3 space-y-1 text-sm text-muted">
+          {opensLine && (
+            <li>
+              <span className="font-medium text-text">RSVPs open</span> {opensLine}
+            </li>
+          )}
+          {closesLine && (
+            <li>
+              <span className="font-medium text-text">RSVPs close</span> {closesLine}
+            </li>
+          )}
+        </ul>
+      )}
+      {/* The relocated calendar buttons — same links the RSVP box carried, now RSVP-state-free. */}
+      <div className="mt-3 border-t border-border pt-3">
+        <AddToCalendar icsHref={schedule.icsHref} googleUrl={schedule.googleUrl} emphasis />
+      </div>
     </div>
   )
 }

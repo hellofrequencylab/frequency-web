@@ -34,6 +34,7 @@ export function DetailTemplate({
   band,
   tabs,
   stickyNav,
+  titleScale = 'default',
   children,
 }: {
   /** A fully custom hero node rendered ABOVE the context header band. The escape hatch for a
@@ -59,6 +60,10 @@ export function DetailTemplate({
    *  Every other Detail page omits it and is unchanged. The band must own the single
    *  page `<h1>` itself; `title` is then ignored for rendering. */
   band?: React.ReactNode
+  /** Heading scale. 'display' renders the h1 a deliberate step larger for marquee
+   *  destination pages (the public event page); the default keeps every existing
+   *  Detail page exactly as it was. */
+  titleScale?: 'default' | 'display'
   tabs?: DetailTab[]
   /** OPTIONAL sticky menu band rendered as a direct child of the page root (NOT inside the short
    *  header), so it pins under the global header and STAYS pinned for the whole scroll — its containing
@@ -111,7 +116,13 @@ export function DetailTemplate({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl sm:text-2xl font-bold text-text break-words">{title}</h1>
+                <h1
+                  className={`${
+                    titleScale === 'display' ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-xl sm:text-2xl'
+                  } font-bold text-text break-words`}
+                >
+                  {title}
+                </h1>
                 {badges}
               </div>
               {subtitle && (
