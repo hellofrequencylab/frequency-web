@@ -1,6 +1,8 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { MessageCircle } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { resolveEntityConsole } from '@/lib/admin/entity-console'
@@ -64,6 +66,19 @@ export default async function CircleManagePage({
       description="Your circle's settings in one place. Changes save as you make them and show up on the circle page."
       back={{ href: `/circles/${circle.slug}`, label: 'Back to circle' }}
       width="default"
+      actions={
+        // Message Circle (CRM Everywhere plan Phase 4, ADR-827): the circle's communication
+        // module, up front on the primary dashboard. Shown only to viewers who pass the same
+        // circle.moderate gate the /crm route enforces server-side.
+        caps.has('circle.moderate') ? (
+          <Link
+            href={`/circles/${circle.slug}/crm`}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          >
+            <MessageCircle className="h-3.5 w-3.5" aria-hidden /> Message Circle
+          </Link>
+        ) : undefined
+      }
       stats={
         <>
           <StatCard label="Members" value={`${circle.member_count} of ${cap}`} />

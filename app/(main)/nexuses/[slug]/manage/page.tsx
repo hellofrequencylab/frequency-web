@@ -1,5 +1,7 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { MessageCircle } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getNexusCapabilities } from '@/lib/core/load-capabilities'
 import { resolveEntityConsole } from '@/lib/admin/entity-console'
@@ -51,6 +53,20 @@ export default async function NexusManagePage({
       description="Your nexus's settings in one place. Changes save as you make them and show up on the nexus page."
       back={{ href: `/nexuses/${nexus.slug}`, label: 'Back to nexus' }}
       width="default"
+      actions={
+        // The nexus's communication module (CRM Everywhere plan Phase 4 sibling, ADR-827), up
+        // front on the primary dashboard. Shown only to viewers who pass the same nexus.manage
+        // gate the /crm route enforces server-side.
+        // NAMING: provisional. "Message Members" is not canon-ruled for nexuses yet.
+        caps.has('nexus.manage') ? (
+          <Link
+            href={`/nexuses/${nexus.slug}/crm`}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          >
+            <MessageCircle className="h-3.5 w-3.5" aria-hidden /> Message Members
+          </Link>
+        ) : undefined
+      }
       stats={
         <>
           <StatCard label="Member cap" value={String(nexus.member_cap ?? '—')} />
