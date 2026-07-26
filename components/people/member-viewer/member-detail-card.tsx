@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { getInitials, cn } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { profileHrefFor } from '@/lib/people/member-viewer'
 import type { MemberAction, MemberDetail, MemberRole } from './types'
 import type { DetailMode } from './types'
@@ -90,12 +91,12 @@ function Avatar({ detail, size = 64 }: { detail: MemberDetail; size?: number }) 
   if (detail.avatarUrl) {
     return (
       <Image
-        src={detail.avatarUrl}
+        src={avatarSrc(detail.avatarUrl)}
         alt={detail.displayName}
         width={size}
         height={size}
         className="rounded-full object-cover"
-        style={{ width: size, height: size }}
+        style={{ width: size, height: size, ...avatarFocusStyle(detail.avatarUrl) }}
       />
     )
   }

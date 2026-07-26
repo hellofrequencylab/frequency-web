@@ -22,7 +22,8 @@ export async function loadCircleCrmDetail(slug: string, profileId: string): Prom
   if (!circle) throw new Error('You cannot manage this circle.')
   const memberIds = await listActiveCircleMemberIds(circle.id)
   if (!memberIds.has(profileId)) throw new Error('That person is not in this circle.')
-  return buildMemberDetail(profileId, { audience: 'leader' })
+  // The Path lane (ADR-827 ruling 3): this circle's comms only, fail-closed in the assembler.
+  return buildMemberDetail(profileId, { audience: 'leader', scope: { kind: 'circle', id: circle.id } })
 }
 
 /** Open (or reuse) the 1:1 thread with a circle member, then land in it. A refusal (blocked pair,

@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ROLE_LABEL } from '@/lib/community-roles'
 import { getInitials, cn } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import {
   applyQuery,
   type MemberDetail,
@@ -674,10 +675,11 @@ function ListRow({
         <div className="relative shrink-0">
           {member.avatarUrl ? (
             <Image
-              src={member.avatarUrl}
+              src={avatarSrc(member.avatarUrl)}
               alt={member.displayName}
               width={rich ? 36 : 32}
               height={rich ? 36 : 32}
+              style={avatarFocusStyle(member.avatarUrl)}
               className={cn('rounded-full object-cover', rich ? 'h-9 w-9' : 'h-8 w-8')}
             />
           ) : (

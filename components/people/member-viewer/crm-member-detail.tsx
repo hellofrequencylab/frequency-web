@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
+  ChevronRight,
   Mail,
   MessageCircle,
   Phone,
@@ -19,9 +20,7 @@ import {
   CalendarDays,
   Building2,
   StickyNote,
-  Sparkles,
   UserCheck,
-  Route as RouteIcon,
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -29,8 +28,10 @@ import { Dialog } from '@/components/ui/dialog'
 import { StatCard } from '@/components/ui/stat-card'
 import { isError } from '@/lib/action-result'
 import { getInitials, cn } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 // Type-only import: never pull the server-only network reader into the client bundle.
 import type { MemberNetwork, NetworkItem } from '@/lib/crm/member-network'
+import { MessagePathFold } from './message-path'
 import { MemberComposer } from '@/components/admin/crm/member-composer'
 import { SpaceMemberComposer } from '@/components/spaces/crm/space-member-composer'
 import { discardDraftIfEmpty } from '@/app/(main)/admin/email-studio/actions'
@@ -48,9 +49,11 @@ function networkIsEmpty(n: MemberNetwork): boolean {
 // page, so no separate member page is ever needed:
 //   (a) a compact profile card  — identity + ALL contact info (email / phone / links) + role chips.
 //   (b) the <MemberComposer>     — the sibling compose surface (reach out in-line).
-//   (c) an expandable dropdown   — the FULL profile, ported + condensed from the retired contact page:
-//        identity + notes · scores + the engagement rollup (4-across) · what they MANAGE + are PART OF
-//        · a "Path" rail of MAJOR milestones only.
+//   (c) THE PATH fold-down       — the MAIN FOCUS (ADR-827 ruling 3 + owner directive): the threaded
+//        message history through the viewer's lane, each entry naming its tied website event, with
+//        the MAJOR-milestone strip inside. Open by default on scoped surfaces.
+//   (d) "More about <name>"      — the stat blocks (notes · scores · engagement · manages / part of),
+//        TRUNCATED behind one collapsed expander so the history leads.
 // Presentation-neutral: it renders only the fields the server sourced (all optional, fail-safe). Semantic
 // DAWN tokens only, no hex; copy is plain, no em dashes (docs/CONTENT-VOICE.md).
 
@@ -73,10 +76,11 @@ function Avatar({ detail }: { detail: CrmMemberDetail }) {
   if (detail.avatarUrl) {
     return (
       <Image
-        src={detail.avatarUrl}
+        src={avatarSrc(detail.avatarUrl)}
         alt={detail.displayName}
         width={56}
         height={56}
+        style={avatarFocusStyle(detail.avatarUrl)}
         className="h-14 w-14 rounded-full object-cover"
       />
     )
@@ -115,14 +119,16 @@ function NetworkGroup({ icon: Icon, label, items }: { icon: typeof Users; label:
   )
 }
 
-/** The in-dropdown FULL profile (ported + condensed from the retired contact page). */
+/** The stat blocks (ported + condensed from the retired contact page), TRUNCATED by default: they
+ *  render inside the collapsed "More about" fold below so The Path stays the pane's main focus
+ *  (owner directive, ADR-827 ruling 3). */
 function FullProfile({ detail }: { detail: CrmMemberDetail }) {
-  const { scores, engagement, network, milestones, notes } = detail
+  const { scores, engagement, network, notes } = detail
   const hasScores = scores && (scores.health != null || scores.tier || scores.churn || scores.activation != null || scores.lifecycle)
   const hasNetwork = network && !networkIsEmpty(network)
 
   return (
-    <div className="mt-3 space-y-5 border-t border-border pt-4">
+    <div className="space-y-5">
       {/* Notes */}
       {notes && notes.length > 0 && (
         <section>
@@ -186,26 +192,51 @@ function FullProfile({ detail }: { detail: CrmMemberDetail }) {
         </section>
       )}
 
-      {/* The "Path" rail: MAJOR milestones only. */}
-      {milestones && milestones.length > 0 && (
-        <section>
-          <h4 className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
-            <RouteIcon className="h-3.5 w-3.5" aria-hidden /> Path
-          </h4>
-          <ol className="relative space-y-3 border-l border-border pl-5">
-            {milestones.map((m, i) => (
-              <li key={`${m.kind}-${m.at}-${i}`} className="relative">
-                <span className="absolute -left-[27px] flex h-5 w-5 items-center justify-center rounded-full bg-surface-elevated text-primary-strong">
-                  <Sparkles className="h-3 w-3" aria-hidden />
-                </span>
-                <p className="text-sm font-medium text-text">{m.title}</p>
-                {m.detail && <p className="text-2xs text-subtle">{m.detail}</p>}
-              </li>
-            ))}
-          </ol>
-        </section>
-      )}
     </div>
+  )
+}
+
+/** True when the member has any stat block worth a "More about" fold. */
+function hasProfileBlocks(detail: CrmMemberDetail): boolean {
+  const { scores, engagement, network, notes } = detail
+  return !!(
+    (notes && notes.length > 0) ||
+    (scores && (scores.health != null || scores.tier || scores.churn || scores.activation != null || scores.lifecycle)) ||
+    engagement ||
+    (network && !networkIsEmpty(network))
+  )
+}
+
+/** The collapsed expander holding the stat blocks (scores, engagement, manages, part of, notes) so
+ *  The Path keeps the pane's focus. One tap opens everything; collapsed by default on every surface. */
+function MoreAboutFold({ detail }: { detail: CrmMemberDetail }) {
+  const [open, setOpen] = useState(false)
+  if (!hasProfileBlocks(detail)) return null
+  const firstName = detail.displayName.trim().split(/\s+/)[0] || detail.displayName
+  return (
+    <section className="rounded-2xl border border-border">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-left transition-colors hover:bg-surface-elevated/60"
+      >
+        <UserCheck className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+        <span className="text-sm font-bold tracking-tight text-text">More about {firstName}</span>
+        <span className="min-w-0 flex-1 truncate text-right text-2xs text-subtle">
+          Scores, engagement, and their network
+        </span>
+        <ChevronRight
+          className={cn('h-4 w-4 shrink-0 text-subtle transition-transform', open && 'rotate-90')}
+          aria-hidden
+        />
+      </button>
+      {open && (
+        <div className="border-t border-border px-3 py-4">
+          <FullProfile detail={detail} />
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -413,9 +444,18 @@ export function CrmMemberDetailPane({
         </>
       )}
 
-      {/* (c) The FULL profile, always open. Selecting a member opens everything about them inline
-          (scores, engagement, network, path) with no dropdown to expand. */}
-      <FullProfile detail={detail} />
+      {/* (c) THE PATH (ADR-827 ruling 3 + owner directive): the threaded message history is the
+          pane's MAIN FOCUS. Open by default on the scoped surfaces (event / circle / space); the
+          platform pane starts on the one-line latest-touch summary. Each entry names the website
+          event it was tied to; the old milestone rail lives on as the strip inside the fold. */}
+      <MessagePathFold
+        path={detail.path}
+        milestones={detail.milestones ?? []}
+        defaultOpen={messaging.kind !== 'platform'}
+      />
+
+      {/* (d) Everything else about them, truncated behind one expander so the history leads. */}
+      <MoreAboutFold detail={detail} />
     </div>
   )
 }
