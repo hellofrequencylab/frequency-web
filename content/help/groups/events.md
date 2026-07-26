@@ -54,7 +54,7 @@ See a cool event poster around town, or one on Eventbrite or in a group chat? Ca
 ## Tickets & paying
 
 - Many gatherings are free; just RSVP. Some are **ticketed**, and hosts can price them however fits: a set price, **pay-what-you-can**, a **sliding scale**, or a **donation**. Pick the amount that works for you (within any minimum the host sets).
-- Some tickets are **reserved for members** of the Space hosting the event. You'll see a small lock naming the Space; join their membership from their page and the ticket unlocks. Hosts often pair one with a public ticket, so membership can include events that everyone else pays for.
+- Some tickets are **reserved for members** of the Space hosting the event. You'll see a small lock naming the Space; tap the membership row and you can join right on the event page, and the ticket unlocks. Hosts often pair one with a public ticket, so membership can include events that everyone else pays for.
 - Payment goes **straight to the host**. If plans change, hosts can **refund** a ticket, and if a host **cancels the event, everyone who paid is refunded automatically** and emailed to let you know.
 
 ## Checking in verifies you
