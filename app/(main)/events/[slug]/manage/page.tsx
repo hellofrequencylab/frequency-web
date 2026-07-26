@@ -114,7 +114,7 @@ export default async function ManageEventPage({
 
   return (
     <DashboardTemplate
-      eyebrow="Manage"
+      eyebrow="Manage event"
       title={event.title}
       description="Your behind-the-scenes view: who is coming, what they told you, and a direct line to reach them."
       back={{ href: `/events/${event.slug}`, label: 'Back to event' }}

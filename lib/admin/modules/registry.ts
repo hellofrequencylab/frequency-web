@@ -146,8 +146,10 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   },
   // The communication module (ADR-827): every primary management dashboard carries its scope's CRM
   // up front. First non-space use of the `comms` slot; `render: 'link'` because the member viewer is
-  // a full master-detail page, never an inline rail form. Priority sits at the TOP of the primary
-  // band (owner: "up front in any admin dashboard").
+  // a full master-detail surface, never an inline rail form. It leads the circle Manage hub's Home
+  // tab as the message center (ADR-828), so the link resolves to /circles/<slug>/manage
+  // (entity-surface-hrefs). Priority sits at the TOP of the primary band (owner: "up front in any
+  // admin dashboard").
   {
     id: 'circle.crm',
     label: 'Message Circle',

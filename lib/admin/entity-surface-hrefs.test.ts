@@ -36,10 +36,10 @@ describe('hrefForEntitySurface', () => {
   })
 
   it('resolves the four communication modules (*.crm, ADR-827) to their message-center homes', () => {
-    // The event message center leads the Manage hub's Home tab (Events manage overhaul), so
-    // event.crm deep-links to the hub; the other three keep their standalone /crm pages.
+    // The event + circle message centers lead their Manage hubs' Home tab (ADR-828), so those
+    // two deep-link to the hub; hub + nexus keep their standalone /crm pages.
     expect(hrefForEntitySurface('event.crm', { kind: 'event', id: 'summer-social' })).toBe('/events/summer-social/manage')
-    expect(hrefForEntitySurface('circle.crm', { kind: 'circle', id: 'sunrise-sit' })).toBe('/circles/sunrise-sit/crm')
+    expect(hrefForEntitySurface('circle.crm', { kind: 'circle', id: 'sunrise-sit' })).toBe('/circles/sunrise-sit/manage')
     expect(hrefForEntitySurface('hub.crm', { kind: 'hub', id: 'north' })).toBe('/hubs/north/crm')
     expect(hrefForEntitySurface('nexus.crm', { kind: 'nexus', id: 'core' })).toBe('/nexuses/core/crm')
   })
@@ -48,8 +48,8 @@ describe('hrefForEntitySurface', () => {
     // Detail pages hand the rail a scope whose id is the DB uuid; the rail must resolve link-row
     // hrefs through the slug-corrected scope (settings-panel slugScope), never the raw uuid scope.
     const uuid = '3b1f5c2e-8a44-4f4e-9c37-0d2f6b7a1e90'
-    expect(hrefForEntitySurface('circle.crm', { kind: 'circle', id: uuid })).toBe(`/circles/${uuid}/crm`)
-    expect(hrefForEntitySurface('circle.crm', { kind: 'circle', id: 'sunrise-sit' })).toBe('/circles/sunrise-sit/crm')
+    expect(hrefForEntitySurface('circle.crm', { kind: 'circle', id: uuid })).toBe(`/circles/${uuid}/manage`)
+    expect(hrefForEntitySurface('circle.crm', { kind: 'circle', id: 'sunrise-sit' })).toBe('/circles/sunrise-sit/manage')
   })
 
   it('resolves event/hub/nexus core-entity surfaces to their owner manage console (ADR-515 bank seam)', () => {
