@@ -25,7 +25,9 @@ import type { SectionPresence } from '@/lib/spaces/section-anchors'
 import type { SpaceProfileData } from '@/lib/spaces/profile-data'
 import type { LayoutPreset } from '@/lib/spaces/layout-presets'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
-import { listEventsForSpace } from '@/lib/events/store'
+import { listEventsForSpace, listCalendarEngagement } from '@/lib/events/store'
+import { TICKETING_ENABLED } from '@/lib/events/ticketing'
+import { eventPriceLabel } from '@/app/(main)/events/index-data'
 import { listPracticesForSpace } from '@/lib/practices'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
 import { listCirclesForSpace } from '@/lib/circles/store'
@@ -68,12 +70,36 @@ export type SpaceHighlight = { label: string; value: number }
 export type SpaceStat = { metric: ResolvedStat['metric']; label: string; value: number }
 
 /** One upcoming event the SpaceEvents block lists, from the Space's own events (soonest first, live
- *  only). Plain shape so the block imports nothing server-only. */
+ *  only). Plain shape so the block imports nothing server-only. The optional fields feed the block's
+ *  Cards / Calendar views and the on-page event popup (Events block upgrade); every one is additive, so
+ *  older callers keep working with the lean {id, slug, title, startsAt} core. */
 export type SpaceEventItem = {
   id: string
   slug: string
   title: string
   startsAt: string
+  endsAt?: string | null
+  /** The event's own IANA zone (events.time_zone) for server-side when-label formatting. */
+  timeZone?: string | null
+  /** Short description for the popup (events.description), plain text. */
+  description?: string | null
+  /** The VIEWER-SAFE place line: venue + city normally; city-level only when the host hides the
+   *  exact address (ADR-825 — the data bag render is viewer-agnostic, so it always carries what a
+   *  non-registered visitor may see; the full address lives on the event page after RSVP). */
+  location?: string | null
+  /** True when the host hides the exact address until registration (drives the honest note). */
+  addressHidden?: boolean
+  capacity?: number | null
+  /** Confirmed 'going' count (social proof + the card's capacity-aware line). */
+  going?: number
+  /** Public cover URL (event-media bucket), or null. */
+  coverUrl?: string | null
+  /** Price stat, "Free" / "$X" / "From $X" (same resolution as the events index cards). */
+  priceLabel?: string
+  /** ADR-826 tickets mode (buying is attending): the popup offers price + Get tickets on the event
+   *  page instead of an RSVP switch. */
+  ticketsMode?: boolean
+  isDemo?: boolean
 }
 
 /** Whether the Space is currently taking bookings, for the SpaceBooking block. Honest: `enabled` is
@@ -720,14 +746,75 @@ export async function getSpaceStats(spaceId: string): Promise<SpaceStat[]> {
   }
 }
 
+/** One active ticket tier's price fields, for the card's price stat (mirrors the /events index
+ *  loader's TierPriceRow — structural, so eventPriceLabel accepts it). */
+type SpaceTierPriceRow = {
+  event_id: string
+  pricing_mode: string
+  price_cents: number | null
+  min_cents: number | null
+  suggested_cents: number | null
+}
+
 /** The Space's UPCOMING events (soonest first, cancelled dropped), for the SpaceEvents block. Reuses
- *  listEventsForSpace (never re-queries events raw). FAIL-SAFE to []. */
+ *  listEventsForSpace (never re-queries events raw), then enriches in TWO batched reads (never N+1):
+ *  going counts + cover URLs via listCalendarEngagement, and active ticket tiers for the price stat
+ *  (the same resolution the /events index cards use). FAIL-SAFE to [] / to the lean shape. */
 export async function getSpaceUpcomingEvents(spaceId: string): Promise<SpaceEventItem[]> {
   try {
     const events = await listEventsForSpace(spaceId, { limit: 24, upcomingOnly: true })
-    return events
-      .filter((e) => !e.is_cancelled)
-      .map((e) => ({ id: e.id, slug: e.slug, title: e.title, startsAt: e.starts_at }))
+    const live = events.filter((e) => !e.is_cancelled)
+    if (live.length === 0) return []
+    const ids = live.map((e) => e.id)
+    const [engagement, tierRows] = await Promise.all([
+      listCalendarEngagement(ids),
+      createAdminClient()
+        .from('event_ticket_types')
+        .select('event_id, pricing_mode, price_cents, min_cents, suggested_cents')
+        .in('event_id', ids)
+        .eq('active', true)
+        .then(
+          ({ data }) => (data ?? []) as SpaceTierPriceRow[],
+          () => [] as SpaceTierPriceRow[],
+        ),
+    ])
+    const tiersByEvent: Record<string, SpaceTierPriceRow[]> = {}
+    for (const t of tierRows) (tiersByEvent[t.event_id] ??= []).push(t)
+    return live.map((e) => {
+      const eng = engagement.get(e.id)
+      const priceLabel = eventPriceLabel(e.price_cents ?? null, tiersByEvent[e.id] ?? [])
+      // ADR-826: 'auto'/'tickets' + a real price + ticketing on = buying is attending. 'rsvp' keeps
+      // the answer switch for everyone (prices are informational), and a free event always RSVPs.
+      const paid = priceLabel !== 'Free'
+      const ticketsMode = TICKETING_ENABLED && paid && (e.join_mode ?? 'auto') !== 'rsvp'
+      // ADR-825: the data bag is viewer-agnostic, so it carries only what a NON-REGISTERED visitor may
+      // see. Hidden address = city-level line; otherwise venue + city (or the free-text location line).
+      const cityLine = [e.city, e.region].map((p) => p?.trim()).filter(Boolean).join(', ')
+      const venue = e.venue_name?.trim() || null
+      const addressHidden = e.hide_address === true
+      const location = addressHidden
+        ? cityLine || null
+        : venue && cityLine
+          ? `${venue} · ${cityLine}`
+          : venue || e.location?.trim() || cityLine || null
+      return {
+        id: e.id,
+        slug: e.slug,
+        title: e.title,
+        startsAt: e.starts_at,
+        endsAt: e.ends_at ?? null,
+        timeZone: e.time_zone ?? null,
+        description: e.description ?? null,
+        location,
+        addressHidden,
+        capacity: e.capacity ?? null,
+        going: eng?.going ?? 0,
+        coverUrl: eng?.coverUrl ?? null,
+        priceLabel,
+        ticketsMode,
+        isDemo: e.is_demo === true,
+      }
+    })
   } catch {
     return []
   }

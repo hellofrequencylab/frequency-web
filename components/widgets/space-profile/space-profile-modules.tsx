@@ -55,6 +55,10 @@ type BlockComponent = (props: {
    *  feature. EMPTY / absent === show EVERY live item (item 7's default). Each block intersects this with
    *  its live ids (resolvePickedIds), so a stale id is dropped and only real items ever render. */
   featuredIds?: string[]
+  /** The block's FULL sanitized content bag (Events block upgrade): a data block with extra declared
+   *  settings beyond header + picker (e.g. the Events view/columns segmented fields) reads them off
+   *  this. Blocks that declare none simply ignore it. */
+  content?: Record<string, unknown>
 }) => React.ReactNode
 
 /** The id -> section component map (parity with the S1 PROFILE_BLOCKS registry ids). Adding a section
@@ -154,7 +158,13 @@ function renderSpaceBlock(
     // The owner's authored eyebrow/title REPLACE the block's real header (ADR-542), default-filled. A
     // function-backed block also carries its picker selection (ADR-573 item 5); empty === show all (item 7).
     inner = (
-      <Block space={space} data={data} header={resolveDataHeader(id, contentProps)} featuredIds={pickerSelection(contentProps)} />
+      <Block
+        space={space}
+        data={data}
+        header={resolveDataHeader(id, contentProps)}
+        featuredIds={pickerSelection(contentProps)}
+        content={contentProps}
+      />
     )
   } else {
     const blockId = toProfileBlockId(id)
@@ -174,6 +184,7 @@ function renderSpaceBlock(
         header={resolveDataHeader(id, contentProps)}
         authoredBody={authoredBody}
         featuredIds={pickerSelection(contentProps)}
+        content={contentProps}
       />
     )
   }
