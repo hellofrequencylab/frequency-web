@@ -71,10 +71,12 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
       },
       side: {
         order: [
+          // Warm proof (the who's-coming pile) now lives INSIDE the unified event-join RSVP box
+          // (ADR-826); the standalone `event-warm-proof` module stays registered for operators
+          // who place it elsewhere, but the default no longer double-renders it.
           'event-join',
           'event-schedule',
           'event-facts',
-          'event-warm-proof',
           'event-cohosts',
         ],
         hidden: [],

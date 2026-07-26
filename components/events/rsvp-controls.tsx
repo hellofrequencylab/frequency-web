@@ -40,6 +40,7 @@ export function RsvpControls({
   plusOneNames = [],
   requiresApproval = false,
   approvalStatus = 'none',
+  allowGoing = true,
 }: {
   eventId: string
   /** Needed for revalidation on the depth actions; optional for the lean toggle. */
@@ -58,6 +59,10 @@ export function RsvpControls({
   requiresApproval?: boolean
   /** The viewer's approval state ('pending' shows the calm "request sent" line). */
   approvalStatus?: 'none' | 'pending' | 'approved'
+  /** False on a TICKETED event for a viewer whose way in is a ticket (the unified RSVP box,
+   *  ADR-826): the Going segment hides — buying/claiming the ticket IS "going" — while Maybe
+   *  and Can't go stay answerable, and a guest can still change their answer any time. */
+  allowGoing?: boolean
 }) {
   const [pending, startTransition] = useTransition()
   const [names, setNames] = useState<string[]>(plusOneNames)
@@ -179,24 +184,28 @@ export function RsvpControls({
       <div
         role="group"
         aria-label="RSVP"
-        className="grid w-full max-w-sm grid-cols-3 gap-1 rounded-xl border border-border bg-surface p-1"
+        className={`grid w-full max-w-sm gap-1 rounded-xl border border-border bg-surface p-1 ${
+          allowGoing ? 'grid-cols-3' : 'grid-cols-2'
+        }`}
       >
-        <button
-          type="button"
-          onClick={onGoing}
-          disabled={pending}
-          aria-pressed={isGoing || isWaitlisted}
-          className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
-            isGoing
-              ? 'bg-success-bg text-success'
-              : isWaitlisted
-                ? 'bg-surface-elevated text-muted'
-                : 'text-muted hover:bg-surface-elevated hover:text-text'
-          }`}
-        >
-          <GoingIcon className="h-5 w-5" />
-          <span className="text-center leading-tight">{goingLabel}</span>
-        </button>
+        {allowGoing && (
+          <button
+            type="button"
+            onClick={onGoing}
+            disabled={pending}
+            aria-pressed={isGoing || isWaitlisted}
+            className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
+              isGoing
+                ? 'bg-success-bg text-success'
+                : isWaitlisted
+                  ? 'bg-surface-elevated text-muted'
+                  : 'text-muted hover:bg-surface-elevated hover:text-text'
+            }`}
+          >
+            <GoingIcon className="h-5 w-5" />
+            <span className="text-center leading-tight">{goingLabel}</span>
+          </button>
+        )}
 
         <button
           type="button"
