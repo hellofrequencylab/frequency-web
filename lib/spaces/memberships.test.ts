@@ -55,6 +55,8 @@ type TierRow = {
   interval: string
   description: string | null
   benefits: unknown
+  capacity?: number | null
+  waitlist?: boolean
   sort: number
   is_active: boolean
 }
@@ -77,26 +79,43 @@ const db = {
 }
 
 function tiersBuilder() {
-  const filters: { space_id?: string } = {}
+  const filters: { space_id?: string; id?: string } = {}
+  let pendingUpdate: Record<string, unknown> | null = null
   const api = {
     select() {
       return api
     },
     eq(col: string, val: string) {
       if (col === 'space_id') filters.space_id = val
+      if (col === 'id') filters.id = val
+      return api
+    },
+    in() {
       return api
     },
     order() {
       return api
     },
+    update(patch: Record<string, unknown>) {
+      pendingUpdate = patch
+      return api
+    },
     delete() {
-      return {
-        async eq(_col: string, val: string) {
-          db.deletes.push(val)
-          db.tiers = db.tiers.filter((r) => r.space_id !== val)
+      const del = {
+        eq(col: string, val: string) {
+          if (col === 'space_id') filters.space_id = val
+          return del
+        },
+        // upsert-by-id (ADR-824): delete().eq('space_id').in('id', removedIds)
+        async in(_col: string, ids: string[]) {
+          db.deletes.push(...ids)
+          db.tiers = db.tiers.filter(
+            (r) => !(r.space_id === filters.space_id && ids.includes(r.id)),
+          )
           return { error: null }
         },
       }
+      return del
     },
     async insert(rows: Record<string, unknown>[]) {
       for (const r of rows) {
@@ -106,6 +125,13 @@ function tiersBuilder() {
       return { error: null }
     },
     then(resolve: (r: { data: TierRow[] | null; error: null }) => unknown) {
+      // An awaited update chain (update().eq('id').eq('space_id')) applies here.
+      if (pendingUpdate) {
+        const row = db.tiers.find((r) => r.id === filters.id && r.space_id === filters.space_id)
+        if (row) Object.assign(row, pendingUpdate)
+        pendingUpdate = null
+        return Promise.resolve(resolve({ data: null, error: null }))
+      }
       let data = db.tiers.filter((r) => r.space_id === filters.space_id)
       data = [...data].sort((a, b) => a.sort - b.sort)
       return Promise.resolve(resolve({ data, error: null }))
@@ -115,9 +141,23 @@ function tiersBuilder() {
 }
 
 function membershipsBuilder() {
-  const filters: { space_id?: string; status?: string; id?: string; member_profile_id?: string } = {}
+  const filters: {
+    space_id?: string
+    status?: string
+    statusIn?: string[]
+    id?: string
+    member_profile_id?: string
+  } = {}
   let pendingInsert: Record<string, unknown> | null = null
   let pendingUpdate: Record<string, unknown> | null = null
+
+  const matches = (m: MembershipRow) =>
+    (!filters.id || m.id === filters.id) &&
+    (!filters.space_id || m.space_id === filters.space_id) &&
+    (!filters.member_profile_id || m.member_profile_id === filters.member_profile_id) &&
+    (!filters.status || m.status === filters.status) &&
+    (!filters.statusIn || filters.statusIn.includes(m.status))
+
   const api = {
     select() {
       return api
@@ -127,12 +167,10 @@ function membershipsBuilder() {
       if (col === 'status') filters.status = val
       if (col === 'id') filters.id = val
       if (col === 'member_profile_id') filters.member_profile_id = val
-      // an eq after update() is the terminal write
-      if (pendingUpdate && col === 'id') {
-        const row = db.memberships.find((m) => m.id === val)
-        if (row) Object.assign(row, pendingUpdate)
-        return Promise.resolve({ error: null })
-      }
+      return api
+    },
+    in(col: string, vals: string[]) {
+      if (col === 'status') filters.statusIn = vals
       return api
     },
     order() {
@@ -161,19 +199,17 @@ function membershipsBuilder() {
         db.inserts.push(pendingInsert)
         return { data: row, error: null }
       }
-      // a read: by id, or by (space_id, member_profile_id, status)
-      let rows = db.memberships
-      if (filters.id) rows = rows.filter((m) => m.id === filters.id)
-      if (filters.space_id) rows = rows.filter((m) => m.space_id === filters.space_id)
-      if (filters.member_profile_id)
-        rows = rows.filter((m) => m.member_profile_id === filters.member_profile_id)
-      if (filters.status) rows = rows.filter((m) => m.status === filters.status)
+      const rows = db.memberships.filter(matches)
       return { data: rows[0] ?? null, error: null }
     },
     then(resolve: (r: { data: MembershipRow[] | null; error: null }) => unknown) {
-      let data = db.memberships.filter((m) => m.space_id === filters.space_id)
-      if (filters.status) data = data.filter((m) => m.status === filters.status)
-      return Promise.resolve(resolve({ data, error: null }))
+      // An awaited update chain (update().eq('id')[.eq('status')]) applies here.
+      if (pendingUpdate) {
+        for (const row of db.memberships.filter(matches)) Object.assign(row, pendingUpdate)
+        pendingUpdate = null
+        return Promise.resolve(resolve({ data: null, error: null }))
+      }
+      return Promise.resolve(resolve({ data: db.memberships.filter(matches), error: null }))
     },
   }
   return api
@@ -213,6 +249,7 @@ import {
   joinTier,
   cancelMembership,
   listSpaceMemberships,
+  planTierSetOps,
   type MembershipTier,
 } from './memberships'
 
@@ -237,6 +274,8 @@ function tier(over: Partial<MembershipTier> = {}): MembershipTier {
     interval: 'month',
     description: null,
     benefits: ['Unlimited classes'],
+    capacity: null,
+    waitlist: false,
     sort: 0,
     isActive: true,
     ...over,
@@ -287,9 +326,21 @@ describe('normalizeTier (pure, fail-closed)', () => {
       interval: 'year',
       description: 'great',
       benefits: ['x'],
+      capacity: null,
+      waitlist: false,
       sort: 3,
       isActive: false,
     })
+  })
+
+  it('parses capacity + waitlist (ADR-824); malformed capacity falls open to unlimited', () => {
+    expect(normalizeTier({ name: 'A', capacity: 12, waitlist: true })).toMatchObject({
+      capacity: 12,
+      waitlist: true,
+    })
+    expect(normalizeTier({ name: 'A', capacity: -3 })?.capacity).toBeNull()
+    expect(normalizeTier({ name: 'A', capacity: 'lots' })?.capacity).toBeNull()
+    expect(normalizeTier({ name: 'A', waitlist: 'yes' })?.waitlist).toBe(false)
   })
 
   it('drops a tier with no name', () => {
@@ -351,23 +402,41 @@ describe('setMembershipTiers (action) — permission gating', () => {
     expect(db.inserts).toHaveLength(0)
   })
 
-  it('an authorized editor replaces the tiers (delete then insert), dropping invalid ones', async () => {
+  it('an authorized editor saves the tiers (upsert-by-id), dropping invalid ones', async () => {
     const r = await setMembershipTiers('space-1', [
       tier({ name: 'Gold' }),
       tier({ name: '' }), // invalid: dropped
     ])
     expect('error' in r).toBe(false)
-    expect(db.deletes).toContain('space-1') // cleared first
+    expect(db.deletes).toHaveLength(0) // nothing existed, nothing deleted
     expect(db.inserts).toHaveLength(1) // only the valid tier was inserted
     expect(db.inserts[0]!.name).toBe('Gold')
     expect(db.inserts[0]!.sort).toBe(0)
   })
 
+  it('a tier carrying its existing id is UPDATED in place (id stable, ADR-824)', async () => {
+    seedActiveTier('t0')
+    const r = await setMembershipTiers('space-1', [tier({ id: 't0', name: 'Renamed', priceCents: 4400 })])
+    expect('error' in r).toBe(false)
+    expect(db.inserts).toHaveLength(0) // updated, not re-created
+    expect(db.deletes).toHaveLength(0)
+    expect(db.tiers.find((t) => t.id === 't0')?.name).toBe('Renamed')
+    expect(db.tiers.find((t) => t.id === 't0')?.price_cents).toBe(4400)
+  })
+
+  it('a stale/cross-space id is treated as an insert, never a hijack', async () => {
+    const r = await setMembershipTiers('space-1', [tier({ id: 'not-mine', name: 'New' })])
+    expect('error' in r).toBe(false)
+    expect(db.inserts).toHaveLength(1)
+    expect(db.inserts[0]!.name).toBe('New')
+  })
+
   it('an empty list clears tiers (valid "no memberships")', async () => {
-    seedActiveTier()
+    seedActiveTier('t0')
     const r = await setMembershipTiers('space-1', [])
     expect('error' in r).toBe(false)
-    expect(db.deletes).toContain('space-1')
+    expect(db.deletes).toContain('t0') // the removed row is deleted by id
+    expect(db.tiers).toHaveLength(0)
     expect(db.inserts).toHaveLength(0)
   })
 })
@@ -462,6 +531,76 @@ describe('joinTier (action)', () => {
     const r = await joinTier('space-1', 't0')
     expect('error' in r).toBe(false)
     expect(db.memberships.filter((m) => m.status === 'active')).toHaveLength(1)
+  })
+
+  it('a FULL tier with the waitlist on records a WAITLIST spot (ADR-824)', async () => {
+    db.tiers = []
+    seedActiveTier('t0', { capacity: 1, waitlist: true })
+    db.memberships.push({
+      id: 'm0',
+      space_id: 'space-1',
+      member_profile_id: 'someone-else',
+      tier_id: 't0',
+      status: 'active',
+      started_at: '2026-06-10T00:00:00.000Z',
+    })
+    const r = await joinTier('space-1', 't0')
+    expect('error' in r).toBe(false)
+    if (!('error' in r)) expect(r.data.waitlisted).toBe(true)
+    expect(db.memberships.find((m) => m.member_profile_id === currentProfileId)?.status).toBe(
+      'waitlist',
+    )
+  })
+
+  it('a FULL tier with NO waitlist refuses with an honest message', async () => {
+    db.tiers = []
+    seedActiveTier('t0', { capacity: 1, waitlist: false })
+    db.memberships.push({
+      id: 'm0',
+      space_id: 'space-1',
+      member_profile_id: 'someone-else',
+      tier_id: 't0',
+      status: 'active',
+      started_at: '2026-06-10T00:00:00.000Z',
+    })
+    const r = await joinTier('space-1', 't0')
+    expect('error' in r).toBe(true)
+    if ('error' in r) expect(r.error).toMatch(/full/i)
+    expect(db.memberships).toHaveLength(1)
+  })
+
+  it('an existing WAITLIST spot blocks a second join with the waitlist message', async () => {
+    db.memberships.push({
+      id: 'm0',
+      space_id: 'space-1',
+      member_profile_id: currentProfileId!,
+      tier_id: 't0',
+      status: 'waitlist',
+      started_at: '2026-06-10T00:00:00.000Z',
+    })
+    const r = await joinTier('space-1', 't0')
+    expect('error' in r).toBe(true)
+    if ('error' in r) expect(r.error).toMatch(/waitlist/i)
+  })
+})
+
+describe('planTierSetOps (pure, ADR-824 upsert-by-id)', () => {
+  it('splits updates (existing ids), inserts (new), and deletes (removed)', () => {
+    const plan = planTierSetOps(
+      ['t0', 't1'],
+      [tier({ id: 't0', name: 'Kept' }), tier({ name: 'Fresh' })],
+    )
+    expect(plan.updates.map((t) => t.id)).toEqual(['t0'])
+    expect(plan.inserts.map((t) => t.name)).toEqual(['Fresh'])
+    expect(plan.deleteIds).toEqual(['t1'])
+  })
+
+  it('treats an unknown id as an insert (id dropped) and dedupes a repeated id', () => {
+    const plan = planTierSetOps(['t0'], [tier({ id: 'zz', name: 'A' }), tier({ id: 't0' }), tier({ id: 't0' })])
+    expect(plan.updates).toHaveLength(1)
+    expect(plan.inserts).toHaveLength(2)
+    expect(plan.inserts.every((t) => t.id === undefined)).toBe(true)
+    expect(plan.deleteIds).toEqual([])
   })
 })
 
