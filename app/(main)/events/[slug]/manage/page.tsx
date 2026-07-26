@@ -12,6 +12,7 @@ import { EventSettingsModule } from '@/components/admin/modules/event-settings-m
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { EVENT_HUB_SECTIONS, asEventHubSection, type EventHubSection } from './hub'
 import { EventMemberViewer } from './event-member-viewer'
+import { EventBroadcastSection } from './broadcast-section'
 import {
   HomeStatsStrip,
   RsvpBreakdownSection,
@@ -137,6 +138,15 @@ export default async function ManageEventPage({
           <Suspense fallback={<Skeleton className="h-20 rounded-xl" />}>
             <HomeStatsStrip eventId={event.id} slug={event.slug} />
           </Suspense>
+          <section>
+            {/* The multi-channel broadcast composer (ADR-827 ruling 3): one message to the
+                whole event audience over Email / Direct Message / Dispatch, Text coming
+                soon. Streams behind its own Suspense (it loads the audience counts). */}
+            <SectionHeader title="Message everyone" />
+            <Suspense fallback={<Skeleton className="h-56 rounded-2xl" />}>
+              <EventBroadcastSection eventId={event.id} slug={event.slug} />
+            </Suspense>
+          </section>
           <section>
             <SectionHeader title="Message center" />
             <Suspense fallback={<Skeleton className="h-96 rounded-2xl" />}>

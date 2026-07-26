@@ -1,0 +1,498 @@
+'use server'
+
+import { randomUUID } from 'crypto'
+import { revalidatePath } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getMyProfileId } from '@/lib/auth'
+import { getEventCapabilities } from '@/lib/core/load-capabilities'
+import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
+import { rateLimitOk } from '@/lib/rate-limit'
+import { isBlockedBetween } from '@/lib/blocking'
+import { shouldSend } from '@/lib/notification-preferences'
+import { sendEventUpdateEmail } from '@/lib/email'
+import { composeEventDispatch } from '@/lib/events/dispatch'
+import { listEventCrmMemberIds } from '@/lib/events/crm-roster'
+import { resolveEventBroadcastAudience } from '@/lib/events/broadcast-audience'
+import { sendSpaceCampaignSystem } from '@/lib/spaces/email'
+import { renderCampaignHtml } from '@/lib/spaces/campaigns'
+import { openOrGetConversation, appendConversationMessage } from '@/lib/comms/conversations'
+import { recordContactInteraction } from '@/lib/crm/interactions'
+import type {
+  BroadcastChannelKey,
+  BroadcastChannelResult,
+  BroadcastSendInput,
+} from '@/components/comms/broadcast-types'
+
+// MESSAGE EVERYONE — the event hub's broadcast action (ADR-827 ruling 3: the multi-channel
+// composer, wired on the event surface; ADR-828: it lives on the Manage hub's Home tab).
+// ONE action, per-channel fan-out over the EXISTING seams, never a parallel sender:
+//
+//   Email    — the CAMPAIGNS machinery (owner refinement): a `campaigns` row (topic 'events')
+//              in the event's host Space lane, delivered by the space send seam
+//              (lib/spaces/email — kill-switch, daily cap, consent + per-topic mutes,
+//              per-recipient unsubscribe, outreach_sends ledger). A platform-hosted event
+//              (no host Space) falls back to the Event Dispatch email lane
+//              (sendEventUpdateEmail per guest, 'dispatches' email preference).
+//   DM       — one spine conversation per recipient (kind 'crm', channel 'in_app',
+//              scope event), the operator-DM lane ADR-827 ruling 4 ordered: fully logged,
+//              visible in the member's own inbox. Policy parity with lib/messages/scoped-dm:
+//              same leadership gate (event.editSettings, the page-gate audience), same
+//              going/maybe audience leg, per-recipient block check, shared rate buckets.
+//   Dispatch — the frozen composeEventDispatch data layer (ADR-255), so the update lands
+//              on the event page AND in Sent Dispatches exactly like the page composer's.
+//   Text     — no action: SMS is refuse-first until A2P is filed (ADR-256); the chip is
+//              disabled UI only and a smuggled 'sms' key is refused honestly below.
+//
+// GATE: 'event.editSettings' (the Manage hub's gate), re-checked here (ADR-274 — never
+// trust the client). The audience is re-resolved server-side from segment keys.
+// LOGGING: every delivered touch is stamped scope_kind 'event' + scope_id through the
+// scope-spine front doors (openOrGetConversation scopeKind/scopeId, appendConversationMessage
+// mirror.scope, RecordInteractionInput.scope — ADR-831), dual-writing the legacy
+// metadata convention. Copy is plain, no em dashes (docs/CONTENT-VOICE.md).
+
+const MAX_SUBJECT = 200
+const MAX_BODY = 5000
+
+/** Direct Messages write 2+ rows per recipient in one request, so the blast is bounded.
+ *  Refuse-first past the cap: the composer tells the host to use Email or a Dispatch. */
+const DM_BLAST_CAP = 300
+
+const CHANNEL_ORDER: readonly BroadcastChannelKey[] = ['email', 'dm', 'dispatch', 'sms']
+
+interface ManagedEvent {
+  id: string
+  title: string
+  slug: string
+  hostSpaceId: string | null
+}
+
+/** Resolve the event by slug and require 'event.editSettings' (the hub's gate), mirroring
+ *  manage/crm/actions.ts. The host Space resolution is the ticketing one (ADR-819):
+ *  host_space_id, else the placement space. Returns null on any miss (fail-closed). */
+async function resolveManagedEvent(slug: string): Promise<ManagedEvent | null> {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('events')
+    .select('id, title, slug, space_id, host_space_id')
+    .eq('slug', slug)
+    .maybeSingle()
+  const ev = data as
+    | { id: string; title: string; slug: string; space_id: string | null; host_space_id: string | null }
+    | null
+  if (!ev) return null
+  const caps = await getEventCapabilities(ev.id)
+  if (!caps.has('event.editSettings')) return null
+  return { id: ev.id, title: ev.title, slug: ev.slug, hostSpaceId: ev.host_space_id ?? ev.space_id ?? null }
+}
+
+/** display name + auth email per audience member (the Event Dispatch email lane's shape:
+ *  profiles -> auth record, lib/events/dispatch.ts fanOutEventEmail). Best-effort per row. */
+async function resolveRecipients(
+  profileIds: string[],
+): Promise<Map<string, { displayName: string; email: string | null }>> {
+  const out = new Map<string, { displayName: string; email: string | null }>()
+  if (profileIds.length === 0) return out
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('profiles')
+    .select('id, display_name, auth_user_id')
+    .in('id', profileIds)
+  const rows = (data ?? []) as { id: string; display_name: string | null; auth_user_id: string | null }[]
+  for (const p of rows) {
+    let email: string | null = null
+    if (p.auth_user_id) {
+      try {
+        const { data: u } = await admin.auth.admin.getUserById(p.auth_user_id)
+        email = u?.user?.email?.trim().toLowerCase() ?? null
+      } catch {
+        email = null
+      }
+    }
+    out.set(p.id, { displayName: p.display_name ?? 'there', email })
+  }
+  return out
+}
+
+function people(n: number): string {
+  return `${n} ${n === 1 ? 'person' : 'people'}`
+}
+
+// ── Email: the campaigns lane (host Space) or the event update lane (platform) ─────────
+
+/** Untyped `campaigns` handle (space_id/topic reached past the generated types, ADR-246 —
+ *  the same convention lib/spaces/campaigns.ts uses). */
+function campaignsTable() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = createAdminClient() as unknown as { from: (t: string) => any }
+  return db.from('campaigns')
+}
+
+async function sendEmailChannel(args: {
+  event: ManagedEvent
+  actorId: string
+  subject: string
+  body: string
+  segments: string[]
+  audience: string[]
+  recipients: Map<string, { displayName: string; email: string | null }>
+}): Promise<BroadcastChannelResult> {
+  const { event, actorId, subject, body } = args
+  if (!subject) return { channel: 'email', ok: false, detail: 'Add a subject to send email.' }
+
+  const emailable = args.audience
+    .map((id) => ({ profileId: id, ...args.recipients.get(id) }))
+    .filter((r): r is { profileId: string; displayName: string; email: string } => !!r.email)
+  if (emailable.length === 0) {
+    return { channel: 'email', ok: false, detail: 'No one in this audience has an email address on file.' }
+  }
+
+  // ── Host-Space lane: the REAL campaigns machinery (owner refinement). ──────────────────
+  if (event.hostSpaceId) {
+    const spaceId = event.hostSpaceId
+
+    // 1. The campaigns row, topic 'events' (per-topic mutes key off it), in the host
+    //    Space's lane, so the send shows up wherever campaigns are tracked. The gate here
+    //    is the EVENT's (event.editSettings): a cohost may not hold a Space role, so this
+    //    writes the row directly (the same insert createSpaceCampaign performs) and the
+    //    delivery core below still re-runs every anti-spam gate.
+    let campaignId: string | null = null
+    try {
+      const { data } = await campaignsTable()
+        .insert([
+          {
+            space_id: spaceId,
+            subject,
+            body,
+            status: 'draft',
+            created_by: actorId,
+            topic: 'events',
+            audience_filter: { source: 'event_broadcast', event_id: event.id, segments: args.segments },
+          },
+        ])
+        .select('id')
+        .maybeSingle()
+      campaignId = (data as { id: string } | null)?.id ?? null
+    } catch {
+      campaignId = null
+    }
+    if (!campaignId) {
+      return { channel: 'email', ok: false, detail: 'Could not create the campaign. Try again.' }
+    }
+
+    // 2. Map recipients to the Space's contacts where they exist (ledger + engagement
+    //    attribution), then hand the batch to the shared delivery core. The SYSTEM entry is
+    //    used because the caller is authorized by the EVENT gate above, not a Space role;
+    //    the core still enforces the plan gate, kill-switch, daily cap, consent + topic
+    //    mutes, suppression, and the per-recipient unsubscribe.
+    const contactIdByEmail = new Map<string, string>()
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = createAdminClient() as unknown as { from: (t: string) => any }
+      const { data } = await db
+        .from('contacts')
+        .select('id, email')
+        .eq('space_id', spaceId)
+        .in('email', emailable.map((r) => r.email))
+      for (const c of (data ?? []) as { id: string; email: string | null }[]) {
+        if (c.email) contactIdByEmail.set(c.email.toLowerCase(), c.id)
+      }
+    } catch {
+      // contact mapping is best-effort; the send still goes by address.
+    }
+
+    const res = await sendSpaceCampaignSystem(spaceId, {
+      campaignId,
+      subject,
+      html: renderCampaignHtml(body),
+      topic: 'events',
+      recipients: emailable.map((r) => ({ email: r.email, contactId: contactIdByEmail.get(r.email) })),
+    })
+    if (isError(res)) return { channel: 'email', ok: false, detail: res.error }
+
+    // 3. Stamp the campaign sent (best-effort, mirroring lib/spaces/campaigns.ts).
+    try {
+      await campaignsTable()
+        .update({ status: 'sent', sent_at: new Date().toISOString(), recipient_count: res.data.sent })
+        .eq('id', campaignId)
+        .eq('space_id', spaceId)
+    } catch {
+      // the emails already went; the stamp is non-critical.
+    }
+
+    // 4. Scope-spine logging (ADR-831): one event-scoped timeline touch per recipient the
+    //    ledger confirms as sent. The seam already logged the campaign-scoped CONTACT touch;
+    //    this is the event lane's PROFILE touch, so Message Attendees' The Path shows the
+    //    send. Exactly-once per (campaign, profile). Best-effort, never blocks the result.
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = createAdminClient() as unknown as { from: (t: string) => any }
+      const { data } = await db
+        .from('outreach_sends')
+        .select('email')
+        .eq('campaign_id', campaignId)
+        .eq('status', 'sent')
+      const sentEmails = new Set(
+        ((data ?? []) as { email: string | null }[]).map((r) => r.email?.toLowerCase()).filter(Boolean),
+      )
+      for (const r of emailable) {
+        if (!sentEmails.has(r.email)) continue
+        await recordContactInteraction(
+          {
+            ownerProfileId: actorId,
+            subjectKind: 'profile',
+            subjectId: r.profileId,
+            channel: 'email',
+            direction: 'outbound',
+            summary: subject,
+            body,
+            source: 'crm_activity',
+            scope: { kind: 'event', id: event.id },
+            metadata: { kind: 'event_broadcast', event_id: event.id, campaign_id: campaignId },
+            idempotencyKey: `event-broadcast:${campaignId}:${r.profileId}`,
+          },
+          spaceId,
+        )
+      }
+    } catch {
+      // timeline mirroring is best-effort.
+    }
+
+    const { sent, suppressed, failed } = res.data
+    let detail = `Sent to ${people(sent)} through the host Space's campaign lane.`
+    if (suppressed > 0) detail += ` ${suppressed} skipped (not subscribed to its emails, or muted event emails).`
+    if (failed > 0) detail += ` ${failed} failed.`
+    return { channel: 'email', ok: sent > 0 || (suppressed === 0 && failed === 0), detail }
+  }
+
+  // ── Platform-hosted (no host Space): the Event Dispatch email lane. ─────────────────────
+  // Same behavior as "Email guests" on an Event Dispatch (lib/events/dispatch.ts): the
+  // branded event update template, each guest gated by their 'dispatches' email preference
+  // and the outbox suppression guard. KNOWN LIMITATION: no campaigns row and no per-topic
+  // contact mutes on this lane (there is no Space lane to hang them on).
+  const broadcastRef = randomUUID()
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
+  const eventUrl = `${appUrl}/events/${event.slug}`
+  let sent = 0
+  let skipped = 0
+  for (const r of emailable) {
+    try {
+      if (!(await shouldSend(r.profileId, 'email', 'dispatches'))) {
+        skipped++
+        continue
+      }
+      await sendEventUpdateEmail({
+        to: r.email,
+        recipientName: r.displayName,
+        recipientProfileId: r.profileId,
+        eventTitle: event.title,
+        updateTitle: subject,
+        body,
+        eventUrl,
+      })
+      sent++
+      await recordContactInteraction(
+        {
+          ownerProfileId: actorId,
+          subjectKind: 'profile',
+          subjectId: r.profileId,
+          channel: 'email',
+          direction: 'outbound',
+          summary: subject,
+          body,
+          source: 'crm_activity',
+          scope: { kind: 'event', id: event.id },
+          metadata: { kind: 'event_broadcast', event_id: event.id, broadcast_ref: broadcastRef },
+          idempotencyKey: `event-broadcast:${broadcastRef}:${r.profileId}`,
+        },
+        null,
+      )
+    } catch {
+      skipped++
+    }
+  }
+  let detail = `Sent to ${people(sent)} as an event update email.`
+  if (skipped > 0) detail += ` ${skipped} skipped (event emails off, or no deliverable address).`
+  return { channel: 'email', ok: sent > 0, detail }
+}
+
+// ── Direct Message: the operator-DM spine lane (ADR-827 ruling 4) ───────────────────────
+
+async function sendDmChannel(args: {
+  event: ManagedEvent
+  actorId: string
+  subject: string
+  body: string
+  audience: string[]
+  recipients: Map<string, { displayName: string; email: string | null }>
+}): Promise<BroadcastChannelResult> {
+  const { event, actorId, body } = args
+
+  // Audience leg, policy parity with lib/messages/scoped-dm canDmEventAttendee: the DM lane
+  // reaches the Message Attendees audience ONLY (going or maybe, the owner ruling). A picked
+  // segment member outside it (a ticket holder who never answered) is skipped, counted.
+  const attendeeSet = await listEventCrmMemberIds(event.id)
+  const eligible = args.audience.filter((id) => id !== actorId && attendeeSet.has(id))
+  const outsideAudience = args.audience.filter((id) => id !== actorId).length - eligible.length
+
+  if (eligible.length === 0) {
+    return { channel: 'dm', ok: false, detail: 'No one in this audience can receive a Direct Message (it reaches people going or maybe).' }
+  }
+  if (eligible.length > DM_BLAST_CAP) {
+    return {
+      channel: 'dm',
+      ok: false,
+      detail: `That is too many people for Direct Messages (limit ${DM_BLAST_CAP}). Use Email or a Dispatch for a list this size.`,
+    }
+  }
+
+  // Shared abuse buckets (the scoped-DM lane's per-minute token, drawn once per blast, plus
+  // a broadcast bucket so a host cannot loop blasts). Fail-closed in production when
+  // unconfigured (lib/rate-limit).
+  if (!(await rateLimitOk('event-broadcast:dm', actorId, 10, '1 h'))) {
+    return { channel: 'dm', ok: false, detail: 'You have sent a lot of messages recently. Try again in a bit.' }
+  }
+  if (!(await rateLimitOk('scoped-dm:msg', actorId, 20, '1 m'))) {
+    return { channel: 'dm', ok: false, detail: 'Slow down a little. Try again in a minute.' }
+  }
+
+  const threadSubject = args.subject || event.title
+  let sent = 0
+  let skipped = outsideAudience
+  for (const profileId of eligible) {
+    try {
+      // Block gate, both directions, per recipient (parity with openScopedDm).
+      if (await isBlockedBetween(actorId, profileId)) {
+        skipped++
+        continue
+      }
+      const email = args.recipients.get(profileId)?.email
+      if (!email) {
+        skipped++ // the spine threads by counterpart address; no address, no thread.
+        continue
+      }
+      // The spine, scoped: an in-app CRM conversation in THIS event's lane (an event thread
+      // never absorbs an unrelated exchange with the same person, ADR-831).
+      const conv = await openOrGetConversation({
+        kind: 'crm',
+        channel: 'in_app',
+        externalEmail: email,
+        ownerProfileId: actorId,
+        subject: threadSubject,
+        memberProfileId: profileId,
+        spaceId: event.hostSpaceId,
+        scopeKind: 'event',
+        scopeId: event.id,
+        metadata: { kind: 'event_broadcast', event_id: event.id },
+      })
+      if (!conv) {
+        skipped++
+        continue
+      }
+      const appended = await appendConversationMessage({
+        conversationId: conv.id,
+        direction: 'outbound',
+        authorKind: 'leader',
+        authorId: actorId,
+        channel: 'in_app',
+        body,
+        mirror: {
+          ownerProfileId: actorId,
+          subjectKind: 'profile',
+          subjectId: profileId,
+          spaceId: event.hostSpaceId,
+          subject: threadSubject,
+          scope: { kind: 'event', id: event.id },
+        },
+      })
+      if (appended && 'id' in appended) sent++
+      else skipped++
+    } catch {
+      skipped++
+    }
+  }
+
+  let detail = `Delivered to ${people(sent)} in their Frequency inbox.`
+  if (skipped > 0) detail += ` ${skipped} skipped (not going or maybe, blocked, or unreachable).`
+  return { channel: 'dm', ok: sent > 0, detail }
+}
+
+// ── The action ──────────────────────────────────────────────────────────────────────────
+
+/**
+ * Send one composed message to the event's audience over the selected channels. Gate:
+ * 'event.editSettings', re-checked here. The audience is re-resolved server-side from the
+ * segment keys (never client ids). Returns one result per attempted channel; a short
+ * channel never aborts the others.
+ */
+export async function sendEventBroadcast(
+  slug: string,
+  input: BroadcastSendInput,
+): Promise<ActionResult<{ results: BroadcastChannelResult[] }>> {
+  const actorId = await getMyProfileId()
+  if (!actorId) return fail('Sign in to message your guests.')
+
+  const event = await resolveManagedEvent(slug)
+  if (!event) return fail('You cannot manage this event.')
+
+  const subject = (input.subject ?? '').trim().slice(0, MAX_SUBJECT)
+  const body = (input.body ?? '').trim().slice(0, MAX_BODY)
+  if (!body) return fail('Write something to send first.')
+
+  const channels = CHANNEL_ORDER.filter((c) => Array.isArray(input.channels) && input.channels.includes(c))
+  if (channels.length === 0) return fail('Pick at least one channel.')
+
+  // One blast bucket across all channels (fail-closed in production when unconfigured).
+  if (!(await rateLimitOk('event-broadcast:send', actorId, 10, '1 h'))) {
+    return fail('You have sent a lot of broadcasts recently. Try again in a bit.')
+  }
+
+  const segments = Array.isArray(input.segments)
+    ? input.segments.filter((s): s is string => typeof s === 'string')
+    : []
+  const audience = await resolveEventBroadcastAudience(event.id, segments)
+  if (audience.length === 0) return fail('No one is in that audience yet.')
+
+  // Emails + names are needed by both the email lane and the DM thread keys.
+  const needsRecipients = channels.includes('email') || channels.includes('dm')
+  const recipients = needsRecipients ? await resolveRecipients(audience) : new Map<string, { displayName: string; email: string | null }>()
+
+  const results: BroadcastChannelResult[] = []
+  let dispatched = false
+  for (const channel of channels) {
+    if (channel === 'email') {
+      results.push(await sendEmailChannel({ event, actorId, subject, body, segments, audience, recipients }))
+    } else if (channel === 'dm') {
+      results.push(await sendDmChannel({ event, actorId, subject, body, audience, recipients }))
+    } else if (channel === 'dispatch') {
+      // The frozen Event Dispatch data layer (ADR-255): page post + Dispatch rail + push
+      // fan-out to ITS audience (the whole event audience, not the picked segments), landing
+      // in Sent Dispatches like every other Event Dispatch.
+      try {
+        const res = await composeEventDispatch({
+          eventId: event.id,
+          authorId: actorId,
+          title: subject || null,
+          body,
+          toPage: true,
+          toDispatch: true,
+          eventUrl: `/events/${event.slug}`,
+        })
+        dispatched = !!(res.eventDispatchId || res.dispatchId)
+        results.push(
+          dispatched
+            ? { channel: 'dispatch', ok: true, detail: 'Posted to the event page and sent as a Dispatch to the whole event audience.' }
+            : { channel: 'dispatch', ok: false, detail: 'Could not post the Dispatch. Try again.' },
+        )
+      } catch {
+        results.push({ channel: 'dispatch', ok: false, detail: 'Could not post the Dispatch. Try again.' })
+      }
+    } else {
+      // 'sms': the chip is disabled UI; a hand-rolled request is refused honestly (ADR-256).
+      results.push({ channel: 'sms', ok: false, detail: 'Text messages are coming soon.' })
+    }
+  }
+
+  revalidatePath(`/events/${event.slug}/manage`)
+  if (dispatched) revalidatePath(`/events/${event.slug}`)
+  return ok({ results })
+}

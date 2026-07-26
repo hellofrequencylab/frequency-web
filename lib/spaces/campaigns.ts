@@ -38,7 +38,9 @@ import type { NotificationTopic } from '@/lib/notification-preferences'
 function escapeCampaignHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
-function renderCampaignHtml(body: string): string {
+/** Exported for the event broadcast action (the event hub's Email channel rides this same
+ *  campaign render + send seam, so a campaign body looks identical whichever surface sent it). */
+export function renderCampaignHtml(body: string): string {
   const paras = body
     .split(/\n{2,}/)
     .map(
