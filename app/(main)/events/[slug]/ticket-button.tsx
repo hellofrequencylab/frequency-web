@@ -189,28 +189,32 @@ export function TicketButton({
               }`}
             >
               <div className="min-w-0">
-                <p className="flex items-center gap-2 text-sm font-semibold text-text">
-                  {t.name}
-                  {t.memberOnly && (
-                    <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
-                      Members
-                    </span>
-                  )}
-                  {t.spaceMembersOnly &&
-                    (unlocked(t) ? (
-                      // Member: their membership covers this ticket — the warm "Included" tag.
-                      <span className="inline-flex items-center gap-1 rounded-md bg-primary-bg px-1.5 py-0.5 text-2xs font-medium text-primary-strong">
-                        <Check className="h-2.5 w-2.5" />
-                        Included
+                {/* Title stays ONE line (truncate); tags sit on their own row below so a long
+                    tier name never wraps around a chip (owner spec). */}
+                <p className="truncate text-sm font-semibold text-text">{t.name}</p>
+                {(t.memberOnly || t.spaceMembersOnly) && (
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {t.memberOnly && (
+                      <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
+                        Members
                       </span>
-                    ) : (
-                      // Non-member / signed out: this row IS the membership offer.
-                      <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
-                        <Lock className="h-2.5 w-2.5" />
-                        Membership
-                      </span>
-                    ))}
-                </p>
+                    )}
+                    {t.spaceMembersOnly &&
+                      (unlocked(t) ? (
+                        // Member: their membership covers this ticket.
+                        <span className="inline-flex items-center gap-1 rounded-md bg-primary-bg px-1.5 py-0.5 text-2xs font-medium text-primary-strong">
+                          <Check className="h-2.5 w-2.5" />
+                          Member
+                        </span>
+                      ) : (
+                        // Non-member / signed out: this row IS the membership offer.
+                        <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
+                          <Lock className="h-2.5 w-2.5" />
+                          Membership
+                        </span>
+                      ))}
+                  </div>
+                )}
                 {t.description && <p className="mt-0.5 text-xs text-muted">{t.description}</p>}
                 {t.spotsLeft != null && !t.soldOut && (
                   <p className="mt-0.5 text-xs text-subtle">{t.spotsLeft} left</p>
