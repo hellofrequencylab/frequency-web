@@ -27,6 +27,7 @@ import { RsvpControls } from '@/components/events/rsvp-controls'
 import { WarmProof } from '@/components/events/warm-proof'
 import { safeHttpUrl } from '@/lib/safe-url'
 import { MembershipCheckoutFold } from '@/components/events/membership-checkout-fold'
+import { RsvpPaymentFlow, type FlowRate } from '@/components/events/rsvp-payment-flow'
 import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { HOME_TZ, resolveZone, isEventPast, zoneAbbrev } from '@/lib/time/zone'
 import { type ActivityPost } from '@/components/events/event-activity'
@@ -1047,6 +1048,41 @@ export default async function EventDetailPage({
     tiers.find((t) => !t.spaceMembersOnly)?.id ??
     null
 
+  // RSVP + PAYMENT FLOW inputs (ADR-826): the selectable rates, the membership fold context,
+  // and whether checkout can actually charge. Drives the progressive flow on a live RSVP-mode
+  // priced event; past events keep the static informational list.
+  const flowRates: FlowRate[] = tiers.map((t) => ({
+    id: t.id,
+    name: t.name,
+    priceLabel: t.spaceMembersOnly
+      ? memberUnlocks(t)
+        ? 'Included'
+        : t.membershipPriceLabel ?? 'Members'
+      : t.pricingMode === 'fixed'
+        ? `$${((t.priceCents ?? 0) / 100).toFixed(2)}`
+        : t.pricingMode === 'free'
+          ? 'Free'
+          : 'Pay what you can',
+    kind: t.spaceMembersOnly ? ('membership' as const) : ('general' as const),
+    ticketTypeId: t.id,
+    covered: t.spaceMembersOnly ? memberUnlocks(t) : t.pricingMode === 'free',
+    tag: t.spaceMembersOnly ? (memberUnlocks(t) ? ('member' as const) : ('membership' as const)) : null,
+  }))
+  const gatedNamedTierId = tiers.find((t) => t.spaceMembersOnly)?.spaceTierId ?? null
+  const membershipFold =
+    spaceHost && eventSpaceId && hostMembershipTiers.length > 0
+      ? {
+          spaceId: eventSpaceId,
+          spaceName: spaceHost.name,
+          tiers: gatedNamedTierId
+            ? hostMembershipTiers.filter((mt) => mt.id === gatedNamedTierId)
+            : hostMembershipTiers,
+          includedEvent: { slug: event.slug, title: event.title },
+          billingOn: membershipBillingOn,
+        }
+      : null
+  const paymentsReady = TICKETING_ENABLED && hostPayoutReady
+
   // The Join column's primary action — reused in the aside AND the mobile sheet.
   const joinActions = (
     <div className="space-y-4">
@@ -1085,11 +1121,27 @@ export default async function EventDetailPage({
           )}
         </div>
 
-        {/* RSVP mode with pricing: the tiers as INFORMATION (no buy CTA) — what it costs at the
-            door and what a membership includes, next to the one join function below. The row that
-            APPLIES to the viewer highlights: a member's included tier, else the general rate —
-            so a signed-in member lands on their rate with the RSVP switch ready below. */}
-        {!ticketsMode && isPaidEvent && hasTiers && (
+        {/* RSVP + PAYMENT FLOW (live RSVP-mode priced event): the progressive experience —
+            pick a rate, answer, and the payment area slides open under Going when the rate
+            costs something. Maybe funnels to follow-up; Can't go just files. */}
+        {!ticketsMode && isPaidEvent && hasTiers && !isPast && !event.is_cancelled && (
+          <RsvpPaymentFlow
+            eventId={event.id}
+            slug={event.slug}
+            rates={flowRates}
+            status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
+            plusOnes={myPlusOnes}
+            isFull={capacityInfo.isFull}
+            initialNote={myRsvpNote}
+            membership={membershipFold}
+            paymentsReady={paymentsReady}
+            signedIn={!!myProfileId}
+            signInHref={`/sign-in?next=/events/${event.slug}`}
+          />
+        )}
+
+        {/* Past RSVP-mode priced event: the rates as plain INFORMATION. */}
+        {!ticketsMode && isPaidEvent && hasTiers && isPast && (
           <div className="space-y-2">
             {tiers.map((t) => {
               // A membership row a non-member can act on: selecting the package folds the full
@@ -1251,17 +1303,20 @@ export default async function EventDetailPage({
 
         {/* Your answer — RSVP mode only (first come, first served; never Crew-gated; a host
             counts themselves in like anyone else). In TICKETS mode the ticket IS the answer, so
-            the switch doesn't render. Answers change any time. */}
+            the switch doesn't render; on a priced RSVP event the FLOW above already carries it.
+            Answers change any time. */}
         {!ticketsMode && myProfileId && !isPast ? (
           <div className="space-y-3">
-            <RsvpControls
-              eventId={event.id}
-              slug={event.slug}
-              status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
-              plusOnes={myPlusOnes}
-              isFull={capacityInfo.isFull}
-              initialNote={myRsvpNote}
-            />
+            {!(isPaidEvent && hasTiers) && (
+              <RsvpControls
+                eventId={event.id}
+                slug={event.slug}
+                status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
+                plusOnes={myPlusOnes}
+                isFull={capacityInfo.isFull}
+                initialNote={myRsvpNote}
+              />
+            )}
             {/* At-RSVP calendar — the highest-ROI lever, emphasised once going. */}
             {isGoing ? (
               <div className="rounded-xl border border-border bg-surface-elevated/40 px-4 py-3">
@@ -1309,10 +1364,10 @@ export default async function EventDetailPage({
               On waitlist · tap to leave
             </button>
           </form>
-        ) : !myProfileId && !isPast && !ticketsMode ? (
-          /* Signed-out visitor on an RSVP-mode upcoming event: RSVP is for everyone, so offer
-             the one step that unlocks it — sign in, then you're on the list. (Tickets-mode
-             events carry their own "Sign in to get your ticket" line above.) */
+        ) : !myProfileId && !isPast && !ticketsMode && !(isPaidEvent && hasTiers) ? (
+          /* Signed-out visitor on a FREE RSVP-mode upcoming event: RSVP is for everyone, so
+             offer the one step that unlocks it. (A priced RSVP event's flow above carries its
+             own sign-in step; tickets-mode events carry theirs in the cascade.) */
           <div className="space-y-2">
             <Link
               href={`/sign-in?next=/events/${event.slug}`}
