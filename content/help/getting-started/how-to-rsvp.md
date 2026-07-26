@@ -29,6 +29,10 @@ There are two, and you can change either one anytime.
 - **Interested** signals you are curious without claiming a spot. Use it when you
   are not sure yet.
 
+On a ticketed event, your ticket is your Going; you can still mark Interested or
+Can't go while you decide. If the hosting Space's membership includes the event,
+being a member is enough: just answer Going and your spot is covered.
+
 Plans change. You can update your RSVP whenever you need to, right up to the day.
 
 ## What happens after I RSVP?

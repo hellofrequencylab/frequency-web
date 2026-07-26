@@ -28,6 +28,7 @@ export function WarmProof({
   faces = [],
   nearFull = false,
   spotsLeft = null,
+  embedded = false,
 }: {
   /** Confirmed 'going' count. */
   going: number
@@ -43,11 +44,17 @@ export function WarmProof({
   nearFull?: boolean
   /** Remaining seats (only meaningful when `nearFull`). */
   spotsLeft?: number | null
+  /** Render WITHOUT the card chrome — for embedding inside the unified RSVP box (the avatar
+   *  pile grows in place as guests answer). The standalone layout module keeps its card. */
+  embedded?: boolean
 }) {
+  const shell = embedded
+    ? 'border-t border-border pt-3'
+    : 'rounded-2xl border border-border bg-surface px-4 py-3'
   // Empty → warm invite, never a zero count.
   if (going <= 0) {
     return (
-      <div className="rounded-2xl border border-border bg-surface px-4 py-3">
+      <div className={shell}>
         <p className="text-sm font-medium text-text">Be the first to RSVP.</p>
         <p className="mt-0.5 text-xs text-subtle">
           Your circles will see you’re going. A warm start gets others to join.
@@ -66,7 +73,7 @@ export function WarmProof({
   if (maybe > 0) parts.push(`${maybe} maybe`)
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-border bg-surface px-4 py-3">
+    <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 ${shell}`}>
       {shownFaces.length > 0 && (
         <div className="flex -space-x-2" aria-hidden>
           {shownFaces.map((a) =>

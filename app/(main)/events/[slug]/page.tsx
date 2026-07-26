@@ -24,6 +24,7 @@ import { isStaff, asWebRole } from '@/lib/core/roles'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { updateEventField } from '../admin-actions'
 import { RsvpControls } from '@/components/events/rsvp-controls'
+import { WarmProof } from '@/components/events/warm-proof'
 import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { HOME_TZ, resolveZone, isEventPast, zoneAbbrev } from '@/lib/time/zone'
 import { type ActivityPost } from '@/components/events/event-activity'
@@ -1004,23 +1005,37 @@ export default async function EventDetailPage({
 
   const mode = MODE_CHIP[attendanceMode]
 
+  // UNIFIED RSVP BOX (ADR-826): ONE dynamic card for free, paid, and membership events. Tickets
+  // (when priced), the answer row, and the who's-coming pile all live together, role-aware: a
+  // ticket holder, an event manager, or a member whose membership unlocks a FREE members ticket
+  // answers directly (their Going IS the claim); everyone else on a ticketed event goes via the
+  // ticket, and can still answer Maybe / Can't go. Guests change their answer any time.
+  const viewerHasIncludedTicket = tiers.some(
+    (t) =>
+      t.spaceMembersOnly &&
+      t.pricingMode === 'free' &&
+      viewerIsSpaceMember &&
+      (t.spaceTierId == null || t.spaceTierId === viewerSpaceTierId),
+  )
+  const answerCoversGoing =
+    !ticketingActive || ownsTicket || viewerHasIncludedTicket || canManage
+
   // The Join column's primary action — reused in the aside AND the mobile sheet.
   const joinActions = (
     <div className="space-y-4">
-      {/* Price card for a priced event. With ticketing ON it carries the full checkout
-          cascade; with ticketing OFF (lib/events/ticketing) it keeps ONLY the price
-          header and the RSVP card below opens up like a free event — no
-          closed/sold-out/sign-in/buy states. */}
-      {isPaidEvent && !event.is_cancelled && (
-        <div className="rounded-2xl border border-border bg-surface p-4">
-          <div className="flex items-center gap-2">
-            <Ticket className="h-4 w-4 text-primary" />
-            <span className="text-sm font-bold text-text">
-              {hasTiers ? (tiers.length === 1 ? 'Ticket' : 'Tickets') : `${priceLabel} ticket`}
-            </span>
-          </div>
-          {TICKETING_ENABLED && (
-            <div className="mt-3">
+      <div className="space-y-4 rounded-2xl border border-border bg-surface p-4">
+        <div className="flex items-center gap-2">
+          <Ticket className="h-4 w-4 text-primary" />
+          <span className="text-sm font-bold text-text">RSVP</span>
+          {isPaidEvent && !hasTiers && (
+            <span className="text-sm font-medium text-muted">· {priceLabel} ticket</span>
+          )}
+        </div>
+
+        {/* Tickets (priced, ticketing ON): the full checkout cascade. With ticketing OFF the
+            card behaves like a free event — answers only, no buy/closed/sold-out states. */}
+        {isPaidEvent && TICKETING_ENABLED && (
+          <div>
               {ownsTicket ? (
                 <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
                   <Check className="h-4 w-4" /> Ticket confirmed
@@ -1105,85 +1120,101 @@ export default async function EventDetailPage({
                    Honest to the buyer, no dead "not available" phrasing. */
                 <p className="text-sm text-muted">The host hasn&rsquo;t opened ticket sales yet.</p>
               )}
-            </div>
-          )}
-          {/* Tickets sold, folded onto the ticket card from the retired rail Sales box. Quiet, factual. */}
-          <p className="mt-3 text-xs text-subtle">
+          </div>
+        )}
+
+        {/* Your answer — role-aware (ADR-826). A ticket holder, a manager, or a member whose
+            membership covers the ticket answers Going directly; on a ticketed event everyone
+            else answers Maybe / Can't go and the ticket above is the way in. Never Crew-gated;
+            a host counts themselves in like anyone else. Answers change any time. */}
+        {myProfileId && !isPast ? (
+          <div className="space-y-3">
+            <RsvpControls
+              eventId={event.id}
+              slug={event.slug}
+              status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
+              plusOnes={myPlusOnes}
+              isFull={capacityInfo.isFull}
+              allowGoing={answerCoversGoing}
+            />
+            {/* At-RSVP calendar — the highest-ROI lever, emphasised once going. */}
+            {isGoing ? (
+              <div className="rounded-xl border border-border bg-surface-elevated/40 px-4 py-3">
+                <p className="mb-2 text-xs font-medium text-muted">
+                  You&rsquo;re going. Lock it in so you don&rsquo;t miss it.
+                </p>
+                <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} emphasis />
+              </div>
+            ) : (
+              <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} />
+            )}
+          </div>
+        ) : myProfileId && isGoing && isPast ? (
+          /* Event time, going: Check in is the primary action; Cancel RSVP is quiet. */
+          <div className="flex flex-wrap items-center gap-4">
+            {alreadyCheckedIn ? (
+              <div className="inline-flex items-center gap-2 rounded-lg bg-success-bg text-success px-4 py-2 text-sm font-semibold">
+                <Check className="w-4 h-4" />
+                Checked In
+              </div>
+            ) : (
+              <EventCheckInButton eventId={event.id} />
+            )}
+            {!hasEnded && (
+              <form action={toggleRSVP.bind(null, event.id)}>
+                <button
+                  type="submit"
+                  className="text-xs text-subtle hover:text-danger underline underline-offset-2 transition-colors"
+                >
+                  Cancel RSVP
+                </button>
+              </form>
+            )}
+          </div>
+        ) : myProfileId && isWaitlisted ? (
+          <form action={toggleRSVP.bind(null, event.id)}>
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-muted transition-colors hover:border-danger hover:text-danger"
+            >
+              <Clock className="w-4 h-4" />
+              On waitlist · tap to leave
+            </button>
+          </form>
+        ) : !myProfileId && !isPast && !ticketingActive ? (
+          /* Signed-out visitor on a free, upcoming event: RSVP is for everyone, so offer the
+             one step that unlocks it — sign in, then you're on the list. (Ticketed events
+             carry their own "Sign in to get your ticket" line above.) */
+          <div className="space-y-2">
+            <Link
+              href={`/sign-in?next=/events/${event.slug}`}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            >
+              Sign in to RSVP
+            </Link>
+            <p className="text-xs text-muted">Free to join. Sign in and you&rsquo;re on the list.</p>
+          </div>
+        ) : null}
+
+        {/* Who's coming — the avatar pile grows in place as guests answer (warm proof, in-box). */}
+        <WarmProof
+          embedded
+          going={goingRsvps.length}
+          fromYourCircles={fromYourCircles}
+          maybe={maybeCount}
+          guests={guestCount}
+          faces={faces}
+          nearFull={nearFull}
+          spotsLeft={capacityInfo.spotsLeft}
+        />
+
+        {/* Tickets sold — quiet, factual (from the retired rail Sales box). */}
+        {isPaidEvent && TICKETING_ENABLED && (
+          <p className="text-xs text-subtle">
             {ticketsSold > 0 ? `${ticketsSold} sold` : 'No tickets sold yet'}
           </p>
-        </div>
-      )}
-      {ticketingActive ? null : !event.is_cancelled && myProfileId && !isPast ? (
-        <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
-          {/* RSVP is open to every member on any event, INCLUDING the host of their own
-              gathering (a host counts themselves in like anyone else) — it is never
-              Crew-gated. Crew unlocks CREATING events, not attending them (the upgrade
-              gate lives on the create flow, not here). */}
-          <RsvpControls
-            eventId={event.id}
-            slug={event.slug}
-            status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
-            plusOnes={myPlusOnes}
-            isFull={capacityInfo.isFull}
-          />
-          {/* At-RSVP calendar — the highest-ROI lever, emphasised once going. */}
-          {isGoing ? (
-            <div className="rounded-xl border border-border bg-surface-elevated/40 px-4 py-3">
-              <p className="mb-2 text-xs font-medium text-muted">
-                You&rsquo;re going. Lock it in so you don&rsquo;t miss it.
-              </p>
-              <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} emphasis />
-            </div>
-          ) : (
-            <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} />
-          )}
-        </div>
-      ) : !event.is_cancelled && myProfileId && isGoing && isPast ? (
-        /* Event time, going: Check in is the primary action; Cancel RSVP is quiet. */
-        <div className="flex items-center gap-4 flex-wrap rounded-2xl border border-border bg-surface p-4">
-          {alreadyCheckedIn ? (
-            <div className="inline-flex items-center gap-2 rounded-lg bg-success-bg text-success px-4 py-2 text-sm font-semibold">
-              <Check className="w-4 h-4" />
-              Checked In
-            </div>
-          ) : (
-            <EventCheckInButton eventId={event.id} />
-          )}
-          {!hasEnded && (
-            <form action={toggleRSVP.bind(null, event.id)}>
-              <button
-                type="submit"
-                className="text-xs text-subtle hover:text-danger underline underline-offset-2 transition-colors"
-              >
-                Cancel RSVP
-              </button>
-            </form>
-          )}
-        </div>
-      ) : !event.is_cancelled && myProfileId && isWaitlisted ? (
-        <form action={toggleRSVP.bind(null, event.id)} className="rounded-2xl border border-border bg-surface p-4">
-          <button
-            type="submit"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-muted transition-colors hover:border-danger hover:text-danger"
-          >
-            <Clock className="w-4 h-4" />
-            On waitlist · tap to leave
-          </button>
-        </form>
-      ) : !event.is_cancelled && !myProfileId && !isPast ? (
-        /* Signed-out visitor on a free, upcoming event: RSVP is for everyone, so offer the
-           one step that unlocks it — sign in, then you're on the list. (Paid events are
-           handled above with their own "Sign in to get your ticket" line.) */
-        <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
-          <Link
-            href={`/sign-in?next=/events/${event.slug}`}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-          >
-            Sign in to RSVP
-          </Link>
-          <p className="text-xs text-muted">Free to join. Sign in and you&rsquo;re on the list.</p>
-        </div>
-      ) : null}
+        )}
+      </div>
     </div>
   )
 
