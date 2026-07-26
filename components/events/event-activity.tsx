@@ -9,8 +9,9 @@ import { getEventPostReactions, toggleEventPostReaction } from '@/lib/events/rea
 import type { BoopKind, PostReactions } from '@/lib/events/reactions'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB (post-prep; HEIC is converted and big photos shrink first)
 
 // Boops — the Partiful-style reaction set (EVENTS-DESIGN §2.2/§8). A small set of
 // real faces a guest taps on a post. Now PERSISTED: the bar shows real aggregate
@@ -129,14 +130,24 @@ export function EventActivity({
     setReactions((prev) => ({ ...prev, [postId]: next }))
   }
 
-  function pickImage(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!file.type.startsWith('image/')) {
+  async function pickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.files?.[0]
+    if (!raw) return
+    if (!raw.type.startsWith('image/')) {
       setError('Only image files work here.')
       if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
+    // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
+    // previews and stores broken in every browser but Safari), then big photos are downscaled. An
+    // unconvertible HEIC gets an inline message; the size gate applies to the CONVERTED file.
+    const prepared = await prepareImageForUpload(raw)
+    if ('error' in prepared) {
+      setError(prepared.error)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    const file = prepared.file
     if (file.size > MAX_IMAGE_BYTES) {
       setError(`That image is ${(file.size / 1024 / 1024).toFixed(1)} MB. Keep it under 10 MB.`)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -335,7 +346,7 @@ export function EventActivity({
 
           {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
 
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={pickImage} />
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => void pickImage(e)} />
 
           <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-2">
             <div className="flex items-center gap-1">

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { Upload, X, ImageIcon, Search } from 'lucide-react'
+import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { listLoomImages, uploadToLoom, type LoomImagePick } from './loom-field-actions'
 import { useSpaceEditorSlug } from './space-editor-context'
 
@@ -53,26 +54,43 @@ function LoomImageField({
     return () => clearTimeout(handle)
   }, [picking, q, slug])
 
-  async function upload(file: File) {
+  async function upload(raw: File) {
     setErr(null)
     if (!slug) {
       setErr('Open this from your space editor to add images.')
       return
     }
-    if (!file.type.startsWith('image/')) {
+    if (!raw.type.startsWith('image/')) {
       setErr('Choose an image file.')
       return
     }
     setBusy(true)
-    const fd = new FormData()
-    fd.set('file', file)
-    const res = await uploadToLoom(slug, fd)
-    setBusy(false)
-    if ('error' in res) {
-      setErr(res.error)
-      return
+    try {
+      // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
+      // stores fine but renders broken in every browser but Safari), then a big photo is downscaled
+      // so the server action stays under the platform body limit. An unconvertible HEIC gets an
+      // inline message instead of a broken upload.
+      const prepared = await prepareImageForUpload(raw)
+      if ('error' in prepared) {
+        setErr(prepared.error)
+        return
+      }
+      const file = prepared.file
+      if (file.size > SERVER_MAX_BYTES) {
+        setErr(`That image is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Try a smaller one.`)
+        return
+      }
+      const fd = new FormData()
+      fd.set('file', file)
+      const res = await uploadToLoom(slug, fd)
+      if ('error' in res) {
+        setErr(res.error)
+        return
+      }
+      onChange(res.url)
+    } finally {
+      setBusy(false)
     }
-    onChange(res.url)
   }
 
   const aspect = square ? 'aspect-square' : 'aspect-[16/10]'
@@ -87,7 +105,7 @@ function LoomImageField({
         disabled={busy}
         onChange={(e) => {
           const f = e.target.files?.[0]
-          if (f) upload(f)
+          if (f) void upload(f)
           e.target.value = ''
         }}
       />

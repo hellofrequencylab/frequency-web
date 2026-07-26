@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { ImagePlus, X, Loader2 } from 'lucide-react'
 import { useEditMode } from '@/lib/admin/use-edit-mode'
 import { LoomPicker } from '@/components/loom/loom-picker'
+import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 
 // Inline cover-image editor for the tuning layer (ADR-138). Out of Edit Mode it
 // just shows the cover (or nothing). In Edit Mode — and only for someone who can
@@ -64,13 +65,27 @@ export function InlineCover({
   }
 
   function pick(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
+    const raw = e.target.files?.[0]
     e.target.value = ''
-    if (!file || !upload) return
-    const fd = new FormData()
-    fd.set('file', file)
+    if (!raw || !upload) return
     setErr(null)
     startTransition(async () => {
+      // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
+      // stores fine but renders broken in every browser but Safari), then a big photo is downscaled so
+      // the upload action stays under the platform body limit. An unconvertible HEIC gets an inline
+      // message instead of a broken upload.
+      const prepared = await prepareImageForUpload(raw)
+      if ('error' in prepared) {
+        setErr(prepared.error)
+        return
+      }
+      const file = prepared.file
+      if (file.size > SERVER_MAX_BYTES) {
+        setErr(`That image is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Try a smaller one.`)
+        return
+      }
+      const fd = new FormData()
+      fd.set('file', file)
       const res = await upload(fd)
       if ('error' in res) setErr(res.error)
       else {

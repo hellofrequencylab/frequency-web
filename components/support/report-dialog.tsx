@@ -9,6 +9,7 @@ import {
 import { createSupportTicket, askHelp } from '@/app/(main)/support/actions'
 import { isError } from '@/lib/action-result'
 import { gatherSupportContext, contextLines } from '@/lib/support/context'
+import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { TYPE_LABELS, type SupportContext, type TicketType } from '@/lib/support/types'
 import type { HelpCitation } from '@/lib/ai/help-rag'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
@@ -81,8 +82,23 @@ export function ReportDialog({
   // Revoke the preview object URL when it changes/unmounts.
   useEffect(() => () => { if (shot) URL.revokeObjectURL(shot.url) }, [shot])
 
-  function attach(file: File | null | undefined) {
-    if (!file || !file.type.startsWith('image/')) return
+  async function attach(raw: File | null | undefined) {
+    if (!raw || !raw.type.startsWith('image/')) return
+    // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
+    // previews and stores broken in every browser but Safari), then a big screenshot is downscaled so
+    // the ticket's form post stays under the server body limit. An unconvertible HEIC gets an inline
+    // message instead of a broken attachment.
+    const prepared = await prepareImageForUpload(raw)
+    if ('error' in prepared) {
+      setError(prepared.error)
+      return
+    }
+    const file = prepared.file
+    if (file.size > SERVER_MAX_BYTES) {
+      setError(`That image is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Try a smaller one.`)
+      return
+    }
+    setError(null)
     setShot((prev) => {
       if (prev) URL.revokeObjectURL(prev.url)
       return { file, url: URL.createObjectURL(file) }
@@ -92,7 +108,7 @@ export function ReportDialog({
   // Paste a screenshot straight from the clipboard (Cmd/Ctrl+Shift+4 → paste).
   function onPaste(e: React.ClipboardEvent) {
     const item = Array.from(e.clipboardData.items).find((i) => i.type.startsWith('image/'))
-    if (item) attach(item.getAsFile())
+    if (item) void attach(item.getAsFile())
   }
 
   function submit() {
@@ -233,7 +249,7 @@ export function ReportDialog({
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => attach(e.target.files?.[0])}
+                onChange={(e) => { void attach(e.target.files?.[0]); e.target.value = '' }}
               />
             </div>
 

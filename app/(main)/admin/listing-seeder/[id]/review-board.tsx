@@ -19,6 +19,7 @@ import { Loader2, Check, X, Pencil, Send, CheckCircle2, Copy, ImagePlus, Star, P
 import { Button } from '@/components/ui/button'
 import { Banner, StatusChip } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { AMENITIES } from '@/lib/listings/types'
 import type { ListingDetail, ListingSeedKind } from '@/lib/listing-seeder/types'
 import type { SimilarSeededListing } from '@/lib/listing-seeder/dedupe'
@@ -515,12 +516,31 @@ function PhotoStrip({
 
   function addFiles(files: File[]) {
     setError(null)
-    const okFiles = files.filter((f) => f.type.startsWith('image/') && f.size <= MAX_UPLOAD_BYTES)
-    if (okFiles.length === 0) {
+    const imageFiles = files.filter((f) => f.type.startsWith('image/'))
+    if (imageFiles.length === 0) {
       setError('Pick image files under 9 MB.')
       return
     }
     startBusy(async () => {
+      // Prep each in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw
+      // HEIC stores fine but renders broken in every browser but Safari), then big photos are
+      // downscaled. The size cap applies to the CONVERTED file; an unconvertible HEIC is skipped
+      // with an inline message.
+      const okFiles: File[] = []
+      let prepError: string | null = null
+      for (const raw of imageFiles) {
+        const prepared = await prepareImageForUpload(raw)
+        if ('error' in prepared) {
+          prepError ??= prepared.error
+          continue
+        }
+        if (prepared.file.size <= MAX_UPLOAD_BYTES) okFiles.push(prepared.file)
+      }
+      if (okFiles.length === 0) {
+        setError(prepError ?? 'Pick image files under 9 MB.')
+        return
+      }
+      if (prepError) setError(prepError)
       const form = new FormData()
       for (const f of okFiles) form.append('files', f)
       try {

@@ -12,6 +12,7 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Banner } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { startListingIntake, uploadListingImages } from './actions'
 import { detectListingKind } from '@/lib/listing-seeder/detect'
 import type { ListingSeedKind } from '@/lib/listing-seeder/types'
@@ -47,9 +48,24 @@ export function StartImportForm() {
 
   const previews = photos.map((f) => ({ file: f, url: URL.createObjectURL(f) }))
 
-  function addPhotos(files: File[]) {
+  async function addPhotos(files: File[]) {
     const images = files.filter((f) => f.type.startsWith('image/'))
-    setPhotos((prev) => [...prev, ...images].slice(0, 12))
+    if (!images.length) return
+    // Prep each in the browser first (the shared seam): an iPhone HEIC is converted to JPEG so the
+    // preview grid renders it and the staged upload stays under the body limit (a raw HEIC previews
+    // broken in every browser but Safari). An unconvertible HEIC is skipped with an inline message.
+    const ready: File[] = []
+    let prepError: string | null = null
+    for (const raw of images) {
+      const prepared = await prepareImageForUpload(raw)
+      if ('error' in prepared) {
+        prepError ??= prepared.error
+        continue
+      }
+      ready.push(prepared.file)
+    }
+    setError(prepError)
+    if (ready.length) setPhotos((prev) => [...prev, ...ready].slice(0, 12))
   }
 
   // As the operator pastes, run the pure heuristic. On a HIGH-confidence read, pre-select that
@@ -233,7 +249,7 @@ export function StartImportForm() {
         className="hidden"
         onChange={(e) => {
           const files = Array.from(e.target.files ?? [])
-          if (files.length) addPhotos(files)
+          if (files.length) void addPhotos(files)
           e.target.value = ''
         }}
       />

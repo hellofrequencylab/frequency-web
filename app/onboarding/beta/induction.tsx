@@ -10,6 +10,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { getInitials } from '@/lib/utils'
 import { downscaleImageFile } from '@/lib/images/downscale-image'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
 import { BETA_OATHS as DEFAULT_OATHS, VERA as DEFAULT_VERA, type OathId, type VeraCopy } from '@/lib/onboarding/beta-script'
 import { getPersona, listPersonas, isPersonaId, DEFAULT_PERSONA, type PersonaId } from '@/lib/onboarding/personas'
@@ -368,11 +369,19 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     if (!file) return
     setUploadError('')
     setAvatarUrl('')
-    // Downscale + compress on pick so EVERY downstream path uses a small image: the
+    // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
+    // previews and stores broken in every browser but Safari). An unconvertible HEIC gets an inline
+    // message instead of a broken avatar.
+    const prepared = await prepareImageForUpload(file)
+    if ('error' in prepared) {
+      setUploadError(prepared.error)
+      return
+    }
+    // Then downscale + compress on pick so EVERY downstream path uses a small image: the
     // signed-out flow parks it in localStorage across the magic-link hop (a raw photo's
     // base64 overflows the ~5MB quota and was silently dropped), and the immediate
-    // upload is faster. Best-effort: falls back to the original file on any failure.
-    const compressed = await downscaleImageFile(file)
+    // upload is faster. Best-effort: falls back to the prepped file on any failure.
+    const compressed = await downscaleImageFile(prepared.file)
     setAvatarFile(compressed)
     setAvatarPreview(URL.createObjectURL(compressed))
   }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { completeOnboarding } from './actions'
 import { getInitials } from '@/lib/utils'
 import { WizardShell } from '@/components/templates'
@@ -91,12 +92,21 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setAvatarFile(file)
-    setAvatarPreview(URL.createObjectURL(file))
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.files?.[0]
+    if (!raw) return
     setUploadError('')
+    // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
+    // previews and stores broken in every browser but Safari), then big photos are downscaled. An
+    // unconvertible HEIC gets an inline message instead of a broken avatar.
+    const prepared = await prepareImageForUpload(raw)
+    if ('error' in prepared) {
+      setUploadError(prepared.error)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    setAvatarFile(prepared.file)
+    setAvatarPreview(URL.createObjectURL(prepared.file))
     setAvatarUrl('') // reset any previously uploaded URL
   }
 
@@ -361,7 +371,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={handleFileChange}
+                      onChange={(e) => void handleFileChange(e)}
                     />
                   </div>
                   {uploadError && <p className="text-xs text-danger">{uploadError}</p>}

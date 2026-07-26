@@ -7,48 +7,12 @@ import { createPost } from '@/app/(main)/feed/actions'
 import { isError } from '@/lib/action-result'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { EmojiPicker } from './emoji-picker'
 import { ComposeLightbox } from './compose-lightbox'
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB (post-downscale; raw camera shots are downscaled first)
-const MAX_IMAGE_DIM = 2048 // longest edge after downscale
-
-// Downscale + re-encode a chosen image to a sane size BEFORE we hold it in memory or upload it.
-// Phone camera photos are routinely 5–12 MB and high-resolution — too big for the 5 MB cap (so the
-// upload silently failed) and a big memory hog that makes iOS reload the page after the camera (the
-// "I took a photo and the box vanished" bug). Best-effort: any decode/encode failure returns the
-// original file so a normal upload still proceeds.
-async function downscaleImage(file: File): Promise<File> {
-  if (!file.type.startsWith('image/')) return file
-  try {
-    const bitmap = await createImageBitmap(file)
-    const longest = Math.max(bitmap.width, bitmap.height)
-    const scale = Math.min(1, MAX_IMAGE_DIM / longest)
-    // Already small in both dimensions AND bytes → keep the original (no needless re-encode).
-    if (scale === 1 && file.size <= MAX_IMAGE_BYTES) {
-      bitmap.close?.()
-      return file
-    }
-    const w = Math.max(1, Math.round(bitmap.width * scale))
-    const h = Math.max(1, Math.round(bitmap.height * scale))
-    const canvas = document.createElement('canvas')
-    canvas.width = w
-    canvas.height = h
-    const ctx = canvas.getContext('2d')
-    if (!ctx) {
-      bitmap.close?.()
-      return file
-    }
-    ctx.drawImage(bitmap, 0, 0, w, h)
-    bitmap.close?.()
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85))
-    if (!blob) return file
-    const name = file.name.replace(/\.[^.]+$/, '') || 'photo'
-    return new File([blob], `${name}.jpg`, { type: 'image/jpeg' })
-  } catch {
-    return file
-  }
-}
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB (post-prep; raw camera shots are converted + downscaled first)
 
 type HandleResult = { id: string; handle: string; display_name: string; avatar_url: string | null }
 
@@ -202,8 +166,16 @@ export function Composer({
     }
 
     setImageError('')
-    // Downscale big camera shots so they fit the cap (and don't blow up memory). Best-effort.
-    const processed = await downscaleImage(file)
+    // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
+    // stores fine but renders broken in every browser but Safari — including this preview), then big
+    // camera shots are downscaled so they fit the cap (and don't blow up memory). A HEIC this browser
+    // cannot convert gets an inline message instead of a broken upload.
+    const prepared = await prepareImageForUpload(file)
+    if ('error' in prepared) {
+      setImageError(prepared.error)
+      return
+    }
+    const processed = prepared.file
     if (processed.size > MAX_IMAGE_BYTES) {
       setImageError(`That image is too large (${(processed.size / 1024 / 1024).toFixed(1)} MB). Try a smaller one.`)
       return
@@ -533,7 +505,7 @@ export function Composer({
                 }`}
               >
                 {p.avatar_url ? (
-                  <Image src={p.avatar_url} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-full object-cover" />
+                  <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={24} height={24} style={avatarFocusStyle(p.avatar_url)} className="h-6 w-6 shrink-0 rounded-full object-cover" />
                 ) : (
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-bg text-3xs font-bold text-primary-strong">
                     {getInitials(p.display_name)}

@@ -9,6 +9,7 @@ import {
   uploadEmailLoomImage,
   type LoomImagePick,
 } from '@/lib/email-studio/loom-actions'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 
 // THE LOOM PHOTO POPUP (Email Studio canvas, Slice B). Clicking an image slot on the WYSIWYG email canvas
 // opens this dialog to manage the slot's photo through Loom (the media library): PICK an existing image from
@@ -95,11 +96,21 @@ export function LoomImagePopup({
   // overflowed and threw, hanging the upload with no feedback. So we reject oversize files up front and
   // catch any thrown error, always returning cleanly.
   const uploadFile = useCallback(
-    async (file: File): Promise<boolean> => {
-      if (!file.type.startsWith('image/')) {
+    async (raw: File): Promise<boolean> => {
+      if (!raw.type.startsWith('image/')) {
         setError('Choose an image file.')
         return false
       }
+      // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
+      // stores fine but renders broken in every browser but Safari — and email clients cannot show it
+      // at all), then big photos are downscaled. The size gate applies to the CONVERTED file; an
+      // unconvertible HEIC gets an inline message instead of a broken upload.
+      const prepared = await prepareImageForUpload(raw)
+      if ('error' in prepared) {
+        setError(prepared.error)
+        return false
+      }
+      const file = prepared.file
       if (file.size > MAX_UPLOAD_BYTES) {
         setError(`That image is ${(file.size / 1024 / 1024).toFixed(1)} MB. Use one under 9 MB.`)
         return false

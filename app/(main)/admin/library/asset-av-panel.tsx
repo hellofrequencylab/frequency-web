@@ -12,6 +12,7 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { RefreshCw, Radio, Loader2 } from 'lucide-react'
 import type { AssetUsage } from '@/lib/airwaves/asset-usage'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { replaceLibraryAssetFile } from './replace-actions'
 
 export function AssetAvPanel({
@@ -54,11 +55,20 @@ export function AssetAvPanel({
     }
   }, [assetId, isAv])
 
-  function replace(file: File) {
+  function replace(raw: File) {
     setError(null)
-    const fd = new FormData()
-    fd.append('file', file)
     startTransition(async () => {
+      // Prep images in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a
+      // raw HEIC stores fine but renders broken in every browser but Safari), then big photos are
+      // downscaled. Audio and video files pass through untouched. An unconvertible HEIC gets an
+      // inline message instead of a broken replacement.
+      const prepared = await prepareImageForUpload(raw)
+      if ('error' in prepared) {
+        setError(prepared.error)
+        return
+      }
+      const fd = new FormData()
+      fd.append('file', prepared.file)
       const res = await replaceLibraryAssetFile(assetId, fd)
       if ('error' in res) {
         setError(res.error)

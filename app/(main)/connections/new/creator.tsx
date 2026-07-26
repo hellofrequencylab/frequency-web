@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ScanText, Pencil, Camera, Upload, Sparkles, Loader2, Check, X, User, ChevronDown, Mail, RefreshCcw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { squareCropRect, dedupeTags, normalizeTag, hasAnyDetails } from '@/lib/connections/normalize'
 import { deskewCardCanvas } from '@/lib/connections/deskew'
 import { DetailsEditor } from '@/components/connections/contact-details-fields'
@@ -199,7 +200,21 @@ export function Creator({ userId }: { userId: string }) {
     ].slice(0, 6)
   }
 
-  function setSide(side: 'front' | 'back', file: File | null) {
+  async function setSide(side: 'front' | 'back', raw: File | null) {
+    const ref = side === 'front' ? frontRef : backRef
+    if (ref.current) ref.current.value = ''
+    let file = raw
+    if (raw) {
+      // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG so the slot
+      // thumbnail renders and the on-device downscale/deskew/crop steps can decode it (none work on a
+      // raw HEIC outside Safari). An unconvertible HEIC gets an inline message instead of a dead scan.
+      const prepared = await prepareImageForUpload(raw)
+      if ('error' in prepared) {
+        setMsg({ kind: 'err', text: prepared.error })
+        return
+      }
+      file = prepared.file
+    }
     const setFile = side === 'front' ? setFrontFile : setBackFile
     const setThumb = side === 'front' ? setFrontThumb : setBackThumb
     setThumb((prev) => {
@@ -209,19 +224,29 @@ export function Creator({ userId }: { userId: string }) {
     setFile(file)
     setPendingScan(null)
     setMsg(null)
-    const ref = side === 'front' ? frontRef : backRef
-    if (ref.current) ref.current.value = ''
   }
 
-  function addExtraFiles(list: FileList | null) {
+  async function addExtraFiles(list: FileList | null) {
     const incoming = list ? Array.from(list) : []
-    if (incoming.length) {
-      setExtraFiles((prev) => [...prev, ...incoming].slice(0, 4))
-      setExtraThumbs((prev) => [...prev, ...incoming.map((f) => URL.createObjectURL(f))].slice(0, 4))
-      setPendingScan(null)
-      setMsg(null)
-    }
     if (extraRef.current) extraRef.current.value = ''
+    if (!incoming.length) return
+    // Same prep as the card sides: convert HEIC extras so their thumbnails and crops work everywhere.
+    const ready: File[] = []
+    let convertError: string | null = null
+    for (const raw of incoming) {
+      const prepared = await prepareImageForUpload(raw)
+      if ('error' in prepared) {
+        convertError ??= prepared.error
+        continue
+      }
+      ready.push(prepared.file)
+    }
+    if (ready.length) {
+      setExtraFiles((prev) => [...prev, ...ready].slice(0, 4))
+      setExtraThumbs((prev) => [...prev, ...ready.map((f) => URL.createObjectURL(f))].slice(0, 4))
+      setPendingScan(null)
+    }
+    setMsg(convertError ? { kind: 'err', text: convertError } : null)
   }
 
   function removeExtraFile(i: number) {
@@ -234,8 +259,8 @@ export function Creator({ userId }: { userId: string }) {
   }
 
   function clearScanFiles() {
-    setSide('front', null)
-    setSide('back', null)
+    void setSide('front', null)
+    void setSide('back', null)
     setExtraThumbs((prev) => { prev.forEach((u) => URL.revokeObjectURL(u)); return [] })
     setExtraFiles([])
   }
@@ -343,7 +368,16 @@ export function Creator({ userId }: { userId: string }) {
     }
   }
 
-  async function handlePhoto(file: File) {
+  async function handlePhoto(raw: File) {
+    // Prep in the browser first (the shared seam): a HEIC photo cannot be decoded for the center
+    // crop outside Safari; convert it to JPEG, or surface the seam's inline message.
+    const prepared = await prepareImageForUpload(raw)
+    if ('error' in prepared) {
+      setMsg({ kind: 'err', text: prepared.error })
+      if (photoRef.current) photoRef.current.value = ''
+      return
+    }
+    const file = prepared.file
     try {
       const cropped = await cropFromBox(file, null) // center-crop a manually chosen photo
       const ap = await uploadBlob(cropped)
@@ -457,14 +491,14 @@ export function Creator({ userId }: { userId: string }) {
                 hint="Required"
                 thumb={frontThumb}
                 onPick={() => setPickSide('front')}
-                onClear={frontFile ? () => setSide('front', null) : undefined}
+                onClear={frontFile ? () => void setSide('front', null) : undefined}
               />
               <CardSlot
                 label="Back of card"
                 hint="Optional"
                 thumb={backThumb}
                 onPick={() => setPickSide('back')}
-                onClear={backFile ? () => setSide('back', null) : undefined}
+                onClear={backFile ? () => void setSide('back', null) : undefined}
               />
             </div>
 
@@ -542,11 +576,11 @@ export function Creator({ userId }: { userId: string }) {
               the rear camera — the only way to shoot on mobile, since Android's
               library picker has no camera) and a LIBRARY input (the OS photo picker).
               The Take photo / Upload sheet below routes the tap to the right one. */}
-          <input ref={frontCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('front', f) }} />
-          <input ref={backCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('back', f) }} />
-          <input ref={frontRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('front', f) }} />
-          <input ref={backRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('back', f) }} />
-          <input ref={extraRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => addExtraFiles(e.target.files)} />
+          <input ref={frontCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void setSide('front', f) }} />
+          <input ref={backCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void setSide('back', f) }} />
+          <input ref={frontRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void setSide('front', f) }} />
+          <input ref={backRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void setSide('back', f) }} />
+          <input ref={extraRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => void addExtraFiles(e.target.files)} />
 
           {/* Take photo / Upload choice for a card side — Take photo opens the camera,
               Upload opens the library. Shown when a slot is tapped. */}

@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { PenLine, Megaphone, NotebookPen, UserPlus, Camera } from 'lucide-react'
 import { updateMyAvatar } from '@/app/(main)/feed/actions'
 import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { Composer } from './composer'
 import { ContactCaptureForm } from './contact-capture-form'
 
@@ -111,12 +112,24 @@ export function CaptureBox({
 function TakeProfilePic() {
   const inputRef = useRef<HTMLInputElement>(null)
   const [state, setState] = useState<'idle' | 'saving' | 'done' | 'error'>('idle')
+  const [prepError, setPrepError] = useState<string | null>(null)
 
   async function onSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
+    const raw = e.target.files?.[0]
     e.target.value = ''
-    if (!file) return
+    if (!raw) return
+    setPrepError(null)
     setState('saving')
+    // Prep in the browser first (the shared seam): a HEIC capture is converted to JPEG (a raw HEIC
+    // stores fine but renders broken in every browser but Safari), then big photos are downscaled so
+    // the server action stays under the platform body limit.
+    const prepared = await prepareImageForUpload(raw)
+    if ('error' in prepared) {
+      setPrepError(prepared.error)
+      setState('idle')
+      return
+    }
+    const file = prepared.file
     try {
       // Upload through the SERVER action (service-role write), not the browser Supabase
       // client: under SSR-cookie auth the browser client often has no session, so a
@@ -159,6 +172,7 @@ function TakeProfilePic() {
       {state === 'error' && (
         <p className="mt-1 text-2xs text-danger">That didn’t save. Try again, or set it in Settings.</p>
       )}
+      {prepError && <p className="mt-1 text-2xs text-danger">{prepError}</p>}
     </div>
   )
 }

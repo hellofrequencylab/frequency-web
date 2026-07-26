@@ -31,6 +31,7 @@ import { isSafeInAppPath } from '@/lib/onboarding/funnel-destination'
 import { WizardProgress } from '@/components/templates'
 import { trackClient } from '@/components/analytics/track-provider'
 import { downscaleImageFile } from '@/lib/images/downscale-image'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { beginFeatureFunnelSignup } from './feature-actions'
 import { signInWithMagicLink } from '@/app/sign-in/actions'
 
@@ -508,6 +509,7 @@ function JoinStep({
 }) {
   const [signingIn, setSigningIn] = useState(false)
   const [avatar, setAvatar] = useState<string | null>(null)
+  const [photoError, setPhotoError] = useState<string | null>(null)
   const emailOk = EMAIL_RE.test(lead.email.trim())
 
   const completeNext =
@@ -518,8 +520,17 @@ function JoinStep({
   async function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setPhotoError(null)
+    // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
+    // previews and stores broken in every browser but Safari). An unconvertible HEIC gets an inline
+    // message instead of a silently dropped photo.
+    const prepared = await prepareImageForUpload(file)
+    if ('error' in prepared) {
+      setPhotoError(prepared.error)
+      return
+    }
     try {
-      const compressed = await downscaleImageFile(file)
+      const compressed = await downscaleImageFile(prepared.file)
       const dataUrl = await new Promise<string>((resolve, reject) => {
         const r = new FileReader()
         r.onload = () => resolve(String(r.result))
@@ -611,6 +622,7 @@ function JoinStep({
             />
           </div>
         </div>
+        {photoError && <p className="mb-3 text-xs text-danger">{photoError}</p>}
         {lead.handle && <p className="mb-3 text-sm text-muted">You are <span className="font-semibold text-text">@{lead.handle}</span></p>}
         <input
           type="email"
