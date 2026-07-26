@@ -29,13 +29,9 @@ import { ApproveButton } from './approve-button'
 import { CsvExportButton } from './csv-export-button'
 import { QuestionEditor } from './question-editor'
 import { FollowUpButton } from './follow-up-button'
-import { TicketTiersPanel, type SpaceAccessContext } from './ticket-tiers-panel'
+import { TicketTiersPanel } from './ticket-tiers-panel'
 import { listEventTicketTiers } from '@/lib/events/ticket-tiers'
-import { listMembershipTiers } from '@/lib/spaces/memberships'
-import { featureAllowed } from '@/lib/pricing/gates'
-import { billingLive } from '@/lib/pricing/settings'
-import { asSpacePlan } from '@/lib/pricing/plans'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { loadSpaceAccessContext } from '@/lib/events/ticket-space-access'
 import { listEventGuests, type EventGuestListItem, type GuestRsvpStatus } from '@/lib/events/guests'
 
 // The Manage Dashboard's body sections (EVENTS-REWORK A2). Each is an async Server
@@ -433,50 +429,11 @@ export async function InvitedGuestsSection({ eventId }: { eventId: string }) {
 // host actions re-check that same capability on every write.
 
 export async function TicketTiersSection({ eventId, slug }: { eventId: string; slug: string }) {
-  const tiers = await listEventTicketTiers(eventId)
-  const spaceAccess = await loadSpaceAccessContext(eventId)
-  return <TicketTiersPanel eventId={eventId} slug={slug} tiers={tiers} spaceAccess={spaceAccess} />
-}
-
-/** Membership-linked access context for the tier editor (ADR-823): the event's hosting Space
- *  (host_space_id, else the placement space — the same resolution the checkout gates on), its
- *  membership tiers, and whether its plan clears the Collective gate. Null when the event has no
- *  hosting Space — the "Who can buy" control simply doesn't render. */
-async function loadSpaceAccessContext(eventId: string): Promise<SpaceAccessContext | null> {
-  const admin = createAdminClient()
-  const { data: ev } = await admin
-    .from('events')
-    .select('space_id, host_space_id')
-    .eq('id', eventId)
-    .maybeSingle()
-  const evRow = ev as { space_id: string | null; host_space_id: string | null } | null
-  const spaceId = evRow?.host_space_id ?? evRow?.space_id ?? null
-  if (!spaceId) return null
-
-  const { data: sp } = await admin
-    .from('spaces')
-    .select('name, brand_name, plan')
-    .eq('id', spaceId)
-    .maybeSingle()
-  const space = sp as { name: string | null; brand_name: string | null; plan: string | null } | null
-  if (!space) return null
-
-  const [membershipTiers, allowed] = await Promise.all([
-    listMembershipTiers(spaceId),
-    (async () =>
-      featureAllowed(
-        'space_membership_tickets',
-        { plan: asSpacePlan(space.plan) },
-        { billingLive: await billingLive() },
-      ))(),
+  const [tiers, spaceAccess] = await Promise.all([
+    listEventTicketTiers(eventId),
+    loadSpaceAccessContext(eventId),
   ])
-  return {
-    spaceName: space.brand_name ?? space.name ?? 'this space',
-    allowed,
-    membershipTiers: membershipTiers
-      .filter((t) => t.id)
-      .map((t) => ({ id: t.id!, name: t.name })),
-  }
+  return <TicketTiersPanel eventId={eventId} slug={slug} tiers={tiers} spaceAccess={spaceAccess} />
 }
 
 // ── Sent Event Dispatches ─────────────────────────────────────────────────────

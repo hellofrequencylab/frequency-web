@@ -995,7 +995,12 @@ export default async function EventDetailPage({
                 <p className="text-sm text-muted">Sold out.</p>
               ) : !myProfileId ? (
                 <p className="text-sm text-muted">Sign in to get your ticket.</p>
-              ) : isHost ? (
+              ) : isHost && !hostSpaceOwnerId ? (
+                /* PERSONAL event only: the host IS the payee, so "no ticket needed" / "connect
+                   YOUR payouts" both address the right person. A SPACE-hosted event's organizer
+                   falls through to the buyer chain instead: the payee is the space owner, the
+                   organizer may buy a ticket (ADR-819), and the payout prompt would have pointed
+                   them at the wrong Stripe account. */
                 hostPayoutReady ? (
                   <p className="text-sm text-muted">You&rsquo;re hosting. No ticket needed.</p>
                 ) : (
@@ -1017,6 +1022,10 @@ export default async function EventDetailPage({
                     </Link>
                   </div>
                 )
+              ) : myProfileId && myProfileId === hostSpaceOwnerId ? (
+                /* The hosting space's OWNER is the payee — the server's self-purchase guard would
+                   refuse their checkout, so say so instead of showing a button that errors. */
+                <p className="text-sm text-muted">Your space is hosting. No ticket needed.</p>
               ) : hostPayoutReady ? (
                 <TicketButton
                   eventId={event.id}
