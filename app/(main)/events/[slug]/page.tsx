@@ -272,6 +272,9 @@ export default async function EventDetailPage({
     geog: unknown
     // ADR-825: hide the exact address until the viewer registers (going/waitlist RSVP or ticket).
     hide_address: boolean | null
+    // ADR-826: how people join — 'auto' derives from pricing; 'rsvp' = first come first served
+    // (prices informational); 'tickets' = buying is attending (no RSVP switch).
+    join_mode: 'auto' | 'rsvp' | 'tickets' | null
   }
   // These three only depend on already-resolved values (event.id / session_id) and
   // not on each other, so resolve them concurrently: the extra-meta read, the
@@ -280,7 +283,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, space_id, host_space_id, theme, geog, hide_address',
+        'posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, space_id, host_space_id, theme, geog, hide_address, join_mode',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -700,6 +703,11 @@ export default async function EventDetailPage({
   // price header but behaves like a free event everywhere else: RSVP stays open and
   // no buy/closed/sold-out states render.
   const ticketingActive = TICKETING_ENABLED && isPaidEvent
+  // JOIN MODE (ADR-826): ONE join function per event, never both. 'rsvp' = first come first
+  // served (the answer switch for everyone; prices render as information); 'tickets' = buying is
+  // attending (the ticket cascade, no answer switch); 'auto' keeps the pre-existing derivation.
+  const joinMode = extra?.join_mode ?? 'auto'
+  const ticketsMode = ticketingActive && joinMode !== 'rsvp'
 
   // Host sales + refunds (EVENTS-SYSTEM §7). The host (anyone who can manage this
   // event) sees the succeeded tickets and can refund them. RLS lets the host read
@@ -1005,20 +1013,13 @@ export default async function EventDetailPage({
 
   const mode = MODE_CHIP[attendanceMode]
 
-  // UNIFIED RSVP BOX (ADR-826): ONE dynamic card for free, paid, and membership events. Tickets
-  // (when priced), the answer row, and the who's-coming pile all live together, role-aware: a
-  // ticket holder, an event manager, or a member whose membership unlocks a FREE members ticket
-  // answers directly (their Going IS the claim); everyone else on a ticketed event goes via the
-  // ticket, and can still answer Maybe / Can't go. Guests change their answer any time.
-  const viewerHasIncludedTicket = tiers.some(
-    (t) =>
-      t.spaceMembersOnly &&
-      t.pricingMode === 'free' &&
-      viewerIsSpaceMember &&
-      (t.spaceTierId == null || t.spaceTierId === viewerSpaceTierId),
-  )
-  const answerCoversGoing =
-    !ticketingActive || ownsTicket || viewerHasIncludedTicket || canManage
+  // UNIFIED RSVP BOX (ADR-826): ONE dynamic card, ONE join function. TICKETS mode carries the
+  // checkout cascade (your ticket is your answer; a members-only tier prices the member rate).
+  // RSVP mode is first come, first served: the answer switch for everyone, with any pricing
+  // rendered as information (paid at the door / included with membership), never a buy button.
+  // The who's-coming pile grows in place in both modes. Guests change their answer any time.
+  const memberUnlocks = (t: (typeof tiers)[number]) =>
+    !!viewerIsSpaceMember && (t.spaceTierId == null || t.spaceTierId === viewerSpaceTierId)
 
   // The Join column's primary action — reused in the aside AND the mobile sheet.
   const joinActions = (
@@ -1032,9 +1033,49 @@ export default async function EventDetailPage({
           )}
         </div>
 
-        {/* Tickets (priced, ticketing ON): the full checkout cascade. With ticketing OFF the
-            card behaves like a free event — answers only, no buy/closed/sold-out states. */}
-        {isPaidEvent && TICKETING_ENABLED && (
+        {/* RSVP mode with pricing: the tiers as INFORMATION (no buy CTA) — what it costs at the
+            door and what a membership includes, next to the one join function below. */}
+        {!ticketsMode && isPaidEvent && hasTiers && (
+          <div className="space-y-2">
+            {tiers.map((t) => (
+              <div
+                key={t.id}
+                className="flex items-start justify-between gap-3 rounded-xl border border-border px-3.5 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-text">{t.name}</p>
+                  {t.spaceMembersOnly && (
+                    <div className="mt-1">
+                      {memberUnlocks(t) ? (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-primary-bg px-1.5 py-0.5 text-2xs font-medium text-primary-strong">
+                          <Check className="h-2.5 w-2.5" /> Member
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
+                          Membership
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <span className="shrink-0 text-sm font-semibold text-text">
+                  {t.spaceMembersOnly
+                    ? memberUnlocks(t)
+                      ? 'Included'
+                      : t.membershipPriceLabel ?? 'Members'
+                    : t.pricingMode === 'fixed'
+                      ? `$${((t.priceCents ?? 0) / 100).toFixed(2)}`
+                      : t.pricingMode === 'free'
+                        ? 'Free'
+                        : 'Pay what you can'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* TICKETS mode: the full checkout cascade — buying is how you attend. */}
+        {ticketsMode && (
           <div>
               {ownsTicket ? (
                 <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
@@ -1123,11 +1164,10 @@ export default async function EventDetailPage({
           </div>
         )}
 
-        {/* Your answer — role-aware (ADR-826). A ticket holder, a manager, or a member whose
-            membership covers the ticket answers Going directly; on a ticketed event everyone
-            else answers Maybe / Can't go and the ticket above is the way in. Never Crew-gated;
-            a host counts themselves in like anyone else. Answers change any time. */}
-        {myProfileId && !isPast ? (
+        {/* Your answer — RSVP mode only (first come, first served; never Crew-gated; a host
+            counts themselves in like anyone else). In TICKETS mode the ticket IS the answer, so
+            the switch doesn't render. Answers change any time. */}
+        {!ticketsMode && myProfileId && !isPast ? (
           <div className="space-y-3">
             <RsvpControls
               eventId={event.id}
@@ -1135,7 +1175,6 @@ export default async function EventDetailPage({
               status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
               plusOnes={myPlusOnes}
               isFull={capacityInfo.isFull}
-              allowGoing={answerCoversGoing}
             />
             {/* At-RSVP calendar — the highest-ROI lever, emphasised once going. */}
             {isGoing ? (
@@ -1149,6 +1188,9 @@ export default async function EventDetailPage({
               <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} />
             )}
           </div>
+        ) : ticketsMode && ownsTicket && !isPast ? (
+          /* Ticket holder before the event: their ticket is their answer — offer the calendar. */
+          <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} emphasis />
         ) : myProfileId && isGoing && isPast ? (
           /* Event time, going: Check in is the primary action; Cancel RSVP is quiet. */
           <div className="flex flex-wrap items-center gap-4">
@@ -1181,10 +1223,10 @@ export default async function EventDetailPage({
               On waitlist · tap to leave
             </button>
           </form>
-        ) : !myProfileId && !isPast && !ticketingActive ? (
-          /* Signed-out visitor on a free, upcoming event: RSVP is for everyone, so offer the
-             one step that unlocks it — sign in, then you're on the list. (Ticketed events
-             carry their own "Sign in to get your ticket" line above.) */
+        ) : !myProfileId && !isPast && !ticketsMode ? (
+          /* Signed-out visitor on an RSVP-mode upcoming event: RSVP is for everyone, so offer
+             the one step that unlocks it — sign in, then you're on the list. (Tickets-mode
+             events carry their own "Sign in to get your ticket" line above.) */
           <div className="space-y-2">
             <Link
               href={`/sign-in?next=/events/${event.slug}`}
@@ -1208,8 +1250,8 @@ export default async function EventDetailPage({
           spotsLeft={capacityInfo.spotsLeft}
         />
 
-        {/* Tickets sold — quiet, factual (from the retired rail Sales box). */}
-        {isPaidEvent && TICKETING_ENABLED && (
+        {/* Tickets sold — quiet, factual (tickets mode only). */}
+        {ticketsMode && (
           <p className="text-xs text-subtle">
             {ticketsSold > 0 ? `${ticketsSold} sold` : 'No tickets sold yet'}
           </p>
@@ -1223,8 +1265,8 @@ export default async function EventDetailPage({
   // so the host is excluded only on the paid path ("you're hosting, no ticket needed").
   // While ticketing is off, a priced event rides the RSVP path (no "Get ticket" CTA).
   const showBottomBar =
-    !event.is_cancelled && !hasEnded && (ticketingActive ? !isHost && !ownsTicket && !allTiersSoldOut : !!myProfileId)
-  const bottomBarLabel = ticketingActive
+    !event.is_cancelled && !hasEnded && (ticketsMode ? !isHost && !ownsTicket && !allTiersSoldOut : !!myProfileId)
+  const bottomBarLabel = ticketsMode
     ? `Get ticket${hasTiers ? '' : ` · ${priceLabel}`}`
     : isGoing
       ? 'Going'
