@@ -9,6 +9,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { cleanConversationBody } from '@/lib/comms/message-body'
+import { splitQuotedReply } from '@/lib/comms/quoted-reply'
 import { healMissingBodies } from '@/lib/comms/inbound'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -71,10 +72,20 @@ export interface ConversationThreadMessage {
   authorName: string
   body: string
   bodyHtml: string | null
+  /** The quoted/threaded email trail split off `body` at display time (null when none). The reader keeps
+   *  it behind a collapsed toggle; the stored body is untouched. */
+  quotedTrail: string | null
   isInternal: boolean
   channel: string
   deliveryStatus: string
   occurredAt: string
+}
+
+/** A thing the conversation is attached to (event, circle, campaign...), for the reader's context band.
+ *  `href` is null when the reference exists but has no linkable page. */
+export interface ConversationContextRef {
+  label: string
+  href: string | null
 }
 
 /** The full thread (the reader pane): the conversation header + its attributed messages, oldest first. */
@@ -94,13 +105,21 @@ export interface ConversationThread {
   memberProfileId: string | null
   contactId: string | null
   spaceId: string | null
+  /** The owning Space's display name + slug (for the context band's Space link); null = platform lane. */
+  spaceName: string | null
+  spaceSlug: string | null
+  /** The linked support ticket, when this conversation wraps one (kind='support'). */
+  supportTicketId: string | null
+  /** Resolved references from the conversation's context/metadata (event, circle, campaign...). */
+  contextRefs: ConversationContextRef[]
   lastActivityAt: string
   messages: ConversationThreadMessage[]
 }
 
 const CONV_COLS =
   'id, ref, subject, status, priority, channel, kind, member_profile_id, contact_id, external_email, ' +
-  'owner_profile_id, assigned_to, space_id, last_activity_at, last_inbound_at, last_outbound_at, created_at'
+  'owner_profile_id, assigned_to, space_id, support_ticket_id, context, metadata, ' +
+  'last_activity_at, last_inbound_at, last_outbound_at, created_at'
 
 const MSG_COLS =
   'id, conversation_id, direction, author_id, author_contact_id, author_kind, body, body_html, ' +
@@ -142,6 +161,69 @@ async function loadSpaceNames(ids: string[]): Promise<Map<string, string>> {
     /* fail-safe */
   }
   return map
+}
+
+/** Load one Space's display name + slug for the thread's context band (fail-safe: null). */
+async function loadSpaceIdentity(spaceId: string | null): Promise<{ name: string | null; slug: string | null } | null> {
+  if (!spaceId) return null
+  try {
+    const { data } = await db().from('spaces').select('name, brand_name, slug').eq('id', spaceId).maybeSingle()
+    if (!data) return null
+    const s = data as { name: string | null; brand_name: string | null; slug: string | null }
+    return { name: s.brand_name || s.name || null, slug: s.slug ?? null }
+  } catch {
+    return null
+  }
+}
+
+/** Read the first non-empty string under any of the given keys (defensive: metadata shapes vary). */
+function firstStringKey(bag: Record<string, unknown>, keys: string[]): string | null {
+  for (const k of keys) {
+    const v = bag[k]
+    if (typeof v === 'string' && v.trim()) return v.trim()
+  }
+  return null
+}
+
+/** Resolve what a conversation references (event / circle / broadcast / campaign) from its context +
+ *  metadata jsonb — the formal scope columns don't exist yet, so this reads defensively and only returns
+ *  refs that actually resolve. Slug-routed entities get links; id-only refs render as plain labels.
+ *  FAIL-SAFE: []. */
+async function resolveContextRefs(
+  context: Record<string, unknown> | null,
+  metadata: Record<string, unknown> | null,
+): Promise<ConversationContextRef[]> {
+  const bag: Record<string, unknown> = {
+    ...(context && typeof context === 'object' ? context : {}),
+    ...(metadata && typeof metadata === 'object' ? metadata : {}),
+  }
+  const refs: ConversationContextRef[] = []
+  const eventId = firstStringKey(bag, ['event_id', 'eventId'])
+  const circleId = firstStringKey(bag, ['circle_id', 'circleId'])
+  const broadcastId = firstStringKey(bag, ['broadcast_id', 'broadcastId'])
+  const campaignId = firstStringKey(bag, ['campaign_id', 'campaignId'])
+
+  if (eventId) {
+    try {
+      const { data } = await db().from('events').select('slug, title').eq('id', eventId).maybeSingle()
+      const e = data as { slug: string | null; title: string | null } | null
+      if (e) refs.push({ label: e.title || 'Event', href: e.slug ? `/events/${e.slug}` : null })
+    } catch {
+      /* fail-safe */
+    }
+  }
+  if (circleId) {
+    try {
+      const { data } = await db().from('circles').select('slug, name').eq('id', circleId).maybeSingle()
+      const c = data as { slug: string | null; name: string | null } | null
+      if (c) refs.push({ label: c.name || 'Circle', href: c.slug ? `/circles/${c.slug}` : null })
+    } catch {
+      /* fail-safe */
+    }
+  }
+  if (broadcastId) refs.push({ label: 'From a broadcast', href: null })
+  if (campaignId) refs.push({ label: 'From an email campaign', href: null })
+  return refs
 }
 
 /** Batch-load { name, email } for a set of contact ids (fail-safe: empty map). */
@@ -260,6 +342,9 @@ interface ConvRow {
   owner_profile_id: string | null
   assigned_to: string | null
   space_id: string | null
+  support_ticket_id: string | null
+  context: Record<string, unknown> | null
+  metadata: Record<string, unknown> | null
   last_activity_at: string
   last_inbound_at: string | null
   last_outbound_at: string | null
@@ -357,22 +442,35 @@ export async function getWorkspaceThread(
       ...msgs.map((m) => m.author_id),
     ].filter(Boolean) as string[]
     const contactIds = [row.contact_id, ...msgs.map((m) => m.author_contact_id)].filter(Boolean) as string[]
-    const [profiles, contacts] = await Promise.all([loadProfileNames(profileIds), loadContactIdentities(contactIds)])
+    const [profiles, contacts, space, contextRefs] = await Promise.all([
+      loadProfileNames(profileIds),
+      loadContactIdentities(contactIds),
+      loadSpaceIdentity(row.space_id),
+      resolveContextRefs(row.context, row.metadata),
+    ])
 
     const cp = counterpartOf(row, profiles, contacts)
-    const messages: ConversationThreadMessage[] = msgs.map((m) => ({
-      id: String(m.id),
-      direction: m.direction as ConversationThreadMessage['direction'],
-      authorKind: m.author_kind,
-      authorName: authorNameFor(m, profiles, contacts, cp.name),
-      // Chat view shows the human message only — strip the email footer + quoted history (raw stays stored).
-      body: cleanConversationBody(m.body),
-      bodyHtml: m.body_html,
-      isInternal: !!m.is_internal,
-      channel: m.channel,
-      deliveryStatus: m.delivery_status,
-      occurredAt: m.occurred_at ?? m.created_at,
-    }))
+    const messages: ConversationThreadMessage[] = msgs.map((m) => {
+      // Chat view leads with the NEW content only. An email reply carries the quoted trail its client
+      // stapled underneath — split it off (display-time; raw stays stored) so the reader can offer it
+      // behind a collapsed toggle instead of repeating the whole chain in every bubble.
+      const split = m.channel === 'email' ? splitQuotedReply(m.body) : { visible: m.body ?? '', quoted: null }
+      const visible = cleanConversationBody(split.visible)
+      return {
+        id: String(m.id),
+        direction: m.direction as ConversationThreadMessage['direction'],
+        authorKind: m.author_kind,
+        authorName: authorNameFor(m, profiles, contacts, cp.name),
+        // Fail-safe for a quote-only message: fall back to the whole cleaned body (old behavior).
+        body: visible || cleanConversationBody(m.body),
+        bodyHtml: m.body_html,
+        quotedTrail: visible ? split.quoted : null,
+        isInternal: !!m.is_internal,
+        channel: m.channel,
+        deliveryStatus: m.delivery_status,
+        occurredAt: m.occurred_at ?? m.created_at,
+      }
+    })
 
     return {
       id: String(row.id),
@@ -390,6 +488,10 @@ export async function getWorkspaceThread(
       memberProfileId: row.member_profile_id,
       contactId: row.contact_id,
       spaceId: row.space_id,
+      spaceName: space?.name ?? null,
+      spaceSlug: space?.slug ?? null,
+      supportTicketId: row.support_ticket_id,
+      contextRefs,
       lastActivityAt: row.last_activity_at,
       messages,
     }
