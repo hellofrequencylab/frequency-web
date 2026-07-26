@@ -100,6 +100,36 @@ export function shouldAutoAcceptShare(input: {
   return input.callerStewardsApprovingSide || input.collaborationLinksSpaces
 }
 
+/**
+ * The member-facing message for a FAILED event_space_shares write, mapped from the Postgres/PostgREST
+ * error code so a host reads what actually went wrong instead of a blanket "try again". Pure.
+ *
+ * The codes that matter in practice:
+ *   - PGRST205 / 42P01: the event_space_shares table is missing (the EC3 migration band was never
+ *     applied to this database). Seen live 2026-07: prod stopped applying at 20261104 and the
+ *     20261195..20261204 band (space_collaborations, calendar feeds, event_space_shares, venue holds)
+ *     never landed, so EVERY share attempt failed. Retrying cannot help; an operator must migrate.
+ *   - 42501: RLS/permission denied. The table is service-role only, so this means the server is not
+ *     writing with the service role. Also an operator problem, not a retry.
+ *   - 23503: the event or space row vanished between the picker and the write (stale page).
+ *   - 22P02: the submitted id is not a uuid, so the picked result was never a Space.
+ * 23505 never reaches this mapper (an active duplicate is idempotent success in the action).
+ */
+export function shareWriteFailureMessage(code?: string | null): string {
+  switch (code) {
+    case 'PGRST205':
+    case '42P01':
+    case '42501':
+      return 'Event sharing is not set up on this site yet. An operator needs to finish the database setup before events can be co-hosted.'
+    case '23503':
+      return 'This event or that Space no longer exists. Refresh the page and try again.'
+    case '22P02':
+      return 'That result is not a Space. Search again and pick a Space from the list.'
+    default:
+      return 'Could not share this event. Try again.'
+  }
+}
+
 // ── IO: untyped admin handle (event_space_shares isn't in the generated types yet, ADR-246) ───────────
 
 function untyped(): SupabaseClient {
@@ -264,5 +294,33 @@ export async function listShareApproverIds(spaceId: string): Promise<string[]> {
     return await listSpaceStewardIds(spaceId)
   } catch {
     return []
+  }
+}
+
+/**
+ * Explain a share target id that did NOT resolve to a Space. The picker can only submit what a search
+ * surface returned, and person-named results are easy to misread (a member profile vs the personal or
+ * business Space they run), so when the id turns out to be a PROFILE or a CIRCLE the host is told that
+ * in plain words instead of a dead-end "not found". FAIL-SAFE: the generic not-found line on any error
+ * (a non-uuid id just misses both probes and falls through the same way).
+ */
+export async function describeMissingShareTarget(id: string): Promise<string> {
+  const fallback = 'That Space could not be found. Search again and pick a Space from the list.'
+  if (!id) return fallback
+  try {
+    const admin = untyped()
+    const [profileRes, circleRes] = await Promise.all([
+      admin.from('profiles').select('id').eq('id', id).maybeSingle(),
+      admin.from('circles').select('id').eq('id', id).maybeSingle(),
+    ])
+    if (profileRes.data) {
+      return 'That result is a member, not a Space. A member cannot co-host an event, but a Space they run can. Search for that Space by name.'
+    }
+    if (circleRes.data) {
+      return 'That result is a Circle, not a Space. An event can only be co-hosted with a Space.'
+    }
+    return fallback
+  } catch {
+    return fallback
   }
 }

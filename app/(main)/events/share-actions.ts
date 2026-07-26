@@ -39,6 +39,8 @@ import {
   listShareApproverIds,
   approverSideForShare,
   shouldAutoAcceptShare,
+  shareWriteFailureMessage,
+  describeMissingShareTarget,
   type ShareRow,
   type EventShareView,
 } from '@/lib/events/event-share'
@@ -54,7 +56,7 @@ export async function loadEventShares(eventId: string): Promise<EventShareView[]
 
 /** A chainable + awaitable write filter (supabase builders are both), so a status-guarded update is
  *  atomic at the DB (the row updates only if still in the expected state). Mirrors collaborations. */
-interface WriteFilter extends Promise<{ error: { code?: string } | null }> {
+interface WriteFilter extends Promise<{ error: { code?: string; message?: string } | null }> {
   eq: (c: string, val: string) => WriteFilter
   in: (c: string, vals: string[]) => WriteFilter
 }
@@ -64,7 +66,7 @@ function sharesTable() {
   return (createAdminClient() as unknown as {
     from: (t: string) => {
       insert: (rows: Record<string, unknown>[]) => {
-        select: (c: string) => { maybeSingle: () => Promise<{ data: { id: string } | null; error: { code?: string } | null }> }
+        select: (c: string) => { maybeSingle: () => Promise<{ data: { id: string } | null; error: { code?: string; message?: string } | null }> }
       }
       update: (v: Record<string, unknown>) => WriteFilter
     }
@@ -166,7 +168,18 @@ async function insertShare(args: {
     ])
     .select('id')
     .maybeSingle()
-  if (error && error.code !== '23505') return fail('Could not share this event. Try again.')
+  if (error && error.code !== '23505') {
+    // The member sees a mapped, actionable line; the REAL code+message go to the server log so an
+    // operator can diagnose without reproducing (a missing-table PGRST205 looks identical to a network
+    // blip from the rail otherwise; see shareWriteFailureMessage for the codes that matter).
+    console.error('[event-share] event_space_shares insert failed', {
+      code: error.code,
+      message: error.message,
+      eventId: args.eventId,
+      targetSpaceId: args.targetSpaceId,
+    })
+    return fail(shareWriteFailureMessage(error.code))
+  }
   return ok()
 }
 
@@ -186,11 +199,24 @@ export async function requestEventShare(
   if (!(await viewerHostsEvent(eventId))) return fail('You do not manage this event.')
 
   const target = await getSpaceById(spaceId)
-  if (!target) return fail('That space could not be found.')
+  // Not a Space at all: say WHAT it was (a member profile, a Circle) so a person-named result in the
+  // picker doesn't dead-end in a generic "not found" (Spaces can be person-named, so the confusion is real).
+  if (!target) return fail(await describeMissingShareTarget(spaceId))
   if (target.status !== 'active') return fail('That space is not active.')
 
   const homeSpaceId = await eventHomeSpaceId(eventId)
   if (homeSpaceId && homeSpaceId === spaceId) return fail('This event already lives in that space.')
+
+  // Already on file for this pair: say where it stands instead of failing generically. (A concurrent
+  // double-submit that races past this read still lands on the 23505 idempotent-success path below.)
+  const existing = (await listSharesForEvent(eventId)).find((s) => s.space.id === spaceId)
+  if (existing) {
+    if (existing.status === 'accepted') return fail(`${target.name} is already co-hosting this event.`)
+    if (existing.awaitingHostApproval) {
+      return fail(`${target.name} already asked to feature this event. Approve or decline their request in the list above.`)
+    }
+    return fail(`You already invited ${target.name}. A steward there still needs to approve it.`)
+  }
 
   // FUNNEL GATE (ADR-810): the event's HOME space (the venue) must be on a paid Business/Non Profit plan
   // to bring another space onto the event. A member's personal event lives on the platform space, which
