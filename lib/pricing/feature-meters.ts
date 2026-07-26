@@ -238,9 +238,10 @@ export const NON_METERED_FEATURES: Record<string, string> = {
   vault_cash_in: 'On/off unlock (spend Gems / claim rewards); the Gem balance is the natural limit.',
   // The full rewards loop (streaks, seasons, ladder) is an on/off experience, not a "use more" dial.
   gamification_full: 'On/off experience (the full rewards loop), no natural quantity to meter.',
-  // Hosting collaborator spaces / co-hosting events is an on/off Business capability (ADR-810), not a
-  // metered quantity — the collaborator pays for their own space, so the host is never charged per guest.
-  space_collaborators: 'On/off capability (host collaborator spaces + co-host events), free to host per guest.',
+  // Collaborator hosting (hosting collaborator spaces / hosting events with Collaborators) is an
+  // on/off Collective capability of the HOST side (ADR-810/ADR-835), not a metered quantity — the
+  // collaborator pays for their own space (being one is free), so the host is never charged per guest.
+  space_collaborators: 'On/off capability (Collaborator hosting: collaborator spaces + events with Collaborators), free to host per guest.',
   // Restricting a ticket tier to the space's own members (ADR-823) is an on/off gate on the tier
   // editor, not a quantity — ticket volume is already the space's own sales, never charged per use.
   space_membership_tickets: 'On/off capability (members-only ticket tiers), no natural quantity to meter.',

@@ -262,7 +262,7 @@ One CRM engine, four scoped surfaces; each has ONE operator-facing name and a lo
 Never "resident CRM" (no "resident" entity exists), never "Event CRM" / "Circle CRM" in
 operator-facing copy (internal shorthand only).
 
-## Events: Cohosts (people) vs Collaborators (Spaces) (ADR-834, July 2026, owner-ruled)
+## Events: Cohosts (people) vs Collaborators (Spaces) (ADR-834/ADR-835, July 2026, owner-ruled)
 
 Two distinct event relations, one word each. They must never blur:
 
@@ -280,12 +280,21 @@ Two distinct event relations, one word each. They must never blur:
   businesses); an event Collaborator = the PER-EVENT share. Same word on purpose, two grains.
   When the grain matters, qualify: "venue collaborator" vs "event Collaborator". Neither ever
   means a person.
-- **A member's personal space is never a Collaborator.** The share picker offers only Business /
-  Non Profit Spaces, and the server rejects a Space whose identity mirrors its owner's member
-  identity with the pointer "That is a member's personal space. Invite them as a cohost
-  instead." The tension is intentional and free of dark patterns: the Collaborator display
-  itself costs nothing with an accepted share, but BEING a Collaborator requires having a
-  Business Space (the one quiet upsell line lives under the Cohosts field in event Settings).
+- **The person/Space line is structural, never name-based (ADR-835).** A personal ACCOUNT (a
+  profile) can only ever be a cohost; a SPACE (Business / Non Profit) can only ever be a
+  Collaborator, and that includes a Space named after its owner (the owner's own "Daniel
+  Tyack" business Space is a valid Collaborator). Nothing rejects a Space for mirroring its
+  owner's name; instead the picker results and Collaborator rows always show the Space's logo
+  plus a type badge, "Business Space" / "Non Profit", so an owner-named Space never reads as a
+  person. BEING a Collaborator is free for any Business / Non Profit Space; HOSTING an event
+  with Collaborators is the host Space's Collective-plan capability (see next bullet).
+- **"Event hub" is not a name; the capability is "Collaborator hosting" (ADR-835).** The
+  owner's informal "event hub" concept (a Space whose event brings on Collaborator Spaces)
+  maps to the **Collaborator hosting** capability on the Collective plan (feature
+  `space_collaborators`). Never write "Event Hub" / "hub" in UI or member copy for this:
+  **Hub** is the locked community-structure term (Circle → Hub → Nexus) and must not collide.
+  A member-hosted event has no host Space, so it can never take on Collaborators at all
+  (individuals have Cohosts; their business Space can collaborate on a Space-hosted event).
 - **Hyphenation guard:** "co-host" (hyphenated) survives only as the VERB for what a
   Collaborator Space does ("co-host it on their calendar"). The person noun is always
   "cohost"; the Space noun is always "Collaborator".

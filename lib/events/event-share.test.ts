@@ -4,8 +4,9 @@ import {
   roleFor,
   shouldAutoAcceptShare,
   shareWriteFailureMessage,
-  isPersonalMemberSpace,
   collaboratorSpaceGateError,
+  collaboratorTypeLabel,
+  isPersonalMemberSpace,
 } from './event-share'
 
 // The PURE authz/shaping helpers behind shared / co-hosted events (Events EC3). The IO reads/writes run
@@ -94,20 +95,49 @@ describe('shareWriteFailureMessage (failed insert -> actionable member copy)', (
   })
 })
 
-// ── The Collaborator gate (ADR-834): who can be shared with ─────────────────────────────────────────
+// ── The Collaborator gate (ADR-835): who can be shared with ─────────────────────────────────────────
+// The rule is STRUCTURAL: any real console-type Space (business / nonprofit, never the platform root)
+// is Collaborator-eligible, INCLUDING a Space named after its owner. ADR-834's identity-mirroring
+// heuristic is retired; the picker/row TYPE BADGE (collaboratorTypeLabel) now carries the
+// person-vs-Space distinction the member sees.
 
-/** A real business, owned by someone whose member identity does NOT mirror the Space's. */
-const ROYAL_TEMPLE = {
-  type: 'business',
-  name: 'Royal Temple',
-  brandName: 'Royal Temple',
-  slug: 'royaltemple',
-  ownerDisplayName: 'Meghan Riley',
-  ownerHandle: 'meghanriley',
-}
+describe('collaboratorSpaceGateError (the one pickable-Space rule)', () => {
+  it('a real Business Space passes', () => {
+    expect(collaboratorSpaceGateError({ type: 'business' })).toBeNull()
+  })
 
-describe('isPersonalMemberSpace (a Space that reads as its owner, not a business)', () => {
-  it('flags a Space named exactly after its owner (the "Daniel Tyack" screenshot case)', () => {
+  it('a nonprofit passes too (both console designators are valid Collaborators)', () => {
+    expect(collaboratorSpaceGateError({ type: 'nonprofit' })).toBeNull()
+  })
+
+  it('an owner-named business Space IS eligible (the "Daniel Tyack" case, ADR-835 reversal)', () => {
+    // The owner's own scenario: @danieltyack's business Space "Daniel Tyack" collaborates on the
+    // Meld event. Personal accounts are profiles, not spaces — structure decides, names never do.
+    expect(collaboratorSpaceGateError({ type: 'business' })).toBeNull()
+  })
+
+  it('the platform root is never a share target', () => {
+    const msg = collaboratorSpaceGateError({ type: 'root' })
+    expect(msg).toContain('Business or Non Profit Space')
+  })
+
+  it('a legacy raw type (pre-ADR-552 rows) normalizes to business and passes', () => {
+    expect(collaboratorSpaceGateError({ type: 'event_space' })).toBeNull()
+  })
+
+  it('an unknown/null type fails safe into the business bucket (normalizeSpaceType contract)', () => {
+    // normalizeSpaceType folds everything non-root into 'business', so a null type is still a
+    // console Space and passes; only the root is structurally barred.
+    expect(collaboratorSpaceGateError({ type: null })).toBeNull()
+  })
+
+  it('never emits an em dash (brand copy hard rule)', () => {
+    expect(collaboratorSpaceGateError({ type: 'root' })).not.toContain('—')
+  })
+})
+
+describe('isPersonalMemberSpace (RETIRED from the gates by ADR-835; kept only for the ADR-836 CRM tier)', () => {
+  it('still detects an owner-mirroring identity for its remaining consumer (crm-access.ts)', () => {
     expect(
       isPersonalMemberSpace({
         type: 'business',
@@ -133,24 +163,20 @@ describe('isPersonalMemberSpace (a Space that reads as its owner, not a business
     ).toBe(true)
   })
 
-  it('flags a brand_name that mirrors the owner even when name/slug differ', () => {
+  it('a business named differently from its owner does not mirror', () => {
     expect(
       isPersonalMemberSpace({
         type: 'business',
-        name: 'Studio 7',
-        brandName: 'Danny Kenduck',
-        slug: 'studio-7',
-        ownerDisplayName: 'Danny Kenduck',
-        ownerHandle: 'dannyk',
+        name: 'Royal Temple',
+        brandName: 'Royal Temple',
+        slug: 'royaltemple',
+        ownerDisplayName: 'Meghan Riley',
+        ownerHandle: 'meghanriley',
       }),
-    ).toBe(true)
+    ).toBe(false)
   })
 
-  it('a real business named differently from its owner is NOT personal', () => {
-    expect(isPersonalMemberSpace(ROYAL_TEMPLE)).toBe(false)
-  })
-
-  it('fails OPEN with no owner identity (a UX guard, not a security boundary)', () => {
+  it('fails OPEN with no owner identity (a UX signal, never a security boundary)', () => {
     expect(
       isPersonalMemberSpace({
         type: 'business',
@@ -162,72 +188,36 @@ describe('isPersonalMemberSpace (a Space that reads as its owner, not a business
       }),
     ).toBe(false)
   })
+
+  it('does NOT decide Collaborator eligibility: the mirroring Space still passes the share gate', () => {
+    // The ADR-835 contract in one assertion: even a perfect identity mirror is a valid Collaborator,
+    // because eligibility is structural (a spaces row of console type), never name-based.
+    expect(collaboratorSpaceGateError({ type: 'business' })).toBeNull()
+  })
 })
 
-describe('collaboratorSpaceGateError (the one pickable-Space rule)', () => {
-  it('a real Business Space passes', () => {
-    expect(collaboratorSpaceGateError(ROYAL_TEMPLE, 'invite')).toBeNull()
+describe('collaboratorTypeLabel (the Space-type disambiguation badge)', () => {
+  it('a business badges as "Business Space" (spelling out the entity kind so it never reads as a person)', () => {
+    expect(collaboratorTypeLabel('business')).toBe('Business Space')
   })
 
-  it('a nonprofit passes too (both console designators are valid Collaborators)', () => {
-    expect(collaboratorSpaceGateError({ ...ROYAL_TEMPLE, type: 'nonprofit' }, 'invite')).toBeNull()
+  it('a nonprofit badges as "Non Profit" (the NAMING designator already reads as an organization)', () => {
+    expect(collaboratorTypeLabel('nonprofit')).toBe('Non Profit')
   })
 
-  it('the platform root is never a share target', () => {
-    const msg = collaboratorSpaceGateError({ ...ROYAL_TEMPLE, type: 'root', name: 'Frequency', slug: 'frequency' })
-    expect(msg).toContain('Business or Non Profit Space')
+  it('a legacy raw type normalizes before labeling (an unmigrated row still badges correctly)', () => {
+    expect(collaboratorTypeLabel('event_space')).toBe('Business Space')
+    expect(collaboratorTypeLabel('organization')).toBe('Non Profit')
   })
 
-  it("a member's personal space is rejected with the cohost pointer (invite side)", () => {
-    const msg = collaboratorSpaceGateError(
-      {
-        type: 'business',
-        name: 'Daniel Tyack',
-        brandName: 'Daniel Tyack',
-        slug: 'danieltyack',
-        ownerDisplayName: 'Daniel Tyack',
-        ownerHandle: 'danieltyack',
-      },
-      'invite',
-    )
-    expect(msg).toBe("That is a member's personal space. Invite them as a cohost instead.")
-  })
-
-  it('the feature side speaks to the personal-space steward, still pointing at the cohost path', () => {
-    const msg = collaboratorSpaceGateError(
-      {
-        type: 'business',
-        name: 'Daniel Tyack',
-        brandName: null,
-        slug: 'danieltyack',
-        ownerDisplayName: 'Daniel Tyack',
-        ownerHandle: 'danieltyack',
-      },
-      'feature',
-    )
-    expect(msg).toContain('cohost')
-    expect(msg).not.toBe("That is a member's personal space. Invite them as a cohost instead.")
-  })
-
-  it('a legacy raw type (pre-ADR-552 rows) normalizes to business and passes', () => {
-    expect(collaboratorSpaceGateError({ ...ROYAL_TEMPLE, type: 'event_space' }, 'invite')).toBeNull()
+  it('null/undefined fall into the business label, never an empty badge', () => {
+    expect(collaboratorTypeLabel(null)).toBe('Business Space')
+    expect(collaboratorTypeLabel(undefined)).toBe('Business Space')
   })
 
   it('never emits an em dash (brand copy hard rule)', () => {
-    const personal = {
-      type: 'business',
-      name: 'Daniel Tyack',
-      brandName: null,
-      slug: 'danieltyack',
-      ownerDisplayName: 'Daniel Tyack',
-      ownerHandle: 'danieltyack',
-    }
-    for (const msg of [
-      collaboratorSpaceGateError({ ...ROYAL_TEMPLE, type: 'root' }),
-      collaboratorSpaceGateError(personal, 'invite'),
-      collaboratorSpaceGateError(personal, 'feature'),
-    ]) {
-      expect(msg).not.toContain('—')
+    for (const t of ['business', 'nonprofit', null]) {
+      expect(collaboratorTypeLabel(t)).not.toContain('—')
     }
   })
 })

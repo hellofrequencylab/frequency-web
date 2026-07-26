@@ -15,7 +15,18 @@ import { labelClasses } from '@/components/ui/field'
 import { getInitials } from '@/lib/utils'
 import type { EventShareView } from '@/lib/events/event-share'
 
-type ScopeHit = { id: string; name: string; slug: string; image_url: string | null }
+type ScopeHit = { id: string; name: string; slug: string; image_url: string | null; type_label?: string }
+
+/** The quiet Space-type badge (ADR-835): every picker result and Collaborator row names its TYPE
+ *  ("Business Space" / "Non Profit") next to the logo, so a Space named after its owner never reads
+ *  as a person. The badge does the disambiguation; person-named Spaces are eligible. */
+function SpaceTypeBadge({ label }: { label: string }) {
+  return (
+    <span className="shrink-0 rounded-full border border-border bg-surface-elevated px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-subtle">
+      {label}
+    </span>
+  )
+}
 
 // COLLABORATORS (relation B, ADR-834) — the host shares the event with another SPACE so it shows on
 // that Space's calendar too (Events EC3). This is CALENDAR VISIBILITY plus a featured credit on the
@@ -25,8 +36,10 @@ type ScopeHit = { id: string; name: string; slug: string; image_url: string | nu
 // Picking a Space REQUESTS a share; a steward there approves before it appears on their calendar
 // (unless the host stewards it too, or the spaces already collaborate, in which case it's accepted
 // immediately). A Space that asked to FEATURE this event shows here as a request the host approves.
-// The picker offers only valid Collaborator targets (Business / Non Profit Spaces, never a member's
-// personal space — /api/search-scopes?for=event-share); requestEventShare enforces the same rule.
+// The picker offers any real Business / Non Profit Space (ADR-835 — the person/Space distinction is
+// structural, so owner-named Spaces are eligible; each result and row wears a Space-type badge +
+// logo so it never reads as a person — /api/search-scopes?for=event-share); requestEventShare
+// enforces the same rule, and the host side's Collective plan gates Collaborator hosting.
 // Mirrors the placement field: results render IN FLOW (the module's @container wrapper clips a
 // `top-full` overlay).
 
@@ -108,7 +121,10 @@ export function EventShareField({ eventId, slug }: { eventId: string; slug: stri
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-text">{s.space.name}</p>
+                <p className="flex items-center gap-1.5">
+                  <span className="truncate text-sm font-medium text-text">{s.space.name}</span>
+                  <SpaceTypeBadge label={s.space.typeLabel} />
+                </p>
                 <p className="flex items-center gap-1 text-xs text-subtle">
                   {s.status === 'accepted' ? (
                     <>
@@ -193,8 +209,9 @@ function SpaceSearch({ pending, onPick }: { pending: boolean; onPick: (spaceId: 
         return
       }
       try {
-        // `for=event-share` keeps invalid Collaborator targets (the platform root, members'
-        // personal spaces) out of the picker; the server action re-enforces the same rule.
+        // `for=event-share` keeps invalid Collaborator targets (anything that is not a real
+        // Business / Non Profit Space) out of the picker and returns each hit's type badge;
+        // the server action re-enforces the same rule.
         const res = await fetch(`/api/search-scopes?q=${encodeURIComponent(q.trim())}&for=event-share`)
         const json = await res.json()
         setSpaces(json.spaces ?? [])
@@ -241,6 +258,7 @@ function SpaceSearch({ pending, onPick }: { pending: boolean; onPick: (spaceId: 
                 </div>
               )}
               <span className="min-w-0 flex-1 truncate text-xs font-semibold text-text">{h.name}</span>
+              {h.type_label && <SpaceTypeBadge label={h.type_label} />}
             </button>
           ))}
         </div>
