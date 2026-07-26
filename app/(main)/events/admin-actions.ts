@@ -338,6 +338,9 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   await saveEventLocation(id, { address, attendanceMode, onlineUrl, point, geocoder: nominatimGeocoder })
 
   revalidatePath(`/events/${slug}`)
+  // The Manage hub mounts this same settings module on its Settings tab (ADR-828) and renders the
+  // event title in its header, so it revalidates with the page.
+  revalidatePath(`/events/${slug}/manage`)
   revalidatePath('/events')
   revalidatePath('/feed')
 }

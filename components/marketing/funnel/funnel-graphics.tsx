@@ -6,6 +6,17 @@
 // and the signature Loop is labelled with <title>/<desc>. No motion here; the page respects reduced-motion.
 
 import type { FunnelIconName } from '@/lib/marketing/funnel-config'
+import { priceStrings, pricingCatalog } from '@/lib/pricing/pricing-page'
+
+// The Business figure on the break-even graphic reads the ONE code catalog (never hardcoded), and the
+// crossing label is computed from it: the point where Business's halved network rate (10% -> 5%) covers
+// the flat monthly price, rounded to a friendly $50. A catalog change reflows both labels.
+const P = priceStrings()
+const BREAK_EVEN_LABEL = (() => {
+  const listCents = pricingCatalog().business_base.month.listCents
+  const dollars = listCents / 100 / 0.05 // the 5-point rate delta between Free (10%) and Business (5%)
+  return `~$${Math.round(dollars / 50) * 50}/mo`
+})()
 
 // A shared, calm rounded-rect "card" helper keeps the geometry consistent across graphics.
 const CARD_RADIUS = 10
@@ -423,7 +434,7 @@ export function BreakEvenGraphic({ className = '' }: { className?: string }) {
       {/* dashed crossing marker */}
       <g className="text-primary-strong">
         <line x1={cross} y1={y0} x2={cross} y2={y1} stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.8" />
-        <text x={cross} y={y1 + 18} textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="700">~$600/mo</text>
+        <text x={cross} y={y1 + 18} textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="700">{BREAK_EVEN_LABEL}</text>
       </g>
       {/* Free line (quiet) */}
       <g className="text-subtle">
@@ -433,7 +444,7 @@ export function BreakEvenGraphic({ className = '' }: { className?: string }) {
       {/* Business line (accent) */}
       <g className="text-primary-strong">
         <line x1={bizStart.x} y1={bizStart.y} x2={bizEnd.x} y2={bizEnd.y} stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" />
-        <text x={bizEnd.x} y={bizEnd.y - 8} textAnchor="end" fill="currentColor" fontSize="11" fontWeight="700">Business · $29 + 5% network</text>
+        <text x={bizEnd.x} y={bizEnd.y - 8} textAnchor="end" fill="currentColor" fontSize="11" fontWeight="700">Business · {P.businessList} + 5% network</text>
       </g>
       {/* x-axis label */}
       <text x={(x0 + x1) / 2} y={224} textAnchor="middle" className="text-subtle" fill="currentColor" fontSize="11">Monthly network sales</text>

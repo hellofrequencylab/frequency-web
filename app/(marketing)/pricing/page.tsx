@@ -20,12 +20,18 @@ import {
   tierListAnchor,
   loadoutStrip,
   proAddonPrice,
+  priceStrings,
+  PLAN_STORY,
   PRICING_ADDONS,
   MISSION_FRAMING,
   CREW_NOTE,
   type PricingTier,
 } from '@/lib/pricing/pricing-page'
 import type { BillingInterval } from '@/lib/billing/pricing-keys'
+
+// Every dollar figure in the copy below interpolates from the ONE code catalog (priceStrings), so no
+// sentence on this page can quote a price the catalog does not carry.
+const P = priceStrings()
 
 // FAST: the commercial pricing page is STATIC (revalidate is a courtesy for the rare catalog-config
 // edit; the page itself reads only the CODE catalog defaults via lib/pricing/pricing-page, so there are
@@ -41,20 +47,20 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'Pricing for Spaces',
   description:
-    'Frequency is a community collective. Start a Space free. You keep 100% of your own bookings; we earn only on the business the network sends you. Business is $29 a month ($19 at the Opening Beta price), Collective is $79 ($49 Opening Beta), Non Profit is $39. Two months free on yearly.',
+    `Connection is free on Frequency. Businesses pay for reach and scale, never for access to people. Start a Space free; paid plans raise the limits. Business is ${P.businessList} a month (${P.businessBeta} at the Opening Beta price), Collective is ${P.collectiveList} (${P.collectiveBeta} Opening Beta), Non Profit is ${P.nonprofit}. Two months free on yearly.`,
   alternates: { canonical: '/pricing' },
   openGraph: {
-    title: 'Frequency pricing: we never take a cut of your own bookings',
+    title: 'Frequency pricing: connection is free, paid plans raise the limits',
     description:
-      'A community collective, not a tax on your work. Start a Space free, keep 100% of what you bring in; we earn only on network-sourced sales. Business $29 ($19 Opening Beta), Collective $79 ($49 Opening Beta), Non Profit $39.',
+      `A community collective, not a tax on your work. Start a Space free, keep 100% of what you bring in; we earn only on network-sourced sales. Business ${P.businessList} (${P.businessBeta} Opening Beta), Collective ${P.collectiveList} (${P.collectiveBeta} Opening Beta), Non Profit ${P.nonprofit}.`,
     url: '/pricing',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Frequency pricing: we never take a cut of your own bookings',
+    title: 'Frequency pricing: connection is free, paid plans raise the limits',
     description:
-      'Start a Space free. Keep 100% of your own bookings; we earn only on business the network sends you. Business $29 ($19 Opening Beta), Collective $79 ($49 Opening Beta), Non Profit $39.',
+      `Start a Space free. Keep 100% of your own bookings; we earn only on business the network sends you. Business ${P.businessList} (${P.businessBeta} Opening Beta), Collective ${P.collectiveList} (${P.collectiveBeta} Opening Beta), Non Profit ${P.nonprofit}.`,
   },
 }
 
@@ -62,19 +68,27 @@ export const metadata: Metadata = {
 const PRICING_FAQ: { q: string; a: string }[] = [
   {
     q: 'How does Frequency pricing work?',
-    a: 'A ladder, by what you run. A Free Space is the first level: your page, events, posts, and members, free for as long as you want. Business is $29 a month ($19 at the Opening Beta price): the full CRM, email, reporting, bookings, tickets, memberships, and your own website. Collective is $79 a month ($49 Opening Beta): everything in Business plus automations, team roles, multiple pipelines, and hosting collaborators. Non Profit is $39 a month flat, the full Collective toolkit for verified 501(c)(3) organizations.',
+    a: `Connection is free; paid plans raise the limits. A Free Space is the first level: your storefront, your page, events, posts, and members, free for as long as you want. Business is ${P.businessList} a month (${P.businessBeta} at the Opening Beta price): own your audience, with unlimited contacts, campaigns at volume, email branding, exports, and the full CRM. Collective is ${P.collectiveList} a month (${P.collectiveBeta} Opening Beta): be the venue, with team seats, automations, membership tickets, multiple pipelines, and hosting events with Collaborator Spaces. Non Profit is ${P.nonprofit} a month flat, the full Collective toolkit for verified 501(c)(3) organizations.`,
   },
   {
     q: 'Can I run a Space for free?',
-    a: 'Yes. A Free Space is a real Space, not a trial: your page, events, posts, members, and a place for your people to gather. No card, no clock. Upgrade to Business when you want payments and the full business toolkit.',
+    a: 'Yes. A Free Space is a real Space, not a trial: your storefront, your page, events, posts, members, and a place for your people to gather. You can even be a Collaborator on other Spaces’ events. No card, no clock. Upgrade to Business when you want to reach more people at once.',
+  },
+  {
+    q: 'What stays free forever?',
+    a: 'The people part. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. A business never pays for access to people; a paid plan buys reach and scale, higher limits on the same tools every Space already has.',
   },
   {
     q: 'Do you take a cut of my sales?',
     a: 'Not of your own. You keep 100% of the bookings and sales you bring in yourself, always. We earn a share only of the business the network sends you, a referral or a discovery inside the collective, and that rate drops as your plan rises: 5% on Business, 3% on Collective, and 0% for nonprofits. A paid plan buys down your rate.',
   },
   {
+    q: 'What happens if I downgrade?',
+    a: 'Nothing disappears. Your contacts, posts, events, and history stay visible and stay yours; you just go back to the free limits, so you cannot add past the caps until you upgrade again. You can export your contacts and your data before, during, or after, anytime.',
+  },
+  {
     q: 'What is the Vera AI add-on?',
-    a: "Vera AI turns your community's signals into live matches and next-best actions. It is an optional add-on on any paid plan at $20 a month, has a 14-day trial, and you can turn it on or off anytime.",
+    a: `Vera AI turns your community's signals into live matches and next-best actions. It is an optional add-on on any paid plan at ${P.veraAi} a month, has a 14-day trial, and you can turn it on or off anytime.`,
   },
   {
     q: 'What does yearly billing save?',
@@ -86,7 +100,7 @@ const PRICING_FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'Is there a personal plan?',
-    a: 'Yes, two. Crew is the personal tier at $9 a month or $90 a year at the Opening Beta price, under a $12 list. Supporter is $12 a month: everything in Crew, plus the Supporter badge for backing the Foundation. Both live on the personal upgrade page, not on this commercial page.',
+    a: `Yes, two, and neither is a business tool. Crew is the personal tier at ${CREW_NOTE.foundingLabel} a month or $90 a year at the Opening Beta price, under a ${CREW_NOTE.listLabel} list: the Crew badge, the full rewards loop, and a way to back the community. Supporter is ${CREW_NOTE.supporterLabel} a month: everything in Crew, plus the Supporter badge for backing the Foundation. Both live on the personal upgrade page, not on this commercial page.`,
   },
   {
     q: 'Where does the money go?',
@@ -101,13 +115,13 @@ const PRICING_FAQ: { q: string; a: string }[] = [
 // constant so it never drifts from the Crew card below. No dollar amount here is one the catalog renders
 // beside it.
 const VALUE_LADDER: { name: string; line: string; fee: string }[] = [
-  { name: 'Member', line: 'Belong. The full community, free forever.', fee: 'Free' },
-  { name: 'Crew', line: 'The whole Quest, and author your own. The personal tier.', fee: `${CREW_NOTE.foundingLabel}/mo` },
+  { name: 'Member', line: 'Belong to everything. The full community, free forever.', fee: 'Free' },
+  { name: 'Crew', line: 'The Crew badge, the whole Quest, and a way to back the community. Never a business tool.', fee: `${CREW_NOTE.foundingLabel}/mo` },
   { name: 'Supporter', line: 'Everything in Crew, plus the Supporter badge for backing the Foundation.', fee: `${CREW_NOTE.supporterLabel}/mo` },
-  { name: 'Free Space', line: 'The first level of Space: your page, events, posts, and members.', fee: 'Free' },
-  { name: 'Business', line: 'Run your practice: the CRM, email, bookings, payments, and your own website.', fee: '5% network' },
-  { name: 'Collective', line: 'Collaborate and host: automations, team roles, and shared events.', fee: '3% network' },
-  { name: 'Non Profit', line: 'The full toolkit for verified 501(c)(3) organizations.', fee: '0%' },
+  { name: 'Free Space', line: 'Put your business on the map: your storefront, page, events, and members.', fee: 'Free' },
+  { name: 'Business', line: 'Own your audience: unlimited contacts, campaigns at volume, email branding, and exports.', fee: '5% network' },
+  { name: 'Collective', line: 'Be the venue: team seats, automations, membership tickets, and Collaborator hosting.', fee: '3% network' },
+  { name: 'Non Profit', line: 'The full Collective toolkit, verified, for 501(c)(3) organizations.', fee: '0%' },
 ]
 
 export default function PricingPage() {
@@ -155,11 +169,11 @@ export default function PricingPage() {
         eyebrow="Pricing for Spaces"
         title={
           <>
-            We never take a cut
-            <br className="hidden sm:block" /> of <span className="text-primary">your bookings.</span>
+            Connection is free.
+            <br className="hidden sm:block" /> Paid plans <span className="text-primary">raise the limits.</span>
           </>
         }
-        subtitle="Frequency is a community collective, not a tax on your work. Start a Space free. You keep 100% of what you bring in yourself; we earn only on the business the network sends you, at a rate that drops as your plan rises. Business is $29 a month, Collective is $79, and Non Profit is $39."
+        subtitle={`Frequency is where your local community happens. Businesses pay for reach and scale, never for access to people. Start a Space free; you keep 100% of what you bring in yourself, and we never take a cut of your own bookings. Business is ${P.businessList} a month, Collective is ${P.collectiveList}, and Non Profit is ${P.nonprofit}.`}
       >
         <Button href="/spaces">
           Start a Space <ArrowRight className="h-5 w-5" />
@@ -190,15 +204,15 @@ export default function PricingPage() {
         </PricingBillingToggle>
 
         <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-relaxed text-subtle">
-          You keep 100% of your own bookings, always. The take-rate applies only to business the network
-          sends you, and it drops as your plan rises. Every plan here is live and buyable today.
+          {PLAN_STORY.meters} And you keep 100% of your own bookings, always: the take-rate applies only
+          to business the network sends you, and it drops as your plan rises.
         </p>
 
         {/* Add-ons that ride on any paid plan: Vera AI (priced from the catalog) and extra operator
             seats. Seats are an OWNER-SET placeholder (CATALOG operator_seat is placeholder:true), so we
             surface them as available and owner-priced WITHOUT locking a public per-seat number. */}
         <p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-subtle">
-          Two add-ons ride on any paid plan. Vera AI is optional at {proAddonPrice('ai')}, or $200 a
+          Two add-ons ride on any paid plan. Vera AI is optional at {proAddonPrice('ai')}, or {P.veraAiYear} a
           year. And when your team grows, you can add operator seats: these are owner-priced today, so
           you bring on the people you need without a locked public per-seat price.
         </p>
@@ -396,6 +410,9 @@ function PricingTable({ tiers }: { tiers: PricingTier[] }) {
                       </span>
                     )}
                   </div>
+                  <p className="mt-1 text-xs font-semibold normal-case tracking-normal text-muted">
+                    {t.tagline}
+                  </p>
                 </th>
               ))}
             </tr>
@@ -469,9 +486,13 @@ function PriceCell({ tier }: { tier: PricingTier }) {
       {/* The Opening Beta caption shows ONLY where an anchor exists (a list struck over a lower beta
           rate) — i.e. Business's $19-under-$29 and Collective's $49-under-$79. It auto-clears when the
           beta window ends (effectiveCatalogAmounts collapses founding to list, so tierListAnchor returns
-          null). Free / Non Profit at list must NOT claim a discount (skeptic test, CONTENT-VOICE). */}
+          null). Free / Non Profit at list must NOT claim a discount (skeptic test, CONTENT-VOICE). The
+          framing is the honest founding lock (grandfathering, lib/pricing/beta.ts): the Summer of
+          Frequency rate holds through September 1 and stays with a Space that starts on it. */}
       {tierListAnchor(tier, 'month') && (
-        <span className="mt-1 block text-xs text-primary-strong">Opening Beta price, ends September 1</span>
+        <span className="mt-1 block text-xs text-primary-strong">
+          Opening Beta price through September 1, yours for as long as you keep the plan
+        </span>
       )}
     </div>
   )
@@ -498,7 +519,7 @@ function TierCard({ tier }: { tier: PricingTier }) {
         tier.featured ? 'border-2 border-primary ring-4 ring-primary-bg' : 'border-border'
       }`}
     >
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-1 flex items-center gap-2">
         <h3 className="font-display uppercase text-text text-2xl">{tier.name}</h3>
         {tier.featured && (
           <span className="rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
@@ -506,6 +527,7 @@ function TierCard({ tier }: { tier: PricingTier }) {
           </span>
         )}
       </div>
+      <p className="mb-3 text-sm font-semibold text-muted">{tier.tagline}</p>
       <div className="mb-4">
         <PriceCell tier={tier} />
         <p className="mt-1 text-sm text-muted">{tier.billing}</p>

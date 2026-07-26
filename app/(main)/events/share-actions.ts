@@ -66,10 +66,12 @@ export async function loadEventShares(eventId: string): Promise<EventShareView[]
 }
 
 /** A chainable + awaitable write filter (supabase builders are both), so a status-guarded update is
- *  atomic at the DB (the row updates only if still in the expected state). Mirrors collaborations. */
+ *  atomic at the DB (the row updates only if still in the expected state). Mirrors collaborations.
+ *  `select` returns the affected rows, so a caller can tell a won transition from a lost race. */
 interface WriteFilter extends Promise<{ error: { code?: string; message?: string } | null }> {
   eq: (c: string, val: string) => WriteFilter
   in: (c: string, vals: string[]) => WriteFilter
+  select: (c: string) => Promise<{ data: { id: string }[] | null; error: { code?: string; message?: string } | null }>
 }
 
 /** Untyped admin handle for event_space_shares (not in the generated types yet, ADR-246). */
@@ -140,10 +142,14 @@ async function eventTitleSlug(admin: SupabaseClient, eventId: string): Promise<{
   return { title: ev?.title ?? 'this event', slug: ev?.slug ?? null }
 }
 
-/** Revalidate every surface an accepted/changed share can appear on: the event page, the master events
- *  calendar, and the target space's calendar + profile. */
+/** Revalidate every surface an accepted/changed share can appear on: the event page, the event Manage
+ *  hub (the Settings tab mounts the share field), the master events calendar, and the target space's
+ *  calendar + profile. */
 async function revalidateShare(eventSlug: string | null, targetSpaceId: string): Promise<void> {
-  if (eventSlug) revalidatePath(`/events/${eventSlug}`)
+  if (eventSlug) {
+    revalidatePath(`/events/${eventSlug}`)
+    revalidatePath(`/events/${eventSlug}/manage`)
+  }
   revalidatePath('/events')
   revalidatePath('/events/calendar')
   const space = await getSpaceById(targetSpaceId)
@@ -388,11 +394,15 @@ async function respondToShare(shareId: string, next: 'accepted' | 'declined'): P
   }
 
   // Guard the status in the WHERE too: the row updates only if STILL pending (atomic transition).
-  const { error } = await sharesTable()
+  // Select the affected row back so a LOST race (someone else resolved it between the read above
+  // and this write) reports honestly instead of returning ok() and sending a false notification.
+  const { data: updated, error } = await sharesTable()
     .update({ status: next, responded_at: new Date().toISOString(), responded_by: profileId })
     .eq('id', shareId)
     .eq('status', 'pending')
+    .select('id')
   if (error) return fail('Could not update the request. Try again.')
+  if (!updated || updated.length === 0) return fail('That request has already been handled.')
 
   const admin = createAdminClient()
   const { title, slug } = await eventTitleSlug(admin, row.event_id)

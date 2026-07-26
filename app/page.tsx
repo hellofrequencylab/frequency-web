@@ -36,6 +36,14 @@ import { getReferrer } from '@/lib/qr/referral'
 import type { LiveEvent } from '@/components/marketing/blocks'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
+import { priceStrings, CREW_NOTE } from '@/lib/pricing/pricing-page'
+import { PLACEHOLDER_SPACE_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
+import { formatCents } from '@/lib/pricing/display'
+
+// Every dollar figure on the splash interpolates from the ONE price source (the code catalog via
+// priceStrings + the feature-tiers placeholder maps), so the strip can never drift from /pricing.
+const P = priceStrings()
+const INDEPENDENT_PRICE = formatCents(PLACEHOLDER_SPACE_PRICE_CENTS.independent)
 
 // The home is philosophy-led and builder-first: it sells a movement and a role,
 // not "Circles near you." There is no local inventory yet, so the sequence runs
@@ -122,7 +130,7 @@ const HOME_FAQ = [
   },
   {
     q: 'What does it cost?',
-    a: 'The community is free, forever. Browsing, joining a Circle, and showing up never cost anything. Crew is $9 a month, turns on The Quest, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only a small, shrinking network-only take-rate on the business the network sends you (Business 5%, Collective 3%, Non Profit 0%). There is no card today, and your Opening Beta price is locked in for life.',
+    a: `The community is free, forever. Browsing, joining a Circle, and showing up never cost anything, and a business never pays for access to people; paid plans raise the limits. Crew is ${CREW_NOTE.foundingLabel} a month, turns on The Quest, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only a small, shrinking network-only take-rate on the business the network sends you (Business 5%, Collective 3%, Non Profit 0%). There is no card today, and your Opening Beta price is locked in for life.`,
   },
   {
     q: 'Is there a catch?',
@@ -261,15 +269,15 @@ function Splash({
             <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-sm text-white/55">
               <span>Member free</span>
               <span aria-hidden className="text-white/25">·</span>
-              <span>Crew $9</span>
+              <span>Crew {CREW_NOTE.foundingLabel}</span>
               <span aria-hidden className="text-white/25">·</span>
-              <span>Business $29</span>
+              <span>Business {P.businessList}</span>
               <span aria-hidden className="text-white/25">·</span>
-              <span>Collective $79</span>
+              <span>Collective {P.collectiveList}</span>
               <span aria-hidden className="text-white/25">·</span>
-              <span>Non Profit $39</span>
+              <span>Non Profit {P.nonprofit}</span>
               <span aria-hidden className="text-white/25">·</span>
-              <span>Independent $249</span>
+              <span>Independent {INDEPENDENT_PRICE}</span>
             </p>
             <p className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/55">
               <span className="font-semibold text-white/75">Free during the beta.</span>
@@ -615,10 +623,12 @@ function Splash({
           </Faq>
           <Faq q="What does it cost?">
             The community is free, forever. Browsing, joining a Circle, and showing up never cost
-            anything. Crew is $9/mo, turns on The Quest, and is free for the whole beta. If you run a
-            practice or a Space, you keep 100% of your own bookings on one honest price, and we earn
-            only a small, shrinking network-only take-rate on the business the network sends you.
-            There&apos;s no card today: join now and your Opening Beta price is locked in for life.{' '}
+            anything, and a business never pays for access to people: paid plans raise the limits.
+            Crew is {CREW_NOTE.foundingLabel}/mo, turns on The Quest, and is free for the whole beta.
+            If you run a practice or a Space, you keep 100% of your own bookings on one honest price,
+            and we earn only a small, shrinking network-only take-rate on the business the network
+            sends you. There&apos;s no card today: join now and your Opening Beta price is locked in
+            for life.{' '}
             <Link href="/pricing" className="font-semibold text-primary-strong hover:underline">
               See the full breakdown
             </Link>

@@ -177,7 +177,7 @@ const FAQ = [
   },
   {
     q: 'What does Frequency cost to build community here?',
-    a: 'You keep 100% of your own bookings, always. Frequency is a Community Collective, so we earn only on the business the network brings you, and that network rate shrinks as the community grows. See the plans on the pricing page. Month to month, take your data and leave anytime.',
+    a: 'Connection is free: joining, Circles, and showing up never cost anything. You keep 100% of your own bookings, always. Frequency is a Community Collective, so we earn only on the business the network brings you, at a rate that drops as your plan rises. See the plans on the pricing page. Month to month, take your data and leave anytime.',
   },
 ]
 

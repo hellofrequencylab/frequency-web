@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { Zap, Check, MessageSquare, CalendarDays, Users, Star, Radio, BarChart3, ArrowRight } from 'lucide-react'
+import { Zap, Check, MessageSquare, Users, Star, Radio, BarChart3, ArrowRight } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { getPricingValues } from '@/lib/pricing/settings'
 import { memberTierSellable } from '@/lib/pricing/settings'
@@ -81,20 +81,24 @@ export default async function UpgradePage({
   const crew = rows.find((r) => r.key === 'crew')!
   const supporter = rows.find((r) => r.key === 'supporter')!
 
+  // Crew is the personal tier: your Crew identity, the whole game, and a way to back the community.
+  // It is never a business tool, and it never sells back the community itself: joining, Circles,
+  // events, and Channels stay free for everyone. The list below is what Crew actually adds
+  // (lib/pricing/gates.ts: vault_cash_in, gamification_full, vera_unlimited) plus the badge.
   const benefits = [
-    { icon: MessageSquare, label: 'Full community feed access' },
-    { icon: Users, label: 'Join and participate in circles' },
-    { icon: CalendarDays, label: 'Create and RSVP to events' },
-    { icon: Radio, label: 'Access all channels' },
-    { icon: Star, label: 'Earn Zaps and climb the leaderboard' },
-    { icon: BarChart3, label: 'Track your Quest progress' },
+    { icon: Star, label: 'The Crew badge, worn on your profile' },
+    { icon: Zap, label: 'The full rewards loop: streaks, seasons, and the whole ladder' },
+    { icon: BarChart3, label: 'Spend your Gems in the Vault Store' },
+    { icon: MessageSquare, label: 'Vera without the daily cap' },
+    { icon: Radio, label: 'List what you author in the public library' },
+    { icon: Users, label: 'You keep the community free for the next person' },
   ]
 
   return (
     <FocusTemplate
       width="narrow"
       title="Membership"
-      description="Your access to the Frequency community, free during beta."
+      description="Belonging is free, and stays free. Crew is the personal tier: the badge, the whole game, and a way to back the community."
     >
       {/* Supporter-contribution thanks — the confirmed Stripe success redirect. Plain and concrete. */}
       {supporterThanks && (
@@ -148,7 +152,7 @@ export default async function UpgradePage({
             <Zap className="w-7 h-7 text-white" />
           </div>
           <p className="text-2xl font-bold text-white mb-1">Join the Crew</p>
-          <p className="text-primary-bg/80 text-sm">Full access to the Frequency community</p>
+          <p className="text-primary-bg/80 text-sm">The personal tier: your badge, the whole game, and backing the community</p>
           <div className="mt-4 flex items-baseline justify-center gap-1">
             {live ? (
               <>

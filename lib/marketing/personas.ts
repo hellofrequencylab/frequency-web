@@ -23,11 +23,16 @@ import {
   PERSONA_LOADOUTS,
   PRICING_ADDONS,
   loadoutStripRow,
+  priceStrings,
   stripTotalLabel,
   type LoadoutStripRow,
   type PersonaLoadout,
 } from '@/lib/pricing/pricing-page'
 import type { AddonKey } from '@/lib/pricing/plans'
+
+// Every dollar figure in the persona copy interpolates from the ONE code catalog (priceStrings), so no
+// sentence here can quote a price the catalog does not carry.
+const P = priceStrings()
 
 /** One persona / package landing page. Pure data. The (type, variant) pins this persona to a Mode in
  *  lib/spaces/modes.ts, so its lexicon + recommended add-ons are read from the one Mode registry. The
@@ -89,7 +94,7 @@ export const PERSONAS: Persona[] = [
       'Tickets and passes, sold from your Space.',
       'Check-in at the door with a QR code.',
       'Dispatch to message everyone who has a ticket.',
-      'Everything is in Business, $29 a month or $19 at the Opening Beta price, no add-ons required.',
+      `Everything is in Business, ${P.businessList} a month or ${P.businessBeta} at the Opening Beta price, no add-ons required.`,
     ],
   },
   {
@@ -102,7 +107,7 @@ export const PERSONAS: Persona[] = [
       'Circles, cohorts, and memberships in one place.',
       'A member CRM that keeps track of who is who.',
       'Vera AI turns your community signals into live matches between the right people.',
-      'Grow into Collective when you add a team and host collaborators, at $49 a month at the Opening Beta price under the $79 list, with a 3% network rate.',
+      `Grow into Collective when you add a team and host collaborators, at ${P.collectiveBeta} a month at the Opening Beta price under the ${P.collectiveList} list, with a 3% network rate.`,
     ],
   },
   {
@@ -200,12 +205,12 @@ export function personaCopy(persona: Persona): PersonaCopy {
     ? `Frequency for ${persona.audience.toLowerCase()}: ${persona.focus} The Non Profit plan runs ${total} flat, with no take-rate on what you raise.`
     : `Frequency for ${persona.audience.toLowerCase()}: ${persona.focus} The setup runs ${total}, and you keep 100% of your own bookings.`
   const ogTitle = `Frequency for ${persona.audience}`
-  const lede = `${persona.focus} You keep 100% of your own bookings, and your people are always yours to export. Business is $29 a month, or $19 at the Opening Beta price that holds through September 1, 2026, with the full depth. The Non Profit plan is $39 a month flat, and the Vera AI add-on is +$20 a month when you want live matches. Yearly is two months free.`
+  const lede = `${persona.focus} You keep 100% of your own bookings, and your people are always yours to export. Business is ${P.businessList} a month, or ${P.businessBeta} at the Opening Beta price that holds through September 1, 2026, with the full depth. The Non Profit plan is ${P.nonprofit} a month flat, and the Vera AI add-on is +${P.veraAi} a month when you want live matches. Yearly is two months free.`
 
   const loadoutLine = isNonprofit
     ? `Nonprofits run on the Non Profit plan at ${total}, flat and never per seat. It carries the full Collective toolkit with donations built in, and no take-rate on what you raise, for verified 501(c)(3) organizations.`
-    : `The setup for ${persona.audience.toLowerCase()} is ${addonPhrase}. Business is $29 a month, or $19 at the Opening Beta price through September 1, 2026${
-        addonNames.length ? ', and the Vera AI add-on is +$20 a month' : ''
+    : `The setup for ${persona.audience.toLowerCase()} is ${addonPhrase}. Business is ${P.businessList} a month, or ${P.businessBeta} at the Opening Beta price through September 1, 2026${
+        addonNames.length ? `, and the Vera AI add-on is +${P.veraAi} a month` : ''
       }, so the loadout runs ${total} today. Yearly is two months free, and there are no per-seat fees.`
 
   const faq = [

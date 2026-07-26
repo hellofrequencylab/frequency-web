@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isOnline } from '@/lib/presence'
 import { PresenceDot } from '@/components/presence/presence-dot'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { NewRoomCompose } from '@/components/compose/new-room-compose'
 import { CrewLeadQuickAction } from '@/components/messages/crew-lead-quick-action'
 import { IndexTemplate } from '@/components/templates/index-template'
@@ -501,7 +502,7 @@ function DMRowItem({ conv, myProfileId, onlineIds }: { conv: ConversationRow; my
         {isGroup ? (
           <GroupAvatars participants={conv.participants} />
         ) : conv.participants[0]?.avatar_url ? (
-          <Image src={conv.participants[0].avatar_url!} alt={conv.participants[0].display_name} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
+          <Image src={avatarSrc(conv.participants[0].avatar_url!)} alt={conv.participants[0].display_name} width={40} height={40} style={avatarFocusStyle(conv.participants[0].avatar_url)} className="w-10 h-10 rounded-full object-cover" />
         ) : (
           <div className="w-10 h-10 rounded-full bg-primary-bg text-primary-strong text-sm font-semibold flex items-center justify-center select-none">
             {conv.participants[0] ? getInitials(conv.participants[0].display_name) : '?'}
@@ -541,7 +542,8 @@ function GroupAvatars({ participants }: { participants: Profile[] }) {
           ? ''
           : i === 0 ? 'absolute top-0 left-0' : i === 1 ? 'absolute bottom-0 right-0' : 'absolute bottom-0 left-0'
         return p.avatar_url ? (
-          <Image key={p.id} src={p.avatar_url} alt={p.display_name} width={40} height={40}
+          <Image key={p.id} src={avatarSrc(p.avatar_url)} alt={p.display_name} width={40} height={40}
+            style={avatarFocusStyle(p.avatar_url)}
             className={`${size} ${pos} rounded-full object-cover ring-2 ring-surface`} />
         ) : (
           <div key={p.id}

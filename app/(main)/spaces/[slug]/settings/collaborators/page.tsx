@@ -28,14 +28,15 @@ export default async function SpaceCollaboratorsPage({ params }: { params: Promi
 
   const brandName = space.brandName ?? space.name
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  // Locked when the viewer lacks the role OR the space is on a plan below Business (ADR-810): a free
-  // space sees the surface + the value but the controls are the upgrade prompt (the tease pattern). While
-  // billing is OFF, spaceCanHostCollaborators grants, so this stays exactly today's behavior.
+  // Locked when the viewer lacks the role OR the space is on a plan below Collective (ADR-810, floor
+  // raised by ADR-835): a lower-plan space sees the surface + the value but the controls are the upgrade
+  // prompt (the tease pattern). While billing is OFF, spaceCanHostCollaborators grants, so this stays
+  // exactly today's behavior.
   const planOk = await spaceCanHostCollaborators(space)
   const roleOk = spaceFunctionAccess(space, 'collaborators', caps.role)
   const featureLocked = !staffViewing && (!roleOk || !planOk)
-  // Which lock to explain: a plan lock routes to Go Business; a role/module lock routes to the Module
-  // Manager. The plan lock wins when both apply (the upgrade is the real blocker).
+  // Which lock to explain: a plan lock routes to the plans/billing surface; a role/module lock routes to
+  // the Module Manager. The plan lock wins when both apply (the upgrade is the real blocker).
   const lockedReason: 'plan' | 'module' = !planOk ? 'plan' : 'module'
 
   return (

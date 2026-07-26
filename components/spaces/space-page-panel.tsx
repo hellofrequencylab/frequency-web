@@ -382,8 +382,8 @@ function AddPagesUpsell({ slug }: { slug: string }) {
         Add more pages with your own website
       </p>
       <p className="mt-1 text-sm text-muted">
-        Your profile is one continuous page. Unlock the full website to add more pages and build a
-        multi-page site.
+        Your profile is one continuous page. The full website comes with the Business plan: add more
+        pages and build a multi-page site.
       </p>
       <Link
         href={`/spaces/${slug}/settings/billing`}

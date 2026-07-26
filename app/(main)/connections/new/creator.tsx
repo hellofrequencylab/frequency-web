@@ -163,6 +163,12 @@ export function Creator({ userId }: { userId: string }) {
   const photoRef = useRef<HTMLInputElement>(null)
   // Which side the Take photo / Upload sheet is adding a photo for (null = closed).
   const [pickSide, setPickSide] = useState<'front' | 'back' | null>(null)
+  // LATEST-PICK guards: prepareImageForUpload can take seconds (heic2any + wasm), so a member
+  // can pick again (or Clear) while an earlier conversion is still in flight. Each pick bumps
+  // its epoch; a completion whose epoch is stale is dropped, so an old slow pick can never
+  // overwrite a newer one or resurrect a cleared slot.
+  const sideEpoch = useRef<{ front: number; back: number }>({ front: 0, back: 0 })
+  const extrasEpoch = useRef(0)
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((p) => ({ ...p, [k]: v }))
 
@@ -203,12 +209,15 @@ export function Creator({ userId }: { userId: string }) {
   async function setSide(side: 'front' | 'back', raw: File | null) {
     const ref = side === 'front' ? frontRef : backRef
     if (ref.current) ref.current.value = ''
+    const epoch = ++sideEpoch.current[side]
     let file = raw
     if (raw) {
       // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG so the slot
       // thumbnail renders and the on-device downscale/deskew/crop steps can decode it (none work on a
       // raw HEIC outside Safari). An unconvertible HEIC gets an inline message instead of a dead scan.
       const prepared = await prepareImageForUpload(raw)
+      // A newer pick (or a Clear) superseded this one while it converted — drop it.
+      if (epoch !== sideEpoch.current[side]) return
       if ('error' in prepared) {
         setMsg({ kind: 'err', text: prepared.error })
         return
@@ -230,6 +239,7 @@ export function Creator({ userId }: { userId: string }) {
     const incoming = list ? Array.from(list) : []
     if (extraRef.current) extraRef.current.value = ''
     if (!incoming.length) return
+    const epoch = extrasEpoch.current
     // Same prep as the card sides: convert HEIC extras so their thumbnails and crops work everywhere.
     const ready: File[] = []
     let convertError: string | null = null
@@ -241,6 +251,8 @@ export function Creator({ userId }: { userId: string }) {
       }
       ready.push(prepared.file)
     }
+    // Clear ran while these converted — dropping them beats resurrecting a cleared batch.
+    if (epoch !== extrasEpoch.current) return
     if (ready.length) {
       setExtraFiles((prev) => [...prev, ...ready].slice(0, 4))
       setExtraThumbs((prev) => [...prev, ...ready.map((f) => URL.createObjectURL(f))].slice(0, 4))
@@ -261,6 +273,7 @@ export function Creator({ userId }: { userId: string }) {
   function clearScanFiles() {
     void setSide('front', null)
     void setSide('back', null)
+    extrasEpoch.current++ // invalidate any extra-file conversions still in flight
     setExtraThumbs((prev) => { prev.forEach((u) => URL.revokeObjectURL(u)); return [] })
     setExtraFiles([])
   }

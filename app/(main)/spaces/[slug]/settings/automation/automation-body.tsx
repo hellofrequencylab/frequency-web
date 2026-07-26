@@ -50,7 +50,13 @@ export async function AutomationBody({ slug }: { slug: string }) {
         label="Automation"
         reason="plan"
         canManageMembers={caps.canManageMembers}
+        featureKey="space_automation"
         currentPlan={space.plan}
+        planLine={
+          caps.canManageMembers
+            ? 'Automations come with the Collective plan. Sequences and rules run your follow-ups for you.'
+            : 'Automations come with the Collective plan. Ask an admin about the plan for this space.'
+        }
       />
     )
   }

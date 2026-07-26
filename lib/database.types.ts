@@ -854,10 +854,13 @@ export type Database = {
           compiled_html: string | null
           created_at: string
           created_by: string | null
+          from_address: string | null
+          from_name: string | null
           id: string
           phase_id: string | null
           preheader: string | null
           recipient_count: number
+          reply_mode: string
           scheduled_for: string | null
           segment: string
           sent_at: string | null
@@ -865,6 +868,7 @@ export type Database = {
           status: string
           subject: string
           test_sent_at: string | null
+          topic: string
         }
         Insert: {
           approval_status?: string
@@ -876,10 +880,13 @@ export type Database = {
           compiled_html?: string | null
           created_at?: string
           created_by?: string | null
+          from_address?: string | null
+          from_name?: string | null
           id?: string
           phase_id?: string | null
           preheader?: string | null
           recipient_count?: number
+          reply_mode?: string
           scheduled_for?: string | null
           segment?: string
           sent_at?: string | null
@@ -887,6 +894,7 @@ export type Database = {
           status?: string
           subject: string
           test_sent_at?: string | null
+          topic?: string
         }
         Update: {
           approval_status?: string
@@ -898,10 +906,13 @@ export type Database = {
           compiled_html?: string | null
           created_at?: string
           created_by?: string | null
+          from_address?: string | null
+          from_name?: string | null
           id?: string
           phase_id?: string | null
           preheader?: string | null
           recipient_count?: number
+          reply_mode?: string
           scheduled_for?: string | null
           segment?: string
           sent_at?: string | null
@@ -909,6 +920,7 @@ export type Database = {
           status?: string
           subject?: string
           test_sent_at?: string | null
+          topic?: string
         }
         Relationships: [
           {
@@ -1744,6 +1756,7 @@ export type Database = {
       commerce_orders: {
         Row: {
           amount_cents: number
+          attribution_ref: string | null
           buyer_profile_id: string | null
           created_at: string
           currency: string
@@ -1759,12 +1772,14 @@ export type Database = {
           refunded_at: string | null
           seller_stripe_account_id: string | null
           shipping: Json
+          source: string
           status: string
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
         }
         Insert: {
           amount_cents: number
+          attribution_ref?: string | null
           buyer_profile_id?: string | null
           created_at?: string
           currency?: string
@@ -1780,12 +1795,14 @@ export type Database = {
           refunded_at?: string | null
           seller_stripe_account_id?: string | null
           shipping?: Json
+          source?: string
           status?: string
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
         }
         Update: {
           amount_cents?: number
+          attribution_ref?: string | null
           buyer_profile_id?: string | null
           created_at?: string
           currency?: string
@@ -1801,6 +1818,7 @@ export type Database = {
           refunded_at?: string | null
           seller_stripe_account_id?: string | null
           shipping?: Json
+          source?: string
           status?: string
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -2041,6 +2059,298 @@ export type Database = {
           },
         ]
       }
+      comms_assignments: {
+        Row: {
+          assigned_by: string | null
+          assigned_to: string | null
+          conversation_id: string
+          created_at: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          assigned_by?: string | null
+          assigned_to?: string | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          assigned_by?: string | null
+          assigned_to?: string | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comms_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_assignments_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_assignments_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "comms_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comms_conversations: {
+        Row: {
+          ai: Json
+          assigned_to: string | null
+          channel: string
+          contact_id: string | null
+          context: Json
+          created_at: string
+          created_by: string | null
+          external_email: string | null
+          first_response_at: string | null
+          id: string
+          kind: string
+          last_activity_at: string
+          last_digested_at: string | null
+          last_inbound_at: string | null
+          last_outbound_at: string | null
+          member_profile_id: string | null
+          metadata: Json
+          owner_profile_id: string | null
+          priority: string
+          provider_thread_id: string | null
+          ref: number
+          resolved_at: string | null
+          scope_id: string | null
+          scope_kind: string | null
+          sla_due_at: string | null
+          snoozed_until: string | null
+          space_id: string | null
+          status: string
+          subject: string
+          subject_id: string | null
+          subject_kind: string
+          support_ticket_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai?: Json
+          assigned_to?: string | null
+          channel?: string
+          contact_id?: string | null
+          context?: Json
+          created_at?: string
+          created_by?: string | null
+          external_email?: string | null
+          first_response_at?: string | null
+          id?: string
+          kind?: string
+          last_activity_at?: string
+          last_digested_at?: string | null
+          last_inbound_at?: string | null
+          last_outbound_at?: string | null
+          member_profile_id?: string | null
+          metadata?: Json
+          owner_profile_id?: string | null
+          priority?: string
+          provider_thread_id?: string | null
+          ref?: number
+          resolved_at?: string | null
+          scope_id?: string | null
+          scope_kind?: string | null
+          sla_due_at?: string | null
+          snoozed_until?: string | null
+          space_id?: string | null
+          status?: string
+          subject: string
+          subject_id?: string | null
+          subject_kind?: string
+          support_ticket_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai?: Json
+          assigned_to?: string | null
+          channel?: string
+          contact_id?: string | null
+          context?: Json
+          created_at?: string
+          created_by?: string | null
+          external_email?: string | null
+          first_response_at?: string | null
+          id?: string
+          kind?: string
+          last_activity_at?: string
+          last_digested_at?: string | null
+          last_inbound_at?: string | null
+          last_outbound_at?: string | null
+          member_profile_id?: string | null
+          metadata?: Json
+          owner_profile_id?: string | null
+          priority?: string
+          provider_thread_id?: string | null
+          ref?: number
+          resolved_at?: string | null
+          scope_id?: string | null
+          scope_kind?: string | null
+          sla_due_at?: string | null
+          snoozed_until?: string | null
+          space_id?: string | null
+          status?: string
+          subject?: string
+          subject_id?: string | null
+          subject_kind?: string
+          support_ticket_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comms_conversations_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_conversations_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_conversations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_conversations_member_profile_id_fkey"
+            columns: ["member_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_conversations_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_conversations_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_conversations_support_ticket_id_fkey"
+            columns: ["support_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comms_messages: {
+        Row: {
+          attachments: Json
+          author_contact_id: string | null
+          author_id: string | null
+          author_kind: string
+          body: string
+          body_html: string | null
+          channel: string
+          conversation_id: string
+          created_at: string
+          delivery_status: string
+          direction: string
+          external_message_id: string | null
+          id: string
+          in_reply_to: string | null
+          is_internal: boolean
+          metadata: Json
+          occurred_at: string
+          references_ids: string[] | null
+        }
+        Insert: {
+          attachments?: Json
+          author_contact_id?: string | null
+          author_id?: string | null
+          author_kind?: string
+          body: string
+          body_html?: string | null
+          channel?: string
+          conversation_id: string
+          created_at?: string
+          delivery_status?: string
+          direction?: string
+          external_message_id?: string | null
+          id?: string
+          in_reply_to?: string | null
+          is_internal?: boolean
+          metadata?: Json
+          occurred_at?: string
+          references_ids?: string[] | null
+        }
+        Update: {
+          attachments?: Json
+          author_contact_id?: string | null
+          author_id?: string | null
+          author_kind?: string
+          body?: string
+          body_html?: string | null
+          channel?: string
+          conversation_id?: string
+          created_at?: string
+          delivery_status?: string
+          direction?: string
+          external_message_id?: string | null
+          id?: string
+          in_reply_to?: string | null
+          is_internal?: boolean
+          metadata?: Json
+          occurred_at?: string
+          references_ids?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comms_messages_author_contact_id_fkey"
+            columns: ["author_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comms_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "comms_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       connection_settings: {
         Row: {
           default_location_band: string
@@ -2135,17 +2445,139 @@ export type Database = {
           },
         ]
       }
+      contact_channel_preferences: {
+        Row: {
+          channel: string
+          contact_id: string | null
+          created_at: string
+          email: string
+          id: string
+          space_id: string | null
+          state: string
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          contact_id?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          space_id?: string | null
+          state?: string
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          contact_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          space_id?: string | null
+          state?: string
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_channel_preferences_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_import: {
+        Row: {
+          committed_at: string | null
+          created_at: string
+          created_by: string
+          created_ids: Json
+          error: string | null
+          filename: string | null
+          id: string
+          mapping: Json
+          merge_strategy: string
+          result: Json
+          rolled_back_at: string | null
+          source: Json
+          status: string
+          target_kind: string
+          target_space_id: string | null
+          updated_at: string
+          validation: Json
+        }
+        Insert: {
+          committed_at?: string | null
+          created_at?: string
+          created_by: string
+          created_ids?: Json
+          error?: string | null
+          filename?: string | null
+          id?: string
+          mapping?: Json
+          merge_strategy?: string
+          result?: Json
+          rolled_back_at?: string | null
+          source?: Json
+          status?: string
+          target_kind?: string
+          target_space_id?: string | null
+          updated_at?: string
+          validation?: Json
+        }
+        Update: {
+          committed_at?: string | null
+          created_at?: string
+          created_by?: string
+          created_ids?: Json
+          error?: string | null
+          filename?: string | null
+          id?: string
+          mapping?: Json
+          merge_strategy?: string
+          result?: Json
+          rolled_back_at?: string | null
+          source?: Json
+          status?: string
+          target_kind?: string
+          target_space_id?: string | null
+          updated_at?: string
+          validation?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_import_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_import_target_space_id_fkey"
+            columns: ["target_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_interactions: {
         Row: {
           body: string | null
           channel: string
           created_at: string
           direction: string
+          engagement_event_id: string | null
           id: string
           idempotency_key: string | null
           metadata: Json
           occurred_at: string
           owner_profile_id: string
+          scope_id: string | null
+          scope_kind: string | null
           source: string
           space_id: string | null
           subject_id: string
@@ -2157,11 +2589,14 @@ export type Database = {
           channel: string
           created_at?: string
           direction?: string
+          engagement_event_id?: string | null
           id?: string
           idempotency_key?: string | null
           metadata?: Json
           occurred_at?: string
           owner_profile_id: string
+          scope_id?: string | null
+          scope_kind?: string | null
           source?: string
           space_id?: string | null
           subject_id: string
@@ -2173,11 +2608,14 @@ export type Database = {
           channel?: string
           created_at?: string
           direction?: string
+          engagement_event_id?: string | null
           id?: string
           idempotency_key?: string | null
           metadata?: Json
           occurred_at?: string
           owner_profile_id?: string
+          scope_id?: string | null
+          scope_kind?: string | null
           source?: string
           space_id?: string | null
           subject_id?: string
@@ -2185,6 +2623,13 @@ export type Database = {
           summary?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "contact_interactions_engagement_event_id_fkey"
+            columns: ["engagement_event_id"]
+            isOneToOne: false
+            referencedRelation: "engagement_events"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contact_interactions_owner_profile_id_fkey"
             columns: ["owner_profile_id"]
@@ -2194,6 +2639,57 @@ export type Database = {
           },
           {
             foreignKeyName: "contact_interactions_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_relationships: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          kind: string
+          meta: Json
+          since: string | null
+          space_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          meta?: Json
+          since?: string | null
+          space_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          meta?: Json
+          since?: string | null
+          space_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_relationships_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_relationships_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
@@ -2761,6 +3257,131 @@ export type Database = {
           },
         ]
       }
+      crm_tasks: {
+        Row: {
+          assignee_profile_id: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          due_at: string | null
+          id: string
+          notes: string | null
+          space_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_profile_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          space_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_profile_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          space_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_tasks_assignee_profile_id_fkey"
+            columns: ["assignee_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_field_registry: {
+        Row: {
+          created_at: string
+          fingerprint: string | null
+          id: string
+          key: string
+          label: string | null
+          options: Json | null
+          owner_id: string
+          space_id: string | null
+          updated_at: string
+          value_type: string
+        }
+        Insert: {
+          created_at?: string
+          fingerprint?: string | null
+          id?: string
+          key: string
+          label?: string | null
+          options?: Json | null
+          owner_id: string
+          space_id?: string | null
+          updated_at?: string
+          value_type?: string
+        }
+        Update: {
+          created_at?: string
+          fingerprint?: string | null
+          id?: string
+          key?: string
+          label?: string | null
+          options?: Json | null
+          owner_id?: string
+          space_id?: string | null
+          updated_at?: string
+          value_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_field_registry_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_field_registry_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dispatch_comments: {
         Row: {
           author_id: string
@@ -2907,6 +3528,54 @@ export type Database = {
           },
         ]
       }
+      dispatch_recipients: {
+        Row: {
+          channel: string
+          created_at: string
+          dispatch_id: string
+          email: string | null
+          id: string
+          profile_id: string | null
+          reason: string | null
+          status: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          dispatch_id: string
+          email?: string | null
+          id?: string
+          profile_id?: string | null
+          reason?: string | null
+          status: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          dispatch_id?: string
+          email?: string | null
+          id?: string
+          profile_id?: string | null
+          reason?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_recipients_dispatch_id_fkey"
+            columns: ["dispatch_id"]
+            isOneToOne: false
+            referencedRelation: "dispatches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_recipients_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dispatches: {
         Row: {
           audience_id: string | null
@@ -2982,6 +3651,48 @@ export type Database = {
             columns: ["linked_task_id"]
             isOneToOne: false
             referencedRelation: "crew_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      element_settings: {
+        Row: {
+          config: Json
+          element_key: string
+          id: string
+          space_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config?: Json
+          element_key: string
+          id?: string
+          space_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config?: Json
+          element_key?: string
+          id?: string
+          space_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "element_settings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "element_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3515,6 +4226,60 @@ export type Database = {
           },
         ]
       }
+      event_guests: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          event_id: string
+          id: string
+          inviter_profile_id: string
+          meta: Json
+          phone: string | null
+          rsvp_status: string | null
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          event_id: string
+          id?: string
+          inviter_profile_id: string
+          meta?: Json
+          phone?: string | null
+          rsvp_status?: string | null
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          event_id?: string
+          id?: string
+          inviter_profile_id?: string
+          meta?: Json
+          phone?: string | null
+          rsvp_status?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_guests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guests_inviter_profile_id_fkey"
+            columns: ["inviter_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_media: {
         Row: {
           caption: string | null
@@ -3872,6 +4637,78 @@ export type Database = {
           },
         ]
       }
+      event_space_shares: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          invited_by_space_id: string | null
+          requested_by: string
+          responded_at: string | null
+          responded_by: string | null
+          space_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          invited_by_space_id?: string | null
+          requested_by: string
+          responded_at?: string | null
+          responded_by?: string | null
+          space_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          invited_by_space_id?: string | null
+          requested_by?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          space_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_space_shares_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_space_shares_invited_by_space_id_fkey"
+            columns: ["invited_by_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_space_shares_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_space_shares_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_space_shares_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_ticket_types: {
         Row: {
           active: boolean
@@ -3933,6 +4770,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_ticket_types_space_tier_id_fkey"
+            columns: ["space_tier_id"]
+            isOneToOne: false
+            referencedRelation: "space_membership_tiers"
             referencedColumns: ["id"]
           },
         ]
@@ -4043,10 +4887,13 @@ export type Database = {
           featured_at: string | null
           gallery_image_paths: string[]
           geog: unknown
+          hide_address: boolean
           host_id: string | null
+          host_space_id: string | null
           id: string
           is_cancelled: boolean | null
           is_demo: boolean
+          join_mode: string
           location: string | null
           mux_playback_id: string | null
           mux_stream_id: string | null
@@ -4071,7 +4918,7 @@ export type Database = {
           slug: string
           source: string
           space_id: string | null
-          starts_at: string
+          starts_at: string | null
           status: string
           street: string | null
           theme: Json
@@ -4103,10 +4950,13 @@ export type Database = {
           featured_at?: string | null
           gallery_image_paths?: string[]
           geog?: unknown
+          hide_address?: boolean
           host_id?: string | null
+          host_space_id?: string | null
           id?: string
           is_cancelled?: boolean | null
           is_demo?: boolean
+          join_mode?: string
           location?: string | null
           mux_playback_id?: string | null
           mux_stream_id?: string | null
@@ -4131,7 +4981,7 @@ export type Database = {
           slug: string
           source?: string
           space_id?: string | null
-          starts_at: string
+          starts_at?: string | null
           status?: string
           street?: string | null
           theme?: Json
@@ -4163,10 +5013,13 @@ export type Database = {
           featured_at?: string | null
           gallery_image_paths?: string[]
           geog?: unknown
+          hide_address?: boolean
           host_id?: string | null
+          host_space_id?: string | null
           id?: string
           is_cancelled?: boolean | null
           is_demo?: boolean
+          join_mode?: string
           location?: string | null
           mux_playback_id?: string | null
           mux_stream_id?: string | null
@@ -4191,7 +5044,7 @@ export type Database = {
           slug?: string
           source?: string
           space_id?: string | null
-          starts_at?: string
+          starts_at?: string | null
           status?: string
           street?: string | null
           theme?: Json
@@ -4221,6 +5074,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_host_space_id_fkey"
+            columns: ["host_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
@@ -5413,6 +6273,7 @@ export type Database = {
           category: string | null
           certificate_enabled: boolean
           completion_gems: number
+          cover_focus: string | null
           cover_image: string | null
           created_at: string
           daily_minutes: number | null
@@ -5423,9 +6284,12 @@ export type Database = {
           featured_at: string | null
           fork_of: string | null
           forked_count: number
+          header_overlay_color: string | null
+          header_overlay_style: string | null
           id: string
           intro: string | null
           intro_video: string | null
+          logo_image: string | null
           meeting: Json
           official: boolean
           page_config: Json | null
@@ -5455,6 +6319,7 @@ export type Database = {
           category?: string | null
           certificate_enabled?: boolean
           completion_gems?: number
+          cover_focus?: string | null
           cover_image?: string | null
           created_at?: string
           daily_minutes?: number | null
@@ -5465,9 +6330,12 @@ export type Database = {
           featured_at?: string | null
           fork_of?: string | null
           forked_count?: number
+          header_overlay_color?: string | null
+          header_overlay_style?: string | null
           id?: string
           intro?: string | null
           intro_video?: string | null
+          logo_image?: string | null
           meeting?: Json
           official?: boolean
           page_config?: Json | null
@@ -5497,6 +6365,7 @@ export type Database = {
           category?: string | null
           certificate_enabled?: boolean
           completion_gems?: number
+          cover_focus?: string | null
           cover_image?: string | null
           created_at?: string
           daily_minutes?: number | null
@@ -5507,9 +6376,12 @@ export type Database = {
           featured_at?: string | null
           fork_of?: string | null
           forked_count?: number
+          header_overlay_color?: string | null
+          header_overlay_style?: string | null
           id?: string
           intro?: string | null
           intro_video?: string | null
+          logo_image?: string | null
           meeting?: Json
           official?: boolean
           page_config?: Json | null
@@ -5634,6 +6506,135 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_entry_points: {
+        Row: {
+          captured_at: string
+          captured_by_profile_id: string | null
+          captured_where: string | null
+          code_id: string | null
+          contact_id: string
+          created_at: string
+          id: string
+          kind: string
+          label: string | null
+          metadata: Json
+          space_id: string
+        }
+        Insert: {
+          captured_at?: string
+          captured_by_profile_id?: string | null
+          captured_where?: string | null
+          code_id?: string | null
+          contact_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          label?: string | null
+          metadata?: Json
+          space_id: string
+        }
+        Update: {
+          captured_at?: string
+          captured_by_profile_id?: string | null
+          captured_where?: string | null
+          code_id?: string | null
+          contact_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string | null
+          metadata?: Json
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_entry_points_captured_by_profile_id_fkey"
+            columns: ["captured_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_entry_points_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_entry_points_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: true
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_entry_points_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_touchpoints: {
+        Row: {
+          actor_profile_id: string | null
+          channel: string | null
+          contact_id: string
+          created_at: string
+          id: string
+          kind: string
+          metadata: Json
+          note: string | null
+          space_id: string
+        }
+        Insert: {
+          actor_profile_id?: string | null
+          channel?: string | null
+          contact_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          metadata?: Json
+          note?: string | null
+          space_id: string
+        }
+        Update: {
+          actor_profile_id?: string | null
+          channel?: string | null
+          contact_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          metadata?: Json
+          note?: string | null
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_touchpoints_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_touchpoints_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_touchpoints_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -5975,6 +6976,44 @@ export type Database = {
           },
         ]
       }
+      listing_comments: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          image_url: string | null
+          profile_id: string
+          target_id: string
+          target_kind: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          profile_id: string
+          target_id: string
+          target_kind: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          profile_id?: string
+          target_id?: string
+          target_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_comments_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_intake: {
         Row: {
           applied_listing_id: string | null
@@ -6019,6 +7058,47 @@ export type Database = {
           {
             foreignKeyName: "listing_intake_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listing_offers: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          id: string
+          message: string | null
+          profile_id: string
+          status: string
+          target_id: string
+          target_kind: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          id?: string
+          message?: string | null
+          profile_id: string
+          status?: string
+          target_id: string
+          target_kind: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          message?: string | null
+          profile_id?: string
+          status?: string
+          target_id?: string
+          target_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_offers_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -6143,6 +7223,7 @@ export type Database = {
           claimed_by: string | null
           created_at: string
           description: string | null
+          details: Json
           id: string
           images: string[]
           is_demo: boolean
@@ -6150,6 +7231,8 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           neighborhood: string | null
+          pickup_address: string | null
+          pickup_precision: string
           price_note: string | null
           status: string
           title: string
@@ -6165,6 +7248,7 @@ export type Database = {
           claimed_by?: string | null
           created_at?: string
           description?: string | null
+          details?: Json
           id?: string
           images?: string[]
           is_demo?: boolean
@@ -6172,6 +7256,8 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           neighborhood?: string | null
+          pickup_address?: string | null
+          pickup_precision?: string
           price_note?: string | null
           status?: string
           title: string
@@ -6187,6 +7273,7 @@ export type Database = {
           claimed_by?: string | null
           created_at?: string
           description?: string | null
+          details?: Json
           id?: string
           images?: string[]
           is_demo?: boolean
@@ -6194,6 +7281,8 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           neighborhood?: string | null
+          pickup_address?: string | null
+          pickup_precision?: string
           price_note?: string | null
           status?: string
           title?: string
@@ -7038,6 +8127,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "network_contacts_shared_space_id_fkey"
+            columns: ["shared_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
         ]
       }
       nexus_regions: {
@@ -7233,53 +8329,80 @@ export type Database = {
       notification_preferences: {
         Row: {
           created_at: string
+          email_comments: boolean
           email_dispatches: boolean
           email_events: boolean
           email_lifecycle: boolean
           email_mentions: boolean
+          freq_comments: string
+          freq_dispatches: string
+          freq_events: string
+          freq_lifecycle: string
+          freq_mentions: string
+          inapp_comments: boolean
           inapp_dispatches: boolean
           inapp_events: boolean
           inapp_lifecycle: boolean
           inapp_mentions: boolean
           profile_id: string
+          push_comments: boolean
           push_dispatches: boolean
           push_events: boolean
           push_lifecycle: boolean
           push_mentions: boolean
+          space_event_reminders: boolean
           updated_at: string
         }
         Insert: {
           created_at?: string
+          email_comments?: boolean
           email_dispatches?: boolean
           email_events?: boolean
           email_lifecycle?: boolean
           email_mentions?: boolean
+          freq_comments?: string
+          freq_dispatches?: string
+          freq_events?: string
+          freq_lifecycle?: string
+          freq_mentions?: string
+          inapp_comments?: boolean
           inapp_dispatches?: boolean
           inapp_events?: boolean
           inapp_lifecycle?: boolean
           inapp_mentions?: boolean
           profile_id: string
+          push_comments?: boolean
           push_dispatches?: boolean
           push_events?: boolean
           push_lifecycle?: boolean
           push_mentions?: boolean
+          space_event_reminders?: boolean
           updated_at?: string
         }
         Update: {
           created_at?: string
+          email_comments?: boolean
           email_dispatches?: boolean
           email_events?: boolean
           email_lifecycle?: boolean
           email_mentions?: boolean
+          freq_comments?: string
+          freq_dispatches?: string
+          freq_events?: string
+          freq_lifecycle?: string
+          freq_mentions?: string
+          inapp_comments?: boolean
           inapp_dispatches?: boolean
           inapp_events?: boolean
           inapp_lifecycle?: boolean
           inapp_mentions?: boolean
           profile_id?: string
+          push_comments?: boolean
           push_dispatches?: boolean
           push_events?: boolean
           push_lifecycle?: boolean
           push_mentions?: boolean
+          space_event_reminders?: boolean
           updated_at?: string
         }
         Relationships: [
@@ -8178,6 +9301,78 @@ export type Database = {
           },
         ]
       }
+      podcast_shows: {
+        Row: {
+          author: string | null
+          cover_asset_id: string | null
+          created_at: string
+          description: string | null
+          explicit: boolean
+          feed_visibility: string
+          id: string
+          itunes_category: string
+          language: string
+          owner_email: string | null
+          owner_name: string | null
+          slug: string
+          space_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author?: string | null
+          cover_asset_id?: string | null
+          created_at?: string
+          description?: string | null
+          explicit?: boolean
+          feed_visibility?: string
+          id?: string
+          itunes_category: string
+          language?: string
+          owner_email?: string | null
+          owner_name?: string | null
+          slug: string
+          space_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string | null
+          cover_asset_id?: string | null
+          created_at?: string
+          description?: string | null
+          explicit?: boolean
+          feed_visibility?: string
+          id?: string
+          itunes_category?: string
+          language?: string
+          owner_email?: string | null
+          owner_name?: string | null
+          slug?: string
+          space_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "podcast_shows_cover_asset_id_fkey"
+            columns: ["cover_asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "podcast_shows_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_mentions: {
         Row: {
           created_at: string | null
@@ -8444,6 +9639,7 @@ export type Database = {
           ended_at: string
           id: string
           mode: string
+          note: string | null
           pattern: string | null
           practice_id: string | null
           profile_id: string
@@ -8454,6 +9650,7 @@ export type Database = {
           ended_at?: string
           id?: string
           mode?: string
+          note?: string | null
           pattern?: string | null
           practice_id?: string | null
           profile_id: string
@@ -8464,6 +9661,7 @@ export type Database = {
           ended_at?: string
           id?: string
           mode?: string
+          note?: string | null
           pattern?: string | null
           practice_id?: string | null
           profile_id?: string
@@ -8730,6 +9928,7 @@ export type Database = {
       practices: {
         Row: {
           body: string | null
+          breath_pattern: string | null
           cadence: string | null
           category: string | null
           created_at: string
@@ -8776,6 +9975,7 @@ export type Database = {
         }
         Insert: {
           body?: string | null
+          breath_pattern?: string | null
           cadence?: string | null
           category?: string | null
           created_at?: string
@@ -8822,6 +10022,7 @@ export type Database = {
         }
         Update: {
           body?: string | null
+          breath_pattern?: string | null
           cadence?: string | null
           category?: string | null
           created_at?: string
@@ -9133,6 +10334,7 @@ export type Database = {
           discoverable_by: string
           discovery_radius_m: number
           display_name: string
+          email_signature: string | null
           embedding: string | null
           entity_types: string[] | null
           feed_radius_m: number
@@ -9147,7 +10349,6 @@ export type Database = {
           home_lat: number | null
           home_lng: number | null
           home_timezone: string | null
-          email_signature: string | null
           household_bundle_id: string | null
           id: string
           is_active: boolean | null
@@ -9213,6 +10414,7 @@ export type Database = {
           discoverable_by?: string
           discovery_radius_m?: number
           display_name: string
+          email_signature?: string | null
           embedding?: string | null
           entity_types?: string[] | null
           feed_radius_m?: number
@@ -9227,7 +10429,6 @@ export type Database = {
           home_lat?: number | null
           home_lng?: number | null
           home_timezone?: string | null
-          email_signature?: string | null
           household_bundle_id?: string | null
           id?: string
           is_active?: boolean | null
@@ -9293,6 +10494,7 @@ export type Database = {
           discoverable_by?: string
           discovery_radius_m?: number
           display_name?: string
+          email_signature?: string | null
           embedding?: string | null
           entity_types?: string[] | null
           feed_radius_m?: number
@@ -9307,7 +10509,6 @@ export type Database = {
           home_lat?: number | null
           home_lng?: number | null
           home_timezone?: string | null
-          email_signature?: string | null
           household_bundle_id?: string | null
           id?: string
           is_active?: boolean | null
@@ -9671,6 +10872,180 @@ export type Database = {
           status?: string
         }
         Relationships: []
+      }
+      recording_attachments: {
+        Row: {
+          created_at: string
+          host_id: string
+          host_kind: string
+          id: string
+          price: Json | null
+          recording_id: string
+          required_entitlement: string | null
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          host_id: string
+          host_kind: string
+          id?: string
+          price?: Json | null
+          recording_id: string
+          required_entitlement?: string | null
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          host_id?: string
+          host_kind?: string
+          id?: string
+          price?: Json | null
+          recording_id?: string
+          required_entitlement?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recording_attachments_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recording_reviews: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          rating: number
+          recording_id: string
+          reviewer_profile_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          rating: number
+          recording_id: string
+          reviewer_profile_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          recording_id?: string
+          reviewer_profile_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recording_reviews_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "recordings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recording_reviews_reviewer_profile_id_fkey"
+            columns: ["reviewer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recordings: {
+        Row: {
+          chapters: Json | null
+          created_at: string
+          description: string | null
+          duration_seconds: number | null
+          id: string
+          loom_asset_id: string
+          media_kind: string
+          price: Json | null
+          published_at: string | null
+          required_entitlement: string | null
+          show_id: string | null
+          slug: string | null
+          sort_order: number
+          space_id: string
+          title: string
+          transcript: string | null
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          chapters?: Json | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          loom_asset_id: string
+          media_kind: string
+          price?: Json | null
+          published_at?: string | null
+          required_entitlement?: string | null
+          show_id?: string | null
+          slug?: string | null
+          sort_order?: number
+          space_id: string
+          title: string
+          transcript?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          chapters?: Json | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          loom_asset_id?: string
+          media_kind?: string
+          price?: Json | null
+          published_at?: string | null
+          required_entitlement?: string | null
+          show_id?: string | null
+          slug?: string | null
+          sort_order?: number
+          space_id?: string
+          title?: string
+          transcript?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recordings_loom_asset_id_fkey"
+            columns: ["loom_asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recordings_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_shows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recordings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reports: {
         Row: {
@@ -10377,6 +11752,8 @@ export type Database = {
           created_at: string
           end_minute: number
           id: string
+          schedule_id: string | null
+          service_type_id: string | null
           slot_minutes: number
           space_id: string
           start_minute: number
@@ -10387,6 +11764,8 @@ export type Database = {
           created_at?: string
           end_minute: number
           id?: string
+          schedule_id?: string | null
+          service_type_id?: string | null
           slot_minutes?: number
           space_id: string
           start_minute: number
@@ -10397,6 +11776,8 @@ export type Database = {
           created_at?: string
           end_minute?: number
           id?: string
+          schedule_id?: string | null
+          service_type_id?: string | null
           slot_minutes?: number
           space_id?: string
           start_minute?: number
@@ -10404,6 +11785,20 @@ export type Database = {
           weekday?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "space_availability_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "space_availability_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_availability_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "space_service_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "space_availability_space_id_fkey"
             columns: ["space_id"]
@@ -10413,8 +11808,96 @@ export type Database = {
           },
         ]
       }
+      space_availability_overrides: {
+        Row: {
+          created_at: string
+          end_minute: number | null
+          id: string
+          is_blackout: boolean
+          on_date: string
+          schedule_id: string
+          start_minute: number | null
+        }
+        Insert: {
+          created_at?: string
+          end_minute?: number | null
+          id?: string
+          is_blackout?: boolean
+          on_date: string
+          schedule_id: string
+          start_minute?: number | null
+        }
+        Update: {
+          created_at?: string
+          end_minute?: number | null
+          id?: string
+          is_blackout?: boolean
+          on_date?: string
+          schedule_id?: string
+          start_minute?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_availability_overrides_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "space_availability_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_availability_schedules: {
+        Row: {
+          active: boolean
+          booking_window_days: number
+          buffer_after_minutes: number
+          buffer_before_minutes: number
+          created_at: string
+          id: string
+          min_notice_minutes: number
+          name: string
+          space_id: string
+          timezone: string
+        }
+        Insert: {
+          active?: boolean
+          booking_window_days?: number
+          buffer_after_minutes?: number
+          buffer_before_minutes?: number
+          created_at?: string
+          id?: string
+          min_notice_minutes?: number
+          name?: string
+          space_id: string
+          timezone?: string
+        }
+        Update: {
+          active?: boolean
+          booking_window_days?: number
+          buffer_after_minutes?: number
+          buffer_before_minutes?: number
+          created_at?: string
+          id?: string
+          min_notice_minutes?: number
+          name?: string
+          space_id?: string
+          timezone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_availability_schedules_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_bookings: {
         Row: {
+          answers: Json | null
+          cancel_reason: string | null
+          cancelled_at: string | null
           created_at: string
           ends_at: string
           id: string
@@ -10422,11 +11905,16 @@ export type Database = {
           note: string | null
           order_id: string | null
           product_id: string | null
+          rescheduled_from: string | null
+          service_type_id: string | null
           space_id: string
           starts_at: string
           status: string
         }
         Insert: {
+          answers?: Json | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
           created_at?: string
           ends_at: string
           id?: string
@@ -10434,11 +11922,16 @@ export type Database = {
           note?: string | null
           order_id?: string | null
           product_id?: string | null
+          rescheduled_from?: string | null
+          service_type_id?: string | null
           space_id: string
           starts_at: string
           status?: string
         }
         Update: {
+          answers?: Json | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
           created_at?: string
           ends_at?: string
           id?: string
@@ -10446,6 +11939,8 @@ export type Database = {
           note?: string | null
           order_id?: string | null
           product_id?: string | null
+          rescheduled_from?: string | null
+          service_type_id?: string | null
           space_id?: string
           starts_at?: string
           status?: string
@@ -10473,10 +11968,96 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "space_bookings_rescheduled_from_fkey"
+            columns: ["rescheduled_from"]
+            isOneToOne: false
+            referencedRelation: "space_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_bookings_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "space_service_types"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "space_bookings_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_collaborations: {
+        Row: {
+          collaborator_space_id: string
+          created_at: string
+          host_space_id: string
+          id: string
+          invited_by_space_id: string
+          requested_by: string
+          responded_at: string | null
+          responded_by: string | null
+          status: string
+        }
+        Insert: {
+          collaborator_space_id: string
+          created_at?: string
+          host_space_id: string
+          id?: string
+          invited_by_space_id: string
+          requested_by: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+        }
+        Update: {
+          collaborator_space_id?: string
+          created_at?: string
+          host_space_id?: string
+          id?: string
+          invited_by_space_id?: string
+          requested_by?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_collaborations_collaborator_space_id_fkey"
+            columns: ["collaborator_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_collaborations_host_space_id_fkey"
+            columns: ["host_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_collaborations_invited_by_space_id_fkey"
+            columns: ["invited_by_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_collaborations_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_collaborations_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -10688,6 +12269,51 @@ export type Database = {
           },
         ]
       }
+      space_email_events: {
+        Row: {
+          contact_email: string | null
+          created_at: string
+          id: string
+          kind: string
+          send_id: string | null
+          space_id: string
+          url: string | null
+        }
+        Insert: {
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          send_id?: string | null
+          space_id: string
+          url?: string | null
+        }
+        Update: {
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          send_id?: string | null
+          space_id?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_email_events_send_id_fkey"
+            columns: ["send_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_sends"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_email_events_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_email_templates: {
         Row: {
           body: string
@@ -10812,6 +12438,45 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_follower_event_reminders_sent: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          lead: string
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          lead: string
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          lead?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_follower_event_reminders_sent_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_follower_event_reminders_sent_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -10996,6 +12661,7 @@ export type Database = {
       space_membership_tiers: {
         Row: {
           benefits: Json
+          capacity: number | null
           created_at: string
           description: string | null
           id: string
@@ -11006,9 +12672,11 @@ export type Database = {
           sort: number
           space_id: string
           stripe_product_id: string | null
+          waitlist: boolean
         }
         Insert: {
           benefits?: Json
+          capacity?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -11019,9 +12687,11 @@ export type Database = {
           sort?: number
           space_id: string
           stripe_product_id?: string | null
+          waitlist?: boolean
         }
         Update: {
           benefits?: Json
+          capacity?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -11032,6 +12702,7 @@ export type Database = {
           sort?: number
           space_id?: string
           stripe_product_id?: string | null
+          waitlist?: boolean
         }
         Relationships: [
           {
@@ -11311,6 +12982,69 @@ export type Database = {
           },
         ]
       }
+      space_service_types: {
+        Row: {
+          active: boolean
+          cancellation_fee_cents: number | null
+          created_at: string
+          deposit_cents: number | null
+          description: string | null
+          duration_minutes: number
+          id: string
+          name: string
+          price_cents: number | null
+          product_id: string | null
+          questions: Json
+          sort_order: number
+          space_id: string
+        }
+        Insert: {
+          active?: boolean
+          cancellation_fee_cents?: number | null
+          created_at?: string
+          deposit_cents?: number | null
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          name: string
+          price_cents?: number | null
+          product_id?: string | null
+          questions?: Json
+          sort_order?: number
+          space_id: string
+        }
+        Update: {
+          active?: boolean
+          cancellation_fee_cents?: number | null
+          created_at?: string
+          deposit_cents?: number | null
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          name?: string
+          price_cents?: number | null
+          product_id?: string | null
+          questions?: Json
+          sort_order?: number
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_service_types_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "commerce_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_service_types_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_subscription_items: {
         Row: {
           created_at: string
@@ -11521,12 +13255,86 @@ export type Database = {
           },
         ]
       }
+      space_venue_holds: {
+        Row: {
+          created_at: string
+          ends_at: string
+          id: string
+          requested_by: string
+          requester_space_id: string
+          responded_at: string | null
+          responded_by: string | null
+          starts_at: string
+          status: string
+          title: string
+          venue_space_id: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          id?: string
+          requested_by: string
+          requester_space_id: string
+          responded_at?: string | null
+          responded_by?: string | null
+          starts_at: string
+          status?: string
+          title: string
+          venue_space_id: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          id?: string
+          requested_by?: string
+          requester_space_id?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          starts_at?: string
+          status?: string
+          title?: string
+          venue_space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_venue_holds_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_venue_holds_requester_space_id_fkey"
+            columns: ["requester_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_venue_holds_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_venue_holds_venue_space_id_fkey"
+            columns: ["venue_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spaces: {
         Row: {
           about: string | null
           brand_accent: string | null
           brand_logo_url: string | null
           brand_name: string | null
+          claim_token: string | null
+          claimed_at: string | null
+          claimed_by: string | null
           cover_image_url: string | null
           created_at: string
           domain: string | null
@@ -11538,6 +13346,7 @@ export type Database = {
           generation: string | null
           id: string
           is_comped: boolean
+          last_plan_event_at: string | null
           mode_variant: string | null
           name: string
           network_connected: boolean
@@ -11560,6 +13369,9 @@ export type Database = {
           brand_accent?: string | null
           brand_logo_url?: string | null
           brand_name?: string | null
+          claim_token?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
           cover_image_url?: string | null
           created_at?: string
           domain?: string | null
@@ -11571,6 +13383,7 @@ export type Database = {
           generation?: string | null
           id?: string
           is_comped?: boolean
+          last_plan_event_at?: string | null
           mode_variant?: string | null
           name: string
           network_connected?: boolean
@@ -11593,6 +13406,9 @@ export type Database = {
           brand_accent?: string | null
           brand_logo_url?: string | null
           brand_name?: string | null
+          claim_token?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
           cover_image_url?: string | null
           created_at?: string
           domain?: string | null
@@ -11604,6 +13420,7 @@ export type Database = {
           generation?: string | null
           id?: string
           is_comped?: boolean
+          last_plan_event_at?: string | null
           mode_variant?: string | null
           name?: string
           network_connected?: boolean
@@ -11622,6 +13439,13 @@ export type Database = {
           visibility?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "spaces_claimed_by_fkey"
+            columns: ["claimed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "spaces_entity_id_fkey"
             columns: ["entity_id"]
@@ -11932,6 +13756,50 @@ export type Database = {
           {
             foreignKeyName: "studio_site_changes_actor_id_fkey"
             columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subject_topic_preferences: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          muted: boolean
+          profile_id: string
+          subject_id: string
+          subject_type: string
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          id?: string
+          muted?: boolean
+          profile_id: string
+          subject_id: string
+          subject_type: string
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          muted?: boolean
+          profile_id?: string
+          subject_id?: string
+          subject_type?: string
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subject_topic_preferences_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -12506,6 +14374,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vera_autonomy_decisions: {
+        Row: {
+          breaker_reason: string | null
+          category: string
+          created_at: string
+          gate_reason: string | null
+          id: string
+          metadata: Json
+          outcome: string
+          rationale: string | null
+          recipient_email: string | null
+          recipient_profile_id: string | null
+        }
+        Insert: {
+          breaker_reason?: string | null
+          category: string
+          created_at?: string
+          gate_reason?: string | null
+          id?: string
+          metadata?: Json
+          outcome: string
+          rationale?: string | null
+          recipient_email?: string | null
+          recipient_profile_id?: string | null
+        }
+        Update: {
+          breaker_reason?: string | null
+          category?: string
+          created_at?: string
+          gate_reason?: string | null
+          id?: string
+          metadata?: Json
+          outcome?: string
+          rationale?: string | null
+          recipient_email?: string | null
+          recipient_profile_id?: string | null
+        }
+        Relationships: []
       }
       vera_config: {
         Row: {
@@ -13208,6 +15115,10 @@ export type Database = {
         Args: { p_profile_id: string; p_season: number }
         Returns: boolean
       }
+      claim_space_plan_event: {
+        Args: { _event_created: string; _space_id: string }
+        Returns: boolean
+      }
       community_library: {
         Args: { _limit?: number; _pillar?: string; _type?: string }
         Returns: {
@@ -13344,6 +15255,7 @@ export type Database = {
           location: string
           slug: string
           starts_at: string
+          time_zone: string
           title: string
         }[]
       }
@@ -13769,6 +15681,7 @@ export type Database = {
           shared_circles: number
         }[]
       }
+      my_unread_message_count: { Args: never; Returns: number }
       my_unread_notification_count: { Args: never; Returns: number }
       near_misses: {
         Args: { _limit?: number }
@@ -13867,6 +15780,23 @@ export type Database = {
       }
       profile_zap_total: { Args: { _profile: string }; Returns: number }
       public_active_circle_count: { Args: never; Returns: number }
+      public_calendar_feed: {
+        Args: never
+        Returns: {
+          description: string
+          ends_at: string
+          id: string
+          is_cancelled: boolean
+          location: string
+          parent_event_id: string
+          recurrence_type: string
+          recurrence_until: string
+          slug: string
+          starts_at: string
+          time_zone: string
+          title: string
+        }[]
+      }
       public_circle_by_id: {
         Args: { _id: string }
         Returns: {
@@ -14119,6 +16049,23 @@ export type Database = {
         Returns: {
           id: string
           similarity: number
+        }[]
+      }
+      space_public_calendar_feed: {
+        Args: { _space_id: string }
+        Returns: {
+          description: string
+          ends_at: string
+          id: string
+          is_cancelled: boolean
+          location: string
+          parent_event_id: string
+          recurrence_type: string
+          recurrence_until: string
+          slug: string
+          starts_at: string
+          time_zone: string
+          title: string
         }[]
       }
       st_3dclosestpoint: {
