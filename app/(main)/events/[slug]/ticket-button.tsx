@@ -95,9 +95,19 @@ export function TicketButton({
   const hasTiers = !!tiers && tiers.length > 0
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  // Selected tier id (tiered events) and the per-tier buyer amount (dollars string).
+  // Does the viewer's membership unlock a gated tier (ADR-823)? Tier-specific gates need THE
+  // named membership tier; a plain members gate takes any active membership.
+  const unlocked = (t: TicketTierView) =>
+    !!viewerIsSpaceMember && (t.spaceTierId == null || t.spaceTierId === viewerSpaceTierId)
+  // Selected tier id (tiered events) and the per-tier buyer amount (dollars string). A MEMBER's
+  // included ticket preselects — a member landing on their own event should not find the paid
+  // Day pass highlighted over the ticket their membership already covers.
   const [selectedId, setSelectedId] = useState<string | null>(
-    hasTiers ? (tiers!.find((t) => !t.soldOut)?.id ?? tiers![0].id) : null,
+    hasTiers
+      ? (tiers!.find((t) => !t.soldOut && t.spaceMembersOnly && unlocked(t))?.id ??
+          tiers!.find((t) => !t.soldOut)?.id ??
+          tiers![0].id)
+      : null,
   )
   const selected = hasTiers ? tiers!.find((t) => t.id === selectedId) ?? null : null
   // The buyer-chosen amount for a pwyc / sliding_scale / donation tier, surfaced by the shared
@@ -159,10 +169,6 @@ export function TicketButton({
   // ── Tiered selector ──
   const buyerChosen = selected ? isBuyerChosen(selected.pricingMode) : false
   const ctaDisabled = isPending || !selected || selected.soldOut || previewMode
-  // Does the viewer's membership unlock a gated tier (ADR-823)? Tier-specific gates need THE
-  // named membership tier; a plain members gate takes any active membership.
-  const unlocked = (t: TicketTierView) =>
-    !!viewerIsSpaceMember && (t.spaceTierId == null || t.spaceTierId === viewerSpaceTierId)
 
   return (
     <div className="space-y-3">
@@ -190,16 +196,20 @@ export function TicketButton({
                       Members
                     </span>
                   )}
-                  {t.spaceMembersOnly && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
-                      {unlocked(t) ? (
+                  {t.spaceMembersOnly &&
+                    (unlocked(t) ? (
+                      // Member: their membership covers this ticket — the warm "Included" tag.
+                      <span className="inline-flex items-center gap-1 rounded-md bg-primary-bg px-1.5 py-0.5 text-2xs font-medium text-primary-strong">
                         <Check className="h-2.5 w-2.5" />
-                      ) : (
+                        Included
+                      </span>
+                    ) : (
+                      // Non-member / signed out: this row IS the membership offer.
+                      <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
                         <Lock className="h-2.5 w-2.5" />
-                      )}
-                      Included
-                    </span>
-                  )}
+                        Membership
+                      </span>
+                    ))}
                 </p>
                 {t.description && <p className="mt-0.5 text-xs text-muted">{t.description}</p>}
                 {t.spotsLeft != null && !t.soldOut && (
@@ -210,9 +220,12 @@ export function TicketButton({
                 {t.soldOut ? (
                   <span className="text-subtle">Sold out</span>
                 ) : t.spaceMembersOnly && !unlocked(t) && t.membershipPriceLabel ? (
-                  // Non-member on a members-included ticket: the price of ACCESS is the
+                  // Non-member (or signed out) on a members ticket: the price of ACCESS is the
                   // membership, so show that instead of a misleading bare "Free".
                   t.membershipPriceLabel
+                ) : t.spaceMembersOnly && unlocked(t) && t.pricingMode === 'free' ? (
+                  // A member's free members ticket costs them nothing more: it's Included.
+                  'Included'
                 ) : (
                   modeLabel(t)
                 )}
