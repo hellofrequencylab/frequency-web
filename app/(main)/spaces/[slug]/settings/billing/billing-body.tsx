@@ -205,16 +205,17 @@ export async function BillingBody({ slug }: { slug: string }) {
           />
         )}
 
-        {/* Non Profit is the verified-501(c)(3) sibling of Business (same depth, discounted per seat). The
-            self-serve verification flow (ADR-552, AUDIT #6) lives at settings/billing/verify: the owner
-            submits their EIN + legal name, an operator reviews it, and approval grants the Non Profit plan.
-            We show the current request status if one exists, otherwise the "get verified" invite. */}
+        {/* Non Profit is the verified-501(c)(3) sibling plan (ADR-811): the full Collective toolkit at a
+            flat monthly price, never per seat. The self-serve verification flow (ADR-552, AUDIT #6) lives
+            at settings/billing/verify: the owner submits their EIN + legal name, an operator reviews it,
+            and approval grants the Non Profit plan. We show the current request status if one exists,
+            otherwise the "get verified" invite. */}
         <div className="rounded-2xl border border-border bg-surface px-5 py-4">
           <p className="text-sm font-semibold text-text">Non Profit</p>
           {verification?.status === 'verified' ? (
             <p className="mt-0.5 text-xs leading-relaxed text-muted">
-              Verified 501(c)(3). This space is eligible for the Non Profit plan: the full Business depth,
-              discounted per licensed seat.
+              Verified 501(c)(3). This space is eligible for the Non Profit plan: the full Collective
+              toolkit at one flat monthly price, never per seat.
             </p>
           ) : verification?.status === 'pending' ? (
             <p className="mt-0.5 text-xs leading-relaxed text-muted">
@@ -226,7 +227,8 @@ export async function BillingBody({ slug }: { slug: string }) {
             </p>
           ) : (
             <p className="mt-0.5 text-xs leading-relaxed text-muted">
-              Verified 501(c)(3) organizations get the full Business depth, discounted, per licensed seat.{' '}
+              Verified 501(c)(3) organizations get the full Collective toolkit at one flat monthly price,
+              never per seat.{' '}
               <a href={`/spaces/${space.slug}/settings/billing/verify`} className="font-semibold text-primary-strong underline">
                 {verification?.status === 'rejected' ? 'Submit a new request' : 'Get verified'}
               </a>

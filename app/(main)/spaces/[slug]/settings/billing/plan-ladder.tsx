@@ -32,12 +32,12 @@ const RUNGS: Rung[] = [
   {
     plan: 'business',
     icon: Check,
-    blurb: 'Run your practice: the full CRM, email, reporting, and your own website.',
+    blurb: 'Own your audience: unlimited contacts, campaigns at volume, email branding, exports, and the full CRM.',
   },
   {
     plan: 'collective',
     icon: Sparkles,
-    blurb: 'Everything in Business, plus automations, team roles, multiple pipelines, and hosting collaborators.',
+    blurb: 'Be the venue: everything in Business, plus team seats, automations, membership tickets, multiple pipelines, and Collaborator hosting.',
     note: `Opening Beta ${formatCents(COLLECTIVE_BETA_CENTS)}/mo`,
   },
   {
@@ -108,8 +108,9 @@ export function PlanLadder({
       </h2>
       {/* The promise, stated plainly (CONTENT-VOICE §1a, brand promise #1 + #4). No guilt, no hype. */}
       <p className="mt-1 text-sm leading-relaxed text-muted">
-        You keep 100% of what you bring in. We earn only on the business the network sends you, at a rate
-        that drops as your plan rises. A paid plan buys down that rate.
+        Everything is included. Paid plans raise the limits, and you keep 100% of what you bring in. We
+        earn only on the business the network sends you, at a rate that drops as your plan rises. A paid
+        plan buys down that rate.
       </p>
 
       <ul className="mt-4 space-y-2.5">

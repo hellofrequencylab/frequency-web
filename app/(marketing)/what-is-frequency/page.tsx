@@ -21,6 +21,14 @@ import {
 import { FOUNDING_PLACE } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { articleSchema, faqSchema, howToSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { priceStrings, CREW_NOTE } from '@/lib/pricing/pricing-page'
+import { PLACEHOLDER_SPACE_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
+import { formatCents } from '@/lib/pricing/display'
+
+// Every dollar figure on this page interpolates from the ONE price source (the code catalog via
+// priceStrings + the feature-tiers placeholder maps), so the ladder here can never drift from /pricing.
+const P = priceStrings()
+const INDEPENDENT_PRICE = formatCents(PLACEHOLDER_SPACE_PRICE_CENTS.independent)
 
 export const revalidate = 3600
 
@@ -88,7 +96,7 @@ const FAQ = [
   },
   {
     q: 'How much does Frequency cost?',
-    a: 'Frequency keeps 0% of your own bookings, always. You keep 100% of what your own clients and classes earn you. We make our money only on the business the network sends you, a small network-only take-rate that shrinks as your plan rises: Business 5%, Collective 3%, Non Profit 0%, Independent 0%. Plans run Member (free), Crew ($9), Business ($29, beta $19), Collective ($79, beta $49), Non Profit ($39), and Independent ($249). See the full ladder at /pricing.',
+    a: `Connection is free: joining, Circles, and Events never cost anything, and a business never pays for access to people. Paid plans raise the limits. Frequency keeps 0% of your own bookings, always; we make our money only on the business the network sends you, a small network-only take-rate that shrinks as your plan rises: Business 5%, Collective 3%, Non Profit 0%, Independent 0%. Plans run Member (free), Crew (${CREW_NOTE.foundingLabel}), Business (${P.businessList}, beta ${P.businessBeta}), Collective (${P.collectiveList}, beta ${P.collectiveBeta}), Non Profit (${P.nonprofit}), and Independent (${INDEPENDENT_PRICE}). See the full ladder at /pricing.`,
   },
   {
     q: 'How does Frequency make money?',
@@ -125,12 +133,12 @@ const STEPS = [
 // in one place. Take-rate shown is network-sourced only: your own bookings are
 // always 0%. Prices mirror /pricing and the FAQ; every step up buys down the rate.
 const TIERS = [
-  { name: 'Member', price: 'Free', take: '0% on your own bookings', who: 'Belong, be found, run a basic bookable page.' },
-  { name: 'Crew', price: '$9/mo', take: '0% on your own bookings', who: 'The full game, plus author your own Circles and Journeys.' },
-  { name: 'Business', price: '$29/mo (beta $19)', take: '5% network only', who: 'Run your whole practice on one honest price.' },
-  { name: 'Collective', price: '$79/mo (beta $49)', take: '3% network only', who: 'Host collaborators, a shared Space, and shared Events.' },
-  { name: 'Non Profit', price: '$39/mo', take: '0% network only', who: 'The full Collective toolkit, verified 501(c)(3).' },
-  { name: 'Independent', price: '$249/mo', take: 'Off the network', who: 'White-label and standalone. Standard software, no network lift.' },
+  { name: 'Member', price: 'Free', take: '0% on your own bookings', who: 'Belong to everything. The full community, free forever.' },
+  { name: 'Crew', price: `${CREW_NOTE.foundingLabel}/mo`, take: '0% on your own bookings', who: 'The full game, plus author your own Circles and Journeys. Never a business tool.' },
+  { name: 'Business', price: `${P.businessList}/mo (beta ${P.businessBeta})`, take: '5% network only', who: 'Own your audience: unlimited contacts, campaigns at volume, and exports.' },
+  { name: 'Collective', price: `${P.collectiveList}/mo (beta ${P.collectiveBeta})`, take: '3% network only', who: 'Be the venue: team seats, automations, and Collaborator hosting.' },
+  { name: 'Non Profit', price: `${P.nonprofit}/mo`, take: '0% network only', who: 'The full Collective toolkit, verified 501(c)(3).' },
+  { name: 'Independent', price: `${INDEPENDENT_PRICE}/mo`, take: 'Off the network', who: 'White-label and standalone. Standard software, no network lift.' },
 ] as const
 
 export default function WhatIsFrequencyPage() {

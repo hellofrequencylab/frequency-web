@@ -66,10 +66,12 @@ export async function loadEventShares(eventId: string): Promise<EventShareView[]
 }
 
 /** A chainable + awaitable write filter (supabase builders are both), so a status-guarded update is
- *  atomic at the DB (the row updates only if still in the expected state). Mirrors collaborations. */
+ *  atomic at the DB (the row updates only if still in the expected state). Mirrors collaborations.
+ *  `select` returns the affected rows, so a caller can tell a won transition from a lost race. */
 interface WriteFilter extends Promise<{ error: { code?: string; message?: string } | null }> {
   eq: (c: string, val: string) => WriteFilter
   in: (c: string, vals: string[]) => WriteFilter
+  select: (c: string) => Promise<{ data: { id: string }[] | null; error: { code?: string; message?: string } | null }>
 }
 
 /** Untyped admin handle for event_space_shares (not in the generated types yet, ADR-246). */

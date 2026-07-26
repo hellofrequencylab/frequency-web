@@ -23,6 +23,7 @@ import {
   type LoadoutTotal,
 } from './loadout'
 import type { AddonKey } from './plans'
+import { PLACEHOLDER_MEMBER_PRICE_CENTS } from './feature-tiers'
 import { isBetaPricingActive, effectiveCatalogAmounts } from './beta'
 import type { BillingInterval, CatalogAmounts, CatalogItemKey } from '@/lib/billing/pricing-keys'
 
@@ -42,6 +43,54 @@ export interface DualPrice {
 export function pricingCatalog(): Record<CatalogItemKey, ResolvedCatalogItem> {
   return catalogConfigByKey(defaultCatalogConfig())
 }
+
+// ── The plain price strings every COPY surface interpolates (never hardcode a dollar figure) ─────────
+
+/** The formatted monthly price strings, computed once from the code catalog. Marketing copy (metadata,
+ *  FAQ answers, persona pages, funnel beats) interpolates THESE instead of hardcoding "$29"/"$19"/...,
+ *  so a catalog change reflows every sentence that quotes a price. PURE data. */
+export interface PriceStrings {
+  /** Business list, e.g. "$29". */
+  businessList: string
+  /** Business Opening Beta anchor (the charged price during beta), e.g. "$19". */
+  businessBeta: string
+  /** Collective list, e.g. "$79". */
+  collectiveList: string
+  /** Collective Opening Beta anchor, e.g. "$49". */
+  collectiveBeta: string
+  /** Non Profit flat, e.g. "$39". */
+  nonprofit: string
+  /** The Vera AI add-on monthly, e.g. "$20". */
+  veraAi: string
+  /** The Vera AI add-on yearly, e.g. "$200". */
+  veraAiYear: string
+}
+
+/** Build the interpolable price strings from the ONE code catalog. PURE. */
+export function priceStrings(): PriceStrings {
+  const cat = pricingCatalog()
+  return {
+    businessList: formatLoadoutCents(cat.business_base.month.listCents),
+    businessBeta: formatLoadoutCents(cat.business_base.month.foundingCents),
+    collectiveList: formatLoadoutCents(cat.collective_base.month.listCents),
+    collectiveBeta: formatLoadoutCents(cat.collective_base.month.foundingCents),
+    nonprofit: formatLoadoutCents(cat.nonprofit_seat.month.foundingCents),
+    veraAi: formatLoadoutCents(cat.addon_ai.month.foundingCents),
+    veraAiYear: formatLoadoutCents(cat.addon_ai.year.foundingCents),
+  }
+}
+
+/** The one narrative spine every pricing/marketing surface can reuse verbatim (owner plan story,
+ *  2026-07): what is free, what a paid plan buys, stated so a skeptic believes it. No em dashes. */
+export const PLAN_STORY = {
+  /** The whole spine in one breath. */
+  spine:
+    'Frequency is where your local community happens. Connection is free. Businesses pay for reach and scale, never for access to people. Paid plans raise the limits.',
+  /** The meter framing: paid is how much, never whether. */
+  meters: 'Everything is included. Paid plans raise the limits.',
+  /** The honest founding-rate framing, tied to the Summer of Frequency banner language. */
+  founding: 'Opening Beta rates hold through the Summer of Frequency and stay locked for as long as you keep the plan.',
+} as const
 
 // ── The three commercial tiers (the pricing TABLE columns) ──────────────────────────────────────────
 
@@ -65,6 +114,8 @@ export interface PricingTier {
   id: 'free' | 'business' | 'nonprofit' | 'collective'
   /** The display name. */
   name: string
+  /** The rung identity in a few words (the card's one-liner, e.g. "Own your audience."). */
+  tagline: string
   /** How the headline price reads. */
   priceKind: TierPriceKind
   /** The dual-interval price for the headline (Pro base / nonprofit seat / org floor). */
@@ -133,13 +184,14 @@ export function pricingTiers(betaActive: boolean = isBetaPricingActive()): Prici
     {
       id: 'free',
       name: 'Free Space',
+      tagline: 'Put your business on the map.',
       priceKind: 'flat',
       price: { month: zero, year: zero },
       featured: false,
       forWho: 'Anyone starting out, for as long as you want.',
       billing: 'Free. No card, no clock.',
       coreIncluded:
-        'The core of running a Space: your page, events, posts, members, and a place for your people to gather.',
+        'Your storefront and page, host events, post, gather members, and be a Collaborator on other Spaces’ events.',
       addons: [],
       takeRate: '0% on your own bookings, 10% on network-sourced sales',
       cta: { label: 'Start free', href: '/spaces' },
@@ -147,13 +199,14 @@ export function pricingTiers(betaActive: boolean = isBetaPricingActive()): Prici
     {
       id: 'business',
       name: 'Business',
+      tagline: 'Own your audience.',
       priceKind: 'flat',
       price: { month: eff(cat.business_base.month), year: eff(cat.business_base.year) },
       featured: true,
       forWho: 'Coaches, service and product businesses, studios, and practitioners.',
       billing: 'Monthly or yearly. Yearly is two months free.',
       coreIncluded:
-        'Run your practice: the full CRM, email, reporting, bookings, tickets, memberships, and your own website.',
+        'Unlimited contacts, campaigns at volume, email branding, and exports: the full CRM, email, reporting, bookings, tickets, memberships, and your own website.',
       addons: tierAddons,
       takeRate: '0% on your own bookings, 5% on network-sourced sales',
       cta: { label: 'Start a Space', href: '/spaces' },
@@ -161,6 +214,7 @@ export function pricingTiers(betaActive: boolean = isBetaPricingActive()): Prici
     {
       id: 'collective',
       name: 'Collective',
+      tagline: 'Be the venue.',
       priceKind: 'flat',
       // Priced from the code catalog (ADR-811 go-live): $79 list with the $49 beta founding anchor.
       price: { month: eff(cat.collective_base.month), year: eff(cat.collective_base.year) },
@@ -168,7 +222,7 @@ export function pricingTiers(betaActive: boolean = isBetaPricingActive()): Prici
       forWho: 'Growing communities that collaborate and run a team.',
       billing: 'Monthly or yearly. Opening Beta price locked for early Collectives.',
       coreIncluded:
-        'Everything in Business, plus automations, team roles, multiple pipelines, and hosting collaborators inside your space.',
+        'Everything in Business, plus team seats, automations, membership-included tickets, multiple pipelines, and hosting events with Collaborator Spaces.',
       addons: tierAddons,
       takeRate: '0% on your own bookings, 3% on network-sourced sales',
       cta: { label: 'Start a Space', href: '/spaces' },
@@ -176,6 +230,7 @@ export function pricingTiers(betaActive: boolean = isBetaPricingActive()): Prici
     {
       id: 'nonprofit',
       name: 'Non Profit',
+      tagline: 'The full toolkit, verified.',
       priceKind: 'flat',
       price: { month: cat.nonprofit_seat.month, year: cat.nonprofit_seat.year },
       featured: false,
@@ -348,27 +403,33 @@ export const MISSION_FRAMING =
  *  personal tier ($9 a month or $90 a year at the Opening Beta price, under a $12 list); Supporter is $12
  *  a month, everything in Crew plus the Supporter badge for backing the Foundation. Both live on the
  *  personal upgrade page; the commercial page notes them and links there. */
-export const CREW_NOTE = {
-  name: 'Member pricing',
-  listLabel: '$12',
-  foundingLabel: '$9',
-  supporterLabel: '$12',
-  line: 'Crew is the personal tier: $9 a month or $90 a year at the Opening Beta price, under a $12 list. Supporter is $12 a month or $120 a year, everything in Crew plus the Supporter badge for backing the Foundation. Both live on the personal upgrade page.',
-  href: '/upgrade',
-} as const
+export const CREW_NOTE = (() => {
+  // The personal-tier amounts flow from the ONE placeholder price map (feature-tiers), so this note can
+  // never drift from the in-app ladder. The $12 list anchor mirrors PRICING_DEFAULTS (settings.ts).
+  const crew = formatLoadoutCents(PLACEHOLDER_MEMBER_PRICE_CENTS.crew)
+  const supporter = formatLoadoutCents(PLACEHOLDER_MEMBER_PRICE_CENTS.supporter)
+  return {
+    name: 'Member pricing',
+    listLabel: '$12',
+    foundingLabel: crew,
+    supporterLabel: supporter,
+    line: `Being a member is free, and stays free: joining, Circles, events, and the people. Crew is the personal tier at ${crew} a month or $90 a year at the Opening Beta price, under a $12 list: the Crew badge, the full rewards loop, and a way to back the community. Never a business tool. Supporter is ${supporter} a month or $120 a year, everything in Crew plus the Supporter badge for backing the Foundation. Both live on the personal upgrade page.`,
+    href: '/upgrade',
+  } as const
+})()
 
 /** The pricing-table summary an answer engine can lift: a short, plain ladder of the three commercial
  *  tiers plus the add-ons and the take-rates, built from the same catalog the page renders. PURE. The
  *  llms.txt route prints these lines so the ladder is citable. */
 export function pricingLadderSummary(): string[] {
   const tiers = pricingTiers()
-  const lines: string[] = []
+  const lines: string[] = [`- ${PLAN_STORY.spine}`]
   for (const t of tiers) {
     const headline = tierHeadline(t, 'month')
     const anchor = tierListAnchor(t, 'month')
     const price = anchor ? `${headline} (list ${anchor})` : headline
     const soon = t.preview ? ' (coming soon)' : ''
-    lines.push(`- ${t.name}${soon}: ${price}. For ${t.forWho.toLowerCase()} Fee: ${t.takeRate}.`)
+    lines.push(`- ${t.name}${soon}: ${price}. ${t.tagline} For ${t.forWho.toLowerCase()} Fee: ${t.takeRate}.`)
   }
   for (const a of PRICING_ADDONS) {
     lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key)}, optional on any paid plan.`)

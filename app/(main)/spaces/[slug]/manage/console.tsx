@@ -159,10 +159,12 @@ function AccessBadge({ level }: { level: AccessLevel }) {
   )
 }
 
-/** The one-line legend above the board so the three markings are self-explaining. */
+/** The one-line legend above the board so the three markings are self-explaining. Leads with the plan
+ *  story in one line (owner overhaul 2026-07): everything is included, a paid plan raises the limits. */
 function AccessLegend() {
   return (
     <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted">
+      <span className="font-semibold text-text">Everything is included. Paid plans raise the limits.</span>
       {(['included', 'freemium', 'premium'] as const).map((level) => (
         <span key={level} className="inline-flex items-center gap-1.5">
           <AccessBadge level={level} />

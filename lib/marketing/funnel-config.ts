@@ -14,6 +14,17 @@
 
 import type { SpaceType } from '@/lib/spaces/types'
 import { spaceCreatePath, type FunnelDestination } from '@/lib/onboarding/beta-sequences'
+import { priceStrings } from '@/lib/pricing/pricing-page'
+
+// Every dollar figure in the funnel copy interpolates from the ONE code catalog (priceStrings), so no
+// FAQ answer here can quote a price the catalog does not carry.
+const P = priceStrings()
+
+/** The shared what-does-it-cost FAQ answer, with the per-niche "you keep 100% of ..." clause and an
+ *  optional extra sentence (the community-builders Collective line). One template, five doors. */
+function costAnswer(keep: string, extra = ''): string {
+  return `Free to start. Business is ${P.businessList} a month, or ${P.businessBeta} at the Opening Beta price through September 1, 2026, and you keep 100% of ${keep}.${extra} We earn only on business the network sends you, at a rate that drops as your plan rises${extra ? '' : ': 5% on Business, 3% on Collective'}. You always see the full number, nothing hidden.`
+}
 
 // ── The small, consistent feature-icon set (drawn once, house tokens) ─────────────────────────────
 export type FunnelIconName = 'calendar' | 'contact' | 'qr' | 'envelope' | 'spark'
@@ -220,7 +231,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
     { q: 'Do I need to be technical?', a: 'No. Most practitioners are taking bookings the same afternoon.' },
     {
       q: 'What does it actually cost?',
-      a: 'Free to start. Business is $29 a month, or $19 at the Opening Beta price through September 1, 2026, and you keep 100% of your own bookings. We earn only on business the network sends you, at a rate that drops as your plan rises: 5% on Business, 3% on Collective. You always see the full number, nothing hidden.',
+      a: costAnswer('your own bookings'),
     },
     { q: 'Can I take my contacts with me?', a: 'Yes, any time. Download a VCard or export your whole list.' },
     { q: 'Will my clients need to download anything?', a: 'No. They book and pay from a link.' },
@@ -311,7 +322,7 @@ export const STUDIOS_FUNNEL: FunnelConfig = {
     { q: 'Do I need to be technical?', a: 'No. Most studios are taking bookings the same afternoon.' },
     {
       q: 'What does it actually cost?',
-      a: 'Free to start. Business is $29 a month, or $19 at the Opening Beta price through September 1, 2026, and you keep 100% of the memberships you sell. We earn only on business the network sends you, at a rate that drops as your plan rises: 5% on Business, 3% on Collective. You always see the full number, nothing hidden.',
+      a: costAnswer('the memberships you sell'),
     },
     { q: 'Can I take my members with me?', a: 'Yes, any time. Export your whole member list whenever you want.' },
     { q: 'Will my members need to download anything?', a: 'No. They book and pay from a link, and check in with a QR code.' },
@@ -402,7 +413,7 @@ export const EVENTS_FUNNEL: FunnelConfig = {
     { q: 'Do I need to be technical?', a: 'No. Most hosts are selling tickets the same afternoon.' },
     {
       q: 'What does it actually cost?',
-      a: 'Free to start. Business is $29 a month, or $19 at the Opening Beta price through September 1, 2026, and you keep 100% of the tickets you sell. We earn only on business the network sends you, at a rate that drops as your plan rises: 5% on Business, 3% on Collective. You always see the full number, nothing hidden.',
+      a: costAnswer('the tickets you sell'),
     },
     { q: 'Can I take my guest list with me?', a: 'Yes, any time. Export your whole list whenever you want.' },
     { q: 'Will my guests need to download anything?', a: 'No. They buy and check in from a link and a QR code.' },
@@ -494,7 +505,10 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
     { q: 'Do I need to be technical?', a: 'No. Most organizers have their community running the same afternoon.' },
     {
       q: 'What does it actually cost?',
-      a: 'Free to start. Business is $29 a month, or $19 at the Opening Beta price through September 1, 2026, and you keep 100% of the memberships you sell. When you grow a team and host collaborators, Collective adds that for $49 a month at the Opening Beta price under the $79 list, at a 3% network rate. We earn only on business the network sends you, at a rate that drops as your plan rises. You always see the full number, nothing hidden.',
+      a: costAnswer(
+        'the memberships you sell',
+        ` When you grow a team and host collaborators, Collective adds that for ${P.collectiveBeta} a month at the Opening Beta price under the ${P.collectiveList} list, at a 3% network rate.`,
+      ),
     },
     { q: 'Can I take my members with me?', a: 'Yes, any time. Export your whole member list whenever you want.' },
     {
@@ -586,7 +600,7 @@ export const NONPROFITS_FUNNEL: FunnelConfig = {
     { q: 'Do I need to be technical?', a: 'No. Most organizations are taking donations the same afternoon.' },
     {
       q: 'What does it actually cost?',
-      a: 'Free to start. The Non Profit plan is $39 a month flat, never per seat, for verified 501(c)(3) organizations, and there is no take-rate on what you raise. You always see the full number, nothing hidden.',
+      a: `Free to start. The Non Profit plan is ${P.nonprofit} a month flat, never per seat, for verified 501(c)(3) organizations, and there is no take-rate on what you raise. You always see the full number, nothing hidden.`,
     },
     { q: 'Do you take a cut of donations?', a: 'No. You keep 100% of what you raise. We never take a share of a donation.' },
     { q: 'Can I take my supporters with me?', a: 'Yes, any time. Export your whole supporter list whenever you want.' },

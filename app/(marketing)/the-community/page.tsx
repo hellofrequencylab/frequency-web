@@ -39,6 +39,7 @@ import { getLiveData } from '@/lib/page-editor/live-data'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { articleSchema, breadcrumbSchema, faqSchema } from '@/lib/jsonld'
+import { CREW_NOTE } from '@/lib/pricing/pricing-page'
 import { ProductTour } from './tour'
 
 export const revalidate = 3600
@@ -74,7 +75,7 @@ const COMMUNITY_FAQ = [
   },
   {
     q: 'How much does it cost to join Frequency?',
-    a: 'Joining the community is free, forever. Membership is $0. Paid tiers start at Crew for $9, and you never pay a cut of your own bookings.',
+    a: `Joining the community is free, forever. Membership is $0, and connection never costs anything. The personal tier, Crew, is ${CREW_NOTE.foundingLabel} a month, and you never pay a cut of your own bookings.`,
   },
   {
     q: 'How does a Circle grow?',
