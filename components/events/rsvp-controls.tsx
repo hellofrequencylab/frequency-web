@@ -296,6 +296,8 @@ export function RsvpControls({
 // comment when you RSVP). Saving calls the same setRsvpStatus('going') with the note
 // as `message`, which upserts the member's single activity-feed entry — idempotent, no
 // spam. Left untouched, it never fires, so a plain RSVP keeps any earlier note.
+// Once shared, the whole box COLLAPSES to the single "Shared with the group" line
+// (owner spec) with a quiet Edit to reopen it.
 function RsvpNote({ eventId, slug }: { eventId: string; slug?: string }) {
   const [note, setNote] = useState('')
   const [saved, setSaved] = useState(false)
@@ -306,6 +308,22 @@ function RsvpNote({ eventId, slug }: { eventId: string; slug?: string }) {
       await setRsvpStatus(eventId, 'going', { slug, message: note })
       setSaved(true)
     })
+
+  if (saved && !pending) {
+    return (
+      <p className="flex items-center gap-2 text-2xs text-success">
+        <Check className="h-3 w-3" aria-hidden />
+        Shared with the group
+        <button
+          type="button"
+          onClick={() => setSaved(false)}
+          className="font-medium text-subtle underline underline-offset-2 transition-colors hover:text-text"
+        >
+          Edit
+        </button>
+      </p>
+    )
+  }
 
   return (
     <div className="space-y-2 rounded-xl border border-border bg-surface p-3">

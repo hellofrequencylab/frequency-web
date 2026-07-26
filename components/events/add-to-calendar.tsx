@@ -63,22 +63,24 @@ export function AddToCalendar({
   /** Lead with a filled primary "Add to calendar" (use right after a 'going' RSVP). */
   emphasis?: boolean
 }) {
+  // Compact, side-by-side in BOTH variants (owner spec): short labels + small buttons so the
+  // pair never stacks in the narrow join column.
   if (emphasis) {
     return (
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-2">
         <Link
           href={icsHref}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           title="Apple Calendar, Outlook, and any iCal-compatible app"
         >
-          <CalendarPlus className="h-4 w-4" />
+          <CalendarPlus className="h-3.5 w-3.5" />
           Add to calendar
         </Link>
         <a
           href={googleUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-border-strong hover:text-text"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:text-text"
         >
           <ExternalLink className="h-3.5 w-3.5" />
           Google
@@ -88,14 +90,14 @@ export function AddToCalendar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex items-center gap-2">
       <Link
         href={icsHref}
         className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface"
         title="Apple Calendar, Outlook, and any iCal-compatible app"
       >
         <CalendarDays className="h-3.5 w-3.5" />
-        Add to calendar (.ics)
+        Calendar (.ics)
       </Link>
       <a
         href={googleUrl}
@@ -104,7 +106,7 @@ export function AddToCalendar({
         className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface"
       >
         <ExternalLink className="h-3.5 w-3.5" />
-        Add to Google Calendar
+        Google
       </a>
     </div>
   )
