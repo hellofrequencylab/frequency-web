@@ -80,15 +80,21 @@ export function EventCalendar({
   initialYear,
   initialMonth1,
   initialView = 'grid',
+  onSelectEvent,
 }: {
   events: CalendarEvent[]
   initialYear: number
   initialMonth1: number
   /** Which view opens first: the month grid (default) or the chronological list. */
   initialView?: 'grid' | 'list'
+  /** When set, clicking an event calls THIS instead of opening the built-in truncated popup — the
+   *  host surface owns the popup (e.g. the Space page Events block's RSVP dialog). Absent (every
+   *  existing mount), the built-in popup opens exactly as before. */
+  onSelectEvent?: (ev: CalendarEvent) => void
 }) {
   const [{ year, month1 }, setMonth] = useState({ year: initialYear, month1: initialMonth1 })
   const [selected, setSelected] = useState<CalendarEvent | null>(null)
+  const select = onSelectEvent ?? setSelected
   // Times default to the event's own zone (server-formatted whenLabel); the viewer can flip to their own.
   const [inViewerTz, setInViewerTz] = useState(false)
   // The grid is the mental model; the list is how people scan "what is next". Default to the grid.
@@ -189,7 +195,7 @@ export function EventCalendar({
               <button
                 key={`${ev.slug}-${i}`}
                 type="button"
-                onClick={() => setSelected(ev)}
+                onClick={() => select(ev)}
                 className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-elevated"
               >
                 <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
@@ -266,7 +272,7 @@ export function EventCalendar({
                       <button
                         key={`${ev.slug}-${i}`}
                         type="button"
-                        onClick={() => setSelected(ev)}
+                        onClick={() => select(ev)}
                         title={ev.title}
                         className={cn(
                           'w-full truncate rounded px-1.5 py-0.5 text-left text-2xs font-medium transition-colors',

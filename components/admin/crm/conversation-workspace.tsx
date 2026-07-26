@@ -5,6 +5,7 @@
 // (?id=), so a deep link opens straight to a thread and the back button just works.
 
 import Link from 'next/link'
+import type { ReactNode } from 'react'
 import { Inbox, Lock } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { ActionResult } from '@/lib/action-result'
@@ -12,9 +13,22 @@ import { ConversationComposer } from './conversation-composer'
 import { FollowUpButton } from './follow-up-button'
 import { ConversationTriage, type TriageAgent } from './conversation-triage'
 import { LiveChatBridge } from './live-chat-bridge'
-import { STATUS_LABELS, statusTone, type ConversationStatus } from '@/lib/comms/labels'
+import { ResizableReader, ThreadResizeHandle } from './thread-resize'
+import {
+  STATUS_LABELS,
+  KIND_LABELS,
+  DELIVERY_LABELS,
+  channelLabel,
+  statusTone,
+  type ConversationStatus,
+} from '@/lib/comms/labels'
 import { makeChatToken } from '@/lib/comms/chat-token'
-import type { ConversationListRow, ConversationThread, ConversationScope } from '@/lib/comms/workspace'
+import type {
+  ConversationListRow,
+  ConversationThread,
+  ConversationThreadMessage,
+  ConversationScope,
+} from '@/lib/comms/workspace'
 
 /** The injectable action set — the operator inbox uses the defaults; the leader inbox passes its own. */
 export interface WorkspaceActions {
@@ -134,11 +148,12 @@ export function ConversationWorkspace({
           description="When a ticketed send goes out or a reply comes in, the thread shows up in this view."
         />
       ) : (
-        // Bound the whole workspace to the viewport so the thread scrolls INSIDE the reader instead of
-        // growing the page — the composer stays docked no matter how long the conversation runs.
-        <div className="grid gap-4 lg:h-[calc(100dvh-13rem)] lg:grid-cols-[minmax(0,16rem)_1fr]">
+        // The reader bounds its own height (default: the viewport; the pull handle can stretch it), so the
+        // thread scrolls INSIDE the reader and the composer stays docked no matter how long the run gets.
+        // 22rem list column = the pre-regression width (narrowed by c6a418d; restored per owner directive).
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_1fr]">
           {/* List pane. */}
-          <ul className="max-h-[72vh] space-y-1 overflow-y-auto rounded-lg border border-border bg-surface p-1 lg:max-h-none lg:h-full">
+          <ul className="max-h-[72vh] space-y-1 overflow-y-auto rounded-lg border border-border bg-surface p-1 lg:max-h-[calc(100dvh-13rem)]">
             {rows.map((r) => {
               const active = r.id === thread?.id
               return (
@@ -185,7 +200,7 @@ export function ConversationWorkspace({
               chatToken={thread.channel === 'in_app' ? makeChatToken(thread.ref) : null}
             />
           ) : (
-            <div className="hidden rounded-lg border border-border bg-surface lg:flex lg:h-full lg:items-center lg:justify-center">
+            <div className="hidden rounded-lg border border-border bg-surface lg:flex lg:h-[calc(100dvh-13rem)] lg:items-center lg:justify-center">
               <p className="text-sm text-muted">Pick a conversation to read it.</p>
             </div>
           )}
@@ -213,7 +228,7 @@ function ThreadReader({
   // list + typing + live composer). Read-only previewers still get the static transcript.
   const liveChat = thread.channel === 'in_app' && !readOnly && !!chatToken
   return (
-    <div className="flex min-h-[60vh] flex-col rounded-lg border border-border bg-surface lg:h-full lg:min-h-0">
+    <ResizableReader className="flex min-h-[60vh] flex-col overflow-hidden rounded-lg border border-border bg-surface lg:min-h-0">
       <div className="flex items-start justify-between gap-2 border-b border-border p-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-text">{thread.counterpartName || 'Unknown'}</p>
@@ -232,6 +247,8 @@ function ThreadReader({
         </div>
       </div>
 
+      <ContextBand thread={thread} />
+
       {liveChat ? (
         <>
           <ConversationTriage
@@ -248,6 +265,46 @@ function ThreadReader({
         </>
       ) : (
         <ThreadStatic thread={thread} agents={agents} actions={actions} readOnly={readOnly} />
+      )}
+    </ResizableReader>
+  )
+}
+
+/** The conversation's origin + what it is attached to: kind and channel, then links to the Space, the
+ *  support ticket, and any event/circle the context/metadata references (only what exists). */
+function ContextBand({ thread }: { thread: ConversationThread }) {
+  const chips: { key: string; label: string; href: string | null }[] = []
+  if (thread.spaceName) {
+    chips.push({
+      key: 'space',
+      label: thread.spaceName,
+      href: thread.spaceSlug ? `/spaces/${thread.spaceSlug}` : null,
+    })
+  }
+  if (thread.supportTicketId) {
+    chips.push({ key: 'ticket', label: 'Support ticket', href: `/admin/support/${thread.supportTicketId}` })
+  }
+  for (const [i, ref] of thread.contextRefs.entries()) {
+    chips.push({ key: `ref-${i}`, label: ref.label, href: ref.href })
+  }
+
+  const chipClass =
+    'inline-flex max-w-48 items-center truncate rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium'
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-3 py-1.5">
+      <span className="text-2xs text-muted">
+        {KIND_LABELS[thread.kind] ?? thread.kind} · started over {channelLabel(thread.channel)}
+      </span>
+      {chips.map((c) =>
+        c.href ? (
+          <Link key={c.key} href={c.href} className={`${chipClass} text-primary hover:bg-primary/10`}>
+            {c.label}
+          </Link>
+        ) : (
+          <span key={c.key} className={`${chipClass} text-muted`}>
+            {c.label}
+          </span>
+        ),
       )}
     </div>
   )
@@ -266,7 +323,7 @@ function ThreadStatic({
 }) {
   return (
     <>
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+      <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto p-3">
         {thread.messages.length === 0 && <p className="text-sm text-muted">No messages yet.</p>}
         {thread.messages.map((m) =>
           m.isInternal ? (
@@ -277,21 +334,13 @@ function ThreadStatic({
               <p className="mt-0.5 whitespace-pre-wrap text-sm text-text">{m.body}</p>
             </div>
           ) : (
-            <div key={m.id} className={m.direction === 'outbound' ? 'flex justify-end' : 'flex justify-start'}>
-              <div
-                className={`max-w-[80%] rounded-lg px-3 py-2 ${
-                  m.direction === 'outbound' ? 'bg-primary/10 text-text' : 'bg-surface-elevated text-text'
-                }`}
-              >
-                <p className="text-2xs uppercase tracking-wide text-muted">
-                  {m.authorName} · {m.channel} · {when(m.occurredAt)}
-                </p>
-                <p className="mt-0.5 whitespace-pre-wrap text-sm">{m.body}</p>
-              </div>
-            </div>
+            <MessageBubble key={m.id} message={m} />
           ),
         )}
       </div>
+
+      {/* The pull handle: drag to make the chat area taller; double-click resets. */}
+      <ThreadResizeHandle />
 
       {readOnly ? (
         <p className="border-t border-border p-3 text-2xs text-muted">
@@ -318,5 +367,70 @@ function ThreadStatic({
         </>
       )}
     </>
+  )
+}
+
+/**
+ * ONE bubble, per-channel variants (no forks): in_app = clean chat bubble, sms = compact text-message
+ * style, email = an email card whose NEW content is the readable body and whose quoted trail (if any)
+ * sits behind a collapsed "Show earlier messages" toggle. Every bubble carries a footer caption naming
+ * how it came in (Site Message / Email / Text) plus the delivery state when it is worth knowing.
+ */
+function MessageBubble({ message: m }: { message: ConversationThreadMessage }) {
+  const outbound = m.direction === 'outbound'
+  const delivery = DELIVERY_LABELS[m.deliveryStatus]
+  const deliveryTone = m.deliveryStatus === 'bounced' || m.deliveryStatus === 'failed' ? 'text-danger' : 'text-subtle'
+
+  let bubble: ReactNode
+  if (m.channel === 'email') {
+    bubble = (
+      <div
+        className={`w-fit max-w-[88%] rounded-lg border px-3 py-2 ${
+          outbound ? 'border-primary/25 bg-primary/10' : 'border-border bg-surface-elevated'
+        }`}
+      >
+        <p className="text-2xs font-semibold text-muted">{m.authorName}</p>
+        <p className="mt-1 whitespace-pre-wrap text-sm text-text">{m.body}</p>
+        {m.quotedTrail && (
+          <details className="group mt-2 border-t border-border pt-1.5">
+            <summary className="cursor-pointer list-none text-2xs font-medium text-muted hover:text-text [&::-webkit-details-marker]:hidden">
+              <span className="group-open:hidden">Show earlier messages</span>
+              <span className="hidden group-open:inline">Hide</span>
+            </summary>
+            <p className="mt-1.5 whitespace-pre-wrap text-xs text-subtle">{m.quotedTrail}</p>
+          </details>
+        )}
+      </div>
+    )
+  } else if (m.channel === 'sms') {
+    bubble = (
+      <div
+        className={`w-fit max-w-[70%] rounded-2xl px-3 py-1.5 ${
+          outbound ? 'bg-primary/10' : 'bg-surface-elevated'
+        }`}
+      >
+        <p className="whitespace-pre-wrap text-sm text-text">{m.body}</p>
+      </div>
+    )
+  } else {
+    bubble = (
+      <div
+        className={`w-fit max-w-[80%] rounded-lg px-3 py-2 ${outbound ? 'bg-primary/10' : 'bg-surface-elevated'}`}
+      >
+        <p className="whitespace-pre-wrap text-sm text-text">{m.body}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className={`flex flex-col gap-0.5 ${outbound ? 'items-end' : 'items-start'}`}>
+      {bubble}
+      <p className="px-1 text-3xs text-subtle">
+        {m.authorName} · {channelLabel(m.channel)} · {when(m.occurredAt)}
+        {delivery && (
+          <span className={deliveryTone}> · {delivery}</span>
+        )}
+      </p>
+    </div>
   )
 }

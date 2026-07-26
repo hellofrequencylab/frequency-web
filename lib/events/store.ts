@@ -32,10 +32,23 @@ export interface SpaceEvent {
   /** 'draft' | 'published' — the manage calendar badges drafts; public readers filter on it. */
   status: string | null
   location: string | null
+  // ── Space-page Events block fields (view upgrade) — newer than the generated DB types, read via the
+  // untyped-client cast below (ADR-246 convention). All additive + nullable, so every existing caller
+  // keeps its shape. capacity/price feed the card + popup; join_mode/hide_address carry the ADR-826 /
+  // ADR-825 semantics; city/region/venue_name let a reader build the viewer-safe place line.
+  capacity?: number | null
+  price_cents?: number | null
+  join_mode?: 'auto' | 'rsvp' | 'tickets' | null
+  hide_address?: boolean | null
+  city?: string | null
+  region?: string | null
+  venue_name?: string | null
+  attendance_mode?: string | null
+  is_demo?: boolean | null
 }
 
 const COLS =
-  'id, slug, title, description, starts_at, ends_at, host_id, scope_id, scope_type, is_cancelled, space_id, time_zone, status, location'
+  'id, slug, title, description, starts_at, ends_at, host_id, scope_id, scope_type, is_cancelled, space_id, time_zone, status, location, capacity, price_cents, join_mode, hide_address, city, region, venue_name, attendance_mode, is_demo'
 
 /** An event row for the per-space CALENDAR (Events EC2): the fields the month grid + popup need. */
 export interface SpaceCalendarEvent {

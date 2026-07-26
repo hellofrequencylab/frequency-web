@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
   Mail,
+  MessageCircle,
   Phone,
   ExternalLink,
   HeartPulse,
@@ -32,7 +33,7 @@ import { MemberComposer } from '@/components/admin/crm/member-composer'
 import { SpaceMemberComposer } from '@/components/spaces/crm/space-member-composer'
 import { discardDraftIfEmpty } from '@/app/(main)/admin/email-studio/actions'
 import { discardSpaceEmailDraftIfEmpty } from '@/lib/spaces/email-drafts'
-import type { CrmMemberDetail } from './types'
+import type { CrmMemberDetail, MemberMessaging } from './types'
 import type { MemberRole } from '@/lib/people/member-viewer'
 
 /** True when the member neither manages nor belongs to anything. Inlined (the pure lib twin lives
@@ -207,17 +208,30 @@ function FullProfile({ detail }: { detail: CrmMemberDetail }) {
 }
 
 /** The CRM master-detail pane. `detail` carries the compact profile fields plus the rich CRM fields.
- *  `messageScope` OPTIONALLY re-scopes the "Message Member" composer to a Space: when provided, the popup
- *  renders the space-scoped composer (sends via the Space email path, searches only the Space's contacts)
- *  instead of the platform admin composer. Undefined = the unchanged platform behavior. */
+ *  `messaging` picks the messaging affordance (plan 1.5): the platform / space composer popup, a
+ *  leader `dm` button bound to a server action (no email required), or `none` (contact links only).
+ *  `messageScope` is the legacy space re-scope prop, kept working: it maps to kind `space` when
+ *  `messaging` is not given; neither given = the unchanged platform composer. */
 export function CrmMemberDetailPane({
   detail,
   messageScope,
+  messaging: messagingProp,
 }: {
   detail: CrmMemberDetail
   messageScope?: { spaceId: string; slug: string }
+  messaging?: MemberMessaging
 }) {
   const [composeOpen, setComposeOpen] = useState(false)
+  // The dm-kind transition: the Message button disables while the bound server action runs (it
+  // usually ends in a redirect into the thread, so a double-tap would mint a duplicate call).
+  const [dmPending, startDmTransition] = useTransition()
+  // The effective messaging mode: the explicit prop wins; the legacy messageScope maps to `space`;
+  // the platform composer stays the default so every existing mount is byte-identical.
+  const messaging: MemberMessaging =
+    messagingProp ?? (messageScope ? { kind: 'space', ...messageScope } : { kind: 'platform' })
+  const scope = messaging.kind === 'space' ? { spaceId: messaging.spaceId, slug: messaging.slug } : undefined
+  const dm = messaging.kind === 'dm' ? messaging : null
+  const emailCompose = messaging.kind === 'platform' || messaging.kind === 'space'
   // The draft the popup is editing. Remembered across a close so reopening for the SAME member resumes
   // the saved draft. It never needs a manual reset: the viewer keys this pane by profileId, so selecting
   // a different member remounts it and every piece of state (draftId, composeOpen) starts fresh.
@@ -230,7 +244,7 @@ export function CrmMemberDetailPane({
     setComposeOpen(false)
     const id = draftId
     if (!id) return
-    if (messageScope) void discardSpaceEmailDraftIfEmpty(messageScope.spaceId, id)
+    if (scope) void discardSpaceEmailDraftIfEmpty(scope.spaceId, id)
     else void discardDraftIfEmpty(id)
   }
   const contact = detail.contact
@@ -294,10 +308,28 @@ export function CrmMemberDetailPane({
         </ul>
       )}
 
-      {/* (b) Compose: a "Message Member" button opens the FULL email editor in a large popup, so the
-          editor gets the room it needs (the detail pane never has to hold it). The draft is created only
-          when the popup opens, so browsing members never mints a throwaway draft. */}
-      {detail.email && (
+      {/* (b) Compose. The `dm` kind (leader surfaces): one big Message button bound to the host's
+          server action (open a scoped DM thread) — no email on file required, disabled while the
+          action runs. The `none` kind renders no messaging affordance at all (contact links only). */}
+      {dm && (
+        <button
+          type="button"
+          onClick={() =>
+            startDmTransition(async () => {
+              await dm.open(detail.profileId)
+            })
+          }
+          disabled={dmPending}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <MessageCircle className="h-4 w-4" aria-hidden /> {dm.label ?? 'Message'}
+        </button>
+      )}
+
+      {/* (b) Compose (platform / space): a "Message Member" button opens the FULL email editor in a
+          large popup, so the editor gets the room it needs (the detail pane never has to hold it). The
+          draft is created only when the popup opens, so browsing members never mints a throwaway draft. */}
+      {emailCompose && detail.email && (
         <>
           <button
             type="button"
@@ -335,10 +367,10 @@ export function CrmMemberDetailPane({
                 {/* CENTER — the full-size editor. In a Space this is the space-scoped composer (Space email
                     path, Space contacts only); on the platform it is the unchanged admin composer. */}
                 <div className="min-w-0 flex-1 overflow-y-auto p-5">
-                  {messageScope ? (
+                  {scope ? (
                     <SpaceMemberComposer
-                      spaceId={messageScope.spaceId}
-                      slug={messageScope.slug}
+                      spaceId={scope.spaceId}
+                      slug={scope.slug}
                       profileId={detail.profileId}
                       email={detail.email}
                       displayName={detail.displayName}

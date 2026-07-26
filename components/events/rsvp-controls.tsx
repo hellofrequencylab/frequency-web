@@ -43,6 +43,7 @@ export function RsvpControls({
   allowGoing = true,
   initialNote = '',
   onGoingIntercept = null,
+  onRecorded = null,
 }: {
   eventId: string
   /** Needed for revalidation on the depth actions; optional for the lean toggle. */
@@ -72,6 +73,17 @@ export function RsvpControls({
    *  Going calls this instead of recording — the parent slides its payment phase open and
    *  records the RSVP as part of completing it. Maybe / Can't go record normally. */
   onGoingIntercept?: (() => void) | null
+  /** Notified after an answer records (Events block popup): a host surface that OWNS the
+   *  `status` / `approvalStatus` props (a dialog holding them in state, not a page that
+   *  revalidates) updates them from this so the control reflects the new answer. The event
+   *  page never sets it — absent, behavior is exactly as before. */
+  onRecorded?:
+    | ((next: {
+        status: Status
+        approvalStatus?: 'none' | 'pending' | 'approved'
+        plusOnes?: number
+      }) => void)
+    | null
 }) {
   const [pending, startTransition] = useTransition()
   const [names, setNames] = useState<string[]>(plusOneNames)
@@ -112,19 +124,33 @@ export function RsvpControls({
     ) : null
 
   const go = (intent: 'going' | 'maybe' | 'not_going') =>
-    startTransition(() => {
-      setRsvpStatus(eventId, intent, { slug })
+    startTransition(async () => {
+      const done = setRsvpStatus(eventId, intent, { slug })
+      // Without a listener, keep the original fire-and-forget (the page revalidates itself).
+      if (!onRecorded) return
+      await done
+      // A fresh Going on a full event lands on the waitlist server-side — report what recorded,
+      // so a state-owning parent (the Events block popup) mirrors the server exactly.
+      const recorded: Status =
+        intent === 'going' && isFull && !isGoing && !isWaitlisted ? 'waitlist' : intent
+      onRecorded({ status: recorded })
     })
 
   // Approval-required join → write a 'pending' RSVP through the depth layer.
   const requestToJoin = () =>
-    startTransition(() => {
-      setEventRsvpDepth(eventId, slug ?? '', { status: 'going', approvalStatus: 'pending' })
+    startTransition(async () => {
+      const done = setEventRsvpDepth(eventId, slug ?? '', { status: 'going', approvalStatus: 'pending' })
+      if (!onRecorded) return
+      await done
+      onRecorded({ status: 'going', approvalStatus: 'pending' })
     })
 
   const setGuests = (n: number) =>
-    startTransition(() => {
-      setRsvpPlusOnes(eventId, n)
+    startTransition(async () => {
+      const done = setRsvpPlusOnes(eventId, n)
+      if (!onRecorded) return
+      await done
+      onRecorded({ status: 'going', plusOnes: Math.max(0, Math.min(MAX_PLUS_ONES, n)) })
     })
 
   // Save +1 names through the depth layer (keeps plus_ones in sync = names.length).

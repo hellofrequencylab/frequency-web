@@ -45,6 +45,7 @@ describe('admin module registry', () => {
     expect(modulesFor(hubScope, manage).map((m) => m.id)).toEqual([
       'hub.settings',
       'hub.people',
+      'hub.crm',
       'hub.layout',
       'hub.insights',
       'hub.danger',
@@ -59,6 +60,7 @@ describe('admin module registry', () => {
     expect(modulesFor(nexusScope, manage).map((m) => m.id)).toEqual([
       'nexus.settings',
       'nexus.people',
+      'nexus.crm',
       'nexus.layout',
       'nexus.insights',
       'nexus.danger',
@@ -74,6 +76,7 @@ describe('admin module registry', () => {
     expect(modulesFor(eventScope, caps).map((m) => m.id)).toEqual([
       'event.settings',
       'event.people',
+      'event.crm',
     ])
     expect(modulesFor(eventScope, new Set<Capability>())).toHaveLength(0)
     expect(modulesFor(circleScope, caps)).toHaveLength(0)
@@ -198,8 +201,11 @@ describe('admin module registry', () => {
     for (const id of ['account.appearance', 'account.notifications', 'account.connections']) {
       expect(personal.find((m) => m.id === id)?.placement).toBe('bank')
     }
-    // Every core entity module (non-global scope) renders inline in the body (no bank tag).
-    expect(ADMIN_MODULES.filter((m) => !m.scopes.includes('global')).every((m) => m.render === 'inline' && m.placement !== 'bank')).toBe(true)
+    // Every core entity module (non-global scope) renders inline in the body (no bank tag) - EXCEPT the
+    // ADR-827 communication modules (*.crm), which are full master-detail pages and so link out.
+    const coreEntity = ADMIN_MODULES.filter((m) => !m.scopes.includes('global'))
+    expect(coreEntity.filter((m) => !m.id.endsWith('.crm')).every((m) => m.render === 'inline' && m.placement !== 'bank')).toBe(true)
+    expect(coreEntity.filter((m) => m.id.endsWith('.crm')).every((m) => m.render === 'link' && m.slot === 'comms')).toBe(true)
   })
 
   // ADR-250 step 1: registry-driven selection by scope kind (the page admin dock has no
@@ -213,6 +219,7 @@ describe('admin module registry', () => {
       'circle.settings',
       'circle.placeAndTime',
       'circle.people',
+      'circle.crm',
       'circle.engage',
       'circle.practice',
       'circle.insights',
@@ -224,6 +231,7 @@ describe('admin module registry', () => {
     expect(modulesForScopeKind('hub', 'sidebar').map((m) => m.id)).toEqual([
       'hub.settings',
       'hub.people',
+      'hub.crm',
       'hub.layout',
       'hub.insights',
       'hub.danger',
@@ -231,6 +239,7 @@ describe('admin module registry', () => {
     expect(modulesForScopeKind('nexus', 'sidebar').map((m) => m.id)).toEqual([
       'nexus.settings',
       'nexus.people',
+      'nexus.crm',
       'nexus.layout',
       'nexus.insights',
       'nexus.danger',
@@ -238,6 +247,7 @@ describe('admin module registry', () => {
     expect(modulesForScopeKind('event', 'sidebar').map((m) => m.id)).toEqual([
       'event.settings',
       'event.people',
+      'event.crm',
     ])
     expect(modulesForScopeKind('practice', 'sidebar').map((m) => m.id)).toEqual([
       'practice.settings',
@@ -264,6 +274,7 @@ describe('admin module registry', () => {
     expect(modulesForScopeKind('hub').map((m) => m.id)).toEqual([
       'hub.settings',
       'hub.people',
+      'hub.crm',
       'hub.layout',
       'hub.insights',
       'hub.danger',

@@ -351,6 +351,17 @@ export function gridColumns(props: Record<string, unknown> | undefined): 2 | 3 |
   return v === '2' ? 2 : v === '4' ? 4 : 3
 }
 
+/** The Events block's three layouts (Events block upgrade). `list` is today's rows and the default,
+ *  so an existing saved page renders exactly as before (sparse blob: the default is never stored). */
+export type SpaceEventsView = 'list' | 'cards' | 'calendar'
+
+/** The Events block `view` of a content bag, defaulting to `list`, validated to the known set. Pure;
+ *  the space Events section dispatches on the result. */
+export function spaceEventsView(props: Record<string, unknown> | undefined): SpaceEventsView {
+  const v = props?.view
+  return v === 'cards' || v === 'calendar' ? v : 'list'
+}
+
 /** The CONTENT-block field schemas (the operator authors these). */
 const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   // The SPACE free-form blocks (ADR-542).
@@ -630,7 +641,26 @@ const DATA_BLOCK_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   // source feeds this picker (its own id here). When the Space has none of that function's items, the editor
   // shows a "Create ..." link instead (blockCreateHref).
   offerings: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Offerings to feature', type: 'picker', pickerBlock: 'offerings' }],
-  events: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Events to feature', type: 'picker', pickerBlock: 'events' }],
+  // EVENTS (block upgrade): the header + picker, PLUS a three-way Layout (List = today's rows, the
+  // default so saved pages never shift; Cards = the events index card treatment; Calendar = a month
+  // grid) and a Columns count for the Cards layout. Both are declared enum primitives, so the editor
+  // renders the shared segmented control and the sanitizer validates the stored value (ADR-569 C6).
+  events: [
+    ...DATA_HEADER_FIELDS,
+    { key: 'items', label: 'Events to feature', type: 'picker', pickerBlock: 'events' },
+    {
+      key: 'view',
+      label: 'Layout',
+      type: 'segmented',
+      defaultValue: 'list',
+      options: [
+        { value: 'list', label: 'List' },
+        { value: 'cards', label: 'Cards' },
+        { value: 'calendar', label: 'Calendar' },
+      ],
+    },
+    { key: 'columns', label: 'Columns', type: 'segmented', defaultValue: '3', options: COLUMN_OPTIONS },
+  ],
   team: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Team to feature', type: 'picker', pickerBlock: 'team' }],
   journeys: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Journeys to feature', type: 'picker', pickerBlock: 'journeys' }],
   circles: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Circles to feature', type: 'picker', pickerBlock: 'circles' }],

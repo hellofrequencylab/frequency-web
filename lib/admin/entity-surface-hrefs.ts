@@ -56,6 +56,13 @@ export function hrefForEntitySurface(appId: string, scope: EntitySurfaceScope | 
   // so this only feeds the bank resolver, never a dead body row. Fail-safe: no slug ⇒ null.
   const entitySlug = scope?.id ?? null
   if (entitySlug) {
+    // The communication modules (ADR-827) are `render: 'link'` with their OWN pages, so their explicit
+    // cases must precede the manage-console prefix fallbacks below (else 'event.crm' would resolve to
+    // /manage). Circle has no prefix fallback, so its case here is what makes the row resolve at all.
+    if (appId === 'event.crm') return `/events/${entitySlug}/manage/crm`
+    if (appId === 'circle.crm') return `/circles/${entitySlug}/crm`
+    if (appId === 'hub.crm') return `/hubs/${entitySlug}/crm`
+    if (appId === 'nexus.crm') return `/nexuses/${entitySlug}/crm`
     if (appId.startsWith('event.')) return `/events/${entitySlug}/manage`
     if (appId.startsWith('hub.')) return `/hubs/${entitySlug}/manage`
     if (appId.startsWith('nexus.')) return `/nexuses/${entitySlug}/manage`

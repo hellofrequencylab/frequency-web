@@ -102,18 +102,20 @@ export async function requireLeadFloor(): Promise<AdminContext> {
   if (!profile) redirect('/')
   const staff = await getStaffMember().catch(() => null)
   // Admit any community LEADER: host+ on the trust ladder, OR a staffer, OR — regardless of
-  // rung — anyone who actually leads something (you can host a circle, guide a hub, or mentor a
-  // nexus without holding the matching rung; that was the "Circles you host: 0" gap). The
-  // dashboard's blocks each self-scope to the caller, so this only widens the door, never a read.
+  // rung — anyone who actually leads something (you can host a circle, host an event, guide a
+  // hub, or mentor a nexus without holding the matching rung; that was the "Circles you host: 0"
+  // gap). The dashboard's blocks each self-scope to the caller, so this only widens the door,
+  // never a read.
   let admit = atLeastRole(profile.community_role, 'host') || staff != null
   if (!admit) {
     const admin = createAdminClient()
-    const [{ data: c }, { data: h }, { data: n }] = await Promise.all([
+    const [{ data: c }, { data: h }, { data: n }, { data: e }] = await Promise.all([
       admin.from('circles').select('id').eq('host_id', profile.id).limit(1),
       admin.from('hubs').select('id').eq('guide_id', profile.id).limit(1),
       admin.from('nexuses').select('id').eq('mentor_id', profile.id).limit(1),
+      admin.from('events').select('id').eq('host_id', profile.id).limit(1),
     ])
-    admit = Boolean(c?.length || h?.length || n?.length)
+    admit = Boolean(c?.length || h?.length || n?.length || e?.length)
   }
   if (!admit) redirect('/feed')
   return {

@@ -14,7 +14,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Users, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard, LayoutGrid } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Users, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard, LayoutGrid, MessageCircle } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -144,6 +144,24 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'primary',
     priority: 30,
   },
+  // The communication module (ADR-827): every primary management dashboard carries its scope's CRM
+  // up front. First non-space use of the `comms` slot; `render: 'link'` because the member viewer is
+  // a full master-detail page, never an inline rail form. Priority sits at the TOP of the primary
+  // band (owner: "up front in any admin dashboard").
+  {
+    id: 'circle.crm',
+    label: 'Message Circle',
+    desc: 'Every member of this circle: their story, their stats, and a direct line.',
+    Icon: MessageCircle,
+    scopes: ['circle'],
+    requiredCapability: 'circle.moderate',
+    slot: 'comms',
+    surface: 'sidebar',
+    render: 'link',
+    order: 10,
+    tier: 'primary',
+    priority: 15,
+  },
   {
     id: 'circle.engage',
     label: 'Engage',
@@ -243,6 +261,22 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'primary',
     priority: 30,
   },
+  // The communication module (ADR-827): the hub's member CRM, up front. Name provisional pending a
+  // NAMING.md ruling for hub/nexus (the circle/event names are ruled).
+  {
+    id: 'hub.crm',
+    label: 'Message Members',
+    desc: 'Everyone in your hub, across every circle: their story and a direct line.',
+    Icon: MessageCircle,
+    scopes: ['hub'],
+    requiredCapability: 'hub.manage',
+    slot: 'comms',
+    surface: 'sidebar',
+    render: 'link',
+    order: 10,
+    tier: 'primary',
+    priority: 15,
+  },
   // Hub layout (ADR-515 Phase 5, the 'layout' spine cell). Every rail carries a layout chooser (the owner
   // directive). The hub detail page is HAND-BUILT (fixed sections: identity → insight → circles), NOT
   // <PageModules>-driven, so there is no arrangeable block set to reorder — a real LayoutEditor would be a
@@ -324,6 +358,22 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'primary',
     priority: 30,
   },
+  // The communication module (ADR-827): the nexus member CRM, up front. Name provisional pending a
+  // NAMING.md ruling for hub/nexus (the circle/event names are ruled).
+  {
+    id: 'nexus.crm',
+    label: 'Message Members',
+    desc: 'Everyone in your nexus, across every hub and circle: their story and a direct line.',
+    Icon: MessageCircle,
+    scopes: ['nexus'],
+    requiredCapability: 'nexus.manage',
+    slot: 'comms',
+    surface: 'sidebar',
+    render: 'link',
+    order: 10,
+    tier: 'primary',
+    priority: 15,
+  },
   // Nexus layout (ADR-515 Phase 5). Same treatment as hub.layout: the nexus detail page is hand-built (fixed
   // sections: identity → insight → hubs), not <PageModules>-driven, so this is the minimal Layout affordance
   // pointing at the Manage console rather than a broken picker. Gated nexus.manage; self-fetches
@@ -404,6 +454,22 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     // event.settings (10), so the guest list sits above Images and the settings form.
     tier: 'standard',
     priority: 5,
+  },
+  // The communication module (ADR-827): Message Attendees (NAMING.md, owner-ruled), the event's CRM
+  // at /events/<slug>/manage/crm. Leads the primary band so messaging sits up front on the event rail.
+  {
+    id: 'event.crm',
+    label: 'Message Attendees',
+    desc: 'Everyone going or maybe: their story, their stats, and a direct line.',
+    Icon: MessageCircle,
+    scopes: ['event'],
+    requiredCapability: 'event.editSettings',
+    slot: 'comms',
+    surface: 'sidebar',
+    render: 'link',
+    order: 10,
+    tier: 'primary',
+    priority: 8,
   },
   {
     id: 'practice.settings',
