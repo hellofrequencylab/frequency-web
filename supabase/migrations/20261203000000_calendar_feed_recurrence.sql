@@ -25,7 +25,11 @@
 -- Body is IDENTICAL to 20261197000000; only the RETURNS TABLE and BOTH union-branch SELECT lists gain
 -- recurrence_type / recurrence_until / parent_event_id. Every WHERE clause, JOIN, the network+active
 -- owning-space gate, the accepted-share branch's home-space gate, the order, and the limit are verbatim.
-create or replace function public.space_public_calendar_feed(_space_id uuid)
+-- DROP first: the OUT columns change, and CREATE OR REPLACE cannot change a function's return type
+-- (42P13) — caught applying the band to prod, 2026-07-26. Grants are re-applied below.
+drop function if exists public.space_public_calendar_feed(uuid);
+
+create function public.space_public_calendar_feed(_space_id uuid)
 returns table (
   id               uuid,
   title            text,
@@ -97,7 +101,10 @@ comment on function public.space_public_calendar_feed(uuid) is
 -- recurrence columns. The PUBLIC-ONLY gate (never 'unlisted'), the LEFT JOIN platform-event allowance,
 -- the owning-space network+active gate, the non-cancelled / published / upcoming filters, the order, and
 -- the 500 limit are all verbatim.
-create or replace function public.public_calendar_feed()
+-- DROP first for the same 42P13 reason as above; the grant is re-applied below.
+drop function if exists public.public_calendar_feed();
+
+create function public.public_calendar_feed()
 returns table (
   id               uuid,
   title            text,
