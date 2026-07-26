@@ -1020,6 +1020,12 @@ export default async function EventDetailPage({
   // The who's-coming pile grows in place in both modes. Guests change their answer any time.
   const memberUnlocks = (t: (typeof tiers)[number]) =>
     !!viewerIsSpaceMember && (t.spaceTierId == null || t.spaceTierId === viewerSpaceTierId)
+  // The price row that APPLIES to this viewer (RSVP-mode info list): their included member
+  // tier when their membership covers one, else the general rate.
+  const appliedTierId =
+    tiers.find((t) => t.spaceMembersOnly && memberUnlocks(t))?.id ??
+    tiers.find((t) => !t.spaceMembersOnly)?.id ??
+    null
 
   // The Join column's primary action — reused in the aside AND the mobile sheet.
   const joinActions = (
@@ -1034,13 +1040,17 @@ export default async function EventDetailPage({
         </div>
 
         {/* RSVP mode with pricing: the tiers as INFORMATION (no buy CTA) — what it costs at the
-            door and what a membership includes, next to the one join function below. */}
+            door and what a membership includes, next to the one join function below. The row that
+            APPLIES to the viewer highlights: a member's included tier, else the general rate —
+            so a signed-in member lands on their rate with the RSVP switch ready below. */}
         {!ticketsMode && isPaidEvent && hasTiers && (
           <div className="space-y-2">
             {tiers.map((t) => (
               <div
                 key={t.id}
-                className="flex items-start justify-between gap-3 rounded-xl border border-border px-3.5 py-2.5"
+                className={`flex items-start justify-between gap-3 rounded-xl border px-3.5 py-2.5 ${
+                  t.id === appliedTierId ? 'border-primary bg-primary-bg/40' : 'border-border'
+                }`}
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-text">{t.name}</p>
