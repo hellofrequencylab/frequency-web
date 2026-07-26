@@ -150,8 +150,8 @@ export function ConversationWorkspace({
       ) : (
         // The reader bounds its own height (default: the viewport; the pull handle can stretch it), so the
         // thread scrolls INSIDE the reader and the composer stays docked no matter how long the run gets.
-        // 22rem list column = the pre-regression width (narrowed by c6a418d; restored per owner directive).
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_1fr]">
+        // 19rem list column: 16rem read too skinny, 22rem too wide — owner-tuned middle ground.
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,19rem)_1fr]">
           {/* List pane. */}
           <ul className="max-h-[72vh] space-y-1 overflow-y-auto rounded-lg border border-border bg-surface p-1 lg:max-h-[calc(100dvh-13rem)]">
             {rows.map((r) => {
