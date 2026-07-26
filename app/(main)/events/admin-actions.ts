@@ -94,7 +94,7 @@ export async function getEventAdminData(slug: string) {
   })
     .from('events')
     .select(
-      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, details, geog, hide_address',
+      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, details, geog, hide_address, join_mode',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -185,6 +185,8 @@ type EventAdminRow = {
   geog: unknown
   /** ADR-825: exact address renders only for registered viewers / managers. */
   hide_address: boolean | null
+  /** ADR-826: how people join — auto / rsvp (first come first served) / tickets. */
+  join_mode: 'auto' | 'rsvp' | 'tickets' | null
 }
 
 /** Cancel or reinstate the event — the host control that used to live in the
@@ -290,6 +292,11 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
       // hidden input, 'on'/'off'), so a form without the control can never silently reset it.
       ...(fd.get('hide_address') != null
         ? { hide_address: fd.get('hide_address') === 'on' }
+        : {}),
+      // Join mode (ADR-826): same write-only-when-present rule; only a recognised value writes
+      // (the column is CHECK-constrained).
+      ...(['auto', 'rsvp', 'tickets'].includes((fd.get('join_mode') as string) ?? '')
+        ? { join_mode: fd.get('join_mode') as string }
         : {}),
     })
     .eq('id', id)

@@ -379,6 +379,18 @@ export function EventSettingsModule() {
           </label>
         </div>
 
+        {/* HOW PEOPLE JOIN (ADR-826): one join function per event. Automatic derives from
+            pricing; RSVP is first come first served (prices show as information); Tickets makes
+            buying the way in (no RSVP switch). */}
+        <label className="block space-y-1.5">
+          <span className={fieldLabel}>How people join</span>
+          <select name="join_mode" defaultValue={data.join_mode ?? 'auto'} className={`${input} min-w-0 px-2`}>
+            <option value="auto">Automatic (tickets when priced, else RSVP)</option>
+            <option value="rsvp">RSVP, first come first served (prices are informational)</option>
+            <option value="tickets">Tickets (buying is how people attend)</option>
+          </select>
+        </label>
+
         {/* TICKET PRICE — blank keeps the event a free RSVP. */}
         <label className="block space-y-1.5">
           <span className={fieldLabel}>Ticket price</span>
