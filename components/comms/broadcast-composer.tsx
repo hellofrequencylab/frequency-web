@@ -1,7 +1,8 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
-import { Mail, MessageSquare, Radio, Smartphone, Megaphone, CheckCircle2, AlertCircle } from 'lucide-react'
+import Link from 'next/link'
+import { Mail, MessageSquare, Radio, Smartphone, Megaphone, CheckCircle2, AlertCircle, CalendarPlus } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import type { ActionResult } from '@/lib/action-result'
 import type {
@@ -34,6 +35,33 @@ const CHANNEL_META: Record<BroadcastChannelKey, { label: string; Icon: typeof Ma
   sms: { label: 'Text', Icon: Smartphone },
 }
 
+/** The locked state (ADR-836): the mounting surface resolved the viewer's access tier and
+ *  free-form messaging is off, so the compose fields and channel row are replaced by ONE
+ *  action (invite the list to an upcoming event the viewer hosts) plus one quiet upsell
+ *  line. Presentation only: the server action re-checks the tier and the target. */
+export interface BroadcastLockedState {
+  /** The plain explanation line (e.g. the post-event lock message). */
+  message: string
+  /** The one quiet upsell sentence, rendered as a link. No dark patterns. */
+  upsell: { text: string; href: string }
+  reinvite: {
+    /** Upcoming events the viewer hosts/cohosts, soonest first (server-resolved). */
+    targets: { id: string; title: string; startsAt: string | null }[]
+    /** The scope-bound re-invite action (validation + fan-out live server-side). */
+    send: (targetEventId: string) => Promise<ActionResult<{ results: BroadcastChannelResult[] }>>
+    /** Copy when the viewer has no upcoming event to invite the list to. */
+    emptyNote: string
+  }
+}
+
+/** Wall-clock date chip for a re-invite option (event times store wall-clock as UTC parts). */
+function targetDateLabel(startsAt: string | null): string {
+  if (!startsAt) return ''
+  const t = Date.parse(startsAt)
+  if (!Number.isFinite(t)) return ''
+  return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+}
+
 function chipClasses(on: boolean): string {
   return `inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
     on
@@ -48,6 +76,7 @@ export function BroadcastComposer({
   channels,
   send,
   bodyPlaceholder = 'What do you want everyone to know?',
+  locked,
 }: {
   /** The card's small heading line. */
   heading?: string
@@ -58,6 +87,9 @@ export function BroadcastComposer({
   /** The scope-bound server action (authorization + fan-out live server-side). */
   send: (input: BroadcastSendInput) => Promise<ActionResult<{ results: BroadcastChannelResult[] }>>
   bodyPlaceholder?: string
+  /** When set, free-form messaging is off for this viewer: the compose fields and channel
+   *  row are replaced by the one re-invite action + the quiet upsell line (ADR-836). */
+  locked?: BroadcastLockedState
 }) {
   const firstEnabled = channels.find((c) => c.enabled)?.key
   const [picked, setPicked] = useState<Set<BroadcastChannelKey>>(
@@ -71,6 +103,17 @@ export function BroadcastComposer({
   const [error, setError] = useState('')
   const [results, setResults] = useState<BroadcastChannelResult[]>([])
   const [pending, startTransition] = useTransition()
+  const [reinviteTarget, setReinviteTarget] = useState<string>(
+    () => locked?.reinvite.targets[0]?.id ?? '',
+  )
+
+  // The whole list, deduped across segments: the locked state still SHOWS the audience
+  // (tracked and visible), it just cannot free-form message it.
+  const listCount = useMemo(() => {
+    const ids = new Set<string>()
+    for (const s of segments) for (const id of s.profileIds) ids.add(id)
+    return ids.size
+  }, [segments])
 
   // The live recipient count: the UNION of the selected segments, deduped by member id
   // (a ticket holder who also RSVP'd counts once). Display only; the server re-resolves.
@@ -135,7 +178,104 @@ export function BroadcastComposer({
     })
   }
 
+  function submitReinvite() {
+    if (!locked || !reinviteTarget || pending) return
+    const sendReinvite = locked.reinvite.send
+    startTransition(async () => {
+      setError('')
+      setResults([])
+      const res = await sendReinvite(reinviteTarget)
+      if ('error' in res) {
+        setError(res.error)
+        return
+      }
+      setResults(res.data.results)
+    })
+  }
+
   const activeNotes = channels.filter((c) => c.enabled && c.note && picked.has(c.key))
+
+  // ── The locked state (ADR-836): one action instead of the channel row ──────────────────
+  if (locked) {
+    const targets = locked.reinvite.targets
+    return (
+      <div className="rounded-2xl border border-border bg-surface p-4">
+        <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-muted">
+          <Megaphone className="h-3.5 w-3.5 text-primary" aria-hidden />
+          {heading}
+        </p>
+        <p className="text-2xs text-subtle">
+          {listCount > 0 ? `${listCount} ${listCount === 1 ? 'person' : 'people'} on this list.` : 'No one is on this list yet.'}
+        </p>
+        <p className="mt-2 text-xs text-muted">{locked.message}</p>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+          {targets.length > 0 ? (
+            <>
+              <label htmlFor="reinvite-target" className="sr-only">
+                Invite this list to
+              </label>
+              <select
+                id="reinvite-target"
+                value={reinviteTarget}
+                onChange={(e) => setReinviteTarget(e.target.value)}
+                disabled={pending}
+                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text"
+              >
+                {targets.map((t) => {
+                  const when = targetDateLabel(t.startsAt)
+                  return (
+                    <option key={t.id} value={t.id}>
+                      {t.title}
+                      {when ? ` · ${when}` : ''}
+                    </option>
+                  )
+                })}
+              </select>
+              <button
+                type="button"
+                onClick={submitReinvite}
+                disabled={pending || !reinviteTarget || listCount === 0}
+                className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarPlus className="h-3.5 w-3.5" aria-hidden />
+                  {pending ? 'Inviting…' : 'Invite to your next event'}
+                </span>
+              </button>
+            </>
+          ) : (
+            <p className="text-2xs text-subtle">{locked.reinvite.emptyNote}</p>
+          )}
+        </div>
+
+        {/* The one quiet upsell line (voice canon: one plain sentence, one link). */}
+        <p className="mt-2 text-2xs text-subtle">
+          <Link href={locked.upsell.href} className="font-medium text-primary hover:underline">
+            {locked.upsell.text}
+          </Link>
+        </p>
+
+        {error && <p className="mt-2 text-2xs font-medium text-danger">{error}</p>}
+        {results.length > 0 && (
+          <ul className="mt-3 space-y-1">
+            {results.map((r) => (
+              <li key={r.channel} className="flex items-start gap-1.5 text-2xs">
+                {r.ok ? (
+                  <CheckCircle2 className="mt-px h-3.5 w-3.5 shrink-0 text-success" aria-hidden />
+                ) : (
+                  <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0 text-danger" aria-hidden />
+                )}
+                <span className={r.ok ? 'text-muted' : 'font-medium text-danger'}>
+                  <span className="font-semibold text-text">Invitation.</span> {r.detail}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">

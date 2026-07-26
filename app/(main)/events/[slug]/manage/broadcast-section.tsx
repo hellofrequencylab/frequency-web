@@ -2,8 +2,15 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { BroadcastComposer } from '@/components/comms/broadcast-composer'
 import type { BroadcastChannelOption } from '@/components/comms/broadcast-types'
 import { loadEventBroadcastSegments } from '@/lib/events/broadcast-audience'
+import {
+  loadEventCrmAccess,
+  listMyReinviteTargets,
+  EVENT_CRM_LOCKED_MESSAGE,
+  EVENT_CRM_UPSELL_LINE,
+  EVENT_CRM_UPSELL_HREF,
+} from '@/lib/events/crm-access'
 import { isSpaceEmailEnabled } from '@/lib/spaces/email'
-import { sendEventBroadcast } from './broadcast-actions'
+import { sendEventBroadcast, sendEventReinvite } from './broadcast-actions'
 
 // MESSAGE EVERYONE on the event hub's Home tab (ADR-827 ruling 3, first wiring). A
 // self-fetching RSC (streams behind its own <Suspense>, PAGE-FRAMEWORK §5): loads the
@@ -47,6 +54,34 @@ async function resolveEmailLane(eventId: string): Promise<{ enabled: boolean; no
 }
 
 export async function EventBroadcastSection({ eventId, slug }: { eventId: string; slug: string }) {
+  // The access-tier seam (ADR-836): once a personally-hosted event ends, a personal-tier
+  // viewer's composer swaps the channel row for ONE action, inviting this list to their next
+  // event, with the quiet Business Space upsell line. The server actions re-check the tier.
+  const access = await loadEventCrmAccess(eventId)
+  if (!access.canMessage) {
+    const [segments, targets] = await Promise.all([
+      loadEventBroadcastSegments(eventId),
+      listMyReinviteTargets(eventId),
+    ])
+    return (
+      <BroadcastComposer
+        heading="Message everyone"
+        segments={segments}
+        channels={[]}
+        send={sendEventBroadcast.bind(null, slug)}
+        locked={{
+          message: EVENT_CRM_LOCKED_MESSAGE,
+          upsell: { text: EVENT_CRM_UPSELL_LINE, href: EVENT_CRM_UPSELL_HREF },
+          reinvite: {
+            targets,
+            send: sendEventReinvite.bind(null, slug),
+            emptyNote: 'No upcoming events yet. Create your next event, then invite this list to it.',
+          },
+        }}
+      />
+    )
+  }
+
   const [segments, emailLane] = await Promise.all([
     loadEventBroadcastSegments(eventId),
     resolveEmailLane(eventId),

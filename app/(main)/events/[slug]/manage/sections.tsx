@@ -26,6 +26,12 @@ import {
   type ManageGuest,
 } from './load'
 import { loadEventCoreStats } from '@/lib/events/event-stats'
+import {
+  loadEventCrmAccess,
+  EVENT_CRM_LOCKED_MESSAGE,
+  EVENT_CRM_UPSELL_LINE,
+  EVENT_CRM_UPSELL_HREF,
+} from '@/lib/events/crm-access'
 import { EventCoreStatsCards } from '@/components/events/event-core-stats'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { ApproveButton } from './approve-button'
@@ -337,7 +343,10 @@ const FOLLOW_UP_SIGNAL: Record<'started_checkout' | 'rsvp_no_purchase', string> 
 }
 
 export async function FollowUpSection({ eventId }: { eventId: string }) {
-  const candidates = await loadFollowUps(eventId)
+  // The access-tier seam (ADR-836): the follow-up list stays VISIBLE for every tier, but the
+  // Message button drops once a personal-tier viewer's messaging locks (post-event). The
+  // server action (openFollowUpDm) re-checks the same seam, so this is presentation parity.
+  const [candidates, access] = await Promise.all([loadFollowUps(eventId), loadEventCrmAccess(eventId)])
 
   if (candidates.length === 0) {
     return (
@@ -350,19 +359,33 @@ export async function FollowUpSection({ eventId }: { eventId: string }) {
   }
 
   return (
-    <ul className="grid gap-3 sm:grid-cols-2">
-      {candidates.map((c) => (
-        <li key={c.profileId}>
-          <PersonCard
-            handle={c.handle}
-            displayName={c.displayName}
-            avatarUrl={c.avatarUrl}
-            context={FOLLOW_UP_SIGNAL[c.signal]}
-            action={<FollowUpButton eventId={eventId} memberProfileId={c.profileId} />}
-          />
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-3">
+      {!access.canMessage && (
+        <p className="text-2xs text-subtle">
+          {EVENT_CRM_LOCKED_MESSAGE}{' '}
+          <Link href={EVENT_CRM_UPSELL_HREF} className="font-medium text-primary hover:underline">
+            {EVENT_CRM_UPSELL_LINE}
+          </Link>
+        </p>
+      )}
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {candidates.map((c) => (
+          <li key={c.profileId}>
+            <PersonCard
+              handle={c.handle}
+              displayName={c.displayName}
+              avatarUrl={c.avatarUrl}
+              context={FOLLOW_UP_SIGNAL[c.signal]}
+              action={
+                access.canMessage ? (
+                  <FollowUpButton eventId={eventId} memberProfileId={c.profileId} />
+                ) : undefined
+              }
+            />
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 

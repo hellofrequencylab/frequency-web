@@ -1,6 +1,6 @@
 import { EmptyState } from '@/components/ui/empty-state'
 import { MemberViewer } from '@/components/people/member-viewer'
-import type { CrmMemberDetail, Facet, MemberSummary } from '@/components/people/member-viewer'
+import type { CrmMemberDetail, Facet, MemberMessaging, MemberSummary } from '@/components/people/member-viewer'
 import type { ActionResult } from '@/lib/action-result'
 import {
   MEMBER_SORT_OPTIONS,
@@ -33,6 +33,7 @@ export function LeaderCrmViewer({
     title: 'No members match',
     description: 'Try a different search or clear the tier and lifecycle filters.',
   },
+  messaging,
 }: {
   /** The scope's roster (already gated + loaded by the host page). */
   members: MemberSummary[]
@@ -49,6 +50,10 @@ export function LeaderCrmViewer({
   searchPlaceholder?: string
   /** The no-results copy when a search/filter matches nobody. */
   noResults?: { title: string; description: string }
+  /** Messaging affordance override. Default: the big Message button bound to `openDm`. A host
+   *  page whose viewer has messaging locked (e.g. the ADR-836 post-event personal tier on
+   *  Message Attendees) passes `{ kind: 'none' }` so the roster stays readable, button-free. */
+  messaging?: MemberMessaging
 }) {
   if (members.length === 0) {
     return <EmptyState variant="first-use" title={empty.title} description={empty.description} />
@@ -59,7 +64,7 @@ export function LeaderCrmViewer({
       members={members}
       loadDetail={loadDetail}
       detailVariant="crm"
-      messaging={{ kind: 'dm', open: openDm, label: 'Message' }}
+      messaging={messaging ?? { kind: 'dm', open: openDm, label: 'Message' }}
       defaultView="list"
       pageSize={24}
       sortOptions={MEMBER_SORT_OPTIONS}

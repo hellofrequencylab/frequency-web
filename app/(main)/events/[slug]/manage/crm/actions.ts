@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { buildMemberDetail } from '@/lib/crm/member-detail'
 import { listEventCrmMemberIds } from '@/lib/events/crm-roster'
+import { loadEventCrmAccess, eventCrmLockedError } from '@/lib/events/crm-access'
 import { openScopedDm } from '@/lib/messages/scoped-dm'
 import { fail, type ActionResult } from '@/lib/action-result'
 import type { CrmMemberDetail } from '@/components/people/member-viewer'
@@ -58,6 +59,11 @@ export async function openEventAttendeeDm(slug: string, profileId: string): Prom
   let conversationId: string
   try {
     const event = await resolveManagedEvent(slug)
+    // The access-tier seam (ADR-836): after a personally-hosted event ends, a personal-tier
+    // viewer keeps the roster + metrics but free-form messaging locks (re-invite only). The
+    // refusal is a typed ActionResult so the pane renders it inline with the upsell line.
+    const access = await loadEventCrmAccess(event.id)
+    if (!access.canMessage) return fail(eventCrmLockedError())
     ;({ conversationId } = await openScopedDm({
       scope: { kind: 'event', id: event.id },
       targetProfileId: profileId,
