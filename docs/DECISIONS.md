@@ -15114,3 +15114,31 @@ This was introduced by the fix that made anonymous chat work at all: the 2026-07
 One residual risk is accepted and recorded rather than closed: an anonymous visitor can still open a *new* thread attached to someone else's contact card by typing their address, and post messages into it. That is spoofing, not disclosure — nothing is read back — and it is inherent to an unauthenticated chat widget that threads onto real contacts. The operator-visible cue is that the thread's channel is `in_app` with `source: support_chat`. Closing it would require verifying the address, which is decision (2)'s alternative above.
 
 The durable rule: **an unverified email may identify a counterparty for DELIVERY, but it may never key a thread that a capability token is then minted for.** Any new caller of `openOrGetConversation` whose email comes from an unauthenticated request needs `forceNew`.
+
+---
+
+## ADR-855 — A ticketed event's price lives on its tiers, so structured data must read the tier authority (2026-07-27)
+
+**Status.** Accepted.
+
+**Context.** The schema.org `Event` emitted by `lib/jsonld.eventSchema` priced its `Offer` from `events.price_cents`. A ticketed event does not store its price there: it prices on its ACTIVE TIERS in `event_ticket_types`, and `events.price_cents` stays null for those events. The result was that every tier-priced event published `isAccessibleForFree: true` with a `$0.00` offer, on both the canonical `/events/<slug>` page and `/discover/events/<slug>`, while the page itself rendered the real price.
+
+That is worse than a cosmetic bug. It is a Google structured-data mismatch (the markup contradicts the visible page, which is a manual-action risk for the whole property), it advertises paid events as free in rich results and to AI answer engines, and it is invisible from inside the code that emits it, because `price_cents` is a real column with a plausible value of null.
+
+**Decision.** `eventSchema` takes an optional `ticket_from_cents` supplied by the caller from the tier authority (`ticketFromPriceCents`, already the pricing function behind the Tickets rail), and prefers it over the column.
+
+The field is deliberately **three-state**, and the distinction is the whole point:
+
+| Value | Meaning | Behaviour |
+|---|---|---|
+| `undefined` | the caller supplied no tier data | fall back to `events.price_cents` (untiered events are unchanged) |
+| `null` | the event IS tiered and every active tier is free | free, and it must NOT fall through to the column |
+| number | the cheapest active tier's effective price | that price |
+
+A plain `??` collapses the middle case back onto `price_cents` and silently re-introduces the bug, so the code tests `!== undefined` explicitly and both callers spread the key in conditionally rather than passing it always.
+
+**Alternatives considered.** (1) *Have `eventSchema` read the tiers itself.* Rejected: `lib/jsonld` is a pure, dependency-light formatting module with no database access, and giving it one would make every JSON-LD call a query. (2) *Backfill `events.price_cents` from the tiers.* Rejected: it duplicates an authority instead of reading it, and the copy goes stale the moment a tier price changes. (3) *Only fix the canonical page.* Rejected: `/discover/events/<slug>` emits its own JSON-LD, and two surfaces publishing different prices for one event is the failure we are trying to remove.
+
+**Consequences.** `ticketFromPriceCents` now takes only the four pricing fields it reads rather than a whole `TierRow`, so any caller holding active tiers can reuse it; it is the one pricing authority for both surfaces. The `/discover` enrichment read is fail-soft by construction: no tiers, or a read the anon role cannot satisfy, simply omits the field and restores the previous `price_cents` behaviour rather than asserting a wrong price. Three tests in `lib/jsonld.test.ts` cover the three states; the two that describe the new behaviour were confirmed to FAIL against the pre-fix module.
+
+The durable rule: **structured data reads the same authority the page renders from.** If a price, date, or availability is computed for the UI, the JSON-LD takes that computed value, never a column that happens to sit nearby.

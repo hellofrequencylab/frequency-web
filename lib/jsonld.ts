@@ -104,6 +104,14 @@ type EventSchemaEnrichment = {
   category?: string | null
   region?: string | null
   country?: string | null
+  /** The cheapest ACTIVE ticket tier's effective price in cents, from the tier authority
+   *  (`event_ticket_types`, via lib/commerce/ticket-projection.ticketFromPriceCents).
+   *
+   *  THREE-STATE, and the distinction matters: `undefined` means "no tier data supplied" and
+   *  falls back to `events.price_cents`; `null` means "this event IS tiered and every active
+   *  tier is free"; a number is the from-price. A plain `??` would collapse the middle case
+   *  back onto `price_cents` and re-introduce the bug this field exists to fix. */
+  ticket_from_cents?: number | null
 }
 
 const ATTENDANCE_MODE_URL: Record<'in_person' | 'online' | 'hybrid', string> = {
@@ -144,6 +152,11 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
   const location =
     mode === 'online' ? virtual : mode === 'hybrid' ? [place, virtual] : place
 
+  // `undefined` = the caller supplied no tier data, so fall back to the event's own column.
+  // An explicit `null` means "tiered and free" and must NOT fall through to price_cents.
+  const priceCents =
+    event.ticket_from_cents !== undefined ? event.ticket_from_cents : event.price_cents ?? null
+
   return {
     '@context': 'https://schema.org',
     '@type': 'Event',
@@ -164,12 +177,16 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
     ...(event.circle_name
       ? { organizer: { '@type': 'Organization', name: event.circle_name } }
       : {}),
-    // Pricing from the public RPC (price_cents; null/0 = free). The offer URL is
-    // the public event page — tickets are bought there after sign-in.
-    isAccessibleForFree: !(event.price_cents && event.price_cents > 0),
+    // Pricing. A TICKETED event carries its price on its active tiers, not on events.price_cents
+    // (which stays null for them), so reading price_cents alone published "this event is free"
+    // for every tier-priced event — wrong in the rich result, and a Google structured-data
+    // mismatch against the page, which shows the real price. Prefer the tier authority whenever
+    // the caller supplied it; see the three-state note on `ticket_from_cents` above.
+    // The offer URL is the public event page — tickets are bought there after sign-in.
+    isAccessibleForFree: !(priceCents && priceCents > 0),
     offers: {
       '@type': 'Offer',
-      price: event.price_cents && event.price_cents > 0 ? (event.price_cents / 100).toFixed(2) : '0.00',
+      price: priceCents && priceCents > 0 ? (priceCents / 100).toFixed(2) : '0.00',
       priceCurrency: 'USD',
       availability: event.is_cancelled
         ? 'https://schema.org/SoldOut'

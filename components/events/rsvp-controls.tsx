@@ -28,6 +28,10 @@ import type { EventQuestion } from '@/lib/events/questions'
 
 const MAX_PLUS_ONES = 5
 
+// Shown when the RSVP write did not land. Plain and actionable: it says what happened and what
+// to do, without narrating how the member feels about it (docs/CONTENT-VOICE.md).
+const RSVP_SAVE_ERROR = 'We could not save your RSVP. Check your connection and try again.'
+
 type Status = 'going' | 'maybe' | 'waitlist' | 'not_going'
 
 export function RsvpControls({
@@ -87,6 +91,7 @@ export function RsvpControls({
 }) {
   const [pending, startTransition] = useTransition()
   const [names, setNames] = useState<string[]>(plusOneNames)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const current: Status = status ?? 'not_going'
   const isGoing = current === 'going'
   const isMaybe = current === 'maybe'
@@ -137,12 +142,20 @@ export function RsvpControls({
     })
 
   // Approval-required join → write a 'pending' RSVP through the depth layer.
+  // The depth action reports whether the row actually saved; a failed write must not leave the
+  // member looking at a confirmed state the host will never see.
   const requestToJoin = () =>
     startTransition(async () => {
-      const done = setEventRsvpDepth(eventId, slug ?? '', { status: 'going', approvalStatus: 'pending' })
-      if (!onRecorded) return
-      await done
-      onRecorded({ status: 'going', approvalStatus: 'pending' })
+      const res = await setEventRsvpDepth(eventId, slug ?? '', {
+        status: 'going',
+        approvalStatus: 'pending',
+      })
+      if (!res.ok) {
+        setSaveError(RSVP_SAVE_ERROR)
+        return
+      }
+      setSaveError(null)
+      onRecorded?.({ status: 'going', approvalStatus: 'pending' })
     })
 
   const setGuests = (n: number) =>
@@ -155,11 +168,12 @@ export function RsvpControls({
 
   // Save +1 names through the depth layer (keeps plus_ones in sync = names.length).
   const saveNames = (next: string[]) =>
-    startTransition(() => {
-      setEventRsvpDepth(eventId, slug ?? '', {
+    startTransition(async () => {
+      const res = await setEventRsvpDepth(eventId, slug ?? '', {
         status: 'going',
         plusOneNames: next.filter((n) => n.trim().length > 0),
       })
+      setSaveError(res.ok ? null : RSVP_SAVE_ERROR)
     })
 
   // The "Going" segment doubles as the waitlist CTA when the event is full and
@@ -221,6 +235,13 @@ export function RsvpControls({
 
   return (
     <div className="space-y-3">
+      {/* A failed RSVP write says so here rather than silently leaving the control looking saved.
+          role="alert" so it is announced the moment it appears. */}
+      {saveError && (
+        <p role="alert" className="text-sm text-danger">
+          {saveError}
+        </p>
+      )}
       {/* Segmented RSVP control: three equal columns, each an icon stacked OVER its label so
           the longest word ("Can't go") never wraps and the three read as one tidy switch. */}
       <div

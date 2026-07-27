@@ -8,6 +8,7 @@ import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { paletteDestinations, type NavViewer } from '@/lib/nav/registry'
 import { railIconFor } from '@/components/layout/nav-icons'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 
 // Live, full-screen search overlay. Opens from the header search affordance (and
 // ⌘K); types → debounced fetch to /api/search → results appear without a page
@@ -36,6 +37,7 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
   const [results, setResults] = useState<Results>(EMPTY)
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Focus the input on mount.
@@ -43,6 +45,13 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
     const t = setTimeout(() => inputRef.current?.focus(), 50)
     return () => clearTimeout(t)
   }, [])
+
+  // Keep Tab inside the palette and restore focus to the trigger on close. This overlay owns
+  // its backdrop, ESC and scroll-lock already but was not a dialog to assistive tech: Tab walked
+  // straight out into the page behind it, and closing dropped focus to <body> so a keyboard user
+  // restarted from the top of the document. The hook is purely additive alongside what is here —
+  // it respects the input's own mount focus above rather than stealing it.
+  useDialogFocusTrap(true, panelRef)
 
   // Esc closes + body scroll-lock while open. (Full-screen search palette keeps its
   // own mobile-fills-the-screen layout, which the centered ui/Dialog can't express.)
@@ -108,8 +117,17 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
       {/* Backdrop */}
       <div onClick={onClose} className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden />
 
-      {/* Panel */}
-      <div className="relative flex h-full w-full flex-col overflow-hidden bg-surface shadow-2xl sm:h-auto sm:max-h-[80vh] sm:w-full sm:max-w-xl sm:rounded-2xl sm:border sm:border-border">
+      {/* Panel. role/aria-modal name it as a modal dialog (the backdrop already hides the page
+          visually, but nothing told assistive tech this was a dialog); tabIndex={-1} gives the
+          focus trap somewhere to park focus when the panel holds no focusable yet. */}
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search"
+        tabIndex={-1}
+        className="relative flex h-full w-full flex-col overflow-hidden bg-surface shadow-2xl outline-none sm:h-auto sm:max-h-[80vh] sm:w-full sm:max-w-xl sm:rounded-2xl sm:border sm:border-border"
+      >
         {/* Search bar */}
         <div
           className="flex shrink-0 items-center gap-2 border-b border-border px-3"

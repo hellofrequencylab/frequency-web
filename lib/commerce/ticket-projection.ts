@@ -58,8 +58,14 @@ type EventRow = {
  * buyer-chosen mode (pwyc / sliding_scale / donation) uses `suggested_cents` then `min_cents`; a
  * `free` tier contributes nothing. The "from" price is the minimum positive effective price across
  * the active tiers. PURE — the unit under test.
+ *
+ * Takes only the PRICING fields it actually reads (not the whole `TierRow`), so any caller holding
+ * active tiers can reuse it as the one pricing authority — the event Detail page passes its own
+ * tier rows straight in to price the page's JSON-LD.
  */
-export function ticketFromPriceCents(tiers: TierRow[]): number | null {
+export function ticketFromPriceCents(
+  tiers: Pick<TierRow, 'pricing_mode' | 'price_cents' | 'min_cents' | 'suggested_cents'>[],
+): number | null {
   const priced = tiers
     .map((t) =>
       t.pricing_mode === 'free' ? 0 : t.price_cents ?? t.suggested_cents ?? t.min_cents ?? 0,

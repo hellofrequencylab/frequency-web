@@ -13,8 +13,12 @@ function MessageBubbleSkeleton({ align }: { align: 'left' | 'right' }) {
 }
 
 export default function ConversationLoading() {
+  // Bleed the chat surface to the shell's edges. The negative margin must MIRROR the shell's
+  // responsive padding (px-4 sm:px-6 lg:px-8); a flat -mx-6 over-pulled on mobile (bleeding 8px
+  // past the viewport and causing a horizontal scroll) and under-pulled at lg. dvh, not vh, so
+  // the iOS dynamic toolbar does not push the composer off-screen.
   return (
-    <div className="-mx-6 -my-6 flex flex-col h-[calc(100vh-3.5rem)]">
+    <div className="-mx-4 -my-6 sm:-mx-6 lg:-mx-8 flex flex-col h-[calc(100dvh-3.5rem)]">
       {/* Header */}
       <header className="shrink-0 flex items-center gap-3 px-5 py-3 border-b border-border bg-surface">
         <Skeleton className="w-9 h-9 rounded-full shrink-0" />
