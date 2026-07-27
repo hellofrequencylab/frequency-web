@@ -73,12 +73,26 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
   const hubIds    = mems.map((m) => m.circles?.hub_id).filter((x): x is string => !!x)
   const nexusIds  = mems.map((m) => m.circles?.hubs?.nexus_id).filter((x): x is string => !!x)
 
+  // Space Dispatches (ADR-858) reach a Space's ACTIVE members plus its owner
+  // (who holds no space_members row), so both reads feed the id set.
+  const spaceIdSet = new Set<string>()
+  {
+    const [{ data: sm }, { data: owned }] = await Promise.all([
+      admin.from('space_members').select('space_id').eq('profile_id', profileId).eq('status', 'active'),
+      admin.from('spaces').select('id').eq('owner_profile_id', profileId),
+    ])
+    for (const r of (sm ?? []) as { space_id: string }[]) spaceIdSet.add(r.space_id)
+    for (const s of (owned ?? []) as { id: string }[]) spaceIdSet.add(s.id)
+  }
+  const spaceIds = [...spaceIdSet]
+
   // ── Recent dispatches reaching this user ───────────────────────────
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const filters: string[] = []
   if (circleIds.length)  filters.push(`and(audience_scope.eq.circle,audience_id.in.(${circleIds.join(',')}))`)
   if (hubIds.length)     filters.push(`and(audience_scope.eq.hub,audience_id.in.(${hubIds.join(',')}))`)
   if (nexusIds.length)   filters.push(`and(audience_scope.eq.nexus,audience_id.in.(${nexusIds.join(',')}))`)
+  if (spaceIds.length)   filters.push(`and(audience_scope.eq.space,audience_id.in.(${spaceIds.join(',')}))`)
 
   let dispatches: DigestDispatch[] = []
   if (filters.length) {

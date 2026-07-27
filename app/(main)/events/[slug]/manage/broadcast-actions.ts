@@ -7,7 +7,6 @@ import { getMyProfileId } from '@/lib/auth'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
 import { rateLimitOk } from '@/lib/rate-limit'
-import { isBlockedBetween } from '@/lib/blocking'
 import { shouldSend } from '@/lib/notification-preferences'
 import { sendEventUpdateEmail } from '@/lib/email'
 import { composeEventDispatch } from '@/lib/events/dispatch'
@@ -20,7 +19,7 @@ import {
 import { resolveEventBroadcastAudience } from '@/lib/events/broadcast-audience'
 import { sendSpaceCampaignSystem } from '@/lib/spaces/email'
 import { renderCampaignHtml } from '@/lib/spaces/campaigns'
-import { openOrGetConversation, appendConversationMessage } from '@/lib/comms/conversations'
+import { sendBulkDm, resolveDmRecipients } from '@/lib/comms/bulk-dm'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import type {
   BroadcastChannelKey,
@@ -58,10 +57,6 @@ import type {
 const MAX_SUBJECT = 200
 const MAX_BODY = 5000
 
-/** Direct Messages write 2+ rows per recipient in one request, so the blast is bounded.
- *  Refuse-first past the cap: the composer tells the host to use Email or a Dispatch. */
-const DM_BLAST_CAP = 300
-
 const CHANNEL_ORDER: readonly BroadcastChannelKey[] = ['email', 'dm', 'dispatch', 'sms']
 
 interface ManagedEvent {
@@ -88,34 +83,6 @@ async function resolveManagedEvent(slug: string): Promise<ManagedEvent | null> {
   const caps = await getEventCapabilities(ev.id)
   if (!caps.has('event.editSettings')) return null
   return { id: ev.id, title: ev.title, slug: ev.slug, hostSpaceId: ev.host_space_id ?? ev.space_id ?? null }
-}
-
-/** display name + auth email per audience member (the Event Dispatch email lane's shape:
- *  profiles -> auth record, lib/events/dispatch.ts fanOutEventEmail). Best-effort per row. */
-async function resolveRecipients(
-  profileIds: string[],
-): Promise<Map<string, { displayName: string; email: string | null }>> {
-  const out = new Map<string, { displayName: string; email: string | null }>()
-  if (profileIds.length === 0) return out
-  const admin = createAdminClient()
-  const { data } = await admin
-    .from('profiles')
-    .select('id, display_name, auth_user_id')
-    .in('id', profileIds)
-  const rows = (data ?? []) as { id: string; display_name: string | null; auth_user_id: string | null }[]
-  for (const p of rows) {
-    let email: string | null = null
-    if (p.auth_user_id) {
-      try {
-        const { data: u } = await admin.auth.admin.getUserById(p.auth_user_id)
-        email = u?.user?.email?.trim().toLowerCase() ?? null
-      } catch {
-        email = null
-      }
-    }
-    out.set(p.id, { displayName: p.display_name ?? 'there', email })
-  }
-  return out
 }
 
 function people(n: number): string {
@@ -347,83 +314,26 @@ async function sendDmChannel(args: {
   if (eligible.length === 0) {
     return { channel: 'dm', ok: false, detail: 'No one in this audience can receive a Direct Message (it reaches people going or maybe).' }
   }
-  if (eligible.length > DM_BLAST_CAP) {
-    return {
-      channel: 'dm',
-      ok: false,
-      detail: `That is too many people for Direct Messages (limit ${DM_BLAST_CAP}). Use Email or a Dispatch for a list this size.`,
-    }
-  }
 
-  // Shared abuse buckets (the scoped-DM lane's per-minute token, drawn once per blast, plus
-  // a broadcast bucket so a host cannot loop blasts). Fail-closed in production when
-  // unconfigured (lib/rate-limit).
-  if (!(await rateLimitOk('event-broadcast:dm', actorId, 10, '1 h'))) {
-    return { channel: 'dm', ok: false, detail: 'You have sent a lot of messages recently. Try again in a bit.' }
-  }
-  if (!(await rateLimitOk('scoped-dm:msg', actorId, 20, '1 m'))) {
-    return { channel: 'dm', ok: false, detail: 'Slow down a little. Try again in a minute.' }
-  }
-
-  const threadSubject = args.subject || event.title
-  let sent = 0
-  let skipped = outsideAudience
-  for (const profileId of eligible) {
-    try {
-      // Block gate, both directions, per recipient (parity with openScopedDm).
-      if (await isBlockedBetween(actorId, profileId)) {
-        skipped++
-        continue
-      }
-      const email = args.recipients.get(profileId)?.email
-      if (!email) {
-        skipped++ // the spine threads by counterpart address; no address, no thread.
-        continue
-      }
-      // The spine, scoped: an in-app CRM conversation in THIS event's lane (an event thread
-      // never absorbs an unrelated exchange with the same person, ADR-831).
-      const conv = await openOrGetConversation({
-        kind: 'crm',
-        channel: 'in_app',
-        externalEmail: email,
-        ownerProfileId: actorId,
-        subject: threadSubject,
-        memberProfileId: profileId,
-        spaceId: event.hostSpaceId,
-        scopeKind: 'event',
-        scopeId: event.id,
-        metadata,
-      })
-      if (!conv) {
-        skipped++
-        continue
-      }
-      const appended = await appendConversationMessage({
-        conversationId: conv.id,
-        direction: 'outbound',
-        authorKind: 'leader',
-        authorId: actorId,
-        channel: 'in_app',
-        body,
-        mirror: {
-          ownerProfileId: actorId,
-          subjectKind: 'profile',
-          subjectId: profileId,
-          spaceId: event.hostSpaceId,
-          subject: threadSubject,
-          scope: { kind: 'event', id: event.id },
-        },
-      })
-      if (appended && 'id' in appended) sent++
-      else skipped++
-    } catch {
-      skipped++
-    }
-  }
-
-  let detail = `Delivered to ${people(sent)} in their Frequency inbox.`
-  if (skipped > 0) detail += ` ${skipped} skipped (not going or maybe, blocked, or unreachable).`
-  return { channel: 'dm', ok: sent > 0, detail }
+  // The shared bulk-DM loop (lib/comms/bulk-dm): cap refuse-first, the shared abuse buckets, the
+  // per-recipient block check, the email-keyed thread open + append, and the skip counting — one
+  // implementation across the broadcast lanes.
+  const res = await sendBulkDm({
+    actorId,
+    recipientProfileIds: eligible,
+    subject: args.subject || event.title,
+    body,
+    spaceId: event.hostSpaceId,
+    scope: { kind: 'event', id: event.id },
+    bucket: 'event-broadcast',
+    metadata,
+    recipients: args.recipients,
+    scopeOnMirror: true,
+    presetSkipped: outsideAudience,
+    skippedReason: 'not going or maybe, blocked, or unreachable',
+    capAlternative: 'Use Email or a Dispatch for a list this size.',
+  })
+  return { channel: 'dm', ok: res.sent > 0, detail: res.detail }
 }
 
 // ── The action ──────────────────────────────────────────────────────────────────────────
@@ -470,7 +380,7 @@ export async function sendEventBroadcast(
 
   // Emails + names are needed by both the email lane and the DM thread keys.
   const needsRecipients = channels.includes('email') || channels.includes('dm')
-  const recipients = needsRecipients ? await resolveRecipients(audience) : new Map<string, { displayName: string; email: string | null }>()
+  const recipients = needsRecipients ? await resolveDmRecipients(audience) : new Map<string, { displayName: string; email: string | null }>()
 
   const results: BroadcastChannelResult[] = []
   let dispatched = false
@@ -585,7 +495,7 @@ export async function sendEventReinvite(
     .join('\n\n')
     .slice(0, MAX_BODY)
 
-  const recipients = await resolveRecipients(audience)
+  const recipients = await resolveDmRecipients(audience)
   const result = await sendDmChannel({
     event,
     actorId,

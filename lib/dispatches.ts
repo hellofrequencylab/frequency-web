@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // Recent dispatches relevant to a member — their own, plus anything published to a
-// circle / hub / nexus they belong to. Shared by the right-rail "Dispatches"
+// circle / hub / nexus / Space they belong to. Shared by the right-rail "Dispatches"
 // widget and the community news ticker so the query lives in exactly one place.
 
 export type RecentDispatch = {
@@ -45,6 +45,19 @@ export async function getRecentDispatchesForProfile(
     nexusIds = (hubs ?? []).map((h: { nexus_id: string | null }) => h.nexus_id).filter(Boolean) as string[]
   }
 
+  // Space Dispatches (ADR-858) reach a Space's ACTIVE members plus its owner (who
+  // holds no space_members row), so both reads feed the id set.
+  const spaceIdSet = new Set<string>()
+  {
+    const [{ data: sm }, { data: owned }] = await Promise.all([
+      admin.from('space_members').select('space_id').eq('profile_id', profileId).eq('status', 'active'),
+      admin.from('spaces').select('id').eq('owner_profile_id', profileId),
+    ])
+    for (const r of (sm ?? []) as { space_id: string }[]) spaceIdSet.add(r.space_id)
+    for (const s of (owned ?? []) as { id: string }[]) spaceIdSet.add(s.id)
+  }
+  const spaceIds = [...spaceIdSet]
+
   const select = `id, title, audience_scope, published_at,
     author:profiles!author_id ( display_name ),
     linked_task:crew_tasks!linked_task_id ( id )`
@@ -72,6 +85,9 @@ export async function getRecentDispatchesForProfile(
       .order('published_at', { ascending: false }).limit(limit) as unknown as Promise<{ data: Row[] | null }>)
   if (nexusIds.length > 0)
     promises.push(base().eq('audience_scope', 'nexus').in('audience_id', nexusIds)
+      .order('published_at', { ascending: false }).limit(limit) as unknown as Promise<{ data: Row[] | null }>)
+  if (spaceIds.length > 0)
+    promises.push(base().eq('audience_scope', 'space').in('audience_id', spaceIds)
       .order('published_at', { ascending: false }).limit(limit) as unknown as Promise<{ data: Row[] | null }>)
 
   const results = await Promise.all(promises)

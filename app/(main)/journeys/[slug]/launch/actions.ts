@@ -9,7 +9,7 @@
 //                      delivers them with its kill-switch, cap, consent, and unsubscribe intact.
 //   Build the funnel → the Growth OS builder (app/(main)/admin/growth/funnels/actions.ts):
 //                      createFunnel + addStageLink with the real 'campaign' StageRefType.
-//   Message enrollees→ the comms spine (openOrGetConversation + appendConversationMessage), the
+//   Message enrollees→ the shared bulk-DM loop over the comms spine (lib/comms/bulk-dm), the
 //                      same operator-DM lane the event broadcast uses.
 //
 // AUTHORIZATION IS RE-CHECKED HERE, ALWAYS. Every action re-resolves the launch context
@@ -24,10 +24,7 @@ import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { ok, fail, isError, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { rateLimitOk } from '@/lib/rate-limit'
-import { isBlockedBetween } from '@/lib/blocking'
-import { openOrGetConversation, appendConversationMessage } from '@/lib/comms/conversations'
-import type { InteractionScopeRef } from '@/lib/crm/interactions'
+import { sendBulkDm } from '@/lib/comms/bulk-dm'
 import { createSpaceCampaign, scheduleSpaceCampaign, parseScheduleTime } from '@/lib/spaces/campaigns'
 import { createFunnel, addStageLink } from '@/app/(main)/admin/growth/funnels/actions'
 import { getFunnel } from '@/lib/funnels/store'
@@ -61,9 +58,9 @@ const JOURNEY_COMMS_SCOPE_LIVE = true
 /** The comms scope fields for a Journey thread. ONE place decides, so no call site invents its
  *  own lane tag. Returns `undefined` if the lane is ever switched back off, which degrades to an
  *  unscoped conversation rather than a failed send. */
-function journeyCommsScope(planId: string): { scopeKind: InteractionScopeRef['kind']; scopeId: string } | undefined {
+function journeyCommsScope(planId: string): { kind: 'journey'; id: string } | undefined {
   if (!JOURNEY_COMMS_SCOPE_LIVE) return undefined
-  return { scopeKind: 'journey', scopeId: planId }
+  return { kind: 'journey', id: planId }
 }
 
 // ── Shared gate ─────────────────────────────────────────────────────────────────────────────────
@@ -220,10 +217,6 @@ export async function buildLaunchFunnelAction(
 
 // ── Message enrollees ───────────────────────────────────────────────────────────────────────────
 
-/** Direct Messages write rows per recipient in one request, so the blast is bounded (the event
- *  broadcast's cap, same reason). */
-const DM_BLAST_CAP = 300
-
 /** The enrollee segments the composer offers. Resolved server-side from the segment KEYS the
  *  client picked; the client's own profile ids are display-only and never trusted. */
 type EnrolleeSegmentKey = 'all' | 'in_progress' | 'finished'
@@ -249,30 +242,6 @@ async function resolveEnrolleeAudience(planId: string, segments: string[]): Prom
     else if (!finished && keys.includes('in_progress')) out.add(row.profile_id)
   }
   return [...out]
-}
-
-/** display name + auth email per recipient (the spine threads by counterpart address, so a member
- *  with no address cannot be threaded). Best-effort per row. */
-async function resolveRecipientEmails(profileIds: string[]): Promise<Map<string, string>> {
-  const out = new Map<string, string>()
-  if (profileIds.length === 0) return out
-  const admin = createAdminClient()
-  const { data } = await admin.from('profiles').select('id, auth_user_id').in('id', profileIds)
-  for (const p of (data ?? []) as { id: string; auth_user_id: string | null }[]) {
-    if (!p.auth_user_id) continue
-    try {
-      const { data: u } = await admin.auth.admin.getUserById(p.auth_user_id)
-      const email = u?.user?.email?.trim().toLowerCase()
-      if (email) out.set(p.id, email)
-    } catch {
-      // no address resolved; the recipient is counted as skipped below.
-    }
-  }
-  return out
-}
-
-function people(n: number): string {
-  return `${n} ${n === 1 ? 'person' : 'people'}`
 }
 
 /**
@@ -317,80 +286,22 @@ export async function sendJourneyBroadcastAction(
     results.push({ channel: 'dm', ok: false, detail: 'No one in that audience yet.' })
     return ok({ results })
   }
-  if (eligible.length > DM_BLAST_CAP) {
-    results.push({
-      channel: 'dm',
-      ok: false,
-      detail: `That is too many people for Direct Messages (limit ${DM_BLAST_CAP}). Use a launch campaign for a list this size.`,
-    })
-    return ok({ results })
-  }
 
-  // Shared abuse buckets (the scoped-DM lane's per-minute token, drawn once per blast, plus a
-  // per-hour broadcast bucket). Fail-closed in production when unconfigured (lib/rate-limit).
-  if (!(await rateLimitOk('journey-broadcast:dm', ctx.viewerId, 10, '1 h'))) {
-    results.push({ channel: 'dm', ok: false, detail: 'You have sent a lot of messages recently. Try again in a bit.' })
-    return ok({ results })
-  }
-  if (!(await rateLimitOk('scoped-dm:msg', ctx.viewerId, 20, '1 m'))) {
-    results.push({ channel: 'dm', ok: false, detail: 'Slow down a little. Try again in a minute.' })
-    return ok({ results })
-  }
-
-  const emails = await resolveRecipientEmails(eligible)
-  const scope = journeyCommsScope(planId)
-  let sent = 0
-  let skipped = 0
-  for (const profileId of eligible) {
-    try {
-      if (await isBlockedBetween(ctx.viewerId, profileId)) {
-        skipped++
-        continue
-      }
-      const email = emails.get(profileId)
-      if (!email) {
-        skipped++
-        continue
-      }
-      const conv = await openOrGetConversation({
-        kind: 'crm',
-        channel: 'in_app',
-        externalEmail: email,
-        ownerProfileId: ctx.viewerId,
-        subject,
-        memberProfileId: profileId,
-        spaceId: ctx.spaceId,
-        ...scope,
-        metadata: { kind: 'journey_broadcast', journey_plan_id: planId },
-      })
-      if (!conv) {
-        skipped++
-        continue
-      }
-      const appended = await appendConversationMessage({
-        conversationId: conv.id,
-        direction: 'outbound',
-        authorKind: 'leader',
-        authorId: ctx.viewerId,
-        channel: 'in_app',
-        body,
-        mirror: {
-          ownerProfileId: ctx.viewerId,
-          subjectKind: 'profile',
-          subjectId: profileId,
-          spaceId: ctx.spaceId,
-          subject,
-        },
-      })
-      if (appended && 'id' in appended) sent++
-      else skipped++
-    } catch {
-      skipped++
-    }
-  }
-
-  let detail = `Delivered to ${people(sent)} in their Frequency inbox.`
-  if (skipped > 0) detail += ` ${skipped} skipped (blocked or unreachable).`
-  results.push({ channel: 'dm', ok: sent > 0, detail })
+  // The shared bulk-DM loop (lib/comms/bulk-dm): cap refuse-first, the shared abuse buckets, the
+  // per-recipient block check, the email-keyed thread open + append, and the skip counting — one
+  // implementation across the broadcast lanes. The journey mirror stays UNSCOPED (no scopeOnMirror)
+  // until its read side migrates, matching the lane as it shipped.
+  const res = await sendBulkDm({
+    actorId: ctx.viewerId,
+    recipientProfileIds: eligible,
+    subject,
+    body,
+    spaceId: ctx.spaceId,
+    scope: journeyCommsScope(planId) ?? null,
+    bucket: 'journey-broadcast',
+    metadata: { kind: 'journey_broadcast', journey_plan_id: planId },
+    capAlternative: 'Use a launch campaign for a list this size.',
+  })
+  results.push({ channel: 'dm', ok: res.sent > 0, detail: res.detail })
   return ok({ results })
 }
