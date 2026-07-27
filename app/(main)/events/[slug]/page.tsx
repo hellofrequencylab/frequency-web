@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/server'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { ticketFromPriceCents } from '@/lib/commerce/ticket-projection'
 import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
 import { TicketButton, type TicketTierView } from './ticket-button'
@@ -1525,6 +1526,11 @@ export default async function EventDetailPage({
     circle_id: event.scope_id ?? null,
     circle_name: scopeName,
     price_cents: event.price_cents,
+    // A ticketed event prices on its ACTIVE TIERS, not events.price_cents (null for them), so
+    // passing only the column published "free" for every tier-priced event. Supplied only when
+    // the event actually has tiers: `undefined` keeps the price_cents fallback for untiered
+    // events, while an explicit null here correctly means "tiered and genuinely free".
+    ...(hasTiers ? { ticket_from_cents: ticketFromPriceCents(tierRows) } : {}),
     attendance_mode: attendanceMode,
     is_cancelled: event.is_cancelled,
     region: extra?.region ?? null,

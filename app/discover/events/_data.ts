@@ -24,12 +24,20 @@ import type { PublicEvent } from '@/lib/discover'
 // Privacy-safe enrichment fields layered onto a PublicEvent for the schema.org
 // Event and the OG image. attendance_mode + is_cancelled drive eventAttendanceMode
 // + eventStatus; region/country round out the city-level Place.
+// The ONE ticket pricing authority, reused so this surface and the canonical /events/<slug> page
+// can never publish two different prices for the same event.
+import { ticketFromPriceCents } from '@/lib/commerce/ticket-projection'
+
 export type EventEnrichment = {
   attendance_mode: 'in_person' | 'online' | 'hybrid'
   is_cancelled: boolean
   category: string
   region: string | null
   country: string | null
+  /** Cheapest active ticket tier in cents, or null when the event is tiered and free. ABSENT
+   *  (undefined) when the event has no tiers, which is what keeps eventSchema falling back to
+   *  events.price_cents. See the three-state note in lib/jsonld.ts. */
+  ticket_from_cents?: number | null
 }
 
 export type EnrichedPublicEvent = PublicEvent & EventEnrichment
@@ -88,7 +96,7 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
   const supabase = createPublicClient()
   const { data } = await supabase
     .from('events')
-    .select('attendance_mode, is_cancelled, category, region, country')
+    .select('id, attendance_mode, is_cancelled, category, region, country')
     .eq('slug', slug)
     .limit(1)
     .maybeSingle()
@@ -96,13 +104,27 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
   const r = data as unknown as Pick<
     SafeEventRow,
     'attendance_mode' | 'is_cancelled' | 'category' | 'region' | 'country'
-  >
+  > & { id: string }
+
+  // A ticketed event prices on its ACTIVE TIERS, not events.price_cents (null for them), so the
+  // schema.org Offer published "free" for every tier-priced event. The tier read is anon-safe:
+  // event_ticket_types' SELECT policy scopes rows to events the caller can already see, and this
+  // returns only an aggregate price. FAIL-SOFT — no tiers (or an unreadable read) simply omits the
+  // field, which restores the events.price_cents fallback rather than asserting a wrong price.
+  const { data: tierRows } = await supabase
+    .from('event_ticket_types')
+    .select('pricing_mode, price_cents, min_cents, suggested_cents')
+    .eq('event_id', r.id)
+    .eq('active', true)
+  const tiers = (tierRows ?? []) as unknown as Parameters<typeof ticketFromPriceCents>[0]
+
   return {
     attendance_mode: normalizeMode(r.attendance_mode),
     is_cancelled: r.is_cancelled ?? false,
     category: r.category ?? 'gathering',
     region: r.region,
     country: r.country,
+    ...(tiers.length > 0 ? { ticket_from_cents: ticketFromPriceCents(tiers) } : {}),
   }
 }
 

@@ -123,6 +123,31 @@ describe('eventSchema', () => {
     expect(result.offers).toMatchObject({ '@type': 'Offer', price: '25.00', priceCurrency: 'USD' })
   })
 
+  // Pricing authority (meta-scan): a TICKETED event carries its price on its active tiers, so
+  // events.price_cents stays null for them. Reading only that column published
+  // isAccessibleForFree: true for every tier-priced event — a wrong rich result and a
+  // structured-data mismatch against the page, which shows the real price.
+  it('prices a tier-priced event from the tier authority, not the null price_cents column', () => {
+    const result = eventSchema({ ...makeEvent({ price_cents: null }), ticket_from_cents: 2500 })
+    expect(result.isAccessibleForFree).toBe(false)
+    expect(result.offers).toMatchObject({ price: '25.00' })
+  })
+
+  it('treats a tiered event whose tiers are all free as free', () => {
+    // The three-state contract: an explicit null means "tiered and free" and must NOT fall
+    // through to price_cents. A plain `??` here would republish the stale column.
+    const result = eventSchema({ ...makeEvent({ price_cents: 9900 }), ticket_from_cents: null })
+    expect(result.isAccessibleForFree).toBe(true)
+    expect(result.offers).toMatchObject({ price: '0.00' })
+  })
+
+  it('falls back to price_cents when no tier data is supplied', () => {
+    // undefined = "caller supplied no tiers" — the untiered path stays exactly as it was.
+    const result = eventSchema(makeEvent({ price_cents: 1500 }))
+    expect(result.isAccessibleForFree).toBe(false)
+    expect(result.offers).toMatchObject({ price: '15.00' })
+  })
+
   it('includes endDate when ends_at is provided', () => {
     const result = eventSchema(makeEvent({ ends_at: '2026-07-01T21:00:00Z' }))
     expect(result).toHaveProperty('endDate', '2026-07-01T21:00:00Z')
