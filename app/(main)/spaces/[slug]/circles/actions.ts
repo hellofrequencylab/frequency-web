@@ -15,6 +15,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { ok, fail, isError, type ActionResult } from '@/lib/action-result'
 import { createBlankCircleDraft } from '@/lib/circles/draft'
 import { transferCircle, type TransferTarget } from '@/lib/circles/transfer'
+import { listCirclesHostedBy } from '@/lib/circles/store'
 import { offerCircleToPerson, cancelCircleOffer } from '@/lib/circles/handoff'
 import { listManagedSpaces } from '@/lib/spaces/managed'
 import type { RunEndState } from '@/lib/journeys/runs'
@@ -136,6 +137,47 @@ export async function listTransferTargetsAction(
     mine
       .filter((s) => s.id !== gate.spaceId && s.type !== 'root')
       .map((s) => ({ id: s.id, name: s.name, slug: s.slug })),
+  )
+}
+
+/**
+ * Attach a Circle to this Space (ADR-857): the inbound twin of transferSpaceCircleAction. The
+ * caller must edit THIS Space (the destination) and hold authority over the circle's source —
+ * host of a personal Circle, or steward of the Space that owns it today. Both facts are the
+ * transfer gate's to decide (lib/circles/transfer, ADR-843); this surface adds nothing to it.
+ * On success the circle's events land on this Space's calendar too (the transfer restamps them).
+ */
+export async function attachCircleToSpaceAction(
+  slug: string,
+  circleId: string,
+): Promise<ActionResult<void>> {
+  const gate = await requireSpaceEditor(slug)
+  if (typeof gate === 'string') return fail(gate)
+
+  const res = await transferCircle(circleId, { kind: 'space', spaceId: gate.spaceId }, gate.profileId)
+  if (!res.ok) return fail(res.reason || 'Could not attach that circle.')
+
+  revalidatePath(`/spaces/${slug}/circles`)
+  if (res.slug) revalidatePath(`/circles/${res.slug}`)
+  return ok()
+}
+
+/**
+ * The Circles this caller could attach to this Space: ones they HOST that do not already live
+ * here. The transfer gate remains the authority on the write; this read only shapes the picker,
+ * mirroring listTransferTargetsAction's contract of never offering what the gate would refuse.
+ */
+export async function listAttachableCirclesAction(
+  slug: string,
+): Promise<ActionResult<{ id: string; name: string; slug: string }[]>> {
+  const gate = await requireSpaceEditor(slug)
+  if (typeof gate === 'string') return fail(gate)
+
+  const circles = await listCirclesHostedBy(gate.profileId)
+  return ok(
+    circles
+      .filter((c) => c.space_id !== gate.spaceId)
+      .map((c) => ({ id: c.id, name: c.name, slug: c.slug })),
   )
 }
 

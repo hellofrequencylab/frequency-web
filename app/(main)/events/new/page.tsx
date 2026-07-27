@@ -6,6 +6,7 @@ import { EventSpark } from '../event-spark'
 import { getViewerHome } from '../admin-actions'
 import type { EventFormInitial } from './event-form'
 import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 // Build a prefill from a SOURCE event for the Duplicate flow: clone every field the
 // create form sets EXCEPT the date (the new copy defaults to the active day, PART 2) and
@@ -97,14 +98,15 @@ export default async function NewEventPage({
   // places instantly, so it must be one they control; never "circles I'm merely a member of").
   // The server re-validates ownership again in createEvent, so this list is a convenience only.
 
-  // Circles the caller HOSTS (host_id = them).
+  // Circles the caller HOSTS (host_id = them). space_id rides along so the option label can say
+  // when a circle's event will land on a Space calendar too (ADR-857).
   const { data: hostedCircles } = await admin
     .from('circles')
-    .select('id, name')
+    .select('id, name, space_id')
     .eq('host_id', profile.id)
     .neq('status', 'archived')
     .order('name', { ascending: true })
-  const circles = (hostedCircles ?? []) as { id: string; name: string }[]
+  const circles = (hostedCircles ?? []) as { id: string; name: string; space_id: string | null }[]
 
   // Spaces the caller RUNS: the owner, plus any space where they are an ACTIVE admin member.
   const { data: ownedSpaces } = await admin
@@ -144,10 +146,36 @@ export default async function NewEventPage({
     .map(([id, name]) => ({ id, name }))
     .sort((a, b) => a.name.localeCompare(b.name))
 
+  // A circle that lives in a Space places its events on that Space's calendar too (ADR-857) —
+  // say so in the option label, or the dual placement is invisible at the exact moment the host
+  // chooses it. Root = a personal circle, which keeps the plain label. Batched name lookup for
+  // owning spaces the caller does NOT run (a hosted circle can live in someone else's Space).
+  const root = await loadRootSpaceId()
+  const owningSpaceIds = [
+    ...new Set(
+      circles
+        .map((c) => c.space_id)
+        .filter((sid): sid is string => !!sid && sid !== root && !spaceById.has(sid)),
+    ),
+  ]
+  if (owningSpaceIds.length > 0) {
+    const { data: owningSpaces } = await admin
+      .from('spaces')
+      .select('id, name, brand_name')
+      .in('id', owningSpaceIds)
+    for (const s of (owningSpaces ?? []) as { id: string; name: string | null; brand_name: string | null }[]) {
+      spaceById.set(s.id, spaceName(s))
+    }
+  }
+  const circleLabel = (c: { name: string; space_id: string | null }) => {
+    const owner = c.space_id && c.space_id !== root ? spaceById.get(c.space_id) : null
+    return owner ? `In ${c.name} (circle in ${owner})` : `In ${c.name} (circle you host)`
+  }
+
   // Grouped, labeled scope options for the form: circles you host, then spaces you run. `kind`
   // lets the form encode each option's target type without a second lookup on submit.
   const scopeOptions = [
-    ...circles.map((c) => ({ id: c.id, name: c.name, kind: 'circle' as const, label: `In ${c.name} (circle you host)` })),
+    ...circles.map((c) => ({ id: c.id, name: c.name, kind: 'circle' as const, label: circleLabel(c) })),
     ...spaces.map((s) => ({ id: s.id, name: s.name, kind: 'space' as const, label: `In ${s.name} (space you run)` })),
   ]
 

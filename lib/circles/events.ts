@@ -10,6 +10,7 @@
 // invoking, so the Host-ownership gate lives at the call site.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { spaceIdForCircle } from '@/lib/circles/store'
 
 /** A sensible default start for a generated event when the Host gives no date:
  *  N days out at a fixed hour (Meetup midweek evening, Gathering weekend late
@@ -44,6 +45,9 @@ export interface GeneratedEvents {
 
 export async function generateCircleEvents(input: GenerateEventsInput): Promise<GeneratedEvents> {
   const admin = createAdminClient()
+  // A circle's events belong to the circle's Space too (ADR-857) — derive once for both writes.
+  // Null (personal circle / any miss) omits the stamp, and the insert default keeps root.
+  const circleSpaceId = await spaceIdForCircle(input.circleId)
 
   const make = async (kind: 'meetup' | 'gathering', title: string, startsAt: string, description: string): Promise<string | null> => {
     const { data, error } = await admin
@@ -56,6 +60,7 @@ export async function generateCircleEvents(input: GenerateEventsInput): Promise<
         starts_at: new Date(startsAt).toISOString(),
         host_id: input.hostId,
         slug: eventSlug(kind, input.circleId),
+        ...(circleSpaceId ? { space_id: circleSpaceId } : {}),
         // space_id is trigger-defaulted and reads as required in the generated
         // types (ADR-246); cast past it like the other circle/event writes.
       } as never)

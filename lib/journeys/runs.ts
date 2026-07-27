@@ -5,6 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { spaceIdForCircle } from '@/lib/circles/store'
 import { buildJourneyTree, type BlockRow } from './tree'
 import { aggregateCohort, type MemberCompletion, type CohortProgress } from './cohort'
 
@@ -104,6 +105,8 @@ export async function scheduleKickoff(input: {
 }): Promise<string | null> {
   const admin = db()
   const slug = `kickoff-${input.runId.slice(0, 8)}-${Math.random().toString(36).slice(2, 6)}`
+  // A circle's events belong to the circle's Space too (ADR-857).
+  const kickoffSpaceId = await spaceIdForCircle(input.circleId)
   const { data, error } = await admin
     .from('events')
     .insert({
@@ -114,6 +117,7 @@ export async function scheduleKickoff(input: {
       starts_at: new Date(input.startsAt).toISOString(),
       host_id: input.hostId,
       slug,
+      ...(kickoffSpaceId ? { space_id: kickoffSpaceId } : {}),
     })
     .select('id')
     .maybeSingle()
@@ -169,6 +173,8 @@ export async function setPhaseEvent(input: {
 }): Promise<string | null> {
   const admin = db()
   const slug = `${input.kind}-${input.runId.slice(0, 8)}-${input.phaseId.slice(0, 8)}-${Math.random().toString(36).slice(2, 5)}`
+  // A circle's events belong to the circle's Space too (ADR-857).
+  const phaseSpaceId = await spaceIdForCircle(input.circleId)
   const { data, error } = await admin
     .from('events')
     .insert({
@@ -182,6 +188,7 @@ export async function setPhaseEvent(input: {
       starts_at: new Date(input.startsAt).toISOString(),
       host_id: input.hostId,
       slug,
+      ...(phaseSpaceId ? { space_id: phaseSpaceId } : {}),
     })
     .select('id')
     .maybeSingle()

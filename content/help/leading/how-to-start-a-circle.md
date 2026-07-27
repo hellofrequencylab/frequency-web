@@ -102,6 +102,12 @@ accept or pass, and nothing changes until they accept. A Circle carries its memb
 so it never lands on someone who did not agree to take it. When they accept, the
 Circle becomes theirs to host, and its members and anything it is running come along.
 
+It works in the other direction too. If you help run a space, open its Circles page
+and choose **Attach a circle you host** to bring one of your own Circles into the
+space. The Circle keeps its host and its members. Its gatherings join the space's
+calendar, and they stay on the Circle's own page as well, so nobody loses track of
+where to show up. Move the Circle out again and its gatherings leave with it.
+
 ### Do I have to be an expert in the activity?
 
 No. You are the Host, not the teacher. Your job is to hold the time and welcome
