@@ -31,6 +31,11 @@ import { EventPlacementField } from '@/components/events/event-placement-field'
 import { EventShareField } from '@/components/events/event-share-field'
 import { readEventHeroHeight } from '@/lib/events/hero-height'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
+import {
+  readEventMarketListed,
+  MARKET_LISTING_LABEL,
+  MARKET_LISTING_HELP,
+} from '@/lib/events/market-listing'
 import type { PlaceResult } from '@/lib/geocode'
 import {
   CATEGORY_OPTIONS,
@@ -117,6 +122,7 @@ export function EventSettingsModule() {
   const [venueName, setVenueName] = useState('')
   const [street, setStreet] = useState('')
   const [hideAddress, setHideAddress] = useState(false)
+  const [marketListed, setMarketListed] = useState(true)
   const [city, setCity] = useState('')
   const [region, setRegion] = useState('')
   const [postalCode, setPostalCode] = useState('')
@@ -169,6 +175,7 @@ export function EventSettingsModule() {
             setVenueName(d.venue_name ?? '')
             setStreet(d.street ?? '')
             setHideAddress(d.hide_address === true)
+            setMarketListed(readEventMarketListed(d.theme))
             setCity(d.city ?? '')
             setRegion(d.region ?? '')
             setPostalCode(d.postal_code ?? '')
@@ -435,6 +442,25 @@ export function EventSettingsModule() {
               ))}
             </select>
           </label>
+          {/* Public listing (ADR-844) — a SEPARATE question from who can see it: given a public
+              event, is it merchandised when people browse. Controlled hidden input ('on'/'off') so
+              the field is always in the autosave snapshot and no other form can silently relist it. */}
+          <label className="col-span-full flex items-start gap-2 pt-1">
+            <input
+              type="checkbox"
+              checked={marketListed}
+              onChange={(e) => {
+                setMarketListed(e.target.checked)
+                requestAnimationFrame(saveNow)
+              }}
+              className="mt-0.5 h-4 w-4 rounded border-border"
+            />
+            <span className="text-sm text-text">
+              {MARKET_LISTING_LABEL}
+              <span className="block text-2xs font-normal text-subtle">{MARKET_LISTING_HELP}</span>
+            </span>
+          </label>
+          <input type="hidden" name="market_listed" value={marketListed ? 'on' : 'off'} />
         </div>
 
         {/* FORMAT / WHAT KIND / ENERGY */}

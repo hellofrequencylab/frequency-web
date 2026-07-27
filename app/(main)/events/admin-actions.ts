@@ -23,6 +23,7 @@ import { isValidTimeZone } from '@/lib/time/zone'
 import { posterSignedUrl } from '@/lib/events/poster-media'
 import { writeEventHeroHeight, type EventHeroHeight } from '@/lib/events/hero-height'
 import { writeEventCoverFocus } from '@/lib/events/cover-focus'
+import { writeEventMarketListed } from '@/lib/events/market-listing'
 import { pointFromGeog } from '@/lib/events/geo'
 import { approveRsvp } from '@/lib/events/rsvp-depth'
 import {
@@ -248,14 +249,23 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   // events.details.rsvpWindow so the poster-harvest keys survive. Both blank clears the window.
   const opensAt = wallClockToIso(fd.get('rsvp_opens_at') as string)
   const closesAt = wallClockToIso(fd.get('rsvp_closes_at') as string)
-  const { data: currentDetails } = await admin.from('events').select('details').eq('id', id).maybeSingle()
-  const baseDetails = ((currentDetails as { details?: Record<string, unknown> | null } | null)?.details ?? {}) as Record<
+  const { data: currentBags } = await admin.from('events').select('details, theme').eq('id', id).maybeSingle()
+  const baseDetails = ((currentBags as { details?: Record<string, unknown> | null } | null)?.details ?? {}) as Record<
     string,
     unknown
   >
   const nextDetails: Record<string, unknown> = { ...baseDetails }
   if (opensAt || closesAt) nextDetails.rsvpWindow = { opensAt, closesAt }
   else delete nextDetails.rsvpWindow
+
+  // Public listing (ADR-844): read-merge-write into events.theme beside coverFocus/heroHeight, and
+  // ONLY when the form carries the control ('on'/'off'), so a form without it can never silently
+  // relist an event the host took out of the listings.
+  const listingRaw = fd.get('market_listed')
+  const nextTheme =
+    listingRaw != null
+      ? writeEventMarketListed((currentBags as { theme?: unknown } | null)?.theme, listingRaw === 'on')
+      : null
 
   const { error } = await admin
     .from('events')
@@ -285,6 +295,7 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
       ...(['auto', 'rsvp', 'tickets'].includes((fd.get('join_mode') as string) ?? '')
         ? { join_mode: fd.get('join_mode') as string }
         : {}),
+      ...(nextTheme ? { theme: nextTheme as Json } : {}),
     })
     .eq('id', id)
   if (error) throw new Error(error.message)
