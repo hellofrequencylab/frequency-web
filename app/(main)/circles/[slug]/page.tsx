@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle } from '../actions'
 import { JoinCircleButton } from '@/components/circles/join-circle-button'
+import { CircleHandoffBanner } from '@/components/circles/circle-handoff-banner'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 import { CircleHostMenu } from '@/components/circles/circle-host-menu'
@@ -298,6 +299,10 @@ export default async function CirclePage({
           </div>
         </div>
       )}
+
+      {/* A pending handoff, shown ONLY to the person it was offered to (ADR-845). Self-fetching,
+          so it costs this page no read and renders nothing for everyone else. */}
+      {user && <div className="mb-4"><CircleHandoffBanner circleId={circle.id} /></div>}
 
       {/* Demo circles invite a real member to claim + host them in place. */}
       {circle.is_demo && user && (

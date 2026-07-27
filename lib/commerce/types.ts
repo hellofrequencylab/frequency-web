@@ -148,6 +148,10 @@ export type MarketItem = Omit<CommerceProduct, 'priceCents'> & {
   href?: string
   /** True for a read-only ticketed-event projection (never backed by a commerce_products row). */
   projected?: boolean
+  /** Where the cover image should be cropped, as a CSS `object-position` (ADR-845). Generic on
+   *  purpose: a projected event carries its host-chosen focus, and a commerce listing can carry
+   *  one later, without the tile learning what kind of thing it is drawing. Unset = centered. */
+  coverFocus?: string | null
 }
 
 /** The three typed rails the Market umbrella groups listings into. */

@@ -17,6 +17,7 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
+import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import type { MarketItem } from './types'
 
@@ -44,6 +45,7 @@ type EventRow = {
   starts_at: string
   is_demo: boolean | null
   cover_image_path: string | null
+  theme?: unknown
   poster_path: string | null
   space_id: string | null
   host_id: string | null
@@ -92,7 +94,7 @@ export async function listTicketedEventProjections(
     const { data: eventData, error: eventErr } = await admin
       .from('events')
       .select(
-        'id, slug, title, description, currency, starts_at, is_demo, cover_image_path, poster_path, space_id, host_id, organizer_name',
+        'id, slug, title, description, currency, starts_at, is_demo, cover_image_path, poster_path, space_id, host_id, organizer_name, theme',
       )
       .eq('visibility', 'public')
       .eq('status', 'published')
@@ -169,6 +171,9 @@ export async function listTicketedEventProjections(
         title: e.title,
         description: e.description ?? null,
         images: cover ? [cover] : [],
+        // The host's chosen crop travels with the cover, so the Market tile frames the poster the
+        // same way the event's own hero does (ADR-845).
+        coverFocus: readEventCoverFocus(e.theme),
         priceCents: ticketFromPriceCents(tiersByEvent.get(e.id) ?? []),
         currency: e.currency ?? 'usd',
         stock: null,

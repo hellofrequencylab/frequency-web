@@ -10,6 +10,7 @@ import {
   endSpaceCircleRunAction,
   transferSpaceCircleAction,
   listTransferTargetsAction,
+  offerSpaceCircleAction,
 } from '@/app/(main)/spaces/[slug]/circles/actions'
 import { isError } from '@/lib/action-result'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -63,6 +64,9 @@ export function SpaceCirclesManager({
   const [moveFor, setMoveFor] = useState<string | null>(null)
   const [targets, setTargets] = useState<{ id: string; name: string; slug: string }[]>([])
   const [pickedTarget, setPickedTarget] = useState<string>('')
+  /** Handing off to another person: the handle typed, and the matches found. */
+  const [handoffQuery, setHandoffQuery] = useState('')
+  const [handoffHits, setHandoffHits] = useState<{ id: string; handle: string; display_name: string }[]>([])
 
   function create() {
     setError(null)
@@ -127,6 +131,34 @@ export function SpaceCirclesManager({
     start(async () => {
       const res = await listTransferTargetsAction(spaceSlug)
       setTargets(isError(res) ? [] : res.data)
+    })
+  }
+
+  function searchPeople(q: string) {
+    setHandoffQuery(q)
+    if (!q.trim()) {
+      setHandoffHits([])
+      return
+    }
+    fetch(`/api/search-handles?q=${encodeURIComponent(q.trim())}`)
+      .then((r) => r.json())
+      .then((j) => setHandoffHits(j.profiles ?? []))
+      .catch(() => setHandoffHits([]))
+  }
+
+  function handOff(circleId: string, circleName: string, toProfileId: string, toName: string) {
+    if (!window.confirm(`Offer ${circleName} to ${toName}? It stays yours until they accept.`)) return
+    setError(null)
+    start(async () => {
+      const res = await offerSpaceCircleAction(spaceSlug, { circleId, toProfileId })
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
+      setMoveFor(null)
+      setHandoffQuery('')
+      setHandoffHits([])
+      router.refresh()
     })
   }
 
@@ -332,6 +364,44 @@ export function SpaceCirclesManager({
                     Members and any Run travel with it. You can move a circle into a space you help
                     run, or take it as your own.
                   </p>
+
+                  {/* Handing it to someone ELSE is an offer, not a move: it stays yours until they
+                      accept, because a circle carries members (ADR-845). */}
+                  <div className="space-y-1.5 border-t border-border pt-2">
+                    <label htmlFor={`handoff-${c.id}`} className="block text-2xs font-semibold uppercase tracking-wide text-subtle">
+                      Or hand it to someone
+                    </label>
+                    <input
+                      id={`handoff-${c.id}`}
+                      type="text"
+                      value={handoffQuery}
+                      onChange={(e) => searchPeople(e.target.value)}
+                      placeholder="Search by name or @handle"
+                      disabled={pending}
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+                    />
+                    {handoffHits.length > 0 && (
+                      <div className="overflow-hidden rounded-lg border border-border bg-surface">
+                        {handoffHits.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => handOff(c.id, c.name, p.id, p.display_name)}
+                            disabled={pending}
+                            className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left transition-colors hover:bg-surface-elevated disabled:opacity-40"
+                          >
+                            <span className="min-w-0 truncate text-xs font-semibold text-text">
+                              {p.display_name}
+                            </span>
+                            <span className="shrink-0 text-2xs text-subtle">@{p.handle}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-2xs text-subtle">
+                      They get an offer on the circle. It stays yours until they accept.
+                    </p>
+                  </div>
                 </div>
               )}
 

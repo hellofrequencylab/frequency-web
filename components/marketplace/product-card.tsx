@@ -70,7 +70,7 @@ export function ProductCard({
   return (
     <EntityCard
       href={linkHref}
-      cover={<ProductCover image={product.images[0]} group={group} />}
+      cover={<ProductCover image={product.images[0]} group={group} focus={product.coverFocus} />}
       title={product.title}
       badge={
         <span className="flex items-center gap-1.5">
