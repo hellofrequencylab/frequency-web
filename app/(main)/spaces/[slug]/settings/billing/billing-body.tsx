@@ -11,6 +11,8 @@ import { spaceLoadoutSellable, operatorSeatsSellable } from '@/lib/billing/space
 import { loadCatalogConfig, catalogConfigByKey } from '@/lib/pricing/catalog-config'
 import { BASE_SEAT_ALLOWANCE } from '@/lib/spaces/seats'
 import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
+import { activeAgreementForSpace, type AgreementMethod } from '@/lib/billing/manual-agreements'
+import { formatAgreementRate } from '@/lib/billing/manual-agreement-dates'
 import { getSeatUsage } from '@/lib/spaces/seats'
 import { SeatCounter } from '@/components/spaces/seat-counter'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -41,6 +43,14 @@ import { SeatEditor } from './seat-editor'
 // The plan-axis usage meters (ADR-519 / ADR-520 P3): every metered Space feature, so the Plan and usage
 // hub is the single "where am I on the ladder" answer. Personal (tier-axis) meters are excluded.
 const PLAN_USAGE_METERS = Object.values(FEATURE_METERS).filter((m) => m.axis === 'plan')
+
+// Operator-facing labels for how a manual agreement settles (ADR-872). Plain words, no jargon.
+const AGREEMENT_METHOD_LABEL: Record<AgreementMethod, string> = {
+  cash: 'Cash',
+  check: 'Check',
+  transfer: 'Bank transfer',
+  other: 'Other',
+}
 
 export async function BillingBody({ slug }: { slug: string }) {
   const caller = await getCallerProfile()
@@ -94,6 +104,7 @@ export async function BillingBody({ slug }: { slug: string }) {
     catalog,
     earnings,
     contactCount,
+    manualAgreement,
   ] = await Promise.all([
     getPricingValues(),
     spaceLoadoutSellable('business'),
@@ -113,6 +124,10 @@ export async function BillingBody({ slug }: { slug: string }) {
     // Head-only count, so it also stops loading every deal row (select('*') + a people hydrate) just
     // to take .length. Fail-safe 0; display-only, nothing blocks.
     countContacts(space.id),
+    // A MANUAL billing agreement (ADR-872): an off-Stripe cash/check deal the crew recorded. When
+    // one is active, the surface shows its receipt card and hides the Stripe portal button (there
+    // is no Stripe subscription behind a cash deal). Fail-safe null: no agreement, nothing shown.
+    activeAgreementForSpace(space.id),
   ])
 
   const isPaid = currentPlan !== 'free'
@@ -140,6 +155,44 @@ export async function BillingBody({ slug }: { slug: string }) {
           <p className="text-xs font-semibold uppercase tracking-widest text-subtle">Current plan</p>
           <p className="mt-1 text-lg font-bold text-text">{SPACE_PLAN_LABEL[currentPlan]}</p>
         </div>
+
+        {/* MANUAL BILLING AGREEMENT (ADR-872): the read-only receipt for an off-Stripe deal the crew
+            recorded. Shows the plan, the locked rate, how far the space is paid, and how it settles.
+            No self-serve controls on purpose: the crew manages the deal. */}
+        {manualAgreement && (
+          <div className="rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-widest text-subtle">Billing agreement</p>
+            <p className="mt-1 text-sm font-semibold text-text">
+              {SPACE_PLAN_LABEL[asSpacePlan(manualAgreement.plan)]} plan, billed{' '}
+              {manualAgreement.interval === 'year' ? 'yearly' : 'monthly'}
+            </p>
+            <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+              <div>
+                <dt className="text-xs text-subtle">Your rate</dt>
+                <dd className="font-medium text-text">
+                  {manualAgreement.label ??
+                    formatAgreementRate(manualAgreement.amountCents, manualAgreement.interval)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-subtle">Paid through</dt>
+                <dd className="font-medium text-text">
+                  {new Date(`${manualAgreement.paidThrough}T00:00:00Z`).toLocaleDateString('en-US', {
+                    timeZone: 'UTC',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-subtle">Paid by</dt>
+                <dd className="font-medium text-text">{AGREEMENT_METHOD_LABEL[manualAgreement.method]}</dd>
+              </div>
+            </dl>
+            <p className="mt-3 text-xs text-muted">Managed by the crew. Questions? Reach out.</p>
+          </div>
+        )}
 
         {/* The Community Collective ladder (ADR-811): where this Space sits + the buy-down-your-rate
             promise. A free Space gets a one-click Choose on each sellable higher flat rung (Collective /
@@ -222,8 +275,10 @@ export async function BillingBody({ slug }: { slug: string }) {
 
         {/* Already paying: the self-serve subscription control. Opens the Stripe billing portal (payment
             method, plan change/cancel, seats where the portal allows). Owner action; hidden in staff
-            preview (read-only). A paid space that has no Stripe customer yet just gets a clean error. */}
-        {isPaid && !staffViewing && <ManageSubscriptionButton slug={space.slug} />}
+            preview (read-only). A paid space that has no Stripe customer yet just gets a clean error.
+            Hidden while a MANUAL agreement is active (ADR-872): a cash deal has no Stripe portal, so
+            the button would only ever error; the agreement card above carries the state instead. */}
+        {isPaid && !staffViewing && !manualAgreement && <ManageSubscriptionButton slug={space.slug} />}
 
         {/* Direct operator-seat editor (A4/A5): change the licensed seat count on the live subscription
             with proration. Only when paying AND seats are sellable (activated + priced), so it stays

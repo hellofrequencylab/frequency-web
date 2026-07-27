@@ -16,6 +16,8 @@ import {
 } from '@/lib/spaces/functions'
 import { FunctionGrid, type FunctionRow } from '@/components/admin/spaces/function-grid'
 import { SpaceLifecyclePanel, type OwnerCandidate } from '@/components/admin/spaces/space-lifecycle-panel'
+import { ManualAgreementPanel } from '@/components/admin/spaces/manual-agreement-panel'
+import { activeAgreementForSpace } from '@/lib/billing/manual-agreements'
 
 export const dynamic = 'force-dynamic'
 
@@ -106,6 +108,8 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
   // moves to one of them); the current owner is shown alongside. Resolve every relevant profile name
   // in one query. The current owner is included in the lookup even when they have no member row.
   const members = hasOwnerBackEnd ? await listSpaceMembers(space.id) : []
+  // The MANUAL BILLING agreement (ADR-872): the off-Stripe cash/check deal on file, if any.
+  const manualAgreement = hasOwnerBackEnd ? await activeAgreementForSpace(space.id) : null
   const nameIds = [
     ...members.map((m) => m.profileId),
     ...(space.ownerProfileId ? [space.ownerProfileId] : []),
@@ -161,6 +165,29 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
           description="Turn the tools this space uses on or off, and set the lowest role that can use each one. An operator switch beats the plan."
         >
           <FunctionGrid spaceId={space.id} rows={functionRows} />
+        </AdminSection>
+      )}
+      {hasOwnerBackEnd && (
+        <AdminSection
+          title="Manual billing"
+          description="Record an off-Stripe deal (cash, check, or transfer) at its locked rate, and record each renewal payment. Renewal reminders send automatically at 30 days out, 7 days out, and past due. The plan itself is set separately; this is the money record."
+        >
+          <ManualAgreementPanel
+            spaceId={space.id}
+            agreement={
+              manualAgreement
+                ? {
+                    plan: manualAgreement.plan,
+                    interval: manualAgreement.interval,
+                    amountCents: manualAgreement.amountCents,
+                    method: manualAgreement.method,
+                    label: manualAgreement.label,
+                    startedAt: manualAgreement.startedAt,
+                    paidThrough: manualAgreement.paidThrough,
+                  }
+                : null
+            }
+          />
         </AdminSection>
       )}
       {hasOwnerBackEnd && (

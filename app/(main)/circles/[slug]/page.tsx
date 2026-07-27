@@ -16,12 +16,12 @@ import { isPaidViewer, surfaceAccess } from '@/lib/core/viewer-hats'
 import { insightAffordance } from '@/lib/core/scoped-surface-ui'
 import { getCircleActivePractice, listPublicPractices } from '@/lib/practices'
 import { listPublicPlans } from '@/lib/journey-plans'
-import { DetailTemplate } from '@/components/templates/detail-template'
+import { DetailTemplate, PageHero, HERO_ACTION_CLASS } from '@/components/templates'
+import { resolveHeaderElement } from '@/lib/elements/header'
 import { isoDaysAgo } from '@/lib/utils'
 import { getCircleEarnedZaps } from '@/lib/circles/earned'
 import { SITE_NAME } from '@/lib/site'
 import { ClaimCircle } from '@/components/circles/claim-circle'
-import { CircleCover } from '@/components/circles/circle-cover'
 // The circle BODY (feed + info-rail) is now the page-settings module engine (ADR-270/294): the
 // page resolves all the per-viewer data once, stamps it into the request-scoped circle context,
 // and <PageModules> renders the arrangeable blocks (components/widgets/circles/*) — so operators
@@ -211,10 +211,14 @@ export default async function CirclePage({
     newThisWeek = recentJoins?.length ?? 0
   }
 
-  // This week's practice (host-assigned). Library only needed for the host picker.
-  const [circlePractice, practiceLibrary] = await Promise.all([
+  // This week's practice (host-assigned) + the standardized header element config (ADR-793) —
+  // independent reads, one concurrent batch. Library only needed for the host picker.
+  const [circlePractice, practiceLibrary, header] = await Promise.all([
     getCircleActivePractice(circle.id),
     canManage || circle.is_demo ? listPublicPractices() : Promise.resolve([]),
+    // The operator-tunable header (the Journey/Profile/Space idiom): identity layout at the
+    // standard height unless an /admin/elements master (or Space override) retunes it.
+    resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } }),
   ])
 
   // Sort: host first → by join date
@@ -314,37 +318,108 @@ export default async function CirclePage({
         />
       )}
 
-      <CircleCover imageUrl={circle.image_url} name={circle.name} />
-
-      {/* Unified Detail header: back to the Circles index (the channel-page idiom for a
-          detail nested under its browse surface), then title + status/type badges,
-          member/host + capacity below, capability-gated actions right. Editing is in the
-          Settings panel. */}
+      {/* ── UNIFIED ENTITY HEADER (the events/Spaces grammar, ADR-793) ─────────────────────────
+          Extracted rules, mirrored from the Space profile ((profile)/layout.tsx), the Journey page,
+          and the person profile — the ONE header system every destination page now opens on:
+            1. COVER: one immersive PageHero band as DetailTemplate's `hero` slot (rounded-3xl,
+               border, min-height off the header element's size ladder), never a standalone cover
+               card with the title stranded below it. No cover = the neutral token gradient.
+            2. TUNABLE: layout/height/overlay resolve through resolveHeaderElement (identity/
+               standard defaults, the entity-page idiom), so /admin/elements retunes it, no deploy.
+            3. TITLE: the single h1 rides the cover, bottom-left, over the ink scrim (on-ink copy),
+               with the uppercase accent eyebrow above it — the Space-page lockup.
+            4. SUBTITLE: one quiet on-ink line on the cover (the place line here).
+            5. ACTIONS: bottom-right ON the cover. ONE filled primary CTA (Join, the Space pattern:
+               accent fill + shadow-md so it lifts off the photo); secondaries use the glassy
+               on-ink HERO_ACTION_CLASS.
+            6. ADMIN: never on the cover — Edit/host tools read as a light row in the `band`
+               below the hero (the Journey/Profile placement).
+            7. BAND: badge chips (rounded-full), then icon fact rows (key fact semibold, the
+               events subtitle idiom), then the capacity bar.
+            8. BACK: DetailTemplate's `back` slot, above the band. Tabs stay in `tabs`. */}
       <DetailTemplate
         back={{ href: '/circles', label: 'Circles' }}
         title={circle.name}
-        badges={
-          <>
-            <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${statusPill.cls}`}>
-              {statusPill.label}
-            </span>
-            <span className="text-xs px-1.5 py-0.5 rounded-md bg-signal-bg text-signal-strong font-medium">
-              {typeLabel}
-            </span>
-            {nearCap && !full && (
-              <span className="text-xs px-1.5 py-0.5 rounded-md bg-warning-bg text-warning font-medium">
-                Almost full
-              </span>
-            )}
-          </>
+        hero={
+          <PageHero
+            variant={header.layout}
+            size={header.height}
+            overlayStyle={header.overlayStyle}
+            coverImage={circle.image_url}
+            eyebrow="Circle"
+            title={circle.name}
+            subtitle={
+              [circle.neighborhood, circle.city].filter(Boolean).join(', ') || undefined
+            }
+            actions={
+              <>
+                {isMember && !isHost && (
+                  <form action={leaveCircle.bind(null, circle.id)}>
+                    <button type="submit" className={HERO_ACTION_CLASS}>
+                      Leave
+                    </button>
+                  </form>
+                )}
+
+                {!isMember && myProfileId && !full && (
+                  <CrewGateButton
+                    isCrew={isCrew}
+                    label="Join"
+                    buttonClassName="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-md hover:bg-primary-hover transition-colors"
+                  >
+                    <JoinCircleButton
+                      circleId={circle.id}
+                      circleSlug={circle.slug}
+                      className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-md hover:bg-primary-hover transition-colors"
+                    />
+                  </CrewGateButton>
+                )}
+
+                {!isMember && myProfileId && full && (
+                  <span className="shrink-0 inline-flex items-center justify-center rounded-lg border border-white/40 bg-white/10 px-3 py-1.5 text-sm font-semibold text-on-ink/70 backdrop-blur-sm cursor-not-allowed">
+                    Full
+                  </span>
+                )}
+              </>
+            }
+          />
         }
-        subtitle={
-          <>
+        band={
+          <div className="min-w-0 space-y-2">
+            {/* Host/admin tools read as a normal light row BELOW the header (never riding the
+                cover) — the Journey/Profile placement for the standardized admin affordances. */}
+            {canManage && (
+              <div className="flex flex-wrap items-center gap-2 pb-1">
+                <CircleHostMenu circleId={circle.id} />
+                <OpenAdminBarButton
+                  scope={{ kind: 'circle', id: circle.id }}
+                  caps={Array.from(caps)}
+                  label="Edit Circle"
+                  icon={<Settings className="h-4 w-4" />}
+                />
+              </div>
+            )}
+
+            {/* Status / mode chips — the rounded-full chip grammar the event + Journey bands use. */}
+            <span className="inline-flex flex-wrap items-center gap-1.5">
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${statusPill.cls}`}>
+                {statusPill.label}
+              </span>
+              <span className="inline-flex items-center rounded-full bg-signal-bg px-2 py-0.5 text-xs font-medium text-signal-strong">
+                {typeLabel}
+              </span>
+              {nearCap && !full && (
+                <span className="inline-flex items-center rounded-full bg-warning-bg px-2 py-0.5 text-xs font-medium text-warning">
+                  Almost full
+                </span>
+              )}
+            </span>
+
             {/* Place-first context: the locale, then the Hub this circle belongs to.
                 Hubs/Nexuses surface here as the emergent "where this sits", never as
                 primary nav — a member reads it as place, not an org chart (IA §3a/§4). */}
             {circle.hub && (
-              <div className="mb-1.5 flex items-center gap-1.5 text-sm text-subtle">
+              <div className="flex items-center gap-1.5 text-sm text-subtle">
                 <MapPin className="w-4 h-4 shrink-0" />
                 <span className="truncate">
                   {circle.hub.nexus?.outpost?.name && <>{circle.hub.nexus.outpost.name} · </>}
@@ -354,10 +429,14 @@ export default async function CirclePage({
                 </span>
               </div>
             )}
-            <div className="flex items-center gap-x-4 gap-y-1 flex-wrap">
+
+            {/* Fact row — the events-header idiom: icon rows, the key fact a step stronger. */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
               <span className="flex items-center gap-1.5">
-                <Users className="w-4 h-4" />
-                {circle.member_count} of {circle.member_cap} members
+                <Users className="w-4 h-4 text-primary-strong shrink-0" />
+                <span className="font-semibold text-text">
+                  {circle.member_count} of {circle.member_cap} members
+                </span>
               </span>
               {circle.host && (
                 <span>
@@ -377,52 +456,7 @@ export default async function CirclePage({
                 style={{ width: `${pct}%` }}
               />
             </div>
-          </>
-        }
-        actions={
-          <>
-            {canManage && <CircleHostMenu circleId={circle.id} />}
-
-            {canManage && (
-              <OpenAdminBarButton
-                scope={{ kind: 'circle', id: circle.id }}
-                caps={Array.from(caps)}
-                label="Edit Circle"
-                icon={<Settings className="h-4 w-4" />}
-              />
-            )}
-
-            {isMember && !isHost && (
-              <form action={leaveCircle.bind(null, circle.id)}>
-                <button
-                  type="submit"
-                  className="shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text hover:text-danger hover:border-danger transition-colors"
-                >
-                  Leave
-                </button>
-              </form>
-            )}
-
-            {!isMember && myProfileId && !full && (
-              <CrewGateButton
-                isCrew={isCrew}
-                label="Join"
-                buttonClassName="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors"
-              >
-                <JoinCircleButton
-                  circleId={circle.id}
-                  circleSlug={circle.slug}
-                  className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors"
-                />
-              </CrewGateButton>
-            )}
-
-            {!isMember && myProfileId && full && (
-              <span className="shrink-0 rounded-lg border border-border px-4 py-2 text-sm font-medium text-subtle cursor-not-allowed">
-                Full
-              </span>
-            )}
-          </>
+          </div>
         }
       >
         {/* ── About (boxless, collapsible) — part of the fixed identity, above the body. */}

@@ -181,6 +181,80 @@ export async function foundingSellersFor(sellers: readonly FoundingSellerRef[]):
   return out
 }
 
+// ── BADGE READS (making the grant VISIBLE) ──────────────────────────────────────────────────
+//
+// A founding grant that no surface renders is invisible, so these are the reads every Space
+// surface paints the Founding Business mark from. They are the ONLY founding reads a public
+// surface calls, and they are deliberately narrow.
+
+/** What a Space surface needs to resolve the Founding Business mark.
+ *
+ *  `lockedRateCents` is the OPERATOR's own commercial term. It is carried here so a Space's own
+ *  settings surface can read its rate back, and it must NEVER be handed to a public component:
+ *  the badge is a STATUS, not a price tag. The public chip (FoundingBusinessBadge) takes a
+ *  boolean and nothing else, and a source-shape test locks that. */
+export interface FoundingSpaceBadge {
+  isFounding: boolean
+  /** Always 'business' — a Space founder is a Founding Business; the 'member' kind never keys a Space. */
+  kind: 'business'
+  /** PRIVATE. Operator-facing readouts only. Never render this on a public surface. */
+  lockedRateCents: number | null
+}
+
+/** ONLY status='active' earns a badge.
+ *  • 'reserved' has NOT graduated: the spot is held and nothing has been charged, so the Space is
+ *    not a Founding Business yet and must not wear the mark.
+ *  • 'lapsed' fell out of the cohort, so the mark is no longer true.
+ *  A row must also be kind='business' — a Space is badged as a business founder, never as a member. */
+function isActiveFoundingBusiness(r: Row): boolean {
+  return r.status === 'active' && r.kind === 'business'
+}
+
+/** BATCHED: the Founding Business mark for many Spaces in ONE query, keyed by space id. A directory
+ *  grid resolves every card's badge in a single pass, so a card list NEVER goes N+1 (mirrors the
+ *  grouped-count readers in lib/spaces/discovery.ts). A space id absent from the Map is not a founder.
+ *  Empty input costs no query. FAIL-SAFE to an empty Map: a read error never fabricates founder status. */
+export async function foundingBadgesForSpaces(
+  spaceIds: readonly string[],
+): Promise<Map<string, FoundingSpaceBadge>> {
+  const out = new Map<string, FoundingSpaceBadge>()
+  const ids = Array.from(new Set(spaceIds)).filter(Boolean)
+  if (ids.length === 0) return out
+  try {
+    const { data } = await foundingDb()
+      .from('founding_members')
+      .select('space_id, kind, status, locked_rate_cents')
+      .in('space_id', ids)
+    for (const r of (data ?? []) as Row[]) {
+      // The status/kind gate runs HERE rather than as a second .eq() on the query, on purpose: the
+      // callers' own tenancy filters (the directory binds .eq('status','active') on `spaces`) are
+      // asserted by the leak-contract tests, and an identical filter emitted by this read would
+      // satisfy those assertions on the directory's behalf. Matches foundingActiveFor.
+      if (!isActiveFoundingBusiness(r)) continue
+      const spaceId = typeof r.space_id === 'string' ? r.space_id : null
+      if (!spaceId) continue
+      out.set(spaceId, {
+        isFounding: true,
+        kind: 'business',
+        lockedRateCents: typeof r.locked_rate_cents === 'number' ? r.locked_rate_cents : null,
+      })
+    }
+  } catch {
+    return out
+  }
+  return out
+}
+
+/** The Founding Business mark for ONE Space, or null when it is not an active founder. Delegates to
+ *  the batched reader so there is exactly one rule about what counts. FAIL-SAFE to null. */
+export async function foundingBadgeForSpace(
+  spaceId: string | null | undefined,
+): Promise<FoundingSpaceBadge | null> {
+  const id = (spaceId ?? '').trim()
+  if (!id) return null
+  return (await foundingBadgesForSpaces([id])).get(id) ?? null
+}
+
 // ── RESERVE (durable, no charge) ────────────────────────────────────────────────────────────
 
 /** Reserve a durable founding spot for a SIGNED-IN subject (a member or a Space owner with a Space),

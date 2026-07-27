@@ -23,6 +23,7 @@ import { spaceCategory, spaceCategoryPillLabel } from './profile-data'
 import { isSpaceCategory, type SpaceCategory } from './categories'
 import { readHeaderCtaPreference, resolveHeaderCta } from './header-cta'
 import { defaultPrimaryCtaLabel } from './profile-config'
+import { foundingBadgesForSpaces } from '@/lib/founding/status'
 
 /** The one resolved action a directory card paints (the operator-configured header CTA, resolved to a
  *  real surface label + href off the Space base path). */
@@ -62,6 +63,10 @@ export interface NetworkedSpace {
   /** Count of this Space's UPCOMING, non-cancelled, published events (events.starts_at > now), or null
    *  when unavailable. */
   upcomingEventCount: number | null
+  /** Whether this Space is an ACTIVE Founding Business (a founding_members row, status='active'), so the
+   *  card can paint the founding mark. Resolved for the WHOLE page in one batched read (never per card).
+   *  A boolean only: the founder's locked rate is a private commercial term and never leaves the reader. */
+  isFoundingBusiness: boolean
 }
 
 /** How the catalog is ordered. `name` (A–Z) is the default; `newest` is most-recently created
@@ -337,11 +342,15 @@ export const listNetworkedSpaces = cache(
 
       // The cheap per-Space stats: three grouped reads over just the matched ids (each fail-safe to no
       // counts, each batched the SAME way — one query per stat, no N+1). Run together.
+      // The Founding Business marks ride the SAME batched pass: ONE query for the whole page, keyed by
+      // space id, so adding the badge to the card costs no per-card read (no N+1). Fail-safe to an empty
+      // Map, in which case no card is badged.
       const ids = rows.map((r) => r.id)
-      const [memberCounts, followerCounts, upcomingCounts] = await Promise.all([
+      const [memberCounts, followerCounts, upcomingCounts, foundingBadges] = await Promise.all([
         memberCountsFor(ids),
         followerCountsFor(ids),
         upcomingEventCountsFor(ids),
+        foundingBadgesForSpaces(ids),
       ])
 
       const spaces = rows.map((r) => {
@@ -368,6 +377,7 @@ export const listNetworkedSpaces = cache(
           memberCount: memberCounts.get(r.id) ?? null,
           followerCount: followerCounts.get(r.id) ?? null,
           upcomingEventCount: upcomingCounts.get(r.id) ?? null,
+          isFoundingBusiness: foundingBadges.get(r.id)?.isFounding === true,
         }
       })
 

@@ -6,8 +6,10 @@ import { join } from 'node:path'
 // focus-area home, not a Circle. Locked here as source-shape guards (the
 // programs.test.ts idiom), so a refactor cannot quietly regress the page back
 // into its old single-scroll, circle-flavored form:
-//   1. It composes the kit: DetailTemplate + ChannelCover, never a hand-rolled
-//      header.
+//   1. It composes the kit: DetailTemplate opening on the standardized header
+//      element (resolveHeaderElement -> PageHero identity, ADR-793 — the same
+//      grammar as the Space profile / Journey / person profile), never a
+//      hand-rolled header or a parallel cover band.
 //   2. The segmented body exists: Home (default) / Feed / Chapters-or-Circles /
 //      About via ?tab=, server-rendered and shareable.
 //   3. The tune-in gate is intact: composer only for tuned-in members, the
@@ -22,9 +24,20 @@ const src = readFileSync(
 )
 
 describe('channel page (source shape): a Channel renders as a focus-area home', () => {
-  it('composes the Detail kit: DetailTemplate with the ChannelCover band and back link', () => {
+  it('composes the Detail kit: DetailTemplate opening on the standardized PageHero header', () => {
     expect(src).toContain('<DetailTemplate')
-    expect(src).toContain('<ChannelCover')
+    // The hero is the ONE canonical header band (ADR-793): PageHero fed by the
+    // operator-tunable header element at the entity-page defaults.
+    expect(src).toContain('<PageHero')
+    expect(src).toContain('resolveHeaderElement(')
+    expect(src).toMatch(/defaults: \{ layout: 'identity', height: 'standard' \}/)
+    expect(src).toContain('variant={header.layout}')
+    expect(src).toContain('size={header.height}')
+    expect(src).toContain('overlayStyle={header.overlayStyle}')
+    // On-cover secondary actions use the ONE glassy on-ink header-button style.
+    expect(src).toContain('HERO_ACTION_CLASS')
+    // The retired parallel cover band stays gone.
+    expect(src).not.toContain('<ChannelCover')
     expect(src).toMatch(/back=\{\{ href: '\/channels', label: 'Channels' \}\}/)
   })
 

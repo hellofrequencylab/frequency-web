@@ -13,9 +13,13 @@ import { startChapterAction } from '@/app/(main)/channels/actions'
 export function StartChapterButton({
   channelId,
   label = 'Start a Chapter',
+  className,
 }: {
   channelId: string
   label?: string
+  /** Overrides the default filled-primary style — the channel header's hero actions pass
+   *  the glassy on-ink HERO_ACTION_CLASS so Tune in stays the one filled CTA. */
+  className?: string
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -40,7 +44,7 @@ export function StartChapterButton({
         onClick={startAChapter}
         disabled={pending}
         title="You get a private draft to shape before anyone sees it."
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 whitespace-nowrap"
+        className={`${className ?? 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover whitespace-nowrap'} disabled:opacity-60`}
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
         {pending ? 'Starting…' : label}
