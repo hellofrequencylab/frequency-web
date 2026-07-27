@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { SiteHeader } from '@/components/layout/site-header'
+import { ViewerProvider } from '@/components/layout/viewer-chrome'
 import { SiteAlertBar } from '@/components/layout/site-alert-bar'
 import { SupportLauncher } from '@/components/support/support-launcher'
 import { SupportChatWidget } from '@/components/chat/support-chat-widget'
@@ -12,10 +13,17 @@ import { SupportChatWidget } from '@/components/chat/support-chat-widget'
 // nav (the indexable view is unchanged), while a signed-in member keeps the
 // same explore menu + account chrome they had in the app, so the menu doesn't
 // switch when they cross over from /feed.
+//
+// authMode="client" is what keeps that promise WITHOUT costing the static render. Reading auth
+// during render is a dynamic API, and one anywhere in a layout opts the whole route out of static
+// rendering, so the server-auth header was force-dynamicking all 22 pages under here and silently
+// voiding their `export const revalidate = 3600` — every visitor and every crawler paid two auth
+// round trips plus the page's own full query set, on every hit. Now the anonymous shell (which IS
+// the indexable view) renders statically and a member's chrome swaps in after hydration.
 export default function DiscoverLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
-      <SiteHeader variant="light" />
+    <ViewerProvider>
+      <SiteHeader variant="light" authMode="client" />
       {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top); min-h-dvh
           tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
       {/* id="main" is the target of SiteHeader's "Skip to content" link (WCAG 2.4.1 Bypass
@@ -55,6 +63,6 @@ export default function DiscoverLayout({ children }: { children: React.ReactNode
           (docs/CHAT-SHELL-PLAN.md §2); the member shell owns its own via the dock. Off unless
           NEXT_PUBLIC_SUPPORT_CHAT is enabled. */}
       {process.env.NEXT_PUBLIC_SUPPORT_CHAT === '1' && <SupportChatWidget />}
-    </>
+    </ViewerProvider>
   )
 }
