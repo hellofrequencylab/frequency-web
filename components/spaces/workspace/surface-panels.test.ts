@@ -15,7 +15,7 @@ describe('SURFACE_PANELS — the inline commerce service panels (P2)', () => {
     ['booking', 'Booking', `/spaces/${slug}/settings/offerings#availability`],
     ['memberships', 'Memberships', `/spaces/${slug}/settings/offerings#memberships`],
     ['donations', 'Donations', `/spaces/${slug}/settings/offerings#donations`],
-    ['enroll', 'Enrollment', `/spaces/${slug}/settings/enroll`],
+    ['enroll', 'Enrollment', `/spaces/${slug}/settings/offerings#enroll`],
     ['tickets', 'Tickets', `/spaces/${slug}/settings/offerings#tickets`],
     ['checkin', 'Check in', `/spaces/${slug}/settings/offerings#checkin`],
   ]

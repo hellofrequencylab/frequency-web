@@ -63,7 +63,9 @@ export const SURFACE_PANELS: Record<string, SurfacePanel> = {
   },
   enroll: {
     label: 'Enrollment',
-    fullHref: (slug) => `/spaces/${slug}/settings/enroll`,
+    // Anchored on the unified Offerings surface like its five siblings: /settings/enroll is only a
+    // `redirect()` into this anchor now, so "Open full page" no longer costs a hop.
+    fullHref: (slug) => `/spaces/${slug}/settings/offerings#enroll`,
   },
   tickets: {
     label: 'Tickets',
