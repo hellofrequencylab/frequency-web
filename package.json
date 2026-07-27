@@ -28,13 +28,13 @@
     "seed:demo-space": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/seed-demo-space.mts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.112.3",
+    "@anthropic-ai/sdk": "^0.115.0",
     "@iconify/react": "^6.0.2",
     "@iconify/utils": "^3.1.4",
     "@resvg/resvg-wasm": "^2.6.2",
     "@sentry/nextjs": "^10.68.0",
     "@supabase/ssr": "^0.12.3",
-    "@supabase/supabase-js": "^2.110.8",
+    "@supabase/supabase-js": "^2.110.9",
     "@tiptap/extension-link": "^3.29.1",
     "@tiptap/extension-placeholder": "^3.29.1",
     "@tiptap/pm": "^3.29.1",
@@ -76,7 +76,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
     "jsdom": "^29.1.1",
-    "supabase": "^2.109.1",
+    "supabase": "^2.110.0",
     "tailwindcss": "^4",
     "typescript": "^6",
     "vitest": "^4.1.10"
