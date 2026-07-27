@@ -35,9 +35,13 @@ async function caller(): Promise<{ id: string; email: string | null } | null> {
   } = await supabase.auth.getUser()
   if (!user) return null
   const admin = createAdminClient()
-  const { data } = await admin.from('profiles').select('id, email').eq('auth_user_id', user.id).maybeSingle()
-  const me = data as { id: string; email?: string | null } | null
-  return me ? { id: me.id, email: me.email ?? user.email ?? null } : null
+  // NOT `email` — there is no profiles.email column, and selecting it fails the whole PostgREST
+  // request (42703), so `data` was null and every signed-in member fell through to the ANONYMOUS
+  // branch, which then demands an email they should never have been asked for. auth.users owns the
+  // address and the session already carries it.
+  const { data } = await admin.from('profiles').select('id').eq('auth_user_id', user.id).maybeSingle()
+  const me = data as { id: string } | null
+  return me ? { id: me.id, email: user.email ?? null } : null
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

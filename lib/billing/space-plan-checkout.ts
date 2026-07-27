@@ -25,6 +25,7 @@ import {
 } from './pricing-keys'
 import { itemKeyForCatalogKey, readLockedPriceId } from './space-subscription-items'
 import { isBetaPricingActive } from '@/lib/pricing/beta'
+import { profileAccountEmail } from '@/lib/profiles/account-email'
 
 /** The per-plan enable flag for a space plan (must be ON, with billing live, to sell it). */
 const PLAN_FLAG: Record<SpacePlanKey, 'plan_business_enabled' | 'plan_nonprofit_enabled'> = {
@@ -136,14 +137,17 @@ export async function createSpacePlanCheckout(
   let customer = space.stripe_customer_id ?? undefined
   let ownerEmail: string | undefined
   if (!customer) {
+    // `email` is NOT a profiles column. Selecting it failed the whole PostgREST request (42703),
+    // so `owner` came back null and BOTH values below stayed undefined — the owner's saved
+    // stripe_customer_id was never reused (duplicate Stripe customers on every repeat checkout)
+    // and the session was created with no customer_email to prefill.
     const { data: owner } = await db
       .from('profiles')
-      .select('email, stripe_customer_id')
+      .select('stripe_customer_id')
       .eq('id', space.owner_profile_id)
       .maybeSingle()
-    const ownerRow = owner as { email?: string | null; stripe_customer_id?: string | null } | null
-    customer = ownerRow?.stripe_customer_id ?? undefined
-    ownerEmail = ownerRow?.email ?? undefined
+    customer = (owner as { stripe_customer_id?: string | null } | null)?.stripe_customer_id ?? undefined
+    ownerEmail = (await profileAccountEmail(space.owner_profile_id)) ?? undefined
   }
 
   const metadata = { kind: 'space_plan', space_id: spaceId, plan: planKey, billing_period: billingPeriod }
@@ -278,14 +282,17 @@ export async function createSpaceLoadoutCheckout(
   let customer = space.stripe_customer_id ?? undefined
   let ownerEmail: string | undefined
   if (!customer) {
+    // `email` is NOT a profiles column. Selecting it failed the whole PostgREST request (42703),
+    // so `owner` came back null and BOTH values below stayed undefined — the owner's saved
+    // stripe_customer_id was never reused (duplicate Stripe customers on every repeat checkout)
+    // and the session was created with no customer_email to prefill.
     const { data: owner } = await db
       .from('profiles')
-      .select('email, stripe_customer_id')
+      .select('stripe_customer_id')
       .eq('id', space.owner_profile_id)
       .maybeSingle()
-    const ownerRow = owner as { email?: string | null; stripe_customer_id?: string | null } | null
-    customer = ownerRow?.stripe_customer_id ?? undefined
-    ownerEmail = ownerRow?.email ?? undefined
+    customer = (owner as { stripe_customer_id?: string | null } | null)?.stripe_customer_id ?? undefined
+    ownerEmail = (await profileAccountEmail(space.owner_profile_id)) ?? undefined
   }
 
   // PHASE D: the seat-quantity items (Team add-on / Nonprofit seat) bill the LICENSED seat count. The
