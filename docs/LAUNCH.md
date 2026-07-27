@@ -52,6 +52,11 @@ registered at GoDaddy; point it at Vercel.
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | membership billing **+ Connect payouts** (ADR-175/176) | `sk_…` + `whsec_…`. One webhook endpoint, `https://frequencylocal.com/api/webhooks/stripe`, covers checkout events, `account.updated` (Connect onboarding sync), and `checkout.session.completed` (tips + future channels). `STRIPE_PRICE_CREW` optional (inline-price fallback). Develop in **test mode**; live needs platform identity verification |
 | `STRIPE_PLATFORM_FEE_PCT` | platform fee % on Connect payout channels (tips, etc.) | **optional**: defaults to `10`. Centralized in `lib/billing/fees.ts`; explicit `0` = no fee |
 | `ANTHROPIC_API_KEY` | Studio AI operator (win-back drafting) | **optional**: without it the proposer uses a deterministic template; the agent stays copilot-gated either way |
+| `CONVERSATION_TOKEN_SECRET` | signs the conversation reply-address HMAC + the anonymous live-chat capability token | **🔴 required in production**: `lib/comms/reply-address.ts` and `lib/comms/chat-token.ts` THROW rather than sign with the service-role key when `NODE_ENV=production`. Unset means inbound email replies and the live chat both fail. 32+ byte random |
+| `CONVERSATION_REPLY_DOMAIN` | the domain replies are addressed to (`reply+<ref>-<hmac>@…`) | **optional**: defaults to `reply.frequencylocal.com`. Must match the domain configured for inbound routing in Resend |
+| `RESEND_INBOUND_WEBHOOK_SECRET` | Svix signing secret for `/api/webhooks/inbound-email` | until set, every inbound request is rejected 401 — the seam is inert, so replies never thread back into Conversations |
+| `OPTIN_CONFIRM_SECRET` | signs CRM double-opt-in confirm + lead links | **optional**: falls back to `BETA_CONFIRM_SECRET`, then `UNSUBSCRIBE_SECRET`, then the service-role key. Set it so opt-in links do not share a secret with unsubscribe |
+| `EVENT_INVITE_SECRET` | signs event invite / QR intro links | **optional**: same fallback chain as `OPTIN_CONFIRM_SECRET` |
 | `COMPANY_POSTAL_ADDRESS` | physical mailing address in the scan-intro email footer (CAN-SPAM) | **🔴 not set yet**: required before turning on scan-intro friend invites (see urgent note below). One line, e.g. `Frequency™, PO Box 123, Encinitas, CA 92024` |
 
 > 🔴 **URGENT: before enabling scan-intro friend invites** *(deferred ~a few months; owner-only)*

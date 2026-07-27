@@ -62,12 +62,22 @@ export async function detachRecordingFromHost(
   return detachRecording(viewerProfileId, { recordingId, hostKind, hostId })
 }
 
-/** The Recordings attached to a host, resolved to display rows (title + kind), in attach order. Service-role
- *  read; the surface that renders it gates display. FAIL-SAFE to []. */
+/** The Recordings attached to a host, resolved to display rows (title + kind), in attach order.
+ *
+ *  SIGNED-IN ONLY. This lives in a 'use server' module, so it is an HTTP endpoint any client can POST
+ *  to directly — "the surface that renders it gates display" was true of the surfaces and irrelevant
+ *  to the action, which took a caller-supplied hostKind + hostId and did a SERVICE-ROLE read with no
+ *  caller check at all. An anonymous visitor could enumerate the attached recording titles of any
+ *  host id. Both real callers are editor surfaces (the attach manager inside a host editor, and the
+ *  Space airwaves page, already gated on canEdit), so the gate costs them nothing.
+ *
+ *  FAIL-SAFE to []. */
 export async function listAttachedRecordings(
   hostKind: RecordingHostKind,
   hostId: string,
 ): Promise<AttachedRecordingRow[]> {
+  const caller = await getCallerProfile()
+  if (!caller?.id) return []
   const attachments = await listAttachmentsFor(hostKind, hostId)
   const rows = await Promise.all(
     attachments.map(async (a) => {

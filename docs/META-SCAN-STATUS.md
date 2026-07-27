@@ -1,8 +1,151 @@
 # Meta-scan status + master to-do
 
-> Snapshot of the full-repo meta scan (17 parallel dimension sweeps, 249 findings:
-> 49 high / 117 medium / 83 low) and the follow-up work. This is the durable record of
-> what shipped and what is still open. Update it as items close.
+> The durable record of the full-repo meta scan: what shipped, and what is still open with the
+> exact fix. Update it as items close. Newest pass first; earlier passes are kept below.
+
+## 2026-07-27 scan (14 dimensions, 92 findings: 19 high / 49 medium / 24 low)
+
+Fourteen read-only dimension sweeps (orphans, unplugged routes, half-wired features, security,
+performance, member + admin correctness, SEO/AIO, DB hygiene, canons, a11y, docs drift, UI
+consistency), each finding re-verified against the actual code and the live database before
+anything was touched. Baseline at scan start: tsc clean, 6348 tests green, all 12 machine guards
+green. Everything below is therefore something the guards structurally cannot see.
+
+**Two findings were false and are recorded as such:** the "15 marketing pages missing metadata" are
+15 intentional 308 redirect stubs, and `/spaces/<slug>/podcasts` (the Shows index) was already
+anonymously viewable — only the Show *page* was not.
+
+### Shipped this pass
+
+| Area | What was wrong | Guard added |
+|---|---|---|
+| 🔴 **Migrations** | Three pairs of files shared a version. `schema_migrations.version` is the PK, so on any fresh apply the second of each pair is **silently skipped** — a `db reset` or DR rebuild would have built a schema with no `events.time_zone`, no orphan-retirement, and no `supporter_contributions`. Prod was fine only because each half had been applied by hand via MCP. | `pnpm check:migrations` (in CI) |
+| 🔴 **Migration ledger** | 106 repo migrations from 2026-09-13 on were applied but never recorded. Each was **proven applied** (signature object checked against the live catalog) before reconciling. Drift from that date is now zero in both directions. | same |
+| 🔴 **Security, anon chat** | `openOrGetConversation` keys threads on `(kind, email, owner)`. Typing a target's email into the public live chat returned a capability token for **their** existing CRM conversation: full transcript read plus forged inbound messages. The signed-in path had the same hole via a spoofable email. | 3 regression tests |
+| 🔴 **Security, Airwaves** | `listAttachedRecordings` is a `'use server'` action doing a service-role read with **no caller check**; anyone could enumerate attached recording titles for any host id. | — |
+| 🔴 **SEO, crawler gate** | Five sitemap-advertised detail families (`/store/<id>`, `/market/<id>`, `/marketplace/housing/<id>`, `/classifieds/<id>`, `/spaces/<slug>/podcasts/<showSlug>`) **307-redirected crawlers to the homepage**. We submitted the URLs and then bounced the bot off them. | sitemap-to-gate drift test |
+| 🔴 **SEO, pricing doors** | Three of the five `/for/<niche>` doors were shadowed by `next.config` redirects written for a slug rename the registry never adopted: one 404, two bounced back to `/pricing`. All three are in the sitemap. | funnel-redirect test |
+| 🔴 **Perf, /discover** | All 22 pages declared `revalidate = 3600` and none got it: `<SiteHeader>` read auth during render, and one dynamic API in a layout opts the whole route out of static rendering. **8 routes measured Dynamic to Static/SSG** after moving the auth read to `/api/viewer`. | — |
+| 🔴 **`profiles.email` does not exist** | Five sites selected it. PostgREST treats an unknown column as a request-level error, so the **whole row** returned null: `/apply` told every member "Only members can apply", `/waitlist` dropped members into the anonymous branch, and three checkouts lost the owner's cached `stripe_customer_id`. | repo-wide select guard |
+| 🔴 **Feed ranking discarded** | `feed-list.tsx` re-sorted by `created_at` unconditionally *after* ranking. "Resonance" and "Most popular" rendered identically to "Most recent" — the whole ranking layer computed and thrown away on every render. | — |
+| 🔴 **Orphan: Events discovery** | The map toggle, For You lane, connector suggestions and AI blurbs were built, documented as shipped, and never mounted, while `/events` paid to compute `mapPins`/`showForYou` on every request. | reachability test |
+| 🔴 **Orphan: Founding Business** | `createFoundingBusinessCheckout` had zero callers and redirected to routes that did not exist, so the offer was unbuyable. Built the offer page, the owner-gated action, and the success confirm that grants the founder record. | wiring test |
+| 🔴 **Orphan: Vera autonomy** | `autonomousSend`, "the ONLY function that turns a Vera-decided send into a real send", had zero callers while `/admin/vera-ai` rendered a live master switch, per-category toggles, rate caps and a decision history over a table nothing wrote. Now wired at both send executors; behaviour is unchanged until the switch is turned on. | wiring test |
+| 🟠 **Two files unsearchable** | `lib/ai/vera/execute.ts` and `lib/apps/for-scope.ts` held raw control bytes (NUL, 0x1f, 0x7f), which makes a file "binary" to ripgrep — so **every grep-based sweep silently skipped them**, including this scan's own. | source-hygiene test |
+| 🟠 **CRM contacts meter** | The `space_crm` meter (dimension "Contacts", 250 free) was fed the **deal** count. A Space with 900 imported contacts and 2 deals read "2 of 250 used". | count tests |
+| 🟠 **Retired reward promised** | The event page told every Circle-event attendee "adds to <Circle>'s Current", a mechanic whose table and trigger were dropped in the rewards v3 teardown. | — |
+| 🟠 **Canon breaks** | Member-facing training copy: lowercase "zaps & gems", the retired noun "broadcast", the banned word "unlocked", two em dashes. All outside `check:canon`'s `content/` scope. | — |
+| 🟠 **Date in the wrong zone** | The Journey event chip formatted in the **browser's** zone; events store wall-clock in UTC parts, so a viewer west of UTC saw the previous day. | — |
+| 🟠 **Docs drift** | `CONVERSATION_TOKEN_SECRET` **throws in production** and was in neither `.env.example` nor the LAUNCH checklist (plus four more secrets). `DATABASE.md` described 10 tables that no longer exist, verified against the live DB. | — |
+
+### Verified healthy (worth not re-auditing)
+
+- **Crons**: all 25 `vercel.json` entries resolve to a real route handler, and every cron route
+  handler is scheduled. No drift in either direction.
+- **Orphaned tables**: none. Every live `public` table has a code reader or writer except
+  `app_instances`, which is schema-ahead-of-code for the Loom backbone (tracked below).
+- **CI**: every `check:*` script the repo defines runs in CI. `check:cron-freshness` is consciously
+  excluded and documented as a runtime SLO check.
+- **DB advisors**: one `auth_rls_initplan` warning across ~270 tables. The `rls_enabled_no_policy`
+  INFOs are deliberate deny-all.
+
+---
+
+## Master to-do (open)
+
+### 🔴 High, verified, not yet fixed
+
+| Item | Where | The fix |
+|---|---|---|
+| **`/people/<handle>` shows a directory skeleton** | `app/(main)/people/loading.tsx:19` | Its parent `page.tsx` is now only a redirect, so the detail route inherits a grid skeleton. Move a Detail-shaped skeleton to `app/(main)/people/[handle]/loading.tsx` (mirror `events/[slug]/loading.tsx`) and delete the parent one. |
+| **⌘K search overlay is an untrapped modal** | `components/search/search-overlay.tsx:107` | No `role="dialog"`, no `aria-modal`, no focus trap, no focus restore. Call the existing `useDialogFocusTrap(true, panelRef)` and add the dialog roles; purely additive alongside the ESC + scroll-lock already there. |
+| **`Label` never associates with its control** | `components/ui/field.tsx:28` | Whole member forms (Create Event, contact edit) are programmatically unlabelled. Give `Input`/`Textarea` a `useId()` default id and thread `htmlFor`, or have `Label` wrap its control. |
+| **Chat routes bleed past the mobile gutter** | `app/(main)/messages/[id]/page.tsx:133` and two siblings | Flat `-mx-6` against the shell's responsive `px-4 sm:px-6 lg:px-8`, plus `100vh` where 18 other files use `dvh`. Change to `-mx-4 -my-6 sm:-mx-6 lg:-mx-8` and `100dvh`. |
+
+### 🟠 Medium, grouped by theme
+
+**Half-built features (each has a live control or nav entry with nothing behind it)**
+- Beta **graduation** is orphaned, so referral-contest prizes were never awarded on the `billing_live` flip (`lib/beta/graduation.ts:33`).
+- Beta **admission-wave** engine has no caller while the Command Center advertises and renders the UI (`lib/beta/admission.ts:88`).
+- **Email Studio** Phase-3 template gallery is a dead subtree; its nav target `/admin/email-studio` does not exist (`components/admin/email-studio/template-gallery.tsx:42`).
+- **Household/Circle bundle checkout** has no caller AND no webhook seating branch, so enabling the flag would take payment and seat nobody (`lib/billing/bundle-checkout.ts:21`).
+- `/admin/elements` renders QR Studio toggles and role gates nothing consumes; saving them silently does nothing (`lib/elements/qr-studio.ts:83`).
+- The declared **CRM policy layer** and membrane contact-card primitive are unreferenced (`lib/crm/capabilities.ts:83`).
+- The embeddable-elements `<AppElement>` mounter is orphaned; every mount forks its own (`components/elements/app-element.tsx:25`).
+- `lib/marketing/personas.ts` is a second, unwired copy of the persona registry `/for/[niche]` actually uses.
+- `app_instances` (0 rows, no reader or writer) is the Loom where-referenced backbone, shipped ahead of its code.
+
+**Correctness**
+- **RSVP writes report success to the member even when the database write failed** (`lib/events/rsvp-depth.ts:60`).
+- Reactivating a suspended operator **bypasses the licensed-seat wall**, single and bulk (`lib/spaces/roster.ts:179`).
+- CRM import dedupe index truncates at 1,000 rows, so re-importing into a large list creates duplicates (`lib/crm/import/commit.ts:230`).
+- Circle handoff has no way to see or cancel a pending offer, so an unanswered offer blocks the Circle permanently (`app/(main)/spaces/[slug]/circles/actions.ts:161`).
+- The Vault card shows `lifetime_gems` as "gems to spend", so it never decreases after a redemption or gift (`components/sidebar/right-sidebar.tsx:147`).
+- The 7-day streak strip keys days in server UTC while logs are keyed to the member's local day (`components/sidebar/right-sidebar.tsx:118`).
+- The per-topic notification Frequency selector is inert on every realtime email path (`lib/notification-preferences.ts:181`).
+- The host's "List this event publicly" opt-out is honored on one of four public browse surfaces (`lib/commerce/ticket-projection.ts:99`).
+- Admin footer "Report a problem" links to a POST-only handler, so a click returns 405 (`components/admin/admin-footer.tsx:113`).
+- A root-type Space's "Manage" affordance dead-ends in a 404 (`lib/spaces/types.ts:47`).
+- `library_usages` was dropped five days after it was created; the admin Library splash lane still queries it (`lib/library/splash-registry.ts:190`).
+- Four incompatible cents-to-price formatters; the one used by the seller price editor and product emails drops precision (`lib/commerce/types.ts:375`).
+
+**SEO/AIO**
+- **Event JSON-LD claims every tier-priced event is free** — it reads `events.price_cents` rather than the live tier authority (`lib/jsonld.ts:169`).
+- `/spaces/<slug>/podcasts` is advertised in the sitemap but canonicals to `/spaces/<slug>` (`app/(main)/spaces/[slug]/podcasts/page.tsx:23`).
+- Spotlight pages render a double-branded title, "Name · Frequency · Frequency" (`app/spotlight/[handle]/page.tsx:27`).
+- Four indexable public hubs have **zero inbound internal links**, so they are crawlable only from `sitemap.xml`.
+- Nine `/discover` pages remain dynamic for their own reasons (filterable indexes read `searchParams`). Worth a pass now that the layout no longer forces it.
+
+**Performance**
+- `app/sitemap.ts:379` fires one `podcast_shows` query per networked Space, up to 200 round trips in a single request.
+- QR Studio reads the entire `qr_scans` and `captures` tables into memory on every load, and reads `qr_codes` twice (`app/(main)/admin/qr/page.tsx:42`).
+- The events embedding cron runs every 30 minutes. Now that the For You lane is mounted this work finally has a consumer, but the cadence deserves a look.
+
+**Naming and voice (member-facing, outside `check:canon`'s scope)**
+- The "Around You" dashboard calls Dispatches "broadcasts" in three visible strings (`app/(main)/broadcast/page.tsx:204`).
+- The Dispatches console is "Broadcasts" in the app rail and "Dispatches" in the admin sub-header (`lib/nav/studio.ts:195`).
+- Global search labels eight member destinations with the retired name "Marketplace" (`lib/search/destinations.ts:40`).
+- `/for/community-builders` and Journey copy both sell "cohorts", the one word the canon bans.
+- Public profile and Spotlight stat pills render lowercase "zaps" and "gems earned".
+- **Worth doing:** widen `pnpm check:canon` past `content/` to member-facing strings in `app/` and `lib/`. Every canon break this scan found was outside its current scope.
+
+**Accessibility**
+- The header wordmark's keyboard focus indicator is explicitly deleted (`app/globals.css:1028`).
+- Four member-facing toggle switches have no accessible name.
+- Vera's chat transcript is not a live region, so replies are never announced.
+
+**Docs and repo hygiene**
+- Seven ADR numbers (088 to 094) are each used twice, 090 three times; 75 cross-references are ambiguous.
+- ADR-219 is still marked "Accepted" after ADR-305 retired it.
+- `ARCHITECTURE.md` documents two cron endpoints deleted by ADR-305, and still warns about a removed `vercel.app` canonical fallback.
+- **`tsconfig` excludes `scripts/`**, so the CI guard test files vitest runs are never typechecked.
+
+**UI consistency**
+- Five "Spark" wizards hand-roll the WizardShell lockup, a header violation `check:headers` structurally cannot see.
+- Two hand-rolled `EmptyState` components shadow the kit's variant taxonomy on the two main post feeds.
+- Six route skeletons use the retired `px-4 py-8 max-w-2xl mx-auto` shell, double-padding inside the shell.
+
+### 🧑 Needs your call
+
+- **Pre-2026-09-13 migration ledger divergence.** 477 applied versions have no repo file, from a
+  historical filename rewrite. Reconciling means DELETING ledger rows for a cosmetic gain, so it is
+  documented rather than done. The schema is correct either way.
+- **19 unindexed foreign keys** against 247 already-unused indexes. Adding all 19 to a low-traffic
+  DB is probably not worth it; the cascade-delete parents are the ones that matter.
+- **Three anon-callable SECURITY DEFINER RPCs with no internal auth gate**: `circle_momentum`
+  (membership and friendship counts for any circle), `resonance_neighbors` (any profile's similarity
+  graph, and only ever called by other SQL functions, so revoking anon/authenticated EXECUTE is
+  behaviour-preserving), and `mkt_interest_demand` (channel-demand BI, with no code caller at all).
+- **Duplicate `record_qr_scan` overload.** The 7-arg version is superseded by the 8-arg `p_variant`
+  one and silently drops variant attribution. Dropping it needs `p_variant text default null` on the
+  survivor so the existing named-argument call still resolves.
+- **`listAttachedRecordings` deeper authorization.** Now signed-in only; a signed-in member can still
+  enumerate another host's attached recording titles. Proper per-`hostKind` authorization is a
+  larger change.
+
+---
+
+# Earlier passes
 
 ## 2026-07-25 re-scan (post Comms/Collective/Events era, #1867–#1919)
 
