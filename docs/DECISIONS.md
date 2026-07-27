@@ -14995,3 +14995,38 @@ Two facts about the live system shaped everything below. The rail is **DB-backed
 6. **The lane is composed but is NOT yet the rail's source.** The rail still reads `NAV_AREAS` / the DB menu. Swapping it moves the `/admin/roles` permission-grid keys and the `TELESCOPE_SECTIONS` label together and wants an `area_permissions` migration beside it, so it is its own change. What lands here is the catalog membership plus the parity proof that makes that swap mechanical.
 
 **Consequences.** All four lanes now live in one `APPS` array behind one gate resolver, which is what "one registry for every admin rail" means concretely. A **Space rail coverage guard** was added at the same time, because the owner's standing concern is that consolidation must never cull working features: it asserts end to end that every one of the 32 Space catalog rows reaches the rail for an owner, that nesting is a permutation and never a filter, that a tool survives its box being gated away, and that the nav lane contributes nothing to a Space or entity scope. Writing it surfaced one honest exception, now documented in the test itself: the `profile` Space function is deliberately not a row gate, because the Profile and Settings box is `gate: always` so an owner is never locked out of the surface they would need to re-enable it from; `profile` gates that box's CONTENTS and is enforced in `lib/spaces/profile-settings.ts` and the `/manage` rail getters.
+
+## ADR-850 — The two operator catalogs are reconciled, and their disagreements become a CI failure (2026-07-27)
+
+**Context.** ADR-849 composed the operator destinations into the App catalog and left one step: making that lane the rail's actual source. Doing it turned up two things that change what "the swap" should even mean.
+
+**First, the two catalogs disagree.** `NAV_AREAS` and `STUDIO_LEAVES` both describe the same operator pages, and no code reads both, so nothing has ever compared them. On two of the eleven shared destinations they name different gates:
+
+| Row | `NAV_AREAS` | `STUDIO_LEAVES` |
+|---|---|---|
+| `admin-library` (Loom Studio) | `janitor` ∪ `marketing` staff | `janitor`, no staff arm |
+| `admin-spaces` (Manage Spaces) | `admin` ∪ `platform` staff | `janitor`, no staff arm |
+
+A source swap that took the leaf gate would therefore have **changed who can reach those two pages** while looking like a refactor. `registry.gate.test.ts` pins the nav side of `admin-spaces`, which is the only reason one of them was pinned at all.
+
+**Second, `area_permissions` had inert rows.** Nine live rows; two (`messages`, `settings`) name keys that are not in the catalog. `lib/permissions.ts` fail-safes by dropping unknown keys, so those overrides were saved, shown as saved, and never applied.
+
+**Decision.**
+
+1. **One reconciled source, `ADMIN_RAIL` (`lib/nav/admin-rail.ts`).** One entry per operator rail row, joining the legacy `key`, label and href with the `world` parent derived from the operator catalog. It is a PROJECTION of `NAV_AREAS`, in declaration order, not a second list.
+
+2. **The gate is taken from `NAV_AREAS` verbatim, including where the catalogs disagree.** This is what makes the reconciliation a refactor rather than a security change: `NAV_AREAS` is what the rail enforces today, so sourcing from it changes no access at all. Resolving either divergence is a decision with a real population behind it and is deliberately NOT bundled into a structural change.
+
+3. **The disagreements are recorded as DATA and enforced by a drift guard.** `KNOWN_GATE_DIVERGENCES` lists the two, and a test compares every shared destination across both catalogs and fails if the diverged set is anything other than exactly that list. It also asserts each listed key *still* diverges, so the allowlist cannot rot into a licence after someone reconciles one. A third silent divergence is now a red build rather than a discovery.
+
+4. **The keys are PINNED by a test.** `area_permissions` is keyed by these strings and the reader silently drops unrecognised ones, so a rename does not fail anything at runtime: it quietly voids the operator's saved override. Renaming is still allowed; renaming without a migration is what the pin catches.
+
+5. **The orphans are DELETED, not remapped** (`20270102000000`). Remapping `messages` to `messageBoards` would activate an override that has never been in force, and `messageBoards` defaults to `member` while the stored value is `crew` — one rung stricter. That would tighten access for real members on the strength of a two-month-old row whose intent cannot be confirmed. Changing live access is not a cleanup. Deleting an inert row changes nothing today and removes the trap where a future area keyed `messages` or `settings` would silently inherit it. The four live operator overrides (`admin-growth`, `admin-operations`, `admin-vera-ai` at `mentor`; `admin-programs` at `guide`) are untouched.
+
+6. **`leftMenu()` was NOT re-pointed at `ADMIN_RAIL`.** It was the obvious "finish the swap" move and it earns nothing: `ADMIN_RAIL` is derived FROM `NAV_AREAS`, so routing the menu builder through it adds an indirection hop that computes the identical object. The reconciliation's value is the join and the guard, not the extra layer.
+
+7. **The DB menu stays the live source.** The rail's rows are `menu_items`, customized by the owner, including a destination that is not in the code catalog at all. Re-seeding to make the code the source would overwrite that customization, which is the owner's data and the owner's call. The href-keyed nesting (ADR-848) already reaches those rows without touching them.
+
+**Alternatives.** *Taking the stricter gate on both divergences*, following the precedent `studio.ts` set for its own internal conflicts, was the closest call. Rejected here because "stricter" is not well defined across the axis divergence (ADR-848): `NAV_AREAS` measures `janitor` on the community ladder and `STUDIO_LEAVES` on `web_role`, so the two gates do not order, they select different populations. Picking one silently would have been the exact class of error this whole arc has been about. *Remapping the orphaned rows* is covered in 5. *Deleting `NAV_AREAS`' Admin rows outright* and driving everything from the leaves would have re-keyed `area_permissions`, moved the `/admin/roles` grid and changed two gates in one commit.
+
+**Consequences.** There is now a single place that states what the operator rail is, and CI fails if the two catalogs drift apart again on a shared page or if a key moves out from under stored data. Production has 7 valid `area_permissions` rows instead of 9, with every live override preserved. Two genuine access-policy questions are now written down with their exact populations instead of sitting unnoticed in two files: whether a Marketer should reach Loom Studio, and whether Manage Spaces belongs at `admin` ∪ platform staff or at `janitor`.
