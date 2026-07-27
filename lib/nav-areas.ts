@@ -82,10 +82,13 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   { key: 'circles',       href: '/circles',   label: 'Circles',      section: 'Community', defaultAccess: 'visitor', surface: 'circles' },
   { key: 'channels',      href: '/channels',  label: 'Channels',     section: 'Community', defaultAccess: 'visitor', surface: 'channels' },
   { key: 'events',        href: '/events',    label: 'Events',       section: 'Community', defaultAccess: 'visitor', surface: 'events' },
-  // 'market' is contributed by the Marketplace vertical and composed in below
-  // (after 'events') — see composeNavAreas. It is intentionally NOT a literal here.
+  // 'market' (the "Marketplace" commerce-umbrella row, ADR-868) is contributed by the
+  // market vertical and composed in below (after 'events'), with 'housing' then 'shop'
+  // chained behind it — see composeNavAreas. They are intentionally NOT literals here.
   { key: 'messageBoards', href: '/messages',  label: 'Message Boards', section: 'Community', defaultAccess: 'member', surface: 'messageBoards' },
-  { key: 'people',        href: '/network',   label: 'Community',    section: 'Community', defaultAccess: 'member',  surface: 'people' },
+  // The member directory. Labeled "Members" (ADR-868; was "Community", which collided with
+  // the section header right above it and read as a place, not the people in it).
+  { key: 'people',        href: '/network',   label: 'Members',      section: 'Community', defaultAccess: 'member',  surface: 'people' },
   // Re-homed orphan (E.1): the contacts list lives in the Network hub as My Contacts (ADR-172) —
   // /connections redirects there. Surfaced here so members reach their connections from the rail.
   { key: 'connections',   href: '/network/contacts', label: 'My Contacts', section: 'Community', defaultAccess: 'member', surface: 'people' },

@@ -283,7 +283,7 @@ const MEMBER_FOOTER_COLUMNS: readonly { title: string; links: readonly MemberFoo
       { id: 'housing', label: 'Housing', href: '/housing', navKey: 'housing' },
       { id: 'maker', label: 'Market', href: '/market', navKey: 'maker' },
       { id: 'shop', label: 'Frequency Store', href: '/store', navKey: 'shop' },
-      { id: 'network', label: 'Community', href: '/network', navKey: 'people' },
+      { id: 'network', label: 'Members', href: '/network', navKey: 'people' },
     ],
   },
   {
@@ -549,9 +549,9 @@ export function paletteDestinations(viewer: NavViewer, query = ''): PaletteDesti
 
 // ── Calm mobile spine (§5a: the five thumb-zone worlds + Zap center) ─────────────────
 // The mobile tab bar is the five TOP-LEVEL calm worlds (Feed · Community · Events · The
-// Quest · Classifieds), flanking the raised Zap center button (an ACTION, declared in the
+// Quest · Marketplace), flanking the raised Zap center button (an ACTION, declared in the
 // shell, not a registry node). The bar reads Menu · Feed · Community · [Zap] · Events · The
-// Quest · Classifieds (slots 1-2 sit left of Zap, slots 3-5 right of it). Each spine slot is
+// Quest · Marketplace (slots 1-2 sit left of Zap, slots 3-5 right of it). Each spine slot is
 // an EXISTING calm registry node — its href, gate, and icon key carry over verbatim (moving
 // where the tab is declared, never what it permits); only the rendered TAB label is the
 // canon world name, distinct from the node's rail label where §5a shortens it (e.g. the
@@ -570,16 +570,17 @@ export type SpineTab = {
 
 /** The five calm spine roots, in bar order: their registry node id → the world label
  *  the tab renders. Ids are existing calm nodes (see nav-areas.ts BASE_NAV_AREAS + the
- *  `market` vertical). NAMING canon (ADR-596): internal id `market` IS the Classifieds
- *  peer board (/classifieds) and is never labeled "Market" — that name belongs to the
- *  id-`maker` commerce surface (/market). The fifth tab keeps the peer-board node and
- *  reads "Classifieds". */
+ *  `market` vertical). The fifth tab is the id-`market` node, which since ADR-868 is the
+ *  "Marketplace" commerce umbrella (href /marketplace, the last-visited commerce redirect)
+ *  — the tab label follows the node so the bar never says one thing and lands on another.
+ *  NAMING canon: "Marketplace" is umbrella-only; the surfaces keep their own names
+ *  (Classifieds /classifieds · Market /market · Frequency Store /store · Housing /housing). */
 const CALM_SPINE_ROOTS: readonly { id: string; label: string }[] = [
   { id: 'feed', label: 'Feed' },
   { id: 'circles', label: 'Community' },
   { id: 'events', label: 'Events' },
   { id: 'quest', label: 'The Quest' },
-  { id: 'market', label: 'Classifieds' },
+  { id: 'market', label: 'Marketplace' },
 ] as const
 
 /** The five calm mobile-spine tabs (§5a), in bar order, each pairing its §5a world label

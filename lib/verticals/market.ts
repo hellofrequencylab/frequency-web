@@ -6,6 +6,12 @@ import type { Vertical } from './registry'
 // the single source of the vertical's nav: lib/nav-areas.ts composes it into NAV_AREAS at the
 // anchored position (`after: 'events'`), so the area sits in its exact spot in the Community
 // section. The Classifieds UI (lib/marketplace.ts, route /classifieds) still owns the pages.
+//
+// NAV (ADR-868): this vertical's rail row is now the member commerce UMBRELLA, "Marketplace"
+// (founder decision reviving the word ADR-596 retired — umbrella only; the surfaces keep their
+// names). One row replaces the old Classifieds + Market pair; its /marketplace href is a server
+// redirect that remembers the member's last commerce surface (classifieds | market, cookie
+// `commerce_last`) and defaults to Classifieds. The `maker` vertical no longer contributes a row.
 export const market: Vertical = {
   id: 'market',
   entity: 'labs',
@@ -14,8 +20,8 @@ export const market: Vertical = {
       after: 'events',
       area: {
         key: 'market',
-        href: '/classifieds',
-        label: 'Classifieds',
+        href: '/marketplace',
+        label: 'Marketplace',
         section: 'Community',
         defaultAccess: 'visitor',
         surface: 'market',

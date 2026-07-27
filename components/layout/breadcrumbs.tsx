@@ -48,8 +48,9 @@ type Crumb = { href: string; label: string }
 // The four commerce surfaces all live at their own top-level routes (/classifieds,
 // /market, /store, /housing), so auto-derivation would give each a single crumb
 // (hidden). Pin an explicit, uniform "Marketplace > <Segment>" trail on all four so
-// the commerce hub reads the same everywhere. "Marketplace" is the umbrella (it
-// redirects to /classifieds).
+// the commerce hub reads the same everywhere. "Marketplace" is the member commerce
+// umbrella (ADR-868): /marketplace redirects to the member's last-visited commerce
+// surface (cookie `commerce_last`), defaulting to Classifieds.
 const MARKETPLACE = { href: '/marketplace', label: 'Marketplace' }
 const PATH_TRAILS: Record<string, Crumb[]> = {
   '/classifieds': [MARKETPLACE, { href: '/classifieds', label: 'Classifieds' }],
