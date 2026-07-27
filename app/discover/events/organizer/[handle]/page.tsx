@@ -13,6 +13,7 @@ import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, eventListSchema, personSchema } from '@/lib/jsonld'
 import { SITE_NAME } from '@/lib/site'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 export const revalidate = 3600
 
@@ -147,7 +148,7 @@ export default async function OrganizerPage({
           personSchema({
             name: displayName,
             path: `/discover/events/organizer/${hostHandle}`,
-            image: avatarUrl,
+            image: avatarUrl ? avatarSrc(avatarUrl) : avatarUrl,
           }),
           breadcrumbSchema([
             { name: 'Discover', path: '/discover' },
@@ -171,11 +172,12 @@ export default async function OrganizerPage({
           <span className="inline-flex items-center gap-3">
             {avatarUrl ? (
               <Image
-                src={avatarUrl}
+                src={avatarSrc(avatarUrl)}
                 alt={displayName}
                 width={48}
                 height={48}
                 className="h-12 w-12 rounded-full object-cover"
+                style={avatarFocusStyle(avatarUrl)}
               />
             ) : (
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-bg text-base font-semibold text-primary-strong select-none">

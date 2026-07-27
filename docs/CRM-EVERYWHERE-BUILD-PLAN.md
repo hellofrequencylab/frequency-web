@@ -1,5 +1,25 @@
 # CRM Everywhere — the scoped member viewer + communications build plan
 
+> ## ⚠️ SUPERSEDED — phases 1–5 shipped 2026-07-26 (kept as the design record)
+>
+> Build phases 1 through 5 (and the phase 0 write side) SHIPPED on 2026-07-26 — ADR-828
+> through ADR-836 in [DECISIONS.md](DECISIONS.md). Code + `supabase/migrations/` are now the
+> source of truth; read this document for the rationale, not as a to-do list. Where the
+> shipped shape differs from the plan:
+>
+> - **Routes.** The standalone `/crm` routes this plan names for events and circles became
+>   the **Manage hubs**: Message Attendees leads the Home tab of `/events/[slug]/manage`,
+>   Message Circle leads `/circles/[slug]/manage`, and each old `/crm` path is a redirect
+>   into its hub (ADR-828). **Hub and nexus kept their `/crm` routes** as planned.
+> - **Files.** Several files named below were never created under those names; their
+>   responsibilities were absorbed into the shipped structure (e.g. the viewer wiring lives
+>   with the Manage hubs). Grep for the symbol, not the planned path.
+> - **Still unshipped:** SMS go-live (Track A — A2P registration, owner-held) and the
+>   read-side lane filters (item 0.7's scoped `WorkspaceFilter` / `ListInteractionsFilter`
+>   reads).
+>
+> Annotations below mark the drift inline; the plan text itself is left as written.
+
 > **What this is.** The phased build plan for the owner directive (2026-07-26): mount the
 > master-detail **member viewer** (list left, member box right) on every primary management
 > dashboard — platform Resonance CRM, Space, **Event**, and **Circle** — with the member box
@@ -42,6 +62,9 @@ rewrites.**
 | **4 — Message Circle (Circle CRM)** | The member viewer + comm log at `/circles/[slug]/crm` via the menu contract | 1, 3 patterns |
 | **5 — Multi-channel composer** | One compose, channels Email / DM / Text / Dispatch, per-channel eligibility + one result banner | 0 |
 | **A — Ops track (parallel)** | SMS live (A2P), email replies live in prod (inbound secret + MX) | humans, not code |
+
+> **Status 2026-07-26:** phases 0–5 ✅ shipped (ADR-828..836), except item 0.7 (read-side
+> lane filters) ⏳; Track A ⏳ (A2P + inbound email remain owner-held ops).
 
 ### Surface names + audiences (owner ruling 2026-07-26; in NAMING.md)
 
@@ -88,7 +111,7 @@ with plain indexed `eq()`; a join table models many-to-many we don't have.
 | 0.4 | Backfill migration from existing metadata (`event_id`, `campaign_id`, `bookingId`, `tierId`, `broadcast_id`) — guarded per-source, nullable forever | `supabase/migrations/` | S |
 | 0.5 | Unified send ledger: `email_events` gains `profile_id`, `scope_kind`, `scope_id`, `category` + indexes; `sendRawEmail` writes the missing `sent` leg (+ `suppressed`) with the Resend id; `EmailPayload.attribution` rides the outbox JSON; senders adopt attribution incrementally. NOT `outreach_sends` (it is the Space daily-cap counter) and NOT `contact_interactions` from `lib/email.ts` (client-bundle seam, ADR-613) | `supabase/migrations/`, `lib/email.ts`, `lib/queue/handlers.ts` | M |
 | 0.6 | SMS persistence: `sms_events` table mirroring `email_events` (append-only, service-role only); Twilio status webhook inserts instead of `console.info`; `sendRawSms` writes the `sent` leg. Apply `20260626010000_sms_groundwork.sql` FIRST (verify `supabase migration list`) | `supabase/migrations/`, `app/api/webhooks/twilio/route.ts`, `lib/comms/sms-send.ts` | S |
-| 0.7 | Lane read filters: `WorkspaceFilter` + `ListInteractionsFilter` gain `scopeKind`/`scopeId`; event-lane and circle-lane callers get scope-eq ONLY, and every write action re-checks `conv.scope_id === gate.scopeId` (the `tenantLaneSealed` pattern) | `lib/comms/workspace.ts`, `lib/crm/interactions.ts` | M |
+| 0.7 | ⏳ STILL OPEN (the one unshipped code item). Lane read filters: `WorkspaceFilter` + `ListInteractionsFilter` gain `scopeKind`/`scopeId`; event-lane and circle-lane callers get scope-eq ONLY, and every write action re-checks `conv.scope_id === gate.scopeId` (the `tenantLaneSealed` pattern) | `lib/comms/workspace.ts`, `lib/crm/interactions.ts` | M |
 | 0.8 | Types regen + guard/test updates (ADR-246 untyped-cast sites; `check:crm-parity` unaffected by new params) | `lib/database.types.ts`, touched tests | S |
 
 ## 3. Phase 1 — the member box rework (all instances at once)
@@ -137,6 +160,9 @@ Event manage stays bespoke (menu contract) — the viewer gets a subroute, linke
 dashboard. Surface name **Message Attendees**; audience per owner ruling = **RSVP'd going
 or maybe**.
 
+> **As shipped (ADR-828):** the viewer leads the Home tab of `/events/[slug]/manage`;
+> `/events/[slug]/manage/crm` is a redirect into the hub (its `actions.ts` stays).
+
 | # | Work | Files | Size |
 |---|---|---|---|
 | 3.1 | Route `app/(main)/events/[slug]/manage/crm/page.tsx` — same gate as manage (`event.editSettings`: host / cohost / staff / parent-scope manager), `DashboardTemplate` titled "Message Attendees", mounts `MemberViewer` with `detailVariant="crm"`, RSVP facet | new | M |
@@ -151,6 +177,9 @@ or maybe**.
 
 The pure catalog path: one row + one page. Surface name **Message Circle**; audience =
 active members of the Circle.
+
+> **As shipped (ADR-828):** the viewer leads `/circles/[slug]/manage`; `/circles/[slug]/crm`
+> is a redirect into the hub (its `actions.ts` stays). Hub + nexus kept their `/crm` routes.
 
 | # | Work | Files | Size |
 |---|---|---|---|

@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { ArrowLeft, Zap, Megaphone } from 'lucide-react'
 import { relativeTime, getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { DispatchBody } from './dispatch-body'
 import { LikeButton } from './like-button'
 import { CommentSection } from './comment-section'
@@ -164,7 +165,7 @@ export default async function DispatchDetailPage({ params }: Props) {
           subtitle={
             <div className="flex items-center gap-2 flex-wrap">
               {author?.avatar_url ? (
-                <Image src={author.avatar_url} alt={author.display_name} width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
+                <Image src={avatarSrc(author.avatar_url)} alt={author.display_name} width={20} height={20} className="w-5 h-5 rounded-full object-cover" style={avatarFocusStyle(author.avatar_url)} />
               ) : (
                 <span className="w-5 h-5 rounded-full bg-primary-bg flex items-center justify-center text-3xs font-bold text-primary-strong">
                   {getInitials(author?.display_name ?? '?')}

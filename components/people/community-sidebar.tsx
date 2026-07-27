@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Users, MapPin } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { SidebarCard } from '@/components/ui/sidebar-card'
 
 // Right-rail building blocks for the Community page. Presentational +
@@ -36,12 +37,13 @@ export function OnlineMembersCard({ members }: { members: OnlineMember[] }) {
                 <span className="relative shrink-0">
                   {m.avatarUrl ? (
                     <Image
-                      src={m.avatarUrl}
+                      src={avatarSrc(m.avatarUrl)}
                       alt={m.displayName}
                       width={32}
                       height={32}
                       sizes="32px"
                       className="h-8 w-8 rounded-full object-cover"
+                      style={avatarFocusStyle(m.avatarUrl)}
                     />
                   ) : (
                     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-bg text-2xs font-semibold text-primary-strong select-none">

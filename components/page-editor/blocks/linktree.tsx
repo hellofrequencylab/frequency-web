@@ -30,6 +30,7 @@ import type { CSSProperties } from 'react'
 import { Flame, Gem, CalendarDays, MapPin, Zap } from 'lucide-react'
 import type { ComponentConfig } from '@/lib/page-editor/types'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import {
   MAX_LINKS_PER_BLOCK,
   MAX_GALLERY_IMAGES,
@@ -302,7 +303,7 @@ function TopFriendsView({ title, meta }: { title?: string; meta: SpotlightRender
               className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-2 text-center transition-colors hover:bg-surface-elevated"
             >
               {f.avatarUrl ? (
-                <Image src={f.avatarUrl} alt={name} width={64} height={64} className="h-14 w-14 rounded-full object-cover" />
+                <Image src={avatarSrc(f.avatarUrl)} alt={name} width={64} height={64} className="h-14 w-14 rounded-full object-cover" style={avatarFocusStyle(f.avatarUrl)} />
               ) : (
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-bg text-sm font-bold text-primary-strong">
                   {getInitials(name)}

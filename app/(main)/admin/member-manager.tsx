@@ -8,6 +8,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { assignRole, deactivateMember } from './actions'
 import type { SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
@@ -148,11 +149,12 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
                 {/* Avatar */}
                 {m.avatarUrl ? (
                   <Image
-                    src={m.avatarUrl}
+                    src={avatarSrc(m.avatarUrl)}
                     alt={m.displayName}
                     width={32}
                     height={32}
                     className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5"
+                    style={avatarFocusStyle(m.avatarUrl)}
                   />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none mt-0.5">

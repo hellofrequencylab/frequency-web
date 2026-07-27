@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight } from 'lucide-react'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 
 // Presentational blocks shared by the Puck config (editor + public render) and
@@ -105,7 +106,7 @@ export function LivePostsBlock({ heading, live, pad, vis = '' }: { heading?: str
                 <div className="p-5">
                   <div className="flex items-start gap-3 mb-3">
                     {a?.avatar_url ? (
-                      <Image src={a.avatar_url} alt={a.display_name} width={40} height={40} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                      <Image src={avatarSrc(a.avatar_url)} alt={a.display_name} width={40} height={40} className="w-10 h-10 rounded-full object-cover shrink-0" style={avatarFocusStyle(a.avatar_url)} />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                         {initials}

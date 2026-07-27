@@ -43,8 +43,7 @@ export async function listMySupportThreads(limit = 20): Promise<MemberSupportThr
   try {
     const me = await getMyProfileId()
     if (!me) return []
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = (await createClient()) as unknown as { from: (t: string) => any }
+    const db = await createClient()
     const { data } = await db
       .from('comms_conversations')
       .select('ref, subject, status, last_activity_at')
@@ -52,7 +51,7 @@ export async function listMySupportThreads(limit = 20): Promise<MemberSupportThr
       .neq('kind', 'dm')
       .order('last_activity_at', { ascending: false })
       .limit(limit)
-    const rows = (data as { ref: number | string; subject: string; status: string; last_activity_at: string }[] | null) ?? []
+    const rows = data ?? []
     return rows.map((r) => ({
       ref: String(r.ref),
       subject: r.subject || 'Support request',
@@ -71,12 +70,13 @@ export async function getMySupportThread(ref: string): Promise<MemberSupportDeta
   try {
     const me = await getMyProfileId()
     if (!me) return null
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = (await createClient()) as unknown as { from: (t: string) => any }
+    const db = await createClient()
     const { data: conv } = await db
       .from('comms_conversations')
       .select('id, ref, subject, status, member_profile_id')
-      .eq('ref', ref)
+      // ref is a bigint in the schema; a non-numeric ref coerces to NaN, errors server-side, and
+      // resolves to the same fail-safe null the raw string produced before the typed client.
+      .eq('ref', Number(ref))
       .eq('member_profile_id', me) // defense in depth on top of RLS
       .maybeSingle()
     if (!conv) return null
@@ -87,7 +87,7 @@ export async function getMySupportThread(ref: string): Promise<MemberSupportDeta
       .eq('is_internal', false)
       .order('created_at', { ascending: true })
       .limit(200)
-    const messages = ((msgs as { id: string; direction: string; body: string; created_at: string }[] | null) ?? []).map((m) => ({
+    const messages = (msgs ?? []).map((m) => ({
       id: String(m.id),
       author: authorOf(m.direction),
       body: cleanConversationBody(m.body),

@@ -21,6 +21,7 @@ import { SPOTLIGHT_PUBLIC_BASE } from '@/lib/spotlight/puck/resolve'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { SectionHeader } from '@/components/ui/section-header'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 // Personal "You" module (ADR-525): the grid-side APPEARANCE surface for the Spotlight looks that lost their
 // editor when the Puck Spotlight editor was retired (ADR-524). Their VALUES still render on the public
@@ -438,11 +439,12 @@ function Avatar({ friend }: { friend: TopFriend }) {
   const name = friend.displayName || `@${friend.handle}`
   return friend.avatarUrl ? (
     <Image
-      src={friend.avatarUrl}
+      src={avatarSrc(friend.avatarUrl)}
       alt=""
       width={28}
       height={28}
       className="h-7 w-7 shrink-0 rounded-full object-cover"
+      style={avatarFocusStyle(friend.avatarUrl)}
     />
   ) : (
     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong">

@@ -11,15 +11,18 @@ import { describe, it, expect } from 'vitest'
 
 import { FEATURE_GATES } from './gates'
 import {
+  ALLOWANCE_NUDGE,
   FEATURE_METERS,
   FEATURE_METER_KEYS,
   NON_METERED_FEATURES,
   PLACEHOLDER_ALLOWANCES,
+  PLACEHOLDER_METER_LIMITS,
   featureMeter,
   allowanceAt,
   allowanceLabel,
   allowanceReadout,
   currentMeterStepIndex,
+  nearAllowanceLimit,
   withinAllowance,
 } from './feature-meters'
 import { tierRankOnAxis } from './feature-tiers'
@@ -136,12 +139,49 @@ describe('shape — every meter ladder is well-formed with per-tier placeholder 
   })
 })
 
+describe('one source of quantities — PLACEHOLDER_METER_LIMITS is the map every ladder reads (ADR-837)', () => {
+  it('the map and the built ladders cover exactly the same feature keys', () => {
+    expect(Object.keys(PLACEHOLDER_METER_LIMITS).sort()).toEqual([...FEATURE_METER_KEYS].sort())
+  })
+
+  it("every rung's allowance equals the map's row (no second copy of a quantity anywhere)", () => {
+    for (const key of FEATURE_METER_KEYS) {
+      const limits = PLACEHOLDER_METER_LIMITS[key]!
+      for (const step of FEATURE_METERS[key]!.steps) {
+        expect(step.allowance, `${key}.${step.tier} drifted from PLACEHOLDER_METER_LIMITS`).toBe(
+          limits[step.tier] ?? null,
+        )
+      }
+    }
+  })
+
+  it('mirrors the LIVE caps the codebase already enforces (never invents a conflict)', () => {
+    // QR codes: lib/qr/space-codes.ts PLAN_CODE_CAPS enforces free 3 / business 500 today.
+    expect(PLACEHOLDER_METER_LIMITS.space_qr).toMatchObject({ free: 3, business: 500 })
+    // Team seats: lib/spaces/seats.ts BASE_SEAT_ALLOWANCE = 1 (the owner's free seat, ADR-799).
+    expect(PLACEHOLDER_METER_LIMITS.space_team!.free).toBe(1)
+    // Vera: mirrors PRICING_DEFAULTS.vera_free_daily_cap (~10/day, §2).
+    expect(PLACEHOLDER_METER_LIMITS.space_vera!.free).toBe(10)
+  })
+})
+
 describe('label + readout formatting', () => {
   it('allowanceLabel renders a cap, a period, and unlimited plainly', () => {
     expect(allowanceLabel(100, 'contacts', null)).toBe('Up to 100 contacts')
     expect(allowanceLabel(5000, 'sends', 'month')).toBe('Up to 5,000 sends/mo')
     expect(allowanceLabel(10, 'messages', 'day')).toBe('Up to 10 messages/day')
     expect(allowanceLabel(null, 'contacts', null)).toBe('Unlimited contacts')
+  })
+
+  it('allowanceLabel handles the edge counts honestly: zero is "not included", one drops the plural', () => {
+    expect(allowanceLabel(0, 'runs', 'month')).toBe('Not included on this plan')
+    expect(allowanceLabel(1, 'pipelines', null)).toBe('Up to 1 pipeline')
+  })
+
+  it('the seats ladder says INCLUDED seats and the per-seat add-on, never a wall (ADR-799)', () => {
+    const seats = featureMeter('space_team')!
+    const top = seats.steps[seats.steps.length - 1]!
+    expect(top.allowanceText).toBe('3 seats included, add more per seat')
   })
 
   it('allowanceReadout renders "X of N used" or the unlimited form; null for a non-metered feature', () => {
@@ -161,11 +201,12 @@ describe('read helpers', () => {
   })
 
   it('currentMeterStepIndex maps a viewer tier to the highest rung at/below it', () => {
-    const crm = featureMeter('space_crm')! // steps: free, business
+    const crm = featureMeter('space_crm')! // steps: free, business, collective
     expect(currentMeterStepIndex(crm, 'free')).toBe(0)
     expect(currentMeterStepIndex(crm, 'business')).toBe(1)
-    // Nonprofit ranks above business (the top rung) → maps to the business rung.
-    expect(currentMeterStepIndex(crm, 'nonprofit')).toBe(1)
+    expect(currentMeterStepIndex(crm, 'collective')).toBe(2)
+    // Nonprofit ranks above collective (the top rung) → maps to the collective rung.
+    expect(currentMeterStepIndex(crm, 'nonprofit')).toBe(2)
     // Unknown tier → the free floor.
     expect(currentMeterStepIndex(crm, 'nonsense')).toBe(0)
   })
@@ -175,6 +216,28 @@ describe('read helpers', () => {
     expect(allowanceAt('space_crm', 'business')).toBeNull() // unlimited
     expect(allowanceAt('space_crm', 'nonprofit')).toBeNull() // maps to business rung (unlimited)
     expect(allowanceAt('space_whitelabel', 'free')).toBeNull() // not metered
+  })
+})
+
+describe('the gauge as upsell — nearAllowanceLimit + the one shared nudge line (ADR-837)', () => {
+  it('trips at the threshold (80% of a finite allowance) and not below it', () => {
+    // Free CRM allowance is 250 → the nudge appears at 200 (0.8 exactly), not at 199.
+    expect(nearAllowanceLimit('space_crm', 'free', 199)).toBe(false)
+    expect(nearAllowanceLimit('space_crm', 'free', 200)).toBe(true)
+    expect(nearAllowanceLimit('space_crm', 'free', 10_000)).toBe(true)
+  })
+
+  it('never trips on an unlimited tier, a zero allowance, or a non-metered feature', () => {
+    expect(nearAllowanceLimit('space_crm', 'business', 1_000_000)).toBe(false) // unlimited
+    expect(nearAllowanceLimit('space_automation', 'free', 5)).toBe(false) // zero allowance, nothing to fill
+    expect(nearAllowanceLimit('space_whitelabel', 'free', 999)).toBe(false) // not metered
+    expect(nearAllowanceLimit('made-up', 'free', 999)).toBe(false)
+  })
+
+  it('the nudge copy is on-canon: plain, no em dashes, no urgency or dark-pattern words', () => {
+    expect(ALLOWANCE_NUDGE).toBe('Nearly full. Move up a plan for a higher allowance.')
+    expect(ALLOWANCE_NUDGE).not.toMatch(/[–—]/)
+    expect(ALLOWANCE_NUDGE.toLowerCase()).not.toMatch(/hurry|now|last chance|only|don't|warning|limit reached/)
   })
 })
 

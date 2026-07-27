@@ -9,6 +9,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { downscaleImageFile } from '@/lib/images/downscale-image'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
@@ -559,7 +560,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-border bg-surface py-1.5 pl-1.5 pr-3.5 shadow-sm">
               {inviter.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={inviter.avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover" />
+                <img src={avatarSrc(inviter.avatarUrl)} alt="" className="h-7 w-7 rounded-full object-cover" style={avatarFocusStyle(inviter.avatarUrl)} />
               ) : (
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong" aria-hidden>
                   {getInitials(inviter.displayName) || '?'}

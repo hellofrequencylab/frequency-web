@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 // A page-layout module (ADR-270): the latest profiles to join. Self-fetching RSC;
 // returns null when there's nothing to show. Public profile data only.
@@ -23,9 +24,10 @@ export async function NewestMembers() {
               {member.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={member.avatar_url}
+                  src={avatarSrc(member.avatar_url)}
                   alt=""
                   className="h-7 w-7 shrink-0 rounded-full object-cover"
+                  style={avatarFocusStyle(member.avatar_url)}
                 />
               ) : (
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-border text-2xs font-semibold uppercase text-muted">

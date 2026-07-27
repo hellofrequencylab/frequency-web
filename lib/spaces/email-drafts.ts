@@ -19,10 +19,12 @@
 // TENANCY + AUTHZ (ADR-246/328/329, mirrors campaigns.ts). Every READ + WRITE filters `space_id = spaceId`, so
 // a cross-space id leaks nothing. READS are gated on canEditProfile OR a platform janitor previewing (fail-safe
 // to [] / null); WRITES are gated on canEditProfile and re-validate the row belongs to the Space (fail-closed).
-// The `campaigns.space_id` column is not in the generated types yet, so this module reaches the table through
-// the untyped admin client (ADR-246), the same convention campaigns.ts uses.
+// The `campaigns` columns here (space_id / block_json / preheader) are covered by the regenerated types
+// (ADR-246 closed), so this module reaches the table through the typed admin client, the same convention
+// campaigns.ts uses; only the jsonb block_json payload keeps a narrow Json cast.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Json, TablesUpdate } from '@/lib/database.types'
 import { getMyProfileId, getCallerProfile, getCachedUser } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -62,7 +64,7 @@ import type {
   LoadedEmailCampaign,
 } from '@/app/(main)/admin/email-studio/actions'
 
-// ── The untyped `campaigns` seam (space_id/block_json not fully in the generated types) ──────────────────────
+// ── The typed `campaigns` seam (space_id/block_json are in the generated types; ADR-246 closed) ─────────────
 
 const DRAFT_COLS = 'id, subject, preheader, block_json, status, space_id, created_at'
 
@@ -76,22 +78,8 @@ type DraftRow = {
   created_at: string
 }
 
-type DraftQuery = {
-  select: (cols: string) => DraftQuery
-  eq: (col: string, val: string) => DraftQuery
-  not: (col: string, op: string, val: null) => DraftQuery
-  order: (col: string, opts: { ascending: boolean }) => DraftQuery
-  limit: (n: number) => DraftQuery
-  insert: (rows: Record<string, unknown>[]) => DraftQuery
-  update: (patch: Record<string, unknown>) => DraftQuery
-  delete: () => DraftQuery
-  maybeSingle: () => Promise<{ data: DraftRow | null; error: unknown }>
-  then: (resolve: (r: { data: DraftRow[] | null; error: unknown }) => unknown) => Promise<unknown>
-}
-
-function campaignsTable(): DraftQuery {
-  const db = createAdminClient() as unknown as { from: (t: string) => DraftQuery }
-  return db.from('campaigns')
+function campaignsTable() {
+  return createAdminClient().from('campaigns')
 }
 
 /** A fresh EMAIL layout (kind 'email') seeded from the `basic` starter — the shape a new draft is born with. */
@@ -169,25 +157,19 @@ export async function listSpaceEmailDrafts(spaceId: string): Promise<EmailCampai
   const caps = await getSpaceCapabilities(space, caller?.id ?? null)
   if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return []
   try {
-    return await new Promise<EmailCampaignCard[]>((resolve) => {
-      campaignsTable()
-        .select(DRAFT_COLS)
-        .eq('space_id', spaceId)
-        .not('block_json', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(50)
-        .then(({ data, error }) => {
-          if (error || !data) return resolve([])
-          resolve(
-            data.map((r) => ({
-              id: r.id,
-              subject: r.subject ?? '',
-              status: r.status ?? 'draft',
-              updatedAt: r.created_at,
-            })),
-          )
-        })
-    })
+    const { data, error } = await campaignsTable()
+      .select(DRAFT_COLS)
+      .eq('space_id', spaceId)
+      .not('block_json', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (error || !data) return []
+    return data.map((r) => ({
+      id: r.id,
+      subject: r.subject ?? '',
+      status: r.status ?? 'draft',
+      updatedAt: r.created_at,
+    }))
   } catch {
     return []
   }
@@ -207,29 +189,23 @@ export async function listSpaceEmailMessagingItems(spaceId: string): Promise<Mes
   const caps = await getSpaceCapabilities(space, caller?.id ?? null)
   if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return []
   try {
-    return await new Promise<MessagingCampaignItem[]>((resolve) => {
-      campaignsTable()
-        .select('id, subject, status, recipient_count, sent_at')
-        .eq('space_id', spaceId)
-        .not('block_json', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(100)
-        .then(({ data, error }) => {
-          if (error || !data) return resolve([])
-          resolve(
-            (data as unknown as { id: string; subject: string | null; status: string | null; recipient_count: number | null; sent_at: string | null }[]).map((r) => ({
-              kind: 'campaign' as const,
-              id: r.id,
-              name: r.subject ?? '',
-              segment: 'Your contacts',
-              status: campaignStatusToMessaging(r.status ?? 'draft'),
-              recipientCount: r.recipient_count ?? 0,
-              sentAt: r.sent_at ?? null,
-              href: '',
-            })),
-          )
-        })
-    })
+    const { data, error } = await campaignsTable()
+      .select('id, subject, status, recipient_count, sent_at')
+      .eq('space_id', spaceId)
+      .not('block_json', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(100)
+    if (error || !data) return []
+    return data.map((r) => ({
+      kind: 'campaign' as const,
+      id: r.id,
+      name: r.subject ?? '',
+      segment: 'Your contacts',
+      status: campaignStatusToMessaging(r.status ?? 'draft'),
+      recipientCount: r.recipient_count ?? 0,
+      sentAt: r.sent_at ?? null,
+      href: '',
+    }))
   } catch {
     return []
   }
@@ -251,7 +227,8 @@ export async function createSpaceEmailDraft(spaceId: string): Promise<ActionResu
       .insert([
         {
           space_id: spaceId,
-          block_json: layout,
+          // The jsonb block_json payload is the one loose shape here — narrow cast to Json only.
+          block_json: layout as unknown as Json,
           body: '',
           subject: '',
           preheader: '',
@@ -325,14 +302,15 @@ export async function saveSpaceEmailDraft(
   const existing = await readDraft(id, spaceId)
   if (!existing) return { error: 'That email no longer exists.' }
 
-  const update: Record<string, unknown> = {}
+  const update: TablesUpdate<'campaigns'> = {}
   if (typeof patch.subject === 'string') update.subject = patch.subject.slice(0, 300)
   if (typeof patch.preheader === 'string') update.preheader = patch.preheader.slice(0, 300)
 
   if (patch.layout) {
     const clean = sanitizeEntityLayout(patch.layout as EntityLayout, 'email')
     const layout = clean ? sanitizeEmailRichContent(clean) : starterEmailLayout()
-    update.block_json = layout
+    // The jsonb block_json payload stays a narrow Json cast (the one loose shape in this module).
+    update.block_json = layout as unknown as Json
     try {
       const subject = typeof patch.subject === 'string' ? patch.subject : (existing.subject ?? '')
       const preheader = typeof patch.preheader === 'string' ? patch.preheader : (existing.preheader ?? '')
@@ -620,17 +598,7 @@ export async function sendSpaceEmailDraftAsConversations(
   const emails = recipients.map((r) => r.email).filter(Boolean)
   const byEmail = new Map<string, { contactId: string; profileId: string | null }>()
   try {
-    const db = createAdminClient() as unknown as {
-      from: (t: string) => {
-        select: (c: string) => {
-          eq: (col: string, val: string) => {
-            in: (col: string, vals: string[]) => Promise<{
-              data: { id: string; email: string | null; profile_id: string | null }[] | null
-            }>
-          }
-        }
-      }
-    }
+    const db = createAdminClient()
     const { data } = await db.from('contacts').select('id, email, profile_id').eq('space_id', spaceId).in('email', emails)
     for (const c of data ?? []) {
       const e = (c.email ?? '').trim().toLowerCase()

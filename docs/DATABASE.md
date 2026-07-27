@@ -525,3 +525,13 @@ npx supabase gen types typescript --linked > lib/database.types.ts  # regenerate
 
 If prod ever needs filename-stamp parity for a tool that only reads filenames, do a deliberate,
 one-time `migration repair --status applied <id>` reconciliation, not an ad-hoc rename or a `db push`.
+
+### Name-variant bookkeeping (verified 2026-07-26, harmless)
+
+Beyond the stamp divergence above, about 35 migrations with logical stamps before `202611*`
+also carry **name variants**: the repo filename and the name recorded in prod's
+`schema_migrations` differ (renames during authoring, dashboard-side applies, and parallel
+MCP applies). All of the objects those migrations create were verified present in prod on
+2026-07-26 — this is bookkeeping drift only, not schema drift. Treat these entries exactly
+like the stamp divergence: they are expected, they are harmless, and **do not re-apply** the
+repo files to "fix" the names (re-running several of them is destructive).

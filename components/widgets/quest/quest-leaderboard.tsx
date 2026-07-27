@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCrewContext } from '@/lib/quest/crew-context'
 import { getRankDef, type SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { ModuleCard } from '@/components/modules/module-card'
 
 // My Quest layout module (ADR-270/294): the viewer's circle ranked by season Zaps (top 5).
@@ -64,11 +65,12 @@ export async function QuestLeaderboard() {
 
               {member.avatarUrl ? (
                 <Image
-                  src={member.avatarUrl}
+                  src={avatarSrc(member.avatarUrl)}
                   alt={member.displayName}
                   width={28}
                   height={28}
                   className="h-7 w-7 shrink-0 rounded-full object-cover"
+                  style={avatarFocusStyle(member.avatarUrl)}
                 />
               ) : (
                 <div className="flex h-7 w-7 shrink-0 select-none items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong">

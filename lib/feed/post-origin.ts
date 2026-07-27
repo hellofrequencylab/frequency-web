@@ -2,8 +2,6 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { PostScopeContext } from '@/components/feed/post-card'
 
-export type { PostScopeContext }
-
 // Where a post lives. A post's home is its `scope_id`: a CIRCLE (group/cluster
 // visibility), an EVENT (a post tied to a gathering), a CHANNEL, a SPACE
 // (post_type 'space_update' community posts), or a member's WALL/profile.

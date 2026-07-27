@@ -14739,3 +14739,36 @@ Production was missing ten repo migrations (20261192 operator seat CHECK through
 **Alternatives.** Deriving `business` from the host Space's PLAN (`hostSpacePlan`) — rejected: the owner's split is account type, and plan-ranking it would beta-soften into a no-op while billing is off. A new invite sender or notification type for the re-invite — rejected: the operator-DM spine lane already delivers to this exact audience with logging, blocks, and rate limits; the re-invite is that lane with server-authored copy and a target stamp. Hiding the roster/metrics post-lock — rejected by the ruling (tracked and visible to both).
 
 **Consequences.** A personal host keeps every list they ever built (visible, measured) and keeps a real growth loop (re-invite), while ongoing outreach is the Business Space's offer — the upsell is one sentence on the locked actions. Business/staff behavior is unchanged everywhere. Known deferrals: the re-invite sends in-app DM only (recipients without an email on file for spine threading are skipped and counted; an email/push invite lane can join later through the same action), CSV of questionnaire answers stays available to all tiers (event ops data, not the marketing export), and occurrence-level lock times for recurring events stay on the simple anchor rule by design.
+
+## ADR-837 — Placeholder meter numbers land in ONE map: PLACEHOLDER_METER_LIMITS (display-only, beta-soft) (2026-07-27)
+
+**Context.** ADR-836 set the owner's tier model (value for all, limits on how much) and ADR-519/520 built the meter machinery, but the quantities were scattered inline per meter in `lib/pricing/feature-meters.ts` and several ladder lines stayed qualitative ("a capped number of contacts"). The owner directed: give the tier model its meters with clearly marked placeholder numbers, adjustable in one place at go-live. Beta posture unchanged (ADR-782): `billing_live` OFF, `PLACEHOLDER_PRICING`/`PLACEHOLDER_ALLOWANCES` true, meters inform and preview, nothing blocks or charges.
+
+**Decision.**
+1. **One go-live map.** `PLACEHOLDER_METER_LIMITS` (lib/pricing/feature-meters.ts, `@placeholder`) is now THE per-feature, per-tier allowance map; every `RAW_METERS` entry reads its row from it, and a parity test asserts no rung can drift from the map. It is the quantities sibling of the `PLACEHOLDER_*_PRICE_CENTS` maps (ADR-518). Go-live = edit this one map (and flip the flags).
+2. **The numbers (all placeholder; live code caps MIRRORED, never contradicted):**
+
+   | Feature (key) | Free | Business | Collective | Source |
+   |---|---|---|---|---|
+   | CRM contacts (`space_crm`) | 250 | Unlimited | Unlimited | BUSINESS-MODEL-PLAN §2; console freeNote |
+   | Email sends /mo (`space_email`) | 300 | 5,000 | 25,000 | §2 ("300/mo free, 5k → 25k steps"); the live `DAILY_SEND_CAP = 500/day` (lib/spaces/email.ts) is a separate deliverability throttle, untouched |
+   | Bookings /mo (`space_bookings`) | 15 | Unlimited | — | §2 |
+   | Journey enrollees (`space_journey`) | 10 | Unlimited | — | §2 |
+   | Active memberships (`space_memberships`) | 10 | Unlimited | — | §2 |
+   | Tickets (`space_tickets`) | 50 | Unlimited | — | §2 |
+   | QR codes (`space_qr`) | 3 | 500 | Unlimited | MIRRORS the LIVE `PLAN_CODE_CAPS` (lib/qr/space-codes.ts: free 3, business 500). Collective unlimited is placeholder; NOTE: the live cap map has no `collective` row, so a Collective Space falls to the free cap (3) today — flagged for the enforcement owner, not changed here (out of this change's lane) |
+   | Automation runs /mo (`space_automation`) | Not included | — | 1,000 included | Owner placeholder; the feature itself stays the Collective on/off (FEATURE_GATES); the meter shows included volume |
+   | Team seats (`space_team`) | 1 (the owner, mirrors `BASE_SEAT_ALLOWANCE`) | — | 3 included, more per seat | ADR-799 stands: seats remain the per-seat add-on; "3 included" is a placeholder bundling choice on the display ladder, never a wall (`allowanceTextByTier` prints "3 seats included, add more per seat") |
+   | Pipelines (`space_multi_pipeline`) | 1 | — | Unlimited | §2 |
+   | Vera msgs /day (`space_vera`) | 10 | 200 | — | mirrors `PRICING_DEFAULTS.vera_free_daily_cap` |
+   | Playbook runs /mo (`space_crm_playbooks`) | 0 | 5,000 | — | pre-existing placeholder |
+   | Resonance matches /mo (`space_crm_resonance_ai`) | 10 | 2,000 | — | pre-existing placeholder |
+   | Vera msgs /day, personal (`vera_unlimited`) | 10 | Crew: unlimited | — | pre-existing placeholder |
+
+   `feature-tiers.ts` ladder lines that were qualitative now name these numbers (CRM 250, Email 300/5,000/25,000, Automations 1,000 runs, Team 3 included seats), each tagged `@placeholder` pointing back at the map; the map stays the single edit point. Console `freeNote` levers (space-modules.ts) updated to match (ADR-784 pattern).
+3. **Usage reads, display-only.** Where a real count is already cheap, meter surfaces now show "X of Y used": the billing Plan-and-usage hub passes the pipeline count (the ADR-520 contacts proxy, `getDeals`) into the CRM meter and `seatUsage.used` into the seats meter; the CRM locked page + profile snapshot upsell pass the same pipeline count; the rail `SurfaceSummaryCard` already showed live counts. No sends-this-month read exists cheaply, so the Email meter shows the allowance alone (follow-up: a month-window count over `outreach_sends` if wanted). NO new counters, tables, or migrations; `withinAllowance` untouched (never blocks while billing is off).
+4. **The gauge as upsell.** One shared sentence, `ALLOWANCE_NUDGE` = "Nearly full. Move up a plan for a higher allowance.", plus a "See plans" link, appears once usage crosses `USAGE_UPGRADE_THRESHOLD` (0.8) — decided by the new pure `nearAllowanceLimit`. Mounted in `FeatureMeterRange` (usage-aware surfaces) and the rail card's meter line (chip relabeled "See plans"). No modals, no urgency words, informational only. `allowanceLabel` also stops saying "Up to 0": a zero allowance reads "Not included on this plan", and a cap of 1 drops the plural.
+
+**Alternatives.** Inventing the proposed Business-25 QR rung / Free-500 email rung from the directive draft — rejected: live code already enforces QR 3/500 and documents email 300 free, and the standing rule is mirror-don't-conflict. Putting numbers only in prose (feature-tiers) — rejected: two copies drift; the map + parity test make drift a test failure.
+
+**Consequences.** Go-live tuning is one map edit + two flag flips. Numbers are explicitly the owner's go-live decision; everything stays beta-soft (ADR-782). Follow-ups: add the numbers table to docs/PRICING-OPERATIONS.md (that file was mid-edit by a parallel workstream when this landed, so the table lives here for now); a `collective` row for `PLAN_CODE_CAPS`; an optional month-window sends count for the Email meter readout.

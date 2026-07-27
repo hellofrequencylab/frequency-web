@@ -5,6 +5,7 @@ import { Flame, Gem, CalendarDays, MapPin, Zap } from 'lucide-react'
 import type { SpotlightBlock, SpotlightStatKey, BlockTint } from '@/lib/spotlight/blocks/schema'
 import type { TopFriend } from '@/lib/spotlight/top-friends'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { buildEmbedSrc, embedHeight } from '@/lib/spotlight/embeds'
 import { GalleryLightbox } from './gallery-lightbox'
 
@@ -95,11 +96,12 @@ function TopFriendsView({ title, friends, cardStyle, headingFont }: {
             >
               {f.avatarUrl ? (
                 <Image
-                  src={f.avatarUrl}
+                  src={avatarSrc(f.avatarUrl)}
                   alt={name}
                   width={64}
                   height={64}
                   className="h-14 w-14 rounded-full object-cover"
+                  style={avatarFocusStyle(f.avatarUrl)}
                 />
               ) : (
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-bg text-sm font-bold text-primary-strong">

@@ -262,9 +262,10 @@ export interface AssembleMessagePathInput {
   audience: 'staff' | 'leader'
   /** The member's display name (the inbound sender label). */
   memberName?: string
-  /** Max threads returned (newest first). */
-  limit?: number
 }
+
+/** Max threads returned (newest first). One page of the fold; "Show older" pages via the IO cursor. */
+const MAX_THREADS = 30
 
 /**
  * Merge one person's interactions + spine conversations into the thread-grouped message path:
@@ -280,7 +281,6 @@ export function assembleMessagePath(input: AssembleMessagePathInput): MessagePat
   const { scope, audience, labels } = input
   const leader = audience === 'leader'
   const memberName = input.memberName?.trim() || 'Member'
-  const limit = Math.min(Math.max(input.limit ?? 30, 1), 100)
 
   // 1. Conversations in this lane (each becomes a thread), with their refs resolved once.
   const keptConversations = (input.conversations ?? []).flatMap((c) => {
@@ -402,7 +402,7 @@ export function assembleMessagePath(input: AssembleMessagePathInput): MessagePat
     if (d !== 0) return d
     return a.key < b.key ? 1 : a.key > b.key ? -1 : 0
   })
-  const capped = threads.slice(0, limit)
+  const capped = threads.slice(0, MAX_THREADS)
 
   let latest: PathEntry | null = null
   for (const t of capped) {

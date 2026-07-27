@@ -12,6 +12,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Star, Trash2 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import type { ReviewAggregate } from '@/lib/spaces/reviews-aggregate'
 import type { RecordingReview } from '@/lib/airwaves/reviews'
 import { submitRecordingReviewAction, deleteRecordingReviewAction } from '@/lib/airwaves/review-actions'
@@ -179,12 +180,13 @@ export function RecordingReviews({
               <li key={r.id} className="flex gap-3">
                 {a?.avatarUrl ? (
                   <Image
-                    src={a.avatarUrl}
+                    src={avatarSrc(a.avatarUrl)}
                     alt={a.displayName}
                     width={32}
                     height={32}
                     unoptimized
                     className="h-8 w-8 shrink-0 rounded-full object-cover"
+                    style={avatarFocusStyle(a.avatarUrl)}
                   />
                 ) : (
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong select-none">

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 // The event host's name in the page header, with a hover/focus PROFILE PREVIEW popover
 // (Event page overhaul, item 3). Reserved for an IN-NETWORK host — one with a Frequency
@@ -32,11 +33,12 @@ export function HostHovercard({
         <Link href={`/people/${host.handle}`} className="flex items-center gap-3">
           {host.avatar_url ? (
             <Image
-              src={host.avatar_url}
+              src={avatarSrc(host.avatar_url)}
               alt=""
               width={44}
               height={44}
               className="h-11 w-11 shrink-0 rounded-full object-cover"
+              style={avatarFocusStyle(host.avatar_url)}
             />
           ) : (
             <span className="flex h-11 w-11 shrink-0 select-none items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong">

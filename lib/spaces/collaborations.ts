@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // Collaborator spaces (ADR-799 §B) — the service-role READS + PURE resolvers behind the collaborator
@@ -8,8 +7,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // reads straight from here; the actions import the pure helpers for their authz decision.
 //
 // The row IS the relationship (unlike event_placement_requests, approval sets no external column). The
-// table is newer than the generated Database types, so we reach it through an untyped admin handle
-// (ADR-246, the same convention as lib/events/placement.ts). Reads FAIL-SAFE (empty / null on any error).
+// table is covered by the regenerated Database types (ADR-246 closed), so we reach it through the
+// typed admin client. Reads FAIL-SAFE (empty / null on any error).
 
 export type CollaborationStatus = 'pending' | 'accepted' | 'declined' | 'revoked'
 
@@ -62,16 +61,14 @@ export function partnerSideForSpace(
   return row.host_space_id === spaceId ? row.collaborator_space_id : row.host_space_id
 }
 
-// ── IO: the untyped admin handle (space_collaborations isn't in the generated types yet, ADR-246) ────
+// ── IO: the typed admin client (space_collaborations is in the generated types; ADR-246 closed) ─────
 
-function untyped(): SupabaseClient {
-  return createAdminClient()
-}
+type AdminClient = ReturnType<typeof createAdminClient>
 
 type PartnerSpace = { id: string; slug: string; name: string; logoUrl: string | null; tagline: string | null }
 
 /** Batch-resolve the partner spaces for a set of rows (one query), keyed by id. */
-async function resolvePartners(admin: SupabaseClient, ids: string[]): Promise<Map<string, PartnerSpace>> {
+async function resolvePartners(admin: AdminClient, ids: string[]): Promise<Map<string, PartnerSpace>> {
   const map = new Map<string, PartnerSpace>()
   const unique = [...new Set(ids)]
   if (unique.length === 0) return map
@@ -79,9 +76,7 @@ async function resolvePartners(admin: SupabaseClient, ids: string[]): Promise<Ma
     .from('spaces')
     .select('id, name, brand_name, slug, brand_logo_url, tagline')
     .in('id', unique)
-  for (const r of (data ?? []) as Array<{
-    id: string; name: string | null; brand_name: string | null; slug: string; brand_logo_url: string | null; tagline: string | null
-  }>) {
+  for (const r of data ?? []) {
     map.set(r.id, {
       id: r.id,
       slug: r.slug,
@@ -99,11 +94,12 @@ async function resolvePartners(admin: SupabaseClient, ids: string[]): Promise<Ma
 async function loadViews(spaceId: string): Promise<CollaborationView[]> {
   if (!spaceId) return []
   try {
-    const admin = untyped()
+    const admin = createAdminClient()
     const [asHost, asCollab] = await Promise.all([
       admin.from('space_collaborations').select('*').eq('host_space_id', spaceId),
       admin.from('space_collaborations').select('*').eq('collaborator_space_id', spaceId),
     ])
+    // The typed rows carry status as plain string; narrow to the CollaborationStatus vocabulary.
     const rows = [
       ...((asHost.data ?? []) as CollaborationRow[]),
       ...((asCollab.data ?? []) as CollaborationRow[]),
@@ -153,11 +149,11 @@ export async function spaceHasCollaborators(spaceId: string): Promise<boolean> {
   return (await listAcceptedCollaborations(spaceId)).length > 0
 }
 
-/** A single collaboration row by id (untyped select), for the action authz path. FAIL-SAFE: null. */
+/** A single collaboration row by id (typed select), for the action authz path. FAIL-SAFE: null. */
 export async function loadCollaboration(id: string): Promise<CollaborationRow | null> {
   if (!id) return null
   try {
-    const { data } = await untyped().from('space_collaborations').select('*').eq('id', id).maybeSingle()
+    const { data } = await createAdminClient().from('space_collaborations').select('*').eq('id', id).maybeSingle()
     return (data as CollaborationRow | null) ?? null
   } catch {
     return null
@@ -169,9 +165,9 @@ export async function loadCollaboration(id: string): Promise<CollaborationRow | 
 export async function listSpaceCollaborationApprovers(spaceId: string): Promise<string[]> {
   const ids = new Set<string>()
   try {
-    const admin = untyped()
+    const admin = createAdminClient()
     const { data: space } = await admin.from('spaces').select('owner_profile_id').eq('id', spaceId).maybeSingle()
-    const ownerId = (space as { owner_profile_id: string | null } | null)?.owner_profile_id
+    const ownerId = space?.owner_profile_id
     if (ownerId) ids.add(ownerId)
     const { data: admins } = await admin
       .from('space_members')
@@ -179,7 +175,7 @@ export async function listSpaceCollaborationApprovers(spaceId: string): Promise<
       .eq('space_id', spaceId)
       .eq('role', 'admin')
       .eq('status', 'active')
-    for (const m of (admins ?? []) as Array<{ profile_id: string }>) ids.add(m.profile_id)
+    for (const m of admins ?? []) ids.add(m.profile_id)
   } catch {
     /* fail-safe: an empty approver set denies every action (fail-closed) */
   }

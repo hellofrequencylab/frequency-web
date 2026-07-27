@@ -25,18 +25,10 @@ async function viewerApprovesSpace(spaceId: string): Promise<boolean> {
   return approvers.includes(profileId)
 }
 
-interface WriteFilter extends Promise<{ error: { code?: string } | null }> {
-  eq: (c: string, val: string) => WriteFilter
-  in: (c: string, vals: string[]) => WriteFilter
-}
-
+/** The typed admin handle for space_venue_holds (in the generated types; ADR-246 closed). The
+ *  builder is chainable + awaitable, so the status-guarded updates stay atomic at the DB. */
 function holdsTable() {
-  return (createAdminClient() as unknown as {
-    from: (t: string) => {
-      insert: (rows: Record<string, unknown>[]) => { select: (c: string) => { maybeSingle: () => Promise<{ data: { id: string } | null; error: { code?: string } | null }> } }
-      update: (v: Record<string, unknown>) => WriteFilter
-    }
-  }).from('space_venue_holds')
+  return createAdminClient().from('space_venue_holds')
 }
 
 async function revalidateSpaces(...spaceIds: string[]): Promise<void> {

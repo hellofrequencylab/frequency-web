@@ -12,6 +12,7 @@ import { DemoBadge } from '@/components/ui/demo-badge'
 import { getViewerHats } from '@/lib/core/viewer-hats'
 import { accessTo } from '@/lib/core/access-matrix'
 import { matchDestinations } from '@/lib/search/destinations'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -287,7 +288,7 @@ export default async function SearchPage({
                     href={a ? `/people/${a.handle}` : '/feed'}
                     anchor={
                       a?.avatar_url ? (
-                        <Image src={a.avatar_url} alt="" width={44} height={44} className="h-11 w-11 rounded-full object-cover" />
+                        <Image src={avatarSrc(a.avatar_url)} alt="" width={44} height={44} className="h-11 w-11 rounded-full object-cover" style={avatarFocusStyle(a.avatar_url)} />
                       ) : (
                         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong select-none">
                           {a ? getInitials(a.display_name) : '?'}

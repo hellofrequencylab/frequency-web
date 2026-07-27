@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { MapPin } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { RoleBadge } from '@/lib/community-roles'
 import type { RoleChipKey } from '@/lib/community-roles'
 import { DemoBadge } from '@/components/ui/demo-badge'
@@ -46,12 +47,13 @@ export function ContactCard({
       <div className="relative">
         {avatarUrl ? (
           <Image
-            src={avatarUrl}
+            src={avatarSrc(avatarUrl)}
             alt={displayName}
             width={72}
             height={72}
             sizes="72px"
             className="h-18 w-18 rounded-full object-cover ring-2 ring-surface-elevated"
+            style={avatarFocusStyle(avatarUrl)}
           />
         ) : (
           <div className="flex h-18 w-18 items-center justify-center rounded-full bg-primary-bg text-xl font-semibold text-primary-strong select-none ring-2 ring-surface-elevated">

@@ -12,6 +12,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { listCircleTasks } from '@/lib/crew/circle-tasks'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { SectionHeader } from '@/components/ui/section-header'
 import { CompleteButton } from './complete-button'
 import { ClaimTaskButton, ReleaseTaskButton } from './circle-task-controls'
@@ -109,11 +110,12 @@ export async function CircleTasksSection({
                   <span className="mt-1 flex items-center gap-1.5">
                     {task.assignee?.avatarUrl ? (
                       <Image
-                        src={task.assignee.avatarUrl}
+                        src={avatarSrc(task.assignee.avatarUrl)}
                         alt={task.assignee.displayName}
                         width={16}
                         height={16}
                         className="w-4 h-4 rounded-full object-cover shrink-0"
+                        style={avatarFocusStyle(task.assignee.avatarUrl)}
                       />
                     ) : (
                       <span className="w-4 h-4 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">

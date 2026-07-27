@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { HeartHandshake, ArrowRight } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import type {
@@ -14,12 +15,12 @@ function Avatar({ person, size = 36 }: { person: IntroPerson; size?: number }) {
   if (person.avatarUrl) {
     return (
       <Image
-        src={person.avatarUrl}
+        src={avatarSrc(person.avatarUrl)}
         alt={person.displayName}
         width={size}
         height={size}
         className="rounded-full object-cover ring-2 ring-surface-elevated"
-        style={{ height: size, width: size }}
+        style={{ height: size, width: size, ...avatarFocusStyle(person.avatarUrl) }}
       />
     )
   }

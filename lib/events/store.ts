@@ -7,11 +7,9 @@
 //     `entity-schedule` modules use to list a Space's own events.
 //
 // Server-only (admin client; callers enforce authz, exactly like the existing event flows).
-// `space_id` is not in the generated DB types yet — the column is added by
-// 20260711000000_object_space_id.sql; per the codebase pattern (ADR-246) it is reached with
-// untyped casts (the payload field + the `.eq('space_id', …)` filter), not a typed client.
+// `space_id` (20260711000000_object_space_id.sql) and the rest of the columns here are covered
+// by the regenerated DB types (ADR-246 closed), so everything reads through the typed client.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 
@@ -32,8 +30,8 @@ export interface SpaceEvent {
   /** 'draft' | 'published' — the manage calendar badges drafts; public readers filter on it. */
   status: string | null
   location: string | null
-  // ── Space-page Events block fields (view upgrade) — newer than the generated DB types, read via the
-  // untyped-client cast below (ADR-246 convention). All additive + nullable, so every existing caller
+  // ── Space-page Events block fields (view upgrade) — all in the generated DB types now (ADR-246
+  // closed). All additive + nullable, so every existing caller
   // keeps its shape. capacity/price feed the card + popup; join_mode/hide_address carry the ADR-826 /
   // ADR-825 semantics; city/region/venue_name let a reader build the viewer-safe place line.
   capacity?: number | null
@@ -64,7 +62,7 @@ export interface SpaceCalendarEvent {
 
 const CALENDAR_COLS = 'id, slug, title, starts_at, ends_at, location, time_zone, is_cancelled'
 
-/** A calendar event row as read untyped (status/visibility/space_id aren't in the generated types). */
+/** A calendar event row with the gate columns (status/visibility) alongside the display fields. */
 export type SpaceCalendarEventRow = SpaceCalendarEvent & {
   status?: string | null
   visibility?: string | null
@@ -138,17 +136,15 @@ export function filterSharedByHomeSpace(
   return sharedRows.filter((e) => e.space_id == null || allowedHomeSpaceIds.has(e.space_id))
 }
 
-/** Untyped admin handle — space_id / visibility / event_space_shares are newer than the generated
- *  types (ADR-246), so the reads below reach them through this loose handle. */
-function untypedAdmin(): SupabaseClient {
-  return createAdminClient()
-}
+/** The typed admin client — space_id / visibility / event_space_shares are all in the generated
+ *  types (ADR-246 closed). */
+type AdminClient = ReturnType<typeof createAdminClient>
 
 /** Which of `spaceIds` are network-visible + active — the home spaces allowed to surface events on a
  *  co-host calendar (the shared branch's home-space gate). Platform events (null home) skip this and are
  *  allowed by `filterSharedByHomeSpace` directly. FAIL-SAFE: empty set on any error (drops every
  *  real-home shared event rather than risk surfacing a walled space's event). */
-async function networkActiveHomeSpaceIds(admin: SupabaseClient, spaceIds: string[]): Promise<Set<string>> {
+async function networkActiveHomeSpaceIds(admin: AdminClient, spaceIds: string[]): Promise<Set<string>> {
   const ids = [...new Set(spaceIds)]
   if (ids.length === 0) return new Set()
   try {
@@ -168,7 +164,7 @@ async function networkActiveHomeSpaceIds(admin: SupabaseClient, spaceIds: string
 /** Event ids ACCEPTED-shared TO this space (EC3). The share is NECESSARY here; the per-event
  *  visibility gate (passesCalendarGate) is re-applied by the caller on each event's OWN row, so a
  *  share never surfaces a private/draft/cancelled event. FAIL-SAFE: [] on any error. */
-async function acceptedShareEventIds(admin: SupabaseClient, spaceId: string): Promise<string[]> {
+async function acceptedShareEventIds(admin: AdminClient, spaceId: string): Promise<string[]> {
   try {
     const { data, error } = await admin
       .from('event_space_shares')
@@ -190,7 +186,7 @@ async function acceptedShareEventIds(admin: SupabaseClient, spaceId: string): Pr
  * a draft, private, or circle_only event, EVEN via a share. The shared branch re-applies the gate on
  * each event's OWN row (passesCalendarGate): an accepted share is necessary, never sufficient. Owned
  * events are filtered by space_id so space A never resolves space B's OWN events. FAIL-SAFE: [] on any
- * error / missing tenant. `space_id`/`visibility`/`event_space_shares` are reached untyped (ADR-246).
+ * error / missing tenant. `space_id`/`visibility`/`event_space_shares` are all typed reads (ADR-246 closed).
  */
 export async function listSpaceCalendarEvents(
   spaceId: string | null | undefined,
@@ -202,7 +198,7 @@ export async function listSpaceCalendarEvents(
   const fromDay = opts.fromDay ?? new Date().toISOString().slice(0, 10)
   const fromDayIso = `${fromDay}T00:00:00Z`
   try {
-    const admin = untypedAdmin()
+    const admin = createAdminClient()
     const shareIds = await acceptedShareEventIds(admin, sid)
 
     // Owned events (by space_id) and, if any, shared events (by id) — each gated on the event's OWN
@@ -267,7 +263,7 @@ export async function spaceHasPublicUpcomingEvents(spaceId: string | null | unde
   const today = new Date().toISOString().slice(0, 10)
   const fromDayIso = `${today}T00:00:00Z`
   try {
-    const admin = untypedAdmin()
+    const admin = createAdminClient()
     const { data: owned, error } = await admin
       .from('events')
       .select('id')
@@ -309,16 +305,13 @@ export async function spaceHasPublicUpcomingEvents(spaceId: string | null | unde
  * non-cancelled events across the network — the one authoritative read behind both the /events/calendar
  * grid and the master .ics feed. Delegates to public_calendar_feed(), which self-gates in-function
  * (the same set the .ics route renders), so the grid and the subscribed feed can never drift.
- * FAIL-SAFE: [] on any error. The RPC is newer than the generated types, so it's reached untyped.
+ * FAIL-SAFE: [] on any error. The RPC is in the regenerated types (ADR-246 closed), so it's typed.
  */
 export async function listPublicCalendarEvents(): Promise<SpaceCalendarEvent[]> {
   try {
-    const rpc = createAdminClient() as unknown as {
-      rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>
-    }
-    const { data, error } = await rpc.rpc('public_calendar_feed', {})
+    const { data, error } = await createAdminClient().rpc('public_calendar_feed')
     if (error || !Array.isArray(data)) return []
-    return (data as SpaceCalendarEvent[]).filter((e) => !e.is_cancelled)
+    return data.filter((e) => !e.is_cancelled)
   } catch {
     return []
   }
@@ -348,13 +341,13 @@ export function tallyGoingByEvent(rows: Array<{ event_id: string; status?: strin
  *  (event_rsvps + events.cover_image_path). FAIL-SAFE to an empty map (a read error just drops the
  *  social-proof/cover, never the event). Cover URLs come from the public 'event-media' bucket (the same
  *  the event page uses), so no signed-URL round-trip. Every requested id gets an entry (default 0/null).
- *  `event_rsvps` / `cover_image_path` are reached untyped (ADR-246). */
+ *  `event_rsvps` / `cover_image_path` are typed reads (ADR-246 closed). */
 export async function listCalendarEngagement(eventIds: string[]): Promise<Map<string, CalendarEngagement>> {
   const ids = [...new Set(eventIds)].filter(Boolean)
   const out = new Map<string, CalendarEngagement>()
   if (ids.length === 0) return out
   try {
-    const admin = untypedAdmin()
+    const admin = createAdminClient()
     const [rsvpRes, coverRes] = await Promise.all([
       admin.from('event_rsvps').select('event_id, status').in('event_id', ids).eq('status', 'going'),
       admin.from('events').select('id, cover_image_path').in('id', ids),
@@ -403,25 +396,12 @@ export async function listEventsForSpace(
   if (!sid) return []
   const limit = opts.limit ?? 50
   try {
-    // space_id isn't in the generated types yet — reach it with an untyped handle (ADR-246).
-    const db = createAdminClient().from('events') as unknown as {
-      select: (cols: string) => {
-        eq: (col: string, val: string) => {
-          gte: (col: string, val: string) => unknown
-          order: (col: string, opts: { ascending: boolean }) => {
-            limit: (n: number) => Promise<{ data: unknown; error: unknown }>
-          }
-        }
-      }
-    }
-    type Chain = {
-      gte: (col: string, val: string) => Chain
-      order: (col: string, opts: { ascending: boolean }) => { limit: (n: number) => Promise<{ data: unknown; error: unknown }> }
-    }
-    let q = db.select(COLS).eq('space_id', sid) as unknown as Chain
+    let q = createAdminClient().from('events').select(COLS).eq('space_id', sid)
     if (opts.upcomingOnly) q = q.gte('starts_at', new Date().toISOString())
     const { data, error } = await q.order('starts_at', { ascending: true }).limit(limit)
     if (error) return []
+    // The typed rows carry starts_at as string|null and join_mode as plain string; SpaceEvent keeps
+    // the narrower app-facing shape every caller already consumes.
     return (data as SpaceEvent[] | null) ?? []
   } catch {
     return []

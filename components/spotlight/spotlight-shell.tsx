@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, MapPin } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { resolveProfileSkin } from '@/lib/theme/profile-skins'
 import { ROLE_LABEL, roleBadgeStyle, type RoleChipKey } from '@/lib/community-roles'
@@ -78,11 +79,12 @@ export function SpotlightShell({
           >
             {profile.avatar_url ? (
               <Image
-                src={profile.avatar_url}
+                src={avatarSrc(profile.avatar_url)}
                 alt={name}
                 width={112}
                 height={112}
                 className="h-28 w-28 rounded-full object-cover ring-4 ring-canvas shadow-lg"
+                style={avatarFocusStyle(profile.avatar_url)}
               />
             ) : (
               <div className="flex h-28 w-28 items-center justify-center rounded-full bg-primary-bg text-3xl font-bold text-primary-strong ring-4 ring-canvas shadow-lg">

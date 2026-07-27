@@ -12,6 +12,7 @@ import {
   Clock,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import type { WarmProofAttendee } from './warm-proof'
 
 // EventFactPanel (EVENTS-DESIGN §2.5, C4) — the critical-info card in the Join
@@ -123,11 +124,12 @@ export function EventFactPanel({
               g.avatarUrl ? (
                 <Image
                   key={g.id}
-                  src={g.avatarUrl}
+                  src={avatarSrc(g.avatarUrl)}
                   alt={g.displayName}
                   width={28}
                   height={28}
                   className="h-7 w-7 rounded-full object-cover ring-2 ring-surface"
+                  style={avatarFocusStyle(g.avatarUrl)}
                 />
               ) : (
                 <div
@@ -157,11 +159,12 @@ export function EventFactPanel({
                   >
                     {g.avatarUrl ? (
                       <Image
-                        src={g.avatarUrl}
+                        src={avatarSrc(g.avatarUrl)}
                         alt={g.displayName}
                         width={24}
                         height={24}
                         className="h-6 w-6 shrink-0 rounded-full object-cover"
+                        style={avatarFocusStyle(g.avatarUrl)}
                       />
                     ) : (
                       <div className="flex h-6 w-6 shrink-0 select-none items-center justify-center rounded-full bg-primary-bg text-3xs font-semibold text-primary-strong">

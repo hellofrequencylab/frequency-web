@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Building2, Mail, Search, Sparkles, UserRound, X } from 'lucide-react'
 import { getInitials, cn } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { ROLE_LABEL } from '@/lib/community-roles'
@@ -260,11 +261,12 @@ function ContactRow({ row }: { row: ContactRosterRow }) {
       <div className="shrink-0">
         {row.avatarUrl ? (
           <Image
-            src={row.avatarUrl}
+            src={avatarSrc(row.avatarUrl)}
             alt=""
             width={36}
             height={36}
             className="h-9 w-9 rounded-full object-cover"
+            style={avatarFocusStyle(row.avatarUrl)}
           />
         ) : (
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong select-none">

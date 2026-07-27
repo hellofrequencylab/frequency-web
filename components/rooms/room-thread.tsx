@@ -6,6 +6,7 @@ import { Send, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { sendRoomMessage, markRoomRead } from '@/app/(main)/messages/rooms/actions'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { useTypingIndicator } from '@/lib/realtime/use-typing'
 import { TypingIndicator } from '@/components/messages/typing-indicator'
 
@@ -127,7 +128,7 @@ export function RoomThread({
               <div key={m.id} className={`flex gap-3 ${showAuthor ? 'mt-3' : ''}`}>
                 {showAuthor && a ? (
                   a.avatar_url ? (
-                    <Image src={a.avatar_url} alt={a.display_name} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                    <Image src={avatarSrc(a.avatar_url)} alt={a.display_name} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" style={avatarFocusStyle(a.avatar_url)} />
                   ) : (
                     <div className="w-9 h-9 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                       {getInitials(a.display_name)}

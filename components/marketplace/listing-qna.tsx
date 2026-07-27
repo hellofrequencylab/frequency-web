@@ -9,6 +9,7 @@ import type { ListingCommentTargetKind } from '@/lib/listings-shared/detail-view
 import type { ListingComment } from '@/lib/marketplace/listing-comments'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB (post-prep; HEIC is converted and big photos shrink first)
@@ -225,12 +226,13 @@ export function ListingQna({
               <li key={c.id} className="flex gap-3">
                 {a?.avatarUrl ? (
                   <Image
-                    src={a.avatarUrl}
+                    src={avatarSrc(a.avatarUrl)}
                     alt={a.displayName}
                     width={32}
                     height={32}
                     unoptimized
                     className="h-8 w-8 shrink-0 rounded-full object-cover"
+                    style={avatarFocusStyle(a.avatarUrl)}
                   />
                 ) : (
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong select-none">

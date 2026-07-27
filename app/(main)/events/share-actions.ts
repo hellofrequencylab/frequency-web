@@ -17,7 +17,6 @@
 // exists) is treated as idempotent success.
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
@@ -65,26 +64,15 @@ export async function loadEventShares(eventId: string): Promise<EventShareView[]
   return listSharesForEvent(eventId)
 }
 
-/** A chainable + awaitable write filter (supabase builders are both), so a status-guarded update is
- *  atomic at the DB (the row updates only if still in the expected state). Mirrors collaborations.
- *  `select` returns the affected rows, so a caller can tell a won transition from a lost race. */
-interface WriteFilter extends Promise<{ error: { code?: string; message?: string } | null }> {
-  eq: (c: string, val: string) => WriteFilter
-  in: (c: string, vals: string[]) => WriteFilter
-  select: (c: string) => Promise<{ data: { id: string }[] | null; error: { code?: string; message?: string } | null }>
+/** The typed admin handle for event_space_shares (in the generated types; ADR-246 closed). The
+ *  builder is chainable + awaitable, so a status-guarded update stays atomic at the DB (the row
+ *  updates only if still in the expected state), and `.select('id')` after an update returns the
+ *  affected rows so a caller can tell a won transition from a lost race. */
+function sharesTable() {
+  return createAdminClient().from('event_space_shares')
 }
 
-/** Untyped admin handle for event_space_shares (not in the generated types yet, ADR-246). */
-function sharesTable() {
-  return (createAdminClient() as unknown as {
-    from: (t: string) => {
-      insert: (rows: Record<string, unknown>[]) => {
-        select: (c: string) => { maybeSingle: () => Promise<{ data: { id: string } | null; error: { code?: string; message?: string } | null }> }
-      }
-      update: (v: Record<string, unknown>) => WriteFilter
-    }
-  }).from('event_space_shares')
-}
+type AdminClient = ReturnType<typeof createAdminClient>
 
 /** True when the signed-in caller is a steward (owner/admin) of `spaceId`. Fail-closed. */
 async function viewerStewardsSpace(spaceId: string, profileId: string): Promise<boolean> {
@@ -111,7 +99,7 @@ async function collaborationLinks(a: string | null, b: string): Promise<boolean>
 
 /** Best-effort notification when a share is requested (to the approving side) or resolved (to requester). */
 async function notify(
-  admin: SupabaseClient,
+  admin: AdminClient,
   recipientIds: string[],
   actorId: string | null,
   type: string,
@@ -136,10 +124,9 @@ async function notify(
   }
 }
 
-async function eventTitleSlug(admin: SupabaseClient, eventId: string): Promise<{ title: string; slug: string | null }> {
+async function eventTitleSlug(admin: AdminClient, eventId: string): Promise<{ title: string; slug: string | null }> {
   const { data } = await admin.from('events').select('title, slug').eq('id', eventId).maybeSingle()
-  const ev = data as { title: string | null; slug: string | null } | null
-  return { title: ev?.title ?? 'this event', slug: ev?.slug ?? null }
+  return { title: data?.title ?? 'this event', slug: data?.slug ?? null }
 }
 
 /** Revalidate every surface an accepted/changed share can appear on: the event page, the event Manage
@@ -331,7 +318,7 @@ export async function requestFeatureEvent(spaceId: string, eventId: string): Pro
   if (!autoAccept) {
     // Notify the event's host side to approve. Best-effort: the event's host_id.
     const { data } = await admin.from('events').select('host_id').eq('id', eventId).maybeSingle()
-    const hostId = (data as { host_id: string | null } | null)?.host_id
+    const hostId = data?.host_id
     await notify(admin, hostId ? [hostId] : [], profileId, 'event_feature_request', eventId, `asked to feature “${title}” on ${target.name}`)
   }
 
@@ -354,7 +341,7 @@ export async function requestFeatureEventBySlug(spaceId: string, eventSlug: stri
     .select('id, status, visibility')
     .eq('slug', clean)
     .maybeSingle()
-  const ev = data as { id: string; status: string | null; visibility: string | null } | null
+  const ev = data
   if (!ev || ev.status !== 'published' || !['public', 'unlisted'].includes(ev.visibility ?? '')) {
     return fail('Could not find a public event with that link.')
   }

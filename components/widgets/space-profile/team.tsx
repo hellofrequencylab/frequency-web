@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import type { SpaceContentData } from '@/lib/spaces/content-data'
 import type { SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { getInitials } from '@/lib/utils'
@@ -42,11 +43,12 @@ export function TeamBlock({
             >
               {member.avatarUrl ? (
                 <Image
-                  src={member.avatarUrl}
+                  src={avatarSrc(member.avatarUrl)}
                   alt=""
                   width={44}
                   height={44}
                   className="h-11 w-11 shrink-0 rounded-full object-cover"
+                  style={avatarFocusStyle(member.avatarUrl)}
                 />
               ) : (
                 <span

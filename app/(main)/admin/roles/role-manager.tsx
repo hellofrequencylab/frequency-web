@@ -9,6 +9,7 @@ import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
 import { ROLE_LABEL, roleBadgeStyle } from '@/lib/community-roles'
 import { nextRole } from '@/lib/roles-meta'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 export type RoleMember = {
   id: string
@@ -86,7 +87,7 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
                 {i + 1}
               </span>
               {m.avatarUrl ? (
-                <Image src={m.avatarUrl} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                <Image src={avatarSrc(m.avatarUrl)} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full object-cover" style={avatarFocusStyle(m.avatarUrl)} />
               ) : (
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-xs font-semibold text-muted">
                   {getInitials(m.displayName)}

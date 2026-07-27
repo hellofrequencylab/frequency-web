@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from 'react'
 import Image from 'next/image'
 import { UserPlus, Check, Search } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { inviteToRoom } from '@/app/(main)/messages/rooms/actions'
 import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
 
@@ -111,7 +112,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
                   }`}
                 >
                   {r.avatar_url ? (
-                    <Image src={r.avatar_url} alt={r.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                    <Image src={avatarSrc(r.avatar_url)} alt={r.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" style={avatarFocusStyle(r.avatar_url)} />
                   ) : (
                     <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center shrink-0">
                       {getInitials(r.display_name)}

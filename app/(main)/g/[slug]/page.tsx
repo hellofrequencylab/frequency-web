@@ -3,6 +3,7 @@ import { Zap } from 'lucide-react'
 import { requireProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { FocusTemplate } from '@/components/templates'
 import { GiftButton } from './gift-button'
 
@@ -48,7 +49,7 @@ export default async function GiftPage({ params }: { params: Promise<{ slug: str
         <div className="mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-primary-bg text-primary-strong">
           {owner.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={owner.avatar_url} alt="" className="h-full w-full object-cover" />
+            <img src={avatarSrc(owner.avatar_url)} alt="" className="h-full w-full object-cover" style={avatarFocusStyle(owner.avatar_url)} />
           ) : (
             <span className="text-lg font-bold">{getInitials(name)}</span>
           )}

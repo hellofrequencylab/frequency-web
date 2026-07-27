@@ -49,6 +49,12 @@ const PLAN_CODE_CAPS: Record<string, number> = {
   starter: 25,
   pro: 100,
   business: 500,
+  // Plans at or above Collective are effectively unlimited (the ADR-837 ladder shows Unlimited);
+  // a huge finite cap keeps the pure fail-small shape without a special case. Non Profit and
+  // Independent carry the full Collective toolkit (ADR-811).
+  collective: 100000,
+  nonprofit: 100000,
+  independent: 100000,
 }
 // The cap for an unset / unknown plan (the smallest, so a misconfigured plan is never over-granted).
 const DEFAULT_CODE_CAP = PLAN_CODE_CAPS.free

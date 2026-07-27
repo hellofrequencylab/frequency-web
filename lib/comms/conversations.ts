@@ -9,6 +9,7 @@
 
 import { randomUUID } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Json, Tables, TablesUpdate } from '@/lib/database.types'
 import {
   recordContactInteraction,
   normalizeInteractionScope,
@@ -28,12 +29,10 @@ export function newConversationMessageId(ref: string | number): string {
   return `<conv.${ref}.${randomUUID()}@${MESSAGE_ID_HOST}>`
 }
 
-/** Untyped admin handle — the comms_* spine tables are not in the generated Database types yet, so the
- *  typed `.from()` overloads reject their names. Cast the client to an untyped `.from` (ADR-246). */
-function convTable(name: 'comms_conversations' | 'comms_messages') {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = createAdminClient() as unknown as { from: (n: string) => any }
-  return db.from(name)
+/** The typed admin client — the comms_* spine tables are covered by the generated Database types
+ *  (ADR-246 closed), so every read/write below flows through the typed `.from()` overloads. */
+function admin() {
+  return createAdminClient()
 }
 
 export interface OpenConversationInput {
@@ -80,7 +79,8 @@ export async function openOrGetConversation(
     // The SCOPE is part of the thread key too (ADR-827): a scoped open only reuses a thread in the
     // SAME scope, and an unscoped open never grabs a scoped thread — an event thread can never absorb
     // an unrelated send to the same address.
-    let q = convTable('comms_conversations')
+    let q = admin()
+      .from('comms_conversations')
       .select('id, ref')
       .eq('kind', input.kind)
       .eq('external_email', email)
@@ -93,7 +93,8 @@ export async function openOrGetConversation(
       return { id: String(existing.data.id), ref: String(existing.data.ref), created: false }
     }
 
-    const ins = await convTable('comms_conversations')
+    const ins = await admin()
+      .from('comms_conversations')
       .insert({
         kind: input.kind,
         subject: (input.subject || '(no subject)').slice(0, 300),
@@ -108,7 +109,8 @@ export async function openOrGetConversation(
         space_id: input.spaceId ?? null,
         scope_kind: scope?.kind ?? null,
         scope_id: scope?.id ?? null,
-        metadata: input.metadata ?? {},
+        // The jsonb metadata bag is the one genuinely loose shape here — narrow cast to Json only.
+        metadata: (input.metadata ?? {}) as Json,
         last_activity_at: new Date().toISOString(),
       })
       .select('id, ref')
@@ -142,8 +144,14 @@ export interface ConversationRow {
 const CONV_ROW_COLS =
   'id, ref, status, kind, external_email, owner_profile_id, assigned_to, member_profile_id, contact_id, space_id, subject, scope_kind, scope_id'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function toConversationRow(row: any): ConversationRow {
+/** The typed slice of a comms_conversations row that CONV_ROW_COLS selects. */
+type ConvRowSelected = Pick<
+  Tables<'comms_conversations'>,
+  | 'id' | 'ref' | 'status' | 'kind' | 'external_email' | 'owner_profile_id' | 'assigned_to'
+  | 'member_profile_id' | 'contact_id' | 'space_id' | 'subject' | 'scope_kind' | 'scope_id'
+>
+
+function toConversationRow(row: ConvRowSelected): ConversationRow {
   // Fail-closed scope mapping: an unknown scope_kind (a future vocab value this build doesn't know)
   // surfaces as unscoped rather than mislabeled.
   const scope = normalizeInteractionScope(
@@ -156,13 +164,13 @@ function toConversationRow(row: any): ConversationRow {
     ref: String(row.ref),
     status: String(row.status),
     kind: String(row.kind),
-    externalEmail: (row.external_email as string) ?? null,
-    ownerProfileId: (row.owner_profile_id as string) ?? null,
-    assignedTo: (row.assigned_to as string) ?? null,
-    memberProfileId: (row.member_profile_id as string) ?? null,
-    contactId: (row.contact_id as string) ?? null,
-    spaceId: (row.space_id as string) ?? null,
-    subject: (row.subject as string) ?? null,
+    externalEmail: row.external_email ?? null,
+    ownerProfileId: row.owner_profile_id ?? null,
+    assignedTo: row.assigned_to ?? null,
+    memberProfileId: row.member_profile_id ?? null,
+    contactId: row.contact_id ?? null,
+    spaceId: row.space_id ?? null,
+    subject: row.subject ?? null,
     scopeKind: scope?.kind ?? null,
     scopeId: scope?.id ?? null,
   }
@@ -179,7 +187,7 @@ export async function getConversationByRef(ref: string | number): Promise<Conver
   const key = typeof ref === 'number' ? ref : parseInt(String(ref), 10)
   if (!Number.isFinite(key) || key <= 0) return null
   try {
-    const res = await convTable('comms_conversations').select(CONV_ROW_COLS).eq('ref', key).maybeSingle()
+    const res = await admin().from('comms_conversations').select(CONV_ROW_COLS).eq('ref', key).maybeSingle()
     return res?.data ? toConversationRow(res.data) : null
   } catch (err) {
     console.error('[comms] getConversationByRef failed:', err)
@@ -192,7 +200,7 @@ export async function getConversationById(id: string): Promise<ConversationRow |
   const key = typeof id === 'string' ? id.trim() : ''
   if (!key) return null
   try {
-    const res = await convTable('comms_conversations').select(CONV_ROW_COLS).eq('id', key).maybeSingle()
+    const res = await admin().from('comms_conversations').select(CONV_ROW_COLS).eq('id', key).maybeSingle()
     return res?.data ? toConversationRow(res.data) : null
   } catch (err) {
     console.error('[comms] getConversationById failed:', err)
@@ -205,7 +213,8 @@ export async function getConversationById(id: string): Promise<ConversationRow |
 export async function reopenConversationIfClosed(conversationId: string, currentStatus: string): Promise<void> {
   if (currentStatus !== 'resolved' && currentStatus !== 'closed') return
   try {
-    await convTable('comms_conversations')
+    await admin()
+      .from('comms_conversations')
       .update({ status: 'open', resolved_at: null, updated_at: new Date().toISOString() })
       .eq('id', conversationId)
   } catch (err) {
@@ -224,7 +233,7 @@ export interface ConversationFieldPatch {
  *  status becomes resolved/closed and clears it otherwise (mirrors support `updateTicketFields`). When the
  *  assignee changes, the caller also records an assignment-audit row (see `recordAssignment`). FAIL-SAFE. */
 export async function updateConversationFields(id: string, patch: ConversationFieldPatch): Promise<boolean> {
-  const set: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  const set: TablesUpdate<'comms_conversations'> = { updated_at: new Date().toISOString() }
   if (patch.status !== undefined) {
     set.status = patch.status
     set.resolved_at = patch.status === 'resolved' || patch.status === 'closed' ? new Date().toISOString() : null
@@ -232,7 +241,7 @@ export async function updateConversationFields(id: string, patch: ConversationFi
   if (patch.priority !== undefined) set.priority = patch.priority
   if (patch.assignedTo !== undefined) set.assigned_to = patch.assignedTo
   try {
-    const res = await convTable('comms_conversations').update(set).eq('id', id)
+    const res = await admin().from('comms_conversations').update(set).eq('id', id)
     return !res?.error
   } catch (err) {
     console.error('[comms] updateConversationFields failed:', err)
@@ -248,8 +257,7 @@ export async function recordAssignment(input: {
   reason?: string | null
 }): Promise<void> {
   try {
-    const db = createAdminClient() as unknown as { from: (n: string) => any } // eslint-disable-line @typescript-eslint/no-explicit-any
-    await db.from('comms_assignments').insert({
+    await admin().from('comms_assignments').insert({
       conversation_id: input.conversationId,
       assigned_to: input.assignedTo,
       assigned_by: input.assignedBy,
@@ -304,7 +312,8 @@ export type AppendOutcome = { id: string } | { duplicate: true } | null
  *  transient/unknown failure (callers that only care about success still treat any non-`{id}` as a no-op). */
 export async function appendConversationMessage(input: AppendMessageInput): Promise<AppendOutcome> {
   try {
-    const ins = await convTable('comms_messages')
+    const ins = await admin()
+      .from('comms_messages')
       .insert({
         conversation_id: input.conversationId,
         direction: input.direction,
@@ -319,24 +328,25 @@ export async function appendConversationMessage(input: AppendMessageInput): Prom
         in_reply_to: input.inReplyTo ?? null,
         references_ids: input.referencesIds ?? null,
         ...(input.deliveryStatus ? { delivery_status: input.deliveryStatus } : {}),
-        ...(input.metadata ? { metadata: input.metadata } : {}),
+        // The jsonb metadata bag stays a narrow Json cast (the one caller-defined loose shape).
+        ...(input.metadata ? { metadata: input.metadata as Json } : {}),
       })
       .select('id')
       .single()
     // A unique(external_message_id) conflict (Postgres 23505) = a replayed inbound → idempotent no-op.
     // Any OTHER error is transient/unknown → return null so the inbound webhook can ask for redelivery.
     if (ins?.error) {
-      return (ins.error as { code?: string } | null)?.code === '23505' ? { duplicate: true } : null
+      return ins.error.code === '23505' ? { duplicate: true } : null
     }
     if (!ins?.data) return null
     const messageId = String(ins.data.id)
 
     // Bump the conversation's activity clock + the direction-specific timestamp.
     const now = new Date().toISOString()
-    const bump: Record<string, unknown> = { last_activity_at: now, updated_at: now }
+    const bump: TablesUpdate<'comms_conversations'> = { last_activity_at: now, updated_at: now }
     if (input.direction === 'inbound') bump.last_inbound_at = now
     if (input.direction === 'outbound') bump.last_outbound_at = now
-    await convTable('comms_conversations').update(bump).eq('id', input.conversationId)
+    await admin().from('comms_conversations').update(bump).eq('id', input.conversationId)
 
     // Mirror non-internal messages to the CRM person-timeline (never blocks the write).
     if (!input.isInternal && input.mirror) {

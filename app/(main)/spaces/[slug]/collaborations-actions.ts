@@ -35,22 +35,12 @@ async function viewerApprovesSpace(spaceId: string): Promise<boolean> {
   return approvers.includes(profileId)
 }
 
-/** A chainable + awaitable write filter (supabase builders are both). Lets an update chain extra
- *  `.eq`/`.in` guards so the status transition is atomic at the DB (the row updates only if it is still
- *  in the expected state), closing the read-then-write race. */
-interface WriteFilter extends Promise<{ error: { code?: string } | null }> {
-  eq: (c: string, val: string) => WriteFilter
-  in: (c: string, vals: string[]) => WriteFilter
-}
-
-/** Untyped admin handle for the write (space_collaborations isn't in the generated types yet, ADR-246). */
+/** The typed admin handle for the writes (space_collaborations is in the generated types; ADR-246
+ *  closed). The builder is chainable + awaitable, so an update can chain extra `.eq`/`.in` guards
+ *  and the status transition stays atomic at the DB (the row updates only if it is still in the
+ *  expected state), closing the read-then-write race. */
 function collabTable() {
-  return (createAdminClient() as unknown as {
-    from: (t: string) => {
-      insert: (rows: Record<string, unknown>[]) => { select: (c: string) => { maybeSingle: () => Promise<{ data: { id: string } | null; error: { code?: string } | null }> } }
-      update: (v: Record<string, unknown>) => WriteFilter
-    }
-  }).from('space_collaborations')
+  return createAdminClient().from('space_collaborations')
 }
 
 async function revalidateSpaces(...spaceIds: string[]): Promise<void> {

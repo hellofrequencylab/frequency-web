@@ -11,6 +11,7 @@ import { Check, Hand, Plus, Trash2, Undo2, X } from 'lucide-react'
 import { createCircleTask, deleteCircleTask, releaseCircleTask } from '../../crew/circle-task-actions'
 import type { CircleTask } from '@/lib/crew/circle-tasks'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 const TASK_TYPES = [
   'attendance', 'hosting', 'volunteering', 'content', 'referral', 'other',
@@ -165,7 +166,7 @@ function CircleTaskRow({ task }: { task: CircleTask }) {
           {task.assignee ? (
             <>
               {task.assignee.avatarUrl ? (
-                <Image src={task.assignee.avatarUrl} alt={task.assignee.displayName} width={16} height={16} className="w-4 h-4 rounded-full object-cover shrink-0" />
+                <Image src={avatarSrc(task.assignee.avatarUrl)} alt={task.assignee.displayName} width={16} height={16} className="w-4 h-4 rounded-full object-cover shrink-0" style={avatarFocusStyle(task.assignee.avatarUrl)} />
               ) : (
                 <span className="w-4 h-4 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                   {getInitials(task.assignee.displayName)}

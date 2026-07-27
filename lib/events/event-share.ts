@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listSpaceStewardIds } from '@/lib/events/placement'
 import { normalizeSpaceType, isConsoleSpaceType } from '@/lib/spaces/types'
@@ -25,8 +24,8 @@ import { normalizeSpaceType, isConsoleSpaceType } from '@/lib/spaces/types'
 // approved by its stewards) and the EVENT HOST side (the event's host/cohost — event.editSettings — with
 // the event's home space as context). So the pure "who approves" helper returns a KIND, not a space id.
 //
-// event_space_shares is newer than the generated Database types, so we reach it through an untyped admin
-// handle (ADR-246). Reads FAIL-SAFE (empty / null on any error). The per-event VISIBILITY gate is NOT
+// event_space_shares is covered by the regenerated Database types (ADR-246 closed), so we reach it
+// through the typed admin client. Reads FAIL-SAFE (empty / null on any error). The per-event VISIBILITY gate is NOT
 // applied here — these reads power the host/steward management UI (which must show a pending share even
 // for a currently-private event); the LEAK gate lives in the calendar READERS (store + RPC) that decide
 // what surfaces publicly.
@@ -183,8 +182,9 @@ export function collaboratorTypeLabel(type: string | null | undefined): string {
 // the event CRM tier resolver (lib/events/crm-access.ts, ADR-836), which reads it for a different
 // question (does this Space confer the business CRM tier). Do not wire it back into any share path.
 
-/** The identity facts the personal-space check compares. All optional-safe: unknown fields never match. */
-export interface ShareTargetIdentity {
+/** The identity facts the personal-space check compares. All optional-safe: unknown fields never match.
+ *  Local: callers pass a structural object literal; nothing imports the type. */
+interface ShareTargetIdentity {
   /** spaces.type, raw or normalized. */
   type: string | null
   name: string | null
@@ -217,18 +217,16 @@ export function isPersonalMemberSpace(target: ShareTargetIdentity): boolean {
   return spaceKeys.some((k) => ownerKeys.includes(k))
 }
 
-// ── IO: untyped admin handle (event_space_shares isn't in the generated types yet, ADR-246) ───────────
+// ── IO: the typed admin client (event_space_shares is in the generated types; ADR-246 closed) ─────────
 
-function untyped(): SupabaseClient {
-  return createAdminClient()
-}
+type AdminClient = ReturnType<typeof createAdminClient>
 
 type TargetSpace = {
   id: string; slug: string; name: string; logoUrl: string | null; typeLabel: string; status: string | null
 }
 
 /** Batch-resolve target spaces for a set of ids (one query), keyed by id. */
-async function resolveSpaces(admin: SupabaseClient, ids: string[]): Promise<Map<string, TargetSpace>> {
+async function resolveSpaces(admin: AdminClient, ids: string[]): Promise<Map<string, TargetSpace>> {
   const map = new Map<string, TargetSpace>()
   const unique = [...new Set(ids)]
   if (unique.length === 0) return map
@@ -236,10 +234,7 @@ async function resolveSpaces(admin: SupabaseClient, ids: string[]): Promise<Map<
     .from('spaces')
     .select('id, name, brand_name, slug, brand_logo_url, type, status')
     .in('id', unique)
-  for (const r of (data ?? []) as Array<{
-    id: string; name: string | null; brand_name: string | null; slug: string; brand_logo_url: string | null
-    type: string | null; status: string | null
-  }>) {
+  for (const r of data ?? []) {
     map.set(r.id, {
       id: r.id,
       slug: r.slug,
@@ -252,8 +247,9 @@ async function resolveSpaces(admin: SupabaseClient, ids: string[]): Promise<Map<
   return map
 }
 
-/** A Space credited as a Collaborator on the public event page (accepted share, active Space). */
-export interface CollaboratorSpace {
+/** A Space credited as a Collaborator on the public event page (accepted share, active Space).
+ *  Local: consumers type the rows structurally (SpaceHostLite); nothing imports the type. */
+interface CollaboratorSpace {
   id: string
   slug: string
   name: string
@@ -269,7 +265,7 @@ export interface CollaboratorSpace {
 export async function listCollaboratorSpacesForEvent(eventId: string): Promise<CollaboratorSpace[]> {
   if (!eventId) return []
   try {
-    const admin = untyped()
+    const admin = createAdminClient()
     const { data } = await admin
       .from('event_space_shares')
       .select('*')
@@ -294,23 +290,22 @@ export async function listCollaboratorSpacesForEvent(eventId: string): Promise<C
  *  placement space (events.space_id). FAIL-SAFE: null on any error. */
 export async function eventHomeSpaceId(eventId: string): Promise<string | null> {
   try {
-    const { data } = await untyped()
+    const { data } = await createAdminClient()
       .from('events')
       .select('space_id, host_space_id')
       .eq('id', eventId)
       .maybeSingle()
-    const row = data as { space_id: string | null; host_space_id: string | null } | null
-    return row?.host_space_id ?? row?.space_id ?? null
+    return data?.host_space_id ?? data?.space_id ?? null
   } catch {
     return null
   }
 }
 
-/** A single share row by id (untyped select), for the action authz path. FAIL-SAFE: null. */
+/** A single share row by id (typed select), for the action authz path. FAIL-SAFE: null. */
 export async function loadShare(id: string): Promise<ShareRow | null> {
   if (!id) return null
   try {
-    const { data } = await untyped().from('event_space_shares').select('*').eq('id', id).maybeSingle()
+    const { data } = await createAdminClient().from('event_space_shares').select('*').eq('id', id).maybeSingle()
     return (data as ShareRow | null) ?? null
   } catch {
     return null
@@ -323,7 +318,7 @@ export async function loadShare(id: string): Promise<ShareRow | null> {
 export async function listSharesForEvent(eventId: string): Promise<EventShareView[]> {
   if (!eventId) return []
   try {
-    const admin = untyped()
+    const admin = createAdminClient()
     const homeSpaceId = await eventHomeSpaceId(eventId)
     const { data } = await admin
       .from('event_space_shares')
@@ -357,7 +352,7 @@ export async function listSharesForEvent(eventId: string): Promise<EventShareVie
 export async function listAcceptedSharesForSpace(spaceId: string): Promise<ShareRow[]> {
   if (!spaceId) return []
   try {
-    const { data } = await untyped()
+    const { data } = await createAdminClient()
       .from('event_space_shares')
       .select('*')
       .eq('space_id', spaceId)
@@ -376,7 +371,7 @@ export async function listAcceptedSharesForSpace(spaceId: string): Promise<Share
 export async function listIncomingShareRequestsForSpace(spaceId: string): Promise<IncomingShareRequest[]> {
   if (!spaceId) return []
   try {
-    const admin = untyped()
+    const admin = createAdminClient()
     const { data } = await admin
       .from('event_space_shares')
       .select('*')
@@ -396,12 +391,8 @@ export async function listIncomingShareRequestsForSpace(spaceId: string): Promis
       admin.from('events').select('id, title, slug').in('id', eventIds),
       admin.from('profiles').select('id, display_name').in('id', requesterIds),
     ])
-    const eventById = new Map(
-      ((events ?? []) as Array<{ id: string; title: string | null; slug: string }>).map((e) => [e.id, e]),
-    )
-    const nameById = new Map(
-      ((profiles ?? []) as Array<{ id: string; display_name: string | null }>).map((p) => [p.id, p.display_name]),
-    )
+    const eventById = new Map((events ?? []).map((e) => [e.id, e]))
+    const nameById = new Map((profiles ?? []).map((p) => [p.id, p.display_name]))
     return inbox.flatMap((r) => {
       const ev = eventById.get(r.event_id)
       if (!ev) return []
@@ -442,13 +433,13 @@ export async function describeMissingShareTarget(id: string): Promise<string> {
   const fallback = 'That Space could not be found. Search again and pick a Space from the list.'
   if (!id) return fallback
   try {
-    const admin = untyped()
+    const admin = createAdminClient()
     const [profileRes, circleRes] = await Promise.all([
       admin.from('profiles').select('id').eq('id', id).maybeSingle(),
       admin.from('circles').select('id').eq('id', id).maybeSingle(),
     ])
     if (profileRes.data) {
-      return 'That result is a member, not a Space. A member cannot co-host an event, but a Space they run can. Search for that Space by name.'
+      return 'That result is a member, not a Space. A member cannot co-host an event, but a Space they run can. Search for that Space by name. Run a business? Put it on the map with a free Business Space.'
     }
     if (circleRes.data) {
       return 'That result is a Circle, not a Space. An event can only be co-hosted with a Space.'

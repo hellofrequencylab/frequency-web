@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Loader2, Trash2, MessageCircle } from 'lucide-react'
 import { addDispatchComment, deleteDispatchComment } from '../actions'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 type Comment = {
   id: string
@@ -77,7 +78,7 @@ export function CommentSection({
           {comments.map(c => (
             <div key={c.id} className="flex gap-3 group">
               {c.author.avatar_url ? (
-                <Image src={c.author.avatar_url} alt={c.author.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5" />
+                <Image src={avatarSrc(c.author.avatar_url)} alt={c.author.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5" style={avatarFocusStyle(c.author.avatar_url)} />
               ) : (
                 <div className="w-7 h-7 rounded-full bg-border-strong flex items-center justify-center text-3xs font-bold text-muted shrink-0 mt-0.5 select-none">
                   {getInitials(c.author.display_name)}

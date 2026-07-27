@@ -6,6 +6,7 @@ import { useState, useTransition } from 'react'
 import { PersonCard } from '@/components/cards/person-card'
 import { Dialog } from '@/components/ui/dialog'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { isError } from '@/lib/action-result'
 import { messageHost } from '@/app/(main)/events/[slug]/social-actions'
 import type { HostLite } from '@/lib/events/active-event'
@@ -92,11 +93,12 @@ export function HostProfileBox({
           <div className="flex items-center gap-4">
             {host.avatar_url ? (
               <Image
-                src={host.avatar_url}
+                src={avatarSrc(host.avatar_url)}
                 alt={host.display_name}
                 width={64}
                 height={64}
                 className="h-16 w-16 rounded-full object-cover"
+                style={avatarFocusStyle(host.avatar_url)}
               />
             ) : (
               <div className="flex h-16 w-16 select-none items-center justify-center rounded-full bg-primary-bg text-lg font-semibold text-primary-strong">

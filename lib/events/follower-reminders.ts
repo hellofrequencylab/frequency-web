@@ -26,8 +26,8 @@
 // cron respects — so a member who turned event email off globally never receives
 // these via a side channel. (candidate.eventsEmailOn)
 //
-// The tables/columns here are newer than the generated DB types, so reads/writes
-// go through the untyped admin client (ADR-246), exactly like lib/spaces/follows.ts.
+// space_follower_event_reminders_sent and the columns here are covered by the
+// regenerated DB types (ADR-246 closed), so reads/writes use the typed admin client.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { HOME_TZ, zoneAbbrev, eventInstant, resolveZone } from '@/lib/time/zone'
@@ -36,7 +36,7 @@ import { isSuppressed } from '@/lib/suppression'
 import { listSpaceFollowerIds } from '@/lib/spaces/follows'
 import { sendSpaceFollowerEventReminderEmail } from '@/lib/email'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+type AdminClient = ReturnType<typeof createAdminClient>
 
 export type ReminderLead = '7d' | '24h' | '2h'
 
@@ -154,7 +154,7 @@ export function selectFollowerReminderRecipients(
  *  never-double-send guarantee, even across concurrent cron runs. */
 async function recordFollowerReminderSent(eventId: string, profileId: string, lead: ReminderLead): Promise<boolean> {
   try {
-    const admin = createAdminClient() as any
+    const admin = createAdminClient()
     const { error } = await admin
       .from('space_follower_event_reminders_sent')
       .insert({ event_id: eventId, profile_id: profileId, lead })
@@ -171,14 +171,14 @@ async function recordFollowerReminderSent(eventId: string, profileId: string, le
  *  only trims work. FAIL-SAFE: empty set on any error (the insert still prevents a dup). */
 async function alreadySentProfileIds(eventId: string, lead: ReminderLead): Promise<Set<string>> {
   try {
-    const admin = createAdminClient() as any
+    const admin = createAdminClient()
     const { data } = await admin
       .from('space_follower_event_reminders_sent')
       .select('profile_id')
       .eq('event_id', eventId)
       .eq('lead', lead)
     const ids = new Set<string>()
-    for (const r of (data as Array<{ profile_id?: string }> | null) ?? []) {
+    for (const r of data ?? []) {
       if (r.profile_id) ids.add(r.profile_id)
     }
     return ids
@@ -195,7 +195,7 @@ async function alreadySentProfileIds(eventId: string, lead: ReminderLead): Promi
  *  "you follow this Space" nudge. FAIL-SAFE: emails no one on error (returns a set that, combined
  *  with the fail-closed candidate, drops sends) — here we throw-safe to an empty set but the outer
  *  loop treats a read failure conservatively by skipping the event. */
-async function rsvpProfileIds(admin: any, eventId: string): Promise<Set<string> | null> {
+async function rsvpProfileIds(admin: AdminClient, eventId: string): Promise<Set<string> | null> {
   try {
     const { data, error } = await admin
       .from('event_rsvps')
@@ -203,7 +203,7 @@ async function rsvpProfileIds(admin: any, eventId: string): Promise<Set<string> 
       .eq('event_id', eventId)
     if (error) return null
     const ids = new Set<string>()
-    for (const r of (data as Array<{ profile_id?: string }> | null) ?? []) {
+    for (const r of data ?? []) {
       if (r.profile_id) ids.add(r.profile_id)
     }
     return ids
@@ -215,7 +215,7 @@ async function rsvpProfileIds(admin: any, eventId: string): Promise<Set<string> 
 /** Accepted co-host profile ids for an event, excluded alongside the primary host (never remind someone
  *  about an event they co-host). FAIL-SAFE: null on error, which the caller treats as skip-the-event
  *  (conservative), the same posture as the RSVP read. */
-async function cohostProfileIds(admin: any, eventId: string): Promise<Set<string> | null> {
+async function cohostProfileIds(admin: AdminClient, eventId: string): Promise<Set<string> | null> {
   try {
     const { data, error } = await admin
       .from('event_cohosts')
@@ -224,7 +224,7 @@ async function cohostProfileIds(admin: any, eventId: string): Promise<Set<string
       .eq('status', 'accepted')
     if (error) return null
     const ids = new Set<string>()
-    for (const r of (data as Array<{ profile_id?: string }> | null) ?? []) {
+    for (const r of data ?? []) {
       if (r.profile_id) ids.add(r.profile_id)
     }
     return ids
@@ -252,7 +252,7 @@ type EventRow = {
 type ProfileRow = { id: string; display_name: string | null; auth_user_id: string | null }
 
 async function processLead(lead: ReminderLead): Promise<{ events: number; sent: number }> {
-  const admin = createAdminClient() as any
+  const admin = createAdminClient()
   const now = Date.now()
   const { start, end } = reminderWindow(lead, now)
 
@@ -285,7 +285,7 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
     .in('id', spaceIds)
     .eq('status', 'active')
   const spaces = new Map<string, { name: string; slug: string }>()
-  for (const s of (spaceRows as Array<{ id: string; name: string; slug: string; status: string }> | null) ?? []) {
+  for (const s of spaceRows ?? []) {
     spaces.set(s.id, { name: s.name, slug: s.slug })
   }
 
@@ -320,7 +320,7 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
       .select('id, display_name, auth_user_id')
       .in('id', prospects)
     const profiles = new Map<string, ProfileRow>()
-    for (const p of (profileRows as ProfileRow[] | null) ?? []) profiles.set(p.id, p)
+    for (const p of profileRows ?? []) profiles.set(p.id, p)
 
     // Build a candidate per prospect (resolve email + suppression + prefs), then let the pure
     // selector make the ONE decision. Per-member IO mirrors the RSVP reminder cron's shape.
@@ -394,4 +394,3 @@ export async function runSpaceFollowerEventReminders(): Promise<Record<ReminderL
   const t2  = await processLead('2h')
   return { '7d': t7, '24h': t24, '2h': t2 }
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */

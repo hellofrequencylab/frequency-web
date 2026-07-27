@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { rankForCompletion, journeysFinishedThisSeason, type SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { listEntryPointLeaderboard, signupsToNextTier } from '@/lib/entry-points/leaderboard'
 import { getCurrentSeason } from '@/lib/seasons'
 import { IndexTemplate } from '@/components/templates'
@@ -394,7 +395,7 @@ async function EntryPointsBoard({ profileId }: { profileId: string }) {
                 >
                   <span className="w-6 shrink-0 text-center text-sm font-semibold tabular-nums text-subtle">{i + 1}</span>
                   {entry.avatarUrl ? (
-                    <Image src={entry.avatarUrl} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                    <Image src={avatarSrc(entry.avatarUrl)} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full object-cover" style={avatarFocusStyle(entry.avatarUrl)} />
                   ) : (
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-bg text-xs font-bold text-primary-strong" aria-hidden>
                       {getInitials(entry.displayName)}

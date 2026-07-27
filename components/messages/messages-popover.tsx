@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { MessageSquare, Hash, Lock, ArrowRight, Loader2 } from 'lucide-react'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { fetchMessagesSummary, type MessagesSummary } from '@/app/(main)/messages/popover-actions'
 
 export function MessagesPopover({ initialUnread = 0 }: { initialUnread?: number }) {
@@ -133,7 +134,7 @@ export function MessagesPopover({ initialUnread = 0 }: { initialUnread?: number 
                       className="flex items-center gap-2.5 px-4 py-2 hover:bg-surface transition-colors"
                     >
                       {firstAvatar?.avatar_url ? (
-                        <Image src={firstAvatar.avatar_url} alt={firstAvatar.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                        <Image src={avatarSrc(firstAvatar.avatar_url)} alt={firstAvatar.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" style={avatarFocusStyle(firstAvatar.avatar_url)} />
                       ) : (
                         <div className="w-7 h-7 rounded-full bg-surface-elevated text-muted text-3xs font-semibold flex items-center justify-center shrink-0 select-none">
                           {firstAvatar ? getInitials(firstAvatar.display_name) : '?'}

@@ -23,6 +23,7 @@ import { Reveal, Parallax, CountUp, ScrollCue } from '@/components/marketing/mot
 import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
 import { getInitials, relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE } from '@/lib/site'
 import { resolvePageContent } from '@/lib/page-content'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
@@ -299,11 +300,12 @@ function Splash({
             <div className="inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white shadow-sm backdrop-blur-sm">
               {referrer.avatarUrl ? (
                 <Image
-                  src={referrer.avatarUrl}
+                  src={avatarSrc(referrer.avatarUrl)}
                   alt=""
                   width={28}
                   height={28}
                   className="h-7 w-7 rounded-full object-cover ring-2 ring-white/30"
+                  style={avatarFocusStyle(referrer.avatarUrl)}
                 />
               ) : (
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-xs font-bold">
@@ -806,11 +808,12 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
     <>
       {a?.avatar_url ? (
         <Image
-          src={a.avatar_url}
+          src={avatarSrc(a.avatar_url)}
           alt={a.display_name}
           width={40}
           height={40}
           className="w-10 h-10 rounded-full object-cover shrink-0"
+          style={avatarFocusStyle(a.avatar_url)}
         />
       ) : (
         <div className="w-10 h-10 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">

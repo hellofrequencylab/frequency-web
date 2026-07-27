@@ -31,8 +31,7 @@ function inboxOwner(): string | null {
  *  tenant Space's lead never gets the platform chat bound to that tenant's CRM row. FAIL-SAFE: null. */
 async function resolveOrCreateContactId(email: string, name: string): Promise<string | null> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = createAdminClient() as unknown as { from: (t: string) => any }
+    const db = createAdminClient()
     // The platform lane = the ROOT space row (the tenancy trigger stamps root) or a legacy NULL row.
     const rootId = await loadRootSpaceId()
     let q = db
@@ -59,13 +58,11 @@ async function resolveOrCreateContactId(email: string, name: string): Promise<st
 async function resolveMemberIdentity(profileId: string): Promise<{ name: string | null; email: string | null }> {
   try {
     const admin = createAdminClient()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = admin as unknown as { from: (t: string) => any }
-    const { data: profile } = await db.from('profiles').select('display_name, auth_user_id').eq('id', profileId).maybeSingle()
-    const name = (profile?.display_name as string | null) ?? null
+    const { data: profile } = await admin.from('profiles').select('display_name, auth_user_id').eq('id', profileId).maybeSingle()
+    const name = profile?.display_name ?? null
     let email: string | null = null
     if (profile?.auth_user_id) {
-      const { data } = await admin.auth.admin.getUserById(profile.auth_user_id as string)
+      const { data } = await admin.auth.admin.getUserById(profile.auth_user_id)
       email = data?.user?.email ?? null
     }
     return { name, email }
@@ -182,8 +179,7 @@ export async function loadSupportChatHistory(input: { ref: string; token: string
   const conv = await getConversationByRef(input.ref)
   if (!conv) return []
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = createAdminClient() as unknown as { from: (t: string) => any }
+    const db = createAdminClient()
     const { data } = await db
       .from('comms_messages')
       .select('id, direction, body, is_internal, created_at')
@@ -191,7 +187,7 @@ export async function loadSupportChatHistory(input: { ref: string; token: string
       .eq('is_internal', false)
       .order('created_at', { ascending: true })
       .limit(200)
-    return ((data as { id: string; direction: string; body: string; created_at: string }[] | null) ?? []).map((m) => ({
+    return (data ?? []).map((m) => ({
       id: String(m.id),
       author: authorOf(m.direction),
       body: cleanConversationBody(m.body),

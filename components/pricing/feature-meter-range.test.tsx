@@ -56,6 +56,26 @@ describe('FeatureMeterRange — renders the allowance ladder per tier', () => {
     expect(out).toMatch(/12 of [\d,]+ contacts used/)
   })
 
+  it('shows the gauge-as-upsell nudge + See plans link once usage crosses the threshold (ADR-837)', () => {
+    // Free CRM allowance is 250; 240 is past the 80% threshold.
+    const out = html(
+      <FeatureMeterRange ladder={CRM} currentTier="free" upgradeHref="/spaces/x/settings/billing" usage={240} />,
+    )
+    expect(out).toContain('Nearly full. Move up a plan for a higher allowance.')
+    expect(out).toContain('See plans')
+  })
+
+  it('keeps the nudge away below the threshold and on an unlimited tier', () => {
+    const under = html(
+      <FeatureMeterRange ladder={CRM} currentTier="free" upgradeHref="/spaces/x/settings/billing" usage={12} />,
+    )
+    expect(under).not.toContain('Nearly full.')
+    const unlimited = html(
+      <FeatureMeterRange ladder={CRM} currentTier="business" upgradeHref="/spaces/x/settings/billing" usage={99999} />,
+    )
+    expect(unlimited).not.toContain('Nearly full.')
+  })
+
   it('shows the honest placeholder note (billing not live) and states nothing is charged or limited', () => {
     const out = html(
       <FeatureMeterRange ladder={CRM} currentTier="free" upgradeHref="/spaces/x/settings/billing" live={false} />,

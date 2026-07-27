@@ -124,7 +124,7 @@ export async function getPreferences(profileId: string): Promise<NotificationPre
   if (!data) return DEFAULT_PREFERENCES
   // Merge over defaults so a row written before the Phase 6 columns shipped (no
   // *_comments key) still resolves every category to its canonical default.
-  return { ...DEFAULT_PREFERENCES, ...(data as unknown as Partial<NotificationPreferences>) }
+  return { ...DEFAULT_PREFERENCES, ...data }
 }
 
 // Read the member's per-category delivery cadence. Missing row / missing columns /
@@ -139,7 +139,7 @@ export async function getFrequencies(profileId: string): Promise<CategoryFrequen
       .eq('profile_id', profileId)
       .maybeSingle()
     if (!data) return { ...DEFAULT_FREQUENCIES }
-    const row = data as unknown as Partial<CategoryFrequencies>
+    const row = data
     return {
       freq_dispatches: normalizeFrequency(row.freq_dispatches),
       freq_events:     normalizeFrequency(row.freq_events),
@@ -226,9 +226,8 @@ export async function wantsSpaceEventReminders(profileId: string): Promise<boole
 // A member can silence ONE Space or Circle for ONE topic on ONE channel without
 // touching their global grid. Stored in `subject_topic_preferences` as explicit
 // muted=true rows (absence = not muted). The send path consults `isSubjectTopicMuted`
-// on top of the global `shouldSend` check. Table isn't in the generated types yet
-// (ADR-246), so the read uses the untyped admin-client cast.
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// on top of the global `shouldSend` check. The table is covered by the generated
+// types (ADR-246 closed), so reads/writes go through the typed admin client.
 
 export type PreferenceSubjectType = 'space' | 'circle'
 
@@ -250,7 +249,7 @@ export async function isSubjectTopicMuted(
   channel: NotificationChannel,
 ): Promise<boolean> {
   try {
-    const admin = createAdminClient() as any
+    const admin = createAdminClient()
     const { data } = await admin
       .from('subject_topic_preferences')
       .select('muted')
@@ -271,14 +270,14 @@ export async function listSubjectMutes(
   profileId: string,
 ): Promise<{ subjectType: PreferenceSubjectType; subjectId: string; topic: NotificationTopic; channel: NotificationChannel }[]> {
   try {
-    const admin = createAdminClient() as any
+    const admin = createAdminClient()
     const { data } = await admin
       .from('subject_topic_preferences')
       .select('subject_type, subject_id, topic, channel, muted')
       .eq('profile_id', profileId)
       .eq('muted', true)
     if (!Array.isArray(data)) return []
-    return data.map((r: any) => ({
+    return data.map((r) => ({
       subjectType: r.subject_type as PreferenceSubjectType,
       subjectId: String(r.subject_id),
       topic: r.topic as NotificationTopic,
@@ -298,7 +297,7 @@ export async function setSubjectTopicMute(
   muted: boolean,
 ): Promise<boolean> {
   try {
-    const admin = createAdminClient() as any
+    const admin = createAdminClient()
     if (!muted) {
       const { error } = await admin
         .from('subject_topic_preferences')
@@ -326,14 +325,14 @@ export async function setSubjectTopicMute(
     return false
   }
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 // ── SMS channel preferences (EVENTS-REWORK §5 / ADR-256) ─────────────────────
 // SMS is a separate, hard-gated channel: it never sends until the legal track is
 // live (see lib/comms/sms.ts). These readers are additive — the `sms_*` columns
-// (added in 20260626010000_sms_groundwork, not applied / not in database.types
-// yet) default OFF, so until a member explicitly opts in everything below returns
-// the safe "off / legal-default" values. Cast convention for the new columns.
+// (added in 20260626010000_sms_groundwork) are STILL not applied to prod and so
+// not in the regenerated database.types (the one shape here that stays behind a
+// narrow local cast). They default OFF, so until a member explicitly opts in
+// everything below returns the safe "off / legal-default" values.
 
 // SMS only carries the two host-driven event categories (ADR-255: "text the group"
 // is an Event Dispatch channel). Lifecycle/mentions never go to SMS.
