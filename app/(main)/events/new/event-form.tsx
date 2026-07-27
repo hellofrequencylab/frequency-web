@@ -395,10 +395,10 @@ export function EventForm({
         {/* Title + kind sit side by side on desktop, single column on mobile. */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-sm text-text">
+            <Label className="text-sm text-text" htmlFor="event-title">
               Event title <span className="text-danger">*</span>
             </Label>
-            <Input
+            <Input id="event-title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -409,8 +409,8 @@ export function EventForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-sm text-text">What kind of gathering is this?</Label>
-            <select
+            <Label className="text-sm text-text" htmlFor="event-category">What kind of gathering is this?</Label>
+            <select id="event-category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               disabled={isPending}
@@ -467,10 +467,10 @@ export function EventForm({
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Description — the wide left column (~2/3). */}
           <div className="space-y-1.5 lg:col-span-2">
-            <Label className="text-sm text-text">
+            <Label className="text-sm text-text" htmlFor="event-description">
               Description <span className="text-2xs font-normal text-subtle">(optional)</span>
             </Label>
-            <Textarea
+            <Textarea id="event-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Details, what to bring, meetup point…"
@@ -483,10 +483,10 @@ export function EventForm({
           {/* Time rail — the narrow right column (~1/3): Starts, Ends, Repeats stacked. */}
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-sm text-text">
+              <Label className="text-sm text-text" htmlFor="event-starts-at">
                 Starts at <span className="text-danger">*</span>
               </Label>
-              <Input
+              <Input id="event-starts-at"
                 type="datetime-local"
                 value={startsAt}
                 onChange={(e) => setStartsAt(e.target.value)}
@@ -495,10 +495,10 @@ export function EventForm({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm text-text">
+              <Label className="text-sm text-text" htmlFor="event-ends-at">
                 Ends at <span className="text-2xs font-normal text-subtle">(optional)</span>
               </Label>
-              <Input
+              <Input id="event-ends-at"
                 type="datetime-local"
                 value={endsAt}
                 onChange={(e) => setEndsAt(e.target.value)}
@@ -510,8 +510,10 @@ export function EventForm({
 
             {/* Recurrence — set the cadence on create, change it on edit. */}
             <div className="space-y-1.5">
-              <Label className="text-sm text-text">Repeats</Label>
-              <div className="grid grid-cols-2 gap-2">
+              {/* A button group is not a labelable control, so `htmlFor` has nothing to point at:
+                  the accessible name comes from role="group" + aria-labelledby instead. */}
+              <Label className="text-sm text-text" id="event-repeats-label">Repeats</Label>
+              <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="event-repeats-label">
                 {RECURRENCE_OPTIONS.map(({ value, label, helper }) => {
                   const active = recurrenceType === value
                   return (
@@ -536,10 +538,10 @@ export function EventForm({
               </div>
               {recurrenceType !== 'none' && (
                 <div className="mt-3 space-y-1.5">
-                  <Label className="text-text">
+                  <Label className="text-text" htmlFor="event-recurrence-until">
                     Ends on <span className="text-subtle">(optional, leave blank for indefinite)</span>
                   </Label>
-                  <Input
+                  <Input id="event-recurrence-until"
                     type="date"
                     value={recurrenceUntil}
                     onChange={(e) => setRecurrenceUntil(e.target.value)}
@@ -564,8 +566,8 @@ export function EventForm({
       {/* ── Where ─────────────────────────────────────────────────────────── */}
       <FormSection title="Where" hint="Add an address for in-person events so people nearby can find it on the map.">
         <div className="space-y-1.5">
-          <Label className="text-sm text-text">How do people attend?</Label>
-          <div className="grid grid-cols-3 gap-2">
+          <Label className="text-sm text-text" id="event-attendance-label">How do people attend?</Label>
+          <div className="grid grid-cols-3 gap-2" role="group" aria-labelledby="event-attendance-label">
             {ATTENDANCE_OPTIONS.map(({ value, label }) => {
               const active = attendanceMode === value
               return (
@@ -590,10 +592,10 @@ export function EventForm({
         {/* Online join link (online / hybrid only) */}
         {attendanceMode !== 'in_person' && (
           <div className="space-y-1.5">
-            <Label className="text-sm text-text">
+            <Label className="text-sm text-text" htmlFor="event-online-url">
               Join link <span className="text-2xs font-normal text-subtle">(optional)</span>
             </Label>
-            <Input
+            <Input id="event-online-url"
               type="url"
               value={onlineUrl}
               onChange={(e) => setOnlineUrl(e.target.value)}
@@ -605,10 +607,10 @@ export function EventForm({
         )}
 
         <div className="space-y-1.5">
-          <Label className="text-sm text-text">
+          <Label className="text-sm text-text" htmlFor="event-location">
             Location <span className="text-2xs font-normal text-subtle">(optional)</span>
           </Label>
-          <Input
+          <Input id="event-location"
             type="text"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
@@ -626,9 +628,15 @@ export function EventForm({
         {attendanceMode !== 'online' && (
           <div className="space-y-4">
             {/* Row one — the structured address. */}
-            <div className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-4">
+            {/* "Address" heads a GROUP of controls (the typeahead plus street/city/state/zip), not a
+                single one, so it names the group rather than pointing `htmlFor` at one of them. */}
+            <div
+              className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-4"
+              role="group"
+              aria-labelledby="event-address-label"
+            >
               <div className="space-y-1">
-                <Label className="text-sm text-text">
+                <Label className="text-sm text-text" id="event-address-label">
                   Address <span className="text-2xs font-normal text-subtle">(optional, for the map)</span>
                 </Label>
                 <p className="text-2xs text-muted">
@@ -718,7 +726,9 @@ export function EventForm({
         {/* Where it lives — Public by default, or one of the circles you host / spaces you run.
             Owned targets place instantly (no approval needed). */}
         <div className="space-y-1.5">
-          <Label className="text-sm text-text">
+          {/* On EDIT the scope is fixed and renders as static text, so there is no control to point
+              at and the label is a plain heading; on CREATE it names the select. */}
+          <Label className="text-sm text-text" htmlFor={isEdit ? undefined : 'event-scope'}>
             Where does it live? {!isEdit && <span className="text-danger">*</span>}
           </Label>
           {isEdit ? (
@@ -728,6 +738,7 @@ export function EventForm({
           ) : (
             <>
               <select
+                id="event-scope"
                 value={scopeId}
                 onChange={(e) => setScopeId(e.target.value)}
                 required
@@ -764,8 +775,8 @@ export function EventForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-sm text-text">Who can see this?</Label>
-          <select
+          <Label className="text-sm text-text" htmlFor="event-visibility">Who can see this?</Label>
+          <select id="event-visibility"
             value={visibility}
             onChange={(e) => setVisibility(e.target.value)}
             disabled={isPending}
@@ -790,8 +801,8 @@ export function EventForm({
         <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
           {/* Price — free RSVP or a set ticket price (events.price_cents). */}
           <div className="space-y-1.5">
-            <Label className="text-sm text-text">Price</Label>
-            <div className="grid grid-cols-2 gap-2">
+            <Label className="text-sm text-text" id="event-price-label">Price</Label>
+            <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="event-price-label">
               {([
                 { value: 'free' as const, label: 'Free' },
                 { value: 'paid' as const, label: 'Set a price' },
@@ -840,10 +851,10 @@ export function EventForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-sm text-text">
+            <Label className="text-sm text-text" htmlFor="event-capacity">
               Group size <span className="text-2xs font-normal text-subtle">(optional)</span>
             </Label>
-            <Input
+            <Input id="event-capacity"
               type="number"
               inputMode="numeric"
               min={1}
@@ -856,10 +867,10 @@ export function EventForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-sm text-text">
+            <Label className="text-sm text-text" htmlFor="event-energy">
               Energy <span className="text-2xs font-normal text-subtle">(optional)</span>
             </Label>
-            <select
+            <select id="event-energy"
               value={energyTag}
               onChange={(e) => setEnergyTag(e.target.value)}
               disabled={isPending}
@@ -878,10 +889,10 @@ export function EventForm({
 
           {/* Special instructions — practical notes for attendees. */}
           <div className="space-y-1.5">
-            <Label className="text-sm text-text">
+            <Label className="text-sm text-text" htmlFor="event-special-instructions">
               Special instructions <span className="text-2xs font-normal text-subtle">(optional)</span>
             </Label>
-            <Textarea
+            <Textarea id="event-special-instructions"
               value={specialInstructions}
               onChange={(e) => setSpecialInstructions(e.target.value)}
               placeholder="Parking, what to bring, door code, accessibility notes…"

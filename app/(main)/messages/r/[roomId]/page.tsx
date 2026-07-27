@@ -150,8 +150,12 @@ export default async function RoomPage({
     </span>
   )
 
+  // Bleed the chat surface to the shell's edges. The negative margin must MIRROR the shell's
+  // responsive padding (px-4 sm:px-6 lg:px-8); a flat -mx-6 over-pulled on mobile (bleeding 8px
+  // past the viewport and causing a horizontal scroll) and under-pulled at lg. dvh, not vh, so
+  // the iOS dynamic toolbar does not push the composer off-screen.
   return (
-    <div className="-mx-6 -my-6 flex flex-col h-[calc(100vh-3.5rem)]">
+    <div className="-mx-4 -my-6 sm:-mx-6 lg:-mx-8 flex flex-col h-[calc(100dvh-3.5rem)]">
       {/* Takeover chat bar — bespoke, full-bleed chrome (the documented exception,
           MEMBER-DESIGN-SYSTEM §207), with the room identity title routed through the
           shared PageHeading grammar instead of a hand-rolled <h1>. */}

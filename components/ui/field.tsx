@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes, type LabelHTMLAttributes } from 'react'
+import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes, type LabelHTMLAttributes, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 // Shared form-field styling + primitives — one source of truth for inputs,
@@ -27,4 +27,38 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
 
 export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
   return <label className={cn(labelClasses, className)} {...props} />
+}
+
+// `Field` is the labelled-control primitive — prefer it over a bare <Label> + sibling <Input>.
+//
+// A bare `<Label>Name</Label>` next to an `<Input />` renders a <label> with no `htmlFor` and an
+// input with no `id`, so the two are not associated: the control is programmatically unlabelled,
+// a screen reader announces "edit text, blank", and clicking the label does not focus the field.
+// Field fixes that by WRAPPING the control, which is HTML's implicit association — no id to mint,
+// no `htmlFor` to thread, and (unlike a useId() default) no hook, so this file stays importable
+// from Server Components. Pass `htmlFor`/`id` explicitly if you need the explicit form instead.
+//
+// Wrap exactly ONE control. Implicit association binds the label to the first labelable descendant,
+// so a Field containing two inputs would name only the first; use two Fields.
+export function Field({
+  label,
+  hint,
+  className,
+  labelClassName,
+  children,
+}: {
+  label: ReactNode
+  /** Optional helper text rendered under the control, inside the label. */
+  hint?: ReactNode
+  className?: string
+  labelClassName?: string
+  children: ReactNode
+}) {
+  return (
+    <label className={cn('block', className)}>
+      <span className={cn(labelClasses, 'mb-1 block', labelClassName)}>{label}</span>
+      {children}
+      {hint ? <span className="mt-1 block text-xs text-subtle">{hint}</span> : null}
+    </label>
+  )
 }

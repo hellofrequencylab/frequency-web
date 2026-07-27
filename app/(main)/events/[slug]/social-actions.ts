@@ -597,17 +597,21 @@ export async function setEventRsvpDepth(
     declineReason?: string | null
     approvalStatus?: 'none' | 'pending' | 'approved'
   },
-) {
+): Promise<{ ok: boolean }> {
   const profileId = await getMyProfileId()
-  if (!profileId) return
-  if (!RSVP_DEPTH_STATUSES.includes(args.status)) return
+  if (!profileId) return { ok: false }
+  if (!RSVP_DEPTH_STATUSES.includes(args.status)) return { ok: false }
 
   // A guest sets only their own RSVP and may request 'pending' (on approval-required events)
   // or 'none'. 'approved' is host-only (approveEventRsvp); never trust the client with it or a
   // guest self-approves past the queue (ADR-274).
   const approvalStatus = args.approvalStatus === 'approved' ? 'pending' : args.approvalStatus
 
-  await setRsvp({
+  // setRsvp returns null when the upsert failed. That result used to be discarded, so a failed
+  // write still fell through to revalidate + a silent success: the member watched the control
+  // flip to "Going" and the host never got the RSVP. Report the outcome so the caller can keep
+  // the UI honest, and only revalidate when something actually changed.
+  const saved = await setRsvp({
     eventId,
     profileId,
     status: args.status,
@@ -615,9 +619,11 @@ export async function setEventRsvpDepth(
     declineReason: args.declineReason,
     approvalStatus,
   })
+  if (!saved) return { ok: false }
 
   revalidateEvent(slug)
   revalidatePath('/events', 'layout')
+  return { ok: true }
 }
 
 // Host approves one pending RSVP (approval-required events). Host/cohost only.
