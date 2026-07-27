@@ -37,6 +37,20 @@ import { PersonalSpotlightModule } from './personal-spotlight-module'
 import { PersonalLayoutModule } from './personal-layout-module'
 import { PersonalAppearanceModule } from './personal-appearance-module'
 
+// The collapsed "Engage" inline body (ADR-846): the circle's shared challenges PLUS this week's practice,
+// stacked under the ONE `circle.engage` module. Both were separate `engage`-slot rows on the same
+// authority (circle.assignTask) for the same subject — what the circle is doing together — so the
+// seven-box core-entity shape gives Engage one box. The `circle.practice` catalog row is gone; its picker
+// is NOT (it renders right here), mirroring how SpaceProfileSettingsModule stacks three section editors.
+function CircleEngageAndPracticeModule() {
+  return (
+    <>
+      <CircleEngageModule />
+      <CirclePracticeModule />
+    </>
+  )
+}
+
 // The collapsed "Profile and Settings" inline body (ADR-782): the three former shell section editors
 // (Identity & Branding · Info & Connect · Settings) stacked, so the single `space.basics` module renders
 // the full config inline on the rail — matching what the /manage console's card opens (/settings/basics).
@@ -63,11 +77,14 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'circle.text': CircleTextModule,
   'circle.placeAndTime': CirclePlaceTimeModule,
   'circle.people': CirclePeopleModule,
-  'circle.engage': CircleEngageModule,
-  'circle.practice': CirclePracticeModule,
+  // ONE Engage box (ADR-846): the shared challenges + this week's practice, stacked.
+  'circle.engage': CircleEngageAndPracticeModule,
   'circle.insights': CircleInsightsModule,
   'hub.settings': HubSettingsModule,
   'hub.people': HubPeopleModule,
+  // hub.layout / nexus.layout / journey.builder are `render: 'link'` since ADR-846 (thin cards whose whole
+  // body was one link out, folded into their Settings box as that link row), so these bindings are not
+  // mounted today. They stay mapped so the id keeps a working inline body if a future change flips it back.
   'hub.layout': HubLayoutModule,
   'hub.insights': HubInsightsModule,
   'hub.danger': HubDangerModule,

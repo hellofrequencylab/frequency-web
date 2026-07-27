@@ -60,10 +60,9 @@ describe('groupForModule (every module folds into one of the console groups)', (
     }
   })
 
-  it('folds Email (comms) into Reach, and Plan and usage (billing) into Plan and billing (insights)', () => {
+  it('folds Email (comms) into Reach, and Plan and billing into the insights group', () => {
     expect(groupForModule(byId('space.reach'))).toBe('reach')
     expect(groupForModule(byId('space.comms'))).toBe('reach')
-    expect(groupForModule(byId('space.insights'))).toBe('insights')
     expect(groupForModule(byId('space.billing'))).toBe('insights')
     expect(groupForModule(byId('space.danger'))).toBe('danger')
   })
@@ -100,9 +99,11 @@ describe('panelHrefForModule (on-page panel first, else deep link, no regression
     expect(panelHrefForModule(byId('space.checkin'), slug)).toBe(`/spaces/${slug}?panel=checkin`)
   })
 
-  it('falls through to the deep link for a module with no panel (Insights)', () => {
-    // Insights still has no on-page panel, so it opens its deep route (the QR Scans anchor).
-    expect(panelHrefForModule(byId('space.insights'), slug)).toBe(`/spaces/${slug}/settings/qr#scans`)
+  it('opens the Offerings and money box on-page, and falls through to the deep link for Content', () => {
+    // ADR-846: the Offerings box opens the ADAPTIVE `offerings` panel (the same workspace its six services
+    // open their own sections of). Content has no panel, so it opens the hub's Content & Programs area.
+    expect(panelHrefForModule(byId('space.offerings'), slug)).toBe(`/spaces/${slug}?panel=offerings`)
+    expect(panelHrefForModule(byId('space.content'), slug)).toBe(`/spaces/${slug}/manage?section=programs`)
   })
 
   it('gives Danger no href (it renders its delete control inline)', () => {
@@ -170,9 +171,10 @@ describe('Mode is a secondary signal: Identity is never demoted below mode modul
 describe('Community (resonance) section coverage', () => {
   const resonance = SPACE_MODULES.filter((m) => sectionForModule(m) === 'resonance')
 
-  it('groups the CRM relationship + capture surfaces under Community', () => {
+  it('groups the CRM box and every tool it owns under Community', () => {
     // space.conversations joined the set when the stale space.inbox id was corrected in
     // sectionForModule (the ticketed workspace files under Resonance, not the Offerings catch-all).
+    // Automation is the one CRM-owned tool that files under Marketing instead (outbound drip).
     expect(resonance.map((m) => m.id).sort()).toEqual(
       ['space.conversations', 'space.crm', 'space.doors', 'space.leads', 'space.shared'].sort(),
     )

@@ -65,9 +65,16 @@ describe('panelHrefForModule (module-first inline panel)', () => {
     expect(panelHrefForModule(mod!, slug)).toBe(`/spaces/${slug}?panel=${panel}`)
   })
 
-  it('falls through to the deepLink for a module with no panel (Insights)', () => {
-    const insights = spaceModuleById('space.insights')
-    expect(insights).not.toBeNull()
-    expect(panelHrefForModule(insights!, slug)).toBe(`/spaces/${slug}/settings/qr#scans`)
+  it('opens the Offerings and money box on the adaptive panel, and keeps Insights reachable', () => {
+    // ADR-846: the six commerce panels above are TOOLS inside this box, which opens the ADAPTIVE
+    // `offerings` panel. Its deepLink (the console + bank path) stays the full /settings/offerings page.
+    const offerings = spaceModuleById('space.offerings')
+    expect(offerings).not.toBeNull()
+    expect(panelHrefForModule(offerings!, slug)).toBe(`/spaces/${slug}?panel=offerings`)
+    expect(offerings!.deepLink?.(slug)).toBe(`/spaces/${slug}/settings/offerings`)
+    expect(spaceModuleById('space.insights')).toBeNull()
+    // hrefForSurface KEEPS its space.insights case: the rail bank's fixed Insights quick-link resolves
+    // through it, so the scans view stays one tap away even though the catalog row is gone.
+    expect(hrefForSurface('space.insights', slug)).toBe(`/spaces/${slug}/settings/qr#scans`)
   })
 })

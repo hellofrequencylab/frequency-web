@@ -6,6 +6,8 @@ import {
   getSpaceBookingSummary,
   getSpaceMembershipsSummary,
   getSpaceTicketsSummary,
+  getSpaceCalendarSummary,
+  getSpaceQrSummary,
 } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 
 // SURFACE SUMMARIES — the client-boundary map for the Phase 2 "keep it in the rail" summary cards
@@ -14,9 +16,21 @@ import {
 // boundary, binding a `render: 'link'` Space surface to (a) its read-gated, fail-safe getter and (b) the
 // singular/plural COPY for the glanceable inline stat. A surface appears here IFF it has one honest,
 // glanceable stat — so a link surface gets a summary CARD when SURFACE_SUMMARIES[id] exists, and falls
-// back to a plain SurfaceLinkRow otherwise (data-driven + fail-safe by construction). Deliberately absent:
-// space.offerings (adaptive, no single honest stat) and every extra-tier surface (QR / Insights / Billing
-// / Danger — Danger must never carry a stat).
+// back to a plain SurfaceLinkRow otherwise (data-driven + fail-safe by construction).
+//
+// THE TWELVE BOXES (ADR-846) and where each one stands. A box appears here IFF it has ONE honest number:
+//   • carries a stat — People · CRM · Calendar · Shop · Email · QR codes and insights (plus three tools
+//     inside the Offerings and money box that each have a cheap count of their own: Booking, Memberships,
+//     Tickets).
+//   • DELIBERATELY no stat, and this is the honest answer rather than an invented one:
+//       - Profile and Settings, Page — `render: 'inline'`; they mount their editor, so there is no link
+//         row for a card to replace in the first place.
+//       - Offerings and money — ADAPTIVE. It stacks whichever of six services a space runs, so any single
+//         number (windows? tiers? sales?) would describe one service and misdescribe the box.
+//       - Content — a MIXED library box (practices, journeys, circles, recordings, images). No one count
+//         is the box; "12" would be a number with no noun.
+//       - Plan and billing — a plan is a name, not a quantity. The usage ladders live on its own page.
+//       - Danger zone — must NEVER carry a stat.
 //
 // The COPY lives HERE, not in rail-getters (those return only data): correct singular/plural, plain
 // nouns, no em dashes (docs/CONTENT-VOICE.md §10).
@@ -76,5 +90,17 @@ export const SURFACE_SUMMARIES: Record<string, SurfaceSummaryEntry> = {
   'space.tickets': {
     getter: getSpaceTicketsSummary,
     format: (n) => (n.count === 1 ? '1 ticket tier' : `${n.count} ticket tiers`),
+  },
+  // The two consolidated boxes that gained a stat (ADR-846). Calendar counts what is still ahead — the one
+  // thing a calendar is asked; QR codes counts the codes the space has made, which is also the metered
+  // dimension (space_qr: 3 free, 500 on Business), so its card carries the usage line too.
+  'space.calendar': {
+    getter: getSpaceCalendarSummary,
+    format: (n) => (n.count === 1 ? '1 upcoming event' : `${n.count} upcoming events`),
+  },
+  'space.reach': {
+    getter: getSpaceQrSummary,
+    format: (n) => (n.count === 1 ? '1 code' : `${n.count} codes`),
+    meterKey: 'space_qr',
   },
 }

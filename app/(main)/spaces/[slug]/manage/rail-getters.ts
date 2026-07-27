@@ -30,6 +30,8 @@ import { listAllMembershipTiers } from '@/lib/spaces/memberships'
 import { listAllTicketTiers } from '@/lib/spaces/tickets'
 import { getDeals } from '@/lib/crm/pipeline'
 import { listSpaceCampaigns } from '@/lib/spaces/campaigns'
+import { listEventsForSpace } from '@/lib/events/store'
+import { listSpaceCodes } from '@/lib/qr/space-codes'
 import {
   readProfilePages,
   hasPage,
@@ -55,6 +57,11 @@ import { readProfileData, isServiceListed, type SpaceProfileData } from '@/lib/s
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SpaceSettingsValues } from '../settings/settings-form'
+
+/** The upper bound on the upcoming-events read behind the Calendar box's stat. The Calendar console itself
+ *  reads at most 200 events, so the rail's count uses the SAME ceiling rather than a second, unbounded
+ *  query (ADR-846). */
+const EVENT_COUNT_LIMIT = 200
 
 // ── Basics (space.basics) ──────────────────────────────────────────────────────────────────────────
 // The SpaceSettingsForm prop bundle the /settings/basics page assembles (basics/page.tsx). Read-gated on
@@ -504,13 +511,16 @@ async function buildSummariesData(
       return fallback
     }
   }
-  const [members, deals, windows, memberTiers, ticketTiers, campaigns] = await Promise.all([
+  const [members, deals, windows, memberTiers, ticketTiers, campaigns, upcoming, codes] = await Promise.all([
     can('members') ? safe(() => listSpaceMembers(space.id), []) : null,
     can('crm') ? safe(() => getDeals(space.id), []) : null,
     can('availability') ? safe(() => listSpaceAvailability(space.id), []) : null,
     can('memberships') ? safe(() => listAllMembershipTiers(space.id), []) : null,
     can('tickets') ? safe(() => listAllTicketTiers(space.id), []) : null,
     can('email') ? safe(() => listSpaceCampaigns(space.id), []) : null,
+    // The Calendar + QR boxes (ADR-846): the two consolidated boxes that gained an honest single stat.
+    can('events') ? safe(() => listEventsForSpace(space.id, { upcomingOnly: true, limit: EVENT_COUNT_LIMIT }), []) : null,
+    can('qr') ? safe(() => listSpaceCodes(space.id), []) : null,
   ])
   const services = readProfileData(space.preferences).offerings ?? []
   return {
@@ -521,6 +531,8 @@ async function buildSummariesData(
     'space.booking': windows ? { count: windows.length } : null,
     'space.memberships': memberTiers ? { count: memberTiers.length } : null,
     'space.tickets': ticketTiers ? { count: ticketTiers.length } : null,
+    'space.calendar': upcoming ? { count: upcoming.length } : null,
+    'space.reach': codes ? { count: codes.length, tier } : null,
   }
 }
 
@@ -785,6 +797,33 @@ export async function getSpaceTicketsSummary(slug: string): Promise<{ count: num
   if (!space) return null
   const tiers = await listAllTicketTiers(space.id)
   return { count: tiers.length }
+}
+
+// ── The consolidated boxes' snapshots (ADR-846) ──────────────────────────────────────────────────────
+// The twelve-box menu left two boxes carrying an honest single stat that the rail was not yet showing:
+// Calendar (what is coming up) and QR codes and insights (how many codes exist, the metered dimension).
+// Both reuse the SAME reader their own page loads, re-gate on the box's per-Space function, and fail safe
+// to null so the card degrades to a plain link row for a viewer who cannot use the tool. The other ten
+// boxes are covered, or deliberately carry no stat (see components/admin/modules/surface-summaries.ts).
+
+/** "N upcoming events" — the Space's events still ahead of now. Gated on manage access + the `events`
+ *  function. Reuses listEventsForSpace (the SAME reader the Calendar console loads) with its
+ *  `upcomingOnly` filter, so there is no new query. Fail-safe. */
+export async function getSpaceCalendarSummary(slug: string): Promise<{ count: number } | null> {
+  const space = await resolveSummarySpace(slug, 'events')
+  if (!space) return null
+  const upcoming = await listEventsForSpace(space.id, { upcomingOnly: true, limit: EVENT_COUNT_LIMIT })
+  return { count: upcoming.length }
+}
+
+/** "N codes" — the QR codes this Space has made. Gated on manage access + the `qr` function, and
+ *  listSpaceCodes re-gates on canEditProfile itself and fails safe to []. Returns the Space plan `tier`
+ *  too, so the card can place the count against the space_qr allowance (3 free, 500 on Business). */
+export async function getSpaceQrSummary(slug: string): Promise<{ count: number; tier: string } | null> {
+  const space = await resolveSummarySpace(slug, 'qr')
+  if (!space) return null
+  const codes = await listSpaceCodes(space.id)
+  return { count: codes.length, tier: (space.plan ?? 'free').toLowerCase() }
 }
 
 // ── The Space Hub (ADR-516 Phase B) ──────────────────────────────────────────────────────────────────

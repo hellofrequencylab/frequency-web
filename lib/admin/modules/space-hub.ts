@@ -53,8 +53,11 @@ const SETTINGS_MODULE_IDS = new Set<string>([
   'space.danger', // Danger zone
 ])
 
-/** The module ids REMOVED from the hub entirely (page editing lives on the admin rail now, not the hub). */
-const HUB_EXCLUDED_IDS = new Set<string>(['space.layout'])
+/** The module ids REMOVED from the hub entirely: Page (page editing lives on the admin rail now, not the
+ *  hub) and the Content box (ADR-846 — the hub's Content & Programs TAB *is* that box, so rendering a card
+ *  that links back to the tab you are standing on would be a circular row). The Content box's five tools
+ *  still render as cards on that tab, so nothing inside it is lost. */
+const HUB_EXCLUDED_IDS = new Set<string>(['space.layout', 'space.content'])
 
 /**
  * The hub category a module belongs to, or null when it is excluded from the hub (the Page layout module).
@@ -69,16 +72,19 @@ export function sectionForModule(module: SpaceModule): SpaceHubSection | null {
   // is the ticketed inbox (it replaced the retired `space.inbox`).
   if (['space.crm', 'space.conversations', 'space.leads', 'space.doors', 'space.shared'].includes(module.id)) return 'resonance'
 
-  // Marketing — outbound reach + growth (email trio, QR + scans, automation/drip).
-  if (['space.comms', 'space.marketing', 'space.emailstyle', 'space.reach', 'space.insights', 'space.automation'].includes(module.id)) {
+  // Marketing — outbound reach + growth (email trio, QR codes and insights, automation/drip).
+  if (['space.comms', 'space.marketing', 'space.emailstyle', 'space.reach', 'space.automation'].includes(module.id)) {
     return 'marketing'
   }
 
-  // Content & Programs — the practitioner content + the space's media libraries (Airwaves + Loom Studio).
-  if (['space.practices', 'space.journeys', 'space.airwaves', 'space.loom'].includes(module.id)) return 'programs'
+  // Content & Programs — the Content box and everything inside it: the practitioner content (Practices,
+  // Journeys, Circles) plus the space's media libraries (Airwaves + Loom Studio).
+  if (['space.content', 'space.practices', 'space.journeys', 'space.circles', 'space.airwaves', 'space.loom'].includes(module.id)) {
+    return 'programs'
+  }
 
-  // Offerings & Money — everything else is a commerce/offering surface (booking, memberships, donations,
-  // enrollment, tickets, check-in, shop). Falls through here by elimination.
+  // Offerings & Money — everything else is a commerce/offering surface (the Offerings and money box plus
+  // booking, memberships, donations, enrollment, tickets, check-in, shop). Falls through by elimination.
   return 'offerings'
 }
 

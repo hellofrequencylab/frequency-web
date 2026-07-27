@@ -33,8 +33,7 @@ import { EmailBody } from '@/app/(main)/spaces/[slug]/settings/email/email-body'
 const TOOL_LABEL: Record<string, string> = {
   'space.marketing': 'Email design',
   'space.emailstyle': 'Email style',
-  'space.reach': 'QR codes',
-  'space.insights': 'Scans',
+  'space.reach': 'QR codes and insights',
   'space.automation': 'Automation',
 }
 

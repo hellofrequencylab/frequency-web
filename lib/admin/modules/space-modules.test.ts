@@ -10,6 +10,8 @@ import {
   UNHIDEABLE_MODULE_IDS,
   SPACE_MODULE_FAMILY_ORDER,
   SPACE_MODULE_FAMILY_LABEL,
+  SPACE_MODULE_BOX_IDS,
+  spaceModuleChildren,
 } from './space-modules'
 import { SPACE_FUNCTIONS, type SpaceFunctionKey } from '@/lib/spaces/functions'
 
@@ -33,11 +35,19 @@ describe('SPACE_MODULES catalog', () => {
     }
   })
 
-  it('splits the commerce services into INDEPENDENT modules (no merged Offerings surface)', () => {
-    for (const id of ['space.booking', 'space.memberships', 'space.donations', 'space.enroll', 'space.tickets', 'space.checkin', 'space.services']) {
-      expect(spaceModuleById(id), `${id} should be its own module`).not.toBeNull()
+  // ADR-846 REVERSES the ADR-544b split: the six commerce services keep their own rows (own gate, own
+  // panel, own anchored section) but are TOOLS inside the one "Offerings and money" box again.
+  it('keeps each commerce service a real module, owned by the Offerings and money box', () => {
+    for (const id of ['space.booking', 'space.memberships', 'space.donations', 'space.enroll', 'space.tickets', 'space.checkin']) {
+      const m = spaceModuleById(id)
+      expect(m, `${id} should still be its own module`).not.toBeNull()
+      expect(m!.parent, `${id} belongs to the Offerings and money box`).toBe('space.offerings')
     }
-    expect(spaceModuleById('space.offerings')).toBeNull() // the merged surface is gone
+    // Shop is its own BOX (a full 3-tab console), not a section of the adaptive offerings surface.
+    expect(spaceModuleById('space.services')!.parent).toBeUndefined()
+    const offerings = spaceModuleById('space.offerings')
+    expect(offerings, 'the Offerings and money box exists again').not.toBeNull()
+    expect(offerings!.deepLink?.('demo')).toBe('/spaces/demo/settings/offerings')
   })
 
   it('keeps the shell modules always-on and every service feature-gated + toggleable', () => {
@@ -105,9 +115,10 @@ describe('spaceModuleManifest', () => {
     expect(ids.slice(2)).toEqual([...ids.slice(2)].sort((a, b) => spaceModuleById(a)!.order - spaceModuleById(b)!.order))
   })
 
-  it('a disabled QR feature drops BOTH its modules (QR codes + Insights)', () => {
+  it('a disabled QR feature drops the QR codes and insights box', () => {
     const ids = spaceModuleManifest({ qr: false }).map((m) => m.id)
     expect(ids).not.toContain('space.reach')
+    // ADR-846 retired the second `space.insights` row onto the same page; the box absorbed it.
     expect(ids).not.toContain('space.insights')
   })
 })
@@ -183,9 +194,11 @@ describe('rail presentation metadata (priority + placement)', () => {
     }
   })
 
-  it('banks exactly the back-office reach + growth destinations (QR · Email · Insights · Plan and usage)', () => {
+  it('banks exactly the back-office reach + growth destinations (QR and insights · Email · Plan and billing)', () => {
+    // Insights left the catalog with ADR-846 (it was a second row onto the QR page). The rail bank keeps
+    // its own fixed Insights quick-link straight to /settings/qr#scans (lib/admin/rail-bank.ts).
     const banked = SPACE_MODULES.filter((m) => m.placement === 'bank').map((m) => m.id).sort()
-    expect(banked).toEqual(['space.billing', 'space.comms', 'space.insights', 'space.reach'].sort())
+    expect(banked).toEqual(['space.billing', 'space.comms', 'space.reach'].sort())
   })
 
   it('never banks Danger (destructive is never a bottom-bank quick-link)', () => {
@@ -219,13 +232,102 @@ describe('console consolidation metadata (ADR-782)', () => {
   })
 
   it('nests the CRM cluster under CRM and the email trio under Email', () => {
-    for (const id of ['space.automation', 'space.leads', 'space.doors', 'space.shared']) {
+    for (const id of ['space.conversations', 'space.automation', 'space.leads', 'space.doors', 'space.shared']) {
       expect(spaceModuleById(id)!.parent).toBe('space.crm')
     }
     for (const id of ['space.marketing', 'space.emailstyle']) {
       expect(spaceModuleById(id)!.parent).toBe('space.comms')
     }
-    expect(spaceModuleById('space.insights')!.parent).toBe('space.reach')
+  })
+})
+
+// ADR-846: the TWELVE-BOX consolidation. A Space menu is twelve top-level boxes; every other catalog row is
+// a tool owned by exactly one of them. This is the lock on that shape.
+describe('the twelve boxes (ADR-846)', () => {
+  it('has exactly twelve top-level boxes, in the approved order', () => {
+    expect(SPACE_MODULE_BOX_IDS).toEqual([
+      'space.basics', // 1 Profile and Settings
+      'space.layout', // 2 Page
+      'space.people', // 3 People
+      'space.crm', // 4 CRM
+      'space.calendar', // 5 Calendar
+      'space.offerings', // 6 Offerings and money
+      'space.content', // 8 Content (catalog order puts it before Shop)
+      'space.services', // 7 Shop
+      'space.reach', // 10 QR codes and insights (catalog order puts it before Email)
+      'space.comms', // 9 Email
+      'space.billing', // 11 Plan and billing
+      'space.danger', // 12 Danger zone
+    ])
+    expect(SPACE_MODULE_BOX_IDS).toHaveLength(12)
+  })
+
+  it('gives every non-box row a box that owns it, one level deep, with no orphan', () => {
+    const boxes = new Set(SPACE_MODULE_BOX_IDS)
+    for (const m of SPACE_MODULES) {
+      if (boxes.has(m.id)) continue
+      expect(m.parent, `${m.id} is neither a box nor owned by one`).toBeTruthy()
+      expect(boxes.has(m.parent!), `${m.id} nests under ${m.parent}, which is not a box`).toBe(true)
+    }
+  })
+
+  it('files each absorbed tool under the box the consolidation assigned it', () => {
+    const expected: Record<string, string> = {
+      'space.reviews': 'space.basics',
+      'space.collaborators': 'space.people',
+      'space.conversations': 'space.crm',
+      'space.leads': 'space.crm',
+      'space.doors': 'space.crm',
+      'space.shared': 'space.crm',
+      'space.automation': 'space.crm',
+      'space.booking': 'space.offerings',
+      'space.memberships': 'space.offerings',
+      'space.donations': 'space.offerings',
+      'space.enroll': 'space.offerings',
+      'space.tickets': 'space.offerings',
+      'space.checkin': 'space.offerings',
+      'space.practices': 'space.content',
+      'space.journeys': 'space.content',
+      'space.circles': 'space.content',
+      'space.airwaves': 'space.content',
+      'space.loom': 'space.content',
+      'space.marketing': 'space.comms',
+      'space.emailstyle': 'space.comms',
+    }
+    for (const [id, parent] of Object.entries(expected)) {
+      expect(spaceModuleById(id)?.parent, `${id} belongs to ${parent}`).toBe(parent)
+    }
+    // Every box keeps its tools reachable: each child resolves a real deep-editing route of its own.
+    for (const id of Object.keys(expected)) {
+      expect(spaceModuleById(id)!.deepLink?.('demo')).toMatch(/^\/spaces\/demo\//)
+    }
+  })
+
+  it('retired only the one row whose destination duplicated its box (Scans and insights)', () => {
+    expect(spaceModuleById('space.insights')).toBeNull()
+    // The box it folded into now says so, and still opens the page that carries the scans readout.
+    const reach = spaceModuleById('space.reach')!
+    expect(reach.label).toBe('QR codes and insights')
+    expect(reach.deepLink?.('demo')).toBe('/spaces/demo/settings/qr')
+  })
+
+  it('gives each box a real child set (spaceModuleChildren)', () => {
+    expect(spaceModuleChildren('space.offerings').map((m) => m.id)).toEqual([
+      'space.booking',
+      'space.memberships',
+      'space.donations',
+      'space.enroll',
+      'space.tickets',
+      'space.checkin',
+    ])
+    expect(spaceModuleChildren('space.content').map((m) => m.id)).toEqual([
+      'space.practices',
+      'space.journeys',
+      'space.circles',
+      'space.airwaves',
+      'space.loom',
+    ])
+    expect(spaceModuleChildren('space.danger')).toEqual([])
   })
 })
 
