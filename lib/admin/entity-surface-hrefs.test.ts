@@ -52,6 +52,16 @@ describe('hrefForEntitySurface', () => {
     expect(hrefForEntitySurface('circle.crm', { kind: 'circle', id: 'sunrise-sit' })).toBe('/circles/sunrise-sit/manage')
   })
 
+  it('resolves channel.manage to the Channel Manage hub (ADR-870), by slug or raw id', () => {
+    // The one channel `link` row. The manage route accepts the DB id or the slug, so both resolve.
+    expect(hrefForEntitySurface('channel.manage', { kind: 'channel', id: 'movement' })).toBe('/channels/movement/manage')
+    const uuid = 'aa0f862c-2647-4f8f-96ab-d0bd33c80fee'
+    expect(hrefForEntitySurface('channel.manage', { kind: 'channel', id: uuid })).toBe(`/channels/${uuid}/manage`)
+    // No slug, nothing to key on; other channel surfaces stay inline (no prefix fallback).
+    expect(hrefForEntitySurface('channel.manage', { kind: 'channel' })).toBeNull()
+    expect(hrefForEntitySurface('channel.settings', { kind: 'channel', id: 'movement' })).toBeNull()
+  })
+
   it('resolves event/hub/nexus core-entity surfaces to their owner manage console (ADR-515 bank seam)', () => {
     // These consoles are full owner workspaces, so a `placement: 'bank'` surface resolves its bank href here.
     expect(hrefForEntitySurface('event.people', { kind: 'event', id: 'x' })).toBe('/events/x/manage')

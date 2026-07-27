@@ -20,6 +20,12 @@ import { join } from 'node:path'
 //      setProgramPaused flips is_active only for the owner; and
 //      refreshProgramBlueprint rewrites the blueprint from an owned live
 //      circle, refusing drafts and foreign circles, touching no Chapter.
+//   7. The STAFF Program lifecycle (ADR-870): attachProgramBlueprint refuses a
+//      channel already running a Program, snapshots any live real circle or
+//      CLONES a Starter (the original never moves, and the program_only clone
+//      never reaches the catalog list reads); detachProgramBlueprint clears
+//      template_id and soft-retires the blueprint; the staff editor twins work
+//      on a Frequency-run (NULL-owner) Program the Space path can never reach.
 
 const SPACE = 'aaaaaaaa-0000-4000-a000-000000space1'
 const OTHER_SPACE = 'bbbbbbbb-0000-4000-a000-00000space2'
@@ -165,8 +171,17 @@ import {
   updateSpaceProgram,
   setProgramPaused,
   refreshProgramBlueprint,
+  attachProgramBlueprint,
+  detachProgramBlueprint,
+  updateProgramForStaff,
+  setProgramPausedForStaff,
+  refreshProgramBlueprintForStaff,
   type ChapterSummary,
 } from './programs'
+// The catalog list reads share the mocked admin client above, so the ADR-870
+// leak guard can exercise them FUNCTIONALLY: a program_only clone must never
+// come back from either list read.
+import { getActiveTemplates, getAllTemplates } from '@/lib/circles/templates-data'
 
 beforeEach(() => {
   state.channels = [
@@ -677,6 +692,317 @@ describe('catalog guard (source shape): Program blueprints never reach the Start
     expect(src.match(/\.is\('owner_space_id', null\)/g)?.length).toBe(2)
     const singles = src.slice(src.indexOf('export async function getTemplateById'))
     expect(singles).not.toContain(".is('owner_space_id', null)")
+  })
+
+  it('the two LIST reads also filter program_only = false (ADR-870); single reads stay open', () => {
+    const src = readFileSync(join(__dirname, '..', 'circles', 'templates-data.ts'), 'utf8')
+    // The NULL-owner fence: a Frequency-run Program's blueprint has no owner
+    // Space, so the owner filter alone would let it leak into the catalog.
+    expect(src.match(/\.eq\('program_only', false\)/g)?.length).toBe(2)
+    const singles = src.slice(src.indexOf('export async function getTemplateById'))
+    expect(singles).not.toContain(".eq('program_only', false)")
+  })
+})
+
+// ── The STAFF Program lifecycle (ADR-870). AUTHZ lives in the /channels/[id]/manage
+//    action layer (channel.manage); these lock the data-layer invariants. ──
+
+const STARTER = 'eeeeeeee-0000-4000-a000-000starter-1'
+
+describe('attachProgramBlueprint (ADR-870)', () => {
+  beforeEach(() => {
+    state.circles = [
+      {
+        id: FLAGSHIP,
+        space_id: OTHER_SPACE, // any owner: the staff path has no Space fence
+        status: 'active',
+        is_demo: false,
+        about: 'Work alongside people building real things.',
+        primary_pillar: 'mind',
+        topical_channel_id: null,
+      },
+    ]
+    state.circleProfiles = [
+      {
+        circle_id: FLAGSHIP,
+        meetup: { text: 'Tuesdays', length: '90 min' },
+        gathering: { text: 'Saturday build day' },
+        agreements: ['Show up'],
+        pillars_inside: { body: 'Walk breaks' },
+        format: 'Cowork sprints',
+        size_label: '5 to 12',
+        thread: 'Weekly wins',
+        remix_options: ['Evening edition'],
+      },
+    ]
+  })
+
+  it('refuses a channel that already runs a Program, writing nothing', async () => {
+    await expect(
+      attachProgramBlueprint({
+        channelId: PROGRAM_CHANNEL,
+        profileId: PROFILE,
+        source: { kind: 'circle', circleId: FLAGSHIP },
+      }),
+    ).rejects.toThrow(/already runs a Program/)
+    expect(state.inserts).toHaveLength(0)
+    expect(state.updates).toHaveLength(0)
+  })
+
+  it('refuses a missing channel', async () => {
+    await expect(
+      attachProgramBlueprint({
+        channelId: '00000000-0000-4000-a000-000000000000',
+        profileId: PROFILE,
+        source: { kind: 'circle', circleId: FLAGSHIP },
+      }),
+    ).rejects.toThrow(/not available/)
+    expect(state.inserts).toHaveLength(0)
+  })
+
+  it('refuses a demo or draft circle as the snapshot source', async () => {
+    state.circles[0].is_demo = true
+    await expect(
+      attachProgramBlueprint({
+        channelId: PLAIN_CHANNEL,
+        profileId: PROFILE,
+        source: { kind: 'circle', circleId: FLAGSHIP },
+      }),
+    ).rejects.toThrow(/demo/)
+    state.circles[0].is_demo = false
+    state.circles[0].status = 'draft'
+    await expect(
+      attachProgramBlueprint({
+        channelId: PLAIN_CHANNEL,
+        profileId: PROFILE,
+        source: { kind: 'circle', circleId: FLAGSHIP },
+      }),
+    ).rejects.toThrow(/Publish the Circle first/)
+    expect(state.inserts).toHaveLength(0)
+  })
+
+  it('circle snapshot: writes a program_only blueprint and stamps template_id on the channel', async () => {
+    const res = await attachProgramBlueprint({
+      channelId: PLAIN_CHANNEL,
+      profileId: PROFILE,
+      source: { kind: 'circle', circleId: FLAGSHIP },
+    })
+
+    // The blueprint: display copy rides the CHANNEL, content rides the circle
+    // snapshot, and the discriminator pair keeps it out of the catalog while
+    // is_active stays true for Remix. owner_space_id follows the channel:
+    // NULL for a Frequency-run channel.
+    const tpl = state.inserts.find((i) => i.table === 'circle_templates')!.row
+    expect(tpl).toMatchObject({
+      name: 'Movement',
+      about: 'Work alongside people building real things.',
+      meetup: { text: 'Tuesdays', length: '90 min' },
+      agreements: ['Show up'],
+      owner_space_id: null,
+      program_only: true,
+      is_active: true,
+    })
+    expect(res.templateId).toBe(tpl.id)
+
+    // The channel became a Program.
+    const channel = state.channels.find((c) => c.id === PLAIN_CHANNEL)!
+    expect(channel.template_id).toBe(res.templateId)
+    expect(isProgram(channel as { template_id?: string | null })).toBe(true)
+    // The source circle was only READ: it is not pulled into the channel.
+    expect(state.circles[0].topical_channel_id).toBeNull()
+  })
+
+  it('an owner-Space channel stamps its owner onto the blueprint', async () => {
+    state.channels.find((c) => c.id === PLAIN_CHANNEL)!.owner_space_id = SPACE
+    await attachProgramBlueprint({
+      channelId: PLAIN_CHANNEL,
+      profileId: PROFILE,
+      source: { kind: 'circle', circleId: FLAGSHIP },
+    })
+    const tpl = state.inserts.find((i) => i.table === 'circle_templates')!.row
+    expect(tpl).toMatchObject({ owner_space_id: SPACE, program_only: true })
+  })
+
+  it('starter clone: never mutates the original, and the clone never appears in the catalog reads', async () => {
+    state.templates = [
+      {
+        id: STARTER,
+        slug: 'morning-pages',
+        name: 'Morning Pages',
+        one_liner: 'Write three pages before the day starts.',
+        identity: 'Writers who show up early.',
+        audience: 'Early risers',
+        card: 'Write first.',
+        about: 'The original about.',
+        primary_pillar: 'expression',
+        pillars_inside: { mind: 'Clarity' },
+        meetup: { text: 'Daily' },
+        gathering: {},
+        thread: 'Page counts',
+        format: 'Solo, together',
+        size_label: '3 to 8',
+        agreements: ['No editing'],
+        remix_options: [],
+        callouts: [],
+        image_url: null,
+        recommended_journey_pillar: null,
+        owner_space_id: null,
+        program_only: false,
+        is_active: true,
+        display_order: 1,
+      },
+    ]
+    const original = JSON.parse(JSON.stringify(state.templates[0]))
+
+    const res = await attachProgramBlueprint({
+      channelId: PLAIN_CHANNEL,
+      profileId: PROFILE,
+      source: { kind: 'starter', templateId: STARTER },
+    })
+
+    // A NEW row was cloned; the channel points at the clone, never the original.
+    expect(res.templateId).not.toBe(STARTER)
+    expect(state.channels.find((c) => c.id === PLAIN_CHANNEL)!.template_id).toBe(res.templateId)
+
+    // The original is byte-for-byte untouched and still in the catalog.
+    expect(state.templates.find((t) => t.id === STARTER)).toEqual(original)
+
+    // The clone carries the channel's display copy + the template's content,
+    // and the program_only fence.
+    const clone = state.templates.find((t) => t.id === res.templateId)!
+    expect(clone).toMatchObject({
+      name: 'Movement',
+      about: 'The original about.',
+      agreements: ['No editing'],
+      program_only: true,
+      owner_space_id: null,
+      is_active: true,
+    })
+    expect(clone.slug).not.toBe('morning-pages')
+
+    // FUNCTIONAL leak guard: both catalog list reads return the original only.
+    const active = await getActiveTemplates()
+    expect(active.map((t) => t.id)).toEqual([STARTER])
+    const all = await getAllTemplates()
+    expect(all.map((t) => t.id)).toEqual([STARTER])
+  })
+
+  it('refuses to clone anything but a live catalog Starter', async () => {
+    state.templates = [
+      { id: STARTER, slug: 's', name: 'S', one_liner: '', owner_space_id: SPACE, program_only: false, is_active: true },
+    ]
+    await expect(
+      attachProgramBlueprint({
+        channelId: PLAIN_CHANNEL,
+        profileId: PROFILE,
+        source: { kind: 'starter', templateId: STARTER },
+      }),
+    ).rejects.toThrow(/from the catalog/)
+    state.templates[0].owner_space_id = null
+    state.templates[0].program_only = true
+    await expect(
+      attachProgramBlueprint({
+        channelId: PLAIN_CHANNEL,
+        profileId: PROFILE,
+        source: { kind: 'starter', templateId: STARTER },
+      }),
+    ).rejects.toThrow(/from the catalog/)
+    expect(state.inserts).toHaveLength(0)
+  })
+})
+
+describe('detachProgramBlueprint (ADR-870)', () => {
+  it('refuses a channel that does not run a Program, writing nothing', async () => {
+    await expect(
+      detachProgramBlueprint({ channelId: PLAIN_CHANNEL, profileId: PROFILE }),
+    ).rejects.toThrow(/does not run a Program/)
+    expect(state.updates).toHaveLength(0)
+  })
+
+  it('clears template_id and soft-retires the blueprint; circles are untouched', async () => {
+    state.templates = [{ id: TEMPLATE, slug: 'meld', name: 'Meld', is_active: true, program_only: true, owner_space_id: SPACE }]
+    state.circles = [{ id: 'c1', topical_channel_id: PROGRAM_CHANNEL, status: 'active' }]
+
+    await detachProgramBlueprint({ channelId: PROGRAM_CHANNEL, profileId: PROFILE })
+
+    const channel = state.channels.find((c) => c.id === PROGRAM_CHANNEL)!
+    expect(channel.template_id).toBeNull()
+    // Back to a plain focus area — not a Program any more.
+    expect(isProgram(channel as { template_id?: string | null })).toBe(false)
+    // The blueprint is retired, never deleted (Chapters copied it at remix time).
+    expect(state.templates[0].is_active).toBe(false)
+    expect(state.deletes).toHaveLength(0)
+    // The circles in the channel stay exactly where they were.
+    expect(state.circles[0].topical_channel_id).toBe(PROGRAM_CHANNEL)
+  })
+})
+
+describe('the staff editor twins work on a Frequency-run (NULL-owner) Program (ADR-870)', () => {
+  beforeEach(() => {
+    // The seeded Program loses its owner: the Space path can never touch it now.
+    state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.owner_space_id = null
+    seedBlueprintRow()
+    state.templates[0].owner_space_id = null
+  })
+
+  it('the Space path refuses it, the staff path edits it (copy sync, slug untouched)', async () => {
+    await expect(
+      updateSpaceProgram({ spaceId: SPACE, profileId: PROFILE, channelId: PROGRAM_CHANNEL, patch: { name: 'X' } }),
+    ).rejects.toThrow(/different Space/)
+
+    await updateProgramForStaff({
+      channelId: PROGRAM_CHANNEL,
+      profileId: PROFILE,
+      patch: { name: 'Meld Community Cowork', oneLiner: 'Cowork with your people.' },
+    })
+    const channel = state.channels.find((c) => c.id === PROGRAM_CHANNEL)!
+    expect(channel).toMatchObject({ name: 'Meld Community Cowork', description: 'Cowork with your people.' })
+    expect(channel.slug).toBe('meld')
+    expect(state.templates[0]).toMatchObject({
+      name: 'Meld Community Cowork',
+      one_liner: 'Cowork with your people.',
+      card: 'Cowork with your people.',
+      identity: 'Cowork with your people.',
+    })
+  })
+
+  it('pause/resume flips the same retire switch startChapter respects', async () => {
+    await setProgramPausedForStaff({ channelId: PROGRAM_CHANNEL, profileId: PROFILE, paused: true })
+    expect(state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.is_active).toBe(false)
+    await expect(startChapter({ channelId: PROGRAM_CHANNEL, profileId: PROFILE })).rejects.toThrow(
+      /not taking new Chapters/,
+    )
+    await setProgramPausedForStaff({ channelId: PROGRAM_CHANNEL, profileId: PROFILE, paused: false })
+    expect(state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.is_active).toBe(true)
+  })
+
+  it('refresh re-snapshots from any live real circle; a demo is refused', async () => {
+    state.circles = [
+      {
+        id: FLAGSHIP,
+        space_id: OTHER_SPACE,
+        status: 'active',
+        is_demo: false,
+        about: 'The staff-refreshed way.',
+        primary_pillar: 'body',
+        topical_channel_id: null,
+      },
+    ]
+    state.circleProfiles = []
+
+    await refreshProgramBlueprintForStaff({
+      channelId: PROGRAM_CHANNEL,
+      profileId: PROFILE,
+      sourceCircleId: FLAGSHIP,
+    })
+    expect(state.templates[0]).toMatchObject({ about: 'The staff-refreshed way.', primary_pillar: 'body' })
+    // Display copy is updateProgramForStaff's job, not the refresh's.
+    expect(state.templates[0].name).toBe('Meld')
+
+    state.circles[0].is_demo = true
+    await expect(
+      refreshProgramBlueprintForStaff({ channelId: PROGRAM_CHANNEL, profileId: PROFILE, sourceCircleId: FLAGSHIP }),
+    ).rejects.toThrow(/demo/)
   })
 })
 

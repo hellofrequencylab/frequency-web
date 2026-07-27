@@ -524,6 +524,26 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'extra',
     priority: 10,
   },
+  // The Channel Manage hub deep link (ADR-870). Channels now have a full owner-console at
+  // /channels/<id>/manage (Home · Members · Circles/Chapters · Program · Settings), so the staff rail
+  // carries a link-row into it — the same pattern as hub.layout/journey.builder (a `link` row in the
+  // Settings box) and the crm rows (a full dashboard is never inlined). Resolves via
+  // hrefForEntitySurface('channel.manage'). Gated channel.manage (staff); the hub page and every one
+  // of its actions re-gate server-side (ADR-274).
+  {
+    id: 'channel.manage',
+    label: 'Manage Channel',
+    desc: 'The Channel console: members, Circles, the Program, and settings in one place.',
+    Icon: LayoutGrid,
+    scopes: ['channel'],
+    requiredCapability: 'channel.manage',
+    slot: 'basics',
+    surface: 'sidebar',
+    render: 'link',
+    order: 12,
+    tier: 'primary',
+    priority: 15,
+  },
   // ── Journey rail (ADR-515 Phase 6, the net-new Journey scope) ────────────────────────────────────
   // A Journey's core editable functions, surfaced in the standardized rail exactly like the other
   // entities. All gated journey.editSettings (author OR staff OR parent-scope manager — see
