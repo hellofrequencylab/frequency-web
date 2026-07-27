@@ -324,6 +324,7 @@ describe('the twelve boxes (ADR-846)', () => {
       'space.practices',
       'space.journeys',
       'space.circles',
+      'space.program', // Programs on Channels: the flagship circle grown into a network-wide blueprint
       'space.airwaves',
       'space.loom',
     ])

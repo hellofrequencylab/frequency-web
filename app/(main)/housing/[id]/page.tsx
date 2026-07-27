@@ -12,7 +12,7 @@ import { ListingDetailTemplate } from '@/components/templates/listing-detail-tem
 import { listingDetailFromHousing } from '@/lib/listings-shared/detail-view'
 import { listingMetadata, type HousingSeoFacts } from '@/lib/listings-shared/listing-seo'
 import { getListingComments } from '@/lib/marketplace/listing-comments'
-import { setListingStatusAction, deleteListingAction } from '../../actions'
+import { setListingStatusAction, deleteListingAction } from '@/app/(main)/marketplace/actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -85,7 +85,7 @@ export default async function HousingDetailPage({
   let claimShareUrl: string | undefined
   if (isStaff && listing.seededUnclaimed) {
     const token = await getListingClaimToken(id)
-    if (token) claimShareUrl = `/marketplace/housing/${id}?claim=${token}`
+    if (token) claimShareUrl = `/housing/${id}?claim=${token}`
   }
 
   const [detail, comments, savedIds] = await Promise.all([
@@ -112,7 +112,7 @@ export default async function HousingDetailPage({
   const view = {
     ...listingDetailFromHousing(listing, detail, { isOwner }),
     ...(isOwner
-      ? { action: { kind: 'edit' as const, label: 'Edit listing', href: `/marketplace/housing/${id}/edit` } }
+      ? { action: { kind: 'edit' as const, label: 'Edit listing', href: `/housing/${id}/edit` } }
       : {}),
     housingFacts,
   }
@@ -156,7 +156,7 @@ export default async function HousingDetailPage({
                 listingId={listing.id}
                 initialSaved={savedIds.has(listing.id)}
                 signedIn={!!profileId}
-                signInNext={`/marketplace/housing/${listing.id}`}
+                signInNext={`/housing/${listing.id}`}
               />
               <ReportButton targetKind="listing" targetId={listing.id} />
             </div>

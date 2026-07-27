@@ -1004,7 +1004,7 @@ export function housingListingSchema(h: {
   rentCents?: number | null
   bedrooms?: number | null
   roomType?: string | null
-  /** Canonical app path, e.g. `/marketplace/housing/<id>`. */
+  /** Canonical app path, e.g. `/housing/<id>`. */
   path: string
 }) {
   const url = abs(h.path)

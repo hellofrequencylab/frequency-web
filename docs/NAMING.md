@@ -210,11 +210,23 @@
   toward a Lab. Circles meet in homes/public spaces, never Outposts.
 - **Frequency Lab** = standalone for-profit venue; when a Lab exists in a Nexus, the
   Outpost HQ lives there.
-- **Channels** = the topical forum feature ONLY (the `topical_channels` table): the
-  seven topics, Spirituality, Movement, Holistic Health, Human Relating, Activism,
-  Creative, Business Support. Verb: **"tune in."** A Channel sorts under a Pillar via
-  `topical_channels.pillar_id`. **"Interest" / "Interests" is RETIRED as a member-facing
-  word for these** (it was a synonym for the topical Channels): say **Channel**.
+- **Channels** = a FOCUS AREA (the `topical_channels` table): it hosts Circles
+  (`circles.topical_channel_id`), carries the forum feed, and can run as a Program
+  (below). The founding seven, Spirituality, Movement, Holistic Health, Human Relating,
+  Activism, Creative, Business Support, stay platform-curated. Verb: **"tune in."**
+  A Channel sorts under a Pillar via `topical_channels.pillar_id`. **"Interest" /
+  "Interests" is RETIRED as a member-facing word for these**: say **Channel**.
+  (Broadened from "forum feature only" by ADR-864, July 2026: the forum is one module
+  inside a Channel, not its definition.)
+- **Program** = a Channel with a Chapter blueprint (`topical_channels.template_id`),
+  run by Frequency (`owner_space_id` NULL) or by a Space (a Collective business
+  member). Examples: Meld Community Coworking, MoFlow. Never "Collective" (a Space
+  membership plan), never "Hub" (the community tree), never "Franchise".
+- **Chapter** = one local Circle running a Program's model
+  (`circles.topical_channel_id` points at the Program's Channel). Verbs: **"Start a
+  Chapter"** (the Remix flow with the Program's blueprint) and **"Find a Chapter near
+  you."** A Chapter is still a Circle everywhere else in the product; "Chapter" is
+  the word only inside Program framing.
 - **Pillars vs Channels (locked, June 2026):** the FOUR (Mind / Body / Spirit /
   Expression) are **Pillars**, never "Channels" and never "Domains". The SEVEN topics
   are **Channels**, never "Interests". Two distinct layers: Pillar > Channel > Circle.
@@ -481,7 +493,8 @@ Phase-6 zero-hits grep carves them out:
   reused it was renamed **Catalyst** (`lib/entry-points/leaderboard.ts`), and the
   recruiter reward **leaderboard** (Catalyst included) is now retired (ADR-305). Core QR
   entry-point *capture* stays; only the recruiter *reward board* is gone.
-- **"channels"**: forum feature only; any Pillar-as-channel framing is renamed.
+- **"channels"**: the focus-area feature only (ADR-864 broadened it from "forum
+  only"); any Pillar-as-channel framing is still renamed.
 - **"tune"**: "tune in" = the Channels verb; "tune out" / "tune back in" =
   Mindless (the On Air timer). Two dials, no collision.
 - **"co-op"**: one meaning only, a Circle **Run** of a Journey (cohort, ADR-252).

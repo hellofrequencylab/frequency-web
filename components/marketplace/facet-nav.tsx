@@ -8,7 +8,7 @@ import Link from 'next/link'
 
 const AREAS = [
   { key: 'all', href: '/classifieds', label: 'Classifieds' },
-  { key: 'housing', href: '/marketplace/housing', label: 'Housing' },
+  { key: 'housing', href: '/housing', label: 'Housing' },
   { key: 'makers', href: '/market', label: 'Market' },
   { key: 'events', href: '/marketplace/events', label: 'Events' },
   { key: 'shop', href: '/store', label: 'Frequency Store' },

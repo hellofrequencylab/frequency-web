@@ -124,6 +124,12 @@ const nextConfig: NextConfig = {
       { source: '/founders', destination: '/pricing', permanent: true },
       { source: '/founders/offer', destination: '/pricing', permanent: true },
       { source: '/founders/business', destination: '/pricing', permanent: true },
+      // Housing namespace move (ADR-596 cleanup): the last member-facing /marketplace/* URL
+      // moved to /housing. Permanent (308) so old indexed URLs, bookmarks, and saved links
+      // transfer their signals to the new canonical home. :path* also matches zero segments,
+      // but keep the bare rule explicit so the pair reads like the other retired routes.
+      { source: '/marketplace/housing', destination: '/housing', permanent: true },
+      { source: '/marketplace/housing/:path*', destination: '/housing/:path*', permanent: true },
     ]
   },
   images: {

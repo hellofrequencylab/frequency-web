@@ -5,8 +5,8 @@ import type { Listing } from '@/lib/listings/types'
 
 // Browse card for a connect-only listing (Housing). Wraps the shared EntityCard so
 // the marketplace grid reads like every other browse grid. `basePath` sets where the
-// card links (e.g. /marketplace/housing/<id> for a housing listing's detail page).
-export function ListingCard({ listing, basePath = '/marketplace/housing' }: { listing: Listing; basePath?: string }) {
+// card links (e.g. /housing/<id> for a housing listing's detail page).
+export function ListingCard({ listing, basePath = '/housing' }: { listing: Listing; basePath?: string }) {
   return (
     <EntityCard
       href={`${basePath}/${listing.id}`}

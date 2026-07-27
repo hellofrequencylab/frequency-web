@@ -61,31 +61,33 @@ async function resolveManagedSpace(slug: string): Promise<{ space: ManagedSpace;
   return { space: { id: space.id, slug, name }, actorId: caller.id }
 }
 
-/** display name + auth email per audience member. Same shape and posture as the event
- *  action's resolver (best-effort per row; profiles carry no email column, the auth record
- *  is the source — ADR-854 posture: an address is delivery data, not identity). */
-async function resolveRecipients(
+/** The Space CONTACTS inside the audience, by profile_id — the ONLY people this lane may
+ *  email (ADR-863). A member's auth-account email is delivery data they never gave the
+ *  Space (ADR-854); reading it via the Auth admin API and feeding it to the campaign lane
+ *  both disclosed private addresses into the operator-visible send ledger AND ran one Auth
+ *  call per member. The campaign lane exists to email CONTACTS — people the Space already
+ *  has a relationship and consent record for — so we resolve the audience to its contact
+ *  rows in ONE batched read and never touch auth. A member with no contact card is not
+ *  emailable here; they still receive DM and Dispatch. */
+async function resolveContactEmails(
+  spaceId: string,
   profileIds: string[],
-): Promise<Map<string, { displayName: string; email: string | null }>> {
-  const out = new Map<string, { displayName: string; email: string | null }>()
-  if (profileIds.length === 0) return out
-  const admin = createAdminClient()
-  const { data } = await admin
-    .from('profiles')
-    .select('id, display_name, auth_user_id')
-    .in('id', profileIds)
-  const rows = (data ?? []) as { id: string; display_name: string | null; auth_user_id: string | null }[]
-  for (const p of rows) {
-    let email: string | null = null
-    if (p.auth_user_id) {
-      try {
-        const { data: u } = await admin.auth.admin.getUserById(p.auth_user_id)
-        email = u?.user?.email?.trim().toLowerCase() ?? null
-      } catch {
-        email = null
-      }
-    }
-    out.set(p.id, { displayName: p.display_name ?? 'there', email })
+): Promise<{ profileId: string; contactId: string; email: string }[]> {
+  if (profileIds.length === 0) return []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = createAdminClient() as unknown as { from: (t: string) => any }
+  const { data } = await db
+    .from('contacts')
+    .select('id, profile_id, email')
+    .eq('space_id', spaceId)
+    .in('profile_id', profileIds)
+  const out: { profileId: string; contactId: string; email: string }[] = []
+  const seen = new Set<string>()
+  for (const c of (data ?? []) as { id: string; profile_id: string | null; email: string | null }[]) {
+    const email = c.email?.trim().toLowerCase()
+    if (!c.profile_id || !email || seen.has(c.profile_id)) continue
+    seen.add(c.profile_id)
+    out.push({ profileId: c.profile_id, contactId: c.id, email })
   }
   return out
 }
@@ -104,16 +106,19 @@ async function sendEmailChannel(args: {
   body: string
   segments: string[]
   audience: string[]
-  recipients: Map<string, { displayName: string; email: string | null }>
 }): Promise<BroadcastChannelResult> {
   const { space, actorId, subject, body } = args
   if (!subject) return { channel: 'email', ok: false, detail: 'Add a subject to send email.' }
 
-  const emailable = args.audience
-    .map((id) => ({ profileId: id, ...args.recipients.get(id) }))
-    .filter((r): r is { profileId: string; displayName: string; email: string } => !!r.email)
+  // Contacts only (ADR-863): the audience members who are Space contacts with an email on
+  // file. Members who never shared an email with the Space are not emailable here.
+  const emailable = await resolveContactEmails(space.id, args.audience)
   if (emailable.length === 0) {
-    return { channel: 'email', ok: false, detail: 'No one in this audience has an email address on file.' }
+    return {
+      channel: 'email',
+      ok: false,
+      detail: 'No one in this audience is a contact with an email on file. Members who have not shared an email get this by DM or Dispatch instead.',
+    }
   }
 
   // The campaigns row first (ledger + analytics + per-topic mutes), then the shared
@@ -145,32 +150,16 @@ async function sendEmailChannel(args: {
     return { channel: 'email', ok: false, detail: 'Could not create the campaign. Try again.' }
   }
 
-  // Map recipients onto the Space's contacts where they exist (ledger + engagement
-  // attribution); the send still goes by address for members with no contact card.
-  const contactIdByEmail = new Map<string, string>()
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = createAdminClient() as unknown as { from: (t: string) => any }
-    const { data } = await db
-      .from('contacts')
-      .select('id, email')
-      .eq('space_id', space.id)
-      .in('email', emailable.map((r) => r.email))
-    for (const c of (data ?? []) as { id: string; email: string | null }[]) {
-      if (c.email) contactIdByEmail.set(c.email.toLowerCase(), c.id)
-    }
-  } catch {
-    // best-effort mapping only.
-  }
-
   // SYSTEM entry: this action's own manage gate is the authority (a moderator may hold no
   // canEditProfile), and the core still enforces the whole anti-spam battery either way.
+  // Every recipient already carries its contact id (resolveContactEmails), so the ledger
+  // and engagement attribution are exact and no address is looked up outside the contact set.
   const res = await sendSpaceCampaignSystem(space.id, {
     campaignId,
     subject,
     html: renderCampaignHtml(body),
     topic: 'marketing',
-    recipients: emailable.map((r) => ({ email: r.email, contactId: contactIdByEmail.get(r.email) })),
+    recipients: emailable.map((r) => ({ email: r.email, contactId: r.contactId })),
   })
   if (isError(res)) return { channel: 'email', ok: false, detail: res.error }
 
@@ -229,16 +218,14 @@ export async function sendSpaceBroadcast(
   // space-wide send carried by the tenancy lane alone.
   const scope = scopeForSelection(segments)
 
-  const needsRecipients = channels.includes('email') || channels.includes('dm')
-  const recipients = needsRecipients
-    ? await resolveRecipients(audience)
-    : new Map<string, { displayName: string; email: string | null }>()
-
+  // Each lane resolves the recipients IT needs: the email lane its contact set, the DM lane
+  // its own (bulk-dm, capped-then-resolved). No shared upfront resolution runs the whole
+  // audience through the Auth API before a cap check (ADR-863).
   const results: BroadcastChannelResult[] = []
   let dispatched = false
   for (const channel of channels) {
     if (channel === 'email') {
-      results.push(await sendEmailChannel({ space, actorId, subject, body, segments, audience, recipients }))
+      results.push(await sendEmailChannel({ space, actorId, subject, body, segments, audience }))
     } else if (channel === 'dm') {
       const res = await sendBulkDm({
         actorId,

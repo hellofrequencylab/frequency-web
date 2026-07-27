@@ -75,10 +75,10 @@ export default async function HousingPage({
       action={
         viewerProfileId ? (
           <>
-            <Link href="/marketplace/housing/roommates" className={buttonClasses('secondary', 'md')}>
+            <Link href="/housing/roommates" className={buttonClasses('secondary', 'md')}>
               <Users className="h-4 w-4" aria-hidden /> Find a roommate
             </Link>
-            <Link href="/marketplace/housing/new" className={buttonClasses('primary', 'md')}>
+            <Link href="/housing/new" className={buttonClasses('primary', 'md')}>
               <Plus className="h-4 w-4" aria-hidden /> List housing
             </Link>
           </>
@@ -157,7 +157,7 @@ export default async function HousingPage({
               <div className="flex items-center gap-2">
                 {/* The saved filter: `?saved=1` narrows the grid to hearted homes. */}
                 <Link
-                  href={savedOnly ? '/marketplace/housing' : '/marketplace/housing?saved=1'}
+                  href={savedOnly ? '/housing' : '/housing?saved=1'}
                   aria-current={savedOnly ? 'true' : undefined}
                   className={buttonClasses(savedOnly ? 'secondary' : 'ghost', 'sm')}
                 >
@@ -250,7 +250,7 @@ export default async function HousingPage({
 
               <div className="flex items-center justify-end gap-2">
                 {hasFacets && (
-                  <Link href="/marketplace/housing" className={buttonClasses('ghost', 'sm')}>
+                  <Link href="/housing" className={buttonClasses('ghost', 'sm')}>
                     Clear
                   </Link>
                 )}

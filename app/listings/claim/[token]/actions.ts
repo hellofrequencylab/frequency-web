@@ -7,7 +7,7 @@ import { claimListing } from '@/lib/listing-seeder/claim'
 
 /** The route a claimed listing lands on, per vertical (the public detail page). */
 function listingDetailPath(kind: 'classifieds' | 'housing', listingId: string): string {
-  return kind === 'housing' ? `/marketplace/housing/${listingId}` : `/classifieds/${listingId}`
+  return kind === 'housing' ? `/housing/${listingId}` : `/classifieds/${listingId}`
 }
 
 /** The poster claims a seeded listing with its one-time token: ownership transfers to them and

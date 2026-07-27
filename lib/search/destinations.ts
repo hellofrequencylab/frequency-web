@@ -41,11 +41,11 @@ const CURATED: Destination[] = [
     keywords: ['sell', 'list', 'new listing', 'post item', 'create listing'],
   },
   {
-    href: '/marketplace/housing', label: 'Housing', group: 'Marketplace', surface: 'housing',
+    href: '/housing', label: 'Housing', group: 'Marketplace', surface: 'housing',
     keywords: ['housing', 'rent', 'rentals', 'apartment', 'room', 'sublet', 'lease', 'place to live'],
   },
   {
-    href: '/marketplace/housing/roommates', label: 'Roommate matches', group: 'Marketplace', surface: 'housing',
+    href: '/housing/roommates', label: 'Roommate matches', group: 'Marketplace', surface: 'housing',
     keywords: ['roommate', 'roommates', 'housemate', 'match'],
   },
   {

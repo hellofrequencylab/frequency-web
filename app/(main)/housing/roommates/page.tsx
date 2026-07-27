@@ -56,7 +56,7 @@ export default async function RoommatesPage({
   searchParams: Promise<{ tab?: string }>
 }) {
   const profileId = await getMyProfileId()
-  if (!profileId) redirect('/sign-in?next=/marketplace/housing/roommates')
+  if (!profileId) redirect('/sign-in?next=/housing/roommates')
 
   const { tab } = await searchParams
   const activeTab: 'rooms' | 'people' = tab === 'people' ? 'people' : 'rooms'
@@ -70,7 +70,7 @@ export default async function RoommatesPage({
     matchRoommateSeekers(supabase as unknown as Parameters<typeof matchRoommateSeekers>[0], 12).catch(() => []),
   ])
 
-  const base = '/marketplace/housing/roommates'
+  const base = '/housing/roommates'
 
   return (
     <IndexTemplate
@@ -129,7 +129,7 @@ export default async function RoommatesPage({
                 return (
                   <Link
                     key={m.listingId}
-                    href={`/marketplace/housing/${m.listingId}`}
+                    href={`/housing/${m.listingId}`}
                     className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-primary/60"
                   >
                     <div className="min-w-0">

@@ -88,7 +88,7 @@ describe('housingListingSchema', () => {
       rentCents: 120000,
       bedrooms: 1,
       roomType: 'private_room',
-      path: '/marketplace/housing/abc',
+      path: '/housing/abc',
     }) as {
       '@type': string
       address: { addressLocality: string; streetAddress?: string }
@@ -104,7 +104,7 @@ describe('housingListingSchema', () => {
   })
 
   it('redacts location when no city is known', () => {
-    const s = housingListingSchema({ title: 'x', path: '/marketplace/housing/x' }) as {
+    const s = housingListingSchema({ title: 'x', path: '/housing/x' }) as {
       address: { addressLocality: string }
     }
     expect(s.address.addressLocality).toBe('Shared with members')

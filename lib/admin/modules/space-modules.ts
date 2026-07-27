@@ -32,6 +32,7 @@ import {
   Handshake,
   HandCoins,
   Library,
+  Network,
 } from 'lucide-react'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import type { AdminSlot } from './registry'
@@ -223,6 +224,13 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Circles moved from under Journeys to under Content (ADR-846): nesting is one level deep, and Journeys
   // is itself a tool inside the Content box now, so Circles takes its place as a sibling there.
   { id: 'space.circles', label: 'Circles', desc: 'The circles your space runs, and the Journey each one is moving through together.', Icon: UsersRound, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'journeys' }, featureKey: 'journeys', render: 'link', deepLink: (s) => `${base(s)}/circles`, order: 57.5, tier: 'primary', priority: 33.7, access: 'included', parent: 'space.content' },
+  // Program (Programs on Channels): run the space's model as a Program — the flagship circle becomes the
+  // Chapter blueprint (topical_channels.template_id) and members anywhere start Chapters from it. A TOOL
+  // inside the Content box (parent keeps the ADR-846 twelve-box lock intact), ordered right after Circles:
+  // a Program is what a circle grows into. Family `growth` so the Module Manager files it under Growth with
+  // Plan and billing — it is the growth play, not another content library. Collective-plan feature: the
+  // premium badge + freeNote mark the plan story (presentation only; the surface gates server-side).
+  { id: 'space.program', label: 'Program', desc: 'Run your model as a Program: your flagship circle becomes the blueprint, and members start Chapters anywhere.', Icon: Network, family: 'growth', slot: 'engage', gate: { kind: 'feature', fn: 'program' }, featureKey: 'program', render: 'link', deepLink: (s) => `${base(s)}/settings/program`, order: 57.7, tier: 'primary', priority: 33.8, access: 'premium', freeNote: 'Included with Collective', parent: 'space.content' },
   { id: 'space.tickets', label: 'Tickets', desc: 'Free or RSVP ticket tiers, and who has reserved a spot.', Icon: Ticket, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'tickets' }, featureKey: 'tickets', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#tickets`, order: 60, tier: 'primary', priority: 34, access: 'freemium', freeNote: '50 tickets, 1 event free, then unlimited', parent: 'space.offerings' },
   { id: 'space.checkin', label: 'Check in', desc: 'Show the door code, and see who checked in.', Icon: DoorOpen, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'checkin' }, featureKey: 'checkin', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#checkin`, order: 65, tier: 'primary', priority: 35, access: 'included', parent: 'space.offerings' },
   // Shop is now a first-class GATEABLE feature keyed on the `shop` function (SpaceFunctionKey), so it can

@@ -55,7 +55,7 @@ export default async function EditHousingPage({ params }: { params: Promise<{ id
     <FocusTemplate
       title="Edit your listing"
       description="Update the details, photos, or price. Changes go live as soon as you save."
-      back={{ href: `/marketplace/housing/${id}`, label: listing.title }}
+      back={{ href: `/housing/${id}`, label: listing.title }}
       width="wide"
     >
       <HousingForm initial={initial} action={updateHousingListingAction.bind(null, id)} />

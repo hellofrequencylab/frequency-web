@@ -11,7 +11,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 
 const SURFACES = [
   { icon: Tag, name: 'Classifieds', href: '/classifieds', blurb: 'Swap, lend, give, and find things locally, no fees.' },
-  { icon: Home, name: 'Housing', href: '/marketplace/housing', blurb: 'Rooms, rentals, and roommate matching.' },
+  { icon: Home, name: 'Housing', href: '/housing', blurb: 'Rooms, rentals, and roommate matching.' },
   { icon: ShoppingBag, name: 'Market', href: '/market', blurb: 'Products, services, and tickets from members and businesses.' },
   { icon: CalendarDays, name: 'Events', href: '/marketplace/events', blurb: 'Find paid and free events near you.' },
   { icon: Store, name: 'Frequency Store', href: '/store', blurb: 'First-party Frequency goods.' },
