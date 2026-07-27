@@ -35,12 +35,14 @@ const SUBJECT_KINDS: readonly InteractionSubjectKind[] = ['contact', 'network_co
 const SOURCES: readonly InteractionSource[] = ['manual', 'engagement', 'resend', 'twilio', 'crm_activity', 'ai', 'playbook', 'system', 'import']
 
 // ── The scope spine (ADR-827 ruling 1, migration 20261226000000) ─────────────────────────────────
-// A touch's LANE: the event/circle/hub/nexus/campaign/dispatch/booking/membership it belongs to.
-// Scope NARROWS WITHIN the space_id tenancy lane, never replaces it. Kept in lock-step with the
-// CHECK constraints; callers keep dual-writing the legacy metadata convention (metadata.kind +
-// event_id/campaign_id/bookingId/tierId) until the read side migrates.
+// A touch's LANE: the event/circle/hub/nexus/campaign/dispatch/booking/membership/journey it
+// belongs to. Scope NARROWS WITHIN the space_id tenancy lane, never replaces it. Kept in lock-step
+// with the CHECK constraints; callers keep dual-writing the legacy metadata convention
+// (metadata.kind + event_id/campaign_id/bookingId/tierId) until the read side migrates.
+// 'journey' joined with migration 20261228000000 (ADR-838/840), applied 2026-07-27.
 export type InteractionScopeKind =
   | 'event' | 'circle' | 'hub' | 'nexus' | 'campaign' | 'dispatch' | 'booking' | 'membership'
+  | 'journey'
 
 /** A first-class scope reference: WHICH lane entity a touch (or conversation) belongs to. */
 export interface InteractionScopeRef {
@@ -49,7 +51,7 @@ export interface InteractionScopeRef {
 }
 
 const SCOPE_KINDS: readonly InteractionScopeKind[] =
-  ['event', 'circle', 'hub', 'nexus', 'campaign', 'dispatch', 'booking', 'membership']
+  ['event', 'circle', 'hub', 'nexus', 'campaign', 'dispatch', 'booking', 'membership', 'journey']
 
 /** Normalize a caller-supplied scope, FAIL-SAFE: an unknown kind or blank id yields null (the row
  *  still writes, unscoped) — recording a touch must never break the caller's hot path. Exported for

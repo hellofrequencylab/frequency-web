@@ -14,12 +14,10 @@
 --   * status vocabulary — WIDENED: + 'scheduled' (created ahead of its window). The existing
 --     'active' default and 'completed'/'cancelled' terminal states are unchanged.
 --
--- DRAFT — for owner approval; do not apply to prod without it. ADDITIVE + IDEMPOTENT (add
--- column if not exists / do-block + drop-loop constraints / create index if not exists).
--- After applying, regenerate types (ADR-246):
---   npx supabase gen types typescript --linked > lib/database.types.ts
--- Until the regen lands, app code must not select the new columns through the typed client
--- (the ADR-838 seams read only the existing columns; run-level cap reads land after regen).
+-- APPLIED to production 2026-07-27 (owner approved). ADDITIVE + IDEMPOTENT (add column if not
+-- exists / do-block + drop-loop constraints / create index if not exists), so a re-run is safe.
+-- lib/database.types.ts carries the matching delta, so the new columns read through the typed
+-- client.
 
 -- ── New run-level columns ────────────────────────────────────────────────────────────────────
 

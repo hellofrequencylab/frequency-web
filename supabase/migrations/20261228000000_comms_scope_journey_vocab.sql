@@ -8,9 +8,9 @@
 -- paired-null CHECKs + partial scope indexes from that migration already cover the new value —
 -- this migration ONLY widens the two scope_kind vocabulary CHECKs.
 --
--- DRAFT — for owner approval; do not apply to prod without it. Nothing writes
--- scope_kind='journey' until this applies: the ADR-838 write-path stamping ships dormant and
--- the launch surface must not go live before this migration lands.
+-- APPLIED to production 2026-07-27 (owner approved). With the CHECK widened, the journey lane
+-- switched on: 'journey' joined InteractionScopeKind (lib/crm/interactions.ts) and the launch
+-- surface now stamps scope_kind='journey' on the comms it sends.
 --
 -- IDEMPOTENT: each do-block drops the named constraint only when it exists WITHOUT 'journey'
 -- in its definition, then re-adds the widened set only when the name is absent — so a re-run,

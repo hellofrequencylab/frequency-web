@@ -101,30 +101,13 @@ interface PhaseRow {
   sort_order: number
 }
 
-// ── The ONE untyped seam: journey_drip_sends (ADR-840) ──────────────────────────────────────────
-// The ledger table ships as a DRAFT migration and is not in the generated DB types until it is
-// applied + types regen (the repo's pre-regen convention, ADR-246). This accessor is the single
-// place the untyped handle exists; every caller goes through it. Retire after regen.
+// ── The ledger handle: journey_drip_sends (ADR-840) ─────────────────────────────────────────────
+// Typed. The table's migration (20261229000000) applied 2026-07-27 and the generated types carry
+// it, so the pre-regen untyped seam this file shipped with is retired. One accessor still, so
+// every caller reaches the ledger the same way.
 
-interface DripSendsOps {
-  upsert: (
-    rows: Record<string, unknown>[],
-    opts: { onConflict: string; ignoreDuplicates: boolean },
-  ) => {
-    select: (c: string) => Promise<{ data: { id: string; phase_index: number }[] | null; error: unknown }>
-  }
-  select: (c: string) => {
-    in: (
-      c: string,
-      v: string[],
-    ) => Promise<{ data: { enrollment_id: string; phase_index: number }[] | null; error: unknown }>
-  }
-  update: (p: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> }
-}
-
-function dripSendsTable(): DripSendsOps {
-  const db = createAdminClient() as unknown as { from: (t: string) => DripSendsOps }
-  return db.from('journey_drip_sends')
+function dripSendsTable() {
+  return createAdminClient().from('journey_drip_sends')
 }
 
 // ── The fire pass ───────────────────────────────────────────────────────────────────────────────

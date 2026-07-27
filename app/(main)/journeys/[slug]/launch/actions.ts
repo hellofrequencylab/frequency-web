@@ -44,33 +44,26 @@ import type {
   BroadcastSendInput,
 } from '@/components/comms/broadcast-types'
 
-// ── THE DORMANT JOURNEY COMMS SCOPE (migration 20261228000000, DRAFT) ───────────────────────────
+// ── THE JOURNEY COMMS SCOPE (LIVE since 2026-07-27) ─────────────────────────────────────────────
 //
-// The scope spine's `scope_kind` CHECK does NOT include 'journey' in production yet: the widening
-// migration (supabase/migrations/20261228000000_comms_scope_journey_vocab.sql) is a draft awaiting
-// owner approval. Writing scope_kind='journey' before it applies would be REFUSED BY POSTGRES and
-// would take the whole message down with it.
+// A message sent from the launch surface carries the journey lane on the scope spine
+// (scope_kind='journey', scope_id=<journey_plans.id>), so it threads in The Path beside the
+// event/circle/campaign lanes instead of arriving unscoped.
 //
-// So the journey lane ships DORMANT, the same way lib/journeys/drip-sends.ts ships its ledger
-// dormant: the flag below is the single switch, and while it is false every journey-scoped write
-// falls back to an UNSCOPED conversation (scope_kind null, which every deployed CHECK accepts).
-// Nothing is lost — the message still sends, it just does not carry the journey lane tag yet.
-//
-// TO TURN IT ON, in this order: (1) the owner approves + applies the migration, (2) 'journey'
-// joins InteractionScopeKind in lib/crm/interactions.ts (the type union is the second, compile-time
-// guard: `scopeKind: 'journey'` does not even typecheck today), (3) flip this to true.
-const JOURNEY_COMMS_SCOPE_LIVE = false
+// This lane shipped DORMANT and was switched on once its two preconditions were both true:
+// migration 20261228000000_comms_scope_journey_vocab.sql applied to production (the deployed
+// CHECK now accepts 'journey'; writing it earlier would have been refused by Postgres and taken
+// the whole message down), and 'journey' joined InteractionScopeKind in lib/crm/interactions.ts.
+// The type union remains the compile-time half of the guard: it and the CHECK move together, and
+// normalizeInteractionScope still fails safe to unscoped on anything it does not recognize.
+const JOURNEY_COMMS_SCOPE_LIVE = true
 
-/** The comms scope fields for a Journey thread, or `undefined` while the vocabulary is dormant.
- *  ONE place decides, so no call site can smuggle 'journey' past the guard. Note the return type
- *  is the spine's own `InteractionScopeRef['kind']`, which does not include 'journey' yet: the type
- *  union is the compile-time half of this guard, and it widens with step 2 above. */
-function journeyCommsScope(): { scopeKind: InteractionScopeRef['kind']; scopeId: string } | undefined {
+/** The comms scope fields for a Journey thread. ONE place decides, so no call site invents its
+ *  own lane tag. Returns `undefined` if the lane is ever switched back off, which degrades to an
+ *  unscoped conversation rather than a failed send. */
+function journeyCommsScope(planId: string): { scopeKind: InteractionScopeRef['kind']; scopeId: string } | undefined {
   if (!JOURNEY_COMMS_SCOPE_LIVE) return undefined
-  // Once the migration applies AND 'journey' joins InteractionScopeKind, this takes the plan id
-  // back as a parameter and becomes exactly:
-  //   return { scopeKind: 'journey', scopeId: planId }
-  return undefined
+  return { scopeKind: 'journey', scopeId: planId }
 }
 
 // ── Shared gate ─────────────────────────────────────────────────────────────────────────────────
@@ -291,9 +284,8 @@ function people(n: number): string {
  * Text are offered as disabled chips by the surface with honest reasons (refuse-first, ADR-256) —
  * a smuggled key is refused here too rather than silently ignored.
  *
- * SCOPE: see JOURNEY_COMMS_SCOPE_LIVE at the top of this file. Until the journey vocabulary
- * migration applies, these conversations open UNSCOPED rather than carrying scope_kind='journey',
- * which the deployed CHECK would reject.
+ * SCOPE: these conversations carry the journey lane (scope_kind='journey', scope_id=plan id) so
+ * the send threads in The Path beside the other lanes. See JOURNEY_COMMS_SCOPE_LIVE above.
  */
 export async function sendJourneyBroadcastAction(
   planId: string,
@@ -346,7 +338,7 @@ export async function sendJourneyBroadcastAction(
   }
 
   const emails = await resolveRecipientEmails(eligible)
-  const scope = journeyCommsScope()
+  const scope = journeyCommsScope(planId)
   let sent = 0
   let skipped = 0
   for (const profileId of eligible) {

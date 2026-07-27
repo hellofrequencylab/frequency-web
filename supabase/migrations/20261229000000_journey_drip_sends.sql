@@ -1,8 +1,8 @@
 -- JOURNEY DRIP SENDS: the phase-unlock delivery LEDGER (ADR-840, Journeys lane J3).
 --
--- *** DRAFT — NOT YET APPLIED. Do not run against production until the owner approves; the ***
--- *** runner (lib/journeys/drip-sends.ts) is DORMANT until this table exists (it fails safe ***
--- *** to zero deliveries on the missing table), so shipping the code first is harmless.    ***
+-- *** APPLIED to production 2026-07-27 (owner approved). The runner (lib/journeys/         ***
+-- *** drip-sends.ts) reads the ledger through the typed client now; it still fails safe to  ***
+-- *** zero deliveries if the table is ever absent.                                          ***
 --
 -- Journeys already DERIVE phase unlocks (lib/journeys/schedule.ts, ADR-252: started_at +
 -- drip_interval_days), so unlike space_drip_enrollments there is no cursor to advance. What was
