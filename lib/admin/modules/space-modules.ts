@@ -177,7 +177,11 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#availability`, order: 40, tier: 'primary', priority: 30, access: 'freemium', freeNote: '15 bookings/mo free, then unlimited' },
   { id: 'space.memberships', label: 'Memberships', desc: 'The tiers members can join, and who has joined.', Icon: BadgeCheck, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'memberships' }, featureKey: 'memberships', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#memberships`, order: 45, tier: 'primary', priority: 31, access: 'freemium', freeNote: '10 members, 1 tier free · 0% on your own, 10% on network sales' },
   { id: 'space.donations', label: 'Donations', desc: 'The fund, a short description, and the amounts members can pick.', Icon: HeartHandshake, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'donations' }, featureKey: 'donations', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#donations`, order: 50, tier: 'primary', priority: 32, access: 'included', freeNote: '0% on your own, 10% on network sales' },
-  { id: 'space.enroll', label: 'Enrollment', desc: 'The program details, and who has enrolled.', Icon: GraduationCap, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'enroll' }, featureKey: 'enroll', render: 'panel', deepLink: (s) => `${base(s)}/settings/enroll`, order: 55, tier: 'primary', priority: 33, access: 'included' },
+  // Enrollment deep-links to the ANCHORED section on the unified Offerings surface, exactly like its five
+  // commerce siblings. The standalone /settings/enroll route is now a bare `redirect()` into that anchor
+  // (its real body lives in settings/enroll/section.tsx, composed by Offerings), so pointing at it cost a
+  // server redirect hop for the same destination.
+  { id: 'space.enroll', label: 'Enrollment', desc: 'The program details, and who has enrolled.', Icon: GraduationCap, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'enroll' }, featureKey: 'enroll', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#enroll`, order: 55, tier: 'primary', priority: 33, access: 'included' },
   // Practices + Journeys (the practitioner's content). Practices are the daily-log atom (each with its
   // own timer); Journeys compose them into multi week programs (the e-learning upsell: free spaces publish
   // one). Both are `link` rows out to their own space-scoped manager (data-heavy authoring, like Airwaves).
@@ -208,14 +212,20 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Email is the ONE comms card (ADR-782): Email design (the canvas editor, `space.marketing`) and Email
   // style (the palette, `space.emailstyle`) fold UNDER it on the console — Compose / Design / Style read as
   // one Email surface. Each stays a first-class module (own deepLink + rail row).
-  { id: 'space.comms', label: 'Email', desc: 'Write a campaign, pick who gets it, and send or schedule it.', Icon: Mail, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'panel', deepLink: (s) => `${base(s)}/settings/email`, order: 80, tier: 'primary', priority: 55, placement: 'bank', access: 'freemium', freeNote: '300 sends/mo free, then 5,000/mo on Business, 25,000/mo on Collective' },
+  // The email trio sits on the `reach` slot, not the engineering `comms` slot. A Space's menu groups into the
+  // SEVEN member-facing groups (ADR-520: Identity · Page · Audience · Offerings & money · Reach · Growth ·
+  // Danger), and the /manage console already folds comms into Reach (console.tsx groupForModule). The rail
+  // groups by raw slot, so a `comms` row drew an eighth, engineering-named "Comms" header there. Same slot as
+  // QR codes ⇒ one Reach group on both surfaces. (`comms` stays live for the core-entity CRM modules in
+  // ADMIN_MODULES; only the Space rows move.)
+  { id: 'space.comms', label: 'Email', desc: 'Write a campaign, pick who gets it, and send or schedule it.', Icon: Mail, family: 'reach', slot: 'reach', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'panel', deepLink: (s) => `${base(s)}/settings/email`, order: 80, tier: 'primary', priority: 55, placement: 'bank', access: 'freemium', freeNote: '300 sends/mo free, then 5,000/mo on Business, 25,000/mo on Collective' },
   // Email design (Email in the Business CRM, P1): the FULL on-canvas email editor. Reuses the one Email Studio
   // engine (EmailCanvasEditor) pointed at this Space's own drafts, seeded from the Space brand. Gated on the
   // `email` function; nested under Email on the console. Distinct destination from `space.comms` (the composer).
-  { id: 'space.marketing', label: 'Email design', desc: 'Design a branded email on the canvas, block by block.', Icon: Megaphone, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'link', deepLink: (s) => `${base(s)}/marketing`, order: 81, tier: 'primary', priority: 56, access: 'freemium', parent: 'space.comms' },
+  { id: 'space.marketing', label: 'Email design', desc: 'Design a branded email on the canvas, block by block.', Icon: Megaphone, family: 'reach', slot: 'reach', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'link', deepLink: (s) => `${base(s)}/marketing`, order: 81, tier: 'primary', priority: 56, access: 'freemium', parent: 'space.comms' },
   // Email style (Email in the Business CRM, P1): tune the brand-derived palette a Space's emails default to
   // (spaces.preferences.emailStyle, seeded from the brand accent). Gated on `email`; nested under Email.
-  { id: 'space.emailstyle', label: 'Email style', desc: 'Set the brand colors your emails use by default.', Icon: Paintbrush, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'link', deepLink: (s) => `${base(s)}/settings/email-style`, order: 82, tier: 'extra', priority: 57, access: 'freemium', parent: 'space.comms' },
+  { id: 'space.emailstyle', label: 'Email style', desc: 'Set the brand colors your emails use by default.', Icon: Paintbrush, family: 'reach', slot: 'reach', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'link', deepLink: (s) => `${base(s)}/settings/email-style`, order: 82, tier: 'extra', priority: 57, access: 'freemium', parent: 'space.comms' },
 
   // ── Growth & billing ─────────────────────────────────────────────────────────────────────────────────
   { id: 'space.insights', label: 'Scans and insights', desc: 'Scans, growth, and how your space is doing.', Icon: BarChart3, family: 'growth', slot: 'insights', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'link', deepLink: (s) => `${base(s)}/settings/qr#scans`, order: 85, tier: 'extra', priority: 20, placement: 'bank', access: 'freemium', parent: 'space.reach' },

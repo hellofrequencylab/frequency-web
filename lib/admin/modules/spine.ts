@@ -24,8 +24,7 @@ import {
   AlertTriangle,
   HandCoins,
   TrendingUp,
-  Palette,
-  SlidersHorizontal,
+  IdCard,
 } from 'lucide-react'
 import type { AdminSlot } from './registry'
 
@@ -81,19 +80,23 @@ export const PERSONAL_META: SpineMeta = SPINE_META.account
 // invent a parallel grouping key, each group re-purposes ONE distinct spine slot for the Space scope, and
 // the section header is relabelled from this per-scope map (the rail applies it ONLY when the scope is a
 // Space, so every other scope's SPINE_META header is untouched). The slot→group mapping:
-//   Identity → basics · Page → layout · Audience → people · Offerings & money → engage ·
+//   Profile and Settings → basics · Page → layout · Audience → people · Offerings & money → engage ·
 //   Reach → reach · Growth → insights · Danger → danger.
+// A Space module must therefore sit on one of those SEVEN slots, or the rail falls back to the engineering
+// SPINE_META noun and draws an eighth header the group set never named (how "Comms" leaked in before the
+// email trio moved to `reach`).
 // The Starter chip (space.mode) is pulled OUT of the section list and pinned under Identity as a chip, so
 // it is not a group here. Labels pass NAMING.md + CONTENT-VOICE.md §10 (no em dashes; "&" is allowed, as
 // in "Place & Time"). Owner-approved group names.
 export const SPACE_GROUP_META: Partial<Record<AdminSlot, SpineMeta>> = {
-  // Standardized rail (ADR-535): Identity & Branding (the hero) leads on the `place` slot; Info & Connect
-  // (the forward-facing content) follows on `basics`; Settings (rating + visibility) sits low on `safety`.
-  // Each per-scope relabel keeps every OTHER scope's header untouched.
-  place: { label: 'Identity and Branding', Icon: Palette },
-  basics: { label: 'Info and Connect', Icon: Info },
+  // ADR-782 collapsed the three former shell modules (Identity & Branding on `place`, Info & Connect on
+  // `basics`, Settings on `safety`) into the ONE `space.basics` module, "Profile and Settings", on the
+  // `basics` slot. The header is the only title a single-module section draws, so it must name what the
+  // section now holds (brand + info & connect + visibility), not just one of the three. The `place` and
+  // `safety` relabels were dropped with them: no Space module sits on either slot any more, so they only
+  // described headers that can never render.
+  basics: { label: 'Profile and Settings', Icon: IdCard },
   layout: { label: 'Page', Icon: LayoutGrid },
-  safety: { label: 'Settings', Icon: SlidersHorizontal },
   people: { label: 'Audience', Icon: Users },
   engage: { label: 'Offerings & money', Icon: HandCoins },
   reach: { label: 'Reach', Icon: Share2 },

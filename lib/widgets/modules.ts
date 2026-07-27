@@ -244,14 +244,14 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'event-gallery', label: 'Photo gallery', description: 'The event photo strip with a full-screen lightbox. The header photo leads. Hidden until there are two or more photos.' },
   // Each poster-harvest section is its OWN movable block (no lumped "poster details"): an operator
   // moves or hides any one of them independently. Each renders only when the poster carried it.
-  { id: 'event-lineup', label: 'Host', description: "The host's profile with a Message Host button. Hidden when the event has no host." },
+  { id: 'event-lineup', label: 'Host & Co Hosts', description: 'The one credit card: the Host, the Spaces co-hosting, and the people co-hosting. Carries the Message Host button when a person hosts. Hidden when there is nobody to credit.' },
   { id: 'event-schedule', label: 'Schedule', description: 'The run of show captured from the poster.' },
   { id: 'event-good-to-know', label: 'Good to know', description: 'The quick what-to-expect tags captured from the poster.' },
   { id: 'event-pricing', label: 'Pricing', description: 'The prices as printed on the poster.' },
   { id: 'event-links', label: 'Links', description: 'The links captured from the poster.' },
   { id: 'event-sponsors', label: 'Sponsors', description: 'The support / credits line from the poster.' },
   { id: 'event-details', label: 'Details', description: 'The other key-value details captured from the poster.' },
-  { id: 'event-cohosts', label: 'Cohosts', description: 'The people helping host; the host adds or removes them.' },
+  { id: 'event-cohosts', label: 'Co Host controls', description: 'The host-only panel for inviting, removing, or handing off Co Hosts. The public credit lives in the Host & Co Hosts card.' },
   { id: 'event-sales', label: 'Ticket sales', description: 'Sold tickets and refunds for a paid event (host only).' },
   { id: 'event-dispatch', label: 'Post an update', description: 'Compose an Event Dispatch to the page (host or cohost only).' },
   { id: 'event-activity', label: 'Activity', description: 'Event Dispatches and guest comments, newest first.' },

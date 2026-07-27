@@ -12,7 +12,8 @@ import { useSpaceRailSlice } from './space-rail-data'
 // Identity & Branding; ratings + visibility live in Settings. The getter re-gates server-side and returns
 // null when the viewer cannot manage this Space (fail-safe). The form's own actions re-check canEditProfile.
 //
-// No module header: the rail already labels this group "Info & Connect" (SPACE_GROUP_META).
+// No module header: the rail's section header is the single source of the title. Since ADR-782 that header
+// is "Profile and Settings" (SPACE_GROUP_META.basics) and this form is one of the three stacked under it.
 
 function slugFromPath(pathname: string): string | null {
   return pathname.match(/^\/spaces\/([^/]+)/)?.[1] ?? null
