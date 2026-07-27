@@ -140,35 +140,15 @@ Also closed in the same pass, both flagged above as the highest user impact:
 - Two hand-rolled `EmptyState` components shadow the kit's variant taxonomy on the two main post feeds.
 - Six route skeletons use the retired `px-4 py-8 max-w-2xl mx-auto` shell, double-padding inside the shell.
 
-### 🧑 Needs your call
+### 🧑 Needs your call — ALL FOUR CLOSED (database best-practice pass, 2026-07-27, ADR-856)
 
-- **Migrations applied without being recorded keeps recurring.** `check:migrations` catches filename
-  COLLISIONS (the dangerous half) but is a repo-only guard: it structurally cannot see "applied to
-  production but never ledgered", because that is a database fact. #1961's own
-  `20270102000000_area_permissions_orphan_cleanup` drifted that way within hours of the historical
-  backlog being reconciled; it was verified applied (its `area_permissions` comment is live) and
-  recorded, so drift from 2026-09-13 forward is zero again. Closing this permanently needs the
-  ledger-vs-repo comparison to run somewhere with database access — `/maintenance` is the natural
-  home, since it already talks to Supabase.
-- **Pre-2026-09-13 migration ledger divergence.** 477 applied versions have no repo file, from a
-  historical filename rewrite. Reconciling means DELETING ledger rows for a cosmetic gain, so it is
-  documented rather than done. The schema is correct either way.
-- **19 unindexed foreign keys** against 247 already-unused indexes. Adding all 19 to a low-traffic
-  DB is probably not worth it; the cascade-delete parents are the ones that matter.
-- **Three anon-callable SECURITY DEFINER RPCs with no internal auth gate**: `circle_momentum`
-  (membership and friendship counts for any circle), `resonance_neighbors` (any profile's similarity
-  graph, and only ever called by other SQL functions, so revoking anon/authenticated EXECUTE is
-  behaviour-preserving), and `mkt_interest_demand` (channel-demand BI, with no code caller at all).
-- **Duplicate `record_qr_scan` overload.** The 7-arg version is superseded by the 8-arg `p_variant`
-  one and silently drops variant attribution. Dropping it needs `p_variant text default null` on the
-  survivor so the existing named-argument call still resolves.
-- **`listAttachedRecordings` deeper authorization.** Now signed-in only; a signed-in member can still
-  enumerate another host's attached recording titles. Proper per-`hostKind` authorization is a
-  larger change.
+| Item | Resolution |
+|---|---|
+| **Pre-2026-09-13 ledger divergence** | Re-measured as version SETS and found worse than recorded: **296 repo files were absent from the ledger** (re-appliable by any future `migration up` — a correctness risk, not cosmetics) alongside the 477 orphan rows. Every missing version was proven applied (261 by name lineage, 33 by live signature objects, 2 by a later retire migration), inserted, and the orphans deleted in one asserted transaction. The ledger is now an **exact bijection with the repo: 549 ⇄ 549**. Pre-surgery snapshot: `docs/maintenance/ledger-archive-2026-07-27.json`. |
+| **Three anon-callable SECURITY DEFINER RPCs** | Locked to their verified callers in `20270104000000` — and two of this doc's claims were stale on re-verification: `circle_momentum` IS live on the authed client (anon revoked, authenticated kept), while `resonance_neighbors` + `mkt_interest_demand` are service-role only. Verified with `has_function_privilege` per role, because a role revoke under the default PUBLIC grant is a no-op. |
+| **Duplicate `record_qr_scan` overload** | 7-arg dropped in `20270104000000`; the 8-arg already defaulted `p_variant`, so every call now lands on the one true function and variant attribution cannot be silently lost. |
+| **19 unindexed FKs** | All 19 indexed in `20270104000000`. Every one points at a delete-bearing parent (`profiles`/`spaces`/`contacts`) and arrived with #1961's tables, so the indexes were free at current row counts. Advisor INFO now zero. The **247 unused indexes** stay untouched deliberately: usage stats are young, and mass-dropping serves nothing yet — revisit after real traffic. |
 
----
-
-# Earlier passes
 
 ## 2026-07-25 re-scan (post Comms/Collective/Events era, #1867–#1919)
 
