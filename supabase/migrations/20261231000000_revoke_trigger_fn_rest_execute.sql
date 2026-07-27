@@ -1,28 +1,39 @@
--- Take one trigger function off the public REST surface (advisor: *_security_definer_function_executable).
+-- Take the TRIGGER functions off the REST surface (advisor: *_security_definer_function_executable).
 --
--- `after_crew_completion_verified()` is a TRIGGER function: it returns `trigger` and exists only to
--- fire from `trg_after_crew_completion_verified` when a crew completion is stamped verified. Postgres
--- checks EXECUTE at trigger CREATION, not at fire time, so revoking the grant cannot affect the
--- trigger. What it does remove is the ability for a browser to POST /rest/v1/rpc/... and invoke a
--- SECURITY DEFINER function directly.
+-- A trigger function returns `trigger` and exists only to fire from its trigger. Postgres checks
+-- EXECUTE at trigger CREATION, not at fire time, so revoking the grant cannot affect any trigger.
+-- What it removes is a browser's ability to POST /rest/v1/rpc/<name> and invoke a SECURITY DEFINER
+-- function directly. Proven, not assumed: an isolated SECURITY DEFINER trigger function with the
+-- same revoke applied still fired on insert (`revoked_trigger_still_fired: true`) while a direct
+-- call as `authenticated` was denied (`can_call_directly: false`).
 --
--- WHY ONLY THIS ONE. An audit cross-referenced all 68 flagged SECURITY DEFINER functions against
--- (a) the RLS policies that call them and (b) every real call site in the app:
---   * 18 are RLS HELPERS. `get_my_profile_id` alone is used by policies on 61 tables. A policy
---     expression is evaluated as the QUERYING role, so revoking EXECUTE would break reads across
---     most of the product. They must keep their grants.
---   * 44 are RPCs the app genuinely calls. Four of those (dm_conversation_summaries,
---     my_unread_message_count, public_organizer_handles, room_unread_counts) were nearly revoked:
---     a naive `.rpc('name')` grep missed them because their call sites use double quotes or a
---     wrapper helper. Revoking them would have broken messaging, the unread badges, and the sitemap.
---   * `st_estimatedextent` is PostGIS-owned and not ours to regrant.
--- That leaves exactly one function that is neither policy-load-bearing nor called from anywhere.
+-- REVOKING FROM anon/authenticated ALONE IS A NO-OP. Postgres grants EXECUTE on a new function to
+-- PUBLIC by default, which shows up in `proacl` as a bare `=X/postgres` entry. Every role inherits
+-- PUBLIC, so `revoke ... from anon, authenticated` leaves the function fully callable. An earlier
+-- draft of this migration made exactly that mistake and measured no change in the advisor count.
+-- The revoke has to name `public` first; the role names are kept for the case where an explicit
+-- per-role grant was also issued at some point.
 --
--- The remaining advisories of this class are NOT bugs to clear one by one. The real remediation for
--- an RLS helper is moving it to a schema PostgREST does not expose, which means rewriting every
--- policy that references it. That is a deliberate migration, not a grant tweak, and is left for a
--- decision of its own rather than smuggled in here.
+-- service_role KEEPS its grant. It is the server-side key and is not reachable from a browser, and
+-- some of these functions are invoked by backfills and admin scripts running under it.
 --
--- REVERSIBLE: re-grant with `grant execute on function public.after_crew_completion_verified() to anon, authenticated;`
+-- Applied to production 2026-07-27. Written as a catalog-driven loop rather than a hand-listed set
+-- so a trigger function added later by another migration is covered on the next `db reset` replay
+-- instead of quietly re-appearing on the REST surface.
+--
+-- REVERSIBLE: `grant execute on function public.<name>() to anon, authenticated;` per function.
 
-revoke execute on function public.after_crew_completion_verified() from anon, authenticated;
+do $$
+declare f record;
+begin
+  for f in
+    select p.oid::regprocedure::text as sig
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.prosecdef
+      and pg_get_function_result(p.oid) = 'trigger'
+  loop
+    execute format('revoke execute on function %s from public, anon, authenticated', f.sig);
+  end loop;
+end $$;
