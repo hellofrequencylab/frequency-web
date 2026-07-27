@@ -41,6 +41,7 @@ import {
 } from '@/lib/community-roles'
 import { NAV_AREAS, meetsAccess, meetsStaff, type NavAccess, type NavArea } from '@/lib/nav-areas'
 import { calmSpine, canSee, type NavViewer, type SpineTab } from '@/lib/nav/registry'
+import { nestAdminRows } from '@/lib/nav/admin-nesting'
 import type { AccessLevel } from '@/lib/core/access-matrix'
 import type { StaffRole, StaffDomain } from '@/lib/staff'
 import type { ProfileIdentity } from '@/lib/types/profile'
@@ -105,6 +106,10 @@ type MainNavItem = {
   ghostTier?: string
   /** Optional override copy for the ghost upgrade lightbox. */
   ghostMessage?: string
+  /** Nesting level in the rail (ADR-848). 0 = a top-level row / box; 1 = a tool drawn under its
+   *  box. Stamped by `nestAdminRows` at render time from the world its StudioLeaf declares, never
+   *  stored on a catalog row or a DB menu row. */
+  depth?: number
 }
 
 type NavSectionGroup = { label: string | null; items: MainNavItem[] }
@@ -813,8 +818,13 @@ function NavLinkList({
 }) {
   // `emphasize` = the home anchor (Feed): always the brand's dark brown and bold,
   // active or not, so it reads as the rail's permanent "home".
-  const itemClass = (active: boolean, emphasize = false) =>
-    `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+  // A nested Admin tool (ADR-848): indented under its box and hung off a hairline, the same
+  // treatment the Space rail uses for its twelve boxes. Never applied in `compact` (the icon-only
+  // edge column has no room for a hierarchy, and the tooltip already names the destination).
+  const nestClass = (depth?: number) => (depth ? 'ml-3 border-l border-border ' : '')
+
+  const itemClass = (active: boolean, emphasize = false, depth = 0) =>
+    `${nestClass(depth)}flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
       emphasize
         ? `font-bold text-[var(--brand-mark)] ${active ? 'bg-primary-bg' : 'hover:bg-surface-elevated'}`
         : active
@@ -838,9 +848,17 @@ function NavLinkList({
         // DB-driven sections skip this: effectiveMode already resolved each item (hidden
         // dropped, empty groups dropped upstream), so the menu's minAccess + role modes own it.
         const adminSection = !menuDriven && TELESCOPE_SECTIONS.has(section.label ?? '')
-        const visibleItems = adminSection
+        const gatedItems = adminSection
           ? section.items.filter((it) => itemAccess(it, role, staffRole, permissions, navAccess, operatesSpaces) === 'full')
           : section.items
+        // Draw the operator Admin section as BOXES with their tools nested under them (ADR-848).
+        // The parent of each row is the `world` its own StudioLeaf already declares, joined by href
+        // — the one identifier the code catalog and a DB `menu_items` row share, so this nests the
+        // DB-driven rail too without a reseed. Applied to EVERY section because it is a no-op
+        // anywhere else: a member-world href declares no world, so it resolves to depth 0 and the
+        // list comes back in its original order. Runs AFTER the telescope filter on purpose — a
+        // child whose box was gated away keeps its own place at depth 0 rather than vanishing.
+        const visibleItems = nestAdminRows(gatedItems)
         if (visibleItems.length === 0) return null
         return (
         <div
@@ -854,6 +872,8 @@ function NavLinkList({
           {!compact && section.label && <p className={sectionLabelClass}>{section.label}</p>}
           {visibleItems.map((item) => {
             const { href, label, Icon } = item
+            // Depth comes from nestAdminRows above; `compact` suppresses it (see nestClass).
+            const nest = compact ? '' : nestClass(item.depth)
 
             // DB-driven rail (lib/menus): the item's mode was already resolved for the viewer
             // by effectiveMode (hidden dropped upstream). 'ghost' → a muted GhostLink that opens
@@ -880,7 +900,7 @@ function NavLinkList({
                     ghostTier={item.ghostTier}
                     ghostMessage={item.ghostMessage}
                     ariaLabel={label}
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-subtle"
+                    className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-subtle`}
                   >
                     <Icon className="h-[18px] w-[18px] shrink-0 text-subtle" strokeWidth={2} aria-hidden />
                     {label}
@@ -904,7 +924,7 @@ function NavLinkList({
                 )
               }
               return (
-                <Link key={item.key} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active)}>
+                <Link key={item.key} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active, false, item.depth)}>
                   <Icon
                     className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
                     strokeWidth={active ? 2.5 : 2}
@@ -966,7 +986,7 @@ function NavLinkList({
                   href={href}
                   onClick={onNavigate}
                   title="Preview. Sign in or upgrade to engage"
-                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     active ? 'bg-surface-elevated text-muted' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
                   }`}
                 >
@@ -982,7 +1002,7 @@ function NavLinkList({
                   key={href}
                   aria-disabled="true"
                   title="You don't have access to this yet"
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none"
+                  className={`${nest}flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none`}
                 >
                   <Icon className="w-[18px] h-[18px] shrink-0 text-subtle" strokeWidth={2} />
                   {label}
@@ -991,7 +1011,7 @@ function NavLinkList({
             }
             const active = isActive(href)
             return (
-              <Link key={href} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active)}>
+              <Link key={href} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active, false, item.depth)}>
                 <Icon
                   className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
                   strokeWidth={active ? 2.5 : 2}
