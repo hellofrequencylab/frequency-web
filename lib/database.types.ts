@@ -1390,6 +1390,7 @@ export type Database = {
           meetup: Json
           name: string
           one_liner: string
+          owner_space_id: string | null
           pillars_inside: Json
           primary_pillar: string
           recommended_journey_pillar: string | null
@@ -1416,6 +1417,7 @@ export type Database = {
           meetup?: Json
           name: string
           one_liner: string
+          owner_space_id?: string | null
           pillars_inside?: Json
           primary_pillar: string
           recommended_journey_pillar?: string | null
@@ -1442,6 +1444,7 @@ export type Database = {
           meetup?: Json
           name?: string
           one_liner?: string
+          owner_space_id?: string | null
           pillars_inside?: Json
           primary_pillar?: string
           recommended_journey_pillar?: string | null
@@ -14332,8 +14335,10 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          owner_space_id: string | null
           pillar_id: string | null
           slug: string
+          template_id: string | null
         }
         Insert: {
           category: string
@@ -14344,8 +14349,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          owner_space_id?: string | null
           pillar_id?: string | null
           slug: string
+          template_id?: string | null
         }
         Update: {
           category?: string
@@ -14356,8 +14363,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          owner_space_id?: string | null
           pillar_id?: string | null
           slug?: string
+          template_id?: string | null
         }
         Relationships: [
           {
