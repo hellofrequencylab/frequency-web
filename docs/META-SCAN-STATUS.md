@@ -136,6 +136,22 @@ Also closed in the same pass, both flagged above as the highest user impact:
 - Four member-facing toggle switches have no accessible name.
 - Vera's chat transcript is not a live region, so replies are never announced.
 
+**Menus (ADR-860 backlog: audited 2026-07-27, first tranche shipped)**
+- The sync engine still inserts-only: build the non-destructive "re-check for new pages" action,
+  key identity on a stable `default_key` instead of href, and surface per-item drift badges
+  (synced / edited / retired / missing) in the Menu manager.
+- The marketing MOBILE menu renders registry triggers only: submenu items are unreachable on
+  phones and operator menu edits never appear there (`marketing-mobile-menu.tsx:96-105`).
+- `AdminSubNav` flattens away group headings and drops depth-3 groups, so Menu-manager
+  sub-organization of admin_header has no visible effect (`admin-sub-nav.tsx:56-61`).
+- The two account-menu renderers gate the same items differently (`user-menu.tsx:73` vs
+  `app-shell.tsx:427`); unify on one gate.
+- `/admin/library` and `/admin/spaces` have no `admin_header` section (empty sub-nav band).
+- `/marketplace/housing` is the last member-facing `/marketplace/*` URL: needs `/market/housing`
+  + redirect per ADR-596, then the nav/footer/menu rows re-pointed.
+- Add a CI drift guard asserting materialized `admin_header` rows still match
+  `defaultMenu('admin_header')` (the read-side hazard MENU-CONTRACT should document).
+
 **Docs and repo hygiene**
 - Seven ADR numbers (088 to 094) are each used twice, 090 three times; 75 cross-references are ambiguous.
 - ADR-219 is still marked "Accepted" after ADR-305 retired it.

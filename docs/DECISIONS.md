@@ -15184,3 +15184,53 @@ The durable rules: **a migration exists in exactly two places — as a repo file
 **Consequences.** The event form's circle options now say when a circle lives in a Space ("circle in {space}"), so the dual placement is visible at the moment of choice. `lib/circles/circle-space-events.test.ts` locks both halves — functional (derivation + both restamp directions) and source-shape (every writer references the helper), all confirmed to FAIL against the pre-fix tree. One adjacent defect found during verification is recorded in META-SCAN-STATUS rather than fixed here: `placement-actions.ts` writes `scope_circle_id` alone, which the `sync_event_scope_arc` trigger does not propagate back to `scope_id`, leaving such events invisible to the circle-membership RLS disjunct.
 
 The durable rule: **an event's space placement is a derived fact, not an assigned one — it derives from whoever owns the event's home.** Writers stamp it through the one helper; moves restamp it; nothing else touches it.
+
+---
+
+## ADR-858 — The Space Message center: audiences are rosters, channels are lanes, and every chip tells the truth (2026-07-27)
+
+**Status.** Accepted.
+
+**Context.** A Space had three disconnected comms surfaces (ticketed Conversations inbox, email campaigns, CRM board) and no way to send one message to the people it actually organizes: its members, a paid tier, one of its circles, or an event's guest list. The scope-agnostic four-channel composer already existed and was wired only on events.
+
+**Decision.** One console at `/spaces/<slug>/messages`, bound to Space-shaped audiences and lanes:
+
+- **Audiences are the canonical rosters**, never parallel lists: all members (`listActiveSpaceMemberIds`), a tier's active `space_memberships`, a circle's CRM roster, an event's Message Attendees set. The action re-resolves the audience server-side from segment keys (ADR-274). One selected circle or event stamps the comms scope spine; anything wider is a space-wide send on the tenancy lane — `'space'` is deliberately not a `scope_kind`.
+- **Email rides the Space's own campaign machinery**, so the whole anti-spam battery applies unchanged (kill switch, daily cap, marketing consent, topic mutes, suppression, RFC 8058). Topic `'marketing'`: a free-form member blast is held to the strictest consent bar.
+- **DM**: the loop that was copy-pasted across the event and journey composers is now ONE helper (`lib/comms/bulk-dm.ts`) used by all three, byte-equivalent (cap 300 refuse-first, block gates, email-keyed threads). `scoped-dm` gains the `'space'` scope with a leadership/membership gate mirroring the circle one.
+- **Dispatch becomes a first-class Space audience**: `dispatches.audience_scope` gains `'space'` (`20270106000000`, applied), the rail and digest readers union the member's spaces, and push fan-out reaches active members through the same preference-gated path events use.
+- **Text is refuse-first** (ADR-256): a disabled chip that says so, and a server that refuses a smuggled request. The consent ledger exists; A2P provisioning does not.
+
+**Consequences.** The menu row extends `SPACE_MODULES` beside its inbound sibling Conversations. Known deferred items: member-audience email keys on contact consent rather than `notification_preferences` (the same asymmetry the event lane has); recipient email resolution is per-profile auth reads, acceptable under the DM cap but worth batching before five-figure audiences.
+
+The durable rule: **an audience is a read of the roster that already governs the surface, and a channel chip is disabled with a reason or enabled with a destination — never decorative.**
+
+---
+
+## ADR-859 — A membership tier includes a circle, and the lifecycle keeps it true (2026-07-27)
+
+**Status.** Accepted.
+
+**Context.** The owner's model: a Space runs a circle per membership tier; the circle is that group's communications hub; private events attach to the circle; access comes from the membership. Everything existed except the tier→circle edge and any entitlement-driven circle membership.
+
+**Decision.** `space_membership_tiers.circle_id` (one circle per tier) plus provenance on the grant: `memberships.granted_by_tier_id` (`20270107000000`, applied). The sync engine (`lib/spaces/tier-circle.ts`) grants on activate and revokes on lapse at all five lifecycle sites (free join, waitlist promote, member/admin cancel, both Stripe webhook branches, tier switch = revoke old + grant new).
+
+Why durable rows when ADR-823 chose a live gate for tickets: a ticket gate is a checkout-time question; circle membership is what the product reads everywhere else — `member_count`, the roster, the comms audience, and the `get_my_circle_ids()` RLS that gates `circle_only` events. The provenance column is what makes durable rows safe: **revoke deletes only rows the tier created; a self-joined member is never evicted by a billing event.** A full circle never fails a paid membership (the grant reports `circle_full` and continues). Linking a tier sweeps current members in, so new links self-heal and no backfill migration exists.
+
+Fixed en route because the feature made it load-bearing: `cancelMembership` never cancelled the Stripe subscription, so a member cancel kept billing and the next webhook re-asserted `active` — which would have silently re-granted circle access. It now cancels best-effort before the DB flip.
+
+**Consequences.** Operator UI is the Circle access panel in Memberships settings (mirrors ADR-824's Event access). Deleting a tier releases its rows to the members (`ON DELETE SET NULL`) rather than evicting them. Two recorded limits: `past_due` keeps access (existing consumer behavior, documented on `hasActiveSpaceMembership`); and `circle_only` event RLS also requires platform tier `crew`+, so a paid Space member on a free platform account cannot see tier-circle events — widening that disjunct is a separate, deliberate decision.
+
+The durable rule: **entitlement-granted state carries provenance, and revocation follows provenance — never breadth.**
+
+---
+
+## ADR-860 — Menus: the sync only ever inserts, so code must stay the source of truth it re-enters through (2026-07-27)
+
+**Status.** Accepted (first tranche shipped; the backlog is in META-SCAN-STATUS).
+
+**Context.** The operator reported the Menu manager "isn't synced up" with submenu items needing reorganization. The audit found the mechanism: opening the manager materializes a surface into `menu_*` rows, and from then on the sync ONLY inserts new hrefs — it never updates a label, href, gate, or grouping, and menus seeded before the baseline column existed swallowed every page added since. Identity is href-only, so a route rename strands the old row and blocks the new one; injected items lose their sub-group (categories are matched top-level only); and the public header's code defaults had silently lost two of their six documented triggers.
+
+**Decision.** Two-sided repair. **Code:** the header regains The Community and Spaces triggers (with the REAL `/for/<niche>` slugs); retired names leave the nav catalogs (Dispatches, Market); the payouts row gets its own destination instead of a duplicate href; profile renderers flatten child categories like the rail already did; the sync creates categories on the full parent path with the default's access copied, and positions append at `max+1`. **Data:** the live header's dead `/for/*` doors were re-pointed at the real slugs, the Spaces/About category-position collision resolved, the stranded pricing item re-homed, retired labels updated, and the profile surface — two default rows surviving, ten swallowed — was emptied so `getMenu` falls back to full code defaults.
+
+**Consequences.** The deeper redesign is recorded, not smuggled: a non-destructive "re-check for new pages" action, `default_key`-based sync identity, per-item drift badges, the mobile marketing menu reading the resolved menu, and an `admin_header` code-vs-DB drift guard. Until those land, the operational rule stands in the manager's docs: **a code-side nav change reaches a materialized surface only by explicit re-sync or reset — check the surface after shipping nav changes.**
