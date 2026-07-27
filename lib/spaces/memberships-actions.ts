@@ -24,6 +24,7 @@ import {
   type MembershipTier,
 } from '@/lib/spaces/memberships'
 import { getMyProfileId } from '@/lib/auth'
+import { setTierCircle as setTierCircleImpl } from '@/lib/spaces/tier-circle'
 import { createSpaceMembershipCheckout } from '@/lib/billing/space-membership-checkout'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -69,4 +70,19 @@ export async function startSpaceMembershipCheckout(
   // 'billing_off' / 'free_tier' / 'no_owner_payouts' etc. — the caller decides whether to fall back
   // to the free join path; a clean error keeps this from ever being a broken button.
   return fail(result.reason ?? 'error')
+}
+
+/** Link a membership tier to one of the Space's circles, or unlink with null (ADR-859). The
+ *  implementation gates on canEditProfile and validates both objects belong to this Space; the
+ *  caller identity resolves HERE so the client never names the actor. Linking sweeps current
+ *  active tier members into the circle; the result reports how many were granted and how many
+ *  missed because the circle is full. */
+export async function setTierCircleAction(
+  spaceId: string,
+  tierId: string,
+  circleId: string | null,
+): Promise<ActionResult<{ granted: number; full: number }>> {
+  const actorId = await getMyProfileId()
+  if (!actorId) return fail('Not signed in')
+  return setTierCircleImpl(spaceId, tierId, circleId, actorId)
 }
