@@ -38,7 +38,10 @@ export default async function StarterCirclePreview({
   const { slug } = await params
   if (!(await templatesEnabled())) notFound()
   const t = await getTemplateBySlug(slug)
-  if (!t || !t.isActive) notFound()
+  // Owned blueprints are a Program's Chapter template (ADR-864), never a public
+  // Starter: rendering one here would show a Space's model as staff content and
+  // let it be claimed outside its Program. 404, same as an unknown slug.
+  if (!t || !t.isActive || t.ownerSpaceId) notFound()
 
   const lead = t.about || t.identity || t.oneLiner
 

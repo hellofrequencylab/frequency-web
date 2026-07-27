@@ -107,6 +107,10 @@ export const COLLECTIVE_DEPTH_ENTITLEMENT_KEYS: readonly string[] = [
   'automation',
   'multi_pipeline',
   'team',
+  // Programs on Channels (ADR-864/865): running a Program is Collective depth.
+  // While billing is OFF the seam stays permissive (the ADR-370 invariant); the
+  // one-Program-per-Space unique index caps creation in the meantime.
+  'program',
 ]
 
 /** Independent (~$249, white-label, network-disconnected) depth = Collective depth PLUS branding

@@ -18,7 +18,7 @@ import { Field, Input, fieldClasses } from '@/components/ui/field'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { spaceFunctionAccess } from '@/lib/spaces/functions'
+import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { listCirclesForSpace } from '@/lib/circles/store'
 import { listSpacePrograms, listChapters } from '@/lib/channels/programs'
 import { createSpaceProgramAction } from './actions'
@@ -52,7 +52,7 @@ export default async function SpaceProgramPage({
 
   const brandName = space.brandName ?? space.name
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  const featureLocked = !staffViewing && !spaceFunctionAccess(space, 'program', caps.role)
+  const featureLocked = !staffViewing && !(await spaceFunctionAccessLive(space, 'program', caps.role))
 
   if (featureLocked) {
     return (

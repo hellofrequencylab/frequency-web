@@ -12,7 +12,7 @@ import { redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { spaceFunctionAccess } from '@/lib/spaces/functions'
+import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { listCirclesForSpace } from '@/lib/circles/store'
 import { createSpaceProgram } from '@/lib/channels/programs'
 
@@ -37,7 +37,7 @@ export async function createSpaceProgramAction(slug: string, formData: FormData)
   // staffViewing) AND the `program` function gate (enabled + admin-level role) the page renders by.
   const { canManage } = await resolveSpaceManageAccess(space, viewerProfileId, caller?.webRole)
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  if (!canManage || !spaceFunctionAccess(space, 'program', caps.role)) {
+  if (!canManage || !(await spaceFunctionAccessLive(space, 'program', caps.role))) {
     redirect(`${settingsPath(slug)}?error=denied`)
   }
 

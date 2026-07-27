@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { remixTemplate, publishCircle } from '@/lib/circles/remix'
 import { generateCircleEvents } from '@/lib/circles/events'
+import { getTemplateById } from '@/lib/circles/templates-data'
 
 /** The signed-in REAL member's profile id. Demo profiles cannot remix (mirrors
  *  the claim guard). */
@@ -28,6 +29,14 @@ async function callerProfileId(): Promise<string> {
 
 export async function remixTemplateAction(templateId: string): Promise<{ slug: string; circleId: string }> {
   const profileId = await callerProfileId()
+  // A Program's blueprint (owner_space_id set, ADR-864) is not open-remixable:
+  // cloning it here would mint an off-Program copy with no Chapter stamp. The
+  // only path into an owned blueprint is startChapter, which stamps the channel.
+  const template = await getTemplateById(templateId)
+  if (!template) throw new Error('That Starter Circle is not available.')
+  if (template.ownerSpaceId) {
+    throw new Error('This blueprint belongs to a Program. Start a Chapter from its Channel instead.')
+  }
   const res = await remixTemplate({ templateId, profileId })
   revalidatePath('/circles')
   revalidatePath('/lead')

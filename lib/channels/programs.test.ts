@@ -34,6 +34,8 @@ const state = {
   circleProfiles: [] as Row[], // circle_profiles
   inserts: [] as Array<{ table: string; row: Row }>,
   updates: [] as Array<{ table: string; patch: Row }>,
+  deletes: [] as Array<{ table: string }>,
+  failNextInsert: null as string | null, // table name whose next insert errors
   seq: 0,
 }
 
@@ -49,6 +51,7 @@ function builder(table: string) {
   const filters: Array<(r: Row) => boolean> = []
   let pendingInsert: Row[] | null = null
   let pendingUpdate: Row | null = null
+  let pendingDelete = false
   let orderBy: { col: string; asc: boolean } | null = null
   const matching = () => {
     let rows = rowsOf(table).filter((r) => filters.every((f) => f(r)))
@@ -58,8 +61,13 @@ function builder(table: string) {
     }
     return rows
   }
-  async function exec(): Promise<{ data: Row[] | null; error: null }> {
+  async function exec(): Promise<{ data: Row[] | null; error: { message: string } | null }> {
     if (pendingInsert) {
+      if (state.failNextInsert === table) {
+        state.failNextInsert = null
+        pendingInsert = null
+        return { data: null, error: { message: `${table} insert failed (injected)` } }
+      }
       const inserted = pendingInsert.map((r) => ({ id: `${table}-${(state.seq += 1)}`, ...r }))
       pendingInsert = null
       for (const row of inserted) {
@@ -67,6 +75,15 @@ function builder(table: string) {
         rowsOf(table).push(row)
       }
       return { data: inserted, error: null }
+    }
+    if (pendingDelete) {
+      pendingDelete = false
+      const doomed = matching()
+      const keep = rowsOf(table).filter((r) => !doomed.includes(r))
+      rowsOf(table).length = 0
+      rowsOf(table).push(...keep)
+      state.deletes.push({ table })
+      return { data: doomed, error: null }
     }
     if (pendingUpdate) {
       const patch = pendingUpdate
@@ -105,16 +122,21 @@ function builder(table: string) {
       pendingUpdate = patch
       return api
     },
+    delete() {
+      pendingDelete = true
+      return api
+    },
     async maybeSingle() {
       const { data } = await exec()
       return { data: data?.[0] ?? null, error: null }
     },
     async single() {
-      const { data } = await exec()
+      const { data, error } = await exec()
+      if (error) return { data: null, error }
       const row = data?.[0] ?? null
       return { data: row, error: row ? null : { message: 'no rows' } }
     },
-    then<T>(resolve: (r: { data: Row[] | null; error: null }) => T): Promise<T> {
+    then<T>(resolve: (r: { data: Row[] | null; error: { message: string } | null }) => T): Promise<T> {
       return exec().then(resolve)
     },
   }
@@ -170,6 +192,8 @@ beforeEach(() => {
   state.circleProfiles = []
   state.inserts = []
   state.updates = []
+  state.deletes = []
+  state.failNextInsert = null
   state.seq = 0
   remixMock.mockReset()
 })
@@ -267,6 +291,14 @@ describe('startChapter', () => {
     expect(remixMock).not.toHaveBeenCalled()
   })
 
+  it('refuses a retired (inactive) Program channel, the review fix (ADR-865)', async () => {
+    state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.is_active = false
+    await expect(startChapter({ channelId: PROGRAM_CHANNEL, profileId: PROFILE })).rejects.toThrow(
+      /not taking new Chapters/,
+    )
+    expect(remixMock).not.toHaveBeenCalled()
+  })
+
   it('remixes the blueprint and stamps the draft into the Program channel', async () => {
     remixMock.mockImplementation(async ({ templateId }: { templateId: string }) => {
       expect(templateId).toBe(TEMPLATE)
@@ -282,6 +314,9 @@ describe('startChapter', () => {
 
 describe('createSpaceProgram', () => {
   beforeEach(() => {
+    // The global seed gives SPACE a Program; these tests create one, so the
+    // seeded Program moves to another owner (one Program per Space, ADR-865).
+    state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.owner_space_id = OTHER_SPACE
     state.circles = [
       {
         id: FLAGSHIP,
@@ -305,6 +340,36 @@ describe('createSpaceProgram', () => {
         remix_options: ['Evening edition'],
       },
     ]
+  })
+
+  it('refuses a Space that already runs a Program, writing nothing (ADR-865)', async () => {
+    state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.owner_space_id = SPACE
+    await expect(
+      createSpaceProgram({
+        spaceId: SPACE,
+        profileId: PROFILE,
+        name: 'Meld Again',
+        oneLiner: 'A second one.',
+        sourceCircleId: FLAGSHIP,
+      }),
+    ).rejects.toThrow(/already runs a Program/)
+    expect(state.inserts).toHaveLength(0)
+  })
+
+  it('deletes the orphaned blueprint when the channel insert fails (ADR-865)', async () => {
+    state.failNextInsert = 'topical_channels'
+    await expect(
+      createSpaceProgram({
+        spaceId: SPACE,
+        profileId: PROFILE,
+        name: 'Meld',
+        oneLiner: 'Community coworking.',
+        sourceCircleId: FLAGSHIP,
+      }),
+    ).rejects.toThrow(/insert failed/)
+    // The blueprint went in first, then was cleaned up: nothing public survives.
+    expect(state.deletes).toContainEqual({ table: 'circle_templates' })
+    expect(state.templates).toHaveLength(0)
   })
 
   it('refuses a circle owned by another Space, writing nothing', async () => {
@@ -415,5 +480,18 @@ describe('catalog guard (source shape): Program blueprints never reach the Start
     expect(src.match(/\.is\('owner_space_id', null\)/g)?.length).toBe(2)
     const singles = src.slice(src.indexOf('export async function getTemplateById'))
     expect(singles).not.toContain(".is('owner_space_id', null)")
+  })
+})
+
+describe('blueprint exposure guards (source shape, ADR-865): owned blueprints never render or claim as Starters', () => {
+  const root = join(__dirname, '..', '..')
+  it('the public Starter preview 404s an owned blueprint', () => {
+    const src = readFileSync(join(root, 'app', '(main)', 'circles', 'starter', '[slug]', 'page.tsx'), 'utf8')
+    expect(src).toMatch(/!t\.isActive \|\| t\.ownerSpaceId\) notFound\(\)/)
+  })
+  it('the open remix action refuses an owned blueprint', () => {
+    const src = readFileSync(join(root, 'app', '(main)', 'circles', 'remix-actions.ts'), 'utf8')
+    expect(src).toContain('template.ownerSpaceId')
+    expect(src).toMatch(/belongs to a Program/)
   })
 })

@@ -159,11 +159,15 @@ export async function startChapter(input: { channelId: string; profileId: string
   const admin = db()
   const { data } = await admin
     .from('topical_channels')
-    .select('id, template_id')
+    .select('id, template_id, is_active')
     .eq('id', input.channelId)
     .maybeSingle()
-  const channel = data as { id: string; template_id: string | null } | null
+  const channel = data as { id: string; template_id: string | null; is_active: boolean } | null
   if (!channel) throw new Error('That Channel is not available.')
+  // is_active is the retire switch: the page 404s an inactive channel, but this
+  // action is directly callable, so the switch must hold here too (review fix,
+  // ADR-865): a retired Program takes no new Chapters.
+  if (!channel.is_active) throw new Error('This Program is not taking new Chapters right now.')
   if (!channel.template_id) {
     throw new Error('This Channel does not run a Program yet, so there is no Chapter blueprint to start from.')
   }
@@ -196,6 +200,15 @@ export async function createSpaceProgram(input: {
   category?: string // one of the existing topical_channels categories; default 'business-support'
 }): Promise<{ channelId: string; channelSlug: string; templateId: string }> {
   const admin = db()
+
+  // ONE Program per Space (review fix, ADR-865). The DB backs this with a
+  // unique partial index on topical_channels(owner_space_id), so a double
+  // submit cannot mint two public channels; this pre-check just gives the
+  // second click a sentence instead of a constraint error.
+  const existing = await listSpacePrograms(input.spaceId)
+  if (existing.length > 0) {
+    throw new Error('This Space already runs a Program. Changes go through the crew.')
+  }
 
   // The flagship must be this Space's own, live circle. A draft has not proven
   // anything yet; a circle from another Space is simply not theirs to franchise.
@@ -278,6 +291,9 @@ export async function createSpaceProgram(input: {
     .select('id, slug')
     .single()
   if (channelError || !channelRow) {
+    // No transaction spans the two inserts, so a channel failure would strand
+    // an is_active Space blueprint. Best-effort cleanup keeps nothing public.
+    await admin.from('circle_templates').delete().eq('id', templateId)
     throw new Error(channelError?.message ?? 'Could not create the Program.')
   }
   const channel = channelRow as { id: string; slug: string }
