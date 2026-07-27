@@ -7,7 +7,7 @@ import type { App } from '@/lib/apps/types'
 import { SurfaceLinkRow } from './surface-link-row'
 import type { SurfaceSummaryEntry } from './surface-summaries'
 import { useSpaceRailSummary } from './space-rail-data'
-import { allowanceAt, featureMeter, USAGE_UPGRADE_THRESHOLD } from '@/lib/pricing/feature-meters'
+import { ALLOWANCE_NUDGE, allowanceAt, featureMeter, nearAllowanceLimit } from '@/lib/pricing/feature-meters'
 
 // SURFACE SUMMARY CARD — the Phase 2 "keep it in the rail" affordance (ADR-514). A generic card for a
 // `render: 'link'` Space surface that has a glanceable stat (SURFACE_SUMMARIES[id]). It keeps the SIGNAL in
@@ -61,9 +61,10 @@ export function SurfaceSummaryCard({
   const Icon = app.surfaces.editor?.Icon
 
   // ── The inline usage meter (ADR-520 P2) — a thin usage line on a metered surface's card. It shows the
-  //    live count against the current plan's allowance with a quiet fill bar, and a subtle "Upgrade" nudge
-  //    once usage crosses USAGE_UPGRADE_THRESHOLD. Informs, never blocks. Rendered only when the entry
-  //    carries a meterKey AND the getter returned a `tier`; an unlimited allowance shows no bar/nudge. ──
+  //    live count against the current plan's allowance with a quiet fill bar, and once usage crosses
+  //    USAGE_UPGRADE_THRESHOLD the shared ALLOWANCE_NUDGE sentence + a "See plans" link (ADR-837).
+  //    Informs, never blocks. Rendered only when the entry carries a meterKey AND the getter returned a
+  //    `tier`; an unlimited allowance shows no bar/nudge. ──
   const ladder = entry.meterKey ? featureMeter(entry.meterKey) : null
   const allowance = entry.meterKey && data.tier ? allowanceAt(entry.meterKey, data.tier) : null
   const meter =
@@ -72,7 +73,7 @@ export function SurfaceSummaryCard({
           unit: ladder.unit,
           allowance, // null = unlimited
           ratio: allowance && allowance > 0 ? Math.min(1, data.count / allowance) : 0,
-          nearLimit: allowance != null && allowance > 0 && data.count / allowance >= USAGE_UPGRADE_THRESHOLD,
+          nearLimit: nearAllowanceLimit(entry.meterKey!, data.tier, data.count),
         }
       : null
   const billingHref = `/spaces/${slug}/settings/billing`
@@ -118,7 +119,7 @@ export function SurfaceSummaryCard({
                 href={billingHref}
                 className="shrink-0 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong hover:bg-primary-bg/70"
               >
-                Upgrade
+                See plans
               </Link>
             )}
           </div>
@@ -130,6 +131,8 @@ export function SurfaceSummaryCard({
               />
             </div>
           )}
+          {/* The one shared nudge sentence (ADR-837): plain, no urgency, links only via the chip above. */}
+          {meter.nearLimit && <p className="mt-1 text-2xs text-subtle">{ALLOWANCE_NUDGE}</p>}
         </div>
       )}
     </div>

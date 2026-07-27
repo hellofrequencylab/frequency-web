@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, Users, MapPin, CalendarDays, Map as MapIcon } from 'lucide-react'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { eventDateBadge, formatEventDate } from '@/lib/discover'
 import type { PublicCircle, PublicEvent, PublicPost, TopicalChannel } from '@/lib/discover'
 import type { JourneyPlan } from '@/lib/journey-plans'
@@ -155,11 +156,12 @@ export function PostPreview({ post, isAuthed = false }: { post: PublicPost; isAu
   const initials = post.author_display_name ? getInitials(post.author_display_name) : '?'
   const avatar = post.author_avatar_url ? (
     <Image
-      src={post.author_avatar_url}
+      src={avatarSrc(post.author_avatar_url)}
       alt={post.author_display_name ?? 'Member'}
       width={40}
       height={40}
       className="w-10 h-10 rounded-full object-cover shrink-0"
+      style={avatarFocusStyle(post.author_avatar_url)}
     />
   ) : (
     <div className="w-10 h-10 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Hash, Lock, MessageSquare, Loader2, ArrowRight, Users, ChevronLeft } from 'lucide-react'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import {
   fetchMessagesSummary,
   loadDockDmThread,
@@ -133,7 +134,7 @@ export function DockChat({ onNavigate }: { onNavigate?: () => void }) {
                 <li key={c.id}>
                   <button type="button" onClick={() => openDm(c.id, title)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-elevated">
                     {peer?.avatar_url ? (
-                      <Image src={peer.avatar_url} alt="" width={36} height={36} className="h-9 w-9 rounded-full object-cover" />
+                      <Image src={avatarSrc(peer.avatar_url)} alt="" width={36} height={36} className="h-9 w-9 rounded-full object-cover" style={avatarFocusStyle(peer.avatar_url)} />
                     ) : (
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong select-none">{getInitials(title)}</div>
                     )}

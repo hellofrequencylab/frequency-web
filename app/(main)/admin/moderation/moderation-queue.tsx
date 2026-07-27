@@ -13,6 +13,7 @@ import {
 } from '@/app/(main)/feed/report-actions'
 import { isError } from '@/lib/action-result'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { Button } from '@/components/ui/button'
 
 type ReportItem = {
@@ -126,11 +127,12 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
             <div className="flex items-start gap-3 mb-3">
               {report.reporter.avatar_url ? (
                 <Image
-                  src={report.reporter.avatar_url}
+                  src={avatarSrc(report.reporter.avatar_url)}
                   alt={report.reporter.display_name}
                   width={32}
                   height={32}
                   className="w-8 h-8 rounded-full object-cover shrink-0"
+                  style={avatarFocusStyle(report.reporter.avatar_url)}
                 />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">

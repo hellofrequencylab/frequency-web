@@ -5,6 +5,7 @@ import { Search, X, UserPlus, GripVertical } from 'lucide-react'
 import { searchNetworkMembers, resolveNetworkMembers, type MemberPick } from './member-search-action'
 import { useSpaceEditorSlug } from './space-editor-context'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 // The Team block's NETWORK MEMBER PICKER — a Puck custom field that lets a space operator pick real
 // Frequency members from the directory (search by name or handle) instead of typing names by hand.
@@ -183,7 +184,7 @@ function Avatar({ member }: { member: MemberPick }) {
   if (member.avatarUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- directory avatar preview in the editor, not a build-time asset
-      <img src={member.avatarUrl} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
+      <img src={avatarSrc(member.avatarUrl)} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" style={avatarFocusStyle(member.avatarUrl)} />
     )
   }
   return (

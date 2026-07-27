@@ -78,6 +78,9 @@ export default async function SpaceCrmBoardPage({
 
   // GATE: a viewer whose role is too low, OR a space whose plan lacks CRM, gets the locked state.
   if (!canUseCrm) {
+    // The live usage read for the meter (ADR-837): the pipeline count is the established proxy for
+    // contacts (ADR-520 P2), fail-safe ([] on error). Read only for a manager who will see the meter.
+    const usage = !hasCrm && caps.canManageMembers ? (await getDeals(space.id)).length : undefined
     return (
       <LockedCrm
         brandName={brandName}
@@ -85,6 +88,7 @@ export default async function SpaceCrmBoardPage({
         type={space.type}
         plan={space.plan}
         canManage={caps.canManageMembers}
+        usage={usage}
         // Tailor the message: an admin on a plan without CRM sees an upgrade nudge; a viewer whose role
         // is too low sees a "this is for the team" note. Both are calm next steps, never a dead end. The
         // entitlement (hasCrm) decides which: no entitlement -> upgrade; entitlement present but role
@@ -204,6 +208,7 @@ function LockedCrm({
   reason,
   plan,
   canManage,
+  usage,
 }: {
   brandName: string
   slug: string
@@ -213,6 +218,8 @@ function LockedCrm({
   plan?: string | null
   /** Whether the viewer can act on the plan (owner / admin), so the range only shows to them. */
   canManage?: boolean
+  /** The live contacts-proxy count (pipeline size), when cheaply read. Display-only (ADR-837). */
+  usage?: number
 }) {
   const description =
     reason === 'not-admin'
@@ -253,12 +260,12 @@ function LockedCrm({
         // ADR-519 (metered model): the reusable usage-meter range + placeholder allowances (an "upgrade
         // for more" CTA that only navigates, never charges). Shown only to a manager who can change the
         // plan. Nothing is locked; higher tiers just raise the allowance.
-        <FeatureMeterUpsell featureKey="space_crm" currentTier={plan} upgradeHref={`/spaces/${slug}/settings/billing`} />
-      )}
-      {reason === 'no-entitlement' && (
-        <p className="mt-4 text-center text-xs text-subtle">
-          Want a higher allowance? Reach out and we will set up the right plan for your space.
-        </p>
+        <FeatureMeterUpsell
+          featureKey="space_crm"
+          currentTier={plan}
+          upgradeHref={`/spaces/${slug}/settings/billing`}
+          usage={usage}
+        />
       )}
     </DashboardTemplate>
   )

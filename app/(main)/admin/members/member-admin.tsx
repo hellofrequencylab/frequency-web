@@ -9,6 +9,7 @@ import {
   UserX, UserCheck, Trash2, Loader2, Check, Sparkles,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { Button } from '@/components/ui/button'
 import {
   assignRole, deactivateMember, reactivateMember,
@@ -223,7 +224,7 @@ function MemberRow({
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-elevated transition-colors text-left"
       >
         {m.avatar_url ? (
-          <Image src={m.avatar_url} alt={m.display_name} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" />
+          <Image src={avatarSrc(m.avatar_url)} alt={m.display_name} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" style={avatarFocusStyle(m.avatar_url)} />
         ) : (
           <div className="w-9 h-9 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0">
             {initials}

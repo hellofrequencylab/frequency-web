@@ -5,6 +5,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { getMatchingConsent } from '@/lib/resonance/matches'
 import { getResonanceMatchesForPerson, matchWhyLine, matchStrengthLabel } from '@/lib/resonance/surface'
 import { AcceptIntroButton } from './accept-intro-button'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 // The member's own Resonance Engine matches (ADR-385): the few people they would most click with,
 // from the Circles, Journeys, practices, and Pillars they already share. CONSENT-FIRST and fail-safe:
@@ -66,12 +67,13 @@ export async function ResonanceMatches() {
           <li key={m.profileId} className="flex items-center gap-3 rounded-xl border border-border bg-surface-elevated/40 p-3">
             {m.avatarUrl ? (
               <Image
-                src={m.avatarUrl}
+                src={avatarSrc(m.avatarUrl)}
                 alt=""
                 width={44}
                 height={44}
                 sizes="44px"
                 className="h-11 w-11 shrink-0 rounded-full object-cover"
+                style={avatarFocusStyle(m.avatarUrl)}
               />
             ) : (
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong" aria-hidden>

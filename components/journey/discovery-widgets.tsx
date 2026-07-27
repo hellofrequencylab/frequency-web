@@ -16,6 +16,7 @@ import {
   UsersRound,
 } from 'lucide-react'
 import type { JourneyPlanItem, JourneyPlan } from '@/lib/journey-plans'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { planPillarMap } from '@/lib/journey-plans'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -356,7 +357,7 @@ export function InstructorBlock({
         className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-border-strong"
       >
         {author.avatarUrl ? (
-          <Image src={author.avatarUrl} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-cover" />
+          <Image src={avatarSrc(author.avatarUrl)} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-cover" style={avatarFocusStyle(author.avatarUrl)} />
         ) : (
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-sm font-bold text-muted">
             {author.displayName.slice(0, 1).toUpperCase()}

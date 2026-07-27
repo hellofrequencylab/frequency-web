@@ -17,6 +17,7 @@ import {
   ArrowUpRight,
 } from 'lucide-react'
 import type { JourneyPlan, JourneyMeeting, JourneyTouchpoint, PlanAuthor } from '@/lib/journey-plans'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { HelpMarkdown } from '@/components/help/help-markdown'
@@ -303,11 +304,12 @@ export function AuthorBlock({ author }: { author: PlanAuthor | null }) {
       >
         {author.avatarUrl ? (
           <Image
-            src={author.avatarUrl}
+            src={avatarSrc(author.avatarUrl)}
             alt=""
             width={44}
             height={44}
             className="h-11 w-11 shrink-0 rounded-full object-cover"
+            style={avatarFocusStyle(author.avatarUrl)}
           />
         ) : (
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-sm font-bold text-muted">

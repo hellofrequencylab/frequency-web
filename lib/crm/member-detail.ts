@@ -50,7 +50,7 @@ export type MemberDetailAudience = 'staff' | 'leader'
  * scope gets NO message path at all (fail closed — a leader lane must name its scope). The event /
  * circle / hub / nexus loaders pass their own scope so the fold shows exactly that scope's comms.
  */
-export type MemberDetailScope = PathScope
+type MemberDetailScope = PathScope
 
 const LIFECYCLE_LABELS: Record<string, string> = {
   new: 'New',

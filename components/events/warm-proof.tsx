@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 // Warm proof, not FOMO (EVENTS-SYSTEM §4, Law 1). A small avatar pile of confirmed
 // attendees + a single warm line of REAL numbers. Presentational + server-friendly
@@ -80,11 +81,12 @@ export function WarmProof({
             a.avatarUrl ? (
               <Image
                 key={a.id}
-                src={a.avatarUrl}
+                src={avatarSrc(a.avatarUrl)}
                 alt={a.displayName}
                 width={28}
                 height={28}
                 className="h-7 w-7 rounded-full object-cover ring-2 ring-surface"
+                style={avatarFocusStyle(a.avatarUrl)}
               />
             ) : (
               <div

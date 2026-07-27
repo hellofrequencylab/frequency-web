@@ -4,6 +4,7 @@ import { Zap, Flame } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { getRankDef, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 // LeaderboardList — the responsive, mobile-first board that replaces the old fixed
 // six-column grid (grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem]) that broke on phones.
@@ -92,11 +93,12 @@ export function LeaderboardList({
               {/* Avatar */}
               {entry.avatarUrl ? (
                 <Image
-                  src={entry.avatarUrl}
+                  src={avatarSrc(entry.avatarUrl)}
                   alt=""
                   width={36}
                   height={36}
                   className="h-9 w-9 shrink-0 rounded-full object-cover"
+                  style={avatarFocusStyle(entry.avatarUrl)}
                 />
               ) : (
                 <span

@@ -9,6 +9,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { MessageSquare } from 'lucide-react'
 import { startConversation } from '@/app/(main)/messages/actions'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { getInitials } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
 import { isEndorsed } from '@/lib/season-ranks'
@@ -71,11 +72,12 @@ export function CircleMembersList({
               >
                 {profile.avatar_url ? (
                   <Image
-                    src={profile.avatar_url}
+                    src={avatarSrc(profile.avatar_url)}
                     alt={profile.display_name}
                     width={32}
                     height={32}
                     className="w-8 h-8 rounded-full object-cover shrink-0"
+                    style={avatarFocusStyle(profile.avatar_url)}
                   />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">

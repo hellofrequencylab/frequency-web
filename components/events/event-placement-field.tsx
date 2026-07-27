@@ -15,6 +15,7 @@ import { transferEventHost } from '@/app/(main)/events/[slug]/social-actions'
 import { isError } from '@/lib/action-result'
 import { labelClasses } from '@/components/ui/field'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import type { PlacementView, PlacementTargetType } from '@/lib/events/placement'
 
 type HandleHit = { id: string; handle: string; display_name: string; avatar_url: string | null }
@@ -315,7 +316,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
                   className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-elevated"
                 >
                   {p.avatar_url ? (
-                    <Image src={p.avatar_url} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-full object-cover" />
+                    <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-full object-cover" style={avatarFocusStyle(p.avatar_url)} />
                   ) : (
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-bg text-3xs font-bold text-primary-strong">
                       {getInitials(p.display_name)}

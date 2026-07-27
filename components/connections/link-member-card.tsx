@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Search, UserRoundCheck, Link2Off, ExternalLink } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { mergeWithMember, unmergeFromMember, searchMembersToLink } from '@/app/(main)/connections/actions'
 
 interface MemberHit {
@@ -16,7 +17,7 @@ interface MemberHit {
 }
 
 function Avatar({ url, name }: { url: string | null; name: string | null }) {
-  if (url) return <Image src={url} alt="" width={32} height={32} className="h-8 w-8 rounded-full object-cover" />
+  if (url) return <Image src={avatarSrc(url)} alt="" width={32} height={32} className="h-8 w-8 rounded-full object-cover" style={avatarFocusStyle(url)} />
   return (
     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-elevated text-xs font-semibold text-muted">
       {getInitials(name ?? '?')}

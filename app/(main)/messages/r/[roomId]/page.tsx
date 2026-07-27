@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ChevronLeft, Users, Hash, Lock, LogIn, LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { PageHeading } from '@/components/templates'
 import { joinRoom, leaveRoom } from '../../rooms/actions'
 import { RoomThread } from '@/components/rooms/room-thread'
@@ -255,7 +256,7 @@ export default async function RoomPage({
                   <div className="group flex items-center gap-2.5 px-4 py-2 hover:bg-surface-elevated/50 transition-colors">
                     <Link href={`/people/${p.handle}`} className="flex items-center gap-2.5 flex-1 min-w-0">
                       {p.avatar_url ? (
-                        <Image src={p.avatar_url} alt={p.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                        <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" style={avatarFocusStyle(p.avatar_url)} />
                       ) : (
                         <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center shrink-0 select-none">
                           {getInitials(p.display_name)}

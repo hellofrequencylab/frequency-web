@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 // Author attribution for a practice — a small, quiet "by {Name}" link to the
 // creator's profile (/people/{handle}). Shared by the library card footer and the
@@ -29,7 +30,7 @@ export function PracticeAuthor({
       >
         {creator.avatar_url && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={creator.avatar_url} alt="" className="h-4 w-4 shrink-0 rounded-full object-cover" />
+          <img src={avatarSrc(creator.avatar_url)} alt="" className="h-4 w-4 shrink-0 rounded-full object-cover" style={avatarFocusStyle(creator.avatar_url)} />
         )}
         <span className="truncate">{name}</span>
       </Link>

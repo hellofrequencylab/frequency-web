@@ -10,6 +10,7 @@ import { isError } from '@/lib/action-result'
 import { formatMoney, type CrmStage, type CrmDeal, type PersonLite } from '@/lib/crm/pipeline'
 import { PIPELINE_LANES, laneMeta, type PipelineLane } from '@/lib/crm/stage-templates'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { Button } from '@/components/ui/button'
 import { Banner } from '@/components/admin/status'
 
@@ -199,7 +200,7 @@ function LaneTab({ active, onClick, children }: { active: boolean; onClick: () =
 
 function Avatar({ person }: { person: PersonLite }) {
   return person.avatar_url ? (
-    <Image src={person.avatar_url} alt={person.display_name} width={20} height={20} className="h-5 w-5 rounded-full object-cover" />
+    <Image src={avatarSrc(person.avatar_url)} alt={person.display_name} width={20} height={20} className="h-5 w-5 rounded-full object-cover" style={avatarFocusStyle(person.avatar_url)} />
   ) : (
     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-2xs font-semibold text-primary-strong select-none">
       {getInitials(person.display_name)}

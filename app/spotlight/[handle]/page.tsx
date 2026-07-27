@@ -5,6 +5,7 @@ import { SpotlightShell } from '@/components/spotlight/spotlight-shell'
 import { MemberProfileModules } from '@/components/widgets/member-profile/member-profile-modules'
 import { JsonLd } from '@/components/json-ld'
 import { personSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { avatarSrc } from '@/lib/images/avatar-focus'
 
 // PUBLIC, top-level route (outside the auth-gated (main) group) so a signed-out
 // visitor or non-member can open a shared link. Per-request + fail-closed: a page
@@ -31,7 +32,7 @@ export async function generateMetadata({
       url: path,
       title: name,
       description,
-      images: data.profile.avatar_url ? [data.profile.avatar_url] : undefined,
+      images: data.profile.avatar_url ? [avatarSrc(data.profile.avatar_url)] : undefined,
     },
   }
 }
@@ -60,7 +61,7 @@ export default async function SpotlightRoute({
     <>
       <JsonLd
         data={[
-          personSchema({ name, path, image: data.profile.avatar_url }),
+          personSchema({ name, path, image: data.profile.avatar_url ? avatarSrc(data.profile.avatar_url) : data.profile.avatar_url }),
           breadcrumbSchema([{ name: 'Spotlight', path }]),
         ]}
       />

@@ -41,7 +41,12 @@ export async function SpaceCrmSnapshot({ slug }: { slug: string }) {
     // Split the reason the same way the board does: an owner/admin whose plan lacks the entitlement
     // sees the upsell; anyone whose role is simply too low sees nothing at all here.
     const hasCrm = spaceHasEntitlement(space, 'crm')
-    if (!hasCrm) return <CrmUpsell slug={space.slug} plan={space.plan} canManage={caps.canManageMembers} />
+    if (!hasCrm) {
+      // The live usage read for the meter (ADR-837): the pipeline count is the established proxy for
+      // contacts (ADR-520 P2), fail-safe ([] on error). Read only for a manager who will see the meter.
+      const usage = caps.canManageMembers ? (await getDeals(space.id)).length : undefined
+      return <CrmUpsell slug={space.slug} plan={space.plan} canManage={caps.canManageMembers} usage={usage} />
+    }
     return null
   }
 
@@ -93,7 +98,18 @@ export async function SpaceCrmSnapshot({ slug }: { slug: string }) {
 // every space; this is a "you're on the free allowance, move up for more" nudge, trimmed to fit the
 // fold-out, with a link to this space's billing. Nothing is locked. For a manager it also shows the
 // reusable usage-meter range + placeholder allowances (the CTA only navigates, never charges).
-function CrmUpsell({ slug, plan, canManage }: { slug: string; plan?: string | null; canManage?: boolean }) {
+function CrmUpsell({
+  slug,
+  plan,
+  canManage,
+  usage,
+}: {
+  slug: string
+  plan?: string | null
+  canManage?: boolean
+  /** The live contacts-proxy count (pipeline size), when cheaply read. Display-only (ADR-837). */
+  usage?: number
+}) {
   return (
     <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
       <div className="flex items-start gap-3">
@@ -116,7 +132,12 @@ function CrmUpsell({ slug, plan, canManage }: { slug: string; plan?: string | nu
         </div>
       </div>
       {canManage && (
-        <FeatureMeterUpsell featureKey="space_crm" currentTier={plan} upgradeHref={`/spaces/${slug}/settings/billing`} />
+        <FeatureMeterUpsell
+          featureKey="space_crm"
+          currentTier={plan}
+          upgradeHref={`/spaces/${slug}/settings/billing`}
+          usage={usage}
+        />
       )}
     </section>
   )

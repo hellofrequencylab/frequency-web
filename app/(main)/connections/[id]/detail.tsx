@@ -7,6 +7,7 @@ import {
   Mail, Phone, MapPin, Globe, Lock, Users, Pencil, Check, X, Plus, Trash2, Loader2, User, Sparkles, CalendarClock, History,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { DetailTemplate } from '@/components/templates'
 import { normalizeTag, hasAnyDetails } from '@/lib/connections/normalize'
 import { DetailsEditor, DetailsView } from '@/components/connections/contact-details-fields'
@@ -128,7 +129,7 @@ export function Detail({
         <span className="inline-flex items-center gap-3 align-middle">
           {avatarUrl ? (
             // Private `network-contacts` signed URL — skip the optimizer (see network/contacts page note).
-            <Image src={avatarUrl} alt="" width={48} height={48} unoptimized className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-surface" />
+            <Image src={avatarSrc(avatarUrl)} alt="" width={48} height={48} unoptimized className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-surface" style={avatarFocusStyle(avatarUrl)} />
           ) : (
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-base font-semibold text-muted">
               {contact.displayName ? getInitials(name) : <User className="h-6 w-6" />}

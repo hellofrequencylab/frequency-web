@@ -44,11 +44,20 @@ export function SeatCounter({
             <span className="tabular-nums">{licensed}</span> operator seats used
           </p>
           <p className="mt-0.5 text-xs text-muted">
-            {enforced
-              ? full
-                ? 'Every operator seat is taken. Add a seat to invite another teammate.'
-                : 'Admins, moderators, and editors use a seat. Members are free.'
-              : 'Seats are not enforced yet. This is a preview of how your team will be counted when paid plans go live.'}
+            {enforced ? (
+              full ? (
+                <>
+                  Every operator seat is taken. Add a seat to invite another teammate.{' '}
+                  <Link href={billingHref} className="font-medium text-text underline underline-offset-2 hover:text-primary">
+                    Team roles come with the Collective plan.
+                  </Link>
+                </>
+              ) : (
+                'Admins, moderators, and editors use a seat. Members are free.'
+              )
+            ) : (
+              'Seats are not enforced yet. This is a preview of how your team will be counted when paid plans go live.'
+            )}
           </p>
         </div>
       </div>

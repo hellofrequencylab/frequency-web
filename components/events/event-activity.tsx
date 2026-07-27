@@ -9,6 +9,7 @@ import { getEventPostReactions, toggleEventPostReaction } from '@/lib/events/rea
 import type { BoopKind, PostReactions } from '@/lib/events/reactions'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB (post-prep; HEIC is converted and big photos shrink first)
@@ -447,7 +448,7 @@ export function EventActivity({
             return (
               <li key={post.id} className="flex gap-3">
                 {a?.avatarUrl ? (
-                  <Image src={a.avatarUrl} alt={a.displayName} width={32} height={32} className="h-8 w-8 shrink-0 rounded-full object-cover" />
+                  <Image src={avatarSrc(a.avatarUrl)} alt={a.displayName} width={32} height={32} className="h-8 w-8 shrink-0 rounded-full object-cover" style={avatarFocusStyle(a.avatarUrl)} />
                 ) : (
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong select-none">
                     {a ? getInitials(a.displayName) : '?'}

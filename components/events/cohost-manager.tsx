@@ -7,6 +7,7 @@ import { X, UserPlus, Crown } from 'lucide-react'
 import { inviteCohost, removeCohost, transferEventHost } from '@/app/(main)/events/[slug]/social-actions'
 import { isError } from '@/lib/action-result'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 export type CohostView = {
   id: string
@@ -52,7 +53,7 @@ export function CohostManager({
           {cohosts.map((c) => (
             <li key={c.id} className="flex items-center gap-3 rounded-lg px-3 py-2 -mx-3 hover:bg-surface transition-colors">
               {c.avatarUrl ? (
-                <Image src={c.avatarUrl} alt={c.displayName} width={28} height={28} className="h-7 w-7 shrink-0 rounded-full object-cover" />
+                <Image src={avatarSrc(c.avatarUrl)} alt={c.displayName} width={28} height={28} className="h-7 w-7 shrink-0 rounded-full object-cover" style={avatarFocusStyle(c.avatarUrl)} />
               ) : (
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong select-none">
                   {getInitials(c.displayName)}
@@ -79,7 +80,7 @@ export function CohostManager({
             {pendingInvites.map((p) => (
               <li key={p.id} className="flex items-center gap-3 rounded-lg px-3 py-2 -mx-3 hover:bg-surface transition-colors">
                 {p.avatarUrl ? (
-                  <Image src={p.avatarUrl} alt={p.displayName} width={28} height={28} className="h-7 w-7 shrink-0 rounded-full object-cover" />
+                  <Image src={avatarSrc(p.avatarUrl)} alt={p.displayName} width={28} height={28} className="h-7 w-7 shrink-0 rounded-full object-cover" style={avatarFocusStyle(p.avatarUrl)} />
                 ) : (
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-2xs font-bold text-subtle select-none">
                     {getInitials(p.displayName)}
@@ -205,7 +206,7 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
               className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-elevated disabled:opacity-40"
             >
               {p.avatar_url ? (
-                <Image src={p.avatar_url} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-full object-cover" />
+                <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-full object-cover" style={avatarFocusStyle(p.avatar_url)} />
               ) : (
                 <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-bg text-3xs font-bold text-primary-strong">
                   {getInitials(p.display_name)}
@@ -345,7 +346,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
                   className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-elevated"
                 >
                   {p.avatar_url ? (
-                    <Image src={p.avatar_url} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-full object-cover" />
+                    <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-full object-cover" style={avatarFocusStyle(p.avatar_url)} />
                   ) : (
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-bg text-3xs font-bold text-primary-strong">
                       {getInitials(p.display_name)}

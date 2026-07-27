@@ -22,6 +22,7 @@ import {
 import type { ComponentConfig } from '@/lib/page-editor/types'
 
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { normalizeHttpUrl } from '@/lib/safe-url'
 import { focalClass } from '@/lib/page-editor/image-controls'
 import { CtaButton } from '@/components/page-editor/blocks/kit'
@@ -1030,7 +1031,7 @@ type TeamCard = {
 function TeamAvatar({ card }: { card: TeamCard }) {
   if (card.avatar) {
     // eslint-disable-next-line @next/next/no-img-element -- member/operator avatar URL, resolved at render
-    return <img src={card.avatar} alt="" className="mx-auto h-16 w-16 rounded-full object-cover" />
+    return <img src={avatarSrc(card.avatar)} alt="" className="mx-auto h-16 w-16 rounded-full object-cover" style={avatarFocusStyle(card.avatar)} />
   }
   return (
     <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-surface-elevated text-lg font-bold text-subtle">

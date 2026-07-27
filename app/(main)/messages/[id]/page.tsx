@@ -5,6 +5,7 @@ import { ChevronLeft, LogOut, UsersRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { MessageThread, type Message } from '@/components/messages/thread'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { PageHeading } from '@/components/templates'
 import { leaveConversation } from '../actions'
 import { ConversationRenameButton } from '@/components/messages/conversation-rename-button'
@@ -100,7 +101,7 @@ export default async function ConversationPage({
     </span>
   ) : others[0] ? (
     others[0].avatar_url ? (
-      <Image src={others[0].avatar_url} alt={others[0].display_name} width={36} height={36} className="h-9 w-9 shrink-0 rounded-full object-cover" />
+      <Image src={avatarSrc(others[0].avatar_url)} alt={others[0].display_name} width={36} height={36} className="h-9 w-9 shrink-0 rounded-full object-cover" style={avatarFocusStyle(others[0].avatar_url)} />
     ) : (
       <span className="flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong">
         {getInitials(others[0].display_name)}
@@ -195,7 +196,7 @@ export default async function ConversationPage({
                     className="flex items-center gap-2.5 px-4 py-2 hover:bg-surface-elevated/50 transition-colors"
                   >
                     {p.avatar_url ? (
-                      <Image src={p.avatar_url} alt={p.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                      <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" style={avatarFocusStyle(p.avatar_url)} />
                     ) : (
                       <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center shrink-0 select-none">
                         {getInitials(p.display_name)}

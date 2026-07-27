@@ -187,7 +187,7 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
               className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-elevated disabled:opacity-40"
             >
               {p.avatar_url ? (
-                <Image src={p.avatar_url} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-full object-cover" />
+                <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-full object-cover" style={avatarFocusStyle(p.avatar_url)} />
               ) : (
                 <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-bg text-3xs font-bold text-primary-strong">
                   {getInitials(p.display_name)}

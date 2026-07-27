@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { BadgeCheck, Loader2, Star } from 'lucide-react'
 import { submitSpaceReview, hideSpaceReview, respondToSpaceReview } from '@/lib/spaces/content-actions'
 import { isError } from '@/lib/action-result'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { relativeTime } from '@/lib/utils'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -49,13 +50,13 @@ function Avatar({ name, avatarUrl, size = 36 }: { name: string; avatarUrl: strin
   if (avatarUrl) {
     return (
       <Image
-        src={avatarUrl}
+        src={avatarSrc(avatarUrl)}
         alt=""
         width={size}
         height={size}
         unoptimized
         className="shrink-0 rounded-full object-cover"
-        style={{ width: size, height: size }}
+        style={{ width: size, height: size, ...avatarFocusStyle(avatarUrl) }}
       />
     )
   }

@@ -9,6 +9,7 @@ import {
   STAFF_ROLES, STAFF_ROLE_LABEL, STAFF_ROLE_BLURB, type StaffRole,
 } from '@/lib/core/staff-roles'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 export type StaffMemberRow = {
   profileId: string
@@ -131,7 +132,7 @@ export function StaffRoleManager({ members }: { members: StaffMemberRow[] }) {
           {members.map((m) => (
             <li key={m.profileId} className="flex items-center gap-3 p-3">
               {m.avatarUrl ? (
-                <Image src={m.avatarUrl} alt={m.displayName} width={36} height={36} className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                <Image src={avatarSrc(m.avatarUrl)} alt={m.displayName} width={36} height={36} className="h-9 w-9 shrink-0 rounded-full object-cover" style={avatarFocusStyle(m.avatarUrl)} />
               ) : (
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong">
                   {getInitials(m.displayName)}

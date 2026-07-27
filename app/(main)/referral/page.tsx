@@ -22,6 +22,7 @@ import {
 } from '@/lib/beta/referral-contest'
 import { getInviteLink } from '@/app/(main)/invite-actions'
 import { ReferralLinkCard } from './copy-link'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 export const dynamic = 'force-dynamic'
 
@@ -138,11 +139,12 @@ function LeaderRow({ row, isMe }: { row: ContestLeaderboardRow; isMe: boolean })
       </span>
       {row.avatarUrl ? (
         <Image
-          src={row.avatarUrl}
+          src={avatarSrc(row.avatarUrl)}
           alt={row.displayName}
           width={36}
           height={36}
           className="h-9 w-9 shrink-0 rounded-full object-cover"
+          style={avatarFocusStyle(row.avatarUrl)}
         />
       ) : (
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong">

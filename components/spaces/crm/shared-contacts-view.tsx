@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { SharedWithSpaceView } from '@/lib/connections/store'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 // SHARED-WITH-SPACE — the team read view for the 'shared' network-contact tier (ADR-778). A member can
 // share a contact's CARD with a Space's team; this is where the team reads it. Presentational only: the
@@ -75,12 +76,13 @@ function ContactCard({ contact }: { contact: SharedWithSpaceView }) {
       <div className="flex items-start gap-3">
         {contact.avatarUrl ? (
           <Image
-            src={contact.avatarUrl}
+            src={avatarSrc(contact.avatarUrl)}
             alt=""
             width={44}
             height={44}
             unoptimized
             className="h-11 w-11 shrink-0 rounded-full object-cover"
+            style={avatarFocusStyle(contact.avatarUrl)}
           />
         ) : (
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong">

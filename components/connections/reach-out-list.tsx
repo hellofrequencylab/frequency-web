@@ -6,6 +6,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, CalendarClock } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { completeReminder } from '@/app/(main)/connections/actions'
 import type { ReminderWithContact } from '@/lib/connections/types'
 
@@ -76,7 +77,7 @@ function ReachOutRow({ reminder, onDone }: { reminder: ReminderWithContact; onDo
       >
         {reminder.contactAvatarUrl ? (
           // Private `network-contacts` signed URL — skip the optimizer (see page.tsx note).
-          <Image src={reminder.contactAvatarUrl} alt="" width={36} height={36} unoptimized className="h-9 w-9 rounded-full object-cover" />
+          <Image src={avatarSrc(reminder.contactAvatarUrl)} alt="" width={36} height={36} unoptimized className="h-9 w-9 rounded-full object-cover" style={avatarFocusStyle(reminder.contactAvatarUrl)} />
         ) : (
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-elevated text-xs font-semibold text-muted">
             {getInitials(name)}

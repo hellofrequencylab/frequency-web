@@ -4,6 +4,7 @@ import { HandHeart, Radio, LifeBuoy, ShieldCheck, BookOpen } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { RoleBadge } from '@/lib/community-roles'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { AskVeraButton } from './ask-vera-button'
 
 // Vera's profile (ADR-238) — the system voice gets her own page, not a member
@@ -55,11 +56,12 @@ export function VeraProfile({
         <span className="inline-flex items-center gap-3 align-middle">
           {avatarUrl ? (
             <Image
-              src={avatarUrl}
+              src={avatarSrc(avatarUrl)}
               alt={name}
               width={56}
               height={56}
               className="h-14 w-14 rounded-full object-cover ring-2 ring-surface-elevated"
+              style={avatarFocusStyle(avatarUrl)}
             />
           ) : (
             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-bg text-lg font-bold text-primary-strong">

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Sparkles, X, UserRoundCheck } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { mergeWithMember, dismissMatch } from '@/app/(main)/connections/actions'
 import type { ContactMatchSuggestion } from '@/lib/connections/matching'
 
@@ -42,7 +43,7 @@ export function ContactMatches({ suggestions }: { suggestions: ContactMatchSugge
 
 function Avatar({ url, name }: { url: string | null; name: string | null }) {
   if (url) {
-    return <Image src={url} alt="" width={36} height={36} className="h-9 w-9 rounded-full object-cover" />
+    return <Image src={avatarSrc(url)} alt="" width={36} height={36} className="h-9 w-9 rounded-full object-cover" style={avatarFocusStyle(url)} />
   }
   return (
     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-elevated text-xs font-semibold text-muted">

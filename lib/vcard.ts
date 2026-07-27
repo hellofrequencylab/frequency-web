@@ -3,6 +3,8 @@
 // into a .vcf string. Pure + isomorphic — unit-tests cleanly. Permissions = the
 // member only fills/enables what they want shared; nothing else reaches the card.
 
+import { avatarSrc } from './images/avatar-focus'
+
 export interface VcardConfig {
   /** Offer a "Save contact" vCard at all. */
   enabled: boolean
@@ -79,7 +81,7 @@ export function buildVcf(profile: VcardProfile, config: VcardConfig): string | n
   if (config.title) lines.push(`TITLE:${esc(config.title)}`)
   if (config.website) lines.push(`URL:${esc(config.website)}`)
   if (config.includeAvatar && profile.avatarUrl && /^https:\/\//i.test(profile.avatarUrl)) {
-    lines.push(`PHOTO;VALUE=URI:${esc(profile.avatarUrl)}`)
+    lines.push(`PHOTO;VALUE=URI:${esc(avatarSrc(profile.avatarUrl))}`)
   }
   if (profile.bio) lines.push(`NOTE:${esc(profile.bio)}`)
   lines.push('END:VCARD')

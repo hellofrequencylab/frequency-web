@@ -16,6 +16,7 @@ import { isError, type ActionResult } from '@/lib/action-result'
 import { formatMoney, type CrmStage, type CrmDeal, type CrmActivity } from '@/lib/crm/pipeline'
 import { PIPELINE_LANES, laneMeta, type PipelineLane } from '@/lib/crm/stage-templates'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 const ACTIVITY_META: Record<CrmActivity['kind'], { Icon: typeof StickyNote; label: string }> = {
   note: { Icon: StickyNote, label: 'Note' },
@@ -195,7 +196,7 @@ export function DealDetail({
             {deal.owner && (
               <span className="inline-flex items-center gap-1.5">
                 {deal.owner.avatar_url ? (
-                  <Image src={deal.owner.avatar_url} alt="" width={20} height={20} className="h-5 w-5 rounded-full object-cover" />
+                  <Image src={avatarSrc(deal.owner.avatar_url)} alt="" width={20} height={20} className="h-5 w-5 rounded-full object-cover" style={avatarFocusStyle(deal.owner.avatar_url)} />
                 ) : (
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-2xs font-semibold text-primary-strong">
                     {getInitials(deal.owner.display_name)}

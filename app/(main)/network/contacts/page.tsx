@@ -7,6 +7,7 @@ import { googleImportConfigured } from '@/lib/integrations/google/config'
 import { listContacts, listDueReminders, type ContactSort as ContactSortKey } from '@/lib/connections/store'
 import { findContactMatches } from '@/lib/connections/matching'
 import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { IndexTemplate } from '@/components/templates'
 import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -204,7 +205,7 @@ export default async function ConnectionsPage({
                     // which only allowlists the PUBLIC storage path and would otherwise reject
                     // these (broken avatars) — and re-optimize a new token every request. Matches
                     // the plain <img> used for the card front/back/logo on the detail page.
-                    <Image src={c.avatarUrl} alt="" width={44} height={44} unoptimized className="h-11 w-11 rounded-full object-cover" />
+                    <Image src={avatarSrc(c.avatarUrl)} alt="" width={44} height={44} unoptimized className="h-11 w-11 rounded-full object-cover" style={avatarFocusStyle(c.avatarUrl)} />
                   ) : (
                     <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-elevated text-sm font-semibold text-muted">
                       {getInitials(c.displayName ?? '?')}

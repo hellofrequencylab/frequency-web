@@ -96,8 +96,6 @@ export interface MediaToneInput {
   lightTextLuminance: number
   /** Relative luminance of the dark text option (the on-media-dark token). */
   darkTextLuminance: number
-  /** Readability floor before the scrim turns on. Defaults to MIN_HERO_CONTRAST. */
-  minContrast?: number
 }
 
 export interface MediaToneResult {
@@ -111,14 +109,14 @@ export interface MediaToneResult {
 }
 
 /** The decision: composite the overlay over the sampled media, then pick the text tone with
- *  the better contrast; ask for a scrim when the winner still misses the floor. Pure. */
+ *  the better contrast; ask for a scrim when the winner still misses the floor
+ *  (MIN_HERO_CONTRAST). Pure. */
 export function resolveMediaTone({
   mediaLuminance,
   overlayStyle,
   overlayLuminance,
   lightTextLuminance,
   darkTextLuminance,
-  minContrast = MIN_HERO_CONTRAST,
 }: MediaToneInput): MediaToneResult {
   const alpha = overlayAlphaInTextBand(overlayStyle)
   const effective = overlayLuminance * alpha + mediaLuminance * (1 - alpha)
@@ -128,7 +126,7 @@ export function resolveMediaTone({
   const contrast = useLightText ? lightContrast : darkContrast
   return {
     tone: useLightText ? 'dark' : 'light',
-    scrim: contrast < minContrast,
+    scrim: contrast < MIN_HERO_CONTRAST,
     contrast,
   }
 }
@@ -145,7 +143,6 @@ export async function sampleCoverRegionLuminance(
     containerHeight: number
     /** The cover's focal point ("x% y%"); centered when absent. */
     focus?: string | null
-    region?: RegionFraction
   },
 ): Promise<number | null> {
   if (typeof document === 'undefined') return null
@@ -168,7 +165,7 @@ export async function sampleCoverRegionLuminance(
     const offsetX = (cw - iw * scale) * (fx / 100)
     const offsetY = (ch - ih * scale) * (fy / 100)
 
-    const region = opts.region ?? HERO_TEXT_REGION
+    const region = HERO_TEXT_REGION
     // Container-space region → image-space source rect, clamped to the image bounds.
     const sx0 = Math.max(0, Math.min(iw, (cw * region.x0 - offsetX) / scale))
     const sx1 = Math.max(0, Math.min(iw, (cw * region.x1 - offsetX) / scale))
