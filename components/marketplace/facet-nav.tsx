@@ -10,7 +10,7 @@ const AREAS = [
   { key: 'all', href: '/classifieds', label: 'Classifieds' },
   { key: 'housing', href: '/housing', label: 'Housing' },
   { key: 'makers', href: '/market', label: 'Market' },
-  { key: 'events', href: '/marketplace/events', label: 'Events' },
+  { key: 'events', href: '/events', label: 'Events' },
   { key: 'shop', href: '/store', label: 'Frequency Store' },
 ] as const
 
