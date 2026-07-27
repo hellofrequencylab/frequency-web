@@ -54,8 +54,15 @@ describe('activated marketplace verticals mount into the shared shell', () => {
     const keys = NAV_AREAS.map((a) => a.key)
     expect(keys).toContain('market')
     expect(keys).toContain('housing')
-    expect(keys).toContain('maker')
+    // ADR-868: the maker vertical no longer contributes a rail row — the single
+    // "Marketplace" umbrella row (key 'market', /marketplace) reaches /market via the
+    // last-visited redirect. The vertical stays registered + enabled (asserted above),
+    // so its surface remains crash-proof in the shell; only the nav row is retired.
+    expect(keys).not.toContain('maker')
     expect(keys).toContain('shop')
+    // And the rail order holds: the shop area anchors after housing now that maker is
+    // out of the run (a dangling anchor would APPEND shop after the Admin section).
+    expect(keys.indexOf('shop')).toBe(keys.indexOf('housing') + 1)
   })
 
   it('every marketplace surface in NAV_AREAS still resolves without throwing (the shell path)', () => {
@@ -65,11 +72,12 @@ describe('activated marketplace verticals mount into the shared shell', () => {
     }
   })
 
-  it('verticalNavPlacements emits every active vertical', () => {
+  it('verticalNavPlacements emits every rail-contributing vertical', () => {
     const keys = verticalNavPlacements().map((p) => p.area.key)
     expect(keys).toContain('market')
     expect(keys).toContain('housing')
-    expect(keys).toContain('maker')
+    // maker declares no nav since ADR-868 (see the NAV_AREAS assertion above).
+    expect(keys).not.toContain('maker')
     expect(keys).toContain('shop')
   })
 })

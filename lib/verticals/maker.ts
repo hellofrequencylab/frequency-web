@@ -12,19 +12,12 @@ export const maker: Vertical = {
   // registers the 'maker' surface. Browse + list work today; checkout settles once
   // billing is enabled (Connect destination charge, same path as tips/tickets).
   enabled: true,
-  nav: [
-    {
-      after: 'housing',
-      area: {
-        key: 'maker',
-        href: '/market',
-        label: 'Market',
-        section: 'Community',
-        defaultAccess: 'visitor',
-        surface: 'maker',
-      },
-    },
-  ],
+  // NAV (ADR-868): the Maker market no longer contributes its own rail row. The member menu's
+  // commerce area is just Marketplace + Housing; the single "Marketplace" umbrella row (the
+  // `market` vertical's nav, href /marketplace) reaches this surface via the last-visited
+  // commerce redirect. /market itself, the member footer link, and every page stay live —
+  // only the dedicated left-rail row is retired.
+  nav: [],
   rail: [
     {
       test: (p) => p === '/market' || p.startsWith('/market/'),

@@ -6,12 +6,16 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveSeedOwnerProfileId } from '@/lib/listing-seeder/seed-owner'
 import { rowToListing } from './index'
-import { AMENITIES, PROPERTY_TYPES } from './types'
+import { ACCESSIBILITY_TAGS, AMENITIES, LAUNDRY_OPTIONS, PARKING_OPTIONS, PROPERTY_TYPES } from './types'
 import type {
+  AccessibilityTag,
+  AddressPrecision,
   AmenitySlug,
   HousingDetail,
   HousingType,
+  LaundryOption,
   Listing,
+  ParkingOption,
   PropertyType,
   RoommateMatch,
 } from './types'
@@ -24,6 +28,10 @@ function db(): SupabaseClient {
 
 const PROPERTY_TYPE_SET = new Set<string>(PROPERTY_TYPES.map((p) => p.slug))
 const AMENITY_SET = new Set<string>(AMENITIES.map((a) => a.slug))
+const PARKING_SET = new Set<string>(PARKING_OPTIONS.map((p) => p.slug))
+const LAUNDRY_SET = new Set<string>(LAUNDRY_OPTIONS.map((l) => l.slug))
+const ACCESSIBILITY_SET = new Set<string>(ACCESSIBILITY_TAGS.map((t) => t.slug))
+const ADDRESS_PRECISIONS_SET = new Set<string>(['city', 'neighborhood', 'exact'])
 
 /** Coerce an untrusted string to a valid PropertyType, or null. */
 export function toPropertyType(v: unknown): PropertyType | null {
@@ -38,12 +46,86 @@ export function toAmenities(values: readonly string[]): AmenitySlug[] {
   return [...seen]
 }
 
+/** Coerce an untrusted string to a valid ParkingOption, or null (Tier B, ADR-867). */
+export function toParking(v: unknown): ParkingOption | null {
+  return typeof v === 'string' && PARKING_SET.has(v) ? (v as ParkingOption) : null
+}
+
+/** Coerce an untrusted string to a valid LaundryOption, or null (Tier B, ADR-867). */
+export function toLaundry(v: unknown): LaundryOption | null {
+  return typeof v === 'string' && LAUNDRY_SET.has(v) ? (v as LaundryOption) : null
+}
+
+/** Keep only recognised accessibility tags (deduped, capped to the known list), so a
+ *  tampered form can't smuggle a value past housing_listings_accessibility_vocab. */
+export function toAccessibilityTags(values: readonly unknown[]): AccessibilityTag[] {
+  const seen = new Set<AccessibilityTag>()
+  for (const v of values) {
+    if (typeof v === 'string' && ACCESSIBILITY_SET.has(v)) seen.add(v as AccessibilityTag)
+  }
+  return [...seen]
+}
+
+/** Coerce an untrusted string to a valid AddressPrecision. Anything unrecognised
+ *  falls back to 'city' — the most private choice, matching the DB default. */
+export function toAddressPrecision(v: unknown): AddressPrecision {
+  return typeof v === 'string' && ADDRESS_PRECISIONS_SET.has(v) ? (v as AddressPrecision) : 'city'
+}
+
 export function propertyTypeLabel(slug: string | null): string | null {
   return PROPERTY_TYPES.find((p) => p.slug === slug)?.label ?? null
 }
 
 export function amenityLabel(slug: string): string {
   return AMENITIES.find((a) => a.slug === slug)?.label ?? slug
+}
+
+export function parkingLabel(slug: string | null): string | null {
+  return PARKING_OPTIONS.find((p) => p.slug === slug)?.label ?? null
+}
+
+export function laundryLabel(slug: string | null): string | null {
+  return LAUNDRY_OPTIONS.find((l) => l.slug === slug)?.label ?? null
+}
+
+export function accessibilityLabel(slug: string): string {
+  return ACCESSIBILITY_TAGS.find((t) => t.slug === slug)?.label ?? slug
+}
+
+// ── Address display (Tier B privacy model, ADR-867) ─────────────────────────
+
+/** What a viewer may see of a listing's location. */
+export interface AddressDisplay {
+  /** The coarse place line. Safe EVERYWHERE: page body, cards, meta description,
+   *  and JSON-LD addressLocality. Never contains the street address. */
+  areaLabel: string | null
+  /** The street address. Non-null ONLY when the member chose 'exact' precision AND
+   *  the viewer is signed in. Render in the page body only; never in structured data. */
+  addressLine: string | null
+}
+
+/** Resolve what a listing's location shows, from the member's chosen precision and
+ *  whether the viewer is signed in. PURE — the one place the display rule lives:
+ *    city         → city only
+ *    neighborhood → neighborhood, city
+ *    exact        → neighborhood, city + (signed in ? the street address : nothing)
+ *  Callers building public output (meta, JSON-LD) MUST pass signedIn: false. */
+export function resolveAddressDisplay(input: {
+  precision: AddressPrecision
+  city: string | null
+  neighborhood: string | null
+  addressLine: string | null
+  signedIn: boolean
+}): AddressDisplay {
+  const city = input.city?.trim() || null
+  const neighborhood = input.neighborhood?.trim() || null
+  const areaLabel =
+    input.precision === 'city'
+      ? city
+      : [neighborhood, city].filter(Boolean).join(', ') || null
+  const addressLine =
+    input.precision === 'exact' && input.signedIn ? input.addressLine?.trim() || null : null
+  return { areaLabel, addressLine }
 }
 
 function rowToHousingDetail(r: Record<string, unknown>): HousingDetail {
@@ -66,6 +148,15 @@ function rowToHousingDetail(r: Record<string, unknown>): HousingDetail {
     amenities: toAmenities((r.amenities as string[] | null) ?? []),
     smokingOk: (r.smoking_ok as boolean) ?? null,
     cannabisOk: (r.cannabis_ok as boolean) ?? null,
+    parking: toParking(r.parking),
+    laundry: toLaundry(r.laundry),
+    bathroomsShared: (r.bathrooms_shared as boolean) ?? null,
+    moveInCostsCents: (r.move_in_costs_cents as number) ?? null,
+    minStayMonths: (r.min_stay_months as number) ?? null,
+    maxOccupants: (r.max_occupants as number) ?? null,
+    accessibility: toAccessibilityTags(Array.isArray(r.accessibility) ? r.accessibility : []),
+    addressPrecision: toAddressPrecision(r.address_precision),
+    addressLine: (r.address_line as string) ?? null,
     details: (r.details as Record<string, unknown>) ?? {},
     preferences: (r.preferences as Record<string, unknown>) ?? {},
   }
@@ -89,11 +180,34 @@ export interface HousingDetailInput {
   amenities?: AmenitySlug[]
   smokingOk?: boolean | null
   cannabisOk?: boolean | null
+  parking?: ParkingOption | null
+  laundry?: LaundryOption | null
+  bathroomsShared?: boolean | null
+  moveInCostsCents?: number | null
+  minStayMonths?: number | null
+  maxOccupants?: number | null
+  accessibility?: AccessibilityTag[]
+  addressPrecision?: AddressPrecision
+  addressLine?: string | null
   details?: Record<string, unknown>
   preferences?: Record<string, unknown>
 }
 
+/** A positive integer, or null — the write-side clamp for the Tier B counts/amounts. */
+function posInt(v: number | null | undefined): number | null {
+  return typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.round(v) : null
+}
+
 export async function upsertHousingDetail(listingId: string, input: HousingDetailInput): Promise<void> {
+  // Belt-and-braces server-side validation for the Tier B fields (the DB CHECKs are
+  // the backstop): enums re-whitelisted, numbers clamped positive, accessibility
+  // capped to the known tags, and address_line stored ONLY when the member chose
+  // 'exact' precision — a leftover address under a coarser setting is a leak waiting
+  // for a display bug, so it never lands in the row at all.
+  const addressPrecision = toAddressPrecision(input.addressPrecision)
+  const addressLine =
+    addressPrecision === 'exact' ? input.addressLine?.trim().slice(0, 200) || null : null
+
   // Cast to a loose row: the new Phase-2 columns are intentionally absent from the
   // generated types (ADR-246 — database.types.ts is never regenerated here).
   const row: Record<string, unknown> = {
@@ -115,6 +229,15 @@ export async function upsertHousingDetail(listingId: string, input: HousingDetai
     amenities: input.amenities ?? [],
     smoking_ok: input.smokingOk ?? null,
     cannabis_ok: input.cannabisOk ?? null,
+    parking: toParking(input.parking),
+    laundry: toLaundry(input.laundry),
+    bathrooms_shared: input.bathroomsShared ?? null,
+    move_in_costs_cents: posInt(input.moveInCostsCents),
+    min_stay_months: posInt(input.minStayMonths),
+    max_occupants: posInt(input.maxOccupants),
+    accessibility: toAccessibilityTags(input.accessibility ?? []),
+    address_precision: addressPrecision,
+    address_line: addressLine,
     details: input.details ?? {},
     preferences: input.preferences ?? {},
   }

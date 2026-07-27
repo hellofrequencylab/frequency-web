@@ -18,7 +18,10 @@ export const shop: Vertical = {
   enabled: true,
   nav: [
     {
-      after: 'maker',
+      // Anchored after 'housing' since ADR-868 retired the maker rail row (the old anchor);
+      // a missing anchor would APPEND this area after the Admin section and fork a second
+      // "Community" header (composeNavAreas groups by consecutive section runs).
+      after: 'housing',
       area: {
         key: 'shop',
         href: '/store',

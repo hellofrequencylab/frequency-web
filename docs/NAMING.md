@@ -254,6 +254,11 @@
 
 ## Connection layer
 
+- **Members** = the member directory (`/network`), the sidebar row included (ADR-868; the row
+  was previously labeled "Community", which collided with the section header above it and with
+  the brand's "The Community"). "Members" names the directory of people; it is not a synonym
+  for the community itself, and the generic lowercase "member" (a person on the platform)
+  is unchanged. My Contacts (`/network/contacts`) stays its own row.
 - Resonance, Inner/Middle/Outer orbit, Pulse, Near Misses, Frequency Signature: unchanged.
 - **Circle Current: RETIRED as a reward mechanic (Rewards Economy v3, ADR-305).** It was a
   circle's collective, non-competitive seasonal standing (internal column
@@ -386,16 +391,23 @@ they must read as one idea on the event page:
 - **Retired:** the ADR-552 "no third vocabulary / no tier names" lock (this ADR reintroduces named tiers);
   the flat single-Business $49 model (ADR-590, grandfathered).
 
-## Marketplace & Commerce (ADR-596, July 2026)
+## Marketplace & Commerce (ADR-596, July 2026; umbrella revived by ADR-868)
 
-The four consumer commerce surfaces. **Member-facing names + public routes are canonical; the
-internal vertical ids stay stable** (a documented mismatch: internal id ≠ member label, to avoid
-data churn — see ADR-596 §6 and the collision guard below).
+The four consumer commerce surfaces, plus their umbrella. **Member-facing names + public routes
+are canonical; the internal vertical ids stay stable** (a documented mismatch: internal id ≠
+member label, to avoid data churn — see ADR-596 §6 and the collision guard below).
 
+- **Marketplace** = the member-facing commerce **UMBRELLA** — revived by founder decision
+  (ADR-868; ADR-596 had retired the word). It names exactly two things: the single commerce
+  menu row in the member sidebar / mobile spine, and the `/marketplace` landing redirect
+  (last-visited surface via the `commerce_last` cookie, default Classifieds), plus the pinned
+  "Marketplace > …" breadcrumb trail over the four surfaces. It is **never** the name of a
+  surface: the four surfaces keep their own names below. "Marketplace" ≠ "Market."
 - **Classifieds** = the peer board: members post **offer / free / lend / request** listings,
   connect-only (no in-app money, contact via DM). Free members and up. Route `/classifieds`.
   Internal vertical id stays `market`; table stays `market_listings`. **Supersedes "General
-  Marketplace" / "Marketplace"** as the name for this surface.
+  Marketplace"** as the name for this surface — and note ADR-868: "Marketplace" now names the
+  umbrella above, never this board.
 - **Market** = the **umbrella commerce surface** grouped by type (**Products · Services ·
   Tickets**), aggregating listings across every Space and every paid member. One browse surface,
   typed rails + curated collections, unified search. Route `/market`. Internal vertical id stays
@@ -423,6 +435,9 @@ Commerce item vocabulary (one `commerce_products` row, discriminated by `type`):
 - Reserved item types (schema-only, no surface yet): `digital`, `membership`.
 
 Collision guards:
+- **"Marketplace"**: umbrella ONLY (ADR-868) — the sidebar/spine menu row, the `/marketplace`
+  landing redirect, and the pinned breadcrumb trail. Never a surface name, never a synonym for
+  Market or Classifieds, and never a heading on any of the four surfaces themselves.
 - **"Shop"**: the per-Space storefront **tab** (member word, renameable). The first-party retail
   vertical is **Frequency Store**, never "Shop." The management console is the **Shop console**.
 - **"Market"**: the umbrella commerce surface (id `maker`), never the peer board. The peer board is

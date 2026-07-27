@@ -61,7 +61,7 @@ function asCallouts(v: unknown): CircleCallout[] {
 }
 
 const TEMPLATE_COLS =
-  'id, slug, name, primary_pillar, identity, audience, card, one_liner, about, pillars_inside, meetup, gathering, thread, format, size_label, agreements, recommended_journey_pillar, remix_options, callouts, image_url, is_active, display_order'
+  'id, slug, name, primary_pillar, identity, audience, card, one_liner, about, pillars_inside, meetup, gathering, thread, format, size_label, agreements, recommended_journey_pillar, remix_options, callouts, image_url, is_active, display_order, owner_space_id'
 
 export function rowToTemplate(row: Record<string, unknown>): CircleTemplate {
   return {
@@ -87,6 +87,7 @@ export function rowToTemplate(row: Record<string, unknown>): CircleTemplate {
     imageUrl: row.image_url == null ? null : String(row.image_url),
     isActive: Boolean(row.is_active),
     displayOrder: typeof row.display_order === 'number' ? row.display_order : 0,
+    ownerSpaceId: row.owner_space_id == null ? null : String(row.owner_space_id),
   }
 }
 

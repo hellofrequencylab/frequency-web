@@ -16,12 +16,15 @@ describe('vertical registry (ADR-250 step 3/4)', () => {
 
   it('composes declared nav into NAV_AREAS at the anchored position', () => {
     const keys = NAV_AREAS.map((a) => a.key)
-    // Marketplace is contributed by the descriptor, anchored after 'events'.
+    // The commerce umbrella row is contributed by the descriptor, anchored after 'events'.
     expect(keys).toContain('market')
     expect(keys.indexOf('market')).toBe(keys.indexOf('events') + 1)
-    // And it carries through with its declared shape.
+    // And it carries through with its declared shape: since ADR-868 the id-`market` row IS
+    // the "Marketplace" umbrella (menu row + /marketplace landing redirect only — the
+    // surfaces keep their own names, Classifieds included).
     const market = NAV_AREAS.find((a) => a.key === 'market')
-    expect(market?.label).toBe('Classifieds')
+    expect(market?.label).toBe('Marketplace')
+    expect(market?.href).toBe('/marketplace')
     expect(market?.section).toBe('Community')
     expect(verticalNavAreas().some((a) => a.key === 'market')).toBe(true)
   })

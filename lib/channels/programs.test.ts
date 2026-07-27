@@ -15,6 +15,11 @@ import { join } from 'node:path'
 //   5. SOURCE-SHAPE catalog guard: the two circle_templates LIST reads filter
 //      owner_space_id IS NULL (exactly two .is calls), so a Program blueprint
 //      can never surface in the global Starter Circles rail.
+//   6. The ADR-869 editor operations: updateSpaceProgram patches channel +
+//      blueprint copy together (slug untouched) and refuses a foreign Program;
+//      setProgramPaused flips is_active only for the owner; and
+//      refreshProgramBlueprint rewrites the blueprint from an owned live
+//      circle, refusing drafts and foreign circles, touching no Chapter.
 
 const SPACE = 'aaaaaaaa-0000-4000-a000-000000space1'
 const OTHER_SPACE = 'bbbbbbbb-0000-4000-a000-00000space2'
@@ -34,6 +39,8 @@ const state = {
   circleProfiles: [] as Row[], // circle_profiles
   inserts: [] as Array<{ table: string; row: Row }>,
   updates: [] as Array<{ table: string; patch: Row }>,
+  deletes: [] as Array<{ table: string }>,
+  failNextInsert: null as string | null, // table name whose next insert errors
   seq: 0,
 }
 
@@ -49,6 +56,7 @@ function builder(table: string) {
   const filters: Array<(r: Row) => boolean> = []
   let pendingInsert: Row[] | null = null
   let pendingUpdate: Row | null = null
+  let pendingDelete = false
   let orderBy: { col: string; asc: boolean } | null = null
   const matching = () => {
     let rows = rowsOf(table).filter((r) => filters.every((f) => f(r)))
@@ -58,8 +66,13 @@ function builder(table: string) {
     }
     return rows
   }
-  async function exec(): Promise<{ data: Row[] | null; error: null }> {
+  async function exec(): Promise<{ data: Row[] | null; error: { message: string } | null }> {
     if (pendingInsert) {
+      if (state.failNextInsert === table) {
+        state.failNextInsert = null
+        pendingInsert = null
+        return { data: null, error: { message: `${table} insert failed (injected)` } }
+      }
       const inserted = pendingInsert.map((r) => ({ id: `${table}-${(state.seq += 1)}`, ...r }))
       pendingInsert = null
       for (const row of inserted) {
@@ -67,6 +80,15 @@ function builder(table: string) {
         rowsOf(table).push(row)
       }
       return { data: inserted, error: null }
+    }
+    if (pendingDelete) {
+      pendingDelete = false
+      const doomed = matching()
+      const keep = rowsOf(table).filter((r) => !doomed.includes(r))
+      rowsOf(table).length = 0
+      rowsOf(table).push(...keep)
+      state.deletes.push({ table })
+      return { data: doomed, error: null }
     }
     if (pendingUpdate) {
       const patch = pendingUpdate
@@ -105,16 +127,21 @@ function builder(table: string) {
       pendingUpdate = patch
       return api
     },
+    delete() {
+      pendingDelete = true
+      return api
+    },
     async maybeSingle() {
       const { data } = await exec()
       return { data: data?.[0] ?? null, error: null }
     },
     async single() {
-      const { data } = await exec()
+      const { data, error } = await exec()
+      if (error) return { data: null, error }
       const row = data?.[0] ?? null
       return { data: row, error: row ? null : { message: 'no rows' } }
     },
-    then<T>(resolve: (r: { data: Row[] | null; error: null }) => T): Promise<T> {
+    then<T>(resolve: (r: { data: Row[] | null; error: { message: string } | null }) => T): Promise<T> {
       return exec().then(resolve)
     },
   }
@@ -135,6 +162,9 @@ import {
   rankChaptersNear,
   startChapter,
   createSpaceProgram,
+  updateSpaceProgram,
+  setProgramPaused,
+  refreshProgramBlueprint,
   type ChapterSummary,
 } from './programs'
 
@@ -170,6 +200,8 @@ beforeEach(() => {
   state.circleProfiles = []
   state.inserts = []
   state.updates = []
+  state.deletes = []
+  state.failNextInsert = null
   state.seq = 0
   remixMock.mockReset()
 })
@@ -267,6 +299,14 @@ describe('startChapter', () => {
     expect(remixMock).not.toHaveBeenCalled()
   })
 
+  it('refuses a retired (inactive) Program channel, the review fix (ADR-865)', async () => {
+    state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.is_active = false
+    await expect(startChapter({ channelId: PROGRAM_CHANNEL, profileId: PROFILE })).rejects.toThrow(
+      /not taking new Chapters/,
+    )
+    expect(remixMock).not.toHaveBeenCalled()
+  })
+
   it('remixes the blueprint and stamps the draft into the Program channel', async () => {
     remixMock.mockImplementation(async ({ templateId }: { templateId: string }) => {
       expect(templateId).toBe(TEMPLATE)
@@ -282,6 +322,9 @@ describe('startChapter', () => {
 
 describe('createSpaceProgram', () => {
   beforeEach(() => {
+    // The global seed gives SPACE a Program; these tests create one, so the
+    // seeded Program moves to another owner (one Program per Space, ADR-865).
+    state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.owner_space_id = OTHER_SPACE
     state.circles = [
       {
         id: FLAGSHIP,
@@ -305,6 +348,36 @@ describe('createSpaceProgram', () => {
         remix_options: ['Evening edition'],
       },
     ]
+  })
+
+  it('refuses a Space that already runs a Program, writing nothing (ADR-865)', async () => {
+    state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.owner_space_id = SPACE
+    await expect(
+      createSpaceProgram({
+        spaceId: SPACE,
+        profileId: PROFILE,
+        name: 'Meld Again',
+        oneLiner: 'A second one.',
+        sourceCircleId: FLAGSHIP,
+      }),
+    ).rejects.toThrow(/already runs a Program/)
+    expect(state.inserts).toHaveLength(0)
+  })
+
+  it('deletes the orphaned blueprint when the channel insert fails (ADR-865)', async () => {
+    state.failNextInsert = 'topical_channels'
+    await expect(
+      createSpaceProgram({
+        spaceId: SPACE,
+        profileId: PROFILE,
+        name: 'Meld',
+        oneLiner: 'Community coworking.',
+        sourceCircleId: FLAGSHIP,
+      }),
+    ).rejects.toThrow(/insert failed/)
+    // The blueprint went in first, then was cleaned up: nothing public survives.
+    expect(state.deletes).toContainEqual({ table: 'circle_templates' })
+    expect(state.templates).toHaveLength(0)
   })
 
   it('refuses a circle owned by another Space, writing nothing', async () => {
@@ -406,6 +479,195 @@ describe('createSpaceProgram', () => {
   })
 })
 
+// ── The ADR-869 editor operations. The global seed already gives SPACE the
+//    Program channel (PROGRAM_CHANNEL → TEMPLATE); these add the blueprint row
+//    it points at, so the copy-sync writes have something to land on. ──
+
+function seedBlueprintRow() {
+  state.templates = [
+    {
+      id: TEMPLATE,
+      slug: 'meld',
+      name: 'Meld',
+      one_liner: 'Community coworking',
+      card: 'Community coworking',
+      identity: 'Community coworking',
+      about: 'The old snapshot.',
+      primary_pillar: 'mind',
+      meetup: { text: 'Mondays' },
+      owner_space_id: SPACE,
+      is_active: true,
+    },
+  ]
+}
+
+describe('updateSpaceProgram (ADR-869)', () => {
+  beforeEach(seedBlueprintRow)
+
+  it('refuses a Program another Space runs, writing nothing', async () => {
+    await expect(
+      updateSpaceProgram({
+        spaceId: OTHER_SPACE,
+        profileId: PROFILE,
+        channelId: PROGRAM_CHANNEL,
+        patch: { name: 'Hijack' },
+      }),
+    ).rejects.toThrow(/different Space/)
+    expect(state.updates).toHaveLength(0)
+  })
+
+  it('refuses a channel that is not a Program', async () => {
+    await expect(
+      updateSpaceProgram({
+        spaceId: SPACE,
+        profileId: PROFILE,
+        channelId: PLAIN_CHANNEL,
+        patch: { name: 'Nope' },
+      }),
+    ).rejects.toThrow(/does not run a Program/)
+    expect(state.updates).toHaveLength(0)
+  })
+
+  it('patches the channel AND the blueprint copy together; the slug never moves', async () => {
+    await updateSpaceProgram({
+      spaceId: SPACE,
+      profileId: PROFILE,
+      channelId: PROGRAM_CHANNEL,
+      patch: { name: 'Meld 2.0', oneLiner: 'Coworking, sharper.' },
+    })
+
+    const channel = state.channels.find((c) => c.id === PROGRAM_CHANNEL)!
+    expect(channel).toMatchObject({ name: 'Meld 2.0', description: 'Coworking, sharper.' })
+    // Links keep working: the slug is untouched by a rename.
+    expect(channel.slug).toBe('meld')
+
+    // The blueprint's display copy follows the same patch.
+    const blueprint = state.templates.find((t) => t.id === TEMPLATE)!
+    expect(blueprint).toMatchObject({
+      name: 'Meld 2.0',
+      one_liner: 'Coworking, sharper.',
+      card: 'Coworking, sharper.',
+      identity: 'Coworking, sharper.',
+    })
+    // The snapshot content is NOT the copy patch's business.
+    expect(blueprint.about).toBe('The old snapshot.')
+    expect(state.updates.map((u) => u.table).sort()).toEqual(['circle_templates', 'topical_channels'])
+  })
+
+  it('a cover-only patch touches the channel row alone', async () => {
+    await updateSpaceProgram({
+      spaceId: SPACE,
+      profileId: PROFILE,
+      channelId: PROGRAM_CHANNEL,
+      patch: { coverImage: 'https://cdn.example/meld.jpg' },
+    })
+    expect(state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.cover_image).toBe('https://cdn.example/meld.jpg')
+    expect(state.updates.map((u) => u.table)).toEqual(['topical_channels'])
+  })
+})
+
+describe('setProgramPaused (ADR-869)', () => {
+  it('refuses a Program another Space runs, writing nothing', async () => {
+    await expect(
+      setProgramPaused({ spaceId: OTHER_SPACE, profileId: PROFILE, channelId: PROGRAM_CHANNEL, paused: true }),
+    ).rejects.toThrow(/different Space/)
+    expect(state.updates).toHaveLength(0)
+    expect(state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.is_active).toBe(true)
+  })
+
+  it('pause flips is_active off, resume flips it back on', async () => {
+    await setProgramPaused({ spaceId: SPACE, profileId: PROFILE, channelId: PROGRAM_CHANNEL, paused: true })
+    expect(state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.is_active).toBe(false)
+    // While paused, the switch startChapter respects (ADR-865) is engaged.
+    await expect(startChapter({ channelId: PROGRAM_CHANNEL, profileId: PROFILE })).rejects.toThrow(
+      /not taking new Chapters/,
+    )
+    await setProgramPaused({ spaceId: SPACE, profileId: PROFILE, channelId: PROGRAM_CHANNEL, paused: false })
+    expect(state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.is_active).toBe(true)
+  })
+})
+
+describe('refreshProgramBlueprint (ADR-869)', () => {
+  beforeEach(() => {
+    seedBlueprintRow()
+    state.circles = [
+      {
+        id: FLAGSHIP,
+        space_id: SPACE,
+        status: 'active',
+        about: 'The new way we work together.',
+        primary_pillar: 'body',
+        topical_channel_id: PROGRAM_CHANNEL,
+      },
+    ]
+    state.circleProfiles = [
+      {
+        circle_id: FLAGSHIP,
+        meetup: { text: 'Thursdays', length: '2 hours' },
+        gathering: { text: 'Monthly demo night' },
+        agreements: ['Ship something'],
+        pillars_inside: { mind: 'Focus blocks' },
+        format: 'Build sessions',
+        size_label: '6 to 10',
+        thread: 'Demo photos',
+        remix_options: ['Morning edition'],
+      },
+    ]
+  })
+
+  it('refuses a draft circle, leaving the blueprint untouched', async () => {
+    state.circles[0].status = 'draft'
+    await expect(
+      refreshProgramBlueprint({ spaceId: SPACE, profileId: PROFILE, channelId: PROGRAM_CHANNEL, sourceCircleId: FLAGSHIP }),
+    ).rejects.toThrow(/Publish the Circle first/)
+    expect(state.updates).toHaveLength(0)
+    expect(state.templates[0].about).toBe('The old snapshot.')
+  })
+
+  it('refuses a circle owned by another Space', async () => {
+    state.circles[0].space_id = OTHER_SPACE
+    await expect(
+      refreshProgramBlueprint({ spaceId: SPACE, profileId: PROFILE, channelId: PROGRAM_CHANNEL, sourceCircleId: FLAGSHIP }),
+    ).rejects.toThrow(/Pick a Circle this Space runs/)
+    expect(state.updates).toHaveLength(0)
+  })
+
+  it('refuses a Program another Space runs before ever reading the circle', async () => {
+    await expect(
+      refreshProgramBlueprint({ spaceId: OTHER_SPACE, profileId: PROFILE, channelId: PROGRAM_CHANNEL, sourceCircleId: FLAGSHIP }),
+    ).rejects.toThrow(/different Space/)
+    expect(state.updates).toHaveLength(0)
+  })
+
+  it('rewrites the blueprint snapshot in place; display copy and Chapters stay put', async () => {
+    await refreshProgramBlueprint({
+      spaceId: SPACE,
+      profileId: PROFILE,
+      channelId: PROGRAM_CHANNEL,
+      sourceCircleId: FLAGSHIP,
+    })
+
+    const blueprint = state.templates.find((t) => t.id === TEMPLATE)!
+    expect(blueprint).toMatchObject({
+      about: 'The new way we work together.',
+      primary_pillar: 'body',
+      meetup: { text: 'Thursdays', length: '2 hours' },
+      gathering: { text: 'Monthly demo night' },
+      agreements: ['Ship something'],
+      pillars_inside: { mind: 'Focus blocks' },
+      format: 'Build sessions',
+      size_label: '6 to 10',
+      thread: 'Demo photos',
+      remix_options: ['Morning edition'],
+    })
+    // Display copy is updateSpaceProgram's job, not the refresh's.
+    expect(blueprint).toMatchObject({ name: 'Meld', one_liner: 'Community coworking' })
+    // Only the blueprint row moved: existing Chapters (circles) are untouched.
+    expect(state.updates.map((u) => u.table)).toEqual(['circle_templates'])
+    expect(state.circles[0].topical_channel_id).toBe(PROGRAM_CHANNEL)
+  })
+})
+
 describe('catalog guard (source shape): Program blueprints never reach the Starter Circles rail', () => {
   it('the two circle_templates LIST reads filter owner_space_id IS NULL; single reads stay open for Remix', () => {
     const src = readFileSync(join(__dirname, '..', 'circles', 'templates-data.ts'), 'utf8')
@@ -415,5 +677,18 @@ describe('catalog guard (source shape): Program blueprints never reach the Start
     expect(src.match(/\.is\('owner_space_id', null\)/g)?.length).toBe(2)
     const singles = src.slice(src.indexOf('export async function getTemplateById'))
     expect(singles).not.toContain(".is('owner_space_id', null)")
+  })
+})
+
+describe('blueprint exposure guards (source shape, ADR-865): owned blueprints never render or claim as Starters', () => {
+  const root = join(__dirname, '..', '..')
+  it('the public Starter preview 404s an owned blueprint', () => {
+    const src = readFileSync(join(root, 'app', '(main)', 'circles', 'starter', '[slug]', 'page.tsx'), 'utf8')
+    expect(src).toMatch(/!t\.isActive \|\| t\.ownerSpaceId\) notFound\(\)/)
+  })
+  it('the open remix action refuses an owned blueprint', () => {
+    const src = readFileSync(join(root, 'app', '(main)', 'circles', 'remix-actions.ts'), 'utf8')
+    expect(src).toContain('template.ownerSpaceId')
+    expect(src).toMatch(/belongs to a Program/)
   })
 })

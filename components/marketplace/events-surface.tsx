@@ -18,23 +18,22 @@ import { EventConnectors } from '@/components/events/event-connectors'
 import type { EventsIndexData } from '@/app/(main)/events/index-data'
 import { resolveHeaderElement } from '@/lib/elements/header'
 
-// EVENTS SURFACE — the ONE Marketplace events composition, rendered at BOTH /events (the member's
-// own events home) and /marketplace/events (the Events tab of the commerce hub). It is the same
-// hero search bar (instant client filter over the loaded list), the uncarded MarketplaceBar, one
-// UnderlineTabs sub-menu (All + event categories) with the density control, an InstantGrid of
-// EventCard, and the shared MarketplaceGuide. It reuses the SAME data + card the two routes already
-// load (getEventsIndexData + EventCard); no business logic is duplicated. Parameterized by `basePath`
-// (the category-tab hrefs, the clear-filters link, the empty-state links) and an optional `actions`
-// slot (the member's Add Event / Manage / My drafts cluster on their own /events home; the commerce
-// tab passes none). Server component; semantic tokens only, no em or en dashes.
+// EVENTS SURFACE — the ONE events composition, rendered at /events (the member's events home and
+// the commerce hub's Events tab in one; the duplicate /marketplace/events twin was retired by
+// ADR-866 and 308-redirects here). It is the hero search bar (instant client filter over the
+// loaded list), the uncarded MarketplaceBar, one UnderlineTabs sub-menu (All + event categories)
+// with the density control, an InstantGrid of EventCard, and the shared MarketplaceGuide. It
+// reuses the SAME data + card the route already loads (getEventsIndexData + EventCard); no
+// business logic is duplicated. Parameterized by `basePath` (the category-tab hrefs, the
+// clear-filters link, the empty-state links) and an optional `actions` slot (the member's Add
+// Event / Manage / My drafts cluster). Server component; semantic tokens only, no em or en dashes.
 
 // Coded hero fallback, matching the /events banner when no operator hero is set.
 const HERO_FALLBACK = '/images/site/community-dinner.jpg'
 
-// The default hero copy — shared by BOTH /events and /marketplace/events so the two surfaces render
-// one identical header. "Events near you" is the keyword-forward H1 (the phrase people actually
+// The default hero copy. "Events near you" is the keyword-forward H1 (the phrase people actually
 // search, EVENTS AIO / CONTENT-VOICE §8a): the hero title IS the page H1 (MarketHero), and /events
-// is the canonical URL both routes consolidate to.
+// is the one canonical events URL (ADR-866).
 const HERO_DEFAULT_EYEBROW = 'Events'
 const HERO_DEFAULT_TITLE = 'Events near you'
 const HERO_DEFAULT_SUBTITLE =
@@ -51,14 +50,14 @@ export async function EventsSurface({
 }: {
   data: EventsIndexData
   /** Roots every category-tab href, the clear-filters link, and the empty-state links. */
-  basePath: '/events' | '/marketplace/events'
+  basePath: '/events'
   /** The active category facet value (from the URL), highlighting its tab. */
   activeCategory?: string
   /** The member-actions cluster (Add Event / Manage / My drafts), rendered in the hero. Omit on the
    *  commerce tab, where these host actions do not belong. */
   actions?: React.ReactNode
-  /** Hero copy. Defaults to the marketplace framing so /marketplace/events is unchanged; /events
-   *  passes a keyword-forward, on-canon H1 (the hero title IS the page H1, MarketHero). */
+  /** Hero copy. Defaults to the keyword-forward, on-canon H1 (the hero title IS the page H1,
+   *  MarketHero). */
   heroEyebrow?: string
   heroTitle?: string
   heroSubtitle?: string

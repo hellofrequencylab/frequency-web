@@ -130,6 +130,12 @@ const nextConfig: NextConfig = {
       // but keep the bare rule explicit so the pair reads like the other retired routes.
       { source: '/marketplace/housing', destination: '/housing', permanent: true },
       { source: '/marketplace/housing/:path*', destination: '/housing/:path*', permanent: true },
+      // Events namespace merge (ADR-866, closing ADR-862's flagged follow-up): the commerce
+      // hub's Events tab was a literal twin of /events (same data, same surface, canonical
+      // already pointed here), so the duplicate route is retired and everything lands on the
+      // one events home. Permanent (308), same shape as the housing pair above.
+      { source: '/marketplace/events', destination: '/events', permanent: true },
+      { source: '/marketplace/events/:path*', destination: '/events/:path*', permanent: true },
     ]
   },
   images: {

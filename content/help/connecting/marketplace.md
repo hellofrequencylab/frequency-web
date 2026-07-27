@@ -3,7 +3,7 @@ title: Buying, selling & sharing
 description: Swap and share with neighbors, plus housing, the community Market, and the Frequency Store.
 category: connecting
 order: 5
-updated: 2026-07-12
+updated: 2026-07-27
 audience: member
 featureKeys: [marketplace]
 status: published
@@ -88,3 +88,8 @@ card until someone claims it.
 
 Distance sorting works from your device location and shows only an approximate distance.
 Frequency never publishes your exact address or a listing's precise coordinates.
+
+Housing listings add one more dial: **address precision**. Your listing shows the city by
+default. You can choose to add the neighborhood, or share the street address, and the street
+address is only ever shown to signed-in members. Search engines and link previews always get
+the city, nothing closer.

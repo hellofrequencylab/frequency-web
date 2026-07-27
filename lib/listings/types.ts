@@ -8,6 +8,21 @@ export type ListingStatus = 'active' | 'claimed' | 'closed'
 export type HousingType = 'rental' | 'roommate' | 'sublet' | 'roommate_wanted' | 'housing_wanted'
 export type RoomType = 'private_room' | 'shared_room' | 'entire_place'
 export type PropertyType = 'house' | 'apartment' | 'studio' | 'condo' | 'townhouse' | 'room' | 'other'
+// Tier B facts (migration 20270111000000, ADR-867). All facts about the HOME,
+// never about who should apply (fair housing).
+export type ParkingOption = 'none' | 'street' | 'driveway' | 'garage'
+export type LaundryOption = 'none' | 'in_unit' | 'on_site' | 'nearby'
+export type AccessibilityTag =
+  | 'step_free'
+  | 'elevator'
+  | 'ground_floor'
+  | 'wide_doorways'
+  | 'roll_in_shower'
+  | 'grab_bars'
+  | 'accessible_parking'
+/** How much of the location a listing shows. The member picks; 'exact' reveals the
+ *  street address to signed-in viewers only, never to crawlers or structured data. */
+export type AddressPrecision = 'city' | 'neighborhood' | 'exact'
 
 // Pure data (no server imports) so client forms can render the pickers directly.
 // The DB CHECKs in migration 20261129000000 are the source of truth for the slugs.
@@ -59,6 +74,48 @@ export const AMENITIES: readonly { slug: AmenitySlug; label: string }[] = [
   { slug: 'wheelchair_accessible', label: 'Wheelchair accessible' },
 ]
 
+/** Parking options with member-facing labels, in lockstep with the DB CHECK
+ *  (migration 20270111000000). */
+export const PARKING_OPTIONS: readonly { slug: ParkingOption; label: string }[] = [
+  { slug: 'none', label: 'No parking' },
+  { slug: 'street', label: 'Street parking' },
+  { slug: 'driveway', label: 'Driveway' },
+  { slug: 'garage', label: 'Garage' },
+]
+
+/** Laundry options with member-facing labels, in lockstep with the DB CHECK
+ *  (migration 20270111000000). */
+export const LAUNDRY_OPTIONS: readonly { slug: LaundryOption; label: string }[] = [
+  { slug: 'none', label: 'No laundry' },
+  { slug: 'in_unit', label: 'In unit' },
+  { slug: 'on_site', label: 'On site' },
+  { slug: 'nearby', label: 'Laundromat nearby' },
+]
+
+/** Accessibility tag set with member-facing labels, in lockstep with the DB CHECK
+ *  housing_listings_accessibility_vocab (migration 20270111000000). */
+export const ACCESSIBILITY_TAGS: readonly { slug: AccessibilityTag; label: string }[] = [
+  { slug: 'step_free', label: 'Step-free entry' },
+  { slug: 'elevator', label: 'Elevator' },
+  { slug: 'ground_floor', label: 'Ground floor' },
+  { slug: 'wide_doorways', label: 'Wide doorways' },
+  { slug: 'roll_in_shower', label: 'Roll-in shower' },
+  { slug: 'grab_bars', label: 'Grab bars' },
+  { slug: 'accessible_parking', label: 'Accessible parking' },
+]
+
+/** Address precision choices for the Privacy section of the listing form. The hint
+ *  is the honest one-liner under each option; no em dashes (voice canon). */
+export const ADDRESS_PRECISIONS: readonly { slug: AddressPrecision; label: string; hint: string }[] = [
+  { slug: 'city', label: 'City only', hint: 'The listing shows just the city.' },
+  { slug: 'neighborhood', label: 'Neighborhood and city', hint: 'Adds the neighborhood to the city.' },
+  {
+    slug: 'exact',
+    label: 'Exact address for signed-in members',
+    hint: 'Signed-in members see the street address. Search engines and previews never do.',
+  },
+]
+
 export interface Listing {
   id: string
   vertical: ListingVertical
@@ -104,6 +161,20 @@ export interface HousingDetail {
   amenities: AmenitySlug[]
   smokingOk: boolean | null
   cannabisOk: boolean | null
+  // Tier B attributes (migration 20270111000000, ADR-867).
+  parking: ParkingOption | null
+  laundry: LaundryOption | null
+  bathroomsShared: boolean | null
+  /** Total move-in cost beyond the deposit (first/last, fees), in cents. */
+  moveInCostsCents: number | null
+  minStayMonths: number | null
+  maxOccupants: number | null
+  accessibility: AccessibilityTag[]
+  /** Member-chosen location granularity; render through resolveAddressDisplay. */
+  addressPrecision: AddressPrecision
+  /** Street address. Shown ONLY when addressPrecision is 'exact' AND the viewer is
+   *  signed in; NEVER in JSON-LD, meta tags, or the sitemap. */
+  addressLine: string | null
   details: Record<string, unknown>
   preferences: Record<string, unknown>
 }

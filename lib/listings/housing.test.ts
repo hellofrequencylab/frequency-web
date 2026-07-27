@@ -1,15 +1,20 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { AMENITIES, PROPERTY_TYPES } from './types'
+import { ACCESSIBILITY_TAGS, AMENITIES, LAUNDRY_OPTIONS, PARKING_OPTIONS, PROPERTY_TYPES } from './types'
 import {
   amenityLabel,
   fitChips,
   matchRoommateSeekers,
   propertyTypeLabel,
+  resolveAddressDisplay,
   sanitizeSeekerPreferences,
   seekerPreferencesToLifestyle,
+  toAccessibilityTags,
+  toAddressPrecision,
   toAmenities,
+  toLaundry,
+  toParking,
   toPropertyType,
 } from './housing'
 
@@ -36,6 +41,19 @@ const DB_AMENITIES = [
   'wheelchair_accessible',
 ]
 
+// Tier B vocabularies (migration 20270111000000, ADR-867).
+const DB_PARKING = ['none', 'street', 'driveway', 'garage']
+const DB_LAUNDRY = ['none', 'in_unit', 'on_site', 'nearby']
+const DB_ACCESSIBILITY = [
+  'step_free',
+  'elevator',
+  'ground_floor',
+  'wide_doorways',
+  'roll_in_shower',
+  'grab_bars',
+  'accessible_parking',
+]
+
 describe('housing controlled vocabularies', () => {
   it('property types match the DB CHECK slug set', () => {
     expect(new Set(PROPERTY_TYPES.map((p) => p.slug))).toEqual(new Set(DB_PROPERTY_TYPES))
@@ -43,6 +61,12 @@ describe('housing controlled vocabularies', () => {
 
   it('amenities match the DB CHECK slug set', () => {
     expect(new Set(AMENITIES.map((a) => a.slug))).toEqual(new Set(DB_AMENITIES))
+  })
+
+  it('parking, laundry, and accessibility match their DB CHECK slug sets', () => {
+    expect(new Set(PARKING_OPTIONS.map((p) => p.slug))).toEqual(new Set(DB_PARKING))
+    expect(new Set(LAUNDRY_OPTIONS.map((l) => l.slug))).toEqual(new Set(DB_LAUNDRY))
+    expect(new Set(ACCESSIBILITY_TAGS.map((t) => t.slug))).toEqual(new Set(DB_ACCESSIBILITY))
   })
 })
 
@@ -66,6 +90,86 @@ describe('toAmenities', () => {
   })
   it('returns an empty array for no input', () => {
     expect(toAmenities([])).toEqual([])
+  })
+})
+
+describe('Tier B enum coercers (ADR-867)', () => {
+  it('toParking accepts valid slugs and rejects everything else', () => {
+    expect(toParking('garage')).toBe('garage')
+    expect(toParking('street')).toBe('street')
+    expect(toParking('valet')).toBeNull()
+    expect(toParking('')).toBeNull()
+    expect(toParking(null)).toBeNull()
+    expect(toParking(3)).toBeNull()
+  })
+
+  it('toLaundry accepts valid slugs and rejects everything else', () => {
+    expect(toLaundry('in_unit')).toBe('in_unit')
+    expect(toLaundry('nearby')).toBe('nearby')
+    expect(toLaundry('washboard')).toBeNull()
+    expect(toLaundry(undefined)).toBeNull()
+  })
+
+  it('toAccessibilityTags whitelists, dedupes, and drops non-strings', () => {
+    expect(toAccessibilityTags(['elevator', 'not_a_tag', 'elevator', 'step_free', 7, null])).toEqual([
+      'elevator',
+      'step_free',
+    ])
+    expect(toAccessibilityTags([])).toEqual([])
+  })
+
+  it('toAddressPrecision falls back to city (the most private) on anything unrecognised', () => {
+    expect(toAddressPrecision('exact')).toBe('exact')
+    expect(toAddressPrecision('neighborhood')).toBe('neighborhood')
+    expect(toAddressPrecision('city')).toBe('city')
+    expect(toAddressPrecision('gps')).toBe('city')
+    expect(toAddressPrecision(null)).toBe('city')
+    expect(toAddressPrecision(undefined)).toBe('city')
+  })
+})
+
+describe('resolveAddressDisplay (the Tier B privacy resolver)', () => {
+  const base = { city: 'Asheville', neighborhood: 'West End', addressLine: '412 Maple St' }
+
+  it("'city' precision shows the city only, never the address", () => {
+    expect(resolveAddressDisplay({ ...base, precision: 'city', signedIn: true })).toEqual({
+      areaLabel: 'Asheville',
+      addressLine: null,
+    })
+    expect(resolveAddressDisplay({ ...base, precision: 'city', signedIn: false })).toEqual({
+      areaLabel: 'Asheville',
+      addressLine: null,
+    })
+  })
+
+  it("'neighborhood' precision adds the neighborhood, still no address", () => {
+    expect(resolveAddressDisplay({ ...base, precision: 'neighborhood', signedIn: true })).toEqual({
+      areaLabel: 'West End, Asheville',
+      addressLine: null,
+    })
+  })
+
+  it("'exact' precision reveals the address to signed-in viewers ONLY", () => {
+    expect(resolveAddressDisplay({ ...base, precision: 'exact', signedIn: true })).toEqual({
+      areaLabel: 'West End, Asheville',
+      addressLine: '412 Maple St',
+    })
+    expect(resolveAddressDisplay({ ...base, precision: 'exact', signedIn: false })).toEqual({
+      areaLabel: 'West End, Asheville',
+      addressLine: null,
+    })
+  })
+
+  it('handles missing pieces without junk separators', () => {
+    expect(
+      resolveAddressDisplay({ precision: 'neighborhood', city: null, neighborhood: 'West End', addressLine: null, signedIn: true }),
+    ).toEqual({ areaLabel: 'West End', addressLine: null })
+    expect(
+      resolveAddressDisplay({ precision: 'city', city: '  ', neighborhood: 'West End', addressLine: null, signedIn: true }),
+    ).toEqual({ areaLabel: null, addressLine: null })
+    expect(
+      resolveAddressDisplay({ precision: 'exact', city: 'Asheville', neighborhood: null, addressLine: '   ', signedIn: true }),
+    ).toEqual({ areaLabel: 'Asheville', addressLine: null })
   })
 })
 
@@ -362,5 +466,110 @@ describe('labels', () => {
   it('falls back to the slug for an unknown amenity', () => {
     expect(amenityLabel('ac')).toBe('Air conditioning')
     expect(amenityLabel('mystery')).toBe('mystery')
+  })
+})
+
+// ── Tier B (ADR-867) ─────────────────────────────────────────────────────────
+
+describe('migration 20270111000000 (housing Tier B) source shape', () => {
+  const sql = readFileSync(
+    resolve(process.cwd(), 'supabase/migrations/20270111000000_housing_tier_b.sql'),
+    'utf8',
+  )
+
+  it('adds every Tier B column', () => {
+    for (const col of [
+      'parking',
+      'laundry',
+      'bathrooms_shared',
+      'move_in_costs_cents',
+      'min_stay_months',
+      'max_occupants',
+      'accessibility',
+      'address_precision',
+      'address_line',
+    ]) {
+      expect(sql, `adds ${col}`).toMatch(new RegExp(`add column if not exists ${col}\\b`))
+    }
+  })
+
+  it('CHECK-constrains the enums to the app vocabularies', () => {
+    expect(sql).toContain("parking in ('none','street','driveway','garage')")
+    expect(sql).toContain("laundry in ('none','in_unit','on_site','nearby')")
+    expect(sql).toContain("address_precision in ('city','neighborhood','exact')")
+    for (const tag of DB_ACCESSIBILITY) expect(sql, `accessibility vocab has ${tag}`).toContain(`"${tag}"`)
+    expect(sql).toContain("jsonb_typeof(accessibility) = 'array'")
+  })
+
+  it('defaults address_precision to city and accessibility to an empty array', () => {
+    expect(sql).toMatch(/address_precision text not null default 'city'/)
+    expect(sql).toMatch(/accessibility jsonb not null default '\[\]'::jsonb/)
+  })
+
+  it('documents the address_line privacy contract on the column itself', () => {
+    // The comment is the durable warning for anyone reading the schema: exact + signed-in
+    // only, and never in structured data.
+    expect(sql).toMatch(/comment on column public\.housing_listings\.address_line[\s\S]*NEVER emitted in JSON-LD/)
+  })
+})
+
+describe('create/edit action parity (Tier B fields cannot drift)', () => {
+  const read = (p: string) => readFileSync(resolve(process.cwd(), p), 'utf8')
+  const createSrc = read('app/(main)/marketplace/actions.ts')
+  const editSrc = read('app/(main)/housing/[id]/edit/actions.ts')
+  const formSrc = read('app/(main)/housing/new/housing-form.tsx')
+
+  /** Every form-data key a housing action source reads, however it reads it. */
+  function formKeys(src: string, fn: string): Set<string> {
+    const body = src.slice(src.indexOf(fn))
+    const end = body.indexOf('\nexport async function', 1)
+    const scoped = end > 0 ? body.slice(0, end) : body
+    const keys = new Set<string>()
+    for (const m of scoped.matchAll(/formData\.(?:get|getAll)\('([^']+)'\)/g)) keys.add(m[1])
+    for (const m of scoped.matchAll(/checkbox\(formData, '([^']+)'\)/g)) keys.add(m[1])
+    return keys
+  }
+
+  it('createHousingListingAction and updateHousingListingAction read the same field set', () => {
+    expect(formKeys(createSrc, 'createHousingListingAction')).toEqual(
+      formKeys(editSrc, 'updateHousingListingAction'),
+    )
+  })
+
+  it('the shared form renders an input for every Tier B field both actions read', () => {
+    for (const name of [
+      'parking',
+      'laundry',
+      'bathrooms_shared',
+      'move_in_costs',
+      'min_stay_months',
+      'max_occupants',
+      'accessibility',
+      'address_precision',
+      'address_line',
+    ]) {
+      expect(formSrc, `form has name="${name}"`).toContain(`name="${name}"`)
+    }
+  })
+})
+
+describe('address_line never reaches structured data', () => {
+  const read = (p: string) => readFileSync(resolve(process.cwd(), p), 'utf8')
+
+  it('the SEO module never touches the street address', () => {
+    const seo = read('lib/listings-shared/listing-seo.ts')
+    expect(seo).not.toMatch(/address_line|addressLine/)
+  })
+
+  it('the sitemap never touches the street address', () => {
+    const sitemap = read('app/sitemap.ts')
+    expect(sitemap).not.toMatch(/address_line|addressLine/)
+  })
+
+  it('the shared view model computes its public place line as a signed-out viewer', () => {
+    const view = read('lib/listings-shared/detail-view.ts')
+    // listingDetailFromHousing must pass signedIn: false and a null addressLine into the
+    // resolver, so locationLabel (meta + JSON-LD addressLocality) stays public-safe.
+    expect(view).toMatch(/resolveAddressDisplay\(\{[\s\S]*?addressLine: null,[\s\S]*?signedIn: false,[\s\S]*?\}\)/)
   })
 })

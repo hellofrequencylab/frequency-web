@@ -16,6 +16,7 @@ import {
   FileText,
   Sparkles,
   BookOpen,
+  BookUser,
   Send,
   Contact,
   ContactRound,
@@ -26,6 +27,7 @@ import {
   Bot,
   Compass,
   Route,
+  MapPinHouse,
   QrCode,
   Library,
   LifeBuoy,
@@ -57,7 +59,11 @@ export const AREA_ICONS: Record<string, ElementType> = {
   circles: Users,
   channels: Radio,
   events: CalendarDays,
+  // 'market' is the Marketplace commerce-umbrella row (ADR-868); Store reads "commerce".
   market: Store,
+  // Housing is a home SEARCH surface: MapPinHouse (a house on a map pin) is the closest
+  // lucide has to house+search ("find a place near you"); plain House reads as "home page".
+  housing: MapPinHouse,
   practices: Sparkles,
   journeys: Route,
   library: Library,
@@ -65,7 +71,9 @@ export const AREA_ICONS: Record<string, ElementType> = {
   messages: MessageSquare,
   friends: UserPlus,
   partners: Store,
-  people: Globe,
+  // The Members directory row (ADR-868): BookUser (an address-book person) reads "the
+  // people directory" — clearly people, and distinct from Circles' Users pair glyph.
+  people: BookUser,
   codes: QrCode,
   crew: Zap,
   quest: Compass,
@@ -128,9 +136,11 @@ const LUCIDE_BY_NAME: Record<string, ElementType> = {
   FileText,
   Sparkles,
   BookOpen,
+  BookUser,
   Send,
   Contact,
   ContactRound,
+  MapPinHouse,
   LayoutDashboard,
   LayoutGrid,
   Building2,

@@ -265,7 +265,7 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     key: 'program',
     label: 'Program',
     description: 'Run your model as a Program. Your flagship circle becomes the blueprint, and members start Chapters anywhere.',
-    entitlement: null,
+    entitlement: 'program',
     defaultMinRole: 'admin',
     types: ['*'],
   },

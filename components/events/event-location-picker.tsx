@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import maplibregl from 'maplibre-gl'
+// maplibre-gl 6 is ESM-only with named exports; the namespace import keeps the maplibregl.* call sites unchanged.
+import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 // Editor location picker (Event settings overhaul §5). A MapLibre map with ONE

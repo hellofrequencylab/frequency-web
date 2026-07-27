@@ -65,6 +65,11 @@ export interface CircleTemplate {
   imageUrl: string | null
   isActive: boolean
   displayOrder: number
+  /** The Space that owns this blueprint (a Program's Chapter template, ADR-864).
+   *  null = staff-authored Starter Circle. Owned blueprints NEVER render on the
+   *  public Starter surfaces and cannot be claimed via the open remix action;
+   *  only startChapter may clone them (it stamps the Chapter into the Program). */
+  ownerSpaceId: string | null
 }
 
 /** Global master switch key (platform_flags) gating the whole member surface. */

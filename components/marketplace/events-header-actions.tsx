@@ -4,8 +4,8 @@ import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { CalendarSubscribe } from '@/components/events/calendar-subscribe'
 import { HERO_PRIMARY_BTN, HERO_SECONDARY_BTN } from './hero-buttons'
 
-// The member action cluster for the unified Events header, rendered IDENTICALLY on both /events and
-// /marketplace/events so the two surfaces share one header. New Event (the guided composer, wrapped in
+// The member action cluster for the unified Events header on /events (the one events home; the
+// /marketplace/events twin was retired by ADR-866). New Event (the guided composer, wrapped in
 // CrewGateButton so non-Crew get the upgrade popup) shows to any signed-in member; Manage + My drafts
 // appear only once the member has added an event (the owner rule). Gating is unchanged from the old
 // /events home; it just lives in one place now. No em dashes.

@@ -35,6 +35,9 @@ export interface ProgramChannel {
   category: string
   ownerSpaceId: string | null
   templateId: string
+  /** The retire/pause switch (topical_channels.is_active). False = the Channel
+   *  page 404s and startChapter refuses new Chapters (ADR-865). */
+  isActive: boolean
 }
 
 export interface ChapterSummary {
@@ -52,7 +55,7 @@ export interface ChapterSummary {
   distanceKm: number | null
 }
 
-const CHANNEL_COLS = 'id, name, slug, description, cover_image, category, owner_space_id, template_id'
+const CHANNEL_COLS = 'id, name, slug, description, cover_image, category, owner_space_id, template_id, is_active'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -71,6 +74,7 @@ function rowToProgram(row: Record<string, unknown>): ProgramChannel {
     category: String(row.category),
     ownerSpaceId: row.owner_space_id == null ? null : String(row.owner_space_id),
     templateId: String(row.template_id),
+    isActive: row.is_active !== false,
   }
 }
 
@@ -159,11 +163,15 @@ export async function startChapter(input: { channelId: string; profileId: string
   const admin = db()
   const { data } = await admin
     .from('topical_channels')
-    .select('id, template_id')
+    .select('id, template_id, is_active')
     .eq('id', input.channelId)
     .maybeSingle()
-  const channel = data as { id: string; template_id: string | null } | null
+  const channel = data as { id: string; template_id: string | null; is_active: boolean } | null
   if (!channel) throw new Error('That Channel is not available.')
+  // is_active is the retire switch: the page 404s an inactive channel, but this
+  // action is directly callable, so the switch must hold here too (review fix,
+  // ADR-865): a retired Program takes no new Chapters.
+  if (!channel.is_active) throw new Error('This Program is not taking new Chapters right now.')
   if (!channel.template_id) {
     throw new Error('This Channel does not run a Program yet, so there is no Chapter blueprint to start from.')
   }
@@ -178,6 +186,79 @@ export async function startChapter(input: { channelId: string; profileId: string
   if (error) throw new Error(error.message)
 
   return { circleId: draft.circleId, slug: draft.slug }
+}
+
+/** Verify a channel is a Program THIS Space runs, or throw. Every phase-2
+ *  editor operation funnels through this: the action layer proves the caller
+ *  manages the Space (ADR-274), and this proves the Space owns the Program. */
+async function requireSpaceProgram(
+  admin: SupabaseClient,
+  spaceId: string,
+  channelId: string,
+): Promise<{ id: string; templateId: string; isActive: boolean }> {
+  const { data } = await admin
+    .from('topical_channels')
+    .select('id, owner_space_id, template_id, is_active')
+    .eq('id', channelId)
+    .maybeSingle()
+  const row = data as { id: string; owner_space_id: string | null; template_id: string | null; is_active: boolean } | null
+  if (!row || !isProgram(row)) throw new Error('That Channel does not run a Program.')
+  if (row.owner_space_id !== spaceId) {
+    throw new Error('That Program belongs to a different Space.')
+  }
+  return { id: String(row.id), templateId: String(row.template_id), isActive: row.is_active !== false }
+}
+
+/** Load a Space's own live circle and snapshot its content into the blueprint
+ *  field shape (circle_templates content columns). Shared by createSpaceProgram
+ *  and refreshProgramBlueprint so the ownership + non-draft checks and the
+ *  snapshot shape can never drift apart. Throws on a missing, foreign, or
+ *  draft circle; display copy (name/one_liner/card/identity) is NOT included
+ *  here, since it belongs to the Program, not the snapshot. */
+async function snapshotCircleForBlueprint(
+  admin: SupabaseClient,
+  spaceId: string,
+  sourceCircleId: string,
+): Promise<Record<string, unknown>> {
+  // The source must be this Space's own, live circle. A draft has not proven
+  // anything yet; a circle from another Space is simply not theirs to franchise.
+  const { data: circleData } = await admin
+    .from('circles')
+    .select('id, space_id, status, about, primary_pillar')
+    .eq('id', sourceCircleId)
+    .maybeSingle()
+  const circle = circleData as
+    | { id: string; space_id: string | null; status: string; about: string | null; primary_pillar: string | null }
+    | null
+  if (!circle) throw new Error('That Circle is not available.')
+  if (circle.space_id !== spaceId) {
+    throw new Error('Pick a Circle this Space runs. That one belongs to a different Space.')
+  }
+  if (circle.status === 'draft') {
+    throw new Error('Publish the Circle first. A draft cannot anchor a Program.')
+  }
+
+  // The rich content lives on the 1:1 circle_profiles row when the circle came
+  // through the builder; sane empty-json fallbacks otherwise.
+  const { data: profileData } = await admin
+    .from('circle_profiles')
+    .select('meetup, gathering, agreements, pillars_inside, format, size_label, thread, remix_options')
+    .eq('circle_id', sourceCircleId)
+    .maybeSingle()
+  const profile = (profileData ?? {}) as Record<string, unknown>
+
+  return {
+    about: circle.about ?? null,
+    primary_pillar: circle.primary_pillar ?? 'mind',
+    pillars_inside: profile.pillars_inside ?? {},
+    meetup: profile.meetup ?? {},
+    gathering: profile.gathering ?? {},
+    thread: profile.thread ?? null,
+    format: profile.format ?? null,
+    size_label: profile.size_label ?? null,
+    agreements: profile.agreements ?? [],
+    remix_options: profile.remix_options ?? [],
+  }
 }
 
 /** Create a Space-run Program: snapshot the Space's flagship circle into a
@@ -197,38 +278,24 @@ export async function createSpaceProgram(input: {
 }): Promise<{ channelId: string; channelSlug: string; templateId: string }> {
   const admin = db()
 
-  // The flagship must be this Space's own, live circle. A draft has not proven
-  // anything yet; a circle from another Space is simply not theirs to franchise.
-  const { data: circleData } = await admin
-    .from('circles')
-    .select('id, space_id, status, about, primary_pillar')
-    .eq('id', input.sourceCircleId)
-    .maybeSingle()
-  const circle = circleData as
-    | { id: string; space_id: string | null; status: string; about: string | null; primary_pillar: string | null }
-    | null
-  if (!circle) throw new Error('That Circle is not available.')
-  if (circle.space_id !== input.spaceId) {
-    throw new Error('Pick a Circle this Space runs. That one belongs to a different Space.')
-  }
-  if (circle.status === 'draft') {
-    throw new Error('Publish the Circle first. A draft cannot anchor a Program.')
+  // ONE Program per Space (review fix, ADR-865). The DB backs this with a
+  // unique partial index on topical_channels(owner_space_id), so a double
+  // submit cannot mint two public channels; this pre-check just gives the
+  // second click a sentence instead of a constraint error.
+  const existing = await listSpacePrograms(input.spaceId)
+  if (existing.length > 0) {
+    throw new Error('This Space already runs a Program. Edit the one you have instead.')
   }
 
-  // The rich content lives on the 1:1 circle_profiles row when the circle came
-  // through the builder; sane empty-json fallbacks otherwise.
-  const { data: profileData } = await admin
-    .from('circle_profiles')
-    .select('meetup, gathering, agreements, pillars_inside, format, size_label, thread, remix_options')
-    .eq('circle_id', input.sourceCircleId)
-    .maybeSingle()
-  const profile = (profileData ?? {}) as Record<string, unknown>
+  // Ownership + non-draft checks and the content snapshot, shared with
+  // refreshProgramBlueprint so the two paths can never drift.
+  const snapshot = await snapshotCircleForBlueprint(admin, input.spaceId, input.sourceCircleId)
 
   // 1. The blueprint: a Space-owned circle_templates row. owner_space_id keeps
   //    it out of the global Starter Circles catalog (the list reads filter
   //    owner_space_id IS NULL); remix still loads it through getTemplateById.
-  //    The card copy fields ride the one-liner for v1; changes go through the
-  //    crew (ADR-864 has no Program edit surface yet).
+  //    The card copy fields ride the one-liner; updateSpaceProgram (ADR-869)
+  //    keeps them in step with the Channel's display copy after creation.
   const templateSlug = await uniqueSlugIn(admin, 'circle_templates', input.name, 'program')
   const { data: templateRow, error: templateError } = await admin
     .from('circle_templates')
@@ -239,16 +306,7 @@ export async function createSpaceProgram(input: {
       identity: input.oneLiner,
       audience: '',
       card: input.oneLiner,
-      about: circle.about ?? null,
-      primary_pillar: circle.primary_pillar ?? 'mind',
-      pillars_inside: profile.pillars_inside ?? {},
-      meetup: profile.meetup ?? {},
-      gathering: profile.gathering ?? {},
-      thread: profile.thread ?? null,
-      format: profile.format ?? null,
-      size_label: profile.size_label ?? null,
-      agreements: profile.agreements ?? [],
-      remix_options: profile.remix_options ?? [],
+      ...snapshot,
       callouts: [],
       owner_space_id: input.spaceId,
       is_active: true,
@@ -278,6 +336,9 @@ export async function createSpaceProgram(input: {
     .select('id, slug')
     .single()
   if (channelError || !channelRow) {
+    // No transaction spans the two inserts, so a channel failure would strand
+    // an is_active Space blueprint. Best-effort cleanup keeps nothing public.
+    await admin.from('circle_templates').delete().eq('id', templateId)
     throw new Error(channelError?.message ?? 'Could not create the Program.')
   }
   const channel = channelRow as { id: string; slug: string }
@@ -290,4 +351,98 @@ export async function createSpaceProgram(input: {
   if (stampError) throw new Error(stampError.message)
 
   return { channelId: String(channel.id), channelSlug: String(channel.slug), templateId }
+}
+
+/** Edit a Space's Program display copy (ADR-869): name, one liner, cover.
+ *  Patches the Channel row AND keeps the blueprint's display copy in step
+ *  (circle_templates name/one_liner/card/identity ride the same patch), so the
+ *  Channel page and the Chapter-start flow never tell two different stories.
+ *
+ *  The channel slug NEVER changes here: renaming a Program keeps its
+ *  /channels/<slug> address, so every shared link keeps working.
+ *
+ *  AUTHZ IS THE CALLER'S JOB for the Space side (action layer, ADR-274);
+ *  channel ownership is verified HERE against the DB. */
+export async function updateSpaceProgram(input: {
+  spaceId: string
+  profileId: string
+  channelId: string
+  patch: { name?: string; oneLiner?: string; coverImage?: string | null }
+}): Promise<void> {
+  const admin = db()
+  const program = await requireSpaceProgram(admin, input.spaceId, input.channelId)
+
+  const channelPatch: Record<string, unknown> = {}
+  const blueprintPatch: Record<string, unknown> = {}
+  if (input.patch.name !== undefined) {
+    channelPatch.name = input.patch.name
+    blueprintPatch.name = input.patch.name
+  }
+  if (input.patch.oneLiner !== undefined) {
+    channelPatch.description = input.patch.oneLiner
+    // The blueprint's card copy fields ride the one-liner (same as create).
+    blueprintPatch.one_liner = input.patch.oneLiner
+    blueprintPatch.card = input.patch.oneLiner
+    blueprintPatch.identity = input.patch.oneLiner
+  }
+  if (input.patch.coverImage !== undefined) channelPatch.cover_image = input.patch.coverImage
+  if (Object.keys(channelPatch).length === 0) return
+
+  const { error: channelError } = await admin
+    .from('topical_channels')
+    .update(channelPatch)
+    .eq('id', input.channelId)
+  if (channelError) throw new Error(channelError.message)
+
+  if (Object.keys(blueprintPatch).length > 0) {
+    const { error: blueprintError } = await admin
+      .from('circle_templates')
+      .update(blueprintPatch)
+      .eq('id', program.templateId)
+    if (blueprintError) throw new Error(blueprintError.message)
+  }
+}
+
+/** Pause or resume a Space's Program (ADR-869): flips topical_channels.is_active,
+ *  the same retire switch startChapter already respects (ADR-865). While paused,
+ *  the Channel page 404s and no new Chapters can start; existing Chapters and
+ *  their members are untouched, and resuming brings the page straight back. */
+export async function setProgramPaused(input: {
+  spaceId: string
+  profileId: string
+  channelId: string
+  paused: boolean
+}): Promise<void> {
+  const admin = db()
+  await requireSpaceProgram(admin, input.spaceId, input.channelId)
+  const { error } = await admin
+    .from('topical_channels')
+    .update({ is_active: !input.paused })
+    .eq('id', input.channelId)
+  if (error) throw new Error(error.message)
+}
+
+/** Re-snapshot a Program's blueprint from one of the Space's live circles
+ *  (ADR-869). Same ownership + non-draft checks as createSpaceProgram, via the
+ *  shared snapshotCircleForBlueprint helper. The blueprint row is rewritten in
+ *  place; display copy (name/one_liner/card/identity) stays as-is, since that
+ *  is updateSpaceProgram's job.
+ *
+ *  Existing Chapters are untouched: a Chapter is a real circle that already
+ *  copied the old snapshot at remix time, so a blueprint change affects only
+ *  FUTURE Chapters. */
+export async function refreshProgramBlueprint(input: {
+  spaceId: string
+  profileId: string
+  channelId: string
+  sourceCircleId: string
+}): Promise<void> {
+  const admin = db()
+  const program = await requireSpaceProgram(admin, input.spaceId, input.channelId)
+  const snapshot = await snapshotCircleForBlueprint(admin, input.spaceId, input.sourceCircleId)
+  const { error } = await admin
+    .from('circle_templates')
+    .update(snapshot)
+    .eq('id', program.templateId)
+  if (error) throw new Error(error.message)
 }

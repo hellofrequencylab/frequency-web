@@ -5,13 +5,13 @@ import { breadcrumbSchema, eventsListingSchema } from '@/lib/jsonld'
 import { pageContentMetadata } from '@/lib/page-content'
 import { getEventsIndexData, CONTENT_FALLBACK } from './index-data'
 
-// EVENTS — the member's own events home. It renders the SAME Marketplace events surface the
-// commerce Events tab uses (components/marketplace/events-surface.tsx), on the SAME data + card
-// (getEventsIndexData + EventCard), at the SAME /events URL (kept, with its profile link). Both this
-// home and the /marketplace/events tab now render the SAME header: identical hero copy plus the shared
-// member action cluster (New Event always; Manage + My drafts only once they have added an event), so
-// the two surfaces are visually identical. What's unique to this canonical home is the JSON-LD below.
-// No business logic is duplicated. No em or en dashes.
+// EVENTS — the one events home, for members and for the commerce hub alike. The hub's Events tab
+// links here and the old /marketplace/events twin 308-redirects here (ADR-866; it rendered this
+// exact surface on this exact data and already canonicaled here). The shared composition lives in
+// components/marketplace/events-surface.tsx (getEventsIndexData + EventCard), topped by the member
+// action cluster (New Event always; Manage + My drafts only once they have added an event). What's
+// unique to this canonical home is the JSON-LD below. No business logic is duplicated. No em or en
+// dashes.
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2). Kept on /events so the
 // URL keeps its SEO — the surface swap does not touch the page's metadata.
@@ -38,14 +38,14 @@ export default async function EventsPage({
   const data = await getEventsIndexData(sp)
   const { myProfileId, isCrew, userHasEvents } = data
 
-  // The member action cluster (New Event always; Manage + My drafts once they have added one), from the
-  // SHARED header-actions component so /events and /marketplace/events render an identical hero cluster.
+  // The member action cluster (New Event always; Manage + My drafts once they have added one), from
+  // the shared header-actions component.
   const actions = (
     <EventsHeaderActions myProfileId={myProfileId} isCrew={isCrew} userHasEvents={userHasEvents} />
   )
 
-  // JSON-LD for the self-canonical /events home only (the /marketplace/events twin canonicals here, so
-  // it emits none — the structured data must live on the canonical URL). A BreadcrumbList (Home ->
+  // JSON-LD for the self-canonical /events home (the one events URL; the structured data lives on
+  // the canonical). A BreadcrumbList (Home ->
   // Events) plus an ItemList of the upcoming events, each a nested Event node pointing at its canonical
   // /events/<slug> page. PRIVACY (ADR-186): no venue location is emitted — name + startDate + url +
   // status only. The public events query in getEventsIndexData runs unconditionally, so a signed-out
