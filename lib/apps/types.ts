@@ -19,6 +19,9 @@
 
 import type { LucideIcon } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
+import type { CommunityRole, WebRole } from '@/lib/core/roles'
+import type { StaffRole, StaffDomain, Access } from '@/lib/core/staff-roles'
+import type { MenuAccess } from '@/lib/menus/types'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import type { SpaceType } from '@/lib/spaces/types'
 import type { AdminSlot } from '@/lib/admin/modules/registry'
@@ -48,12 +51,40 @@ export type AppScope =
  *   - `spaceFunction` — a per-Space function key, resolved by `spaceFunctionAccess`; `entitlement`
  *                       optionally names the plan switch the function needs.
  *   - `staff`         — the web_role staff axis; `domain` optionally narrows to a staff domain.
+ *   - `role`          — the PLATFORM nav axis (ADR-848): a community-role floor UNIONED with a staff
+ *                       capability, mirroring `canSee` (lib/nav/registry.ts) and nav-areas'
+ *                       meetsAccess/meetsStaff pair EXACTLY. This is the vocabulary the operator
+ *                       Admin rail gates on, and it is a UNION (either axis admits), unlike every
+ *                       other member here. `requiresOperatedSpaces` is a DATA predicate and a hard
+ *                       veto evaluated BEFORE the union, so a viewer who runs no Space is hidden
+ *                       even when their role would reveal the row.
  *   - `none`          — always-on (Basics, a public element).
  */
 export type AppGate =
   | { system: 'capability'; capability: Capability }
   | { system: 'spaceFunction'; fn: SpaceFunctionKey; entitlement?: string }
   | { system: 'staff'; domain?: string }
+  | {
+      system: 'role'
+      /**
+       * WHICH ladder `minAccess` is measured against. EXPLICIT on purpose, because the legacy
+       * catalogs value-encode this and the two encodings disagree:
+       *   • `nav-areas.ts::meetsAccess` reads `'admin'` / `'janitor'` as rungs of the COMMUNITY
+       *     ladder (`ROLE_HIERARCHY.indexOf`).
+       *   • `lib/admin/guard.ts::meetsMin` and `lib/admin/nav.ts::canSeeAdminSection` read the SAME
+       *     two tokens as the `web_role` STAFF axis (`isStaff` / `isJanitor`).
+       * ADR-208 moved staff onto `web_role`, so a real operator today is `web_role: 'janitor'` with
+       * `community_role: 'member'`. Reading a STUDIO_LEAVES `min: 'janitor'` against the community
+       * ladder would therefore HIDE the row from every actual operator and SHOW it to anyone still
+       * carrying the deprecated community rung. Same token, opposite population. Default is
+       * `'community'` (the nav-areas reading), so an omitted axis preserves NAV_AREAS behavior.
+       */
+      axis?: 'community' | 'web'
+      minAccess: MenuAccess
+      staffDomain?: StaffDomain
+      staffLevel?: Access
+      requiresOperatedSpaces?: boolean
+    }
   | { system: 'none' }
 
 /** The viewer the gate resolver reads (filled once per request by the server seam; the resolver never
@@ -66,6 +97,18 @@ export interface AppViewer {
   canUseSpaceFn?: (fn: SpaceFunctionKey) => boolean
   /** The web_role staff axis (admin OR janitor). Omitted / false ⇒ every `staff` gate fails closed. */
   isStaff?: boolean
+  /** The viewer's community role, for a `role` gate's access floor. Omitted ⇒ read as a visitor
+   *  (null), which is what `meetsAccess` already treats a signed-out viewer as. */
+  role?: CommunityRole | null
+  /** The viewer's STAFF role (team_members axis), for a `role` gate's staff-capability arm. Omitted /
+   *  null ⇒ that arm never admits, so the gate falls back to the role floor alone. */
+  staffRole?: StaffRole | null
+  /** The viewer's `web_role` platform-staff axis (ADR-208), for a `role` gate declaring
+   *  `axis: 'web'`. Omitted ⇒ 'none', so every web-axis floor fails closed. */
+  webRole?: WebRole | null
+  /** Does the viewer own or run at least one Space? Answers a `role` gate's `requiresOperatedSpaces`
+   *  DATA predicate. Fail-closed: anything other than `true` fails that veto. */
+  operatesSpaces?: boolean
 }
 
 /** An external wiring an App declares (The Loom shows connect state per App — docs/LOOM-PLATFORM.md
