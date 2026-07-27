@@ -7,9 +7,8 @@
 //     uses to list a Space's own circles.
 //
 // Server-only (admin client; callers enforce authz, exactly like the existing circle flows).
-// `space_id` is not in the generated DB types yet — the column is added by
-// 20260711000000_object_space_id.sql; per the codebase pattern (ADR-246) it is reached with
-// untyped casts (the payload field + the `.eq('space_id', …)` filter), not a typed client.
+// `circles.space_id` (added by 20260711000000_object_space_id.sql) is in the generated types now,
+// so the ADR-246 untyped casts this module carried are retired.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadRootSpaceId } from '@/lib/spaces/store'
@@ -26,6 +25,17 @@ export interface SpaceCircle {
   host_id: string | null
   space_id: string | null
   created_at: string | null
+}
+
+/** A Space's Circle plus the Journey it is running right now, if any (ADR-842). */
+export interface SpaceCircleWithRun extends SpaceCircle {
+  run: {
+    id: string
+    planId: string
+    journeyTitle: string
+    journeySlug: string | null
+    startedAt: string
+  } | null
 }
 
 const COLS = 'id, slug, name, about, type, member_count, status, host_id, space_id, created_at'
@@ -49,17 +59,8 @@ export async function listCirclesForSpace(spaceId?: string | null, limit = 50): 
   const sid = spaceId ?? (await loadRootSpaceId())
   if (!sid) return []
   try {
-    // space_id isn't in the generated types yet — reach it with an untyped handle (ADR-246).
-    const q = createAdminClient().from('circles') as unknown as {
-      select: (cols: string) => {
-        eq: (col: string, val: string) => {
-          order: (col: string, opts: { ascending: boolean }) => {
-            limit: (n: number) => Promise<{ data: unknown; error: unknown }>
-          }
-        }
-      }
-    }
-    const { data, error } = await q
+    const { data, error } = await createAdminClient()
+      .from('circles')
       .select(COLS)
       .eq('space_id', sid)
       .order('created_at', { ascending: false })
@@ -68,5 +69,60 @@ export async function listCirclesForSpace(spaceId?: string | null, limit = 50): 
     return (data as SpaceCircle[] | null) ?? []
   } catch {
     return []
+  }
+}
+
+/**
+ * A Space's Circles plus the Journey each one is currently running, for the Space's Circles
+ * surface. A Circle a Space owns is where its people move through a program together; the Run
+ * (journey_runs, ADR-252) is that Circle going through one Journey. At most one ACTIVE Run is
+ * surfaced per Circle (the newest), which is what the Space's steward needs to see at a glance.
+ *
+ * Two reads, not a join: the circles list, then one batched Run lookup keyed by circle id.
+ * FAIL-SAFE like its sibling above, a bad Run read degrades to circles with no Run shown rather
+ * than an empty page.
+ */
+export async function listSpaceCirclesWithRuns(
+  spaceId?: string | null,
+  limit = 50,
+): Promise<SpaceCircleWithRun[]> {
+  const circles = await listCirclesForSpace(spaceId, limit)
+  if (!circles.length) return []
+  try {
+    const admin = createAdminClient()
+    const { data: runs } = await admin
+      .from('journey_runs')
+      .select('id, circle_id, plan_id, started_at, status')
+      .in('circle_id', circles.map((c) => c.id))
+      .eq('status', 'active')
+      .order('started_at', { ascending: false })
+
+    const rows = runs ?? []
+    const planIds = [...new Set(rows.map((r) => r.plan_id))]
+    const titles = new Map<string, { title: string; slug: string }>()
+    if (planIds.length) {
+      const { data: plans } = await admin
+        .from('journey_plans')
+        .select('id, title, slug')
+        .in('id', planIds)
+      for (const p of plans ?? []) titles.set(p.id, { title: p.title, slug: p.slug })
+    }
+
+    // Newest-first from the query, so the FIRST row seen per circle is the one to show.
+    const byCircle = new Map<string, SpaceCircleWithRun['run']>()
+    for (const r of rows) {
+      if (byCircle.has(r.circle_id)) continue
+      const plan = titles.get(r.plan_id)
+      byCircle.set(r.circle_id, {
+        id: r.id,
+        planId: r.plan_id,
+        journeyTitle: plan?.title ?? 'A Journey',
+        journeySlug: plan?.slug ?? null,
+        startedAt: r.started_at,
+      })
+    }
+    return circles.map((c) => ({ ...c, run: byCircle.get(c.id) ?? null }))
+  } catch {
+    return circles.map((c) => ({ ...c, run: null }))
   }
 }
