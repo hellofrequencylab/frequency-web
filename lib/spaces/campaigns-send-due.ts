@@ -19,6 +19,7 @@
 // Space's OWN contacts (resolveAudience), so tenancy holds end to end.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { TablesUpdate } from '@/lib/database.types'
 import { resolveAudience, definitionToFilter } from '@/lib/spaces/audiences'
 import { sendSpaceCampaignSystem, SPACE_UNSUBSCRIBE_PLACEHOLDER } from '@/lib/spaces/email'
 import { normalizeEmailTopic } from '@/lib/spaces/email-topics'
@@ -73,28 +74,8 @@ function renderCampaignHtml(body: string): string {
  * campaign's resolve/send error stamps THAT campaign 'failed' and moves on; the pass never throws.
  */
 export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
-  const db = createAdminClient() as unknown as {
-    from: (t: string) => {
-      select: (cols: string) => {
-        eq: (c: string, v: string) => {
-          lte: (c: string, v: string) => {
-            order: (c: string, o: { ascending: boolean }) => {
-              limit: (n: number) => Promise<{ data: DueCampaignRow[] | null; error: unknown }>
-            }
-          }
-        }
-      }
-      update: (patch: Record<string, unknown>) => {
-        eq: (c: string, v: string) => {
-          eq: (c: string, v: string) => {
-            select: (cols: string) => {
-              maybeSingle: () => Promise<{ data: { id: string } | null; error: unknown }>
-            }
-          }
-        }
-      }
-    }
-  }
+  // The typed admin client (campaigns.space_id / scheduled_for / topic are in the generated types).
+  const db = createAdminClient()
 
   const nowIso = new Date().toISOString()
 
@@ -111,7 +92,7 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
     log.error('cron.space_campaigns.fetch_failed', { error: String(dueErr) })
     return { due: 0, claimed: 0, sent: 0, failed: 0 }
   }
-  const due = dueRows ?? []
+  const due: DueCampaignRow[] = dueRows ?? []
   if (due.length === 0) return { due: 0, claimed: 0, sent: 0, failed: 0 }
 
   // GLOBAL vs per-Space routing. Two different campaign shapes share the `campaigns` table:
@@ -208,17 +189,14 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
 /** Stamp a claimed campaign to a terminal status ('sent' or 'failed'), setting sent_at on a send.
  *  Best-effort: the email already went out, so a failed status write must not surface as an error. */
 async function stampStatus(
-  db: { from: (t: string) => unknown },
+  db: ReturnType<typeof createAdminClient>,
   id: string,
   status: 'sent' | 'failed',
 ): Promise<void> {
-  const patch: Record<string, unknown> =
+  const patch: TablesUpdate<'campaigns'> =
     status === 'sent' ? { status, sent_at: new Date().toISOString() } : { status }
   try {
-    const table = db.from('campaigns') as unknown as {
-      update: (p: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<unknown> }
-    }
-    await table.update(patch).eq('id', id)
+    await db.from('campaigns').update(patch).eq('id', id)
   } catch {
     // ignore: the send already happened; the status stamp is non-critical.
   }

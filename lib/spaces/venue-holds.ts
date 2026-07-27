@@ -4,13 +4,12 @@
 // touches the space_bookings conflict engine, so a hold can never double-book. Service-role only (the
 // table is RLS-deny-all); the app-layer authz lives here + in venue-actions.ts.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listAcceptedCollaborations } from './collaborations'
 
 export type VenueHoldStatus = 'pending' | 'accepted' | 'declined' | 'cancelled'
 
-/** A raw space_venue_holds row (untyped table, ADR-246). */
+/** A raw space_venue_holds row (typed table; status narrowed to the VenueHoldStatus vocabulary). */
 export interface VenueHoldRow {
   id: string
   venue_space_id: string
@@ -43,9 +42,7 @@ export interface VenueHoldView {
   createdAt: string | null
 }
 
-function untyped(): SupabaseClient {
-  return createAdminClient()
-}
+type AdminClient = ReturnType<typeof createAdminClient>
 
 /** The space id on the OTHER side of a hold from `spaceId`. PURE. */
 export function partnerSideForHold(row: Pick<VenueHoldRow, 'venue_space_id' | 'requester_space_id'>, spaceId: string): string {
@@ -57,12 +54,12 @@ export function roleForHold(row: Pick<VenueHoldRow, 'venue_space_id'>, spaceId: 
   return row.venue_space_id === spaceId ? 'venue' : 'requester'
 }
 
-async function resolveSpaces(admin: SupabaseClient, ids: string[]): Promise<Map<string, PartnerSpace>> {
+async function resolveSpaces(admin: AdminClient, ids: string[]): Promise<Map<string, PartnerSpace>> {
   const map = new Map<string, PartnerSpace>()
   const unique = [...new Set(ids)].filter(Boolean)
   if (unique.length === 0) return map
   const { data } = await admin.from('spaces').select('id, name, brand_name, slug').in('id', unique)
-  for (const r of (data ?? []) as Array<{ id: string; name: string | null; brand_name: string | null; slug: string }>) {
+  for (const r of data ?? []) {
     map.set(r.id, { id: r.id, slug: r.slug, name: r.brand_name ?? r.name ?? 'Space' })
   }
   return map
@@ -72,7 +69,7 @@ async function resolveSpaces(admin: SupabaseClient, ids: string[]): Promise<Map<
 export async function loadVenueHold(id: string): Promise<VenueHoldRow | null> {
   if (!id) return null
   try {
-    const { data } = await untyped().from('space_venue_holds').select('*').eq('id', id).maybeSingle()
+    const { data } = await createAdminClient().from('space_venue_holds').select('*').eq('id', id).maybeSingle()
     return (data as VenueHoldRow | null) ?? null
   } catch {
     return null
@@ -82,7 +79,7 @@ export async function loadVenueHold(id: string): Promise<VenueHoldRow | null> {
 async function loadHoldViews(spaceId: string, statuses?: VenueHoldStatus[]): Promise<VenueHoldView[]> {
   if (!spaceId) return []
   try {
-    const admin = untyped()
+    const admin = createAdminClient()
     const [asVenue, asRequester] = await Promise.all([
       admin.from('space_venue_holds').select('*').eq('venue_space_id', spaceId),
       admin.from('space_venue_holds').select('*').eq('requester_space_id', spaceId),
@@ -136,7 +133,7 @@ export async function cancelOpenHoldsBetween(
 ): Promise<void> {
   if (!spaceA || !spaceB || spaceA === spaceB) return
   try {
-    const admin = untyped()
+    const admin = createAdminClient()
     const patch = { status: 'cancelled', responded_at: new Date().toISOString(), responded_by: actorProfileId }
     // Two directional updates (A→B venue and B→A venue) cover the unordered pair without an `.or()`.
     await admin

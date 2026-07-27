@@ -1,9 +1,9 @@
 // PER-SPACE CAMPAIGNS (ENTITY-SPACES-BUILD §C Phase 3, "campaign composer + schedule"). The library
 // plus server actions behind the Space email composer, the per-Space analog of lib/spaces/memberships.ts.
-// CRUD over the existing `campaigns` table (subject + body + status), scoped to a Space. The sibling
-// backbone agent's migration adds `campaigns.space_id` + `campaigns.scheduled_for`; until the types
-// regenerate, every column is reached through the untyped admin client (ADR-246), the same convention
-// lib/spaces/memberships.ts uses for space_membership_tiers.
+// CRUD over the existing `campaigns` table (subject + body + status), scoped to a Space.
+// `campaigns.space_id` + `campaigns.scheduled_for` (and topic) are covered by the regenerated DB
+// types (ADR-246 closed), so every column is reached through the typed admin client; only the jsonb
+// audience_filter keeps a narrow Json cast.
 //
 // TENANCY + AUTHZ (ADR-246/328/329). A Space A caller never sees or edits Space B's campaigns: every
 // READ filters `space_id = spaceId`, and every read of a single campaign by id ALSO filters space_id
@@ -12,7 +12,7 @@
 // FAIL-SAFE (empty / null); writes FAIL-CLOSED on a permission miss.
 //
 // SHAPE: pure validation helpers (no Supabase/Next imports) so they are unit-testable, a thin IO layer
-// of untyped admin-client reads/writes, and the action implementations as plain async functions. This
+// of typed admin-client reads/writes, and the action implementations as plain async functions. This
 // module has NO 'use server' directive (so it can ALSO export the pure helpers + types the surfaces
 // import). The thin 'use server' wrappers the CLIENT calls live in lib/spaces/campaigns-actions.ts.
 //
@@ -21,6 +21,7 @@
 // owns the kill-switch, daily cap, suppression, per-recipient unsubscribe, and the outreach_sends ledger.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Json, TablesUpdate } from '@/lib/database.types'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -119,10 +120,9 @@ export function parseScheduleTime(raw: unknown, now: Date = new Date()): string 
   return d.toISOString()
 }
 
-// ── IO: the untyped admin-client seam (campaigns.space_id/scheduled_for not in types yet, ADR-246) ──
+// ── IO: the typed admin-client seam (campaigns.space_id/scheduled_for are in the types; ADR-246 closed) ──
 
-// The `campaigns` columns the Space surfaces read. space_id + scheduled_for are added by the sibling's
-// migration and reached via the untyped cast until the types regenerate.
+// The `campaigns` columns the Space surfaces read.
 const CAMPAIGN_COLS =
   'id, subject, body, status, recipient_count, scheduled_for, sent_at, created_at, space_id, topic'
 
@@ -139,23 +139,9 @@ type CampaignRow = {
   topic: string | null
 }
 
-type CampaignQuery = {
-  select: (cols: string) => CampaignQuery
-  eq: (col: string, val: string) => CampaignQuery
-  order: (col: string, opts: { ascending: boolean }) => CampaignQuery
-  limit: (n: number) => CampaignQuery
-  insert: (rows: Record<string, unknown>[]) => CampaignQuery
-  update: (patch: Record<string, unknown>) => CampaignQuery
-  maybeSingle: () => Promise<{ data: CampaignRow | null; error: unknown }>
-  then: (
-    resolve: (r: { data: CampaignRow[] | null; error: unknown }) => unknown,
-  ) => Promise<unknown>
-}
-
-/** The untyped `campaigns` query builder (space_id/scheduled_for aren't in the generated types yet). */
-function campaignsTable(): CampaignQuery {
-  const db = createAdminClient() as unknown as { from: (t: string) => CampaignQuery }
-  return db.from('campaigns')
+/** The typed `campaigns` query builder. */
+function campaignsTable() {
+  return createAdminClient().from('campaigns')
 }
 
 /** Map a DB row to a typed SpaceCampaign. */
@@ -219,16 +205,12 @@ export async function listSpaceCampaigns(spaceId: string): Promise<SpaceCampaign
   const caps = await getSpaceCapabilities(space, caller?.id ?? null)
   if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return []
   try {
-    return await new Promise<SpaceCampaign[]>((resolve) => {
-      campaignsTable()
-        .select(CAMPAIGN_COLS)
-        .eq('space_id', spaceId)
-        .order('created_at', { ascending: false })
-        .then(({ data, error }) => {
-          if (error || !data) return resolve([])
-          resolve(data.map(mapCampaign))
-        })
-    })
+    const { data, error } = await campaignsTable()
+      .select(CAMPAIGN_COLS)
+      .eq('space_id', spaceId)
+      .order('created_at', { ascending: false })
+    if (error || !data) return []
+    return data.map(mapCampaign)
   } catch {
     return []
   }
@@ -290,7 +272,7 @@ export async function updateSpaceCampaign(
   if (toCampaignStatus(existing.status) === 'sent')
     return fail('This campaign has already gone out, so it cannot be edited.')
 
-  const patch: Record<string, unknown> = {}
+  const patch: TablesUpdate<'campaigns'> = {}
   if (input.subject !== undefined) {
     const subject = normalizeSubject(input.subject)
     if (!subject) return fail('Give your campaign a subject.')
@@ -345,7 +327,7 @@ export async function scheduleSpaceCampaign(
 
   try {
     const { error } = await campaignsTable()
-      .update({ scheduled_for: iso, status: 'scheduled', audience_filter: filter })
+      .update({ scheduled_for: iso, status: 'scheduled', audience_filter: filter as Json })
       .eq('id', id)
       .eq('space_id', spaceId)
       .maybeSingle()

@@ -61,9 +61,9 @@ function leaderFrom(name: string | null): string {
 
 async function profileDisplayName(profileId: string): Promise<string | null> {
   try {
-    const db = createAdminClient() as unknown as { from: (t: string) => any } // eslint-disable-line @typescript-eslint/no-explicit-any
+    const db = createAdminClient()
     const { data } = await db.from('profiles').select('display_name').eq('id', profileId).maybeSingle()
-    return (data?.display_name as string) ?? null
+    return data?.display_name ?? null
   } catch {
     return null
   }

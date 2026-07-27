@@ -290,7 +290,7 @@ async function resolveSpaceCounterpart(
   const needle = email.trim().toLowerCase()
   if (!needle) return null
   try {
-    const db = createAdminClient() as unknown as { from: (t: string) => any } // eslint-disable-line @typescript-eslint/no-explicit-any
+    const db = createAdminClient()
     const { data } = await db
       .from('contacts')
       .select('id, profile_id')
@@ -301,7 +301,7 @@ async function resolveSpaceCounterpart(
       .limit(1)
       .maybeSingle()
     if (!data) return null
-    return { contactId: String(data.id), profileId: (data.profile_id as string) ?? null }
+    return { contactId: String(data.id), profileId: data.profile_id ?? null }
   } catch {
     return null
   }

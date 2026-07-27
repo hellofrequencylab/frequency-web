@@ -3,11 +3,11 @@
 // the caller (buildMemberDetail, behind each surface's gate + tenancy check) has already authorized
 // the read, and the ALTITUDE lives in the assembler's scope filter (fail-closed for leader lanes).
 //
-// DEFENSIVE by design: the scope_kind/scope_id columns are landing in a parallel Phase 0 change, so
-// every read selects `*` and maps the scope fields only when present — this reader works identically
-// before and after that migration (pre-migration rows resolve through the legacy metadata
-// conventions instead). FAIL-SAFE: any error degrades to EMPTY_MESSAGE_PATH, never a throw, so the
-// member pane always renders. No N+1: a fixed handful of batched reads for the ONE selected person.
+// DEFENSIVE by design: every read selects `*` and maps the scope fields defensively (a pre-scope-spine
+// row resolves through the legacy metadata conventions instead) — the scope_kind/scope_id columns are
+// live and covered by the regenerated types (ADR-246 closed). FAIL-SAFE: any error degrades to
+// EMPTY_MESSAGE_PATH, never a throw, so the member pane always renders. No N+1: a fixed handful of
+// batched reads for the ONE selected person.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getProfileSummaries } from '@/lib/connections/matching'
@@ -30,23 +30,9 @@ const MAX_CONVERSATIONS = 20
 const MAX_MESSAGES = 300
 const MAX_INTERACTIONS = 200
 
-/** An untyped `.from` handle (the comms/CRM tables are not in the generated types yet, ADR-246). */
-function table(name: string): {
-  select: (c: string) => {
-    in: (col: string, vals: string[]) => {
-      order: (col: string, opts: { ascending: boolean }) => {
-        limit: (n: number) => Promise<{ data: Record<string, unknown>[] | null; error: unknown }>
-      }
-      eq: (col: string, val: string) => {
-        order: (col: string, opts: { ascending: boolean }) => {
-          limit: (n: number) => Promise<{ data: Record<string, unknown>[] | null; error: unknown }>
-        }
-      }
-    }
-  }
-} {
-  const db = createAdminClient() as unknown as { from: (t: string) => never }
-  return db.from(name)
+/** The typed admin client (the comms/CRM tables are covered by the generated types; ADR-246 closed). */
+function admin() {
+  return createAdminClient()
 }
 
 function s(v: unknown): string | null {
@@ -77,7 +63,7 @@ async function resolveLabels(refs: PathRef[]): Promise<PathLabels> {
   await Promise.all([
     eventIds.length
       ? safe(async () => {
-          const { data } = await table('events').select('id, slug, title').in('id', eventIds).order('id', { ascending: true }).limit(eventIds.length)
+          const { data } = await admin().from('events').select('id, slug, title').in('id', eventIds).order('id', { ascending: true }).limit(eventIds.length)
           for (const row of data ?? []) {
             const id = s(row.id)
             if (!id) continue
@@ -88,7 +74,7 @@ async function resolveLabels(refs: PathRef[]): Promise<PathLabels> {
       : Promise.resolve(),
     campaignIds.length
       ? safe(async () => {
-          const { data } = await table('campaigns').select('id, subject').in('id', campaignIds).order('id', { ascending: true }).limit(campaignIds.length)
+          const { data } = await admin().from('campaigns').select('id, subject').in('id', campaignIds).order('id', { ascending: true }).limit(campaignIds.length)
           for (const row of data ?? []) {
             const id = s(row.id)
             if (!id) continue
@@ -98,7 +84,7 @@ async function resolveLabels(refs: PathRef[]): Promise<PathLabels> {
       : Promise.resolve(),
     dispatchIds.length
       ? safe(async () => {
-          const { data } = await table('dispatches').select('id, title').in('id', dispatchIds).order('id', { ascending: true }).limit(dispatchIds.length)
+          const { data } = await admin().from('dispatches').select('id, title').in('id', dispatchIds).order('id', { ascending: true }).limit(dispatchIds.length)
           for (const row of data ?? []) {
             const id = s(row.id)
             if (!id) continue
@@ -136,10 +122,10 @@ export async function loadMessagePath(input: LoadMessagePathInput): Promise<Mess
   try {
     const spaceLane = scope.kind === 'space' ? scope.id : null
 
-    // Conversations + interactions for the person, in parallel. `select('*')` on purpose: the new
-    // scope columns may not exist yet, and an explicit column list would error the whole read.
-    const convQ = table('comms_conversations').select('*').in('subject_id', subjectIds)
-    const intQ = table('contact_interactions').select('*').in('subject_id', subjectIds)
+    // Conversations + interactions for the person, in parallel. `select('*')` kept on purpose so the
+    // defensive row mapping below stays schema-tolerant (the assembler resolves legacy metadata too).
+    const convQ = admin().from('comms_conversations').select('*').in('subject_id', subjectIds)
+    const intQ = admin().from('contact_interactions').select('*').in('subject_id', subjectIds)
     const [convRes, intRes] = await Promise.all([
       (spaceLane ? convQ.eq('space_id', spaceLane) : convQ).order('last_activity_at', { ascending: false }).limit(MAX_CONVERSATIONS),
       (spaceLane ? intQ.eq('space_id', spaceLane) : intQ).order('occurred_at', { ascending: false }).limit(MAX_INTERACTIONS),
@@ -189,7 +175,8 @@ export async function loadMessagePath(input: LoadMessagePathInput): Promise<Mess
     let messages: PathMessageRow[] = []
     const convIds = conversations.map((c) => c.id)
     if (convIds.length) {
-      const { data } = await table('comms_messages')
+      const { data } = await admin()
+        .from('comms_messages')
         .select('*')
         .in('conversation_id', convIds)
         .order('occurred_at', { ascending: true })

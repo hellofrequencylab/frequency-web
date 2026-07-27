@@ -5,8 +5,9 @@
 //
 // SHAPE (mirrors lib/crm/client-notes.ts + lib/spaces/membership.ts): the PURE row builder
 // (`buildInteractionInsert`) has no Supabase/Next imports, so it is unit-testable in isolation. The IO
-// (`recordContactInteraction` / `listContactInteractions`) reaches the table through the untyped admin
-// client (the table is not in the generated DB types yet, ADR-246).
+// (`recordContactInteraction` / `listContactInteractions`) reaches the table through the TYPED admin
+// client (contact_interactions is covered by the regenerated DB types; ADR-246 closed). Only the jsonb
+// metadata bag keeps a narrow Json cast.
 //
 // authz-delegated: contact_interactions is a system/owner-scoped timeline FRONT DOOR — exactly-once on
 // idempotency_key, every write is STAMPED with the owner (and Space) the calling action/webhook already
@@ -14,6 +15,7 @@
 // lib/engagement/events.ts. There is no per-caller scope to enforce here by design.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Json, TablesInsert } from '@/lib/database.types'
 
 // ── Vocabulary (kept in lock-step with the CHECK constraints in 20260728000000) ──────────────────
 
@@ -203,7 +205,7 @@ export function buildInteractionInsert(
   }
 }
 
-// ── IO: the untyped admin-client seam (contact_interactions is not in generated types yet, ADR-246) ─
+// ── IO: the typed admin-client seam (contact_interactions is in the generated types; ADR-246 closed) ─
 
 type InteractionRow = {
   id: string
@@ -224,26 +226,15 @@ type InteractionRow = {
 const ROW_COLS =
   'id, owner_profile_id, subject_kind, subject_id, space_id, channel, direction, summary, body, metadata, source, occurred_at, created_at'
 
-/** The contact_interactions table via an untyped admin client (not in generated types yet, ADR-246).
- *  Loosely typed, mirroring lib/spaces/membership.ts. */
-function interactionsTable(): {
-  insert: (rows: InteractionInsert[]) => {
-    select: (c: string) => { maybeSingle: () => Promise<{ data: InteractionRow | null; error: unknown }> }
-  }
-  upsert: (
-    rows: InteractionInsert[],
-    opts: { onConflict: string; ignoreDuplicates: boolean },
-  ) => {
-    select: (c: string) => { maybeSingle: () => Promise<{ data: InteractionRow | null; error: unknown }> }
-  }
-  select: (c: string) => {
-    eq: (col: string, val: string) => unknown
-    order: (col: string, opts: { ascending: boolean }) => unknown
-    limit: (n: number) => unknown
-  }
-} {
-  const db = createAdminClient() as unknown as { from: (t: string) => never }
-  return db.from('contact_interactions')
+/** The contact_interactions table via the typed admin client. */
+function interactionsTable() {
+  return createAdminClient().from('contact_interactions')
+}
+
+/** The typed insert row: everything in InteractionInsert flows through as-is; only the jsonb
+ *  metadata bag needs the narrow Json cast (Record<string, unknown> is wider than Json). */
+function toDbInsert(row: InteractionInsert): TablesInsert<'contact_interactions'> {
+  return { ...row, metadata: row.metadata as Json }
 }
 
 /** Map a raw row to a typed ContactInteraction, fail-closed: an unknown enum value drops the row
@@ -290,13 +281,13 @@ export async function recordContactInteraction(
     if (row.idempotency_key) {
       // Exactly-once: on a replay (same key) do nothing and return null — the touch is already logged.
       const { data, error } = await interactionsTable()
-        .upsert([row], { onConflict: 'idempotency_key', ignoreDuplicates: true })
+        .upsert([toDbInsert(row)], { onConflict: 'idempotency_key', ignoreDuplicates: true })
         .select(ROW_COLS)
         .maybeSingle()
       if (error || !data) return null
       return { id: data.id }
     }
-    const { data, error } = await interactionsTable().insert([row]).select(ROW_COLS).maybeSingle()
+    const { data, error } = await interactionsTable().insert([toDbInsert(row)]).select(ROW_COLS).maybeSingle()
     if (error || !data) return null
     return { id: data.id }
   } catch {
@@ -322,11 +313,7 @@ export interface ListInteractionsFilter {
 export async function listContactInteractions(filter: ListInteractionsFilter): Promise<ContactInteraction[]> {
   const limit = Math.min(Math.max(filter.limit ?? 100, 1), 500)
   try {
-    let q = interactionsTable().select(ROW_COLS) as {
-      eq: (col: string, val: string) => typeof q
-      order: (col: string, opts: { ascending: boolean }) => typeof q
-      limit: (n: number) => Promise<{ data: InteractionRow[] | null; error: unknown }>
-    }
+    let q = interactionsTable().select(ROW_COLS)
     if (filter.ownerProfileId) q = q.eq('owner_profile_id', filter.ownerProfileId)
     if (filter.spaceId) q = q.eq('space_id', filter.spaceId)
     if (filter.subjectKind) q = q.eq('subject_kind', filter.subjectKind)
@@ -411,17 +398,8 @@ export async function listInteractionsForPerson(
   const ids = [...new Set(subjectIds.filter((s): s is string => typeof s === 'string' && s.length > 0))]
   if (ids.length === 0) return []
   const capped = Math.min(Math.max(limit, 1), 500)
-  type InteractionQ = {
-    eq: (col: string, val: string) => InteractionQ
-    order: (col: string, opts: { ascending: boolean }) => {
-      limit: (n: number) => Promise<{ data: InteractionRow[] | null; error: unknown }>
-    }
-  }
   try {
-    const db = createAdminClient() as unknown as {
-      from: (t: string) => { select: (c: string) => { in: (col: string, vals: string[]) => InteractionQ } }
-    }
-    let q: InteractionQ = db.from('contact_interactions').select(ROW_COLS).in('subject_id', ids)
+    let q = interactionsTable().select(ROW_COLS).in('subject_id', ids)
     // Strict per-space scope when a Space asked (never leak another tenant's touches); global otherwise.
     if (typeof spaceId === 'string' && spaceId) q = q.eq('space_id', spaceId)
     const { data, error } = await q.order('occurred_at', { ascending: false }).limit(capped)

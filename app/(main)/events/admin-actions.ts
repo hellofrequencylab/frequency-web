@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Json } from '@/lib/database.types'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { loadEventCoreStats, type EventCoreStats } from '@/lib/events/event-stats'
 import { getMyProfileId } from '@/lib/auth'
@@ -69,35 +70,21 @@ export async function getViewerHome(): Promise<{ lat: number; lng: number } | nu
 // this is the authority — the admin client bypasses RLS). Cancel/reinstate lives
 // here too (the header kebab is gone; Settings is the one host surface).
 
-// The admin client's generated types don't cover every events column used below
-// (cover_image_path / capacity / attendance_mode / slug are newer than the generated
-// types — repo convention; see app/(main)/events/index-data.ts). Cast to an untyped
-// update surface for those, with the capability gate as the real authority.
-type UntypedUpdate = {
-  from: (t: string) => {
-    update: (v: Record<string, unknown>) => {
-      eq: (c: string, val: string) => Promise<{ error: { message: string } | null }>
-    }
-  }
-}
+// Every events column used below is covered by the regenerated DB types (ADR-246
+// closed), so reads and writes go through the typed admin client. The rows below
+// keep their app-facing shapes (join_mode narrowed to its vocabulary, details as a
+// plain record) via a narrowing assertion on the typed read.
 
 export async function getEventAdminData(slug: string) {
   const admin = createAdminClient()
-  // cover_image_path / capacity / attendance_mode are newer than the generated DB
-  // types — read them through an untyped client (repo convention).
-  const { data: event } = await (admin as unknown as {
-    from: (t: string) => {
-      select: (cols: string) => {
-        eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: EventAdminRow | null }> }
-      }
-    }
-  })
+  const { data } = await admin
     .from('events')
     .select(
       'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, details, geog, hide_address, join_mode',
     )
     .eq('slug', slug)
     .maybeSingle()
+  const event = data as EventAdminRow | null
   if (!event) return null
 
   const caps = await getEventCapabilities(event.id)
@@ -270,7 +257,7 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   if (opensAt || closesAt) nextDetails.rsvpWindow = { opensAt, closesAt }
   else delete nextDetails.rsvpWindow
 
-  const { error } = await (admin as unknown as UntypedUpdate)
+  const { error } = await admin
     .from('events')
     .update({
       title,
@@ -284,7 +271,7 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
       price_cents: priceCents,
       recurrence_type: recurrence,
       recurrence_until: untilIso,
-      details: nextDetails,
+      details: nextDetails as Json,
       ...(timeZone ? { time_zone: timeZone } : {}),
       ...(category ? { category } : {}),
       ...(visibility ? { visibility } : {}),
@@ -386,7 +373,7 @@ export async function useEventPosterAsCover(
   const before = ((ev as { gallery_image_paths?: string[] | null } | null)?.gallery_image_paths ?? []) as string[]
   const paths = [path, ...before.filter((p) => p !== path)].slice(0, MAX_GALLERY_IMAGES)
 
-  const { error: dbErr } = await (admin as unknown as UntypedUpdate)
+  const { error: dbErr } = await admin
     .from('events')
     .update({ cover_image_path: path, gallery_image_paths: paths })
     .eq('id', id)
@@ -460,7 +447,7 @@ export async function uploadEventCover(
   if (upErr) return { error: upErr.message }
 
   // Persist the PATH (not the public URL) — events resolve the URL at read time.
-  const { error: dbErr } = await (admin as unknown as UntypedUpdate)
+  const { error: dbErr } = await admin
     .from('events')
     .update({ cover_image_path: path })
     .eq('id', id)
@@ -501,9 +488,9 @@ export async function updateEventHeroHeight(
   const { data: current } = await admin.from('events').select('theme').eq('id', id).maybeSingle()
   const nextTheme = writeEventHeroHeight((current as { theme?: unknown } | null)?.theme, height)
 
-  const { error } = await (admin as unknown as UntypedUpdate)
+  const { error } = await admin
     .from('events')
-    .update({ theme: nextTheme })
+    .update({ theme: nextTheme as Json })
     .eq('id', id)
   if (error) return { error: error.message }
 
@@ -527,9 +514,9 @@ export async function updateEventCoverFocus(
   const { data: current } = await admin.from('events').select('theme').eq('id', id).maybeSingle()
   const nextTheme = writeEventCoverFocus((current as { theme?: unknown } | null)?.theme, focus)
 
-  const { error } = await (admin as unknown as UntypedUpdate)
+  const { error } = await admin
     .from('events')
-    .update({ theme: nextTheme })
+    .update({ theme: nextTheme as Json })
     .eq('id', id)
   if (error) return { error: error.message }
 
@@ -542,7 +529,7 @@ export async function removeEventCover(id: string, slug: string) {
   if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
 
   const admin = createAdminClient()
-  const { error } = await (admin as unknown as UntypedUpdate)
+  const { error } = await admin
     .from('events')
     .update({ cover_image_path: null })
     .eq('id', id)
@@ -560,7 +547,7 @@ export async function removeEventPoster(id: string, slug: string) {
   if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
 
   const admin = createAdminClient()
-  const { error } = await (admin as unknown as UntypedUpdate)
+  const { error } = await admin
     .from('events')
     .update({ poster_path: null })
     .eq('id', id)
@@ -654,7 +641,7 @@ export async function setEventGalleryImages(
   // event-media paths, so cover and gallery are the same address space — no bucket mismatch.
   const nextCover = clean[0] ?? null
 
-  const { error } = await (admin as unknown as UntypedUpdate)
+  const { error } = await admin
     .from('events')
     .update({ gallery_image_paths: clean, cover_image_path: nextCover })
     .eq('id', id)
@@ -743,7 +730,7 @@ export async function addEventImageFromLoom(
   const paths = [...before, path].slice(0, MAX_GALLERY_IMAGES)
   const nextCover = paths[0] ?? null
 
-  const { error: dbErr } = await (admin as unknown as UntypedUpdate)
+  const { error: dbErr } = await admin
     .from('events')
     .update({ gallery_image_paths: paths, cover_image_path: nextCover })
     .eq('id', id)
@@ -781,7 +768,7 @@ export async function updateEventPermalink(
     if (clash) return { error: 'That permalink is already taken.' }
   }
 
-  const { error } = await (admin as unknown as UntypedUpdate)
+  const { error } = await admin
     .from('events')
     .update({ slug: next })
     .eq('id', id)
@@ -859,21 +846,15 @@ type PlaceTimeRow = {
  *  the caller holds event.editSettings (visibility is enforced here, not in the client). */
 export async function getEventPlaceTimeData(slug: string) {
   const admin = createAdminClient()
-  // time_zone / recurrence_* / details are newer than (or outside) the generated types — read
-  // them through an untyped client (repo convention; see getEventAdminData).
-  const { data: event } = await (admin as unknown as {
-    from: (t: string) => {
-      select: (cols: string) => {
-        eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: PlaceTimeRow | null }> }
-      }
-    }
-  })
+  // Typed read (ADR-246 closed); PlaceTimeRow keeps the app-facing shape (details as a plain record).
+  const { data } = await admin
     .from('events')
     .select(
       'id, slug, starts_at, ends_at, location, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, geog, time_zone, recurrence_type, recurrence_until, details',
     )
     .eq('slug', slug)
     .maybeSingle()
+  const event = data as PlaceTimeRow | null
   if (!event) return null
 
   const caps = await getEventCapabilities(event.id)
@@ -947,7 +928,7 @@ export async function updateEventPlaceTime(id: string, slug: string, fd: FormDat
   if (opensAt || closesAt) nextDetails.rsvpWindow = { opensAt, closesAt }
   else delete nextDetails.rsvpWindow
 
-  const { error } = await (admin as unknown as UntypedUpdate)
+  const { error } = await admin
     .from('events')
     .update({
       // UTC-naive wall-clock kept literally (lib/events/datetime); an empty start leaves it.
@@ -956,7 +937,7 @@ export async function updateEventPlaceTime(id: string, slug: string, fd: FormDat
       recurrence_type: recurrence,
       recurrence_until: untilIso,
       ...(timeZone ? { time_zone: timeZone } : {}),
-      details: nextDetails,
+      details: nextDetails as Json,
     })
     .eq('id', id)
   if (error) throw new Error(error.message)
@@ -1073,7 +1054,7 @@ export async function updateEventPricing(
   const priceCents = Number.isFinite(amount) && amount > 0 ? Math.round(amount * 100) : null
 
   const admin = createAdminClient()
-  const { error } = await (admin as unknown as UntypedUpdate)
+  const { error } = await admin
     .from('events')
     .update({ price_cents: priceCents })
     .eq('id', id)
