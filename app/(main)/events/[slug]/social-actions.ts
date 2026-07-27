@@ -625,7 +625,6 @@ export async function approveEventRsvp(eventId: string, slug: string, guestProfi
   const profileId = await getMyProfileId()
   if (!profileId) return
 
-  const admin = createAdminClient()
   if (!(await isEventHost(eventId, profileId)) && !(await isEventCohost(eventId, profileId)))
     return
 
@@ -654,7 +653,6 @@ export async function postEventDispatch(
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to post an update.')
 
-  const admin = createAdminClient()
   const isAuthor =
     (await isEventHost(eventId, profileId)) || (await isEventCohost(eventId, profileId))
   if (!isAuthor) return fail('Only the host or a cohost can post an update.')

@@ -222,7 +222,9 @@ export function JourneyGuide({
         return
       }
       await saveGuideProgressAction(plan.planId, plan.slug, 'ready')
-      router.push(`/journeys/${plan.slug}/learn`)
+      // The chokepoint hands back where to go next: the launch builder on a publish (ADR-840),
+      // the player otherwise. Finishing the guide and finishing the builder land the same place.
+      router.push(res.data.next ?? `/journeys/${plan.slug}/learn`)
     })
   }
 

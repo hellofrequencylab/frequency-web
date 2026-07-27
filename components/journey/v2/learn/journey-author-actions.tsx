@@ -34,7 +34,9 @@ export function JourneyAuthorActions({
         // Optionally adopt it for yourself too, so you can run it from On Air.
         if (adopt) await adoptJourney(planId)
         setJustPublished(true)
-        router.refresh()
+        // Publishing is the start of the launch: the chokepoint says where to land (ADR-840).
+        if (res.data.next) router.push(res.data.next)
+        else router.refresh()
       }
     })
 

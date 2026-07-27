@@ -5983,6 +5983,64 @@ export type Database = {
           },
         ]
       }
+      journey_drip_sends: {
+        Row: {
+          claimed_at: string
+          created_at: string
+          enrollment_id: string
+          id: string
+          phase_index: number
+          plan_id: string
+          profile_id: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          claimed_at?: string
+          created_at?: string
+          enrollment_id: string
+          id?: string
+          phase_index: number
+          plan_id: string
+          profile_id: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          claimed_at?: string
+          created_at?: string
+          enrollment_id?: string
+          id?: string
+          phase_index?: number
+          plan_id?: string
+          profile_id?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_drip_sends_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "journey_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_drip_sends_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_drip_sends_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journey_enrollments: {
         Row: {
           completed_at: string | null
@@ -6447,6 +6505,7 @@ export type Database = {
           circle_id: string
           created_at: string
           drip_interval_days: number
+          enroll_cap: number | null
           host_id: string | null
           id: string
           kickoff_event_id: string | null
@@ -6454,11 +6513,14 @@ export type Database = {
           started_at: string
           status: string
           updated_at: string
+          window_ends_at: string | null
+          window_starts_at: string | null
         }
         Insert: {
           circle_id: string
           created_at?: string
           drip_interval_days?: number
+          enroll_cap?: number | null
           host_id?: string | null
           id?: string
           kickoff_event_id?: string | null
@@ -6466,11 +6528,14 @@ export type Database = {
           started_at?: string
           status?: string
           updated_at?: string
+          window_ends_at?: string | null
+          window_starts_at?: string | null
         }
         Update: {
           circle_id?: string
           created_at?: string
           drip_interval_days?: number
+          enroll_cap?: number | null
           host_id?: string | null
           id?: string
           kickoff_event_id?: string | null
@@ -6478,6 +6543,8 @@ export type Database = {
           started_at?: string
           status?: string
           updated_at?: string
+          window_ends_at?: string | null
+          window_starts_at?: string | null
         }
         Relationships: [
           {

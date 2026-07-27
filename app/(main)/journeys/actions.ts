@@ -347,6 +347,22 @@ export async function getJourneyMeetingEvent(
   return ok({ event: e ? { id: e.id, title: e.title, slug: e.slug, startsAt: e.starts_at } : null })
 }
 
+/** The launch surface path for a Journey (ADR-840), or null when its slug cannot be resolved.
+ *  Navigation only: it never gates anything and never blocks a publish. */
+async function launchPathFor(planId: string): Promise<string | null> {
+  try {
+    const { data } = await createAdminClient()
+      .from('journey_plans')
+      .select('slug')
+      .eq('id', planId)
+      .maybeSingle()
+    const slug = (data as { slug: string } | null)?.slug
+    return slug ? `/journeys/${slug}/launch` : null
+  } catch {
+    return null
+  }
+}
+
 /**
  * Set visibility + drive the review workflow (docs/JOURNEYS.md §11–§12) and, on publish,
  * run Vera's rank quality gate (ADR-Quest "Gate + coach").
@@ -363,11 +379,17 @@ export async function getJourneyMeetingEvent(
  *
  * Returns the resolved moderation state + Vera's review so the builder can show the right
  * celebration ("live" vs "in review") and the rank-eligibility coaching.
+ *
+ * NAVIGATION (ADR-840): it also returns `next`, WHERE THE PUBLISHER SHOULD LAND. A Journey that
+ * just went live goes to its launch surface (/journeys/<slug>/launch) — publishing is the start of
+ * the launch, not the end of the build — and unpublishing back to a draft returns null (stay put).
+ * This is the one place that decision is made, so every publish button lands the same way; it is
+ * navigation only and changes nothing about the gate above it.
  */
 export async function setJourneyVisibility(
   planId: string,
   visibility: PlanVisibility,
-): Promise<ActionResult<{ status: PlanStatus; review: StoredVeraReview | null }>> {
+): Promise<ActionResult<{ status: PlanStatus; review: StoredVeraReview | null; next: string | null }>> {
   const caller = await getCallerProfile()
   if (!caller) return fail('Not allowed.')
   // The author, a platform operator (admin.access), or a manager of the owning Space (team
@@ -392,12 +414,15 @@ export async function setJourneyVisibility(
     // not block publishing — the Journey is already live above.
     const review = await runVeraGate(planId)
     revalidatePath('/journeys', 'layout')
-    return ok({ status, review })
+    return ok({ status, review, next: await launchPathFor(planId) })
   }
 
   await setPlanVisibility(planId, visibility)
   revalidatePath('/journeys', 'layout')
-  return ok({ status: 'draft', review: null })
+  // Unlisted is still published (shared by link), so it launches too; private is a step back to the
+  // draft, where the publisher stays where they were.
+  const next = visibility === 'unlisted' ? await launchPathFor(planId) : null
+  return ok({ status: 'draft', review: null, next })
 }
 
 /**
