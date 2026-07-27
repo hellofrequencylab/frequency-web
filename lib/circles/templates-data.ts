@@ -2,6 +2,13 @@
 // Server-only (admin client; the column reads are explicitly filtered, e.g.
 // is_active for the public gallery). Callers above enforce authz. Coercion is
 // defensive: jsonb columns are re-shaped, never trusted raw.
+//
+// CATALOG GUARD (ADR-864): circle_templates now also holds Space-owned Program
+// blueprints (owner_space_id set). The LIST reads below filter owner_space_id
+// IS NULL so a Program blueprint never appears in the global Starter Circles
+// rail or the staff catalog. The single-template reads (getTemplateById /
+// getTemplateBySlug) stay unfiltered on purpose: Remix loads Program
+// blueprints through them when someone starts a Chapter.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -83,17 +90,28 @@ export function rowToTemplate(row: Record<string, unknown>): CircleTemplate {
   }
 }
 
-/** Active templates for the member gallery, in display order. */
+/** Active templates for the member gallery, in display order. Staff-authored
+ *  catalog only: Program blueprints (owner_space_id set) never show here. */
 export async function getActiveTemplates(): Promise<CircleTemplate[]> {
   const admin = db()
-  const { data } = await admin.from('circle_templates').select(TEMPLATE_COLS).eq('is_active', true).order('display_order')
+  const { data } = await admin
+    .from('circle_templates')
+    .select(TEMPLATE_COLS)
+    .eq('is_active', true)
+    .is('owner_space_id', null)
+    .order('display_order')
   return ((data ?? []) as Record<string, unknown>[]).map(rowToTemplate)
 }
 
-/** Every template (operator admin), in display order — active and not. */
+/** Every template (operator admin), in display order — active and not. Same
+ *  guard: the staff catalog, not Space-owned Program blueprints. */
 export async function getAllTemplates(): Promise<CircleTemplate[]> {
   const admin = db()
-  const { data } = await admin.from('circle_templates').select(TEMPLATE_COLS).order('display_order')
+  const { data } = await admin
+    .from('circle_templates')
+    .select(TEMPLATE_COLS)
+    .is('owner_space_id', null)
+    .order('display_order')
   return ((data ?? []) as Record<string, unknown>[]).map(rowToTemplate)
 }
 
