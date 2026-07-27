@@ -30,12 +30,13 @@ export const CHANNEL_HUB_SECTIONS: readonly {
   {
     key: 'circles',
     label: 'Circles',
-    blurb: 'The Circles practicing in this Channel, with status and how full each one is.',
+    blurb: 'The Circles practicing in this Channel: add one, remove one, and see how full each is.',
   },
   {
     key: 'program',
     label: 'Program',
-    blurb: 'The Chapter blueprint: attach one to make this Channel a Program, or run the one it has.',
+    blurb:
+      'Who runs this Channel, and the Chapter blueprint: attach one to make it a Program, or run the one it has.',
   },
   {
     key: 'settings',

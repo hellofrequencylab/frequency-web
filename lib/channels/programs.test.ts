@@ -26,6 +26,13 @@ import { join } from 'node:path'
 //      never reaches the catalog list reads); detachProgramBlueprint clears
 //      template_id and soft-retires the blueprint; the staff editor twins work
 //      on a Frequency-run (NULL-owner) Program the Space path can never reach.
+//   8. The assignment flows (ADR-871): setCircleChannel refuses a paused
+//      channel (the same retire switch) and clears on null;
+//      removeCircleFromChannel only detaches a circle that is IN the channel;
+//      setChannelOwnerSpace enforces one owned channel per Space (the DB's
+//      unique partial index, pre-checked into a sentence), re-stamps a
+//      Program blueprint's owner to match (the ADR-865 catalog fence), leaves
+//      program_only alone, and clears both back to NULL (Frequency-run).
 
 const SPACE = 'aaaaaaaa-0000-4000-a000-000000space1'
 const OTHER_SPACE = 'bbbbbbbb-0000-4000-a000-00000space2'
@@ -43,6 +50,7 @@ const state = {
   circles: [] as Row[],
   templates: [] as Row[], // circle_templates
   circleProfiles: [] as Row[], // circle_profiles
+  spaces: [] as Row[],
   inserts: [] as Array<{ table: string; row: Row }>,
   updates: [] as Array<{ table: string; patch: Row }>,
   deletes: [] as Array<{ table: string }>,
@@ -55,6 +63,7 @@ function rowsOf(table: string): Row[] {
   if (table === 'circles') return state.circles
   if (table === 'circle_templates') return state.templates
   if (table === 'circle_profiles') return state.circleProfiles
+  if (table === 'spaces') return state.spaces
   throw new Error(`unexpected table ${table}`)
 }
 
@@ -176,6 +185,9 @@ import {
   updateProgramForStaff,
   setProgramPausedForStaff,
   refreshProgramBlueprintForStaff,
+  setCircleChannel,
+  removeCircleFromChannel,
+  setChannelOwnerSpace,
   type ChapterSummary,
 } from './programs'
 // The catalog list reads share the mocked admin client above, so the ADR-870
@@ -213,6 +225,7 @@ beforeEach(() => {
   state.circles = []
   state.templates = []
   state.circleProfiles = []
+  state.spaces = []
   state.inserts = []
   state.updates = []
   state.deletes = []
@@ -1003,6 +1016,137 @@ describe('the staff editor twins work on a Frequency-run (NULL-owner) Program (A
     await expect(
       refreshProgramBlueprintForStaff({ channelId: PROGRAM_CHANNEL, profileId: PROFILE, sourceCircleId: FLAGSHIP }),
     ).rejects.toThrow(/demo/)
+  })
+})
+
+// ── The assignment flows (ADR-871): circle ↔ channel ↔ owner Space. ──
+
+describe('setCircleChannel (ADR-871)', () => {
+  beforeEach(() => {
+    state.circles = [{ id: FLAGSHIP, topical_channel_id: null, status: 'active' }]
+  })
+
+  it('refuses a missing circle or a missing channel, writing nothing', async () => {
+    await expect(
+      setCircleChannel({ circleId: '00000000-0000-4000-a000-000000000000', channelId: PLAIN_CHANNEL }),
+    ).rejects.toThrow(/Circle is not available/)
+    await expect(
+      setCircleChannel({ circleId: FLAGSHIP, channelId: '00000000-0000-4000-a000-000000000000' }),
+    ).rejects.toThrow(/Channel is not available/)
+    expect(state.updates).toHaveLength(0)
+  })
+
+  it('refuses a paused channel with the member-facing copy (the ADR-865 retire switch)', async () => {
+    state.channels.find((c) => c.id === PLAIN_CHANNEL)!.is_active = false
+    await expect(setCircleChannel({ circleId: FLAGSHIP, channelId: PLAIN_CHANNEL })).rejects.toThrow(
+      /paused and not taking new Circles/,
+    )
+    expect(state.updates).toHaveLength(0)
+    expect(state.circles[0].topical_channel_id).toBeNull()
+  })
+
+  it('sets the channel, and null clears it back to no Channel', async () => {
+    await setCircleChannel({ circleId: FLAGSHIP, channelId: PLAIN_CHANNEL })
+    expect(state.circles[0].topical_channel_id).toBe(PLAIN_CHANNEL)
+
+    await setCircleChannel({ circleId: FLAGSHIP, channelId: null })
+    expect(state.circles[0].topical_channel_id).toBeNull()
+    // Only the circle row ever moves: no channel or blueprint write.
+    expect(state.updates.map((u) => u.table)).toEqual(['circles', 'circles'])
+  })
+})
+
+describe('removeCircleFromChannel (ADR-871)', () => {
+  it('refuses a circle that is not in this channel, writing nothing', async () => {
+    state.circles = [{ id: FLAGSHIP, topical_channel_id: PROGRAM_CHANNEL, status: 'active' }]
+    await expect(
+      removeCircleFromChannel({ circleId: FLAGSHIP, channelId: PLAIN_CHANNEL }),
+    ).rejects.toThrow(/not in this Channel/)
+    expect(state.updates).toHaveLength(0)
+    expect(state.circles[0].topical_channel_id).toBe(PROGRAM_CHANNEL)
+  })
+
+  it('clears topical_channel_id for a circle that is in the channel', async () => {
+    state.circles = [{ id: FLAGSHIP, topical_channel_id: PLAIN_CHANNEL, status: 'active' }]
+    await removeCircleFromChannel({ circleId: FLAGSHIP, channelId: PLAIN_CHANNEL })
+    expect(state.circles[0].topical_channel_id).toBeNull()
+  })
+})
+
+describe('setChannelOwnerSpace (ADR-871)', () => {
+  beforeEach(() => {
+    state.spaces = [
+      { id: SPACE, type: 'business' },
+      { id: OTHER_SPACE, type: 'nonprofit' },
+    ]
+  })
+
+  it('refuses a missing channel, a missing Space, and the root Space', async () => {
+    await expect(
+      setChannelOwnerSpace({
+        channelId: '00000000-0000-4000-a000-000000000000',
+        profileId: PROFILE,
+        spaceId: SPACE,
+      }),
+    ).rejects.toThrow(/Channel is not available/)
+    await expect(
+      setChannelOwnerSpace({
+        channelId: PLAIN_CHANNEL,
+        profileId: PROFILE,
+        spaceId: '00000000-0000-4000-a000-000000000000',
+      }),
+    ).rejects.toThrow(/Space is not available/)
+    state.spaces.push({ id: 'root-space', type: 'root' })
+    await expect(
+      setChannelOwnerSpace({ channelId: PLAIN_CHANNEL, profileId: PROFILE, spaceId: 'root-space' }),
+    ).rejects.toThrow(/Space is not available/)
+    expect(state.updates).toHaveLength(0)
+  })
+
+  it('one owned channel per Space, full stop: a Space that owns ANY channel is refused', async () => {
+    // The seed gives SPACE the Program channel; a second owned channel — even a
+    // plain, non-Program one — would violate the DB's unique partial index
+    // (20270112000000). The pre-check turns that into a sentence.
+    await expect(
+      setChannelOwnerSpace({ channelId: PLAIN_CHANNEL, profileId: PROFILE, spaceId: SPACE }),
+    ).rejects.toThrow(/already owns a Channel/)
+    expect(state.updates).toHaveLength(0)
+    expect(state.channels.find((c) => c.id === PLAIN_CHANNEL)!.owner_space_id).toBeNull()
+  })
+
+  it('re-assigning the same owner to the same channel stays a no-op success', async () => {
+    seedBlueprintRow()
+    await setChannelOwnerSpace({ channelId: PROGRAM_CHANNEL, profileId: PROFILE, spaceId: SPACE })
+    expect(state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.owner_space_id).toBe(SPACE)
+  })
+
+  it('assigns an owner to a plain channel without touching any blueprint', async () => {
+    await setChannelOwnerSpace({ channelId: PLAIN_CHANNEL, profileId: PROFILE, spaceId: OTHER_SPACE })
+    expect(state.channels.find((c) => c.id === PLAIN_CHANNEL)!.owner_space_id).toBe(OTHER_SPACE)
+    expect(state.updates.map((u) => u.table)).toEqual(['topical_channels'])
+  })
+
+  it('assigning an owner to a Program re-stamps the blueprint owner; program_only stays put', async () => {
+    seedBlueprintRow()
+    state.templates[0].program_only = true
+    await setChannelOwnerSpace({ channelId: PROGRAM_CHANNEL, profileId: PROFILE, spaceId: OTHER_SPACE })
+
+    expect(state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.owner_space_id).toBe(OTHER_SPACE)
+    // The ADR-865 catalog fence reads the blueprint's owner: it must follow.
+    expect(state.templates[0].owner_space_id).toBe(OTHER_SPACE)
+    expect(state.templates[0].program_only).toBe(true)
+    expect(state.updates.map((u) => u.table).sort()).toEqual(['circle_templates', 'topical_channels'])
+  })
+
+  it('clears back to NULL (Frequency-run), blueprint owner included', async () => {
+    seedBlueprintRow()
+    state.templates[0].program_only = true
+    await setChannelOwnerSpace({ channelId: PROGRAM_CHANNEL, profileId: PROFILE, spaceId: null })
+
+    expect(state.channels.find((c) => c.id === PROGRAM_CHANNEL)!.owner_space_id).toBeNull()
+    expect(state.templates[0].owner_space_id).toBeNull()
+    // Fenced from the catalog forever: program_only survives the clear.
+    expect(state.templates[0].program_only).toBe(true)
   })
 })
 

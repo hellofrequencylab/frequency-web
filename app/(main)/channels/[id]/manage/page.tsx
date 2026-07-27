@@ -171,7 +171,12 @@ export default async function ManageChannelPage({
         <section>
           <SectionHeader title={isProgramChannel ? 'Chapters' : 'Circles'} />
           <Suspense fallback={<SectionFallback />}>
-            <CirclesSection channelId={channel.id} isProgramChannel={isProgramChannel} />
+            <CirclesSection
+              channelId={channel.id}
+              idOrSlug={channel.slug}
+              isProgramChannel={isProgramChannel}
+              notice={{ saved: saved === '1', error }}
+            />
           </Suspense>
         </section>
       )}

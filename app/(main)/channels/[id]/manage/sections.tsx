@@ -18,6 +18,7 @@ import {
   loadChannelHomeStats,
   loadTunedInMembers,
   loadChannelCircles,
+  loadAssignableCircles,
   loadProgramSection,
 } from './load'
 import {
@@ -26,7 +27,12 @@ import {
   setChannelProgramPausedAction,
   refreshChannelProgramBlueprintAction,
   detachChannelProgramAction,
+  addChannelCircleAction,
+  removeChannelCircleAction,
+  setChannelOwnerSpaceAction,
+  clearChannelOwnerSpaceAction,
 } from './actions'
+import { RemoveCircleButton } from './remove-circle-button'
 
 // The Channel Manage hub's body sections (ADR-870). Each is an async Server
 // Component that fetches its own slice, so the page can stream them behind
@@ -181,73 +187,149 @@ const CIRCLE_STATUS_CHIP: Record<string, { Icon: typeof Check; cls: string; labe
 
 export async function CirclesSection({
   channelId,
+  idOrSlug,
   isProgramChannel,
+  notice,
 }: {
   channelId: string
+  idOrSlug: string
   isProgramChannel: boolean
+  notice?: { saved?: boolean; error?: string }
 }) {
-  const circles = await loadChannelCircles(channelId)
+  const [circles, assignable] = await Promise.all([
+    loadChannelCircles(channelId),
+    loadAssignableCircles(channelId),
+  ])
   const noun = isProgramChannel ? 'Chapter' : 'Circle'
+
+  const banner = notice?.error ? (
+    <p className="rounded-xl border border-danger/30 bg-danger-bg px-4 py-2.5 text-sm text-danger">
+      {notice.error === 'missing'
+        ? 'Pick a Circle first.'
+        : notice.error === 'denied'
+          ? 'You are not allowed to do that.'
+          : notice.error === 'paused'
+            ? 'This Channel is paused and not taking new Circles right now.'
+            : 'That did not save. Try again.'}
+    </p>
+  ) : notice?.saved ? (
+    <p className="rounded-xl border border-success/30 bg-success-bg px-4 py-2.5 text-sm text-success">
+      Saved.
+    </p>
+  ) : null
+
+  // Add an existing circle (ADR-871): the picker only offers real, live circles
+  // not already here; the action re-gates channel.manage and the data layer
+  // refuses a paused channel either way.
+  const addForm = (
+    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <SectionHeader title={`Add a ${noun}`} />
+      <p className="mb-3 text-sm text-muted">
+        Bring an existing Circle into this Channel. It keeps its host, members, and events; it
+        starts practicing here.
+      </p>
+      {assignable.length === 0 ? (
+        <p className="text-sm text-subtle">Every live Circle already practices somewhere here.</p>
+      ) : (
+        <form action={addChannelCircleAction.bind(null, channelId, idOrSlug)} className="space-y-3">
+          <label className="block space-y-1">
+            <span className={labelClasses}>Circle</span>
+            <select name="circleId" required className={fieldClasses} defaultValue="">
+              <option value="" disabled>
+                Pick a Circle
+              </option>
+              {assignable.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {c.city ? ` (${c.city})` : ''} · {c.memberCount} members
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button type="submit" size="sm">
+            Add to Channel
+          </Button>
+        </form>
+      )}
+    </div>
+  )
 
   if (circles.length === 0) {
     return (
-      <EmptyState
-        variant="first-use"
-        title={`No ${noun}s yet`}
-        description={
-          isProgramChannel
-            ? 'When someone starts a Chapter from the blueprint, it lands here.'
-            : 'When a Circle starts practicing in this Channel, it lands here.'
-        }
-      />
+      <div className="space-y-5">
+        {banner}
+        <EmptyState
+          variant="first-use"
+          title={`No ${noun}s yet`}
+          description={
+            isProgramChannel
+              ? 'When someone starts a Chapter from the blueprint, it lands here.'
+              : 'When a Circle starts practicing in this Channel, it lands here.'
+          }
+        />
+        {addForm}
+      </div>
     )
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-border">
-            <th className="px-4 py-2.5 text-xs font-semibold text-subtle">{noun}</th>
-            <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Status</th>
-            <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Where</th>
-            <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Members</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {circles.map((c) => {
-            const chip = CIRCLE_STATUS_CHIP[c.status] ?? {
-              Icon: CircleIcon,
-              cls: 'bg-surface-elevated text-subtle',
-              label: c.status,
-            }
-            return (
-              <tr key={c.id} className="align-top">
-                <td className="px-4 py-2.5 font-medium text-text">
-                  <Link href={`/circles/${c.slug}`} className="hover:underline">
-                    {c.name}
-                  </Link>
-                </td>
-                <td className="px-4 py-2.5">
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold ${chip.cls}`}
-                  >
-                    <chip.Icon className="h-3 w-3" aria-hidden />
-                    {chip.label}
-                  </span>
-                </td>
-                <td className="px-4 py-2.5 text-muted">
-                  {c.type === 'online' ? 'Online' : c.city || 'In person'}
-                </td>
-                <td className="px-4 py-2.5 text-muted">
-                  {c.memberCount}
-                  {c.memberCap > 0 && <span className="text-subtle"> / {c.memberCap}</span>}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+    <div className="space-y-5">
+      {banner}
+      <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">{noun}</th>
+              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Status</th>
+              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Where</th>
+              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Members</th>
+              <th className="px-4 py-2.5">
+                <span className="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {circles.map((c) => {
+              const chip = CIRCLE_STATUS_CHIP[c.status] ?? {
+                Icon: CircleIcon,
+                cls: 'bg-surface-elevated text-subtle',
+                label: c.status,
+              }
+              return (
+                <tr key={c.id} className="align-top">
+                  <td className="px-4 py-2.5 font-medium text-text">
+                    <Link href={`/circles/${c.slug}`} className="hover:underline">
+                      {c.name}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold ${chip.cls}`}
+                    >
+                      <chip.Icon className="h-3 w-3" aria-hidden />
+                      {chip.label}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 text-muted">
+                    {c.type === 'online' ? 'Online' : c.city || 'In person'}
+                  </td>
+                  <td className="px-4 py-2.5 text-muted">
+                    {c.memberCount}
+                    {c.memberCap > 0 && <span className="text-subtle"> / {c.memberCap}</span>}
+                  </td>
+                  <td className="px-4 py-2.5 text-right">
+                    <RemoveCircleButton
+                      circleName={c.name}
+                      action={removeChannelCircleAction.bind(null, channelId, idOrSlug, c.id)}
+                    />
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      {addForm}
     </div>
   )
 }
@@ -278,7 +360,9 @@ export async function ProgramSection({
         ? 'Pick a source first.'
         : notice.error === 'denied'
           ? 'You are not allowed to do that.'
-          : 'That did not save. Check the source and try again.'}
+          : notice.error === 'owned'
+            ? 'That Space already owns a Channel. A Space can own one Channel, so clear that one first.'
+            : 'That did not save. Check the source and try again.'}
     </p>
   ) : notice?.saved ? (
     <p className="rounded-xl border border-success/30 bg-success-bg px-4 py-2.5 text-sm text-success">
@@ -286,11 +370,67 @@ export async function ProgramSection({
     </p>
   ) : null
 
+  // Who runs this Channel (ADR-871). Lives on the Program tab, not Settings:
+  // owner_space_id is the Program model's "who runs it" column (ADR-864), and
+  // Settings mounts the shared catalog module, which must not grow a
+  // hub-only staff control (MENU-CONTRACT). Rendered in both blueprint states —
+  // a plain focus area can be owned too.
+  const ownerCard = (
+    <ProgramCard>
+      <SectionHeader title="Owner Space" />
+      {data.ownerSpace ? (
+        <>
+          <p className="mb-3 text-sm text-muted">
+            <Link href={`/spaces/${data.ownerSpace.slug}`} className="font-medium text-text hover:underline">
+              {data.ownerSpace.name}
+            </Link>{' '}
+            runs this Channel. Clearing it hands the Channel back to Frequency; the Space keeps
+            everything else it has.
+          </p>
+          <form action={clearChannelOwnerSpaceAction.bind(null, channelId, idOrSlug)}>
+            <Button type="submit" variant="secondary" size="sm">
+              Make it Frequency-run
+            </Button>
+          </form>
+        </>
+      ) : (
+        <>
+          <p className="mb-3 text-sm text-muted">
+            Frequency runs this Channel. Assign an owner Space to hand it to that Space&apos;s
+            team. A Space can own one Channel.
+          </p>
+          <form
+            action={setChannelOwnerSpaceAction.bind(null, channelId, idOrSlug)}
+            className="space-y-3"
+          >
+            <label className="block space-y-1">
+              <span className={labelClasses}>Space</span>
+              <select name="spaceId" required className={fieldClasses} defaultValue="">
+                <option value="" disabled>
+                  Pick a Space
+                </option>
+                {data.spaces.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button type="submit" size="sm">
+              Assign owner Space
+            </Button>
+          </form>
+        </>
+      )}
+    </ProgramCard>
+  )
+
   // ── No blueprint yet: the attach forms. ──
   if (!data.blueprint) {
     return (
       <div className="space-y-5">
         {banner}
+        {ownerCard}
         <p className="max-w-2xl text-sm text-muted">
           A Program is a Channel with a Chapter blueprint attached. Members anywhere can start a
           Chapter from it: a local Circle running the same model. Pick where the blueprint comes
@@ -364,6 +504,8 @@ export async function ProgramSection({
         This Channel runs a Program. The blueprint below is what every new Chapter starts from.
         {!data.channel.isActive && ' The Program is paused right now: the page is hidden and no new Chapters can start.'}
       </p>
+
+      {ownerCard}
 
       <ProgramCard>
         <SectionHeader title="Name and one liner" />
