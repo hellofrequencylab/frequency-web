@@ -2,7 +2,15 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { getListingWithOwner, getListingClaimToken, listSavedListingIds } from '@/lib/listings'
-import { amenityLabel, getHousingDetail, propertyTypeLabel } from '@/lib/listings/housing'
+import {
+  accessibilityLabel,
+  amenityLabel,
+  getHousingDetail,
+  laundryLabel,
+  parkingLabel,
+  propertyTypeLabel,
+  resolveAddressDisplay,
+} from '@/lib/listings/housing'
 import { resolveListingClaim } from '@/lib/listing-seeder/claim'
 import { buttonClasses } from '@/components/ui/button'
 import { ReportButton } from '@/components/marketplace/report-button'
@@ -118,6 +126,20 @@ export default async function HousingDetailPage({
   }
   const firstName = listing.owner?.displayName.split(' ')[0] ?? 'the host'
 
+  // The address, resolved through the member's chosen precision (ADR-867). The street
+  // address is SERVER-checked here: it only renders when the member picked 'exact' AND
+  // the viewer is signed in. It rides the page body only — the view's locationLabel
+  // (meta + JSON-LD) is computed public-safe inside listingDetailFromHousing.
+  const address = detail
+    ? resolveAddressDisplay({
+        precision: detail.addressPrecision,
+        city: listing.city,
+        neighborhood: listing.neighborhood,
+        addressLine: detail.addressLine,
+        signedIn: !!profileId,
+      })
+    : null
+
   // Structured facts, rendered as a compact spec grid when present.
   const facts: { label: string; value: string }[] = []
   if (detail?.propertyType) facts.push({ label: 'Property', value: propertyTypeLabel(detail.propertyType) ?? detail.propertyType })
@@ -127,8 +149,14 @@ export default async function HousingDetailPage({
   if (detail?.sqft != null) facts.push({ label: 'Size', value: `${detail.sqft.toLocaleString('en-US')} sq ft` })
   if (detail && leaseLabel(detail.leaseMonths)) facts.push({ label: 'Lease', value: leaseLabel(detail.leaseMonths)! })
   if (detail && money(detail.depositCents)) facts.push({ label: 'Deposit', value: money(detail.depositCents)! })
+  if (detail && money(detail.moveInCostsCents)) facts.push({ label: 'Move-in costs', value: money(detail.moveInCostsCents)! })
+  if (detail?.minStayMonths != null) facts.push({ label: 'Minimum stay', value: `${detail.minStayMonths} ${detail.minStayMonths === 1 ? 'month' : 'months'}` })
+  if (detail?.maxOccupants != null) facts.push({ label: 'Max occupants', value: String(detail.maxOccupants) })
+  if (detail && parkingLabel(detail.parking)) facts.push({ label: 'Parking', value: parkingLabel(detail.parking)! })
+  if (detail && laundryLabel(detail.laundry)) facts.push({ label: 'Laundry', value: laundryLabel(detail.laundry)! })
   if (detail?.householdSize != null) facts.push({ label: 'In the home', value: `${detail.householdSize} ${detail.householdSize === 1 ? 'person' : 'people'}` })
   if (detail && longDate(detail.availableFrom)) facts.push({ label: 'Available', value: longDate(detail.availableFrom)! })
+  if (address?.addressLine) facts.push({ label: 'Address', value: address.addressLine })
 
   // House rules as plain yes-tags (only the ones that are true or explicitly set).
   const rules: string[] = []
@@ -137,6 +165,7 @@ export default async function HousingDetailPage({
   if (detail?.petsOk) rules.push('Pets welcome')
   if (detail?.smokingOk) rules.push('Smoking OK')
   if (detail?.cannabisOk) rules.push('Cannabis friendly')
+  if (detail?.bathroomsShared) rules.push('Shared bathroom')
 
   return (
     <ListingDetailTemplate
@@ -213,6 +242,19 @@ export default async function HousingDetailPage({
             {detail.amenities.map((a) => (
               <li key={a} className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-xs font-medium text-text">
                 {amenityLabel(a)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {detail && detail.accessibility.length > 0 && (
+        <div className="mb-5">
+          <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Accessibility</p>
+          <ul className="flex flex-wrap gap-2">
+            {detail.accessibility.map((t) => (
+              <li key={t} className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-xs font-medium text-text">
+                {accessibilityLabel(t)}
               </li>
             ))}
           </ul>

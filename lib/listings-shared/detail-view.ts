@@ -15,6 +15,7 @@ import {
   type MarketListingWithAuthor,
 } from '@/lib/marketplace'
 import type { CommerceProduct } from '@/lib/commerce/types'
+import { resolveAddressDisplay } from '@/lib/listings/housing'
 import type { HousingDetail, Listing } from '@/lib/listings/types'
 import type { ProductReviewInput } from '@/lib/jsonld'
 
@@ -259,7 +260,19 @@ export function listingDetailFromHousing(
   opts: { isOwner: boolean },
 ): ListingDetailView {
   const images = resolveImages(listing.images)
-  const place = [listing.neighborhood, listing.city].filter(Boolean).join(', ') || null
+  // The PUBLIC place line (info band + meta description + JSON-LD addressLocality) goes
+  // through the Tier B precision resolver as a signed-out viewer, so 'city' precision
+  // shows city only and address_line can never reach structured data (ADR-867). A
+  // listing without a housing row keeps the legacy neighborhood+city line.
+  const place = detail
+    ? resolveAddressDisplay({
+        precision: detail.addressPrecision,
+        city: listing.city,
+        neighborhood: listing.neighborhood,
+        addressLine: null,
+        signedIn: false,
+      }).areaLabel
+    : [listing.neighborhood, listing.city].filter(Boolean).join(', ') || null
   const seller = listing.owner
     ? { handle: listing.owner.handle, displayName: listing.owner.displayName, avatarUrl: listing.owner.avatarUrl }
     : null

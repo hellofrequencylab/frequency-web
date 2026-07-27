@@ -4,7 +4,15 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { listingOwnerId, saveListing, unsaveListing, updateListing } from '@/lib/listings'
-import { toAmenities, toPropertyType, upsertHousingDetail } from '@/lib/listings/housing'
+import {
+  toAccessibilityTags,
+  toAddressPrecision,
+  toAmenities,
+  toLaundry,
+  toParking,
+  toPropertyType,
+  upsertHousingDetail,
+} from '@/lib/listings/housing'
 import { approxCoordsForArea } from '@/lib/marketplace/area-geocode'
 import type { HousingType, RoomType } from '@/lib/listings/types'
 
@@ -113,6 +121,21 @@ export async function updateHousingListingAction(listingId: string, formData: Fo
     amenities: toAmenities(formData.getAll('amenities').map(String)),
     smokingOk: checkbox(formData, 'smoking_ok'),
     cannabisOk: checkbox(formData, 'cannabis_ok'),
+    // Tier B (ADR-867). Enums re-whitelisted server-side; money arrives in dollars.
+    // address_line is kept only under 'exact' precision (upsertHousingDetail enforces
+    // it again, so a coarser choice never stores a stale street address).
+    parking: toParking(formData.get('parking')),
+    laundry: toLaundry(formData.get('laundry')),
+    bathroomsShared: checkbox(formData, 'bathrooms_shared'),
+    moveInCostsCents: (() => {
+      const dollars = posNum(formData.get('move_in_costs'))
+      return dollars ? Math.round(dollars * 100) : null
+    })(),
+    minStayMonths: posNum(formData.get('min_stay_months')),
+    maxOccupants: posNum(formData.get('max_occupants')),
+    accessibility: toAccessibilityTags(formData.getAll('accessibility').map(String)),
+    addressPrecision: toAddressPrecision(formData.get('address_precision')),
+    addressLine: (formData.get('address_line') as string) || null,
   })
 
   revalidatePath('/housing')

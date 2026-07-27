@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { buttonClasses } from '@/components/ui/button'
-import { AMENITIES, PROPERTY_TYPES } from '@/lib/listings/types'
+import { ACCESSIBILITY_TAGS, ADDRESS_PRECISIONS, AMENITIES, LAUNDRY_OPTIONS, PARKING_OPTIONS, PROPERTY_TYPES } from '@/lib/listings/types'
 import { createHousingListingAction } from '@/app/(main)/marketplace/actions'
 
 // The listing compose form (client) — hosts the photo gallery (MultiImageUpload,
@@ -42,6 +42,16 @@ export interface HousingFormInitial {
   petsOk: boolean
   smokingOk: boolean
   cannabisOk: boolean
+  // Tier B (ADR-867).
+  parking: string | null
+  laundry: string | null
+  bathroomsShared: boolean
+  moveInCostsDollars: number | null
+  minStayMonths: number | null
+  maxOccupants: number | null
+  accessibility: string[]
+  addressPrecision: string
+  addressLine: string | null
   description: string | null
   images: string[]
 }
@@ -56,6 +66,9 @@ export function HousingForm({
   action?: (formData: FormData) => Promise<void>
 } = {}) {
   const [images, setImages] = useState<string[]>(initial?.images ?? [])
+  // The Privacy toggle: the street-address input only exists while 'exact' is picked,
+  // so a coarser choice never carries a stale address in the submit.
+  const [precision, setPrecision] = useState<string>(initial?.addressPrecision ?? 'city')
 
   return (
     <form action={action ?? createHousingListingAction} className="space-y-6">
@@ -203,6 +216,87 @@ export function HousingForm({
         </div>
       </div>
 
+      {/* Tier B details (ADR-867): facts about the home a renter decides on. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="parking" className={LABEL}>
+            Parking
+          </label>
+          <select id="parking" name="parking" className={FIELD} defaultValue={initial?.parking ?? ''}>
+            <option value="">Not specified</option>
+            {PARKING_OPTIONS.map((p) => (
+              <option key={p.slug} value={p.slug}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="laundry" className={LABEL}>
+            Laundry
+          </label>
+          <select id="laundry" name="laundry" className={FIELD} defaultValue={initial?.laundry ?? ''}>
+            <option value="">Not specified</option>
+            {LAUNDRY_OPTIONS.map((l) => (
+              <option key={l.slug} value={l.slug}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div>
+          <label htmlFor="move_in_costs" className={LABEL}>
+            Move-in costs (optional)
+          </label>
+          <input
+            id="move_in_costs"
+            name="move_in_costs"
+            type="number"
+            min="0"
+            step="1"
+            inputMode="numeric"
+            defaultValue={initial?.moveInCostsDollars ?? ''}
+            className={FIELD}
+            placeholder="Total beyond the deposit"
+          />
+        </div>
+        <div>
+          <label htmlFor="min_stay_months" className={LABEL}>
+            Minimum stay (months)
+          </label>
+          <input
+            id="min_stay_months"
+            name="min_stay_months"
+            type="number"
+            min="0"
+            step="1"
+            inputMode="numeric"
+            defaultValue={initial?.minStayMonths ?? ''}
+            className={FIELD}
+            placeholder="e.g. 3"
+          />
+        </div>
+        <div>
+          <label htmlFor="max_occupants" className={LABEL}>
+            Max occupants (optional)
+          </label>
+          <input
+            id="max_occupants"
+            name="max_occupants"
+            type="number"
+            min="0"
+            step="1"
+            inputMode="numeric"
+            defaultValue={initial?.maxOccupants ?? ''}
+            className={FIELD}
+            placeholder="e.g. 2"
+          />
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="neighborhood" className={LABEL}>
@@ -218,6 +312,49 @@ export function HousingForm({
         </div>
       </div>
 
+      {/* Privacy (ADR-867): the member picks how much of the location the listing shows.
+          The exact address only ever renders to signed-in members, and never reaches
+          search engines, previews, or structured data. */}
+      <fieldset>
+        <legend className={LABEL}>Address privacy</legend>
+        <p className="mb-2 text-xs text-subtle">
+          Choose how much of the location shows on the listing.
+        </p>
+        <div className="space-y-2">
+          {ADDRESS_PRECISIONS.map((p) => (
+            <label key={p.slug} className="flex items-start gap-2 text-sm text-text">
+              <input
+                type="radio"
+                name="address_precision"
+                value={p.slug}
+                checked={precision === p.slug}
+                onChange={() => setPrecision(p.slug)}
+                className="mt-0.5 h-4 w-4 border-border"
+              />
+              <span>
+                <span className="font-medium">{p.label}</span>
+                <span className="block text-xs text-subtle">{p.hint}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+        {precision === 'exact' && (
+          <div className="mt-3">
+            <label htmlFor="address_line" className={LABEL}>
+              Street address
+            </label>
+            <input
+              id="address_line"
+              name="address_line"
+              maxLength={200}
+              defaultValue={initial?.addressLine ?? ''}
+              className={FIELD}
+              placeholder="e.g. 412 Maple St, Unit B"
+            />
+          </div>
+        )}
+      </fieldset>
+
       <fieldset>
         <legend className={LABEL}>Amenities</legend>
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
@@ -231,6 +368,24 @@ export function HousingForm({
                 className="h-4 w-4 rounded border-border"
               />
               {a.label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend className={LABEL}>Accessibility</legend>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+          {ACCESSIBILITY_TAGS.map((t) => (
+            <label key={t.slug} className={CHECK}>
+              <input
+                type="checkbox"
+                name="accessibility"
+                value={t.slug}
+                defaultChecked={initial?.accessibility.includes(t.slug)}
+                className="h-4 w-4 rounded border-border"
+              />
+              {t.label}
             </label>
           ))}
         </div>
@@ -258,6 +413,10 @@ export function HousingForm({
           <label className={CHECK}>
             <input type="checkbox" name="cannabis_ok" defaultChecked={initial?.cannabisOk} className="h-4 w-4 rounded border-border" />
             Cannabis friendly
+          </label>
+          <label className={CHECK}>
+            <input type="checkbox" name="bathrooms_shared" defaultChecked={initial?.bathroomsShared} className="h-4 w-4 rounded border-border" />
+            Shared bathroom
           </label>
         </div>
       </fieldset>
