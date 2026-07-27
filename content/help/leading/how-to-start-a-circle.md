@@ -108,6 +108,12 @@ space. The Circle keeps its host and its members. Its gatherings join the space'
 calendar, and they stay on the Circle's own page as well, so nobody loses track of
 where to show up. Move the Circle out again and its gatherings leave with it.
 
+A space can also include a Circle with a membership. In the space's Memberships
+settings, each tier can name one Circle under **Circle access**. Join that
+membership and you are in the Circle while your membership is active; if it ends,
+you leave the Circle too, unless you had joined it on your own first. Your own
+joins are always yours to keep.
+
 ### Do I have to be an expert in the activity?
 
 No. You are the Host, not the teacher. Your job is to hold the time and welcome
