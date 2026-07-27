@@ -4,8 +4,9 @@
 // Mirrors the sibling settings-page pattern (collaborators / airwaves): resolve the caller, resolve +
 // gate the Space (canManage || staffViewing, else 404 with no existence leak), feature-lock on the
 // `program` function, and frame the body in the FocusTemplate. The chrome auto-registers via the
-// /spaces/<slug>/settings* pattern in page-chrome.ts, so no rail edit is needed. v1 is create + review
-// only: no edit or delete (the quiet note below says so).
+// /spaces/<slug>/settings* pattern in page-chrome.ts, so no rail edit is needed. v1 was create-only;
+// ADR-869 makes this a real editor: display copy, blueprint refresh, and pause/resume are self-serve.
+// Deleting a Program stays a crew call (the quiet note at the bottom says so).
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -21,14 +22,19 @@ import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/ent
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { listCirclesForSpace } from '@/lib/circles/store'
 import { listSpacePrograms, listChapters } from '@/lib/channels/programs'
-import { createSpaceProgramAction } from './actions'
+import {
+  createSpaceProgramAction,
+  updateSpaceProgramAction,
+  refreshProgramBlueprintAction,
+  setProgramPausedAction,
+} from './actions'
 
 export const metadata = { title: 'Program' }
 
-// Plain-voice copy for the short error codes the action bounces back with.
+// Plain-voice copy for the short error codes the actions bounce back with.
 const ERROR_COPY: Record<string, string> = {
   denied: 'You do not have access to do that here.',
-  missing: 'Give your Program a name, a one liner, and a blueprint circle.',
+  missing: 'Fill in every field before saving.',
   circle: 'Pick one of your own live circles as the blueprint.',
   failed: 'That did not go through. Try again in a moment.',
 }
@@ -38,9 +44,9 @@ export default async function SpaceProgramPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; saved?: string }>
 }) {
-  const [{ slug }, { error }] = await Promise.all([params, searchParams])
+  const [{ slug }, { error, saved }] = await Promise.all([params, searchParams])
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
 
@@ -97,45 +103,113 @@ export default async function SpaceProgramPage({
             {errorMsg}
           </p>
         )}
+        {!errorMsg && saved && (
+          <p className="rounded-lg border border-success/30 bg-success-bg px-3 py-2 text-sm text-success">
+            Saved.
+          </p>
+        )}
 
         {programs.length > 0 ? (
           <>
             {programs.map((program) => {
               const chapters = chaptersByProgram[program.id] ?? []
               return (
-                <section key={program.id} className="rounded-2xl border border-border bg-surface p-6">
-                  <SectionHeader
-                    title={program.name}
-                    href={`/channels/${program.slug}`}
-                    action={
-                      <Link href={`/channels/${program.slug}`} className={buttonClasses('secondary', 'sm')}>
-                        View the Channel
-                      </Link>
-                    }
-                  />
-                  {program.description && <p className="text-sm text-muted">{program.description}</p>}
-                  <div className="mt-4 space-y-3 text-sm">
-                    <p className="flex items-center gap-2 text-text">
-                      <UsersRound className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                      {chapters.length === 0
-                        ? 'No Chapters yet. The first one starts when a member runs your blueprint.'
-                        : chapters.length === 1
-                          ? '1 Chapter is running your model.'
-                          : `${chapters.length} Chapters are running your model.`}
+                <div key={program.id} className="space-y-6">
+                  <section className="rounded-2xl border border-border bg-surface p-6">
+                    <SectionHeader
+                      title={program.name}
+                      href={program.isActive ? `/channels/${program.slug}` : undefined}
+                      action={
+                        program.isActive ? (
+                          <Link href={`/channels/${program.slug}`} className={buttonClasses('secondary', 'sm')}>
+                            View the Channel
+                          </Link>
+                        ) : (
+                          <span className="rounded-full border border-warning/60 px-3 py-1 text-xs font-medium text-warning">
+                            Paused
+                          </span>
+                        )
+                      }
+                    />
+                    {program.description && <p className="text-sm text-muted">{program.description}</p>}
+                    <div className="mt-4 space-y-3 text-sm">
+                      <p className="flex items-center gap-2 text-text">
+                        <UsersRound className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+                        {chapters.length === 0
+                          ? 'No Chapters yet. The first one starts when a member runs your blueprint.'
+                          : chapters.length === 1
+                            ? '1 Chapter is running your model.'
+                            : `${chapters.length} Chapters are running your model.`}
+                      </p>
+                      <p className="text-muted">
+                        Members see {program.name} as a Channel. They can tune in, follow the feed, find a
+                        Chapter near them, or start one from your blueprint.
+                      </p>
+                    </div>
+                  </section>
+
+                  <form
+                    action={updateSpaceProgramAction.bind(null, slug, program.id)}
+                    className="space-y-4 rounded-2xl border border-border bg-surface p-6"
+                  >
+                    <SectionHeader title="Edit your Program" />
+                    <p className="text-sm text-muted">
+                      Renaming keeps the Channel at the same address, so every shared link keeps working.
                     </p>
-                    <p className="text-muted">
-                      Blueprint: your flagship circle, saved when you created this Program. Every new
-                      Chapter starts from that snapshot.
+                    <Field label="Program name" hint="The name members see on the Channel.">
+                      <Input name="name" required maxLength={80} defaultValue={program.name} />
+                    </Field>
+                    <Field label="One liner" hint="One plain sentence on what a Chapter does together.">
+                      <Input name="oneLiner" required maxLength={160} defaultValue={program.description ?? ''} />
+                    </Field>
+                    <Button type="submit">Save changes</Button>
+                  </form>
+
+                  <form
+                    action={refreshProgramBlueprintAction.bind(null, slug, program.id)}
+                    className="space-y-4 rounded-2xl border border-border bg-surface p-6"
+                  >
+                    <SectionHeader title="Blueprint" />
+                    <p className="text-sm text-muted">
+                      The blueprint is the snapshot every new Chapter starts from, saved when you created
+                      this Program. Refresh it to save the current setup of one of your live circles
+                      instead. Chapters already running keep what they have; only future Chapters start
+                      from the new snapshot.
                     </p>
-                    <p className="text-muted">
-                      Members see {program.name} as a Channel. They can tune in, follow the feed, find a
-                      Chapter near them, or start one from your blueprint.
+                    <Field label="Snapshot from" hint="One of your live circles. Its current setup becomes the new blueprint.">
+                      <select name="sourceCircleId" required defaultValue="" className={fieldClasses}>
+                        <option value="" disabled>
+                          Pick a circle
+                        </option>
+                        {liveCircles.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Button type="submit" variant="secondary">
+                      Refresh blueprint
+                    </Button>
+                  </form>
+
+                  <section className="space-y-4 rounded-2xl border border-border bg-surface p-6">
+                    <SectionHeader title={program.isActive ? 'Pause your Program' : 'Resume your Program'} />
+                    <p className="text-sm text-muted">
+                      {program.isActive
+                        ? 'Paused: the Channel page is hidden and no new Chapters can start. Members and Chapters keep everything they have.'
+                        : 'This Program is paused. The Channel page is hidden and no new Chapters can start. Resuming brings both straight back.'}
                     </p>
-                  </div>
-                </section>
+                    <form action={setProgramPausedAction.bind(null, slug, program.id, program.isActive)}>
+                      <Button type="submit" variant={program.isActive ? 'warningOutline' : 'successOutline'}>
+                        {program.isActive ? 'Pause Program' : 'Resume Program'}
+                      </Button>
+                    </form>
+                  </section>
+                </div>
               )
             })}
-            <p className="text-xs text-subtle">Need a change to your Program? Contact the crew.</p>
+            <p className="text-xs text-subtle">Deleting a Program goes through the crew. Everything else here is yours.</p>
           </>
         ) : liveCircles.length === 0 ? (
           <EmptyState
