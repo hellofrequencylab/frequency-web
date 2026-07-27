@@ -44,10 +44,12 @@ describe('facets', () => {
   it('category + surface facet counts sum consistently with the rows', () => {
     const catTotal = appCategoryFacets(items).reduce((n, f) => n + f.count, 0)
     expect(catTotal).toBe(items.length)
-    // Every facet is non-empty and in spine order (elements last).
+    // Every facet is non-empty and in spine order, with the two NON-SPINE lanes last: elements,
+    // then the operator nav destinations (ADR-848). Both sit after the nine spine slots because
+    // neither names one, so the spine facets stay contiguous at the head of the list.
     const cats = appCategoryFacets(items)
     expect(cats.every((f) => f.count > 0)).toBe(true)
-    expect(cats.at(-1)?.category).toBe('element')
+    expect(cats.slice(-2).map((f) => f.category)).toEqual(['element', 'nav'])
 
     for (const f of appSurfaceFacets(items)) {
       expect(f.count).toBe(items.filter((i) => i.surfaces.includes(f.surface)).length)

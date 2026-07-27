@@ -82,6 +82,19 @@ function rolePasses(gate: Extract<AppGate, { system: 'role' }>, viewer: AppViewe
   return floor || meetsStaff({ staffDomain: gate.staffDomain }, staffRole)
 }
 
+/**
+ * Is this App a SPINE app — one the admin bar / settings rail may render?
+ *
+ * The operator nav lane (ADR-848) declares the `global` scope, so `appsForScope` on the operator
+ * scope returns nav destinations alongside editor and page apps. They are pages to navigate to, not
+ * editors to mount, and they carry no spine `category`, so every rail path filters through this
+ * first. It is a type guard as well as a filter: downstream render code keeps its narrow
+ * `AdminSlot | 'element'` category instead of widening to accommodate rows it never draws.
+ */
+export function isSpineApp(app: App): app is App & { category: Exclude<App['category'], 'nav'> } {
+  return app.category !== 'nav'
+}
+
 /** Whether an App's declared placement `s` satisfies a concrete scope `query`. */
 function scopeMatches(s: AppScope, query: AppScopeQuery): boolean {
   switch (query.on) {

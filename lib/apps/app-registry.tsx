@@ -83,6 +83,8 @@ const CATEGORY_LABELS: Record<App['category'], string> = {
   billing: 'Billing',
   danger: 'Danger',
   element: 'Elements',
+  // Operator nav destinations (ADR-848) — pages an operator navigates to, not spine editors.
+  nav: 'Admin pages',
 }
 
 export function categoryLabel(category: App['category']): string {

@@ -104,7 +104,10 @@ export const SPACE_GROUP_META: Partial<Record<AdminSlot, SpineMeta>> = {
   danger: { label: 'Danger', Icon: AlertTriangle },
 }
 
-/** The minimal App shape the spine helpers read — `id` + which spine `category` it sits in. */
+/** The minimal App shape the spine helpers read — `id` + which spine `category` it sits in.
+ *  Deliberately NOT widened to the full App category union: the operator nav lane (ADR-848) carries
+ *  no spine slot and is never drawn here, so callers filter it out with `isSpineApp` and this stays
+ *  narrow. Widening it would let a nav row reach the rail render, which is what the filter prevents. */
 interface SpineApp {
   id: string
   category: AdminSlot | 'element'

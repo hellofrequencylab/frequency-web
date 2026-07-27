@@ -23,6 +23,7 @@ import { ADMIN_MODULES } from '@/lib/admin/modules/registry'
 import { LAYOUT_MODULES, ROUTE_MODULE_IDS } from '@/lib/widgets/modules'
 import type { ElementRegistry, PillarSlug } from '@/lib/library/element-catalog'
 import { SPACE_MODULES } from '@/lib/admin/modules/space-modules'
+import { STUDIO_LEAVES } from '@/lib/nav/studio'
 import type { App } from './types'
 
 // ── editor Apps ← ADMIN_MODULES ───────────────────────────────────────────────────────────────────
@@ -214,8 +215,59 @@ const SPACE_EDITOR_APPS: App[] = SPACE_MODULES.map((m): App => ({
   version: 1,
 }))
 
+// ── operator nav Apps ← STUDIO_LEAVES (ADR-848) ─────────────────────────────────────────────────
+// The fourth lane, and the one that finishes the set: every PLATFORM admin destination as an App,
+// so the operator rail resolves from the same catalog the Space rail, the entity consoles and the
+// page blocks already do. `lib/nav/studio.ts` is the single source those destinations already have
+// (it derives both legacy admin catalogs, ADMIN_NAV and ADMIN_GROUPS), so this composes it rather
+// than restating it.
+//
+// THE GATE IS THE SERVER'S, NOT THE PALETTE'S. A leaf's `min` is read TWO different ways today:
+// `lib/admin/guard.ts::meetsMin` (which every one of these pages actually enforces with
+// `requireAdmin`) treats 'admin'/'janitor' as the `web_role` STAFF axis, while `canSee` in
+// lib/nav/registry.ts reads the same token as a COMMUNITY rung for the ⌘K palette. Those disagree,
+// and since ADR-208 a real operator is `web_role: 'janitor'` with `community_role: 'member'`, so
+// the two readings select nearly disjoint populations. The rail must agree with the SERVER, or it
+// offers rows that redirect to /feed and hides rows the viewer can open — hence `axis: 'web'`.
+// `staffLevel` carries through verbatim (three leaves opt into 'read'; the rest default to write,
+// matching `canUseLink`).
+//
+// IDS ARE NAMESPACED `nav:<leafId>` so a destination can never collide with a module id, and so
+// `appById` stays unambiguous now that four lanes share one map.
+const ADMIN_NAV_APPS: App[] = STUDIO_LEAVES.map((leaf): App => ({
+  id: `nav:${leaf.id}`,
+  label: leaf.label,
+  description: leaf.desc,
+  category: 'nav',
+  // Operator destinations hang off the platform scope, not an entity's.
+  scopes: [{ on: 'scopeKind', kind: 'global' }],
+  gate: {
+    system: 'role',
+    axis: 'web',
+    minAccess: leaf.min,
+    ...(leaf.staffDomain ? { staffDomain: leaf.staffDomain } : {}),
+    ...(leaf.staffLevel ? { staffLevel: leaf.staffLevel } : {}),
+  },
+  // A nav destination presents on the RAIL, never as an editor — that is what keeps it out of the
+  // spine groupings and out of `appsForScope(scope, viewer, 'editor')`.
+  surfaces: { rail: { side: 'left' } },
+  themeable: false,
+  status: 'final',
+  version: 1,
+}))
+
+/** The operator nav destinations, as Apps. Exported so the rail and the drift guards can read the
+ *  lane without re-filtering the whole catalog by category. */
+export const ADMIN_NAV_APP_LIST: readonly App[] = ADMIN_NAV_APPS
+
 /** THE catalog — the composed, uniform view of every feature. LP2 will invert the registries onto it. */
-export const APPS: readonly App[] = [...EDITOR_APPS, ...PAGE_APPS, ...ELEMENT_APPS, ...SPACE_EDITOR_APPS]
+export const APPS: readonly App[] = [
+  ...EDITOR_APPS,
+  ...PAGE_APPS,
+  ...ELEMENT_APPS,
+  ...SPACE_EDITOR_APPS,
+  ...ADMIN_NAV_APPS,
+]
 
 /** Look an App up by id. */
 export function appById(id: string): App | undefined {

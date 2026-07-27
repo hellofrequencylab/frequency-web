@@ -23,6 +23,7 @@ import { appsForScope, lockedAppsForScope } from '@/lib/apps/for-scope'
 import { mergeAppOverrides, effectiveMinRole } from '@/lib/apps/overrides'
 import { APPS } from '@/lib/apps/catalog'
 import type { App, AppViewer } from '@/lib/apps/types'
+import { isSpineApp } from '@/lib/apps/access'
 import { usePageAdmin } from '@/components/layout/page-admin-context'
 import { CONTENT_EDIT_ROUTES } from '@/lib/layout/editable-content'
 import { isStaff, atLeastRole } from '@/lib/core/roles'
@@ -382,7 +383,7 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
     if (!surfaces || surfaces.length === 0) return true
     return surfaces.some((re) => re.test(pathname))
   }
-  const inlineApps = apps.filter((a) => {
+  const inlineApps = apps.filter(isSpineApp).filter((a) => {
     if (isBankPlacement(a)) return false
     if (!surfacesMatch(a)) return false
     // The Hub shows stats, never an inline PERSONAL editor. The surface predicate already drops the
@@ -602,9 +603,15 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   const searchApps: SearchableApp[] = [
     ...personalApps,
     ...(manager || isOperator || isSpace
-      ? applyOverrides(appsForScope(scope, viewer).filter((a) => !PERSONAL_MODULE_IDS.has(a.id)))
+      ? applyOverrides(
+          // `isSpineApp` drops the operator NAV lane (ADR-848): those declare the `global` scope, so
+          // an unqualified appsForScope on the operator scope returns them, but they are pages to
+          // navigate to rather than editors to search for in this rail.
+          appsForScope(scope, viewer).filter(isSpineApp).filter((a) => !PERSONAL_MODULE_IDS.has(a.id)),
+        )
       : []),
   ]
+    .filter(isSpineApp)
     .map((a) => ({
     id: a.id,
     label: a.label,
