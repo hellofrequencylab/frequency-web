@@ -15,8 +15,9 @@ import { STUDIO_LEAVES, STUDIO_WORLDS } from './studio'
 //
 // The load-bearing test in this file is the DRIFT GUARD at the bottom. Two catalogs describe the
 // same operator pages and no code read both, so they were free to disagree — and on two rows they
-// do. That guard turns "they disagree" from something nobody notices into a CI failure, with the
-// two existing differences listed as accepted exceptions so a THIRD one cannot slip in quietly.
+// did, each in a way that made the RAIL promise access the PAGE refused. Both are resolved
+// (ADR-851). The guard turns "they disagree" from something nobody notices into a CI failure, and
+// the exception list is empty, so ANY new divergence fails the build.
 
 describe('the rail is a projection of NAV_AREAS, not a second list', () => {
   it('has exactly one entry per Admin-section nav area, in order', () => {
@@ -178,7 +179,7 @@ describe('the two catalogs may not silently disagree about a shared destination'
     expect(sharedDestinations().length).toBeGreaterThanOrEqual(10)
   })
 
-  it('agrees on every shared destination except the two recorded exceptions', () => {
+  it('agrees on every shared destination, with no exceptions outstanding', () => {
     const diverged = sharedDestinations()
       .filter((d) => d.navMin !== d.leafMin || d.navDomain !== d.leafDomain)
       .map((d) => d.key)
@@ -195,21 +196,34 @@ describe('the two catalogs may not silently disagree about a shared destination'
     for (const key of KNOWN_GATE_DIVERGENCES) expect(divergedKeys.has(key)).toBe(true)
   })
 
-  it('pins what each recorded divergence actually is, so resolving one is a deliberate edit', () => {
+  it('pins the two the owner resolved, so a regression reads as an access change', () => {
+    // These were the only two divergences, and each meant the RAIL offered a row the PAGE refused.
+    // ADR-851 resolved both; pinning the agreed values means re-introducing either difference shows
+    // up in review as what it is, an access change, rather than as a one-word catalog edit.
     const byKey = new Map(sharedDestinations().map((d) => [d.key, d]))
+
+    // A Marketer reaches Loom Studio: both catalogs carry the marketing staff arm, and
+    // app/(main)/admin/library/page.tsx guards on requireAdmin('janitor', { staff: 'marketing' }).
     expect(byKey.get('admin-library')).toEqual({
       key: 'admin-library',
       navMin: 'janitor',
       navDomain: 'marketing',
       leafMin: 'janitor',
-      leafDomain: undefined,
+      leafDomain: 'marketing',
     })
+
+    // Manage Spaces sits at janitor, with no staff arm on either side, matching the page's
+    // requireAdmin('janitor').
     expect(byKey.get('admin-spaces')).toEqual({
       key: 'admin-spaces',
-      navMin: 'admin',
-      navDomain: 'platform',
+      navMin: 'janitor',
+      navDomain: undefined,
       leafMin: 'janitor',
       leafDomain: undefined,
     })
+  })
+
+  it('has nothing left on the exception list', () => {
+    expect([...KNOWN_GATE_DIVERGENCES]).toEqual([])
   })
 })

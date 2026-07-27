@@ -140,7 +140,7 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // and the operator "My Spaces" hub above. Gated EXACTLY like QR Studio: community admin/janitor
   // (defaultAccess 'admin' = the top of the ladder) OR platform-capable staff (staffDomain
   // 'platform'), so only Admin + Janitor see it. Telescopes like the rest of the Admin section.
-  { key: 'admin-spaces',     href: '/admin/spaces',     label: 'Manage Spaces', section: 'Admin', defaultAccess: 'admin',   staffDomain: 'platform',  surface: 'platformManage' },
+  { key: 'admin-spaces',     href: '/admin/spaces',     label: 'Manage Spaces', section: 'Admin', defaultAccess: 'janitor', surface: 'platformManage' },
   { key: 'admin-marketplace', href: '/admin/marketplace', label: 'Marketplace', section: 'Admin', defaultAccess: 'admin', staffDomain: 'platform', surface: 'platformManage' },
   // Personal Settings is NOT an admin tool — every logged-in member reaches it from the
   // profile card (bottom-left) + /settings. It deliberately no longer sits under "Admin".

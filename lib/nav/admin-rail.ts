@@ -7,15 +7,14 @@
 //   • `STUDIO_LEAVES` / `STUDIO_WORLDS` (lib/nav/studio.ts) — the same pages, carrying the `world`
 //     each belongs to and the gate the SERVER enforces through `requireAdmin`.
 //
-// They overlap on eleven destinations, and on two of them THEY DISAGREE (see DIVERGENCES below).
-// Nothing detected that until it was looked for, because no code reads both. This module is the
-// join: one entry per rail row, naming its legacy key, its world parent, and ONE gate.
+// They overlap on eleven destinations. Nothing had ever compared them, because no code reads both,
+// and two of the eleven turned out to disagree — each in a way that made the RAIL promise access the
+// PAGE refused. Both are resolved (ADR-851); see KNOWN_GATE_DIVERGENCES. This module is the join:
+// one entry per rail row, naming its legacy key, its world parent, and ONE gate.
 //
-// THE GATE IS TAKEN FROM `NAV_AREAS`, VERBATIM, INCLUDING WHERE THE TWO DISAGREE. That is a
-// deliberate choice and the reason this file changes no access at all: `NAV_AREAS` is what the rail
-// enforces today, so sourcing from it means the reconciliation is a refactor rather than a security
-// change. Where the catalogs conflict, the conflict is recorded below as data instead of being
-// silently resolved by whichever file a future reader happens to open first.
+// THE GATE IS TAKEN FROM `NAV_AREAS`, VERBATIM. `NAV_AREAS` is what the rail enforces, so sourcing
+// from it means this join can never itself change access: a gate change has to be made in the
+// catalog, deliberately, where the drift guard will see it.
 
 import { NAV_AREAS, type NavArea } from '@/lib/nav-areas'
 import { STUDIO_LEAVES, STUDIO_WORLDS } from './studio'
@@ -45,18 +44,26 @@ export type AdminRailEntry = {
 }
 
 /**
- * The two destinations where `NAV_AREAS` and `STUDIO_LEAVES` disagree about who may reach the page.
- * Listed as DATA so the drift guard can distinguish "a known, accepted difference" from "someone
- * just introduced a new one". Resolving either is an access-control decision with a real population
- * behind it, not a refactor, so neither is resolved here.
+ * Destinations where `NAV_AREAS` and `STUDIO_LEAVES` disagree about who may reach the page.
  *
- *   admin-library  nav: janitor ∪ marketing staff   leaf: janitor, no staff arm
- *                  -> the nav row lets a Marketer reach Loom Studio; the leaf does not.
- *   admin-spaces   nav: admin ∪ platform staff      leaf: janitor, no staff arm
- *                  -> the nav row is BOTH looser (admin, not janitor) and wider (a platform staffer
- *                     qualifies) than the leaf. Note `registry.gate.test.ts` pins the nav side.
+ * EMPTY, and that is the point. Two divergences existed when this join was first written; the owner
+ * resolved both (ADR-851), and each turned out to be a live mismatch between the rail and the page
+ * rather than a cosmetic difference:
+ *
+ *   admin-library  A Marketer reaches Loom Studio. The rail already advertised it to the `marketing`
+ *                  staff domain, but the page guarded on `requireAdmin('janitor')` with no staff arm,
+ *                  so a Marketer was shown the row and then redirected. The leaf gained the domain
+ *                  and the page gained the staff arm.
+ *   admin-spaces   Manage Spaces sits at janitor. The page already guarded on
+ *                  `requireAdmin('janitor')`; the rail row advertised the looser `admin` plus a
+ *                  platform-staff arm, so it promised access the page refused. The rail row now
+ *                  matches the page.
+ *
+ * The list stays as a mechanism, not a habit. Adding a key here means "we have decided to live with
+ * this difference"; the drift guard fails the build for any divergence NOT listed, so a new one
+ * cannot land silently, and it also fails if a key listed here no longer diverges.
  */
-export const KNOWN_GATE_DIVERGENCES: ReadonlySet<string> = new Set(['admin-library', 'admin-spaces'])
+export const KNOWN_GATE_DIVERGENCES: ReadonlySet<string> = new Set<string>()
 
 /** `key` of the NAV_AREA whose href is a world landing page — the BOXES. */
 function boxKeyByHref(): Map<string, string> {
