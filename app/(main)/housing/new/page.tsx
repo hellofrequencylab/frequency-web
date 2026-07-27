@@ -12,13 +12,13 @@ export const metadata = { title: 'List housing' }
 
 export default async function NewHousingPage() {
   const viewerProfileId = await getMyProfileId()
-  if (!viewerProfileId) redirect('/sign-in?next=/marketplace/housing/new')
+  if (!viewerProfileId) redirect('/sign-in?next=/housing/new')
 
   return (
     <FocusTemplate
       title="List housing"
       description="A rental, a sublet, or a room with a roommate. No fees and no payment to set up. Members reach you by message."
-      back={{ href: '/marketplace/housing', label: 'Housing' }}
+      back={{ href: '/housing', label: 'Housing' }}
       width="wide"
     >
       <HousingForm />

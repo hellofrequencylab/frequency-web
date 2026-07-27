@@ -18,7 +18,7 @@ const LAYOUT = readFileSync('app/(main)/layout.tsx', 'utf8')
 const ADVERTISED: { path: string; sitemapMarker: string }[] = [
   { path: '/store/abc-123', sitemapMarker: '/store/${p.id}' },
   { path: '/market/abc-123', sitemapMarker: '/market/${p.id}' },
-  { path: '/marketplace/housing/abc-123', sitemapMarker: '/marketplace/housing/${l.id}' },
+  { path: '/housing/abc-123', sitemapMarker: '/housing/${l.id}' },
   { path: '/classifieds/abc-123', sitemapMarker: '/classifieds/' },
   { path: '/spaces/a-space/podcasts/a-show', sitemapMarker: '/podcasts/' },
 ]
@@ -43,7 +43,7 @@ describe('sitemap URLs are reachable by a signed-out crawler', () => {
   it('keeps the member index pages and every sub-route members-only', () => {
     // Scope discipline: only the detail routes the sitemap names. A blanket /store or /market rule
     // would expose the member index pages; a loose Space rule would expose manage sub-routes.
-    for (const p of ['/store', '/market', '/marketplace/housing', '/classifieds', '/feed', '/messages']) {
+    for (const p of ['/store', '/market', '/housing', '/classifieds', '/feed', '/messages']) {
       expect(isAnonPublicDetail(p), `${p} must stay members-only`).toBe(false)
     }
     for (const p of ['/store/abc/edit', '/market/abc/manage', '/spaces/a/podcasts/b/manage', '/spaces/a/settings']) {

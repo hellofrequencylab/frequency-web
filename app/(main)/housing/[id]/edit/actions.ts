@@ -48,7 +48,7 @@ function parseImages(v: FormDataEntryValue | null): string[] {
  *  createHousingListingAction field for field, so create and edit can never drift. */
 export async function updateHousingListingAction(listingId: string, formData: FormData): Promise<void> {
   const profileId = await getMyProfileId()
-  if (!profileId) redirect(`/sign-in?next=/marketplace/housing/${listingId}/edit`)
+  if (!profileId) redirect(`/sign-in?next=/housing/${listingId}/edit`)
   if ((await listingOwnerId(listingId)) !== profileId) return
 
   const title = String(formData.get('title') ?? '').trim()
@@ -99,9 +99,9 @@ export async function updateHousingListingAction(listingId: string, formData: Fo
     cannabisOk: checkbox(formData, 'cannabis_ok'),
   })
 
-  revalidatePath('/marketplace/housing')
-  revalidatePath(`/marketplace/housing/${listingId}`)
-  redirect(`/marketplace/housing/${listingId}`)
+  revalidatePath('/housing')
+  revalidatePath(`/housing/${listingId}`)
+  redirect(`/housing/${listingId}`)
 }
 
 // ── Favorites (the heart toggle) ─────────────────────────────────────────────
@@ -112,12 +112,12 @@ export async function saveListingAction(listingId: string): Promise<void> {
   const profileId = await getMyProfileId()
   if (!profileId) return
   await saveListing(profileId, listingId)
-  revalidatePath('/marketplace/housing')
+  revalidatePath('/housing')
 }
 
 export async function unsaveListingAction(listingId: string): Promise<void> {
   const profileId = await getMyProfileId()
   if (!profileId) return
   await unsaveListing(profileId, listingId)
-  revalidatePath('/marketplace/housing')
+  revalidatePath('/housing')
 }

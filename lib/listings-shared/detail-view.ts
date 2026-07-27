@@ -295,6 +295,6 @@ export function listingDetailFromHousing(
     // Housing carries no review model, so no AggregateRating or Review nodes.
     aggregateRating: null,
     reviews: [],
-    back: { href: '/marketplace/housing', label: 'Housing' },
+    back: { href: '/housing', label: 'Housing' },
   }
 }

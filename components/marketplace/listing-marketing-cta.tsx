@@ -22,7 +22,7 @@ const COPY: Record<ListingDetailView['vertical'], { heading: string; body: strin
   housing: {
     heading: 'Have a place to share?',
     body: 'List a rental, a room, or a sublet and reach members looking nearby. Contact stays in messages.',
-    href: '/marketplace/housing/new',
+    href: '/housing/new',
     cta: 'List housing',
   },
 }

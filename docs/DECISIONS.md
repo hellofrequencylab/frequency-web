@@ -15250,3 +15250,17 @@ The durable rule: **entitlement-granted state carries provenance, and revocation
 **Consequences.** Tier B (richer listing fields behind an address-precision setting) and the `/housing` namespace move are next, recorded in the plan. The fair-housing posture is unchanged and must stay deliberate: gender/age fields remain gated to shared living and unscored, and any future hard filter must branch on arrangement type.
 
 The durable rule: **a match score a member can act on names its reasons in plain words, and never names another member's private numbers.**
+
+---
+
+## ADR-862 — Housing moves to /housing, off the retired marketplace namespace (2026-07-27)
+
+**Status.** Accepted.
+
+**Context.** ADR-596 retired "Marketplace" as a member word, splitting commerce into Classifieds, Market, Frequency Store, and Shop. Housing kept the last member-facing `/marketplace/*` URL (`/marketplace/housing`), an inconsistency the housing audit flagged to fix BEFORE the surface grew in Tier B rather than after, when more inbound links and indexed URLs would exist.
+
+**Decision.** The whole housing subtree moves to `/housing` (index, detail, edit, new, roommates), with `git mv` preserving history. `/marketplace/housing` and `/marketplace/housing/:path*` 308-redirect permanently, so indexed URLs and shared links survive. Every reference updated in one pass — nav areas, the crawler-gate pattern, search destinations, the sitemap (now emitting `/housing/<id>`), canonical/JSON-LD bases, breadcrumbs, the member-footer seed, the commerce components' base paths, and the live `menu_items`/`menu_rail_cards` rows. The mandate's `/housing` (a top-level route, matching NAMING's pattern) was chosen over META-SCAN-STATUS's earlier `/market/housing` suggestion.
+
+**Consequences.** Two follow-ups recorded, not smuggled: `/marketplace/events` is still member-linked, so housing was not literally the last `/marketplace/*` URL — that surface deserves its own ADR-596 pass; and the breadcrumb umbrella still labels all four commerce surfaces "Marketplace", a pre-existing retired-word use left untouched here because changing it is a breadcrumb-taxonomy decision, not a routing one. The housing breadcrumb pin stays: all four surfaces are deliberately pinned to a uniform trail, and auto-derivation would hide them as single-crumb pages.
+
+The durable rule: **a namespace rename moves before the surface grows, and moves completely — routes, redirects, sitemap, canonicals, nav data, and the live menu rows in one atomic change, never a slow drift.**

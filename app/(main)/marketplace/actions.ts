@@ -52,7 +52,7 @@ function parseImages(v: FormDataEntryValue | null): string[] {
 
 export async function createHousingListingAction(formData: FormData): Promise<void> {
   const profileId = await getMyProfileId()
-  if (!profileId) redirect('/sign-in?next=/marketplace/housing/new')
+  if (!profileId) redirect('/sign-in?next=/housing/new')
 
   const title = String(formData.get('title') ?? '').trim()
   if (!title) return
@@ -123,31 +123,31 @@ export async function createHousingListingAction(formData: FormData): Promise<vo
     cannabisOk: checkbox(formData, 'cannabis_ok'),
   })
 
-  revalidatePath('/marketplace/housing')
-  redirect(`/marketplace/housing/${listing.id}`)
+  revalidatePath('/housing')
+  redirect(`/housing/${listing.id}`)
 }
 
 export async function setListingStatusAction(id: string, status: ListingStatus): Promise<void> {
   const profileId = await getMyProfileId()
   if (!profileId || (await listingOwnerId(id)) !== profileId) return
   await setListingStatus(id, status)
-  revalidatePath('/marketplace/housing')
-  revalidatePath(`/marketplace/housing/${id}`)
+  revalidatePath('/housing')
+  revalidatePath(`/housing/${id}`)
 }
 
 export async function deleteListingAction(id: string): Promise<void> {
   const profileId = await getMyProfileId()
   if (!profileId || (await listingOwnerId(id)) !== profileId) return
   await deleteListing(id)
-  revalidatePath('/marketplace/housing')
-  redirect('/marketplace/housing')
+  revalidatePath('/housing')
+  redirect('/housing')
 }
 
 /** Save the caller's roommate seeker profile (what they're looking for). The matching
  *  itself runs server-side via a consent-gated RPC; this is the seeker half. */
 export async function saveSeekerProfileAction(formData: FormData): Promise<void> {
   const profileId = await getMyProfileId()
-  if (!profileId) redirect('/sign-in?next=/marketplace/housing/roommates')
+  if (!profileId) redirect('/sign-in?next=/housing/roommates')
 
   const dollarsToCents = (k: string): number | null => {
     const n = Number(formData.get(k))
@@ -199,5 +199,5 @@ export async function saveSeekerProfileAction(formData: FormData): Promise<void>
     searchRadiusM: radiusM,
     preferences,
   })
-  revalidatePath('/marketplace/housing/roommates')
+  revalidatePath('/housing/roommates')
 }
