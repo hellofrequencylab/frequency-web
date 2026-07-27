@@ -1,0 +1,2926 @@
+{
+ "archived_at": "2026-07-27",
+ "reason": "Pre-ledger-reconcile snapshot of supabase_migrations.schema_migrations (version+name), taken before inserting the 296 renamed-but-applied versions and deleting the 477 orphaned pre-rewrite rows. Restore any row by INSERTing it back verbatim.",
+ "rows": [
+  {
+   "version": "20240101000000",
+   "name": "initial_schema"
+  },
+  {
+   "version": "20240101000001",
+   "name": "rls_policies"
+  },
+  {
+   "version": "20240102000000",
+   "name": "hierarchy_v2"
+  },
+  {
+   "version": "20240103000000",
+   "name": "direct_messages"
+  },
+  {
+   "version": "20240104000000",
+   "name": "post_reactions"
+  },
+  {
+   "version": "20240105000000",
+   "name": "invite_links"
+  },
+  {
+   "version": "20240106000000",
+   "name": "dispatches"
+  },
+  {
+   "version": "20240107000000",
+   "name": "seed_nexus_regions"
+  },
+  {
+   "version": "20240108000000",
+   "name": "janitor_broadcasts_v2"
+  },
+  {
+   "version": "20240109000000",
+   "name": "notifications_polls_scheduling_mentions"
+  },
+  {
+   "version": "20240110000000",
+   "name": "season_ranks_and_zaps"
+  },
+  {
+   "version": "20240111000000",
+   "name": "lifecycle_triggers"
+  },
+  {
+   "version": "20240112000000",
+   "name": "post_replies"
+  },
+  {
+   "version": "20240113000000",
+   "name": "storage_avatars"
+  },
+  {
+   "version": "20240114000000",
+   "name": "post_engagement"
+  },
+  {
+   "version": "20240115000000",
+   "name": "rename_season_ranks"
+  },
+  {
+   "version": "20240116000000",
+   "name": "storage_posts"
+  },
+  {
+   "version": "20240117000000",
+   "name": "reports"
+  },
+  {
+   "version": "20240118000000",
+   "name": "hierarchy_v3_topical_channels"
+  },
+  {
+   "version": "20240119000000",
+   "name": "gamification_phase2"
+  },
+  {
+   "version": "20240120000000",
+   "name": "gems_economy"
+  },
+  {
+   "version": "20240121000000",
+   "name": "gem_store"
+  },
+  {
+   "version": "20240130000000",
+   "name": "rooms"
+  },
+  {
+   "version": "20240131000000",
+   "name": "group_dms"
+  },
+  {
+   "version": "20240201000000",
+   "name": "hierarchy_v3_topical_channels"
+  },
+  {
+   "version": "20240202000000",
+   "name": "profile_presence"
+  },
+  {
+   "version": "20240203000000",
+   "name": "friendships"
+  },
+  {
+   "version": "20240204000000",
+   "name": "public_landing_reads"
+  },
+  {
+   "version": "20240205000000",
+   "name": "prevent_role_self_escalation"
+  },
+  {
+   "version": "20240206000000",
+   "name": "notification_preferences"
+  },
+  {
+   "version": "20240207000000",
+   "name": "moderation_actions"
+  },
+  {
+   "version": "20240208000000",
+   "name": "event_recurrence"
+  },
+  {
+   "version": "20240209000000",
+   "name": "event_reminder_sent"
+  },
+  {
+   "version": "20240210000000",
+   "name": "push_subscriptions"
+  },
+  {
+   "version": "20240210000001",
+   "name": "topical_channel_descriptions_no_em_dash"
+  },
+  {
+   "version": "20240211000000",
+   "name": "public_discover_reads"
+  },
+  {
+   "version": "20240212000000",
+   "name": "profile_delete_fk_set_null"
+  },
+  {
+   "version": "20240213000000",
+   "name": "circle_announcement_visibility"
+  },
+  {
+   "version": "20240214000000",
+   "name": "enable_postgis_geography"
+  },
+  {
+   "version": "20240215000000",
+   "name": "engagement_events"
+  },
+  {
+   "version": "20240216000000",
+   "name": "physical_nodes"
+  },
+  {
+   "version": "20240217000000",
+   "name": "node_zaps_value"
+  },
+  {
+   "version": "20240218000000",
+   "name": "partners_module"
+  },
+  {
+   "version": "20240219000000",
+   "name": "notification_queue"
+  },
+  {
+   "version": "20240220000000",
+   "name": "email_events"
+  },
+  {
+   "version": "20240221000000",
+   "name": "studio_crm"
+  },
+  {
+   "version": "20240222000000",
+   "name": "contacts_backfill"
+  },
+  {
+   "version": "20240223000000",
+   "name": "campaigns"
+  },
+  {
+   "version": "20240224000000",
+   "name": "automations"
+  },
+  {
+   "version": "20240225000000",
+   "name": "agent_actions"
+  },
+  {
+   "version": "20240226000000",
+   "name": "pages_cms"
+  },
+  {
+   "version": "20240227000000",
+   "name": "zap_config"
+  },
+  {
+   "version": "20240228000000",
+   "name": "practices"
+  },
+  {
+   "version": "20240229000000",
+   "name": "seasons"
+  },
+  {
+   "version": "20240301000000",
+   "name": "blocked_users"
+  },
+  {
+   "version": "20240302000000",
+   "name": "seed_circle_coords"
+  },
+  {
+   "version": "20240303000000",
+   "name": "seed_demo_circles"
+  },
+  {
+   "version": "20240304000000",
+   "name": "lock_economy_columns"
+  },
+  {
+   "version": "20240305000000",
+   "name": "perf_indexes"
+  },
+  {
+   "version": "20240306000000",
+   "name": "admin_role"
+  },
+  {
+   "version": "20240306000100",
+   "name": "area_permissions"
+  },
+  {
+   "version": "20240307000000",
+   "name": "notifications_rls_convergence"
+  },
+  {
+   "version": "20240308000000",
+   "name": "friendships_rls_convergence"
+  },
+  {
+   "version": "20240309000000",
+   "name": "feed_rls_convergence"
+  },
+  {
+   "version": "20260602194223",
+   "name": "feed_detail_rls_convergence"
+  },
+  {
+   "version": "20260602195209",
+   "name": "messages_rls_convergence"
+  },
+  {
+   "version": "20260602195255",
+   "name": "fk_indexes"
+  },
+  {
+   "version": "20260602200701",
+   "name": "room_thread_rls_convergence"
+  },
+  {
+   "version": "20260602203246",
+   "name": "set_updated_at_search_path"
+  },
+  {
+   "version": "20260603035927",
+   "name": "demo_0_infrastructure"
+  },
+  {
+   "version": "20260603040345",
+   "name": "demo_1_geo_practices_programs"
+  },
+  {
+   "version": "20260603041349",
+   "name": "demo_2_sandiego"
+  },
+  {
+   "version": "20260603042757",
+   "name": "demo_3_national"
+  },
+  {
+   "version": "20260603043329",
+   "name": "demo_3_national"
+  },
+  {
+   "version": "20260603044505",
+   "name": "feed_rpcs_is_demo"
+  },
+  {
+   "version": "20260603045202",
+   "name": "circles_near_rpc"
+  },
+  {
+   "version": "20260603131426",
+   "name": "feed_rpcs_demo_mode"
+  },
+  {
+   "version": "20260603150840",
+   "name": "ai_help_search_infra"
+  },
+  {
+   "version": "20260603160107",
+   "name": "ai_help_queries"
+  },
+  {
+   "version": "20260603162632",
+   "name": "ai_member_context"
+  },
+  {
+   "version": "20260603170258",
+   "name": "member_tags"
+  },
+  {
+   "version": "20260603171601",
+   "name": "member_traits"
+  },
+  {
+   "version": "20260603172543",
+   "name": "segments"
+  },
+  {
+   "version": "20260603174151",
+   "name": "engagement_dashboard_rpcs"
+  },
+  {
+   "version": "20260603180007",
+   "name": "outcome_analytics_rpcs"
+  },
+  {
+   "version": "20260603211833",
+   "name": "consent_records"
+  },
+  {
+   "version": "20260603222533",
+   "name": "vera_config"
+  },
+  {
+   "version": "20260604015608",
+   "name": "rename_quests_to_arcs"
+  },
+  {
+   "version": "20260604025137",
+   "name": "channels_domains_taxonomy"
+  },
+  {
+   "version": "20260604031429",
+   "name": "vera_featured_posts"
+  },
+  {
+   "version": "20260604041918",
+   "name": "marketing_intel_data_spine"
+  },
+  {
+   "version": "20260604070559",
+   "name": "practices_rich_content"
+  },
+  {
+   "version": "20260604070616",
+   "name": "demo_v2_teardown"
+  },
+  {
+   "version": "20260604071156",
+   "name": "demo_v2_base_practices"
+  },
+  {
+   "version": "20260604071250",
+   "name": "demo_v2_base_practices"
+  },
+  {
+   "version": "20260604155714",
+   "name": "profile_contact_fields"
+  },
+  {
+   "version": "20260604164945",
+   "name": "rename_arcs_to_journeys"
+  },
+  {
+   "version": "20260604180351",
+   "name": "rename_journeys_engine_to_quests"
+  },
+  {
+   "version": "20260604182321",
+   "name": "practices_domain_pillar_link"
+  },
+  {
+   "version": "20260604193936",
+   "name": "qr_codes_dynamic_links"
+  },
+  {
+   "version": "20260604200524",
+   "name": "dispatch_global_tier"
+  },
+  {
+   "version": "20260604200752",
+   "name": "journey_plans"
+  },
+  {
+   "version": "20260604201122",
+   "name": "member_qr_codes"
+  },
+  {
+   "version": "20260604201805",
+   "name": "journey_plan_adoptions"
+  },
+  {
+   "version": "20260604205415",
+   "name": "member_geo_columns_foundation"
+  },
+  {
+   "version": "20260604210343",
+   "name": "reconcile_feed_for_viewer_geo_demo"
+  },
+  {
+   "version": "20260604210811",
+   "name": "qr_campaign_challenges"
+  },
+  {
+   "version": "20260604221601",
+   "name": "campaign_windows"
+  },
+  {
+   "version": "20260604225019",
+   "name": "nodes_style"
+  },
+  {
+   "version": "20260604234055",
+   "name": "network_contacts"
+  },
+  {
+   "version": "20260604234931",
+   "name": "journey_item_cadence"
+  },
+  {
+   "version": "20260604235541",
+   "name": "platform_flag_events"
+  },
+  {
+   "version": "20260605013139",
+   "name": "channel_open_rooms"
+  },
+  {
+   "version": "20260605013358",
+   "name": "group_dms_to_private_rooms"
+  },
+  {
+   "version": "20260605020033",
+   "name": "room_message_embeddings"
+  },
+  {
+   "version": "20260605020329",
+   "name": "scan_invite"
+  },
+  {
+   "version": "20260605032231",
+   "name": "feed_demo_visible_to_all"
+  },
+  {
+   "version": "20260605040609",
+   "name": "qr_scan_geo"
+  },
+  {
+   "version": "20260605041835",
+   "name": "crm_pipeline"
+  },
+  {
+   "version": "20260605042047",
+   "name": "qr_action_destinations"
+  },
+  {
+   "version": "20260605043454",
+   "name": "profiles_vcard"
+  },
+  {
+   "version": "20260605044135",
+   "name": "secure_conversation_room_migration"
+  },
+  {
+   "version": "20260605052339",
+   "name": "hubs_is_demo"
+  },
+  {
+   "version": "20260605052519",
+   "name": "qr_scan_medium"
+  },
+  {
+   "version": "20260605053815",
+   "name": "economy_rebalance"
+  },
+  {
+   "version": "20260605054733",
+   "name": "profile_header_image"
+  },
+  {
+   "version": "20260605054946",
+   "name": "node_geo"
+  },
+  {
+   "version": "20260605055812",
+   "name": "qr_source_passthrough"
+  },
+  {
+   "version": "20260605061217",
+   "name": "community_library"
+  },
+  {
+   "version": "20260605062951",
+   "name": "node_max_claims"
+  },
+  {
+   "version": "20260605075125",
+   "name": "practices_library_expansion"
+  },
+  {
+   "version": "20260605075547",
+   "name": "practice_taxonomy_foundation"
+  },
+  {
+   "version": "20260605075618",
+   "name": "practice_templates"
+  },
+  {
+   "version": "20260605075655",
+   "name": "practices_ranked_include_is_template"
+  },
+  {
+   "version": "20260605205151",
+   "name": "person_identity_stitch"
+  },
+  {
+   "version": "20260606000000",
+   "name": "entry_points"
+  },
+  {
+   "version": "20260606010252",
+   "name": "zap_ledger_and_recategorize"
+  },
+  {
+   "version": "20260606010325",
+   "name": "seasonal_pillar_journeys"
+  },
+  {
+   "version": "20260606013924",
+   "name": "quest_chains_pillar"
+  },
+  {
+   "version": "20260606013959",
+   "name": "seed_starter_content"
+  },
+  {
+   "version": "20260606022911",
+   "name": "journey_identity_fields"
+  },
+  {
+   "version": "20260606032345",
+   "name": "market_listings"
+  },
+  {
+   "version": "20260606040502",
+   "name": "density_demand_read_model"
+  },
+  {
+   "version": "20260606045537",
+   "name": "quests_container"
+  },
+  {
+   "version": "20260606211946",
+   "name": "support_tickets"
+  },
+  {
+   "version": "20260606224918",
+   "name": "sequence_overrides_full"
+  },
+  {
+   "version": "20260607000000",
+   "name": "nurture_sequences"
+  },
+  {
+   "version": "20260607010000",
+   "name": "persona_segments"
+  },
+  {
+   "version": "20260607020000",
+   "name": "entry_point_ab"
+  },
+  {
+   "version": "20260607030000",
+   "name": "entry_template_settings"
+  },
+  {
+   "version": "20260608133014",
+   "name": "membership_tier"
+  },
+  {
+   "version": "20260608140811",
+   "name": "membership_tier_rename_member_to_crew"
+  },
+  {
+   "version": "20260608151138",
+   "name": "profile_personas"
+  },
+  {
+   "version": "20260608153041",
+   "name": "profiles_stripe_customer_id"
+  },
+  {
+   "version": "20260608162827",
+   "name": "lifetime_rank"
+  },
+  {
+   "version": "20260608164733",
+   "name": "persona_verification"
+  },
+  {
+   "version": "20260608173109",
+   "name": "interaction_events"
+  },
+  {
+   "version": "20260608174239",
+   "name": "interaction_rollups"
+  },
+  {
+   "version": "20260608182824",
+   "name": "studio_site_changes"
+  },
+  {
+   "version": "20260608183917",
+   "name": "reward_grants"
+  },
+  {
+   "version": "20260608202047",
+   "name": "stripe_webhook_events"
+  },
+  {
+   "version": "20260608203800",
+   "name": "admin_audit_log"
+  },
+  {
+   "version": "20260608230253",
+   "name": "rls_qr_codes"
+  },
+  {
+   "version": "20260609041731",
+   "name": "circle_sidebar_order"
+  },
+  {
+   "version": "20260609042930",
+   "name": "page_content"
+  },
+  {
+   "version": "20260609043153",
+   "name": "qr_page_folders"
+  },
+  {
+   "version": "20260609043159",
+   "name": "founders_first_week_badge"
+  },
+  {
+   "version": "20260609043205",
+   "name": "training_paths"
+  },
+  {
+   "version": "20260609043219",
+   "name": "connect_accounts"
+  },
+  {
+   "version": "20260609043349",
+   "name": "tips"
+  },
+  {
+   "version": "20260609043406",
+   "name": "event_tickets"
+  },
+  {
+   "version": "20260609152022",
+   "name": "connection_layer_foundation"
+  },
+  {
+   "version": "20260609152254",
+   "name": "connection_members_near_band_fix"
+  },
+  {
+   "version": "20260609155114",
+   "name": "connection_resonance"
+  },
+  {
+   "version": "20260609161323",
+   "name": "connection_introductions"
+  },
+  {
+   "version": "20260609162824",
+   "name": "connection_welcomes"
+  },
+  {
+   "version": "20260609164148",
+   "name": "connection_metrics"
+  },
+  {
+   "version": "20260609190758",
+   "name": "journey_intensity_tiers_completion_and_config"
+  },
+  {
+   "version": "20260609191507",
+   "name": "seed_official_seasonal_journeys"
+  },
+  {
+   "version": "20260609191600",
+   "name": "official_journeys_remap_items_to_real_practices"
+  },
+  {
+   "version": "20260609210938",
+   "name": "events_p0_capacity_visibility"
+  },
+  {
+   "version": "20260609211012",
+   "name": "circle_field"
+  },
+  {
+   "version": "20260609211039",
+   "name": "event_ticket_types"
+  },
+  {
+   "version": "20260609211102",
+   "name": "event_embeddings"
+  },
+  {
+   "version": "20260609211113",
+   "name": "events_security_hardening"
+  },
+  {
+   "version": "20260609221632",
+   "name": "circle_challenge_adoptions"
+  },
+  {
+   "version": "20260609223458",
+   "name": "events_visibility_rls"
+  },
+  {
+   "version": "20260609223914",
+   "name": "pin_function_search_paths"
+  },
+  {
+   "version": "20260609224938",
+   "name": "public_events_price"
+  },
+  {
+   "version": "20260609230425",
+   "name": "retire_quest_chains_engine"
+  },
+  {
+   "version": "20260609231013",
+   "name": "practice_streak_badges"
+  },
+  {
+   "version": "20260609233346",
+   "name": "crew_task_assignment"
+  },
+  {
+   "version": "20260609235209",
+   "name": "page_content_hero_cta"
+  },
+  {
+   "version": "20260610000614",
+   "name": "retire_crew_role_value"
+  },
+  {
+   "version": "20260610024940",
+   "name": "naming_canon_pillars"
+  },
+  {
+   "version": "20260610025026",
+   "name": "naming_canon_tiers"
+  },
+  {
+   "version": "20260610025113",
+   "name": "naming_canon_ranks"
+  },
+  {
+   "version": "20260610025207",
+   "name": "naming_canon_circle_current"
+  },
+  {
+   "version": "20260610025251",
+   "name": "naming_canon_roles_split"
+  },
+  {
+   "version": "20260610030734",
+   "name": "rename_100_days_badge"
+  },
+  {
+   "version": "20260610051113",
+   "name": "event_posts_media_cohosts"
+  },
+  {
+   "version": "20260610051217",
+   "name": "event_calendar_follows"
+  },
+  {
+   "version": "20260610060047",
+   "name": "network_contact_match"
+  },
+  {
+   "version": "20260610163304",
+   "name": "qr_codes_owner_purpose_full_unique"
+  },
+  {
+   "version": "20260610171926",
+   "name": "content_curation"
+  },
+  {
+   "version": "20260610225725",
+   "name": "poster_events"
+  },
+  {
+   "version": "20260610233822",
+   "name": "contact_card_media"
+  },
+  {
+   "version": "20260611000205",
+   "name": "creator_tips_event"
+  },
+  {
+   "version": "20260611022528",
+   "name": "stewardships"
+  },
+  {
+   "version": "20260611024540",
+   "name": "rewards_economy_v2"
+  },
+  {
+   "version": "20260611032153",
+   "name": "capability_permissions"
+  },
+  {
+   "version": "20260611033555",
+   "name": "store_redemption_no_double_charge"
+  },
+  {
+   "version": "20260611043907",
+   "name": "on_air"
+  },
+  {
+   "version": "20260611065704",
+   "name": "store_redemptions_service_writes"
+  },
+  {
+   "version": "20260611144007",
+   "name": "wrap_rls_auth_calls_in_select"
+  },
+  {
+   "version": "20260611151101",
+   "name": "perf_fk_indexes_and_drop_redundant_service_policies"
+  },
+  {
+   "version": "20260611164635",
+   "name": "post_type_note"
+  },
+  {
+   "version": "20260611164649",
+   "name": "post_type_system_value"
+  },
+  {
+   "version": "20260611164725",
+   "name": "moderation_account_to_vera"
+  },
+  {
+   "version": "20260611164730",
+   "name": "vera_system_profile"
+  },
+  {
+   "version": "20260611170518",
+   "name": "vera_profile_handle_and_bio"
+  },
+  {
+   "version": "20260611170937",
+   "name": "vera_avatar"
+  },
+  {
+   "version": "20260611174024",
+   "name": "vera_fully_visible"
+  },
+  {
+   "version": "20260611180738",
+   "name": "join_zaps"
+  },
+  {
+   "version": "20260612051731",
+   "name": "menu_config"
+  },
+  {
+   "version": "20260612144359",
+   "name": "walkthroughs"
+  },
+  {
+   "version": "20260612152342",
+   "name": "retarget_personal_codes"
+  },
+  {
+   "version": "20260614002134",
+   "name": "energetics_schema_init"
+  },
+  {
+   "version": "20260614030710",
+   "name": "energetics_profiles_and_notes"
+  },
+  {
+   "version": "20260614043613",
+   "name": "energetics_primary_chart"
+  },
+  {
+   "version": "20260614052519",
+   "name": "energetics_0004_narratives"
+  },
+  {
+   "version": "20260614055340",
+   "name": "energetics_0005_systems_catalog"
+  },
+  {
+   "version": "20260614153507",
+   "name": "energetics_0006_system_order"
+  },
+  {
+   "version": "20260614214559",
+   "name": "themes"
+  },
+  {
+   "version": "20260614214610",
+   "name": "space_brand"
+  },
+  {
+   "version": "20260614214620",
+   "name": "page_chrome_overrides"
+  },
+  {
+   "version": "20260615000746",
+   "name": "theme_seeds"
+  },
+  {
+   "version": "20260615033505",
+   "name": "0007_resonances"
+  },
+  {
+   "version": "20260615035035",
+   "name": "page_settings"
+  },
+  {
+   "version": "20260615052645",
+   "name": "energetics_0008_security_hardening"
+  },
+  {
+   "version": "20260615125545",
+   "name": "perf_and_rls_hardening"
+  },
+  {
+   "version": "20260615133518",
+   "name": "event_geolocation"
+  },
+  {
+   "version": "20260615133836",
+   "name": "standalone_public_events"
+  },
+  {
+   "version": "20260615133910",
+   "name": "event_rsvp_depth"
+  },
+  {
+   "version": "20260615133954",
+   "name": "event_questions"
+  },
+  {
+   "version": "20260615134012",
+   "name": "event_dispatches"
+  },
+  {
+   "version": "20260615134021",
+   "name": "event_cover_theme"
+  },
+  {
+   "version": "20260615134035",
+   "name": "event_post_reactions"
+  },
+  {
+   "version": "20260615134325",
+   "name": "secure_set_event_geog"
+  },
+  {
+   "version": "20260615134350",
+   "name": "secure_set_event_geog_roles"
+  },
+  {
+   "version": "20260615145748",
+   "name": "billing"
+  },
+  {
+   "version": "20260615145951",
+   "name": "billing_harden"
+  },
+  {
+   "version": "20260615150300",
+   "name": "deactivate_membership_credit_skus"
+  },
+  {
+   "version": "20260615164413",
+   "name": "practice_slugs"
+  },
+  {
+   "version": "20260615183237",
+   "name": "retire_practice_intensity_tiers"
+  },
+  {
+   "version": "20260615183358",
+   "name": "quest_completion_model"
+  },
+  {
+   "version": "20260615192228",
+   "name": "seed_season_1_stretch"
+  },
+  {
+   "version": "20260615192252",
+   "name": "retire_season_rank_bonus"
+  },
+  {
+   "version": "20260615192430",
+   "name": "seed_season_1_stretch"
+  },
+  {
+   "version": "20260615192454",
+   "name": "retire_season_rank_bonus"
+  },
+  {
+   "version": "20260615194615",
+   "name": "fix_founders_table_rank_gate"
+  },
+  {
+   "version": "20260615195611",
+   "name": "guard_lifetime_rank_self_edit"
+  },
+  {
+   "version": "20260615223413",
+   "name": "rename_stretch_journeys"
+  },
+  {
+   "version": "20260615224938",
+   "name": "library_journey_ranked_eligibility"
+  },
+  {
+   "version": "20260616003328",
+   "name": "seed_shine_season"
+  },
+  {
+   "version": "20260616003855",
+   "name": "one_expression_per_journey"
+  },
+  {
+   "version": "20260616174147",
+   "name": "circles_featured"
+  },
+  {
+   "version": "20260616175509",
+   "name": "events_featured"
+  },
+  {
+   "version": "20260616183030",
+   "name": "practice_focus_details"
+  },
+  {
+   "version": "20260616224730",
+   "name": "side_quests"
+  },
+  {
+   "version": "20260617143900",
+   "name": "practices_ranked_focus_details"
+  },
+  {
+   "version": "20260617171246",
+   "name": "journey_settings_attributes"
+  },
+  {
+   "version": "20260617183141",
+   "name": "add_practice_duration_min"
+  },
+  {
+   "version": "20260617193827",
+   "name": "journey_plans_source_overview"
+  },
+  {
+   "version": "20260617211350",
+   "name": "journey_plans_meeting"
+  },
+  {
+   "version": "20260617233923",
+   "name": "practice_uses_timer"
+  },
+  {
+   "version": "20260618013246",
+   "name": "rewards_v3_teardown"
+  },
+  {
+   "version": "20260618013328",
+   "name": "rewards_v3_config_seed_sinks_spark"
+  },
+  {
+   "version": "20260618025745",
+   "name": "journey_phase_events"
+  },
+  {
+   "version": "20260618035020",
+   "name": "reaward_join_invite_v2"
+  },
+  {
+   "version": "20260618041454",
+   "name": "audit_perf_indexes"
+  },
+  {
+   "version": "20260618043836",
+   "name": "personal_codes_standard_format"
+  },
+  {
+   "version": "20260618173246",
+   "name": "page_settings_header_image"
+  },
+  {
+   "version": "20260619052800",
+   "name": "feed_open_flag"
+  },
+  {
+   "version": "20260619202346",
+   "name": "spaces_generation"
+  },
+  {
+   "version": "20260619202348",
+   "name": "page_settings_space_id"
+  },
+  {
+   "version": "20260619202406",
+   "name": "page_settings_space_id_contract"
+  },
+  {
+   "version": "20260619204338",
+   "name": "pages_space_id"
+  },
+  {
+   "version": "20260619211457",
+   "name": "spaces_visibility_plan_entitlements"
+  },
+  {
+   "version": "20260619211510",
+   "name": "space_members"
+  },
+  {
+   "version": "20260619211543",
+   "name": "object_space_id"
+  },
+  {
+   "version": "20260619212711",
+   "name": "resonance_init"
+  },
+  {
+   "version": "20260619212940",
+   "name": "resonance_room_state"
+  },
+  {
+   "version": "20260619214117",
+   "name": "resonance_dj_loop"
+  },
+  {
+   "version": "20260619220435",
+   "name": "resonance_profiles"
+  },
+  {
+   "version": "20260619220440",
+   "name": "spaces_about_tagline"
+  },
+  {
+   "version": "20260619221537",
+   "name": "resonance_gamification"
+  },
+  {
+   "version": "20260619230135",
+   "name": "spaces_type_event_space"
+  },
+  {
+   "version": "20260619230731",
+   "name": "resonance_venue_theme"
+  },
+  {
+   "version": "20260619232538",
+   "name": "space_booking"
+  },
+  {
+   "version": "20260619233601",
+   "name": "resonance_venue_playlist"
+  },
+  {
+   "version": "20260620000752",
+   "name": "space_members_admin_read_definer"
+  },
+  {
+   "version": "20260620001208",
+   "name": "resonance_events"
+  },
+  {
+   "version": "20260620001213",
+   "name": "resonance_presence_pings"
+  },
+  {
+   "version": "20260620002413",
+   "name": "resonance_venue_decor"
+  },
+  {
+   "version": "20260620002430",
+   "name": "resonance_marketplace"
+  },
+  {
+   "version": "20260620003123",
+   "name": "spaces_visibility_aware_rls"
+  },
+  {
+   "version": "20260620003539",
+   "name": "space_memberships"
+  },
+  {
+   "version": "20260620004626",
+   "name": "resonance_minigames"
+  },
+  {
+   "version": "20260620004633",
+   "name": "resonance_creator_revshare"
+  },
+  {
+   "version": "20260620004641",
+   "name": "resonance_worlds"
+  },
+  {
+   "version": "20260620004806",
+   "name": "space_content_isolation"
+  },
+  {
+   "version": "20260620010800",
+   "name": "space_content_write_isolation"
+  },
+  {
+   "version": "20260620011210",
+   "name": "resonance_moderation"
+  },
+  {
+   "version": "20260620040516",
+   "name": "space_invites"
+  },
+  {
+   "version": "20260620040523",
+   "name": "space_follows"
+  },
+  {
+   "version": "20260620040531",
+   "name": "ai_usage_space_id"
+  },
+  {
+   "version": "20260620040544",
+   "name": "content_space_id_default_root"
+  },
+  {
+   "version": "20260620044237",
+   "name": "qr_space_id_splash"
+  },
+  {
+   "version": "20260620044256",
+   "name": "crm_space_id_client_notes"
+  },
+  {
+   "version": "20260620044307",
+   "name": "node_captures_space_checkin"
+  },
+  {
+   "version": "20260620051206",
+   "name": "space_email"
+  },
+  {
+   "version": "20260620141041",
+   "name": "tenancy_hardening"
+  },
+  {
+   "version": "20260620145246",
+   "name": "team_member_roles"
+  },
+  {
+   "version": "20260620152245",
+   "name": "profile_zap_total"
+  },
+  {
+   "version": "20260620165845",
+   "name": "space_donations"
+  },
+  {
+   "version": "20260620165850",
+   "name": "space_enroll"
+  },
+  {
+   "version": "20260620165855",
+   "name": "space_tickets"
+  },
+  {
+   "version": "20260620183330",
+   "name": "practice_log_zaps_awarded"
+  },
+  {
+   "version": "20260620220313",
+   "name": "practice_timer_kind"
+  },
+  {
+   "version": "20260621002855",
+   "name": "space_enrollments_program_idx"
+  },
+  {
+   "version": "20260621160127",
+   "name": "practice_mindless_mode"
+  },
+  {
+   "version": "20260621160137",
+   "name": "practice_log_completion"
+  },
+  {
+   "version": "20260621160152",
+   "name": "practice_timer_data_fix"
+  },
+  {
+   "version": "20260622162017",
+   "name": "menu_system"
+  },
+  {
+   "version": "20260622183000",
+   "name": "community_library_rank_fix"
+  },
+  {
+   "version": "20260623060220",
+   "name": "network_contacts_crm_p1"
+  },
+  {
+   "version": "20260623073852",
+   "name": "pricing_foundation"
+  },
+  {
+   "version": "20260623073912",
+   "name": "pricing_stripe"
+  },
+  {
+   "version": "20260623131852",
+   "name": "wrap_reminders_rls_auth"
+  },
+  {
+   "version": "20260623131946",
+   "name": "practices_ranked_security_invoker"
+  },
+  {
+   "version": "20260623140300",
+   "name": "spaces_feature_roles"
+  },
+  {
+   "version": "20260623154924",
+   "name": "round2_concurrency_guards"
+  },
+  {
+   "version": "20260623154939",
+   "name": "pricing_deferred_gates"
+  },
+  {
+   "version": "20260623155200",
+   "name": "lock_down_atomic_rpcs"
+  },
+  {
+   "version": "20260623171917",
+   "name": "crm_contact_interactions"
+  },
+  {
+   "version": "20260623171932",
+   "name": "connection_edge_provenance"
+  },
+  {
+   "version": "20260624035543",
+   "name": "activate_resonance_engine_adr382_387"
+  },
+  {
+   "version": "20260624152840",
+   "name": "menu_gate_columns"
+  },
+  {
+   "version": "20260624152849",
+   "name": "menu_four_containers"
+  },
+  {
+   "version": "20260624153931",
+   "name": "menu_admin_header"
+  },
+  {
+   "version": "20260624164807",
+   "name": "menu_synced_default_keys"
+  },
+  {
+   "version": "20260624200151",
+   "name": "starter_circles_0_draft_status"
+  },
+  {
+   "version": "20260624200214",
+   "name": "starter_circles_1_schema"
+  },
+  {
+   "version": "20260624200356",
+   "name": "starter_circles_2_seed"
+  },
+  {
+   "version": "20260625171749",
+   "name": "fix_space_gate_profile_id"
+  },
+  {
+   "version": "20260625171758",
+   "name": "lock_down_dashboard_rpcs"
+  },
+  {
+   "version": "20260625171807",
+   "name": "listings_update_with_check"
+  },
+  {
+   "version": "20260625202956",
+   "name": "commerce_stock_enforce"
+  },
+  {
+   "version": "20260625203016",
+   "name": "qr_stats_summary_rpc"
+  },
+  {
+   "version": "20260625222706",
+   "name": "fk_covering_indexes"
+  },
+  {
+   "version": "20260625222715",
+   "name": "tighten_public_bucket_listing"
+  },
+  {
+   "version": "20260626163054",
+   "name": "event_gallery_images"
+  },
+  {
+   "version": "20260626214302",
+   "name": "resonance_phase0_scaffolding"
+  },
+  {
+   "version": "20260626221911",
+   "name": "resonance_density_rollup"
+  },
+  {
+   "version": "20260626224104",
+   "name": "member_verification_scaffold"
+  },
+  {
+   "version": "20260627001021",
+   "name": "verify_by_attendance"
+  },
+  {
+   "version": "20260627140837",
+   "name": "reply_count_exclude_self"
+  },
+  {
+   "version": "20260627140846",
+   "name": "daily_walk_timed"
+  },
+  {
+   "version": "20260627143016",
+   "name": "rls_advisor_sweep"
+  },
+  {
+   "version": "20260627160945",
+   "name": "reaction_emoji_set"
+  },
+  {
+   "version": "20260627162811",
+   "name": "reaction_medium_tan"
+  },
+  {
+   "version": "20260629135722",
+   "name": "capstone_claim_rpc"
+  },
+  {
+   "version": "20260629145956",
+   "name": "practice_library_scale_phase1"
+  },
+  {
+   "version": "20260629150012",
+   "name": "practice_hybrid_search_rpc"
+  },
+  {
+   "version": "20260629150024",
+   "name": "practice_admin_facet_counts"
+  },
+  {
+   "version": "20260629151420",
+   "name": "practice_library_clean_phase2"
+  },
+  {
+   "version": "20260629155327",
+   "name": "practice_clean_review_fixes"
+  },
+  {
+   "version": "20260629165619",
+   "name": "h1_1_scope_typed_arc_expand"
+  },
+  {
+   "version": "20260629175110",
+   "name": "event_lifecycle_audit_trail"
+  },
+  {
+   "version": "20260629175111",
+   "name": "h0_pin_practices_touch_search_path"
+  },
+  {
+   "version": "20260629175113",
+   "name": "circle_earned_zaps_indexes"
+  },
+  {
+   "version": "20260629180758",
+   "name": "rls_tier1_store_items_delete"
+  },
+  {
+   "version": "20260629210915",
+   "name": "spotlight_top_friends"
+  },
+  {
+   "version": "20260629215005",
+   "name": "fix_can_write_space_content_profile_id"
+  },
+  {
+   "version": "20260629233615",
+   "name": "rls_practices_admin_creator_staff"
+  },
+  {
+   "version": "20260630134506",
+   "name": "20260816000000_circle_earned_zaps_indexes"
+  },
+  {
+   "version": "20260630134525",
+   "name": "20260817000000_retire_demo_seed"
+  },
+  {
+   "version": "20260630134553",
+   "name": "20260818000000_fix_space_gate_profile_id"
+  },
+  {
+   "version": "20260630134616",
+   "name": "20260818000100_lock_down_dashboard_rpcs"
+  },
+  {
+   "version": "20260630134630",
+   "name": "20260818000200_listings_update_with_check"
+  },
+  {
+   "version": "20260630134657",
+   "name": "20260819000000_commerce_stock_enforce"
+  },
+  {
+   "version": "20260630134730",
+   "name": "20260819000100_qr_stats_summary_rpc"
+  },
+  {
+   "version": "20260630134755",
+   "name": "20260820000000_fk_covering_indexes"
+  },
+  {
+   "version": "20260630134816",
+   "name": "20260820000100_tighten_public_bucket_listing"
+  },
+  {
+   "version": "20260630134832",
+   "name": "20260820000200_event_gallery_images"
+  },
+  {
+   "version": "20260630134915",
+   "name": "20260821000000_resonance_phase0_scaffolding"
+  },
+  {
+   "version": "20260630134947",
+   "name": "20260822000000_resonance_density_rollup"
+  },
+  {
+   "version": "20260630135005",
+   "name": "20260823000000_member_verification_scaffold"
+  },
+  {
+   "version": "20260630135021",
+   "name": "20260824000000_verify_by_attendance"
+  },
+  {
+   "version": "20260630135046",
+   "name": "20260825000000_daily_walk_timed"
+  },
+  {
+   "version": "20260630135111",
+   "name": "20260826000000_capstone_claim_rpc"
+  },
+  {
+   "version": "20260630135155",
+   "name": "20260827000000_practice_library_scale_phase1"
+  },
+  {
+   "version": "20260630135227",
+   "name": "20260827000100_practice_hybrid_search_rpc"
+  },
+  {
+   "version": "20260630135257",
+   "name": "20260827000200_practice_admin_facet_counts"
+  },
+  {
+   "version": "20260630135345",
+   "name": "20260828000000_practice_library_clean_phase2"
+  },
+  {
+   "version": "20260630135419",
+   "name": "20260828000100_practice_clean_review_fixes"
+  },
+  {
+   "version": "20260630135506",
+   "name": "20260829000000_h1_1_scope_typed_arc_expand"
+  },
+  {
+   "version": "20260630135525",
+   "name": "20260830000000_event_lifecycle_audit_trail"
+  },
+  {
+   "version": "20260630135542",
+   "name": "20260831000000_h0_pin_practices_touch_search_path"
+  },
+  {
+   "version": "20260630135903",
+   "name": "20260905000000_crm_rls_convergence"
+  },
+  {
+   "version": "20260630164001",
+   "name": "funnels"
+  },
+  {
+   "version": "20260630171216",
+   "name": "applications"
+  },
+  {
+   "version": "20260630180444",
+   "name": "pricing_plan_collapse"
+  },
+  {
+   "version": "20260630180501",
+   "name": "pricing_member_tier"
+  },
+  {
+   "version": "20260630184623",
+   "name": "pricing_addons_seats"
+  },
+  {
+   "version": "20260630195449",
+   "name": "space_modes"
+  },
+  {
+   "version": "20260701004319",
+   "name": "spaces_cover_image"
+  },
+  {
+   "version": "20260701004324",
+   "name": "post_type_space_update"
+  },
+  {
+   "version": "20260701004346",
+   "name": "space_content_tables"
+  },
+  {
+   "version": "20260701004723",
+   "name": "space_update_member_interaction"
+  },
+  {
+   "version": "20260701141958",
+   "name": "library_assets"
+  },
+  {
+   "version": "20260701142022",
+   "name": "library_dam"
+  },
+  {
+   "version": "20260701194747",
+   "name": "library_embeddings"
+  },
+  {
+   "version": "20260701220636",
+   "name": "library_styles"
+  },
+  {
+   "version": "20260702000802",
+   "name": "20260923000000_advisor_sweep_initplan_fk_indexes"
+  },
+  {
+   "version": "20260702033750",
+   "name": "lockdown_secdef_internal_helpers"
+  },
+  {
+   "version": "20260702045829",
+   "name": "20261002000000_challenge_streak_atomic"
+  },
+  {
+   "version": "20260702052605",
+   "name": "20261003000000_membership_event_ordering_guard"
+  },
+  {
+   "version": "20260702053557",
+   "name": "20261004000000_consolidate_multiple_permissive_policies"
+  },
+  {
+   "version": "20260702055245",
+   "name": "20261005000000_lockdown_anon_executable_secdef_rpcs"
+  },
+  {
+   "version": "20260702093657",
+   "name": "20261007000000_consolidate_remaining_permissive_policies"
+  },
+  {
+   "version": "20260702151237",
+   "name": "crew_completion_atomic"
+  },
+  {
+   "version": "20260702160337",
+   "name": "verification_gated_zaps"
+  },
+  {
+   "version": "20260702160738",
+   "name": "verification_gated_zaps_fix"
+  },
+  {
+   "version": "20260702164706",
+   "name": "dm_conversation_summaries"
+  },
+  {
+   "version": "20260702185718",
+   "name": "room_unread_counts"
+  },
+  {
+   "version": "20260704024012",
+   "name": "supporter_contributions"
+  },
+  {
+   "version": "20260704024018",
+   "name": "drop_redundant_space_subscription_items_index"
+  },
+  {
+   "version": "20260704024027",
+   "name": "library_sequence_kind"
+  },
+  {
+   "version": "20260704024039",
+   "name": "app_overrides"
+  },
+  {
+   "version": "20260704024052",
+   "name": "reconcile_signup_trigger"
+  },
+  {
+   "version": "20260704224856",
+   "name": "practice_timer_sessions"
+  },
+  {
+   "version": "20260706213527",
+   "name": "space_automation"
+  },
+  {
+   "version": "20260706214342",
+   "name": "contact_at_risk"
+  },
+  {
+   "version": "20260706220552",
+   "name": "collapse_space_types_to_business_nonprofit"
+  },
+  {
+   "version": "20260706220606",
+   "name": "collapse_space_plans_to_business_nonprofit"
+  },
+  {
+   "version": "20260707003155",
+   "name": "space_drip_enrollments"
+  },
+  {
+   "version": "20260707151749",
+   "name": "business_intake"
+  },
+  {
+   "version": "20260709220226",
+   "name": "practice_warmup"
+  },
+  {
+   "version": "20260709222056",
+   "name": "loom_funnel_elements"
+  },
+  {
+   "version": "20260710045642",
+   "name": "offerings_backfill"
+  },
+  {
+   "version": "20260710054624",
+   "name": "market_published"
+  },
+  {
+   "version": "20260710070911",
+   "name": "bookable_services"
+  },
+  {
+   "version": "20260710071612",
+   "name": "20261104000000_advisor_hygiene_initplan_and_fk_indexes"
+  },
+  {
+   "version": "20260710202030",
+   "name": "event_media_mime"
+  },
+  {
+   "version": "20260710202032",
+   "name": "event_venmo"
+  },
+  {
+   "version": "20260710202242",
+   "name": "library_card_times"
+  },
+  {
+   "version": "20260710205832",
+   "name": "event_cohost_invites"
+  },
+  {
+   "version": "20260710205837",
+   "name": "event_placement_requests"
+  },
+  {
+   "version": "20260710224051",
+   "name": "community_library_drop_programs"
+  },
+  {
+   "version": "20260710224824",
+   "name": "commerce_reviews"
+  },
+  {
+   "version": "20260710231240",
+   "name": "drop_programs_tables"
+  },
+  {
+   "version": "20260711014915",
+   "name": "image_focal_point"
+  },
+  {
+   "version": "20260711020103",
+   "name": "beta_command_center"
+  },
+  {
+   "version": "20260711031525",
+   "name": "qr_public_targets"
+  },
+  {
+   "version": "20260711035028",
+   "name": "founding_status"
+  },
+  {
+   "version": "20260711035058",
+   "name": "beta_referrals"
+  },
+  {
+   "version": "20260711035529",
+   "name": "beta_access_flags"
+  },
+  {
+   "version": "20260711035656",
+   "name": "host_prompts"
+  },
+  {
+   "version": "20260711154530",
+   "name": "event_layout_cleanup"
+  },
+  {
+   "version": "20260711165612",
+   "name": "event_posts_kind"
+  },
+  {
+   "version": "20260711222835",
+   "name": "commerce_variants"
+  },
+  {
+   "version": "20260711222925",
+   "name": "housing_matching_v2"
+  },
+  {
+   "version": "20260711223124",
+   "name": "housing_matching_v2_search_path"
+  },
+  {
+   "version": "20260712002908",
+   "name": "email_studio"
+  },
+  {
+   "version": "20260712014004",
+   "name": "nurture_block_body"
+  },
+  {
+   "version": "20260712021805",
+   "name": "listing_seeder"
+  },
+  {
+   "version": "20260712024708",
+   "name": "commerce_condition"
+  },
+  {
+   "version": "20260712024713",
+   "name": "commerce_media_tags"
+  },
+  {
+   "version": "20260712024726",
+   "name": "housing_attributes"
+  },
+  {
+   "version": "20260712024741",
+   "name": "nonprofit_verification"
+  },
+  {
+   "version": "20260712025212",
+   "name": "housing_match_revoke_anon"
+  },
+  {
+   "version": "20260712031938",
+   "name": "email_events_campaign_id"
+  },
+  {
+   "version": "20260712042531",
+   "name": "space_review_responses"
+  },
+  {
+   "version": "20260712193733",
+   "name": "spaces_visibility_unlisted"
+  },
+  {
+   "version": "20260712203932",
+   "name": "listing_comments"
+  },
+  {
+   "version": "20260712213510",
+   "name": "listing_details_offers"
+  },
+  {
+   "version": "20260713021524",
+   "name": "spaces_claim"
+  },
+  {
+   "version": "20260713151935",
+   "name": "space_service_types"
+  },
+  {
+   "version": "20260713151947",
+   "name": "space_availability_schedules"
+  },
+  {
+   "version": "20260713151954",
+   "name": "space_booking_lifecycle"
+  },
+  {
+   "version": "20260713181141",
+   "name": "airwaves_p0_library_assets_av"
+  },
+  {
+   "version": "20260713181154",
+   "name": "airwaves_p0_podcast_shows"
+  },
+  {
+   "version": "20260713181203",
+   "name": "airwaves_p0_recordings"
+  },
+  {
+   "version": "20260713181211",
+   "name": "airwaves_p0_recording_attachments"
+  },
+  {
+   "version": "20260713215133",
+   "name": "airwaves_p2_recording_reviews"
+  },
+  {
+   "version": "20260713215135",
+   "name": "airwaves_p2_listing_comments_recording"
+  },
+  {
+   "version": "20260713215140",
+   "name": "my_unread_message_count"
+  },
+  {
+   "version": "20260714060802",
+   "name": "circles_unlisted"
+  },
+  {
+   "version": "20260714191743",
+   "name": "crm_timeline_inapp_engagement"
+  },
+  {
+   "version": "20260714191812",
+   "name": "contact_import"
+  },
+  {
+   "version": "20260714191852",
+   "name": "lead_entry_points"
+  },
+  {
+   "version": "20260714191930",
+   "name": "subscription_preferences"
+  },
+  {
+   "version": "20260714191955",
+   "name": "dispatch_recipients"
+  },
+  {
+   "version": "20260716160544",
+   "name": "practice_session_note"
+  },
+  {
+   "version": "20260716204001",
+   "name": "contact_tenancy_per_space"
+  },
+  {
+   "version": "20260716204031",
+   "name": "import_custom_fields_and_undo"
+  },
+  {
+   "version": "20260716211039",
+   "name": "campaign_from_name"
+  },
+  {
+   "version": "20260717041707",
+   "name": "contact_relationships"
+  },
+  {
+   "version": "20260717041724",
+   "name": "vera_autonomy_decisions"
+  },
+  {
+   "version": "20260717041736",
+   "name": "crm_tasks"
+  },
+  {
+   "version": "20260717061537",
+   "name": "event_guests"
+  },
+  {
+   "version": "20260717061551",
+   "name": "network_contacts_shared_space"
+  },
+  {
+   "version": "20260717061603",
+   "name": "connector_rewards"
+  },
+  {
+   "version": "20260717145220",
+   "name": "campaign_from_address"
+  },
+  {
+   "version": "20260719191412",
+   "name": "element_settings"
+  },
+  {
+   "version": "20260719200204",
+   "name": "backfill_library_created_by"
+  },
+  {
+   "version": "20260719203812",
+   "name": "journey_plans_cover_focus"
+  },
+  {
+   "version": "20260719215043",
+   "name": "journey_plans_logo_image"
+  },
+  {
+   "version": "20260720015331",
+   "name": "journey_plans_header_overlay"
+  },
+  {
+   "version": "20260720022653",
+   "name": "lockdown_anon_analytics_rpcs"
+  },
+  {
+   "version": "20260720140020",
+   "name": "fk_covering_indexes"
+  },
+  {
+   "version": "20260720165246",
+   "name": "20261187000000_library_assets_source_provenance"
+  },
+  {
+   "version": "20260720170251",
+   "name": "20261188000000_loom_event_media_provenance"
+  },
+  {
+   "version": "20260720184837",
+   "name": "20261189000000_space_email_engagement"
+  },
+  {
+   "version": "20260720191535",
+   "name": "20261189000000_space_email_engagement"
+  },
+  {
+   "version": "20260720213329",
+   "name": "library_media_heic_mime"
+  },
+  {
+   "version": "20260720231808",
+   "name": "events_draft_nullable_start"
+  },
+  {
+   "version": "20260724015417",
+   "name": "commerce_order_attribution"
+  },
+  {
+   "version": "20260724015425",
+   "name": "spaces_network_connected_default"
+  },
+  {
+   "version": "20260724015435",
+   "name": "space_subscription_items_collective_independent"
+  },
+  {
+   "version": "20260724015441",
+   "name": "founding_business_reprice"
+  },
+  {
+   "version": "20260724015447",
+   "name": "community_collective_go_live"
+  },
+  {
+   "version": "20260724231738",
+   "name": "conversations_spine"
+  },
+  {
+   "version": "20260725021905",
+   "name": "conversations_digest_marker"
+  },
+  {
+   "version": "20260725052551",
+   "name": "backfill_founding_marketing_consent"
+  },
+  {
+   "version": "20260725055429",
+   "name": "profile_email_signature"
+  },
+  {
+   "version": "20260726201803",
+   "name": "space_subscription_items_operator_seat"
+  },
+  {
+   "version": "20260726201837",
+   "name": "event_calendar_feed_time_zone"
+  },
+  {
+   "version": "20260726201853",
+   "name": "campaign_topic"
+  },
+  {
+   "version": "20260726201909",
+   "name": "space_collaborations"
+  },
+  {
+   "version": "20260726201921",
+   "name": "public_calendar_feed"
+  },
+  {
+   "version": "20260726201942",
+   "name": "event_space_shares"
+  },
+  {
+   "version": "20260726201953",
+   "name": "pricing_admin_gaps"
+  },
+  {
+   "version": "20260726202008",
+   "name": "space_venue_holds"
+  },
+  {
+   "version": "20260726202103",
+   "name": "calendar_feed_recurrence"
+  },
+  {
+   "version": "20260726202117",
+   "name": "space_follower_reminders"
+  },
+  {
+   "version": "20260726205131",
+   "name": "comms_scope_spine"
+  },
+  {
+   "version": "20260726205142",
+   "name": "avatar_focus_in_url"
+  },
+  {
+   "version": "20260727014527",
+   "name": "journey_runs_v3_windows"
+  },
+  {
+   "version": "20260727014538",
+   "name": "comms_scope_journey_vocab"
+  },
+  {
+   "version": "20260727014547",
+   "name": "journey_drip_sends"
+  },
+  {
+   "version": "20260727033432",
+   "name": "circle_transfer_offers"
+  },
+  {
+   "version": "20260727042228",
+   "name": "sms_groundwork"
+  },
+  {
+   "version": "20260727042311",
+   "name": "app_instances"
+  },
+  {
+   "version": "20260727042351",
+   "name": "revoke_trigger_fn_rest_execute"
+  },
+  {
+   "version": "20260727044549",
+   "name": "rls_helpers_to_private_schema"
+  },
+  {
+   "version": "20260727044736",
+   "name": "revoke_public_execute_on_trigger_fns"
+  },
+  {
+   "version": "20260815000000",
+   "name": "commerce_core"
+  },
+  {
+   "version": "20260815000100",
+   "name": "listings_core_housing"
+  },
+  {
+   "version": "20260815000200",
+   "name": "pricing_storefront_gate"
+  },
+  {
+   "version": "20260815000300",
+   "name": "housing_matching_rpcs"
+  },
+  {
+   "version": "20260913000000",
+   "name": "funnels"
+  },
+  {
+   "version": "20260914000000",
+   "name": "applications"
+  },
+  {
+   "version": "20260915000000",
+   "name": "pricing_plan_collapse"
+  },
+  {
+   "version": "20260915000100",
+   "name": "pricing_member_tier"
+  },
+  {
+   "version": "20260916000000",
+   "name": "pricing_addons_seats"
+  },
+  {
+   "version": "20260917000000",
+   "name": "space_modes"
+  },
+  {
+   "version": "20260918000000",
+   "name": "spaces_cover_image"
+  },
+  {
+   "version": "20260918000100",
+   "name": "post_type_space_update"
+  },
+  {
+   "version": "20260918000200",
+   "name": "space_content_tables"
+  },
+  {
+   "version": "20260918000300",
+   "name": "space_update_member_interaction"
+  },
+  {
+   "version": "20260919000000",
+   "name": "library_assets"
+  },
+  {
+   "version": "20260920000000",
+   "name": "library_dam"
+  },
+  {
+   "version": "20260921000000",
+   "name": "library_embeddings"
+  },
+  {
+   "version": "20260922000000",
+   "name": "library_styles"
+  },
+  {
+   "version": "20260923000000",
+   "name": "advisor_sweep_initplan_fk_indexes"
+  },
+  {
+   "version": "20260924000000",
+   "name": "event_time_zone"
+  },
+  {
+   "version": "20260924000100",
+   "name": "app_instances"
+  },
+  {
+   "version": "20260925000000",
+   "name": "retire_orphaned_tables_and_functions"
+  },
+  {
+   "version": "20260925000100",
+   "name": "library_lanes_expansion"
+  },
+  {
+   "version": "20260926000000",
+   "name": "lockdown_secdef_trigger_functions"
+  },
+  {
+   "version": "20260927000000",
+   "name": "lockdown_secdef_internal_helpers"
+  },
+  {
+   "version": "20260928000000",
+   "name": "drop_commerce_variants"
+  },
+  {
+   "version": "20260929000000",
+   "name": "award_gems_atomic"
+  },
+  {
+   "version": "20260930000000",
+   "name": "reserve_ticket_atomic"
+  },
+  {
+   "version": "20261001000000",
+   "name": "claim_outbox_jobs"
+  },
+  {
+   "version": "20261002000000",
+   "name": "challenge_streak_atomic"
+  },
+  {
+   "version": "20261003000000",
+   "name": "membership_event_ordering_guard"
+  },
+  {
+   "version": "20261004000000",
+   "name": "consolidate_multiple_permissive_policies"
+  },
+  {
+   "version": "20261005000000",
+   "name": "lockdown_anon_executable_secdef_rpcs"
+  },
+  {
+   "version": "20261005000100",
+   "name": "supporter_contributions"
+  },
+  {
+   "version": "20261006000000",
+   "name": "drop_redundant_space_subscription_items_index"
+  },
+  {
+   "version": "20261007000000",
+   "name": "consolidate_remaining_permissive_policies"
+  },
+  {
+   "version": "20261008000000",
+   "name": "crew_completion_atomic"
+  },
+  {
+   "version": "20261009000000",
+   "name": "verification_gated_zaps"
+  },
+  {
+   "version": "20261010000000",
+   "name": "dm_conversation_summaries"
+  },
+  {
+   "version": "20261010000001",
+   "name": "library_sequence_kind"
+  },
+  {
+   "version": "20261011000000",
+   "name": "app_overrides"
+  },
+  {
+   "version": "20261012000000",
+   "name": "room_unread_counts"
+  },
+  {
+   "version": "20261013000000",
+   "name": "reconcile_signup_trigger"
+  },
+  {
+   "version": "20261014000000",
+   "name": "practice_timer_sessions"
+  },
+  {
+   "version": "20261015000000",
+   "name": "collapse_space_types_to_business_nonprofit"
+  },
+  {
+   "version": "20261016000000",
+   "name": "collapse_space_plans_to_business_nonprofit"
+  },
+  {
+   "version": "20261017000000",
+   "name": "contact_at_risk"
+  },
+  {
+   "version": "20261020000000",
+   "name": "space_automation"
+  },
+  {
+   "version": "20261021000000",
+   "name": "space_drip_enrollments"
+  },
+  {
+   "version": "20261022000000",
+   "name": "business_intake"
+  },
+  {
+   "version": "20261023000000",
+   "name": "loom_funnel_elements"
+  },
+  {
+   "version": "20261024000000",
+   "name": "practice_warmup"
+  },
+  {
+   "version": "20261101000000",
+   "name": "offerings_backfill"
+  },
+  {
+   "version": "20261102000000",
+   "name": "bookable_services"
+  },
+  {
+   "version": "20261103000000",
+   "name": "market_published"
+  },
+  {
+   "version": "20261104000000",
+   "name": "advisor_hygiene_initplan_and_fk_indexes"
+  },
+  {
+   "version": "20261105000000",
+   "name": "event_media_mime"
+  },
+  {
+   "version": "20261106000000",
+   "name": "event_venmo"
+  },
+  {
+   "version": "20261109000000",
+   "name": "library_card_times"
+  },
+  {
+   "version": "20261110000000",
+   "name": "event_cohost_invites"
+  },
+  {
+   "version": "20261111000000",
+   "name": "event_placement_requests"
+  },
+  {
+   "version": "20261112000000",
+   "name": "commerce_reviews"
+  },
+  {
+   "version": "20261113000000",
+   "name": "community_library_drop_programs"
+  },
+  {
+   "version": "20261114000000",
+   "name": "drop_programs_tables"
+  },
+  {
+   "version": "20261116000000",
+   "name": "image_focal_point"
+  },
+  {
+   "version": "20261117000000",
+   "name": "beta_command_center"
+  },
+  {
+   "version": "20261119000000",
+   "name": "qr_public_targets"
+  },
+  {
+   "version": "20261121000000",
+   "name": "beta_access_flags"
+  },
+  {
+   "version": "20261122000000",
+   "name": "founding_status"
+  },
+  {
+   "version": "20261123000000",
+   "name": "beta_referrals"
+  },
+  {
+   "version": "20261124000000",
+   "name": "host_prompts"
+  },
+  {
+   "version": "20261125000000",
+   "name": "event_posts_kind"
+  },
+  {
+   "version": "20261126000000",
+   "name": "event_layout_cleanup"
+  },
+  {
+   "version": "20261127000000",
+   "name": "commerce_condition"
+  },
+  {
+   "version": "20261128000000",
+   "name": "commerce_media_tags"
+  },
+  {
+   "version": "20261129000000",
+   "name": "housing_attributes"
+  },
+  {
+   "version": "20261131000000",
+   "name": "nonprofit_verification"
+  },
+  {
+   "version": "20261132000000",
+   "name": "commerce_variants"
+  },
+  {
+   "version": "20261133000000",
+   "name": "housing_matching_v2"
+  },
+  {
+   "version": "20261134000000",
+   "name": "housing_matching_v2_search_path"
+  },
+  {
+   "version": "20261135000000",
+   "name": "email_studio"
+  },
+  {
+   "version": "20261136000000",
+   "name": "nurture_block_body"
+  },
+  {
+   "version": "20261137000000",
+   "name": "listing_seeder"
+  },
+  {
+   "version": "20261138000000",
+   "name": "housing_match_revoke_anon"
+  },
+  {
+   "version": "20261139000000",
+   "name": "email_events_campaign_id"
+  },
+  {
+   "version": "20261140000000",
+   "name": "space_review_responses"
+  },
+  {
+   "version": "20261142000000",
+   "name": "spaces_visibility_unlisted"
+  },
+  {
+   "version": "20261143000000",
+   "name": "listing_comments"
+  },
+  {
+   "version": "20261144000000",
+   "name": "listing_details_offers"
+  },
+  {
+   "version": "20261145000000",
+   "name": "spaces_claim"
+  },
+  {
+   "version": "20261146000000",
+   "name": "space_service_types"
+  },
+  {
+   "version": "20261147000000",
+   "name": "space_availability_schedules"
+  },
+  {
+   "version": "20261148000000",
+   "name": "space_booking_lifecycle"
+  },
+  {
+   "version": "20261150000000",
+   "name": "library_assets_av"
+  },
+  {
+   "version": "20261151000000",
+   "name": "podcast_shows"
+  },
+  {
+   "version": "20261152000000",
+   "name": "recordings"
+  },
+  {
+   "version": "20261153000000",
+   "name": "recording_attachments"
+  },
+  {
+   "version": "20261154000000",
+   "name": "recording_reviews"
+  },
+  {
+   "version": "20261155000000",
+   "name": "listing_comments_recording"
+  },
+  {
+   "version": "20261156000000",
+   "name": "my_unread_message_count"
+  },
+  {
+   "version": "20261157000000",
+   "name": "circles_unlisted"
+  },
+  {
+   "version": "20261158000000",
+   "name": "crm_timeline_inapp_engagement"
+  },
+  {
+   "version": "20261159000000",
+   "name": "contact_import"
+  },
+  {
+   "version": "20261160000000",
+   "name": "lead_entry_points"
+  },
+  {
+   "version": "20261161000000",
+   "name": "subscription_preferences"
+  },
+  {
+   "version": "20261162000000",
+   "name": "dispatch_recipients"
+  },
+  {
+   "version": "20261163000000",
+   "name": "practice_session_note"
+  },
+  {
+   "version": "20261164000000",
+   "name": "contact_tenancy_per_space"
+  },
+  {
+   "version": "20261165000000",
+   "name": "import_custom_fields_and_undo"
+  },
+  {
+   "version": "20261166000000",
+   "name": "campaign_from_name"
+  },
+  {
+   "version": "20261167000000",
+   "name": "contact_relationships"
+  },
+  {
+   "version": "20261168000000",
+   "name": "vera_autonomy_decisions"
+  },
+  {
+   "version": "20261169000000",
+   "name": "crm_tasks"
+  },
+  {
+   "version": "20261170000000",
+   "name": "event_guests"
+  },
+  {
+   "version": "20261171000000",
+   "name": "network_contacts_shared_space"
+  },
+  {
+   "version": "20261172000000",
+   "name": "connector_rewards"
+  },
+  {
+   "version": "20261173000000",
+   "name": "campaign_from_address"
+  },
+  {
+   "version": "20261180000000",
+   "name": "element_settings"
+  },
+  {
+   "version": "20261181000000",
+   "name": "backfill_library_created_by"
+  },
+  {
+   "version": "20261182000000",
+   "name": "journey_plans_cover_focus"
+  },
+  {
+   "version": "20261183000000",
+   "name": "journey_plans_logo_image"
+  },
+  {
+   "version": "20261184000000",
+   "name": "journey_plans_header_overlay"
+  },
+  {
+   "version": "20261185000000",
+   "name": "lockdown_anon_analytics_rpcs"
+  },
+  {
+   "version": "20261186000000",
+   "name": "fk_covering_indexes"
+  },
+  {
+   "version": "20261187000000",
+   "name": "library_assets_source_provenance"
+  },
+  {
+   "version": "20261188000000",
+   "name": "loom_event_media_provenance"
+  },
+  {
+   "version": "20261189000000",
+   "name": "space_email_engagement"
+  },
+  {
+   "version": "20261190000000",
+   "name": "library_media_heic_mime"
+  },
+  {
+   "version": "20261191000000",
+   "name": "events_draft_nullable_start"
+  },
+  {
+   "version": "20261192000000",
+   "name": "space_subscription_items_operator_seat"
+  },
+  {
+   "version": "20261193000000",
+   "name": "event_calendar_feed_time_zone"
+  },
+  {
+   "version": "20261194000000",
+   "name": "campaign_topic"
+  },
+  {
+   "version": "20261195000000",
+   "name": "space_collaborations"
+  },
+  {
+   "version": "20261196000000",
+   "name": "public_calendar_feed"
+  },
+  {
+   "version": "20261197000000",
+   "name": "event_space_shares"
+  },
+  {
+   "version": "20261198000000",
+   "name": "pricing_admin_gaps"
+  },
+  {
+   "version": "20261202000000",
+   "name": "space_venue_holds"
+  },
+  {
+   "version": "20261203000000",
+   "name": "calendar_feed_recurrence"
+  },
+  {
+   "version": "20261204000000",
+   "name": "space_follower_reminders"
+  },
+  {
+   "version": "20261205000000",
+   "name": "commerce_order_attribution"
+  },
+  {
+   "version": "20261206000000",
+   "name": "spaces_network_connected_default"
+  },
+  {
+   "version": "20261207000000",
+   "name": "founding_business_reprice"
+  },
+  {
+   "version": "20261208000000",
+   "name": "space_subscription_items_collective_independent"
+  },
+  {
+   "version": "20261209000000",
+   "name": "community_collective_go_live"
+  },
+  {
+   "version": "20261210000000",
+   "name": "conversations_spine"
+  },
+  {
+   "version": "20261211000000",
+   "name": "conversations_digest_marker"
+  },
+  {
+   "version": "20261211100000",
+   "name": "backfill_founding_marketing_consent"
+  },
+  {
+   "version": "20261211200000",
+   "name": "profile_email_signature"
+  },
+  {
+   "version": "20261212000000",
+   "name": "adr811_plan_anchor_reconcile"
+  },
+  {
+   "version": "20261213000000",
+   "name": "space_plan_event_ordering"
+  },
+  {
+   "version": "20261214000000",
+   "name": "practice_breath_pattern"
+  },
+  {
+   "version": "20261215000000",
+   "name": "contacts_read_operator_only"
+  },
+  {
+   "version": "20261216000000",
+   "name": "scrub_dm_bodies_from_crm"
+  },
+  {
+   "version": "20261217000000",
+   "name": "pricing_overhaul_supporter_independent"
+  },
+  {
+   "version": "20261218000000",
+   "name": "event_host_space"
+  },
+  {
+   "version": "20261219000000",
+   "name": "flat_inbox_open_loop_backfill"
+  },
+  {
+   "version": "20261220000000",
+   "name": "event_ticket_membership_access"
+  },
+  {
+   "version": "20261221000000",
+   "name": "membership_capacity_waitlist"
+  },
+  {
+   "version": "20261222000000",
+   "name": "event_hide_address"
+  },
+  {
+   "version": "20261223000000",
+   "name": "event_join_mode"
+  },
+  {
+   "version": "20261224000000",
+   "name": "event_dispatch_email"
+  },
+  {
+   "version": "20261225000000",
+   "name": "avatar_focus_in_url"
+  },
+  {
+   "version": "20261226000000",
+   "name": "comms_scope_spine"
+  },
+  {
+   "version": "20261227000000",
+   "name": "journey_runs_v3_windows"
+  },
+  {
+   "version": "20261228000000",
+   "name": "comms_scope_journey_vocab"
+  },
+  {
+   "version": "20261229000000",
+   "name": "journey_drip_sends"
+  },
+  {
+   "version": "20261230000000",
+   "name": "circle_transfer_offers"
+  },
+  {
+   "version": "20261231000000",
+   "name": "revoke_trigger_fn_rest_execute"
+  },
+  {
+   "version": "20270101000000",
+   "name": "rls_helpers_to_private_schema"
+  },
+  {
+   "version": "20270102000000",
+   "name": "area_permissions_orphan_cleanup"
+  },
+  {
+   "version": "20270103000000",
+   "name": "advisor_sweep_sms_initplan_contacts_policies"
+  }
+ ]
+}

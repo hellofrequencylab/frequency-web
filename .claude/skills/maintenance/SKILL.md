@@ -16,7 +16,15 @@ Work on the session's feature branch. Run all checks, THEN write one report.
   name; do not assume the Hook project ref). Then `get_advisors` `security` and
   `performance`. Summarize each with its remediation URL as a clickable link; flag
   missing-RLS as **high**.
-- `list_migrations` vs `supabase/migrations/` in the repo — report any drift.
+- **Ledger ⇄ repo parity, BOTH directions** (`list_migrations` vs `supabase/migrations/`),
+  compared as version SETS, not counts. The invariant since 2026-07-27 is exact bijection:
+  every repo version ledgered, every ledger row backed by a repo file. Repo-not-in-ledger is
+  the dangerous direction (a future `migration up` would re-apply it); ledger-not-in-repo
+  means someone applied without committing the file. Report either with the exact versions.
+- **After any MCP `apply_migration`** (here or in any session): the tool records the ledger
+  row under its own apply-timestamp, NOT the repo filename's version — this alone
+  manufactures drift. Immediately rename the row to the repo version:
+  `update supabase_migrations.schema_migrations set version = '<repo version>' where name = '<name>' and version <> '<repo version>';`
 - **Never** `apply_migration` / DDL `execute_sql` here. If a migration should be applied,
   write the exact step into the report and stop.
 
