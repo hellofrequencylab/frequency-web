@@ -178,25 +178,11 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'primary',
     priority: 40,
   },
-  // This week's practice (ADR-515 Phase 4, the CIRCLE rail). The host-assigned practice is an on-screen
-  // function (the "This week's practice" card in the page body + the members' log button), so the rail gets
-  // its own control for it — the picker extracted out of Circle Quest into a first-class engage module.
-  // Gated circle.assignTask (the engage authority; its read action re-checks the SAME capability), and the
-  // set action stays gated circle.editSettings (co-granted to a circle leader, so never weaker).
-  {
-    id: 'circle.practice',
-    label: "This week's practice",
-    desc: 'Set the practice your circle does together this week. It shows on the circle page for members to log.',
-    Icon: Sparkles,
-    scopes: ['circle'],
-    requiredCapability: 'circle.assignTask',
-    slot: 'engage',
-    surface: 'sidebar',
-    render: 'inline',
-    order: 12,
-    tier: 'primary',
-    priority: 45,
-  },
+  // NOTE (ADR-846): the separate `circle.practice` row was FOLDED INTO `circle.engage`. It was a second
+  // Engage-slot row on the same authority (circle.assignTask) for the same subject — what the circle is
+  // doing together — so the seven-box core-entity shape gives Engage one box. The picker did not go
+  // anywhere: `circle.engage` now mounts BOTH editors (module-map.tsx composes CircleEngageModule +
+  // CirclePracticeModule under the one id), exactly as `space.basics` composes its three section editors.
   // Circle insights (ADR-515 Phase 4). Circle health is an on-screen readout (zaps earned here, active
   // streaks, new this week), so the rail carries an at-a-glance insights module — INLINE, mirroring
   // hub.insights / nexus.insights / practice.insights (a circle has no standalone insights page, so there
@@ -279,12 +265,12 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'primary',
     priority: 15,
   },
-  // Hub layout (ADR-515 Phase 5, the 'layout' spine cell). Every rail carries a layout chooser (the owner
-  // directive). The hub detail page is HAND-BUILT (fixed sections: identity → insight → circles), NOT
-  // <PageModules>-driven, so there is no arrangeable block set to reorder — a real LayoutEditor would be a
-  // broken picker. Instead this is a minimal, honest Layout affordance: it states the page uses a standard
-  // fixed layout and links to the Manage console (where the hub's sections + settings live). Gated hub.manage;
-  // the module self-fetches getHubAdminData (null for anyone else), so it renders nothing when unauthorized.
+  // Hub layout (ADR-515 Phase 5). The hub detail page is HAND-BUILT (fixed sections: identity → insight →
+  // circles), NOT <PageModules>-driven, so there is no arrangeable block set to reorder — a real
+  // LayoutEditor would be a broken picker. It was a THIN inline card whose whole body was one link to the
+  // Manage console, so ADR-846 folds it INTO the Settings box (`basics`) as a plain link row to that same
+  // console: identical destination, one row instead of a card wrapping a row. Gated hub.manage; the
+  // console page it opens re-gates server-side.
   {
     id: 'hub.layout',
     label: 'Layout',
@@ -292,9 +278,9 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     Icon: LayoutGrid,
     scopes: ['hub'],
     requiredCapability: 'hub.manage',
-    slot: 'layout',
+    slot: 'basics',
     surface: 'sidebar',
-    render: 'inline',
+    render: 'link',
     order: 10,
     tier: 'primary',
     priority: 50,
@@ -376,10 +362,9 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'primary',
     priority: 15,
   },
-  // Nexus layout (ADR-515 Phase 5). Same treatment as hub.layout: the nexus detail page is hand-built (fixed
-  // sections: identity → insight → hubs), not <PageModules>-driven, so this is the minimal Layout affordance
-  // pointing at the Manage console rather than a broken picker. Gated nexus.manage; self-fetches
-  // getNexusAdminData (null for anyone else), fail-safe.
+  // Nexus layout (ADR-515 Phase 5). Same treatment as hub.layout, and folded the same way by ADR-846: the
+  // nexus detail page is hand-built (fixed sections: identity → insight → hubs), so the row is a plain link
+  // into the Manage console inside the Settings box, not a card wrapping one link. Gated nexus.manage.
   {
     id: 'nexus.layout',
     label: 'Layout',
@@ -387,9 +372,9 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     Icon: LayoutGrid,
     scopes: ['nexus'],
     requiredCapability: 'nexus.manage',
-    slot: 'layout',
+    slot: 'basics',
     surface: 'sidebar',
-    render: 'inline',
+    render: 'link',
     order: 10,
     tier: 'primary',
     priority: 50,
@@ -561,11 +546,12 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'standard',
     priority: 10,
   },
-  // Layout (the 'layout' spine cell). Every rail carries a layout affordance (the owner directive), but a
-  // Journey's arrangeable structure is the Phase → Module → Lesson block tree + the page_config, which is
-  // DATA-HEAVY (blocks, practices, pillars, Vera review). Mounting it inline with fabricated props would be
-  // a broken picker, so — exactly like hub.layout / nexus.layout — this is a minimal, honest affordance:
-  // it links to the full-page builder where the tree + advanced layout live.
+  // Builder and layout. A Journey's arrangeable structure is the Phase → Module → Lesson block tree + the
+  // page_config, which is DATA-HEAVY (blocks, practices, pillars, Vera review), so it has always been a
+  // thin card whose whole body was one link to /journeys/<slug>/edit. ADR-846 folds it INTO the Settings
+  // box (`basics`) as that link row. NOTE the prerequisite that made this safe: hrefForEntitySurface had no
+  // journey case, so a `link` row would have resolved null and drawn NOTHING; the explicit
+  // `journey.builder` → /journeys/<slug>/edit case was added there first.
   {
     id: 'journey.builder',
     label: 'Builder and layout',
@@ -573,16 +559,17 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     Icon: LayoutGrid,
     scopes: ['journey'],
     requiredCapability: 'journey.editSettings',
-    slot: 'layout',
+    slot: 'basics',
     surface: 'sidebar',
-    render: 'inline',
+    render: 'link',
     order: 20,
     tier: 'primary',
     priority: 50,
   },
-  // Export (the 'reach' spine cell). A light, self-contained control (JourneyExport takes only the slug):
-  // saves a portable copy of the Journey to travel to another Space or a Hook cohort. Inline; not banked
-  // (it is a mutating client action with no navigable route, not a quick-link destination).
+  // Export. A light, self-contained control (JourneyExport takes only the slug): saves a portable copy of
+  // the Journey to travel to another Space or a Hook cohort. It stays INLINE (a mutating client action with
+  // no navigable route, so it could never be a link row), but ADR-846 moves it off the lone `reach` slot
+  // into the Settings box, so a Journey resolves to the seven-box core shape with no eighth header.
   {
     id: 'journey.export',
     label: 'Export',
@@ -590,7 +577,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     Icon: Archive,
     scopes: ['journey'],
     requiredCapability: 'journey.editSettings',
-    slot: 'reach',
+    slot: 'basics',
     surface: 'sidebar',
     render: 'inline',
     order: 30,

@@ -15,6 +15,11 @@
 //     the scope carries (`scope.id`). Callers on a detail page must pass a SLUG-corrected scope (the
 //     AdminBar detail's scope.id is the DB id): settings-panel's `slugScope` / the manage console's
 //     path-derived scope both do.
+//   • The THIN LAYOUT/BUILDER surfaces (ADR-846): hub.layout / nexus.layout / journey.builder were cards
+//     whose entire body was a single link out, so they fold into their entity's Settings box as `link`
+//     rows. Hub + nexus resolve through the manage-console prefix fallbacks below (the same destination
+//     their inline card linked to); journey.builder needs its OWN case above, since journey has no prefix
+//     fallback and a null href would draw nothing.
 //   • Every OTHER core-entity surface (circle / hub / nexus / event / practice / channel) stays
 //     `render: 'inline'`: the entity's inline module IS its dedicated editor (the /manage + /settings
 //     consoles merely re-compose the SAME module components); the manage-console prefix fallbacks
@@ -66,6 +71,11 @@ export function hrefForEntitySurface(appId: string, scope: EntitySurfaceScope | 
     // Message Attendees / Message Circle live at the TOP of their Manage hubs' Home tab now
     // (the message center, ADR-828), so those communication modules deep-link to the hub
     // itself, not a standalone page. Hub + nexus keep their standalone /crm pages.
+    // The Journey builder (ADR-846): "Builder and layout" folded into the Journey's Settings box as a
+    // LINK row, so it needs a destination here — the full-page course builder. Journey has NO prefix
+    // fallback below (its console is that builder, not a /manage page), so WITHOUT this explicit case the
+    // row would resolve null and draw nothing at all. Every other journey surface stays `inline`.
+    if (appId === 'journey.builder') return `/journeys/${entitySlug}/edit`
     if (appId === 'event.crm') return `/events/${entitySlug}/manage`
     if (appId === 'circle.crm') return `/circles/${entitySlug}/manage`
     if (appId === 'hub.crm') return `/hubs/${entitySlug}/crm`

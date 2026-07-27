@@ -15,7 +15,9 @@ import { SPACE_MODULES, spaceModuleById } from './space-modules'
 describe('sectionForModule (the hub IA)', () => {
   it('assigns every catalog module to a section or explicitly excludes it (no orphan)', () => {
     const KNOWN = new Set(['resonance', 'marketing', 'offerings', 'programs', 'settings'])
-    const EXCLUDED = new Set(['space.layout']) // Page editing lives on the admin rail now, not the hub
+    // Page editing lives on the admin rail, and the Content BOX is the Content & Programs tab itself
+    // (ADR-846), so a card for it would link back to the tab you are standing on.
+    const EXCLUDED = new Set(['space.layout', 'space.content'])
     for (const m of SPACE_MODULES) {
       const section = sectionForModule(m)
       if (EXCLUDED.has(m.id)) {
@@ -35,19 +37,19 @@ describe('sectionForModule (the hub IA)', () => {
   })
 
   it('routes the reach + growth surfaces to Marketing (Audience + Reach combined)', () => {
-    for (const id of ['space.comms', 'space.marketing', 'space.emailstyle', 'space.reach', 'space.insights', 'space.automation']) {
+    for (const id of ['space.comms', 'space.marketing', 'space.emailstyle', 'space.reach', 'space.automation']) {
       expect(sectionForModule(spaceModuleById(id)!)).toBe('marketing')
     }
   })
 
-  it('routes the commerce surfaces to Offerings & Money', () => {
-    for (const id of ['space.booking', 'space.memberships', 'space.donations', 'space.enroll', 'space.tickets', 'space.checkin', 'space.services']) {
+  it('routes the Offerings and money box and every service in it to Offerings & Money', () => {
+    for (const id of ['space.offerings', 'space.booking', 'space.memberships', 'space.donations', 'space.enroll', 'space.tickets', 'space.checkin', 'space.services']) {
       expect(sectionForModule(spaceModuleById(id)!)).toBe('offerings')
     }
   })
 
   it('routes the practitioner content to Content & Programs', () => {
-    for (const id of ['space.practices', 'space.journeys', 'space.airwaves']) {
+    for (const id of ['space.practices', 'space.journeys', 'space.circles', 'space.airwaves', 'space.loom']) {
       expect(sectionForModule(spaceModuleById(id)!)).toBe('programs')
     }
   })

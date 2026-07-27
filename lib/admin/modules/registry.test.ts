@@ -93,7 +93,8 @@ describe('admin module registry', () => {
   it('surfaces the journey rail only on a journey scope, only with journey.editSettings (ADR-515 Phase 6)', () => {
     const journeyScope: Scope = { kind: 'journey', journeyId: 'j1', authorId: 'a1' }
     const caps = new Set<Capability>(['journey.editSettings'])
-    // Settings (basics), Builder/Layout (layout), Export (reach), Danger (danger) — in `order`.
+    // ADR-846 seven-box shape: Settings, Builder/Layout, and Export all sit in the Settings box (basics);
+    // Danger keeps its own. Still in `order`.
     expect(modulesFor(journeyScope, caps).map((m) => m.id)).toEqual([
       'journey.settings',
       'journey.builder',
@@ -104,10 +105,14 @@ describe('admin module registry', () => {
     // No leakage across kinds.
     expect(modulesFor(circleScope, caps)).toHaveLength(0)
     expect(modulesFor(journeyScope, new Set<Capability>(['circle.editSettings']))).toHaveLength(0)
-    // Every journey row renders INLINE in the body (no bank tag) and re-uses the one journey capability.
+    // Every journey row is in the body (never banked) and re-uses the one journey capability. Builder is
+    // the one `link` row (ADR-846): a thin card whose whole body was a link to the full-page builder.
     const journeyMods = ADMIN_MODULES.filter((m) => m.scopes.includes('journey'))
-    expect(journeyMods.every((m) => m.render === 'inline' && m.placement !== 'bank')).toBe(true)
+    expect(journeyMods.every((m) => m.placement !== 'bank')).toBe(true)
+    expect(journeyMods.filter((m) => m.render === 'link').map((m) => m.id)).toEqual(['journey.builder'])
     expect(journeyMods.every((m) => m.requiredCapability === 'journey.editSettings')).toBe(true)
+    // The Journey resolves to the seven-box shape: only Settings + Danger slots, no lone `reach`/`layout`.
+    expect([...new Set(journeyMods.map((m) => m.slot))].sort()).toEqual(['basics', 'danger'])
     // Danger is present and sits in the danger slot (never banked).
     expect(moduleById('journey.danger')?.slot).toBe('danger')
   })
@@ -201,27 +206,33 @@ describe('admin module registry', () => {
     for (const id of ['account.appearance', 'account.notifications', 'account.connections']) {
       expect(personal.find((m) => m.id === id)?.placement).toBe('bank')
     }
-    // Every core entity module (non-global scope) renders inline in the body (no bank tag) - EXCEPT the
-    // ADR-827 communication modules (*.crm), which are full master-detail pages and so link out.
+    // Every core entity module (non-global scope) sits in the body (no bank tag), and renders inline
+    // EXCEPT two documented families: the ADR-827 communication modules (*.crm — full master-detail pages)
+    // and the ADR-846 thin Layout/Builder rows folded into their Settings box as a single link out.
     const coreEntity = ADMIN_MODULES.filter((m) => !m.scopes.includes('global'))
-    expect(coreEntity.filter((m) => !m.id.endsWith('.crm')).every((m) => m.render === 'inline' && m.placement !== 'bank')).toBe(true)
+    const linkOut = new Set(['hub.layout', 'nexus.layout', 'journey.builder'])
+    expect(coreEntity.every((m) => m.placement !== 'bank')).toBe(true)
+    expect(coreEntity.filter((m) => m.render === 'link').map((m) => m.id).sort()).toEqual(
+      [...coreEntity.filter((m) => m.id.endsWith('.crm')).map((m) => m.id), ...linkOut].sort(),
+    )
     expect(coreEntity.filter((m) => m.id.endsWith('.crm')).every((m) => m.render === 'link' && m.slot === 'comms')).toBe(true)
+    // The folded Layout/Builder rows live in the Settings box, not a lone `layout` slot of their own.
+    for (const id of linkOut) expect(moduleById(id)?.slot).toBe('basics')
   })
 
   // ADR-250 step 1: registry-driven selection by scope kind (the page admin dock has no
   // resolved caps; it selects by kind and each module self-gates server-side).
   it('selects modules by scope kind, filtered by surface, ordered', () => {
-    // Circle carries the 9-spine editor Apps (ADMIN-RAIL Phase 7) PLUS the ADR-515 Phase 4 additions:
-    // This week's practice (engage, order 12) and Insights (order 14). modulesForScopeKind sorts by
-    // `order` (stable), so the order-10 modules keep declaration order, then practice (12), insights (14),
-    // and text (15) trail.
+    // Circle carries the 9-spine editor Apps (ADMIN-RAIL Phase 7) plus Insights (order 14).
+    // modulesForScopeKind sorts by `order` (stable), so the order-10 modules keep declaration order, then
+    // insights (14) and text (15) trail. This week's practice folded INTO circle.engage (ADR-846) — its
+    // picker now mounts inside that one Engage box, so it is no longer a row of its own.
     expect(modulesForScopeKind('circle', 'sidebar').map((m) => m.id)).toEqual([
       'circle.settings',
       'circle.placeAndTime',
       'circle.people',
       'circle.crm',
       'circle.engage',
-      'circle.practice',
       'circle.insights',
       'circle.text',
     ])

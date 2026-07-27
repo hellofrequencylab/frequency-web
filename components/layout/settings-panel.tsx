@@ -6,6 +6,7 @@ import { LayoutGrid, type LucideIcon } from 'lucide-react'
 import { meetsAccess } from '@/lib/nav-areas'
 import { isModuleRoute } from '@/lib/widgets/module-routes'
 import { LayoutEditor } from '@/components/admin/page-settings/layout-editor'
+import { spaceModuleById } from '@/lib/admin/modules/space-modules'
 import { EventDangerZone } from '@/components/admin/modules/event-danger-zone'
 import { CircleQuestModule } from '@/components/admin/modules/circle-quest-module'
 import { PageContentModule } from '@/components/admin/modules/page-content-module'
@@ -128,10 +129,55 @@ export function useIsDesktop(): boolean {
  *  when a section holds more than one node (so a single-module section reads as just its section header,
  *  never a doubled title — the "no duplicate titles" directive). Modules render flush BODY only; the
  *  section header is the single source of the title. */
+/**
+ * Order a section's ids so each BOX is immediately followed by the tools it owns, and stamp the
+ * nesting depth the renderer indents by (ADR-846).
+ *
+ * The catalog expresses the 12-box shape through `parent`; before this, the rail flattened it and an
+ * operator still saw every tool as a top-level box. Space scopes only: SPACE_MODULES is the one
+ * catalog that uses `parent` (core entities consolidate by moving modules between slots instead).
+ *
+ * FAIL-SAFE: a child whose parent is not in this section (a different slot, or gated out for this
+ * viewer) keeps its original position at depth 0 rather than disappearing. Losing a tool would be a
+ * far worse failure than showing it un-nested, and gating is per-module, so this case is real.
+ */
+export function orderByBox(ids: string[], isSpace: boolean): { id: string; depth: number }[] {
+  if (!isSpace) return ids.map((id) => ({ id, depth: 0 }))
+
+  const present = new Set(ids)
+  const parentOf = new Map<string, string>()
+  for (const id of ids) {
+    const parent = spaceModuleById(id)?.parent
+    // Only treat it as a child when the parent is actually rendered beside it.
+    if (parent && present.has(parent)) parentOf.set(id, parent)
+  }
+
+  const out: { id: string; depth: number }[] = []
+  const emitted = new Set<string>()
+  for (const id of ids) {
+    if (parentOf.has(id)) continue // emitted under its box below
+    out.push({ id, depth: 0 })
+    emitted.add(id)
+    for (const childId of ids) {
+      if (parentOf.get(childId) === id && !emitted.has(childId)) {
+        out.push({ id: childId, depth: 1 })
+        emitted.add(childId)
+      }
+    }
+  }
+  // Anything left is an orphan child (parent gated out mid-pass): render it flat, never drop it.
+  for (const id of ids) if (!emitted.has(id)) out.push({ id, depth: 0 })
+  return out
+}
+
 export interface RailNode {
   id: string
   label: string
   node: ReactNode
+  /** Nesting depth inside its section (ADR-846). 0 = a BOX; 1 = a tool the box owns, via the
+   *  catalog's `parent`. The renderer indents depth 1 under the box above it, which is what turns
+   *  the 12-box catalog shape into 12 visible boxes instead of a flat list. Absent = 0. */
+  depth?: number
 }
 
 export interface AdminSection {
@@ -507,9 +553,9 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
       slot: g.slot,
       label: meta.label,
       Icon: meta.Icon,
-      nodes: g.appIds.flatMap((id) => {
+      nodes: orderByBox(g.appIds, isSpace).flatMap(({ id, depth }) => {
         const node = nodeById.get(id)
-        return node != null ? [{ id, label: labelById.get(id) ?? '', node }] : []
+        return node != null ? [{ id, label: labelById.get(id) ?? '', node, depth }] : []
       }),
     }
   })

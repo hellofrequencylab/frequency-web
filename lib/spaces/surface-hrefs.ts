@@ -98,6 +98,10 @@ export function panelHrefForSurface(id: string, slug: string): string | null {
  *  keep their existing panel ids. PURE. */
 const MODULE_PANEL_ID: Record<string, string> = {
   'space.people': 'members', // Members
+  // The Offerings and money BOX (ADR-846) opens the adaptive `offerings` panel — the same on-page
+  // workspace its six services open their own sections of, so the box behaves like every other panel box
+  // instead of being the one row that navigates away.
+  'space.offerings': 'offerings',
   'space.crm': 'crm', // CRM (the bounded board panel — legacy surface id was space.engage.crm)
   // 'space.services' (relabeled 'Shop') intentionally has NO inline panel: it deep-links to the 3-tab
   // Shop console at /settings/shop (ADR-596). A panel entry here would short-circuit that deepLink.

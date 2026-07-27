@@ -8457,6 +8457,11 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
+          sms_dispatches: boolean
+          sms_enabled: boolean
+          sms_events: boolean
+          sms_quiet_end_hour: number
+          sms_quiet_start_hour: number
           created_at: string
           email_comments: boolean
           email_dispatches: boolean
@@ -8483,6 +8488,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          sms_dispatches?: boolean
+          sms_enabled?: boolean
+          sms_events?: boolean
+          sms_quiet_end_hour?: number
+          sms_quiet_start_hour?: number
           created_at?: string
           email_comments?: boolean
           email_dispatches?: boolean
@@ -8509,6 +8519,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          sms_dispatches?: boolean
+          sms_enabled?: boolean
+          sms_events?: boolean
+          sms_quiet_end_hour?: number
+          sms_quiet_start_hour?: number
           created_at?: string
           email_comments?: boolean
           email_dispatches?: boolean
@@ -15152,8 +15167,6 @@ export type Database = {
         Args: { _challenge: string; _profile: string; _target: number }
         Returns: Json
       }
-      am_participant: { Args: { p_conversation_id: string }; Returns: boolean }
-      am_room_member: { Args: { p_room_id: string }; Returns: boolean }
       apply_membership_event_atomic: {
         Args: {
           _customer_id?: string
@@ -15174,12 +15187,6 @@ export type Database = {
           _profile: string
         }
         Returns: Json
-      }
-      can_read_event: { Args: { p_event_id: string }; Returns: boolean }
-      can_view_space_content: { Args: { p_space_id: string }; Returns: boolean }
-      can_write_space_content: {
-        Args: { p_space_id: string }
-        Returns: boolean
       }
       challenge_outcomes: {
         Args: never
@@ -15388,7 +15395,6 @@ export type Database = {
           title: string
         }[]
       }
-      event_id_for_post: { Args: { p_post_id: string }; Returns: string }
       feed_for_viewer: {
         Args: {
           _lat?: number
@@ -15525,17 +15531,7 @@ export type Database = {
         Returns: boolean
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
-      get_my_circle_ids: { Args: never; Returns: string[] }
       get_my_group_ids: { Args: never; Returns: string[] }
-      get_my_hub_ids: { Args: never; Returns: string[] }
-      get_my_profile_id: { Args: never; Returns: string }
-      get_my_region_id: { Args: never; Returns: string }
-      get_my_role: {
-        Args: never
-        Returns: Database["public"]["Enums"]["community_role"]
-      }
-      get_my_tuned_channel_ids: { Args: never; Returns: string[] }
-      get_my_web_role: { Args: never; Returns: string }
       gettransactionid: { Args: never; Returns: unknown }
       gift_gems_atomic: {
         Args: { _amount: number; _giver: string; _recipient: string }
@@ -15586,14 +15582,6 @@ export type Database = {
         }[]
       }
       is_blocked_between: { Args: { a: string; b: string }; Returns: boolean }
-      is_event_cohost: {
-        Args: { p_event_id: string; p_profile_id: string }
-        Returns: boolean
-      }
-      is_my_event: { Args: { p_event_id: string }; Returns: boolean }
-      is_space_admin: { Args: { p_space_id: string }; Returns: boolean }
-      is_space_member: { Args: { p_space_id: string }; Returns: boolean }
-      is_space_update_post: { Args: { p_post_id: string }; Returns: boolean }
       log_crew_completion_atomic: {
         Args: {
           _profile: string
