@@ -28,8 +28,8 @@ import type { RawPost } from '@/components/feed/post-card'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { canCreate, getChannelCapabilities } from '@/lib/core/load-capabilities'
-import { DetailTemplate, type DetailTab } from '@/components/templates/detail-template'
-import { ChannelCover } from '@/components/channels/channel-cover'
+import { DetailTemplate, PageHero, HERO_ACTION_CLASS, type DetailTab } from '@/components/templates'
+import { resolveHeaderElement } from '@/lib/elements/header'
 import { ModuleCard } from '@/components/modules/module-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -295,6 +295,8 @@ export default async function ChannelPage({
   //   - the Pillar this Channel sorts under (topical_channels.pillar_id; table is
   //     newer than the generated types → untyped read, same as channels-list)
   //   - the viewer's channel capabilities (channel.manage = staff, ADR-515 Phase 5)
+  //   - the standardized header element config (ADR-793): identity layout at the
+  //     standard height unless an /admin/elements master retunes it (no deploy)
   const [
     { count: memberCount },
     { data: channelRoom },
@@ -302,6 +304,7 @@ export default async function ChannelPage({
     chapters,
     pillarRow,
     channelCaps,
+    header,
   ] = await Promise.all([
     admin
       .from('topical_channel_memberships')
@@ -336,6 +339,7 @@ export default async function ChannelPage({
           .then(({ data }) => data as { name: string } | null)
       : Promise.resolve(null),
     getChannelCapabilities(channel.id),
+    resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } }),
   ])
 
   const channelRoomId = (channelRoom as { id: string } | null)?.id ?? null
@@ -430,103 +434,144 @@ export default async function ChannelPage({
 
   return (
     <div>
-      {/* Header band — opens on the channel's cover image when set, else a tasteful
-          gradient (channels aren't inline-editable, so this is display-only). */}
-      <ChannelCover imageUrl={channel.cover_image} name={channel.name} />
-
-      {/* Unified Detail header (REDESIGN-INAPP Phase 1, the treatment shared with
-          /events/[slug] and /circles/[slug]): category icon in the title node,
-          one-line value prop + fact row as subtitle, join CTA + tools as actions. */}
+      {/* ── UNIFIED ENTITY HEADER (the events/Spaces grammar, ADR-793) ─────────────────────────
+          Extracted rules, mirrored from the Space profile ((profile)/layout.tsx), the Journey page,
+          and the person profile — the ONE header system every destination page now opens on:
+            1. COVER: one immersive PageHero band as DetailTemplate's `hero` slot (rounded-3xl,
+               border, min-height off the header element's size ladder), never a standalone cover
+               card with the title stranded below it. No cover = the neutral token gradient.
+            2. TUNABLE: layout/height/overlay resolve through resolveHeaderElement (identity/
+               standard defaults, the entity-page idiom), so /admin/elements retunes it, no deploy.
+            3. TITLE: the single h1 rides the cover, bottom-left, over the ink scrim (on-ink copy),
+               with a leading chip (the category icon) and the uppercase accent eyebrow above it —
+               the Space-page lockup.
+            4. SUBTITLE: one quiet on-ink line on the cover (the value prop).
+            5. ACTIONS: bottom-right ON the cover. ONE filled primary CTA (Tune in, the Space
+               pattern: accent fill + shadow-md so it lifts off the photo); secondaries use the
+               glassy on-ink HERO_ACTION_CLASS.
+            6. ADMIN: never on the cover — Edit + Manage read as a light row in the `band` below
+               the hero (the Journey/Profile placement).
+            7. BAND: icon fact rows, key fact semibold (the events subtitle idiom); social proof
+               up front (pattern 2).
+            8. BACK: DetailTemplate's `back` slot, above the band. Tabs stay in `tabs`. */}
       <DetailTemplate
         back={{ href: '/channels', label: 'Channels' }}
-        title={
-          <span className="inline-flex items-center gap-3">
-            <span className={`flex h-9 w-9 items-center justify-center rounded-2xl shrink-0 ${accent}`}>
-              <Icon className="h-5 w-5" />
-            </span>
-            {channel.name}
-          </span>
+        title={channel.name}
+        hero={
+          <PageHero
+            variant={header.layout}
+            size={header.height}
+            overlayStyle={header.overlayStyle}
+            coverImage={channel.cover_image}
+            leading={
+              <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow ring-1 ring-on-ink/10 backdrop-blur ${accent}`}>
+                <Icon className="h-6 w-6" />
+              </span>
+            }
+            eyebrow={categoryLabel}
+            title={channel.name}
+            subtitle={description}
+            actions={
+              myProfileId ? (
+                <>
+                  {channelRoomId && (
+                    <Link href={`/messages/r/${channelRoomId}`} className={HERO_ACTION_CLASS}>
+                      <Hash className="h-4 w-4" /> Open room
+                    </Link>
+                  )}
+                  {isProgramChannel ? (
+                    // A program channel's one create verb: Start a Chapter (the
+                    // Remix flow). Same gate as Remix, so no crew popup here.
+                    <StartChapterButton
+                      channelId={channel.id}
+                      className={`${HERO_ACTION_CLASS} whitespace-nowrap`}
+                    />
+                  ) : (
+                    // Kept, but demoted to a secondary button: on a hub the one
+                    // primary action is Tune in (pattern 1).
+                    <NewCircleCompose
+                      topicalChannelId={channel.id}
+                      topicalChannelName={channel.name}
+                      buttonLabel="Start a Circle"
+                      buttonClass={`${HERO_ACTION_CLASS} whitespace-nowrap`}
+                      canCreate={canStartCircle}
+                    />
+                  )}
+                  {isTunedIn
+                    ? (
+                      <TunedInButton
+                        channelId={channel.id}
+                        channelName={channel.name}
+                        size="md"
+                        className={HERO_ACTION_CLASS}
+                      />
+                    )
+                    : (
+                      <TuneInButton
+                        channelId={channel.id}
+                        slug={channel.slug}
+                        size="md"
+                        className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-md hover:bg-primary-hover transition-colors"
+                      />
+                    )
+                  }
+                </>
+              ) : (
+                // Signed-out visitors still get the one primary join CTA.
+                <Link
+                  href={`/sign-in?next=/channels/${channel.slug}`}
+                  className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-md hover:bg-primary-hover transition-colors"
+                >
+                  Sign in to tune in
+                </Link>
+              )
+            }
+          />
         }
-        subtitle={
-          <>
-            <p className="max-w-2xl leading-relaxed">{description}</p>
-            {/* Fact row: social proof up front (pattern 2). */}
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-              <Users className="w-3 h-3" />
-              <span>{(memberCount ?? 0).toLocaleString()} tuned in</span>
-              <span className="text-subtle/60">·</span>
-              <CircleIcon className="w-3 h-3" />
-              <span>
-                {groupCount} {groupCount === 1 ? groupNoun : groupNounPlural}
+        band={
+          <div className="min-w-0 space-y-2">
+            {/* Staff tools read as a normal light row BELOW the header (never riding the
+                cover) — the Journey/Profile placement for the standardized admin affordances. */}
+            {canManageChannel && (
+              <div className="flex flex-wrap items-center gap-2 pb-1">
+                <OpenAdminBarButton
+                  scope={{ kind: 'channel', id: channel.id }}
+                  caps={Array.from(channelCaps)}
+                  label="Edit"
+                  icon={<Settings className="h-4 w-4" />}
+                />
+                <Link
+                  href={`${base}/manage`}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                >
+                  <LayoutDashboard className="h-4 w-4 text-subtle" />
+                  Manage
+                </Link>
+              </div>
+            )}
+
+            {/* Fact row — the events-header idiom: icon rows, social proof up front
+                (pattern 2), the key fact a step stronger. */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+              <span className="flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-primary-strong shrink-0" />
+                <span className="font-semibold text-text">
+                  {(memberCount ?? 0).toLocaleString()} tuned in
+                </span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <CircleIcon className="w-4 h-4 text-subtle shrink-0" />
+                <span>
+                  {groupCount} {groupCount === 1 ? groupNoun : groupNounPlural}
+                </span>
               </span>
               {pillarName && (
-                <>
-                  <span className="text-subtle/60">·</span>
-                  <span className="rounded-full bg-surface-elevated px-2 py-0.5 font-medium text-muted">
-                    {pillarName} Pillar
-                  </span>
-                </>
+                <span className="inline-flex items-center rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+                  {pillarName} Pillar
+                </span>
               )}
             </div>
-          </>
-        }
-        actions={
-          myProfileId ? (
-            <>
-              {canManageChannel && (
-                <>
-                  <OpenAdminBarButton
-                    scope={{ kind: 'channel', id: channel.id }}
-                    caps={Array.from(channelCaps)}
-                    label="Edit"
-                    icon={<Settings className="h-4 w-4" />}
-                  />
-                  <Link
-                    href={`${base}/manage`}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
-                  >
-                    <LayoutDashboard className="h-4 w-4 text-subtle" />
-                    Manage
-                  </Link>
-                </>
-              )}
-              {channelRoomId && (
-                <Link
-                  href={`/messages/r/${channelRoomId}`}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
-                >
-                  <Hash className="h-4 w-4" /> Open room
-                </Link>
-              )}
-              {isProgramChannel ? (
-                // A program channel's one create verb: Start a Chapter (the
-                // Remix flow). Same gate as Remix, so no crew popup here.
-                <StartChapterButton channelId={channel.id} />
-              ) : (
-                // Kept, but demoted to a secondary button: on a hub the one
-                // primary action is Tune in (pattern 1).
-                <NewCircleCompose
-                  topicalChannelId={channel.id}
-                  topicalChannelName={channel.name}
-                  buttonLabel="Start a Circle"
-                  buttonClass="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated whitespace-nowrap"
-                  canCreate={canStartCircle}
-                />
-              )}
-              {isTunedIn
-                ? <TunedInButton channelId={channel.id} channelName={channel.name} size="md" />
-                : <TuneInButton channelId={channel.id} slug={channel.slug} size="md" />
-              }
-            </>
-          ) : (
-            // Signed-out visitors still get the one primary join CTA.
-            <Link
-              href={`/sign-in?next=/channels/${channel.slug}`}
-              className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors"
-            >
-              Sign in to tune in
-            </Link>
-          )
+          </div>
         }
         tabs={tabs}
       >
