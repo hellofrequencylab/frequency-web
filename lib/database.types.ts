@@ -8457,6 +8457,11 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
+          sms_dispatches: boolean
+          sms_enabled: boolean
+          sms_events: boolean
+          sms_quiet_end_hour: number
+          sms_quiet_start_hour: number
           created_at: string
           email_comments: boolean
           email_dispatches: boolean
@@ -8483,6 +8488,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          sms_dispatches?: boolean
+          sms_enabled?: boolean
+          sms_events?: boolean
+          sms_quiet_end_hour?: number
+          sms_quiet_start_hour?: number
           created_at?: string
           email_comments?: boolean
           email_dispatches?: boolean
@@ -8509,6 +8519,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          sms_dispatches?: boolean
+          sms_enabled?: boolean
+          sms_events?: boolean
+          sms_quiet_end_hour?: number
+          sms_quiet_start_hour?: number
           created_at?: string
           email_comments?: boolean
           email_dispatches?: boolean

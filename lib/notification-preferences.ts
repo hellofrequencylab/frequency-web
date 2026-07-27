@@ -328,11 +328,11 @@ export async function setSubjectTopicMute(
 
 // ── SMS channel preferences (EVENTS-REWORK §5 / ADR-256) ─────────────────────
 // SMS is a separate, hard-gated channel: it never sends until the legal track is
-// live (see lib/comms/sms.ts). These readers are additive — the `sms_*` columns
-// (added in 20260626010000_sms_groundwork) are STILL not applied to prod and so
-// not in the regenerated database.types (the one shape here that stays behind a
-// narrow local cast). They default OFF, so until a member explicitly opts in
-// everything below returns the safe "off / legal-default" values.
+// live (see lib/comms/sms.ts). The `sms_*` columns (20260626010000_sms_groundwork)
+// APPLIED to prod on 2026-07-27 and are in the generated types, so these readers
+// go through the typed client and the narrow local cast they carried is retired.
+// They default OFF, so until a member explicitly opts in everything below returns
+// the safe "off / legal-default" values.
 
 // SMS only carries the two host-driven event categories (ADR-255: "text the group"
 // is an Event Dispatch channel). Lifecycle/mentions never go to SMS.
@@ -357,7 +357,7 @@ async function getSmsPreferenceRow(profileId: string): Promise<SmsPreferenceRow 
     .select('*')
     .eq('profile_id', profileId)
     .maybeSingle()
-  return (data as unknown as SmsPreferenceRow | null) ?? null
+  return data ?? null
 }
 
 // True only when the master SMS switch AND this category's SMS toggle are both on.

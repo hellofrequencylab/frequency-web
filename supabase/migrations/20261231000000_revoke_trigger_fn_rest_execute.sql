@@ -1,0 +1,28 @@
+-- Take one trigger function off the public REST surface (advisor: *_security_definer_function_executable).
+--
+-- `after_crew_completion_verified()` is a TRIGGER function: it returns `trigger` and exists only to
+-- fire from `trg_after_crew_completion_verified` when a crew completion is stamped verified. Postgres
+-- checks EXECUTE at trigger CREATION, not at fire time, so revoking the grant cannot affect the
+-- trigger. What it does remove is the ability for a browser to POST /rest/v1/rpc/... and invoke a
+-- SECURITY DEFINER function directly.
+--
+-- WHY ONLY THIS ONE. An audit cross-referenced all 68 flagged SECURITY DEFINER functions against
+-- (a) the RLS policies that call them and (b) every real call site in the app:
+--   * 18 are RLS HELPERS. `get_my_profile_id` alone is used by policies on 61 tables. A policy
+--     expression is evaluated as the QUERYING role, so revoking EXECUTE would break reads across
+--     most of the product. They must keep their grants.
+--   * 44 are RPCs the app genuinely calls. Four of those (dm_conversation_summaries,
+--     my_unread_message_count, public_organizer_handles, room_unread_counts) were nearly revoked:
+--     a naive `.rpc('name')` grep missed them because their call sites use double quotes or a
+--     wrapper helper. Revoking them would have broken messaging, the unread badges, and the sitemap.
+--   * `st_estimatedextent` is PostGIS-owned and not ours to regrant.
+-- That leaves exactly one function that is neither policy-load-bearing nor called from anywhere.
+--
+-- The remaining advisories of this class are NOT bugs to clear one by one. The real remediation for
+-- an RLS helper is moving it to a schema PostgREST does not expose, which means rewriting every
+-- policy that references it. That is a deliberate migration, not a grant tweak, and is left for a
+-- decision of its own rather than smuggled in here.
+--
+-- REVERSIBLE: re-grant with `grant execute on function public.after_crew_completion_verified() to anon, authenticated;`
+
+revoke execute on function public.after_crew_completion_verified() from anon, authenticated;
