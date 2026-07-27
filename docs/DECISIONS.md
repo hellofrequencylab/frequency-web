@@ -15250,3 +15250,51 @@ The durable rule: **entitlement-granted state carries provenance, and revocation
 **Consequences.** Tier B (richer listing fields behind an address-precision setting) and the `/housing` namespace move are next, recorded in the plan. The fair-housing posture is unchanged and must stay deliberate: gender/age fields remain gated to shared living and unscored, and any future hard filter must branch on arrangement type.
 
 The durable rule: **a match score a member can act on names its reasons in plain words, and never names another member's private numbers.**
+
+---
+
+## ADR-862 — Housing moves to /housing, off the retired marketplace namespace (2026-07-27)
+
+**Status.** Accepted.
+
+**Context.** ADR-596 retired "Marketplace" as a member word, splitting commerce into Classifieds, Market, Frequency Store, and Shop. Housing kept the last member-facing `/marketplace/*` URL (`/marketplace/housing`), an inconsistency the housing audit flagged to fix BEFORE the surface grew in Tier B rather than after, when more inbound links and indexed URLs would exist.
+
+**Decision.** The whole housing subtree moves to `/housing` (index, detail, edit, new, roommates), with `git mv` preserving history. `/marketplace/housing` and `/marketplace/housing/:path*` 308-redirect permanently, so indexed URLs and shared links survive. Every reference updated in one pass — nav areas, the crawler-gate pattern, search destinations, the sitemap (now emitting `/housing/<id>`), canonical/JSON-LD bases, breadcrumbs, the member-footer seed, the commerce components' base paths, and the live `menu_items`/`menu_rail_cards` rows. The mandate's `/housing` (a top-level route, matching NAMING's pattern) was chosen over META-SCAN-STATUS's earlier `/market/housing` suggestion.
+
+**Consequences.** Two follow-ups recorded, not smuggled: `/marketplace/events` is still member-linked, so housing was not literally the last `/marketplace/*` URL — that surface deserves its own ADR-596 pass; and the breadcrumb umbrella still labels all four commerce surfaces "Marketplace", a pre-existing retired-word use left untouched here because changing it is a breadcrumb-taxonomy decision, not a routing one. The housing breadcrumb pin stays: all four surfaces are deliberately pinned to a uniform trail, and auto-derivation would hide them as single-crumb pages.
+
+The durable rule: **a namespace rename moves before the surface grows, and moves completely — routes, redirects, sitemap, canonicals, nav data, and the live menu rows in one atomic change, never a slow drift.**
+
+## ADR-863 — The privacy review of the message center and the housing match RPCs (2026-07-27)
+
+**Status.** Accepted.
+
+**Context.** An adversarial security pass over the session's new surfaces — the Space Message center (ADR-858), the tier→circle lifecycle (ADR-859), and the housing/roommate build-out (ADR-861) — turned up five confirmed data-flow defects, each one a place where a value the member never consented to expose could reach an operator or another member, or where a cap the schema promised was not actually enforced on one code path.
+
+**Decision.** Five fixes, each closing a specific leak:
+
+1. **The email lane emails Space contacts, not auth accounts.** `broadcast-actions.ts` resolved its recipients through `admin.auth.admin.getUserById`, writing members' *account* emails into the operator-visible send ledger — an identity a member never handed the Space. It now resolves through `resolveContactEmails(spaceId, profileIds)`, a single batched read of the `contacts` table scoped to `space_id` and deduped by `profile_id`. A source-shape guard (`message-center-privacy.test.ts`) fails the build if `getUserById`/`auth.admin` ever reappear in the send path.
+2. **The circle cap is re-checked on reactivation.** `grantCircleRow`'s reactivation branch (a lapsed membership rejoining a tier's circle) flipped a soft-deleted row back to active without re-counting, so a circle could exceed `member_cap` by readmitting past members. It now reads `circles.member_cap`, counts active memberships, and returns `{granted:false, reason:'circle_full'}` before the UPDATE.
+3. **The person-to-person match RPC stops emitting raw fit terms.** `housing_roommate_matches` returned `budget_fit`, `geo_fit`, and `timing_fit` as continuous scores — enough for a viewer to back out another member's budget band, rough location, and move timing. The migration `20270109000000_housing_roommate_fit_privacy.sql` returns `null::double precision` for those three terms (they still feed the internal composite score) and bands `lifestyle_fit` to {0, 0.5, 1.0}. The listing-candidate RPC `housing_match_candidates` is untouched — a listing is public by design.
+4. **Recipient resolution moved past the cap.** The email lane no longer resolves the full audience up front (one auth call each) before any cap or lane runs; each lane resolves only what it needs, when it needs it.
+5. **Editing a listing re-geocodes.** `housing/[id]/edit/actions.ts` re-geocodes `[neighborhood, city]` on save (as create already did), so changing the city no longer leaves the old coordinates behind to score `geo_fit` and proximity against the wrong place forever. Best-effort: a geocode miss leaves coordinates untouched rather than blocking the save.
+
+**Consequences.** Both migrations (`20270108000000`, `20270109000000`) are applied to prod and recorded in the ledger under their repo timestamps (555 rows, bijection intact per `check:migrations`). The deployed `housing_roommate_matches` emits `null::double precision as budget_fit`, verified against prod. Fit terms 3 remains the only member-facing behavior change: a viewer sees *whether* a candidate fits on lifestyle (three bands) and the composite score, never the raw budget/geo/timing numbers.
+
+The durable rule: **a value the member gave for one purpose is not yours to surface for another — an auth email is not a contact email, a continuous fit score is a de-anonymizer, and a cap the schema declares must be enforced on every path that admits a member, reactivation included.**
+
+## ADR-864 — Programs live on Channels: a Channel is a focus area, and a Program is a Channel with a blueprint (2026-07-27)
+
+**Status.** Accepted.
+
+**Context.** The founder wants to host franchise-style community models — "Meld — Community Coworking", "MoFlow" — where one canonical brand hosts many independent local groups that members start themselves, discoverable by "find one near you" and "start your own". Both Frequency and Collective business members must be able to run one. The obvious names were all taken (Collective = a Space membership plan, Hub = the Circle→Hub→Nexus tree, Channel = locked to "the topical forum feature only"), and the obvious shapes were all wrong: a `parent_circle_id` self-join would make circles carry a fourth parent and collide with the Hub tree, and a new standalone `programs` table would duplicate a container the schema already had.
+
+**Decision.** Three moves, one of them a canon change:
+
+1. **The Channel canon broadens** from "the topical forum feature ONLY" to **a focus area**: a Channel hosts circles (`circles.topical_channel_id`, already live), carries the forum feed (now one module *inside* a Channel, not its definition), and can run as a Program. Hub and Nexus stay reserved for the geographic tree; "tune in" stays the Channel verb.
+2. **A Program is a Channel with two nullable columns**, not a new entity: `topical_channels.template_id` (the Chapter blueprint, a `circle_templates` row) makes it a Program; `topical_channels.owner_space_id` says who runs it (NULL = Frequency-run, set = a Collective business member's Space). `circle_templates.owner_space_id` distinguishes Space-owned blueprints from the staff-authored Starter Circle catalog, and every catalog read filters `owner_space_id IS NULL` so a Program blueprint never appears in the global Starter Circles rail. Migration `20270110000000`, applied to prod (ledger 556, bijection intact).
+3. **A Chapter is a circle in the Program's channel** — nothing new is invented. "Start a Chapter" = the existing Remix flow (`remixTemplate` → draft → publish) with the draft stamped `topical_channel_id`; "find a Chapter near you" = the chapters' own coordinates ranked by the existing Haversine helper; creating a Space-run Program snapshots the Space's flagship circle into the blueprint and stamps that circle in as the first Chapter. The operator surface is one new universal `SpaceFunctionKey` (`'program'`) + one `SPACE_MODULES` catalog row per the locked menu contract (ADR-553), gated admin-and-up, with the Collective plan note riding the same tier seam every plan-flavored function uses.
+
+**Consequences.** The word **Program** is now locked for the umbrella and **Chapter** for the local instance (NAMING §Community structure); "Chapter" is Program-framing only — the entity remains a Circle everywhere else. The founding seven Channels stay platform-curated and render exactly as before (a channel without a blueprint shows zero difference). Frequency-run Programs are administered through the existing staff channel tooling; Space-run Programs through the Space console's Program module. V1 has no Program edit/delete surface — the create is the commitment, and changes go through the crew.
+
+The durable rule: **when a new product idea looks like a new hierarchy, check whether an existing container plus one discriminating column already expresses it — the schema you don't add is the collision you don't manage.**

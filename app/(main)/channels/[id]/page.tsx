@@ -28,6 +28,9 @@ import { DetailTemplate } from '@/components/templates/detail-template'
 import { ChannelCover } from '@/components/channels/channel-cover'
 import { ModuleCard } from '@/components/modules/module-card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { isProgram, listChapters, type ChapterSummary } from '@/lib/channels/programs'
+import { StartChapterButton } from '@/components/channels/start-chapter-button'
+import { ChaptersNearMe } from '@/components/channels/chapters-near-me'
 import type { CircleBase } from '@/lib/types/circle'
 
 type TopicalChannel = {
@@ -38,6 +41,8 @@ type TopicalChannel = {
   description: string | null
   cover_image: string | null
   is_active: boolean
+  template_id: string | null
+  owner_space_id: string | null
 }
 
 type CircleRow = CircleBase & {
@@ -82,12 +87,17 @@ export default async function ChannelPage({
   const matchField = UUID_RE.test(id) ? 'id' : 'slug'
   const { data: rawChannel } = await admin
     .from('topical_channels')
-    .select('id, name, slug, category, description, cover_image, is_active')
+    .select('id, name, slug, category, description, cover_image, is_active, template_id, owner_space_id')
     .eq(matchField, id)
     .maybeSingle()
 
   if (!rawChannel || !rawChannel.is_active) notFound()
   const channel = rawChannel as TopicalChannel
+
+  // A Channel with a blueprint attached is a PROGRAM: its circles are Chapters
+  // (local circles running the model), and the primary create verb becomes
+  // "Start a Chapter" (the Remix flow, stamped into this channel).
+  const isProgramChannel = isProgram(channel)
 
   const {
     data: { user },
@@ -127,21 +137,27 @@ export default async function ChannelPage({
     .maybeSingle()
   const channelRoomId = (channelRoom as { id: string } | null)?.id ?? null
 
-  const [{ count: memberCount }, { data: rawCircles }] = await Promise.all([
+  // Program channels list their Chapters via lib/channels/programs (adds
+  // coordinates for the client-side "Near me" sort); non-program channels keep
+  // the original circles query untouched.
+  const [{ count: memberCount }, { data: rawCircles }, chapters] = await Promise.all([
     admin
       .from('topical_channel_memberships')
       .select('id', { count: 'exact', head: true })
       .eq('topical_channel_id', channel.id),
-    admin
-      .from('circles')
-      .select(
-        `id, name, slug, type, member_count, member_cap, status, city, neighborhood,
-         host:profiles!host_id ( display_name, handle )`
-      )
-      .eq('topical_channel_id', channel.id)
-      .neq('status', 'archived')
-      .order('member_count', { ascending: false })
-      .limit(12),
+    isProgramChannel
+      ? Promise.resolve({ data: null })
+      : admin
+          .from('circles')
+          .select(
+            `id, name, slug, type, member_count, member_cap, status, city, neighborhood,
+             host:profiles!host_id ( display_name, handle )`
+          )
+          .eq('topical_channel_id', channel.id)
+          .neq('status', 'archived')
+          .order('member_count', { ascending: false })
+          .limit(12),
+    isProgramChannel ? listChapters(channel.id) : Promise.resolve<ChapterSummary[]>([]),
   ])
 
   const circles = (rawCircles ?? []) as unknown as CircleRow[]
@@ -195,7 +211,11 @@ export default async function ChannelPage({
               <span>{(memberCount ?? 0).toLocaleString()} tuned in</span>
               <span className="text-subtle/60">·</span>
               <CircleIcon className="w-3 h-3" />
-              <span>{circles.length} {circles.length === 1 ? 'Circle' : 'Circles'} practicing</span>
+              {isProgramChannel ? (
+                <span>{chapters.length} {chapters.length === 1 ? 'Chapter' : 'Chapters'}</span>
+              ) : (
+                <span>{circles.length} {circles.length === 1 ? 'Circle' : 'Circles'} practicing</span>
+              )}
             </div>
           </>
         }
@@ -218,12 +238,18 @@ export default async function ChannelPage({
                   <Hash className="h-4 w-4" /> Open room
                 </Link>
               )}
-              <NewCircleCompose
-                topicalChannelId={channel.id}
-                topicalChannelName={channel.name}
-                buttonLabel="Start a Circle"
-                canCreate={canStartCircle}
-              />
+              {isProgramChannel ? (
+                // A program channel's one create verb: Start a Chapter (the
+                // Remix flow). Same gate as Remix, so no crew popup here.
+                <StartChapterButton channelId={channel.id} />
+              ) : (
+                <NewCircleCompose
+                  topicalChannelId={channel.id}
+                  topicalChannelName={channel.name}
+                  buttonLabel="Start a Circle"
+                  canCreate={canStartCircle}
+                />
+              )}
               {isTunedIn
                 ? <TunedInButton channelId={channel.id} channelName={channel.name} size="md" />
                 : <TuneInButton channelId={channel.id} slug={channel.slug} size="md" />
@@ -272,7 +298,42 @@ export default async function ChannelPage({
             />
           </section>
 
+          {/* ── Chapters directory (program channels) ─────────────── */}
+          {isProgramChannel && (
+            <ModuleCard
+              title={`Chapters of ${channel.name}`}
+              badge={chapters.length > 0 ? String(chapters.length) : undefined}
+            >
+              {chapters.length === 0 ? (
+                <EmptyState
+                  icon={CircleIcon}
+                  title="No Chapters yet"
+                  description={`Start the first Chapter of ${channel.name} where you live.`}
+                  action={
+                    myProfileId ? (
+                      <StartChapterButton
+                        channelId={channel.id}
+                        label="Start the first Chapter"
+                      />
+                    ) : undefined
+                  }
+                />
+              ) : (
+                <ChaptersNearMe chapters={chapters} />
+              )}
+
+              {/* Context note BELOW the list, same spot as the non-program
+                  card, so the page rhythm matches across channels. */}
+              <p className="mt-4 text-xs text-muted leading-relaxed">
+                A Chapter is a local Circle of up to 50 people running the{' '}
+                {channel.name} model. Start one where you live. You get a
+                private draft to shape before anyone sees it.
+              </p>
+            </ModuleCard>
+          )}
+
           {/* ── Circles practicing this Channel, stacked below the feed ─ */}
+          {!isProgramChannel && (
           <ModuleCard
             title={`Circles practicing ${channel.name}`}
             badge={circles.length > 0 ? String(circles.length) : undefined}
@@ -339,6 +400,7 @@ export default async function ChannelPage({
               required yet, you&apos;ll be the first host.
             </p>
           </ModuleCard>
+          )}
         </div>
       </DetailTemplate>
     </div>

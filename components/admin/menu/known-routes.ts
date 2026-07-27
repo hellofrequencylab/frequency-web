@@ -41,7 +41,7 @@ export const KNOWN_ROUTES: { href: string; label: string }[] = [
   { href: '/messages', label: 'Messages' },
   { href: '/spaces/directory', label: 'Spaces (directory)' },
   { href: '/classifieds', label: 'Classifieds' },
-  { href: '/marketplace/housing', label: 'Housing' },
+  { href: '/housing', label: 'Housing' },
   { href: '/market', label: 'Market' },
   { href: '/store', label: 'Frequency Store' },
   { href: '/orders', label: 'My orders' },

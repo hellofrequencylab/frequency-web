@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 import { buttonClasses } from '@/components/ui/button'
-import { saveSeekerProfileAction } from '../../actions'
+import { saveSeekerProfileAction } from '@/app/(main)/marketplace/actions'
 
 // The seeker half (client) — captures budget, move-in, the search LOCATION (city
 // typeahead → lat/lng) plus a radius, AND the lifestyle preferences the resonance

@@ -232,7 +232,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Global Market listings (/market/[id]) — active + market-published maker/Space products only
       // (listMarketListings gates on both), so an unpublished item stays out. Fail-safe to [].
       listMarketListings({ limit: 100 }).catch(() => []),
-      // Housing listings (/marketplace/housing/[id]) — active only. Fail-safe to [].
+      // Housing listings (/housing/[id]) — active only. Fail-safe to [].
       listHousingListings({ limit: 100 }).catch(() => []),
       // Classifieds (/classifieds/[id]) — active market_listings only. Fail-safe to [].
       listClassifieds({ limit: 100 }).catch(() => []),
@@ -355,7 +355,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     const housingRoutes: MetadataRoute.Sitemap = housingListings.map((l) => ({
-      url: `${SITE_URL}/marketplace/housing/${l.id}`,
+      url: `${SITE_URL}/housing/${l.id}`,
       lastModified: l.updatedAt ? new Date(l.updatedAt) : now,
       changeFrequency: "weekly" as const,
       priority: 0.5,

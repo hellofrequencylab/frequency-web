@@ -29,7 +29,7 @@ const OTHER: { slug: PropertyType; label: string }[] = [
 const OTHER_SLUGS = OTHER.map((o) => o.slug) as string[]
 
 const typeHref = (slug?: string) =>
-  slug ? `/marketplace/housing?type=${slug}` : '/marketplace/housing'
+  slug ? `/housing?type=${slug}` : '/housing'
 
 export function HousingCategoryNav({ selectedType }: { selectedType: string }) {
   const otherActive = OTHER_SLUGS.includes(selectedType)
@@ -83,7 +83,7 @@ export function HousingCategoryNav({ selectedType }: { selectedType: string }) {
           ))}
         </div>
       </details>
-      <Link href="/marketplace/housing/roommates" className={cn(TAB, IDLE)}>
+      <Link href="/housing/roommates" className={cn(TAB, IDLE)}>
         Roommates
       </Link>
     </nav>

@@ -62,6 +62,7 @@ export type SpaceFunctionKey =
   | 'loom'
   | 'collaborators'
   | 'events'
+  | 'program'
 
 /** A Space type, or the wildcard '*' meaning "every type offers this function". */
 type FunctionTypeScope = SpaceType | '*'
@@ -251,6 +252,19 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     key: 'collaborators',
     label: 'Collaborators',
     description: 'Host separate businesses that operate inside your space, and approve requests to collaborate.',
+    entitlement: null,
+    defaultMinRole: 'admin',
+    types: ['*'],
+  },
+  {
+    // Programs on Channels: a Space runs its model as a Program (topical_channels.owner_space_id +
+    // template_id), its flagship circle becomes the Chapter blueprint, and members start Chapters
+    // anywhere. Universal like every other function (entitlement null; the Collective-plan story is
+    // the console badge + the surface's own server-side checks). Admin-managed: creating a Program
+    // publishes a network-wide Channel, so it stays above the editor bar.
+    key: 'program',
+    label: 'Program',
+    description: 'Run your model as a Program. Your flagship circle becomes the blueprint, and members start Chapters anywhere.',
     entitlement: null,
     defaultMinRole: 'admin',
     types: ['*'],

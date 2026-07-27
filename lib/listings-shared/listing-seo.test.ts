@@ -159,7 +159,7 @@ function housingView(
       categoryLabel: 'Rental',
       locationLabel: 'North Park, San Diego',
       seller: { handle: 'maya', displayName: 'Maya R.', avatarUrl: null },
-      back: { href: '/marketplace/housing', label: 'Housing' },
+      back: { href: '/housing', label: 'Housing' },
       ...overrides,
     }),
     housingFacts: facts,

@@ -28,7 +28,7 @@ export const AREA_LABEL: Record<MarketArea, string> = {
 // area's prefix (exact, or prefix + '/', so '/classifieds' never swallows '/marketplace/...').
 export const AREA_PREFIX: Record<MarketArea, string> = {
   market: '/classifieds',
-  housing: '/marketplace/housing',
+  housing: '/housing',
   makers: '/market',
   shop: '/store',
 }

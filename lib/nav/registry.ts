@@ -280,7 +280,7 @@ const MEMBER_FOOTER_COLUMNS: readonly { title: string; links: readonly MemberFoo
       { id: 'channels', label: 'Channels', href: '/channels', navKey: 'channels' },
       { id: 'events', label: 'Events', href: '/events', navKey: 'events' },
       { id: 'market', label: 'Classifieds', href: '/classifieds', navKey: 'market' },
-      { id: 'housing', label: 'Housing', href: '/marketplace/housing', navKey: 'housing' },
+      { id: 'housing', label: 'Housing', href: '/housing', navKey: 'housing' },
       { id: 'maker', label: 'Market', href: '/market', navKey: 'maker' },
       { id: 'shop', label: 'Frequency Store', href: '/store', navKey: 'shop' },
       { id: 'network', label: 'Community', href: '/network', navKey: 'people' },

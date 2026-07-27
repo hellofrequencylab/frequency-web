@@ -24,7 +24,7 @@ export function listingCanonicalPath(view: Pick<ListingDetailView, 'vertical' | 
     case 'market':
       return `/market/${view.id}`
     case 'housing':
-      return `/marketplace/housing/${view.id}`
+      return `/housing/${view.id}`
   }
 }
 

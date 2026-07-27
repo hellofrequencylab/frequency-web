@@ -2,7 +2,7 @@
 //
 // app/(main)/layout.tsx redirects an anonymous visitor to `/` for any path it does not recognise as
 // public. That rule and the sitemap are written in different files for different reasons, and they
-// drifted: the sitemap advertised /store/<id>, /market/<id>, /marketplace/housing/<id>,
+// drifted: the sitemap advertised /store/<id>, /market/<id>, /housing/<id>,
 // /classifieds/<id> and /spaces/<slug>/podcasts/<showSlug> — each emitting its own canonical and
 // JSON-LD — while the layout answered every one with a 307 to the homepage. We were submitting URLs
 // and then bouncing the crawler off them. robots.ts even documents /store/<id> as "self-canonical +
@@ -20,7 +20,7 @@
 export const PUBLIC_DETAIL_PATTERNS: readonly RegExp[] = [
   /^\/store\/[^/]+$/, // Frequency Store product (Product JSON-LD)
   /^\/market\/[^/]+$/, // Global Market listing (Product JSON-LD)
-  /^\/marketplace\/housing\/[^/]+$/, // Housing listing
+  /^\/housing\/[^/]+$/, // Housing listing
   /^\/classifieds\/[^/]+$/, // Classified listing
   // A Show page. NOT covered by the layout's isAnonSpaceProfile: that regex allows at most ONE
   // segment after the slug and this is two. The Shows INDEX (/spaces/<slug>/podcasts) does match it

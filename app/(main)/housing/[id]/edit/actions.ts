@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { listingOwnerId, saveListing, unsaveListing, updateListing } from '@/lib/listings'
 import { toAmenities, toPropertyType, upsertHousingDetail } from '@/lib/listings/housing'
+import { approxCoordsForArea } from '@/lib/marketplace/area-geocode'
 import type { HousingType, RoomType } from '@/lib/listings/types'
 
 // Housing EDIT + favorites actions. The create/status/delete actions live in
@@ -48,7 +49,7 @@ function parseImages(v: FormDataEntryValue | null): string[] {
  *  createHousingListingAction field for field, so create and edit can never drift. */
 export async function updateHousingListingAction(listingId: string, formData: FormData): Promise<void> {
   const profileId = await getMyProfileId()
-  if (!profileId) redirect(`/sign-in?next=/marketplace/housing/${listingId}/edit`)
+  if (!profileId) redirect(`/sign-in?next=/housing/${listingId}/edit`)
   if ((await listingOwnerId(listingId)) !== profileId) return
 
   const title = String(formData.get('title') ?? '').trim()
@@ -69,13 +70,28 @@ export async function updateHousingListingAction(listingId: string, formData: Fo
   const leaseNum = Number(leaseRaw)
   const leaseMonths = leaseRaw !== null && leaseRaw !== '' && Number.isFinite(leaseNum) && leaseNum >= 0 ? Math.round(leaseNum) : null
 
+  const city = (formData.get('city') as string) || null
+  const neighborhood = (formData.get('neighborhood') as string) || null
+
+  // Re-geocode on edit exactly as create does (ADR-863): without this, changing the city left
+  // the OLD coordinates, so geo_fit and proximity reads scored against the wrong place forever.
+  // Best-effort; a miss leaves coordinates untouched rather than blocking the save.
+  let coords: { latitude: number; longitude: number } | null = null
+  try {
+    const c = await approxCoordsForArea([neighborhood, city].filter(Boolean).join(', '))
+    if (c) coords = { latitude: c.lat, longitude: c.lng }
+  } catch {
+    coords = null
+  }
+
   const updated = await updateListing(listingId, profileId, {
     title,
     description: (formData.get('description') as string) || null,
-    city: (formData.get('city') as string) || null,
-    neighborhood: (formData.get('neighborhood') as string) || null,
+    city,
+    neighborhood,
     priceNote: rentDollars ? `$${rentDollars}/mo` : null,
     images: parseImages(formData.get('images')),
+    ...(coords ?? {}),
   })
   if (!updated) return
 
@@ -99,9 +115,9 @@ export async function updateHousingListingAction(listingId: string, formData: Fo
     cannabisOk: checkbox(formData, 'cannabis_ok'),
   })
 
-  revalidatePath('/marketplace/housing')
-  revalidatePath(`/marketplace/housing/${listingId}`)
-  redirect(`/marketplace/housing/${listingId}`)
+  revalidatePath('/housing')
+  revalidatePath(`/housing/${listingId}`)
+  redirect(`/housing/${listingId}`)
 }
 
 // ── Favorites (the heart toggle) ─────────────────────────────────────────────
@@ -112,12 +128,12 @@ export async function saveListingAction(listingId: string): Promise<void> {
   const profileId = await getMyProfileId()
   if (!profileId) return
   await saveListing(profileId, listingId)
-  revalidatePath('/marketplace/housing')
+  revalidatePath('/housing')
 }
 
 export async function unsaveListingAction(listingId: string): Promise<void> {
   const profileId = await getMyProfileId()
   if (!profileId) return
   await unsaveListing(profileId, listingId)
-  revalidatePath('/marketplace/housing')
+  revalidatePath('/housing')
 }

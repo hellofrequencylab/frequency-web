@@ -6,7 +6,7 @@ import { Heart } from 'lucide-react'
 import {
   saveListingAction,
   unsaveListingAction,
-} from '@/app/(main)/marketplace/housing/[id]/edit/actions'
+} from '@/app/(main)/housing/[id]/edit/actions'
 
 // The heart toggle for a housing listing (favorites, listing_saves). Optimistic: the
 // heart flips instantly and quietly reverts if the server action fails. Signed-out
@@ -21,7 +21,7 @@ export function SaveListingButton({
   listingId,
   initialSaved,
   signedIn,
-  signInNext = '/marketplace/housing',
+  signInNext = '/housing',
 }: {
   listingId: string
   /** Whether the viewer has already saved this listing (from the batched server read). */
