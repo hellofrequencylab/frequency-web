@@ -67,6 +67,7 @@ export type Surface =
   | 'hookNetwork' | 'growthStudio' | 'earnings' | 'qrStudio'
   // Platform
   | 'status' | 'insight' | 'veraAi' | 'platformManage' | 'financialDashboard' | 'settings'
+  | 'platformSpaces'
 
 type Row = Partial<Record<MatrixColumn, AccessLevel>> // omitted column ⇒ 'none'
 
@@ -139,6 +140,11 @@ export const ACCESS_MATRIX: Record<Surface, Row> = {
   insight: { host: 'limited', guide: 'full', mentor: 'full', collaborator: 'full', practitioner: 'limited', business: 'full', organization: 'full', analyst: 'full', admin: 'full', janitor: 'full' },
   veraAi: { host: 'limited', guide: 'full', mentor: 'full', practitioner: 'limited', business: 'full', organization: 'full', analyst: 'full', admin: 'full', janitor: 'full' },
   platformManage: { admin: 'full', janitor: 'full' }, // Hubs & Nexuses · Memberships · Pages — admin only
+  // Manage Spaces has its OWN row rather than riding platformManage (ADR-852). The page guards on
+  // `requireAdmin('janitor')`, so admitting the `admin` column here would have the rail offer a row
+  // that redirects — the exact rail-versus-page mismatch ADR-851 closed on the declared gate. This
+  // is the same gate, expressed on the axis the matrix actually decides with. Janitor only.
+  platformSpaces: { janitor: 'full' },
   financialDashboard: { janitor: 'full' }, // Janitor ONLY — Admin is excluded (the financials carve-out)
   settings: EVERYONE,
 }

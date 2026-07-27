@@ -64,6 +64,10 @@ const SHEET: Record<Surface, AccessLevel[]> = {
   insight: [_, _, _, L, F, F, F, L, F, F, F, F, F], // host limited, guide/mentor full (owner correction)
   veraAi: [_, _, _, L, F, F, _, L, F, F, F, F, F], // host limited, guide/mentor full
   platformManage: [_, _, _, _, _, _, _, _, _, _, _, F, F],
+  // Manage Spaces on its own row (ADR-852): janitor ONLY, one column narrower than platformManage.
+  // The page guards on requireAdmin('janitor'), so granting the admin column here would put the
+  // rail back to offering a row that redirects.
+  platformSpaces: [_, _, _, _, _, _, _, _, _, _, _, _, F],
   financialDashboard: [_, _, _, _, _, _, _, _, _, _, _, _, F],
   settings: [F, F, F, F, F, F, F, F, F, F, F, F, F],
 }

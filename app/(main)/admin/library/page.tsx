@@ -83,7 +83,10 @@ export default async function LoomStudioPage({
     edit?: string
   }>
 }) {
-  const ctx = await requireAdmin('janitor')
+  // A Marketer reaches Loom Studio (owner decision, ADR-851): the rail and the operator catalog
+  // both advertise it to the `marketing` staff domain, so the page must admit them or it offers a
+  // row that redirects. `marketer` holds marketing:'write', which is requireAdmin's default level.
+  const ctx = await requireAdmin('janitor', { staff: 'marketing' })
   const sp = await searchParams
 
   // The Apps lane (LP5b, docs/LOOM-PLATFORM.md §4): the code-drawn App catalog, indexed read-only.
