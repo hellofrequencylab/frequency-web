@@ -1,12 +1,14 @@
 import Link from 'next/link'
-import { Home, Plus, Users, DoorOpen, SlidersHorizontal } from 'lucide-react'
+import { Heart, Home, Plus, Users, DoorOpen, SlidersHorizontal } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getMyProfileId } from '@/lib/auth'
+import { listSavedListingIds, listSavedListings } from '@/lib/listings'
 import { listHousingListings } from '@/lib/listings/housing'
 import { AMENITIES, PROPERTY_TYPES } from '@/lib/listings/types'
 import type { AmenitySlug, PropertyType } from '@/lib/listings/types'
 import { ListingCard } from '@/components/marketplace/listing-card'
+import { SaveListingButton } from '@/components/marketplace/save-listing-button'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid } from '@/components/marketplace/market-search'
 import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
@@ -33,6 +35,8 @@ type HousingSearchParams = {
   min?: string
   max?: string
   amenity?: string | string[]
+  /** `?saved=1` narrows the grid to the member's hearted homes. */
+  saved?: string
 }
 
 const FIELD =
@@ -100,6 +104,7 @@ export default async function HousingPage({
   }
 
   // Facet state, straight from the URL (validated against the controlled vocab in the read helper).
+  const savedOnly = sp.saved === '1'
   const selectedType = PROPERTY_TYPES.some((p) => p.slug === sp.type) ? sp.type ?? '' : ''
   const rawAmenities = Array.isArray(sp.amenity) ? sp.amenity : sp.amenity ? [sp.amenity] : []
   const selectedAmenities = new Set(rawAmenities)
@@ -107,13 +112,21 @@ export default async function HousingPage({
   const maxCents = dollarsToCents(sp.max)
 
   // Server-side narrowing through the Phase-2 facets. The hero search bar still filters the
-  // returned set instantly on the client (text), so both layers compose.
-  const listings = await listHousingListings({
-    propertyType: (selectedType || null) as PropertyType | null,
-    minPriceCents: minCents,
-    maxPriceCents: maxCents,
-    amenities: rawAmenities as AmenitySlug[],
-  })
+  // returned set instantly on the client (text), so both layers compose. `?saved=1` swaps the
+  // read to the member's hearted homes instead (still active listings only).
+  const listings = savedOnly
+    ? await listSavedListings(viewerProfileId, 'housing')
+    : await listHousingListings({
+        propertyType: (selectedType || null) as PropertyType | null,
+        minPriceCents: minCents,
+        maxPriceCents: maxCents,
+        amenities: rawAmenities as AmenitySlug[],
+      })
+
+  // Which of the visible cards the viewer has hearted — ONE batched read for the grid.
+  const savedIds = savedOnly
+    ? new Set(listings.map((l) => l.id))
+    : await listSavedListingIds(viewerProfileId, listings.map((l) => l.id))
 
   const activeFacetCount =
     (selectedType ? 1 : 0) + (minCents != null || maxCents != null ? 1 : 0) + selectedAmenities.size
@@ -141,10 +154,24 @@ export default async function HousingPage({
                 dropdown | Roommates), with the density control folded to the right of the menu. */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <HousingCategoryNav selectedType={selectedType} />
-              <MarketplaceColumns />
+              <div className="flex items-center gap-2">
+                {/* The saved filter: `?saved=1` narrows the grid to hearted homes. */}
+                <Link
+                  href={savedOnly ? '/marketplace/housing' : '/marketplace/housing?saved=1'}
+                  aria-current={savedOnly ? 'true' : undefined}
+                  className={buttonClasses(savedOnly ? 'secondary' : 'ghost', 'sm')}
+                >
+                  <Heart className={savedOnly ? 'h-4 w-4 fill-primary text-primary' : 'h-4 w-4'} aria-hidden />{' '}
+                  Saved
+                </Link>
+                <MarketplaceColumns />
+              </div>
             </div>
 
-            {/* Advanced filters — a URL-driven GET form (no client JS). Submitting rebuilds the query. */}
+            {/* Advanced filters — a URL-driven GET form (no client JS). Submitting rebuilds the query.
+                Hidden in the saved view: the facets do not apply to the hearted list, and showing a
+                form that silently does nothing would be dishonest. */}
+            {!savedOnly && (
             <form
               method="get"
               className="space-y-4 rounded-2xl border border-border bg-surface p-4 shadow-sm"
@@ -232,18 +259,28 @@ export default async function HousingPage({
                 </button>
               </div>
             </form>
+            )}
 
             {listings.length === 0 ? (
-              <EmptyState
-                icon={Home}
-                variant={hasFacets ? 'no-results' : 'first-use'}
-                title={hasFacets ? 'Nothing matches those filters.' : 'No housing listed near you yet.'}
-                description={
-                  hasFacets
-                    ? 'Try widening the price range or clearing an amenity.'
-                    : 'List a room, a rental, or a sublet. Roommate listings will match to members you\'d actually get along with.'
-                }
-              />
+              savedOnly ? (
+                <EmptyState
+                  icon={Heart}
+                  variant="first-use"
+                  title="Nothing saved yet."
+                  description="Tap the heart on a home to keep it here."
+                />
+              ) : (
+                <EmptyState
+                  icon={Home}
+                  variant={hasFacets ? 'no-results' : 'first-use'}
+                  title={hasFacets ? 'Nothing matches those filters.' : 'No housing listed near you yet.'}
+                  description={
+                    hasFacets
+                      ? 'Try widening the price range or clearing an amenity.'
+                      : 'List a room, a rental, or a sublet. Roommate listings will match to members you\'d actually get along with.'
+                  }
+                />
+              )
             ) : (
               <div className="@container">
                 <InstantGrid
@@ -251,7 +288,14 @@ export default async function HousingPage({
                   className="mp-grid gap-6"
                 >
                   {listings.map((l) => (
-                    <ListingCard key={l.id} listing={l} />
+                    // Wrapper-level heart: the save toggle floats over the shared card, so the
+                    // EntityCard contract stays untouched for the other verticals.
+                    <div key={l.id} className="relative">
+                      <ListingCard listing={l} />
+                      <div className="absolute right-3 top-3 z-10">
+                        <SaveListingButton listingId={l.id} initialSaved={savedIds.has(l.id)} signedIn />
+                      </div>
+                    </div>
                   ))}
                 </InstantGrid>
               </div>

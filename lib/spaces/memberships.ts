@@ -31,6 +31,8 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { fireSpaceTrigger } from '@/lib/spaces/drip-enroll'
 import { ensureSpaceMemberContact } from '@/lib/crm/lead-capture'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
+import { syncTierCircleAccess } from '@/lib/spaces/tier-circle'
+import { stripe } from '@/lib/billing/stripe'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -570,8 +572,11 @@ export async function joinTier(
       void (async () => {
         const contactId = await ensureSpaceMemberContact(spaceId, profileId)
         await fireSpaceTrigger(spaceId, 'member.joined', { contactId: contactId ?? undefined, profileId })
+        // TIER→CIRCLE ACCESS (ADR-859): a live membership grants the tier's linked circle, if any.
+        // Fail-soft by contract — the join stands regardless of the circle write.
+        await syncTierCircleAccess({ spaceId, profileId, tierId, action: 'grant' })
       })().catch(() => {
-        // Both callees are contractually non-throwing; this is cheap insurance against a future
+        // All callees are contractually non-throwing; this is cheap insurance against a future
         // contract break, so an automation error can never surface as an unhandled rejection.
       })
     }
@@ -656,6 +661,13 @@ export async function promoteMembership(membershipId: string): Promise<ActionRes
       contactId: contactId ?? undefined,
       profileId: memberProfileId,
     })
+    // TIER→CIRCLE ACCESS (ADR-859): promotion IS the membership start — grant the tier's circle.
+    await syncTierCircleAccess({
+      spaceId: row.space_id,
+      profileId: memberProfileId,
+      tierId: row.tier_id,
+      action: 'grant',
+    })
   })().catch(() => {
     /* fail-safe: the promotion is recorded regardless of the automation */
   })
@@ -682,13 +694,17 @@ export async function cancelMembership(membershipId: string): Promise<ActionResu
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to cancel a membership.')
 
-  let row: MembershipRow | null = null
+  // stripe_subscription_id rides along (when the billing migration added it) so a PAID membership's
+  // subscription can be cancelled too — without it a member cancel keeps billing and the next
+  // webhook re-asserts status 'active' (which would silently re-grant tier circle access, ADR-859).
+  type CancelRow = MembershipRow & { stripe_subscription_id?: string | null }
+  let row: CancelRow | null = null
   try {
     const { data } = await membershipsTable()
-      .select(MEMBERSHIP_COLS)
+      .select(`${MEMBERSHIP_COLS}, stripe_subscription_id`)
       .eq('id', membershipId)
       .maybeSingle()
-    row = data
+    row = data as CancelRow | null
   } catch {
     row = null
   }
@@ -704,6 +720,18 @@ export async function cancelMembership(membershipId: string): Promise<ActionResu
   }
   if (!allowed) return fail('You do not have permission to cancel this membership.')
 
+  // BILLING GUARD (ADR-859): stop the Stripe subscription BEFORE the DB flip, immediately (no
+  // period-end grace — the member asked to cancel). Best-effort: a Stripe error logs + continues,
+  // the DB cancel below still stands. The remaining edge (Stripe cancel fails, a later webhook
+  // re-asserts active) is documented in the ADR; without this call that edge was the NORM.
+  if (row.stripe_subscription_id && stripe) {
+    try {
+      await stripe.subscriptions.cancel(row.stripe_subscription_id)
+    } catch (err) {
+      console.error('[cancelMembership] stripe subscription cancel failed', err)
+    }
+  }
+
   try {
     const { error } = await membershipsTable()
       .update({ status: 'cancelled' })
@@ -712,6 +740,16 @@ export async function cancelMembership(membershipId: string): Promise<ActionResu
   } catch {
     return fail('Could not cancel the membership. Try again.')
   }
+  // TIER→CIRCLE ACCESS (ADR-859): the membership ended — revoke the rows ITS tier granted (a
+  // self-joined circle row is never touched). Fire-and-forget, matching the join-side automation.
+  void syncTierCircleAccess({
+    spaceId: row.space_id,
+    profileId: row.member_profile_id,
+    tierId: row.tier_id,
+    action: 'revoke',
+  }).catch(() => {
+    /* contractually non-throwing; insurance so a revoke error never rejects unhandled */
+  })
   // Log the departure onto the member's Space timeline (ADR-796): the comms center records arrivals AND
   // departures, so an operator's "where this person is" read stays true. Keyed to this membership row so
   // it logs exactly once per cancel.

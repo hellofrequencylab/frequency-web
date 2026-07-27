@@ -30,6 +30,7 @@ import {
   seatQuantityFromItems,
 } from './space-subscription-items'
 import { setSpaceSeatQuantity } from '@/lib/spaces/seats'
+import { syncTierCircleAccess } from '@/lib/spaces/tier-circle'
 
 /** The metadata kinds the space subscription webhook handles. */
 export type SubscriptionKind = 'space_plan' | 'space_membership'
@@ -162,7 +163,9 @@ export async function reconcileSpaceMembershipSubscription(sub: Stripe.Subscript
       select: (c: string) => {
         eq: (c: string, v: string) => {
           eq: (c: string, v: string) => {
-            eq: (c: string, v: string) => { limit: (n: number) => Promise<{ data: { id: string }[] | null }> }
+            eq: (c: string, v: string) => {
+              limit: (n: number) => Promise<{ data: { id: string; tier_id?: string | null }[] | null }>
+            }
           }
         }
       }
@@ -173,14 +176,16 @@ export async function reconcileSpaceMembershipSubscription(sub: Stripe.Subscript
 
   // Find the member's CURRENT active membership in this Space (the partial one-active index means there is
   // at most one). Scope to status='active' + limit(1) so a cancelled-history row can never make this throw.
+  // tier_id rides along so a metadata tier that DIFFERS from the row is recognized as a TIER SWITCH below.
   const { data: activeRows } = await db
     .from('space_memberships')
-    .select('id')
+    .select('id, tier_id')
     .eq('space_id', spaceId)
     .eq('member_profile_id', memberId)
     .eq('status', 'active')
     .limit(1)
   const activeId = activeRows?.[0]?.id ?? null
+  const previousTierId = activeRows?.[0]?.tier_id ?? null
 
   if (activeId) {
     // Update the existing active membership: payment-state change, reactivation, or a cancel (status flips
@@ -197,6 +202,31 @@ export async function reconcileSpaceMembershipSubscription(sub: Stripe.Subscript
     // A failed write must NOT ack the webhook 200 — throw so the route releases its event claim and Stripe
     // retries (the member-tier path's contract). A silent swallow would lose a paid member's state forever.
     if (error) throw new Error(`space_membership update failed: ${writeErrorMessage(error)}`)
+    // TIER→CIRCLE ACCESS (ADR-859), after the membership write stands. Contractually non-throwing
+    // (fail-soft inside), so a circle hiccup can never make the webhook retry a settled payment.
+    // A cancelled transition revokes; anything still 'active' (incl. past_due — deliberately kept a
+    // member) grants, with the overwritten tier_id treated as a switch (revoke old + grant new).
+    const effectiveTierId = tierId ?? previousTierId
+    if (effectiveTierId) {
+      await syncTierCircleAccess({
+        spaceId,
+        profileId: memberId,
+        tierId: effectiveTierId,
+        previousTierId:
+          previousTierId && previousTierId !== effectiveTierId ? previousTierId : undefined,
+        action: status === 'cancelled' ? 'revoke' : 'grant',
+      })
+      // A cancel must also clear a grant left under the PREVIOUS tier when the final event switched
+      // tiers at the same time (rare, but a revoke keyed only to the new tier would strand it).
+      if (status === 'cancelled' && previousTierId && previousTierId !== effectiveTierId) {
+        await syncTierCircleAccess({
+          spaceId,
+          profileId: memberId,
+          tierId: previousTierId,
+          action: 'revoke',
+        })
+      }
+    }
     return
   }
 
@@ -225,6 +255,10 @@ export async function reconcileSpaceMembershipSubscription(sub: Stripe.Subscript
   if (error && error.code !== '23505') {
     throw new Error(`space_membership insert failed: ${writeErrorMessage(error)}`)
   }
+  // TIER→CIRCLE ACCESS (ADR-859): the first payment just created the membership (or the 23505 race
+  // confirmed it exists) — grant the tier's linked circle. Non-throwing by contract; a full circle
+  // or write hiccup is logged, never bounced back into the webhook as a retry.
+  await syncTierCircleAccess({ spaceId, profileId: memberId, tierId, action: 'grant' })
 }
 
 /** The shape of a supabase-js write error (subset). */

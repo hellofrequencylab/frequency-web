@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { listingJsonLd } from '@/lib/listings-shared/listing-seo'
+import { listingJsonLd, type HousingSeoFacts, type ListingJsonLdInput } from '@/lib/listings-shared/listing-seo'
 import type { ListingDetailView } from '@/lib/listings-shared/detail-view'
 
 // A minimal active Market product view. Only the fields listingJsonLd reads matter; the rest are filled
@@ -138,5 +138,140 @@ describe('listingJsonLd — Review nodes', () => {
 
   it('omits Review nodes for a non-active listing (no rich result at all)', () => {
     expect(listingJsonLd(marketView({ status: 'sold_out', reviews: [review()] }))).toEqual([])
+  })
+})
+
+// ── Housing (Accommodation) ───────────────────────────────────────────────────
+
+/** An active housing view with the structured-facts block the detail page attaches. */
+function housingView(
+  facts: HousingSeoFacts | undefined,
+  overrides: Partial<ListingDetailView> = {},
+): ListingJsonLdInput {
+  return {
+    ...marketView({
+      vertical: 'housing',
+      commentTargetKind: 'listing',
+      id: 'house-1',
+      title: 'Sunny room in a 3-bed near the park',
+      priceLabel: '$1,450/mo',
+      priceShort: '$1,450',
+      categoryLabel: 'Rental',
+      locationLabel: 'North Park, San Diego',
+      seller: { handle: 'maya', displayName: 'Maya R.', avatarUrl: null },
+      back: { href: '/marketplace/housing', label: 'Housing' },
+      ...overrides,
+    }),
+    housingFacts: facts,
+  }
+}
+
+const FACTS: HousingSeoFacts = {
+  bedrooms: 3,
+  bathrooms: 1.5,
+  sqft: 850,
+  petsAllowed: true,
+  amenityLabels: ['In-unit laundry', 'Parking'],
+  rentCents: 145000,
+}
+
+type AccommodationNode = {
+  '@type': string
+  numberOfBedrooms?: number
+  numberOfBathroomsTotal?: number
+  floorSize?: { '@type': string; value: number; unitCode: string }
+  petsAllowed?: boolean
+  amenityFeature?: { '@type': string; name: string; value: boolean }[]
+  address?: { '@type': string; addressLocality?: string; streetAddress?: string }
+  offers?: {
+    '@type': string
+    price?: string
+    priceSpecification?: { '@type': string; price: string; priceCurrency: string; unitText: string }
+  }
+}
+
+function accommodationNode(input: ListingJsonLdInput): AccommodationNode {
+  return listingJsonLd(input)[0] as AccommodationNode
+}
+
+describe('listingJsonLd — Accommodation (housing facts)', () => {
+  it('renders housing as an Accommodation, not a Product', () => {
+    expect(accommodationNode(housingView(FACTS))['@type']).toBe('Accommodation')
+  })
+
+  it('carries the room, bath, and size facts when present', () => {
+    const node = accommodationNode(housingView(FACTS))
+    expect(node.numberOfBedrooms).toBe(3)
+    expect(node.numberOfBathroomsTotal).toBe(1.5)
+    expect(node.floorSize).toEqual({ '@type': 'QuantitativeValue', value: 850, unitCode: 'FTK' })
+  })
+
+  it('carries petsAllowed and one LocationFeatureSpecification per amenity label', () => {
+    const node = accommodationNode(housingView(FACTS))
+    expect(node.petsAllowed).toBe(true)
+    expect(node.amenityFeature).toEqual([
+      { '@type': 'LocationFeatureSpecification', name: 'In-unit laundry', value: true },
+      { '@type': 'LocationFeatureSpecification', name: 'Parking', value: true },
+    ])
+  })
+
+  it('prices the Offer per MONTH via a UnitPriceSpecification from the exact rent_cents', () => {
+    const node = accommodationNode(housingView(FACTS))
+    expect(node.offers?.priceSpecification).toEqual({
+      '@type': 'UnitPriceSpecification',
+      price: '1450.00',
+      priceCurrency: 'USD',
+      unitText: 'MONTH',
+    })
+    // The flat one-time `price` is a Product concept; housing prices monthly only.
+    expect(node.offers?.price).toBeUndefined()
+  })
+
+  it('falls back to the parsed price label for the monthly rate when facts carry no rent', () => {
+    const node = accommodationNode(housingView({ ...FACTS, rentCents: null }))
+    expect(node.offers?.priceSpecification?.price).toBe('1450.00')
+    expect(node.offers?.priceSpecification?.unitText).toBe('MONTH')
+  })
+
+  it('omits every housing fact key when no facts block is attached (nothing is faked)', () => {
+    const node = accommodationNode(housingView(undefined))
+    expect(node.numberOfBedrooms).toBeUndefined()
+    expect(node.numberOfBathroomsTotal).toBeUndefined()
+    expect(node.floorSize).toBeUndefined()
+    expect(node.petsAllowed).toBeUndefined()
+    expect(node.amenityFeature).toBeUndefined()
+  })
+
+  it('omits null facts individually (a partial block emits only what it knows)', () => {
+    const node = accommodationNode(
+      housingView({ bedrooms: 2, bathrooms: null, sqft: null, petsAllowed: null, amenityLabels: [], rentCents: null }),
+    )
+    expect(node.numberOfBedrooms).toBe(2)
+    expect(node.numberOfBathroomsTotal).toBeUndefined()
+    expect(node.floorSize).toBeUndefined()
+    expect(node.petsAllowed).toBeUndefined()
+    expect(node.amenityFeature).toBeUndefined()
+  })
+
+  it('emits petsAllowed: false when the listing explicitly disallows pets', () => {
+    expect(accommodationNode(housingView({ ...FACTS, petsAllowed: false })).petsAllowed).toBe(false)
+  })
+
+  it('NEVER emits a street address — addressLocality stays the only address field (fair housing/privacy)', () => {
+    const node = accommodationNode(housingView(FACTS))
+    expect(node.address).toEqual({ '@type': 'PostalAddress', addressLocality: 'North Park, San Diego' })
+    expect(JSON.stringify(listingJsonLd(housingView(FACTS)))).not.toContain('streetAddress')
+  })
+
+  it('housing facts never leak onto another vertical', () => {
+    // Even a (mis-wired) market view carrying a facts block must not emit Accommodation fields.
+    const node = listingJsonLd({ ...marketView(), housingFacts: FACTS })[0] as AccommodationNode
+    expect(node['@type']).toBe('Product')
+    expect(node.numberOfBedrooms).toBeUndefined()
+    expect(node.amenityFeature).toBeUndefined()
+  })
+
+  it('emits no structured data for a non-active housing listing', () => {
+    expect(listingJsonLd(housingView(FACTS, { status: 'closed' }))).toEqual([])
   })
 })

@@ -126,13 +126,68 @@ export async function getHousingDetail(listingId: string): Promise<HousingDetail
   return data ? rowToHousingDetail(data as Record<string, unknown>) : null
 }
 
+// ── Match fits: the raw per-term values the v3 RPCs expose ──────────────────
+// (migration 20270108000000). Astrology and resonance are deliberately NOT here:
+// astrology is opt-in-sensitive and resonance is opaque; neither is ever a chip.
+
+export interface MatchFits {
+  budget: number
+  geo: number
+  timing: number
+  lifestyle: number
+}
+
+/** Read the four fit columns off an RPC row; a missing/invalid value falls back
+ *  to the neutral 0.5 (below every chip threshold), so a v2 database degrades
+ *  to "no chips", never a wrong claim. */
+function rowFits(r: Record<string, unknown>): MatchFits {
+  const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0.5)
+  return {
+    budget: num(r.budget_fit),
+    geo: num(r.geo_fit),
+    timing: num(r.timing_fit),
+    lifestyle: num(r.lifestyle_fit),
+  }
+}
+
+/** Up to three plain-English compatibility chips from the strongest fit terms.
+ *  PURE. Thresholds are deliberately high so a chip is a claim we can stand
+ *  behind; the neutral 0.5 (unknown data) never earns one. Astrology and
+ *  resonance never chip — the overall percentage carries those. */
+export function fitChips(
+  fits: MatchFits,
+  opts: { city?: string | null; distanceKnown?: boolean } = {},
+): string[] {
+  const candidates = [
+    { label: 'Budget fits', value: fits.budget, min: 0.8, show: true },
+    {
+      label: opts.city ? `Close to ${opts.city}` : 'Close by',
+      value: fits.geo,
+      min: 0.8,
+      show: opts.distanceKnown !== false,
+    },
+    { label: 'Timing lines up', value: fits.timing, min: 0.8, show: true },
+    { label: 'Similar lifestyle', value: fits.lifestyle, min: 0.7, show: true },
+  ]
+  return candidates
+    .filter((c) => c.show && c.value >= c.min)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 3)
+    .map((c) => c.label)
+}
+
+/** A roommate-listing match with the per-term fits alongside the blended score. */
+export interface RoommateListingMatch extends RoommateMatch {
+  fits: MatchFits
+}
+
 /** Roommate compatibility for the caller, via housing_match_candidates (consent-gated).
  *  Pass an authenticated supabase client (carries the JWT) so the RPC resolves
  *  auth.uid() to the caller — resonance is private to them by construction. */
 export async function matchRoommates(
   authedClient: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> },
   limit = 10,
-): Promise<RoommateMatch[]> {
+): Promise<RoommateListingMatch[]> {
   const { data } = await authedClient.rpc('housing_match_candidates', { _limit: limit })
   return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
     listingId: r.listing_id as string,
@@ -141,31 +196,73 @@ export async function matchRoommates(
     rentCents: (r.rent_cents as number) ?? null,
     city: (r.city as string) ?? null,
     score: (r.score as number) ?? 0,
+    fits: rowFits(r),
   }))
 }
 
-/** A roommate<->roommate match: another active seeker ranked against the caller. Symmetric
- *  (reciprocal resonance). Coarse city/score band only — never coordinates. */
+/** A roommate<->roommate match: another active seeker ranked against the caller,
+ *  enriched with their public profile card. Symmetric (reciprocal resonance).
+ *  Coarse city/score band only — never coordinates. */
 export interface RoommateSeekerMatch {
   profileId: string
+  displayName: string
+  handle: string
+  avatarUrl: string | null
   resonance: number
   city: string | null
   score: number
+  fits: MatchFits
+}
+
+/** The loose client shape the seeker matcher needs: the consent-gated RPC plus a
+ *  batch profile read (both on the CALLER's client, so RLS applies to the read). */
+interface SeekerMatchClient {
+  rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }>
+  from: (table: string) => {
+    select: (columns: string) => {
+      in: (column: string, values: string[]) => Promise<{ data: unknown }>
+    }
+  }
 }
 
 /** Rank OTHER active seekers against the caller (roommate<->roommate), via the consent-gated
- *  housing_roommate_matches RPC. Pass an authed client so auth.uid() resolves to the caller. */
+ *  housing_roommate_matches RPC, then join each match to its public profile card (display
+ *  name, handle, avatar) in ONE batch read on the same authed client. Rows whose profile
+ *  can't be read (blocked, deleted) are dropped — no card, no match. Fail-safe []. */
 export async function matchRoommateSeekers(
-  authedClient: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> },
+  authedClient: SeekerMatchClient,
   limit = 12,
 ): Promise<RoommateSeekerMatch[]> {
   const { data } = await authedClient.rpc('housing_roommate_matches', { _limit: limit })
-  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
-    profileId: r.profile_id as string,
-    resonance: (r.resonance as number) ?? 0,
-    city: (r.city as string) ?? null,
-    score: (r.score as number) ?? 0,
-  }))
+  const rows = (data ?? []) as Record<string, unknown>[]
+  const ids = rows.map((r) => r.profile_id).filter((v): v is string => typeof v === 'string')
+  if (ids.length === 0) return []
+
+  const { data: profileData } = await authedClient
+    .from('profiles')
+    .select('id, display_name, handle, avatar_url')
+    .in('id', ids)
+  const profiles = new Map(
+    ((profileData ?? []) as Record<string, unknown>[]).map((p) => [p.id as string, p]),
+  )
+
+  const out: RoommateSeekerMatch[] = []
+  for (const r of rows) {
+    const p = profiles.get(r.profile_id as string)
+    const handle = p?.handle
+    if (!p || typeof handle !== 'string' || !handle) continue
+    out.push({
+      profileId: r.profile_id as string,
+      displayName: typeof p.display_name === 'string' && p.display_name ? p.display_name : handle,
+      handle,
+      avatarUrl: (p.avatar_url as string) ?? null,
+      resonance: (r.resonance as number) ?? 0,
+      city: (r.city as string) ?? null,
+      score: (r.score as number) ?? 0,
+      fits: rowFits(r),
+    })
+  }
+  return out
 }
 
 export interface HousingFacets {
@@ -278,6 +375,58 @@ export function sanitizeSeekerPreferences(input: SeekerPreferenceInput): Record<
     out.age_pref = { min: Math.min(lo, hi), max: Math.max(lo, hi) }
   }
 
+  return out
+}
+
+/** The lifestyle block as the seeker FORM expects it (camelCase, all strings).
+ *  Mirrors LifestylePrefs in the roommates seeker form; kept structural here so
+ *  the server module never imports a client file. */
+export interface SeekerLifestylePrefill {
+  cleanliness?: string
+  socialLevel?: string
+  schedule?: string
+  diet?: string
+  pets?: string
+  smoking?: string
+  cannabis?: string
+  arrangement?: string
+  genderPref?: string
+  ageMin?: string
+  ageMax?: string
+}
+
+/** Map the stored preferences jsonb (sanitizeSeekerPreferences output, snake_case)
+ *  back into the form's prefill shape, so re-saving the form never wipes a saved
+ *  lifestyle block. PURE; inverse of sanitizeSeekerPreferences over its own output.
+ *  Unknown keys are ignored; missing keys stay absent (the form supplies defaults). */
+export function seekerPreferencesToLifestyle(
+  prefs: Record<string, unknown> | null | undefined,
+): SeekerLifestylePrefill {
+  const out: SeekerLifestylePrefill = {}
+  if (!prefs) return out
+
+  if (typeof prefs.cleanliness === 'number' && Number.isFinite(prefs.cleanliness)) {
+    out.cleanliness = String(prefs.cleanliness)
+  }
+
+  const str = (k: string): string | undefined =>
+    typeof prefs[k] === 'string' && prefs[k] !== '' ? (prefs[k] as string) : undefined
+
+  const socialLevel = str('social_level')
+  if (socialLevel) out.socialLevel = socialLevel
+  for (const k of ['schedule', 'diet', 'pets', 'smoking', 'cannabis', 'arrangement'] as const) {
+    const v = str(k)
+    if (v) out[k] = v
+  }
+  const genderPref = str('gender_pref')
+  if (genderPref) out.genderPref = genderPref
+
+  const age = prefs.age_pref
+  if (age && typeof age === 'object') {
+    const { min, max } = age as { min?: unknown; max?: unknown }
+    if (typeof min === 'number' && Number.isFinite(min)) out.ageMin = String(min)
+    if (typeof max === 'number' && Number.isFinite(max)) out.ageMax = String(max)
+  }
   return out
 }
 

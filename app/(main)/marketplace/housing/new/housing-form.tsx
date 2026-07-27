@@ -10,18 +10,55 @@ import { createHousingListingAction } from '../../actions'
 // browser upload into the shared event-media bucket under the signer's own uid
 // prefix) and serialises the ordered paths into a hidden field the server action
 // reads. Everything else is native form controls so the server action owns
-// validation. Connect-only: no payment, a member messages the host.
+// validation. Connect-only: no payment, a member messages the host. Reused by the
+// EDIT surface ([id]/edit): pass `initial` to prefill + a bound update `action`.
 
 const FIELD =
   'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary'
 const LABEL = 'mb-1 block text-sm font-medium text-text'
 const CHECK = 'flex items-center gap-2 text-sm text-text'
 
-export function HousingForm() {
-  const [images, setImages] = useState<string[]>([])
+/** Prefill values for EDIT mode — the base listing + housing extension, already merged
+ *  by the edit page. Field-for-field with the form controls below; money is in dollars
+ *  (what the inputs show), never cents. */
+export interface HousingFormInitial {
+  title: string
+  listingType: string
+  propertyType: string | null
+  roomType: string | null
+  sqft: number | null
+  rentDollars: number | null
+  depositDollars: number | null
+  leaseMonths: number | null
+  bedrooms: number | null
+  bathrooms: number | null
+  householdSize: number | null
+  availableFrom: string | null
+  neighborhood: string | null
+  city: string | null
+  amenities: string[]
+  furnished: boolean
+  utilitiesIncluded: boolean
+  petsOk: boolean
+  smokingOk: boolean
+  cannabisOk: boolean
+  description: string | null
+  images: string[]
+}
+
+export function HousingForm({
+  initial,
+  action,
+}: {
+  /** Prefill for edit mode; omitted on the compose surface. */
+  initial?: HousingFormInitial
+  /** A bound server action (edit mode). Defaults to the create action. */
+  action?: (formData: FormData) => Promise<void>
+} = {}) {
+  const [images, setImages] = useState<string[]>(initial?.images ?? [])
 
   return (
-    <form action={createHousingListingAction} className="space-y-6">
+    <form action={action ?? createHousingListingAction} className="space-y-6">
       <div>
         <label htmlFor="title" className={LABEL}>
           Title
@@ -31,6 +68,7 @@ export function HousingForm() {
           name="title"
           required
           maxLength={120}
+          defaultValue={initial?.title}
           className={FIELD}
           placeholder="e.g. Sunny room in a 3-bed near the park"
         />
@@ -41,7 +79,7 @@ export function HousingForm() {
           <label htmlFor="listing_type" className={LABEL}>
             Listing
           </label>
-          <select id="listing_type" name="listing_type" className={FIELD} defaultValue="rental">
+          <select id="listing_type" name="listing_type" className={FIELD} defaultValue={initial?.listingType ?? 'rental'}>
             <option value="rental">Rental to offer</option>
             <option value="sublet">Sublet to offer</option>
             <option value="roommate">Room with a roommate</option>
@@ -53,7 +91,7 @@ export function HousingForm() {
           <label htmlFor="property_type" className={LABEL}>
             Property type
           </label>
-          <select id="property_type" name="property_type" className={FIELD} defaultValue="">
+          <select id="property_type" name="property_type" className={FIELD} defaultValue={initial?.propertyType ?? ''}>
             <option value="">Not specified</option>
             {PROPERTY_TYPES.map((p) => (
               <option key={p.slug} value={p.slug}>
@@ -69,7 +107,7 @@ export function HousingForm() {
           <label htmlFor="room_type" className={LABEL}>
             Space
           </label>
-          <select id="room_type" name="room_type" className={FIELD} defaultValue="">
+          <select id="room_type" name="room_type" className={FIELD} defaultValue={initial?.roomType ?? ''}>
             <option value="">Not specified</option>
             <option value="private_room">Private room</option>
             <option value="shared_room">Shared room</option>
@@ -87,6 +125,7 @@ export function HousingForm() {
             min="0"
             step="1"
             inputMode="numeric"
+            defaultValue={initial?.sqft ?? ''}
             className={FIELD}
             placeholder="e.g. 850"
           />
@@ -98,13 +137,13 @@ export function HousingForm() {
           <label htmlFor="rent" className={LABEL}>
             Rent (per month)
           </label>
-          <input id="rent" name="rent" type="number" min="0" step="1" inputMode="numeric" className={FIELD} placeholder="e.g. 1200" />
+          <input id="rent" name="rent" type="number" min="0" step="1" inputMode="numeric" defaultValue={initial?.rentDollars ?? ''} className={FIELD} placeholder="e.g. 1200" />
         </div>
         <div>
           <label htmlFor="deposit" className={LABEL}>
             Deposit (optional)
           </label>
-          <input id="deposit" name="deposit" type="number" min="0" step="1" inputMode="numeric" className={FIELD} placeholder="e.g. 1200" />
+          <input id="deposit" name="deposit" type="number" min="0" step="1" inputMode="numeric" defaultValue={initial?.depositDollars ?? ''} className={FIELD} placeholder="e.g. 1200" />
         </div>
         <div>
           <label htmlFor="lease_months" className={LABEL}>
@@ -117,6 +156,7 @@ export function HousingForm() {
             min="0"
             step="1"
             inputMode="numeric"
+            defaultValue={initial?.leaseMonths ?? ''}
             className={FIELD}
             placeholder="0 = month-to-month"
           />
@@ -128,13 +168,13 @@ export function HousingForm() {
           <label htmlFor="bedrooms" className={LABEL}>
             Bedrooms (optional)
           </label>
-          <input id="bedrooms" name="bedrooms" type="number" min="0" step="1" inputMode="numeric" className={FIELD} placeholder="e.g. 2" />
+          <input id="bedrooms" name="bedrooms" type="number" min="0" step="1" inputMode="numeric" defaultValue={initial?.bedrooms ?? ''} className={FIELD} placeholder="e.g. 2" />
         </div>
         <div>
           <label htmlFor="bathrooms" className={LABEL}>
             Bathrooms (optional)
           </label>
-          <input id="bathrooms" name="bathrooms" type="number" min="0" step="0.5" inputMode="decimal" className={FIELD} placeholder="e.g. 1.5" />
+          <input id="bathrooms" name="bathrooms" type="number" min="0" step="0.5" inputMode="decimal" defaultValue={initial?.bathrooms ?? ''} className={FIELD} placeholder="e.g. 1.5" />
         </div>
         <div>
           <label htmlFor="household_size" className={LABEL}>
@@ -147,6 +187,7 @@ export function HousingForm() {
             min="0"
             step="1"
             inputMode="numeric"
+            defaultValue={initial?.householdSize ?? ''}
             className={FIELD}
             placeholder="e.g. 3"
           />
@@ -158,7 +199,7 @@ export function HousingForm() {
           <label htmlFor="available_from" className={LABEL}>
             Available from (optional)
           </label>
-          <input id="available_from" name="available_from" type="date" className={FIELD} />
+          <input id="available_from" name="available_from" type="date" defaultValue={initial?.availableFrom ?? ''} className={FIELD} />
         </div>
       </div>
 
@@ -167,13 +208,13 @@ export function HousingForm() {
           <label htmlFor="neighborhood" className={LABEL}>
             Neighborhood (optional)
           </label>
-          <input id="neighborhood" name="neighborhood" className={FIELD} placeholder="e.g. North Park" />
+          <input id="neighborhood" name="neighborhood" defaultValue={initial?.neighborhood ?? ''} className={FIELD} placeholder="e.g. North Park" />
         </div>
         <div>
           <label htmlFor="city" className={LABEL}>
             City
           </label>
-          <input id="city" name="city" className={FIELD} placeholder="Where is it?" />
+          <input id="city" name="city" defaultValue={initial?.city ?? ''} className={FIELD} placeholder="Where is it?" />
         </div>
       </div>
 
@@ -182,7 +223,13 @@ export function HousingForm() {
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
           {AMENITIES.map((a) => (
             <label key={a.slug} className={CHECK}>
-              <input type="checkbox" name="amenities" value={a.slug} className="h-4 w-4 rounded border-border" />
+              <input
+                type="checkbox"
+                name="amenities"
+                value={a.slug}
+                defaultChecked={initial?.amenities.includes(a.slug)}
+                className="h-4 w-4 rounded border-border"
+              />
               {a.label}
             </label>
           ))}
@@ -193,23 +240,23 @@ export function HousingForm() {
         <legend className={LABEL}>House rules</legend>
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
           <label className={CHECK}>
-            <input type="checkbox" name="furnished" className="h-4 w-4 rounded border-border" />
+            <input type="checkbox" name="furnished" defaultChecked={initial?.furnished} className="h-4 w-4 rounded border-border" />
             Furnished
           </label>
           <label className={CHECK}>
-            <input type="checkbox" name="utilities_included" className="h-4 w-4 rounded border-border" />
+            <input type="checkbox" name="utilities_included" defaultChecked={initial?.utilitiesIncluded} className="h-4 w-4 rounded border-border" />
             Utilities included
           </label>
           <label className={CHECK}>
-            <input type="checkbox" name="pets_ok" className="h-4 w-4 rounded border-border" />
+            <input type="checkbox" name="pets_ok" defaultChecked={initial?.petsOk} className="h-4 w-4 rounded border-border" />
             Pets welcome
           </label>
           <label className={CHECK}>
-            <input type="checkbox" name="smoking_ok" className="h-4 w-4 rounded border-border" />
+            <input type="checkbox" name="smoking_ok" defaultChecked={initial?.smokingOk} className="h-4 w-4 rounded border-border" />
             Smoking OK
           </label>
           <label className={CHECK}>
-            <input type="checkbox" name="cannabis_ok" className="h-4 w-4 rounded border-border" />
+            <input type="checkbox" name="cannabis_ok" defaultChecked={initial?.cannabisOk} className="h-4 w-4 rounded border-border" />
             Cannabis friendly
           </label>
         </div>
@@ -224,6 +271,7 @@ export function HousingForm() {
           name="description"
           rows={5}
           maxLength={2000}
+          defaultValue={initial?.description ?? ''}
           className={FIELD}
           placeholder="The place, the vibe, who'd be a good fit, what's included."
         />
@@ -245,7 +293,7 @@ export function HousingForm() {
 
       <div className="flex justify-end">
         <button type="submit" className={buttonClasses('primary', 'md')}>
-          List housing
+          {initial ? 'Save changes' : 'List housing'}
         </button>
       </div>
     </form>

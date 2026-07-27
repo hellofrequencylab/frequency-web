@@ -10,6 +10,9 @@ import { isError } from '@/lib/action-result'
 import { MembershipTierForm } from '@/components/spaces/membership-tier-form'
 import { MembershipOwnerList } from '@/components/spaces/membership-owner-list'
 import { MembershipEventAccess } from '@/components/spaces/membership-event-access'
+import { MembershipCircleAccess } from '@/components/spaces/membership-circle-access'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { listCirclesForSpace } from '@/lib/circles/store'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { SectionHeader } from '@/components/ui/section-header'
 import type { Space } from '@/lib/spaces/types'
@@ -56,6 +59,20 @@ export async function MembershipsSection({
       <fieldset disabled={staffViewing} className="contents">
         <MembershipTierForm spaceId={space.id} slug={space.slug} initialTiers={tiers} />
       </fieldset>
+
+      {/* CIRCLE ACCESS (ADR-859): the circle each tier includes. The circle is the tier's
+          communications hub: its gatherings and its Message center audience. Linking sweeps the
+          tier's current members in; the membership lifecycle keeps it in sync from then on. */}
+      <section>
+        <SectionHeader title="Circle access" />
+        <p className="mb-3 text-sm text-muted">
+          Give each membership its own circle. Members join it automatically while their
+          membership is active, and its gatherings show on your space calendar.
+        </p>
+        <Suspense fallback={<MembersSkeleton />}>
+          <CircleAccessLoader space={space} staffViewing={staffViewing} />
+        </Suspense>
+      </section>
 
       {/* EVENT ACCESS (ADR-824): which upcoming events a membership includes. Writes the ADR-823
           members-ticket gate on the event, the same rows the event's own ticket editor manages. */}
@@ -121,5 +138,33 @@ function MembersSkeleton() {
         <div key={i} className="h-14 animate-pulse rounded-lg bg-surface-elevated/50" />
       ))}
     </div>
+  )
+}
+
+/** Tiers with their circle link + the Space's circles for the picker (ADR-859). The circle_id
+ *  column is newer than the generated types (ADR-246), so the link read is a loose cast. */
+async function CircleAccessLoader({ space, staffViewing }: { space: Space; staffViewing: boolean }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = createAdminClient() as unknown as { from: (t: string) => any }
+  const [tiersRes, circles] = await Promise.all([
+    db
+      .from('space_membership_tiers')
+      .select('id, name, circle_id')
+      .eq('space_id', space.id)
+      .eq('is_active', true)
+      .order('sort', { ascending: true }),
+    listCirclesForSpace(space.id),
+  ])
+  const tiers = ((tiersRes?.data ?? []) as { id: string; name: string | null; circle_id: string | null }[]).map(
+    (t) => ({ id: t.id, name: t.name || 'Membership', circleId: t.circle_id }),
+  )
+  return (
+    <fieldset disabled={staffViewing} className="contents">
+      <MembershipCircleAccess
+        spaceId={space.id}
+        tiers={tiers}
+        circles={circles.filter((c) => c.status !== 'archived').map((c) => ({ id: c.id, name: c.name }))}
+      />
+    </fieldset>
   )
 }

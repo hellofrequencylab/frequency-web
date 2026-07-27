@@ -45,7 +45,7 @@ export interface PlaceTreeScope {
 
 /** The scope a DM is being opened FROM (the surface the leader is standing on). */
 export interface ScopedDmInput {
-  scope: { kind: 'event' | 'circle' | 'hub' | 'nexus'; id: string }
+  scope: { kind: 'event' | 'circle' | 'hub' | 'nexus' | 'space'; id: string }
   targetProfileId: string
 }
 
@@ -254,6 +254,64 @@ export async function canDmPlaceTreeMember(
   }
 }
 
+/** Does the profile hold an ACTIVE space_members row here (optionally narrowed to roles)?
+ *  Fail-closed. */
+async function hasActiveSpaceMemberRow(
+  profileId: string,
+  spaceId: string,
+  roles: string[] | null,
+): Promise<boolean> {
+  try {
+    const admin = createAdminClient()
+    let q = admin
+      .from('space_members')
+      .select('id')
+      .eq('space_id', spaceId)
+      .eq('profile_id', profileId)
+      .eq('status', 'active')
+    if (roles) q = q.in('role', roles)
+    const { data } = await q.limit(1).maybeSingle()
+    return !!data
+  } catch {
+    return false
+  }
+}
+
+/**
+ * May the sender DM this Space member? Sender must LEAD the Space: its owner
+ * (spaces.owner_profile_id), an ACTIVE space_members admin or moderator, or platform staff (the
+ * same staff axis every other gate here passes). Target must hold an ACTIVE space_members row, or
+ * BE the owner (the owner is on the roster without a member row, same as a circle's host).
+ * Fail-closed on any error.
+ */
+export async function canDmSpaceMember(
+  senderProfileId: string,
+  spaceId: string,
+  targetProfileId: string,
+): Promise<boolean> {
+  if (!senderProfileId || !spaceId || !targetProfileId) return false
+  try {
+    const admin = createAdminClient()
+
+    const { data: s } = await admin
+      .from('spaces')
+      .select('owner_profile_id')
+      .eq('id', spaceId)
+      .maybeSingle()
+    if (!s) return false
+    const leads =
+      s.owner_profile_id === senderProfileId ||
+      (await hasActiveSpaceMemberRow(senderProfileId, spaceId, ['admin', 'moderator'])) ||
+      (await isStaffProfile(senderProfileId))
+    if (!leads) return false
+
+    if (targetProfileId === s.owner_profile_id) return true
+    return hasActiveSpaceMemberRow(targetProfileId, spaceId, null)
+  } catch {
+    return false
+  }
+}
+
 /**
  * Open (or reuse) the 1:1 thread from the signed-in leader to a member of a scope they lead. The ONE
  * front door for every leader-surface Message button: resolves the caller, runs the matching scope
@@ -277,7 +335,9 @@ export async function openScopedDm(input: ScopedDmInput): Promise<{ conversation
       ? await canDmEventAttendee(senderProfileId, targetProfileId, scope.id)
       : scope.kind === 'circle'
         ? await canDmCircleMember(senderProfileId, targetProfileId, scope.id)
-        : await canDmPlaceTreeMember(senderProfileId, targetProfileId, { kind: scope.kind, id: scope.id })
+        : scope.kind === 'space'
+          ? await canDmSpaceMember(senderProfileId, scope.id, targetProfileId)
+          : await canDmPlaceTreeMember(senderProfileId, targetProfileId, { kind: scope.kind, id: scope.id })
   if (!allowed) throw new Error('You can only message members of a scope you lead.')
 
   // 2) The block gate — ALWAYS, both directions (parity with startConversation / messageHost).

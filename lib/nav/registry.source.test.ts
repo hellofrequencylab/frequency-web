@@ -36,6 +36,16 @@ describe('nav single-source invariant — the registry feeds every surface', () 
     }
   })
 
+  it('the public header carries ALL SIX primary pages (every footer link has a trigger)', () => {
+    const triggers = headerTriggers()
+    // The six primaries: Home, The Community, The Quest, The Lab, Spaces, About.
+    expect(triggers.length).toBe(6)
+    const triggerHrefs = triggers.map((t) => t.node.href)
+    for (const link of marketingFooterLinks()) {
+      expect(triggerHrefs, `footer link ${link.href} (${link.label}) has no header trigger`).toContain(link.href)
+    }
+  })
+
   it('lib/site marketing nav is DERIVED from the registry, not hand-maintained', () => {
     const triggers = headerTriggers()
     // PUBLIC_MEGA_NAV mirrors the header trigger projection (one panel per trigger, same label).

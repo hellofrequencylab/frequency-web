@@ -94,13 +94,36 @@ export function listingMetadata(view: ListingDetailView): Metadata {
 
 const abs = (path: string) => (/^https?:\/\//i.test(path) ? path : `${SITE_URL}${path}`)
 
+/** Housing-only structured facts for the Accommodation JSON-LD (audit Tier A #8). The
+ *  housing detail page attaches these to the view it hands the shared template; the
+ *  other verticals never set them. Amenities arrive as HUMAN LABELS (already resolved
+ *  from slugs) so the schema reads like the page. Fair-housing/privacy posture: these
+ *  are facts about the HOME, never about who should apply — and location stays the
+ *  coarse addressLocality the card already shows, NEVER a street address. */
+export interface HousingSeoFacts {
+  bedrooms?: number | null
+  bathrooms?: number | null
+  /** Interior size in square feet (emitted with unitCode FTK). */
+  sqft?: number | null
+  petsAllowed?: boolean | null
+  amenityLabels?: string[]
+  /** Monthly rent in cents; emitted as a UnitPriceSpecification with unitText MONTH. */
+  rentCents?: number | null
+}
+
+/** The JSON-LD input: the shared view, plus the optional housing facts block. A plain
+ *  ListingDetailView still satisfies it, so the other verticals pass through unchanged. */
+export type ListingJsonLdInput = ListingDetailView & { housingFacts?: HousingSeoFacts }
+
 /**
  * The Schema.org graph for a listing detail page: a Product/Offer (Housing renders as Accommodation)
  * plus a breadcrumb. Rendered by the shared ListingDetailTemplate, so every vertical emits it. Only
  * an active listing gets structured data (a noindexed page should not advertise a rich result), and
- * the Offer is attached only when a numeric price can be read from the label.
+ * the Offer is attached only when a numeric price is known (the parsed label, or housing's exact
+ * rent_cents). Housing additionally carries the HousingSeoFacts block (rooms/size/pets/amenities +
+ * per-month pricing) when the detail page supplies it.
  */
-export function listingJsonLd(view: ListingDetailView): object[] {
+export function listingJsonLd(view: ListingJsonLdInput): object[] {
   const path = listingCanonicalPath(view)
   const url = abs(path)
   if (view.status != null) return [] // non-active: no rich result
@@ -108,18 +131,36 @@ export function listingJsonLd(view: ListingDetailView): object[] {
   const image = [...(view.primaryImage ? [view.primaryImage] : []), abs('/opengraph-image')]
   const priceCents = priceCentsFromLabel(view.priceLabel)
   const isHousing = view.vertical === 'housing'
+  const housing = isHousing ? view.housingFacts : undefined
 
+  // Housing prices monthly RENT, so its Offer carries a UnitPriceSpecification (price per
+  // MONTH) instead of the flat one-time price a Product sells at. rent_cents is exact when
+  // the facts block carries it; the parsed label ("$1,450/mo") is the fallback.
+  const monthlyCents = housing?.rentCents ?? (isHousing ? priceCents : null)
   const offer =
-    priceCents != null
+    isHousing && monthlyCents != null
       ? {
           '@type': 'Offer',
-          price: (priceCents / 100).toFixed(2),
-          priceCurrency: 'USD',
+          priceSpecification: {
+            '@type': 'UnitPriceSpecification',
+            price: (monthlyCents / 100).toFixed(2),
+            priceCurrency: 'USD',
+            unitText: 'MONTH',
+          },
           availability: 'https://schema.org/InStock',
           url,
           ...(view.seller ? { seller: { '@type': 'Person', name: view.seller.displayName } } : {}),
         }
-      : undefined
+      : priceCents != null
+        ? {
+            '@type': 'Offer',
+            price: (priceCents / 100).toFixed(2),
+            priceCurrency: 'USD',
+            availability: 'https://schema.org/InStock',
+            url,
+            ...(view.seller ? { seller: { '@type': 'Person', name: view.seller.displayName } } : {}),
+          }
+        : undefined
 
   // AggregateRating (commerce AIO): emitted ONLY when there is a real average AND at least one review.
   // A null/zero rating is dropped — answer engines silently discard malformed schema, which would negate
@@ -142,6 +183,23 @@ export function listingJsonLd(view: ListingDetailView): object[] {
     ...(view.categoryLabel ? { category: view.categoryLabel } : {}),
     ...(view.locationLabel
       ? { address: { '@type': 'PostalAddress', addressLocality: view.locationLabel } }
+      : {}),
+    // Housing facts (Accommodation only) — rooms, size, pets, amenities. addressLocality
+    // above stays the ONLY address field: never a street address (fair housing/privacy).
+    ...(housing?.bedrooms != null ? { numberOfBedrooms: housing.bedrooms } : {}),
+    ...(housing?.bathrooms != null ? { numberOfBathroomsTotal: housing.bathrooms } : {}),
+    ...(housing?.sqft != null
+      ? { floorSize: { '@type': 'QuantitativeValue', value: housing.sqft, unitCode: 'FTK' } }
+      : {}),
+    ...(housing?.petsAllowed != null ? { petsAllowed: housing.petsAllowed } : {}),
+    ...(housing?.amenityLabels?.length
+      ? {
+          amenityFeature: housing.amenityLabels.map((label) => ({
+            '@type': 'LocationFeatureSpecification',
+            name: label,
+            value: true,
+          })),
+        }
       : {}),
     ...(!isHousing && view.seller ? { brand: { '@type': 'Brand', name: view.seller.displayName } } : {}),
     ...(rating ? { aggregateRating: rating } : {}),

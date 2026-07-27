@@ -173,6 +173,110 @@ export async function createListing(ownerProfileId: string, input: ListingInput)
   return data ? rowToListing(data as Record<string, unknown>) : null
 }
 
+/** The owner-editable slice of a listing (the shared base row only; per-vertical
+ *  attributes go through their extension upsert, e.g. upsertHousingDetail). */
+export interface ListingPatch {
+  title?: string
+  description?: string | null
+  images?: string[]
+  priceNote?: string | null
+  neighborhood?: string | null
+  city?: string | null
+  latitude?: number | null
+  longitude?: number | null
+}
+
+/** Update a listing's base row, OWNER-SCOPED IN THE WHERE (id + owner_profile_id both
+ *  match or nothing is written) — the same app-code authz posture as the rest of the
+ *  file, enforced at the row level so a mis-gated caller still cannot touch someone
+ *  else's listing. Only the fields present on the patch change; title/images carry the
+ *  same caps as createListing. Returns true when a row was actually updated. */
+export async function updateListing(
+  listingId: string,
+  ownerProfileId: string,
+  patch: ListingPatch,
+): Promise<boolean> {
+  const row: Record<string, unknown> = {}
+  if (patch.title !== undefined) {
+    const title = patch.title.trim()
+    if (!title) return false
+    row.title = title.slice(0, 120)
+  }
+  if (patch.description !== undefined) row.description = patch.description
+  if (patch.images !== undefined) row.images = patch.images.slice(0, 6)
+  if (patch.priceNote !== undefined) row.price_note = patch.priceNote
+  if (patch.neighborhood !== undefined) row.neighborhood = patch.neighborhood
+  if (patch.city !== undefined) row.city = patch.city
+  if (patch.latitude !== undefined) row.latitude = patch.latitude
+  if (patch.longitude !== undefined) row.longitude = patch.longitude
+  if (Object.keys(row).length === 0) return false
+  const { data } = await db()
+    .from('listings')
+    .update(row)
+    .eq('id', listingId)
+    .eq('owner_profile_id', ownerProfileId)
+    .select('id')
+    .maybeSingle()
+  return !!data
+}
+
+// ── Saves (favorites) — listing_saves, (profile_id, listing_id) PK, self RLS ─────────
+
+/** Save (heart) a listing for the member. Idempotent: the upsert lands on the
+ *  (profile_id, listing_id) primary key, so a double-tap never errors. */
+export async function saveListing(profileId: string, listingId: string): Promise<void> {
+  await db().from('listing_saves').upsert({ profile_id: profileId, listing_id: listingId })
+}
+
+/** Remove a saved listing. A no-op when it was never saved. */
+export async function unsaveListing(profileId: string, listingId: string): Promise<void> {
+  await db()
+    .from('listing_saves')
+    .delete()
+    .eq('profile_id', profileId)
+    .eq('listing_id', listingId)
+}
+
+/** Which of `listingIds` the member has saved — ONE batched read for a whole browse
+ *  grid (never a per-card query). Fail-safe to an empty set. */
+export async function listSavedListingIds(
+  profileId: string,
+  listingIds: string[],
+): Promise<Set<string>> {
+  if (listingIds.length === 0) return new Set()
+  const { data } = await db()
+    .from('listing_saves')
+    .select('listing_id')
+    .eq('profile_id', profileId)
+    .in('listing_id', listingIds)
+  return new Set(((data ?? []) as { listing_id: string }[]).map((r) => r.listing_id))
+}
+
+/** The member's saved listings for a vertical, newest-saved first. Joined `!inner` to
+ *  still-ACTIVE listings only, so a closed or deleted home quietly drops out instead of
+ *  lingering as a dead card. Fail-safe to []. */
+export async function listSavedListings(
+  profileId: string,
+  vertical: ListingVertical,
+  limit = 40,
+): Promise<Listing[]> {
+  const [{ data }, seedOwnerId] = await Promise.all([
+    db()
+      .from('listing_saves')
+      .select(`created_at, listing:listings!inner(${LISTING_COLS})`)
+      .eq('profile_id', profileId)
+      .eq('listing.vertical', vertical)
+      .eq('listing.status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(Math.min(Math.max(limit, 1), 100)),
+    resolveSeedOwnerProfileId(),
+  ])
+  return ((data ?? []) as Record<string, unknown>[])
+    .map((r) => (Array.isArray(r.listing) ? r.listing[0] : r.listing) as Record<string, unknown> | null)
+    .filter((l): l is Record<string, unknown> => !!l)
+    .map((l) => rowToListing(l, seedOwnerId))
+}
+
 export async function setListingStatus(id: string, status: ListingStatus): Promise<void> {
   await db().from('listings').update({ status }).eq('id', id)
 }

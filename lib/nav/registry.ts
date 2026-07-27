@@ -126,8 +126,10 @@ function studioNodes(): NavNode[] {
  *  link. The trigger `label` is the tab name; `href` is the tab's CANONICAL landing
  *  (== the old PRIMARY_NAV href), carried even on dropdown triggers so PRIMARY_NAV /
  *  SITE_NAV derive from ONE source. `blurb` carries the sub-link description (`desc`).
- *  Visitor-gated (public marketing). Order + copy verbatim from the old PUBLIC_MEGA_NAV
- *  so the mega header renders identically. */
+ *  Visitor-gated (public marketing). All six primary pages (the FOOTER_LINK_SEEDS set)
+ *  are triggers here, so the header and footer cover the same six tabs: The Community
+ *  and Spaces open dropdowns (community explore pages; the Spaces directory + the
+ *  persona doors and Business pricing), alongside The Quest and About. */
 type HeaderTriggerSeed = {
   id: string
   label: string
@@ -137,6 +139,17 @@ type HeaderTriggerSeed = {
 
 const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
   { id: 'home', label: 'Home', href: '/' },
+  {
+    id: 'the-community',
+    label: 'The Community',
+    href: '/the-community',
+    items: [
+      { label: 'Discover', href: '/discover', desc: 'Everything happening near you' },
+      { label: 'Circles', href: '/discover/circles', desc: 'Small groups around an interest' },
+      { label: 'Events', href: '/discover/events', desc: 'Gatherings you can show up to' },
+      { label: 'Partners', href: '/discover/partners', desc: 'Shops, studios, and makers in the network' },
+    ],
+  },
   {
     id: 'the-quest',
     label: 'The Quest',
@@ -149,6 +162,20 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
     ],
   },
   { id: 'the-lab', label: 'The Lab', href: '/the-lab' },
+  {
+    id: 'spaces',
+    label: 'Spaces',
+    href: '/spaces',
+    items: [
+      { label: 'Spaces directory', href: '/spaces/directory', desc: 'Browse every Space in the network' },
+      { label: 'For coaches and healers', href: '/for/coaches-and-healers', desc: 'Packages, scheduling, and a client CRM' },
+      { label: 'For community builders', href: '/for/community-builders', desc: 'Circles, memberships, and connections' },
+      { label: 'For event hosts', href: '/for/event-hosts', desc: 'Tickets, check-in, and a full room' },
+      { label: 'For nonprofits', href: '/for/nonprofits', desc: 'Donations, supporters, and programs' },
+      { label: 'For studios', href: '/for/studios', desc: 'Classes, memberships, and check-in' },
+      { label: 'Business pricing', href: '/pricing', desc: 'Plans and what each one includes' },
+    ],
+  },
   {
     id: 'about',
     label: 'About',
@@ -365,7 +392,10 @@ const PROFILE_LINK_SEEDS: readonly {
   { id: 'notifications', label: 'Notifications', href: '/settings/notifications', icon: 'BellRing', section: 'You' },
   // Membership
   { id: 'billing', label: 'Billing & Plans', href: '/settings/billing', icon: 'CreditCard', section: 'Membership' },
-  { id: 'payouts', label: 'Receive payments', href: '/settings/billing', icon: 'Banknote', section: 'Membership', minAccess: 'host' },
+  // Payouts lands on the billing page's payouts card. The `?tab=payouts` href keeps it
+  // DISTINCT from the Billing link above: menu identity is href (leafHrefs / the sync
+  // pass), so two seeds sharing '/settings/billing' would block auto-sync injection.
+  { id: 'payouts', label: 'Receive payments', href: '/settings/billing?tab=payouts', icon: 'Banknote', section: 'Membership', minAccess: 'host' },
   // Commerce
   { id: 'orders', label: 'My orders', href: '/orders', icon: 'Receipt', section: 'Commerce', minAccess: 'member' },
   { id: 'storefront', label: 'My storefront', href: '/market/manage', icon: 'Store', section: 'Commerce', minAccess: 'host' },
@@ -519,17 +549,16 @@ export function paletteDestinations(viewer: NavViewer, query = ''): PaletteDesti
 
 // ── Calm mobile spine (§5a: the five thumb-zone worlds + Zap center) ─────────────────
 // The mobile tab bar is the five TOP-LEVEL calm worlds (Feed · Community · Events · The
-// Quest · Marketplace), flanking the raised Zap center button (an ACTION, declared in the
+// Quest · Classifieds), flanking the raised Zap center button (an ACTION, declared in the
 // shell, not a registry node). The bar reads Menu · Feed · Community · [Zap] · Events · The
-// Quest · Marketplace (slots 1-2 sit left of Zap, slots 3-5 right of it). Each spine slot is
+// Quest · Classifieds (slots 1-2 sit left of Zap, slots 3-5 right of it). Each spine slot is
 // an EXISTING calm registry node — its href, gate, and icon key carry over verbatim (moving
-// where the tab is declared, never what it permits); only the rendered TAB label is the §5a
-// canon world name, distinct from the node's rail label (e.g. the `quest` rail reads "My
-// Quest", the mobile tab reads "The Quest"; the `market` rail reads "Classifieds", the tab
-// reads "Marketplace"). Deriving from NAV_REGISTRY keeps the bar in lockstep with the one
-// source — no parallel hardcoded list — and gate-filters through the same canSee as every
-// surface. Messages left the bar for the header (a badged top-right icon, DM convention);
-// its rail/drawer entry is unchanged.
+// where the tab is declared, never what it permits); only the rendered TAB label is the
+// canon world name, distinct from the node's rail label where §5a shortens it (e.g. the
+// `quest` rail reads "My Quest", the mobile tab reads "The Quest"). Deriving from
+// NAV_REGISTRY keeps the bar in lockstep with the one source — no parallel hardcoded list —
+// and gate-filters through the same canSee as every surface. Messages left the bar for the
+// header (a badged top-right icon, DM convention); its rail/drawer entry is unchanged.
 
 /** One mobile-bar tab: the §5a world name + the calm registry node it projects. */
 export type SpineTab = {
@@ -539,16 +568,18 @@ export type SpineTab = {
   node: NavNode
 }
 
-/** The five calm spine roots, in bar order: their registry node id → the §5a world label
+/** The five calm spine roots, in bar order: their registry node id → the world label
  *  the tab renders. Ids are existing calm nodes (see nav-areas.ts BASE_NAV_AREAS + the
- *  `market` vertical). `market` is the marketplace root the registry exposes (Classifieds
- *  at /classifieds); the tab renders it as "Marketplace". */
+ *  `market` vertical). NAMING canon (ADR-596): internal id `market` IS the Classifieds
+ *  peer board (/classifieds) and is never labeled "Market" — that name belongs to the
+ *  id-`maker` commerce surface (/market). The fifth tab keeps the peer-board node and
+ *  reads "Classifieds". */
 const CALM_SPINE_ROOTS: readonly { id: string; label: string }[] = [
   { id: 'feed', label: 'Feed' },
   { id: 'circles', label: 'Community' },
   { id: 'events', label: 'Events' },
   { id: 'quest', label: 'The Quest' },
-  { id: 'market', label: 'Market' },
+  { id: 'market', label: 'Classifieds' },
 ] as const
 
 /** The five calm mobile-spine tabs (§5a), in bar order, each pairing its §5a world label

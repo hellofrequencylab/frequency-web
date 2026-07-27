@@ -41,8 +41,10 @@ export interface SeekerFormValues {
   lat: number | null
   lng: number | null
   radiusMiles: number
-  /** Prefill for the lifestyle block. Optional so callers that don't yet read the
-   *  preferences jsonb still compile; the form falls back to empty defaults. */
+  /** Prefill for the lifestyle block — the roommates page maps the stored
+   *  preferences jsonb through seekerPreferencesToLifestyle so a re-save keeps
+   *  what the member already told us. Optional; missing keys fall back to the
+   *  empty defaults for a first-time seeker. */
   lifestyle?: Partial<LifestylePrefs>
 }
 
