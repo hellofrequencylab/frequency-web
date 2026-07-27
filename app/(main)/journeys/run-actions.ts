@@ -1,13 +1,23 @@
 'use server'
 
-// Journeys v2 — start a Run (ADR-252, J2). A Circle Host launches a Journey as a cohort Run
-// for their Circle; the Circle's active members are enrolled. Host-gated.
+// Journeys v2 — start a Run (ADR-252, J2). A Run is one Circle going through one Journey
+// together; the Circle's active members are enrolled. Gated through lib/journeys/run-gate
+// (ADR-842): the Circle's host, a steward of the Space that owns the Circle, or platform staff.
 
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
-import { startRun, scheduleKickoff, getRun, setPhaseEvent, type PhaseEventKind } from '@/lib/journeys/runs'
+import {
+  startRun,
+  scheduleKickoff,
+  getRun,
+  setPhaseEvent,
+  setRunEndState,
+  type PhaseEventKind,
+  type RunEndState,
+} from '@/lib/journeys/runs'
+import { resolveRunGate, journeysOfferedBySpace } from '@/lib/journeys/run-gate'
 import { buildJourneyTree, type BlockRow } from '@/lib/journeys/tree'
 import { phaseUnlockAt } from '@/lib/journeys/schedule'
 
@@ -24,16 +34,20 @@ export async function startJourneyRunAction(input: {
   const caller = await getCallerProfile()
   if (!caller) return fail('Sign in first.')
 
-  // Host gate: only the Circle's host can start a Run for it.
-  const admin = createAdminClient()
-  const { data: circle } = await admin
-    .from('circles')
-    .select('host_id, slug')
-    .eq('id', input.circleId)
-    .maybeSingle()
-  const c = circle as { host_id: string | null; slug: string } | null
-  if (!c) return fail('Circle not found.')
-  if (c.host_id !== caller.id) return fail('Only the circle host can start a run.')
+  // WHO may start it (ADR-842): the Circle's host, a steward of the Space that owns the Circle,
+  // or platform staff. One shared seam so the Space Circles surface and the Circle page agree.
+  const gate = await resolveRunGate(input.circleId, caller.id)
+  if (!gate.circleSlug) return fail('Circle not found.')
+  if (!gate.allowed) return fail('Only the circle host or the space team can start a run.')
+
+  // WHAT they may pick, for a SPACE Circle: only a Journey that Space offers. Checked here and
+  // not just in the picker, so a smuggled plan id is refused rather than quietly run.
+  if (gate.spaceId) {
+    const offered = await journeysOfferedBySpace(gate.spaceId)
+    if (!offered.some((p) => p.id === input.planId)) {
+      return fail('Pick a Journey this space offers.')
+    }
+  }
 
   const runId = await startRun({
     planId: input.planId,
@@ -55,8 +69,33 @@ export async function startJourneyRunAction(input: {
     })
   }
 
-  revalidatePath(`/circles/${c.slug}`)
+  revalidatePath(`/circles/${gate.circleSlug}`)
   return ok({ runId })
+}
+
+/**
+ * End a Run: 'completed' when the Circle finished it, 'cancelled' when it is being called off
+ * (ADR-842). Same gate as starting one, resolved from the Run's own Circle, so whoever could
+ * start it can end it. Enrollments stay: members keep the progress they earned.
+ */
+export async function endJourneyRunAction(input: {
+  runId: string
+  state: RunEndState
+}): Promise<ActionResult<void>> {
+  const caller = await getCallerProfile()
+  if (!caller) return fail('Sign in first.')
+
+  const run = await getRun(input.runId)
+  if (!run) return fail('Run not found.')
+
+  const gate = await resolveRunGate(run.circleId, caller.id)
+  if (!gate.allowed) return fail('Only the circle host or the space team can end a run.')
+
+  if (!(await setRunEndState(input.runId, input.state))) {
+    return fail('That run has already ended.')
+  }
+  if (gate.circleSlug) revalidatePath(`/circles/${gate.circleSlug}`)
+  return ok()
 }
 
 /** A Run Host schedules a dated touchpoint Event for a week (phase): the mid-week Circle Meetup or

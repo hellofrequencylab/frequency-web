@@ -43,6 +43,7 @@ export async function SharedCollaboratorCalendar({
         location: ev.location,
         goingCount: eng?.going ?? 0,
         coverUrl: eng?.coverUrl ?? null,
+        coverFocus: eng?.coverFocus ?? null,
         // Own events carry no badge; a collaborator's events show the partner space's name.
         sourceLabel: ev.isOwn ? null : ev.sourceName,
         isCancelled: !!ev.is_cancelled,

@@ -82,6 +82,7 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
         location: ev.location,
         goingCount: eng?.going ?? 0,
         coverUrl: eng?.coverUrl ?? null,
+        coverFocus: eng?.coverFocus ?? null,
         statusLabel: ev.status === 'draft' ? 'Draft' : isPast ? 'Past' : null,
         editHref: editHrefFor(ev.slug),
         isCancelled: !!ev.is_cancelled,
@@ -101,6 +102,7 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
         location: ev.location,
         goingCount: eng?.going ?? 0,
         coverUrl: eng?.coverUrl ?? null,
+        coverFocus: eng?.coverFocus ?? null,
         sourceLabel: 'Co-hosted here',
         isCancelled: !!ev.is_cancelled,
       }

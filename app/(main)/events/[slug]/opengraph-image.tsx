@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { posterSignedUrl } from '@/lib/events/poster-media'
+import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import type { EventDetailsWithMedia } from '@/lib/events/details-media'
 import { fetchRemoteImage } from '@/lib/og/remote-image'
 import { loadNunito } from '@/lib/og/load-nunito'
@@ -34,6 +35,8 @@ type Row = {
   is_cancelled: boolean | null
   poster_path: string | null
   details: EventDetailsWithMedia | null
+  /** The presentation bag (events.theme jsonb) — read for its `coverFocus` key only. */
+  theme: unknown
   host: { display_name: string | null } | null
 }
 
@@ -50,7 +53,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const { data } = await admin
     .from('events')
     .select(
-      'title, starts_at, location, attendance_mode, is_cancelled, poster_path, details, host:profiles!host_id ( display_name )',
+      'title, starts_at, location, attendance_mode, is_cancelled, poster_path, details, theme, host:profiles!host_id ( display_name )',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -178,7 +181,16 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           alt=""
           width={size.width}
           height={size.height}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            // The SAME focal point the event page hero and the claim card apply
+            // (events.theme.coverFocus), so every shared crop of this poster matches the page.
+            objectPosition: readEventCoverFocus(ev?.theme),
+          }}
         />
         {/* Ink legibility scrim: bottom-heavy fade so the identity clears any photo while the top
             stays crisp (the same treatment as the Space card). */}

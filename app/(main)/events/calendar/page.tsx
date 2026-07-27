@@ -53,6 +53,7 @@ export default async function EventsCalendarPage() {
         location: ev.location,
         goingCount: eng?.going ?? 0,
         coverUrl: eng?.coverUrl ?? null,
+        coverFocus: eng?.coverFocus ?? null,
         isCancelled: !!ev.is_cancelled,
       }
     })

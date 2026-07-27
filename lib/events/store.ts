@@ -12,6 +12,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import { readEventCoverFocus } from '@/lib/events/cover-focus'
+import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 
 /** An event as the by-space read returns it (the columns the offerings/schedule modules need). */
 export interface SpaceEvent {
@@ -325,6 +327,10 @@ export async function listPublicCalendarEvents(): Promise<SpaceCalendarEvent[]> 
 export interface CalendarEngagement {
   going: number
   coverUrl: string | null
+  /** The host-picked focal point for that cover (events.theme.coverFocus) as a CSS
+   *  object-position — the SAME value the event page hero applies, so a calendar/popup cover crops
+   *  through the same point instead of dead center. Unset events resolve to the centered default. */
+  coverFocus: string
 }
 
 /** PURE: tally confirmed 'going' RSVP rows into a per-event count (ignores maybe/waitlist/cancelled). */
@@ -350,12 +356,14 @@ export async function listCalendarEngagement(eventIds: string[]): Promise<Map<st
     const admin = createAdminClient()
     const [rsvpRes, coverRes] = await Promise.all([
       admin.from('event_rsvps').select('event_id, status').in('event_id', ids).eq('status', 'going'),
-      admin.from('events').select('id, cover_image_path').in('id', ids),
+      admin.from('events').select('id, cover_image_path, theme').in('id', ids),
     ])
     const going = tallyGoingByEvent((rsvpRes.data as Array<{ event_id: string; status?: string | null }> | null) ?? [])
     const coverPath = new Map<string, string | null>()
-    for (const r of ((coverRes.data as Array<{ id: string; cover_image_path?: string | null }> | null) ?? [])) {
+    const coverFocusById = new Map<string, string>()
+    for (const r of (coverRes.data ?? [])) {
       coverPath.set(r.id, r.cover_image_path ?? null)
+      coverFocusById.set(r.id, readEventCoverFocus(r.theme))
     }
     for (const id of ids) {
       const path = coverPath.get(id) ?? null
@@ -364,7 +372,11 @@ export async function listCalendarEngagement(eventIds: string[]): Promise<Map<st
         const { data: pub } = admin.storage.from('event-media').getPublicUrl(path)
         coverUrl = pub?.publicUrl ?? null
       }
-      out.set(id, { going: going.get(id) ?? 0, coverUrl })
+      out.set(id, {
+        going: going.get(id) ?? 0,
+        coverUrl,
+        coverFocus: coverFocusById.get(id) ?? DEFAULT_OBJECT_POSITION,
+      })
     }
     return out
   } catch {

@@ -124,6 +124,7 @@ export function EventsBlock({
             <EventCard
               event={toEventRow(e)}
               coverUrl={e.coverUrl ?? undefined}
+              coverFocus={e.coverFocus ?? null}
               going={e.going ?? 0}
               now={now}
               priceLabel={e.priceLabel ?? 'Free'}
@@ -146,6 +147,7 @@ export function EventsBlock({
         location: e.location ?? null,
         goingCount: e.going ?? 0,
         coverUrl: e.coverUrl ?? null,
+        coverFocus: e.coverFocus ?? null,
         isCancelled: false,
       }))
     const idBySlug: Record<string, string> = {}

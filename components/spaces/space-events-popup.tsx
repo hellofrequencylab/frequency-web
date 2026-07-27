@@ -8,6 +8,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { RsvpControls } from '@/components/events/rsvp-controls'
 import { EventCalendar, type CalendarEvent } from '@/components/events/event-calendar'
 import { loadEventJoinState, type EventJoinState } from '@/app/(main)/events/join-state-actions'
+import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
 import type { SpaceEventItem } from '@/lib/spaces/content-data'
 
 // THE SPACE PAGE EVENT POPUP (Events block upgrade). Clicking an event in ANY of the block's views
@@ -158,7 +159,13 @@ function EventPopupBody({ item, onClose }: { item: SpaceEventsViewItem; onClose:
     <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-xl">
       {item.coverUrl && (
         // eslint-disable-next-line @next/next/no-img-element -- external public bucket URL, not a local asset
-        <img src={item.coverUrl} alt="" className="h-32 w-full object-cover" loading="lazy" />
+        <img
+          src={item.coverUrl}
+          alt=""
+          className="h-32 w-full object-cover"
+          style={eventCoverFocusStyle(item.coverFocus)}
+          loading="lazy"
+        />
       )}
       <div className="p-6">
         <h3 className="text-xl font-bold leading-tight text-text">{item.title}</h3>

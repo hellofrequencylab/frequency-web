@@ -215,12 +215,15 @@ export async function createBlankCircleDraft(input: {
   profileId: string
   name?: string
   spark?: CircleSparkDraft
+  /** The Space this Circle belongs to (ADR-842). Omitted = the root space, so every existing
+   *  member-facing create flow behaves exactly as before. */
+  spaceId?: string | null
 }): Promise<{ circleId: string; slug: string }> {
   const admin = createAdminClient()
   const spark = input.spark
   const name = (input.name?.trim() || spark?.name?.trim() || 'New circle').slice(0, 120)
   const slug = await uniqueCircleSlug(admin, name)
-  const spaceId = await stampCircleSpaceId()
+  const spaceId = await stampCircleSpaceId(input.spaceId)
 
   // The draft Circle: owned by the caller, status 'draft' so it is hidden from
   // discovery until they publish. Default in-person. space_id + status 'draft' +

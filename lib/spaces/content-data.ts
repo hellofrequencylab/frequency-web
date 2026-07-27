@@ -94,6 +94,10 @@ export type SpaceEventItem = {
   going?: number
   /** Public cover URL (event-media bucket), or null. */
   coverUrl?: string | null
+  /** The host-picked focal point for that cover (events.theme.coverFocus) as a CSS
+   *  object-position, so this block's cards and popup crop the photo exactly like the event page
+   *  hero. Absent keeps today's centered crop. */
+  coverFocus?: string | null
   /** Price stat, "Free" / "$X" / "From $X" (same resolution as the events index cards). */
   priceLabel?: string
   /** ADR-826 tickets mode (buying is attending): the popup offers price + Get tickets on the event
@@ -810,6 +814,7 @@ export async function getSpaceUpcomingEvents(spaceId: string): Promise<SpaceEven
         capacity: e.capacity ?? null,
         going: eng?.going ?? 0,
         coverUrl: eng?.coverUrl ?? null,
+        coverFocus: eng?.coverFocus ?? null,
         priceLabel,
         ticketsMode,
         isDemo: e.is_demo === true,

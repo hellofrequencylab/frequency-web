@@ -65,6 +65,7 @@ export async function EventsSurface({
     sortedEvents,
     circleNames,
     coverUrls,
+    coverFocus,
     rsvpCounts,
     priceLabels,
     filtering,
@@ -154,6 +155,7 @@ export async function EventsSurface({
                       event={event}
                       circleName={circleNames[event.scope_id]}
                       coverUrl={coverUrls[event.id]}
+                      coverFocus={coverFocus[event.id]}
                       going={rsvpCounts[event.id] ?? 0}
                       priceLabel={priceLabels[event.id] ?? 'Free'}
                       now={nowDate}

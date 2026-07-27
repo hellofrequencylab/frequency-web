@@ -5,6 +5,7 @@ import { DemoBadge } from '@/components/ui/demo-badge'
 import { FeaturedBadge } from '@/components/ui/featured-badge'
 import { formatWhen, type EventRow } from '@/app/(main)/events/index-data'
 import { recurrenceLabel, type RecurrenceType } from '@/lib/events/recurrence'
+import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
 
 function eventDate(iso: string) {
   const d = new Date(iso)
@@ -64,12 +65,17 @@ function distanceLabel(distanceM: number | null | undefined): string | null {
 }
 
 export function EventCard({
-  event, circleName, coverUrl, going, now, priceLabel, blurb,
+  event, circleName, coverUrl, coverFocus, going, now, priceLabel, blurb,
 }: {
   event: EventRow
   circleName?: string
   /** Public URL of the event's expressive cover, when it has one. */
   coverUrl?: string
+  /** The host-picked focal point for that cover (events.theme.coverFocus, as a CSS
+   *  object-position) — the SAME value the detail hero applies, so a poster whose title sits at
+   *  the top survives the card's 16:9 crop instead of being sliced through the middle. Absent
+   *  (no stored focus) keeps today's centered crop. */
+  coverFocus?: string | null
   going: number
   now: Date
   /** Price stat resolved by the index loader — "Free" / "$X" / "From $X". */
@@ -119,12 +125,15 @@ export function EventCard({
           // a scanned poster's cover is a SIGNED URL from the private bucket (path
           // `/object/sign/...`, outside next.config remotePatterns), so it must bypass the
           // optimizer or next/image renders a broken image (matches the detail hero).
+          // The focal point matches the hero too: same stored value, same object-position, so a
+          // card and the page it links to crop the same photo the same way.
           <Image
             src={coverUrl}
             alt=""
             fill
             sizes="(max-width: 1024px) 100vw, 50vw"
             className="object-cover"
+            style={eventCoverFocusStyle(coverFocus)}
             unoptimized={coverUrl.includes('/object/sign/')}
           />
         ) : (
