@@ -8,8 +8,6 @@ import { formatEventMoney, type EventCoreStats } from '@/lib/events/event-stats'
 // headline numbers read identically wherever a host looks. Presentational + client-safe
 // (StatCard has no hooks), so the rail's client module can use it too.
 //
-//   variant="cards"  → bare <StatCard> tiles for the DashboardTemplate `stats` slot, which
-//                      supplies the responsive grid.
 //   variant="strip"  → labeled GROUP clusters of soft compact tiles (StatCard size "xs",
 //                      unbordered — no white card, owner directive) for the Manage hub's Home
 //                      strip: Tickets (sold/revenue, paid only) and Guests (RSVP set +
@@ -18,6 +16,9 @@ import { formatEventMoney, type EventCoreStats } from '@/lib/events/event-stats'
 //                      (e.g. a Reach group with page views).
 //   variant="panel"  → a self-contained 2-up grid of bordered tiles for the narrow admin
 //                      rail (event-settings-module), replacing its former inline divs.
+//
+// (The original full-size "cards" variant for the DashboardTemplate `stats` slot retired
+// with the Manage hub rework, ADR-828 — the hub renders the strip instead.)
 
 interface Tile {
   key: string
@@ -61,11 +62,11 @@ function tilesFor(stats: EventCoreStats): Tile[] {
 
 export function EventCoreStatsCards({
   stats,
-  variant = 'cards',
+  variant,
   links,
 }: {
   stats: EventCoreStats
-  variant?: 'cards' | 'strip' | 'panel'
+  variant: 'strip' | 'panel'
   /** strip only: where a tile drills into — sold/revenue → `tickets`, everything else → `guests`. */
   links?: { tickets?: string; guests?: string }
 }) {
@@ -94,34 +95,25 @@ export function EventCoreStatsCards({
     )
   }
 
-  if (variant === 'panel') {
-    // TIGHT tile grid for the narrow admin rail — a dense stat strip, NOT the full-size StatCard (which
-    // made the rail's top section balloon). Icon + a small value over a 2xs label; the capacity detail
-    // tucks under it. Reads as a compact "at a glance" band at the top of the panel.
-    return (
-      <div className="grid grid-cols-2 gap-1.5">
-        {tiles.map((t) => (
-          <div
-            key={t.key}
-            className="flex items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5"
-          >
-            <t.Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-            <div className="min-w-0">
-              <div className="truncate text-sm font-bold leading-tight text-text">{t.value}</div>
-              <div className="truncate text-2xs font-medium uppercase tracking-wide text-subtle">{t.label}</div>
-              {t.detail && <div className="truncate text-2xs text-subtle">{t.detail}</div>}
-            </div>
-          </div>
-        ))}
-      </div>
-    )
-  }
-
+  // variant === 'panel': TIGHT tile grid for the narrow admin rail — a dense stat strip, NOT the
+  // full-size StatCard (which made the rail's top section balloon). Icon + a small value over a 2xs
+  // label; the capacity detail tucks under it. Reads as a compact "at a glance" band at the top of
+  // the panel.
   return (
-    <>
+    <div className="grid grid-cols-2 gap-1.5">
       {tiles.map((t) => (
-        <StatCard key={t.key} label={t.label} value={t.value} icon={t.Icon} detail={t.detail} />
+        <div
+          key={t.key}
+          className="flex items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5"
+        >
+          <t.Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
+          <div className="min-w-0">
+            <div className="truncate text-sm font-bold leading-tight text-text">{t.value}</div>
+            <div className="truncate text-2xs font-medium uppercase tracking-wide text-subtle">{t.label}</div>
+            {t.detail && <div className="truncate text-2xs text-subtle">{t.detail}</div>}
+          </div>
+        </div>
       ))}
-    </>
+    </div>
   )
 }

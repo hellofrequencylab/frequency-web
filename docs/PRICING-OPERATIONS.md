@@ -7,12 +7,22 @@ There are two separate money flows. Keep them straight.
 
 ## 1. Plan billing (money in)
 
-Members and Spaces pay Frequency for a plan.
+Members and Spaces pay Frequency for a plan. The current catalog (the Community Collective
+ladder, ADR-811; every yearly price is two months free):
 
-- A **Space** buys **Business** ($49/mo, $490/yr with two months free) or **Non Profit** ($29/mo).
-- A **member** can add a **Supporter** contribution (pay what you want, $5 minimum) to support the cause,
-  or buy **Crew** ($9/mo under a $12 anchor) when that tier is turned on.
-- **Founding Members** pay a one-time **$250**, locked for life.
+| Plan | Who buys it | Price |
+|---|---|---|
+| **Business** | a Space | $29/mo list, $19/mo founding beta charged today |
+| **Collective** | a Space | $79/mo list, $49/mo founding beta charged today |
+| **Non Profit** | a verified 501(c)(3) Space | $39/mo flat, never per seat |
+| **Independent** | a Space going white-label, off the network | $249/mo flat, no founding discount |
+| **Crew** | a member | $9/mo under a $12 list anchor |
+| **Supporter** | a member | $12/mo (Crew plus the Supporter badge) |
+
+The founding beta anchors ($19 Business, $49 Collective) auto-revert to list on 2026-09-01
+(`lib/pricing/beta.ts`); a Space that bought at the founding rate keeps it. The Collective beta
+price is the one `COLLECTIVE_BETA_CENTS` constant (`lib/pricing/feature-tiers.ts`), shared by
+every surface that shows it. **Vera AI** is the sole add-on: +$20/mo on any paid Space plan.
 
 All of this bills through Stripe subscriptions and one-time payments.
 
@@ -25,16 +35,22 @@ All of this bills through Stripe subscriptions and one-time payments.
 ## 2. Payouts (money through)
 
 When a member tips a host, buys an event ticket, or buys from a Space storefront, the money goes to that
-host or Space through **Stripe Connect**. Frequency keeps a platform fee (the **take-rate**) off the top:
+host or Space through **Stripe Connect**. Frequency keeps a platform fee (the **take-rate**) off the top,
+and the rule comes first: **a sale you bring yourself costs you nothing.** Every order is classified as
+`self` (your own booking, your own audience) or `network` (the network sourced it: referral, discovery,
+the marketplace). Self orders are always 0%. Network orders pay the ladder for the seller's tier:
 
-| Seller | Take-rate |
-|---|---|
-| Free Space | 5% |
-| Paying Business | 3% |
-| Non Profit | 3% |
-| Individual member on the Market | 8% |
+| Seller | Network-sourced take-rate | Self-sourced |
+|---|---|---|
+| Free Space | 10% | 0% |
+| Business | 5% | 0% |
+| Collective | 3% | 0% |
+| Non Profit | 0% | 0% |
+| Independent | 0% (off the network, so no network sales) | 0% |
+| Individual member seller on the Market | 8% | 0% |
 
-Upgrading a Space to Business buys the fee down from 5% to 3%. The take-rate is set in the pricing console.
+Upgrading buys the fee down: Free 10% to Business 5% to Collective 3%. The rates are set in the pricing
+console (`/admin/pricing`, Take-rate); the seeded defaults live in `lib/pricing/settings.ts`.
 
 ## Turning payments on and off
 
@@ -44,8 +60,9 @@ when, old to new) in `platform_flag_events`.
 - **`billing_live` (the master switch).** The one switch that turns billing on. While it is off, nobody is
   charged and everyone keeps full access. It only takes effect when the **Stripe keys are also set** in
   the environment.
-- **`plan_business_enabled` / `plan_nonprofit_enabled`.** Show and sell each Space plan. A plan sells only
-  when its switch **and** the master switch are both on.
+- **`plan_business_enabled` / `plan_collective_enabled` / `plan_nonprofit_enabled` /
+  `plan_independent_enabled`.** Show and sell each Space plan. A plan sells only when its switch **and**
+  the master switch are both on.
 - **`tier_crew_enabled` / `tier_supporter_enabled`.** The same for member plans.
 - **`host_payouts_enabled`** (at `/admin/payments`). Turns the tips, ticket, and storefront payout
   marketplace on. Off means none of those payment controls appear anywhere.
@@ -55,22 +72,30 @@ when, old to new) in `platform_flag_events`.
 
 ## The beta "free until Sept 1" setup (current state)
 
-Two independent pieces, both currently on:
+Where things stand today, in one paragraph: **nobody is charged.** The master switch
+(`billing_live`) is **off**, and the code-side preview switch `PLACEHOLDER_PRICING`
+(`lib/pricing/feature-tiers.ts`) is **on**, which marks every pricing surface as a preview.
+Plan ladders, allowance meters, and upgrade buttons all render with real catalog numbers, but
+every CTA only navigates; nothing checks out. Going live is a deliberate two-part flip: set the
+Stripe keys and turn `billing_live` on at `/admin/pricing`, and have an engineer flip
+`PLACEHOLDER_PRICING` to false.
 
-- **The paid feature gates are turned off**, so every member and Space keeps paid features for free even
-  though billing is live and plans are for sale. On September 1 you turn the gates back on and paid
-  features lock to paying members.
+On top of that, two beta pieces are currently set:
+
+- **The paid feature gates are turned off**, so every member and Space keeps paid features for free.
+  On September 1 you turn the gates back on and paid features lock to paying members.
 - **The countdown clock (`beta_ends_at`)** is set to `2026-09-01`. It drives the "Summer of Frequency ends
-  Sept 1" banner only; it changes nothing about access on its own.
+  Sept 1" banner only; it changes nothing about access on its own. The founding beta prices ($19 Business,
+  $49 Collective) auto-revert to list on the same date in code.
 
 To lock paid features on Sept 1: re-enable the feature gates in `/admin/pricing` (turn each back on), and
 turn `gamification_full_member` back off.
 
 ## Setting prices and syncing to Stripe
 
-1. Edit the price in `/admin/pricing`. The Catalog section holds the live prices (Business base, AI Engine,
-   Non Profit). Each shows a list anchor and the lower founding price that is actually charged. The yearly
-   is two months free unless you override it.
+1. Edit the price in `/admin/pricing`. The Catalog section holds the live prices (Business, Collective,
+   Independent, Non Profit, the Vera AI add-on, and the operator seat). Each shows a list anchor and the
+   lower founding price that is actually charged. The yearly is two months free unless you override it.
 2. Save. Nothing is charged by saving; you are only editing config.
 3. Press **Sync the catalog to Stripe**. This creates or updates the Stripe products and prices. It is
    safe to run while billing is off, and it is idempotent, so running it twice does nothing extra. Stripe
@@ -78,12 +103,14 @@ turn `gamification_full_member` back off.
 
 ## How Founding Members and the Business plan are sold
 
-- **Founding Members (personal).** A one-time purchase at `/founders`: Founding Supporter ($25), Founding
-  Member ($250, locked for life, capped at the first 150), and Founding Patron ($1,000). Inert until
-  `billing_live` is on. A paid Founding Member is flagged for life and grandfathered at their rate.
-- **Founding Businesses.** The founding Business rate is **$49/mo, $490/yr** (matching the live Business
-  plan), with a bought-down 3% marketplace fee and a per-city cap of 25. A Space that buys the Business
-  plan now is grandfathered at that price for the life of its subscription.
+- **The `/founders` page is retired.** It now sends visitors straight to `/pricing` (a permanent 301
+  redirect, along with `/founders/offer` and `/founders/business`). The founders marketing funnel is
+  gone; founding pricing lives in the plan catalog itself as the founding beta rates above.
+- **Founding Members (personal).** A paid Founding Member is flagged for life and grandfathered at their
+  rate. The founding rate and seat cap are edited in the `Founding rates` section of `/admin/pricing`.
+- **Founding Businesses.** A Space that buys a plan at today's founding beta rate ($19 Business, $49
+  Collective) is grandfathered at that price for the life of its subscription. The locked Founding
+  Business display values are also edited under `Founding rates`.
 - **Business plan (ongoing).** A Space owner buys it from their Space billing settings once the plan is
   enabled and billing is live. It includes a trial with a card upfront. Business is the full-depth tier;
   free is a usage state within Business, not a separate plan.

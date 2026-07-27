@@ -5,6 +5,8 @@
 // comes from operator input, and it ends up inlined into an SVG, so colors, URLs,
 // and labels are all validated before they render.
 
+import { avatarSrc } from '../images/avatar-focus'
+
 export type ModuleShape = 'square' | 'rounded' | 'dots' | 'connected'
 export type EyeShape = 'square' | 'rounded' | 'circle'
 
@@ -198,7 +200,7 @@ export function withMemberAvatar(base: QrStyle, avatarUrl: string | null | undef
 export function withCenterLogo(base: QrStyle, imageUrl: string | null | undefined): QrStyle {
   const usingDefaultMark = !base.logo || base.logo === DEFAULT_STYLE.logo
   return imageUrl && usingDefaultMark && isSafeLogoSrc(imageUrl)
-    ? { ...base, logo: imageUrl.trim(), logoShape: 'circle' }
+    ? { ...base, logo: avatarSrc(imageUrl.trim()), logoShape: 'circle' }
     : base
 }
 

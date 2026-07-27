@@ -110,9 +110,10 @@ export function tierPriceLabel(axis: GateAxis, tier: string): string {
 
 // ── The per-feature raw config (axis + minTier + what each rung unlocks) ─────────────────────────────
 // One entry per tier-gated FEATURE_GATES key. `unlocks` is the plain line the selector prints under each
-// rung: the limit/quota or the on/off it grants for THIS feature. No em dashes; honest, no urgency. The
-// specific numeric limits (contact caps, monthly send volume, seat counts) are deliberately LEFT
-// QUALITATIVE here: those numbers are an owner decision for go-live (flagged in the ADR), not invented.
+// rung: the limit/quota or the on/off it grants for THIS feature. No em dashes; honest, no urgency.
+// Where a line names a NUMBER it is a @placeholder mirror of PLACEHOLDER_METER_LIMITS
+// (lib/pricing/feature-meters.ts) — THAT map is the one go-live source of quantities (ADR-837); edit it
+// there and keep these lines in step. Lines with no natural quantity stay qualitative.
 
 interface RawFeatureLadder {
   axis: GateAxis
@@ -142,27 +143,30 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     axis: 'plan',
     minTier: 'business',
     title: 'CRM',
+    // @placeholder 250 mirrors PLACEHOLDER_METER_LIMITS.space_crm (ADR-837).
     rungs: spaceRungs(
-      'A preview of the pipeline with a capped number of contacts.',
-      'The full CRM: pipeline, contacts, private notes, and governed playbooks. Multiple pipelines and team roles come with Collective.',
+      'The pipeline with your first 250 contacts free.',
+      'The full CRM with unlimited contacts: pipeline, private notes, and governed playbooks. Multiple pipelines and team roles come with Collective.',
     ),
   },
   space_email: {
     axis: 'plan',
     minTier: 'business',
     title: 'Email',
+    // @placeholder 300 and 5,000 mirror PLACEHOLDER_METER_LIMITS.space_email (ADR-837).
     rungs: spaceRungs(
-      'A capped number of email sends each month.',
-      'Higher sending limits, automations, and saved templates.',
+      'Up to 300 email sends each month.',
+      'Up to 5,000 sends a month, automations, and saved templates. Collective raises it to 25,000.',
     ),
   },
   space_automation: {
     axis: 'plan',
     minTier: 'collective',
     title: 'Automations',
+    // @placeholder 1,000 runs/mo mirrors PLACEHOLDER_METER_LIMITS.space_automation (ADR-837).
     rungs: spaceRungs(
       'One pipeline, no automations.',
-      'Governed playbooks and multi-step sequences that run the safe, reversible moves for you.',
+      'Governed playbooks and multi-step sequences that run the safe, reversible moves for you, with 1,000 runs included each month.',
       'collective',
     ),
   },
@@ -170,9 +174,11 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     axis: 'plan',
     minTier: 'collective',
     title: 'Team roles',
+    // @placeholder 3 included seats mirrors PLACEHOLDER_METER_LIMITS.space_team; more seats stay the
+    // ADR-799 per-seat add-on (never a wall).
     rungs: spaceRungs(
       'One operator seat.',
-      'Add teammates with roles: editor, moderator, and admin.',
+      'Add teammates with roles: editor, moderator, and admin. Three seats included, add more per seat.',
       'collective',
     ),
   },

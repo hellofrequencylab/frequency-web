@@ -4,8 +4,10 @@ import { useState, type KeyboardEvent } from 'react'
 import Link from 'next/link'
 import { Check, Gauge } from 'lucide-react'
 import {
+  ALLOWANCE_NUDGE,
   currentMeterStepIndex,
   allowanceReadout,
+  nearAllowanceLimit,
   type FeatureMeterLadder,
 } from '@/lib/pricing/feature-meters'
 
@@ -57,6 +59,9 @@ export function FeatureMeterRange({ ladder, currentTier, upgradeHref, live = fal
   const isCurrent = selected === currentIdx
   const isBelowCurrent = selected < currentIdx
   const readout = typeof usage === 'number' ? allowanceReadout(ladder.featureKey, currentTier, usage) : null
+  // The quiet gauge-as-upsell line (ADR-837): once real usage crosses USAGE_UPGRADE_THRESHOLD of the
+  // current tier's allowance, ONE plain sentence + a "See plans" link. Informational; nothing blocks.
+  const nearLimit = typeof usage === 'number' && nearAllowanceLimit(ladder.featureKey, currentTier, usage)
 
   function move(next: number) {
     const clamped = Math.max(0, Math.min(ladder.steps.length - 1, next))
@@ -95,6 +100,17 @@ export function FeatureMeterRange({ ladder, currentTier, upgradeHref, live = fal
         <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
           <Gauge className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
           <span>{readout}</span>
+        </p>
+      )}
+
+      {/* The gauge as upsell (ADR-837): the one shared nudge sentence + a See plans link, only once usage
+          crosses the threshold. No modal, no countdown, no urgency; it links, it never blocks. */}
+      {nearLimit && (
+        <p className="mt-1 text-sm text-muted">
+          {ALLOWANCE_NUDGE}{' '}
+          <Link href={upgradeHref} className="font-semibold text-primary-strong underline">
+            See plans
+          </Link>
         </p>
       )}
 

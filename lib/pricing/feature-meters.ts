@@ -50,6 +50,11 @@ export const PLACEHOLDER_ALLOWANCES = true
  *  inline meters read. */
 export const USAGE_UPGRADE_THRESHOLD = 0.8
 
+/** The ONE nudge sentence a meter surface shows once usage crosses USAGE_UPGRADE_THRESHOLD (ADR-837).
+ *  Exported so every surface prints the same line and none invents urgency. It always rides next to a
+ *  plain "See plans" link; it never blocks, never counts down, never warns. */
+export const ALLOWANCE_NUDGE = 'Nearly full. Move up a plan for a higher allowance.'
+
 /** The sentinel for an UNLIMITED allowance (a tier with no cap on this dimension). PURE data, so the
  *  ladder + `withinAllowance` treat `null` as "never blocked". */
 export type Allowance = number | null // a numeric cap, or null = unlimited
@@ -60,10 +65,50 @@ export type Allowance = number | null // a numeric cap, or null = unlimited
  *  (sends per month, Vera messages per day). Drives the "/mo", "/day", or bare-count label. */
 export type MeterPeriod = 'month' | 'day' | null
 
+// ── THE ONE GO-LIVE MAP OF QUANTITIES (ADR-837) ─────────────────────────────────────────────────────
+
+/** @placeholder THE single per-feature, per-tier allowance map — every metered quantity in the product
+ *  lives HERE and nowhere else, so the go-live edit is ONE map (the quantities sibling of the
+ *  PLACEHOLDER_*_PRICE_CENTS maps in feature-tiers.ts). Number = cap, null = unlimited; keys are tiers on
+ *  the feature's axis. EVERY value is a PREVIEW while PLACEHOLDER_ALLOWANCES is true: meters inform, and
+ *  `withinAllowance` never hard-blocks (ADR-782 beta-soft). The real limits are the owner's go-live call.
+ *
+ *  Sources per row (mirrored, not invented, wherever the codebase already carries a number):
+ *   - space_crm 250 free            — docs/BUSINESS-MODEL-PLAN §2 (also the console freeNote).
+ *   - space_email 300/mo free       — §2; Business 5,000 and Collective 25,000 are the §2 "5k → 25k
+ *                                     steps". Separately, lib/spaces/email.ts DAILY_SEND_CAP = 500/day is
+ *                                     a LIVE per-day throttle on every plan (deliverability, not pricing).
+ *   - space_qr 3 free / 500 Business — MIRRORS the LIVE cap in lib/qr/space-codes.ts PLAN_CODE_CAPS
+ *                                     (free 3, business 500). Collective unlimited is a placeholder; the
+ *                                     live map has no collective row yet (it falls to the free cap).
+ *   - space_automation 1,000 runs/mo on Collective — placeholder included volume (the feature itself is
+ *                                     the Collective on/off, FEATURE_GATES.space_automation).
+ *   - space_team 1 free             — MIRRORS lib/spaces/seats.ts BASE_SEAT_ALLOWANCE (the owner's seat,
+ *                                     ADR-799). Collective 3 = placeholder INCLUDED seats; more seats
+ *                                     stay the ADR-799 per-seat add-on, never blocked by this meter.
+ *   - space_vera 10/day free        — mirrors PRICING_DEFAULTS.vera_free_daily_cap (§2 "~10 msgs / day").
+ *   - bookings 15/mo, journey 10, memberships 10, tickets 50, pipelines 1 — the §2 free-cap table. */
+export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>> = {
+  space_crm: { free: 250, business: null, collective: null },
+  space_email: { free: 300, business: 5_000, collective: 25_000 },
+  space_bookings: { free: 15, business: null },
+  space_journey: { free: 10, business: null },
+  space_memberships: { free: 10, business: null },
+  space_tickets: { free: 50, business: null },
+  space_qr: { free: 3, business: 500, collective: null },
+  space_automation: { free: 0, collective: 1_000 },
+  space_team: { free: 1, collective: 3 },
+  space_multi_pipeline: { free: 1, collective: null },
+  space_vera: { free: 10, business: 200 },
+  space_crm_playbooks: { free: 0, business: 5_000 },
+  space_crm_resonance_ai: { free: 10, business: 2_000 },
+  vera_unlimited: { free: 10, crew: null },
+}
+
 // ── The per-feature raw meter config (dimension + per-tier allowance) ────────────────────────────────
 // One entry per METERABLE feature. `dimension` is the human noun the ladder heads with; `unit` is the
 // short plural for the readout; `period` shapes the label. `allowances` is the per-tier cap on the axis
-// ladder (free → paid); `null` = unlimited. THE NUMBERS ARE PLACEHOLDERS (owner decision for go-live).
+// ladder (free → paid), ALWAYS read from PLACEHOLDER_METER_LIMITS (one source of quantities, ADR-837).
 
 interface RawMeter {
   axis: GateAxis
@@ -75,27 +120,30 @@ interface RawMeter {
   unit: string
   /** The reset period, or null for a standing count. */
   period: MeterPeriod
-  /** @placeholder The per-tier allowance on the axis ladder. Number = cap, null = unlimited. THESE ARE
-   *  PREVIEW NUMBERS — the real limits are an owner decision (ADR-519). Keys must be tiers on the axis. */
+  /** @placeholder The per-tier allowance on the axis ladder — always a PLACEHOLDER_METER_LIMITS row, so
+   *  the quantities live in ONE map. Number = cap, null = unlimited. Keys must be tiers on the axis. */
   allowances: Record<string, Allowance>
+  /** OPTIONAL per-tier override for the plain allowance line, where the bare "Up to N" would misread
+   *  (e.g. Collective seats INCLUDE 3 and more are a per-seat add-on, never a wall · ADR-799). */
+  allowanceTextByTier?: Record<string, string>
 }
 
-/** @placeholder The per-feature usage-meter ladder. Every value in `allowances` is a PREVIEW number the
- *  owner sets for real before go-live (flagged in ADR-519). Dimensions are drawn only from the real
- *  feature set; a feature with no natural quantity is NOT here (see NON_METERED_FEATURES). */
+/** @placeholder The per-feature usage-meter ladder. Every quantity comes from PLACEHOLDER_METER_LIMITS
+ *  (the ONE go-live map, ADR-837). Dimensions are drawn only from the real feature set; a feature with no
+ *  natural quantity is NOT here (see NON_METERED_FEATURES). */
 const RAW_METERS: Record<string, RawMeter> = {
-  // ── Space functions (plan axis: free < business · ADR-552) ───────────────────────────────────────
+  // ── Space functions (plan axis: free < business < collective · ADR-552/ADR-811) ─────────────────
   // The FREE allowances are the docs/BUSINESS-MODEL-PLAN §2 numbers (usage becomes the paywall);
-  // Business is high/unlimited (null) except the two real cost dials (email sends, AI), which stay a
-  // high step. Everything is still dormant while `billing_live` is OFF (withinAllowance short-circuits).
+  // Business is high/unlimited (null) except the real cost dials (email sends, AI), which stay a high
+  // step. Everything is still dormant while `billing_live` is OFF (withinAllowance short-circuits).
   space_crm: {
     axis: 'plan',
     title: 'CRM',
     dimension: 'Contacts',
     unit: 'contacts',
     period: null,
-    // Free: 250 contacts (activation → scale lever, §2). Business: unlimited.
-    allowances: { free: 250, business: null },
+    // Free: 250 contacts (activation → scale lever, §2). Business and Collective: unlimited.
+    allowances: PLACEHOLDER_METER_LIMITS.space_crm!,
   },
   space_email: {
     axis: 'plan',
@@ -103,8 +151,9 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Email sends',
     unit: 'sends',
     period: 'month',
-    // Free: 300 sends / mo (§2). Business: a high step (email is a real cost dial, not unlimited · §2).
-    allowances: { free: 300, business: 25_000 },
+    // Free: 300 sends / mo (§2). Business 5,000 / Collective 25,000: the §2 "5k → 25k steps" (email is
+    // a real cost dial, never unlimited). The live 500/day throttle (email.ts) is separate.
+    allowances: PLACEHOLDER_METER_LIMITS.space_email!,
   },
   space_bookings: {
     axis: 'plan',
@@ -113,7 +162,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'bookings',
     period: 'month',
     // Free: 15 bookings / mo (activation lever, §2). Business: unlimited.
-    allowances: { free: 15, business: null },
+    allowances: PLACEHOLDER_METER_LIMITS.space_bookings!,
   },
   space_journey: {
     axis: 'plan',
@@ -122,7 +171,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'enrollees',
     period: null,
     // Free: 10 active enrollees (activation lever, §2). Business: unlimited.
-    allowances: { free: 10, business: null },
+    allowances: PLACEHOLDER_METER_LIMITS.space_journey!,
   },
   space_memberships: {
     axis: 'plan',
@@ -131,7 +180,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'members',
     period: null,
     // Free: 10 active members, one tier (scale lever, §2). Business: unlimited, multi-tier.
-    allowances: { free: 10, business: null },
+    allowances: PLACEHOLDER_METER_LIMITS.space_memberships!,
   },
   space_tickets: {
     axis: 'plan',
@@ -140,7 +189,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'tickets',
     period: null,
     // Free: 50 tickets across one event (scale lever, §2). Business: unlimited.
-    allowances: { free: 50, business: null },
+    allowances: PLACEHOLDER_METER_LIMITS.space_tickets!,
   },
   space_qr: {
     axis: 'plan',
@@ -148,18 +197,19 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'QR codes',
     unit: 'codes',
     period: null,
-    // Free: 3 QR codes (scale lever, §2). Business: unlimited.
-    allowances: { free: 3, business: null },
+    // Free 3 / Business 500 MIRROR the live cap (lib/qr/space-codes.ts PLAN_CODE_CAPS). Collective:
+    // unlimited (placeholder; the live cap map has no collective row yet).
+    allowances: PLACEHOLDER_METER_LIMITS.space_qr!,
   },
   space_automation: {
     axis: 'plan',
     title: 'Automations',
-    dimension: 'Active automations',
-    unit: 'automations',
-    period: null,
-    // Free: no automations (§2: "1 pipeline, no automations"). Collective floor (ADR-811, mirrors
-    // FEATURE_GATES.space_automation): unlimited.
-    allowances: { free: 0, collective: null },
+    dimension: 'Automation runs',
+    unit: 'runs',
+    period: 'month',
+    // Free: none (§2: "1 pipeline, no automations"). Collective floor (ADR-811, mirrors
+    // FEATURE_GATES.space_automation): the on/off turns ON with 1,000 included runs / mo (placeholder).
+    allowances: PLACEHOLDER_METER_LIMITS.space_automation!,
   },
   space_team: {
     axis: 'plan',
@@ -167,9 +217,13 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Team seats',
     unit: 'seats',
     period: null,
-    // Free: 1 seat (§2). Collective floor (ADR-811, mirrors FEATURE_GATES.space_team): unlimited,
-    // billed per seat (§2: +$9 / seat / mo).
-    allowances: { free: 1, collective: null },
+    // Free: 1 seat, the owner's (BASE_SEAT_ALLOWANCE, ADR-799 / §2). Collective: 3 seats INCLUDED
+    // (placeholder); more seats are the ADR-799 per-seat add-on, so the top rung is never a wall.
+    allowances: PLACEHOLDER_METER_LIMITS.space_team!,
+    allowanceTextByTier: {
+      free: '1 seat included (the owner)',
+      collective: '3 seats included, add more per seat',
+    },
   },
   space_multi_pipeline: {
     axis: 'plan',
@@ -179,7 +233,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     period: null,
     // Free: 1 pipeline (§2). Collective floor (ADR-811, mirrors FEATURE_GATES.space_multi_pipeline):
     // unlimited.
-    allowances: { free: 1, collective: null },
+    allowances: PLACEHOLDER_METER_LIMITS.space_multi_pipeline!,
   },
   // ── Space AI depth (plan axis; the Resonance Engine metered usage · ADR-387) ─────────────────────
   space_vera: {
@@ -189,7 +243,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'messages',
     period: 'day',
     // Free: ~10 Vera messages / day (§2; mirrors PRICING_DEFAULTS.vera_free_daily_cap). Business: more.
-    allowances: { free: 10, business: 200 },
+    allowances: PLACEHOLDER_METER_LIMITS.space_vera!,
   },
   space_crm_playbooks: {
     axis: 'plan',
@@ -198,7 +252,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'runs',
     period: 'month',
     // Free: no playbooks (§2: free AI is suggest-only, no autonomous playbooks). Business: a high step.
-    allowances: { free: 0, business: 5_000 },
+    allowances: PLACEHOLDER_METER_LIMITS.space_crm_playbooks!,
   },
   space_crm_resonance_ai: {
     axis: 'plan',
@@ -207,7 +261,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'matches',
     period: 'month',
     // Free: read-only wedge scoring; Business: the full Resonance Graph, a high step (AI is a cost dial).
-    allowances: { free: 10, business: 2_000 },
+    allowances: PLACEHOLDER_METER_LIMITS.space_crm_resonance_ai!,
   },
   // ── Personal membership (tier axis: free < crew) ─────────────────────────────────────────────────
   vera_unlimited: {
@@ -217,7 +271,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'messages',
     period: 'day',
     // @placeholder daily Vera message allowance — owner sets real numbers before go-live. Crew = no cap.
-    allowances: { free: 10, crew: null },
+    allowances: PLACEHOLDER_METER_LIMITS.vera_unlimited!,
   },
 }
 
@@ -260,11 +314,14 @@ function periodSuffix(period: MeterPeriod): string {
 }
 
 /** A plain, honest allowance label for one rung. "Up to 100 contacts", "Up to 5,000 sends/mo",
- *  "Unlimited contacts". No urgency, no dark pattern. PURE. */
+ *  "Unlimited contacts". A zero allowance reads "Not included on this plan" (never "Up to 0"); a cap of
+ *  exactly 1 drops the plural s ("Up to 1 pipeline"). No urgency, no dark pattern. PURE. */
 export function allowanceLabel(allowance: Allowance, unit: string, period: MeterPeriod): string {
   if (allowance == null) return `Unlimited ${unit}`
+  if (allowance === 0) return 'Not included on this plan'
+  const noun = allowance === 1 ? unit.replace(/s$/, '') : unit
   const n = allowance.toLocaleString('en-US')
-  return `Up to ${n} ${unit}${periodSuffix(period)}`
+  return `Up to ${n} ${noun}${periodSuffix(period)}`
 }
 
 // ── The built meter ladder (labels + placeholder prices + allowance labels filled in) ────────────────
@@ -320,7 +377,7 @@ function buildMeter(featureKey: string, raw: RawMeter): FeatureMeterLadder {
       price: tierPriceLabel(raw.axis, tier),
       priceCents: tierPriceCents(raw.axis, tier),
       allowance,
-      allowanceText: allowanceLabel(allowance, raw.unit, raw.period),
+      allowanceText: raw.allowanceTextByTier?.[tier] ?? allowanceLabel(allowance, raw.unit, raw.period),
       isFree: tierRankOnAxis(raw.axis, tier) === 0,
     }
   })
@@ -385,6 +442,16 @@ export function allowanceReadout(featureKey: string, tier: string, usage: number
   const n = used.toLocaleString('en-US')
   if (allowance == null) return `${n} ${ladder.unit} used (unlimited)`
   return `${n} of ${allowance.toLocaleString('en-US')} ${ladder.unit} used`
+}
+
+/** Has usage crossed the quiet-nudge threshold of the tier's allowance (>= USAGE_UPGRADE_THRESHOLD, so
+ *  80% by default)? THE one predicate every meter surface uses to decide when the ALLOWANCE_NUDGE line
+ *  and its "See plans" link appear (ADR-837). False for an unlimited tier, a non-metered feature, or a
+ *  zero allowance (nothing to fill). Display-only: it gates one sentence, never a feature. PURE. */
+export function nearAllowanceLimit(featureKey: string, tier: string, usage: number): boolean {
+  const allowance = allowanceAt(featureKey, tier)
+  if (allowance == null || allowance <= 0) return false
+  return Math.max(0, usage) / allowance >= USAGE_UPGRADE_THRESHOLD
 }
 
 // ── THE ENFORCEMENT SEAM (billing OFF ⇒ always true; nothing hard-blocks) ────────────────────────────
