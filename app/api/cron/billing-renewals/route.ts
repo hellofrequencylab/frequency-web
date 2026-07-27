@@ -20,6 +20,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail } from '@/lib/email'
+import { wrapEmailHtml, textToInnerHtml } from '@/lib/comms/email-template'
 import { agreementsDue, stampAgreementTouch, type ManualAgreement } from '@/lib/billing/manual-agreements'
 import { formatAgreementRate } from '@/lib/billing/manual-agreement-dates'
 import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
@@ -158,16 +159,18 @@ async function notifyAgreement(agreement: ManualAgreement, touch: Touch): Promis
           const billingUrl = space.slug ? `${appUrl}/spaces/${space.slug}/settings/billing` : appUrl
           const greeting = profile.display_name ? `Hi ${profile.display_name},` : 'Hi,'
           const paragraphs = copy.body
+          // The SHARED branded wrapper (header, footer, frequencylocal.com) every Frequency email
+          // rides, rather than a hand-rolled document: it owns the type and colour so this body
+          // carries no literal styling of its own, and the notice looks like the rest of our mail.
+          const inner = [greeting, ...paragraphs]
+            .map((p) => `<p>${textToInnerHtml(p)}</p>`)
+            .join('')
+          const cta = `<p><a href="${billingUrl}">View plan and billing</a></p>`
+          const why = `<p>${textToInnerHtml(`You are receiving this because you run ${spaceName} on Frequency.`)}</p>`
           await enqueueEmail({
             to: user.email,
             subject: copy.subject,
-            html: `
-              <p style="font-size:16px;line-height:1.6;color:#333;margin:0 0 16px;">${greeting}</p>
-              ${paragraphs.map((p) => `<p style="font-size:16px;line-height:1.6;color:#333;margin:0 0 16px;">${p}</p>`).join('')}
-              <a href="${billingUrl}" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700;">View plan and billing</a>
-              <hr style="border:none;border-top:1px solid #eee;margin:28px 0;">
-              <p style="font-size:13px;color:#999;">You are receiving this because you run ${spaceName} on Frequency.</p>
-            `,
+            html: wrapEmailHtml(`${inner}${cta}${why}`),
             text: `${greeting}\n\n${paragraphs.join('\n\n')}\n\nView plan and billing: ${billingUrl}\n\nYou are receiving this because you run ${spaceName} on Frequency.\n`,
           })
           delivered = true
