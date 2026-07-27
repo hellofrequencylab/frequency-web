@@ -87,12 +87,20 @@ export type MeterPeriod = 'month' | 'day' | null
  *                                     ADR-799). Collective 3 = placeholder INCLUDED seats; more seats
  *                                     stay the ADR-799 per-seat add-on, never blocked by this meter.
  *   - space_vera 10/day free        — mirrors PRICING_DEFAULTS.vera_free_daily_cap (§2 "~10 msgs / day").
- *   - bookings 15/mo, journey 10, memberships 10, tickets 50, pipelines 1 — the §2 free-cap table. */
+ *   - bookings 15/mo, journey 10, memberships 10, tickets 50, pipelines 1 — the §2 free-cap table.
+ *   - space_journey_publish 1 free  — MIRRORS the LIVE free-space publish cap (owner decision
+ *                                     2026-07-18; was FREE_PUBLISHED_JOURNEY_LIMIT). Business/
+ *                                     Collective unlimited mirrors the live paid-unlimited behavior.
+ *   - journey_publish 1 free        — the SAME live personal cap on the tier axis; publish-limits.ts
+ *                                     now reads FREE_PUBLISHED_JOURNEY_LIMIT from this row (ADR-838).
+ *                                     Crew 25 is a placeholder "higher cap" (was unlimited pre-838).
+ *   - journey_enrollees 10 free     — mirrors space_journey's free 10 on the personal axis (ADR-838). */
 export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>> = {
   space_crm: { free: 250, business: null, collective: null },
   space_email: { free: 300, business: 5_000, collective: 25_000 },
   space_bookings: { free: 15, business: null },
   space_journey: { free: 10, business: null },
+  space_journey_publish: { free: 1, business: null },
   space_memberships: { free: 10, business: null },
   space_tickets: { free: 50, business: null },
   space_qr: { free: 3, business: 500, collective: null },
@@ -103,6 +111,8 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   space_crm_playbooks: { free: 0, business: 5_000 },
   space_crm_resonance_ai: { free: 10, business: 2_000 },
   vera_unlimited: { free: 10, crew: null },
+  journey_publish: { free: 1, crew: 25 },
+  journey_enrollees: { free: 10, crew: null },
 }
 
 // ── The per-feature raw meter config (dimension + per-tier allowance) ────────────────────────────────
@@ -172,6 +182,16 @@ const RAW_METERS: Record<string, RawMeter> = {
     period: null,
     // Free: 10 active enrollees (activation lever, §2). Business: unlimited.
     allowances: PLACEHOLDER_METER_LIMITS.space_journey!,
+  },
+  space_journey_publish: {
+    axis: 'plan',
+    title: 'Published Journeys',
+    dimension: 'Published Journeys',
+    unit: 'journeys',
+    period: null,
+    // Free: 1 published Journey (the LIVE free-space cap, owner decision 2026-07-18). Business:
+    // unlimited (mirrors the live paid behavior). resolveJourneyAccess reads this row (ADR-838).
+    allowances: PLACEHOLDER_METER_LIMITS.space_journey_publish!,
   },
   space_memberships: {
     axis: 'plan',
@@ -272,6 +292,26 @@ const RAW_METERS: Record<string, RawMeter> = {
     period: 'day',
     // @placeholder daily Vera message allowance — owner sets real numbers before go-live. Crew = no cap.
     allowances: PLACEHOLDER_METER_LIMITS.vera_unlimited!,
+  },
+  journey_publish: {
+    axis: 'tier',
+    title: 'Published Journeys',
+    dimension: 'Published Journeys',
+    unit: 'journeys',
+    period: null,
+    // Free: 1 published Journey — the LIVE personal cap (publish-limits.ts FREE_PUBLISHED_JOURNEY_LIMIT
+    // now reads THIS row, ADR-838). Crew: 25 placeholder (a higher cap; was unlimited pre-838).
+    allowances: PLACEHOLDER_METER_LIMITS.journey_publish!,
+  },
+  journey_enrollees: {
+    axis: 'tier',
+    title: 'Journey enrollees',
+    dimension: 'Active enrollees',
+    unit: 'enrollees',
+    period: null,
+    // Free: 10 active enrollees across a personal Journey (mirrors space_journey's free 10). Crew:
+    // unlimited. resolveJourneyAccess reads this row for the personal enroll allotment (ADR-838).
+    allowances: PLACEHOLDER_METER_LIMITS.journey_enrollees!,
   },
 }
 
