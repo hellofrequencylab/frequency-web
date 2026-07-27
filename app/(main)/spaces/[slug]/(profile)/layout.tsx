@@ -34,6 +34,8 @@ import { JsonLd } from '@/components/json-ld'
 import { spaceSchema, breadcrumbSchema, parseOpeningHours, spaceOfferingsSchema } from '@/lib/jsonld'
 import { isServiceListed } from '@/lib/spaces/profile-data'
 import { getSpaceReviews } from '@/lib/spaces/content-data'
+import { foundingBadgeForSpace } from '@/lib/founding/status'
+import { FoundingBusinessBadge } from '@/lib/community-roles'
 
 // ── THE NETWORKED ENTITY PROFILE CHROME (ENTITY-SPACES-BUILD §A.4 / §B.1) ────────────────────────
 // This is the profile's ONE cohesive header for every public tab (Facebook/LinkedIn business-page
@@ -126,12 +128,17 @@ export default async function SpaceProfileChromeLayout({
   // `visibility` gates the JSON-LD (a private Space is noindex; fail-safe private). `presence` (which
   // live sections have real rows) rides the same round-trip and is request-cached, SHARED with the page
   // body's own content read, so the anchor menu costs no extra queries on the Home render.
-  const [caller, tagline, visibility, viewerFollows] = await Promise.all([
+  // The FOUNDING BUSINESS mark rides the same round-trip (one bounded read, no extra waterfall). It is
+  // PUBLIC by design: a Founding Business shows its badge to every visitor, signed in or not. Only the
+  // boolean crosses into the header; the row's locked rate is a private commercial term and stays here.
+  const [caller, tagline, visibility, viewerFollows, foundingBadge] = await Promise.all([
     getCallerProfile(),
     readTagline(space.id),
     getSpaceVisibility(slug),
     viewerProfileId ? isFollowing(space.id, viewerProfileId) : Promise.resolve(false),
+    foundingBadgeForSpace(space.id),
   ])
+  const isFoundingBusiness = foundingBadge?.isFounding === true
   const manage = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole ?? null)
   const canSeeAsOwner = manage.canManage || manage.staffViewing
   const isNetwork = visibility !== 'private'
@@ -423,6 +430,16 @@ export default async function SpaceProfileChromeLayout({
       >
         {heroHeading}
       </h1>
+      {/* The FOUNDING BUSINESS mark sits where the type pill used to (D-refine #8 retired that chip), so
+          the identity reads name -> founding mark -> tagline. It is the SAME gold chip a Founding Member
+          wears on their profile (lib/community-roles), so the two read as one system. It carries a status
+          only: the locked rate never reaches this component. Renders for every visitor; nothing here is
+          owner-gated. */}
+      {isFoundingBusiness && (
+        <div className="mt-1.5">
+          <FoundingBusinessBadge founding className="text-3xs leading-tight" />
+        </div>
+      )}
       {/* The tagline reads as part of the identity, not fine print. On the Hero cover it stays inline
           under the name only at WIDE widths (lg+); below lg (narrow desktop + mobile) it is relocated to
           its own full-width row below the buttons (taglineHiddenOnMobile), so the identity block stays a

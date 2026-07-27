@@ -105,3 +105,36 @@ export function FoundingBadge({
     </span>
   )
 }
+
+// The Space-side twin of FoundingBadge: the mark an active FOUNDING BUSINESS wears on its profile
+// header and its directory card. It lives HERE, next to the member chip, so the two can never drift
+// apart visually — same .rank-badge primitive, same gold rank token, same Gem glyph, same sizing prop.
+// A member founder reads "Founder"; a Space founder reads "Founding Business" (the locked cohort term,
+// NAMING/canon: Founding Members + Founding Businesses).
+//
+// PRICE STAYS PRIVATE: this component takes a BOOLEAN and nothing else. The locked monthly rate on the
+// founding_members row is a private commercial term between the operator and Frequency, so it is never
+// a prop here and never reaches the tooltip. The badge is a status, not a price tag.
+//
+// `founding` is caller-resolved (like FoundingBadge / CharterBadge / VerifiedBadge) — resolve it with
+// foundingBadgeForSpace (one Space) or foundingBadgesForSpaces (a grid, one query) from
+// lib/founding/status.ts. This component performs no data read of its own.
+export function FoundingBusinessBadge({
+  founding,
+  className,
+}: {
+  founding?: boolean | null
+  className?: string
+}) {
+  if (!founding) return null
+  return (
+    <span
+      className={`rank-badge inline-flex items-center gap-1 ${className ?? 'text-3xs leading-tight'}`}
+      style={rankBadgeStyle('gold')}
+      title="Founding Business. One of the first businesses to join Frequency."
+    >
+      <Gem className="h-3 w-3" aria-hidden />
+      Founding Business
+    </span>
+  )
+}
