@@ -1,15 +1,16 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
-import { getListingWithOwner, getListingClaimToken } from '@/lib/listings'
+import { getListingWithOwner, getListingClaimToken, listSavedListingIds } from '@/lib/listings'
 import { amenityLabel, getHousingDetail, propertyTypeLabel } from '@/lib/listings/housing'
 import { resolveListingClaim } from '@/lib/listing-seeder/claim'
 import { buttonClasses } from '@/components/ui/button'
 import { ReportButton } from '@/components/marketplace/report-button'
+import { SaveListingButton } from '@/components/marketplace/save-listing-button'
 import { ListingClaimLink } from '@/components/marketplace/listing-claim-link'
 import { ListingDetailTemplate } from '@/components/templates/listing-detail-template'
 import { listingDetailFromHousing } from '@/lib/listings-shared/detail-view'
-import { listingMetadata } from '@/lib/listings-shared/listing-seo'
+import { listingMetadata, type HousingSeoFacts } from '@/lib/listings-shared/listing-seo'
 import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { setListingStatusAction, deleteListingAction } from '../../actions'
 
@@ -87,8 +88,34 @@ export default async function HousingDetailPage({
     if (token) claimShareUrl = `/marketplace/housing/${id}?claim=${token}`
   }
 
-  const [detail, comments] = await Promise.all([getHousingDetail(id), getListingComments('listing', id)])
-  const view = listingDetailFromHousing(listing, detail, { isOwner })
+  const [detail, comments, savedIds] = await Promise.all([
+    getHousingDetail(id),
+    getListingComments('listing', id),
+    profileId ? listSavedListingIds(profileId, [id]) : Promise.resolve(new Set<string>()),
+  ])
+
+  // The housing-only structured facts for the Accommodation JSON-LD (rooms, size, pets,
+  // amenities, per-month rent). Coarse-location posture unchanged: never a street address.
+  const housingFacts: HousingSeoFacts | undefined = detail
+    ? {
+        bedrooms: detail.bedrooms,
+        bathrooms: detail.bathrooms,
+        sqft: detail.sqft,
+        petsAllowed: detail.petsOk,
+        amenityLabels: detail.amenities.map(amenityLabel),
+        rentCents: detail.rentCents,
+      }
+    : undefined
+
+  // Owners get the Edit action (hero overlay + Manage rail link, both rendered by the
+  // shared template off `action.kind === 'edit'`), pointing at the [id]/edit route.
+  const view = {
+    ...listingDetailFromHousing(listing, detail, { isOwner }),
+    ...(isOwner
+      ? { action: { kind: 'edit' as const, label: 'Edit listing', href: `/marketplace/housing/${id}/edit` } }
+      : {}),
+    housingFacts,
+  }
   const firstName = listing.owner?.displayName.split(' ')[0] ?? 'the host'
 
   // Structured facts, rendered as a compact spec grid when present.
@@ -124,7 +151,15 @@ export default async function HousingDetailPage({
             <p className="text-xs text-subtle">
               No payment happens in the app. Message {firstName} to arrange a viewing and the rest offline.
             </p>
-            <ReportButton targetKind="listing" targetId={listing.id} />
+            <div className="flex items-center gap-3">
+              <SaveListingButton
+                listingId={listing.id}
+                initialSaved={savedIds.has(listing.id)}
+                signedIn={!!profileId}
+                signInNext={`/marketplace/housing/${listing.id}`}
+              />
+              <ReportButton targetKind="listing" targetId={listing.id} />
+            </div>
           </div>
         ) : undefined
       }

@@ -12,6 +12,7 @@ import {
   upsertSeekerProfile,
 } from '@/lib/listings/housing'
 import type { HousingType, ListingStatus, RoomType } from '@/lib/listings/types'
+import { approxCoordsForArea } from '@/lib/marketplace/area-geocode'
 
 // Housing actions (connect-only, ADR-39Y/148). General goods live on /market
 // (lib/marketplace.ts); these write the shared `listings` base + the housing
@@ -71,12 +72,32 @@ export async function createHousingListingAction(formData: FormData): Promise<vo
   const leaseNum = Number(leaseRaw)
   const leaseMonths = leaseRaw !== null && leaseRaw !== '' && Number.isFinite(leaseNum) && leaseNum >= 0 ? Math.round(leaseNum) : null
 
+  const city = (formData.get('city') as string) || null
+  const neighborhood = (formData.get('neighborhood') as string) || null
+
+  // Best-effort area geocode (ADR-861): the housing form captures no coordinates, so
+  // without this every listing's geocell stays NULL and the match blend's geo term is
+  // permanently "unknown". Coarse neighborhood/city level only (never an address),
+  // memoized per area, and NEVER blocks the create — a miss just means no geo signal.
+  let latitude: number | null = null
+  let longitude: number | null = null
+  const area = [neighborhood, city].filter(Boolean).join(', ')
+  if (area) {
+    const coords = await approxCoordsForArea(area).catch(() => null)
+    if (coords) {
+      latitude = coords.lat
+      longitude = coords.lng
+    }
+  }
+
   const listing = await createListing(profileId, {
     vertical: 'housing',
     title,
     description: (formData.get('description') as string) || null,
-    city: (formData.get('city') as string) || null,
-    neighborhood: (formData.get('neighborhood') as string) || null,
+    city,
+    neighborhood,
+    latitude,
+    longitude,
     priceNote: rentDollars ? `$${rentDollars}/mo` : null,
     images: parseImages(formData.get('images')),
   })
