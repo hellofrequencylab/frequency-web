@@ -345,7 +345,13 @@ export default async function EventDetailPage({
 
   // An unclaimed event posted on an organizer's behalf: it has a poster credit, no
   // host, and was never claimed. Drives the "this is not my event / claim it" UI.
-  const isUnclaimedPosted = isPostedEvent && !extra?.claimed_at && !event.host
+  //
+  // A SPACE host counts as claimed (owner report, seeded-listing handoff): once an operator
+  // places a seeded listing under the organizer's real Space, that Space owns the event even
+  // though host_id is still null (nobody claimed it as a person). Without the spaceHost term
+  // the page kept the seeded posture — prominent "Posted by Frequency" with the Zap credit,
+  // plus the claim banner — under a real host's brand.
+  const isUnclaimedPosted = isPostedEvent && !extra?.claimed_at && !event.host && !spaceHost
 
   // Uploaded cover (A1) — a public storage path in the event-media bucket → public URL
   // (next/image allows the supabase public storage host). Null when the host never

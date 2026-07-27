@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { isEventCohost } from '@/lib/events/cohosts'
+import { viewerActsAsEventHost } from '@/lib/events/host-gate'
 import { loadEventCrmAccess, eventCrmLockedError } from '@/lib/events/crm-access'
 import {
   setRsvp,
@@ -54,18 +55,13 @@ async function isOnEvent(
   return !!rsvp && ['going', 'maybe', 'waitlist'].includes(rsvp.status ?? '')
 }
 
-// True when the caller is the event host (the only one who manages cohosts).
-async function isEventHost(
-  admin: ReturnType<typeof createAdminClient>,
-  eventId: string,
-  profileId: string,
-): Promise<boolean> {
-  const { data: ev } = await admin
-    .from('events')
-    .select('host_id')
-    .eq('id', eventId)
-    .maybeSingle()
-  return !!ev && ev.host_id === profileId
+// True when the caller holds the event HOST's authority: the host themself, or platform
+// staff (web_role admin/janitor). One shared seam (lib/events/host-gate, ADR-841) so every
+// host-only action below — cohost management, transfer, moderation, dispatch — admits an
+// operator too. Before this, a seeded listing with host_id = the staff poster (or NULL)
+// locked even a platform admin out of its own settings rail.
+async function isEventHost(eventId: string, profileId: string): Promise<boolean> {
+  return viewerActsAsEventHost(eventId, profileId)
 }
 
 function revalidateEvent(slug: string) {
@@ -178,7 +174,7 @@ export async function deleteEventPost(postId: string, slug: string) {
 
   // The author may remove their own comment; the event host moderates their page.
   const canDelete =
-    post.profile_id === profileId || (await isEventHost(admin, post.event_id, profileId))
+    post.profile_id === profileId || (await isEventHost(post.event_id, profileId))
   if (!canDelete) return
 
   await admin.from('event_posts').delete().eq('id', postId)
@@ -254,7 +250,7 @@ export async function deleteEventMedia(mediaId: string, slug: string) {
   if (!media) return
 
   const canDelete =
-    media.profile_id === profileId || (await isEventHost(admin, media.event_id, profileId))
+    media.profile_id === profileId || (await isEventHost(media.event_id, profileId))
   if (!canDelete) return
 
   await admin.from('event_media').delete().eq('id', mediaId)
@@ -279,7 +275,7 @@ export async function inviteCohost(
   if (!cleaned) return fail('Enter a name or @handle.')
 
   const admin = createAdminClient()
-  if (!(await isEventHost(admin, eventId, profileId))) {
+  if (!(await isEventHost(eventId, profileId))) {
     return fail('Only the host can invite cohosts.')
   }
 
@@ -466,7 +462,7 @@ export async function listEventCohostsForEditor(eventId: string): Promise<Editor
   if (!profileId) return []
 
   const admin = createAdminClient()
-  if (!(await isEventHost(admin, eventId, profileId))) return []
+  if (!(await isEventHost(eventId, profileId))) return []
 
   const { data: rows } = await admin
     .from('event_cohosts')
@@ -504,7 +500,7 @@ export async function removeCohost(eventId: string, slug: string, cohostProfileI
   if (!profileId) return
 
   const admin = createAdminClient()
-  if (!(await isEventHost(admin, eventId, profileId))) return
+  if (!(await isEventHost(eventId, profileId))) return
 
   await admin
     .from('event_cohosts')
@@ -516,8 +512,11 @@ export async function removeCohost(eventId: string, slug: string, cohostProfileI
 }
 
 // ── Transfer host ───────────────────────────────────────────────────────────────
-// The current host hands the event to another member. The outgoing host is kept on as
-// a cohost so they retain co-management and are never locked out of their own event.
+// The current host (or platform staff, ADR-841 — seeded listings especially need an operator
+// to hand an event to its real organizer) hands the event to another member. The OUTGOING
+// host, when there is one, is kept on as a cohost so they retain co-management and are never
+// locked out of their own event. A staff caller who was never the host does not gain a cohost
+// seat from transferring.
 export async function transferEventHost(
   eventId: string,
   slug: string,
@@ -530,9 +529,19 @@ export async function transferEventHost(
   if (!cleaned) return fail('Enter a name or @handle.')
 
   const admin = createAdminClient()
-  if (!(await isEventHost(admin, eventId, profileId))) {
+  if (!(await isEventHost(eventId, profileId))) {
     return fail('Only the current host can transfer the host role.')
   }
+
+  // The outgoing host (null on a hostless seeded listing) — read BEFORE the handover so
+  // they can be kept on as a cohost afterwards.
+  const { data: ev } = await admin
+    .from('events')
+    .select('host_id')
+    .eq('id', eventId)
+    .maybeSingle()
+  if (!ev) return fail('This event no longer exists.')
+  const outgoingHostId = ev.host_id ?? null
 
   const { data: target } = await admin
     .from('profiles')
@@ -540,7 +549,7 @@ export async function transferEventHost(
     .eq('handle', cleaned)
     .maybeSingle()
   if (!target) return fail('We could not find that member.')
-  if (target.id === profileId) return fail('You are already the host.')
+  if (target.id === outgoingHostId) return fail('They are already the host.')
 
   // Hand over the host seat.
   const { error: upErr } = await admin
@@ -552,14 +561,17 @@ export async function transferEventHost(
     return fail('Could not transfer the host role. Please try again.')
   }
 
-  // The new host no longer needs a cohost row; the outgoing host gains one so they keep
-  // co-management. A 23505 (already a cohost) on the insert is fine to ignore.
+  // The new host no longer needs a cohost row; the OUTGOING host (when one existed and is
+  // not the new host) gains one so they keep co-management. A 23505 (already a cohost) on
+  // the insert is fine to ignore.
   await admin.from('event_cohosts').delete().eq('event_id', eventId).eq('profile_id', target.id)
-  const { error: insErr } = await admin
-    .from('event_cohosts')
-    .insert({ event_id: eventId, profile_id: profileId, added_by: profileId })
-  if (insErr && insErr.code !== '23505') {
-    console.error('[transferEventHost cohost]', insErr.message)
+  if (outgoingHostId && outgoingHostId !== target.id) {
+    const { error: insErr } = await admin
+      .from('event_cohosts')
+      .insert({ event_id: eventId, profile_id: outgoingHostId, added_by: profileId })
+    if (insErr && insErr.code !== '23505') {
+      console.error('[transferEventHost cohost]', insErr.message)
+    }
   }
 
   revalidateEvent(slug)
@@ -614,7 +626,7 @@ export async function approveEventRsvp(eventId: string, slug: string, guestProfi
   if (!profileId) return
 
   const admin = createAdminClient()
-  if (!(await isEventHost(admin, eventId, profileId)) && !(await isEventCohost(eventId, profileId)))
+  if (!(await isEventHost(eventId, profileId)) && !(await isEventCohost(eventId, profileId)))
     return
 
   await approveRsvp(eventId, guestProfileId)
@@ -644,7 +656,7 @@ export async function postEventDispatch(
 
   const admin = createAdminClient()
   const isAuthor =
-    (await isEventHost(admin, eventId, profileId)) || (await isEventCohost(eventId, profileId))
+    (await isEventHost(eventId, profileId)) || (await isEventCohost(eventId, profileId))
   if (!isAuthor) return fail('Only the host or a cohost can post an update.')
 
   const body = (args.body ?? '').trim()

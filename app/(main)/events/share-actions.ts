@@ -36,8 +36,6 @@ const HOSTING_NEEDS_COLLECTIVE =
   'Collaborator hosting comes with the Collective plan. Upgrade the event’s home Space to bring Collaborators on.'
 const HOST_SPACE_NEEDS_COLLECTIVE =
   'Collaborator hosting comes with the Collective plan. The event’s host Space needs it before this event can take on Collaborators.'
-const MEMBER_HOSTED_NO_COLLABORATORS =
-  'A member-hosted event can have Cohosts, not Collaborators. Run this event under a Space to bring Collaborators on.'
 const MEMBER_HOSTED_NO_COLLABORATORS_FEATURE =
   'This event is hosted by a member, not a Space, so it cannot take on Collaborators.'
 import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
@@ -50,10 +48,12 @@ import {
   shouldAutoAcceptShare,
   shareWriteFailureMessage,
   collaboratorSpaceGateError,
+  memberHostedCollaboratorError,
   describeMissingShareTarget,
   type ShareRow,
   type EventShareView,
 } from '@/lib/events/event-share'
+import { getPlacementView } from '@/lib/events/placement'
 
 /**
  * The event's current shares for the host-side field. Gated on event.editSettings so only a host/cohost
@@ -216,9 +216,18 @@ export async function requestEventShare(
 
   // STRUCTURAL RULE (ADR-835): only an event with a HOME SPACE can take on Collaborators. A
   // member-hosted (platform) event has no host Space to do the Collaborator hosting, so it can only
-  // have Cohosts. This is structure, not a plan gate, so it holds during the beta too.
+  // have Cohosts. This is structure, not a plan gate, so it holds during the beta too. When a Space
+  // placement is already PENDING, the refusal names what is being waited on instead of restating a
+  // rule the host already followed (ADR-841).
   const homeSpaceId = await eventHomeSpaceId(eventId)
-  if (!homeSpaceId) return fail(MEMBER_HOSTED_NO_COLLABORATORS)
+  if (!homeSpaceId) {
+    const placement = await getPlacementView(eventId)
+    const pending =
+      placement.status === 'pending' && placement.target?.type === 'space'
+        ? { targetName: placement.target.name }
+        : null
+    return fail(memberHostedCollaboratorError(pending))
+  }
   if (homeSpaceId === spaceId) return fail('This event already lives in that space.')
 
   // Already on file for this pair: say where it stands instead of failing generically. (A concurrent
