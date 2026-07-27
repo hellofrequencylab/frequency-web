@@ -96,7 +96,9 @@ function JourneyActions({
       // Optionally adopt it for yourself too, so you can run it from On Air.
       if (adopt) await adoptJourney(planId)
       setJustPublished(true)
-      router.push(viewHref)
+      // Publishing is the start of the launch: the chokepoint returns where to land (ADR-840),
+      // falling back to the Journey page if a slug could not be resolved.
+      router.push(res.data.next ?? viewHref)
     })
   }
 

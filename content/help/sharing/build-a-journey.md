@@ -3,7 +3,7 @@ title: Build and share a Journey
 description: Turn what you know into a guided program. Let Vera draft a balanced first week, build it phase by phase, share it with the community, and let Vera check it for rank.
 category: sharing
 order: 3
-updated: 2026-06-16
+updated: 2026-07-27
 audience: member
 featureKeys: [journeys]
 status: published
@@ -15,12 +15,24 @@ how deep to go.
 
 ## Start one
 
-From **Journeys**, hit **New journey**. You land on the **editor**: one page laid out like the
-Journey itself, with a cover photo up top, a **title and subtitle you click to edit**, the curriculum
-in the middle, and all the settings in a panel on the right. **Nothing is saved until you name it**,
-so hitting the button never leaves a half-made draft behind. The moment you give it a name, the
-Journey is created with **three phases ready to fill**, and from then on everything **saves as you
-go** (there's no Save button).
+From **Journeys**, hit **New journey**. You start in the **guide**, which walks you through setting
+the Journey up one step at a time. **Nothing is saved until you name it**, so hitting the button never
+leaves a half-made draft behind. The moment you give it a name, the Journey is created with **three
+phases ready to fill**, and from then on everything **saves as you go** (there's no Save button).
+
+The guide has three steps once your Journey exists:
+
+- **Shape.** Pick a template or lay the phases down yourself.
+- **Schedule.** Set the dates it runs between, and how many days sit between phase unlocks.
+- **Ready.** A last look at what's set and what's still missing, then publish.
+
+**You can switch to the editor at any step** and switch back. The guide and the editor work on the
+same Journey, so nothing you do in one gets lost in the other. Use the guide when you want to be
+walked through it, and the editor when you know exactly what you want to change. The editor is one
+page laid out like the Journey itself: cover photo up top, a **title and subtitle you click to edit**,
+the curriculum in the middle, and the settings in a panel on the right.
+
+Leave partway through and you'll come back to the step you stopped on.
 
 ## Let Vera build it
 
@@ -61,7 +73,9 @@ Everything else sits in the **settings panel** on the right:
 - **Completion Gems.** What finishing the Journey earns.
 - **Certificate.** Turn on a printable certificate for people who finish.
 - **Phase drip.** How many days between Phase unlocks (weekly by default), so a Circle moving through
-  it together stays in step.
+  it together stays in step. Everyone taking the Journey gets a note when their next phase opens.
+- **Run between dates.** An optional start and end, so a Journey can open on a date and close on one.
+  Leave them empty and it simply stays open.
 - **Who can see it**, the advanced bits, and a **Danger zone** if you ever need to delete the Journey.
   Guides and Mentors can mark a Journey **official** and attach it to a Season here.
 
@@ -73,6 +87,23 @@ Your Journey starts **private** (just you). When you're ready:
 - **Community library.** Publish it so anyone can take it. Publishing, taking, and remixing are all
   **free**. When you publish, a Guide gives it a quick look before it lists in the library, so the
   shelf stays worth browsing. A Guide or Mentor's own Journey lists right away.
+
+Building drafts is free and unlimited, so you can work on as many as you like. A free account keeps
+**one Journey published** at a time. Paid plans and Business Spaces raise that.
+
+## Tell people it exists
+
+Publishing drops you on the **launch** page, because a Journey nobody hears about is a Journey nobody
+takes. It hands you a short series of messages already written, dated off your Journey's start:
+
+- **Announce**, the day you publish.
+- **Enrollment open**, once the announcement has landed.
+- **Last call**, a couple of days before you start.
+- **Kickoff**, on day one.
+
+Edit any of them, change when they send, and schedule them one at a time or all at once. You can also
+message the people already enrolled from the same page. Sending on a schedule needs a Space with a
+contact list behind it; without one you still get the drafts to copy and send yourself.
 
 ## Vera checks it for rank
 

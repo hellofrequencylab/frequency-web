@@ -355,6 +355,8 @@ export function railArchetypeFor(pathname: string): RailArchetype {
 // DEFAULT width. Pattern match (one segment deep, the edit surface only).
 const MINI_RAIL_PATTERNS: RegExp[] = [
   /^\/journeys\/[^/]+\/edit$/, // the Journey course builder (full-page editor)
+  /^\/journeys\/[^/]+\/guide$/, // the guided creation wizard, phases 3-5 (ADR-839) — same immersive treatment
+  /^\/journeys\/[^/]+\/launch$/, // the post-publish launch surface (ADR-840) — a focused review/schedule pass
 ]
 
 /** Whether a page's GLOBAL rail should START collapsed to a mini strip (an expand toggle at the

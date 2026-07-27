@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { getEventCapabilities, getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -105,15 +105,30 @@ async function notifyRequesterOfDecision(
   }
 }
 
-/** Set (or clear) the event column that makes it live under a target. */
+/** Set (or clear) the event column that makes it live under a target. Returns whether the
+ *  write LANDED — the Royal Temple bug: this update's error was dropped, so a failed write
+ *  reported "Lives here" while the row never changed. Callers must surface a false. */
 async function setEventPlacementColumn(
   admin: SupabaseClient,
   eventId: string,
   target: PlacementTarget,
-): Promise<void> {
+): Promise<boolean> {
   const patch = target.type === 'space' ? { space_id: target.id } : { scope_circle_id: target.id }
-  await admin.from('events').update(patch).eq('id', eventId)
+  const { error } = await admin.from('events').update(patch).eq('id', eventId)
+  if (error) {
+    console.error('[event-placement] events update failed', {
+      code: error.code,
+      message: error.message,
+      eventId,
+      target,
+    })
+    return false
+  }
+  return true
 }
+
+const PLACEMENT_WRITE_FAILED =
+  'Could not place this event there. Please try again, and tell an operator if it keeps failing.'
 
 /**
  * Read the event's current placement for the editor field. Gated on event.editSettings so only
@@ -149,9 +164,17 @@ export async function requestEventPlacement(
   const { data: ev } = await admin.from('events').select('title').eq('id', eventId).maybeSingle()
   const eventTitle = (ev as { title: string | null } | null)?.title ?? 'this event'
 
-  // Steward-of-target shortcut: no one to ask, so place it now.
+  // Steward-of-target shortcut: no one to ask, so place it now. viewerIsSteward already
+  // admits PLATFORM STAFF (getSpaceCapabilities grants staff full operator authority on any
+  // Space; the circle capability resolver does the same), so an operator placing a seeded
+  // event goes live immediately instead of parking a pending ask nobody can see (ADR-841).
   if (await viewerIsSteward(target)) {
-    await admin.from('event_placement_requests').insert({
+    // The LIVE column is the placement; write it FIRST and surface a failure honestly. The
+    // request row is the audit trail — a failure there logs but never fakes a dead placement.
+    if (!(await setEventPlacementColumn(admin, eventId, target))) {
+      return fail(PLACEMENT_WRITE_FAILED)
+    }
+    const { error: auditErr } = await admin.from('event_placement_requests').insert({
       event_id: eventId,
       target_type: target.type,
       space_id: target.type === 'space' ? target.id : null,
@@ -161,7 +184,9 @@ export async function requestEventPlacement(
       responded_at: new Date().toISOString(),
       responded_by: actorId,
     })
-    await setEventPlacementColumn(admin, eventId, target)
+    if (auditErr) {
+      console.error('[event-placement] audit insert failed', { code: auditErr.code, message: auditErr.message, eventId })
+    }
     revalidatePath(`/events/${slug}`)
     revalidatePath('/events')
     return ok({ status: 'live', target: ref, requestId: null })
@@ -243,7 +268,9 @@ export async function approveEventPlacement(requestId: string): Promise<ActionRe
   const actorId = await getMyProfileId()
   const ref = await resolvePlacementTarget(target)
 
-  await setEventPlacementColumn(admin, req.event_id, target)
+  if (!(await setEventPlacementColumn(admin, req.event_id, target))) {
+    return fail(PLACEMENT_WRITE_FAILED)
+  }
   await admin
     .from('event_placement_requests')
     .update({ status: 'approved', responded_at: new Date().toISOString(), responded_by: actorId })
@@ -319,7 +346,14 @@ export async function clearEventPlacement(
 
   // Clearing where it lives also clears the HOSTING entity (ADR-819): an event that no longer
   // lives under any space cannot stay billed/displayed as that space's event.
-  await admin.from('events').update({ space_id: null, scope_circle_id: null, host_space_id: null }).eq('id', eventId)
+  const { error: clearErr } = await admin
+    .from('events')
+    .update({ space_id: null, scope_circle_id: null, host_space_id: null })
+    .eq('id', eventId)
+  if (clearErr) {
+    console.error('[clearEventPlacement]', { code: clearErr.code, message: clearErr.message, eventId })
+    return fail('Could not remove this event from where it lives. Please try again.')
+  }
   await admin
     .from('event_placement_requests')
     .update({ status: 'declined', responded_at: new Date().toISOString(), responded_by: actorId })
@@ -374,20 +408,36 @@ export async function setEventHostEntity(
   const admin = untyped()
 
   if (host.kind === 'profile') {
-    await admin.from('events').update({ host_space_id: null }).eq('id', eventId)
+    const { error } = await admin.from('events').update({ host_space_id: null }).eq('id', eventId)
+    if (error) {
+      console.error('[setEventHostEntity clear]', { code: error.code, message: error.message, eventId })
+      return fail('Could not change the host. Please try again.')
+    }
     revalidatePath(`/events/${slug}`)
     revalidatePath('/events')
     return ok({ hostSpace: null })
   }
 
+  // Space authority: someone who helps run the space (editor+, the same set that creates its
+  // events), OR platform staff (ADR-841 — an operator hands a seeded event to its real
+  // organizer's Space without joining that Space first).
   const creators = await listSpaceEventCreatorIds(host.spaceId)
-  if (!creators.includes(actorId)) {
+  if (!creators.includes(actorId) && !(await isPlatformStaff())) {
     return fail('Only someone who helps run that space can make it the host.')
   }
   const ref = await resolvePlacementTarget({ type: 'space', id: host.spaceId })
   if (!ref) return fail('That space could not be found.')
 
-  await admin.from('events').update({ host_space_id: host.spaceId, space_id: host.spaceId }).eq('id', eventId)
+  // Surface a failed write (the Royal Temple bug: this error was dropped, so the UI read
+  // success while host_space_id never changed).
+  const { error } = await admin
+    .from('events')
+    .update({ host_space_id: host.spaceId, space_id: host.spaceId })
+    .eq('id', eventId)
+  if (error) {
+    console.error('[setEventHostEntity]', { code: error.code, message: error.message, eventId, spaceId: host.spaceId })
+    return fail('Could not make that space the host. Please try again.')
+  }
 
   revalidatePath(`/events/${slug}`)
   revalidatePath('/events')

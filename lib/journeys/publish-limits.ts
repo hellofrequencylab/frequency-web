@@ -11,8 +11,12 @@
 // lib/journeys/rewards.ts, so it is trivially unit-testable. The IO (counting an owner's published
 // Journeys, resolving the paid signal) lives at the call sites; this only decides yes/no from counts.
 
-/** How many PUBLISHED Journeys a FREE owner may have. Paid owners are unlimited. */
-export const FREE_PUBLISHED_JOURNEY_LIMIT = 1
+import { PLACEHOLDER_METER_LIMITS } from '@/lib/pricing/feature-meters'
+
+/** How many PUBLISHED Journeys a FREE owner may have. Reads the ONE quantities map
+ *  (PLACEHOLDER_METER_LIMITS.journey_publish.free, ADR-837/ADR-838) so the cap can never drift from
+ *  the pricing ladder; the tier-aware caps live on resolveJourneyAccess (lib/journeys/journey-access.ts). */
+export const FREE_PUBLISHED_JOURNEY_LIMIT: number = PLACEHOLDER_METER_LIMITS.journey_publish?.free ?? 1
 
 /** The Journey visibility values (mirrors journey_plans.visibility CHECK). `private` = a draft;
  *  `unlisted` = published, reachable by the Space / a direct link but not in public discovery;
@@ -48,3 +52,8 @@ export const FREE_JOURNEY_CAP_MESSAGE =
 /** Upsell copy for the library-listing gate (a free owner trying to go public). */
 export const LIBRARY_LISTING_PAID_MESSAGE =
   'Listing a Journey in the public library is a paid feature. Upgrade to reach the whole community.'
+
+/** Copy for a PAID owner who hits their (higher, finite) publish allotment (ADR-838). Plain and
+ *  honest per CONTENT-VOICE: no em dashes, no urgency, a real way forward. */
+export const JOURNEY_PUBLISH_CAP_MESSAGE =
+  'You have published every Journey your plan includes. Unpublish one, or move up a plan for more.'

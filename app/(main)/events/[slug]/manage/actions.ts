@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { isEventCohost } from '@/lib/events/cohosts'
+import { viewerActsAsEventHost } from '@/lib/events/host-gate'
 import { loadEventCrmAccess } from '@/lib/events/crm-access'
 import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
 import {
@@ -37,22 +38,16 @@ const MAX_PROMPT = 200
 const MAX_OPTION = 80
 const MAX_OPTIONS = 20
 
-/** Is the caller allowed to manage this event (host or cohost)? Mirrors the page
- *  gate so a direct POST can't bypass it. Returns the caller's profile id when
+/** Is the caller allowed to manage this event (host, platform staff, or cohost)? Mirrors
+ *  the page gate so a direct POST can't bypass it. Host authority resolves through the
+ *  shared host-gate seam (lib/events/host-gate, ADR-841), so an operator passes on any
+ *  event, including a hostless seeded listing. Returns the caller's profile id when
  *  authorized, else null. */
 async function authorizeManager(eventId: string): Promise<string | null> {
   const profileId = await getMyProfileId()
   if (!profileId) return null
 
-  const admin = createAdminClient()
-  const { data: ev } = await admin
-    .from('events')
-    .select('host_id')
-    .eq('id', eventId)
-    .maybeSingle()
-  if (!ev) return null
-
-  if (ev.host_id === profileId) return profileId
+  if (await viewerActsAsEventHost(eventId, profileId)) return profileId
   if (await isEventCohost(eventId, profileId)) return profileId
   return null
 }

@@ -361,8 +361,11 @@ function CurrentPlacement({
               <Check className="h-3 w-3 text-success" /> Lives here
             </>
           ) : (
+            // A pending ask names who it waits on, so a placement that needs approval never
+            // reads as one that silently failed.
             <>
-              <Clock className="h-3 w-3" /> Pending approval
+              <Clock className="h-3 w-3" /> Waiting on {target.name}&rsquo;s{' '}
+              {target.type === 'space' ? 'steward' : 'host'} to approve
             </>
           )}
         </p>

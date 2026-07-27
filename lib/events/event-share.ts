@@ -144,6 +144,23 @@ export function shareWriteFailureMessage(code?: string | null): string {
   }
 }
 
+/**
+ * The member-facing refusal when an event with NO home Space tries to take on a Collaborator
+ * (the ADR-835 structural rule: a member-hosted / platform event has Cohosts, not Collaborators).
+ * PENDING-AWARE: when a Space placement is already asked-for but not yet approved, the line says
+ * exactly what is being waited on instead of re-explaining the rule the host already followed
+ * (the Royal Temple confusion: "run it under a Space" reads as a dead end when you just did).
+ * Pure; enforced in requestEventShare.
+ */
+export function memberHostedCollaboratorError(
+  pendingPlacement: { targetName: string } | null,
+): string {
+  if (pendingPlacement) {
+    return `${pendingPlacement.targetName} hasn't approved hosting this event yet. Collaborators unlock once that placement is approved.`
+  }
+  return 'A member-hosted event can have Cohosts, not Collaborators. Run this event under a Space to bring Collaborators on.'
+}
+
 // ── The Collaborator gate: which Spaces an event may be shared with (ADR-834 + ADR-835) ─────────────
 
 /**
