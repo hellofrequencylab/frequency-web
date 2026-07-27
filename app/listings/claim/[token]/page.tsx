@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MapPin, Tag, Zap } from 'lucide-react'
@@ -10,6 +11,14 @@ import { getHousingDetail, propertyTypeLabel } from '@/lib/listings/housing'
 import { ClaimButton } from './claim-button'
 
 export const dynamic = 'force-dynamic'
+
+// Never index a claim landing: it previews a listing that already has its own canonical
+// public page, and the URL carries a one-time claim token. Same posture as the (capture)
+// funnel pages — a per-page noindex plus a robots.ts Disallow.
+export const metadata: Metadata = {
+  title: 'Claim this listing',
+  robots: { index: false },
+}
 
 // The claim landing a poster reaches from the seeder outreach message — PUBLIC (outside the
 // (main) shell, like /events/claim/[token]) so a signed-out poster can see what they are

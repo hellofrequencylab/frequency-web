@@ -73,6 +73,7 @@ import {
   AREA_PREFIX,
 } from '@/lib/marketplace/visibility'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
+import { isAnonPublicDetail } from '@/lib/nav/public-detail-routes'
 import { viewerRoleFor } from '@/components/layout/menu-role'
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
@@ -160,7 +161,8 @@ export default async function MainLayout({
   // with onboarding incomplete hit the induction redirect even on a public page. The public surface
   // must never redirect to onboarding; it just shows the page with a Sign in / Join header.
   const currentPath = (await headers()).get('x-pathname')
-  const isPublicView = isAnonSpaceProfile(currentPath) || isAnonPublicEvent(currentPath)
+  const isPublicView =
+    isAnonSpaceProfile(currentPath) || isAnonPublicEvent(currentPath) || isAnonPublicDetail(currentPath)
   const publicChrome = async () => {
     const [headerMenu, footerMenu, menuTimings] = await Promise.all([
       getMenu('header'),

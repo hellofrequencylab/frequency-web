@@ -54,6 +54,11 @@ export interface OpenConversationInput {
    *  convention too (dual-write) until the read side migrates. */
   scopeKind?: InteractionScopeRef['kind'] | null
   scopeId?: string | null
+  /** Skip the reuse lookup and always INSERT a fresh thread. For callers whose "counterparty" is an
+   *  unauthenticated claim rather than a proven identity — the anonymous live chat, where the visitor
+   *  types an email nobody verified. Reusing a thread there would hand whoever typed the address a
+   *  capability token for someone else's existing conversation (see lib/comms/support-chat.ts). */
+  forceNew?: boolean
 }
 
 /** Find the open conversation for (kind, counterpart, owner), else create one. FAIL-SAFE: null on error. */
@@ -79,18 +84,24 @@ export async function openOrGetConversation(
     // The SCOPE is part of the thread key too (ADR-827): a scoped open only reuses a thread in the
     // SAME scope, and an unscoped open never grabs a scoped thread — an event thread can never absorb
     // an unrelated send to the same address.
-    let q = admin()
-      .from('comms_conversations')
-      .select('id, ref')
-      .eq('kind', input.kind)
-      .eq('external_email', email)
-      .eq('owner_profile_id', input.ownerProfileId)
-      .neq('status', 'closed')
-    q = input.spaceId ? q.eq('space_id', input.spaceId) : q.is('space_id', null)
-    q = scope ? q.eq('scope_kind', scope.kind).eq('scope_id', scope.id) : q.is('scope_kind', null)
-    const existing = await q.order('last_activity_at', { ascending: false }).limit(1).maybeSingle()
-    if (existing?.data) {
-      return { id: String(existing.data.id), ref: String(existing.data.ref), created: false }
+    if (!input.forceNew) {
+      let q = admin()
+        .from('comms_conversations')
+        .select('id, ref')
+        .eq('kind', input.kind)
+        .eq('external_email', email)
+        .eq('owner_profile_id', input.ownerProfileId)
+        .neq('status', 'closed')
+      q = input.spaceId ? q.eq('space_id', input.spaceId) : q.is('space_id', null)
+      q = scope ? q.eq('scope_kind', scope.kind).eq('scope_id', scope.id) : q.is('scope_kind', null)
+      // A MEMBER-bound thread belongs to that member, so the member is part of the thread key. Without
+      // this, the key is just (kind, email, owner) and a caller who supplies someone else's address
+      // adopts their thread — the email is a claim, the profile id is the proven identity.
+      if (input.memberProfileId) q = q.eq('member_profile_id', input.memberProfileId)
+      const existing = await q.order('last_activity_at', { ascending: false }).limit(1).maybeSingle()
+      if (existing?.data) {
+        return { id: String(existing.data.id), ref: String(existing.data.ref), created: false }
+      }
     }
 
     const ins = await admin()

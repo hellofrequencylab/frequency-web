@@ -23,12 +23,15 @@ async function caller(): Promise<{ id: string; email: string | null } | string> 
   const admin = createAdminClient()
   const { data } = await admin
     .from('profiles')
-    .select('id, is_demo, email')
+    // NOT `email` — there is no profiles.email column, and selecting it makes PostgREST fail the
+    // whole request (42703), so `data` came back null and every signed-in member was told
+    // "Only members can apply." The address is the session user's; auth.users owns it.
+    .select('id, is_demo')
     .eq('auth_user_id', user.id)
     .maybeSingle()
-  const me = data as { id: string; is_demo?: boolean; email?: string | null } | null
+  const me = data as { id: string; is_demo?: boolean } | null
   if (!me || me.is_demo) return 'Only members can apply.'
-  return { id: me.id, email: me.email ?? user.email ?? null }
+  return { id: me.id, email: user.email ?? null }
 }
 
 export interface ApplyInput {

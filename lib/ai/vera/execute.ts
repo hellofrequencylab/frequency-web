@@ -12,6 +12,7 @@ import { processGamificationEvent, recordStreakActivity } from '@/lib/achievemen
 import { awardGems } from '@/lib/gems'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { resolveSendGate, type SendCategory } from '@/lib/comms/send-gate'
+import { autonomousSend } from '@/lib/ai/vera/autonomous-send'
 import { saveStreakWithFreeze } from '@/lib/practice-streak'
 import { bothPartiesOptedIn } from '@/lib/resonance/matches'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
@@ -199,7 +200,7 @@ async function saveStreak(operatorId: string, args: Record<string, unknown>): Pr
 async function tagContact(operatorId: string, args: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
   const contactId = String(args.contactId ?? '').trim()
   if (!UUID_RE.test(contactId)) return { ok: false, error: 'That contact id does not look right.' }
-  const tag = String(args.tag ?? '').replace(/[ -]/g, '').trim().slice(0, 60)
+  const tag = String(args.tag ?? '').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 60)
   if (!tag) return { ok: false, error: 'There is no tag to add.' }
   const playbookId = playbookIdArg(args)
 
@@ -235,7 +236,7 @@ async function tagContact(operatorId: string, args: Record<string, unknown>): Pr
 async function moveContactStage(operatorId: string, args: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
   const contactId = String(args.contactId ?? '').trim()
   if (!UUID_RE.test(contactId)) return { ok: false, error: 'That contact id does not look right.' }
-  const stage = String(args.stage ?? '').replace(/[ -]/g, '').trim().slice(0, 40)
+  const stage = String(args.stage ?? '').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 40)
   if (!stage) return { ok: false, error: 'There is no stage to move to.' }
   const playbookId = playbookIdArg(args)
 
@@ -323,8 +324,8 @@ async function sendPlaybookEmail(
   if (!UUID_RE.test(contactId)) return { ok: false, error: 'That contact id does not look right.' }
   const rawCategory = String(args.category ?? '').trim()
   const category: SendCategory = rawCategory === 'marketing' ? 'marketing' : 'lifecycle'
-  const subject = String(args.subject ?? '').replace(/[ -]/g, '').trim().slice(0, 200)
-  const body = String(args.body ?? '').replace(/[ --]/g, '').trim().slice(0, 5000)
+  const subject = String(args.subject ?? '').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 200)
+  const body = String(args.body ?? '').replace(/[\x00-\x08\x0b-\x1f\x7f]/g, '').trim().slice(0, 5000)
   if (!subject || !body) return { ok: false, error: 'The email needs a subject and a body.' }
   const playbookId = playbookIdArg(args)
 
@@ -336,8 +337,8 @@ async function sendPlaybookEmail(
   const gate = await resolveSendGate(subjectProfileId, 'email', category, email ? { email } : {})
   if (!gate.allowed) return { ok: false, error: 'This member has not opted in, so nothing was sent.' }
 
-  // Real send ONLY with an explicit human approval AND a deliverable address. Otherwise: draft.
-  const willSend = approvedSend === true && !!email
+  // Real send with an explicit human approval AND a deliverable address.
+  let willSend = approvedSend === true && !!email
   if (willSend) {
     const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: OUTBOUND_BASE_URL, profileId: subjectProfileId, category: 'lifecycle' })
     await enqueueEmail({
@@ -347,6 +348,33 @@ async function sendPlaybookEmail(
       text: `${body}\n\nUnsubscribe or manage emails: ${unsubscribeUrl}`,
       headers: listUnsubscribeHeaders(unsubscribeUrl),
     })
+  } else if (!approvedSend) {
+    // THE GRADUATION SEAM (ADR-626). Without a human approval this used to draft, unconditionally,
+    // which is why the /admin/vera-ai autonomy console was a control that could never do anything:
+    // its master switch, per-category toggles and rate caps had no code path reading them.
+    //
+    // `autonomousSend` owns both gates (circuit breaker, then send-gate) and can only enqueue when
+    // BOTH allow. Everything else falls back to propose. The master switch defaults OFF, so while
+    // autonomy is disabled this returns 'proposed' and the behaviour is byte-for-byte what it was:
+    // a draft. Turning the switch on is what changes anything.
+    //
+    // `propose` is injected as a no-op because THIS function already records the human-approval
+    // fallback below (the interaction row with status 'drafted'); the default propose would write a
+    // second, duplicate proposal.
+    const outcome = await autonomousSend(
+      {
+        category: 'playbook_email',
+        recipientProfileId: subjectProfileId,
+        recipientEmail: email,
+        sendCategory: category,
+        subject,
+        body,
+        rationale: 'Vera playbook send',
+        metadata: { contactId, playbookId, action: 'send_playbook_email' },
+      },
+      { propose: async () => {} },
+    )
+    willSend = outcome.status === 'sent'
   }
 
   // Record the outbound touch: `sent` when the human approved and it went to the outbox, else `drafted`.
@@ -385,8 +413,8 @@ async function sendIntroEmail(
   if (!UUID_RE.test(otherProfileId)) return { ok: false, error: 'That other member id does not look right.' }
   if (!UUID_RE.test(contactId)) return { ok: false, error: 'That contact id does not look right.' }
   if (subjectProfileId === otherProfileId) return { ok: false, error: 'An intro needs two different people.' }
-  const subject = String(args.subject ?? '').replace(/[ -]/g, '').trim().slice(0, 200)
-  const body = String(args.body ?? '').replace(/[ -]/g, '').trim().slice(0, 5000)
+  const subject = String(args.subject ?? '').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 200)
+  const body = String(args.body ?? '').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 5000)
   if (!subject || !body) return { ok: false, error: 'The intro needs a subject and a body.' }
 
   // GATE 1 (the consent-first heart of the Resonance Graph): nothing sends until BOTH tap yes.
@@ -400,9 +428,8 @@ async function sendIntroEmail(
   const gate = await resolveSendGate(subjectProfileId, 'email', 'lifecycle' as SendCategory, email ? { email } : {})
   if (!gate.allowed) return { ok: false, error: 'This member has not opted in to email, so nothing was sent.' }
 
-  // Real send ONLY with an explicit human approval AND a deliverable address (both gates already
-  // passed above). Otherwise: draft. Never autonomous.
-  const willSend = approvedSend === true && !!email
+  // Real send with an explicit human approval AND a deliverable address (both gates already passed).
+  let willSend = approvedSend === true && !!email
   if (willSend) {
     const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: OUTBOUND_BASE_URL, profileId: subjectProfileId, category: 'lifecycle' })
     await enqueueEmail({
@@ -412,6 +439,25 @@ async function sendIntroEmail(
       text: `${body}\n\nUnsubscribe or manage emails: ${unsubscribeUrl}`,
       headers: listUnsubscribeHeaders(unsubscribeUrl),
     })
+  } else if (!approvedSend) {
+    // The graduation seam (ADR-626), same shape as the playbook path above. The two-party opt-in
+    // gate above still had to pass to get here, and autonomousSend then runs the breaker + the
+    // send-gate again; it can only enqueue when every one of them allows. Master switch OFF (the
+    // default) means this proposes, so today's behaviour is unchanged.
+    const outcome = await autonomousSend(
+      {
+        category: 'intro_email',
+        recipientProfileId: subjectProfileId,
+        recipientEmail: email,
+        sendCategory: 'lifecycle' as SendCategory,
+        subject,
+        body,
+        rationale: 'Vera resonance intro',
+        metadata: { contactId, otherProfileId, action: 'send_intro_email' },
+      },
+      { propose: async () => {} },
+    )
+    willSend = outcome.status === 'sent'
   }
 
   // Record the outbound touch: `sent` when the human approved and both gates passed, else `drafted`.

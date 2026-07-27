@@ -6,6 +6,20 @@ clients via the `Database` generic. See [ARCHITECTURE.md](ARCHITECTURE.md) for t
 RLS / admin-client authorization model and [GLOSSARY.md](GLOSSARY.md) for what
 these tables mean.
 
+## Retired relations (verified dropped, 2026-07-27)
+
+The inventory below is historical in places: these tables are named in the domain sections
+that follow but **no longer exist**. Verified against the live database, not inferred from
+the migrations. Read any mention of them further down as a record of what the mechanic used
+to be, never as a description of the current schema.
+
+| Relation | Dropped by |
+|---|---|
+| `circle_current_transactions`, `circle_awards`, `witnessed_grants`, `practice_streaks` | `20260702000001_rewards_v3_teardown.sql` — the rewards v3 teardown retired every circle-collaborative mechanic (Circle Current, Co-op Pulse, Co-op Synchrony, Carrier Wave) plus the peer-award and practice-shelf layers |
+| `circle_topics`, `menu_config`, `listing_saves`, `library_renditions`, `library_usages`, `conversation_room_migration` | `20260925000000_retire_orphaned_tables_and_functions.sql` — the meta-scan orphan retirement (each verified to have 0 code references, 0 incoming FKs, 0 triggers, 0 policy deps before dropping) |
+
+`area_permissions` and `profile_personas` are still live and are described accurately below.
+
 ## Table inventory by domain
 
 **Identity & social**

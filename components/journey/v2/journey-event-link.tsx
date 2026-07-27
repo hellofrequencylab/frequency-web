@@ -20,7 +20,12 @@ function formatEventDate(iso: string | null): string {
   if (!iso) return ''
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+  // UTC, and a fixed locale. An event's starts_at stores its own local WALL-CLOCK in UTC parts
+  // (lib/time/zone: "the stored UTC parts"), so reading it in the browser's zone shifts the date —
+  // a viewer west of UTC saw an evening event land on the previous day. `undefined` locale also let
+  // the chip disagree with every other event surface on the same page. This matches the convention
+  // the other 22 event-display sites use, including the canonical /events/<slug> page.
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
 export function JourneyEventLink({

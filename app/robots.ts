@@ -49,6 +49,14 @@ const DISALLOW = [
   "/unlock",
   "/exchange",
   "/rsvp",
+  // One-time claim landings (operator outreach → the real owner claims their seeded
+  // Space/listing/event). Same shape as the capture funnel above: token-gated, single-use,
+  // and the Space one renders the SAME block body as the canonical /spaces/<slug> profile,
+  // so an indexed copy would cannibalize it exactly like the /spaces/directory twin would.
+  // The pages that render also carry their own noindex; /events/claim only ever redirects.
+  "/spaces/claim/",
+  "/listings/claim/",
+  "/events/claim/",
 ];
 
 // AI answer engines and their crawlers. We name each one explicitly (allow "/",

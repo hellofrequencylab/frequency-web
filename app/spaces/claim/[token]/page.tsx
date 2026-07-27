@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound, redirect } from 'next/navigation'
@@ -21,6 +22,17 @@ import { SpaceProfileModules } from '@/components/widgets/space-profile/space-pr
 import { ClaimSpaceButton } from './claim-button'
 
 export const dynamic = 'force-dynamic'
+
+// Never index a claim landing. This page renders the SAME block body as the live
+// /spaces/<slug> profile, so an indexed copy would compete with the canonical Space
+// page for its own brand terms — the exact cannibalization robots.ts avoids for the
+// /spaces/directory twin. It is also a one-time token URL: indexing it publishes a
+// single-use claim link. Same posture as the (capture) funnel pages, which pair a
+// per-page noindex with a robots.ts Disallow.
+export const metadata: Metadata = {
+  title: 'Claim this business',
+  robots: { index: false },
+}
 
 // The claim landing the real business owner reaches from an operator's outreach. PUBLIC (outside the
 // (main) shell) so a signed-out owner can see what they are claiming. It now shows the REAL, FULL public

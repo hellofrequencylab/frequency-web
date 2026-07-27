@@ -1804,7 +1804,6 @@ export default async function EventDetailPage({
               <EventRewardStrip
                 checkInZaps={ZAP_AMOUNTS.event_attend}
                 isPast={isPast}
-                circleName={scopeName}
               />
             )}
           </div>

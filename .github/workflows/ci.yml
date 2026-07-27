@@ -60,6 +60,8 @@ jobs:
         run: pnpm check:crm-parity
       - name: RLS coverage (static shift-left of the DB advisors)
         run: pnpm check:rls
+      - name: Migration filename contract (unique versions — a collision silently skips a migration)
+        run: pnpm check:migrations
       # NOTE: check:cron-freshness is intentionally NOT wired here — it is a runtime/ops
       # SLO check (inspects live cron heartbeat state, env-dependent, advisory exit 0), not
       # a deterministic code gate. It runs in the scheduled /maintenance sweep instead.

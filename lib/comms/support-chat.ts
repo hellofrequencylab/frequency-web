@@ -105,13 +105,15 @@ export async function startSupportChat(input: {
   if (!owner) return null
   const memberProfileId = input.memberProfileId ?? null
 
-  // A member-bound request resolves the member's own name + account email from their profile when the
-  // caller didn't pass them (the member action only has the profile id).
+  // A member-bound request takes its EMAIL from the signed-in profile, never from the caller. The email
+  // is part of the conversation thread key, so trusting the submitted value would let a signed-in member
+  // type someone else's address and be handed that person's `support` thread (plus its capability token).
+  // The submitted name is still honoured — it only ever renders in the subject line.
   let rawName = input.name
   let rawEmail = input.email
-  if (memberProfileId && (!rawEmail || !rawName)) {
+  if (memberProfileId) {
     const identity = await resolveMemberIdentity(memberProfileId)
-    rawEmail = rawEmail || identity.email || ''
+    rawEmail = identity.email || ''
     rawName = rawName || identity.name || ''
   }
 
@@ -132,6 +134,13 @@ export async function startSupportChat(input: {
     subject: memberProfileId ? `Support request from ${name}` : `Live chat with ${name}`,
     channel: 'in_app',
     metadata: { source: 'support_chat', visitor_name: name },
+    // ANONYMOUS chat always opens a NEW thread. The visitor's only identity claim is an email address
+    // they typed, so adopting an existing thread with that address would return `makeChatToken(ref)` for
+    // a conversation they cannot prove they own — an anonymous read of the whole transcript via
+    // loadSupportChatHistory, plus the ability to append forged inbound messages. Resumption never
+    // depended on this reuse: the widget stores {ref, token} in localStorage and rehydrates from it, and
+    // only calls this when it has no stored session.
+    forceNew: !memberProfileId,
   })
   if (!conv) return null
 

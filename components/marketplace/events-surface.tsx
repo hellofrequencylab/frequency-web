@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { CalendarDays } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EventCard } from '@/components/events/event-card'
@@ -11,6 +12,9 @@ import {
   MarketplaceColumnsProvider,
   MarketplaceColumns,
 } from '@/components/marketplace/column-selector'
+import { EventsMapToggle } from '@/components/events/events-map-client'
+import { EventsForYou } from '@/components/events/events-for-you'
+import { EventConnectors } from '@/components/events/event-connectors'
 import type { EventsIndexData } from '@/app/(main)/events/index-data'
 import { resolveHeaderElement } from '@/lib/elements/header'
 
@@ -70,6 +74,9 @@ export async function EventsSurface({
     priceLabels,
     filtering,
     facets,
+    mapPins,
+    showForYou,
+    myProfileId,
   } = data
 
   // Canonical sub-menu: All + one tab per event category, the SAME UnderlineTabs row the other
@@ -120,6 +127,33 @@ export async function EventsSurface({
               <MarketplaceColumns />
             </div>
 
+            {/* The personalized lanes (Events B-4). Both are slow — embedding scoring, an AI blurb,
+                a connector query — so each streams behind its OWN <Suspense> and neither can delay
+                the shell, the stats, or the list below (PAGE-FRAMEWORK §5). `showForYou` is the
+                gate index-data already computed: signed in, no facet active, more than one event. */}
+            {showForYou && myProfileId ? (
+              <div className="space-y-6">
+                <Suspense fallback={null}>
+                  <EventsForYou
+                    viewerProfileId={myProfileId}
+                    events={sortedEvents}
+                    circleNames={circleNames}
+                    coverUrls={coverUrls}
+                    coverFocus={coverFocus}
+                    rsvpCounts={rsvpCounts}
+                    priceLabels={priceLabels}
+                    nowDate={nowDate}
+                  />
+                </Suspense>
+                <Suspense fallback={null}>
+                  <EventConnectors
+                    viewerProfileId={myProfileId}
+                    eventIds={sortedEvents.map((e) => e.id)}
+                  />
+                </Suspense>
+              </div>
+            ) : null}
+
             <div className="@container">
               {sortedEvents.length === 0 ? (
                 filtering ? (
@@ -145,6 +179,7 @@ export async function EventsSurface({
                   />
                 )
               ) : (
+                <EventsMapToggle pins={mapPins}>
                 <InstantGrid
                   items={sortedEvents.map((e) => ({ text: `${e.title} ${e.location ?? ''}` }))}
                   className="mp-grid gap-4"
@@ -162,6 +197,7 @@ export async function EventsSurface({
                     />
                   ))}
                 </InstantGrid>
+                </EventsMapToggle>
               )}
             </div>
           </MarketplaceColumnsProvider>

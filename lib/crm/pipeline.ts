@@ -148,6 +148,23 @@ export async function countOpenTasks(spaceId?: string): Promise<number> {
   return count ?? 0
 }
 
+// How many contacts a Space's CRM lane holds — the real number behind the `space_crm` usage meter,
+// whose dimension is literally "Contacts" against a 250-on-free allowance. Counted head-only (no rows
+// transferred) and scoped exactly like every other read here, so the meter and the contacts list can
+// never disagree. FAIL-SAFE: 0 on any read error, matching the module's contract; the meter is
+// display-only, so a failed count shows an honest 0 rather than blocking the billing page.
+export async function countContacts(spaceId?: string): Promise<number> {
+  try {
+    const { count } = await scopeBySpace(
+      db().from('contacts').select('id', { count: 'exact', head: true }),
+      spaceId,
+    )
+    return count ?? 0
+  } catch {
+    return 0
+  }
+}
+
 export type CrmContact = {
   id: string
   email: string

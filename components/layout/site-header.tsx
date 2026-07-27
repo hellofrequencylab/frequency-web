@@ -4,6 +4,7 @@ import { Search } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { UserMenu, AuthButtons, type UserMenuProfile } from './user-menu'
 import { PrimaryNav } from './primary-nav'
+import { ViewerAuthSlot, ViewerLink, ViewerPrimaryNav } from './viewer-chrome'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { viewerRoleFor } from '@/components/layout/menu-role'
 import { asWebRole, type CommunityRole } from '@/lib/core/roles'
@@ -17,9 +18,51 @@ interface SiteHeaderProps {
   profile?: UserMenuProfile | null
   /** Visual style: 'light' for white bg, 'dark' for transparent over hero */
   variant?: 'light' | 'dark'
+  /** WHERE the viewer is resolved.
+   *
+   *  'server' (default) reads auth during render — correct for routes that are dynamic anyway.
+   *
+   *  'client' skips the auth read entirely and renders the ANONYMOUS shell, letting the member's
+   *  own chrome swap in after hydration from /api/viewer. Reading auth during render is a dynamic
+   *  API, and one anywhere in a layout opts the whole route out of static rendering: this header
+   *  was force-dynamicking all 22 public /discover pages and silently voiding their
+   *  `export const revalidate = 3600`, so every visitor and every crawler paid two auth round
+   *  trips plus the page's full query set on every hit. Use 'client' on trees that should be
+   *  statically rendered; the HTML a crawler gets is the anonymous view either way. */
+  authMode?: 'server' | 'client'
 }
 
-export async function SiteHeader({ profile: profileProp, variant = 'light' }: SiteHeaderProps) {
+/** Search targets /search for a member and /sign-in for a visitor. On the client-auth path the
+ *  swap happens after hydration; otherwise it is decided here during render. */
+function SearchLink({
+  clientAuth,
+  isAuth,
+  className,
+  'aria-label': ariaLabel,
+  children,
+}: {
+  clientAuth: boolean
+  isAuth: boolean
+  className?: string
+  'aria-label'?: string
+  children: React.ReactNode
+}) {
+  if (clientAuth) {
+    return (
+      <ViewerLink anonHref="/sign-in" authHref="/search" className={className} aria-label={ariaLabel}>
+        {children}
+      </ViewerLink>
+    )
+  }
+  return (
+    <Link href={isAuth ? '/search' : '/sign-in'} className={className} aria-label={ariaLabel}>
+      {children}
+    </Link>
+  )
+}
+
+export async function SiteHeader({ profile: profileProp, variant = 'light', authMode = 'server' }: SiteHeaderProps) {
+  const clientAuth = authMode === 'client'
   // Only fetch if caller didn't provide explicit profile
   let profile: UserMenuProfile | null = profileProp ?? null
   // The viewer's role/staff axes for the menu (only known on the self-fetch path; an
@@ -28,7 +71,10 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
   let communityRole: CommunityRole | null = null
   let webRole: ReturnType<typeof asWebRole> = 'none'
 
-  if (profileProp === undefined) {
+  // `clientAuth` short-circuits the auth read — that read is the dynamic API that would opt the
+  // whole route out of static rendering. The menu fetches below stay on the server: they are plain
+  // data reads, not dynamic APIs, so they cache with the page.
+  if (profileProp === undefined && !clientAuth) {
     const supabase = await createClient()
     const {
       data: { user },
@@ -82,31 +128,53 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
       </a>
 
       {/* Logo */}
-      <Link href={isAuth ? '/feed' : '/'} className="shrink-0">
-        <Image
-          src="/frequency-logo.png"
-          alt="Frequency"
-          width={963}
-          height={170}
-          className={`h-7 w-auto ${isDark ? 'invert' : 'dark:invert'}`}
-        />
-      </Link>
+      {clientAuth ? (
+        <ViewerLink anonHref="/" authHref="/feed" className="shrink-0">
+          <Image
+            src="/frequency-logo.png"
+            alt="Frequency"
+            width={963}
+            height={170}
+            className={`h-7 w-auto ${isDark ? 'invert' : 'dark:invert'}`}
+          />
+        </ViewerLink>
+      ) : (
+        <Link href={isAuth ? '/feed' : '/'} className="shrink-0">
+          <Image
+            src="/frequency-logo.png"
+            alt="Frequency"
+            width={963}
+            height={170}
+            className={`h-7 w-auto ${isDark ? 'invert' : 'dark:invert'}`}
+          />
+        </Link>
+      )}
 
       {/* Header mega-menu (from the `header` surface). Desktop only; mobile relies on
           the prominent CTA + footer nav until a drawer ships. */}
-      <PrimaryNav
-        variant={isDark ? 'dark' : 'light'}
-        className="ml-2"
-        headerMenu={headerMenu}
-        viewerRole={viewerRole}
-        timings={menuTimings}
-      />
+      {clientAuth ? (
+        <ViewerPrimaryNav
+          variant={isDark ? 'dark' : 'light'}
+          className="ml-2"
+          headerMenu={headerMenu}
+          timings={menuTimings}
+        />
+      ) : (
+        <PrimaryNav
+          variant={isDark ? 'dark' : 'light'}
+          className="ml-2"
+          headerMenu={headerMenu}
+          viewerRole={viewerRole}
+          timings={menuTimings}
+        />
+      )}
 
       <div className="flex-1" />
 
       {/* Search pill */}
-      <Link
-        href={isAuth ? '/search' : '/sign-in'}
+      <SearchLink
+        clientAuth={clientAuth}
+        isAuth={isAuth}
         className={`hidden sm:flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-colors ${
           isDark
             ? 'border-white/20 bg-white/10 text-white/60 hover:bg-white/20 hover:text-white/80'
@@ -124,11 +192,12 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
         >
           ⌘K
         </kbd>
-      </Link>
+      </SearchLink>
 
       {/* Mobile search icon */}
-      <Link
-        href={isAuth ? '/search' : '/sign-in'}
+      <SearchLink
+        clientAuth={clientAuth}
+        isAuth={isAuth}
         className={`sm:hidden p-2 rounded-lg transition-colors ${
           isDark
             ? 'text-white/60 hover:text-white hover:bg-white/10'
@@ -137,10 +206,12 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
         aria-label="Search"
       >
         <Search className="w-5 h-5" />
-      </Link>
+      </SearchLink>
 
       {/* Profile menu / auth buttons */}
-      {isAuth ? (
+      {clientAuth ? (
+        <ViewerAuthSlot dark={isDark} profileMenu={profileMenu} />
+      ) : isAuth ? (
         <UserMenu profile={profile} menu={profileMenu} />
       ) : (
         <AuthButtons dark={isDark} />
