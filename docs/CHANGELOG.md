@@ -12,6 +12,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Hand a Circle to someone else**: a Circle can now move between the spaces you run, come back to
+  you as your own, or go to another person. Handing it to a person is an offer rather than a move:
+  they see it on the Circle and choose to accept or pass, and nothing changes until they do. A
+  Circle carries its members, so it never lands on anyone who did not agree to take it.
 - **Set a Journey up step by step, then tell people it exists**: building a Journey now starts in a
   **guide** that walks you through it: **Shape** the phases, **Schedule** the dates it runs between
   and how often a new phase opens, then **Ready** for a last look before you publish. You can switch

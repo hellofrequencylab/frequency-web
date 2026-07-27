@@ -3,7 +3,7 @@ title: How to start a Circle
 description: Pick one thing, set a standing time, recruit a co-host, and run a simple first night. You do not build a community. You host one Circle, and we hand you the format.
 category: leading
 order: 1
-updated: 2026-07-17
+updated: 2026-07-27
 audience: host
 role: host
 featureKeys: [circles, events]
@@ -92,6 +92,15 @@ Run it anyway, with whoever shows, even if it is one person and you. A group tha
 meets with two people this week and three next week is alive. The fizzle comes from
 canceling, not from a small turnout. See
 [why groups fizzle, and how to get the return](/help/leading/why-groups-fizzle).
+
+### Can I hand my Circle to someone else?
+
+Yes. Open the Circle from the space that runs it and choose **Move**. You can move it
+into another space you help run, take it as your own, or hand it to a person. Handing
+it to a person is an **offer**, not a move: they see it on the Circle and choose to
+accept or pass, and nothing changes until they accept. A Circle carries its members,
+so it never lands on someone who did not agree to take it. When they accept, the
+Circle becomes theirs to host, and its members and anything it is running come along.
 
 ### Do I have to be an expert in the activity?
 
