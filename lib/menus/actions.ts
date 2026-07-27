@@ -347,60 +347,101 @@ function leafHrefs(menu: ResolvedMenu): string[] {
   return out
 }
 
-type DefaultLeaf = { item: ResolvedItem; categoryLabel: string | null }
-/** Flatten a menu's items with the label of their immediate parent category (null = root). */
+type DefaultLeaf = { item: ResolvedItem; categoryPath: ResolvedCategory[] }
+/** Flatten a menu's items with the full ANCESTRY of default categories above each one
+ *  (root → immediate parent; empty = the root bucket). The sync pass needs the whole
+ *  path, not just the immediate label, so a child category's item lands nested under
+ *  the same parent chain the defaults declare instead of a flat top-level lookalike. */
 function defaultLeaves(menu: ResolvedMenu): DefaultLeaf[] {
   const out: DefaultLeaf[] = []
-  for (const it of menu.rootItems) out.push({ item: it, categoryLabel: null })
-  const walk = (cats: ResolvedCategory[]) => {
+  for (const it of menu.rootItems) out.push({ item: it, categoryPath: [] })
+  const walk = (cats: ResolvedCategory[], path: ResolvedCategory[]) => {
     for (const c of cats) {
-      for (const it of c.items) out.push({ item: it, categoryLabel: c.label ?? null })
-      walk(c.children)
+      const next = [...path, c]
+      for (const it of c.items) out.push({ item: it, categoryPath: next })
+      walk(c.children, next)
     }
   }
-  walk(menu.categories)
+  walk(menu.categories, [])
   return out
 }
 
-/** Find a TOP-LEVEL category by label in a menu, creating it (appended) if absent. A null
- *  label resolves to the root bucket (category_id null). */
-async function ensureCategoryByLabel(
+/** Append position for a new category under `parentId` (null = top level): one past the
+ *  highest sibling position (never rows.length, which collides after deletes/reorders). */
+async function nextCategoryPosition(
   db: ReturnType<typeof adminDb>,
   menuId: string,
-  label: string | null,
-): Promise<string | null> {
-  if (label == null) return null
-  const found = await db
-    .from<{ id: string }>('menu_categories')
-    .select('id')
-    .eq('menu_id', menuId)
-    .is('parent_id', null)
-    .eq('label', label)
-    .limit(1)
-  const hit = (found.data ?? [])[0]?.id
-  if (hit) return hit
-  const siblings = await db
-    .from<{ id: string }>('menu_categories')
-    .select('id')
-    .eq('menu_id', menuId)
-    .is('parent_id', null)
-  const ins = await db
-    .from<{ id: string }>('menu_categories')
-    .insert({ menu_id: menuId, parent_id: null, label, position: (siblings.data ?? []).length })
-    .select('id')
-    .limit(1)
-  return (ins.data ?? [])[0]?.id ?? null
+  parentId: string | null,
+): Promise<number> {
+  const base = db.from<{ position: number | null }>('menu_categories').select('position').eq('menu_id', menuId)
+  const res = await (parentId == null ? base.is('parent_id', null) : base.eq('parent_id', parentId))
+  const rows = res.data ?? []
+  if (rows.length === 0) return 0
+  return Math.max(...rows.map((r) => r.position ?? 0)) + 1
 }
 
-/** Append position for a new item in a bucket (root or a category). */
+/** Resolve a default category PATH inside a menu, matching by label level by level
+ *  (parent first, then each child under the level above) and creating any missing
+ *  level, appended, with the default category's own gate copied over (min_access +
+ *  staff_domain + staff_level) so a synced group is born with the gate the defaults
+ *  declare instead of a wide-open 'visitor' floor. An empty path (or an unlabeled
+ *  level) resolves to the container reached so far — root = category_id null. */
+async function ensureCategoryByPath(
+  db: ReturnType<typeof adminDb>,
+  menuId: string,
+  path: ResolvedCategory[],
+): Promise<string | null> {
+  let parentId: string | null = null
+  for (const cat of path) {
+    const label = cat.label ?? null
+    // A label-less default category can't be matched by name; file under what we have.
+    if (!label) return parentId
+    const base = db
+      .from<{ id: string }>('menu_categories')
+      .select('id')
+      .eq('menu_id', menuId)
+      .eq('label', label)
+    const scoped = parentId == null ? base.is('parent_id', null) : base.eq('parent_id', parentId)
+    const found: { data: { id: string }[] | null } = await scoped.limit(1)
+    const hit: string | undefined = (found.data ?? [])[0]?.id
+    if (hit) {
+      parentId = hit
+      continue
+    }
+    const position = await nextCategoryPosition(db, menuId, parentId)
+    const ins: { data: { id: string }[] | null } = await db
+      .from<{ id: string }>('menu_categories')
+      .insert({
+        menu_id: menuId,
+        parent_id: parentId,
+        label,
+        position,
+        min_access: cat.minAccess ?? 'visitor',
+        staff_domain: cleanStaffDomain(cat.staffDomain),
+        staff_level: cleanStaffLevel(cat.staffLevel),
+      })
+      .select('id')
+      .limit(1)
+    const created = (ins.data ?? [])[0]?.id ?? null
+    if (!created) return parentId
+    parentId = created
+  }
+  return parentId
+}
+
+/** Append position for a new item in a bucket (root or a category): one past the highest
+ *  sibling position. Counting rows (the old behavior) collides after a delete or a
+ *  reorder leaves gaps — max(position) + 1 is always past the end. */
 async function nextItemPosition(
   db: ReturnType<typeof adminDb>,
   menuId: string,
   categoryId: string | null,
 ): Promise<number> {
-  const base = db.from<{ id: string }>('menu_items').select('id').eq('menu_id', menuId)
+  const base = db.from<{ position: number | null }>('menu_items').select('position').eq('menu_id', menuId)
   const res = await (categoryId == null ? base.is('category_id', null) : base.eq('category_id', categoryId))
-  return (res.data ?? []).length
+  const rows = res.data ?? []
+  if (rows.length === 0) return 0
+  return Math.max(...rows.map((r) => r.position ?? 0)) + 1
 }
 
 /** Sync a surface with the code defaults: SEED it if empty, otherwise inject only the
@@ -449,7 +490,7 @@ export async function syncMenuFromDefaults(
           )
 
     for (const leaf of toInject) {
-      const categoryId = await ensureCategoryByLabel(db, menuId, leaf.categoryLabel)
+      const categoryId = await ensureCategoryByPath(db, menuId, leaf.categoryPath)
       const position = await nextItemPosition(db, menuId, categoryId)
       const ins = await db.from('menu_items').insert({
         menu_id: menuId,

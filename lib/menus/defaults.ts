@@ -341,6 +341,7 @@ const PROFILE_MENU_IDS: Record<string, string> = {
   storefront: 'default:profile:root:item:storefront',
   settings: 'default:profile:root:item:1',
   billing: 'default:profile:root:item:2',
+  payouts: 'default:profile:root:item:payouts',
   notifications: 'default:profile:root:item:3',
   codes: 'default:profile:root:item:4',
   'entry-points': 'default:profile:root:item:5',

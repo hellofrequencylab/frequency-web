@@ -54,7 +54,7 @@ import type {
   ResolvedItem,
   ResolvedMenu,
 } from '@/lib/menus/types'
-import { effectiveMode, canSeeMenuItem, type MenuViewer } from '@/components/layout/menu-role'
+import { effectiveMode, canSeeMenuItem, flattenCategoryTree, type MenuViewer } from '@/components/layout/menu-role'
 import { GhostLink } from '@/components/layout/ghost-link'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { MemberFooter } from '@/components/layout/member-footer'
@@ -219,15 +219,14 @@ function menuItemToNav(item: ResolvedItem, viewer: MenuViewer): MainNavItem | nu
   }
 }
 
-// Collect a category's own items plus all descendants', flattened in tree order, each
-// resolved for the viewer (not-visible dropped).
+// Collect a category's own items plus all descendants', flattened in tree order (the
+// shared flattenCategoryTree walk), each resolved for the viewer (not-visible dropped).
 function flattenCategoryItems(cat: ResolvedCategory, viewer: MenuViewer): MainNavItem[] {
   const out: MainNavItem[] = []
-  for (const it of cat.items) {
+  for (const it of flattenCategoryTree(cat, (item) => canSeeMenuItem(item, viewer))) {
     const nav = menuItemToNav(it, viewer)
     if (nav) out.push(nav)
   }
-  for (const child of cat.children) out.push(...flattenCategoryItems(child, viewer))
   return out
 }
 
@@ -311,11 +310,11 @@ interface Profile extends ProfileIdentity {
 // DATA by the `host` trust tier as an EARNER PROXY. The shell now threads the REAL payouts
 // capability (canReceivePayouts — a host+ OR anyone holding a live partner persona, resolved
 // server-side in the layout) and gates that ONE item on it instead of the proxy. Identified by its
-// destination + the `host` access floor the seed carries: Billing shares the href but sits at the
-// visitor floor, so this never catches it. A custom DB menu that re-gated the item off `host` falls
+// destination (the payouts tab of the billing page — distinct from the plain Billing href) + the
+// `host` access floor the seed carries. A custom DB menu that re-gated the item off `host` falls
 // through to the normal canSeeMenuItem path (fail-safe: no worse than the old proxy).
 function isPayoutsMenuItem(it: ResolvedItem): boolean {
-  return it.href === '/settings/billing' && it.minAccess === 'host'
+  return it.href === '/settings/billing?tab=payouts' && it.minAccess === 'host'
 }
 
 // Visibility for one account-menu (profile surface) link: the payouts item rides the real payouts
@@ -423,8 +422,10 @@ function ProfileCard({
   // grouped into labeled sections; leftover ungrouped rootItems render too (safety).
   const profileResolved = menu ?? defaultMenu('profile')
   const profileViewer: MenuViewer = { viewerRole, staffRole }
+  // Child categories flatten into their section (flattenCategoryTree) so sub-group links
+  // still render in this one-level list.
   const profileSectionsResolved = profileResolved.categories
-    .map((cat) => ({ label: cat.label, items: cat.items.filter((it) => canSeeAccountItem(it, profileViewer, canReceivePayouts)) }))
+    .map((cat) => ({ label: cat.label, items: flattenCategoryTree(cat, (it) => canSeeAccountItem(it, profileViewer, canReceivePayouts)) }))
     .filter((s) => s.items.length > 0)
   const profileLooseLinks = profileResolved.rootItems.filter((it) => canSeeAccountItem(it, profileViewer, canReceivePayouts))
   const renderCardLink = (it: ResolvedItem) => {
@@ -600,11 +601,12 @@ function AccountDropdown({
 
   const resolvedMenu = menu ?? defaultMenu('profile')
   const menuViewer: MenuViewer = { viewerRole, staffRole }
-  // Each account section (category) → a muted section header + its gated items; any
+  // Each account section (category) → a muted section header + its gated items, child
+  // categories flattened in (flattenCategoryTree, so sub-group links still render); any
   // leftover ungrouped rootItems still render (safety). canSeeMenuItem is the shared
   // two-axis union gate — no permission gate changes, only where the list is grouped.
   const accountSections = resolvedMenu.categories
-    .map((cat) => ({ label: cat.label, items: cat.items.filter((it) => canSeeAccountItem(it, menuViewer, canReceivePayouts)) }))
+    .map((cat) => ({ label: cat.label, items: flattenCategoryTree(cat, (it) => canSeeAccountItem(it, menuViewer, canReceivePayouts)) }))
     .filter((s) => s.items.length > 0)
   const looseAccountLinks = resolvedMenu.rootItems.filter((it) => canSeeAccountItem(it, menuViewer, canReceivePayouts))
   const renderAccountLink = (it: ResolvedItem) => {

@@ -8,7 +8,7 @@ import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { defaultMenu } from '@/lib/menus/defaults'
-import { canSeeMenuItem } from '@/components/layout/menu-role'
+import { canSeeMenuItem, flattenCategoryTree } from '@/components/layout/menu-role'
 import { railIconFor } from '@/components/layout/nav-icons'
 import type { MenuAccess, ResolvedItem, ResolvedMenu } from '@/lib/menus/types'
 
@@ -65,11 +65,12 @@ export function UserMenu({
   const ref = useRef<HTMLDivElement>(null)
   const resolved = menu ?? defaultMenu('profile')
   const viewer = { viewerRole }
-  // Each account section (category) → a muted section header + its gated items. Leftover
-  // ungrouped rootItems still render (for safety when an operator moved links out of a
-  // section). Gate via canSeeMenuItem (the shared two-axis union).
+  // Each account section (category) → a muted section header + its gated items, child
+  // categories flattened in (flattenCategoryTree, so a sub-group's links still render in
+  // this one-level menu). Leftover ungrouped rootItems still render (for safety when an
+  // operator moved links out of a section). Gate via canSeeMenuItem (the two-axis union).
   const sections = resolved.categories
-    .map((cat) => ({ label: cat.label, items: cat.items.filter((it) => canSeeMenuItem(it, viewer)) }))
+    .map((cat) => ({ label: cat.label, items: flattenCategoryTree(cat, (it) => canSeeMenuItem(it, viewer)) }))
     .filter((s) => s.items.length > 0)
   const looseItems = resolved.rootItems.filter((it) => canSeeMenuItem(it, viewer))
   const renderItem = (it: ResolvedItem) => {

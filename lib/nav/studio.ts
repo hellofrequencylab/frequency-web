@@ -163,7 +163,7 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
 
   // ═══════════════ COMMUNITY ═══════════════
   // §5b: Circles · Templates · Hubs · Nexuses · Channels · Members · Roles · Events ·
-  // Broadcasts · Moderation · Support
+  // Dispatches · Moderation · Support
   { id: 'circles', href: '/admin/circles', label: 'Circles', desc: 'Create, edit, and archive circles.', icon: 'CircleDot', min: 'host', staffDomain: 'community',
     world: 'community', worldLabel: 'Circles', worldOrder: 0,
     adminGroups: [{ domain: 'community', section: 'Structure' }], adminNav: { section: 'community', heading: 'Spaces & groups' } },
@@ -192,8 +192,8 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'events', href: '/admin/events', label: 'Events', desc: 'Gatherings across your circles, plus posted events, claims, and poster quality.', icon: 'CalendarDays', min: 'host', staffDomain: 'community',
     world: 'community', worldLabel: 'Events', worldOrder: 7,
     adminGroups: [{ domain: 'community', section: 'Activity' }], adminNav: { section: 'community', heading: 'Activity' } },
-  { id: 'dispatches', href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', icon: 'Megaphone', min: 'host', staffDomain: 'community',
-    world: 'community', worldLabel: 'Broadcasts', worldOrder: 8,
+  { id: 'dispatches', href: '/admin/dispatches', label: 'Dispatches', desc: 'Posts and polls to your people.', icon: 'Megaphone', min: 'host', staffDomain: 'community',
+    world: 'community', worldLabel: 'Dispatches', worldOrder: 8,
     adminGroups: [{ domain: 'community', section: 'Activity' }], adminNav: { section: 'community', heading: 'Activity' } },
   { id: 'import', href: '/admin/import', label: 'Import from chat', desc: 'Import members and history from chat.', icon: 'Users', min: 'host', staffDomain: 'community',
     adminNav: { section: 'community', heading: 'Activity' } },
@@ -353,7 +353,7 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
     adminGroups: [{ domain: 'crm', section: 'Audiences' }] },
 
   // ═══════════════ PLATFORM ═══════════════
-  // §5b: Menu · Pages · Page layout · Theme · Spaces · Marketplace · Payments · Pricing ·
+  // §5b: Menu · Pages · Page layout · Theme · Spaces · Market · Payments · Pricing ·
   // Vera · Insights · Demo · Audit
   { id: 'menu', href: '/admin/menu', label: 'Menu manager', desc: 'Order and hide the one shared nav menu; set who reaches each item.', icon: 'Menu', min: 'janitor',
     world: 'platform', worldLabel: 'Menu', worldOrder: 0,
@@ -369,17 +369,17 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
     adminGroups: [{ domain: 'operations', section: 'Platform' }], adminNav: { section: 'operations', heading: 'Configuration' } },
   { id: 'spaces', href: '/admin/spaces', label: 'Spaces', desc: 'White-label tenants: set each Space its theme and brand, view its live profile, or open the owner settings.', icon: 'Building2', min: 'janitor',
     world: 'platform', worldLabel: 'Spaces', worldOrder: 4,
-    adminGroups: [{ domain: 'operations', section: 'Platform' }], adminNav: { section: 'qr' } },
-  { id: 'marketplace', href: '/admin/marketplace', label: 'Marketplace', desc: 'Listings, the shop catalog, and area visibility across General, Housing, Makers, and Shop.', icon: 'ShoppingBag', min: 'admin', staffDomain: 'platform',
-    world: 'platform', worldLabel: 'Marketplace', worldOrder: 5,
+    adminGroups: [{ domain: 'operations', section: 'Platform' }], adminNav: { section: 'operations', heading: 'Platform' } },
+  { id: 'marketplace', href: '/admin/marketplace', label: 'Market', desc: 'Listings, the store catalog, and area visibility across Classifieds, Housing, Market, and the Frequency Store.', icon: 'ShoppingBag', min: 'admin', staffDomain: 'platform',
+    world: 'platform', worldLabel: 'Market', worldOrder: 5,
     adminGroups: [{ domain: 'operations', section: 'Commerce' }], adminNav: { section: 'marketplace', heading: 'Catalog' } },
-  { id: 'marketplace-orders', href: '/admin/marketplace/orders', label: 'Marketplace orders', desc: 'Every order across makers and the shop, with one-tap refunds.', icon: 'CreditCard', min: 'admin', staffDomain: 'platform',
+  { id: 'marketplace-orders', href: '/admin/marketplace/orders', label: 'Market orders', desc: 'Every order across makers and the Frequency Store, with one-tap refunds.', icon: 'CreditCard', min: 'admin', staffDomain: 'platform',
     adminGroups: [{ domain: 'operations', section: 'Commerce' }], adminNav: { section: 'marketplace', heading: 'Activity' } },
-  { id: 'marketplace-reports', href: '/admin/marketplace/reports', label: 'Marketplace reports', desc: 'The moderation queue for reported listings and sellers.', icon: 'ShieldAlert', min: 'admin', staffDomain: 'platform',
+  { id: 'marketplace-reports', href: '/admin/marketplace/reports', label: 'Market reports', desc: 'The moderation queue for reported listings and sellers.', icon: 'ShieldAlert', min: 'admin', staffDomain: 'platform',
     adminGroups: [{ domain: 'operations', section: 'Commerce' }], adminNav: { section: 'marketplace', heading: 'Activity' } },
-  { id: 'marketplace-disputes', href: '/admin/marketplace/disputes', label: 'Marketplace disputes', desc: 'Buyer disputes and refund requests on orders, with resolve controls.', icon: 'ShieldAlert', min: 'admin', staffDomain: 'platform',
+  { id: 'marketplace-disputes', href: '/admin/marketplace/disputes', label: 'Market disputes', desc: 'Buyer disputes and refund requests on orders, with resolve controls.', icon: 'ShieldAlert', min: 'admin', staffDomain: 'platform',
     adminGroups: [{ domain: 'operations', section: 'Commerce' }], adminNav: { section: 'marketplace', heading: 'Activity' } },
-  { id: 'marketplace-reviews', href: '/admin/marketplace/reviews', label: 'Marketplace reviews', desc: 'Every rating members left on a listing or Shop item, with hide and restore controls.', icon: 'Star', min: 'admin', staffDomain: 'platform',
+  { id: 'marketplace-reviews', href: '/admin/marketplace/reviews', label: 'Market reviews', desc: 'Every rating members left on a listing or Frequency Store item, with hide and restore controls.', icon: 'Star', min: 'admin', staffDomain: 'platform',
     adminGroups: [{ domain: 'operations', section: 'Commerce' }], adminNav: { section: 'marketplace', heading: 'Activity' } },
   { id: 'payments', href: '/admin/payments', label: 'Payments', desc: 'Turn host payouts (tips, tickets, sales) on or off.', icon: 'CreditCard', min: 'janitor',
     world: 'platform', worldLabel: 'Payments', worldOrder: 6,
@@ -602,7 +602,8 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
 // the old ADMIN_NAV, referencing leaves by id.
 /** A sub-page in an ADMIN_NAV group: a leaf id, with an optional label OVERRIDE for the
  *  cases where the sub-header shows a shorter tab label than the leaf's canonical name
- *  (e.g. "Dispatches" for the Broadcasts page, "Shop catalog" for Marketplace). */
+ *  (e.g. "Onboarding" for the Onboarding & referral controls page, "Market catalog" for
+ *  the Market console). */
 export type AdminNavLeafRef = { leaf: string; label?: string }
 export type AdminNavGroupSpec = { heading?: string; leaves: readonly AdminNavLeafRef[] }
 export type AdminNavSectionSpec = {
@@ -667,19 +668,19 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
   {
     href: '/admin/operations', label: 'Operations', min: 'janitor', staffDomain: 'platform',
     groups: [
-      { heading: 'Platform', leaves: [{ leaf: 'audit', label: 'Audit' }, { leaf: 'payments' }, { leaf: 'pricing' }, { leaf: 'roles', label: 'Roles' }, { leaf: 'support' }] },
+      { heading: 'Platform', leaves: [{ leaf: 'audit', label: 'Audit' }, { leaf: 'payments' }, { leaf: 'pricing' }, { leaf: 'roles', label: 'Roles' }, { leaf: 'support' }, { leaf: 'spaces' }] },
       { heading: 'Configuration', leaves: [{ leaf: 'onboarding-controls', label: 'Onboarding' }, { leaf: 'walkthroughs' }, { leaf: 'page-layout' }, { leaf: 'menu', label: 'Menu' }, { leaf: 'appearance', label: 'Appearance' }, { leaf: 'demo', label: 'Demo' }, { leaf: 'business-seeder', label: 'Business Seeder' }, { leaf: 'listing-seeder', label: 'Listing Seeder' }] },
     ],
   },
   {
-    href: '/admin/marketplace', label: 'Marketplace', min: 'admin', staffDomain: 'platform',
+    href: '/admin/marketplace', label: 'Market', min: 'admin', staffDomain: 'platform',
     groups: [
-      { heading: 'Catalog', leaves: [{ leaf: 'marketplace', label: 'Shop catalog' }] },
+      { heading: 'Catalog', leaves: [{ leaf: 'marketplace', label: 'Market catalog' }] },
       { heading: 'Activity', leaves: [{ leaf: 'marketplace-orders', label: 'Orders' }, { leaf: 'marketplace-reports', label: 'Reports' }, { leaf: 'marketplace-disputes', label: 'Disputes' }, { leaf: 'marketplace-reviews', label: 'Reviews' }] },
     ],
   },
   {
     href: '/admin/qr', label: 'QR Studio', min: 'admin', staffDomain: 'qr',
-    groups: [{ leaves: [{ leaf: 'qr', label: 'QR codes' }, { leaf: 'qr-stats' }, { leaf: 'spaces' }] }],
+    groups: [{ leaves: [{ leaf: 'qr', label: 'QR codes' }, { leaf: 'qr-stats' }] }],
   },
 ]

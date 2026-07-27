@@ -22,6 +22,7 @@ import { staffCan, type StaffRole, type StaffDomain, type Access } from '@/lib/c
 import type {
   MenuAccess,
   MenuMode,
+  ResolvedCategory,
   ResolvedItem,
   ResolvedRailCard,
 } from '@/lib/menus/types'
@@ -171,6 +172,20 @@ export function canSeeMenuItem(item: ResolvedItem, viewer: MenuViewer): boolean 
   if (!passesDataPredicate(item, viewer)) return false
   if (passesStaffAxis(item, viewer, 'item')) return true
   return effectiveMode(item, viewer.viewerRole) !== 'hidden'
+}
+
+/** A category's own items plus every descendant category's items, flattened in tree
+ *  order and filtered by `visible` (the caller's gate — canSeeMenuItem or a wrapper).
+ *  The flat renderers (the account menus, the left rail) draw ONE level of grouping,
+ *  so a child category's items must fold into the parent group rather than vanish.
+ *  Every flatten site shares this walk so none of them drops sub-groups. PURE. */
+export function flattenCategoryTree(
+  cat: ResolvedCategory,
+  visible: (it: ResolvedItem) => boolean,
+): ResolvedItem[] {
+  const out: ResolvedItem[] = cat.items.filter(visible)
+  for (const child of cat.children) out.push(...flattenCategoryTree(child, visible))
+  return out
 }
 
 /** Generic union gate over any GateElement (item or category). Prefer the typed
