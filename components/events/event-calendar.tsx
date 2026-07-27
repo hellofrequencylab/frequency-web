@@ -7,6 +7,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { buttonClasses } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { monthMatrix, monthLabel, addMonth, WEEKDAY_LABELS } from '@/lib/events/calendar-grid'
+import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
 
 // The month-grid events calendar (Events EC2). Renders a Space's (or the platform's) events on a month
 // grid; clicking an event opens a TRUNCATED popup (title, when, where) with a "Go to Event" link that
@@ -34,6 +35,10 @@ export interface CalendarEvent {
   goingCount: number
   /** Cover image URL (public bucket), or null. */
   coverUrl: string | null
+  /** The host-picked focal point for that cover (events.theme.coverFocus) as a CSS
+   *  object-position, so the popup crops the photo exactly like the event page hero. Absent keeps
+   *  today's centered crop. */
+  coverFocus?: string | null
   /** Optional source label (e.g. the collaborator space this event belongs to in a combined calendar);
    *  null/absent hides it. Shown as a small badge in the list row + popup, never on the compact grid chip. */
   sourceLabel?: string | null
@@ -311,6 +316,7 @@ export function EventCalendar({
                 src={selected.coverUrl}
                 alt=""
                 className="h-32 w-full object-cover"
+                style={eventCoverFocusStyle(selected.coverFocus)}
                 loading="lazy"
               />
             )}

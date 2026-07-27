@@ -8,7 +8,15 @@ import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
-import { startRun, scheduleKickoff, getRun, setPhaseEvent, type PhaseEventKind } from '@/lib/journeys/runs'
+import {
+  startRun,
+  scheduleKickoff,
+  getRun,
+  setPhaseEvent,
+  setRunEndState,
+  type PhaseEventKind,
+  type RunEndState,
+} from '@/lib/journeys/runs'
 import { resolveRunGate, journeysOfferedBySpace } from '@/lib/journeys/run-gate'
 import { buildJourneyTree, type BlockRow } from '@/lib/journeys/tree'
 import { phaseUnlockAt } from '@/lib/journeys/schedule'
@@ -63,6 +71,31 @@ export async function startJourneyRunAction(input: {
 
   revalidatePath(`/circles/${gate.circleSlug}`)
   return ok({ runId })
+}
+
+/**
+ * End a Run: 'completed' when the Circle finished it, 'cancelled' when it is being called off
+ * (ADR-842). Same gate as starting one, resolved from the Run's own Circle, so whoever could
+ * start it can end it. Enrollments stay: members keep the progress they earned.
+ */
+export async function endJourneyRunAction(input: {
+  runId: string
+  state: RunEndState
+}): Promise<ActionResult<void>> {
+  const caller = await getCallerProfile()
+  if (!caller) return fail('Sign in first.')
+
+  const run = await getRun(input.runId)
+  if (!run) return fail('Run not found.')
+
+  const gate = await resolveRunGate(run.circleId, caller.id)
+  if (!gate.allowed) return fail('Only the circle host or the space team can end a run.')
+
+  if (!(await setRunEndState(input.runId, input.state))) {
+    return fail('That run has already ended.')
+  }
+  if (gate.circleSlug) revalidatePath(`/circles/${gate.circleSlug}`)
+  return ok()
 }
 
 /** A Run Host schedules a dated touchpoint Event for a week (phase): the mid-week Circle Meetup or

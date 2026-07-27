@@ -7,6 +7,9 @@ import { UsersRound, Plus, Route, ArrowRight } from 'lucide-react'
 import {
   createSpaceCircleAction,
   startSpaceCircleRunAction,
+  endSpaceCircleRunAction,
+  transferSpaceCircleAction,
+  listTransferTargetsAction,
 } from '@/app/(main)/spaces/[slug]/circles/actions'
 import { isError } from '@/lib/action-result'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -38,10 +41,13 @@ export interface OfferedJourney {
 
 export function SpaceCirclesManager({
   spaceSlug,
+  viewerProfileId,
   circles,
   journeys,
 }: {
   spaceSlug: string
+  /** The signed-in steward, so "move it to me" can name a destination. */
+  viewerProfileId: string
   circles: SpaceCircleRow[]
   journeys: OfferedJourney[]
 }) {
@@ -53,6 +59,10 @@ export function SpaceCirclesManager({
   /** Which circle's Journey picker is open, and what it has selected. */
   const [runFor, setRunFor] = useState<string | null>(null)
   const [pickedPlan, setPickedPlan] = useState<string>('')
+  /** Which circle's move control is open, plus the destinations it can offer (loaded on open). */
+  const [moveFor, setMoveFor] = useState<string | null>(null)
+  const [targets, setTargets] = useState<{ id: string; name: string; slug: string }[]>([])
+  const [pickedTarget, setPickedTarget] = useState<string>('')
 
   function create() {
     setError(null)
@@ -87,6 +97,60 @@ export function SpaceCirclesManager({
       }
       setRunFor(null)
       setPickedPlan('')
+      router.refresh()
+    })
+  }
+
+  function endRun(runId: string, state: 'completed' | 'cancelled', circleName: string) {
+    const verb = state === 'completed' ? 'Finish' : 'Cancel'
+    if (!window.confirm(`${verb} the Run for ${circleName}? Members keep the progress they earned.`)) {
+      return
+    }
+    setError(null)
+    start(async () => {
+      const res = await endSpaceCircleRunAction(spaceSlug, { runId, state })
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
+      router.refresh()
+    })
+  }
+
+  function openMove(circleId: string) {
+    setMoveFor(moveFor === circleId ? null : circleId)
+    setPickedTarget('')
+    setError(null)
+    if (moveFor === circleId) return
+    // Destinations are resolved server-side against the caller's own spaces, so the picker can
+    // only offer moves the gate will accept.
+    start(async () => {
+      const res = await listTransferTargetsAction(spaceSlug)
+      setTargets(isError(res) ? [] : res.data)
+    })
+  }
+
+  function move(circleId: string, circleName: string) {
+    if (!pickedTarget) {
+      setError('Pick where it should go.')
+      return
+    }
+    const target =
+      pickedTarget === 'me'
+        ? ({ kind: 'person', profileId: viewerProfileId } as const)
+        : ({ kind: 'space', spaceId: pickedTarget } as const)
+    const where = pickedTarget === 'me' ? 'you' : targets.find((t) => t.id === pickedTarget)?.name
+    if (!window.confirm(`Move ${circleName} to ${where}? Its members and any Run go with it.`)) return
+
+    setError(null)
+    start(async () => {
+      const res = await transferSpaceCircleAction(spaceSlug, { circleId, target })
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
+      setMoveFor(null)
+      setPickedTarget('')
       router.refresh()
     })
   }
@@ -174,26 +238,102 @@ export function SpaceCirclesManager({
                   </p>
                 </div>
 
-                {c.run ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
-                    <Route className="h-3 w-3" />
-                    Running {c.run.journeyTitle}
-                  </span>
-                ) : journeys.length > 0 ? (
+                <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                  {c.run ? (
+                    <>
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+                        <Route className="h-3 w-3" />
+                        Running {c.run.journeyTitle}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => endRun(c.run!.id, 'completed', c.name)}
+                        disabled={pending}
+                        className="rounded-lg border border-border px-2 py-1 text-2xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+                      >
+                        Finish
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => endRun(c.run!.id, 'cancelled', c.name)}
+                        disabled={pending}
+                        className="rounded-lg px-2 py-1 text-2xs font-medium text-subtle transition-colors hover:text-danger disabled:opacity-40"
+                      >
+                        Cancel Run
+                      </button>
+                    </>
+                  ) : journeys.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRunFor(runFor === c.id ? null : c.id)
+                        setPickedPlan('')
+                        setError(null)
+                      }}
+                      disabled={pending}
+                      className="rounded-lg border border-border px-2.5 py-1 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+                    >
+                      Start a Run
+                    </button>
+                  ) : null}
+
                   <button
                     type="button"
-                    onClick={() => {
-                      setRunFor(runFor === c.id ? null : c.id)
-                      setPickedPlan('')
-                      setError(null)
-                    }}
+                    onClick={() => openMove(c.id)}
                     disabled={pending}
-                    className="shrink-0 rounded-lg border border-border px-2.5 py-1 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+                    aria-label={`Move ${c.name}`}
+                    className="rounded-lg px-2 py-1 text-2xs font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
                   >
-                    Start a Run
+                    Move
                   </button>
-                ) : null}
+                </div>
               </div>
+
+              {/* Move it: to another space this steward runs, or to them as their own circle. */}
+              {moveFor === c.id && (
+                <div className="mt-3 space-y-2 border-t border-border pt-3">
+                  <label htmlFor={`move-${c.id}`} className="block text-2xs font-semibold uppercase tracking-wide text-subtle">
+                    Where it should live
+                  </label>
+                  <select
+                    id={`move-${c.id}`}
+                    value={pickedTarget}
+                    onChange={(e) => setPickedTarget(e.target.value)}
+                    disabled={pending}
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text outline-none disabled:opacity-60"
+                  >
+                    <option value="">Pick a destination</option>
+                    <option value="me">Me, as my own circle</option>
+                    {targets.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => move(c.id, c.name)}
+                      disabled={pending || !pickedTarget}
+                      className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                    >
+                      Move it
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMoveFor(null)}
+                      disabled={pending}
+                      className="rounded-lg px-3 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <p className="text-2xs text-subtle">
+                    Members and any Run travel with it. You can move a circle into a space you help
+                    run, or take it as your own.
+                  </p>
+                </div>
+              )}
 
               {/* The picker: only the Journeys this Space offers. The server re-checks it. */}
               {runFor === c.id && !c.run && (

@@ -61,6 +61,7 @@ export default async function SpaceCirclesPage({ params }: { params: Promise<{ s
 
         <SpaceCirclesManager
           spaceSlug={space.slug}
+          viewerProfileId={viewerProfileId ?? ''}
           circles={circles.map((c) => ({
             id: c.id,
             slug: c.slug,

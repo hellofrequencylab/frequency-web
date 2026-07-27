@@ -253,6 +253,31 @@ export async function getSoloEnrollmentStart(profileId: string, planId: string):
   return (data?.[0] as { started_at: string | null } | undefined)?.started_at ?? null
 }
 
+/** The states a Run can be moved TO by hand (ADR-842). 'active' is the start state; 'scheduled'
+ *  is set at creation for a Run made ahead of its window, never by these controls. */
+export type RunEndState = 'completed' | 'cancelled'
+
+/**
+ * End a Run: 'completed' when the Circle finished it, 'cancelled' when it is being called off.
+ * Both are terminal, so this refuses to move a Run that already ended, which keeps the control
+ * idempotent under a double click and honest about what happened. Enrollments are LEFT INTACT:
+ * members keep the progress they earned, and the Journey stays in their history either way.
+ * Returns whether the row moved. Callers own authorization (lib/journeys/run-gate).
+ */
+export async function setRunEndState(runId: string, state: RunEndState): Promise<boolean> {
+  const { data, error } = await db()
+    .from('journey_runs')
+    .update({ status: state, updated_at: new Date().toISOString() })
+    .eq('id', runId)
+    .in('status', ['scheduled', 'active'])
+    .select('id')
+  if (error) {
+    console.error('[journey-runs] end state write failed', { code: error.code, runId, state })
+    return false
+  }
+  return (data ?? []).length > 0
+}
+
 /** Active Runs for a Circle (most recent first). */
 export async function listRunsForCircle(circleId: string): Promise<JourneyRun[]> {
   const { data } = await db()

@@ -14,7 +14,10 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { ok, fail, isError, type ActionResult } from '@/lib/action-result'
 import { createBlankCircleDraft } from '@/lib/circles/draft'
-import { startJourneyRunAction } from '@/app/(main)/journeys/run-actions'
+import { transferCircle, type TransferTarget } from '@/lib/circles/transfer'
+import { listManagedSpaces } from '@/lib/spaces/managed'
+import type { RunEndState } from '@/lib/journeys/runs'
+import { startJourneyRunAction, endJourneyRunAction } from '@/app/(main)/journeys/run-actions'
 
 /** The one door: the caller must edit this Space. Returns the space id, or the message to show. */
 async function requireSpaceEditor(
@@ -78,4 +81,59 @@ export async function startSpaceCircleRunAction(
   })
   if (!isError(res)) revalidatePath(`/spaces/${slug}/circles`)
   return res
+}
+
+/**
+ * End a Run from the Space surface: finished, or called off. Delegates to the shared Run action,
+ * which re-checks that the caller may act on this Run's Circle.
+ */
+export async function endSpaceCircleRunAction(
+  slug: string,
+  input: { runId: string; state: RunEndState },
+): Promise<ActionResult<void>> {
+  const gate = await requireSpaceEditor(slug)
+  if (typeof gate === 'string') return fail(gate)
+
+  const res = await endJourneyRunAction({ runId: input.runId, state: input.state })
+  if (!isError(res)) revalidatePath(`/spaces/${slug}/circles`)
+  return res
+}
+
+/**
+ * Move a Circle out of this Space: to another Space the caller helps run, or to the caller as
+ * their own Circle (ADR-843). The gate in lib/circles/transfer is the authority on both sides.
+ */
+export async function transferSpaceCircleAction(
+  slug: string,
+  input: { circleId: string; target: TransferTarget },
+): Promise<ActionResult<void>> {
+  const gate = await requireSpaceEditor(slug)
+  if (typeof gate === 'string') return fail(gate)
+
+  const res = await transferCircle(input.circleId, input.target, gate.profileId)
+  if (!res.ok) return fail(res.reason || 'Could not move that circle.')
+
+  revalidatePath(`/spaces/${slug}/circles`)
+  if (res.slug) revalidatePath(`/circles/${res.slug}`)
+  return ok()
+}
+
+/**
+ * The Spaces this caller could move a Circle INTO: the ones they help run, minus this one. Read
+ * by the transfer control so the picker only ever offers destinations the gate will accept.
+ */
+export async function listTransferTargetsAction(
+  slug: string,
+): Promise<ActionResult<{ id: string; name: string; slug: string }[]>> {
+  const gate = await requireSpaceEditor(slug)
+  if (typeof gate === 'string') return fail(gate)
+
+  // listManagedSpaces is already scoped to the CALLER (owner or active editor+), so the picker
+  // can only ever offer destinations the transfer gate will accept.
+  const mine = await listManagedSpaces()
+  return ok(
+    mine
+      .filter((s) => s.id !== gate.spaceId && s.type !== 'root')
+      .map((s) => ({ id: s.id, name: s.name, slug: s.slug })),
+  )
 }

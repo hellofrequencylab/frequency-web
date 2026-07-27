@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { nearbyEvents } from '@/lib/events/geocode'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
+import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import { pointFromGeog } from '@/lib/events/geo'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
@@ -17,6 +18,7 @@ import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import type { CatalogFacet } from './events-filter-bar'
 import type { SortOption } from './events-sort'
 import type { EventMapPin } from '@/components/events/events-map'
+import type { Json } from '@/lib/database.types'
 
 export type EventRow = {
   id: string
@@ -40,6 +42,10 @@ export type EventRow = {
   attendance_mode: string | null
   price_cents: number | null
   cover_image_path: string | null
+  // The host-picked presentation bag (events.theme jsonb). Only `coverFocus` is read here — the
+  // cover's focal point, resolved into the `coverFocus` map below so the cards crop exactly like
+  // the detail hero. `heroHeight` (the other key) is a detail-page concern.
+  theme?: Json | null
   // Recurrence (ADR-007): the cadence on an anchor, and parent_event_id on a materialised
   // occurrence. Either marks the card with a "Repeats weekly" line so a series reads as
   // recurring at a glance. Newer than the generated DB types -> untyped-client cast.
@@ -278,6 +284,9 @@ export interface EventsIndexData {
   mapPins: EventMapPin[]
   circleNames: Record<string, string>
   coverUrls: Record<string, string>
+  /** Per-event cover focal point (CSS object-position), keyed like `coverUrls` — the SAME value
+   *  the detail hero applies, so cards and the page crop the photo identically. */
+  coverFocus: Record<string, string>
   rsvpCounts: Record<string, number>
   /** Per-event price stat for the card — "Free" / "$X" / "From $X". */
   priceLabels: Record<string, string>
@@ -369,7 +378,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   // not-yet-regenerated columns; see lib/events/geocode.ts).
   const EVENT_SELECT = `id, title, slug, location, starts_at, ends_at, is_cancelled, is_demo,
        featured_at, scope_id, scope_type, category, energy_tag, capacity, attendance_mode, price_cents,
-       cover_image_path, recurrence_type, recurrence_until, parent_event_id, poster_path, geog,
+       cover_image_path, theme, recurrence_type, recurrence_until, parent_event_id, poster_path, geog,
        host:profiles!host_id ( id, display_name, handle )`
 
   // ── The three event sources + proximity, fetched in ONE wave ────────────────
@@ -529,7 +538,11 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   }
 
   // Card header images (getPublicUrl is synchronous; the signed poster URLs came from the wave).
+  // Each cover carries the host's focal point beside it (events.theme.coverFocus) so the card
+  // crops through the SAME point the detail hero does — a portrait flyer whose title sits at the
+  // top no longer gets sliced through the middle by the 16:9 card window. Unset === centered.
   const coverUrls: Record<string, string> = {}
+  const coverFocus: Record<string, string> = {}
   for (const e of events) {
     if (e.cover_image_path) {
       const { data } = admin.storage.from('event-media').getPublicUrl(e.cover_image_path)
@@ -538,6 +551,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
       const signed = posterUrlByPath.get(e.poster_path)
       if (signed) coverUrls[e.id] = signed
     }
+    if (coverUrls[e.id]) coverFocus[e.id] = readEventCoverFocus(e.theme)
   }
 
   const rsvpCounts: Record<string, number> = {}
@@ -718,6 +732,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     mapPins,
     circleNames,
     coverUrls,
+    coverFocus,
     rsvpCounts,
     priceLabels,
     myRsvps,

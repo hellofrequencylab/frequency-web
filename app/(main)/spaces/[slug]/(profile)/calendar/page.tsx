@@ -50,6 +50,7 @@ export default async function SpaceCalendarPage({ params }: { params: Promise<{ 
         location: ev.location,
         goingCount: eng?.going ?? 0,
         coverUrl: eng?.coverUrl ?? null,
+        coverFocus: eng?.coverFocus ?? null,
         isCancelled: !!ev.is_cancelled,
       }
     })
