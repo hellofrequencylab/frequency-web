@@ -187,10 +187,22 @@ export function AdminBarBody({
         </div>
         <div className="space-y-4">
           {section.nodes.map((item) => (
-            <div key={`${key}-${item.id}`} className="min-w-0 space-y-2">
+            <div
+              key={`${key}-${item.id}`}
+              // A tool NESTED under its box (ADR-846) indents and takes a hairline rule, so the 12-box
+              // catalog shape reads as boxes-with-tools instead of one flat list of equals. Depth 0 is
+              // the box itself and keeps the section's own alignment.
+              className={
+                item.depth
+                  ? 'min-w-0 space-y-2 border-l border-border pl-3 ml-1'
+                  : 'min-w-0 space-y-2'
+              }
+            >
               {/* A per-node label only when the section holds more than one node — a single-module
-                  section reads as just its section header, never a doubled title. */}
-              {section.nodes.length > 1 && item.label && (
+                  section reads as just its section header, never a doubled title. A nested tool ALWAYS
+                  names itself: it sits under a box whose header is a different noun, so dropping its
+                  label would leave an anonymous control. */}
+              {(item.depth || section.nodes.length > 1) && item.label && (
                 <h3 className="text-xs font-semibold text-text">{item.label}</h3>
               )}
               {item.node}
