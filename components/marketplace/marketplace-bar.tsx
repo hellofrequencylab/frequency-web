@@ -15,6 +15,30 @@ export interface MarketplaceStat {
   icon?: LucideIcon
 }
 
+/** The soft stat-chip row on its own — the ONE stats-band shape every browse surface shares.
+ *  MarketplaceBar composes it beside the commerce area menu; a non-commerce browse surface
+ *  (e.g. /channels) mounts it directly under its hero with its own numbers. */
+export function MarketplaceStats({ stats }: { stats: MarketplaceStat[] }) {
+  if (stats.length === 0) return null
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {stats.map((s) => {
+        const Icon = s.icon
+        return (
+          <div
+            key={s.label}
+            className="flex items-center gap-1.5 rounded-lg bg-surface-elevated/60 px-2.5 py-1"
+          >
+            {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />}
+            <span className="text-sm font-bold tabular-nums text-text">{s.value}</span>
+            <span className="text-xs text-muted">{s.label}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export function MarketplaceBar({
   active,
   stats,
@@ -25,23 +49,7 @@ export function MarketplaceBar({
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
       <MarketplaceFacets active={active} />
-      {stats.length > 0 && (
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {stats.map((s) => {
-            const Icon = s.icon
-            return (
-              <div
-                key={s.label}
-                className="flex items-center gap-1.5 rounded-lg bg-surface-elevated/60 px-2.5 py-1"
-              >
-                {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />}
-                <span className="text-sm font-bold tabular-nums text-text">{s.value}</span>
-                <span className="text-xs text-muted">{s.label}</span>
-              </div>
-            )
-          })}
-        </div>
-      )}
+      <MarketplaceStats stats={stats} />
     </div>
   )
 }

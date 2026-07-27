@@ -316,9 +316,12 @@ export default async function CirclePage({
 
       <CircleCover imageUrl={circle.image_url} name={circle.name} />
 
-      {/* Unified Detail header: title + status/type badges, member/host + capacity
-          below, capability-gated actions right. Editing is in the Settings panel. */}
+      {/* Unified Detail header: back to the Circles index (the channel-page idiom for a
+          detail nested under its browse surface), then title + status/type badges,
+          member/host + capacity below, capability-gated actions right. Editing is in the
+          Settings panel. */}
       <DetailTemplate
+        back={{ href: '/circles', label: 'Circles' }}
         title={circle.name}
         badges={
           <>
