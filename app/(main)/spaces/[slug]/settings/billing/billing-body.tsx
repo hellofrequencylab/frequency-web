@@ -15,7 +15,7 @@ import { SeatCounter } from '@/components/spaces/seat-counter'
 import { SectionHeader } from '@/components/ui/section-header'
 import { FeatureMeterRange } from '@/components/pricing/feature-meter-range'
 import { FEATURE_METERS } from '@/lib/pricing/feature-meters'
-import { getDeals } from '@/lib/crm/pipeline'
+import { countContacts } from '@/lib/crm/pipeline'
 import { getSpaceVerification } from '@/lib/spaces/nonprofit-verification'
 import { spaceEarningsSummary } from '@/lib/commerce/orders'
 import { GoBusinessCta } from './go-business'
@@ -92,7 +92,7 @@ export async function BillingBody({ slug }: { slug: string }) {
     verification,
     catalog,
     earnings,
-    deals,
+    contactCount,
   ] = await Promise.all([
     getPricingValues(),
     spaceLoadoutSellable('business'),
@@ -105,9 +105,13 @@ export async function BillingBody({ slug }: { slug: string }) {
     loadCatalogConfig(),
     // The honest receipt (Phase 5): trailing 30-day earnings, split network-sourced vs self.
     spaceEarningsSummary(space.id, 30),
-    // The CRM usage read for the contacts meter (ADR-837): the pipeline count is the established live
-    // proxy for contacts (ADR-520 P2), fail-safe ([] on error). Display-only; nothing blocks.
-    getDeals(space.id),
+    // The CRM usage read for the contacts meter (ADR-837). This counts CONTACTS, which is what the
+    // meter's dimension says and what the 250-on-free allowance is denominated in. It previously
+    // passed the DEAL count as a "proxy", which is off by whatever the ratio of contacts to open
+    // pipeline deals happens to be — for an imported list that is two or three orders of magnitude.
+    // Head-only count, so it also stops loading every deal row (select('*') + a people hydrate) just
+    // to take .length. Fail-safe 0; display-only, nothing blocks.
+    countContacts(space.id),
   ])
 
   const isPaid = currentPlan !== 'free'
@@ -153,7 +157,7 @@ export async function BillingBody({ slug }: { slug: string }) {
         {/* USAGE METERS (ADR-519 / ADR-520 P3): the ladder for every metered tool in one place, the
             current plan highlighted. Nothing charges or blocks (billing is on hold); the meters are
             informational. This is the single "where am I on the ladder" answer. Where a real count is
-            already cheaply in scope (contacts via the pipeline proxy, operator seats) it renders as an
+            already cheaply in scope (contacts via a head-only count, operator seats) it renders as an
             "X of Y used" readout (ADR-837); every other meter shows the allowance alone. */}
         <section>
           <SectionHeader title="Usage" />
@@ -167,7 +171,7 @@ export async function BillingBody({ slug }: { slug: string }) {
                 live={billingIsLive}
                 usage={
                   ladder.featureKey === 'space_crm'
-                    ? deals.length
+                    ? contactCount
                     : ladder.featureKey === 'space_team'
                       ? seatUsage.used
                       : undefined

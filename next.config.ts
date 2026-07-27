@@ -105,14 +105,16 @@ const nextConfig: NextConfig = {
       // the year-round game is "The Quest"). Redirect old help links + bookmarks.
       { source: '/help/the-game', destination: '/help/the-quest', permanent: false },
       { source: '/help/the-game/:path*', destination: '/help/the-quest/:path*', permanent: false },
-      // The pricing "five doors" rename (ADR-590): the old persona pages collapsed to five doors.
-      // Redirect the retired slugs so bookmarks + inbound links keep landing somewhere real.
-      // The funnel doors use SHORT slugs (ADR-591). The retired persona long-slugs redirect in. The short
-      // slugs studios / hosts / communities / nonprofits are real pages (or land as their funnels ship), so
-      // they are NOT redirected here (a redirect would shadow the real route).
-      { source: '/for/coaches-and-healers', destination: '/for/coaches', permanent: false },
-      { source: '/for/event-hosts', destination: '/pricing', permanent: false },
-      { source: '/for/community-builders', destination: '/pricing', permanent: false },
+      // The pricing "five doors" (ADR-590/591). Only genuinely RETIRED persona slugs belong here.
+      //
+      // These rules used to assume a short-slug rename (coaches / hosts / communities) that the funnel
+      // registry never adopted: lib/marketing/funnel-config.ts still keys the doors on the LONG slugs,
+      // and PERSONA_LOADOUTS + the sitemap both point at those. So three rules were shadowing live
+      // pages — /for/coaches-and-healers redirected to /for/coaches, which is not a registry slug and
+      // 404s under `dynamicParams = false`, and /for/event-hosts + /for/community-builders bounced
+      // back to the very page their card was clicked from. Three of the five doors on /pricing were
+      // dead, and all three are advertised in the sitemap. A redirect must never shadow a real route:
+      // the guard in lib/marketing/funnel-redirects.test.ts now fails if one does.
       { source: '/for/event-spaces', destination: '/pricing', permanent: false },
       { source: '/for/service-businesses', destination: '/pricing', permanent: false },
       { source: '/for/product-businesses', destination: '/pricing', permanent: false },

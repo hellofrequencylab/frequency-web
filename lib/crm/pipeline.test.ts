@@ -81,6 +81,7 @@ import {
   getDeal,
   getActivities,
   countOpenTasks,
+  countContacts,
   getContacts,
   getContact,
   getSpaceTasks,
@@ -197,6 +198,31 @@ describe('getContacts / getContact', () => {
     const contact = await getContact('c-root', 'space-A')
     expect(spaceFilterValue('contacts')).toBe('space-A')
     expect(contact).toBeNull()
+  })
+})
+
+// The `space_crm` usage meter is denominated in CONTACTS against a 250-on-free allowance, and used to
+// be fed the DEAL count as a "proxy". Those are different tables and different magnitudes, so a Space
+// with an imported list read as ~1% of its real usage. These lock the count to contacts, scoped.
+describe('countContacts', () => {
+  it('counts only the Space lane, scoped by space_id', async () => {
+    expect(await countContacts('space-A')).toBe(1)
+    expect(spaceFilterValue('contacts')).toBe('space-A')
+  })
+  it('GLOBAL (no spaceId): applies no space filter and counts every contact', async () => {
+    expect(await countContacts()).toBe(2)
+    expect(hasSpaceFilter('contacts')).toBe(false)
+  })
+  it('does NOT count deals — the two tables must not be interchangeable here', async () => {
+    // Give Space A three contacts against its single deal, the shape that made the old proxy wrong:
+    // a Space with an imported list reads as a fraction of its real usage.
+    store.contacts.push(
+      { id: 'c-A2', email: 'a2@x.com', display_name: 'A2', consent_state: 'unknown', created_at: 'x', space_id: 'space-A' },
+      { id: 'c-A3', email: 'a3@x.com', display_name: 'A3', consent_state: 'unknown', created_at: 'x', space_id: 'space-A' },
+    )
+    const deals = await getDeals('space-A')
+    expect(deals).toHaveLength(1)
+    expect(await countContacts('space-A')).toBe(3)
   })
 })
 
