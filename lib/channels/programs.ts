@@ -728,3 +728,139 @@ export async function refreshProgramBlueprintForStaff(input: {
     .eq('id', program.templateId)
   if (error) throw new Error(error.message)
 }
+
+// ─── CIRCLE ↔ CHANNEL ↔ SPACE assignments (ADR-871) ──────────────────────────
+// The three connective writes the founder asked for: a circle declares its
+// Channel, staff curate a channel's circles from the Manage hub, and staff
+// assign or clear a channel's owner Space. AUTHZ IS THE CALLER'S JOB, same as
+// everything above: the circle-settings action gates on circle.editSettings,
+// the Manage hub actions on channel.manage (ADR-274).
+
+/** Set or clear the Channel a circle practices in (circles.topical_channel_id).
+ *  `channelId` null clears it. A missing channel is refused, and so is a paused
+ *  one: is_active is the same retire switch startChapter honors (ADR-865), so a
+ *  paused Program takes no new Circles by ANY road. */
+export async function setCircleChannel(input: {
+  circleId: string
+  channelId: string | null
+}): Promise<void> {
+  const admin = db()
+
+  const { data: circleData } = await admin
+    .from('circles')
+    .select('id, topical_channel_id')
+    .eq('id', input.circleId)
+    .maybeSingle()
+  if (!circleData) throw new Error('That Circle is not available.')
+
+  if (input.channelId) {
+    const { data } = await admin
+      .from('topical_channels')
+      .select('id, is_active')
+      .eq('id', input.channelId)
+      .maybeSingle()
+    const channel = data as { id: string; is_active: boolean } | null
+    if (!channel) throw new Error('That Channel is not available.')
+    if (channel.is_active === false) {
+      throw new Error('This Channel is paused and not taking new Circles right now.')
+    }
+  }
+
+  const { error } = await admin
+    .from('circles')
+    .update({ topical_channel_id: input.channelId })
+    .eq('id', input.circleId)
+  if (error) throw new Error(error.message)
+}
+
+/** Take a circle out of a channel (the Manage hub's remove). Verifies the
+ *  circle is actually IN this channel first, so a stale form can never detach
+ *  a circle from somewhere else. The circle keeps its host, members, and
+ *  events; it just stops practicing here. */
+export async function removeCircleFromChannel(input: {
+  circleId: string
+  channelId: string
+}): Promise<void> {
+  const admin = db()
+  const { data } = await admin
+    .from('circles')
+    .select('id, topical_channel_id')
+    .eq('id', input.circleId)
+    .maybeSingle()
+  const circle = data as { id: string; topical_channel_id: string | null } | null
+  if (!circle) throw new Error('That Circle is not available.')
+  if (circle.topical_channel_id !== input.channelId) {
+    throw new Error('That Circle is not in this Channel.')
+  }
+  const { error } = await admin
+    .from('circles')
+    .update({ topical_channel_id: null })
+    .eq('id', input.circleId)
+  if (error) throw new Error(error.message)
+}
+
+/** Assign a channel's owner Space, or clear it back to Frequency-run
+ *  (`spaceId` null). ONE owned channel per Space, full stop: the unique partial
+ *  index on topical_channels(owner_space_id) (migration 20270112000000) rejects
+ *  ANY second owned channel, Program or not — the pre-check here turns that
+ *  constraint into a sentence. When the channel runs a Program, the blueprint's
+ *  owner_space_id is re-stamped to match: the ADR-865 catalog fence reads it,
+ *  and a stale owner would leave the fence telling the wrong story.
+ *  program_only is never touched — a Program blueprint is never a Starter,
+ *  whoever owns it. */
+export async function setChannelOwnerSpace(input: {
+  channelId: string
+  profileId: string
+  spaceId: string | null
+}): Promise<void> {
+  const admin = db()
+
+  const { data } = await admin
+    .from('topical_channels')
+    .select('id, owner_space_id, template_id')
+    .eq('id', input.channelId)
+    .maybeSingle()
+  const channel = data as
+    | { id: string; owner_space_id: string | null; template_id: string | null }
+    | null
+  if (!channel) throw new Error('That Channel is not available.')
+
+  if (input.spaceId) {
+    // The owner must be a real business or nonprofit Space; the root Space IS
+    // Frequency, and Frequency-run is spelled NULL, never the root id.
+    const { data: spaceData } = await admin
+      .from('spaces')
+      .select('id, type')
+      .eq('id', input.spaceId)
+      .maybeSingle()
+    const space = spaceData as { id: string; type: string } | null
+    if (!space || space.type === 'root') throw new Error('That Space is not available.')
+
+    // One owned channel per Space. Filter in JS (not .neq) so re-assigning the
+    // same owner to the same channel stays a no-op success.
+    const { data: ownedData } = await admin
+      .from('topical_channels')
+      .select('id')
+      .eq('owner_space_id', input.spaceId)
+    const owned = ((ownedData ?? []) as { id: string }[]).filter((r) => r.id !== input.channelId)
+    if (owned.length > 0) {
+      throw new Error(
+        'That Space already owns a Channel. A Space can own one Channel, so clear that one first.',
+      )
+    }
+  }
+
+  const { error } = await admin
+    .from('topical_channels')
+    .update({ owner_space_id: input.spaceId })
+    .eq('id', input.channelId)
+  if (error) throw new Error(error.message)
+
+  if (channel.template_id) {
+    const { error: blueprintError } = await admin
+      .from('circle_templates')
+      .update({ owner_space_id: input.spaceId })
+      .eq('id', channel.template_id)
+    if (blueprintError) throw new Error(blueprintError.message)
+  }
+}

@@ -12,6 +12,8 @@ status: published
 
 **Channels** are the focus areas Frequency is organized around. Every Circle declares one Channel, so you can explore by what you're into, not just where you are. A Channel holds the Circles practicing it, a forum feed, and an open room. Some Channels also run a **Program** you can start a Chapter of (see below).
 
+Hosts pick the Channel when they start a Circle, and can change it any time from the Circle's settings.
+
 ## The founding topics
 
 The platform-curated Channels are:

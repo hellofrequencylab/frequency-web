@@ -17,6 +17,7 @@ import {
 import { slugify, isoDaysAgo } from '@/lib/utils'
 import { isValidTimeZone } from '@/lib/time/zone'
 import { getCircleEarnedZaps } from '@/lib/circles/earned'
+import { setCircleChannel } from '@/lib/channels/programs'
 import type { Database } from '@/lib/database.types'
 
 /** A small {id, title, href} entry for one of the circle's adopted Quest items. */
@@ -117,6 +118,62 @@ async function getCircleQuestAdoptions(circleId: string): Promise<CircleQuestAdo
 // authority (capabilities are law, capabilities.ts). The admin client bypasses
 // RLS, so the check here — not RLS — is what protects the mutation.
 
+/** One Pillar's worth of Channel choices for the circle-settings picker
+ *  (Pillar > Channel > Circle, NAMING.md). */
+export interface ChannelOptionGroup {
+  pillar: string
+  channels: { id: string; name: string; paused: boolean }[]
+}
+
+/** The Channel picker's choices: active topical_channels grouped by Pillar
+ *  (topical_channels.pillar_id → pillars), in display order. The circle's
+ *  CURRENT channel stays in the list even when paused, so the select tells the
+ *  truth about where the circle practices today — the write action refuses a
+ *  paused target either way. Channels without a pillar land in a trailing
+ *  group so nothing curated silently disappears. */
+async function listChannelOptionGroups(currentChannelId: string | null): Promise<ChannelOptionGroup[]> {
+  const db = untyped()
+  const [pillarsRes, channelsRes] = await Promise.all([
+    db.from('pillars').select('id, name, display_order').eq('is_active', true).order('display_order'),
+    db
+      .from('topical_channels')
+      .select('id, name, pillar_id, is_active, display_order')
+      .eq('is_active', true)
+      .order('display_order'),
+  ])
+  const pillars = (pillarsRes.data ?? []) as { id: string; name: string }[]
+  const channels = (channelsRes.data ?? []) as {
+    id: string
+    name: string
+    pillar_id: string | null
+    is_active: boolean
+  }[]
+
+  if (currentChannelId && !channels.some((c) => c.id === currentChannelId)) {
+    const { data } = await db
+      .from('topical_channels')
+      .select('id, name, pillar_id, is_active')
+      .eq('id', currentChannelId)
+      .maybeSingle()
+    if (data) channels.push(data as (typeof channels)[number])
+  }
+
+  const toOption = (c: (typeof channels)[number]) => ({
+    id: c.id,
+    name: c.name,
+    paused: c.is_active === false,
+  })
+  const groups: ChannelOptionGroup[] = pillars
+    .map((p) => ({
+      pillar: p.name,
+      channels: channels.filter((c) => c.pillar_id === p.id).map(toOption),
+    }))
+    .filter((g) => g.channels.length > 0)
+  const loose = channels.filter((c) => !pillars.some((p) => p.id === c.pillar_id))
+  if (loose.length > 0) groups.push({ pillar: 'More Channels', channels: loose.map(toOption) })
+  return groups
+}
+
 /** Load the editable fields of a circle, but only for a viewer who may edit it.
  *  Returns null when the circle is missing or the caller lacks circle.editSettings
  *  (so the module renders no chrome for someone who can't manage this circle). */
@@ -124,7 +181,7 @@ export async function getCircleAdminData(slug: string) {
   const admin = createAdminClient()
   const { data: circle } = await admin
     .from('circles')
-    .select('id, slug, name, about, type, member_cap, status, image_url, unlisted')
+    .select('id, slug, name, about, type, member_cap, status, image_url, unlisted, topical_channel_id')
     .eq('slug', slug)
     .maybeSingle()
   if (!circle) return null
@@ -134,13 +191,16 @@ export async function getCircleAdminData(slug: string) {
 
   // Also load the practice picker data ("This week's practice" lives here now) plus
   // the Circle Quest adoptions (journeys / practices / challenges) the module lists,
-  // and the global challenges the host could still adopt for the circle.
-  const [practice_library, activePractice, adoptions, adoptableChallenges] = await Promise.all([
-    listPublicPractices(),
-    getCircleActivePractice(circle.id),
-    getCircleQuestAdoptions(circle.id),
-    listAdoptableChallenges(circle.id),
-  ])
+  // the global challenges the host could still adopt for the circle, and the Channel
+  // picker's Pillar-grouped choices (ADR-871).
+  const [practice_library, activePractice, adoptions, adoptableChallenges, channelGroups] =
+    await Promise.all([
+      listPublicPractices(),
+      getCircleActivePractice(circle.id),
+      getCircleQuestAdoptions(circle.id),
+      listAdoptableChallenges(circle.id),
+      listChannelOptionGroups(circle.topical_channel_id ?? null),
+    ])
 
   return {
     id: circle.id,
@@ -152,6 +212,8 @@ export async function getCircleAdminData(slug: string) {
     status: circle.status,
     image_url: circle.image_url,
     unlisted: circle.unlisted ?? false,
+    topical_channel_id: circle.topical_channel_id ?? null,
+    channel_groups: channelGroups,
     practice_library: practice_library.map((p) => ({ id: p.id, title: p.title })),
     active_practice_id: activePractice?.id ?? null,
     adoptedJourneys: adoptions.journeys,
@@ -243,6 +305,29 @@ export async function updateCircleSettings(id: string, slug: string, fd: FormDat
 
   revalidatePath(`/circles/${slug}`)
   revalidatePath('/circles')
+}
+
+/** Declare (or clear) the Channel this circle practices in (ADR-871). Re-checks
+ *  circle.editSettings, the module's own gate, exactly like the sibling field
+ *  saves; the data layer (setCircleChannel) refuses a paused Program with
+ *  member-facing copy, which this returns for the module to show inline. */
+export async function setCircleChannelAction(
+  circleId: string,
+  slug: string,
+  channelId: string | null,
+): Promise<{ ok: true } | { error: string }> {
+  const caps = await getCircleCapabilities(circleId)
+  if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
+
+  try {
+    await setCircleChannel({ circleId, channelId: channelId || null })
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Could not save. Try again.' }
+  }
+
+  revalidatePath(`/circles/${slug}`)
+  revalidatePath('/circles')
+  return { ok: true }
 }
 
 // Cover image: upload to the public `site-media` bucket and persist image_url, or

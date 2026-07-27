@@ -9,6 +9,7 @@ import {
   getCircleAdminData,
   updateCircleSettings,
   updateCirclePermalink,
+  setCircleChannelAction,
   setCircleCoverUrl,
   removeCircleCover,
   deleteCircle,
@@ -37,13 +38,20 @@ export function CircleSettingsModule() {
   const [permaErr, setPermaErr] = useState<string | null>(null)
   const [permaPending, startPerma] = useTransition()
 
+  const [channelId, setChannelId] = useState('')
+  const [channelErr, setChannelErr] = useState<string | null>(null)
+  const [channelPending, startChannel] = useTransition()
+
   useEffect(() => {
     if (!slug) return
     let active = true
     getCircleAdminData(slug).then((d) => {
       if (active) {
         setData(d)
-        if (d) setPermalink(d.slug)
+        if (d) {
+          setPermalink(d.slug)
+          setChannelId(d.topical_channel_id ?? '')
+        }
         setLoading(false)
       }
     })
@@ -66,6 +74,24 @@ export function CircleSettingsModule() {
         setPermaErr(res.error)
       } else {
         router.push(`/circles/${res.slug}`)
+      }
+    })
+  }
+
+  /** Declare the circle's Channel (ADR-871). Its own action, not the autosave form:
+   *  the save can be REFUSED (a paused Program takes no new Circles), and that
+   *  refusal has to land next to the select, with the pick rolled back. */
+  function handleChannel(next: string) {
+    const prev = channelId
+    setChannelId(next)
+    setChannelErr(null)
+    startChannel(async () => {
+      const res = await setCircleChannelAction(data!.id, data!.slug, next || null)
+      if ('error' in res) {
+        setChannelErr(res.error)
+        setChannelId(prev)
+      } else {
+        router.refresh()
       }
     })
   }
@@ -135,6 +161,35 @@ export function CircleSettingsModule() {
         </div>
         <p className="text-2xs text-muted">Unlisted keeps this circle off the directory, map, and search. The link still works and members always see it.</p>
       </RailAutosaveForm>
+
+      {/* Channel — its own action: the save can be refused (a paused Program takes no
+          new Circles), so the refusal shows here and the pick rolls back. */}
+      <div className="space-y-1.5">
+        <span className={fieldLabel}>Channel</span>
+        <select
+          value={channelId}
+          onChange={(e) => handleChannel(e.target.value)}
+          disabled={channelPending}
+          className={input}
+        >
+          <option value="">No Channel</option>
+          {data.channel_groups.map((g) => (
+            <optgroup key={g.pillar} label={g.pillar}>
+              {g.channels.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {c.paused ? ' (paused)' : ''}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+        <p className="text-2xs text-muted">
+          The Channel this circle practices in. It shows up on that Channel&apos;s page, and its
+          posts join that feed.
+        </p>
+        {channelErr && <span className="text-xs font-medium text-danger">{channelErr}</span>}
+      </div>
 
       {/* Permalink — its own action: a rename redirects the page to the new URL. */}
       <div className="space-y-1.5">

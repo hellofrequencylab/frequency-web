@@ -140,6 +140,32 @@ export async function loadChannelCircles(channelId: string): Promise<ManagedCirc
   }))
 }
 
+/** Circles staff could ADD to this channel (ADR-871): real, non-demo,
+ *  forming|active, and not already practicing here. Biggest first, capped for
+ *  the picker. The paused-channel refusal lives in the write (setCircleChannel),
+ *  not here — this read only shapes the offer. */
+export async function loadAssignableCircles(
+  channelId: string,
+): Promise<{ id: string; name: string; city: string | null; memberCount: number }[]> {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('circles')
+    .select('id, name, city, member_count, topical_channel_id')
+    .eq('is_demo', false)
+    .in('status', ['forming', 'active'])
+    .order('member_count', { ascending: false })
+    .limit(200)
+  return ((data ?? []) as Record<string, unknown>[])
+    .filter((row) => row.topical_channel_id !== channelId)
+    .slice(0, 100)
+    .map((row) => ({
+      id: String(row.id),
+      name: String(row.name),
+      city: row.city == null ? null : String(row.city),
+      memberCount: typeof row.member_count === 'number' ? row.member_count : 0,
+    }))
+}
+
 export interface ProgramSectionData {
   /** The blueprint, when the channel runs a Program; null = attach form. */
   blueprint: CircleTemplate | null
@@ -150,6 +176,10 @@ export interface ProgramSectionData {
     isActive: boolean
     ownerSpaceId: string | null
   }
+  /** The owner Space's display row when one is set; null = Frequency-run. */
+  ownerSpace: { id: string; name: string; slug: string } | null
+  /** Assignable owners: active business/nonprofit Spaces, A to Z (capped). */
+  spaces: { id: string; name: string }[]
   /** Attach/refresh sources: live, real circles, biggest first (capped). */
   liveCircles: { id: string; name: string; city: string | null; memberCount: number }[]
   /** Attach sources: the staff Starter Circles catalog. */
@@ -170,7 +200,7 @@ export async function loadProgramSection(channelId: string): Promise<ProgramSect
     | null
   if (!channel) return null
 
-  const [blueprint, circlesRes, starters] = await Promise.all([
+  const [blueprint, circlesRes, starters, ownerSpaceRes, spacesRes] = await Promise.all([
     channel.template_id ? getTemplateById(channel.template_id) : Promise.resolve(null),
     // Sources for attach/refresh: any live, real circle on the platform (the
     // staff path has no Space fence). Capped for the picker; biggest first.
@@ -182,7 +212,25 @@ export async function loadProgramSection(channelId: string): Promise<ProgramSect
       .order('member_count', { ascending: false })
       .limit(100),
     channel.template_id ? Promise.resolve([]) : getActiveTemplates(),
+    // The owner Space's display row (ADR-871); null = Frequency-run.
+    channel.owner_space_id
+      ? admin.from('spaces').select('id, name, slug').eq('id', channel.owner_space_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    // Assignable owners: active business/nonprofit Spaces ('organization' is the
+    // legacy spelling of nonprofit, lib/spaces/types.ts). Only offered while the
+    // channel has no owner; capped for the picker.
+    channel.owner_space_id
+      ? Promise.resolve({ data: [] })
+      : admin
+          .from('spaces')
+          .select('id, name, type, status')
+          .in('type', ['business', 'nonprofit', 'organization'])
+          .eq('status', 'active')
+          .order('name')
+          .limit(200),
   ])
+
+  const ownerRow = (ownerSpaceRes.data ?? null) as { id: string; name: string; slug: string } | null
 
   return {
     blueprint,
@@ -192,6 +240,11 @@ export async function loadProgramSection(channelId: string): Promise<ProgramSect
       isActive: channel.is_active !== false,
       ownerSpaceId: channel.owner_space_id,
     },
+    ownerSpace: ownerRow ? { id: ownerRow.id, name: ownerRow.name, slug: ownerRow.slug } : null,
+    spaces: ((spacesRes.data ?? []) as Record<string, unknown>[]).map((row) => ({
+      id: String(row.id),
+      name: String(row.name),
+    })),
     liveCircles: ((circlesRes.data ?? []) as Record<string, unknown>[]).map((row) => ({
       id: String(row.id),
       name: String(row.name),

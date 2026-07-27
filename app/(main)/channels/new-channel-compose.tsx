@@ -19,7 +19,15 @@ const CATEGORIES: Array<{ value: string; label: string }> = [
 
 type PillarOption = { id: string; name: string }
 
-export function NewChannelCompose({ pillars = [] }: { pillars?: PillarOption[] }) {
+export function NewChannelCompose({
+  pillars = [],
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
+}: {
+  pillars?: PillarOption[]
+  /** The trigger button's classes. Defaults to the standard primary; a hero caller
+   *  passes HERO_PRIMARY_BTN so the CTA matches the shared hero button idiom. */
+  buttonClass?: string
+}) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -61,7 +69,7 @@ export function NewChannelCompose({ pillars = [] }: { pillars?: PillarOption[] }
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap"
+        className={buttonClass}
       >
         <Plus className="w-4 h-4" />
         Create Channel
