@@ -56,7 +56,7 @@ export function CohostInviteBanner({
     return (
       <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-sm font-semibold text-success">
         <Check className="h-4 w-4" />
-        You are a cohost now. You can help run this event.
+        You are a Co Host now. You can help run this event.
       </div>
     )
   }
@@ -64,7 +64,7 @@ export function CohostInviteBanner({
   if (state === 'declined') {
     return (
       <div className="mb-4 rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm text-muted">
-        You declined the cohost invite.
+        You declined the Co Host invite.
       </div>
     )
   }

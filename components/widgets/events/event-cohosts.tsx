@@ -5,22 +5,24 @@ import { CohostManager } from '@/components/events/cohost-manager'
 // detail page via the page-settings module engine. Reads the request-scoped event context (stamped
 // once by the detail page — lib/events/active-event.ts) so it never re-fetches or prop-drills.
 //
-// Self-gate: the host always sees this (so they can add the first cohost); everyone else only sees it
-// once there's at least one cohost to show. With nothing to show and nothing to do, render nothing so
-// an empty slot never appears. The wrapped CohostManager applies the same gate internally.
+// HOST-ONLY since the Host & Co Hosts merge: the PUBLIC credit for a person co-hosting now lives in
+// the `event-lineup` section alongside the Host and the Space Co Hosts, so this module is purely the
+// host's controls (invite, remove, cancel a pending invite, transfer the host role). Rendering it to
+// everyone would name the same people twice on one page. Nothing about the relation changed — these
+// are still event_cohosts rows with management access via isEventCohost.
 export const EventCohosts = async () => {
   const ctx = getEventContext()
   if (!ctx) return null
   const { event, cohosts, cohostInvites, isHost } = ctx
-  if (cohosts.length === 0 && !isHost) return null
+  if (!isHost) return null
 
   return (
     <CohostManager
       eventId={event.id}
       slug={event.slug}
       cohosts={cohosts}
-      pendingInvites={isHost ? cohostInvites : []}
-      canManage={isHost}
+      pendingInvites={cohostInvites}
+      canManage
     />
   )
 }

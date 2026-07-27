@@ -11,14 +11,15 @@ import { isError } from '@/lib/action-result'
 import { messageHost } from '@/app/(main)/events/[slug]/social-actions'
 import type { HostLite } from '@/lib/events/active-event'
 
-// The event Host profile box (the repurposed `event-lineup` module) — a client island so the box
-// can open a modal compose. It REUSES PersonCard for the profile visual (no hand-rolled card), adds
-// a "Message Host" CTA, and on click opens a larger host profile + a message field. The send wires
-// into the SAME messaging backend as /messages via the `messageHost` server action
-// (findOrCreateDirectConversation + messages insert), which returns an ActionResult so this surfaces
-// success and errors inline. The parent server module self-hides when there is no host, so `host`
-// here is always present.
-export function HostProfileBox({
+// The PERSON Host credit inside the Host & Co Hosts section — a client island so the row can open a
+// modal compose. CHROME-FREE on purpose: the section (host-cohost-section.tsx) owns the card border
+// and the "Host & Co Hosts" eyebrow, so this renders only the host's row plus its CTA. It REUSES
+// PersonCard for the profile visual (no hand-rolled card), adds a "Message Host" CTA, and on click
+// opens a larger host profile + a message field. The send wires into the SAME messaging backend as
+// /messages via the `messageHost` server action (findOrCreateDirectConversation + messages insert),
+// which returns an ActionResult so this surfaces success and errors inline. The parent server module
+// self-hides when there is no host, so `host` here is always present.
+export function HostPersonCredit({
   host,
   eventId,
   canMessage,
@@ -60,9 +61,7 @@ export function HostProfileBox({
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-surface p-4">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-subtle">Host</p>
-
+    <div>
       <PersonCard
         handle={host.handle}
         displayName={host.display_name}
@@ -171,6 +170,6 @@ export function HostProfileBox({
           )}
         </div>
       </Dialog>
-    </section>
+    </div>
   )
 }

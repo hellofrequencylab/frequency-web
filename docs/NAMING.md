@@ -264,17 +264,33 @@ operator-facing copy (internal shorthand only).
 
 ## Events: Cohosts (people) vs Collaborators (Spaces) (ADR-834/ADR-835, July 2026, owner-ruled)
 
-Two distinct event relations, one word each. They must never blur:
+Two distinct RELATIONS, one shared member-facing label. They must never blur underneath, and
+they must read as one idea on the event page:
 
+- **"Co Host" (two words, capital H) is the member-facing label for BOTH** (owner ruling, July
+  2026 — it supersedes the display halves of ADR-834/835). On the event page the Host and every
+  Co Host live in ONE card, "Host & Co Hosts": the Host leads, Spaces co-hosting are named
+  under it on the same surface, and people co-hosting sit in a recessed panel inside the same
+  card. There is no separate "Collaborators" box and no separate public Cohosts list.
+  **Cohost / Collaborator remain the internal nouns** for the two relations — in code, schema,
+  ADRs, docs, and operator settings surfaces (the Collaborators share field, the Collective
+  capability "Collaborator hosting"). Never show the word "Collaborator" as an event-page
+  credit heading.
 - **Cohost** (one word, always a PERSON) = a member the host invites to help RUN an event
-  (`event_cohosts`). Gets management access (the `isEventCohost` action gates). Renders as a
-  quiet avatar chip credit (name + handle), never featured. Copy: "invite a cohost",
-  "Cohosts". Never a Space, never hyphenated as the noun.
+  (`event_cohosts`). Gets management access (the `isEventCohost` action gates). Credited in the
+  people panel of the Host & Co Hosts card (round avatar + @handle), never featured. The
+  host's invite / remove / transfer controls are a separate host-only module. Never a Space,
+  never hyphenated as the noun.
 - **Collaborator** (always a SPACE) = a Business or Non Profit Space co-hosting an event
   through an ACCEPTED `event_space_shares` row (Events EC3). Gets calendar visibility (the
-  event appears on that Space's calendar) plus a FEATURED credit on the event page (logo card
-  under the Host box) and a "with …" mention on the hosted-by line. Gets NO management access,
-  ever. Accepted rows display as "Collaborator(s)"; a pending row is "Pending their approval".
+  event appears on that Space's calendar) plus a FEATURED credit on the event page (a logo row
+  directly under the Host, same surface, same shape) and a "with …" mention on the hosted-by
+  line. Gets NO management access, ever. A pending row is still "Pending their approval" on the
+  host's settings surface.
+- **The label merge is display only.** The relations, the gates, and the capabilities are
+  untouched: a Space Co Host still has zero management access, a person Co Host still holds
+  `isEventCohost` rights. Anyone reading "Co Host" in the UI cannot infer which relation it is;
+  anyone reading code must use the internal noun.
 - **Relationship to ADR-799 "collaborator spaces" (deliberate extension, same brand):**
   `space_collaborations` = the STANDING space↔space relation (a venue hosting collaborator
   businesses); an event Collaborator = the PER-EVENT share. Same word on purpose, two grains.
@@ -295,9 +311,10 @@ Two distinct event relations, one word each. They must never blur:
   **Hub** is the locked community-structure term (Circle → Hub → Nexus) and must not collide.
   A member-hosted event has no host Space, so it can never take on Collaborators at all
   (individuals have Cohosts; their business Space can collaborate on a Space-hosted event).
-- **Hyphenation guard:** "co-host" (hyphenated) survives only as the VERB for what a
-  Collaborator Space does ("co-host it on their calendar"). The person noun is always
-  "cohost"; the Space noun is always "Collaborator".
+- **Hyphenation guard:** "co-host" (hyphenated) survives only as the VERB ("co-hosting this
+  event", "invited you to cohost this event"). The member-facing NOUN is "Co Host" / "Co Hosts";
+  the internal person noun is "cohost" (one word) and the internal Space noun is "Collaborator".
+  Never "Cohost" as a display heading, never "Co-Host".
 
 ## Profile pages
 

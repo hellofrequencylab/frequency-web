@@ -40,14 +40,14 @@ export function CohostManager({
   return (
     <section>
       <h2 className="text-sm font-bold text-text mb-3">
-        Cohosts
+        Co Hosts
         {cohosts.length > 0 && (
           <span className="ml-2 text-xs font-normal text-subtle">{cohosts.length}</span>
         )}
       </h2>
 
       {cohosts.length === 0 ? (
-        <p className="text-sm text-subtle">No cohosts yet.</p>
+        <p className="text-sm text-subtle">No Co Hosts yet.</p>
       ) : (
         <ul className="space-y-0.5">
           {cohosts.map((c) => (
@@ -64,7 +64,7 @@ export function CohostManager({
                 <p className="truncate text-xs text-subtle">@{c.handle}</p>
               </Link>
               {canManage && (
-                <RemoveCohostButton eventId={eventId} slug={slug} cohostProfileId={c.profileId} label="Remove cohost" />
+                <RemoveCohostButton eventId={eventId} slug={slug} cohostProfileId={c.profileId} label="Remove Co Host" />
               )}
             </li>
           ))}
@@ -182,7 +182,7 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
             setQuery(v)
             search(v)
           }}
-          placeholder="Invite a cohost by name or @handle"
+          placeholder="Invite a Co Host by name or @handle"
           disabled={pending}
           className="min-w-0 flex-1 bg-transparent text-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
         />
@@ -302,7 +302,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
         <div className="mt-2">
           <p className="text-xs text-muted">
             Make <span className="font-semibold text-text">@{pick.handle}</span> the host? You will
-            stay on as a cohost.
+            stay on as a Co Host.
           </p>
           <div className="mt-2 flex items-center gap-2">
             <button
