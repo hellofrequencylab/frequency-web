@@ -78,8 +78,8 @@ export function sectionForModule(module: SpaceModule): SpaceHubSection | null {
   }
 
   // Content & Programs — the Content box and everything inside it: the practitioner content (Practices,
-  // Journeys, Circles) plus the space's media libraries (Airwaves + Loom Studio).
-  if (['space.content', 'space.practices', 'space.journeys', 'space.circles', 'space.airwaves', 'space.loom'].includes(module.id)) {
+  // Journeys, Circles, the Program) plus the space's media libraries (Airwaves + Loom Studio).
+  if (['space.content', 'space.practices', 'space.journeys', 'space.circles', 'space.program', 'space.airwaves', 'space.loom'].includes(module.id)) {
     return 'programs'
   }
 
