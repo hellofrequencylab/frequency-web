@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { listingOwnerId, saveListing, unsaveListing, updateListing } from '@/lib/listings'
 import { toAmenities, toPropertyType, upsertHousingDetail } from '@/lib/listings/housing'
+import { approxCoordsForArea } from '@/lib/marketplace/area-geocode'
 import type { HousingType, RoomType } from '@/lib/listings/types'
 
 // Housing EDIT + favorites actions. The create/status/delete actions live in
@@ -69,13 +70,28 @@ export async function updateHousingListingAction(listingId: string, formData: Fo
   const leaseNum = Number(leaseRaw)
   const leaseMonths = leaseRaw !== null && leaseRaw !== '' && Number.isFinite(leaseNum) && leaseNum >= 0 ? Math.round(leaseNum) : null
 
+  const city = (formData.get('city') as string) || null
+  const neighborhood = (formData.get('neighborhood') as string) || null
+
+  // Re-geocode on edit exactly as create does (ADR-863): without this, changing the city left
+  // the OLD coordinates, so geo_fit and proximity reads scored against the wrong place forever.
+  // Best-effort; a miss leaves coordinates untouched rather than blocking the save.
+  let coords: { latitude: number; longitude: number } | null = null
+  try {
+    const c = await approxCoordsForArea([neighborhood, city].filter(Boolean).join(', '))
+    if (c) coords = { latitude: c.lat, longitude: c.lng }
+  } catch {
+    coords = null
+  }
+
   const updated = await updateListing(listingId, profileId, {
     title,
     description: (formData.get('description') as string) || null,
-    city: (formData.get('city') as string) || null,
-    neighborhood: (formData.get('neighborhood') as string) || null,
+    city,
+    neighborhood,
     priceNote: rentDollars ? `$${rentDollars}/mo` : null,
     images: parseImages(formData.get('images')),
+    ...(coords ?? {}),
   })
   if (!updated) return
 

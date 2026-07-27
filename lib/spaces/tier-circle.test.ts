@@ -50,8 +50,12 @@ function builder(table: string) {
   let pendingDelete = false
   const matching = () =>
     rowsOf(table).filter((r) => filters.every(([col, val]) => r[col] === val))
+  let headCount = false
   const api = {
-    select: () => api,
+    select: (_cols?: string, opts?: { head?: boolean; count?: string }) => {
+      if (opts?.head) headCount = true
+      return api
+    },
     eq(col: string, val: unknown) {
       filters.push([col, val])
       return api
@@ -101,6 +105,10 @@ function builder(table: string) {
         const arr = rowsOf(table)
         for (let i = arr.length - 1; i >= 0; i -= 1) if (doomed.has(arr[i])) arr.splice(i, 1)
         return Promise.resolve(resolve({ data: null, error: null }))
+      }
+      if (headCount) {
+        headCount = false
+        return Promise.resolve(resolve({ data: null, error: null, count: matching().length } as never))
       }
       return Promise.resolve(resolve({ data: matching(), error: null }))
     },
@@ -175,6 +183,41 @@ describe('syncTierCircleAccess: grant (the provenance stamp)', () => {
     expect(state.inserts).toHaveLength(0)
     expect(state.updates).toHaveLength(0)
     expect(state.circleMemberships[0].granted_by_tier_id).toBeNull()
+  })
+
+  it('(b2) reactivating a dormant row into a FULL circle reports the miss, never overfills (ADR-863)', async () => {
+    // The cap trigger is BEFORE INSERT only; reactivation is an UPDATE, so the code must
+    // re-check the cap itself or a paid membership silently pushes a full circle past its cap.
+    state.circles = [{ id: CIRCLE_A, space_id: SPACE, member_cap: 1 }]
+    state.circleMemberships = [
+      { id: 'active-other', circle_id: CIRCLE_A, profile_id: 'someone-else', status: 'active', granted_by_tier_id: null },
+      { id: 'dormant-mine', circle_id: CIRCLE_A, profile_id: MEMBER, status: 'inactive', granted_by_tier_id: null },
+    ]
+    const res = await syncTierCircleAccess({
+      spaceId: SPACE,
+      profileId: MEMBER,
+      tierId: TIER_A,
+      action: 'grant',
+    })
+    expect(res).toEqual({ granted: false, reason: 'circle_full' })
+    // The dormant row stays dormant; no reactivation UPDATE slipped past the cap.
+    expect(state.updates.filter((u) => u.table === 'memberships')).toHaveLength(0)
+    expect(state.circleMemberships.find((r) => r.id === 'dormant-mine')!.status).toBe('inactive')
+  })
+
+  it('(b3) reactivates a dormant row when the circle has room', async () => {
+    state.circles = [{ id: CIRCLE_A, space_id: SPACE, member_cap: 5 }]
+    state.circleMemberships = [
+      { id: 'dormant-mine', circle_id: CIRCLE_A, profile_id: MEMBER, status: 'inactive', granted_by_tier_id: null },
+    ]
+    const res = await syncTierCircleAccess({
+      spaceId: SPACE,
+      profileId: MEMBER,
+      tierId: TIER_A,
+      action: 'grant',
+    })
+    expect(res.granted).toBe(true)
+    expect(state.circleMemberships.find((r) => r.id === 'dormant-mine')!.status).toBe('active')
   })
 
   it('(a2) an unlinked tier is the normal no-op (no circle, nothing granted)', async () => {

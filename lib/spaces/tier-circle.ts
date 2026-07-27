@@ -115,6 +115,30 @@ async function grantCircleRow(
 
     if (existing) {
       if (existing.status === 'active') return { granted: false, reason: 'already_member' }
+      // Reactivation is an UPDATE, and the cap guard (enforce_circle_member_cap) is BEFORE
+      // INSERT only, counting active rows — so flipping a dormant row to active would slip
+      // past it (ADR-863). Re-check the cap here: a dormant row held a slot in member_count,
+      // but NOT in the active-member cap, so reactivating a full circle must report full, not
+      // silently overfill it. Best-effort read; a miss falls through to the insert-guarded path.
+      const { data: circle } = await table('circles')
+        .select('member_cap')
+        .eq('id', circleId)
+        .maybeSingle()
+      const cap = (circle as { member_cap: number | null } | null)?.member_cap ?? null
+      if (cap != null) {
+        // Count active members via an untyped handle (the shared Chain type doesn't model the
+        // head/count select option; repo idiom for reaching past the generated types, ADR-246).
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const db = createAdminClient() as unknown as { from: (t: string) => any }
+        const { count } = await db
+          .from('memberships')
+          .select('id', { count: 'exact', head: true })
+          .eq('circle_id', circleId)
+          .eq('status', 'active')
+        if (typeof count === 'number' && count >= cap) {
+          return { granted: false, reason: 'circle_full' }
+        }
+      }
       const { error } = await table('memberships')
         .update({ status: 'active', granted_by_tier_id: tierId })
         .eq('id', String(existing.id))

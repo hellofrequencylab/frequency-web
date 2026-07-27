@@ -327,6 +327,33 @@ describe('migration 20270108000000 (matching v3) source shape', () => {
   })
 })
 
+describe('roommate fit-term privacy migration (ADR-863)', () => {
+  const sql = readFileSync(
+    resolve(process.cwd(), 'supabase/migrations/20270109000000_housing_roommate_fit_privacy.sql'),
+    'utf8',
+  )
+
+  it('withholds the per-target budget/geo/timing oracle from the seeker-to-seeker RPC', () => {
+    // The returned columns are NULL (the score still uses the precise values); the app
+    // coalesces null to a neutral 0.5 so those chips never fire on the People tab.
+    for (const col of ['budget_fit', 'geo_fit', 'timing_fit']) {
+      expect(sql).toMatch(new RegExp(`null::double precision as ${col}`))
+    }
+  })
+
+  it('bands lifestyle_fit to three levels rather than a probeable gradient', () => {
+    expect(sql).toMatch(/lifestyle_fit >= 0\.75 then 1\.0/)
+    expect(sql).toMatch(/lifestyle_fit >= 0\.40 then 0\.5/)
+  })
+
+  it('only redefines the seeker RPC and keeps its member-only grant', () => {
+    expect(sql).toContain('drop function if exists public.housing_roommate_matches')
+    // The listing RPC may be named in the explanatory header, but it is never redefined here.
+    expect(sql).not.toContain('create function public.housing_match_candidates')
+    expect(sql).toMatch(/revoke execute on function public\.housing_roommate_matches[^;]*from public, anon/)
+  })
+})
+
 describe('labels', () => {
   it('resolves a property type label', () => {
     expect(propertyTypeLabel('studio')).toBe('Studio')
