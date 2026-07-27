@@ -3,12 +3,14 @@
 // is_active for the public gallery). Callers above enforce authz. Coercion is
 // defensive: jsonb columns are re-shaped, never trusted raw.
 //
-// CATALOG GUARD (ADR-864): circle_templates now also holds Space-owned Program
-// blueprints (owner_space_id set). The LIST reads below filter owner_space_id
-// IS NULL so a Program blueprint never appears in the global Starter Circles
-// rail or the staff catalog. The single-template reads (getTemplateById /
-// getTemplateBySlug) stay unfiltered on purpose: Remix loads Program
-// blueprints through them when someone starts a Chapter.
+// CATALOG GUARD (ADR-864 · ADR-870): circle_templates now also holds Program
+// blueprints — Space-owned (owner_space_id set) AND Frequency-run (owner NULL,
+// stamped program_only, migration 20270113000000). The LIST reads below filter
+// owner_space_id IS NULL **and** program_only = false so a Program blueprint
+// never appears in the global Starter Circles rail or the staff catalog. The
+// single-template reads (getTemplateById / getTemplateBySlug) stay unfiltered
+// on purpose: Remix loads Program blueprints through them when someone starts
+// a Chapter.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -92,7 +94,8 @@ export function rowToTemplate(row: Record<string, unknown>): CircleTemplate {
 }
 
 /** Active templates for the member gallery, in display order. Staff-authored
- *  catalog only: Program blueprints (owner_space_id set) never show here. */
+ *  catalog only: Program blueprints (owner_space_id set, or program_only for a
+ *  Frequency-run Program, ADR-870) never show here. */
 export async function getActiveTemplates(): Promise<CircleTemplate[]> {
   const admin = db()
   const { data } = await admin
@@ -100,18 +103,20 @@ export async function getActiveTemplates(): Promise<CircleTemplate[]> {
     .select(TEMPLATE_COLS)
     .eq('is_active', true)
     .is('owner_space_id', null)
+    .eq('program_only', false)
     .order('display_order')
   return ((data ?? []) as Record<string, unknown>[]).map(rowToTemplate)
 }
 
 /** Every template (operator admin), in display order — active and not. Same
- *  guard: the staff catalog, not Space-owned Program blueprints. */
+ *  guard: the staff catalog, never a Program blueprint (owned or program_only). */
 export async function getAllTemplates(): Promise<CircleTemplate[]> {
   const admin = db()
   const { data } = await admin
     .from('circle_templates')
     .select(TEMPLATE_COLS)
     .is('owner_space_id', null)
+    .eq('program_only', false)
     .order('display_order')
   return ((data ?? []) as Record<string, unknown>[]).map(rowToTemplate)
 }

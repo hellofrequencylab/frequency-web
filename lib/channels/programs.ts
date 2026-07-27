@@ -188,6 +188,29 @@ export async function startChapter(input: { channelId: string; profileId: string
   return { circleId: draft.circleId, slug: draft.slug }
 }
 
+/** Verify a channel is a Program (any owner), or throw. The STAFF twin of
+ *  requireSpaceProgram (ADR-870): the action layer proves the caller holds
+ *  channel.manage (staff, ADR-274) before calling, so ownership is not the
+ *  gate — being a Program is. The Space path below is untouched. */
+async function requireStaffProgram(
+  admin: SupabaseClient,
+  channelId: string,
+): Promise<{ id: string; templateId: string; ownerSpaceId: string | null; isActive: boolean }> {
+  const { data } = await admin
+    .from('topical_channels')
+    .select('id, owner_space_id, template_id, is_active')
+    .eq('id', channelId)
+    .maybeSingle()
+  const row = data as { id: string; owner_space_id: string | null; template_id: string | null; is_active: boolean } | null
+  if (!row || !isProgram(row)) throw new Error('That Channel does not run a Program.')
+  return {
+    id: String(row.id),
+    templateId: String(row.template_id),
+    ownerSpaceId: row.owner_space_id == null ? null : String(row.owner_space_id),
+    isActive: row.is_active !== false,
+  }
+}
+
 /** Verify a channel is a Program THIS Space runs, or throw. Every phase-2
  *  editor operation funnels through this: the action layer proves the caller
  *  manages the Space (ADR-274), and this proves the Space owns the Program. */
@@ -222,14 +245,7 @@ async function snapshotCircleForBlueprint(
 ): Promise<Record<string, unknown>> {
   // The source must be this Space's own, live circle. A draft has not proven
   // anything yet; a circle from another Space is simply not theirs to franchise.
-  const { data: circleData } = await admin
-    .from('circles')
-    .select('id, space_id, status, about, primary_pillar')
-    .eq('id', sourceCircleId)
-    .maybeSingle()
-  const circle = circleData as
-    | { id: string; space_id: string | null; status: string; about: string | null; primary_pillar: string | null }
-    | null
+  const circle = await loadCircleForSnapshot(admin, sourceCircleId)
   if (!circle) throw new Error('That Circle is not available.')
   if (circle.space_id !== spaceId) {
     throw new Error('Pick a Circle this Space runs. That one belongs to a different Space.')
@@ -237,13 +253,63 @@ async function snapshotCircleForBlueprint(
   if (circle.status === 'draft') {
     throw new Error('Publish the Circle first. A draft cannot anchor a Program.')
   }
+  return snapshotContent(admin, circle)
+}
 
-  // The rich content lives on the 1:1 circle_profiles row when the circle came
-  // through the builder; sane empty-json fallbacks otherwise.
+/** The STAFF twin (ADR-870): snapshot ANY live, real circle — no Space fence,
+ *  because staff attach blueprints to platform-curated channels. Still refuses
+ *  demo rows and drafts/archives: a Program blueprint snapshots something that
+ *  actually runs. Shares loadCircleForSnapshot + snapshotContent with the Space
+ *  path so the checks and the snapshot shape can never drift. */
+async function snapshotAnyLiveCircleForBlueprint(
+  admin: SupabaseClient,
+  sourceCircleId: string,
+): Promise<Record<string, unknown>> {
+  const circle = await loadCircleForSnapshot(admin, sourceCircleId)
+  if (!circle) throw new Error('That Circle is not available.')
+  if (circle.is_demo === true) throw new Error('Pick a real Circle. A demo cannot anchor a Program.')
+  if (circle.status === 'draft') {
+    throw new Error('Publish the Circle first. A draft cannot anchor a Program.')
+  }
+  if (circle.status === 'archived') {
+    throw new Error('That Circle is archived. Pick one that is still running.')
+  }
+  return snapshotContent(admin, circle)
+}
+
+interface SnapshotSourceCircle {
+  id: string
+  space_id: string | null
+  status: string
+  about: string | null
+  primary_pillar: string | null
+  is_demo?: boolean
+}
+
+async function loadCircleForSnapshot(
+  admin: SupabaseClient,
+  sourceCircleId: string,
+): Promise<SnapshotSourceCircle | null> {
+  const { data } = await admin
+    .from('circles')
+    .select('id, space_id, status, about, primary_pillar, is_demo')
+    .eq('id', sourceCircleId)
+    .maybeSingle()
+  return (data as SnapshotSourceCircle | null) ?? null
+}
+
+/** The content half of the snapshot, shared by both gates above. The rich
+ *  content lives on the 1:1 circle_profiles row when the circle came through
+ *  the builder; sane empty-json fallbacks otherwise. Display copy
+ *  (name/one_liner/card/identity) is NOT included: it belongs to the Program. */
+async function snapshotContent(
+  admin: SupabaseClient,
+  circle: SnapshotSourceCircle,
+): Promise<Record<string, unknown>> {
   const { data: profileData } = await admin
     .from('circle_profiles')
     .select('meetup, gathering, agreements, pillars_inside, format, size_label, thread, remix_options')
-    .eq('circle_id', sourceCircleId)
+    .eq('circle_id', circle.id)
     .maybeSingle()
   const profile = (profileData ?? {}) as Record<string, unknown>
 
@@ -310,6 +376,10 @@ export async function createSpaceProgram(input: {
       callouts: [],
       owner_space_id: input.spaceId,
       is_active: true,
+      // The blueprint discriminator (ADR-870, migration 20270113000000): a
+      // Program blueprint is never a Starter. Space rows were already fenced by
+      // the owner filter; the flag keeps the meaning uniform across owners.
+      program_only: true,
       display_order: 1000, // well past the staff catalog; never surfaces there anyway
     })
     .select('id')
@@ -367,38 +437,55 @@ export async function updateSpaceProgram(input: {
   spaceId: string
   profileId: string
   channelId: string
-  patch: { name?: string; oneLiner?: string; coverImage?: string | null }
+  patch: ProgramCopyPatch
 }): Promise<void> {
   const admin = db()
   const program = await requireSpaceProgram(admin, input.spaceId, input.channelId)
+  await applyProgramCopyPatch(admin, input.channelId, program.templateId, input.patch)
+}
 
+export interface ProgramCopyPatch {
+  name?: string
+  oneLiner?: string
+  coverImage?: string | null
+}
+
+/** The one copy-patch body (shared by the Space and staff editors, ADR-870):
+ *  patches the Channel row AND keeps the blueprint's display copy in step, and
+ *  NEVER touches the channel slug (shared links keep working). */
+async function applyProgramCopyPatch(
+  admin: SupabaseClient,
+  channelId: string,
+  templateId: string,
+  patch: ProgramCopyPatch,
+): Promise<void> {
   const channelPatch: Record<string, unknown> = {}
   const blueprintPatch: Record<string, unknown> = {}
-  if (input.patch.name !== undefined) {
-    channelPatch.name = input.patch.name
-    blueprintPatch.name = input.patch.name
+  if (patch.name !== undefined) {
+    channelPatch.name = patch.name
+    blueprintPatch.name = patch.name
   }
-  if (input.patch.oneLiner !== undefined) {
-    channelPatch.description = input.patch.oneLiner
+  if (patch.oneLiner !== undefined) {
+    channelPatch.description = patch.oneLiner
     // The blueprint's card copy fields ride the one-liner (same as create).
-    blueprintPatch.one_liner = input.patch.oneLiner
-    blueprintPatch.card = input.patch.oneLiner
-    blueprintPatch.identity = input.patch.oneLiner
+    blueprintPatch.one_liner = patch.oneLiner
+    blueprintPatch.card = patch.oneLiner
+    blueprintPatch.identity = patch.oneLiner
   }
-  if (input.patch.coverImage !== undefined) channelPatch.cover_image = input.patch.coverImage
+  if (patch.coverImage !== undefined) channelPatch.cover_image = patch.coverImage
   if (Object.keys(channelPatch).length === 0) return
 
   const { error: channelError } = await admin
     .from('topical_channels')
     .update(channelPatch)
-    .eq('id', input.channelId)
+    .eq('id', channelId)
   if (channelError) throw new Error(channelError.message)
 
   if (Object.keys(blueprintPatch).length > 0) {
     const { error: blueprintError } = await admin
       .from('circle_templates')
       .update(blueprintPatch)
-      .eq('id', program.templateId)
+      .eq('id', templateId)
     if (blueprintError) throw new Error(blueprintError.message)
   }
 }
@@ -440,6 +527,201 @@ export async function refreshProgramBlueprint(input: {
   const admin = db()
   const program = await requireSpaceProgram(admin, input.spaceId, input.channelId)
   const snapshot = await snapshotCircleForBlueprint(admin, input.spaceId, input.sourceCircleId)
+  const { error } = await admin
+    .from('circle_templates')
+    .update(snapshot)
+    .eq('id', program.templateId)
+  if (error) throw new Error(error.message)
+}
+
+// ─── The STAFF Program lifecycle (ADR-870) ────────────────────────────────────
+// Staff can make ANY channel a Program — including a Frequency-run one with no
+// owner Space (owner_space_id NULL), which the Space path can never reach.
+// AUTHZ IS THE CALLER'S JOB: the /channels/[id]/manage action layer verifies
+// channel.manage (staff, ADR-274) before calling any of these. The Space path
+// above is deliberately untouched.
+
+/** How a staff attach sources its blueprint: snapshot a live circle, or clone a
+ *  Starter template (the original stays in the catalog untouched). */
+export type BlueprintSource =
+  | { kind: 'circle'; circleId: string }
+  | { kind: 'starter'; templateId: string }
+
+/** Attach a Chapter blueprint to a channel, making it a Program (ADR-870).
+ *
+ *  Refuses a channel that already runs one. The blueprint row inherits the
+ *  channel's owner_space_id (NULL for a Frequency-run channel) and is stamped
+ *  `program_only` (migration 20270113000000) so a NULL-owner blueprint can
+ *  never leak into the Starter Circles catalog, whose list reads filter
+ *  owner IS NULL. is_active stays true — Remix needs it live to start
+ *  Chapters. Display copy rides the CHANNEL's name + description, same as the
+ *  Space path: the blueprint tells the Channel's story, not its source's. */
+export async function attachProgramBlueprint(input: {
+  channelId: string
+  profileId: string
+  source: BlueprintSource
+}): Promise<{ templateId: string }> {
+  const admin = db()
+
+  const { data } = await admin
+    .from('topical_channels')
+    .select('id, name, description, owner_space_id, template_id')
+    .eq('id', input.channelId)
+    .maybeSingle()
+  const channel = data as
+    | { id: string; name: string; description: string | null; owner_space_id: string | null; template_id: string | null }
+    | null
+  if (!channel) throw new Error('That Channel is not available.')
+  if (isProgram(channel)) throw new Error('This Channel already runs a Program.')
+
+  // The content columns, by source.
+  let content: Record<string, unknown>
+  let fallbackOneLiner = ''
+  if (input.source.kind === 'circle') {
+    // Snapshot ANY live, real circle (no Space fence — the staff twin).
+    content = {
+      ...(await snapshotAnyLiveCircleForBlueprint(admin, input.source.circleId)),
+      callouts: [],
+    }
+  } else {
+    // CLONE the Starter's content into a new program_only row. The original is
+    // never referenced or mutated: it must keep living in the catalog, and a
+    // Program must own its blueprint outright (detach retires the copy only).
+    const { data: tplData } = await admin
+      .from('circle_templates')
+      .select(
+        'id, name, one_liner, identity, audience, card, about, primary_pillar, pillars_inside, meetup, gathering, thread, format, size_label, agreements, remix_options, callouts, image_url, recommended_journey_pillar, owner_space_id, program_only, is_active',
+      )
+      .eq('id', input.source.templateId)
+      .maybeSingle()
+    const tpl = tplData as Record<string, unknown> | null
+    if (!tpl) throw new Error('That Starter Circle is not available.')
+    // Only a real catalog Starter clones: never another Program's blueprint
+    // (owned or program_only) and never a retired row.
+    if (tpl.owner_space_id != null || tpl.program_only === true || tpl.is_active === false) {
+      throw new Error('Pick a Starter Circle from the catalog.')
+    }
+    fallbackOneLiner = String(tpl.one_liner ?? '')
+    content = {
+      about: tpl.about ?? null,
+      primary_pillar: tpl.primary_pillar ?? 'mind',
+      pillars_inside: tpl.pillars_inside ?? {},
+      meetup: tpl.meetup ?? {},
+      gathering: tpl.gathering ?? {},
+      thread: tpl.thread ?? null,
+      format: tpl.format ?? null,
+      size_label: tpl.size_label ?? null,
+      agreements: tpl.agreements ?? [],
+      remix_options: tpl.remix_options ?? [],
+      callouts: tpl.callouts ?? [],
+      image_url: tpl.image_url ?? null,
+      recommended_journey_pillar: tpl.recommended_journey_pillar ?? null,
+    }
+  }
+
+  const oneLiner = (channel.description ?? '').trim() || fallbackOneLiner
+  const templateSlug = await uniqueSlugIn(admin, 'circle_templates', channel.name, 'program')
+  const { data: templateRow, error: templateError } = await admin
+    .from('circle_templates')
+    .insert({
+      slug: templateSlug,
+      name: channel.name,
+      one_liner: oneLiner,
+      identity: oneLiner,
+      audience: '',
+      card: oneLiner,
+      ...content,
+      owner_space_id: channel.owner_space_id,
+      is_active: true,
+      program_only: true,
+      display_order: 1000,
+    })
+    .select('id')
+    .single()
+  if (templateError || !templateRow) {
+    throw new Error(templateError?.message ?? 'Could not save the Program blueprint.')
+  }
+  const templateId = String((templateRow as { id: string }).id)
+
+  // The stamp that makes the channel a Program.
+  const { error: stampError } = await admin
+    .from('topical_channels')
+    .update({ template_id: templateId })
+    .eq('id', input.channelId)
+  if (stampError) {
+    // No transaction spans the insert + stamp; never strand a live blueprint.
+    await admin.from('circle_templates').delete().eq('id', templateId)
+    throw new Error(stampError.message)
+  }
+
+  return { templateId }
+}
+
+/** Detach a channel's blueprint (ADR-870): clears template_id and soft-retires
+ *  the blueprint row (is_active false; program_only keeps it fenced from the
+ *  catalog forever). The channel goes back to a plain focus area — its circles,
+ *  members, and room are untouched, and existing Chapters keep everything (a
+ *  Chapter is a real circle that copied the snapshot at remix time). */
+export async function detachProgramBlueprint(input: {
+  channelId: string
+  profileId: string
+}): Promise<void> {
+  const admin = db()
+  const program = await requireStaffProgram(admin, input.channelId)
+
+  const { error: channelError } = await admin
+    .from('topical_channels')
+    .update({ template_id: null })
+    .eq('id', input.channelId)
+  if (channelError) throw new Error(channelError.message)
+
+  const { error: blueprintError } = await admin
+    .from('circle_templates')
+    .update({ is_active: false })
+    .eq('id', program.templateId)
+  if (blueprintError) throw new Error(blueprintError.message)
+}
+
+/** The staff twin of updateSpaceProgram (ADR-869 → ADR-870): same copy-patch
+ *  body (channel + blueprint together, slug never moves), gated by being a
+ *  Program instead of Space ownership. */
+export async function updateProgramForStaff(input: {
+  channelId: string
+  profileId: string
+  patch: ProgramCopyPatch
+}): Promise<void> {
+  const admin = db()
+  const program = await requireStaffProgram(admin, input.channelId)
+  await applyProgramCopyPatch(admin, input.channelId, program.templateId, input.patch)
+}
+
+/** The staff twin of setProgramPaused: flips the SAME is_active retire switch
+ *  startChapter respects (ADR-865), on any Program. */
+export async function setProgramPausedForStaff(input: {
+  channelId: string
+  profileId: string
+  paused: boolean
+}): Promise<void> {
+  const admin = db()
+  await requireStaffProgram(admin, input.channelId)
+  const { error } = await admin
+    .from('topical_channels')
+    .update({ is_active: !input.paused })
+    .eq('id', input.channelId)
+  if (error) throw new Error(error.message)
+}
+
+/** The staff twin of refreshProgramBlueprint: re-snapshot from ANY live, real
+ *  circle. Display copy stays as-is (updateProgramForStaff's job); existing
+ *  Chapters are untouched (they copied the old snapshot at remix time). */
+export async function refreshProgramBlueprintForStaff(input: {
+  channelId: string
+  profileId: string
+  sourceCircleId: string
+}): Promise<void> {
+  const admin = db()
+  const program = await requireStaffProgram(admin, input.channelId)
+  const snapshot = await snapshotAnyLiveCircleForBlueprint(admin, input.sourceCircleId)
   const { error } = await admin
     .from('circle_templates')
     .update(snapshot)

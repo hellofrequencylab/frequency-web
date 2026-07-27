@@ -1393,6 +1393,7 @@ export type Database = {
           owner_space_id: string | null
           pillars_inside: Json
           primary_pillar: string
+          program_only: boolean
           recommended_journey_pillar: string | null
           remix_options: Json
           size_label: string | null
@@ -1420,6 +1421,7 @@ export type Database = {
           owner_space_id?: string | null
           pillars_inside?: Json
           primary_pillar: string
+          program_only?: boolean
           recommended_journey_pillar?: string | null
           remix_options?: Json
           size_label?: string | null
@@ -1447,6 +1449,7 @@ export type Database = {
           owner_space_id?: string | null
           pillars_inside?: Json
           primary_pillar?: string
+          program_only?: boolean
           recommended_journey_pillar?: string | null
           remix_options?: Json
           size_label?: string | null

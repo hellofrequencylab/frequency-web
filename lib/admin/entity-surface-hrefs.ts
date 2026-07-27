@@ -76,6 +76,11 @@ export function hrefForEntitySurface(appId: string, scope: EntitySurfaceScope | 
     // fallback below (its console is that builder, not a /manage page), so WITHOUT this explicit case the
     // row would resolve null and draw nothing at all. Every other journey surface stays `inline`.
     if (appId === 'journey.builder') return `/journeys/${entitySlug}/edit`
+    // The Channel Manage hub (ADR-870): channel.manage is a `link` row into the channel's owner
+    // console. Channel has NO prefix fallback below (its other surfaces stay inline on the rail), so
+    // without this explicit case the row would resolve null and draw nothing. The manage route accepts
+    // the DB id or the slug, so a raw-uuid scope still lands.
+    if (appId === 'channel.manage') return `/channels/${entitySlug}/manage`
     if (appId === 'event.crm') return `/events/${entitySlug}/manage`
     if (appId === 'circle.crm') return `/circles/${entitySlug}/manage`
     if (appId === 'hub.crm') return `/hubs/${entitySlug}/crm`
