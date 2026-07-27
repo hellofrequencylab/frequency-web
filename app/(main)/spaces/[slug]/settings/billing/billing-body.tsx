@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
@@ -201,6 +202,21 @@ export async function BillingBody({ slug }: { slug: string }) {
               seatMonthlyCents={seatMonthlyCents}
               trialDays={values.trial.days}
             />
+            {/* The per-city founding cohort (ADR-599/803). Its page owns every figure and every gate,
+                including whether spots remain in this Space's city, so this is only the DOOR — the
+                offer had none, which is why a founding_members business row could never be created
+                through checkout. Shown to unpaid Spaces beside the standard upgrade, never instead
+                of it. */}
+            <p className="text-2xs text-subtle">
+              Opening a business in a city we are just starting in?{' '}
+              <Link
+                href={`/spaces/${space.slug}/settings/billing/founding`}
+                className="font-semibold text-primary-strong hover:underline"
+              >
+                See if a founding spot is left
+              </Link>
+              .
+            </p>
           </fieldset>
         )}
 

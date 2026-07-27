@@ -29,7 +29,7 @@ import { readLockedPriceId } from '@/lib/billing/space-subscription-items'
 import { asSpacePlan } from '@/lib/pricing/plans'
 import { billingLive, getFoundingConfig, getPricingValues } from '@/lib/pricing/settings'
 import { foundingBusinessSpotsRemaining } from '@/lib/pricing/founding'
-import { foundingBusinessTakenInCity, getFoundingStatus } from '@/lib/founding/status'
+import { foundingBusinessTakenInCity, getFoundingStatus, grantFoundingStatus } from '@/lib/founding/status'
 import { profileAccountEmail } from '@/lib/profiles/account-email'
 
 // ── PURE: the annual math (annual is "two months free", read from annual_discount.months_free) ──
@@ -276,4 +276,43 @@ export async function createFoundingBusinessCheckout(input: {
 export async function spaceCohortCity(spaceId: string): Promise<string | null> {
   const record = await getFoundingStatus({ spaceId })
   return record?.cohortCity ?? null
+}
+
+// ── The success confirm (webhook-independent) ──────────────────────────────────────────────────
+
+/**
+ * Grant the durable founder record from a completed founding Business checkout session.
+ *
+ * The session is stamped `kind:'space_plan'` so the EXISTING space-plan webhook already reconciles
+ * the Space to Business. What the webhook does NOT do is read the `founding:'business'` +
+ * `cohort_city` keys, because those exist only for this offer. So the founder record is granted here,
+ * on the success redirect, exactly like the tip / supporter-contribution confirms
+ * (recordSupporterContributionFromSessionId): the redirect is the reliable moment we know the session
+ * id, and `grantFoundingStatus` is idempotent, so a webhook that later learns to do this cannot
+ * double-grant.
+ *
+ * Returns the cohort city on a real grant, else null. FAIL-SAFE: any error yields null, and the
+ * success page then simply shows the plan as active without claiming founder status.
+ */
+export async function grantFoundingBusinessFromSessionId(
+  sessionId: string,
+): Promise<{ spaceId: string; cohortCity: string | null } | null> {
+  if (!stripe || !sessionId) return null
+  let session
+  try {
+    session = await stripe.checkout.sessions.retrieve(sessionId)
+  } catch {
+    return null
+  }
+  const md = session.metadata ?? {}
+  // Only OUR founding sessions, and only once the first invoice actually paid.
+  if (md.founding !== 'business' || md.kind !== 'space_plan') return null
+  if (session.payment_status !== 'paid') return null
+  const spaceId = md.space_id
+  if (!spaceId) return null
+
+  const cohortCity = (md.cohort_city ?? '').trim() || null
+  const res = await grantFoundingStatus({ spaceId, kind: 'business', cohortCity })
+  if ('error' in res) return null
+  return { spaceId, cohortCity }
 }
