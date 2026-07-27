@@ -168,8 +168,12 @@ export interface App {
   label: string
   /** One-line purpose, when the source carries one. */
   description?: string
-  /** The 9-category spine slot, or 'element' for a code-drawn element (docs/LOOM-PLATFORM.md §3). */
-  category: AdminSlot | 'element'
+  /** The 9-category spine slot, or 'element' for a code-drawn element (docs/LOOM-PLATFORM.md §3),
+   *  or 'nav' for an operator NAV DESTINATION (ADR-848). A nav App is a page an operator navigates
+   *  to, not an editor mounted in the spine, so forcing it into a spine slot would put a
+   *  meaningless category on it and risk it grouping under a spine header. It carries no `editor`
+   *  surface, so every spine reader (which filters on `surfaces.editor`) skips it by construction. */
+  category: AdminSlot | 'element' | 'nav'
   /** Where it may attach (the union of placement scopes). */
   scopes: readonly AppScope[]
   /** The single bridged gate (view). */

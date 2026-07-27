@@ -9,6 +9,7 @@ import { MODULE_COMPONENTS } from './module-map'
 import { SurfaceLinkRow } from './surface-link-row'
 import type { Capability } from '@/lib/core/capabilities'
 import type { AppViewer } from '@/lib/apps/types'
+import { isSpineApp } from '@/lib/apps/access'
 
 // The render boundary for EVERY core-entity owner console (/{entity}/[id]/manage — circle · hub · nexus ·
 // practice). The unified replacement for the five near-identical per-entity consoles that each rendered a
@@ -36,7 +37,12 @@ export function EntityManageConsole({ caps }: { caps: readonly Capability[] }) {
 
   // Order the resolved modules by the 9-category spine (drop-empty), preserving catalog order within a
   // slot — the same spine the rail groups by, so the console reads top-to-bottom Basics → … → Danger.
-  const ordered = groupIntoSpine(apps.map((a) => ({ id: a.id, category: a.category }))).flatMap(
+  const ordered = groupIntoSpine(
+    // isSpineApp drops the operator nav lane (ADR-848), which carries no spine slot and is never a
+    // console card. resolveEntityConsole already returns editor apps only, so this removes nothing
+    // today; it keeps the narrowing at the boundary rather than widening the spine helpers.
+    apps.filter(isSpineApp).map((a) => ({ id: a.id, category: a.category })),
+  ).flatMap(
     (g) => g.appIds,
   )
 

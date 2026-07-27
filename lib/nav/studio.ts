@@ -240,7 +240,7 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'crew-tasks', href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', icon: 'ClipboardList', min: 'host', staffDomain: 'community',
     world: 'content', worldLabel: 'Tasks', worldOrder: 8,
     adminGroups: [{ domain: 'rewards', section: 'Rewards' }], adminNav: { section: 'programs', heading: 'Engagement' } },
-  { id: 'library', href: '/admin/library', label: 'Loom Studio', desc: 'The media & asset library: every image the site uses, plus the illustration kit.', icon: 'Images', min: 'janitor',
+  { id: 'library', href: '/admin/library', label: 'Loom Studio', desc: 'The media & asset library: every image the site uses, plus the illustration kit.', icon: 'Images', min: 'janitor', staffDomain: 'marketing',
     world: 'content', worldLabel: 'Loom', worldOrder: 9,
     adminGroups: [{ domain: 'acquisition', section: 'Assets' }] },
   { id: 'elements', href: '/admin/elements', label: 'Elements', desc: 'The reusable elements across the site (the Loom picker, and more): edit each one\'s master settings and role gates once, applied site-wide.', icon: 'LayoutGrid', min: 'admin',

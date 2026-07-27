@@ -58,14 +58,17 @@ describe('the three Spaces nav items', () => {
     expect(byKey.get('operated-spaces')).toBeUndefined()
   })
 
-  it('Manage Spaces — the platform board, admin/staff gated', () => {
+  it('Manage Spaces — the platform board, janitor only', () => {
+    // Owner decision (ADR-851): Manage Spaces sits at janitor. It previously advertised the looser
+    // `admin` plus a `platform` staff arm while the page itself guarded on requireAdmin('janitor'),
+    // so the rail offered a row that redirected. The rail row now matches the page.
     const area = byKey.get('admin-spaces')
     expect(area).toBeDefined()
     expect(area!.label).toBe('Manage Spaces')
     expect(area!.href).toBe('/admin/spaces')
     expect(area!.section).toBe('Admin')
-    expect(area!.defaultAccess).toBe('admin')
-    expect(area!.staffDomain).toBe('platform')
+    expect(area!.defaultAccess).toBe('janitor')
+    expect(area!.staffDomain).toBeUndefined()
   })
 
   it('no live nav node is data-gated on operated Spaces anymore, but the gate mechanism still works', () => {

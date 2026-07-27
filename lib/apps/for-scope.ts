@@ -16,7 +16,7 @@
 // gate; `showsAdminBar` is the resolver a later pass switches visibility onto once the viewer's
 // per-scope capabilities are threaded into PageAdminProvider.
 
-import { appGatePasses, surfacesFor } from './access'
+import { appGatePasses, isSpineApp, surfacesFor } from './access'
 import { APPS } from './catalog'
 import type { App, AppGate, AppSurfaceKind, AppViewer } from './types'
 import type { AdminScope } from '@/lib/layout/page-chrome'
@@ -94,7 +94,9 @@ function applySpaceModuleMenu(apps: App[], menu?: AdminScope['moduleMenu']): App
   // permutes only within its band.
   const bands = new Map<string, App[]>()
   for (const a of visible) {
-    if (!a.surfaces.editor) continue
+    // No editor surface, or the operator nav lane (ADR-848) which carries no spine slot: neither is
+    // drawn in the rail body, so neither belongs in a band.
+    if (!a.surfaces.editor || !isSpineApp(a)) continue
     const band = `${tierForApp({ category: a.category, tier: a.surfaces.editor.tier })}\x00${a.category}`
     const list = bands.get(band)
     if (list) list.push(a)
