@@ -199,7 +199,7 @@ async function saveStreak(operatorId: string, args: Record<string, unknown>): Pr
 async function tagContact(operatorId: string, args: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
   const contactId = String(args.contactId ?? '').trim()
   if (!UUID_RE.test(contactId)) return { ok: false, error: 'That contact id does not look right.' }
-  const tag = String(args.tag ?? '').replace(/[ -]/g, '').trim().slice(0, 60)
+  const tag = String(args.tag ?? '').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 60)
   if (!tag) return { ok: false, error: 'There is no tag to add.' }
   const playbookId = playbookIdArg(args)
 
@@ -235,7 +235,7 @@ async function tagContact(operatorId: string, args: Record<string, unknown>): Pr
 async function moveContactStage(operatorId: string, args: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
   const contactId = String(args.contactId ?? '').trim()
   if (!UUID_RE.test(contactId)) return { ok: false, error: 'That contact id does not look right.' }
-  const stage = String(args.stage ?? '').replace(/[ -]/g, '').trim().slice(0, 40)
+  const stage = String(args.stage ?? '').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 40)
   if (!stage) return { ok: false, error: 'There is no stage to move to.' }
   const playbookId = playbookIdArg(args)
 
@@ -323,8 +323,8 @@ async function sendPlaybookEmail(
   if (!UUID_RE.test(contactId)) return { ok: false, error: 'That contact id does not look right.' }
   const rawCategory = String(args.category ?? '').trim()
   const category: SendCategory = rawCategory === 'marketing' ? 'marketing' : 'lifecycle'
-  const subject = String(args.subject ?? '').replace(/[ -]/g, '').trim().slice(0, 200)
-  const body = String(args.body ?? '').replace(/[ --]/g, '').trim().slice(0, 5000)
+  const subject = String(args.subject ?? '').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 200)
+  const body = String(args.body ?? '').replace(/[\x00-\x08\x0b-\x1f\x7f]/g, '').trim().slice(0, 5000)
   if (!subject || !body) return { ok: false, error: 'The email needs a subject and a body.' }
   const playbookId = playbookIdArg(args)
 
@@ -385,8 +385,8 @@ async function sendIntroEmail(
   if (!UUID_RE.test(otherProfileId)) return { ok: false, error: 'That other member id does not look right.' }
   if (!UUID_RE.test(contactId)) return { ok: false, error: 'That contact id does not look right.' }
   if (subjectProfileId === otherProfileId) return { ok: false, error: 'An intro needs two different people.' }
-  const subject = String(args.subject ?? '').replace(/[ -]/g, '').trim().slice(0, 200)
-  const body = String(args.body ?? '').replace(/[ -]/g, '').trim().slice(0, 5000)
+  const subject = String(args.subject ?? '').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 200)
+  const body = String(args.body ?? '').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 5000)
   if (!subject || !body) return { ok: false, error: 'The intro needs a subject and a body.' }
 
   // GATE 1 (the consent-first heart of the Resonance Graph): nothing sends until BOTH tap yes.
