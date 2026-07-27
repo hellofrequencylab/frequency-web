@@ -1,4 +1,4 @@
-import { Zap, Flame, Activity } from 'lucide-react'
+import { Zap, Flame } from 'lucide-react'
 
 // A single calm reward LINE under the title (EVENTS-DESIGN §2.3): the check-in Zaps
 // reward, the streak it keeps, and the Circle Current it builds — each shown only when
@@ -12,7 +12,6 @@ export function EventRewardStrip({
   checkInZaps,
   isPast,
   streakWeeks,
-  circleName,
 }: {
   /** Zaps a member earns by checking in at the event. Hides when 0/undefined. */
   checkInZaps?: number | null
@@ -20,14 +19,14 @@ export function EventRewardStrip({
   isPast?: boolean
   /** Weeks of the attendance streak this event keeps alive. Hides at 0. */
   streakWeeks?: number | null
-  /** The hosting Circle's name — drives the Circle Current clause. Hides for
-   *  standalone (non-circle) events. */
-  circleName?: string | null
 }) {
   const showCheckIn = typeof checkInZaps === 'number' && checkInZaps > 0
   const showStreak = typeof streakWeeks === 'number' && streakWeeks > 0
-  const showCurrent = !!circleName
-  if (!showCheckIn && !showStreak && !showCurrent) return null
+  // The "adds to <Circle>'s Current" clause is GONE. Circle Current (and every other
+  // circle-collaborative mechanic) was retired in the rewards v3 teardown, which dropped
+  // circle_current_transactions and its trigger outright. The strip kept promising the reward to
+  // every attendee of a circle event, so the page advertised something that could not happen.
+  if (!showCheckIn && !showStreak) return null
 
   return (
     <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-muted">
@@ -45,12 +44,6 @@ export function EventRewardStrip({
         </span>
       )}
 
-      {showCurrent && (
-        <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="text-subtle">·</span>
-          <Activity className="h-3.5 w-3.5 shrink-0 text-signal-strong" /> adds to {circleName}&rsquo;s Current
-        </span>
-      )}
     </div>
   )
 }

@@ -317,9 +317,21 @@ export async function FeedList({
   const pinned  = posts.filter(p => p.is_pinned)
   const regular = posts.filter(p => !p.is_pinned)
 
-  const items = regular
-    .map(p => ({ data: p, date: new Date(p.created_at).getTime() }))
-    .sort((a, b) => b.date - a.date)
+  // Preserve the RANK for the lenses that computed one. `posts` already arrives ordered: 'relevant'
+  // by the blended resonance rank (blendRank) and 'popular' by engagement_score (rankFeedPosts with
+  // fetchSort='relevant'). An unconditional re-sort by created_at here threw both away, so tapping
+  // "Resonance" or "Most popular" returned a plain reverse-chronological feed identical to
+  // "Most recent" — the entire ranking layer computed and then discarded on every render.
+  //
+  // 'recent' and 'nearby' are genuinely chronological: rankFeedPosts documents that 'nearby' selects
+  // WHICH posts (the closest, within radius) while the display order stays recency. So they keep the
+  // sort, and for them this is exactly the behaviour it always had. ('story' never reaches here; it
+  // builds its own day-grouped list below.)
+  const chronological = sort === 'recent' || sort === 'nearby'
+  const items = (() => {
+    const mapped = regular.map((p) => ({ data: p, date: new Date(p.created_at).getTime() }))
+    return chronological ? mapped.sort((a, b) => b.date - a.date) : mapped
+  })()
 
   if (!latestDispatch && !nearestEvent && pinned.length === 0 && items.length === 0) {
     return <EmptyState message={emptyMessage} />
