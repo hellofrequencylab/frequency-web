@@ -76,7 +76,7 @@ const BUSINESS_DEPTH = {
   reporting: true,
   space_full_website: true,
 }
-const COLLECTIVE_DEPTH = { ...BUSINESS_DEPTH, automation: true, multi_pipeline: true, team: true }
+const COLLECTIVE_DEPTH = { ...BUSINESS_DEPTH, automation: true, multi_pipeline: true, team: true, program: true }
 const INDEPENDENT_DEPTH = { ...COLLECTIVE_DEPTH, whitelabel: true }
 
 describe('setSpacePlan, set-to-target the billing namespace (ADR-552)', () => {

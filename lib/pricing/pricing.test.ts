@@ -66,8 +66,8 @@ describe('space tiers (Community Collective ladder · ADR-811)', () => {
   it('Business = run-your-practice depth; Collective/Non Profit add automation+team; Independent adds branding (ADR-811)', () => {
     const businessDepth = ['crm', 'crm.playbooks', 'email', 'reporting', 'space_full_website']
     expect([...planEntitlementKeys('business')].sort()).toEqual([...businessDepth].sort())
-    // Collective (and Non Profit) = Business PLUS automation + multi_pipeline + team.
-    const collectiveDepth = [...businessDepth, 'automation', 'multi_pipeline', 'team']
+    // Collective (and Non Profit) = Business PLUS automation + multi_pipeline + team + program (ADR-865).
+    const collectiveDepth = [...businessDepth, 'automation', 'multi_pipeline', 'team', 'program']
     expect([...planEntitlementKeys('collective')].sort()).toEqual([...collectiveDepth].sort())
     expect(planEntitlementKeys('nonprofit')).toEqual(planEntitlementKeys('collective'))
     // Independent = Collective depth PLUS branding (whitelabel), un-folded from Business.
