@@ -53,14 +53,25 @@ anonymously viewable — only the Show *page* was not.
 
 ## Master to-do (open)
 
-### 🔴 High, verified, not yet fixed
+### 🔴 High, verified — ALL FOUR CLOSED (follow-up pass, 2026-07-27)
 
-| Item | Where | The fix |
+| Item | What shipped | Guard |
 |---|---|---|
-| **`/people/<handle>` shows a directory skeleton** | `app/(main)/people/loading.tsx:19` | Its parent `page.tsx` is now only a redirect, so the detail route inherits a grid skeleton. Move a Detail-shaped skeleton to `app/(main)/people/[handle]/loading.tsx` (mirror `events/[slug]/loading.tsx`) and delete the parent one. |
-| **⌘K search overlay is an untrapped modal** | `components/search/search-overlay.tsx:107` | No `role="dialog"`, no `aria-modal`, no focus trap, no focus restore. Call the existing `useDialogFocusTrap(true, panelRef)` and add the dialog roles; purely additive alongside the ESC + scroll-lock already there. |
-| **`Label` never associates with its control** | `components/ui/field.tsx:28` | Whole member forms (Create Event, contact edit) are programmatically unlabelled. Give `Input`/`Textarea` a `useId()` default id and thread `htmlFor`, or have `Label` wrap its control. |
-| **Chat routes bleed past the mobile gutter** | `app/(main)/messages/[id]/page.tsx:133` and two siblings | Flat `-mx-6` against the shell's responsive `px-4 sm:px-6 lg:px-8`, plus `100vh` where 18 other files use `dvh`. Change to `-mx-4 -my-6 sm:-mx-6 lg:-mx-8` and `100dvh`. |
+| **`/people/<handle>` showed a directory skeleton** | `/people` is now only a redirect (ADR-172), so the segment's grid skeleton was the nearest one Next.js found for the DETAIL route: opening a profile flashed six person cards, then reflowed into a Detail page. Added `app/(main)/people/[handle]/loading.tsx` (hero + band + 2/3 content beside a 1/3 aside) and deleted the parent. | route-shape test |
+| **⌘K search overlay was an untrapped modal** | It owned its backdrop, ESC and scroll-lock but was not a dialog to assistive tech: Tab walked out into the page behind it and closing dropped focus to `<body>`. Added `role="dialog"` + `aria-modal` + `aria-label`, and called the existing `useDialogFocusTrap`. Purely additive. | 3 markup tests |
+| **`Label` never associated with its control** | Create Event's 17 labels are now associated: 12 real controls got `htmlFor`/`id`, and the 3 button groups plus the multi-field Address block became `role="group"` + `aria-labelledby` (a button group is not labelable, so `htmlFor` has nothing to point at). Added a shared `Field` primitive that WRAPS its control — implicit association, no hook, so `ui/field.tsx` stays importable from Server Components. | 3 source tests |
+| **Chat routes bled past the mobile gutter** | A flat `-mx-6` against the shell's `px-4 sm:px-6 lg:px-8` over-pulled 8px on mobile (a horizontal scroll) and under-pulled at lg; `100vh` ignored the iOS dynamic toolbar. Now `-mx-4 -my-6 sm:-mx-6 lg:-mx-8` and `100dvh`, on all three routes. | per-file test |
+
+Also closed in the same pass, both flagged above as the highest user impact:
+
+| Item | What shipped | Guard |
+|---|---|---|
+| 🔴 **RSVP reported success on a failed write** | `setRsvp` returns null when the upsert fails; that result was discarded, so a failed write fell through to revalidate and a silent success — the member watched the control flip to "Going" and the host never got the RSVP. `setEventRsvpDepth` now returns `{ ok }`, and the control shows a `role="alert"` message instead of reporting success. | 2 source tests |
+| 🔴 **Event JSON-LD claimed every tier-priced event was free** | It priced from `events.price_cents`, which stays null for ticketed events (they price on their active tiers), so both `/events/<slug>` and `/discover/events/<slug>` published `isAccessibleForFree: true` while the page showed the real price — a Google structured-data mismatch. Now reads the tier authority via `ticketFromPriceCents`, three-state so "tiered and free" cannot fall back to the stale column. **ADR-855.** | 3 unit tests |
+
+> Every assertion above was confirmed to FAIL against the pre-fix tree before being accepted. The one
+> exception is deliberate: `falls back to price_cents when no tier data is supplied` passes both
+> before and after, because it guards the untiered path against regression.
 
 ### 🟠 Medium, grouped by theme
 
@@ -76,7 +87,6 @@ anonymously viewable — only the Show *page* was not.
 - `app_instances` (0 rows, no reader or writer) is the Loom where-referenced backbone, shipped ahead of its code.
 
 **Correctness**
-- **RSVP writes report success to the member even when the database write failed** (`lib/events/rsvp-depth.ts:60`).
 - Reactivating a suspended operator **bypasses the licensed-seat wall**, single and bulk (`lib/spaces/roster.ts:179`).
 - CRM import dedupe index truncates at 1,000 rows, so re-importing into a large list creates duplicates (`lib/crm/import/commit.ts:230`).
 - Circle handoff has no way to see or cancel a pending offer, so an unanswered offer blocks the Circle permanently (`app/(main)/spaces/[slug]/circles/actions.ts:161`).
@@ -90,7 +100,6 @@ anonymously viewable — only the Show *page* was not.
 - Four incompatible cents-to-price formatters; the one used by the seller price editor and product emails drops precision (`lib/commerce/types.ts:375`).
 
 **SEO/AIO**
-- **Event JSON-LD claims every tier-priced event is free** — it reads `events.price_cents` rather than the live tier authority (`lib/jsonld.ts:169`).
 - `/spaces/<slug>/podcasts` is advertised in the sitemap but canonicals to `/spaces/<slug>` (`app/(main)/spaces/[slug]/podcasts/page.tsx:23`).
 - Spotlight pages render a double-branded title, "Name · Frequency · Frequency" (`app/spotlight/[handle]/page.tsx:27`).
 - Four indexable public hubs have **zero inbound internal links**, so they are crawlable only from `sitemap.xml`.
@@ -110,6 +119,12 @@ anonymously viewable — only the Show *page* was not.
 - **Worth doing:** widen `pnpm check:canon` past `content/` to member-facing strings in `app/` and `lib/`. Every canon break this scan found was outside its current scope.
 
 **Accessibility**
+- **~105 `<Label>` uses across ~40 files are still unassociated.** Create Event (the worst, 17) is
+  fixed and `Field` now exists as the shared labelled-control primitive, but the rest of the repo
+  still renders a bare `<label>` beside its control. Next by volume: `circle-builder.tsx` (12),
+  `movement-session.tsx` (9), `events/drafts/[id]/editor.tsx` (9), the six onboarding `*-render.tsx`
+  files. Mechanical: wrap in `Field`, or thread `htmlFor`/`id` where the control is a real one and
+  `role="group"` + `aria-labelledby` where it is a button group.
 - The header wordmark's keyboard focus indicator is explicitly deleted (`app/globals.css:1028`).
 - Four member-facing toggle switches have no accessible name.
 - Vera's chat transcript is not a live region, so replies are never announced.
@@ -127,6 +142,14 @@ anonymously viewable — only the Show *page* was not.
 
 ### 🧑 Needs your call
 
+- **Migrations applied without being recorded keeps recurring.** `check:migrations` catches filename
+  COLLISIONS (the dangerous half) but is a repo-only guard: it structurally cannot see "applied to
+  production but never ledgered", because that is a database fact. #1961's own
+  `20270102000000_area_permissions_orphan_cleanup` drifted that way within hours of the historical
+  backlog being reconciled; it was verified applied (its `area_permissions` comment is live) and
+  recorded, so drift from 2026-09-13 forward is zero again. Closing this permanently needs the
+  ledger-vs-repo comparison to run somewhere with database access — `/maintenance` is the natural
+  home, since it already talks to Supabase.
 - **Pre-2026-09-13 migration ledger divergence.** 477 applied versions have no repo file, from a
   historical filename rewrite. Reconciling means DELETING ledger rows for a cosmetic gain, so it is
   documented rather than done. The schema is correct either way.
