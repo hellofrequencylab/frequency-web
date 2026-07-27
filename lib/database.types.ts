@@ -1453,6 +1453,68 @@ export type Database = {
         }
         Relationships: []
       }
+      circle_transfer_offers: {
+        Row: {
+          circle_id: string
+          created_at: string
+          from_profile_id: string
+          from_space_id: string | null
+          id: string
+          responded_at: string | null
+          status: string
+          to_profile_id: string
+        }
+        Insert: {
+          circle_id: string
+          created_at?: string
+          from_profile_id: string
+          from_space_id?: string | null
+          id?: string
+          responded_at?: string | null
+          status?: string
+          to_profile_id: string
+        }
+        Update: {
+          circle_id?: string
+          created_at?: string
+          from_profile_id?: string
+          from_space_id?: string | null
+          id?: string
+          responded_at?: string | null
+          status?: string
+          to_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_transfer_offers_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_transfer_offers_from_profile_id_fkey"
+            columns: ["from_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_transfer_offers_from_space_id_fkey"
+            columns: ["from_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_transfer_offers_to_profile_id_fkey"
+            columns: ["to_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       circles: {
         Row: {
           about: string | null

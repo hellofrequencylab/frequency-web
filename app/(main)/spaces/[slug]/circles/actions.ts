@@ -15,6 +15,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { ok, fail, isError, type ActionResult } from '@/lib/action-result'
 import { createBlankCircleDraft } from '@/lib/circles/draft'
 import { transferCircle, type TransferTarget } from '@/lib/circles/transfer'
+import { offerCircleToPerson, cancelCircleOffer } from '@/lib/circles/handoff'
 import { listManagedSpaces } from '@/lib/spaces/managed'
 import type { RunEndState } from '@/lib/journeys/runs'
 import { startJourneyRunAction, endJourneyRunAction } from '@/app/(main)/journeys/run-actions'
@@ -136,4 +137,36 @@ export async function listTransferTargetsAction(
       .filter((s) => s.id !== gate.spaceId && s.type !== 'root')
       .map((s) => ({ id: s.id, name: s.name, slug: s.slug })),
   )
+}
+
+/**
+ * Hand this Space's Circle to another person (ADR-845). Nothing moves yet: it creates a pending
+ * offer they accept or decline, because a Circle carries members and cannot be pushed onto someone
+ * who never agreed to it.
+ */
+export async function offerSpaceCircleAction(
+  slug: string,
+  input: { circleId: string; toProfileId: string },
+): Promise<ActionResult<void>> {
+  const gate = await requireSpaceEditor(slug)
+  if (typeof gate === 'string') return fail(gate)
+
+  const res = await offerCircleToPerson(input.circleId, input.toProfileId, gate.profileId)
+  if (!res.ok) return fail(res.reason || 'Could not send that handoff.')
+  revalidatePath(`/spaces/${slug}/circles`)
+  return ok()
+}
+
+/** Take back a pending handoff before it is answered. */
+export async function cancelSpaceCircleOfferAction(
+  slug: string,
+  offerId: string,
+): Promise<ActionResult<void>> {
+  const gate = await requireSpaceEditor(slug)
+  if (typeof gate === 'string') return fail(gate)
+
+  const res = await cancelCircleOffer(offerId, gate.profileId)
+  if (!res.ok) return fail(res.reason || 'Could not cancel that handoff.')
+  revalidatePath(`/spaces/${slug}/circles`)
+  return ok()
 }
