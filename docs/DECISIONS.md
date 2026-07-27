@@ -15046,3 +15046,19 @@ A source swap that took the leaf gate would therefore have **changed who can rea
 4. **The pinned assertion in `registry.gate.test.ts` was updated, not deleted.** It failed on this change, which is exactly what it is for: an access change should have to be written down twice. It now pins the new gate with the reason beside it.
 
 **Consequences.** The rail and the pages agree on both destinations, so no operator is offered a row that bounces them. Both catalogs now state the same gate for every shared page, and CI enforces it. One residual is worth recording rather than quietly fixing: the rail's *effective* gate for these rows still comes from the access matrix (`platformManage: { admin: 'full', janitor: 'full' }`) via `navAccess`, which takes precedence over `defaultAccess` in `itemAccess`. So a `web_role: 'admin'` who is not a janitor can still see Manage Spaces and be redirected by the page. That is a property of the shared `platformManage` surface, affects every row that names it equally, and giving Manage Spaces its own surface is a separate decision with its own blast radius.
+
+## ADR-852 — Manage Spaces gets its own access-matrix surface (2026-07-27)
+
+**Context.** ADR-851 set the DECLARED gate for Manage Spaces to janitor, matching the page's `requireAdmin('janitor')`. That closed the mismatch on the `NAV_AREAS` gate, but not on the axis the rail actually decides with. `itemAccess` (`components/layout/app-shell.tsx`) resolves a row's level like this:
+
+```ts
+if (navAccess && item.key in navAccess) return navAccess[item.key]
+```
+
+`navAccess` comes from `accessTo(area.surface, navHats)` — the access matrix — and it takes PRECEDENCE over `defaultAccess`. Every operator row named the shared `platformManage` surface, whose row is `{ admin: 'full', janitor: 'full' }`. So a viewer in the `admin` column still resolved `full` on Manage Spaces and was shown a row the page would redirect them away from. The declared gate said janitor; the deciding gate said admin-or-janitor.
+
+**Decision.** Manage Spaces gets its own row, `platformSpaces: { janitor: 'full' }` — one column narrower than `platformManage`. It is the same gate ADR-851 chose, expressed on the axis that actually decides.
+
+**Why a new row rather than tightening `platformManage`.** That surface is shared by every other operator destination, and several of them legitimately admit the `admin` column. Narrowing it to fix one page would have silently hidden the rest from every non-janitor admin: a one-word edit with a blast radius across the whole operator rail. A dedicated row changes exactly one destination.
+
+**Consequences.** The rail, the declared catalog gate, and the page now agree for Manage Spaces on every path: `platformSpaces` on the matrix, `defaultAccess: 'janitor'` with no staff arm in `NAV_AREAS`, `min: 'janitor'` in `STUDIO_LEAVES`, and `requireAdmin('janitor')` on the page. The owner's Roles and Permissions sheet test carries the new row explicitly, so the cell pattern is transcribed rather than inferred, and `marketplace-resilience.test.ts` (which asserts every `NAV_AREAS.surface` is registered) keeps passing. Note what this does NOT change: the live rail is DB-driven and `menuDriven` rows skip `itemAccess` entirely, resolving through `canSeeMenuItem` instead, so this corrects the legacy/fallback path and the declared contract rather than what the owner sees today. It is the difference between the two paths agreeing and them merely happening to agree.
