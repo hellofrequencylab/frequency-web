@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/server'
 import { nearbyEvents } from '@/lib/events/geocode'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
+import { listableOnly } from '@/lib/events/market-listing'
 import { pointFromGeog } from '@/lib/events/geo'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
@@ -411,12 +412,17 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
       })()
     : Promise.resolve([])
 
+  // PUBLIC browse. `visibility = 'public'` is the whole rule for whether an event may be listed
+  // publicly (ADR-844). A circle-scoped event used to be excluded outright, which meant a host who
+  // set their circle's event to "Anyone" still never appeared to anyone outside that circle: the
+  // setting said public and the browse said otherwise. Members still reach their own circles'
+  // events through the circle query above (which also carries 'circle_only'), and the union
+  // de-dupes, so honoring the host's choice here adds reach without duplicating rows.
   let publicQuery = admin
     .from('events')
     .select(EVENT_SELECT)
     .eq('visibility', 'public')
     .eq('status', 'published')
-    .neq('scope_type', 'circle')
     .eq('is_cancelled', false)
     .gte('starts_at', listableFrom)
     .lte('starts_at', future)
@@ -476,8 +482,11 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
 
   // Distance enriches but never filters; the circleIdSet keeps a circle event from
   // reappearing as a standalone public row.
+  // The host's listing choice applies HERE and only here: public browse (ADR-844). A host who
+  // opted out keeps a fully public, linkable event, and still sees it in their own hosted rows
+  // below and on their circle's own list, it simply is not merchandised alongside everyone else's.
   const circleIdSet = new Set(circleEvents.map((e) => e.id))
-  const publicEvents: EventRow[] = rawPublic
+  const publicEvents: EventRow[] = listableOnly(rawPublic)
     .filter((e) => !circleIdSet.has(e.id))
     .map((e) => ({ ...e, distance_m: distanceById.get(e.id) ?? null, is_public_standalone: true }))
 

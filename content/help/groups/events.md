@@ -3,7 +3,7 @@ title: Events & RSVPs
 description: Find gatherings, RSVP, and add them to your calendar.
 category: groups
 order: 3
-updated: 2026-07-26
+updated: 2026-07-27
 audience: member
 role: host
 featureKeys: [events]
@@ -103,6 +103,7 @@ Keep it real. The reward is for people who actually RSVP, show up, or join, neve
 - **Host as your Space.** Create an event from your Space's calendar and the Space is the host: the event page carries its name, and registrations and ticket payments run through it. You can switch any of your events between you and a Space you help run from the event's settings, under "Hosted by."
 - **Tickets for your members.** On the Collective plan, a Space-hosted event can reserve a ticket for its own members, or for one membership tier, under "Who can buy" in the ticket editor. Make it free next to a public paid ticket and your membership includes the event. You can also set this for every upcoming event at once from your Space's Memberships settings, under Event access.
 - **How people join.** In the event's settings, pick one: **RSVP** (first come, first served; any prices show as information, paid at the door or covered by membership) or **Tickets** (buying is how people attend). Automatic picks tickets when the event is priced.
+- **Where your event shows up.** Two settings, doing two different jobs. **"Who can see this"** is who is allowed in: "Anyone" makes it public, "Anyone with the link" keeps it link-only, and the Circle and invite options keep it close. **"List this event publicly"** is separate: leave it on and your public event shows up when people browse events, turn it off and it stays public and fully shareable, it just is not in the listings. A public event hosted by a Circle now shows up in browse too, the same as any other public event.
 - **Hide the address.** Turn on "Hide the address until someone registers" in the event's settings and people browsing see the city only. The venue, street, map pin, and directions appear once they RSVP or get a ticket.
 - **Your Space calendar is a manager.** In your Space's Calendar console, flip between the month grid and a list, and click any event to edit it. Drafts and past events show there too, and co-host requests from other hosts wait there for your approval.
 
