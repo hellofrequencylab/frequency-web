@@ -24,6 +24,15 @@ Frequency is built so you meet people the natural way: at a Circle or a public e
 - **Hosts can protect their address too.** Some events show only the city until you RSVP or get a ticket; the exact address appears once you register. Hosts running gatherings at a home or studio can turn this on in the event's settings.
 - **You decide who can find you.** Ghost mode hides you entirely; you can limit who discovers you to your connections, or no one.
 
+## Looking at housing or meeting a roommate
+
+- **See the place before any money moves.** No landlord or roommate on Frequency should ask
+  for a deposit, a fee, or an app payment before you have seen the home and met in person.
+  Someone pushing you to pay first is the oldest housing scam there is; report the listing
+  and walk away.
+- Roommate matches show a match and a few reasons, never your budget or your answers. Treat
+  a first roommate meeting like any first meeting: somewhere public, on your own schedule.
+
 ## Invites and saved contacts
 
 - **An invite link points at a real gathering, not a private meetup.** When someone shares their personal invite and you RSVP, you're going to an event with other people there. That is the public-first rule working for you: meet in the open, around something real, not one-on-one first.

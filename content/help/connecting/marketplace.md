@@ -34,9 +34,15 @@ reach the person and arrange the rest offline.
   **Roommates** for matches. Narrow further by price and amenities in the filters.
 - **List housing** with the type, the rent, and the basics. Contact stays in messages, like
   Classifieds.
-- **Find a roommate** opens roommate matches. Tell us your budget and city, and the Resonance
-  engine suggests members it thinks you'd click with, the same matching that powers
-  introductions. It is opt-in, so you stay in control.
+- **Find a roommate** opens roommate matches in two tabs: **Rooms** shows places looking for
+  a roommate, and **People** shows other members searching too. Tell us your budget, city,
+  and how you like to live, and the Resonance engine suggests matches, the same matching that
+  powers introductions. It is opt-in, so you stay in control.
+- Each match says **why it fits** in plain words, like "Budget fits" or "Similar lifestyle,"
+  next to the overall match. Your budget and answers stay private; matches only ever see the
+  match itself.
+- Tap the **heart** on any home to keep it, then open **Saved** at the top of Housing to
+  come back to your list. If you listed a place, you can now **edit** it from its page.
 
 ## Events
 
