@@ -12,6 +12,16 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Set a Journey up step by step, then tell people it exists**: building a Journey now starts in a
+  **guide** that walks you through it: **Shape** the phases, **Schedule** the dates it runs between
+  and how often a new phase opens, then **Ready** for a last look before you publish. You can switch
+  to the full editor at any step and switch back, because both work on the same Journey and neither
+  loses what the other did. Leave partway through and you come back where you stopped. Publishing
+  drops you on a **launch** page with a short series of messages already written and dated off your
+  start: Announce, Enrollment open, Last call, and Kickoff. Edit them, change when they send, and
+  schedule them one at a time or all at once. Everyone taking a Journey now gets a note when their
+  next phase opens. Building drafts stays free and unlimited; a free account keeps one Journey
+  published at a time.
 - **Frequency is a Community Collective**: we exist to support and create community, together. Two
   things changed in how Spaces work. First, a clear plan ladder, so you pick what fits what you run:
   **Business** ($29) for your practice, **Collective** ($79, and $49 in the founding beta) to add
