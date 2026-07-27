@@ -316,6 +316,20 @@ export async function respondToCircleOffer(
       console.error('[circle-handoff] accept write failed', { code: error.code, offerId })
       return { ok: false, reason: 'Could not finish that handoff. Please try again.', circleSlug: circle?.slug ?? null }
     }
+
+    // The circle's events travel with it (ADR-857): restamp their placement to root so the old
+    // Space's calendar stops carrying a circle it no longer owns. Same shape as transferCircle's
+    // restamp; best-effort after the authoritative ownership write.
+    if (root) {
+      const { error: restampErr } = await admin
+        .from('events')
+        .update({ space_id: root } as never)
+        .eq('scope_type', 'circle')
+        .eq('scope_id', offer.circle_id)
+      if (restampErr) {
+        console.error('[circle-handoff] event restamp failed', { code: restampErr.code, offerId })
+      }
+    }
     return { ok: true, reason: '', circleSlug: circle?.slug ?? null }
   } catch {
     return { ok: false, reason: 'Could not finish that handoff. Please try again.', circleSlug: null }

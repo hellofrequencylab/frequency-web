@@ -51,6 +51,51 @@ export async function stampCircleSpaceId(spaceId?: string | null): Promise<strin
 }
 
 /**
+ * The Space a circle belongs to — the ONE derivation every circle-EVENT writer stamps
+ * `events.space_id` from (ADR-857). A circle in a Space means the circle's events are that
+ * Space's events too: they appear on the Space calendar (which filters on events.space_id)
+ * while the circle page keeps reading them by scope_id. The root space means "personal circle",
+ * so events there keep today's root placement. FAIL-SAFE to null (caller omits the stamp and the
+ * insert default / backfill sweeps it to root) — placement must never block event creation.
+ */
+export async function spaceIdForCircle(circleId: string): Promise<string | null> {
+  if (!circleId) return null
+  try {
+    const { data } = await createAdminClient()
+      .from('circles')
+      .select('space_id')
+      .eq('id', circleId)
+      .maybeSingle()
+    return (data as { space_id: string | null } | null)?.space_id ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Circles this person HOSTS, newest first, wherever they live (personal or any Space's). Feeds
+ * the attach-to-Space picker (ADR-857): the picker shapes the offer, the transfer gate stays the
+ * authority on the write. Excludes archived circles — a dead circle is not worth attaching.
+ * FAIL-SAFE: [] on any error.
+ */
+export async function listCirclesHostedBy(profileId: string, limit = 50): Promise<SpaceCircle[]> {
+  if (!profileId) return []
+  try {
+    const { data, error } = await createAdminClient()
+      .from('circles')
+      .select(COLS)
+      .eq('host_id', profileId)
+      .neq('status', 'archived')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) return []
+    return (data as SpaceCircle[] | null) ?? []
+  } catch {
+    return []
+  }
+}
+
+/**
  * Circles that BELONG TO a space, newest first. Defaults to the root space (so a caller that
  * passes no spaceId reads the root's circles, the canary). Filtered by space_id so a circle in
  * space A can never resolve for space B. FAIL-SAFE: [] on any error / missing tenant.

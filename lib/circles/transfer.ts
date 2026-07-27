@@ -169,6 +169,23 @@ export async function transferCircle(
       console.error('[circle-transfer] write failed', { code: error.code, circleId, target })
       return { ok: false, reason: 'Could not move that circle. Please try again.', slug: circle.slug }
     }
+
+    // The circle's EVENTS travel with it (ADR-857): every circle-scoped event carries
+    // events.space_id derived from the owning Space, which is what places it on that Space's
+    // calendar. Restamp them to the destination (root on a move to a person) or the old owner's
+    // calendar keeps showing — and gating, under space isolation — a circle it no longer owns.
+    // Best-effort: the ownership move above is the authoritative write and has already succeeded.
+    const eventSpaceId = target.kind === 'space' ? target.spaceId : root
+    if (eventSpaceId) {
+      const { error: restampErr } = await admin
+        .from('events')
+        .update({ space_id: eventSpaceId } as never)
+        .eq('scope_type', 'circle')
+        .eq('scope_id', circleId)
+      if (restampErr) {
+        console.error('[circle-transfer] event restamp failed', { code: restampErr.code, circleId })
+      }
+    }
     return { ok: true, reason: '', slug: circle.slug }
   } catch {
     return { ok: false, reason: 'Could not move that circle. Please try again.', slug: null }

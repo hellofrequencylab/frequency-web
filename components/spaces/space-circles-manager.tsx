@@ -11,6 +11,8 @@ import {
   transferSpaceCircleAction,
   listTransferTargetsAction,
   offerSpaceCircleAction,
+  attachCircleToSpaceAction,
+  listAttachableCirclesAction,
 } from '@/app/(main)/spaces/[slug]/circles/actions'
 import { isError } from '@/lib/action-result'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -67,6 +69,10 @@ export function SpaceCirclesManager({
   /** Handing off to another person: the handle typed, and the matches found. */
   const [handoffQuery, setHandoffQuery] = useState('')
   const [handoffHits, setHandoffHits] = useState<{ id: string; handle: string; display_name: string }[]>([])
+  /** Attaching one of the steward's own circles (ADR-857): panel open, choices, choice. */
+  const [attaching, setAttaching] = useState(false)
+  const [attachable, setAttachable] = useState<{ id: string; name: string; slug: string }[] | null>(null)
+  const [pickedCircle, setPickedCircle] = useState<string>('')
 
   function create() {
     setError(null)
@@ -78,6 +84,33 @@ export function SpaceCirclesManager({
       }
       setNewName('')
       setAdding(false)
+      router.refresh()
+    })
+  }
+
+  /** Open the attach panel and lazy-load the circles the caller could bring in (ADR-857). */
+  function openAttach() {
+    setAttaching(true)
+    setError(null)
+    if (attachable !== null) return
+    start(async () => {
+      const res = await listAttachableCirclesAction(spaceSlug)
+      setAttachable(isError(res) ? [] : res.data)
+    })
+  }
+
+  function attach() {
+    if (!pickedCircle) return
+    setError(null)
+    start(async () => {
+      const res = await attachCircleToSpaceAction(spaceSlug, pickedCircle)
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
+      setAttaching(false)
+      setPickedCircle('')
+      setAttachable(null)
       router.refresh()
     })
   }
@@ -231,14 +264,78 @@ export function SpaceCirclesManager({
               It starts as a draft, so you can shape it before anyone sees it.
             </p>
           </div>
+        ) : attaching ? (
+          <div className="space-y-2">
+            <label htmlFor="attach-circle-pick" className="block text-xs font-semibold text-text">
+              Attach one of your circles
+            </label>
+            {attachable === null ? (
+              <p className="text-2xs text-subtle">Finding your circles…</p>
+            ) : attachable.length === 0 ? (
+              <p className="text-2xs text-subtle">
+                Every circle you host already lives here. Start one below, or ask its host to move it.
+              </p>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  id="attach-circle-pick"
+                  value={pickedCircle}
+                  onChange={(e) => setPickedCircle(e.target.value)}
+                  disabled={pending}
+                  className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text outline-none disabled:opacity-60"
+                >
+                  <option value="">Pick a circle…</option>
+                  {attachable.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={attach}
+                  disabled={pending || !pickedCircle}
+                  className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                >
+                  Attach
+                </button>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-2xs text-subtle">
+                The circle keeps its host and members. Its events join this space&apos;s calendar.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setAttaching(false)
+                  setPickedCircle('')
+                  setError(null)
+                }}
+                disabled={pending}
+                className="rounded-lg px-3 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong transition-colors hover:text-text"
-          >
-            <Plus className="h-4 w-4" /> New circle
-          </button>
+          <div className="flex flex-wrap items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong transition-colors hover:text-text"
+            >
+              <Plus className="h-4 w-4" /> New circle
+            </button>
+            <button
+              type="button"
+              onClick={openAttach}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong transition-colors hover:text-text"
+            >
+              <ArrowRight className="h-4 w-4" /> Attach a circle you host
+            </button>
+          </div>
         )}
       </div>
 

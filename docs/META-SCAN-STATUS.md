@@ -87,6 +87,13 @@ Also closed in the same pass, both flagged above as the highest user impact:
 - `app_instances` (0 rows, no reader or writer) is the Loom where-referenced backbone, shipped ahead of its code.
 
 **Correctness**
+- **Circle-placed events via the placement console are invisible to the circle-membership gate.**
+  `app/(main)/events/placement-actions.ts:116` writes `scope_circle_id` alone; the
+  `sync_event_scope_arc` trigger (20260829000000) only derives when `scope_id` is null or
+  changed, so `scope_id`/`scope_type` stay pointed at the old region — and every reader plus the
+  `circle_only` RLS disjunct keys on `scope_id`. Fix: that write must also set
+  `scope_id`/`scope_type` (or the trigger must sync the reverse direction). Found while building
+  ADR-857; not fixed there because it changes that flow's semantics on its own.
 - Reactivating a suspended operator **bypasses the licensed-seat wall**, single and bulk (`lib/spaces/roster.ts:179`).
 - CRM import dedupe index truncates at 1,000 rows, so re-importing into a large list creates duplicates (`lib/crm/import/commit.ts:230`).
 - Circle handoff has no way to see or cancel a pending offer, so an unanswered offer blocks the Circle permanently (`app/(main)/spaces/[slug]/circles/actions.ts:161`).

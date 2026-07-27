@@ -20,6 +20,7 @@ import { cancelAudit } from '@/lib/events/event-lifecycle'
 import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
 import { stampEventSpaceId } from '@/lib/events/store'
+import { spaceIdForCircle } from '@/lib/circles/store'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
 import { HOME_TZ, isValidTimeZone, isEventPast, zoneAbbrev, resolveZone } from '@/lib/time/zone'
 import { embedEvent } from '@/lib/events/embeddings'
@@ -227,6 +228,10 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
     if (!stewards.includes(myProfileId)) {
       return fail('You can only add an event to a circle you host.')
     }
+    // A circle's events belong to the circle's Space too (ADR-857): derive the placement from
+    // the circle so the event lands on BOTH the circle page (scope_id) and the Space calendar
+    // (space_id). A personal circle derives the root space — exactly today's behaviour.
+    spaceIdForPlacement = await spaceIdForCircle(formScopeId as string)
   } else if (scopeChoice === 'space') {
     // Editor+ managers create under the space (the Calendar console admits editors); the narrower
     // admin-only steward set stays the approval authority for external placement requests.

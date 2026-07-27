@@ -8,6 +8,7 @@ import { getEventCapabilities, getGlobalCapabilities } from '@/lib/core/load-cap
 import { authorizeAction } from '@/lib/admin/guard'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { slugify } from '@/lib/utils'
+import { spaceIdForCircle } from '@/lib/circles/store'
 import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { saveEventLocation, type EventAddress, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
@@ -138,6 +139,8 @@ export async function createEvent(fd: FormData) {
   const { data: existing } = await admin.from('events').select('slug').eq('slug', slug).maybeSingle()
   if (existing) slug = base + '-' + Math.random().toString(36).slice(2, 6)
 
+  // A circle's events belong to the circle's Space too (ADR-857).
+  const circleSpaceId = await spaceIdForCircle(scopeId)
   const { data: inserted, error } = await admin.from('events').insert({
     title,
     description,
@@ -148,6 +151,7 @@ export async function createEvent(fd: FormData) {
     ends_at:    endsAt ? new Date(endsAt).toISOString() : null,
     host_id:    caller.id,
     slug,
+    ...(circleSpaceId ? { space_id: circleSpaceId } : {}),
   }).select('id').single()
   if (error) throw new Error(error.message)
 
