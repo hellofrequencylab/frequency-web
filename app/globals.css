@@ -1514,19 +1514,31 @@ h1, h2, h3, h4, h5, h6 {
    lib/images/hero-contrast.ts is all zeroes to match, and the drift guard asserts they agree,
    so nobody can reintroduce a bar on one side of the contract alone. */
 
-/* The on-cover control for an ADAPTIVE hero (HERO_ACTION_CLASS_ADAPTIVE). Same glass as
-   HERO_ACTION_CLASS, except every colour derives from the ZONE's `--color-on-media`, so a chip
-   cluster sitting on the bright half of a cover goes dark while the name on the dark half stays
-   light. That is the whole reason --color-on-media has to reach the controls and not just the
-   two text runs it used to. */
+/* The on-cover control for an ADAPTIVE hero (HERO_ACTION_CLASS_ADAPTIVE).
+   INK and BORDER follow the zone's tone, so a chip on the bright half of a cover takes dark
+   glyphs while the name on the dark half stays light. That is why --color-on-media reaches the
+   controls at all.
+
+   🔴 THE FILL DOES NOT. It is pinned to the LIGHT token, always. Owner report, 2026-07-28: the
+   profile "first comes up correctly, then the dark background loads in shortly after". Two things
+   were producing that, and removing the plate only fixed one. The other is right here: the fill
+   used to be `--color-on-media` at 12%, so the moment the sensor resolved this cluster to a bright
+   backdrop the token flipped to ink and the glass became a 12% DARK wash that faded in after
+   hydration. A dark rectangle appearing behind the buttons a beat after load is exactly the thing
+   the owner rejected, whether it comes from a plate or from the chip's own fill.
+   A light film reads as glass over both a dark and a bright photo; a dark film only ever reads as
+   a box. The tone contrast comes from the glyphs and the border, which still flip. */
 .hero-chip {
   border: 1px solid color-mix(in srgb, var(--color-on-media) 42%, transparent);
-  background: color-mix(in srgb, var(--color-on-media) 12%, transparent);
+  background: color-mix(in srgb, var(--color-on-media-light) 12%, transparent);
   color: var(--color-on-media);
   backdrop-filter: blur(4px);
 }
+/* Hover follows the same rule as the resting fill, and for the same reason: keyed to the tone it
+   would turn into a dark wash under the cursor on a bright-backdrop cluster. Lighter film, not a
+   darker one. */
 .hero-chip:hover {
-  background: color-mix(in srgb, var(--color-on-media) 22%, transparent);
+  background: color-mix(in srgb, var(--color-on-media-light) 22%, transparent);
 }
 
 /* Soft amber radial glow backdrop, e.g. behind a hero CTA or within a dark band.

@@ -179,6 +179,20 @@ describe('sRGB compositing (the colour-space correction, ADR-894)', () => {
     expect(css).not.toMatch(/data-media-plate="[23]"\]::before/)
   })
 
+  it('🔴 nothing dark fades in after hydration: the chip FILL never follows the tone', () => {
+    // Owner report, 2026-07-28: the profile "first comes up correctly, then the dark background
+    // loads in shortly after". Removing the plate fixed one source; the chip's own fill was the
+    // other. Pinned to the light token so a bright-backdrop zone cannot turn the glass into a
+    // dark wash. Ink and border still flip, which is where the tone contrast comes from.
+    const css = readFileSync('app/globals.css', 'utf8')
+    const chip = css.slice(css.indexOf('.hero-chip {'), css.indexOf('.hero-chip {') + 400)
+    expect(chip).toContain('background: color-mix(in srgb, var(--color-on-media-light) 12%, transparent)')
+    expect(chip).not.toMatch(/background:\s*color-mix\(in srgb, var\(--color-on-media\)/)
+    // The parts that SHOULD still adapt.
+    expect(chip).toContain('color: var(--color-on-media)')
+    expect(chip).toContain('border: 1px solid color-mix(in srgb, var(--color-on-media) 42%, transparent)')
+  })
+
   it('🔴 the only on-media treatment is a shadow under LIGHT copy, never under dark', () => {
     // The other half of the same ruling: "Leave black as is, but make a shadow for white."
     const css = readFileSync('app/globals.css', 'utf8')
