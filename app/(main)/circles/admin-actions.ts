@@ -18,6 +18,7 @@ import { slugify, isoDaysAgo } from '@/lib/utils'
 import { isValidTimeZone } from '@/lib/time/zone'
 import { getCircleEarnedZaps } from '@/lib/circles/earned'
 import { setCircleChannel } from '@/lib/channels/programs'
+import { writeCircleCoverFocus, writeCircleHeroHeight } from '@/lib/circles/hero'
 import type { Database } from '@/lib/database.types'
 
 /** A small {id, title, href} entry for one of the circle's adopted Quest items. */
@@ -191,15 +192,18 @@ export async function getCircleAdminData(slug: string) {
 
   // Also load the practice picker data ("This week's practice" lives here now) plus
   // the Circle Quest adoptions (journeys / practices / challenges) the module lists,
-  // the global challenges the host could still adopt for the circle, and the Channel
-  // picker's Pillar-grouped choices (ADR-871).
-  const [practice_library, activePractice, adoptions, adoptableChallenges, channelGroups] =
+  // the global challenges the host could still adopt for the circle, the Channel
+  // picker's Pillar-grouped choices (ADR-871), and the header presentation bag
+  // (circles.theme — read through its own tolerant helper, NOT this function's main
+  // select, so a not-yet-applied theme migration can never null out the whole module).
+  const [practice_library, activePractice, adoptions, adoptableChallenges, channelGroups, theme] =
     await Promise.all([
       listPublicPractices(),
       getCircleActivePractice(circle.id),
       getCircleQuestAdoptions(circle.id),
       listAdoptableChallenges(circle.id),
       listChannelOptionGroups(circle.topical_channel_id ?? null),
+      readCircleTheme(circle.id),
     ])
 
   return {
@@ -212,6 +216,7 @@ export async function getCircleAdminData(slug: string) {
     status: circle.status,
     image_url: circle.image_url,
     unlisted: circle.unlisted ?? false,
+    theme,
     topical_channel_id: circle.topical_channel_id ?? null,
     channel_groups: channelGroups,
     practice_library: practice_library.map((p) => ({ id: p.id, title: p.title })),
@@ -394,6 +399,79 @@ export async function removeCircleCover(id: string, slug: string) {
   const admin = createAdminClient()
   const { error } = await admin.from('circles').update({ image_url: null }).eq('id', id)
   if (error) throw new Error(error.message)
+
+  revalidatePath(`/circles/${slug}`)
+  revalidatePath('/circles')
+}
+
+/** Read circles.theme on its OWN select, swallowing any error into `{}`. This is deliberate, not
+ *  sloppiness: `theme` ships in migration 20270120000000_circles_theme.sql, which the owner applies
+ *  by hand — until then the column does not exist and PostgREST answers this select with a 42703
+ *  error instead of a row. Folding that error into an empty bag keeps every read total (the
+ *  lib/circles/hero helpers all resolve `{}` to today's defaults), so nothing can 500 or blank a
+ *  module on an environment where the migration has not landed yet. It also keeps `theme` OUT of
+ *  getCircleAdminData's main select, which would otherwise fail wholesale and hide the entire
+ *  settings module. */
+async function readCircleTheme(id: string): Promise<unknown> {
+  const { data, error } = await untyped().from('circles').select('theme').eq('id', id).maybeSingle()
+  if (error) return {}
+  return (data as { theme?: unknown } | null)?.theme ?? {}
+}
+
+/**
+ * Set the Circle hero's cover FOCAL POINT (a CSS object-position). Gated circle.editSettings —
+ * the circle authority (its host, a managing guide/mentor of the parent, or staff), NOT a staff
+ * check: circles have hosts, unlike the platform-curated Channels this mirrors (ADR-886).
+ *
+ * The Event/Channel twins are `updateEventCoverFocus` / `updateChannelCoverFocus`, and this works
+ * the same way: the value is merged into the `theme` jsonb bag rather than given a column of its
+ * own, and a CENTERED focus is dropped rather than stored, so a Circle nobody has repositioned
+ * keeps an empty bag and renders exactly as it does today. The read-modify-write is why this reads
+ * `theme` first: a blind write would clobber `heroHeight` sitting in the same bag.
+ */
+export async function updateCircleCoverFocus(
+  id: string,
+  slug: string,
+  focus: string,
+): Promise<{ error: string } | void> {
+  const caps = await getCircleCapabilities(id)
+  if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
+
+  const next = writeCircleCoverFocus(await readCircleTheme(id), focus)
+  // ADR-246 untyped cast: `theme` post-dates lib/database.types.ts. If the column's migration has
+  // not been applied yet the update comes back as a PostgREST error VALUE (never a throw), which
+  // surfaces as this action's inline `{ error }` — a sentence in the rail, not a 500.
+  const { error } = await (createAdminClient() as unknown as UntypedUpdate)
+    .from('circles')
+    .update({ theme: next })
+    .eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath(`/circles/${slug}`)
+  revalidatePath('/circles')
+}
+
+/**
+ * Set the Circle hero's HEIGHT from the shared Short / Standard / Tall ladder. Same
+ * circle.editSettings gate, same bag, same read-modify-write — and the CHANNEL divergence, NOT the
+ * Event drop-the-default rule: an explicitly chosen 'standard' is STORED, because the Circle page
+ * resolves its hero through the header ELEMENT config (resolveHeaderElement, ADR-793) which also
+ * has an opinion about height, and a dropped key would silently hand the decision back to it.
+ */
+export async function updateCircleHeroHeight(
+  id: string,
+  slug: string,
+  height: string,
+): Promise<{ error: string } | void> {
+  const caps = await getCircleCapabilities(id)
+  if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
+
+  const next = writeCircleHeroHeight(await readCircleTheme(id), height)
+  const { error } = await (createAdminClient() as unknown as UntypedUpdate)
+    .from('circles')
+    .update({ theme: next })
+    .eq('id', id)
+  if (error) return { error: error.message }
 
   revalidatePath(`/circles/${slug}`)
   revalidatePath('/circles')
