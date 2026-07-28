@@ -1,41 +1,36 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { EventDetailTemplate } from '@/components/templates'
 
-export default function EventDetailLoading() {
+// Loading shape for the PUBLIC event page. It composes EventDetailTemplate with skeleton nodes
+// rather than hand-rolling a lookalike, for the same reason the in-app skeleton does: a
+// hand-rolled copy drifts silently. This one had already drifted — it painted a single
+// max-w-3xl column while its destination now renders the standard's two-column interior inside a
+// max-w-5xl frame, so the page visibly jumped as it loaded.
+//
+// It mirrors the destination's ABSENT slots exactly: no cover, no operator actions, and no
+// sticky RSVP bar (nothing to RSVP to while signed out), so no space is reserved for one.
+export default function PublicEventDetailLoading() {
   return (
-    <div className="relative max-w-3xl mx-auto px-6 py-20 sm:py-24">
-      {/* Back link */}
-      <Skeleton className="h-4 w-16 mb-6" />
-
-      {/* Event title */}
-      <Skeleton className="h-8 w-3/4 mb-2" />
-      <Skeleton className="h-7 w-1/2 mb-6" />
-
-      {/* Date + location meta */}
-      <div className="space-y-2 mb-8">
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-4 w-4 rounded" />
-          <Skeleton className="h-4 w-48" />
-        </div>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-4 w-4 rounded" />
-          <Skeleton className="h-4 w-36" />
-        </div>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-4 w-4 rounded" />
-          <Skeleton className="h-4 w-28" />
-        </div>
-      </div>
-
-      {/* Description body */}
-      <div className="space-y-2 mb-10">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-5/6" />
-        <Skeleton className="h-4 w-4/6" />
-      </div>
-
-      {/* CTA / sign-in block */}
-      <Skeleton className="h-24 w-full rounded-2xl" />
+    <div className="relative overflow-hidden max-w-5xl mx-auto px-6 py-20 sm:py-24">
+      <EventDetailTemplate
+        hasActionBar={false}
+        back={{ href: '/discover/events', label: 'Events' }}
+        title={<Skeleton className="h-9 w-2/3" />}
+        identity={{
+          when: <Skeleton className="h-5 w-56" />,
+          where: <Skeleton className="h-4 w-44" />,
+          hostedBy: <Skeleton className="h-4 w-36" />,
+        }}
+        interiorMain={
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        }
+        interiorSide={<Skeleton className="h-48 w-full rounded-2xl" />}
+      />
     </div>
   )
 }

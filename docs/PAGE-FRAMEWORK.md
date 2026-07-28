@@ -380,6 +380,33 @@ two-layer nav).
 cards), `StatCard` (KPI tile with delta/drill-down), `SectionHeader`, `EmptyState`,
 `ModuleCard`/`SidebarCard` (rail/admin panels).
 
+#### 8.1.1 Entity compositions (a shell + one entity's locked shape)
+
+Some entities have a *shape* worth standardising, not just a shell. An entity composition
+**wraps** a shell — it never re-declares a header, an `<h1>`, or a divider — and adds the parts the
+shell has no opinion about. It is **not** a tenth shell; the count above stays nine.
+
+| Composition | Import | Wraps | Locks |
+|---|---|---|---|
+| **EventDetail** | `EventDetailTemplate` | `DetailTemplate` | ✅ the standard block layout for every page-like **event** surface (owner directive 2026-07-28) |
+
+`EventDetailTemplate` owns the page frame (`structuredData` · `notices` · `hasActionBar`), the
+header lockup it hands to Detail (`cover` · `back` · `title` · `badges` · `actions`), the **ordered**
+identity stack (`identity.when → where → cadence → nextDate → seriesRail → belonging → hostedBy →
+credit → reward`), and the interior geometry — either the module engine via `interior`, or an
+explicit `interiorMain`/`interiorSide` pair rendered through the *same* `main-side` grid classes for
+a surface with no module engine (a public route has no `setEventContext` and no `page_settings`
+layout row).
+
+🔴 **A surface differs by an ABSENT SLOT, never a fork.** There is no `variant`, no `isPublic`. The
+signed-out twin at `/discover/events/[slug]` omits `actions`, `gallery`, `interior` and `actionBar`;
+it does not branch inside the template. Consumers: `app/(main)/events/[slug]/page.tsx` (the
+photographed page), `app/discover/events/[slug]/page.tsx`, and that route's `loading.tsx` (the
+skeleton composes the template, so it cannot drift from the destination's shape again). Enforced by
+`components/templates/event-standard-layout.test.ts`; the extraction's byte-identity is pinned by
+`event-detail-template.equivalence.test.tsx`. Operator consoles (`/events/[slug]/manage`, `/crm`,
+`/settings`, `/edit`) are a different archetype and stay on Dashboard / Studio.
+
 **Form + control primitives (2026-06-06, ADR-147):** `Input`/`Textarea`/`Label` (+
 `fieldClasses`/`labelClasses` for a native `<select>`), `Button` (variant × size),
 `Dialog` (the shared backdrop · ESC · scroll-lock overlay shell), and `cn()`

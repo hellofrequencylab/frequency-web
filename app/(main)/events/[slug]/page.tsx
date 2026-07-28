@@ -24,7 +24,7 @@ import { RsvpBottomBar } from './rsvp-bottom-bar'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { hasTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
 import { getCapacityInfo } from '@/lib/events/capacity'
-import { DetailTemplate } from '@/components/templates/detail-template'
+import { EventDetailTemplate } from '@/components/templates/event-detail-template'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { isStaff, asWebRole } from '@/lib/core/roles'
@@ -1610,297 +1610,304 @@ export default async function EventDetailPage({
   })
 
   return (
-    <div className="pb-24 lg:pb-0">
-      <JsonLd
-        data={[
-          eventJsonLd,
-          breadcrumbSchema([
-            { name: 'Events', path: '/events' },
-            { name: event.title, path: `/events/${event.slug}` },
-          ]),
-        ]}
-      />
-      {event.is_cancelled && (
-        <div className="mb-4 rounded-2xl bg-danger-bg border border-danger px-3 py-2">
-          <p className="text-sm font-medium text-danger">This event has been cancelled.</p>
-        </div>
-      )}
+    <EventDetailTemplate
+      structuredData={
+        <JsonLd
+          data={[
+            eventJsonLd,
+            breadcrumbSchema([
+              { name: 'Events', path: '/events' },
+              { name: event.title, path: `/events/${event.slug}` },
+            ]),
+          ]}
+        />
+      }
+      notices={
+        <>
+          {event.is_cancelled && (
+            <div className="mb-4 rounded-2xl bg-danger-bg border border-danger px-3 py-2">
+              <p className="text-sm font-medium text-danger">This event has been cancelled.</p>
+            </div>
+          )}
 
-      {claimed === '1' && isHost && (
-        <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-sm font-semibold text-success">
-          <Check className="h-4 w-4" />
-          It is yours. You are the host now, so you can edit anything on this page.
-        </div>
-      )}
+          {claimed === '1' && isHost && (
+            <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-sm font-semibold text-success">
+              <Check className="h-4 w-4" />
+              It is yours. You are the host now, so you can edit anything on this page.
+            </div>
+          )}
 
-      {ticketedCents !== null && (
-        <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-sm font-semibold text-success">
-          <Ticket className="h-4 w-4" />
-          You&rsquo;re in. ${(ticketedCents / 100).toFixed(2)} ticket confirmed. See you there.
-        </div>
-      )}
+          {ticketedCents !== null && (
+            <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-sm font-semibold text-success">
+              <Ticket className="h-4 w-4" />
+              You&rsquo;re in. ${(ticketedCents / 100).toFixed(2)} ticket confirmed. See you there.
+            </div>
+          )}
 
-      {/* Pending cohost invite — the signed-in viewer was invited to cohost this event.
-          Accept to join as a cohost, or decline. Hidden for the host (they can't invite
-          themselves) and once the invite is answered. */}
-      {myCohostInvite && !isHost && (
-        <CohostInviteBanner eventId={event.id} slug={event.slug} eventTitle={event.title} />
-      )}
+          {/* Pending cohost invite — the signed-in viewer was invited to cohost this event.
+              Accept to join as a cohost, or decline. Hidden for the host (they can't invite
+              themselves) and once the invite is answered. */}
+          {myCohostInvite && !isHost && (
+            <CohostInviteBanner eventId={event.id} slug={event.slug} eventTitle={event.title} />
+          )}
 
-      {/* The public "Is this your event? Claim it" banner is retired (owner directive): the person who
-          SEEDED the event now hands it off privately via the "Send to host" link in the QR and Share popup,
-          so the claim path is no longer surfaced to every visitor. */}
-
-      <DetailTemplate
-        // [A1] header image — the one big visual win. Uploaded cover, else the scanned
-        // poster's cropped cover / full flyer (heroUrl); token placeholder when none.
-        hero={
-          heroUrl ? (
-            <div className={`relative ${heroHeightCls} w-full overflow-hidden rounded-2xl bg-surface-elevated`}>
-              {/* The uploaded cover is a PUBLIC URL the optimizer is configured for; a
-                  scanned poster's hero is a SIGNED URL from the private bucket (path
-                  `/object/sign/...`, outside next.config remotePatterns), so it must
-                  bypass the optimizer — matching PosterDetails' plain <img> crops. */}
-              <Image
-                src={heroUrl}
-                alt=""
-                fill
-                sizes="(max-width: 1024px) 100vw, 1344px"
-                className="object-cover"
-                style={{ objectPosition: coverFocus }}
-                preload
-                unoptimized={heroUrl !== coverUrl}
+          {/* The public "Is this your event? Claim it" banner is retired (owner directive): the person who
+              SEEDED the event now hands it off privately via the "Send to host" link in the QR and Share popup,
+              so the claim path is no longer surfaced to every visitor. */}
+        </>
+      }
+      // [A1] header image — the one big visual win. Uploaded cover, else the scanned
+      // poster's cropped cover / full flyer (heroUrl); token placeholder when none.
+      cover={
+        heroUrl ? (
+          <div className={`relative ${heroHeightCls} w-full overflow-hidden rounded-2xl bg-surface-elevated`}>
+            {/* The uploaded cover is a PUBLIC URL the optimizer is configured for; a
+                scanned poster's hero is a SIGNED URL from the private bucket (path
+                `/object/sign/...`, outside next.config remotePatterns), so it must
+                bypass the optimizer — matching PosterDetails' plain <img> crops. */}
+            <Image
+              src={heroUrl}
+              alt=""
+              fill
+              sizes="(max-width: 1024px) 100vw, 1344px"
+              className="object-cover"
+              style={{ objectPosition: coverFocus }}
+              preload
+              unoptimized={heroUrl !== coverUrl}
+            />
+          </div>
+        ) : (
+          // No cover: a designed placeholder, not a blank box. Mirrors the
+          // circle-card no-cover fill (soft DAWN gradient + centered icon) and
+          // leads with the event's date so the slot still says something.
+          <div className={`relative flex ${heroHeightCls} w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong`}>
+            <div className="flex flex-col items-center gap-1 text-center">
+              <CalendarDays className="h-7 w-7 opacity-80" />
+              <span className="text-3xl font-bold leading-none sm:text-4xl">
+                {new Date(event.starts_at).toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
+              </span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+                {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' })}
+              </span>
+            </div>
+          </div>
+        )
+      }
+      // The event title renders at the DISPLAY scale (a step up from the default Detail h1) —
+      // this is the page's marquee fact, so it leads at destination-page stature.
+      titleScale="display"
+      title={
+        canManage ? (
+          <InlineText
+            value={event.title}
+            save={updateEventField.bind(null, event.id, slug, 'title')}
+            inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-2xl sm:text-3xl lg:text-4xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
+          />
+        ) : (
+          event.title
+        )
+      }
+      // Every viewer gets "QR & Share" (the public send-this-event control); operators/hosts
+      // additionally get Edit (Settings drawer) then Manage (dashboard), stacked beneath it.
+      actions={
+        <div className="flex flex-col items-stretch gap-2 sm:items-end">
+          <EventShareButton
+            slug={event.slug}
+            title={event.title}
+            sharerProfileId={myProfileId}
+            // "Send to host": only the SEEDER (the poster) of an unclaimed event gets the claim link, so
+            // they can hand it to its real organizer. Everyone else gets null (no block shown).
+            hostClaimUrl={
+              isUnclaimedPosted && myProfileId && myProfileId === postedById && extra?.claim_token
+                ? `${SITE_URL}/events/claim/${extra.claim_token}`
+                : null
+            }
+          />
+          {canManage && (
+            <>
+              <OpenAdminBarButton
+                scope={{ kind: 'event', id: event.id }}
+                caps={Array.from(eventCaps)}
+                label="Edit event"
+                icon={<Settings className="h-4 w-4" />}
               />
-            </div>
-          ) : (
-            // No cover: a designed placeholder, not a blank box. Mirrors the
-            // circle-card no-cover fill (soft DAWN gradient + centered icon) and
-            // leads with the event's date so the slot still says something.
-            <div className={`relative flex ${heroHeightCls} w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong`}>
-              <div className="flex flex-col items-center gap-1 text-center">
-                <CalendarDays className="h-7 w-7 opacity-80" />
-                <span className="text-3xl font-bold leading-none sm:text-4xl">
-                  {new Date(event.starts_at).toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
-                </span>
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted">
-                  {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' })}
-                </span>
-              </div>
-            </div>
-          )
-        }
-        // The event title renders at the DISPLAY scale (a step up from the default Detail h1) —
-        // this is the page's marquee fact, so it leads at destination-page stature.
-        titleScale="display"
-        title={
-          canManage ? (
-            <InlineText
-              value={event.title}
-              save={updateEventField.bind(null, event.id, slug, 'title')}
-              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-2xl sm:text-3xl lg:text-4xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
-            />
-          ) : (
-            event.title
-          )
-        }
-        // Every viewer gets "QR & Share" (the public send-this-event control); operators/hosts
-        // additionally get Edit (Settings drawer) then Manage (dashboard), stacked beneath it.
-        actions={
-          <div className="flex flex-col items-stretch gap-2 sm:items-end">
-            <EventShareButton
-              slug={event.slug}
-              title={event.title}
-              sharerProfileId={myProfileId}
-              // "Send to host": only the SEEDER (the poster) of an unclaimed event gets the claim link, so
-              // they can hand it to its real organizer. Everyone else gets null (no block shown).
-              hostClaimUrl={
-                isUnclaimedPosted && myProfileId && myProfileId === postedById && extra?.claim_token
-                  ? `${SITE_URL}/events/claim/${extra.claim_token}`
-                  : null
-              }
-            />
-            {canManage && (
-              <>
-                <OpenAdminBarButton
-                  scope={{ kind: 'event', id: event.id }}
-                  caps={Array.from(eventCaps)}
-                  label="Edit event"
-                  icon={<Settings className="h-4 w-4" />}
-                />
-                <Link
-                  href={`/events/${event.slug}/manage`}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
-                >
-                  <LayoutDashboard className="h-4 w-4 text-subtle" />
-                  Manage event
-                </Link>
-              </>
+              <Link
+                href={`/events/${event.slug}/manage`}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+              >
+                <LayoutDashboard className="h-4 w-4 text-subtle" />
+                Manage event
+              </Link>
+            </>
+          )}
+        </div>
+      }
+      // [A2] attendance-mode pill.
+      badges={
+        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${mode.cls}`}>
+          <mode.Icon className="h-3.5 w-3.5" /> {mode.label}
+        </span>
+      }
+      identity={{
+        // The when-line is the key fact under the title — it renders a step stronger
+        // (size, weight, and full text color) than the rest of the subtitle stack.
+        when: (
+          <div className="flex items-center gap-2">
+            <CalendarDays className="w-4 h-4 text-primary-strong shrink-0" />
+            <span className="text-base font-semibold text-text">{whenLine}</span>
+          </div>
+        ),
+
+        where: headerLocation && !isOnline && (
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-subtle shrink-0" />
+            {/* Venue name leads, then the address (item 4). The line deep-links into Maps
+                (native app on a phone, the map site on desktop) so guests navigate in one tap. */}
+            {mapsHref ? (
+              <a
+                href={mapsHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-primary-strong hover:underline"
+              >
+                {headerLocation}
+              </a>
+            ) : (
+              <span>{headerLocation}</span>
+            )}
+            {addressHidden && (
+              <span className="text-subtle">· Exact address shared after you RSVP</span>
             )}
           </div>
-        }
-        // [A2] attendance-mode pill.
-        badges={
-          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${mode.cls}`}>
-            <mode.Icon className="h-3.5 w-3.5" /> {mode.label}
-          </span>
-        }
-        subtitle={
-          <div className="space-y-1.5">
-            {/* The when-line is the key fact under the title — it renders a step stronger
-                (size, weight, and full text color) than the rest of the subtitle stack. */}
-            <div className="flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-primary-strong shrink-0" />
-              <span className="text-base font-semibold text-text">{whenLine}</span>
-            </div>
+        ),
 
-            {headerLocation && !isOnline && (
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-subtle shrink-0" />
-                {/* Venue name leads, then the address (item 4). The line deep-links into Maps
-                    (native app on a phone, the map site on desktop) so guests navigate in one tap. */}
-                {mapsHref ? (
-                  <a
-                    href={mapsHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-primary-strong hover:underline"
-                  >
-                    {headerLocation}
-                  </a>
-                ) : (
-                  <span>{headerLocation}</span>
-                )}
-                {addressHidden && (
-                  <span className="text-subtle">· Exact address shared after you RSVP</span>
-                )}
-              </div>
-            )}
-
-            {(event.recurrence_type !== 'none' || event.parent_event_id) && (
-              <div className="flex items-center gap-2">
-                <span aria-hidden className="text-base leading-none">🔁</span>
-                <span>
-                  {event.recurrence_type !== 'none'
-                    ? RECURRENCE_LABEL[event.recurrence_type]
-                    : 'Part of a recurring series'}
-                  {event.recurrence_until && (
-                    <span className="text-subtle ml-1">
-                      · until {new Date(event.recurrence_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
-                  )}
+        cadence: (event.recurrence_type !== 'none' || event.parent_event_id) && (
+          <div className="flex items-center gap-2">
+            <span aria-hidden className="text-base leading-none">🔁</span>
+            <span>
+              {event.recurrence_type !== 'none'
+                ? RECURRENCE_LABEL[event.recurrence_type]
+                : 'Part of a recurring series'}
+              {event.recurrence_until && (
+                <span className="text-subtle ml-1">
+                  · until {new Date(event.recurrence_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
-              </div>
-            )}
+              )}
+            </span>
+          </div>
+        ),
 
-            {/* Recurring anchor whose date has passed: surface the next upcoming date so the
-                series never reads as a one-off that already happened. */}
-            {nextRecurrence && (
-              <div className="flex items-center gap-2">
-                <CalendarDays className="w-4 h-4 text-subtle shrink-0" />
-                <span>
-                  Next:{' '}
-                  {nextRecurrence.toLocaleDateString('en-US', {
-                    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
-                  })}
-                </span>
-              </div>
-            )}
+        // Recurring anchor whose date has passed: surface the next upcoming date so the
+        // series never reads as a one-off that already happened.
+        nextDate: nextRecurrence && (
+          <div className="flex items-center gap-2">
+            <CalendarDays className="w-4 h-4 text-subtle shrink-0" />
+            <span>
+              Next:{' '}
+              {nextRecurrence.toLocaleDateString('en-US', {
+                weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+              })}
+            </span>
+          </div>
+        ),
 
-            {/* The series date rail: the next real dates, each linking to that date's own live
-                page (ADR-897). Renders nothing for a one-off or a single-date series. */}
-            <SeriesDatesRail dates={seriesRailDates} timeZone={eventTz} className="pt-1" />
+        // The series date rail: the next real dates, each linking to that date's own live
+        // page (ADR-897). Renders nothing for a one-off or a single-date series.
+        seriesRail: <SeriesDatesRail dates={seriesRailDates} timeZone={eventTz} className="pt-1" />,
 
-            {/* WHERE THIS EVENT BELONGS: its Circle, its Space, and its Journey, each a link.
-                This replaces the bare unlabeled Circle name that used to sit here, which said
-                nothing about what it was and left the Space and Journey ties invisible. The
-                Circle ref is null unless `scope_type` genuinely names one, so a public event's
-                sentinel scope_id and the legacy standalone row's profile id cannot reach it.
-                Its Journey needs a read the header must not wait on, so it streams in behind
-                its own <Suspense> (PAGE-FRAMEWORK §5). */}
-            <Suspense fallback={<EventBelongingSkeleton />}>
-              <EventBelonging
-                eventId={event.id}
-                circle={scopeSlug ? { name: scopeName, slug: scopeSlug } : null}
-                space={spaceHost ? { name: spaceHost.name, slug: spaceHost.slug } : null}
-                canManage={canManage}
-              />
-            </Suspense>
+        // WHERE THIS EVENT BELONGS: its Circle, its Space, and its Journey, each a link.
+        // This replaces the bare unlabeled Circle name that used to sit here, which said
+        // nothing about what it was and left the Space and Journey ties invisible. The
+        // Circle ref is null unless `scope_type` genuinely names one, so a public event's
+        // sentinel scope_id and the legacy standalone row's profile id cannot reach it.
+        // Its Journey needs a read the header must not wait on, so it streams in behind
+        // its own <Suspense> (PAGE-FRAMEWORK §5).
+        belonging: (
+          <Suspense fallback={<EventBelongingSkeleton />}>
+            <EventBelonging
+              eventId={event.id}
+              circle={scopeSlug ? { name: scopeName, slug: scopeSlug } : null}
+              space={spaceHost ? { name: spaceHost.name, slug: spaceHost.slug } : null}
+              canManage={canManage}
+            />
+          </Suspense>
+        ),
 
-            {spaceHost ? (
-              // Space-hosted event: the Space is the attribution — its brand links to the Space page. The
-              // person in host_id stays the organizer, shown as a subtle secondary credit so they're still
-              // visible without being the headline host. Collaborating Spaces (accepted shares, ADR-834)
-              // get a minimal "with …" mention here; their featured credit is the Collaborators box.
-              <p>
-                Hosted by{' '}
-                <Link href={`/spaces/${spaceHost.slug}`} className="font-semibold hover:underline">
-                  {spaceHost.name}
-                </Link>
-                {collaboratorNames ? <span> with {collaboratorNames}</span> : null}
-                {event.host ? (
-                  <span className="text-subtle"> · organized by {event.host.display_name}</span>
-                ) : null}
-              </p>
-            ) : event.host ? (
-              // In-network host: bold, clickable, with a hover/focus profile-preview popover
-              // (items 2 + 3). An out-of-network organizer stays plain text below.
-              <p>
-                Hosted by <HostHovercard host={event.host} />
-                {collaboratorNames ? <span> with {collaboratorNames}</span> : null}
-              </p>
-            ) : isPostedEvent ? (
-              <p className="text-subtle">
-                {extra?.organizer_name ? `By ${extra.organizer_name} · ` : ''}
-                Organizer not on Frequency yet
-              </p>
+        hostedBy: spaceHost ? (
+          // Space-hosted event: the Space is the attribution — its brand links to the Space page. The
+          // person in host_id stays the organizer, shown as a subtle secondary credit so they're still
+          // visible without being the headline host. Collaborating Spaces (accepted shares, ADR-834)
+          // get a minimal "with …" mention here; their featured credit is the Collaborators box.
+          <p>
+            Hosted by{' '}
+            <Link href={`/spaces/${spaceHost.slug}`} className="font-semibold hover:underline">
+              {spaceHost.name}
+            </Link>
+            {collaboratorNames ? <span> with {collaboratorNames}</span> : null}
+            {event.host ? (
+              <span className="text-subtle"> · organized by {event.host.display_name}</span>
             ) : null}
+          </p>
+        ) : event.host ? (
+          // In-network host: bold, clickable, with a hover/focus profile-preview popover
+          // (items 2 + 3). An out-of-network organizer stays plain text below.
+          <p>
+            Hosted by <HostHovercard host={event.host} />
+            {collaboratorNames ? <span> with {collaboratorNames}</span> : null}
+          </p>
+        ) : isPostedEvent ? (
+          <p className="text-subtle">
+            {extra?.organizer_name ? `By ${extra.organizer_name} · ` : ''}
+            Organizer not on Frequency yet
+          </p>
+        ) : null,
 
-            {postedBy &&
-              (isUnclaimedPosted ? (
-                // Still unclaimed: the poster credit IS the attribution, so it stays prominent
-                // (Zap icon + accent link) next to the claim/organizer lines.
-                <p className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-primary shrink-0" />
-                  <span>
-                    Posted by{' '}
-                    <Link href={`/people/${postedBy.handle}`} className="text-primary-strong hover:underline">
-                      {postedBy.display_name}
-                    </Link>
-                  </span>
-                </p>
-              ) : (
-                // Once a host has claimed the event, the original poster is just a small, unobtrusive
-                // credit under the host line — no accent, no icon.
-                <p className="text-2xs text-subtle">
-                  Posted by{' '}
-                  <Link
-                    href={`/people/${postedBy.handle}`}
-                    className="underline-offset-2 hover:text-text hover:underline"
-                  >
-                    {postedBy.display_name}
-                  </Link>
-                </p>
-              ))}
+        credit:
+          postedBy &&
+          (isUnclaimedPosted ? (
+            // Still unclaimed: the poster credit IS the attribution, so it stays prominent
+            // (Zap icon + accent link) next to the claim/organizer lines.
+            <p className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-primary shrink-0" />
+              <span>
+                Posted by{' '}
+                <Link href={`/people/${postedBy.handle}`} className="text-primary-strong hover:underline">
+                  {postedBy.display_name}
+                </Link>
+              </span>
+            </p>
+          ) : (
+            // Once a host has claimed the event, the original poster is just a small, unobtrusive
+            // credit under the host line — no accent, no icon.
+            <p className="text-2xs text-subtle">
+              Posted by{' '}
+              <Link
+                href={`/people/${postedBy.handle}`}
+                className="underline-offset-2 hover:text-text hover:underline"
+              >
+                {postedBy.display_name}
+              </Link>
+            </p>
+          )),
 
-            {/* [A3] The calm reward line reads as HEADER content — it sits with the
-                date/location/host lines, not floating above the grid with a divider. The
-                check-in Zaps reward (+ streak / Current when real). Hidden for a cancelled
-                event. */}
-            {!event.is_cancelled && (
-              <EventRewardStrip
-                checkInZaps={ZAP_AMOUNTS.event_attend}
-                isPast={isPast}
-              />
-            )}
-          </div>
-        }
-      >
-        {/* Claim banner — shown only when an UNCLAIMED posted event is opened via its claim
-            link (?claim=<token>, matching the event's one-time token). The claim landing now
-            redirects here, so the real public listing IS the claim page: opening it never
-            claims (the accidental-claim fix), and claiming is a deliberate button. Signed-in →
-            one-tap claim; signed-out → the host setup funnel, which returns here to finish. */}
-        {claim && isUnclaimedPosted && extra?.claim_token && claim === extra.claim_token && (
+        // [A3] The calm reward line reads as HEADER content — it sits with the
+        // date/location/host lines, not floating above the grid with a divider. The
+        // check-in Zaps reward (+ streak / Current when real). Hidden for a cancelled
+        // event.
+        reward: !event.is_cancelled && (
+          <EventRewardStrip
+            checkInZaps={ZAP_AMOUNTS.event_attend}
+            isPast={isPast}
+          />
+        ),
+      }}
+      // Claim banner — shown only when an UNCLAIMED posted event is opened via its claim
+      // link (?claim=<token>, matching the event's one-time token). The claim landing now
+      // redirects here, so the real public listing IS the claim page: opening it never
+      // claims (the accidental-claim fix), and claiming is a deliberate button. Signed-in →
+      // one-tap claim; signed-out → the host setup funnel, which returns here to finish.
+      bodyLead={
+        claim && isUnclaimedPosted && extra?.claim_token && claim === extra.claim_token ? (
           <div className="mb-5 flex flex-col gap-4 rounded-2xl border border-primary/40 bg-primary-bg/60 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-lg font-bold text-text">
@@ -1924,32 +1931,31 @@ export default async function EventDetailPage({
               )}
             </div>
           </div>
-        )}
-
-        {/* Photo gallery (item 5) — the FIRST gallery image is the header/cover, already rendered
-            full-width above at its host-picked hero height (the DetailTemplate `hero` band). So the
-            gallery below shows only the REST of the photos as thumbnails (no duplicate of the
-            header), each clickable into a full-screen lightbox. It stays in the page (not a module):
-            it's built from the gallery URLs the header already resolved, and self-hides with no
-            extras. It leads the interior, above the arrangeable blocks. */}
-        <EventGallery images={galleryUrls.slice(1)} />
-
-        {/* ── The FULL interior is one templated <PageModules> now: no hardcoded aside, no bespoke
-            two-column grid. The '/events/*' layout owns the arrangement — its default Main + side
-            grid reproduces the old two-column page (post area in MAIN; the Join box, warm proof,
-            facts, and the host "Post an update" composer in SIDE), and every block is movable from
-            the on-page Layout editor. On a phone the SIDE column stacks above MAIN (the grid's
-            order-first), so a guest still sees who's going + the facts before the conversation —
-            the old mobile-only duplicate is gone (no double-render). ── */}
-        <PageModules route={`/events/${event.slug}`} />
-      </DetailTemplate>
-
-      {/* MOBILE sticky action bar — hidden on lg+, hidden for host/past/cancelled. */}
-      {showBottomBar && (
-        <RsvpBottomBar primaryLabel={bottomBarLabel} statusLine={bottomBarStatus}>
-          {joinActions}
-        </RsvpBottomBar>
-      )}
-    </div>
+        ) : null
+      }
+      // Photo gallery (item 5) — the FIRST gallery image is the header/cover, already rendered
+      // full-width above at its host-picked hero height (the cover band). So the gallery below
+      // shows only the REST of the photos as thumbnails (no duplicate of the header), each
+      // clickable into a full-screen lightbox. It stays in the page (not a module): it's built
+      // from the gallery URLs the header already resolved, and self-hides with no extras. It
+      // leads the interior, above the arrangeable blocks.
+      gallery={<EventGallery images={galleryUrls.slice(1)} />}
+      // ── The FULL interior is one templated <PageModules> now: no hardcoded aside, no bespoke
+      //    two-column grid. The '/events/*' layout owns the arrangement — its default Main + side
+      //    grid reproduces the old two-column page (post area in MAIN; the Join box, warm proof,
+      //    facts, and the host "Post an update" composer in SIDE), and every block is movable from
+      //    the on-page Layout editor. On a phone the SIDE column stacks above MAIN (the grid's
+      //    order-first), so a guest still sees who's going + the facts before the conversation —
+      //    the old mobile-only duplicate is gone (no double-render). ──
+      interior={<PageModules route={`/events/${event.slug}`} />}
+      // MOBILE sticky action bar — hidden on lg+, hidden for host/past/cancelled.
+      actionBar={
+        showBottomBar ? (
+          <RsvpBottomBar primaryLabel={bottomBarLabel} statusLine={bottomBarStatus}>
+            {joinActions}
+          </RsvpBottomBar>
+        ) : null
+      }
+    />
   )
 }
