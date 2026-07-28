@@ -36,7 +36,11 @@ describe('channel page (source shape): a Channel renders as a focus-area home', 
     expect(src).toContain('resolveHeaderElement(')
     expect(src).toMatch(/defaults: \{ layout: 'identity', height: 'standard' \}/)
     expect(src).toContain('variant={header.layout}')
-    expect(src).toContain('size={header.height}')
+    // The header ELEMENT still owns the height, but an operator who explicitly picks one in the
+    // Channel admin now wins over it (ADR-886). What this guard protects is unchanged: the height
+    // is never a hardcoded literal, and with nothing stored the element decides.
+    expect(src).toContain('size={savedHeroHeight ?? header.height}')
+    expect(src).toContain('hasChannelHeroHeight(')
     expect(src).toContain('overlayStyle={header.overlayStyle}')
     // On-cover secondary actions use the ONE glassy on-ink header-button style.
     expect(src).toContain('HERO_ACTION_CLASS')

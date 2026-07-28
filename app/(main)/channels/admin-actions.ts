@@ -7,6 +7,7 @@ import { isStaff } from '@/lib/core/roles'
 import { getPillars } from '@/lib/pillars'
 import { isLoomPublicImageUrl } from '@/lib/loom/urls'
 import { slugify } from '@/lib/utils'
+import { writeChannelCoverFocus, writeChannelHeroHeight } from '@/lib/channels/hero'
 
 // In-place "Channel settings" admin module (EMBEDDED-ADMIN.md / ADR-133, PX.5). Topical channels are
 // PLATFORM-CURATED — there is no per-channel host, so both the read and every write gate on staff
@@ -40,11 +41,25 @@ export async function getChannelAdminData(idOrSlug: string) {
 
   const admin = createAdminClient()
   const matchField = UUID_RE.test(idOrSlug) ? 'id' : 'slug'
-  const { data: channel } = await admin
+  const { data } = await admin
     .from('topical_channels')
-    .select('id, name, slug, category, description, cover_image, display_order, is_active, pillar_id')
+    .select('id, name, slug, category, description, cover_image, display_order, is_active, pillar_id, theme')
     .eq(matchField, idOrSlug)
     .maybeSingle()
+  // `theme` post-dates lib/database.types.ts, so the typed select narrows to a query-error union
+  // and the row has to be read through unknown (ADR-246, the same seam the writes below use).
+  const channel = data as unknown as {
+    id: string
+    name: string
+    slug: string
+    category: string
+    description: string | null
+    cover_image: string | null
+    display_order: number
+    is_active: boolean
+    pillar_id: string | null
+    theme: unknown
+  } | null
   if (!channel) return null
 
   // The four active Pillars, in display order — the select's options.
@@ -287,6 +302,67 @@ export async function setChannelCoverUrl(
   const { error } = await (admin as unknown as UntypedUpdate)
     .from('topical_channels')
     .update({ cover_image: url })
+    .eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidateChannel(id, slug)
+}
+
+/**
+ * Set the Channel hero's cover FOCAL POINT (a CSS object-position). Staff (admin+) only.
+ *
+ * The Event twin of this is `updateEventCoverFocus`, and it works the same way: the value is merged
+ * into the `theme` jsonb bag rather than given a column of its own, and a CENTERED focus is dropped
+ * rather than stored, so a Channel nobody has repositioned keeps an empty bag and renders exactly as
+ * it does today. The read-modify-write is why this reads `theme` first: a blind write would clobber
+ * `heroHeight` sitting in the same bag.
+ */
+export async function updateChannelCoverFocus(
+  id: string,
+  slug: string,
+  focus: string,
+): Promise<{ error: string } | void> {
+  if (!(await isChannelManager())) return { error: 'Unauthorized' }
+
+  const admin = createAdminClient()
+  const { data: row } = await admin
+    .from('topical_channels')
+    .select('theme')
+    .eq('id', id)
+    .maybeSingle()
+
+  const next = writeChannelCoverFocus((row as { theme?: unknown } | null)?.theme, focus)
+  const { error } = await (admin as unknown as UntypedUpdate)
+    .from('topical_channels')
+    .update({ theme: next })
+    .eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidateChannel(id, slug)
+}
+
+/**
+ * Set the Channel hero's HEIGHT from the shared Short / Standard / Tall ladder. Staff (admin+) only.
+ * Same bag, same read-modify-write, same drop-the-default rule as the focal point above.
+ */
+export async function updateChannelHeroHeight(
+  id: string,
+  slug: string,
+  height: string,
+): Promise<{ error: string } | void> {
+  if (!(await isChannelManager())) return { error: 'Unauthorized' }
+
+  const admin = createAdminClient()
+  const { data: row } = await admin
+    .from('topical_channels')
+    .select('theme')
+    .eq('id', id)
+    .maybeSingle()
+
+  const next = writeChannelHeroHeight((row as { theme?: unknown } | null)?.theme, height)
+  const { error } = await (admin as unknown as UntypedUpdate)
+    .from('topical_channels')
+    .update({ theme: next })
     .eq('id', id)
   if (error) return { error: error.message }
 

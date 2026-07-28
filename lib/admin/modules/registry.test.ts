@@ -276,6 +276,8 @@ describe('admin module registry', () => {
       'channel.insights',
       'channel.edit',
       'channel.manage',
+      // Danger LAST (order 20), matching hub/nexus: destructive controls sit under everything else.
+      'channel.danger',
     ])
     // Journey carries its ADR-515 Phase 6 rail: Settings, Builder/Layout, Export, Danger, in `order`.
     expect(modulesForScopeKind('journey', 'sidebar').map((m) => m.id)).toEqual([
