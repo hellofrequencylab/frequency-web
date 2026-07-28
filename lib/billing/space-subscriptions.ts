@@ -108,8 +108,10 @@ export async function reconcileSpacePlanSubscription(sub: Stripe.Subscription): 
   // space reverts to free + the billing namespace clears); otherwise map the present items to the plan.
   const items = isCanceled ? [] : reconciledItemsFromSubscription(sub)
 
-  // The plan this reconcile settles on, for the founding hook at the bottom.
-  let settledPlan: SpacePlan = 'free'
+  // The plan this reconcile settles on, for the founding hook at the bottom. Deliberately left
+  // UNINITIALIZED: both branches below assign it, so a placeholder would be dead (CodeQL) and would
+  // quietly become the value if a future branch forgot to. Definite assignment is the guard.
+  let settledPlan: SpacePlan
 
   if (items.length > 0) {
     // Multi-item Phase B path: the live items ARE the plan. Set-to-target the billing namespace from
