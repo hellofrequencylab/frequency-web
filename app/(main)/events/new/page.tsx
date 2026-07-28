@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { getEventCapabilities } from '@/lib/core/load-capabilities'
+import { getEventCapabilities, getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { EventSpark } from '../event-spark'
 import { getViewerHome } from '../admin-actions'
 import type { EventFormInitial } from './event-form'
@@ -108,6 +108,26 @@ export default async function NewEventPage({
     .order('name', { ascending: true })
   const circles = (hostedCircles ?? []) as { id: string; name: string; space_id: string | null }[]
 
+  // A `?circle=` deep link (the circle rail's "New event", the circle header Create menu, the
+  // context actions) can name a Circle the caller RUNS without being its `host_id` row — a guide
+  // or mentor over its hub/nexus, a stewardship-edge host, an operator. The host_id query above
+  // cannot see those, so the link used to fall through to a personal public event with no notice
+  // (the Royal Temple bug, in its circle form). Re-resolve a link that missed through the ONE
+  // circle authority (circle.editSettings, exactly what createEvent now re-checks) and offer it.
+  if (circleParam && !circles.some((c) => c.id === circleParam)) {
+    const { data: linked } = await admin
+      .from('circles')
+      .select('id, name, space_id')
+      .eq('id', circleParam)
+      .neq('status', 'archived')
+      .maybeSingle()
+    const linkedCircle = linked as { id: string; name: string; space_id: string | null } | null
+    if (linkedCircle && (await getCircleCapabilities(linkedCircle.id)).has('circle.editSettings')) {
+      circles.push(linkedCircle)
+      circles.sort((a, b) => a.name.localeCompare(b.name))
+    }
+  }
+
   // Spaces the caller RUNS: the owner, plus any space where they are an ACTIVE admin member.
   const { data: ownedSpaces } = await admin
     .from('spaces')
@@ -211,6 +231,11 @@ export default async function NewEventPage({
   // The deep link named a space the caller does not help run (or that does not exist). Say so
   // instead of quietly building a personal public event they thought was the space's.
   const droppedSpaceLink = !!spaceParam && !spaces.some((s) => s.id === spaceParam)
+  // Same honesty for a `?circle=` link that survived neither the hosted list nor the capability
+  // re-resolve above: the event below will be personal, and the host should hear it here. Silent
+  // when a valid `?space=` already claimed the scope, so the two notices never contradict.
+  const droppedCircleLink =
+    !!circleParam && !circles.some((c) => c.id === circleParam) && !defaultGroupId
 
   return (
     <EventEditorWindow backHref="/events">
@@ -218,6 +243,12 @@ export default async function NewEventPage({
         <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-sm leading-relaxed text-text">
           You opened this from a space you do not help run, so the event below will be a personal
           event. To create it for the space, ask its owner to make you an editor first.
+        </p>
+      )}
+      {droppedCircleLink && (
+        <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-sm leading-relaxed text-text">
+          You opened this from a Circle you do not run, so the event below will be a personal
+          event. To create it for the Circle, ask its host to add it for you.
         </p>
       )}
       <EventSpark

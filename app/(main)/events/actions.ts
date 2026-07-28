@@ -5,7 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
-import { getEventCapabilities } from '@/lib/core/load-capabilities'
+import { getEventCapabilities, getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { slugify } from '@/lib/utils'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
@@ -15,7 +15,7 @@ import { markVerifiedByAttendance } from '@/lib/verification/attendance'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 import { validateRecurrenceUntil } from '@/lib/events/recurrence'
 import { resolveRegionScopeId } from '@/lib/events/event-drafts'
-import { listCircleStewardIds, listSpaceEventCreatorIds } from '@/lib/events/placement'
+import { listSpaceEventCreatorIds } from '@/lib/events/placement'
 import { cancelAudit } from '@/lib/events/event-lifecycle'
 import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
@@ -224,9 +224,24 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   // client's scope list. `space_id` for a space event is set below (that column = instant placement).
   let spaceIdForPlacement: string | null = null
   if (scopeChoice === 'circle') {
-    const stewards = await listCircleStewardIds(formScopeId as string)
-    if (!stewards.includes(myProfileId)) {
-      return fail('You can only add an event to a circle you host.')
+    // The circle has to EXIST before its authority is asked for: a staff viewer resolves
+    // circle.editSettings on any circle id, including one that names no row, and `scope_id` has no
+    // foreign key to catch it. Fail closed on a target that is not there.
+    const { data: targetCircle } = await createAdminClient()
+      .from('circles')
+      .select('id')
+      .eq('id', formScopeId as string)
+      .neq('status', 'archived')
+      .maybeSingle()
+    if (!targetCircle) return fail('That Circle could not be found.')
+    // ONE circle authority: `circle.editSettings` — its host (by FK or stewardship edge), platform
+    // staff, or the guide/mentor over its hub/nexus. The old check read circles.host_id alone, so
+    // someone who runs the Circle everywhere else (and may even APPROVE another host's placement
+    // into it, viewerIsSteward in placement-actions.ts) could not create its events. Same rule on
+    // both sides now. "If you run the scope, you run its events."
+    const circleCaps = await getCircleCapabilities(formScopeId as string)
+    if (!circleCaps.has('circle.editSettings')) {
+      return fail('You can only add an event to a Circle you run.')
     }
     // A circle's events belong to the circle's Space too (ADR-857): derive the placement from
     // the circle so the event lands on BOTH the circle page (scope_id) and the Space calendar

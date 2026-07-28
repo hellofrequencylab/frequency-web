@@ -128,6 +128,64 @@ export async function getPlacementView(eventId: string): Promise<PlacementView> 
   return NO_PLACEMENT
 }
 
+// ── The placement PATCHES (pure) ─────────────────────────────────────────────────────────────
+//
+// A Space placement is one column (events.space_id). A CIRCLE placement is NOT: the typed arc
+// column `scope_circle_id` alone is invisible to the whole product. Everything that reads "this
+// event belongs to that Circle" still keys on the BARE pair — the circle page, the circle rail,
+// the upcoming widget, the events index (index-data.ts), the Dispatch audience, the RLS
+// `can_read_event` circle_only disjunct, and `getEventCapabilities` (which is what hands the
+// circle's host management rights). The expand-phase sync trigger
+// (20260829000000_h1_1_scope_typed_arc_expand.sql) only derives BARE → TYPED: its reverse path is
+// guarded on `scope_id IS NULL`, and scope_id is NOT NULL, so writing the typed column on its own
+// never propagates. So a circle placement writes the pair too, and ADR-857's placement invariant
+// with it (a circle's events belong to the circle's Space).
+
+/** The columns that put an event LIVE under a target. */
+export function livePlacementPatch(
+  target: { type: PlacementTargetType; id: string },
+  opts?: { circleSpaceId?: string | null },
+): Record<string, unknown> {
+  if (target.type === 'space') return { space_id: target.id }
+  return {
+    scope_circle_id: target.id,
+    scope_id: target.id,
+    scope_type: 'circle',
+    // ADR-857: a circle's events belong to the circle's Space too. Omitted when the circle has
+    // no space (a personal circle), which leaves the event's existing placement alone.
+    ...(opts?.circleSpaceId ? { space_id: opts.circleSpaceId } : {}),
+  }
+}
+
+/**
+ * The columns that take an event OUT of wherever it lives. Always clears both live columns and
+ * the hosting entity (ADR-819). When the event was CIRCLE-scoped, the bare pair has to move too
+ * or the event stays on the Circle after "Remove" said it left: it becomes a standalone local
+ * event in the region, exactly the shape createEvent writes for a public event.
+ *
+ * `circle_only` visibility cannot survive the move (there is no circle left to scope to, and the
+ * RLS disjunct that reads it keys on scope_type='circle'), so it steps down to `unlisted`:
+ * link-reachable, never newly broadcast. Falling back to `public` would publish an event the
+ * host had kept inside their Circle.
+ */
+export function clearPlacementPatch(current: {
+  scopeType: string | null
+  visibility: string | null
+  regionId: string | null
+}): Record<string, unknown> {
+  const patch: Record<string, unknown> = {
+    space_id: null,
+    scope_circle_id: null,
+    host_space_id: null,
+  }
+  if (current.scopeType === 'circle' && current.regionId) {
+    patch.scope_id = current.regionId
+    patch.scope_type = 'public'
+    if (current.visibility === 'circle_only') patch.visibility = 'unlisted'
+  }
+  return patch
+}
+
 /** Profile ids that may approve placement into a Space: the owner plus every ACTIVE admin member. */
 export async function listSpaceStewardIds(spaceId: string): Promise<string[]> {
   return listSpaceIdsByRoles(spaceId, ['admin'])
