@@ -17,10 +17,16 @@ import { viewerHidesDemo } from '@/lib/demo-preference'
 import { resolvePageContent } from '@/lib/page-content'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import { CATEGORY_OPTIONS } from '@/lib/events/options'
+import { collapseSeriesRows, DEFAULT_CARDS_PER_SERIES, SERIES_WIDE_READ } from '@/lib/events/series'
 import type { CatalogFacet } from './events-filter-bar'
 import type { SortOption } from './events-sort'
 import type { EventMapPin } from '@/components/events/events-map'
 import type { Json } from '@/lib/database.types'
+
+/** Cards a repeating series may occupy on the Events index (ADR-897). Owner directive, 2026-07-28:
+ *  show the next three dates of a series here, with the rest reachable from the event page's date
+ *  rail. One constant so the number is tuned in one place. */
+const CARDS_PER_SERIES = DEFAULT_CARDS_PER_SERIES
 
 export type EventRow = {
   id: string
@@ -399,7 +405,9 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
           .lte('starts_at', future)
           .order('starts_at', { ascending: true })
         if (hideDemo) circleQuery = circleQuery.eq('is_demo', false)
-        return circleQuery.limit(40).then(({ data }) => (data ?? []) as unknown as EventRow[])
+        // Over-fetch for the series fold (ADR-897): a post-query fold spends the LIMIT on rows it
+        // then discards, so a single daily series could otherwise consume this whole budget.
+        return circleQuery.limit(SERIES_WIDE_READ).then(({ data }) => (data ?? []) as unknown as EventRow[])
       })()
     : Promise.resolve([])
 
@@ -419,10 +427,12 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     .lte('starts_at', future)
     .order('starts_at', { ascending: true })
   if (hideDemo) publicQuery = publicQuery.eq('is_demo', false)
-  const rawPublicP = publicQuery.limit(200).then(({ data }) => (data ?? []) as unknown as EventRow[])
+  // A GLOBAL cap on the community's whole upcoming public set, not a display count: rows past it are
+  // dropped by the DATABASE before the fold can run, so it is raised rather than multiplied (ADR-897).
+  const rawPublicP = publicQuery.limit(SERIES_WIDE_READ).then(({ data }) => (data ?? []) as unknown as EventRow[])
 
   const distanceByIdP: Promise<Map<string, number | null>> = myGeocell
-    ? nearbyEvents(supabase, { lat: myGeocell.lat, lng: myGeocell.lng, radiusM: 50_000, limit: 200 })
+    ? nearbyEvents(supabase, { lat: myGeocell.lat, lng: myGeocell.lng, radiusM: 50_000, limit: SERIES_WIDE_READ })
         .then((nearby) => new Map(nearby.map((n) => [n.id, n.distanceM])))
     : Promise.resolve(new Map<string, number | null>())
 
@@ -444,7 +454,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
           .lte('starts_at', future)
           .order('starts_at', { ascending: true })
         if (hideDemo) hostedQuery = hostedQuery.eq('is_demo', false)
-        return hostedQuery.limit(60).then(({ data }) => (data ?? []) as unknown as EventRow[])
+        return hostedQuery.limit(SERIES_WIDE_READ).then(({ data }) => (data ?? []) as unknown as EventRow[])
       })()
     : Promise.resolve([])
 
@@ -635,7 +645,22 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
           ? 'relevance'
           : 'date'
 
-  const sortedEvents = [...filteredEvents].sort((a, b) => {
+  // Collapse repeating series (ADR-897). AFTER the facet filter and BEFORE the sort, deliberately:
+  // filtering first is what makes "the earliest eligible row" mean "the earliest occurrence INSIDE
+  // the active date facet", so `?date=weekend` elects the Saturday date rather than the series' next
+  // date generally. Folding before the sort keeps every sort branch below working on one row per
+  // representative. `listableFrom` is passed straight through as the floor so the query and the fold
+  // literally share one value and can never disagree about what counts as upcoming.
+  //
+  // Before this, one materialised daily series occupied up to 61 consecutive cards on /events and a
+  // weekly one ~9 (the production read: "Meld - Community Cowork" and "Breathe Connect Expand"
+  // filling the index).
+  const collapsedEvents = collapseSeriesRows(filteredEvents, {
+    perSeries: CARDS_PER_SERIES,
+    upcomingFrom: listableFrom,
+  })
+
+  const sortedEvents = [...collapsedEvents].sort((a, b) => {
     if (effectiveSort === 'distance') {
       const da = eventDistanceKm(a)
       const db = eventDistanceKm(b)

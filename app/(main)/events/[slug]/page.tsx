@@ -7,6 +7,8 @@ import Link from 'next/link'
 import { ClaimButton } from '@/app/events/claim/[token]/claim-button'
 import { CalendarDays, MapPin, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { loadSeriesDates } from '@/lib/events/series-dates'
+import { SeriesDatesRail } from '@/components/events/series-dates-rail'
 import { createClient } from '@/lib/supabase/server'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
@@ -794,6 +796,15 @@ export default async function EventDetailPage({
   // For a recurring anchor whose start has passed, compute the next upcoming date so the
   // page surfaces "Next: ..." instead of looking like a one-off that already happened
   // (pure helper, lib/events/recurrence). Null when not recurring or the series has ended.
+  // The next real dates of this series, for the date rail under the header (ADR-897). Every
+  // occurrence keeps its own live page; the rail is how a member reaches the dates the browse index
+  // no longer lists separately. Fail-safe: [] on any error, and the rail renders nothing.
+  const seriesRailDates = await loadSeriesDates({
+    eventId: event.id,
+    parentEventId: event.parent_event_id,
+    recurrenceType: event.recurrence_type,
+  })
+
   const nextRecurrence =
     event.recurrence_type !== 'none' && isPast
       ? nextOccurrence(
@@ -1757,6 +1768,10 @@ export default async function EventDetailPage({
                 </span>
               </div>
             )}
+
+            {/* The series date rail: the next real dates, each linking to that date's own live
+                page (ADR-897). Renders nothing for a one-off or a single-date series. */}
+            <SeriesDatesRail dates={seriesRailDates} timeZone={eventTz} className="pt-1" />
 
             {/* WHERE THIS EVENT BELONGS: its Circle, its Space, and its Journey, each a link.
                 This replaces the bare unlabeled Circle name that used to sit here, which said
