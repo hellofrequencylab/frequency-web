@@ -662,19 +662,32 @@
    COLOUR-FREE by design: like the generation axis, a theme sets NO `--color-*` tokens —
    the DAWN palette and the Space's own brand accent (painted by AccentScope) carry through
    unchanged, so "keep our standard colours, use the brand accent" holds. Each block re-points
-   `--font-display` (read by `.font-display` + the design-block header default) and
-   `--font-body` (applied to the subtree below), and retunes the radius feel tokens the kit
-   consumes (`--radius-card` / `--radius-control`).
+   `--font-display` (read by `.font-display` + the design-block header default),
+   `--font-body` (applied to the subtree below), and `--font-heading` (read by `.font-section`
+   on the cover title + section headers), and retunes the shape feel tokens the kit consumes
+   (`--radius-card` / `--radius-control` / `--radius-cover`). The per-theme TYPE TREATMENT
+   rules after the blocks then retune weight, case, tracking, and leading per role — a family
+   swap alone is not a theme (Fraunces rendered with Anton's caps styling reads like shouted
+   Playfair, not "quiet and considered").
 
-   `bold` is the NO-OP default (today's look): its fonts equal the base defaults and it sets no
-   radius, so an existing Space — which resolves to `bold` — renders byte-identically. Every id
-   here has a matching SpaceThemeDef; space-themes.test.ts reads this file and enforces the pairing.
+   `bold` is the NO-OP default (today's look): its fonts equal the base defaults and its block
+   sets no radius, no `--font-heading`, and no treatment rule, so an existing Space — which
+   resolves to `bold` — renders byte-identically. Every id here has a matching SpaceThemeDef;
+   space-themes.test.ts reads this file and enforces the pairing.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* Apply the theme BODY face to the whole themed subtree. For `bold` this is Nunito — the base
-   default — so it is a no-op; the other themes swap the reading face. */
+/* Apply the theme BODY face to the whole themed subtree, and PIN the shape tokens to their
+   :root baseline. The pin matters because SKIN + GENERATION blocks above retune
+   `--radius-card`/`--radius-control` on app-shell ancestors: without it, kit surfaces inside a
+   Space subtree that consume the tokens would follow the VIEWER's feel instead of the SPACE's
+   chosen shape. With it, a `bold` Space resolves to exactly today's literals (card 1rem,
+   control 0.5rem) under every skin and generation, and only a theme's own block below
+   (0-2-0, later in source) re-tunes the shape. For `bold` the body face is Nunito — the base
+   default — so the font line is a no-op; the other themes swap the reading face. */
 [data-space-theme] {
   font-family: var(--font-body, var(--font-nunito)), system-ui, sans-serif;
+  --radius-card: 1rem;
+  --radius-control: 0.5rem;
 }
 
 /* bold — today's look (Anton / Nunito). No radius override: a no-op anchor. */
@@ -686,41 +699,155 @@
 /* editorial — a light Fraunces serif, square edges. */
 [data-space-theme="editorial"] {
   --font-display: var(--font-fraunces);
+  --font-heading: var(--font-fraunces);
   --font-body: var(--font-nunito);
   --radius-card: 2px;
   --radius-control: 2px;
+  --radius-cover: 2px;
 }
 
 /* classic — Playfair display over a PT Serif body, small radius. */
 [data-space-theme="classic"] {
   --font-display: var(--font-playfair);
+  --font-heading: var(--font-playfair);
   --font-body: var(--font-pt-serif);
   --radius-card: 3px;
   --radius-control: 3px;
+  --radius-cover: 3px;
 }
 
 /* playful — a rounded Fredoka display, big corners + pill controls. */
 [data-space-theme="playful"] {
   --font-display: var(--font-fredoka);
+  --font-heading: var(--font-fredoka);
   --font-body: var(--font-nunito);
   --radius-card: 20px;
   --radius-control: 9999px;
+  --radius-cover: 20px;
 }
 
 /* accessible — a clear Lexend display over the character-disambiguating Atkinson Hyperlegible body. */
 [data-space-theme="accessible"] {
   --font-display: var(--font-lexend);
+  --font-heading: var(--font-lexend);
   --font-body: var(--font-atkinson);
   --radius-card: 8px;
   --radius-control: 8px;
+  --radius-cover: 8px;
 }
 
 /* modern — a crisp geometric Lexend headline over friendly Nunito body, with soft even corners. */
 [data-space-theme="modern"] {
   --font-display: var(--font-lexend);
+  --font-heading: var(--font-lexend);
   --font-body: var(--font-nunito);
   --radius-card: 14px;
   --radius-control: 10px;
+  --radius-cover: 14px;
+}
+
+/* ── Per-theme TYPE TREATMENT (the "Playful renders as Bold" fix) ─────────────
+   The base `.font-display` rule below (~"Display face") is tuned for ANTON: caps
+   markup, 400 weight, tight 1.0 leading. Swapping only the family leaves that
+   Anton styling on Fraunces/Playfair/Fredoka/Lexend, so every theme reads as the
+   same shouted headline in a different face. These unlayered 0-2-0 rules retune
+   weight, case, tracking, and leading per theme (and per role), so each style is
+   distinct from the cover header to the footer. Unlayered, they beat both the
+   layered `uppercase` utility on existing markup and the base rule.
+
+   Three text roles hang off the axis:
+   · Display — `.font-display` headlines (design blocks, Events heading, canvas).
+   · Heading — `.font-section` (cover title + section headers), resolving
+     `--font-heading` with a body-face fallback.
+   · Eyebrow — `.font-eyebrow`, a bare marker class (deliberately NO base rule,
+     and NOT a data-text-role, so it stays out of the ADR-580 editor machinery).
+
+   `bold` deliberately appears NOWHERE here — no treatment rule, no
+   `--font-heading` — so a bold Space keeps today's computed styles verbatim.
+   space-themes.test.ts enforces that absence. */
+
+/* Heading hook: with no theme (or `bold`) `--font-heading` is unset, so this resolves to
+   the body stack these headings already inherit — a computed no-op outside the five
+   styled themes. */
+.font-section {
+  font-family: var(--font-heading, var(--font-body, var(--font-nunito))), system-ui, sans-serif;
+}
+
+/* editorial — LIGHT Fraunces in sentence case; opsz (auto) + SOFT 40 give the
+   gentle high-contrast serifs the "quiet and considered" promise needs. */
+[data-space-theme="editorial"] .font-display {
+  font-weight: 350;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  line-height: 1.08;
+  font-variation-settings: 'SOFT' 40;
+}
+[data-space-theme="editorial"] .font-section {
+  font-weight: 500;
+  letter-spacing: 0;
+}
+[data-space-theme="editorial"] .font-eyebrow {
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+/* classic — Playfair at semibold, sentence case, roomier leading (separates from
+   editorial by weight: 600 vs 350). Headings keep the markup's 700. */
+[data-space-theme="classic"] .font-display {
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.12;
+}
+[data-space-theme="classic"] .font-eyebrow {
+  letter-spacing: 0.18em;
+}
+
+/* playful — chunky Fredoka in sentence case; the eyebrow joins the rounded family. */
+[data-space-theme="playful"] .font-display {
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.005em;
+  line-height: 1.1;
+}
+[data-space-theme="playful"] .font-section {
+  font-weight: 600;
+}
+[data-space-theme="playful"] .font-eyebrow {
+  font-family: var(--font-fredoka), system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+
+/* accessible — Lexend in sentence case with roomy leading; eyebrow tracking
+   narrowed (wide letter-spacing hurts word-shape recognition). */
+[data-space-theme="accessible"] .font-display {
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+[data-space-theme="accessible"] .font-section {
+  font-weight: 600;
+}
+[data-space-theme="accessible"] .font-eyebrow {
+  letter-spacing: 0.08em;
+}
+
+/* modern — heavy, tight Lexend; KEEPS the markup caps (no text-transform reset),
+   taking the opposite treatment to `accessible` on the shared family. */
+[data-space-theme="modern"] .font-display {
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+}
+[data-space-theme="modern"] .font-section {
+  letter-spacing: -0.01em;
+}
+[data-space-theme="modern"] .font-eyebrow {
+  font-family: var(--font-lexend), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.2em;
 }
 
 /* ── Tailwind wiring ────────────────────────────────────────────────────────

@@ -261,7 +261,8 @@ function SimpleCardGrid({ props }: { props: Record<string, unknown> }): ReactNod
     <div className="space-y-6">
       {(title || subtitle) && (
         <div className="space-y-1">
-          {title && <InlineRichText as="h3" value={title} className="text-2xl font-bold text-text" />}
+          {/* font-section: the Space page theme's heading face (ADR-578); a computed no-op for `bold`. */}
+          {title && <InlineRichText as="h3" value={title} className="font-section text-2xl font-bold text-text" />}
           {subtitle && (
             <InlineRichText value={subtitle} className="whitespace-pre-wrap text-base leading-relaxed text-muted" />
           )}

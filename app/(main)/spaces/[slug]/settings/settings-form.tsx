@@ -268,6 +268,10 @@ export function SpaceSettingsForm({
                   disabled={readOnly}
                   aria-pressed={selected}
                   onClick={() => setTheme(t.id)}
+                  // Each card PREVIEWS its own theme (ADR-578): `data-space-theme` scopes the theme's
+                  // font vars + treatment rules to this card (they live on <html>, so this works outside
+                  // AccentScope), and `font-display` renders the label in that theme's display face.
+                  data-space-theme={t.id}
                   className={`rounded-xl border p-3 text-left transition-colors disabled:opacity-60 ${
                     selected
                       ? 'border-primary bg-primary-bg/50 ring-1 ring-primary'
@@ -275,7 +279,7 @@ export function SpaceSettingsForm({
                   }`}
                 >
                   <span className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-text">{t.label}</span>
+                    <span className="font-display text-sm font-semibold text-text">{t.label}</span>
                     {selected && <Check className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />}
                   </span>
                   <span className="mt-0.5 block text-2xs font-medium uppercase tracking-wide text-subtle">

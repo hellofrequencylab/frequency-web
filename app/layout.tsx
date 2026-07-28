@@ -51,14 +51,18 @@ const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"], weight: [
 const spaceGrotesk = Space_Grotesk({ variable: "--font-grotesk", subsets: ["latin"], display: "swap" });
 
 // Space-page THEME fonts (ADR-578, lib/theme/space-themes.ts). Each Space profile theme pairs a display +
-// body face; these load the ones not already on <html>. next/font self-hosts them and only downloads the
-// bytes when a glyph actually renders (font-display: swap), so a Space that never uses the theme pays no
-// cost. Variable fonts where possible; PT Serif + Atkinson need explicit weights.
-const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], display: "swap" });
-const ptSerif = PT_Serif({ variable: "--font-pt-serif", subsets: ["latin"], weight: ["400", "700"], display: "swap" });
-const fredoka = Fredoka({ variable: "--font-fredoka", subsets: ["latin"], display: "swap" });
-const lexend = Lexend({ variable: "--font-lexend", subsets: ["latin"], display: "swap" });
-const atkinson = Atkinson_Hyperlegible({ variable: "--font-atkinson", subsets: ["latin"], weight: ["400", "700"], display: "swap" });
+// body face; these load the ones not already on <html>. next/font self-hosts them, and `preload: false`
+// keeps the five theme-only faces out of every page's <link rel="preload"> — without it next/font preloads
+// each registered face on EVERY route, so pages that never render a themed Space would still fetch all five.
+// (The browser then downloads a face only when its @font-face is actually matched by rendered text.)
+// Fraunces additionally loads its `opsz` + `SOFT` optical axes: the editorial theme's light display
+// treatment (font-variation-settings in globals.css) needs them, and next/font ships only `wght` by default.
+// Variable fonts where possible; PT Serif + Atkinson need explicit weights.
+const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], display: "swap", axes: ["opsz", "SOFT"], preload: false });
+const ptSerif = PT_Serif({ variable: "--font-pt-serif", subsets: ["latin"], weight: ["400", "700"], display: "swap", preload: false });
+const fredoka = Fredoka({ variable: "--font-fredoka", subsets: ["latin"], display: "swap", preload: false });
+const lexend = Lexend({ variable: "--font-lexend", subsets: ["latin"], display: "swap", preload: false });
+const atkinson = Atkinson_Hyperlegible({ variable: "--font-atkinson", subsets: ["latin"], weight: ["400", "700"], display: "swap", preload: false });
 
 // The first-paint theme-color values, kept in one place so the viewport metadata and the pre-paint
 // themeScript below cannot drift. They mirror --color-canvas (light) and --color-ink (dark) in

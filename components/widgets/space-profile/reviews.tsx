@@ -28,11 +28,13 @@ export function ReviewsBlock({
         <div className="rounded-2xl border border-border bg-surface p-6">
           {(header?.eyebrow || header?.heading) && (
             <div className="mb-4">
+              {/* font-section / font-eyebrow: the page theme's per-role hooks (ADR-578); a computed
+                  no-op for the default `bold` look. */}
               {header?.eyebrow && (
-                <p className="text-2xs font-bold uppercase tracking-[0.2em] text-primary-strong">{header.eyebrow}</p>
+                <p className="font-eyebrow text-2xs font-bold uppercase tracking-[0.2em] text-primary-strong">{header.eyebrow}</p>
               )}
               {header?.heading && (
-                <h2 className="mt-1.5 text-xl font-bold tracking-tight text-text sm:text-2xl">{header.heading}</h2>
+                <h2 className="font-section mt-1.5 text-xl font-bold tracking-tight text-text sm:text-2xl">{header.heading}</h2>
               )}
             </div>
           )}

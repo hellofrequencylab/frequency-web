@@ -75,17 +75,19 @@ function AnchorSection({ anchor, children }: { anchor: string; children: React.R
 // The PROFILE section-title lockup (eyebrow + plain bold heading), matching profile.tsx's CardTitle.
 // These blocks render on a Space PROFILE, not a marketing landing, so the headings are calm bold
 // text, never the full-bleed display type they carried before (which towered over the page).
+// `font-section` / `font-eyebrow`: the page theme's per-role treatment hooks (ADR-578) -- both resolve
+// to exactly these computed styles for a `bold` (default) Space, so only the five styled themes shift.
 function SectionTitle({ eyebrow, heading, ink, accent }: { eyebrow?: string; heading?: React.ReactNode; ink?: boolean; accent?: string }) {
   if (!eyebrow && !heading) return null
   return (
     <div className="mb-6">
       {eyebrow && (
-        <p className={`text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+        <p className={`font-eyebrow text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
           {eyebrow}
         </p>
       )}
       {heading && (
-        <h2 className={`mt-1.5 text-xl font-bold tracking-tight sm:text-2xl ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
+        <h2 className={`font-section mt-1.5 text-xl font-bold tracking-tight sm:text-2xl ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
           {heading}
         </h2>
       )}

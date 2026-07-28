@@ -85,7 +85,7 @@ export function SpaceBrandingForm({
   accent: string
   headerCta?: HeaderCtaPreference | null
   defaultCtaLabel: string
-  /** The current Space PAGE STYLE (ADR-578) — the selected one of the 5 typography + shape themes. */
+  /** The current Space PAGE STYLE (ADR-578) — the selected one of the six typography + shape themes. */
   pageTheme: SpaceThemeId
   /** The hero cover height + button orientation (item 5, edited here now, not in the page builder). */
   heroHeight?: HeroHeight
@@ -134,7 +134,7 @@ export function SpaceBrandingForm({
     setScrim(coverScrim)
   }
 
-  // PAGE STYLE (ADR-578): the one of five typography + shape themes the page renders in. Optimistic like the
+  // PAGE STYLE (ADR-578): the one of six typography + shape themes the page renders in. Optimistic like the
   // cover scrim — flip the active card now, persist to preferences.theme via updateSpaceProfile, and reflect
   // an external prop change back in with the render-time adjust-on-prop-change pattern (no effect).
   const [theme, setTheme] = useState<SpaceThemeId>(pageTheme)
@@ -577,12 +577,16 @@ export function SpaceBrandingForm({
                   }}
                   aria-pressed={active}
                   title={t.description}
+                  // Each card PREVIEWS its own theme: `data-space-theme` scopes the theme's font vars +
+                  // treatment rules to this card (they live on <html>, so this works outside AccentScope),
+                  // and `font-display` on the label renders it in that theme's display face.
+                  data-space-theme={t.id}
                   className={cn(
                     'rounded-lg border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
                     active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
                   )}
                 >
-                  <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
+                  <span className="flex items-center gap-1.5 font-display text-sm font-semibold text-text">
                     {t.label}
                     {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
                   </span>

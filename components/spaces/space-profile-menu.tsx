@@ -45,7 +45,9 @@ export function SpaceProfileMenu({
 
   const itemClasses = (active: boolean) =>
     cn(
-      'whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+      // rounded-control (was rounded-lg, the same 0.5rem at baseline): tab pills are CONTROLS, so the
+      // Space page theme shapes them (ADR-578 — playful pills them); pinned to today's radius for `bold`.
+      'whitespace-nowrap rounded-control px-3 py-1.5 text-sm font-medium transition-colors',
       active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text',
     )
 
