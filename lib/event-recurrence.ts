@@ -9,6 +9,10 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 
+function sanitizeForLog(value: unknown): string {
+  return String(value).replace(/[\r\n]+/g, '')
+}
+
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly'
 
 export const HORIZON_DAYS = 60
@@ -207,7 +211,11 @@ export async function propagateAnchorEditsToOccurrences(anchorId: string): Promi
     .select('id')
   // supabase-js RESOLVES with { data, error } on a DB failure rather than throwing, so read it.
   if (error) {
-    console.error('[propagateAnchorEditsToOccurrences]', anchorId, error.message)
+    console.error(
+      '[propagateAnchorEditsToOccurrences]',
+      sanitizeForLog(anchorId),
+      sanitizeForLog(error.message),
+    )
     return 0
   }
   return (data ?? []).length
