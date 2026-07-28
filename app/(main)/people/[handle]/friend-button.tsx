@@ -127,7 +127,11 @@ export function FriendButton({
       {content}
       {/* The refusal has to read where the button reads. On a cover the danger token is a
           page-canvas colour, so it takes the zone's on-media tone with the halo behind it. */}
-      {error && <p className={onMedia ? 'max-w-[16rem] text-xs text-on-media' : 'text-xs text-danger'}>{error}</p>}
+      {/* The refusal cap is 16rem = 272px, which is WIDER than the whole hero content box on a
+          320px phone (~245px), so an errored button became the widest thing on its flex line and
+          got clipped by the hero's overflow — the refusal was painted off the page. 13rem = 221px
+          fits the narrowest supported width; the `sm:` pair restores 16rem from 640px up. */}
+      {error && <p className={onMedia ? 'max-w-[13rem] text-xs text-on-media sm:max-w-[16rem]' : 'text-xs text-danger'}>{error}</p>}
     </div>
   )
 }
