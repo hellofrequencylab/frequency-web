@@ -375,6 +375,60 @@ describe('derivation guard: changing a depth key set changes the grid', () => {
   })
 })
 
+// ── The grid obeys the OPERATOR's gates, not just the code map (ADR-880) ────────────────────────────
+// featureAllowed resolves mergeGate(feature, await loadFeatureGateOverrides()); the grid used to read
+// FEATURE_GATES directly, so an operator who RAISED a gate at /admin/pricing left this page promising
+// a feature the product would then refuse. The page resolves the overrides and threads them in.
+
+describe('operator gate overrides move the comparison cell', () => {
+  it('raising space_crm to Collective drops the Business cell to Not included', () => {
+    // The code map gates space_crm at 'business', so the Business column reads Included today.
+    expect(cellsByColumn(spaceFeatureGrid(input), 'space_storefront').free).toBe('Included')
+    const raised = spaceFeatureGrid({
+      ...input,
+      gateOverrides: { space_storefront: { minEntitlement: 'collective' } },
+    })
+    const cells = cellsByColumn(raised, 'space_storefront')
+    expect(cells.free).toBe('Not included')
+    expect(cells.business).toBe('Not included')
+    expect(cells.collective).toBe('Included')
+    // The unmocked grid still reads the code answer, so this is the override talking.
+    expect(cellsByColumn(spaceFeatureGrid(input), 'space_storefront').business).toBe('Included')
+  })
+
+  it('DISABLING a gate opens the row on every column (a disabled gate never blocks)', () => {
+    const opened = spaceFeatureGrid({
+      ...input,
+      gateOverrides: { space_collaborators: { enabled: false } },
+    })
+    expect(cellsByColumn(opened, 'space_collaborators').free).toBe('Included')
+    expect(cellsByColumn(spaceFeatureGrid(input), 'space_collaborators').free).toBe('Not included')
+  })
+
+  it('a member-ladder gate follows its override too', () => {
+    const raised = memberFeatureGrid({
+      ...input,
+      gateOverrides: { gamification_full: { enabled: false } },
+    })
+    const cells = Object.fromEntries(
+      raised.columns.map((c, i) => [c.id, row(raised, 'gamification_full').cells[i]!.text]),
+    )
+    expect(cells.member).toBe('Included')
+  })
+
+  it('an INVALID override never widens a gate (mergeGate validates the ladder)', () => {
+    const nonsense = spaceFeatureGrid({
+      ...input,
+      gateOverrides: { space_collaborators: { minEntitlement: 'not-a-tier' } },
+    })
+    expect(cellsByColumn(nonsense, 'space_collaborators').free).toBe('Not included')
+  })
+
+  it('no overrides is exactly the code map (today\'s behavior, unchanged)', () => {
+    expect(spaceFeatureGrid({ ...input, gateOverrides: {} })).toEqual(spaceFeatureGrid(input))
+  })
+})
+
 // ── The page itself carries no price ────────────────────────────────────────────────────────────────
 
 describe('source-shape guard: /pricing hard-codes no money', () => {
@@ -397,6 +451,15 @@ describe('source-shape guard: /pricing hard-codes no money', () => {
       .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
       .replace(/(^|[^:])\/\/[^\n]*/g, '$1')
     expect(code.match(/\b\d{1,2}%/g) ?? []).toEqual([])
+  })
+
+  it('resolves the beta window and the operator gate overrides, and hands BOTH to the grid (ADR-880)', () => {
+    // A page that resolves either one differently from the product is a page that lies: the price it
+    // prints must be the one the checkout takes, and the gate it promises must be the one enforced.
+    expect(source).toContain('isBetaPricingActive()')
+    expect(source).toContain('loadFeatureGateOverrides()')
+    expect(source).toContain('betaActive')
+    expect(source).toContain('gateOverrides')
   })
 
   it('renders the grid from the pure model, not a hand-rolled table of tiers', () => {

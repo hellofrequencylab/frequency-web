@@ -204,8 +204,10 @@ describe('pricing table model', () => {
     expect(lines.some((l) => l.includes('Free Space:'))).toBe(true)
     expect(lines.some((l) => l.includes('Business:'))).toBe(true)
     expect(lines.some((l) => l.includes('Non Profit:'))).toBe(true)
+    // The member ladder is exactly Member (free) and Crew (ADR-878), and the citable summary says so.
+    expect(lines.some((l) => l.includes('Member: free'))).toBe(true)
     expect(lines.some((l) => l.includes('Crew:'))).toBe(true)
-    expect(lines.some((l) => l.includes('Supporter:'))).toBe(true)
+    expect(lines.some((l) => l.includes('Supporter'))).toBe(false)
     expect(lines.some((l) => l.includes('Vera AI'))).toBe(true)
     expect(lines.some((l) => l.includes('Operator seats:'))).toBe(true)
     for (const l of lines) expect(hasEmDash(l)).toBe(false)

@@ -42,8 +42,9 @@ export async function setPricingFlag(key: string, value: boolean): Promise<Actio
 }
 
 /** Save a tier/plan PRICE (monthly/annual cents, optional setup cents). The key is one of
- *  'tier.crew' | 'tier.supporter' | 'plan.practitioner' | 'plan.business' | 'plan.organization' |
- *  'plan.whitelabel'. Values are non-negative integer cents; null annual = monthly-only. */
+ *  'tier.crew' | 'plan.practitioner' | 'plan.business' | 'plan.organization' | 'plan.whitelabel'.
+ *  Values are non-negative integer cents; null annual = monthly-only. 'tier.crew' is the only MEMBER
+ *  price: Supporter left the sellable ladder (ADR-878) and the console offers no row for it. */
 export async function savePrice(key: string, price: TierPrice): Promise<ActionResult> {
   const ctx = await requireAdmin('janitor')
   const monthly = Math.max(0, Math.round(Number(price.monthly_cents) || 0))

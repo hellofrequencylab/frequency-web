@@ -83,6 +83,7 @@ export default async function ProfilePage({
       avatar_url,
       community_role,
       membership_tier,
+      is_supporter,
       is_founding_member,
       created_at,
       current_streak,
@@ -244,9 +245,11 @@ export default async function ProfilePage({
   // free member earns it but it stays in their own Vault, not on their public
   // profile (ADR-141, PB.1i: tier, not role). Inert in Beta (everyone is comped Crew).
   const rankEndorsed = isEndorsed(profile.membership_tier)
-  // Supporter is the pay-more entitlement tier (orthogonal to role/rank) — endorse it
-  // publicly with the thank-you badge (P2.4).
-  const isSupporter = profile.membership_tier === 'supporter'
+  // The Supporter BADGE is the thank-you for backing the Foundation, orthogonal to role and rank
+  // (ADR-458: `profiles.is_supporter`, granted by a pay-what-you-want contribution). Supporter is not
+  // a tier any more and is no longer sold (ADR-878), so the badge reads the badge column; the legacy
+  // `membership_tier = 'supporter'` check stays beside it so a historical row keeps its badge too.
+  const isSupporter = profile.is_supporter === true || profile.membership_tier === 'supporter'
 
   // Rewards — surface the "nearly earned" ones so the next milestone feels within
   // reach (the celebration hook from the Progress spec), not just dimmed-out.

@@ -157,7 +157,12 @@ export function betaStartLabel(endsAtMs: number | null | undefined): string | nu
  *
  *  The badge line differs by axis because the badges do: a Space earns the Founding Business mark
  *  (ADR-873), a member earns the Founder mark on their profile. Both already exist; this only
- *  names them. */
+ *  names them.
+ *
+ *  THE INVITE NAMES THE YEARLY PLAN, not "subscribe" (ADR-880). The badge is earned by backing the
+ *  year, early, with money that actually moved: a monthly subscriber holds the beta rate but does not
+ *  become a founder, and a trial that never charges earns nothing. The copy has to say the same thing
+ *  the code grants on. */
 export function betaNoticeCopy(
   target: BetaNoticeTarget,
   graceEndsAtMs: number | null | undefined,
@@ -173,7 +178,7 @@ export function betaNoticeCopy(
     key: betaNoticeKey(target),
     title: `You are using ${label} tools`,
     body: `Memberships start ${when}. Everything stays open until then.`,
-    invite: `Subscribe before ${when} to hold the beta rate and ${badge}.`,
+    invite: `Take the yearly plan before ${when} to hold the beta rate and ${badge}.`,
     cta: BETA_NOTICE_CTA,
     href: BETA_NOTICE_HREF,
   }

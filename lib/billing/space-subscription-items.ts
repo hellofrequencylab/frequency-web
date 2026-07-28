@@ -101,12 +101,22 @@ export function seatQuantityFromItems(items: readonly ReconciledItem[]): number 
   return total
 }
 
-/** The base TIER a set of item keys implies. PURE (ADR-552). Highest-ranked wins: nonprofit > business >
- *  free. The legacy 'organization' item folds to nonprofit; a 'nonprofit_seat' item -> nonprofit; a
+/** The base TIER a set of item keys implies. PURE (ADR-552, ADR-811 tiers added by ADR-881).
+ *  Highest-ranked wins: independent > nonprofit > collective > business > free.
+ *
+ *  ADR-881: 'collective' and 'independent' were MISSING from this ladder while both bases were
+ *  sellable and the loadout checkout minted their items. A paid Collective subscription therefore
+ *  reconciled to 'free', and setSpaceAddons wrote FREE-tier entitlements over a Space paying $49 a
+ *  month. Every base the catalog can sell must have a case here; the empty set is the only road to
+ *  free. See also the ITEM_KEYS comments above, which already documented the intended mapping.
+ *
+ *  The legacy 'organization' item folds to nonprofit; a 'nonprofit_seat' item -> nonprofit; a
  *  'business' item OR the legacy 'base' (former Pro) item -> business; an empty set -> free. */
 export function planForItemKeys(itemKeys: readonly ItemKey[]): SpacePlan {
+  if (itemKeys.includes('independent')) return 'independent'
   if (itemKeys.includes('organization')) return 'nonprofit' // legacy org folds to nonprofit
   if (itemKeys.includes('nonprofit_seat')) return 'nonprofit'
+  if (itemKeys.includes('collective')) return 'collective'
   if (itemKeys.includes('business')) return 'business'
   if (itemKeys.includes('base')) return 'business' // legacy Pro base folds to business
   return 'free'

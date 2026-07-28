@@ -17,7 +17,6 @@ import {
   asSpacePlanKey,
   catalogPriceKey,
   offersPeriod,
-  priceKey,
   type BillingInterval,
   type BillingPeriod,
   type CatalogItemKey,
@@ -104,72 +103,35 @@ export async function createSpaceBillingPortal(spaceId: string): Promise<string 
   return session.url
 }
 
-/** Create a subscription Checkout session for a Space owner to buy a plan; returns the URL, or null
- *  when the plan isn't sellable / not synced / the space has no owner. GATED on spacePlanSellable.
- *  authz-delegated: caller-trusted operator/owner action authorizes the space; this binds the customer
- *  to the resolved space OWNER and stamps the space_id in metadata so the webhook reconciles correctly. */
+/**
+ * Create a subscription Checkout session for a Space owner to buy a plan; returns the URL, or null when
+ * the plan isn't sellable / not synced / the space has no owner.
+ *
+ * ONE PLAN, ONE PRICE (ADR-880). This used to be its OWN checkout, billing the legacy
+ * `<plan>_<period>` product that syncPricingProductsToStripe mints from `pricing_settings.plan.*`. That
+ * map carries the BETA amount ($19 business monthly), and it has no cutover: after 2026-09-01 the
+ * loadout checkout would charge $29 for Business while this path still charged $19 forever. Two live
+ * prices for one plan is not a pricing policy, it is a bug with a URL.
+ *
+ * So this is now a thin ADAPTER over createSpaceLoadoutCheckout: the same catalog item, the same beta
+ * auto-revert, the same grandfathered locked price for an existing founding subscriber, the same
+ * metadata the webhook reconciles. The legacy `<plan>_<period>` Stripe prices stay synced and resolvable
+ * (a grandfathered subscription still renews on its own price id); nothing NEW is ever sold at them.
+ *
+ * authz-delegated: caller-trusted operator/owner action authorizes the space; the delegate binds the
+ * customer to the resolved space OWNER and stamps the space_id in metadata so the webhook reconciles.
+ */
 export async function createSpacePlanCheckout(
   spaceId: string,
   plan: SpacePlan | string,
   billingPeriod: BillingPeriod = 'monthly',
 ): Promise<string | null> {
-  if (!stripe) return null
   const planKey = asSpacePlanKey(plan)
   if (!planKey) return null
   if (!offersPeriod(planKey, billingPeriod)) return null // both business + nonprofit offer monthly + annual
-  if (!(await spacePlanSellable(planKey))) return null
-
-  // Resolve the synced public Price for this plan+period.
-  const priceId = await resolveStripePriceId(priceKey(planKey, billingPeriod))
-  if (!priceId) return null // not synced to Stripe yet → no-op (never an inline-price fallback for plans)
-
-  // The customer is the Space owner; reuse their Stripe customer id if the space already has one.
-  const db = createAdminClient()
-  const { data: space } = (await db
-    .from('spaces')
-    .select('id, owner_profile_id, slug, stripe_customer_id')
-    .eq('id', spaceId)
-    .maybeSingle()) as {
-    data: { id?: string; owner_profile_id?: string | null; slug?: string | null; stripe_customer_id?: string | null } | null
-  }
-  if (!space?.id || !space.owner_profile_id) return null
-
-  let customer = space.stripe_customer_id ?? undefined
-  let ownerEmail: string | undefined
-  if (!customer) {
-    // `email` is NOT a profiles column. Selecting it failed the whole PostgREST request (42703),
-    // so `owner` came back null and BOTH values below stayed undefined — the owner's saved
-    // stripe_customer_id was never reused (duplicate Stripe customers on every repeat checkout)
-    // and the session was created with no customer_email to prefill.
-    const { data: owner } = await db
-      .from('profiles')
-      .select('stripe_customer_id')
-      .eq('id', space.owner_profile_id)
-      .maybeSingle()
-    customer = (owner as { stripe_customer_id?: string | null } | null)?.stripe_customer_id ?? undefined
-    ownerEmail = (await profileAccountEmail(space.owner_profile_id)) ?? undefined
-  }
-
-  const metadata = { kind: 'space_plan', space_id: spaceId, plan: planKey, billing_period: billingPeriod }
-  // Free trial on Space plans (card upfront; days are operator-editable via pricing settings, default 14).
-  // Stripe starts the subscription in `trialing`, which the reconciler treats as active
-  // (lib/billing/space-subscriptions.ts), so the plan is granted during the trial and auto-converts when
-  // it ends. Members have no trial (their checkout never reads this).
-  const trialDays = (await getPricingValues()).trial.days
-  const subscriptionData: { metadata: typeof metadata; trial_period_days?: number } =
-    trialDays > 0 ? { metadata, trial_period_days: trialDays } : { metadata }
-  const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    line_items: [{ price: priceId, quantity: 1 }],
-    ...(customer ? { customer } : { customer_email: ownerEmail }),
-    client_reference_id: spaceId,
-    metadata,
-    subscription_data: subscriptionData,
-    success_url: `${appUrl()}/spaces/${space.slug ?? spaceId}/settings/billing?plan=upgraded&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${appUrl()}/spaces/${space.slug ?? spaceId}/settings/billing`,
-    allow_promotion_codes: true,
-  })
-  return session.url
+  // The legacy axis is monthly|annual; the catalog axis is month|year. One translation, here.
+  const interval: BillingInterval = billingPeriod === 'annual' ? 'year' : 'month'
+  return createSpaceLoadoutCheckout(spaceId, { plan: planKey, interval })
 }
 
 // ── PHASE B: the MULTI-ITEM loadout checkout (ADR-460, docs/PRICING-LADDER-PLAN.md §4/§5) ──────────

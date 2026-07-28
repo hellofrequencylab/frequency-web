@@ -407,3 +407,69 @@ async function setFoundingMemberFlag(profileId: string): Promise<void> {
     console.error('[founding] failed to set is_founding_member:', err)
   }
 }
+
+// ── LAPSE (the other half of the lifecycle) ─────────────────────────────────────────────────
+//
+// ADR-875 promises the founding rate "for as long as the subscription is maintained". Until ADR-880
+// NOTHING in the repo ever wrote status='lapsed' (zero write sites), so the sentence was true in the
+// copy and false in the code: a founder who stopped paying stayed a founder, badge and locked rate,
+// forever. This is the missing write.
+
+/** Clear profiles.is_founding_member, EXCEPT for a Founders Round buyer.
+ *
+ *  The flag has two sources: the recurring beta-founder grant (which the subscription maintains) and
+ *  the one-time Founders Round purchase (lib/billing/founders.ts, `meta.founder.founder_round`), which
+ *  was BOUGHT OUTRIGHT and is not conditional on any subscription. A lapsing subscription must never
+ *  strip a Founders Round member of the thing they paid $250 for once. Best-effort; never throws. */
+async function clearFoundingMemberFlag(profileId: string): Promise<void> {
+  try {
+    const db = foundingDb()
+    const { data } = await db.from('profiles').select('meta').eq('id', profileId).maybeSingle()
+    const meta = (data?.meta ?? {}) as Record<string, unknown>
+    const founder = (meta.founder ?? {}) as Record<string, unknown>
+    if (founder.founder_round === true) return // bought outright: not a subscription's to take away
+    await db.from('profiles').update({ is_founding_member: false }).eq('id', profileId)
+  } catch (err) {
+    console.error('[founding] failed to clear is_founding_member:', err)
+  }
+}
+
+/**
+ * LAPSE a founder: flip an ACTIVE founding row to 'lapsed' and, for a member founder, drop the
+ * `profiles.is_founding_member` grandfather flag (which resolveMemberPriceId reads as a permanent
+ * founder price). Call it when a subscription reconciles to canceled / unpaid.
+ *
+ * NARROW BY DESIGN:
+ *   • ONLY an `active` row lapses. A 'reserved' spot is a held place, not a granted status, and a
+ *     row already 'lapsed' is left alone (idempotent).
+ *   • A Founders Round member keeps the flag they bought outright (clearFoundingMemberFlag).
+ *   • The CALLER owns the "was there really a subscription behind this?" question. A hand-recorded
+ *     cash founder has no Stripe subscription, so no reconcile may ever reach them: the Space path
+ *     lapses only when the canceled subscription IS the one the Space is on.
+ *
+ * FAIL-QUIET, like the grant: it returns a result and never throws, so a badge write can never bounce
+ * a settled payment back to Stripe.
+ */
+export async function lapseFoundingStatus(subject: {
+  profileId?: string | null
+  spaceId?: string | null
+}): Promise<ActionResult<{ lapsed: boolean }>> {
+  const profileId = subject.profileId ?? null
+  const spaceId = subject.spaceId ?? null
+  if (!profileId && !spaceId) return fail('We could not tell whose founding status to lapse.')
+  try {
+    const existing = await getFoundingStatus({ profileId, spaceId })
+    if (!existing || existing.status !== 'active') return ok({ lapsed: false })
+    await foundingDb()
+      .from('founding_members')
+      .update({ status: 'lapsed', updated_at: new Date().toISOString() })
+      .eq('id', existing.id)
+    if (existing.kind === 'member' && (existing.profileId ?? profileId)) {
+      await clearFoundingMemberFlag((existing.profileId ?? profileId)!)
+    }
+    return ok({ lapsed: true })
+  } catch (err) {
+    console.error('[founding] lapse failed:', err)
+    return fail('Could not lapse founding status.')
+  }
+}

@@ -25,7 +25,7 @@
 
 import { formatCents } from './display'
 import { SPACE_PLAN_LABEL, SPACE_PLANS, type SpacePlan } from './plans'
-import { ENTITLEMENT_LABEL, ENTITLEMENT_TIERS, type EntitlementTier } from '@/lib/core/entitlement'
+import { ENTITLEMENT_LABEL, ENTITLEMENT_TIERS, deriveTier, type EntitlementTier } from '@/lib/core/entitlement'
 import type { GateAxis } from './gates'
 
 // ── THE GO-LIVE SWITCH ────────────────────────────────────────────────────────────────────────────
@@ -52,27 +52,30 @@ export const PLACEHOLDER_SPACE_PRICE_CENTS: Record<SpacePlan, number> = {
  *  the beta anchor can never drift between the two surfaces. */
 export const COLLECTIVE_BETA_CENTS = 4900
 
-/** @placeholder Monthly price point per personal membership tier, in cents. Mirrors the code defaults
- *  (lib/pricing/settings.ts PRICING_DEFAULTS): Crew $9, Supporter $12. THE ONE place to swap real personal
- *  prices when billing goes live. Preview only; never charged. */
-export const PLACEHOLDER_MEMBER_PRICE_CENTS: Record<EntitlementTier, number> = {
+/** @placeholder Monthly price point per SELLABLE personal membership tier, in cents. Mirrors the code
+ *  defaults (lib/pricing/settings.ts PRICING_DEFAULTS): Member free, Crew $9. THE ONE place to swap real
+ *  personal prices when billing goes live. Preview only; never charged.
+ *
+ *  Supporter has no entry (ADR-878): it is off the sellable ladder, so there is no member price to
+ *  preview for it. A historical `supporter` tier is priced through tierPriceCents, which collapses it to
+ *  Crew the same way deriveTier does, so a Supporter row previews Crew's price and never $12. */
+export const PLACEHOLDER_MEMBER_PRICE_CENTS: Record<Exclude<EntitlementTier, 'supporter'>, number> = {
   free: 0,
   crew: 900,
-  supporter: 1200,
 }
 
 // ── The ascending display ladders per axis (a clean upgrade path) ───────────────────────────────────
 // The RANGE the selector moves across. Space uses free → business (ADR-552: free-vs-paid is a usage
 // state within Business; Non Profit is a sibling verified-501c3 plan, sold separately, not a rung here).
-// Personal uses free → crew (Supporter is Crew plus the Supporter badge — same feature entitlements,
-// so it is not a separate unlock rung here even though it is sold at $12).
+// Personal uses free → crew: the whole member ladder (ADR-878). Supporter is not a rung and is not sold;
+// the Supporter badge rides on top of Crew and unlocks nothing beyond it.
 
 /** The Space plan rungs the range selector shows, ascending. A clean upgrade path (Non Profit is sold
  *  separately, so it is not a rung here). */
 export const SPACE_LADDER_TIERS: readonly SpacePlan[] = ['free', 'business', 'collective']
 
-/** The personal membership rungs the range selector shows, ascending (Supporter unlocks nothing beyond
- *  Crew, so it is not a rung). */
+/** The personal membership rungs the range selector shows, ascending. Member (free) and Crew: the whole
+ *  ladder (ADR-878). */
 export const MEMBER_LADDER_TIERS: readonly EntitlementTier[] = ['free', 'crew']
 
 // ── Rank + price-label helpers (pure) ───────────────────────────────────────────────────────────────
@@ -96,7 +99,10 @@ export function tierLabelOnAxis(axis: GateAxis, tier: string): string {
  *  lib/pricing/feature-meters.ts, prices its rungs from the SAME placeholder maps — one price source.) */
 export function tierPriceCents(axis: GateAxis, tier: string): number {
   if (axis === 'plan') return PLACEHOLDER_SPACE_PRICE_CENTS[tier as SpacePlan] ?? 0
-  return PLACEHOLDER_MEMBER_PRICE_CENTS[tier as EntitlementTier] ?? 0
+  // deriveTier collapses a historical 'supporter' to 'crew' (ADR-458/878), so a legacy row prices at
+  // Crew rather than at a $12 tier nobody can buy.
+  const sellable = deriveTier(tier as EntitlementTier) as Exclude<EntitlementTier, 'supporter'>
+  return PLACEHOLDER_MEMBER_PRICE_CENTS[sellable] ?? 0
 }
 
 /** A plain, honest placeholder price label for a tier on its axis, reusing the shared display format

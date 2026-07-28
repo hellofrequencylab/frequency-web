@@ -21,14 +21,13 @@ const usd = (cents: number) => `$${Math.round(cents / 100)}`
  *  ladder here matches the /pricing table exactly and the beta anchors revert on the same cutover. Member
  *  and Crew are the two personal tiers (not space tiers), so they are stated from their own catalog rows. */
 function tierLadderLines(): string[] {
+  // The member ladder is exactly two rungs (ADR-878): Member (free) and Crew, at one plain price.
   const crew = PRICING_DEFAULTS.tier.crew
-  const supporter = PRICING_DEFAULTS.tier.supporter
   const lines: string[] = [
     `- Member: free. Join, show up to a Circle or Event, and use the community. You keep 100% of your own bookings.`,
-    `- Crew: ${usd(crew.monthly_cents)} a month (or ${usd(crew.annual_cents ?? crew.monthly_cents * 10)} a year) at the Opening Beta price${
+    `- Crew: ${usd(crew.monthly_cents)} a month (or ${usd(crew.annual_cents ?? crew.monthly_cents * 10)} a year)${
       crew.list_cents ? `, under a ${usd(crew.list_cents)} list` : ''
     }. The personal tier for individuals: participation and leadership training tracks.`,
-    `- Supporter: ${usd(supporter.monthly_cents)} a month. Everything in Crew, plus the Supporter badge for backing the Foundation.`,
   ]
   for (const t of pricingTiers()) {
     const price = tierHeadline(t, 'month')

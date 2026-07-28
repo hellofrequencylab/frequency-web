@@ -249,6 +249,26 @@ describe('SOURCE SHAPE: the grant is wired at the webhook reconciliation points'
     expect(src).toContain('sub.created * 1000')
   })
 
+  it('BOTH grant points gate on the MONEY test first (ADR-880), never on the plan write alone', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { fileURLToPath } = await import('node:url')
+    const space = readFileSync(fileURLToPath(new URL('./space-subscriptions.ts', import.meta.url)), 'utf8')
+    const webhook = readFileSync(
+      fileURLToPath(new URL('../../app/api/webhooks/stripe/route.ts', import.meta.url)),
+      'utf8',
+    )
+    for (const src of [space, webhook]) {
+      expect(src).toContain('foundingPaymentSignal')
+      expect(src).toContain('earnsFounding')
+      // The locked rate is the BASE item's rate, normalized to a month. items.data[0] is gone.
+      expect(src).toContain('payment.monthlyRateCents')
+      expect(src).not.toContain('items?.data?.[0]?.price?.unit_amount')
+    }
+    // ...and the lapse that makes "for as long as you keep the plan" true in code.
+    expect(space).toContain('lapseFoundingStatus')
+    expect(webhook).toContain('lapseFoundingStatus')
+  })
+
   it('the Stripe webhook grants member founding on an active member subscription', async () => {
     const { readFileSync } = await import('node:fs')
     const { fileURLToPath } = await import('node:url')

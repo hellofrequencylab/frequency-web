@@ -30,6 +30,8 @@ import {
   seatQuantityFromItems,
 } from './space-subscription-items'
 import { grantBetaFounding } from './beta-founding'
+import { foundingPaymentSignal } from './founding-payment'
+import { lapseFoundingStatus } from '@/lib/founding/status'
 import { setSpaceSeatQuantity } from '@/lib/spaces/seats'
 import { syncTierCircleAccess } from '@/lib/spaces/tier-circle'
 
@@ -139,12 +141,25 @@ export async function reconcileSpacePlanSubscription(sub: Stripe.Subscription): 
 
   // Persist the subscription identifiers (audit/reference); a canceled sub clears the id. The columns
   // aren't in the generated types yet (ADR-246) — reach untyped, scope the write to the space id.
+  // The PREVIOUS id is read first: it is the evidence that decides whether a cancel may lapse a
+  // founder (see below), and this update is about to overwrite it.
   const db = createAdminClient()
-  await (db as unknown as {
+  const spaceWriter = db as unknown as {
     from: (t: string) => {
+      select: (c: string) => {
+        eq: (c: string, val: string) => { maybeSingle: () => Promise<{ data: { stripe_subscription_id?: string | null } | null }> }
+      }
       update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
     }
-  })
+  }
+  const { data: priorSpace } = await spaceWriter
+    .from('spaces')
+    .select('stripe_subscription_id')
+    .eq('id', spaceId)
+    .maybeSingle()
+  const priorSubscriptionId = priorSpace?.stripe_subscription_id ?? null
+
+  await spaceWriter
     .from('spaces')
     .update({
       stripe_subscription_id: isCanceled ? null : sub.id,
@@ -152,18 +167,40 @@ export async function reconcileSpacePlanSubscription(sub: Stripe.Subscription): 
     })
     .eq('id', spaceId)
 
-  // BETA FOUNDER PUSH (ADR-875). A Space that took a PAID plan before memberships start becomes a
-  // Founding Business, granted HERE (the reconciliation point, the same truth the plan itself is
-  // written from) rather than on the checkout success page a browser may never load. The cutoff reads
-  // `sub.created`, fixed at purchase, so every renewal event re-decides identically and the grant is
-  // idempotent. A canceled sub (settledPlan 'free') earns nothing. Never throws.
-  if (settledPlan !== 'free') {
+  // BETA FOUNDER PUSH (ADR-875, tightened by ADR-880). A Space becomes a Founding Business only when
+  // ALL THREE hold: money MOVED, it bought the YEAR, and it happened before memberships start. Granted
+  // HERE (the reconciliation point, the same truth the plan itself is written from) rather than on the
+  // checkout success page a browser may never load.
+  //
+  // WHAT CHANGED: the old test was `settledPlan !== 'free'`, i.e. "a subscription exists". A 14-day
+  // trial, a past_due card, an `incomplete` sub, and a 100%-off promo code all passed it and minted a
+  // permanent, publicly visible founder with a lifetime locked rate. foundingPaymentSignal is the money
+  // test (pure, unit-tested); the cutoff still reads `sub.created`, fixed at purchase, so every renewal
+  // event re-decides identically and the grant stays idempotent. Never throws.
+  //
+  // The LOCKED RATE comes from the item whose price is the settled BASE plan (never items.data[0]: a
+  // loadout carries the AI add-on and seat lines too, in no guaranteed order) and is normalized to a
+  // MONTHLY figure, which is what the column documents even for a yearly purchase.
+  const payment = foundingPaymentSignal(sub)
+  if (settledPlan !== 'free' && payment.earnsFounding) {
     await grantBetaFounding({
       kind: 'business',
       spaceId,
       atMs: sub.created * 1000,
-      lockedRateCents: sub.items?.data?.[0]?.price?.unit_amount ?? null,
+      lockedRateCents: payment.monthlyRateCents,
     })
+  }
+
+  // THE OTHER HALF OF THE LIFECYCLE (ADR-880). "The rate holds as long as the subscription is
+  // maintained" only means something if stopping ends it. A subscription reconciling to canceled (or
+  // Stripe-terminal `unpaid`) lapses the Space's founding row.
+  //
+  // GUARDED on the Space actually being ON this subscription: a founding row recorded by hand for a
+  // cash-paying Space has NO Stripe subscription behind it, and must never be lapsed by an unrelated
+  // subscription event. `priorSubscriptionId === sub.id` is that evidence.
+  const lapses = status === 'canceled' || status === 'incomplete_expired' || status === 'unpaid'
+  if (lapses && priorSubscriptionId === sub.id) {
+    await lapseFoundingStatus({ spaceId })
   }
 }
 

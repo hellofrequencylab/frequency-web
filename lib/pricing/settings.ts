@@ -40,7 +40,12 @@ export interface TierPrice {
 }
 
 export interface PricingDefaults {
-  tier: { crew: TierPrice; supporter: TierPrice }
+  /** The SELLABLE member ladder is exactly Member (free) and Crew (ADR-878). Free is the baseline, not
+   *  a priced row, so `tier` carries Crew alone. Supporter is NOT here on purpose: it left the sellable
+   *  ladder, and typing it out of the shape is what makes a $12 member price unrenderable rather than
+   *  merely unrendered. The `supporter` ENTITLEMENT label still exists for read tolerance (ADR-458,
+   *  lib/core/entitlement.ts maps supporter -> crew); that is a different axis from what we SELL. */
+  tier: { crew: TierPrice }
   plan: {
     business: TierPrice
     collective: TierPrice
@@ -68,8 +73,11 @@ export interface PricingDefaults {
 
 export const PRICING_DEFAULTS: PricingDefaults = {
   tier: {
-    crew: { monthly_cents: 900, annual_cents: 9000, list_cents: 1200 }, // $9 Opening Beta under a $12 list (ADR-463)
-    supporter: { monthly_cents: 1200, annual_cents: 12000 }, // $12 / $120: Crew plus the Supporter badge (sold again, 2026-07 pricing overhaul)
+    // Crew is ONE clean price: $9 a month or $90 a year, with NO list anchor (ADR-878). The $12 anchor
+    // is gone because the $12 Supporter tier it echoed is gone; the founder's member ladder is Member
+    // (free) and Crew ($9/mo), stated plainly. An operator may still set a deliberate anchor at
+    // /admin/pricing, and priceRow honors it, but no anchor ships in the code default.
+    crew: { monthly_cents: 900, annual_cents: 9000 },
   },
   plan: {
     // Community Collective ladder (ADR-811). Annual = two months free (10x monthly).
@@ -108,7 +116,8 @@ export const PRICING_DEFAULTS: PricingDefaults = {
 // absent row reads the Phase B CATALOG amount. Seeding them would duplicate that source of truth.
 const SETTING_DEFAULTS: Record<string, unknown> = {
   'tier.crew': PRICING_DEFAULTS.tier.crew,
-  'tier.supporter': PRICING_DEFAULTS.tier.supporter,
+  // No 'tier.supporter' default (ADR-878): Supporter is off the sellable ladder, so there is no member
+  // price for it to seed. A stored row is read into the raw settings map and simply never consumed.
   'plan.business': PRICING_DEFAULTS.plan.business,
   // Collective + Independent are first-class sellable tiers (ADR-811), so they carry a default row here
   // like every other plan; an absent DB row still resolves through getPricingValues' per-key fallback.
@@ -162,7 +171,6 @@ export async function getPricingValues(): Promise<PricingDefaults> {
   return {
     tier: {
       crew: pick('tier.crew', PRICING_DEFAULTS.tier.crew),
-      supporter: pick('tier.supporter', PRICING_DEFAULTS.tier.supporter),
     },
     plan: {
       business: pick('plan.business', PRICING_DEFAULTS.plan.business),
@@ -185,6 +193,9 @@ export async function getPricingValues(): Promise<PricingDefaults> {
 export const PRICING_FLAG_KEYS = [
   'billing_live',
   'tier_crew_enabled',
+  // INERT (ADR-878). Supporter left the sellable ladder, so memberTierSellable('supporter') refuses
+  // regardless of this flag. The key stays in the list only so the operator console keeps reading and
+  // showing the stored row honestly (and so the flag read never 404s); nothing consults it to sell.
   'tier_supporter_enabled',
   'plan_business_enabled',
   'plan_nonprofit_enabled',
@@ -308,16 +319,23 @@ export async function featureGatesLive(): Promise<boolean> {
   }
 }
 
-/** The per-tier enable flag for a paid member tier (must be ON, with billing live, to SELL it). */
-const TIER_FLAG: Record<'crew' | 'supporter', 'tier_crew_enabled' | 'tier_supporter_enabled'> = {
+/** The per-tier enable flag for a SELLABLE paid member tier (must be ON, with billing live, to SELL it).
+ *  Crew is the only entry: the sellable member ladder is Member (free) and Crew (ADR-878). */
+const TIER_FLAG: Record<'crew', 'tier_crew_enabled'> = {
   crew: 'tier_crew_enabled',
-  supporter: 'tier_supporter_enabled',
 }
 
 /** Is this member tier sellable right now? billingLive() AND the per-tier switch (P3). GATED — false
  *  while billing is OFF, so the upgrade surface shows a tasteful disabled "coming soon" CTA instead of
- *  a live checkout. The mirror of spacePlanSellable for personal tiers. FAIL-SAFE FALSE. */
+ *  a live checkout. The mirror of spacePlanSellable for personal tiers. FAIL-SAFE FALSE.
+ *
+ *  SUPPORTER IS ALWAYS FALSE, regardless of `tier_supporter_enabled` (ADR-878, on top of ADR-458 which
+ *  retired Supporter as a tier). The parameter still ACCEPTS 'supporter' so a stale caller cannot be a
+ *  type error that quietly becomes a live checkout; it refuses in code, belt and braces with the flag
+ *  default being false and the SQL that turns the prod flag off. Nothing sells Supporter again without
+ *  deleting this branch on purpose. */
 export async function memberTierSellable(tier: 'crew' | 'supporter'): Promise<boolean> {
+  if (tier === 'supporter') return false
   try {
     if (!(await billingLive())) return false
     const flags = await loadPricingFlags()

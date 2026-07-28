@@ -128,18 +128,28 @@ async function notifyAgreement(agreement: ManualAgreement, touch: Touch): Promis
   let delivered = false
 
   // In-app rows (best-effort each, same insert shape support/lifecycle use).
+  //
+  // supabase-js RESOLVES with `{ data, error }` on a DB failure, it does not throw. The try/catch this
+  // used to sit in was therefore dead code and `delivered = true` ran unconditionally, so a failed
+  // insert still stamped the touch and the stamp suppressed that rung for the whole cycle (the windows
+  // are disjoint; only recordManualPayment clears stamps). Read the returned error. The catch stays for
+  // a genuinely thrown transport error.
   for (const profileId of recipients) {
     try {
-      await admin.from('notifications').insert({
+      const { error } = await admin.from('notifications').insert({
         recipient_id: profileId,
         type: 'billing_renewal',
         reference_type: 'space',
         reference_id: space.id,
         body: copy.inapp,
       })
-      delivered = true
-    } catch {
-      /* best-effort: an in-app miss never blocks the run */
+      if (error) {
+        console.error('[billing-renewals in-app]', space.id, profileId, error.message)
+      } else {
+        delivered = true
+      }
+    } catch (e) {
+      console.error('[billing-renewals in-app]', space.id, profileId, e)
     }
   }
 
@@ -192,9 +202,14 @@ async function processTouch(agreements: ManualAgreement[], touch: Touch): Promis
       // Stamp AFTER the sends, and only when something actually went out: a fully failed fan-out
       // leaves the stamp null so tomorrow retries. (An agreement's space cannot vanish under it,
       // the FK cascades, so "nothing delivered" always means a transient miss worth retrying.)
+      //
+      // And count the touch as SENT only when the stamp itself landed (ADR-880): the stamp is the
+      // only thing that suppresses a repeat, so a stamp that failed means this same reminder goes out
+      // again tomorrow. Reporting it as sent would hide a daily re-send behind a clean cron log.
       if (delivered) {
-        await stampAgreementTouch(agreement.id, TOUCH_COLUMN[touch])
-        sent++
+        const stamped = await stampAgreementTouch(agreement.id, TOUCH_COLUMN[touch])
+        if (stamped) sent++
+        else console.error('[billing-renewals] sent but NOT stamped, will re-send:', touch, agreement.id)
       }
     } catch (e) {
       console.error('[billing-renewals]', touch, agreement.id, e)
