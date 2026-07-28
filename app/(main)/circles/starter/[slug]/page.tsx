@@ -6,6 +6,7 @@ import { StarterBadge } from '@/components/ui/starter-badge'
 import { StarterClaim } from '@/components/circles/starter-claim'
 import { TemplateCover } from '@/components/circles/template-art'
 import { getTemplateBySlug, templatesEnabled } from '@/lib/circles/templates-data'
+import { canCreate } from '@/lib/core/load-capabilities'
 import { PILLAR_SLUGS, type PillarSlug } from '@/lib/pillars'
 import { pageContentMetadata } from '@/lib/page-content'
 
@@ -75,7 +76,7 @@ export default async function StarterCirclePreview({
       subtitle={t.oneLiner}
     >
       <div className="mx-auto max-w-3xl">
-        <StarterClaim templateId={t.id} />
+        <StarterClaim templateId={t.id} canCreate={await canCreate('circle.create')} />
 
         {lead && <p className="text-base leading-relaxed text-text">{lead}</p>}
 

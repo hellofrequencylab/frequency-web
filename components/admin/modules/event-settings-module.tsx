@@ -434,8 +434,24 @@ export function EventSettingsModule() {
           </label>
           <label className="block min-w-0 space-y-1.5">
             <span className={fieldLabel}>Who can see this</span>
-            <select name="visibility" defaultValue={data.visibility ?? 'circle_only'} className={`${input} min-w-0 px-2`}>
-              {VISIBILITY_OPTIONS.map((o) => (
+            {/* "My circle" is only offered when the event's home IS a circle — on any other scope
+                the server steps it down to unlisted (coerceVisibilityForScope, ADR-883), so the
+                dead option never renders. Same rule as the member form's filter. */}
+            <select
+              name="visibility"
+              defaultValue={
+                data.scope_type === 'circle'
+                  ? data.visibility ?? 'circle_only'
+                  : data.visibility === 'circle_only' || !data.visibility
+                    ? 'unlisted'
+                    : data.visibility
+              }
+              className={`${input} min-w-0 px-2`}
+            >
+              {(data.scope_type === 'circle'
+                ? VISIBILITY_OPTIONS
+                : VISIBILITY_OPTIONS.filter((o) => o.value !== 'circle_only')
+              ).map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>

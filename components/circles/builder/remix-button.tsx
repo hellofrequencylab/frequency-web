@@ -4,14 +4,28 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Wand2 } from 'lucide-react'
 import { remixTemplateAction } from '@/app/(main)/circles/remix-actions'
+import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 
 // The "Remix" button on a Starter Circle card (NAMING.md: the verb is Remix, the
 // gloss is "Make it yours"). Remixes the template into a private draft the member
 // owns, then routes them into the builder. Client-side because it mutates + navigates.
-export function RemixButton({ templateId }: { templateId: string }) {
+// The action enforces circle.create (a Remix mints a Circle you host, ADR-891);
+// `canCreate` swaps the button for the free-beta Crew upsell instead of a server error.
+export function RemixButton({ templateId, canCreate = true }: { templateId: string; canCreate?: boolean }) {
   const router = useRouter()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+  if (!canCreate) {
+    return (
+      <CrewGateButton
+        isCrew={false}
+        label="Remix"
+        reason="create-circle"
+        buttonClassName="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+      />
+    )
+  }
 
   const remix = () => {
     setError(null)

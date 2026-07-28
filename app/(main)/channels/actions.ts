@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
+import { assertCanCreate } from '@/lib/core/load-capabilities'
 import { startChapter } from '@/lib/channels/programs'
 
 type ChannelScope = 'hub' | 'nexus' | 'outpost'
@@ -139,8 +140,10 @@ export async function tuneOutChannel(channelId: string) {
 // Starts a Chapter of a program Channel: clones the channel's blueprint into a
 // private draft the member owns (the Remix flow), stamped into the channel.
 // The gate mirrors remixTemplateAction in app/(main)/circles/remix-actions.ts
-// EXACTLY: any signed-in REAL member may start one; demo profiles cannot. The
-// caller routes into the draft builder at /circles/{slug}/edit, same as Remix.
+// EXACTLY: a real (non-demo) member with the `circle.create` capability (ADR-414;
+// Crew is free during the beta). A Chapter IS a Circle the caller hosts, so it
+// takes the same gate creating one does — ADR-891 closed the hole where this
+// path skipped it. The caller routes into the draft builder, same as Remix.
 export async function startChapterAction(
   channelId: string,
 ): Promise<{ circleId: string; slug: string }> {
@@ -158,6 +161,8 @@ export async function startChapterAction(
     .maybeSingle()
   const me = data as { id: string; is_demo?: boolean } | null
   if (!me || me.is_demo) throw new Error('Only real members can start a Chapter.')
+
+  await assertCanCreate('circle.create')
 
   const res = await startChapter({ channelId, profileId: me.id })
   revalidatePath('/circles')
