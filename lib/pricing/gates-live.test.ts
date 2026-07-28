@@ -337,15 +337,21 @@ describe('SOURCE SHAPE: gating seams read featureGatesLive, charging seams read 
     const root = fileURLToPath(new URL('../..', import.meta.url))
     const hits = execFileSync(
       'git',
-      ['grep', '-n', '-A4', '-e', 'featureAllowed(', '-e', 'withinAllowance(', '--', '*.ts', '*.tsx'],
+      [
+        'grep', '-n', '-A4', '-e', 'featureAllowed(', '-e', 'withinAllowance(',
+        // This file is excluded from its own sweep: it carries both call-site names as grep
+        // PATTERNS, so git grep matches this very source and the prose below would flag itself.
+        '--', '*.ts', '*.tsx', ':!lib/pricing/gates-live.test.ts',
+      ],
       { cwd: root, encoding: 'utf8' },
     )
     // Drop comment lines: the prose around these call sites legitimately names billingLive to explain
-    // why it is NOT used here.
+    // why it is NOT used here. git grep prefixes a MATCH line `file:12:` and a -A context line
+    // `file-12-`, so the prefix strip has to accept both separators before the comment test.
     const offenders = hits
       .split('\n')
       .filter((l) => /\bbillingLive\b/.test(l))
-      .filter((l) => !/:\s*(\/\/|\*|\/\*)/.test(l.replace(/^[^:]*:\d+[-:]/, ': ')))
+      .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l.replace(/^.*?[-:]\d+[-:]/, '')))
     expect(offenders).toEqual([])
   })
 })
