@@ -15,7 +15,8 @@ import { markVerifiedByAttendance } from '@/lib/verification/attendance'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 import { validateRecurrenceUntil } from '@/lib/events/recurrence'
 import { resolveRegionScopeId } from '@/lib/events/event-drafts'
-import { listSpaceEventCreatorIds } from '@/lib/events/placement'
+import { listSpaceEventCreatorIds, journeyLinkPatch } from '@/lib/events/placement'
+import { canEditJourney } from '@/lib/journeys/authoring'
 import { cancelAudit } from '@/lib/events/event-lifecycle'
 import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
@@ -60,6 +61,38 @@ function parseGalleryPaths(raw: string | null): string[] {
 function parsePriceCents(raw: string | null): number | null {
   const n = raw ? parseInt(raw.trim(), 10) : NaN
   return Number.isFinite(n) && n > 0 ? n : null
+}
+
+// THE JOURNEY LINK (events.journey_id). An ASSOCIATION, like space_id — not a placement. Attaching
+// or detaching a Journey never moves the event: its home stays the bare scope_id + scope_type pair,
+// so a Circle's event stays on its Circle and a public event stays in its region. The one column
+// this writes comes from journeyLinkPatch (lib/events/placement.ts), never a hand-rolled set.
+//
+// Three outcomes, and the first one matters as much as the others: a form that does not SEND
+// `journeyId` leaves the existing link alone. The event editor is not the only writer of an event
+// (the draft publish path, Vera's spark, the poster scanner), and a patch built from "the field is
+// absent" rather than "the field is empty" is what keeps one of those from silently un-linking an
+// event it never knew was part of a Journey. Blank means detach; only a real id attaches.
+//
+// AUTHORITY is `canEditJourney` — the ONE Journey gate (author, platform operator, or a manager of
+// the owning Space), the same rule the Journey editor route and every Journey editor action ask.
+// The picker offers exactly what this admits (ADR-883 §3: the offer and the gate are one rule), and
+// this re-derives it server-side because the client's list is a convenience, never an authority.
+// Detaching needs no Journey authority: the caller already had to hold event.editSettings to get
+// here, and taking your own event back out of someone's Journey is their business, not the
+// Journey author's.
+type JourneyLink = { ok: true; patch: Record<string, unknown> } | { ok: false; message: string }
+const NO_JOURNEY_CHANGE: JourneyLink = { ok: true, patch: {} }
+
+async function resolveJourneyLink(formData: FormData, profileId: string | null): Promise<JourneyLink> {
+  const raw = formData.get('journeyId')
+  if (raw === null) return NO_JOURNEY_CHANGE
+  const journeyId = typeof raw === 'string' ? raw.trim() : ''
+  if (!journeyId) return { ok: true, patch: journeyLinkPatch(null) }
+  if (!(await canEditJourney(journeyId, profileId))) {
+    return { ok: false, message: 'You can only add an event to a Journey you run.' }
+  }
+  return { ok: true, patch: journeyLinkPatch(journeyId) }
 }
 
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
@@ -257,6 +290,12 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
     spaceIdForPlacement = formScopeId
   }
 
+  // The Journey this event is part of, if any — resolved and AUTHORIZED before the insert, so a
+  // link the caller may not make fails the create outright instead of leaving a created event with
+  // a silently dropped association (the failure mode ADR-883 catalogued for the circle path).
+  const journeyLink = await resolveJourneyLink(formData, myProfileId)
+  if (!journeyLink.ok) return fail(journeyLink.message)
+
   // Resolve the base scope_id column: a circle event uses the chosen circle; a public OR space
   // event is region-scoped (a space event additionally carries space_id, set at insert below).
   const scopeId = scopeChoice === 'circle' ? formScopeId : await resolveRegionScopeId(myProfileId)
@@ -317,6 +356,9 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
       // host; registrations and ticket money route through it). host_id stays the personal operator
       // axis (edit rights, notifications). Distinct from space_id, which is pure tenancy/placement.
       ...(scopeChoice === 'space' && spaceIdForPlacement ? { host_space_id: spaceIdForPlacement } : {}),
+      // The Journey association (journey_id), authorized above. Empty when the form sent no link,
+      // so this is the only place the column is touched on create and it can never carry a scope.
+      ...journeyLink.patch,
     } as never).select('id').single()
 
   if (error || !inserted) {
@@ -364,6 +406,8 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   // A space event surfaces on its Space's Calendar console, public Calendar tab, and .ics
   // feed — refresh those too so a create/edit/cancel/delete shows up there without a wait.
   revalidatePath('/spaces', 'layout')
+  // A linked event shows on its Journey, so refresh that tree when the link was touched.
+  if (Object.keys(journeyLink.patch).length > 0) revalidatePath('/journeys', 'layout')
   // Navigation happens client-side off this result (a server redirect would
   // short-circuit returning the ActionResult).
   return ok({ slug })
@@ -444,6 +488,12 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   const siRaw = formData.get('specialInstructions')
   const specialInstructions = typeof siRaw === 'string' ? siRaw.trim() : null
 
+  // Attach / detach the Journey (events.journey_id). Absent field = leave the link alone; blank =
+  // detach; an id = attach, gated on the one Journey authority. Resolved BEFORE the write so a
+  // rejected link fails the whole save rather than persisting the other edits without it.
+  const journeyLink = await resolveJourneyLink(formData, await getMyProfileId())
+  if (!journeyLink.ok) return fail(journeyLink.message)
+
   const admin = createAdminClient()
   const { data: ev } = await admin
     .from('events')
@@ -487,6 +537,9 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
       ...(isAnchor
         ? { recurrence_type: recurrenceTypeEdit, recurrence_until: recurrenceUntilEdit }
         : {}),
+      // The Journey association (journey_id), authorized above. Empty when the form sent no link,
+      // so an editor that does not surface the field can never wipe one.
+      ...journeyLink.patch,
     } as never)
     .eq('id', eventId)
   if (error) {
@@ -516,6 +569,8 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   // A space event surfaces on its Space's Calendar console, public Calendar tab, and .ics
   // feed — refresh those too so a create/edit/cancel/delete shows up there without a wait.
   revalidatePath('/spaces', 'layout')
+  // A linked event shows on its Journey, so refresh that tree when the link was touched.
+  if (Object.keys(journeyLink.patch).length > 0) revalidatePath('/journeys', 'layout')
   // Navigation happens client-side off this result (a server redirect would
   // short-circuit returning the ActionResult).
   return ok({ slug })

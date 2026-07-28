@@ -8,6 +8,9 @@ import { pointFromGeog } from '@/lib/events/geo'
 import { CancelEventButton } from './cancel-event-button'
 import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import { getMyProfileId } from '@/lib/auth'
+import { listLinkableJourneys, resolveJourneyRef } from '@/lib/events/placement'
+import { canEditJourney } from '@/lib/journeys/authoring'
 
 // Edit an event's details — the host's (and any circle manager's / admin's) self-service editor.
 // Gated by the same `event.editSettings` capability the admin editor + /manage use. Reuses the
@@ -24,6 +27,9 @@ interface EventEditRow {
   scope_type: string | null
   /** The owning Space placement (ADR-246/ADR-857) — names the scope for a Space event. */
   space_id: string | null
+  /** The Journey ASSOCIATION (journey_plans), or null. Newer than the generated DB types, which is
+   *  why the row is read through `unknown` below (ADR-246). Never a placement. */
+  journey_id: string | null
   starts_at: string | null
   ends_at: string | null
   capacity: number | null
@@ -74,7 +80,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
   const { data } = await admin
     .from('events')
     .select(
-      'id, title, description, location, scope_id, scope_type, space_id, starts_at, ends_at, capacity, visibility, category, ' +
+      'id, title, description, location, scope_id, scope_type, space_id, journey_id, starts_at, ends_at, capacity, visibility, category, ' +
         'energy_tag, attendance_mode, online_url, venue_name, street, city, region, postal_code, country, is_cancelled, cover_image_path, gallery_image_paths, recurrence_type, recurrence_until, price_cents, geog',
     )
     .eq('slug', slug)
@@ -110,6 +116,26 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
   // Anything left is a standalone local event — the same words the create form's scope picker uses.
   if (!scopeName) scopeName = 'Public · a local event'
 
+  // PART OF A JOURNEY. Unlike the scope, this IS editable here: a Journey link is an association,
+  // so attaching or detaching one never moves the event. The picker offers the Journeys this viewer
+  // can edit (canEditJourney: author, operator, or a manager of the owning Space) — the same rule
+  // updateEvent re-checks on submit.
+  //
+  // The event's CURRENT Journey is prepended when it is not already in that list, which happens
+  // whenever a Journey's author linked someone else's event. Without it the select could not show
+  // the link, and EventForm would (correctly) hide the whole field rather than offer a control
+  // whose first save would silently detach a Journey this host never chose.
+  const viewerId = await getMyProfileId()
+  const journeys = viewerId ? await listLinkableJourneys(viewerId, await loadRootSpaceId()) : []
+  if (ev.journey_id && !journeys.some((j) => j.id === ev.journey_id)) {
+    if (viewerId && (await canEditJourney(ev.journey_id, viewerId))) {
+      const current = await resolveJourneyRef(ev.journey_id)
+      if (current) journeys.push(current)
+    }
+  }
+  journeys.sort((a, b) => a.title.localeCompare(b.title))
+  const journeyOptions = journeys.map((j) => ({ id: j.id, title: j.title }))
+
   const attendanceMode = (['in_person', 'online', 'hybrid'] as const).find((m) => m === ev.attendance_mode) ?? 'in_person'
   // Decode the stored geog to a {lat,lng} so the form's map preview shows the saved point in edit mode.
   const venuePoint = pointFromGeog(ev.geog)
@@ -141,12 +167,14 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
     priceCents: ev.price_cents ?? undefined,
     venueLat: venuePoint?.lat,
     venueLng: venuePoint?.lng,
+    journeyId: ev.journey_id ?? '',
   }
 
   return (
     <EventEditorWindow backHref={`/events/${slug}`}>
       <EventForm
         groups={[]}
+        journeys={journeyOptions}
         initial={initial}
         eventId={ev.id}
         currentScopeName={scopeName ?? undefined}

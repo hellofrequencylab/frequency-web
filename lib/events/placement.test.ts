@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { livePlacementPatch, clearPlacementPatch } from './placement'
+import { livePlacementPatch, clearPlacementPatch, journeyLinkPatch } from './placement'
 
 // "Where does this event live" — the Event ⇄ Circle tie.
 //
@@ -73,6 +73,46 @@ describe('clearPlacementPatch', () => {
   })
 })
 
+// The Event ⇄ Journey link is an ASSOCIATION, like events.space_id, not a placement. The trap it
+// has to stay clear of is the mirror image of the circle bug: a Journey has no region, no
+// membership roll and no RLS disjunct, so if attaching one ever moved the bare scope pair the
+// event would vanish from its Circle (and from the circle_only read) and land nowhere.
+const JOURNEY = 'jjjjjjjj-0000-4000-a000-00000000000j'
+
+describe('journeyLinkPatch', () => {
+  it('attaching a Journey writes the association column and nothing else', () => {
+    expect(journeyLinkPatch(JOURNEY)).toEqual({ journey_id: JOURNEY })
+  })
+
+  it('detaching is the same shape with null, so attach and detach can never drift apart', () => {
+    expect(journeyLinkPatch(null)).toEqual({ journey_id: null })
+  })
+
+  it('a Journey link NEVER moves the event: no placement column may appear in the patch', () => {
+    for (const patch of [journeyLinkPatch(JOURNEY), journeyLinkPatch(null)]) {
+      for (const col of ['scope_id', 'scope_type', 'scope_circle_id', 'space_id', 'host_space_id', 'visibility']) {
+        expect(patch).not.toHaveProperty(col)
+      }
+    }
+  })
+})
+
+describe('placement and the Journey link are orthogonal', () => {
+  it('placing an event does not touch its Journey link', () => {
+    expect(livePlacementPatch({ type: 'space', id: SPACE })).not.toHaveProperty('journey_id')
+    expect(livePlacementPatch({ type: 'circle', id: CIRCLE }, { circleSpaceId: SPACE })).not.toHaveProperty(
+      'journey_id',
+    )
+  })
+
+  it('removing an event from its Circle leaves it in its Journey', () => {
+    // "Remove from Circle" moves the event home. The Journey it is part of is a different fact
+    // about it, and un-placing must not silently un-link it.
+    const patch = clearPlacementPatch({ scopeType: 'circle', visibility: 'circle_only', regionId: REGION })
+    expect(patch).not.toHaveProperty('journey_id')
+  })
+})
+
 describe('the tie is written and gated through the one rule (source shape)', () => {
   const root = join(__dirname, '..', '..')
   const read = (p: string) => readFileSync(join(root, p), 'utf8')
@@ -97,5 +137,50 @@ describe('the tie is written and gated through the one rule (source shape)', () 
     const src = read('app/(main)/events/new/page.tsx')
     expect(src).toContain('getCircleCapabilities')
     expect(src).toContain('droppedCircleLink')
+  })
+
+  it('both event actions write the Journey link through journeyLinkPatch, never inline', () => {
+    const src = read('app/(main)/events/actions.ts')
+    expect(src).toContain('journeyLinkPatch')
+    // An inline `journey_id:` in an insert/update payload is the drift this seam exists to stop.
+    expect(src).not.toMatch(/journey_id:/)
+  })
+
+  it('attaching a Journey is gated on canEditJourney, the one Journey authority', () => {
+    const src = read('app/(main)/events/actions.ts')
+    expect(src).toContain('canEditJourney')
+    // Detach must not need it, so the check has to sit behind a non-empty id, not at the top.
+    expect(src).toMatch(/if \(!journeyId\) return \{ ok: true, patch: journeyLinkPatch\(null\) \}/)
+  })
+
+  it('an absent journeyId field leaves the link alone (no accidental detach by another writer)', () => {
+    const src = read('app/(main)/events/actions.ts')
+    expect(src).toMatch(/if \(raw === null\) return NO_JOURNEY_CHANGE/)
+  })
+
+  it('both forms offer the Journeys the gate admits, and the create page re-resolves ?journey=', () => {
+    const create = read('app/(main)/events/new/page.tsx')
+    const edit = read('app/(main)/events/[slug]/edit/page.tsx')
+    for (const src of [create, edit]) {
+      expect(src).toContain('listLinkableJourneys')
+      expect(src).toContain('canEditJourney')
+    }
+    expect(create).toContain('droppedJourneyLink')
+  })
+
+  it('the form hides the Journey field rather than offering one that would detach a link it cannot show', () => {
+    const src = read('app/(main)/events/new/event-form.tsx')
+    expect(src).toContain('showJourneyField')
+    expect(src).toMatch(/if \(showJourneyField\) fd\.set\('journeyId', journeyId\)/)
+  })
+
+  it('the migration adds an ASSOCIATION column, not a fourth scope_type', () => {
+    const src = read('supabase/migrations/20270117000000_events_journey_link.sql')
+    // The Journey entity is journey_plans; there is no `journeys` table to reference.
+    expect(src).toMatch(/references public\.journey_plans\(id\) on delete set null/)
+    // Deleting a Journey must never delete somebody's Event.
+    expect(src).not.toMatch(/on delete cascade/)
+    // A Journey is not an event's home: the migration must not widen the scope_type vocabulary.
+    expect(src).not.toMatch(/scope_type in \(/)
   })
 })

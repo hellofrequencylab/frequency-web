@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { computeOccurrenceDates, expandOccurrenceInstants } from './event-recurrence'
+import {
+  anchorIsDormant,
+  computeOccurrenceDates,
+  expandOccurrenceInstants,
+  occurrenceRow,
+} from './event-recurrence'
 
 // F1: monthly recurrence must NOT overflow for day-29/30/31 anchors. The old
 // setUTCMonth(+1) turned Jan 31 → Mar 3 (skipping Feb entirely). The fix counts
@@ -112,5 +117,134 @@ describe('expandOccurrenceInstants — Date.now()-independent expansion to an ex
         new Date('2030-01-01T00:00:00.000Z'),
       ),
     ).toEqual([])
+  })
+})
+
+// ── occurrenceRow — what a materialised occurrence INHERITS from its anchor ──────────────────
+//
+// The defect this locks down (ADR-883 shape): the child payload copied ten columns and let the
+// rest fall to the COLUMN DEFAULTS, which are not neutral. In production both live recurring
+// series were $22 events, and all 17 materialised occurrences came out FREE (price_cents NULL),
+// `circle_only` on a region-scoped row (so the RLS circle disjunct matched nothing and every
+// member but the host lost the event), tenanted to the ROOT space instead of the hosting
+// Business Space, with no venue, no map point, no cover image and no capacity cap.
+
+const ANCHOR = {
+  id: 'anchor-1',
+  slug: 'weekly-cowork',
+  title: 'Weekly cowork',
+  description: 'Bring a laptop.',
+  host_id: 'host-1',
+  scope_id: 'region-1',
+  scope_type: 'public',
+  location: '12 Main St',
+  starts_at: '2027-01-01T19:00:00.000Z',
+  ends_at: '2027-01-01T21:00:00.000Z',
+  recurrence_type: 'weekly' as const,
+  recurrence_until: null,
+  is_cancelled: false,
+  removed_at: null,
+  // The columns whose defaults contradict the anchor.
+  visibility: 'public',
+  status: 'published',
+  price_cents: 2200,
+  currency: 'usd',
+  capacity: 22,
+  time_zone: 'America/Denver',
+  space_id: 'space-royal-temple',
+  host_space_id: 'space-royal-temple',
+  category: 'social',
+  cover_image_path: 'covers/a.jpg',
+  venue_name: 'Royal Temple',
+  city: 'Ojai',
+  hide_address: true,
+  join_mode: 'tickets',
+  is_demo: false,
+  geog: '0101000020E610000071602816AE525DC085D9BA8A7B844040',
+  details: { specialInstructions: 'Door code 1234' },
+}
+
+describe('occurrenceRow — an occurrence inherits the anchor, not the column defaults', () => {
+  const start = new Date('2027-01-08T19:00:00.000Z')
+  const row = occurrenceRow(ANCHOR, start, 2 * 60 * 60 * 1000)
+
+  it('carries the MONEY columns forward (a paid series must not materialise free dates)', () => {
+    expect(row.price_cents).toBe(2200)
+    expect(row.currency).toBe('usd')
+    expect(row.capacity).toBe(22)
+    expect(row.join_mode).toBe('tickets')
+  })
+
+  it('carries VISIBILITY and STATUS forward (the default is circle_only, which hides the row)', () => {
+    expect(row.visibility).toBe('public')
+    expect(row.status).toBe('published')
+  })
+
+  it('carries TENANCY forward (the default trigger rewrites a NULL space_id to ROOT)', () => {
+    expect(row.space_id).toBe('space-royal-temple')
+    expect(row.host_space_id).toBe('space-royal-temple')
+  })
+
+  it('carries the venue, the map point, the zone and the presentation forward', () => {
+    expect(row.venue_name).toBe('Royal Temple')
+    expect(row.city).toBe('Ojai')
+    expect(row.geog).toBe(ANCHOR.geog)
+    expect(row.time_zone).toBe('America/Denver')
+    expect(row.cover_image_path).toBe('covers/a.jpg')
+    expect(row.hide_address).toBe(true)
+    expect(row.details).toEqual({ specialInstructions: 'Door code 1234' })
+  })
+
+  it('sets the occurrence identity: its own date, per-day slug, parent link, and no cadence', () => {
+    expect(row.starts_at).toBe('2027-01-08T19:00:00.000Z')
+    expect(row.ends_at).toBe('2027-01-08T21:00:00.000Z')
+    expect(row.slug).toBe('weekly-cowork-2027-01-08')
+    expect(row.parent_event_id).toBe('anchor-1')
+    // A DB CHECK forbids a materialised occurrence from itself recurring.
+    expect(row.recurrence_type).toBe('none')
+    expect(row.recurrence_until).toBeNull()
+  })
+
+  it('never copies the anchor id, its claim link, or its own lifecycle stamps', () => {
+    expect(row.id).toBeUndefined()
+    expect(row.claim_token).toBeUndefined()
+    expect(row.cancelled_at).toBeUndefined()
+    expect(row.removed_at).toBeUndefined()
+    expect(row.featured_at).toBeUndefined()
+  })
+
+  it('leaves ends_at null when the anchor has no duration', () => {
+    expect(occurrenceRow(ANCHOR, start, null).ends_at).toBeNull()
+  })
+
+  it('drops a GeoJSON-object geog rather than writing a value the insert would reject', () => {
+    // PostgREST returns geography as EWKB hex here, but a GeoJSON object serialization would
+    // abort the whole batch on insert. Degrade to today's behaviour (no point), never to an error.
+    const objectGeog = occurrenceRow(
+      { ...ANCHOR, geog: { type: 'Point', coordinates: [-119.2, 34.4] } },
+      start,
+      null,
+    )
+    expect('geog' in objectGeog).toBe(false)
+  })
+
+  it('passes a NULL inherited column through instead of dropping it to the default', () => {
+    const free = occurrenceRow({ ...ANCHOR, price_cents: null, capacity: null }, start, null)
+    expect(free.price_cents).toBeNull()
+    expect(free.capacity).toBeNull()
+  })
+})
+
+describe('anchorIsDormant — a cancelled or removed series stops materialising', () => {
+  it('is false for a live anchor', () => {
+    expect(anchorIsDormant({ is_cancelled: false, removed_at: null })).toBe(false)
+  })
+
+  it('is true once the host cancels — the daily cron kept minting fresh occurrences otherwise', () => {
+    expect(anchorIsDormant({ is_cancelled: true, removed_at: null })).toBe(true)
+  })
+
+  it('is true once staff removes it (moderation sets removed_at)', () => {
+    expect(anchorIsDormant({ is_cancelled: false, removed_at: '2026-07-28T00:00:00Z' })).toBe(true)
   })
 })
