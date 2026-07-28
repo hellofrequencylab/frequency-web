@@ -205,3 +205,48 @@ describe('filterSharedByHomeSpace (EC3 leak gate: a share cannot out-live its ho
     expect(filterSharedByHomeSpace([e], new Set()).map((r) => r.id)).toEqual(['platform'])
   })
 })
+
+describe('space calendar membership (ADR-898): the drift guard', () => {
+  // The owner report behind ADR-898: a Space whose owner hosted every event personally rendered an
+  // EMPTY calendar, because tenancy (space_id) was the only membership rule. These assertions pin the
+  // widened membership in BOTH the store read and the .ics RPC migration, so neither side can silently
+  // narrow back to tenancy-only (the exact drift that shipped the bug) and the grid ⇄ feed lockstep
+  // holds without a live database.
+  const { readFileSync } = require('node:fs') as typeof import('node:fs')
+  const storeSrc = readFileSync('lib/events/store.ts', 'utf8')
+  const feedSql = readFileSync(
+    'supabase/migrations/20270122000000_space_calendar_hosted_events.sql',
+    'utf8',
+  )
+
+  it('the store read carries every membership axis: tenancy, hosting, owner-hosted, owner-cohosted, shares', () => {
+    expect(storeSrc).toContain(`host_space_id.eq.\${sid}`)
+    expect(storeSrc).toContain(`host_id.eq.\${ownerId}`)
+    expect(storeSrc).toContain(`spaceOwnerProfileId(admin, sid)`)
+    expect(storeSrc).toContain(`acceptedCohostEventIds(admin, ownerId)`)
+    expect(storeSrc).toContain(`acceptedShareEventIds(admin, sid)`)
+  })
+
+  it('the .ics RPC migration carries the SAME membership axes', () => {
+    expect(feedSql).toContain('e.host_space_id = t.id')
+    expect(feedSql).toContain('e.host_id = t.owner_profile_id')
+    expect(feedSql).toContain("c.status = 'accepted'")
+    expect(feedSql).toContain("sh.status = 'accepted'")
+  })
+
+  it('the visibility gate did NOT widen with the membership (the non-negotiable half)', () => {
+    // The RPC re-applies published + public/unlisted + non-cancelled in BOTH branches.
+    expect(feedSql.match(/e\.visibility in \('public', 'unlisted'\)/g)?.length).toBe(2)
+    expect(feedSql.match(/coalesce\(e\.status, 'published'\) = 'published'/g)?.length).toBe(2)
+    expect(feedSql.match(/e\.is_cancelled = false/g)?.length).toBe(2)
+    // The TARGET space is gated network + active in-function (the walling contract).
+    expect(feedSql).toContain("s.visibility = 'network'")
+    expect(feedSql).toContain("s.status = 'active'")
+  })
+
+  it('every value interpolated into an .or() filter is UUID-guarded', () => {
+    expect(storeSrc).toContain('UUID_RE.test(sid)')
+    expect(storeSrc).toContain('owner && UUID_RE.test(owner)')
+    expect(storeSrc).toContain('awayIds.filter((id) => UUID_RE.test(id))')
+  })
+})
