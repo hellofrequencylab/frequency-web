@@ -93,6 +93,19 @@ meets with two people this week and three next week is alive. The fizzle comes f
 canceling, not from a small turnout. See
 [why groups fizzle, and how to get the return](/help/leading/why-groups-fizzle).
 
+### Running your Circle day to day
+
+Open your Circle and hit **Manage**. That is your console: one dashboard for the
+whole Circle, in tabs. Home opens on your message center, where you can look up any
+member and reach them directly. Events shows everything your Circle has coming up,
+and **Add an event** brings one of your existing events into the Circle: it keeps
+its RSVPs and its page, it just belongs here now. The other tabs cover your roster
+and settings.
+
+The **Edit** button beside Manage is for the Circle itself: name, cover image
+(including where the photo sits when it gets cropped, and how tall the header
+stands), meeting details, and the rest.
+
 ### Can I hand my Circle to someone else?
 
 Yes. Open the Circle from the space that runs it and choose **Move**. You can move it

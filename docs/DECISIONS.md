@@ -15847,3 +15847,21 @@ The durable rule: **a security policy branch that no writer can satisfy is not "
 **Consequences.** The three drifts are fixed and the class is closed: a future hand-copied list, a picker that forks, or a hub/vocabulary mismatch fails CI with the file, line, and the fix named. 52 channel-action tests pass including the new skip semantics; the guard was negative-tested in all three rules (planted copy, removed import, phantom + missing hub key) before landing.
 
 The durable rule: **a closed vocabulary is only closed if a machine checks the doors — and on an autosaving surface, "invalid" means skip the field, because refusing the whole snapshot punishes the edit that was valid.**
+
+## ADR-890 — Circles reach console parity, and the diagnosis was the front door (2026-07-28)
+
+**Status.** Accepted. Migration `20270120000000` (circles.theme) applied to production.
+
+**Context.** The owner reported four Circle gaps in one message: no Manage button, no cover focus picker, the message center allegedly not the first Manage tab, and no way to attach an already-created Event. The third report was the interesting one: the hub already led with Home, defaulted every unknown section to it, and rendered the circle.crm master-detail there. Nothing about the order was wrong. **The console had no front door** — the Circle page carried only "Edit" (the admin rail), so the hub was unreachable except through a buried rail row, and a correct tab order nobody can reach reads as a wrong one. The fix for the reported symptom was the missing button, and the diagnosis is recorded so nobody "fixes" the order later.
+
+**Decision.**
+
+1. **The band carries the Channel idiom byte-for-byte**: Edit (admin rail) + Manage (the console), gated `circle.editSettings`. Tab order locked with tests: Home first, default landing, message center inside it.
+2. **Header controls are the ADR-886 pattern, third entity**: `circles.theme` (same bag, same keys), helpers total on junk, controls gated on the Circle's own authority — Hosts, not staff, because Circles have hosts and platform-curated Channels do not. The divergence decision was re-derived from evidence rather than copied: the Circle hero resolves through `resolveHeaderElement`, so an explicit `standard` height is STORED (the Channel rule), not dropped (the Event rule). Built inert-until-applied with the failure mode proven: a missing column read as `{}`, a write error surfaced as the inline alert.
+3. **Attaching an existing Event is the placement seam, from the Circle side.** The picker offers events the caller can EDIT (published, upcoming, not cancelled, not already tied by either shape), and every candidate is re-confirmed through `event.editSettings` so the offer and the gate are one rule (ADR-883 §3). The action re-checks both authorities (ADR-274), writes through `livePlacementPatch` — a test bans the hand-rolled column set — carries the circle's Space (ADR-857), records an approved placement audit row, and revalidates every surface the move touches, including the circle's Channel.
+
+**Alternatives considered.** *Reordering the hub tabs to "fix" the report*: rejected — the order was correct; moving it would have churned a working surface and left the real defect in place. *Staff-gating the header controls for symmetry with Channels*: rejected — symmetry of pattern, not of authority; the entity's own manager is the right gate. *A bespoke attach write*: rejected on ADR-883's record — a second write shape is how the last one became invisible.
+
+**Consequences.** 67 tests across the lane (tab order, both authorities refused independently, the patch routing ban, picker filter). Ledger reconciled 566 ⇄ 566. The help article gains a "Running your Circle day to day" section, because a front door that exists deserves a sentence telling people it exists.
+
+The durable rule: **when a user reports a wrong order, first check whether they could reach the surface at all — an unreachable correct design is indistinguishable from a wrong one.**
