@@ -8,9 +8,14 @@
 // /api/cron/event-occurrences runs daily to roll this forward.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createHash } from 'crypto'
 
 function sanitizeForLog(value: unknown): string {
   return String(value).replace(/[\r\n]+/g, '')
+}
+
+function logToken(value: unknown): string {
+  return createHash('sha256').update(String(value)).digest('hex').slice(0, 16)
 }
 
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly'
@@ -213,7 +218,7 @@ export async function propagateAnchorEditsToOccurrences(anchorId: string): Promi
   if (error) {
     console.error(
       '[propagateAnchorEditsToOccurrences]',
-      sanitizeForLog(anchorId),
+      `anchor=${logToken(anchorId)}`,
       sanitizeForLog(error.message),
     )
     return 0
