@@ -45,11 +45,16 @@ describe('deriveIsBusiness', () => {
   it('is false with neither', () => {
     expect(deriveIsBusiness({ ownedBusinessSpaces: 0, isSpaceAdmin: false })).toBe(false)
   })
-  it('BUSINESS_SPACE_TYPES excludes root + lab', () => {
+  it('BUSINESS_SPACE_TYPES is exactly the two public operator types (ADR-552 collapse)', () => {
+    // The DB CHECK on spaces.type permits only business | nonprofit | root. Both public operator
+    // types confer "operates a Space" standing (a nonprofit owner runs one too — the upgrade
+    // signal must not nudge them toward opening a business); root is the platform itself.
+    expect([...BUSINESS_SPACE_TYPES].sort()).toEqual(['business', 'nonprofit'])
     expect(BUSINESS_SPACE_TYPES).not.toContain('root')
-    expect(BUSINESS_SPACE_TYPES).not.toContain('lab')
-    expect(BUSINESS_SPACE_TYPES).toContain('business')
-    expect(BUSINESS_SPACE_TYPES).toContain('practitioner')
+    // The retired pre-collapse types live on only as mode_variant / KIND framing, never here.
+    for (const retired of ['practitioner', 'coaching', 'organization', 'partner', 'lab', 'event_space']) {
+      expect(BUSINESS_SPACE_TYPES).not.toContain(retired)
+    }
   })
 })
 

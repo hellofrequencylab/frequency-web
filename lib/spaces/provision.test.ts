@@ -201,3 +201,42 @@ describe('createSpace — happy path', () => {
     expect(row.brand_name).toBe('The Studio')
   })
 })
+
+describe('createSpace — directory KIND seed (ADR-887)', () => {
+  it('seeds preferences.profileData.kind from the chosen Focus (appointments -> practitioner)', async () => {
+    const out = await run({ ...VALID, modeVariant: 'appointments' })
+    expect(out.kind).toBe('redirect')
+    const row = store.inserts[0]!
+    expect(row.mode_variant).toBe('appointments')
+    expect(row.preferences).toEqual({ profileData: { kind: 'practitioner' } })
+  })
+
+  it('seeds coach for packages and studio for membership (the wizard correspondence)', async () => {
+    await run({ ...VALID, slug: 'coach-space', modeVariant: 'packages' })
+    await run({ ...VALID, slug: 'gym-space', modeVariant: 'membership' })
+    expect(store.inserts[0]!.preferences).toEqual({ profileData: { kind: 'coach' } })
+    expect(store.inserts[1]!.preferences).toEqual({ profileData: { kind: 'studio' } })
+  })
+
+  it('seeds nothing with no chosen Focus (the row stays bare, kind reads as the default)', async () => {
+    const out = await run(VALID)
+    expect(out.kind).toBe('redirect')
+    expect('preferences' in store.inserts[0]!).toBe(false)
+  })
+
+  it('seeds nothing for a nonprofit Focus (KIND is a Business-shape facet)', async () => {
+    const out = await run({ type: 'nonprofit', name: 'River Aid', slug: 'river-aid', modeVariant: 'donations' })
+    expect(out.kind).toBe('redirect')
+    const row = store.inserts[0]!
+    expect(row.mode_variant).toBe('donations')
+    expect('preferences' in row).toBe(false)
+  })
+
+  it('seeds nothing for a mismatched variant (a nonprofit Focus on a business type is stored null)', async () => {
+    const out = await run({ ...VALID, modeVariant: 'donations' })
+    expect(out.kind).toBe('redirect')
+    const row = store.inserts[0]!
+    expect(row.mode_variant).toBeNull()
+    expect('preferences' in row).toBe(false)
+  })
+})

@@ -27,7 +27,8 @@ import { isProvisionableType, DEFAULT_SPACE_SKIN } from '@/lib/spaces/profile-co
 import { addSpaceMember } from '@/lib/spaces/membership'
 import { isSpaceType, seedSpaceConfigFromDefaults } from '@/lib/spaces/functions'
 import { listTypeDefaultsForType } from '@/lib/spaces/type-defaults'
-import { resolveMode, isModeVariant } from '@/lib/spaces/modes'
+import { resolveMode, isModeVariant, kindForMode } from '@/lib/spaces/modes'
+import { withProfileData } from '@/lib/spaces/profile-data'
 import { ensureSpaceStages } from '@/lib/crm/pipeline'
 import { isSafeSlug } from '@/lib/theme/validate'
 import { slugify } from '@/lib/utils'
@@ -162,6 +163,14 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   const modeVariant =
     requested && isModeVariant(requested) && resolvedMode?.variant === requested ? requested : null
 
+  // Directory KIND seed (ADR-887): the "what do you run?" choice IS the member saying what shape of
+  // thing they are, so seed `preferences.profileData.kind` from the chosen Focus (kindForMode) and the
+  // new Space lands in the right directory bucket instead of reading "Business" by default. Written
+  // through withProfileData (the ONE profileData write seam) so the stored blob is the normalized
+  // shape every reader expects. Sparse by design: no chosen Focus (or a nonprofit one) seeds nothing,
+  // and existing rows are never backfilled — kind is the owner's data after provision.
+  const seededKind = isSpaceType(type) ? kindForMode(type, modeVariant) : null
+
   const entityId = await rootEntityId()
   if (!entityId) return fail('Spaces are not ready yet. Try again in a moment.')
 
@@ -198,6 +207,9 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
         owner_profile_id: profileId,
         brand_name: brandName,
         mode_variant: modeVariant,
+        // The ADR-887 KIND seed (see above); omitted entirely when there is nothing to seed so an
+        // unseeded Space keeps a bare row exactly as today.
+        ...(seededKind ? { preferences: withProfileData(null, { kind: seededKind }) } : {}),
       })
       .select('id')
       .maybeSingle()

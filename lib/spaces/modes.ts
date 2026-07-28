@@ -20,6 +20,7 @@
 
 import type { SpaceType } from './types'
 import type { SpaceFunctionKey } from './functions'
+import type { SpaceKind } from './categories'
 
 /** A Focus (sub-mode) id. Kept SMALL and meaningful per the plan §2a. The set is closed by the
  *  registry below; an unknown variant resolves to the type's default variant. */
@@ -463,6 +464,41 @@ const WIZARD_CHOICES: readonly { type: SpaceType; variant: ModeVariant; label: s
   { type: 'business', variant: 'ticketed', label: 'Event space', hint: 'Tickets and check in' },
   { type: 'nonprofit', variant: 'donations', label: 'Nonprofit', hint: 'Programs and donations' },
 ]
+
+// ── The directory KIND a Focus corresponds to (ADR-887 seed map) ───────────────────────────────────
+// The wizard's "what do you run?" choice IS the member telling us what shape of thing they are — the
+// same question the ADR-887 KIND facet answers — so provisioning seeds `profileData.kind` from it and
+// the new Space lands in the right directory bucket instead of the "Business" catch-all default. One
+// entry per registered BUSINESS Focus, derived from what the wizard/registry actually says:
+//   • packages / cohort carry modeLabel "Coach"            → kind 'coach'   (Guides / Coaches)
+//   • appointments / programs carry modeLabel "Practitioner" → kind 'practitioner'
+//   • membership is the wizard's "Studio or gym" choice     → kind 'studio'
+//   • ticketed carries modeLabel "Event space"              → kind 'venue'  (Event Space)
+//   • product is "Catalog and storefront"                   → kind 'maker'  (Shops)
+//   • service is the general default                        → kind 'business' (the catch-all)
+// NONPROFIT Focuses are deliberately absent: KIND is a Business-shape browse facet with no nonprofit
+// key, the public type chip already reads "Non Profit", and an unset kind resolves to the same
+// default — so we store nothing rather than a value the owner never chose (sparse-by-default, the
+// same rule the theme bag follows).
+const MODE_KIND: Readonly<Record<string, SpaceKind>> = {
+  'business:service': 'business',
+  'business:product': 'maker',
+  'business:packages': 'coach',
+  'business:cohort': 'coach',
+  'business:appointments': 'practitioner',
+  'business:programs': 'practitioner',
+  'business:ticketed': 'venue',
+  'business:membership': 'studio',
+}
+
+/** The directory KIND (ADR-887) a chosen `(type, mode_variant)` corresponds to, or null when there is
+ *  nothing to seed (no variant chosen, an unregistered variant, or a nonprofit Focus — see MODE_KIND).
+ *  PURE + total. Provisioning seeds `preferences.profileData.kind` from this; it NEVER rewrites an
+ *  existing Space's kind (owner data). */
+export function kindForMode(type: SpaceType | null | undefined, variant: string | null | undefined): SpaceKind | null {
+  if (!type || !variant) return null
+  return MODE_KIND[`${type}:${variant}`] ?? null
+}
 
 /** The create wizard's "what do you run?" choices, in plan §3a order. Only choices whose (type, variant)
  *  resolves to a registered Mode are returned (defensive: a renamed variant never shows a dead choice). */

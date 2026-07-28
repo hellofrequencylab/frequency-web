@@ -6,11 +6,13 @@ import {
   defaultVariantForType,
   modeHasFocusChoice,
   isModeVariant,
+  kindForMode,
   readModePreferences,
   effectiveNavEmphasis,
   effectiveLabel,
   type ModeProfile,
 } from './modes'
+import { isSpaceKind } from './categories'
 import type { SpaceType } from './types'
 
 // PURE Mode registry (ADR-461/464, Space Modes plan §2b). What is locked here, all network-free (the
@@ -167,6 +169,39 @@ describe('the ModeProfile defaults', () => {
   it('every (type, variant) key is unique', () => {
     const keys = all.map((m: ModeProfile) => `${m.type}:${m.variant}`)
     expect(new Set(keys).size).toBe(keys.length)
+  })
+})
+
+describe('kindForMode (the ADR-887 directory KIND a Focus seeds)', () => {
+  it('maps each business Focus to the KIND the wizard label promises', () => {
+    // The wizard's "what do you run?" labels are the correspondence: Coach → coach,
+    // Practitioner → practitioner, Studio or gym → studio, Event space → venue,
+    // Product business (catalog/storefront) → maker (Shops), Service business → the catch-all.
+    expect(kindForMode('business', 'packages')).toBe('coach')
+    expect(kindForMode('business', 'cohort')).toBe('coach')
+    expect(kindForMode('business', 'appointments')).toBe('practitioner')
+    expect(kindForMode('business', 'programs')).toBe('practitioner')
+    expect(kindForMode('business', 'membership')).toBe('studio')
+    expect(kindForMode('business', 'ticketed')).toBe('venue')
+    expect(kindForMode('business', 'product')).toBe('maker')
+    expect(kindForMode('business', 'service')).toBe('business')
+  })
+
+  it('seeds nothing for a nonprofit Focus, a null variant, or an unknown pair', () => {
+    // KIND is a Business-shape facet with no nonprofit key; unset already resolves to the default.
+    expect(kindForMode('nonprofit', 'donations')).toBeNull()
+    expect(kindForMode('nonprofit', 'programs')).toBeNull()
+    expect(kindForMode('business', null)).toBeNull()
+    expect(kindForMode(null, 'packages')).toBeNull()
+    expect(kindForMode('business', 'bogus')).toBeNull()
+  })
+
+  it('covers every registered BUSINESS Focus with a valid SpaceKind (a new Focus cannot silently miss the map)', () => {
+    for (const m of listModes().filter((p: ModeProfile) => p.type === 'business')) {
+      const kind = kindForMode(m.type, m.variant)
+      expect(kind, `business:${m.variant} must seed a directory kind`).not.toBeNull()
+      expect(isSpaceKind(kind)).toBe(true)
+    }
   })
 })
 

@@ -444,6 +444,15 @@ export async function updateCirclePermalink(
   revalidatePath(`/circles/${slug}`)
   revalidatePath(`/circles/${next}`)
   revalidatePath('/circles')
+  // A permalink rename MOVES the page, and the circle's link is embedded far beyond its own
+  // routes: the Channel page and Manage hub list it, a Space's surfaces can, the circles browse
+  // cards do. Revalidating only the circle's own paths left all of those serving cached HTML
+  // pointing at the DEAD slug, so clicking the circle from its Channel cycled 404 -> back ->
+  // same cached link, indefinitely (reported live on /circles/meld after a rename to
+  // meld-royal-temple). A rename is rare, so LAYOUT-wide revalidation of the two embedding
+  // sections is the right price for killing the whole class rather than chasing each surface.
+  revalidatePath('/channels', 'layout')
+  revalidatePath('/spaces', 'layout')
   return { slug: next }
 }
 

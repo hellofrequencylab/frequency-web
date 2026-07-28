@@ -13,6 +13,7 @@
 // Naming + voice: this module holds no member-facing copy, only logic + stable status keys.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { normalizeSpaceType } from '@/lib/spaces/types'
 import type { RelationshipKind } from './relationships'
 import { isAssignableKind } from './relationships'
 
@@ -49,16 +50,17 @@ export const UNCLASSIFIED: ContactClassification = {
 
 // ── Pure derivation (unit-tested) ───────────────────────────────────────────────
 
-/** The Space `type` values that count as running a business (drives the derived `business` kind).
- *  'root' is the platform itself and 'lab' is the Labs program (its own relationship kind), so
- *  neither confers business standing; every other operator Space type does. */
-export const BUSINESS_SPACE_TYPES: readonly string[] = [
-  'practitioner',
-  'business',
-  'organization',
-  'partner',
-  'coaching',
-]
+/** The Space `type` values that count as OPERATING a Space (drives the derived `business` kind).
+ *  After the ADR-552 type collapse `spaces.type` holds exactly `business | nonprofit | root`
+ *  (the human flavors — practitioner / coach / studio — moved to `mode_variant` + the ADR-887
+ *  KIND facet, which never touch this classifier). Both public operator types count: `isBusiness`
+ *  means "operates a Space", and a nonprofit owner runs one just as a business owner does — the
+ *  roster's business:yes facet is an operator facet, and the upgrade signal must NOT nudge a
+ *  member who already runs a nonprofit Space toward opening one. Only `root` (the platform
+ *  itself) confers nothing. Raw rows run through `normalizeSpaceType` before matching, so a
+ *  pre-collapse legacy value (`practitioner`, `organization`, ...) still folds to the type it
+ *  collapsed into. */
+export const BUSINESS_SPACE_TYPES: readonly string[] = ['business', 'nonprofit']
 
 /** How recently a contact must have been active to count as "active this week" (7 days, ms). */
 export const ACTIVE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
@@ -229,7 +231,9 @@ async function gatherProfileSignals(profileIds: string[]): Promise<Map<string, P
     if (sp.status === 'archived') continue
     const s = ensure(sp.owner_profile_id)
     s.spacesOwned += 1
-    if (sp.type && BUSINESS_SPACE_TYPES.includes(sp.type)) s.ownedBusinessSpaces += 1
+    // Normalize the raw stored type first (ADR-552 read rule): a legacy pre-collapse value folds
+    // to the type it collapsed into, so an unbackfilled row still classifies correctly.
+    if (sp.type && BUSINESS_SPACE_TYPES.includes(normalizeSpaceType(sp.type))) s.ownedBusinessSpaces += 1
   }
   for (const a of admins) ensure(a.profile_id).isSpaceAdmin = true
   for (const sc of scores) {
