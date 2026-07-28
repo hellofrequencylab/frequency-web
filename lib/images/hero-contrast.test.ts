@@ -156,31 +156,36 @@ describe('sRGB compositing (the colour-space correction, ADR-894)', () => {
     expect(compositeOverSrgb(0.42, 0.9, 1)).toBe(0.9)
   })
 
-  it('is roughly 4x darker than a linear-light blend for a cream plate on black', () => {
-    // THE bug this function exists to prevent. A linear model says 45% cream over a black tile
-    // lands at L 0.386 (about 8:1 for dark copy) and the plate ladder was drawn from that. The
-    // browser actually composites in gamma-encoded sRGB and renders L 0.148, i.e. 3.5:1 — a plate
-    // that was specified as comfortably legible and is not. Pin the real number.
+  it('is roughly 4x darker than a linear-light blend, the error that drew the old plate ladder', () => {
+    // Kept after the plate was removed, because the FUNCTION is still what models any future
+    // on-media treatment. A linear model says 45% cream over a black tile lands at L 0.386
+    // (about 8:1 for dark copy); the browser composites in gamma-encoded sRGB and renders
+    // L 0.148, i.e. 3.5:1. A ladder drawn from the linear number promises a legibility the
+    // paint never delivered. Pin the real ratio with a literal alpha, not HERO_PLATE_ALPHAS,
+    // which is now all zeroes.
     const linearModel = LIGHT_TEXT * 0.45 + BLACK * 0.55
-    const actual = compositeOverSrgb(BLACK, LIGHT_TEXT, HERO_PLATE_ALPHAS[2])
+    const actual = compositeOverSrgb(BLACK, LIGHT_TEXT, 0.45)
     expect(linearModel / actual).toBeGreaterThan(2.5)
     expect(contrastRatio(actual, DARK_TEXT)).toBeLessThan(MIN_HERO_CONTRAST)
-    // ...and the strong rung is what actually clears it.
-    expect(contrastRatio(compositeOverSrgb(BLACK, LIGHT_TEXT, HERO_PLATE_ALPHAS[3]), DARK_TEXT))
-      .toBeGreaterThan(MIN_HERO_CONTRAST)
   })
 
-  it('keeps the CSS and the model on the same alphas', () => {
-    // HERO_PLATE_ALPHAS and the --hero-plate-alpha declarations in globals.css are ONE contract:
-    // if they drift, the resolver promises a contrast the paint does not deliver.
+  it('🔴 paints NO plate rectangle anywhere: every rung is zero and the CSS agrees', () => {
+    // Owner ruling, 2026-07-28: "I do not want the dark boxes behind header content." The model
+    // and the paint are ONE contract, so this asserts BOTH halves — an alpha reintroduced on
+    // either side alone fails here.
+    expect(Object.values(HERO_PLATE_ALPHAS).every((a) => a === 0)).toBe(true)
     const css = readFileSync('app/globals.css', 'utf8')
-    expect(css).toContain(`--hero-plate-alpha: ${HERO_PLATE_ALPHAS[2] * 100}%`)
-    expect(css).toContain(`--hero-plate-alpha: ${HERO_PLATE_ALPHAS[3] * 100}%`)
-    // The composite must stay in plain srgb, because that is what the model assumes. srgb-linear
-    // would NOT change the browser's blend (mixing with transparent yields an alpha, and the alpha
-    // composite runs in the destination space) but it would suggest the model should change.
-    expect(css).toContain('color-mix(in srgb, var(--hero-text-backdrop) var(--hero-plate-alpha), transparent)')
-    expect(css).not.toContain('srgb-linear, var(--hero-text-backdrop)')
+    expect(css).not.toContain('--hero-plate-alpha:')
+    expect(css).not.toMatch(/data-media-plate="[23]"\]::before/)
+  })
+
+  it('🔴 the only on-media treatment is a shadow under LIGHT copy, never under dark', () => {
+    // The other half of the same ruling: "Leave black as is, but make a shadow for white."
+    const css = readFileSync('app/globals.css', 'utf8')
+    // Light copy (and the unmeasured server default) carries the halo...
+    expect(css).toContain('.hero-adaptive-text .hero-zone:not([data-media-tone="light"])')
+    // ...and dark copy explicitly carries none.
+    expect(css).toMatch(/hero-zone\[data-media-tone="light"\]\s*\{\s*text-shadow:\s*none/)
   })
 })
 
@@ -216,17 +221,16 @@ describe('resolveZoneTone — the four covers that decide this design', () => {
     expect(r?.contrast).toBeGreaterThan(MIN_HERO_CONTRAST)
   })
 
-  it('a 50/50 split takes the strong plate, because no tone can carry it alone', () => {
+  it('a 50/50 split still reports the top rung, and we accept it reads hard', () => {
+    // The rung is now a MEASUREMENT, not a promise of paint. On a truly bimodal cover no single
+    // tone clears the floor on both extremes, and since the owner ruled out the plate there is
+    // nothing that can rescue it. This test used to assert the strong plate delivered 4.5:1 on
+    // both; that assertion is deliberately gone, and the honest statement is recorded instead:
+    // rung 3 means "this cover is hard to read", and the answer is a better cover or a focal
+    // point that puts the lockup on a calm patch, not a box.
     const r = resolveZoneTone({ ...ZONE_BASE, tiles: tiles(BLACK, WHITE, TILE_COUNT / 2) })
     expect(r?.plate).toBe(3)
-    // Whichever tone wins the tie, the strong plate must actually clear the floor on BOTH
-    // extremes — that is the promise the rung makes.
-    const text = r?.tone === 'dark' ? LIGHT_TEXT : DARK_TEXT
-    const plate = r?.tone === 'dark' ? DARK_TEXT : LIGHT_TEXT
-    for (const tile of [BLACK, WHITE]) {
-      expect(contrastRatio(compositeOverSrgb(tile, plate, HERO_PLATE_ALPHAS[3]), text))
-        .toBeGreaterThanOrEqual(MIN_HERO_CONTRAST)
-    }
+    expect(HERO_PLATE_ALPHAS[3]).toBe(0)
   })
 })
 
@@ -306,7 +310,9 @@ describe('per-zone wiring (source-level drift guard)', () => {
     // Absent is the signal. A placeholder value would be a guess, and the light default guessed
     // wrong on a bright cover at about 1.13:1 — the failure this whole effort is about.
     expect(hero).toContain("'data-media-plate': measured ? String(measured.plate) : undefined")
-    expect(css).toContain('.hero-adaptive-text .hero-zone:not([data-media-plate])')
+    // The unmeasured zone gets the light-copy halo, because it has no tone attribute yet and the
+    // halo rule is keyed on NOT being dark copy. Same treatment the server renders.
+    expect(css).toContain('.hero-adaptive-text .hero-zone:not([data-media-tone="light"])')
   })
 
   it('tags the cover image so the sensor can never sample the avatar', () => {
@@ -326,12 +332,13 @@ describe('per-zone wiring (source-level drift guard)', () => {
     expect(sensor).not.toMatch(/observer\?\.observe\(zone/)
   })
 
-  it('keeps the plate BELOW the copy it sits behind', () => {
-    // z-index: -1 is load-bearing. .hero-zone is position: relative with z-index auto, so it
-    // establishes no stacking context and the pseudo-element paints inside PageHero's z-10
-    // content div, above the cover and below the name. Without it the wash lands on the name.
-    const plate = css.slice(css.indexOf('.hero-adaptive-text .hero-zone[data-media-plate="2"]::before'))
-    expect(plate.slice(0, 400)).toContain('z-index: -1')
+  it('🔴 no zone paints a background box of any kind', () => {
+    // Replaces the old z-index guard, which existed to keep the ink wash BELOW the name. There
+    // is no wash now (owner ruling), so the guard becomes: the pseudo-element and its vars are
+    // gone entirely, not merely layered correctly.
+    const zoneCss = css.slice(css.indexOf('.hero-adaptive-text .hero-zone'))
+    expect(zoneCss).not.toContain('--hero-plate-blur')
+    expect(zoneCss).not.toContain('backdrop-filter: blur(var(--hero-plate-blur))')
   })
 
   it('gives the on-cover controls a class that reads the ZONE token', () => {

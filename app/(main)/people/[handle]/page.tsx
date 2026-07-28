@@ -515,21 +515,6 @@ export default async function ProfilePage({
         {/* CONTENT (2/3) — practice, the relationship panels, composer, timeline.
             (Bio now reads with the identity band above the header rule.) */}
         <div className="order-2 min-w-0 space-y-6 xl:order-1 xl:col-span-2">
-          {/* Associations (ADR-895) — the answer to "why is this page here": what this member runs,
-              what you have in common, and (for the owner) their own full picture. Streams in its own
-              boundary so a six-read fan-out never blocks the hero's first byte; a null fallback,
-              because a section that may legitimately render nothing must not flash furniture. */}
-          <Suspense fallback={null}>
-            <ProfileAssociations
-              profileId={profileId}
-              handle={profile.handle as string}
-              firstName={firstName}
-              viewerProfileId={myProfileId}
-              isOwner={isOwner}
-              blocked={isBlocked}
-            />
-          </Suspense>
-
           {/* Your private contact card — only the viewer who merged their own personal
               contact with this member sees this (their own logged data). */}
           {myLinkedContact && <PrivateContactPanel card={myLinkedContact} memberName={firstName} />}
@@ -616,6 +601,23 @@ export default async function ProfilePage({
         {/* SIDEBAR (1/3) — tiled info: Standing, Frequency Signature, Achievements. Scrolls
             with the main content (no sticky) so the whole column reads as one page. */}
         <aside className="order-1 min-w-0 space-y-4 self-start xl:order-2 xl:col-span-1">
+          {/* Associations (ADR-895) — what this member runs, what you have in common, and (for the
+              owner) their own full picture. Owner ruling, 2026-07-28: this belongs in the RIGHT
+              column as a plain preview of their Spaces, Circles and Journeys, with no card
+              background, so it reads as a glance rather than another boxed panel in a column that
+              already has several. Streams in its own boundary so a six-read fan-out never blocks
+              the hero's first byte; a null fallback, because a section that may legitimately
+              render nothing must not flash furniture. */}
+          <Suspense fallback={null}>
+            <ProfileAssociations
+              profileId={profileId}
+              handle={profile.handle as string}
+              firstName={firstName}
+              viewerProfileId={myProfileId}
+              isOwner={isOwner}
+              blocked={isBlocked}
+            />
+          </Suspense>
           {/* Standing — Zaps · Gems · Streak · Rank, shown on every profile (the owner asked
               for everyone's stats to be public, not just paid-tier members). */}
           <ProfileStandingCard

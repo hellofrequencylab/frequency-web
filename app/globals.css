@@ -1474,8 +1474,6 @@ h1, h2, h3, h4, h5, h6 {
    Tokens only, no raw hex, no rgba. */
 .hero-adaptive-text .hero-zone {
   --hero-text-backdrop: var(--color-ink);
-  --hero-plate-alpha: 0%;
-  --hero-plate-blur: 0px;
   position: relative;
   border-radius: var(--radius-card);
 }
@@ -1487,56 +1485,34 @@ h1, h2, h3, h4, h5, h6 {
   --color-on-media: var(--color-on-media-dark);
   --hero-text-backdrop: var(--color-on-ink);
 }
-/* Rung 1 and the unmeasured baseline are the per-glyph halo, NOT a rectangle: it keeps a
-   clean photo clean, and it tracks the zone's own backdrop token so it stays the opposite
-   tone to the copy in front of it. */
-.hero-adaptive-text .hero-zone:not([data-media-plate]),
-.hero-adaptive-text .hero-zone[data-media-plate="1"] {
+/* THE ONLY ON-MEDIA TREATMENT: a per-glyph shadow under LIGHT copy. Owner ruling, 2026-07-28,
+   after seeing the plate ship: "I do not want the dark boxes behind header content. Can you add
+   a subtle shadow to any white fonts or buttons in content aware mode. Leave black as is, but
+   make a shadow for white."
+
+   So the rectangle is gone (see the note where the plate rungs used to be) and the halo is now
+   TONE-CONDITIONAL rather than universal:
+     • light copy (data-media-tone="dark", and the unmeasured server default) gets the shadow,
+       because white on a photo needs its own edge to sit on;
+     • dark copy (data-media-tone="light") gets NOTHING. Black on a bright backdrop already has
+       its edge, and a light halo behind black reads as a smudge, which is the "as is" the
+       ruling protects.
+   Deliberately per-glyph and not a box: it keeps a clean photo clean. */
+.hero-adaptive-text .hero-zone:not([data-media-tone="light"]) {
   text-shadow:
-    0 1px 2px color-mix(in srgb, var(--hero-text-backdrop) 55%, transparent),
-    0 2px 12px color-mix(in srgb, var(--hero-text-backdrop) 45%, transparent);
+    0 1px 2px color-mix(in srgb, var(--color-ink) 55%, transparent),
+    0 2px 12px color-mix(in srgb, var(--color-ink) 45%, transparent);
 }
-/* Rungs 2 and 3 add a local pad. These alphas ARE HERO_PLATE_ALPHAS in
-   lib/images/hero-contrast.ts — change one, change both, or the resolver promises a contrast
-   the paint does not deliver. A drift guard asserts they agree. */
-.hero-adaptive-text .hero-zone[data-media-plate="2"] {
-  --hero-plate-alpha: 45%;
-  --hero-plate-blur: 4px;
+/* Dark copy carries no halo, explicitly. */
+.hero-adaptive-text .hero-zone[data-media-tone="light"] {
+  text-shadow: none;
 }
-.hero-adaptive-text .hero-zone[data-media-plate="3"] {
-  --hero-plate-alpha: 70%;
-  --hero-plate-blur: 8px;
-}
-/* The plate. `z-index: -1` is LOAD-BEARING: `.hero-zone` is `position: relative; z-index:
-   auto`, so it establishes NO stacking context and the negative-z pseudo-element paints
-   inside PageHero's `z-10` content div — above the cover and the overlay, below this zone's
-   own text. Without it, painting order puts a positioned descendant above the in-flow content
-   of the same stacking context and the ink wash lands ON TOP of the name.
-   The gradient runs from the modelled alpha at the top to a touch more at the bottom, so the
-   pad softens into the photo where the copy is sparsest while the resolver's number stays the
-   FLOOR of what is painted, never an overstatement. */
-.hero-adaptive-text .hero-zone[data-media-plate="2"]::before,
-.hero-adaptive-text .hero-zone[data-media-plate="3"]::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  inset: -0.5rem -0.875rem;
-  border-radius: inherit;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--hero-text-backdrop) var(--hero-plate-alpha), transparent) 0%,
-    color-mix(in srgb, var(--hero-text-backdrop) calc(var(--hero-plate-alpha) + 12%), transparent) 100%
-  );
-  backdrop-filter: blur(var(--hero-plate-blur));
-  transition: background 200ms ease, backdrop-filter 200ms ease;
-}
-@media (prefers-reduced-motion: reduce) {
-  .hero-adaptive-text .hero-zone[data-media-plate="2"]::before,
-  .hero-adaptive-text .hero-zone[data-media-plate="3"]::before {
-    transition: none;
-  }
-}
+/* NO PLATE RECTANGLE. Rungs 2 and 3 used to paint an ink wash behind the lockup; the owner
+   rejected it on sight ("dark boxes behind header content"). The resolver still measures and
+   still stamps data-media-plate, because the MEASUREMENT is what picks the tone correctly on a
+   split cover, but nothing paints a box any more. HERO_PLATE_ALPHAS in
+   lib/images/hero-contrast.ts is all zeroes to match, and the drift guard asserts they agree,
+   so nobody can reintroduce a bar on one side of the contract alone. */
 
 /* The on-cover control for an ADAPTIVE hero (HERO_ACTION_CLASS_ADAPTIVE). Same glass as
    HERO_ACTION_CLASS, except every colour derives from the ZONE's `--color-on-media`, so a chip
