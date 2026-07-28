@@ -180,15 +180,57 @@ async function acceptedShareEventIds(admin: AdminClient, spaceId: string): Promi
   }
 }
 
+// Interpolated into PostgREST `.or()` filter strings below, so validate the shape even though both
+// values come from our own DB reads (the same sanitizer-by-construction rule as
+// lib/events/circle-upcoming.ts circleEventScopeFilter).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** The Space's owner profile id — the person whose hosted / cohosted events belong on the Space's
+ *  calendar (ADR-898). FAIL-SAFE: null on any error (the calendar falls back to tenancy + hosting
+ *  axis + shares; it never errors the page). */
+async function spaceOwnerProfileId(admin: AdminClient, spaceId: string): Promise<string | null> {
+  try {
+    const { data, error } = await admin
+      .from('spaces')
+      .select('owner_profile_id')
+      .eq('id', spaceId)
+      .maybeSingle()
+    if (error) return null
+    const owner = (data as { owner_profile_id: string | null } | null)?.owner_profile_id ?? null
+    return owner && UUID_RE.test(owner) ? owner : null
+  } catch {
+    return null
+  }
+}
+
+/** Event ids the profile is an ACCEPTED cohost of (ADR-898: the owner's cohosted events belong on
+ *  their Space's calendar). Pending/declined invites never count — same rule as isEventCohost.
+ *  FAIL-SAFE: [] on any error. */
+async function acceptedCohostEventIds(admin: AdminClient, profileId: string): Promise<string[]> {
+  try {
+    const { data, error } = await admin
+      .from('event_cohosts')
+      .select('event_id')
+      .eq('profile_id', profileId)
+      .eq('status', 'accepted')
+    if (error) return []
+    return [...new Set(((data ?? []) as Array<{ event_id: string }>).map((r) => r.event_id))]
+  } catch {
+    return []
+  }
+}
+
 /**
- * A space's events for its calendar tab (Events EC2) + events accepted-SHARED to it (EC3), from
- * `fromDay` (YYYY-MM-DD, inclusive) forward, soonest first, deduped by id. Same EVENT filters as the
- * EC1 subscribe feed (space_public_calendar_feed): only PUBLISHED, public/unlisted, non-cancelled
- * events — so the on-page grid and the subscribed .ics show the exact same event set, and neither leaks
- * a draft, private, or circle_only event, EVEN via a share. The shared branch re-applies the gate on
- * each event's OWN row (passesCalendarGate): an accepted share is necessary, never sufficient. Owned
- * events are filtered by space_id so space A never resolves space B's OWN events. FAIL-SAFE: [] on any
- * error / missing tenant. `space_id`/`visibility`/`event_space_shares` are all typed reads (ADR-246 closed).
+ * A space's events for its calendar tab (Events EC2), from `fromDay` (YYYY-MM-DD, inclusive) forward,
+ * soonest first, deduped by id. MEMBERSHIP (ADR-898): tenancy (space_id), the hosting axis
+ * (host_space_id), the OWNER's hosted events (host_id = owner_profile_id), the owner's ACCEPTED
+ * cohost invites, and events accepted-SHARED to the space (EC3) — because a Space whose owner hosts
+ * every event personally used to render an empty calendar. Same EVENT filters as the EC1 subscribe
+ * feed (space_public_calendar_feed, recreated in lockstep by 20270122000000): only PUBLISHED,
+ * public/unlisted, non-cancelled events — so the on-page grid and the subscribed .ics show the exact
+ * same set, and neither leaks a draft, private, or circle_only event, EVEN via membership. Every
+ * non-tenancy row re-applies the gate on its OWN columns (passesCalendarGate) AND its home space's
+ * walling: membership is necessary, never sufficient. FAIL-SAFE: [] on any error / missing tenant.
  */
 export async function listSpaceCalendarEvents(
   spaceId: string | null | undefined,
@@ -201,10 +243,21 @@ export async function listSpaceCalendarEvents(
   const fromDayIso = `${fromDay}T00:00:00Z`
   try {
     const admin = createAdminClient()
-    const shareIds = await acceptedShareEventIds(admin, sid)
+    // Membership (ADR-898): tenancy (space_id) + the hosting axis (host_space_id) + the OWNER's
+    // hosted and accepted-cohosted events + accepted shares. The owner report behind this: a
+    // coaching Space whose owner hosted every event personally rendered an EMPTY calendar, because
+    // tenancy was the only rule. Membership widens; the visibility gate below never does.
+    const [ownerId, shareIds] = await Promise.all([
+      spaceOwnerProfileId(admin, sid),
+      acceptedShareEventIds(admin, sid),
+    ])
+    const cohostIds = ownerId ? await acceptedCohostEventIds(admin, ownerId) : []
+    const awayIds = [...new Set([...shareIds, ...cohostIds])]
 
-    // Owned events (by space_id) and, if any, shared events (by id) — each gated on the event's OWN
-    // row. Two reads unioned in-app; the DB feed does the same UNION server-side.
+    // Owned events (tenancy — their home IS this space, which the page already resolved as
+    // visible), hosted/owner-hosted events (their home may be ANY space, so they run through the
+    // same home-space re-gate as shares), and share/cohost rows by id. Three reads unioned in-app;
+    // the DB feed (space_public_calendar_feed) does the same UNION server-side.
     const ownedQ = admin
       .from('events')
       .select(`${CALENDAR_COLS}, status, visibility`)
@@ -214,11 +267,27 @@ export async function listSpaceCalendarEvents(
       .gte('starts_at', fromDayIso)
       .order('starts_at', { ascending: true })
       .limit(limit)
-    const sharedQ = shareIds.length
+    // UUID-guarded values interpolated into the `.or()` filter (sid is validated by the callers'
+    // resolve path; re-check both here since this is the interpolation site).
+    const hostedFilter = UUID_RE.test(sid)
+      ? [`host_space_id.eq.${sid}`, ownerId ? `host_id.eq.${ownerId}` : null].filter(Boolean).join(',')
+      : null
+    const hostedQ = hostedFilter
       ? admin
           .from('events')
           .select(`${CALENDAR_COLS}, status, visibility, space_id`)
-          .in('id', shareIds)
+          .or(hostedFilter)
+          .eq('status', 'published')
+          .in('visibility', ['public', 'unlisted'])
+          .gte('starts_at', fromDayIso)
+          .order('starts_at', { ascending: true })
+          .limit(limit)
+      : Promise.resolve({ data: [], error: null })
+    const sharedQ = awayIds.length
+      ? admin
+          .from('events')
+          .select(`${CALENDAR_COLS}, status, visibility, space_id`)
+          .in('id', awayIds)
           .eq('status', 'published')
           .in('visibility', ['public', 'unlisted'])
           .gte('starts_at', fromDayIso)
@@ -226,24 +295,27 @@ export async function listSpaceCalendarEvents(
           .limit(limit)
       : Promise.resolve({ data: [], error: null })
 
-    const [owned, shared] = await Promise.all([ownedQ, sharedQ])
+    const [owned, hosted, shared] = await Promise.all([ownedQ, hostedQ, sharedQ])
     if (owned.error) return []
 
-    // Re-gate the HOME space of each shared event (network + active, platform events excepted) before the
-    // merge — a share is necessary, never sufficient, and it can't out-live its home space's walling.
-    const sharedRows: SharedCalendarEventRow[] = shared.error
-      ? []
-      : ((shared.data as SharedCalendarEventRow[] | null) ?? [])
+    // Re-gate the HOME space of every non-tenancy row (network + active; platform events and rows
+    // whose home IS this space excepted) before the merge — hosting, cohosting, and shares are all
+    // necessary-never-sufficient, and none may out-live its home space's walling.
+    const awayRows: SharedCalendarEventRow[] = [
+      ...(hosted.error ? [] : ((hosted.data as SharedCalendarEventRow[] | null) ?? [])),
+      ...(shared.error ? [] : ((shared.data as SharedCalendarEventRow[] | null) ?? [])),
+    ]
     const allowedHomes = await networkActiveHomeSpaceIds(
       admin,
-      sharedRows.map((e) => e.space_id).filter((id): id is string => !!id),
+      awayRows.map((e) => e.space_id).filter((id): id is string => !!id && id !== sid),
     )
-    const gatedShared = filterSharedByHomeSpace(sharedRows, allowedHomes)
+    allowedHomes.add(sid) // rows homed HERE were already gated by the page's own space resolve
+    const gatedAway = filterSharedByHomeSpace(awayRows, allowedHomes)
 
-    // UNION own + shared, re-gate each row (shared events MUST pass on their OWN row), dedupe, sort.
+    // UNION own + hosted + shared, re-gate each row on its OWN columns, dedupe, sort.
     return mergeSpaceCalendarRows(
       (owned.data as SpaceCalendarEventRow[] | null) ?? [],
-      gatedShared,
+      gatedAway,
       fromDayIso,
       limit,
     )
@@ -277,26 +349,47 @@ export async function spaceHasPublicUpcomingEvents(spaceId: string | null | unde
       .limit(1)
     if (!error && Array.isArray(owned) && owned.length > 0) return true
 
-    // No own upcoming event — does an accepted SHARE surface one? Gate on the event's OWN row AND its
-    // HOME space (network + active, platform events excepted), so a suspended/hidden home space's event
-    // doesn't keep the tab alive. Fetch candidates (not limit(1)) since the first row's home may be walled.
-    const shareIds = await acceptedShareEventIds(admin, sid)
-    if (shareIds.length === 0) return false
-    const { data: shared, error: sErr } = await admin
+    // No tenancy-owned upcoming event — does the widened membership (ADR-898: hosting axis, the
+    // owner's hosted/cohosted events, accepted shares) surface one? SAME rule as
+    // listSpaceCalendarEvents, so the tab can never hide over a non-empty grid or appear over an
+    // empty one. Gate on the event's OWN row AND its HOME space (network + active; platform events
+    // and rows homed here excepted). Fetch candidates (not limit(1)) since a candidate's home may
+    // be walled.
+    const [ownerId, shareIds] = await Promise.all([
+      spaceOwnerProfileId(admin, sid),
+      acceptedShareEventIds(admin, sid),
+    ])
+    const cohostIds = ownerId ? await acceptedCohostEventIds(admin, ownerId) : []
+    const awayIds = [...new Set([...shareIds, ...cohostIds])]
+
+    // Every value below is interpolated into the `.or()` filter string, so each is UUID-guarded
+    // (ownerId already is, via spaceOwnerProfileId).
+    const safeAwayIds = awayIds.filter((id) => UUID_RE.test(id))
+    const membershipFilter = UUID_RE.test(sid)
+      ? [
+          `host_space_id.eq.${sid}`,
+          ownerId ? `host_id.eq.${ownerId}` : null,
+          safeAwayIds.length ? `id.in.(${safeAwayIds.join(',')})` : null,
+        ].filter(Boolean).join(',')
+      : null
+    if (!membershipFilter) return false
+
+    const { data: candidates, error: cErr } = await admin
       .from('events')
       .select('id, space_id')
-      .in('id', shareIds)
+      .or(membershipFilter)
       .eq('status', 'published')
       .eq('is_cancelled', false)
       .in('visibility', ['public', 'unlisted'])
       .gte('starts_at', fromDayIso)
-    if (sErr || !Array.isArray(shared) || shared.length === 0) return false
-    const sharedCandidates = shared as Array<{ id: string; space_id?: string | null }>
+    if (cErr || !Array.isArray(candidates) || candidates.length === 0) return false
+    const rows = candidates as Array<{ id: string; space_id?: string | null }>
     const allowedHomes = await networkActiveHomeSpaceIds(
       admin,
-      sharedCandidates.map((e) => e.space_id).filter((id): id is string => !!id),
+      rows.map((e) => e.space_id).filter((id): id is string => !!id && id !== sid),
     )
-    return sharedCandidates.some((e) => e.space_id == null || allowedHomes.has(e.space_id))
+    allowedHomes.add(sid)
+    return rows.some((e) => e.space_id == null || allowedHomes.has(e.space_id))
   } catch {
     return false
   }

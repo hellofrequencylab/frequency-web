@@ -89,6 +89,13 @@ export interface BuilderRailData {
   matchId: string | null
   rows: RowDef[]
   hidden: string[]
+  /** Per-block authored content + style (ADR-528). OPTIONAL for older callers, but any caller whose layout
+   *  can carry authored content MUST supply them: the shared store's FIRST seed wins, and a rows-only seed
+   *  from this builder blanked every authored block on the Space edit canvas whenever the rail mounted
+   *  before the live grid (owner report, 2026-07-28 — the published page kept the content while edit mode
+   *  showed the empty-state scaffolding). The email studio's LayoutSeeder solved the same race the same way. */
+  content?: Record<string, Record<string, unknown>>
+  style?: Record<string, BlockStyle>
   customized: boolean
   lockedIds?: string[]
   /** The edit-panel PICKER payload per function-backed block (ADR-573 item 5): the Space's live items + the
@@ -188,7 +195,9 @@ export function EntityPageBuilder({
       setLockedIds(d?.lockedIds ?? [])
       setPickerData(d?.pickerData ?? {})
       setCustomized(!!d?.customized)
-      if (d && store?.kind === kind) store.seed(d.rows, d.hidden)
+      // Seed content + style WITH the rows: the first seed wins, so a rows-only seed here would blank
+      // every authored block on the edit canvas when this builder mounts before the live preview.
+      if (d && store?.kind === kind) store.seed(d.rows, d.hidden, d.content, d.style)
       setLoading(false)
     }
     if (seed !== undefined) {
@@ -1043,7 +1052,15 @@ export function ProfilePageBuilder({ pageHandle }: { pageHandle: string }) {
   const load = useCallback(async (): Promise<BuilderRailData | null> => {
     const d = await getMemberLayoutRailData()
     return d
-      ? { matchId: d.handle, rows: d.rows, hidden: d.hidden, customized: d.customized, lockedIds: [...MEMBER_CHROME_BLOCK_IDS] }
+      ? {
+          matchId: d.handle,
+          rows: d.rows,
+          hidden: d.hidden,
+          content: d.content,
+          style: d.style,
+          customized: d.customized,
+          lockedIds: [...MEMBER_CHROME_BLOCK_IDS],
+        }
       : null
   }, [])
   return <EntityPageBuilder pageId={pageHandle} kind="member" loadRailData={load} />
@@ -1066,6 +1083,8 @@ export function SpacePageBuilder({
           matchId: d.slug,
           rows: d.rows,
           hidden: d.hidden,
+          content: d.content,
+          style: d.style,
           customized: d.customized,
           lockedIds: d.lockedIds,
           pickerData: d.pickerData,

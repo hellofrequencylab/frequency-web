@@ -26,7 +26,7 @@
 | **Blast radius** | 1 new pure module + 4 new server modules, 23 browse read edges, 1 additive migration (2 `SECURITY DEFINER` RPCs recreated), 1 new layout module, 1 admin console section, ~40 changed files. No schema change to `events`. No data migration. |
 | **Defaults** | `cardsPerSeries: 1` · `railDates: 5` · `indexedOccurrences: 2`. Zero configuration is correct: the settings row is never seeded and every failure path lands on those three numbers. |
 | **Kill switch** | One `UPDATE` on `platform_settings.events_series_display` → `{"cardsPerSeries":60,"railDates":5,"indexedOccurrences":10}`. `MAX_CARDS_PER_SERIES = 60` is set deliberately so this is a **true** off switch (60 is the materialisation horizon's bound). Browse reverts on the next request; crawl within an hour (`revalidate = 3600`). |
-| **ADR** | ADR-893 (verified: `docs/DECISIONS.md` tops out at ADR-892). |
+| **ADR** | ADR-897 (verified: `docs/DECISIONS.md` tops out at ADR-892). |
 | **Migration version** | `20270121000000` (verified free: latest applied is `20270120000000_circles_theme.sql`). |
 
 ---
@@ -457,7 +457,7 @@ const { cardsPerSeries } = await getSeriesDisplayConfig()
 card needs `hiddenCount` and `collapseSeriesRows` throws it away.
 
 ```ts
-// Collapse repeating series (ADR-893). AFTER the facet filter and BEFORE the sort, deliberately.
+// Collapse repeating series (ADR-897). AFTER the facet filter and BEFORE the sort, deliberately.
 // The Date facet already narrowed the rows to the chosen window, so the earliest row still standing
 // here IS the occurrence inside that window: "This weekend" elects Saturday's date, and no window has
 // to be threaded into the fold. The same ordering makes the elected row the one whose RSVP count and
@@ -578,7 +578,7 @@ Two further citations in the draft are wrong and are corrected here:
 New file `supabase/migrations/20270121000000_public_events_recurrence.sql`:
 
 ```sql
--- ADR-893. Both RPCs gain recurrence_type / recurrence_until / parent_event_id so the browse fold can
+-- ADR-897. Both RPCs gain recurrence_type / recurrence_until / parent_event_id so the browse fold can
 -- run on their rows. DROP first: the OUT columns change and CREATE OR REPLACE cannot change a
 -- function's return type (42P13). Grants are dropped with the function and MUST be re-issued below.
 -- Every WHERE clause, JOIN, ORDER and the price three-state are copied VERBATIM from the source
@@ -609,7 +609,7 @@ is a security change in disguise.
 
 **Docs.** This migration changes a documented API, so update `docs/DATABASE.md`'s `public_events` and
 `public_organizer_events` entries with the three new columns, the new `_limit` parameter and the raised
-cap, cross-referencing ADR-893. The draft claimed "DATABASE.md: nothing"; that was wrong.
+cap, cross-referencing ADR-897. The draft claimed "DATABASE.md: nothing"; that was wrong.
 
 ### 5.8 Discover, hubs, organizer
 
@@ -968,7 +968,7 @@ Notes an implementer must not "improve" away:
 | `import 'server-only'` | The create form is a client component. This turns an accidental client import into a build error instead of a leaked service-role path. `vitest.config.ts:16-26` stubs `server-only` |
 | Defaults **imported** from `lib/events/series.ts` | Copying the literals creates the exact two-source drift the repo keeps failing on |
 | `saveSeriesDisplayConfig` returns the **stored** value | An operator who types `99` sees `60` and learns the range instead of believing the 99 |
-| No audit ledger | `platform_flag_events` is boolean-only. Matches `vera_autonomy`. Note the gap in ADR-893; do not build a parallel ledger |
+| No audit ledger | `platform_flag_events` is boolean-only. Matches `vera_autonomy`. Note the gap in ADR-897; do not build a parallel ledger |
 
 ### 7.3 Consumer wiring (this is where the draft failed, so it is spelled out)
 
@@ -1133,9 +1133,9 @@ silently.
 
 | Audience | Home | What |
 |---|---|---|
-| Engineers | git | **ADR-893** in `docs/DECISIONS.md`; `EVENTS-CALENDAR.md` §3 (EC4) + §4; `EVENTS-SYSTEM.md` §2 Reuse-vs-Build row + Implementation log; **`DATABASE.md`** `public_events` / `public_organizer_events` entries (the draft wrongly said "nothing"); `NAMING.md` |
+| Engineers | git | **ADR-897** in `docs/DECISIONS.md`; `EVENTS-CALENDAR.md` §3 (EC4) + §4; `EVENTS-SYSTEM.md` §2 Reuse-vs-Build row + Implementation log; **`DATABASE.md`** `public_events` / `public_organizer_events` entries (the draft wrongly said "nothing"); `NAMING.md` |
 | Members | `content/help/` + `CHANGELOG.md` | `content/help/groups/events.md` bullet + one `## [Unreleased]` line. ⚠️ `check:canon` scans this path: no em dashes, no GFM tables |
-| Operators / hosts | Notion training DB | **One new page.** Searched `collection://96c71490-1114-4c73-9547-88b5140126ed`: there is no Events subject page today. Title `Events: repeating events (series and dates)`, Source of truth `docs/EVENTS-CALENDAR.md §3 + §4, docs/DECISIONS.md ADR-893`. No code, no changelog, no schema |
+| Operators / hosts | Notion training DB | **One new page.** Searched `collection://96c71490-1114-4c73-9547-88b5140126ed`: there is no Events subject page today. Title `Events: repeating events (series and dates)`, Source of truth `docs/EVENTS-CALENDAR.md §3 + §4, docs/DECISIONS.md ADR-897`. No code, no changelog, no schema |
 | `DEVELOPMENT-MAP.md` | git | Only if Events EC4 is tracked as a build item. Check first |
 
 **🔴 The NAMING row is a blocking gate.** `docs/NAMING.md` contains **zero** occurrences of "series" or
@@ -1238,7 +1238,7 @@ top to bottom. **Risk:** 🟢 low · 🟡 medium · 🔴 high.
 
 | # | Step | Risk | Verify |
 |---|---|---|---|
-| 46 | `docs/DECISIONS.md` ADR-893 (Status / Context / Decision / Consequences, house format) | 🟢 | review |
+| 46 | `docs/DECISIONS.md` ADR-897 (Status / Context / Decision / Consequences, house format) | 🟢 | review |
 | 47 | `docs/EVENTS-CALENDAR.md` §3 EC4 bullet + §4 three key decisions; `docs/EVENTS-SYSTEM.md` §2 row + Implementation log entry | 🟢 | `pnpm help:drift` |
 | 48 | `docs/NAMING.md` row (as ruled at step 12); `content/help/groups/events.md` bullet; `CHANGELOG.md` `## [Unreleased]` line | 🟢 | `pnpm check:canon` |
 | 49 | Notion page `Events: repeating events (series and dates)`, Type `Roles & Admin`, Source of truth pointing at `docs/EVENTS-CALENDAR.md` | 🟢 | page created with all three required properties |
@@ -1337,7 +1337,7 @@ time: it only adds dates that are missing and never duplicates one.
 
 ⚠️ Two things this runbook deliberately does not offer, because the product does not do them yet: there
 is no way to cancel every remaining date of a series in one action, and there is no per-event override of
-these numbers. Both are named as follow-ups in ADR-893.
+these numbers. Both are named as follow-ups in ADR-897.
 
 ### 9.7 Host directions: what a host is told, and where
 
@@ -1485,7 +1485,7 @@ the next two days, **and one 45 days out**, so the horizon-truncation case (§2.
 | R1 | E2 ships before E1: every occurrence's interest score silently goes to zero, no error, no log | 🟡 | 🔴 | Ordering enforced in the checklist (35 → deploy → Q13 → 40); `matching.test.ts` pins the fan-out; the ADR states the order | 35, 40 |
 | R2 | The sitemap advertises more occurrences than the pages leave indexable | 🟡 | 🟡 | One config field feeds both readers; the repo-wide "exactly one home" walk | 34, 38 |
 | R3 | A browse read folds rows whose SELECT lacks `parent_event_id` or `id`: no error, no fold, looks wired | 🔴 | 🟡 | The drift guard; columns + fold in the same commit; the falsy-id pass-through (case 26) | 24 |
-| R4 | Someone canonicalises occurrences to the series page | 🟡 | 🔴 | A test asserts `canonical: '/events/${slug}'`; rejected explicitly in ADR-893 | 36 |
+| R4 | Someone canonicalises occurrences to the series page | 🟡 | 🔴 | A test asserts `canonical: '/events/${slug}'`; rejected explicitly in ADR-897 | 36 |
 | R5 | `eventSchedule` is not honoured or triggers a Rich Results warning | 🟡 | 🟡 | Step 50 is gated on Q14 and is a sibling pure function; `eventSchema` untouched | 50 |
 | R6 | The series home publishes a past `startDate` | 🔴 today | 🟡 | `startDate` from the next live occurrence row | 39 |
 | R7 | The series home is noindexed a week after it starts (D1) | 🔴 today | 🔴 | `suppressPastNoindex`. This is the inversion the effort exists to fix | 36 |
@@ -1503,7 +1503,7 @@ the next two days, **and one 45 days out**, so the horizon-truncation case (§2.
 | R19 | `public_events`' missing visibility gate stays broken on the six discover callers | 🔴 | 🟡 | ⚠️ **Out of scope.** The crawl path is fixed by reading through `series-seo.ts`. Follow-up named; do not widen a `SECURITY DEFINER` `WHERE` inside a display change | follow-up |
 | R20 | Roughly nine operator dashboards keep counting occurrence rows and overstate by ~60x | 🔴 | 🟢 | A row fold cannot fix a head count. Named in the ADR consequences and in §5.9 | follow-up |
 | R21 | A long-running series stops being re-embedded once its anchor ages out | 🔴 | 🟢 | The existing vector survives, so scoring is unaffected; only a post-rename refresh is lost | 40 |
-| R22 | Someone moves the series page to `/events/<slug>/dates` | 🟢 | 🔴 | `isAnonPublicEvent` 307s any sub-route to `/` for a signed-out crawler; `lib/nav/public-detail-routes.test.ts` fails; ADR decision 5 forbids it | ADR-893 |
+| R22 | Someone moves the series page to `/events/<slug>/dates` | 🟢 | 🔴 | `isAnonPublicEvent` 307s any sub-route to `/` for a signed-out crawler; `lib/nav/public-detail-routes.test.ts` fails; ADR decision 5 forbids it | ADR-897 |
 | R23 | New member-facing copy uses "series" before the canon row is ruled | 🟡 | 🟡 | Step 12 is a blocking gate on every string in §9.7. ADR-892 exists because two vocabularies shipped at once | 12 |
 | R24 | An em dash or off-canon noun in a new in-app string | 🟡 | 🟡 | 🔴 **No CI gate reads in-app strings** (`check:canon` covers `content/**/*.md` only). The §10 review of §9.7 is the whole defence | review |
 | R25 | Migration version `20270121000000` collides with a parallel branch | 🟢 | 🟡 | `check:migrations` fails loudly. Bump by `+000100` | 23 |
