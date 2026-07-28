@@ -15812,3 +15812,19 @@ The taxonomy also collided with the voice canon. The original proposal cut "Spir
 **Consequences.** The closed-set drift guard moved from seven keys to fifteen with the reasoning in the test body. The blast-radius audit's findings stand alongside: the icon map's null prototype and the validated create write shipped tonight; the remaining hardcoded category lists (practice-builder's six-item copy missing `activism`, the demo engine's slug-keyed flavour map) and the missing `check:vocab` CI guard are known debt, deliberately not blocking this. The seven founding Channels still share names with their categories; renaming Channels and growing specific topics under each door is content work the taxonomy now leaves room for.
 
 The durable rule: **a vocabulary is owned by the question it answers, not by the entity that asked first — and when a canon rule fights the owner's product judgement, amend the canon in writing rather than quietly breaking it.**
+
+## ADR-888 — The circle_only region branch tests the value writers actually write (2026-07-28)
+
+**Status.** Accepted. Migration `20270119000000`, applied to production.
+
+**Context.** Both the `events: status + visibility-aware read` policy and `private.can_read_event()` granted crew a `circle_only` event through two disjuncts: a circle-scope membership test, or `scope_type = 'region' AND scope_id = get_my_region_id()`. **No writer has ever emitted `scope_type = 'region'`** — a region-scoped event is written as `scope_type = 'public'` with the region uuid as its scope, stated outright in the H1-1 migration and confirmed against production (zero rows, ever). So the second disjunct was dead code in a security policy, and its effect inverted its intent: a `circle_only` event on a region scope matched neither branch and vanished for everyone but its host and poster. That mechanism is how ADR-884's sixteen default-drifted occurrences disappeared entirely rather than merely narrowing to a smaller audience.
+
+**Decision.** One word in each place: the region branch now tests `scope_type = 'public'`, the value those events actually carry. Semantics restored to what the policy always claimed: `circle_only` + circle scope → that Circle's members; `circle_only` + region scope → crew of that region. `ALTER POLICY ... USING` rewrites in place with no drop window; the function keeps SECURITY DEFINER and its pinned search_path.
+
+**Blast radius, measured before applying.** Exactly one live row was `circle_only` on a public scope — a past, finished occurrence deliberately left unrepaired as the record of what happened. Zero upcoming rows. No event became less visible; one past event became visible to the crew of its region, which is what its own visibility setting always claimed.
+
+**Alternatives considered.** *Deleting the region branch outright*: rejected — the branch expresses a real product rule (region-wide crew events) that the writers support today; it was the tested VALUE that was wrong, not the rule. *Adding `'region'` as a writable scope_type instead*: rejected — it would mean teaching every reader, every RLS branch and the typed-arc trigger a new vocabulary value to rescue a policy typo.
+
+**Consequences.** The `updateEvent` visibility coercion gap (ADR-884, in flight in a parallel lane tonight) becomes survivable rather than silent: an event that lands in `circle_only` on a region scope is now readable by its region's crew instead of nobody. Ledger reconciled at 565 ⇄ 565.
+
+The durable rule: **a security policy branch that no writer can satisfy is not "extra safety," it is a hole shaped like the feature it was meant to grant — test policies against the values writers emit, not the values the author imagined.**
