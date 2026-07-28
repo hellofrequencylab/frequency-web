@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   anchorIsDormant,
+  propagationPatch,
   computeOccurrenceDates,
   expandOccurrenceInstants,
   occurrenceRow,
@@ -246,5 +249,108 @@ describe('anchorIsDormant — a cancelled or removed series stops materialising'
 
   it('is true once staff removes it (moderation sets removed_at)', () => {
     expect(anchorIsDormant({ is_cancelled: false, removed_at: '2026-07-28T00:00:00Z' })).toBe(true)
+  })
+})
+
+// ── THE BACKFILL SCRIPT SHARES THIS FILE'S COLUMN LIST ────────────────────────────────────────
+//
+// scripts/adr-884-backfill-recurrence-drift.sql repairs the occurrences that were minted from
+// column DEFAULTS before INHERITED_COLUMNS existed. Its SET list was GENERATED from the constant
+// below rather than retyped, and this test is what keeps that true.
+//
+// The failure it prevents is specific and quiet: someone adds a column to INHERITED_COLUMNS so new
+// occurrences inherit it, the repair script is not updated, and every already-materialized
+// occurrence keeps a defaulted value for that column forever, because the generator uses
+// ignoreDuplicates and will never overwrite an existing row. That is the ORIGINAL bug, re-entering
+// through the repair rather than the write.
+describe('the repair script and the generator agree on what an occurrence inherits', () => {
+  const root = join(__dirname, '..')
+  const source = readFileSync(join(root, 'lib/event-recurrence.ts'), 'utf8')
+  const script = readFileSync(join(root, 'scripts/adr-884-backfill-recurrence-drift.sql'), 'utf8')
+
+  /** The constant's columns, read from the source so the test cannot drift from the runtime value. */
+  const declared = [
+    ...(source.match(/const INHERITED_COLUMNS = \[([\s\S]*?)\] as const/)?.[1] ?? '')
+      .matchAll(/^\s*'([a-z_]+)',/gm),
+  ].map((m) => m[1])
+
+  /** The script's `col = a.col` assignments, which is the whole of what it repairs. */
+  const repaired = [...script.matchAll(/^\s{2}([a-z_]+) = a\.\1/gm)].map((m) => m[1])
+
+  it('parses a non-trivial list from both sides (so a regex that silently matches nothing fails)', () => {
+    expect(declared.length).toBeGreaterThan(30)
+    expect(repaired.length).toBeGreaterThan(30)
+  })
+
+  it('repairs exactly the columns a new occurrence inherits, no more and no fewer', () => {
+    expect([...repaired].sort()).toEqual([...declared].sort())
+  })
+
+  it('never rewrites an occurrence\'s own identity', () => {
+    for (const own of ['starts_at', 'ends_at', 'slug', 'parent_event_id', 'id']) {
+      expect(repaired).not.toContain(own)
+    }
+  })
+
+  it('repairs only upcoming occurrences, leaving past ones as the record of what happened', () => {
+    expect(script).toContain('c.starts_at >= now()')
+  })
+})
+
+// ── PROPAGATION: AN ANCHOR EDIT REACHES THE OCCURRENCES THAT ALREADY EXIST ─────────────────────
+//
+// generateOccurrencesForAnchor only MINTS missing occurrences (ignoreDuplicates), so before this
+// existed an edit changed the anchor and left every materialised child holding whatever it was
+// born with. propagationPatch is the other half, and it shares INHERITED_COLUMNS with occurrenceRow
+// precisely so "same as the anchor" cannot come to mean two different things.
+describe('propagationPatch', () => {
+  const anchor = {
+    id: 'anchor-1',
+    slug: 'meld-community-cowork',
+    starts_at: '2026-08-01T17:00:00.000Z',
+    ends_at: '2026-08-01T19:00:00.000Z',
+    recurrence_type: 'weekly',
+    recurrence_until: '2026-12-01T00:00:00.000Z',
+    is_cancelled: false,
+    removed_at: null,
+    title: 'Meld - Community Cowork',
+    price_cents: 2200,
+    visibility: 'public',
+    capacity: 22,
+    geog: '0101000020E6100000',
+  } as unknown as Parameters<typeof propagationPatch>[0]
+
+  it('carries the columns a fresh occurrence would have inherited', () => {
+    const patch = propagationPatch(anchor)
+    expect(patch.title).toBe('Meld - Community Cowork')
+    expect(patch.price_cents).toBe(2200)
+    expect(patch.visibility).toBe('public')
+    expect(patch.capacity).toBe(22)
+  })
+
+  it('never rewrites an occurrence\'s own identity', () => {
+    const patch = propagationPatch(anchor)
+    for (const own of ['starts_at', 'ends_at', 'slug', 'parent_event_id', 'id']) {
+      expect(patch).not.toHaveProperty(own)
+    }
+  })
+
+  it('never makes an occurrence itself recur (a DB CHECK forbids it)', () => {
+    const patch = propagationPatch(anchor)
+    expect(patch).not.toHaveProperty('recurrence_type')
+    expect(patch).not.toHaveProperty('recurrence_until')
+  })
+
+  it('agrees with occurrenceRow on every inherited column', () => {
+    const patch = propagationPatch(anchor)
+    const row = occurrenceRow(anchor, new Date('2026-08-08T17:00:00.000Z'), 7_200_000)
+    for (const key of Object.keys(patch)) {
+      expect(row[key], key).toEqual(patch[key])
+    }
+  })
+
+  it('drops a non-string geog, exactly as occurrenceRow does', () => {
+    const withObjectGeog = { ...anchor, geog: { type: 'Point', coordinates: [0, 0] } } as typeof anchor
+    expect(propagationPatch(withObjectGeog)).not.toHaveProperty('geog')
   })
 })

@@ -12,7 +12,7 @@ import { awardGems } from '@/lib/gems'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { markVerifiedByAttendance } from '@/lib/verification/attendance'
-import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
+import { propagateAnchorEditsToOccurrences, generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 import { validateRecurrenceUntil } from '@/lib/events/recurrence'
 import { resolveRegionScopeId } from '@/lib/events/event-drafts'
 import { listSpaceEventCreatorIds, journeyLinkPatch } from '@/lib/events/placement'
@@ -553,6 +553,22 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   if (isAnchor && recurrenceTypeEdit !== 'none') {
     generateOccurrencesForAnchor(eventId).catch((e) =>
       console.error('[updateEvent] occurrence generation:', e),
+    )
+  }
+
+  // PROPAGATE the edit onto occurrences that already exist (ADR-884). generateOccurrencesForAnchor
+  // above only MINTS missing occurrences and dedupes with ignoreDuplicates, so on its own an edit
+  // changed the anchor and left every materialised child holding whatever it was born with. That
+  // was visible in production as an anchor titled "Meld - Community Cowork" whose seven children
+  // still read "MELD - A Community Cowork".
+  //
+  // Runs for ANY anchor, not just a still-recurring one: turning a series off must not strand the
+  // occurrences it already made. Upcoming rows only (a past occurrence is a record of what
+  // happened), and best-effort, because the anchor is already saved and a propagation failure must
+  // not report the save as failed.
+  if (isAnchor) {
+    propagateAnchorEditsToOccurrences(eventId).catch((e) =>
+      console.error('[updateEvent] occurrence propagation:', e),
     )
   }
 

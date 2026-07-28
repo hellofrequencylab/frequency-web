@@ -149,6 +149,70 @@ export function occurrenceRow(
   return row
 }
 
+/**
+ * PURE. The patch that brings an existing occurrence back in line with its anchor.
+ *
+ * The same INHERITED_COLUMNS list that builds a NEW occurrence, minus the occurrence's own
+ * identity, which `occurrenceRow` sets and this must never touch: `starts_at`, `ends_at`, `slug`
+ * and `parent_event_id` are what make one occurrence different from another, and `recurrence_type`
+ * / `recurrence_until` are anchor-only (a DB CHECK forbids a materialised occurrence from
+ * recurring). Sharing the list is the point: an anchor edit propagates exactly what a fresh
+ * occurrence would have inherited, so the two paths cannot disagree about what "same as the
+ * anchor" means.
+ */
+export function propagationPatch(anchor: Anchor): Record<string, unknown> {
+  const patch: Record<string, unknown> = {}
+  for (const col of INHERITED_COLUMNS) {
+    const value = anchor[col]
+    if (value === undefined) continue
+    // Same geog caveat as occurrenceRow: only the round-trippable EWKB-hex form travels.
+    if (col === 'geog' && value !== null && typeof value !== 'string') continue
+    patch[col] = value
+  }
+  return patch
+}
+
+/**
+ * Push an anchor's current details onto its UPCOMING occurrences.
+ *
+ * Editing a series used to change the anchor alone, so its already-materialised occurrences kept
+ * whatever they were minted with. That was visible in production as an anchor titled
+ * "Meld - Community Cowork" whose seven children still read "MELD - A Community Cowork", and it is
+ * also how a repaired series would silently re-drift the next time anyone edited it.
+ *
+ * PAST occurrences are left alone on purpose. A past occurrence is the record of an event that
+ * already happened; rewriting its price, capacity or venue after the fact would be inventing
+ * history rather than correcting it.
+ *
+ * Best-effort by contract: the caller has already saved the anchor, and a failure here must not
+ * fail that save. Returns the number of rows brought back in line, or 0.
+ */
+export async function propagateAnchorEditsToOccurrences(anchorId: string): Promise<number> {
+  const admin = createAdminClient()
+
+  const { data: anchorRow, error: anchorErr } = await admin
+    .from('events')
+    .select(ANCHOR_SELECT)
+    .eq('id', anchorId)
+    .is('parent_event_id', null)
+    .maybeSingle()
+  if (anchorErr || !anchorRow) return 0
+
+  const anchor = anchorRow as unknown as Anchor
+  const { data, error } = await admin
+    .from('events')
+    .update(propagationPatch(anchor) as never)
+    .eq('parent_event_id', anchorId)
+    .gte('starts_at', new Date().toISOString())
+    .select('id')
+  // supabase-js RESOLVES with { data, error } on a DB failure rather than throwing, so read it.
+  if (error) {
+    console.error('[propagateAnchorEditsToOccurrences]', anchorId, error.message)
+    return 0
+  }
+  return (data ?? []).length
+}
+
 /** True when an anchor must NOT keep spawning occurrences: cancelled, or moderator-removed.
  *  Without this, cancelling a weekly series stopped nothing — the daily cron kept rolling the
  *  horizon forward and minting fresh, NON-cancelled occurrences of a series the host had ended
