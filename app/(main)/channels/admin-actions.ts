@@ -177,6 +177,88 @@ export async function updateChannelSlug(
   return { slug: next }
 }
 
+/**
+ * The FULL-FORM save behind the dedicated Channel editor (/channels/<slug>/edit, ADR-882).
+ *
+ * Where updateChannelSettings patches only what a drawer happened to submit, this writes the WHOLE
+ * record in one commit, because the editor always renders every field: a blanked description means
+ * "no description", not "not submitted". The URL is part of the same save (the editor has one Save
+ * button, so a rename must not need a second click), which is why this returns the resulting slug
+ * instead of throwing: the caller has to move the page to it. Failures come back as a sentence for
+ * the operator, never a thrown 500.
+ *
+ * Staff (admin+) only, re-checked here (ADR-274) since the admin client bypasses RLS.
+ */
+export async function saveChannelEdits(
+  id: string,
+  currentSlug: string,
+  fd: FormData,
+): Promise<{ slug: string } | { error: string }> {
+  if (!(await isChannelManager())) return { error: 'Unauthorized' }
+
+  const text = (k: string) => ((fd.get(k) as string) ?? '').trim()
+
+  const name = text('name')
+  if (!name) return { error: 'Name is required.' }
+
+  // The URL: slugify whatever was typed, fall back to the name when the field was emptied, and
+  // refuse a collision in words rather than letting the unique index throw.
+  const nextSlug = slugify(text('slug') || name)
+  if (!nextSlug) return { error: 'The URL cannot be empty.' }
+
+  const admin = createAdminClient()
+  if (nextSlug !== currentSlug) {
+    const { data: clash } = await admin
+      .from('topical_channels')
+      .select('id')
+      .eq('slug', nextSlug)
+      .neq('id', id)
+      .maybeSingle()
+    if (clash) return { error: 'Another Channel already uses that URL. Try a different one.' }
+  }
+
+  const order = Number.parseInt(text('display_order'), 10)
+
+  const patch: Record<string, unknown> = {
+    name,
+    slug: nextSlug,
+    description: text('description') || null,
+    category: text('category') || 'general',
+    pillar_id: text('pillar_id') || null,
+    display_order: Number.isFinite(order) ? order : 0,
+    is_active: fd.get('is_active') === 'on',
+  }
+
+  const { error } = await (admin as unknown as UntypedUpdate)
+    .from('topical_channels')
+    .update(patch)
+    .eq('id', id)
+  if (error) return { error: error.message }
+
+  // Revalidate BOTH handles: a rename leaves a cached page on the abandoned URL otherwise.
+  revalidateChannel(id, currentSlug, nextSlug)
+  return { slug: nextSlug }
+}
+
+/**
+ * Delete a Channel outright. Staff (admin+) only.
+ *
+ * What goes with it is decided by the schema, not by this action: memberships and the room/taxonomy
+ * rows cascade, while `circles.topical_channel_id` is ON DELETE SET NULL, so every Circle that
+ * practiced here SURVIVES and simply stops belonging to a Channel. That is the whole reason the
+ * editor still offers Archive as the softer option, and why the copy says so before the click.
+ */
+export async function deleteChannel(id: string, slug: string): Promise<{ error?: string }> {
+  if (!(await isChannelManager())) return { error: 'Unauthorized' }
+
+  const admin = createAdminClient()
+  const { error } = await admin.from('topical_channels').delete().eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidateChannel(id, slug)
+  return {}
+}
+
 /** Set the channel's cover image from a Loom pick. The URL must be a Loom public image URL, so a
  *  caller cannot smuggle an arbitrary address into a rendered `src`. Staff (admin+) only. */
 export async function setChannelCoverUrl(

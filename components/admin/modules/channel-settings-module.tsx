@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { ArrowRight, Users, Circle as CircleIcon, Radio } from 'lucide-react'
+import { ArrowRight, Users, Circle as CircleIcon, Radio, Pencil } from 'lucide-react'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
 import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
@@ -211,11 +211,13 @@ export function ChannelSettingsModule() {
         {slugErr && <span className="text-xs font-medium text-danger">{slugErr}</span>}
       </div>
 
-      {/* The rest of the Channel lives in the Manage hub (ADR-870/871). Link out, never rebuild. */}
+      {/* The rest of the Channel lives in the Manage hub (ADR-870/871) and the full editor
+          (ADR-882). Link out, never rebuild. */}
       <div className="space-y-1.5">
         <span className={fieldLabel}>The rest of this Channel</span>
         <div className="space-y-1.5">
           {[
+            { href: `/channels/${data.slug}/edit`, label: 'Full editor (URL, archive, delete)', Icon: Pencil },
             { href: `${manage}?section=members`, label: 'Members', Icon: Users },
             { href: `${manage}?section=circles`, label: 'Circles', Icon: CircleIcon },
             { href: `${manage}?section=program`, label: 'Program and owner Space', Icon: Radio },
@@ -233,8 +235,8 @@ export function ChannelSettingsModule() {
           ))}
         </div>
         <p className="text-2xs text-muted">
-          Who is tuned in, which Circles practice here, and the Chapter blueprint are edited in the
-          Channel console.
+          The full editor holds every field on one page with a single Save. Who is tuned in, which
+          Circles practice here, and the Chapter blueprint are run from the Channel console.
         </p>
       </div>
     </div>

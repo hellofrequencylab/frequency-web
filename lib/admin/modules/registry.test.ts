@@ -211,8 +211,9 @@ describe('admin module registry', () => {
     // and the ADR-846 thin Layout/Builder rows folded into their Settings box as a single link out.
     // channel.manage joins the link-out family (ADR-870): the Channel Manage hub is a full owner
     // console, so its row deep-links rather than inlining, exactly like the folded Layout/Builder rows.
+    // channel.edit joins it for the same reason (ADR-882): a full-page editor is never inlined.
     const coreEntity = ADMIN_MODULES.filter((m) => !m.scopes.includes('global'))
-    const linkOut = new Set(['hub.layout', 'nexus.layout', 'journey.builder', 'channel.manage'])
+    const linkOut = new Set(['hub.layout', 'nexus.layout', 'journey.builder', 'channel.manage', 'channel.edit'])
     expect(coreEntity.every((m) => m.placement !== 'bank')).toBe(true)
     expect(coreEntity.filter((m) => m.render === 'link').map((m) => m.id).sort()).toEqual(
       [...coreEntity.filter((m) => m.id.endsWith('.crm')).map((m) => m.id), ...linkOut].sort(),
@@ -266,12 +267,14 @@ describe('admin module registry', () => {
       'practice.settings',
       'practice.insights',
     ])
-    // Channel carries its Basics settings, the ADR-515 Phase 5 Insights readout, and the ADR-870
-    // Manage-hub deep link (order 12, declared after insights so declaration order and the `order`
-    // sort agree), all staff-gated (channel.manage).
+    // Channel carries its Basics settings, the ADR-515 Phase 5 Insights readout, the ADR-882 full
+    // editor deep link (order 11), and the ADR-870 Manage-hub deep link (order 12) — each declared
+    // after insights so declaration order and the `order` sort agree, all staff-gated
+    // (channel.manage).
     expect(modulesForScopeKind('channel', 'sidebar').map((m) => m.id)).toEqual([
       'channel.settings',
       'channel.insights',
+      'channel.edit',
       'channel.manage',
     ])
     // Journey carries its ADR-515 Phase 6 rail: Settings, Builder/Layout, Export, Danger, in `order`.

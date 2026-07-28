@@ -14,7 +14,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Users, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard, LayoutGrid, MessageCircle } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Users, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard, LayoutGrid, MessageCircle, Pencil } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -530,6 +530,25 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   // Settings box) and the crm rows (a full dashboard is never inlined). Resolves via
   // hrefForEntitySurface('channel.manage'). Gated channel.manage (staff); the hub page and every one
   // of its actions re-gate server-side (ADR-274).
+  // The full Channel EDITOR deep link (ADR-882). The inline channel.settings module above is the
+  // quick-tweak surface (autosave, in the drawer); this row is the deliberate one — every field on
+  // one page with a single Save, the URL, and the archive/delete controls. A `link` row for the same
+  // reason journey.builder is one: a full-page editor is never inlined into the rail. Resolves via
+  // hrefForEntitySurface('channel.edit'); gated channel.manage, and the page re-gates (ADR-274).
+  {
+    id: 'channel.edit',
+    label: 'Edit Channel',
+    desc: 'The full editor: cover, name, URL, description, category, Pillar, order, visibility, delete.',
+    Icon: Pencil,
+    scopes: ['channel'],
+    requiredCapability: 'channel.manage',
+    slot: 'basics',
+    surface: 'sidebar',
+    render: 'link',
+    order: 11,
+    tier: 'primary',
+    priority: 14,
+  },
   {
     id: 'channel.manage',
     label: 'Manage Channel',

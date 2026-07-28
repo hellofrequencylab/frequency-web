@@ -131,8 +131,10 @@ export default async function ManageChannelPage({
       width="default"
       actions={
         <Button asChild variant="secondary" size="sm">
-          <Link href={`/channels/${channel.slug}/manage?section=settings`}>
-            <Pencil className="h-3.5 w-3.5" aria-hidden /> Edit settings
+          {/* Straight into the full editor (ADR-882), not the Settings tab: this is the button an
+              operator reaches for when they came here to CHANGE something. */}
+          <Link href={`/channels/${channel.slug}/edit`}>
+            <Pencil className="h-3.5 w-3.5" aria-hidden /> Edit Channel
           </Link>
         </Button>
       }
@@ -201,6 +203,20 @@ export default async function ManageChannelPage({
               parallel form (MENU-CONTRACT): it reads the channel from the live path and self-gates
               (getChannelAdminData returns null for non-staff); autosaves in place. */}
           <SectionHeader title="Channel settings" />
+          {/* The full editor is the deliberate surface (ADR-882): one Save, the URL, and the
+              destructive controls. It is offered FIRST so the tab is a route to it, not a
+              dead end for anyone who wants more than a quick tweak. */}
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
+            <p className="text-sm text-muted">
+              Editing more than one thing? The full editor has every field, the URL, and the archive
+              and delete controls.
+            </p>
+            <Button asChild size="sm">
+              <Link href={`/channels/${channel.slug}/edit`}>
+                <Pencil className="h-3.5 w-3.5" aria-hidden /> Open the full editor
+              </Link>
+            </Button>
+          </div>
           <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
             <ChannelSettingsModule />
           </div>

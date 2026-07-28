@@ -11,16 +11,27 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 //   4. The slug is slugified, an empty result is refused, a collision comes back as a SENTENCE (not a
 //      throw), and a successful rename revalidates BOTH the old and the new path.
 
-const { getCallerProfile, isStaff, revalidatePath, getPillars, updateSpy, maybeSingle, updateError } =
-  vi.hoisted(() => ({
-    getCallerProfile: vi.fn(),
-    isStaff: vi.fn(),
-    revalidatePath: vi.fn(),
-    getPillars: vi.fn(),
-    updateSpy: vi.fn(),
-    maybeSingle: vi.fn(),
-    updateError: vi.fn(),
-  }))
+const {
+  getCallerProfile,
+  isStaff,
+  revalidatePath,
+  getPillars,
+  updateSpy,
+  maybeSingle,
+  updateError,
+  deleteSpy,
+  deleteError,
+} = vi.hoisted(() => ({
+  getCallerProfile: vi.fn(),
+  isStaff: vi.fn(),
+  revalidatePath: vi.fn(),
+  getPillars: vi.fn(),
+  updateSpy: vi.fn(),
+  maybeSingle: vi.fn(),
+  updateError: vi.fn(),
+  deleteSpy: vi.fn(),
+  deleteError: vi.fn(),
+}))
 
 vi.mock('next/cache', () => ({ revalidatePath }))
 vi.mock('@/lib/auth', () => ({ getCallerProfile }))
@@ -43,6 +54,12 @@ vi.mock('@/lib/supabase/admin', () => ({
           return { error: updateError() }
         },
       }),
+      delete: () => ({
+        eq: async (col: string, val: string) => {
+          deleteSpy({ table, col, val })
+          return { error: deleteError() }
+        },
+      }),
     }),
   }),
 }))
@@ -53,6 +70,8 @@ import {
   updateChannelSlug,
   setChannelCoverUrl,
   removeChannelCover,
+  saveChannelEdits,
+  deleteChannel,
 } from './admin-actions'
 
 const CHANNEL = '11111111-1111-4111-8111-111111111111'
@@ -79,6 +98,7 @@ beforeEach(() => {
   getPillars.mockResolvedValue([{ id: PILLAR, slug: 'mind', name: 'Mind', description: null, accent: null, order: 1 }])
   maybeSingle.mockResolvedValue({ data: null })
   updateError.mockReturnValue(null)
+  deleteError.mockReturnValue(null)
 })
 
 // ── 1. AUTHZ ──────────────────────────────────────────────────────────────────
@@ -98,8 +118,12 @@ describe('authz: staff only, re-checked in every action', () => {
       expect(await updateChannelSlug(CHANNEL, 'meld', 'new-meld')).toEqual({ error: 'Unauthorized' })
       expect(await setChannelCoverUrl(CHANNEL, 'meld', LOOM_URL)).toEqual({ error: 'Unauthorized' })
       await expect(removeChannelCover(CHANNEL, 'meld')).rejects.toThrow('Unauthorized')
+      // The full editor's two actions gate on the SAME staff check (ADR-882).
+      expect(await saveChannelEdits(CHANNEL, 'meld', form({ name: 'Meld' }))).toEqual({ error: 'Unauthorized' })
+      expect(await deleteChannel(CHANNEL, 'meld')).toEqual({ error: 'Unauthorized' })
 
       expect(updateSpy).not.toHaveBeenCalled()
+      expect(deleteSpy).not.toHaveBeenCalled()
       expect(revalidatePath).not.toHaveBeenCalled()
     })
   }
@@ -241,5 +265,129 @@ describe('updateChannelSlug', () => {
     expect(paths).toContain('/channels/meld-space')
     expect(paths).toContain(`/channels/${CHANNEL}`)
     expect(paths).toContain('/channels')
+  })
+})
+
+// ── 5. THE FULL EDITOR (ADR-882) ──────────────────────────────────────────────
+//
+// saveChannelEdits is the OPPOSITE contract to updateChannelSettings, and that difference is the
+// whole point of these tests. The drawer patches only what it submitted (a form that omits a field
+// must never blank it); the editor always renders every field, so a blanked textarea genuinely means
+// "no description" and the save writes the WHOLE record, URL included, in one commit.
+
+describe('saveChannelEdits writes the whole record in one commit', () => {
+  const full = () =>
+    form({
+      name: 'Meld Community Cowork',
+      slug: 'meld-community-cowork',
+      description: 'This is the hub for all Meld Outposts',
+      category: 'creative',
+      pillar_id: PILLAR,
+      display_order: '3',
+      is_active: 'on',
+    })
+
+  it('writes every field, not just the changed ones', async () => {
+    const res = await saveChannelEdits(CHANNEL, 'meld-community-cowork', full())
+    expect(res).toEqual({ slug: 'meld-community-cowork' })
+    expect(patch()).toEqual({
+      name: 'Meld Community Cowork',
+      slug: 'meld-community-cowork',
+      description: 'This is the hub for all Meld Outposts',
+      category: 'creative',
+      pillar_id: PILLAR,
+      display_order: 3,
+      is_active: true,
+    })
+  })
+
+  it('a cleared description is written as null, not skipped', async () => {
+    const fd = full()
+    fd.set('description', '   ')
+    await saveChannelEdits(CHANNEL, 'meld-community-cowork', fd)
+    expect(patch().description).toBeNull()
+  })
+
+  it('"No Pillar" clears the Pillar, and Archived clears is_active', async () => {
+    const fd = full()
+    fd.set('pillar_id', '')
+    fd.set('is_active', 'off')
+    await saveChannelEdits(CHANNEL, 'meld-community-cowork', fd)
+    expect(patch()).toMatchObject({ pillar_id: null, is_active: false })
+  })
+
+  it('a non-numeric display order falls back to 0 rather than writing NaN', async () => {
+    const fd = full()
+    fd.set('display_order', 'first')
+    await saveChannelEdits(CHANNEL, 'meld-community-cowork', fd)
+    expect(patch().display_order).toBe(0)
+  })
+
+  it('slugifies the URL and renames in the SAME save, revalidating both paths', async () => {
+    const fd = full()
+    fd.set('slug', 'Meld Cowork!!')
+    const res = await saveChannelEdits(CHANNEL, 'meld-community-cowork', fd)
+    expect(res).toEqual({ slug: 'meld-cowork' })
+    expect(patch().slug).toBe('meld-cowork')
+    const paths = revalidatePath.mock.calls.map((c) => c[0])
+    expect(paths).toContain('/channels/meld-community-cowork')
+    expect(paths).toContain('/channels/meld-cowork')
+  })
+
+  it('falls back to the name when the URL field was emptied, so a save can never strand the page', async () => {
+    const fd = full()
+    fd.set('slug', '')
+    const res = await saveChannelEdits(CHANNEL, 'meld-community-cowork', fd)
+    expect(res).toEqual({ slug: 'meld-community-cowork' })
+  })
+
+  it('refuses a blank name in words, writing nothing', async () => {
+    const fd = full()
+    fd.set('name', '  ')
+    expect(await saveChannelEdits(CHANNEL, 'meld', fd)).toEqual({ error: 'Name is required.' })
+    expect(updateSpy).not.toHaveBeenCalled()
+  })
+
+  it('refuses a URL another Channel already holds, in words, writing nothing', async () => {
+    maybeSingle.mockResolvedValue({ data: { id: 'other-channel' } })
+    const fd = full()
+    fd.set('slug', 'movement')
+    expect(await saveChannelEdits(CHANNEL, 'meld', fd)).toEqual({
+      error: 'Another Channel already uses that URL. Try a different one.',
+    })
+    expect(updateSpy).not.toHaveBeenCalled()
+    expect(revalidatePath).not.toHaveBeenCalled()
+  })
+
+  it('does not run the collision check when the URL did not change (a Channel never clashes with itself)', async () => {
+    maybeSingle.mockResolvedValue({ data: { id: CHANNEL } })
+    const res = await saveChannelEdits(CHANNEL, 'meld-community-cowork', full())
+    expect(res).toEqual({ slug: 'meld-community-cowork' })
+    expect(updateSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns a write failure as a sentence rather than throwing a 500 at the operator', async () => {
+    updateError.mockReturnValue({ message: 'permission denied for table topical_channels' })
+    const res = await saveChannelEdits(CHANNEL, 'meld-community-cowork', full())
+    expect(res).toEqual({ error: 'permission denied for table topical_channels' })
+    expect(revalidatePath).not.toHaveBeenCalled()
+  })
+})
+
+describe('deleteChannel', () => {
+  it('deletes the row by id and revalidates the Channel and the directory', async () => {
+    expect(await deleteChannel(CHANNEL, 'meld')).toEqual({})
+    expect(deleteSpy).toHaveBeenCalledWith({ table: 'topical_channels', col: 'id', val: CHANNEL })
+    const paths = revalidatePath.mock.calls.map((c) => c[0])
+    expect(paths).toContain('/channels/meld')
+    expect(paths).toContain('/channels')
+  })
+
+  it('surfaces a failed delete as a sentence and does not revalidate as if it worked', async () => {
+    deleteError.mockReturnValue({ message: 'update or delete violates foreign key constraint' })
+    expect(await deleteChannel(CHANNEL, 'meld')).toEqual({
+      error: 'update or delete violates foreign key constraint',
+    })
+    expect(revalidatePath).not.toHaveBeenCalled()
   })
 })
