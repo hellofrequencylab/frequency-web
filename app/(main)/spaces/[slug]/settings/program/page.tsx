@@ -20,6 +20,8 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
+import { UpsellTease } from '@/components/upsell/upsell-tease'
+import { resolveSpaceTeaseGate } from '@/lib/pricing/tease-gate'
 import { listCirclesForSpace } from '@/lib/circles/store'
 import { listSpacePrograms, listChapters } from '@/lib/channels/programs'
 import {
@@ -86,6 +88,13 @@ export default async function SpaceProgramPage({
   )
   const errorMsg = error ? ERROR_COPY[error] : null
 
+  // BETA FOUNDER PUSH (ADR-875) / Phase E tease (ADR-466). Running a Program is Collective depth. While
+  // the beta grace window is open this Space HAS it without paying, so the resolver hands back the warm
+  // notice ("You are using Collective tools", when memberships start, and the founder invite) rather
+  // than any claim of a lock. Once the gates bite it becomes the ordinary tease. A Space that already
+  // pays, by Stripe or by cash, and a Founding Business are resolved out inside the resolver.
+  const programTease = staffViewing ? null : await resolveSpaceTeaseGate(space, 'program')
+
   return (
     <FocusTemplate
       eyebrow={brandName}
@@ -98,6 +107,18 @@ export default async function SpaceProgramPage({
       back={{ href: `/spaces/${slug}/manage`, label: 'Manage' }}
     >
       <div className="space-y-6">
+        {programTease && (
+          <UpsellTease
+            target="space-program"
+            live={programTease.live}
+            locked={programTease.locked}
+            notice={programTease.notice}
+            href={`/spaces/${slug}/settings/billing`}
+            title="Keep running your model as a Program"
+            body="Collective carries Programs, Chapters, and the Channel your Space owns, plus automation, team roles, and multiple pipelines."
+            cta="See what Collective adds"
+          />
+        )}
         {errorMsg && (
           <p className="rounded-lg border border-danger/30 bg-danger-bg px-3 py-2 text-sm text-danger">
             {errorMsg}

@@ -90,6 +90,7 @@ export function ProfileQrCard({
           target="qr-studio"
           live={studioTease.live}
           locked={studioTease.locked}
+          notice={studioTease.notice}
           href="/upgrade"
           title="Make more codes in QR Studio"
           body="Crew unlocks QR Studio: design several codes, point them anywhere, and see how many scans each one gets."

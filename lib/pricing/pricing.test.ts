@@ -30,6 +30,7 @@ import {
 } from './gates'
 import { PRICING_DEFAULTS } from './settings'
 import { formatCents, priceRow, memberTierRows, spacePlanRows } from './display'
+import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
 
 describe('space tiers (Community Collective ladder · ADR-811)', () => {
   it('SPACE_PLANS is free < business < collective ~ nonprofit ~ independent (capability order)', () => {
@@ -283,12 +284,35 @@ describe('seeded defaults are sane (mirror the migration)', () => {
   })
 
   it('plan defaults reflect the Community Collective launch numbers (ADR-811)', () => {
+    // The ANCHOR IDIOM (ADR-463): monthly_cents is what is CHARGED, list_cents is the crossed-out
+    // anchor above it. Business and Collective ship a beta rate; Non Profit and Independent do not.
     const plan = PRICING_DEFAULTS.plan
-    expect(plan.business.monthly_cents).toBe(2900) // $29 flat
-    expect(plan.business.annual_cents).toBe(29000) // $290
-    expect(plan.collective.monthly_cents).toBe(7900) // $79 list (beta $49 founding)
-    expect(plan.nonprofit.monthly_cents).toBe(3900) // $39 flat, verified 501c3
-    expect(plan.independent.monthly_cents).toBe(24900) // ~$249 white-label (standalone)
+    expect(plan.business.monthly_cents).toBe(1900) // $19 beta, charged
+    expect(plan.business.annual_cents).toBe(19000) // $190
+    expect(plan.business.list_cents).toBe(2900) // $29 list, the struck anchor
+    expect(plan.collective.monthly_cents).toBe(4900) // $49 beta, charged
+    expect(plan.collective.list_cents).toBe(7900) // $79 list
+    expect(plan.nonprofit.monthly_cents).toBe(3900) // $39 flat, verified 501c3, no beta rate
+    expect(plan.nonprofit.list_cents).toBeUndefined()
+    expect(plan.independent.monthly_cents).toBe(24900) // ~$249 white-label (standalone), no beta rate
+    expect(plan.independent.list_cents).toBeUndefined()
+  })
+
+  it('the settings plan prices MATCH the catalog amounts the checkout charges (no two-price drift)', () => {
+    // The page reads the settings layer and the checkout resolves the catalog layer. If these two ever
+    // disagree, /pricing promises a price the checkout will not honor. Business/Collective carry a beta
+    // rate in both; Non Profit/Independent are flat in both.
+    const cat = catalogConfigByKey(defaultCatalogConfig())
+    const pairs = [
+      [PRICING_DEFAULTS.plan.business, cat.business_base],
+      [PRICING_DEFAULTS.plan.collective, cat.collective_base],
+      [PRICING_DEFAULTS.plan.nonprofit, cat.nonprofit_seat],
+      [PRICING_DEFAULTS.plan.independent, cat.independent_base],
+    ] as const
+    for (const [setting, item] of pairs) {
+      expect(setting.monthly_cents).toBe(item.month.foundingCents)
+      expect(setting.list_cents ?? setting.monthly_cents).toBe(item.month.listCents)
+    }
   })
 })
 
@@ -304,10 +328,11 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     const row = priceRow('business', 'Business', PRICING_DEFAULTS.plan.business)
     expect(row.key).toBe('business')
     expect(row.label).toBe('Business')
-    expect(row.monthly).toBe('$29')
-    expect(row.annual).toBe('$290')
-    expect(row.monthlyCents).toBe(2900)
-    expect(row.annualCents).toBe(29000)
+    expect(row.monthly).toBe('$19')
+    expect(row.annual).toBe('$190')
+    expect(row.list).toBe('$29') // the crossed-out anchor the beta rate sits under
+    expect(row.monthlyCents).toBe(1900)
+    expect(row.annualCents).toBe(19000)
   })
 
   it('memberTierRows lists Crew then Supporter from the operator values', () => {
@@ -318,13 +343,16 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     expect(rows[1].monthly).toBe('$12') // Supporter, sold again at $12 (2026-07 overhaul)
   })
 
-  it('spacePlanRows lists the paid ladder Business -> Non Profit (not free · ADR-552)', () => {
+  it('spacePlanRows lists the WHOLE paid ladder, in order (ADR-811)', () => {
     const rows = spacePlanRows(PRICING_DEFAULTS)
-    expect(rows.map((r) => r.key)).toEqual(['business', 'nonprofit'])
-    expect(rows[0].label).toBe('Business')
-    expect(rows[1].label).toBe('Non Profit')
-    // both carry an annual line (Community Collective prices, ADR-811)
-    expect(rows.find((r) => r.key === 'business')?.annual).toBe('$290')
+    expect(rows.map((r) => r.key)).toEqual(['business', 'collective', 'nonprofit', 'independent'])
+    expect(rows.map((r) => r.label)).toEqual(['Business', 'Collective', 'Non Profit', 'Independent'])
+    // every paid plan carries an annual line (two months free)
+    expect(rows.find((r) => r.key === 'business')?.annual).toBe('$190')
     expect(rows.find((r) => r.key === 'nonprofit')?.annual).toBe('$390')
+    expect(rows.find((r) => r.key === 'independent')?.annual).toBe('$2,490')
+    // an anchor reads only where the config carries one
+    expect(rows.find((r) => r.key === 'collective')?.list).toBe('$79')
+    expect(rows.find((r) => r.key === 'nonprofit')?.list).toBeNull()
   })
 })

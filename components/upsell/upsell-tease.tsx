@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Sparkles, X } from 'lucide-react'
 import { shouldShowTease, teaseCapSpent, TEASE_DEFAULT_CAP } from '@/lib/pricing/upsell-tease'
+import { BetaGraceNotice } from './beta-grace-notice'
+import type { BetaNotice } from '@/lib/pricing/beta-notice'
 
 // IN-CONTEXT UPSELL TEASE (Pricing ladder Phase E · ADR-466, docs/PRICING-LADDER-PLAN.md §4). A small,
 // dismissible, plain-voice prompt shown AT A SUCCESS MOMENT — the instant a habit just paid off — with a
@@ -54,6 +56,12 @@ export interface UpsellTeaseProps {
   /** Is the target capability LOCKED for this account? Resolved server-side (the capability gate).
    *  When false, the member already has it, so there is nothing to upsell and this renders nothing. */
   locked: boolean
+  /** THE OTHER HALF (ADR-875). While the gates are NOT live, the same server resolver may hand back a
+   *  beta grace NOTICE instead: a warm, non-blocking line naming the tier whose tools this account is
+   *  using during the beta, when memberships start, and the founder invite. It renders here rather
+   *  than at a new call site so it inherits this component's placement at every success moment.
+   *  Mutually exclusive with `live` by construction. */
+  notice?: BetaNotice | null
   /** The CTA destination — the Crew upgrade (`/upgrade`) or the Space add-on picker. */
   href: string
   /** The headline: name, plainly, what the upgrade unlocks. No guilt, no urgency. */
@@ -72,6 +80,7 @@ export function UpsellTease({
   target,
   live,
   locked,
+  notice,
   href,
   title,
   body,
@@ -97,6 +106,11 @@ export function UpsellTease({
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // ADR-875: the gates are soft and the server resolved a beta grace notice — say the true thing
+  // (you are using this tier's tools, memberships start on the date, subscribe early if you want the
+  // beta rate and the badge) instead of the tease, which would claim a lock that is not being applied.
+  if (!live && notice) return <BetaGraceNotice notice={notice} />
 
   // The pure predicate is the single source of truth. `ready` keeps it client-only (post-cap-read).
   if (!ready) return null

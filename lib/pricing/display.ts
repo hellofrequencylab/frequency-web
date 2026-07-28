@@ -10,13 +10,16 @@
 // Business, Non Profit).
 
 import type { PricingDefaults, TierPrice } from './settings'
+import { SPACE_PLAN_LABEL, type SpacePlan } from './plans'
 
-// Price-catalog labels (ADR-552). The paid space ladder is Business + Non Profit, keyed to the
-// pricing_settings.plan VALUE shape. Plain voice, no em dashes.
-const PRICE_CATALOG_LABEL: Record<string, string> = {
-  business: 'Business',
-  nonprofit: 'Non Profit',
-}
+/** The PAID space plans, in ladder order (ADR-811). `free` is the baseline, not a paid row. Keyed to
+ *  the `pricing_settings.plan.*` VALUE shape, so every sellable Space tier has a display row. */
+export const PAID_SPACE_PLANS: readonly Exclude<SpacePlan, 'free'>[] = [
+  'business',
+  'collective',
+  'nonprofit',
+  'independent',
+]
 
 /** Cents to a plain price label, e.g. 900 -> "$9", 950 -> "$9.50". Whole dollars drop the cents.
  *  USD only (mirrors the membership join card). PURE. */
@@ -76,13 +79,36 @@ export function memberTierRows(values: PricingDefaults): PriceRow[] {
   ]
 }
 
-/** The PAID space plans as display rows, in ladder order (Business, Non Profit). PURE (ADR-552).
- *  'free' is the baseline and is rendered by the caller, not part of the paid ladder here. Non Profit is
- *  the $29 verified-501c3 sibling of Business (same depth, discounted). */
+/** The PAID space plans as display rows, in ladder order: Business, Collective, Non Profit, Independent
+ *  (ADR-811). PURE. 'free' is the baseline and is rendered by the caller, not part of the paid ladder
+ *  here. Labels come from the naming canon (SPACE_PLAN_LABEL), so a rename lands in one place.
+ *
+ *  Whether a row shows a crossed-out anchor is DERIVED from its own values (priceRow: an anchor reads
+ *  only when `list_cents` is strictly above `monthly_cents`), so Business and Collective render their
+ *  beta rate under a list while Non Profit and Independent render a single price. No tier can claim a
+ *  discount the config does not carry. */
 export function spacePlanRows(values: PricingDefaults): PriceRow[] {
-  const labelFor = (p: string): string => PRICE_CATALOG_LABEL[p] ?? p
-  return [
-    priceRow('business', labelFor('business'), values.plan.business),
-    priceRow('nonprofit', labelFor('nonprofit'), values.plan.nonprofit),
-  ]
+  return PAID_SPACE_PLANS.map((plan) => priceRow(plan, SPACE_PLAN_LABEL[plan], values.plan[plan]))
+}
+
+/** The plain yearly-billing line for the operator-set annual discount, e.g. "Yearly is two months free."
+ *  PURE. Reads the months-free knob so a change to the discount reflows the sentence. */
+export function annualDiscountNote(values: PricingDefaults): string {
+  const months = values.annual_discount.months_free
+  if (months <= 0) return 'Monthly or yearly.'
+  return `Yearly is ${months === 2 ? 'two' : months === 1 ? 'one' : String(months)} month${months === 1 ? '' : 's'} free.`
+}
+
+/** The plain trial line for the operator-set trial length, e.g. "14-day free trial." Null when the
+ *  operator has set no trial (never invent one). PURE. */
+export function trialNote(values: PricingDefaults): string | null {
+  const days = values.trial.days
+  return days > 0 ? `${days}-day free trial.` : null
+}
+
+/** A take-rate in basis points as a plain percent label, e.g. 500 -> "5%", 0 -> "0%". PURE. */
+export function formatBps(bps: number): string {
+  if (!Number.isFinite(bps) || bps <= 0) return '0%'
+  const pct = bps / 100
+  return `${Number.isInteger(pct) ? pct : pct.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')}%`
 }

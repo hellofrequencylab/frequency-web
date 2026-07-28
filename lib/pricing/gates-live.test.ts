@@ -303,6 +303,10 @@ describe('SOURCE SHAPE: gating seams read featureGatesLive, charging seams read 
     '../founding/business-checkout.ts',
     './space-plan.ts',
     './dunning.ts',
+    // The beta grace NOTICE seam (ADR-875). It decides what we SAY, never what anybody may DO, so it
+    // rides the charging switch like every other selling surface. Listing it here is the guard that
+    // keeps the founder invite from quietly becoming a second gate.
+    './beta-state.ts',
   ]
 
   it.each(GATING_SEAMS)('%s gates on featureGatesLive and never on billingLive', (rel) => {

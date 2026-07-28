@@ -29,6 +29,7 @@ import { stripe, STRIPE_WEBHOOK_SECRET, tierForPrice } from '@/lib/billing/strip
 import { createAdminClient } from '@/lib/supabase/admin'
 import { routeSpaceSubscription, subscriptionKind } from '@/lib/billing/space-subscriptions'
 import { grantFounderFromSession } from '@/lib/billing/founders'
+import { grantBetaFounding } from '@/lib/billing/beta-founding'
 import { persistAccount } from '@/lib/billing/connect'
 import { recordTipFromSession } from '@/lib/billing/tips'
 import { recordTicketFromSession, recordTicketRefundFromCharge } from '@/lib/billing/tickets'
@@ -179,6 +180,17 @@ export async function POST(req: Request) {
           const status = sub.status
           if (status === 'active' || status === 'trialing') {
             await setTier(profileId, paidTier, null, 'active', event.created)
+            // BETA FOUNDER PUSH (ADR-875). A member subscription that STARTED before memberships
+            // start earns founding status, granted here at the reconciliation point rather than on
+            // the success page (a redirect a browser may never follow). `sub.created` is fixed at
+            // purchase, so every later renewal event re-decides the same way and the grant is a
+            // no-op. Never throws: a badge must not bounce a settled payment.
+            await grantBetaFounding({
+              kind: 'member',
+              profileId,
+              atMs: sub.created * 1000,
+              lockedRateCents: sub.items?.data?.[0]?.price?.unit_amount ?? null,
+            })
           } else if (status === 'past_due') {
             // Dunning grace (ADR-370): a failed renewal must NOT instantly downgrade a paying
             // member. Keep the paid tier and mark past_due so the recovery banner shows while

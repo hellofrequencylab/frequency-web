@@ -34,6 +34,7 @@ export async function VaultStore() {
           target="vault-cash-in"
           live={cashInTease.live}
           locked={cashInTease.locked}
+          notice={cashInTease.notice}
           href="/upgrade"
           title="Spend the Gems you have earned"
           body="You have Gems banked. Crew turns them in: profile cosmetics, titles, badges, and membership credits in the Vault Store."

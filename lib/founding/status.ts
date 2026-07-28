@@ -326,6 +326,11 @@ export async function grantFoundingStatus(input?: {
   spaceId?: string | null
   kind?: FoundingKind
   cohortCity?: string | null
+  /** The rate to LOCK on a NEWLY created row, in cents (ADR-875): the amount actually charged at the
+   *  purchase that earned the grant, so the grandfather promise has a home on the row instead of
+   *  living only in the price catalog. Falls back to the founding config when absent. An EXISTING
+   *  row's locked rate is never overwritten: a founder's agreed rate is settled the day it is set. */
+  lockedRateCents?: number | null
 }): Promise<ActionResult<{ granted: number }>> {
   const config = await getFoundingConfig()
   const db = foundingDb()
@@ -337,8 +342,13 @@ export async function grantFoundingStatus(input?: {
       const spaceId = input.spaceId ?? null
       const existing = await getFoundingStatus({ profileId, spaceId })
       const kind: FoundingKind = existing?.kind ?? input.kind ?? (spaceId ? 'business' : 'member')
+      const paidRate =
+        typeof input.lockedRateCents === 'number' && input.lockedRateCents > 0
+          ? input.lockedRateCents
+          : null
       const lockedRateCents =
         existing?.lockedRateCents ??
+        paidRate ??
         (kind === 'business' ? config.business_monthly_cents : config.member_one_time_cents)
       const lockedTakeBps = existing?.lockedTakeBps ?? (kind === 'business' ? config.business_take_bps : null)
 

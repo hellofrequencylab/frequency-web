@@ -16,12 +16,21 @@
 // PRESENTATION-NEUTRAL (ADR-018): this module decides ONLY visibility. The target, copy, and href
 // are the component's props; this file never names a feature or writes a sentence.
 
-/** What the server resolves and hands the <UpsellTease> island: are the gates live, and is the target
- *  capability locked for this account. Client-safe (no server-only deps), so a client component can
- *  carry it as a prop. The server resolvers in lib/pricing/tease-gate.ts produce it. */
+import type { BetaNotice } from './beta-notice'
+
+/** What the server resolves and hands the <UpsellTease> island: are the gates live, is the target
+ *  capability locked for this account, and (ADR-875) the beta grace NOTICE that speaks in the tease's
+ *  place while the gates are still soft. Client-safe (no server-only deps), so a client component can
+ *  carry it as a prop. The server resolvers in lib/pricing/tease-gate.ts produce it.
+ *
+ *  `live` and `notice` are mutually exclusive by construction: `live` means the gates bite (so the
+ *  tease is the true thing to say) and `notice` means the beta grace window is still open (so the
+ *  warm, non-blocking line is). Neither set = this surface says nothing. */
 export interface TeaseGate {
   live: boolean
   locked: boolean
+  /** The beta grace notice, or null. Present ONLY while the gates are not live (ADR-875). */
+  notice?: BetaNotice | null
 }
 
 /** The inputs the visibility rule needs. All resolved by the caller (the server resolves `gatesLive`

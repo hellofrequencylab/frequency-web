@@ -73,8 +73,19 @@ export const PRICING_DEFAULTS: PricingDefaults = {
   },
   plan: {
     // Community Collective ladder (ADR-811). Annual = two months free (10x monthly).
-    business: { monthly_cents: 2900, annual_cents: 29000 }, // $29 flat, all-in
-    collective: { monthly_cents: 7900, annual_cents: 79000, list_cents: 7900 }, // $79 list (beta $49 founding, below)
+    //
+    // THE BETA ANCHOR IDIOM (ADR-463, owner-confirmed 2026-07): `monthly_cents` is the price a Space is
+    // CHARGED today and `list_cents` is the crossed-out anchor it sits under, exactly as `tier.crew`
+    // carries $9 under a $12 list. Business and Collective ship a beta rate ($19 under $29, $49 under
+    // $79); a Space that subscribes on it keeps it for as long as it keeps the plan (lib/pricing/beta.ts
+    // grandfathering). These now MATCH the catalog amounts the checkout charges (pricing-keys CATALOG
+    // business_base $29/$19, collective_base $79/$49), so the legacy `business_monthly` product this map
+    // mints can no longer be a higher price than the rate the pricing page promises.
+    //
+    // Non Profit and Independent carry NO beta rate (the owner set none), so they ship a single price:
+    // no `list_cents`, no strike-through, no invented discount.
+    business: { monthly_cents: 1900, annual_cents: 19000, list_cents: 2900 }, // $19 beta under the $29 list
+    collective: { monthly_cents: 4900, annual_cents: 49000, list_cents: 7900 }, // $49 beta under the $79 list
     nonprofit: { monthly_cents: 3900, annual_cents: 39000 }, // $39 flat, verified 501c3, full Collective toolkit
     independent: { monthly_cents: 24900, annual_cents: 249000 }, // ~$249 white-label, network-disconnected (standard SaaS)
   },
@@ -99,6 +110,10 @@ const SETTING_DEFAULTS: Record<string, unknown> = {
   'tier.crew': PRICING_DEFAULTS.tier.crew,
   'tier.supporter': PRICING_DEFAULTS.tier.supporter,
   'plan.business': PRICING_DEFAULTS.plan.business,
+  // Collective + Independent are first-class sellable tiers (ADR-811), so they carry a default row here
+  // like every other plan; an absent DB row still resolves through getPricingValues' per-key fallback.
+  'plan.collective': PRICING_DEFAULTS.plan.collective,
+  'plan.independent': PRICING_DEFAULTS.plan.independent,
   'plan.nonprofit': PRICING_DEFAULTS.plan.nonprofit,
   take_rate: PRICING_DEFAULTS.take_rate,
   vera_free_daily_cap: PRICING_DEFAULTS.vera_free_daily_cap,

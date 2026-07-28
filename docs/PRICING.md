@@ -1,5 +1,27 @@
 # Pricing & entitlements
 
+> ## ✅ CURRENT: the public ladder is SEVEN sellable tiers, and `/pricing` DERIVES them (ADR-875, 2026-07-28).
+> **The ladder, all of it sellable:** Member $0 · **Crew $9** · **Free Space** · **Business $29 with a $19
+> beta rate** · **Collective $79 with a $49 beta rate** · **Non Profit $39** · **Independent $249**. The two
+> beta rates are grandfathered: a subscriber keeps the rate for as long as they keep the plan. Non Profit,
+> Independent, and the free tiers have ONE price and never render a struck anchor.
+>
+> **The anchor idiom (ADR-463) is now uniform across `pricing_settings`:** `monthly_cents` is what is
+> CHARGED and `list_cents` is the crossed-out anchor above it, exactly as `tier.crew` has always worked. So
+> `plan.business` is `{1900, list 2900}` and `plan.collective` is `{4900, list 7900}`, matching the catalog
+> amounts (`business_base`, `collective_base`) the checkout charges. `pricing.test.ts` asserts the two
+> layers agree, so they cannot drift. `plan.collective` + `plan.independent` are seeded editable rows
+> (migration `20270115000000_pricing_beta_anchors.sql`).
+>
+> **The public page is derived, not written.** `lib/pricing/pricing-grid.ts` builds every offering and
+> every comparison cell from the code the product actually gates on: `planEntitlementKeys` (the depth key
+> sets in `plans.ts`), `FEATURE_GATES`, the usage ladders in `feature-meters.ts`, and
+> `take_rate.network_bps`. Seats derive from the `team` depth key; the AI add-on derives from
+> `ADDON_ENTITLEMENT_KEYS`. **To change what a tier gets on `/pricing`, change the key set — never the
+> page.** The page reads `getPricingValues()` + `loadCatalogConfig()` at revalidation, so an
+> `/admin/pricing` price edit lands with no deploy, and a source-shape test forbids any dollar literal in
+> the page file.
+
 > ## ⚠️ SUPERSEDED by the Community Collective model (ADR-811, July 2026). Read this first.
 > The pricing direction is now the **Community Collective**: two-world pricing on `spaces.network_connected`
 > (in-collective = affordable, standalone = standard SaaS) and a take-rate charged **only on
