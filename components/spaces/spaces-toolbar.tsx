@@ -5,18 +5,20 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { LayoutGrid, Check } from 'lucide-react'
 import { DirectorySearch } from '@/components/ui/directory-search'
 import { SpacesSort } from './spaces-sort'
-import { SPACE_CATEGORIES } from '@/lib/spaces/categories'
+import { SUBJECTS } from '@/lib/taxonomy/subjects'
 
 // The command bar for the Spaces directory — the same standard the Circles/People directories use.
-// Everything is URL-driven (writes the `q` / `category` / `following` / `sort` params, preserves the
+// Everything is URL-driven (writes the `q` / `subject` / `following` / `sort` params, preserves the
 // rest), so the page stays a Server Component and a filtered view is shareable. URL state IS the
 // filter; no local state.
 //
 // Layout: ROW 1 is the search box (flex-1) with the SORT control and the "Following" toggle as
 // matched-height siblings to its right; the search is the first thing under the hero. ROW 2 is the
-// single CATEGORY filter — the SPACE_CATEGORIES labels (rendered from the source of truth) plus All,
-// wired to `?category=`. The type filter (Business / Non Profit) was retired here (ADR-552); Spaces
-// are browsed by category, not by public type.
+// single SUBJECT filter — the SHARED subject vocabulary (lib/taxonomy/subjects.ts, the same fifteen
+// doors Channels browse by, ADR-887) plus All, wired to `?subject=`. KIND (Studios / Shops / ...)
+// stays a card pill only: a second pill row here would stack two scrolling strips, so it is not a
+// toolbar facet (the discovery read still accepts a kind filter for links that pass one). The type
+// filter (Business / Non Profit) was retired here (ADR-552).
 export function SpacesToolbar({
   showFollowing = true,
   showSearch = true,
@@ -32,7 +34,7 @@ export function SpacesToolbar({
   const pathname = usePathname()
   const params = useSearchParams()
 
-  const category = params.get('category') ?? ''
+  const subject = params.get('subject') ?? ''
   const following = params.get('following') === '1'
 
   function setParam(key: string, next: string | null) {
@@ -41,6 +43,9 @@ export function SpacesToolbar({
     else sp.delete(key)
     // Any facet change resets paging — the current page number is meaningless against a new result set.
     sp.delete('page')
+    // Picking a subject also clears a legacy `?category=` kind filter (old shared links) so a pill
+    // click always yields a pure subject view, never a silent intersection of the two axes.
+    if (key === 'subject') sp.delete('category')
     const s = sp.toString()
     router.push(s ? `${pathname}?${s}` : pathname)
   }
@@ -64,22 +69,22 @@ export function SpacesToolbar({
         </div>
       )}
 
-      {/* ROW 1 — the single CATEGORY filter (URL `?category=`), sitting right under the hero. Labels
-          come from the SPACE_CATEGORIES source of truth, never hardcoded; the strip scrolls
-          horizontally on a narrow screen rather than wrapping. */}
+      {/* ROW 1 — the single SUBJECT filter (URL `?subject=`), sitting right under the hero. Labels
+          come from the SHARED SUBJECTS source of truth (lib/taxonomy/subjects.ts), never hardcoded;
+          the strip scrolls horizontally rather than wrapping. */}
       <div className="-mx-1 flex items-center overflow-x-auto px-1">
         <div className="flex w-max items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
-          <button type="button" onClick={() => setParam('category', null)} className={pill(!category)}>
+          <button type="button" onClick={() => setParam('subject', null)} className={pill(!subject)}>
             <LayoutGrid className="h-3.5 w-3.5" /> All
           </button>
-          {SPACE_CATEGORIES.map((c) => (
+          {SUBJECTS.map((s) => (
             <button
-              key={c.key}
+              key={s.key}
               type="button"
-              onClick={() => setParam('category', c.key)}
-              className={pill(category === c.key)}
+              onClick={() => setParam('subject', s.key)}
+              className={pill(subject === s.key)}
             >
-              <c.Icon className="h-3.5 w-3.5" /> {c.label}
+              <s.Icon className="h-3.5 w-3.5" /> {s.label}
             </button>
           ))}
         </div>

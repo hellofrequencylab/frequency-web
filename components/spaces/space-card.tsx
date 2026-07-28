@@ -6,8 +6,8 @@ import { FoundingBusinessBadge } from '@/lib/community-roles'
 
 // The directory card for one networked entity Space — a COVER-LED composition of the shared EntityCard
 // (ENTITY-SPACES-BUILD §A.2 D2: compose, never author). The cover leads the card and now carries three
-// overlays: the CATEGORY pill (top-left — the browse subcategory: Studios / Shops / …), the brand LOGO
-// (bottom-left), and the Space's own ACTION control (bottom-right). The category pill + logo are
+// overlays: the KIND pill (top-left — what shape of thing it is: Studios / Shops / …, ADR-887), the brand
+// LOGO (bottom-left), and the Space's own ACTION control (bottom-right). The kind pill + logo are
 // decorative (they sit inside the profile link but never take a click — `coverOverlay`,
 // pointer-events-none); the action is a REAL navigational Link rendered as a sibling of the profile link
 // (`coverAction`) and styled as an unfilled text link, so the two anchors are never nested. The body
@@ -82,10 +82,10 @@ export function SpaceCard({ space }: { space: NetworkedSpace }) {
         <>
           {/* Bottom-heavy ink scrim so the logo + action read over any cover image. */}
           <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
-          {/* CATEGORY pill, top-left — the Space's browse subcategory (Studios / Shops / …) on a soft
-              backdrop (legible over photo or gradient). */}
+          {/* KIND pill, top-left — what shape of thing this Space is (Studios / Shops / …, ADR-887)
+              on a soft backdrop (legible over photo or gradient). Reads 'Business' when unset. */}
           <span className="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-0.5 text-2xs font-semibold text-text shadow-sm backdrop-blur-sm">
-            {space.categoryLabel}
+            {space.kindLabel}
           </span>
           {/* LOGO, bottom-left. */}
           <span className="absolute bottom-3 left-3">
@@ -115,7 +115,7 @@ export function SpaceCard({ space }: { space: NetworkedSpace }) {
       description={space.tagline ?? undefined}
       meta={
         <>
-          {/* The category now lives in the top-left cover pill (#7), so the body meta is stats only. */}
+          {/* The kind now lives in the top-left cover pill (#7), so the body meta is stats only. */}
           {members != null && (
             <Stat Icon={Users} label={`${members} ${members === 1 ? 'member' : 'members'}`} />
           )}

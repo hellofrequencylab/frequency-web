@@ -25,8 +25,8 @@ import { resolveHeaderElement } from '@/lib/elements/header'
 // profile (ENTITY-SPACES-BUILD §A/§B). It now opens on the SHARED MarketHero header (the same hero
 // band Events / Marketplace Events / Circles use) so every browse surface reads as one header: a
 // centered title, the search bar IN the hero, and the action buttons row (Create a Space + Manage
-// Spaces). The search moved out of the toolbar into the hero; the toolbar keeps sort + category +
-// Following. The grid + pager + "Go Business" sell are the SHARED directory body
+// Spaces). The search moved out of the toolbar into the hero; the toolbar keeps sort + the subject
+// pills (the shared vocabulary, ADR-887) + Following. The grid + pager + "Go Business" sell are the SHARED directory body
 // (components/spaces/directory-view), so this in-app surface and the public /discover/spaces surface
 // never drift. The grid is its own <Suspense> so the header paints instantly and never blocks on the
 // discovery read (PAGE-FRAMEWORK §5). The result set is PAGED (12/24/48), all URL-driven so a filtered
@@ -48,6 +48,7 @@ export default async function SpacesDirectoryPage({
 }: {
   searchParams: Promise<{
     q?: string
+    subject?: string
     category?: string
     following?: string
     sort?: string
@@ -55,8 +56,11 @@ export default async function SpacesDirectoryPage({
     page?: string
   }>
 }) {
+  // `subject` is the toolbar's pill facet (the shared vocabulary, ADR-887); `category` is the LEGACY
+  // kind param, still honored so an old shared link keeps its narrowed view.
   const {
     q,
+    subject,
     category,
     following: followingParam,
     sort: sortParam,
@@ -73,7 +77,7 @@ export default async function SpacesDirectoryPage({
   const viewerProfileId = await getMyProfileId()
 
   // The shared base for every pager/size link — the current filters, so paging preserves them.
-  const urlBase = { q, category, following: followingParam, sort: sortParam, per, page }
+  const urlBase = { q, subject, category, following: followingParam, sort: sortParam, per, page }
 
   // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
   const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
@@ -118,13 +122,14 @@ export default async function SpacesDirectoryPage({
         {/* Keyed on the filters + sort + page window so a new query remounts the boundary and shows the
             skeleton while the next result set streams in. */}
         <Suspense
-          key={`${q ?? ''}:${category ?? ''}:${following ? '1' : ''}:${sort}:${per}:${page}`}
+          key={`${q ?? ''}:${subject ?? ''}:${category ?? ''}:${following ? '1' : ''}:${sort}:${per}:${page}`}
           fallback={<GridSkeleton />}
         >
           <SpacesGrid
             basePath={DIRECTORY_BASE}
             q={q}
-            category={category}
+            subject={subject}
+            kind={category}
             following={following}
             sort={sort}
             page={page}

@@ -8,6 +8,8 @@ import { fieldClasses, labelClasses } from '@/components/ui/field'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
 import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
 import { CHANNEL_CATEGORIES, isChannelCategory } from '@/lib/channels/categories'
+import { ChannelHeaderControls } from '@/components/admin/modules/channel-header-controls'
+import { readChannelCoverFocus, readChannelHeroHeight } from '@/lib/channels/hero'
 import {
   getChannelAdminData,
   updateChannelSettings,
@@ -106,6 +108,17 @@ export function ChannelSettingsModule() {
           The wide image behind the Channel title. Leave it empty for the default gradient.
         </p>
       </div>
+
+      {/* HEADER controls, mirroring the Event settings flow: the cover, then how it is framed.
+          Only meaningful once there is an image, and the component itself hides the focal picker
+          when there is not. */}
+      <ChannelHeaderControls
+        channelId={data.id}
+        slug={data.slug}
+        imageUrl={data.cover_image ?? null}
+        initialFocus={readChannelCoverFocus(data.theme)}
+        initialHeight={readChannelHeroHeight(data.theme)}
+      />
 
       <RailAutosaveForm action={updateChannelSettings.bind(null, data.id, data.slug)}>
         <label className="block space-y-1.5">

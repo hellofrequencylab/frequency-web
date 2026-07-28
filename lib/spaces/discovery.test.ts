@@ -8,6 +8,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 //      (no profile id) gets [] (follows nothing). Fail-safe throughout.
 //   3. The SORT param orders the catalog: name (A–Z, default) / newest (created_at desc) / members
 //      (active member count desc). normalizeSpaceSort coerces stray values back to 'name'.
+//   4. The two ADR-887 facets: SUBJECT filters in the DB on the jsonb path (shared vocabulary, no
+//      default), KIND filters in APP CODE through the total spaceKind reader (legacy `category`
+//      fallback + 'business' default), so pre-migration rows filter exactly like migrated ones.
 
 // ── Mock the follows read the directory intersects against (toggled per test) ──────────────────────
 let followed: Set<string> = new Set()
@@ -30,7 +33,8 @@ type SpaceRow = {
   /** The Community Collective world switch (ADR-811 §3): only connected Spaces are discoverable. */
   network_connected: boolean
   created_at: string
-  /** The preferences jsonb — carries profileData.category + headerCta for the app-code resolvers. */
+  /** The preferences jsonb — carries profileData.subject / .kind (or the legacy .category) +
+   *  headerCta for the app-code resolvers. */
   preferences?: unknown
 }
 const store: {
@@ -40,18 +44,18 @@ const store: {
   upcoming: Record<string, number>
 } = { spaces: [], counts: {}, followers: {}, upcoming: {} }
 
-/** The stored directory category for a row (preferences.profileData.category), or null when unset. */
-function rowCategory(r: SpaceRow): string | null {
+/** The stored SUBJECT for a row (preferences.profileData.subject), or null when unset — mirrors the
+ *  DB jsonb-path read the real query filters on. */
+function rowSubject(r: SpaceRow): string | null {
   const prefs = r.preferences && typeof r.preferences === 'object' ? (r.preferences as Record<string, unknown>) : {}
   const pd = prefs.profileData && typeof prefs.profileData === 'object' ? (prefs.profileData as Record<string, unknown>) : {}
-  return typeof pd.category === 'string' ? pd.category : null
+  return typeof pd.subject === 'string' ? pd.subject : null
 }
 
 function spacesBuilder() {
   const eqs: Record<string, string | boolean> = {}
   let neqType: string | null = null
-  let categoryEq: string | null = null
-  let categoryBusinessOrNull = false
+  let subjectEq: string | null = null
   let orderCol = 'name'
   let orderAsc = true
   const api = {
@@ -59,8 +63,9 @@ function spacesBuilder() {
       return api
     },
     eq(col: string, val: string | boolean) {
-      // The category jsonb-path filter (a specific, non-business category) records separately.
-      if (col.includes('category')) categoryEq = String(val)
+      // The subject jsonb-path filter records separately. (KIND never reaches the DB: it filters in
+      // app code through the total spaceKind reader, so this mock needs no kind branch.)
+      if (col.includes('subject')) subjectEq = String(val)
       else eqs[col] = val
       return api
     },
@@ -68,10 +73,8 @@ function spacesBuilder() {
       if (col === 'type') neqType = val
       return api
     },
-    or(filter: string) {
-      // Two callers: free-text search over name/brand/slug (ignored by this mock), and the
-      // 'business'-or-null category filter (matches the literal 'business' OR a missing category).
-      if (filter.includes('category')) categoryBusinessOrNull = true
+    or() {
+      // One caller: free-text search over name/brand/slug (ignored by this mock).
       return api
     },
     order(col: string, opts: { ascending: boolean }) {
@@ -88,8 +91,7 @@ function spacesBuilder() {
         .filter((r) => (eqs.status ? r.status === eqs.status : true))
         .filter((r) => (eqs.type ? r.type === eqs.type : true))
         .filter((r) => (neqType ? r.type !== neqType : true))
-        .filter((r) => (categoryEq ? rowCategory(r) === categoryEq : true))
-        .filter((r) => (categoryBusinessOrNull ? rowCategory(r) === 'business' || rowCategory(r) === null : true))
+        .filter((r) => (subjectEq ? rowSubject(r) === subjectEq : true))
         .sort((a, b) => {
           const cmp =
             orderCol === 'created_at'
@@ -145,10 +147,11 @@ beforeEach(() => {
   store.followers = {}
   store.upcoming = {}
   store.spaces = [
-    // s1 stores an explicit 'studio' category; s2 stores 'maker'; s3 has NO category (reads as 'business').
+    // s1 is a PRE-MIGRATION row: kind stored on the LEGACY `category` key, plus a subject. s2 stores
+    // the CANONICAL `kind` key + a subject. s3 has NEITHER (kind reads as 'business', no subject).
     // All three are connected (in the collective), so they list.
-    { id: 's1', slug: 'river-yoga', name: 'River Yoga', type: 'practitioner', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'network', network_connected: true, created_at: '2026-01-10T00:00:00Z', preferences: { profileData: { category: 'studio' } } },
-    { id: 's2', slug: 'sound-co', name: 'Sound Co', type: 'business', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'network', network_connected: true, created_at: '2026-03-01T00:00:00Z', preferences: { profileData: { category: 'maker' } } },
+    { id: 's1', slug: 'river-yoga', name: 'River Yoga', type: 'practitioner', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'network', network_connected: true, created_at: '2026-01-10T00:00:00Z', preferences: { profileData: { category: 'studio', subject: 'movement' } } },
+    { id: 's2', slug: 'sound-co', name: 'Sound Co', type: 'business', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'network', network_connected: true, created_at: '2026-03-01T00:00:00Z', preferences: { profileData: { kind: 'maker', subject: 'meditation' } } },
     { id: 's3', slug: 'forest-org', name: 'Forest Org', type: 'organization', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'network', network_connected: true, created_at: '2026-02-15T00:00:00Z' },
     // Excluded by the discovery boundary: private + root, never listed.
     { id: 's4', slug: 'private-one', name: 'Private One', type: 'practitioner', status: 'active', brand_name: null, brand_logo_url: null, tagline: null, visibility: 'private', network_connected: true, created_at: '2026-01-01T00:00:00Z' },
@@ -240,31 +243,57 @@ describe('normalizeSpaceSort', () => {
   })
 })
 
-describe('the category field + filter', () => {
-  it('resolves each row category, defaulting a missing one to business', async () => {
+describe('the kind field + filter (ADR-887, app-code through the total reader)', () => {
+  it('resolves each row kind — canonical key, LEGACY category fallback, business default', async () => {
     const spaces = await listNetworkedSpaces({})
-    const byId = Object.fromEntries(spaces.map((s) => [s.id, s.category]))
-    expect(byId).toEqual({ s1: 'studio', s2: 'maker', s3: 'business' }) // s3 has no stored category
+    const byId = Object.fromEntries(spaces.map((s) => [s.id, s.kind]))
+    // s1 stores the legacy `category` key, s2 the canonical `kind` key, s3 nothing — one semantics.
+    expect(byId).toEqual({ s1: 'studio', s2: 'maker', s3: 'business' })
   })
 
-  it('filters to one specific category', async () => {
-    const spaces = await listNetworkedSpaces({ category: 'maker' })
-    expect(spaces.map((s) => s.id)).toEqual(['s2'])
+  it('filters to one specific kind, matching a PRE-MIGRATION legacy-key row too', async () => {
+    expect((await listNetworkedSpaces({ kind: 'maker' })).map((s) => s.id)).toEqual(['s2'])
+    // s1 carries kind only on the legacy `category` key; the filter still finds it (read fallback).
+    expect((await listNetworkedSpaces({ kind: 'studio' })).map((s) => s.id)).toEqual(['s1'])
   })
 
-  it('the business filter also matches Spaces with no stored category', async () => {
-    const spaces = await listNetworkedSpaces({ category: 'business' })
-    expect(spaces.map((s) => s.id)).toEqual(['s3']) // only the category-less row reads as business
+  it('the business filter also matches Spaces with no stored kind at all', async () => {
+    const spaces = await listNetworkedSpaces({ kind: 'business' })
+    expect(spaces.map((s) => s.id)).toEqual(['s3']) // only the kind-less row reads as business
   })
 
-  it("'all' / unknown / absent applies no category filter", async () => {
-    const all = await listNetworkedSpaces({ category: 'all' })
-    const bogus = await listNetworkedSpaces({ category: 'nope' })
+  it("'all' / unknown / absent applies no kind filter", async () => {
+    const all = await listNetworkedSpaces({ kind: 'all' })
+    const bogus = await listNetworkedSpaces({ kind: 'nope' })
     const absent = await listNetworkedSpaces({})
     const ids = ['s3', 's1', 's2'] // Forest Org, River Yoga, Sound Co (name order)
     expect(all.map((s) => s.id)).toEqual(ids)
     expect(bogus.map((s) => s.id)).toEqual(ids)
     expect(absent.map((s) => s.id)).toEqual(ids)
+  })
+})
+
+describe('the subject filter (ADR-887, the shared vocabulary in the DB path)', () => {
+  it('filters to one subject', async () => {
+    expect((await listNetworkedSpaces({ subject: 'movement' })).map((s) => s.id)).toEqual(['s1'])
+    expect((await listNetworkedSpaces({ subject: 'meditation' })).map((s) => s.id)).toEqual(['s2'])
+  })
+
+  it('a Space with no subject matches no subject pill (no default subject)', async () => {
+    const spaces = await listNetworkedSpaces({ subject: 'movement' })
+    expect(spaces.map((s) => s.id)).not.toContain('s3')
+  })
+
+  it("'all' / off-list / absent applies no subject filter (KIND keys are not subjects)", async () => {
+    const ids = ['s3', 's1', 's2'] // name order
+    expect((await listNetworkedSpaces({ subject: 'all' })).map((s) => s.id)).toEqual(ids)
+    expect((await listNetworkedSpaces({ subject: 'studio' })).map((s) => s.id)).toEqual(ids) // a kind, not a subject
+    expect((await listNetworkedSpaces({ subject: 'nope' })).map((s) => s.id)).toEqual(ids)
+  })
+
+  it('subject + kind stack (each axis narrows independently)', async () => {
+    expect((await listNetworkedSpaces({ subject: 'movement', kind: 'studio' })).map((s) => s.id)).toEqual(['s1'])
+    expect(await listNetworkedSpaces({ subject: 'movement', kind: 'maker' })).toEqual([])
   })
 })
 
@@ -277,7 +306,7 @@ describe('the resolved card action', () => {
 
   it('resolves an operator custom header CTA override to its label + href', async () => {
     store.spaces[1].preferences = {
-      profileData: { category: 'maker' },
+      profileData: { kind: 'maker', subject: 'meditation' },
       headerCta: { kind: 'custom', url: 'https://book.example.com', label: 'Reserve a spot' },
     }
     const spaces = await listNetworkedSpaces({})
@@ -315,8 +344,8 @@ describe('listNetworkedSpacesPage (pagination)', () => {
     expect(page.spaces.map((s) => s.id)).toEqual(['s3', 's1', 's2'])
   })
 
-  it('carries the filters through to the page (category narrows the total)', async () => {
-    const page = await listNetworkedSpacesPage({ category: 'studio' }, { limit: 12, offset: 0 })
+  it('carries the filters through to the page (subject narrows the total)', async () => {
+    const page = await listNetworkedSpacesPage({ subject: 'movement' }, { limit: 12, offset: 0 })
     expect(page.total).toBe(1)
     expect(page.spaces.map((s) => s.id)).toEqual(['s1'])
   })

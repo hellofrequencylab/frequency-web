@@ -1,5 +1,6 @@
-import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { SectionHeader } from '@/components/ui/section-header'
+import { CIRCLE_SCOPE_TYPES } from '@/lib/events/circle-upcoming'
 import { UpcomingEventRows, type UpcomingEventRow } from './upcoming-event-rows'
 
 // The cross-scope "Upcoming" strip: the next few events across a SET of scopes (used by the
@@ -40,10 +41,16 @@ export async function UpcomingEventsWidget({
     .from('events')
     .select('id, title, slug, location, starts_at, scope_id')
     .in('scope_id', scopeIds)
-    .in('scope_type', ['circle', 'group'])  // accept both during transition
+    // The ONE list of scope_type values that mean "created for a Circle" ('group' is the
+    // pre-rename value still in older rows) — shared with the Circle block and belonging.ts,
+    // never a second hand-written copy.
+    .in('scope_type', [...CIRCLE_SCOPE_TYPES])
     .eq('status', 'published')
     .eq('visibility', 'public')
     .eq('is_cancelled', false)
+    // Staff removal (lib/events/event-drafts.ts removeEvent) also sets is_cancelled, so this is
+    // belt-and-braces — but the Circle's own block filters it, and the two reads should agree.
+    .is('removed_at', null)
     .gte('starts_at', now)
     .order('starts_at', { ascending: true })
     .limit(3)
@@ -54,21 +61,11 @@ export async function UpcomingEventsWidget({
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-subtle">
-          Upcoming
-        </h2>
-        <Link
-          href="/events"
-          className="text-xs text-primary-strong hover:text-primary-strong transition-colors"
-        >
-          See all →
-        </Link>
-      </div>
-
-      <div className="mb-2">
-        <UpcomingEventRows events={events} />
-      </div>
+      {/* The house module heading (SectionHeader exists to replace the ad-hoc uppercase
+          section labels), with the title itself as the drill-down into /events — the same
+          grammar as the rail's Circles module beside it. */}
+      <SectionHeader title="Upcoming" href="/events" />
+      <UpcomingEventRows events={events} />
     </section>
   )
 }

@@ -563,6 +563,30 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'primary',
     priority: 15,
   },
+  // The Channel DANGER box (ADR-886). Events have carried Cancel + Delete in the rail from the
+  // start; a Channel could only be deleted from the full editor. Same slot and same posture as
+  // event.danger: `inline`, LAST, and never banked, so the destructive controls sit at the bottom
+  // of the drawer under everything else. Archive is offered first as the softer option.
+  {
+    id: 'channel.danger',
+    label: 'Archive or delete',
+    desc: 'Archive the Channel to hide it, or delete it outright. Circles survive either way.',
+    Icon: Archive,
+    scopes: ['channel'],
+    requiredCapability: 'channel.manage',
+    slot: 'danger',
+    surface: 'sidebar',
+    render: 'inline',
+    // order 20 (not 10) so it sorts AFTER channel.edit (11) and channel.manage (12):
+    // modulesForScopeKind sorts by `order` alone and is stable, so an order-10 danger row would
+    // land among the other 10s in the middle of the list rather than at the end.
+    order: 20,
+    // Destructive, so it rides the `extra` band under "More" at priority 99 — the same posture
+    // hub.danger and nexus.danger take.
+    tier: 'extra',
+    priority: 99,
+  },
+
   // ── Journey rail (ADR-515 Phase 6, the net-new Journey scope) ────────────────────────────────────
   // A Journey's core editable functions, surfaced in the standardized rail exactly like the other
   // entities. All gated journey.editSettings (author OR staff OR parent-scope manager — see

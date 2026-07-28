@@ -75,6 +75,13 @@ which one it's for.
   plunges. Allergic to anything culty, salesy, preachy, or precious.
 - Does NOT identify as "spiritual" at the front door. Will go deep once trust is
   earned.
+  - AMENDED (owner directive, 2026-07-28): this governs BODY COPY, not names.
+    Category and Channel NAMES may use plain wellness and spiritual terms out
+    loud: Spirituality, Meditation, Holistic Health, Functional Medicine. A
+    door can say what is behind it. The rule that survives untouched: never
+    write CONTENT with heavy spiritual flair. The card, the one-liner, the
+    empty state, the notification stay in the plain register; the name is a
+    label, not a sermon.
 - Their words for their pain (use these, never clinical or mystical terms):
   - "I'm always wired / I can't switch off"
   - "I have a hundred contacts and no real friends"

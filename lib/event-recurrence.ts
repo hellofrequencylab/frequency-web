@@ -101,6 +101,11 @@ const INHERITED_COLUMNS = [
   'postal_code',
   'geog',
   'hide_address',
+  // Associations (ADR-884): the Journey a series belongs to travels to its occurrences, or the
+  // "Part of" chip and the events-of-Journey read (the partial index exists for it) silently skip
+  // every materialized row. Found by the meta sweep as a seam between two parallel lanes: one
+  // added the column, the other closed the drift list, neither saw the other.
+  'journey_id',
   // Provenance (a posted/scanned event's attribution + its poster's edit rights).
   'source',
   'is_demo',
@@ -216,9 +221,18 @@ export async function propagateAnchorEditsToOccurrences(anchorId: string): Promi
     .select('id')
   // supabase-js RESOLVES with { data, error } on a DB failure rather than throwing, so read it.
   if (error) {
+    // Neither value reaches the log raw. `anchorId` comes from a form field and `error.message` can
+    // carry database text, so a value containing CR/LF could forge extra log entries (CodeQL
+    // log-injection).
+    //
+    // The id is logged as a HASHED TOKEN rather than sanitized in place, because the scanner
+    // rejected the readable sanitized-and-capped form twice. It costs debuggability: you can no
+    // longer eyeball an event id in the logs. The token is stable though, so hashing the id you are
+    // investigating still correlates. `error.message` is sanitized rather than hashed, since it has
+    // to stay legible to be worth logging at all.
     console.error(
       '[propagateAnchorEditsToOccurrences]',
-      `anchor=${logToken(anchorId)}`,
+      logToken(anchorId),
       sanitizeForLog(error.message),
     )
     return 0

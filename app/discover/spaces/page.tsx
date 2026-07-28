@@ -55,13 +55,16 @@ export default async function PublicSpacesDirectoryPage({
 }: {
   searchParams: Promise<{
     q?: string
+    subject?: string
     category?: string
     sort?: string
     per?: string
     page?: string
   }>
 }) {
-  const { q, category, sort: sortParam, per: perParam, page: pageParam } = await searchParams
+  // `subject` is the toolbar's pill facet (the shared vocabulary, ADR-887); `category` is the LEGACY
+  // kind param, still honored so an old shared link keeps its narrowed view.
+  const { q, subject, category, sort: sortParam, per: perParam, page: pageParam } = await searchParams
   const sort = normalizeSpaceSort(sortParam)
   const per = normalizePerPage(perParam)
   const page = normalizePage(pageParam)
@@ -69,12 +72,12 @@ export default async function PublicSpacesDirectoryPage({
   // One public read — no viewer (a logged-out surface follows nothing), so no auth call and the page stays
   // cacheable. The same data feeds both the list schema and the body.
   const { spaces, total } = await listNetworkedSpacesPage(
-    { q, category, sort },
+    { q, subject, kind: category, sort },
     { limit: per, offset: (page - 1) * per },
   )
 
   // The pager base — the current filters, so paging preserves them (no `following` on the public surface).
-  const urlBase = { q, category, sort: sortParam, per, page }
+  const urlBase = { q, subject, category, sort: sortParam, per, page }
 
   // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
   const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
@@ -123,7 +126,7 @@ export default async function PublicSpacesDirectoryPage({
         }
       />
 
-      {/* The category filter + sort (search lives in the hero above). */}
+      {/* The subject filter + sort (search lives in the hero above). */}
       <div className="mt-6">
         <SpacesToolbar showFollowing={false} showSearch={false} />
       </div>
@@ -135,7 +138,8 @@ export default async function PublicSpacesDirectoryPage({
           spaces={spaces}
           total={total}
           q={q}
-          category={category}
+          subject={subject}
+          kind={category}
           following={false}
           page={page}
           per={per}

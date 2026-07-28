@@ -1,5 +1,6 @@
 'use server'
 
+import { isChannelCategory } from '@/lib/channels/categories'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -178,12 +179,19 @@ export async function createTopicalChannel(formData: FormData): Promise<void> {
 
   const name = String(formData.get('name') ?? '').trim()
   const description = String(formData.get('description') ?? '').trim() || null
-  const category = String(formData.get('category') ?? '').trim()
+  const rawCategory = String(formData.get('category') ?? '').trim()
   const domainId = String(formData.get('domainId') ?? '').trim() || null
 
   if (!name) throw new Error('Give the channel a name.')
   if (name.length > 80) throw new Error('Channel names need to be 80 characters or fewer.')
-  if (!category) throw new Error('Pick a category so people can find it.')
+  if (!rawCategory) throw new Error('Pick a category so people can find it.')
+  // The vocabulary is CLOSED (lib/channels/categories.ts): the icon and accent on the Channel page
+  // and the directory card are picked from it, and a free-text value here used to reach the DB
+  // unchecked. That was not just untidy - a category named 'toString' crashed the render (the icon
+  // map inherited Object.prototype), and any host can call this action. Refuse off-list values in
+  // words rather than persisting them.
+  if (!isChannelCategory(rawCategory)) throw new Error('Pick one of the listed categories.')
+  const category = rawCategory
 
   const slug = name
     .toLowerCase()

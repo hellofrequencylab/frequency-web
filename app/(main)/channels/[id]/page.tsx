@@ -26,10 +26,16 @@ import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { canCreate, getChannelCapabilities } from '@/lib/core/load-capabilities'
 import { DetailTemplate, PageHero, HERO_ACTION_CLASS, type DetailTab } from '@/components/templates'
 import { resolveHeaderElement } from '@/lib/elements/header'
+import { buttonClasses } from '@/components/ui/button'
 import { ModuleCard } from '@/components/modules/module-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { isProgram, listChapters, type ChapterSummary } from '@/lib/channels/programs'
+import {
+  readChannelCoverFocus,
+  readChannelHeroHeight,
+  hasChannelHeroHeight,
+} from '@/lib/channels/hero'
 import { StartChapterButton } from '@/components/channels/start-chapter-button'
 import { ChaptersNearMe } from '@/components/channels/chapters-near-me'
 import { ChannelRail } from '@/components/channels/channel-rail'
@@ -76,6 +82,7 @@ type TopicalChannel = {
   category: string
   description: string | null
   cover_image: string | null
+  theme: unknown
   is_active: boolean
   template_id: string | null
   owner_space_id: string | null
@@ -182,12 +189,14 @@ export default async function ChannelPage({
   const matchField = UUID_RE.test(id) ? 'id' : 'slug'
   const { data: rawChannel } = await admin
     .from('topical_channels')
-    .select('id, name, slug, category, description, cover_image, is_active, template_id, owner_space_id, pillar_id')
+    .select('id, name, slug, category, description, cover_image, theme, is_active, template_id, owner_space_id, pillar_id')
     .eq(matchField, id)
     .maybeSingle()
 
-  if (!rawChannel || !rawChannel.is_active) notFound()
-  const channel = rawChannel as TopicalChannel
+  // `theme` post-dates lib/database.types.ts, so the typed select narrows to a query-error union and
+  // the row is read through unknown (ADR-246, the repo's standing seam for a not-yet-generated column).
+  const channel = rawChannel as unknown as TopicalChannel | null
+  if (!channel || !channel.is_active) notFound()
 
   // A Channel with a blueprint attached is a PROGRAM: its circles are Chapters
   // (local circles running the model), and the primary create verb becomes
@@ -303,6 +312,16 @@ export default async function ChannelPage({
   // the /channels/[id]/manage console — mirroring the event header's Edit + Manage pair.
   const canManageChannel = channelCaps.has('channel.manage')
 
+  // The saved header settings (topical_channels.theme, ADR-886). An untouched Channel resolves to
+  // the centered default and NO explicit height, which is exactly today's render.
+  //
+  // savedHeroHeight is deliberately null-unless-chosen rather than always a value: the header
+  // ELEMENT config (resolveHeaderElement, ADR-793) also has an opinion about height, and it should
+  // keep deciding for every Channel no operator has tuned. Once an operator picks one, theirs wins.
+  const channelCoverFocus = readChannelCoverFocus(channel.theme)
+  const storedHeight = readChannelHeroHeight(channel.theme)
+  const savedHeroHeight = hasChannelHeroHeight(channel.theme) ? storedHeight : null
+
   const Icon = CHANNEL_CATEGORY_ICON[channel.category] ?? FALLBACK_CHANNEL_CATEGORY_ICON
   const accent = channelCategoryAccent(channel.category)
   const categoryLabel = channelCategoryLabel(channel.category)
@@ -365,7 +384,7 @@ export default async function ChannelPage({
     <p className="mt-4 text-xs text-muted leading-relaxed">
       Circles are local crews of up to 50 people who meet regularly, in-person or
       online. Each one declares a Channel as its practice. Start one from the header
-      above and you are its first host.
+      above and you are its first Host.
     </p>
   )
 
@@ -397,9 +416,10 @@ export default async function ChannelPage({
         hero={
           <PageHero
             variant={header.layout}
-            size={header.height}
+            size={savedHeroHeight ?? header.height}
             overlayStyle={header.overlayStyle}
             coverImage={channel.cover_image}
+            coverFocus={channelCoverFocus}
             leading={
               <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow ring-1 ring-on-ink/10 backdrop-blur ${accent}`}>
                 <Icon className="h-6 w-6" />
@@ -448,7 +468,9 @@ export default async function ChannelPage({
                         channelId={channel.id}
                         slug={channel.slug}
                         size="md"
-                        className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-md hover:bg-primary-hover transition-colors"
+                        // The kit's primary tokens + the hero lift (§8.5: primary CTAs on a
+                        // cover stay bg-primary with shadow-md) — never a hand-rolled string.
+                        className={buttonClasses('primary', 'md', 'shrink-0 shadow-md')}
                       />
                     )
                   }
@@ -457,7 +479,7 @@ export default async function ChannelPage({
                 // Signed-out visitors still get the one primary join CTA.
                 <Link
                   href={`/sign-in?next=/channels/${channel.slug}`}
-                  className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-md hover:bg-primary-hover transition-colors"
+                  className={buttonClasses('primary', 'md', 'shrink-0 shadow-md')}
                 >
                   Sign in to tune in
                 </Link>

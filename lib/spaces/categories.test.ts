@@ -1,24 +1,28 @@
 import { describe, it, expect } from 'vitest'
 import {
-  SPACE_CATEGORIES,
-  DEFAULT_SPACE_CATEGORY,
-  isSpaceCategory,
-  normalizeSpaceCategory,
-  spaceCategoryLabel,
+  SPACE_KINDS,
+  DEFAULT_SPACE_KIND,
+  isSpaceKind,
+  normalizeSpaceKind,
+  spaceKindLabel,
 } from './categories'
 
-// The PUBLIC directory category taxonomy (lib/spaces/categories.ts). What is locked here:
-//   1. Exactly SIX categories, business first (the catch-all default), each with a label + blurb + Icon.
-//   2. The guard (isSpaceCategory) accepts only the closed key set.
-//   3. normalizeSpaceCategory coerces anything unknown / empty / malformed to 'business'.
-//   4. spaceCategoryLabel maps a key to its member-facing label (default for unknown).
-//   5. Copy passes CONTENT-VOICE §10 (no em dashes anywhere in labels or blurbs).
+// The Space KIND taxonomy (lib/spaces/categories.ts, ADR-887: the old "directory category" renamed to
+// the KIND axis — what SHAPE of thing a Space is). What is locked here:
+//   1. Exactly SIX kinds, business first (the catch-all default), each with a label + blurb + Icon.
+//   2. The KEYS are the SAME six the legacy category vocabulary used — the rename never invalidates a
+//      stored row (only the jsonb key moves, via scripts/adr-887-space-kind-migration.sql).
+//   3. The guard (isSpaceKind) accepts only the closed key set.
+//   4. normalizeSpaceKind coerces anything unknown / empty / malformed to 'business'.
+//   5. spaceKindLabel maps a key to its member-facing label (default for unknown), with `coach`
+//      relabeled to "Guides / Coaches" (owner's phrasing, ADR-887).
+//   6. Copy passes CONTENT-VOICE §10 (no em dashes anywhere in labels or blurbs).
 
-describe('SPACE_CATEGORIES', () => {
-  it('has exactly six categories, business first', () => {
-    expect(SPACE_CATEGORIES).toHaveLength(6)
-    expect(SPACE_CATEGORIES[0].key).toBe('business')
-    expect(SPACE_CATEGORIES.map((c) => c.key)).toEqual([
+describe('SPACE_KINDS', () => {
+  it('has exactly six kinds, business first, on the UNCHANGED legacy keys', () => {
+    expect(SPACE_KINDS).toHaveLength(6)
+    expect(SPACE_KINDS[0].key).toBe('business')
+    expect(SPACE_KINDS.map((k) => k.key)).toEqual([
       'business',
       'practitioner',
       'coach',
@@ -28,71 +32,71 @@ describe('SPACE_CATEGORIES', () => {
     ])
   })
 
-  it('covers the owner-named labels', () => {
-    const byKey = Object.fromEntries(SPACE_CATEGORIES.map((c) => [c.key, c.label]))
+  it('covers the owner-named labels, coach relabeled to Guides / Coaches', () => {
+    const byKey = Object.fromEntries(SPACE_KINDS.map((k) => [k.key, k.label]))
     expect(byKey).toMatchObject({
       business: 'Business',
       practitioner: 'Practitioner',
-      coach: 'Coach & Guide',
+      coach: 'Guides / Coaches',
       studio: 'Studios',
       maker: 'Shops',
       venue: 'Event Space',
     })
   })
 
-  it('gives every category a label, a blurb, and an Icon', () => {
-    for (const c of SPACE_CATEGORIES) {
-      expect(c.label.length).toBeGreaterThan(0)
-      expect(c.blurb.length).toBeGreaterThan(0)
-      expect(c.Icon).toBeTruthy() // a lucide icon (a forwardRef component)
+  it('gives every kind a label, a blurb, and an Icon', () => {
+    for (const k of SPACE_KINDS) {
+      expect(k.label.length).toBeGreaterThan(0)
+      expect(k.blurb.length).toBeGreaterThan(0)
+      expect(k.Icon).toBeTruthy() // a lucide icon (a forwardRef component)
     }
   })
 
   it('uses no em dashes in any label or blurb (CONTENT-VOICE §10)', () => {
-    for (const c of SPACE_CATEGORIES) {
-      expect(c.label).not.toContain('—')
-      expect(c.blurb).not.toContain('—')
+    for (const k of SPACE_KINDS) {
+      expect(k.label).not.toContain('—')
+      expect(k.blurb).not.toContain('—')
     }
   })
 
   it('exposes business as the default', () => {
-    expect(DEFAULT_SPACE_CATEGORY).toBe('business')
+    expect(DEFAULT_SPACE_KIND).toBe('business')
   })
 })
 
-describe('isSpaceCategory', () => {
+describe('isSpaceKind', () => {
   it('accepts every known key', () => {
-    for (const c of SPACE_CATEGORIES) expect(isSpaceCategory(c.key)).toBe(true)
+    for (const k of SPACE_KINDS) expect(isSpaceKind(k.key)).toBe(true)
   })
 
-  it('rejects unknown / non-string values', () => {
-    for (const v of ['nonprofit', 'root', 'BUSINESS', '', ' ', 'x', null, undefined, 3, {}]) {
-      expect(isSpaceCategory(v)).toBe(false)
+  it('rejects unknown / non-string values (subjects are NOT kinds)', () => {
+    for (const v of ['nonprofit', 'root', 'BUSINESS', 'meditation', 'movement', '', ' ', 'x', null, undefined, 3, {}]) {
+      expect(isSpaceKind(v)).toBe(false)
     }
   })
 })
 
-describe('normalizeSpaceCategory', () => {
+describe('normalizeSpaceKind', () => {
   it('passes known keys through', () => {
-    expect(normalizeSpaceCategory('practitioner')).toBe('practitioner')
-    expect(normalizeSpaceCategory('venue')).toBe('venue')
+    expect(normalizeSpaceKind('practitioner')).toBe('practitioner')
+    expect(normalizeSpaceKind('venue')).toBe('venue')
   })
 
   it('coerces unknown / empty / malformed to business', () => {
     for (const v of ['', ' ', 'nope', 'Business', null, undefined, 42, {}, []]) {
-      expect(normalizeSpaceCategory(v)).toBe('business')
+      expect(normalizeSpaceKind(v)).toBe('business')
     }
   })
 })
 
-describe('spaceCategoryLabel', () => {
+describe('spaceKindLabel', () => {
   it('maps a known key to its label', () => {
-    expect(spaceCategoryLabel('coach')).toBe('Coach & Guide')
-    expect(spaceCategoryLabel('maker')).toBe('Shops')
+    expect(spaceKindLabel('coach')).toBe('Guides / Coaches')
+    expect(spaceKindLabel('maker')).toBe('Shops')
   })
 
   it('falls back to the default label for an unknown key', () => {
-    expect(spaceCategoryLabel('bogus')).toBe('Business')
-    expect(spaceCategoryLabel(undefined)).toBe('Business')
+    expect(spaceKindLabel('bogus')).toBe('Business')
+    expect(spaceKindLabel(undefined)).toBe('Business')
   })
 })

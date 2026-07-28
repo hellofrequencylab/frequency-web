@@ -24,6 +24,7 @@ import { PracticeSettingsModule } from './practice-settings-module'
 import { PracticeInsightsModule } from './practice-insights-module'
 import { ChannelSettingsModule } from './channel-settings-module'
 import { ChannelInsightsModule } from './channel-insights-module'
+import { ChannelDangerZone } from './channel-danger-zone'
 import { JourneySettingsModule } from './journey-settings-module'
 import { JourneyBuilderModule } from './journey-builder-module'
 import { JourneyExportModule } from './journey-export-module'
@@ -101,6 +102,7 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'practice.insights': PracticeInsightsModule,
   'channel.settings': ChannelSettingsModule,
   'channel.insights': ChannelInsightsModule,
+  'channel.danger': ChannelDangerZone,
   // Journey rail (ADR-515 Phase 6). Settings mounts the self-contained JourneySettings editor inline;
   // Builder/Layout links out to the full-page builder (the block tree is data-heavy — the hub/nexus
   // pattern); Export is a light inline control; Danger is inline (never banked). Each self-fetches its

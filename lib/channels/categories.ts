@@ -1,106 +1,47 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// CHANNEL CATEGORY VOCABULARY — the ONE source for `topical_channels.category`.
+// CHANNEL CATEGORY VOCABULARY — now a VIEW onto the shared subject taxonomy.
 //
-// The category is a small closed set that drives what a Channel LOOKS like: the
-// icon on its directory card, the icon chip + eyebrow on its page hero, and the
-// accent behind that chip. Before ADR-879 the vocabulary was implied by two
-// hand-written `CATEGORY_ICON` maps (the channel page and the channels list)
-// while the operator typed the value as free text, so an operator could quietly
-// pick a word neither map knew and the Channel would fall back to a generic
-// icon with no warning. Now the settings select, the icon, the accent, and the
-// label all read this file, so they cannot drift.
+// ADR-887 hoisted the word list to lib/taxonomy/subjects.ts because Channels
+// and Spaces share one answer to "what is this about?", and neither entity may
+// own a vocabulary both read. This file keeps its ENTIRE public API (the type,
+// the array, the readers, the icon map) so every existing import — the page
+// hero, the directory card, the settings select, the full editor, the create
+// action's validator — keeps working unchanged; it simply derives from the
+// shared list instead of declaring its own.
 //
-// PURE + data-only (no Supabase / Next / server imports), so it is trivially
-// unit-testable and safe to import from a Server Component, a client rail
-// module, and a server action alike. Copy runs NAMING.md + CONTENT-VOICE §10:
-// plain label words, no em dashes, no hype.
+// Everything ADR-879 locked still holds, and is still tested here:
+//   • one source, no hand-written parallel maps;
+//   • OFF-LIST VALUES ARE NOT REWRITTEN — readers are TOTAL, an unknown value
+//     keeps its own text as the label and falls back to the generic Radio icon;
+//   • the settings select surfaces an off-list value as a marked option so
+//     saving another field never silently relabels a Channel;
+//   • the icon map sits on a NULL PROTOTYPE, so a stored category named
+//     'toString' resolves undefined and the caller's ?? fallback fires instead
+//     of React throwing on Object.prototype.toString (this crashed the whole
+//     /channels directory before it was caught).
 //
-// OFF-LIST VALUES ARE NOT REWRITTEN. Existing rows may hold anything (the old
-// free-text field defaulted to 'general'). Every reader here is TOTAL: an
-// unknown value keeps its own text as the label and renders the generic Radio
-// icon, exactly as it did before. The settings select surfaces an off-list value
-// as a marked option so saving another field never silently relabels a Channel.
+// PURE + data-only (no Supabase / Next / server imports).
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { LucideIcon } from 'lucide-react'
+import { Radio } from 'lucide-react'
 import {
-  Sparkles,
-  Activity,
-  Heart,
-  MessagesSquare,
-  Megaphone,
-  Palette,
-  Briefcase,
-  Radio,
-} from 'lucide-react'
+  SUBJECTS,
+  isSubjectKey,
+  findSubject,
+  type SubjectKey,
+  type SubjectChoice,
+} from '@/lib/taxonomy/subjects'
 
-/** The closed set of Channel category keys. */
-export type ChannelCategory =
-  | 'spirituality'
-  | 'movement'
-  | 'holistic-health'
-  | 'human-relating'
-  | 'activism'
-  | 'creative'
-  | 'business-support'
+/** The closed set of Channel category keys — the shared subject keys (ADR-887). */
+export type ChannelCategory = SubjectKey
 
 /** One category: its stored key, the label people read, the card/hero icon, and the chip accent. */
-export interface ChannelCategoryChoice {
-  /** The value stored in `topical_channels.category`. */
-  key: ChannelCategory
-  /** The word a member sees (the hero eyebrow). */
-  label: string
-  /** The lucide icon for the directory card and the hero chip. */
-  Icon: LucideIcon
-  /** Token-only accent classes for the chip (no hex, DAWN tokens only). */
-  accent: string
-}
+export type ChannelCategoryChoice = SubjectChoice
 
-/** The seven categories, in the order the settings select lists them. */
-export const CHANNEL_CATEGORIES: readonly ChannelCategoryChoice[] = [
-  {
-    key: 'spirituality',
-    label: 'Spirituality',
-    Icon: Sparkles,
-    accent: 'text-signal-strong bg-signal-bg/40',
-  },
-  {
-    key: 'movement',
-    label: 'Movement',
-    Icon: Activity,
-    accent: 'text-signal-strong bg-success-bg/40',
-  },
-  {
-    key: 'holistic-health',
-    label: 'Holistic Health',
-    Icon: Heart,
-    accent: 'text-danger bg-danger-bg',
-  },
-  {
-    key: 'human-relating',
-    label: 'Human Relating',
-    Icon: MessagesSquare,
-    accent: 'text-signal-strong bg-signal-bg',
-  },
-  {
-    key: 'activism',
-    label: 'Activism',
-    Icon: Megaphone,
-    accent: 'text-warning dark:text-primary bg-warning-bg',
-  },
-  {
-    key: 'creative',
-    label: 'Creative',
-    Icon: Palette,
-    accent: 'text-warning bg-warning-bg/40',
-  },
-  {
-    key: 'business-support',
-    label: 'Business Support',
-    Icon: Briefcase,
-    accent: 'text-muted dark:text-subtle bg-surface',
-  },
-] as const
+/** The categories, in the order the settings select lists them — THE shared subject list. */
+export const CHANNEL_CATEGORIES: readonly ChannelCategoryChoice[] = SUBJECTS
+
 
 /** What a Channel shows when its stored category is off-list (an old free-text value). */
 export const FALLBACK_CHANNEL_CATEGORY_ICON: LucideIcon = Radio
@@ -110,19 +51,21 @@ export const FALLBACK_CHANNEL_CATEGORY_ACCENT = 'text-muted bg-surface'
  *  its icon during render reads this map rather than calling `channelCategoryIcon`, so the icon is a
  *  stable module-level reference and not a component value created during render. */
 export const CHANNEL_CATEGORY_ICON: Readonly<Record<string, LucideIcon>> = Object.freeze(
-  Object.fromEntries(CHANNEL_CATEGORIES.map((c) => [c.key, c.Icon])),
+  // On a NULL PROTOTYPE, and that is load-bearing. Object.fromEntries inherits Object.prototype,
+  // so indexing the map with a stored category of 'toString' or 'constructor' returned a real,
+  // truthy FUNCTION, the caller's `?? FALLBACK` never fired, and React threw rendering it - taking
+  // down the Channel page and the whole /channels directory. The category column is free text
+  // (any host can type anything at create), so those keys are reachable, not theoretical. With no
+  // prototype, every off-list key is undefined and the fallback fires.
+  Object.assign(Object.create(null), Object.fromEntries(CHANNEL_CATEGORIES.map((c) => [c.key, c.Icon]))),
 )
-
-const CATEGORY_KEYS: readonly ChannelCategory[] = CHANNEL_CATEGORIES.map((c) => c.key)
 
 /** Is `value` one of the registered category keys? (Closed set.) PURE. */
 export function isChannelCategory(value: unknown): value is ChannelCategory {
-  return typeof value === 'string' && (CATEGORY_KEYS as readonly string[]).includes(value)
+  return isSubjectKey(value)
 }
 
-function find(value: unknown): ChannelCategoryChoice | undefined {
-  return isChannelCategory(value) ? CHANNEL_CATEGORIES.find((c) => c.key === value) : undefined
-}
+const find = findSubject
 
 /** The icon for a stored category. An off-list value gets the generic Radio. PURE + total. */
 export function channelCategoryIcon(value: unknown): LucideIcon {
