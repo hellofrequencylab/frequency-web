@@ -1,21 +1,20 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { CHANNEL_CATEGORIES } from '@/lib/channels/categories'
 import { Plus, Radio } from 'lucide-react'
 import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
 import { createTopicalChannel } from './actions'
 
-// The seven launch categories. These match the icon set on the channels
-// page so each new channel inherits the right look automatically.
-const CATEGORIES: Array<{ value: string; label: string }> = [
-  { value: 'spirituality',     label: 'Spirituality' },
-  { value: 'movement',         label: 'Movement' },
-  { value: 'holistic-health',  label: 'Holistic Health' },
-  { value: 'human-relating',   label: 'Human Relating' },
-  { value: 'activism',         label: 'Activism' },
-  { value: 'creative',         label: 'Creative' },
-  { value: 'business-support', label: 'Business Support' },
-]
+// The category options come from THE vocabulary (lib/channels/categories.ts), never a local copy.
+// This file used to carry its own seven-item list with a comment claiming it "matched" the icon
+// set - true only by luck, invisible to tsc, and exactly the drift ADR-879 closed the vocabulary
+// to prevent. The create ACTION now refuses off-list values too, so a stale copy here would have
+// turned into user-facing errors rather than silent bad rows.
+const CATEGORIES: Array<{ value: string; label: string }> = CHANNEL_CATEGORIES.map((c) => ({
+  value: c.key,
+  label: c.label,
+}))
 
 type PillarOption = { id: string; name: string }
 

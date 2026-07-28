@@ -216,17 +216,18 @@ export async function propagateAnchorEditsToOccurrences(anchorId: string): Promi
     .select('id')
   // supabase-js RESOLVES with { data, error } on a DB failure rather than throwing, so read it.
   if (error) {
-    // `anchorId` arrives from a form field and `error.message` can carry database text, so neither
-    // reaches the log raw: a value containing CR/LF could forge additional log entries (CodeQL
-    // log-injection). sanitizeForLog strips the line terminators; the id is also LENGTH-CAPPED,
-    // because stripping newlines stops a forged entry but not a megabyte flooding the log.
+    // Neither value reaches the log raw. `anchorId` comes from a form field and `error.message` can
+    // carry database text, so a value containing CR/LF could forge extra log entries (CodeQL
+    // log-injection).
+    //
+    // The id is logged as a HASHED TOKEN rather than sanitized in place, because the scanner
+    // rejected the readable sanitized-and-capped form twice. It costs debuggability: you can no
+    // longer eyeball an event id in the logs. The token is stable though, so hashing the id you are
+    // investigating still correlates. `error.message` is sanitized rather than hashed, since it has
+    // to stay legible to be worth logging at all.
     console.error(
       '[propagateAnchorEditsToOccurrences]',
-    // The id is logged as a HASHED TOKEN, not the raw value (CodeQL log-injection; the scanner
-    // rejected a sanitized-and-capped id twice). It costs readability - you cannot eyeball an event
-    // id in the logs any more - but the token is stable, so hashing the id you are investigating
-    // still correlates. `error.message` is sanitized rather than hashed, since it has to stay legible.
-      `anchor=${logToken(anchorId)}`,
+      logToken(anchorId),
       sanitizeForLog(error.message),
     )
     return 0

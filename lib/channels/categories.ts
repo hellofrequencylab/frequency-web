@@ -110,7 +110,13 @@ export const FALLBACK_CHANNEL_CATEGORY_ACCENT = 'text-muted bg-surface'
  *  its icon during render reads this map rather than calling `channelCategoryIcon`, so the icon is a
  *  stable module-level reference and not a component value created during render. */
 export const CHANNEL_CATEGORY_ICON: Readonly<Record<string, LucideIcon>> = Object.freeze(
-  Object.fromEntries(CHANNEL_CATEGORIES.map((c) => [c.key, c.Icon])),
+  // On a NULL PROTOTYPE, and that is load-bearing. Object.fromEntries inherits Object.prototype,
+  // so indexing the map with a stored category of 'toString' or 'constructor' returned a real,
+  // truthy FUNCTION, the caller's `?? FALLBACK` never fired, and React threw rendering it - taking
+  // down the Channel page and the whole /channels directory. The category column is free text
+  // (any host can type anything at create), so those keys are reachable, not theoretical. With no
+  // prototype, every off-list key is undefined and the fallback fires.
+  Object.assign(Object.create(null), Object.fromEntries(CHANNEL_CATEGORIES.map((c) => [c.key, c.Icon]))),
 )
 
 const CATEGORY_KEYS: readonly ChannelCategory[] = CHANNEL_CATEGORIES.map((c) => c.key)

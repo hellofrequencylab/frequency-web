@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   CHANNEL_CATEGORIES,
+  CHANNEL_CATEGORY_ICON,
   FALLBACK_CHANNEL_CATEGORY_ICON,
   FALLBACK_CHANNEL_CATEGORY_ACCENT,
   isChannelCategory,
@@ -112,4 +113,26 @@ describe('one source (source shape): nobody re-declares the vocabulary', () => {
       }
     })
   }
+})
+
+// ── THE ICON MAP CANNOT BE POISONED BY ITS OWN PROTOTYPE ─────────────────────────────────────────
+//
+// CHANNEL_CATEGORY_ICON is indexed directly with a STORED category (page hero, directory card),
+// guarded by `?? FALLBACK`. Built with plain Object.fromEntries it inherited Object.prototype, so a
+// stored category of 'toString' returned a real truthy FUNCTION, the ?? never fired, and React
+// threw rendering it - the Channel page and the whole /channels directory went down together. The
+// column is free text at the DB and the create action is host-reachable, so the keys were
+// reachable, not theoretical. The map now sits on a null prototype; these lock it there.
+describe('CHANNEL_CATEGORY_ICON is safe to index with hostile keys', () => {
+  it('returns undefined (so ?? falls back) for every Object.prototype name', () => {
+    for (const k of ['toString', 'constructor', 'valueOf', 'hasOwnProperty', '__proto__']) {
+      expect(CHANNEL_CATEGORY_ICON[k]).toBeUndefined()
+    }
+  })
+
+  it('still resolves every registered key to its icon', () => {
+    for (const c of CHANNEL_CATEGORIES) {
+      expect(CHANNEL_CATEGORY_ICON[c.key]).toBe(c.Icon)
+    }
+  })
 })
