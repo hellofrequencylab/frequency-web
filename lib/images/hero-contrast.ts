@@ -27,8 +27,13 @@ export interface RegionFraction {
   y1: number
 }
 
-/** Where the identity lockup sits: the bottom-left band of the hero. */
-export const HERO_TEXT_REGION: RegionFraction = { x0: 0, y0: 0.5, x1: 0.62, y1: 1 }
+/** Where the identity lockup sits: the bottom-left band of the hero.
+ *
+ *  NARROWED (2026-07-28) from x1 0.62 / y0 0.5 to the box the name + @handle actually occupy. The
+ *  old band swept most of the cover's lower half, so a subject standing anywhere right of centre
+ *  (or high in the band) dominated the statistic for text that never sits on it. With the secondary
+ *  controls moved off the cover, the only overlaid copy is this lockup, so the sample can match it. */
+export const HERO_TEXT_REGION: RegionFraction = { x0: 0, y0: 0.68, x1: 0.5, y1: 1 }
 
 /** The readability floor (WCAG AA for large text is 3:1; we aim a step higher because the
  *  backdrop is a photo average, not a flat color). Below this, the scrim turns on. */
@@ -183,13 +188,19 @@ export async function sampleCoverRegionLuminance(
     if (!ctx) return null
     ctx.drawImage(img, sx0, sy0, sw, sh, 0, 0, SIZE, SIZE)
     const data = ctx.getImageData(0, 0, SIZE, SIZE).data
-    let sum = 0
-    let n = 0
+    // The WORST-CASE bright pixel (p85), not the mean. A photo with a bright subject beside dark
+    // ground averages to a mid-tone that scores as passing while the copy is invisible over the
+    // bright part — the exact production read: a white fur coat beside dark timber averaged light,
+    // so the sensor flipped the name to BLACK over the dark wood it actually sits on. A high
+    // percentile answers the question that matters for light copy ("how bright does this text have
+    // to survive?") and is robust to the few blown-out pixels a true max would trip on.
+    const lums: number[] = []
     for (let i = 0; i < data.length; i += 4) {
-      sum += relativeLuminance(data[i], data[i + 1], data[i + 2])
-      n++
+      lums.push(relativeLuminance(data[i], data[i + 1], data[i + 2]))
     }
-    return n ? sum / n : null
+    if (!lums.length) return null
+    lums.sort((a, b) => a - b)
+    return lums[Math.min(lums.length - 1, Math.floor(lums.length * 0.85))]
   } catch {
     // Tainted canvas (no CORS grant), decode failure, unsupported source — degrade gracefully.
     return null

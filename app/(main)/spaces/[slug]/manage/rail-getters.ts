@@ -51,6 +51,7 @@ import {
 } from '@/lib/entity-blocks/block-data-sources'
 import { PICKER_DATA_BLOCK_IDS } from '@/lib/entity-blocks/block-content'
 import { parseEntityLayout, resolveRows, type RowDef } from '@/lib/entity-blocks/layout'
+import type { BlockStyle } from '@/lib/entity-blocks/block-content'
 import { readHeroConfig, heroCtaFromPreference } from '@/lib/spaces/hero-config'
 import type { HeroEditorValues } from '@/lib/spaces/hero-config'
 import { readProfileData, isServiceListed, type SpaceProfileData } from '@/lib/spaces/profile-data'
@@ -386,6 +387,14 @@ interface SpaceLayoutRailData {
   rows: RowDef[]
   /** The persisted hidden block ids (blocks kept in place but off the render). */
   hidden: string[]
+  /** Per-block authored content (ADR-528), keyed by block id. The builder's FIRST seed of the shared store
+   *  wins (profile-layout-context), so this MUST travel with the rows: seeding rows without content blanked
+   *  every authored block on the edit canvas whenever the rail mounted before the live grid (owner report,
+   *  2026-07-28 — headings, features and cards all rendered their empty-state scaffolding in edit mode while
+   *  the published page kept the content). */
+  content: Record<string, Record<string, unknown>>
+  /** Per-block style (ADR-528) — travels with content for the same first-seed reason. */
+  style: Record<string, BlockStyle>
   /** Whether the space has ever saved a layout (else the resolved rows are the default seed → show starters). */
   customized: boolean
   /** Space blocks locked behind a function this space does not have on, OR (ADR-573 item 6) a function-backed
@@ -454,6 +463,10 @@ async function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): Pro
     slug: space.slug,
     rows: resolveRows(saved, 'space'),
     hidden: saved?.hidden ?? [],
+    // Authored content + style ride the same seed as the rows (already parsed + sanitized by
+    // parseEntityLayout) — see the interface note: a rows-only first seed blanks the edit canvas.
+    content: saved?.content ?? {},
+    style: saved?.style ?? {},
     customized: !!(saved && (saved.rows?.length || saved.template || saved.slots || saved.order)),
     lockedIds,
     pickerData,

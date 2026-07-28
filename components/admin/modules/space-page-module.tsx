@@ -53,6 +53,10 @@ export function SpacePageModule() {
             matchId: layout.slug,
             rows: layout.rows,
             hidden: layout.hidden,
+            // Authored content + style MUST ride the seed (first seed wins): a rows-only seed from this
+            // rail bundle blanked every authored block on the edit canvas (owner report, 2026-07-28).
+            content: layout.content,
+            style: layout.style,
             customized: layout.customized,
             lockedIds: layout.lockedIds,
             pickerData: layout.pickerData,

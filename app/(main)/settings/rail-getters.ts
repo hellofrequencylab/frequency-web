@@ -37,6 +37,7 @@ import { deriveTier, ENTITLEMENT_LABEL } from '@/lib/core/entitlement'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import { readMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
 import { resolveRows, type RowDef } from '@/lib/entity-blocks/layout'
+import type { BlockStyle } from '@/lib/entity-blocks/block-content'
 
 // ── Profile (account.profile / account.spotlight / account.layout) ─────────────────────────────────────
 // The ProfileForm prop bundle the /settings/profile page assembles (profile/page.tsx). Re-gated on the
@@ -244,6 +245,12 @@ export interface MemberLayoutRailData {
   rows: RowDef[]
   /** The persisted hidden block ids (blocks kept in place but off the render). */
   hidden: string[]
+  /** Per-block authored content + style (ADR-528). The builder's FIRST seed of the shared store wins, so
+   *  these MUST travel with the rows — a rows-only seed blanked every authored block on the edit canvas
+   *  whenever the rail mounted before the live preview (the Space builder shipped exactly that; owner
+   *  report, 2026-07-28). */
+  content: Record<string, Record<string, unknown>>
+  style: Record<string, BlockStyle>
   /** Whether the member has ever saved a layout (else the resolved rows are the default seed → show starters). */
   customized: boolean
 }
@@ -268,6 +275,8 @@ export async function getMemberLayoutRailData(): Promise<MemberLayoutRailData | 
     handle: (profile as { handle?: string | null }).handle ?? null,
     rows: resolveRows(saved, 'member'),
     hidden: saved?.hidden ?? [],
+    content: saved?.content ?? {},
+    style: saved?.style ?? {},
     customized: !!(saved && (saved.rows?.length || saved.template || saved.slots || saved.order)),
   }
 }

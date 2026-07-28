@@ -323,13 +323,16 @@ export default async function ProfilePage({
     />
   ) : null
 
-  // The secondary, lower-stakes controls (Block · janitor "Act as") render as small
-  // text LINKS in a row UNDER the primary button row, right-aligned — they shouldn't
-  // compete with Friends/Message/Settings for weight.
+  // The secondary, lower-stakes controls (Block · janitor "Act as") live BELOW the cover, on the
+  // join-date line (owner directive, 2026-07-28). They used to render as a second row nested inside
+  // the hero's actions slot, which is what bent the on-cover button row: the hero lays its actions
+  // out in ONE wrapping flex row, so a two-row never-shrink column inside it wrapped the whole
+  // cluster down onto the @handle line and collided with the name. The hero now gets a FLAT list of
+  // chips only, and these render in `secondaryControls` under the header.
   const hasSecondary = (!isOwner) || isJanitorViewer
   const viewerActions = user ? (
-    <div className="flex flex-col items-end gap-2">
-      <div className="flex flex-wrap items-center justify-end gap-2">
+    <>
+      <div className="contents">
         {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
         {vcardEnabled && (
           <a href={`${profilePath}/vcard`} className={HERO_ACTION_CLASS}>
@@ -363,26 +366,30 @@ export default async function ProfilePage({
           />
         )}
       </div>
-      {hasSecondary && (
-        <div className="flex items-center gap-3 pr-0.5">
-          {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} variant="link" />}
-          {/* Janitor full control: become this member (session swap). The server action
-              re-checks the real janitor web_role before swapping. */}
-          {isJanitorViewer && (
-            <form action={actAsMember.bind(null, profileId)}>
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1 text-xs font-medium text-signal-strong transition-colors hover:underline"
-                title="Act as this member (full control)"
-              >
-                <UserCog className="h-3 w-3" />
-                Act as {firstName}
-              </button>
-            </form>
-          )}
-        </div>
+    </>
+  ) : null
+
+  // Block · janitor "Act as" — the secondary controls, rendered UNDER the cover on the join-date
+  // line (owner directive, 2026-07-28). Small text links: they must not compete with
+  // Friends/Message/Settings for weight, and off the photo they never collide with the name lockup.
+  const secondaryControls = user && hasSecondary ? (
+    <span className="flex items-center gap-3">
+      {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} variant="link" />}
+      {/* Janitor full control: become this member (session swap). The server action
+          re-checks the real janitor web_role before swapping. */}
+      {isJanitorViewer && (
+        <form action={actAsMember.bind(null, profileId)}>
+          <button
+            type="submit"
+            className="inline-flex items-center gap-1 text-xs font-medium text-signal-strong transition-colors hover:underline"
+            title="Act as this member (full control)"
+          >
+            <UserCog className="h-3 w-3" />
+            Act as {firstName}
+          </button>
+        </form>
       )}
-    </div>
+    </span>
   ) : null
 
   // ── The profile IS the Detail template (PAGE-FRAMEWORK §3, Template C; the
@@ -464,6 +471,8 @@ export default async function ProfilePage({
                 )}
                 {/* Status chips (Ghost rank, Founder, Supporter, demo) sit at the END of the stats line. */}
                 {badges}
+                {/* Block · Act as — moved off the cover onto this line (owner directive, 2026-07-28). */}
+                {secondaryControls}
               </div>
               {editProfileButton}
             </div>

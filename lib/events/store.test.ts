@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { readFileSync } from 'node:fs'
 
 // Phase 0 ownership contract for EVENTS (ENTITY-SPACES-BUILD Epic 0.3 / §4.3). Locks two things:
 //   1. STAMP — a new event defaults its space_id to the ROOT space (the canary).
@@ -212,7 +213,6 @@ describe('space calendar membership (ADR-898): the drift guard', () => {
   // widened membership in BOTH the store read and the .ics RPC migration, so neither side can silently
   // narrow back to tenancy-only (the exact drift that shipped the bug) and the grid ⇄ feed lockstep
   // holds without a live database.
-  const { readFileSync } = require('node:fs') as typeof import('node:fs')
   const storeSrc = readFileSync('lib/events/store.ts', 'utf8')
   const feedSql = readFileSync(
     'supabase/migrations/20270122000000_space_calendar_hosted_events.sql',
