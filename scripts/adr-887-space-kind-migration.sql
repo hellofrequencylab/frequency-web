@@ -1,5 +1,12 @@
 -- ADR-887 · MOVE THE SPACE KIND ONTO ITS OWN KEY: profileData.category -> profileData.kind
 --
+-- APPLIED to production 2026-07-28. VERIFY BEFORE matched expectations exactly: nine legacy rows
+-- (alvara, audrey-dewitt, danieltyack, house-of-fates, justice-massage, mikhael, nutrithryv,
+-- rageher, templeofaset), zero rows already carrying kind. VERIFY AFTER: zero category keys
+-- remain, nine kind keys, distribution identical to the before-state (business 3, practitioner 3,
+-- coach 2, venue 1) - values copied verbatim, nothing relabeled. Kept in the repo because every
+-- statement is idempotent and the file is the record of what was run.
+--
 -- The ADR-887 split gave Spaces two axes: SUBJECT (what it is about, the shared vocabulary at
 -- preferences.profileData.subject) and KIND (what shape of thing it is, the old six-key "category"
 -- vocabulary at preferences.profileData.kind). The KEYS themselves are unchanged (business /
