@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ClaimButton } from '@/app/events/claim/[token]/claim-button'
-import { CalendarDays, MapPin, Users, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard, Settings } from 'lucide-react'
+import { CalendarDays, MapPin, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
@@ -36,6 +37,9 @@ import { EventRewardStrip } from '@/components/events/event-reward-strip'
 import { type FactGuest } from '@/components/events/event-fact-panel'
 import { type RecapPhoto } from '@/components/events/recap-album'
 import { EventGallery } from '@/components/events/event-gallery'
+import { EventBelonging, EventBelongingSkeleton } from '@/components/events/event-belonging'
+import { circleScopeId, associatedSpaceId } from '@/lib/events/belonging'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 import { HostHovercard } from '@/components/events/host-hovercard'
 import { EventShareButton } from '@/components/events/event-share-button'
 import { type CohostView } from '@/components/events/cohost-manager'
@@ -240,6 +244,14 @@ export default async function EventDetailPage({
   if (!rawEvent) notFound()
   const event = rawEvent as unknown as EventDetail
 
+  // PLACEMENT, read honestly (ADR-883). `scope_id` names an entity for exactly ONE value of
+  // `scope_type`: Circle. A 'public' event's scope_id is a shared SENTINEL region uuid and the
+  // legacy 'standalone' row's scope_id is a PROFILE id, so both resolve to null here and can
+  // never be looked up as a Circle, gated as a Circle, or rendered as a link. The helper also
+  // accepts the pre-rename 'group' value the older rows still carry, which the two hand-rolled
+  // `=== 'circle'` checks below used to miss (the circle_only membership gate among them).
+  const circleId = circleScopeId({ scopeType: event.scope_type, scopeId: event.scope_id })
+
   // ── Poster Events + presentation + geo fields (newer than the generated types →
   // untyped read, repo convention). Drives the "Posted by" credit, the cover image,
   // the attendance-mode chip, and the online join link. ───────────────────────
@@ -285,7 +297,7 @@ export default async function EventDetailPage({
   // These three only depend on already-resolved values (event.id / session_id) and
   // not on each other, so resolve them concurrently: the extra-meta read, the
   // Stripe redirect reconcile (when present), and the viewer's event capabilities.
-  const [{ data: rawExtra }, ticketedCentsResolved, eventCaps] = await Promise.all([
+  const [{ data: rawExtra }, ticketedCentsResolved, eventCaps, rootSpaceId] = await Promise.all([
     (admin)
       .from('events')
       .select(
@@ -298,6 +310,9 @@ export default async function EventDetailPage({
       ? recordTicketFromSessionId(session_id)
       : Promise.resolve(null),
     getEventCapabilities(event.id),
+    // The root Space is the single-tenant default an event inherits (a personal Circle derives
+    // it), so it has to be excluded before space_id can be read as a real placement.
+    loadRootSpaceId(),
   ])
   const extra = (rawExtra ?? null) as ExtraMeta | null
   // The event's IANA zone (default HOME). Every is-past / check-in gate + when-line
@@ -316,7 +331,15 @@ export default async function EventDetailPage({
   // page. The person in host_id stays the operational organizer (edit rights, rewards, cohost
   // management). Best-effort: a missing or non-active Space just falls back to the person host, so
   // attribution never breaks the page.
-  const eventSpaceId = extra?.host_space_id ?? extra?.space_id ?? null
+  //
+  // The ROOT Space is excluded: every event inherits it (a personal Circle's events derive it,
+  // lib/circles/store.ts spaceIdForCircle), so treating it as a placement attributed those events
+  // to the platform's own brand instead of their person host, and pointed the membership-tier +
+  // payout lookups at the root tenant. The edit page already made this exact check.
+  const eventSpaceId = associatedSpaceId(
+    { spaceId: extra?.space_id, hostSpaceId: extra?.host_space_id },
+    rootSpaceId,
+  )
   let spaceHost: SpaceHostLite | null = null
   // The HOSTING space's owner: for an explicitly space-hosted event (host_space_id set) this is
   // the payee whose Connect account tickets pay into (ADR-819) — the payout-readiness check below
@@ -452,7 +475,7 @@ export default async function EventDetailPage({
   if (!canManage) {
     const vis = event.visibility ?? 'circle_only'
     if (vis === 'private') notFound()
-    if (vis === 'circle_only' && event.scope_type === 'circle') {
+    if (vis === 'circle_only' && circleId) {
       const { getMyProfileId } = await import('@/lib/auth')
       const myId = await getMyProfileId()
       if (!myId) notFound()
@@ -460,7 +483,7 @@ export default async function EventDetailPage({
         .from('memberships')
         .select('id')
         .eq('profile_id', myId)
-        .eq('circle_id', event.scope_id)
+        .eq('circle_id', circleId)
         .eq('status', 'active')
         .maybeSingle()
       if (!member) notFound()
@@ -483,11 +506,11 @@ export default async function EventDetailPage({
     getCapacityInfo(event.id),
     // The circle's PUBLIC city-level coordinates (the mini map rides the hosting
     // circle's area, never the exact venue — ADR-186 privacy).
-    event.scope_type === 'circle'
+    circleId
       ? admin
           .from('circles')
           .select('name, slug, latitude, longitude')
-          .eq('id', event.scope_id)
+          .eq('id', circleId)
           .maybeSingle()
           .then(({ data }) => data as { name: string; slug: string; latitude: number | null; longitude: number | null } | null)
       : Promise.resolve(null),
@@ -1523,7 +1546,9 @@ export default async function EventDetailPage({
     starts_at: event.starts_at,
     ends_at: event.ends_at,
     city: extra?.city ?? null,
-    circle_id: event.scope_id ?? null,
+    // The Circle only, never the raw scope id: a public event's scope_id is the shared sentinel
+    // region, which is not an organizer and must not be published as one.
+    circle_id: circleId,
     circle_name: scopeName,
     price_cents: event.price_cents,
     // A ticketed event prices on its ACTIVE TIERS, not events.price_cents (null for them), so
@@ -1733,18 +1758,21 @@ export default async function EventDetailPage({
               </div>
             )}
 
-            {scopeName && (
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-subtle shrink-0" />
-                {scopeSlug ? (
-                  <Link href={`/circles/${scopeSlug}`} className="text-primary-strong hover:underline">
-                    {scopeName}
-                  </Link>
-                ) : (
-                  <span>{scopeName}</span>
-                )}
-              </div>
-            )}
+            {/* WHERE THIS EVENT BELONGS: its Circle, its Space, and its Journey, each a link.
+                This replaces the bare unlabeled Circle name that used to sit here, which said
+                nothing about what it was and left the Space and Journey ties invisible. The
+                Circle ref is null unless `scope_type` genuinely names one, so a public event's
+                sentinel scope_id and the legacy standalone row's profile id cannot reach it.
+                Its Journey needs a read the header must not wait on, so it streams in behind
+                its own <Suspense> (PAGE-FRAMEWORK §5). */}
+            <Suspense fallback={<EventBelongingSkeleton />}>
+              <EventBelonging
+                eventId={event.id}
+                circle={scopeSlug ? { name: scopeName, slug: scopeSlug } : null}
+                space={spaceHost ? { name: spaceHost.name, slug: spaceHost.slug } : null}
+                canManage={canManage}
+              />
+            </Suspense>
 
             {spaceHost ? (
               // Space-hosted event: the Space is the attribution — its brand links to the Space page. The
