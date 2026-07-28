@@ -73,7 +73,9 @@ export async function bookServiceAction(
 }
 
 export interface ServiceEnquiryResult {
-  url?: string
+  /** The thread the enquiry landed in. An ID, not a URL (ADR-896): the caller opens the chat
+   *  dock over the listing rather than navigating the buyer away to a DM page. */
+  conversationId?: string
   error?: string
 }
 
@@ -122,5 +124,5 @@ export async function sendServiceEnquiry(productId: string): Promise<ServiceEnqu
   })
   if (error) return { error: 'Could not send your enquiry. Try again.' }
 
-  return { url: `/messages/${conversationId}` }
+  return { conversationId }
 }

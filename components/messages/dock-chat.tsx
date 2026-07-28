@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Hash, Lock, MessageSquare, Loader2, ArrowRight, Users, ChevronLeft } from 'lucide-react'
@@ -14,6 +14,7 @@ import {
 } from '@/app/(main)/messages/popover-actions'
 import { MessageThread } from '@/components/messages/thread'
 import { RoomThread } from '@/components/rooms/room-thread'
+import { DOCK_BACK_EVENT, type DockOpenDetail } from '@/lib/messages/dock-open'
 
 // Module-level cache so reopening the dock is INSTANT (the summary is a few RPCs, which
 // is what felt slow). Warmed by the launcher on mount (prefetchDockSummary) and refreshed
@@ -44,13 +45,31 @@ type RoomData = Awaited<ReturnType<typeof loadDockRoomThread>>
 
 // The Chat tab of the dock. Inbox-first; tapping a DM or room opens its live thread
 // INLINE (no route change), so members chat without leaving the page they're on.
-export function DockChat({ onNavigate }: { onNavigate?: () => void }) {
+export function DockChat({
+  onNavigate,
+  requested,
+  onRequestHandled,
+  onThreadOpenChange,
+}: {
+  onNavigate?: () => void
+  /** A programmatic "open this thread" from the launcher (ADR-896). Before this prop the dock
+   *  could ONLY be opened by clicking a row in its own inbox, so a Reconnect button had no way
+   *  to reach it and had to navigate instead. */
+  requested?: DockOpenDetail | null
+  onRequestHandled?: () => void
+  /** Lets the launcher branch ESC: back to the inbox first, close the dock second. */
+  onThreadOpenChange?: (open: boolean) => void
+}) {
   const [data, setData] = useState<MessagesSummary | null>(_summary)
   const [loading, setLoading] = useState(!_summary)
   const [open, setOpen] = useState<OpenThread | null>(null)
   const [dm, setDm] = useState<DmData>(null)
   const [room, setRoom] = useState<RoomData>(null)
   const [threadLoading, setThreadLoading] = useState(false)
+  // True only when the thread was opened programmatically — a member who clicked a row is
+  // already looking at the dock, and stealing focus out from under their pointer is rude.
+  const [autoFocusComposer, setAutoFocusComposer] = useState(false)
+  const handledRef = useRef<string | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -61,17 +80,65 @@ export function DockChat({ onNavigate }: { onNavigate?: () => void }) {
     return () => { alive = false }
   }, [])
 
-  async function openDm(id: string, title: string) {
-    setOpen({ kind: 'dm', id, title }); setThreadLoading(true); setDm(null); setRoom(null)
+  async function openDm(id: string, title?: string) {
+    // An empty title is the "caller did not know the name" sentinel; the header falls back to
+    // a neutral word while the server read (which returns the authoritative title) is in flight.
+    setOpen({ kind: 'dm', id, title: title ?? '' }); setThreadLoading(true); setDm(null); setRoom(null)
     const d = await loadDockDmThread(id).catch(() => null)
-    setDm(d); setThreadLoading(false)
+    setDm(d)
+    if (d && !title) {
+      setOpen((cur) => (cur && cur.kind === 'dm' && cur.id === id ? { ...cur, title: d.title } : cur))
+    }
+    setThreadLoading(false)
   }
-  async function openRoom(id: string, title: string) {
-    setOpen({ kind: 'room', id, title }); setThreadLoading(true); setDm(null); setRoom(null)
+  async function openRoom(id: string, title?: string) {
+    setOpen({ kind: 'room', id, title: title ?? '' }); setThreadLoading(true); setDm(null); setRoom(null)
     const d = await loadDockRoomThread(id).catch(() => null)
-    setRoom(d); setThreadLoading(false)
+    setRoom(d)
+    if (d && !title) {
+      setOpen((cur) => (cur && cur.kind === 'room' && cur.id === id ? { ...cur, title: d.name } : cur))
+    }
+    setThreadLoading(false)
   }
-  function back() { setOpen(null); setDm(null); setRoom(null) }
+  function back() { setOpen(null); setDm(null); setRoom(null); setAutoFocusComposer(false) }
+
+  // ── Honour a programmatic open ────────────────────────────────────────────────────────
+  // Keyed on requestId, NOT on the thread id: a member who opens the same conversation, closes
+  // the dock, then presses Message again must get it back. Keying on the id would make the
+  // second press do nothing at all, which reads as a broken button.
+  useEffect(() => {
+    if (!requested) return
+    if (handledRef.current === requested.requestId) return
+    handledRef.current = requested.requestId
+    // The request IS the external system here: it arrives from a button on the page, or from a
+    // URL on a cold load, and there is no render-time value to derive it from.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (requested.kind === 'inbox') back()
+    else {
+      setAutoFocusComposer(true)
+      if (requested.kind === 'dm') void openDm(requested.id, requested.title)
+      else void openRoom(requested.id, requested.title)
+    }
+    onRequestHandled?.()
+    // openDm / openRoom / back are stable within a render pass and re-running on their identity
+    // would re-open the thread on every keystroke in the composer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requested])
+
+  // ESC inside a thread goes BACK to the inbox before it closes the dock. The launcher owns the
+  // keydown (it owns the panel); this is the receiving half.
+  useEffect(() => {
+    const onBack = () => back()
+    window.addEventListener(DOCK_BACK_EVENT, onBack)
+    return () => window.removeEventListener(DOCK_BACK_EVENT, onBack)
+  }, [])
+
+  // Tell the launcher whether a thread is open, including on unmount (the dock unmounts this
+  // component when it closes or switches to the Vera tab, and a stale `true` would swallow ESC).
+  useEffect(() => {
+    onThreadOpenChange?.(!!open)
+  }, [open, onThreadOpenChange])
+  useEffect(() => () => onThreadOpenChange?.(false), [onThreadOpenChange])
 
   // ── Open thread, rendered inline in the dock ──
   if (open) {
@@ -81,13 +148,13 @@ export function DockChat({ onNavigate }: { onNavigate?: () => void }) {
           <button type="button" onClick={back} aria-label="Back to inbox" className="-ml-1 rounded-lg p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text">
             <ChevronLeft className="h-5 w-5" aria-hidden />
           </button>
-          <span className="truncate text-sm font-semibold text-text">{open.title}</span>
+          <span className="truncate text-sm font-semibold text-text">{open.title || (open.kind === 'room' ? 'Room' : 'Conversation')}</span>
         </div>
         <div className="min-h-0 flex-1 overflow-hidden">
           {threadLoading ? (
             <div className="flex h-full items-center justify-center text-subtle"><Loader2 className="h-5 w-5 animate-spin" aria-hidden /></div>
           ) : open.kind === 'dm' && dm ? (
-            <MessageThread conversationId={open.id} initialMessages={dm.messages} myProfileId={dm.myProfileId} participants={dm.participants} />
+            <MessageThread conversationId={open.id} initialMessages={dm.messages} myProfileId={dm.myProfileId} participants={dm.participants} autoFocus={autoFocusComposer} />
           ) : open.kind === 'room' && room ? (
             <RoomThread roomId={open.id} initialMessages={room.messages} myProfileId={room.myProfileId} canPost={room.canPost} />
           ) : (
@@ -109,7 +176,9 @@ export function DockChat({ onNavigate }: { onNavigate?: () => void }) {
         <Link href="/people" onClick={onNavigate} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary-bg px-3 py-1.5 text-sm font-medium text-primary-strong transition-colors hover:bg-primary-bg/70">
           <Users className="h-4 w-4" aria-hidden /> Message someone
         </Link>
-        <Link href="/messages/rooms" onClick={onNavigate} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated">
+        {/* /messages/rooms holds only an actions.ts and no page.tsx, so this 404'd — on the one
+            surface the owner wants chat to live in. The rooms list is the inbox's Rooms filter. */}
+        <Link href="/messages?filter=rooms" onClick={onNavigate} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated">
           <Hash className="h-4 w-4" aria-hidden /> Rooms
         </Link>
       </div>

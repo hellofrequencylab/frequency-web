@@ -8,6 +8,7 @@ import {
 import { createAdminClient } from '@/lib/supabase/admin'
 import { funnelSlugs, getFunnelConfig } from '@/lib/marketing/funnel-config'
 import { pricingLadderSummary, priceStrings, CREW_NOTE } from '@/lib/pricing/pricing-page'
+import { countUpcomingPublicSeries } from '@/lib/events/series-seo'
 
 // Every dollar figure below interpolates from the ONE code catalog, so this file can never quote a
 // price /pricing does not carry.
@@ -105,12 +106,11 @@ async function statsSection(): Promise<string[]> {
       admin.from('practices').select('*', { head: true, count: 'exact' })
         .eq('is_public', true).eq('is_demo', false),
     ),
-    // Upcoming public Events: published, not cancelled, still ahead (matches /discover/events).
-    headCount(() =>
-      admin.from('events').select('*', { head: true, count: 'exact' })
-        .eq('visibility', 'public').eq('status', 'published').eq('is_cancelled', false)
-        .gte('starts_at', new Date().toISOString()),
-    ),
+    // Upcoming public Events, counted as SERIES rather than rows (ADR-897). Recurrence is
+    // materialised, so a head count charged one weekly cowork series nine "gatherings" and a daily
+    // one about sixty. The published line's wording does not change; the number it states becomes
+    // true. Same fail-safe contract as headCount: null drops the line.
+    countUpcomingPublicSeries(),
     // The four Pillars (active).
     headCount(() => admin.from('pillars').select('*', { head: true, count: 'exact' }).eq('is_active', true)),
   ])

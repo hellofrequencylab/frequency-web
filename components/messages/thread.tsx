@@ -44,11 +44,15 @@ export function MessageThread({
   initialMessages,
   myProfileId,
   participants,
+  autoFocus = false,
 }: {
   conversationId: string
   initialMessages: Message[]
   myProfileId: string
   participants: Participant[]
+  /** Put the caret in the composer on mount. Set ONLY for a programmatic open (a member who
+   *  pressed "Message" meant to type), never for a row click in the dock's own inbox. */
+  autoFocus?: boolean
 }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [body, setBody] = useState('')
@@ -71,6 +75,15 @@ export function MessageThread({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Focus the composer when the thread was opened programmatically. Skipped on a coarse
+  // pointer: on a phone, focusing a textarea raises the keyboard over the conversation the
+  // member has not read yet, which is worse than one extra tap.
+  useEffect(() => {
+    if (!autoFocus) return
+    if (typeof window !== 'undefined' && !window.matchMedia?.('(pointer: fine)').matches) return
+    textareaRef.current?.focus()
+  }, [autoFocus])
 
   // Supabase Realtime subscription for new messages
   useEffect(() => {

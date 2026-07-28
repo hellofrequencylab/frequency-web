@@ -333,6 +333,39 @@ they must read as one idea on the event page:
   the internal person noun is "cohost" (one word) and the internal Space noun is "Collaborator".
   Never "Cohost" as a display heading, never "Co-Host".
 
+## Events: a repeating event is a series of dates (ADR-897, July 2026)
+
+Recurrence is materialised: every date is a real event row with its own page, its own RSVP, and its
+own guest list (ADR-007). That is an implementation truth members never need, so the words split
+cleanly by audience and this section pins which is which.
+
+- **Member-facing, the only two nouns.** A repeating event is a **series**; one occasion in it is a
+  **date**. Both stay lowercase common nouns, never capitalised as product names: a series is not a
+  Frequency object a member manages, it is the plain word for "the weekly one". Shipped copy:
+  `Upcoming dates` (the rail heading on an event page), `Part of a series` (the card line for one
+  date of a repeating event), and the "Browsing shows the next few dates, not all of them" wording in
+  `content/help/groups/events.md`.
+- **The cadence line stays a sentence, not a noun.** `Repeats weekly` / `Repeats daily` /
+  `Repeats monthly` (`recurrenceLabel`, lib/events/recurrence.ts). Never "Weekly Series" as a label,
+  never "Recurrence" as a member-facing heading; recurrence is the internal word for the mechanism.
+- **`occurrence` and `anchor` are INTERNAL ONLY** — code, schema, ADRs, docs, operator surfaces.
+  `occurrence` is a materialised child row (`parent_event_id` set); the `anchor` is the row carrying
+  the cadence, which is also a real date and is NOT "the parent event" in member terms. Neither word
+  may appear in member copy: an anchor whose own date has passed is simply gone from browse, and a
+  member being told about "the anchor" of a thing they think of as "the Tuesday sit" learns nothing.
+- **Never "recurring event" as a member-facing noun phrase.** Say "a repeating event" in prose, or
+  name the thing: "the weekly sit". "Recurring" survives in code (`recurrence_type`, `isRecurring`)
+  and in the help center's existing section heading, which predates this row.
+- **Collision guard: `date`.** The word already means a calendar day everywhere else in the product,
+  and it means a romantic meeting in the Marketplace's matching surfaces (see Marketplace & Commerce).
+  In events copy, a "date" is always one occasion of a series and always sits next to its series or
+  its event, never alone as a standalone noun. When the grain is ambiguous, write "this date" or name
+  the day.
+- **Collision guard: `series`.** Distinct from a **Journey** (an authored multi-step program members
+  enrol in) and from a **Program** (Community structure). A series is nothing but the same event
+  repeating; it has no curriculum, no enrolment, and no page of its own. The repeating event's own
+  page IS the series home, which is why there is no `/series/` route and must not be one.
+
 ## Profile pages
 
 - **Spotlight** = a member's opt-in public mini-site (a linktree/personal page themed

@@ -1,6 +1,15 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SectionHeader } from '@/components/ui/section-header'
 import { CIRCLE_SCOPE_TYPES } from '@/lib/events/circle-upcoming'
+import { HOME_TZ, dayInZone } from '@/lib/time/zone'
+import {
+  SERIES_COLUMNS,
+  TEASER_CARDS_PER_SERIES,
+  collapseSeriesRows,
+  seriesFetchLimit,
+  seriesUpcomingFloor,
+  type SeriesFields,
+} from '@/lib/events/series'
 import { UpcomingEventRows, type UpcomingEventRow } from './upcoming-event-rows'
 
 // The cross-scope "Upcoming" strip: the next few events across a SET of scopes (used by the
@@ -10,7 +19,10 @@ import { UpcomingEventRows, type UpcomingEventRow } from './upcoming-event-rows'
 //
 // Row markup lives in ./upcoming-event-rows so both surfaces render identical rows.
 
-type WidgetEvent = UpcomingEventRow & { scope_id: string }
+type WidgetEvent = UpcomingEventRow & SeriesFields & { scope_id: string }
+
+/** Rows the strip shows. Three, and a repeating series may only have ONE of them. */
+const STRIP_SLOTS = 3
 
 export async function UpcomingEventsWidget({
   scopeIds,
@@ -20,7 +32,10 @@ export async function UpcomingEventsWidget({
   if (scopeIds.length === 0) return null
 
   const admin = createAdminClient()
-  const now = new Date().toISOString()
+  // Midnight today in the community's zone, not `new Date()`: starts_at is the host's wall clock
+  // kept as UTC parts, so a raw ISO instant drops tonight's gathering from 5pm Pacific onward.
+  // The same string is the query floor and the fold floor.
+  const floor = seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ))
 
   // PUBLIC EVENTS ONLY, and only published ones.
   //
@@ -39,7 +54,8 @@ export async function UpcomingEventsWidget({
   // may widen this, because there the viewer's membership in THAT Circle is known.
   const { data: raw } = await admin
     .from('events')
-    .select('id, title, slug, location, starts_at, scope_id')
+    // The three recurrence columns are what make the fold below anything other than a no-op.
+    .select(`id, title, slug, location, starts_at, scope_id, ${SERIES_COLUMNS}`)
     .in('scope_id', scopeIds)
     // The ONE list of scope_type values that mean "created for a Circle" ('group' is the
     // pre-rename value still in older rows) — shared with the Circle block and belonging.ts,
@@ -51,11 +67,18 @@ export async function UpcomingEventsWidget({
     // Staff removal (lib/events/event-drafts.ts removeEvent) also sets is_cancelled, so this is
     // belt-and-braces — but the Circle's own block filters it, and the two reads should agree.
     .is('removed_at', null)
-    .gte('starts_at', now)
+    .gte('starts_at', floor)
     .order('starts_at', { ascending: true })
-    .limit(3)
+    // Over-fetch, then collapse, then slice. Three rows folded to one card per series would leave a
+    // daily series holding a strip of ONE; thirty rows leave it holding one slot out of three.
+    .limit(seriesFetchLimit(STRIP_SLOTS))
 
-  const events = (raw ?? []) as WidgetEvent[]
+  // A repeating event takes one slot here and shows its next date. The other dates live on the
+  // event page's date rail, so nothing becomes unreachable (ADR-897).
+  const events = collapseSeriesRows((raw ?? []) as WidgetEvent[], {
+    upcomingFrom: floor,
+    perSeries: TEASER_CARDS_PER_SERIES,
+  }).slice(0, STRIP_SLOTS)
 
   if (events.length === 0) return null
 

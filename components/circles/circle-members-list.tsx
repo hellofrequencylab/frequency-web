@@ -8,7 +8,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { MessageSquare } from 'lucide-react'
-import { startConversation } from '@/app/(main)/messages/actions'
+import { MessageMemberButton } from '@/components/messages/message-member-button'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { getInitials } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
@@ -110,16 +110,17 @@ export function CircleMembersList({
               </Link>
 
               {!isSelf && isMember && (
-                <form action={startConversation.bind(null, profile.id)}>
-                  <button
-                    type="submit"
-                    aria-label={`Message ${profile.display_name}`}
-                    title={`Message ${profile.display_name}`}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg transition-all"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                  </button>
-                </form>
+                /* Same shared control as the profile header and the Reconnect panel, so the
+                   three cannot drift apart again (ADR-896). Opens the dock, never navigates. */
+                <MessageMemberButton
+                  profileId={profile.id}
+                  threadTitle={profile.display_name}
+                  ariaLabel={`Message ${profile.display_name}`}
+                  title={`Message ${profile.display_name}`}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg transition-all"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </MessageMemberButton>
               )}
             </div>
           )

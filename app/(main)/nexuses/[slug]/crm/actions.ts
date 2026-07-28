@@ -5,6 +5,7 @@ import { resolveNexusCrm } from '@/lib/crm/leader-crm-access'
 import { listPlaceTreeMemberIds } from '@/lib/circles/crm-roster'
 import { buildMemberDetail } from '@/lib/crm/member-detail'
 import { openScopedDm } from '@/lib/messages/scoped-dm'
+import { dmThreadHref } from '@/lib/messages/dm-destination'
 import { fail, type ActionResult } from '@/lib/action-result'
 import type { CrmMemberDetail } from '@/components/people/member-viewer'
 
@@ -42,5 +43,8 @@ export async function openNexusMemberDm(slug: string, profileId: string): Promis
     unstable_rethrow(err)
     return fail(err instanceof Error ? err.message : 'Something went wrong. Try again.')
   }
-  redirect(`/messages/${conversationId}`)
+  // Flag-aware destination (ADR-896): with the DM route retired this lands the operator in
+  // the chat dock in ONE hop instead of bouncing off a redirecting page. Flag off (today's
+  // default) it returns the identical /messages/<id> string this line used to hardcode.
+  redirect(await dmThreadHref(conversationId))
 }

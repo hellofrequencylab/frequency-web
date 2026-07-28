@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { Sparkles, Search, BookOpen, X, MessageSquare, LifeBuoy, Bug, ArrowLeft } from 'lucide-react'
 import type { HelpSearchEntry } from '@/lib/help/content'
 import { searchHelp } from '@/lib/help/search'
@@ -11,6 +11,14 @@ import { SupportConversationsPanel } from '@/components/support/support-conversa
 import { DockChat, prefetchDockSummary } from '@/components/messages/dock-chat'
 import { getMessagesUnreadCount } from '@/app/(main)/messages/popover-actions'
 import { openSupport } from '@/components/support/support-launcher'
+import {
+  DOCK_BACK_EVENT,
+  DOCK_OPEN_EVENT,
+  nextDockRequestId,
+  parseDockRequest,
+  stripDockParams,
+  type DockOpenDetail,
+} from '@/lib/messages/dock-open'
 import { EdgePill } from '@/components/layout/edge-pill'
 import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 
@@ -42,7 +50,15 @@ function initialTab(): Tab {
 export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; veraTease?: TeaseGate }) {
   // Admin pages drop the edge tab (the page-admin dock owns that corner); the panel
   // still opens there via the command bar's open-vera event.
-  const onAdmin = usePathname().startsWith('/admin')
+  const pathname = usePathname()
+  // The deep-link channel (ADR-896). `useSearchParams` forces its client subtree to render on
+  // the client for a prerendered route, so the docs ask for a Suspense boundary above it
+  // (node_modules/next/dist/docs/01-app/03-api-reference/04-functions/use-search-params.md,
+  // "Prerendering"). VeraLauncher already sits inside `<Suspense fallback={null}>` in the
+  // (main) layout, so that requirement is met without a new boundary.
+  const searchParams = useSearchParams()
+  const search = searchParams.toString()
+  const onAdmin = pathname.startsWith('/admin')
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<Tab>(initialTab)
   // The Help & support SECTION overlays the tabs when open (a pushed view with Back).
@@ -52,6 +68,12 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
   const [pulse, setPulse] = useState(() => typeof window !== 'undefined' && localStorage.getItem('fq_vera_unread') === '1')
   // Unread member-message count, for the tab + pill badges.
   const [unread, setUnread] = useState(0)
+  // A pending "open the dock at THIS thread" request, handed to DockChat (ADR-896).
+  const [requested, setRequested] = useState<DockOpenDetail | null>(null)
+  // Whether DockChat currently has a thread open, so ESC can go back before it closes.
+  const [threadOpen, setThreadOpen] = useState(false)
+  // Where focus came from, so closing returns it instead of dumping it on <body>.
+  const openerRef = useRef<HTMLElement | null>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const results = useMemo(() => searchHelp(index, q, 6), [q, index])
 
@@ -79,21 +101,50 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
       setTab('vera'); setHelpOpen(false); setOpen(true); setPulse(false)
       try { localStorage.removeItem('fq_vera_unread') } catch {}
     }
-    const onOpenChat = () => { setTab('chat'); setHelpOpen(false); setOpen(true) }
+    // open-chat now carries an OPTIONAL detail (lib/messages/dock-open.ts): with one, the dock
+    // opens straight onto that conversation; without one it behaves exactly as before, so any
+    // older `new Event('open-chat')` dispatcher keeps working.
+    const onOpenChat = (e: Event) => {
+      const detail = (e as CustomEvent<DockOpenDetail>).detail ?? null
+      if (document.activeElement instanceof HTMLElement) openerRef.current = document.activeElement
+      setTab('chat'); setHelpOpen(false); setOpen(true)
+      setRequested(detail)
+    }
     const onOpenHelp = () => { setHelpOpen(true); setOpen(true) }
     window.addEventListener('vera-activity', onActivity)
     window.addEventListener('open-vera', onOpenVera)
-    window.addEventListener('open-chat', onOpenChat)
+    window.addEventListener(DOCK_OPEN_EVENT, onOpenChat)
     window.addEventListener('open-help', onOpenHelp)
     return () => {
       window.removeEventListener('vera-activity', onActivity)
       window.removeEventListener('open-vera', onOpenVera)
-      window.removeEventListener('open-chat', onOpenChat)
+      window.removeEventListener(DOCK_OPEN_EVENT, onOpenChat)
       window.removeEventListener('open-help', onOpenHelp)
     }
   }, [])
 
+  // ── The deep-link channel: `?chat=dm&thread=<id>` ─────────────────────────────────────────
+  // A CustomEvent dispatched before this component mounts is lost with no trace, so anything
+  // that arrives via a FULL PAGE LOAD (a pasted link, or the Phase 2 redirect off the retired
+  // DM route) has to travel in the URL instead. Keyed on pathname AND the query string: keying
+  // on pathname alone means a query-only change never fires, so a `?chat=…` link landing on the
+  // page the member is already on would be silently ignored.
+  useEffect(() => {
+    const ref = parseDockRequest(search)
+    if (!ref) return
+    // The URL is the external system: on a cold load there is no earlier render to carry this.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTab('chat'); setHelpOpen(false); setOpen(true)
+    setRequested({ ...ref, requestId: nextDockRequestId() })
+    // Plain DOM history, NOT router.replace: the page does not read these params, so a replace
+    // would re-run its Server Components to produce byte-identical output.
+    window.history.replaceState(null, '', stripDockParams(window.location.pathname, window.location.search))
+  }, [pathname, search])
+
   const openPanel = () => {
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      openerRef.current = document.activeElement
+    }
     setOpen(true)
     setPulse(false)
     try { localStorage.removeItem('fq_vera_unread') } catch {}
@@ -104,19 +155,32 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
     if (!open) return
     const t = setTimeout(() => panelRef.current?.focus(), 50)
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key !== 'Escape') return
+      // Inside a thread, the first ESC goes BACK to the inbox. Closing the whole dock on one
+      // keystroke loses the place of a member mid-way through reading a conversation.
+      if (threadOpen) window.dispatchEvent(new Event(DOCK_BACK_EVENT))
+      else close()
     }
     window.addEventListener('keydown', onKey)
     return () => {
       clearTimeout(t)
       window.removeEventListener('keydown', onKey)
     }
-  }, [open])
+    // `close` is re-created every render; the listener is deliberately re-bound only when the
+    // panel opens or a thread opens, never on every keystroke in the composer.
+  }, [open, threadOpen])
 
   function close() {
     setOpen(false)
     setHelpOpen(false)
     setQ('')
+    setRequested(null)
+    // Return focus to whatever opened the dock (the edge pill, or a Message button three
+    // screens up the page). Without this, closing drops focus on <body> and a keyboard member
+    // restarts their tab order from the top of the document.
+    const opener = openerRef.current
+    openerRef.current = null
+    if (opener?.isConnected) opener.focus()
   }
 
   const showInstant = helpOpen && q.trim().length >= 2
@@ -155,6 +219,10 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           ref={panelRef}
           tabIndex={-1}
           role="dialog"
+          // The dock is non-modal by design (no page overlay, members keep navigating while
+          // chatting). `role="dialog"` alone makes assistive tech infer modality, which would
+          // announce the rest of the page as unavailable when it is not.
+          aria-modal="false"
           aria-label="Messages, Vera and help"
           className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[68dvh] max-h-[640px] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-pop outline-none print:hidden md:inset-x-auto md:bottom-6 md:right-6 md:h-[600px] md:w-[24rem] md:rounded-2xl md:pb-0 motion-safe:animate-[slideUp_0.25s_ease-out]"
         >
@@ -275,7 +343,12 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                 </div>
               </div>
             ) : tab === 'chat' ? (
-              <DockChat onNavigate={close} />
+              <DockChat
+                onNavigate={close}
+                requested={requested}
+                onRequestHandled={() => setRequested(null)}
+                onThreadOpenChange={setThreadOpen}
+              />
             ) : (
               <VeraChat opening={COMPANION_OPENING} veraTease={veraTease} />
             )}

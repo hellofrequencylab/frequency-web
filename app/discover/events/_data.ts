@@ -20,6 +20,15 @@
 
 import { createPublicClient } from '@/lib/supabase/public'
 import type { PublicEvent } from '@/lib/discover'
+import { HOME_TZ, dayInZone } from '@/lib/time/zone'
+import {
+  DEFAULT_CARDS_PER_SERIES,
+  SERIES_COLUMNS,
+  SERIES_WIDE_READ,
+  collapseSeriesRows,
+  seriesUpcomingFloor,
+  type SeriesFields,
+} from '@/lib/events/series'
 
 // Privacy-safe enrichment fields layered onto a PublicEvent for the schema.org
 // Event and the OG image. attendance_mode + is_cancelled drive eventAttendanceMode
@@ -61,7 +70,7 @@ type SafeEventRow = {
 }
 
 const SAFE_COLUMNS =
-  'id, slug, title, description, starts_at, ends_at, city, region, country, attendance_mode, is_cancelled, category, price_cents'
+  `id, slug, title, description, starts_at, ends_at, city, region, country, attendance_mode, is_cancelled, category, price_cents, ${SERIES_COLUMNS}`
 
 function normalizeMode(mode: string | null): EventEnrichment['attendance_mode'] {
   return mode === 'online' || mode === 'hybrid' ? mode : 'in_person'
@@ -196,19 +205,32 @@ export function cityFromSlug(slug: string): string {
 // Pull every readable upcoming public event with the privacy-safe columns. Used
 // to build the hubs and their static params. RLS limits anon to public/unlisted;
 // we additionally filter to published, non-cancelled, upcoming, public.
-async function getUpcomingSafeEvents(limit = 500): Promise<EnrichedPublicEvent[]> {
+async function getUpcomingSafeEvents(
+  limit = SERIES_WIDE_READ,
+  perSeries = DEFAULT_CARDS_PER_SERIES,
+): Promise<EnrichedPublicEvent[]> {
   const supabase = createPublicClient()
+  // Wall-clock floor in the community's zone: starts_at is the host's local time kept as UTC parts,
+  // so a raw instant hides tonight's gathering from every hub after 5pm Pacific. One value for the
+  // query and the fold.
+  const floor = seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ))
   const { data } = await supabase
     .from('events')
     .select(SAFE_COLUMNS)
     .eq('visibility', 'public')
     .eq('status', 'published')
     .eq('is_cancelled', false)
-    .gte('starts_at', new Date().toISOString())
+    .gte('starts_at', floor)
     .order('starts_at', { ascending: true })
+    // NOT seriesFetchLimit: this cap is GLOBAL (the community's whole upcoming public set), not a
+    // display count, so rows past it are dropped by the database before any fold can run. The number
+    // is unchanged; SERIES_WIDE_READ just says what it is.
     .limit(limit)
-  const rows = (data ?? []) as unknown as SafeEventRow[]
-  return rows.map(toEnriched)
+  const rows = (data ?? []) as unknown as (SafeEventRow & SeriesFields)[]
+  // FOLD BEFORE toEnriched. EnrichedPublicEvent does not carry the recurrence columns, so a fold
+  // after the map is a silent no-op. One weekly series used to publish ~9 near-identical hub cards
+  // and ~9 schema.org Event nodes; now it publishes its next `perSeries` dates.
+  return collapseSeriesRows(rows, { upcomingFrom: floor, perSeries }).map(toEnriched)
 }
 
 // The set of (city, category) pairs that actually have ≥1 upcoming public event,

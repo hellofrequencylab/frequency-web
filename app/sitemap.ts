@@ -3,8 +3,12 @@ import { SITE_URL } from "@/lib/site";
 import {
   getTopicalChannels,
   getPublicCircles,
-  getPublicEvents,
 } from "@/lib/discover";
+import {
+  listSitemapEventEntries,
+  type SitemapEventEntry,
+} from "@/lib/events/series-seo";
+import { getSeriesDisplayConfig } from "@/lib/events/series-config";
 import { listPublicJourneys } from "@/lib/journey-plans";
 import { listActivePartners } from "@/lib/partners/read";
 import { listPublicPractices } from "@/lib/practices";
@@ -207,10 +211,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let spotlightRoutes: MetadataRoute.Sitemap = [];
   let hubRoutes: MetadataRoute.Sitemap = [];
   try {
+    // How many dates past the series page get their own URL is the operator knob
+    // (/admin/events > Repeating events), and it MUST be the same number the event page's robots
+    // directive uses — a sitemap that advertises date three while that page says noindex is a
+    // self-contradicting crawl signal. Read sequentially because it sizes the fold below; it is one
+    // request-cached settings row, and it never throws (a failed read returns the shipped defaults).
+    const { indexedOccurrences } = await getSeriesDisplayConfig();
     const [channels, circles, events, journeys, organizers, spotlights, hubs, partners, practices, spaces, cities, shopProducts, marketListings, housingListings, classifieds] = await Promise.all([
       getTopicalChannels(),
       getPublicCircles(200),
-      getPublicEvents(200),
+      // Event URLs, FOLDED per series (ADR-897). Before this, one weekly cowork series advertised
+      // ~9 URLs and ~9 image entries and a daily one ~61, all with the same title and description,
+      // out of a GLOBAL 200-row cap — so a single daily series could crowd real one-offs out of the
+      // sitemap entirely. Now a series contributes its page plus the next `indexedOccurrences`
+      // dates; the rest stay live and reachable but go noindex,follow on the page itself. The reader
+      // also applies the full public gate, which the public_events RPC never did (it filters only
+      // is_cancelled + starts_at, so unlisted, draft and moderator-removed events have been
+      // advertised here since it shipped).
+      listSitemapEventEntries({ occurrences: indexedOccurrences }),
       listPublicJourneys(),
       getOrganizerRoutes(now),
       getSpotlightRoutes(now),
@@ -315,16 +333,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
-    // Only UPCOMING events are listed: getPublicEvents (public_events RPC) filters
-    // starts_at >= now(), so expired events are isolated OUT of the sitemap by
-    // construction (they go noindex,follow on the page until pruned). The CANONICAL event URL
-    // is now /events/<slug> (the discover detail canonicalises here), so the sitemap points at
-    // it; each entry carries the per-event OG image for the image sitemap.
-    const eventRoutes: MetadataRoute.Sitemap = events.map((e) => ({
+    // Only UPCOMING events are listed: listSitemapEventEntries floors on the community's wall-clock
+    // day, so expired events are isolated OUT of the sitemap by construction (they go noindex,follow
+    // on the page until pruned). The CANONICAL event URL is /events/<slug> (the discover detail
+    // canonicalises here), so the sitemap points at it; each entry carries the per-event OG image for
+    // the image sitemap. A series' own page outranks its individual dates, which is the ranking we
+    // want a crawler to infer: land a member on the series, not on week three.
+    const eventRoutes: MetadataRoute.Sitemap = (events as SitemapEventEntry[]).map((e) => ({
       url: `${SITE_URL}/events/${e.slug}`,
-      lastModified: new Date(e.starts_at),
+      lastModified: new Date(e.startsAt),
       changeFrequency: "daily",
-      priority: 0.7,
+      priority: e.isSeriesHome ? 0.8 : 0.7,
       images: [`${SITE_URL}/events/${e.slug}/opengraph-image`],
     }));
 

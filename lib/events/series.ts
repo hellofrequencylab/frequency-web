@@ -26,6 +26,23 @@
 
 /** Cards shown per series on a browse surface. Operator-tunable; this is the zero-config default. */
 export const DEFAULT_CARDS_PER_SERIES = 3
+/**
+ * Cards per series on a FIXED TEASER BLOCK — a rail panel, the Channel strip, a Circle's
+ * "Upcoming events" card, a search result list. ONE, and it has to be one.
+ *
+ * DEFAULT_CARDS_PER_SERIES = 3 is sized for a DEEP list (the /events index shows ~40 cards, so three
+ * dates of one series is texture, not a takeover). On a block with three slots it is a no-op: three
+ * slots filled by three dates of the same series is EXACTLY the screenshot this work exists to fix.
+ * The same reasoning covers a result list, which answers "which gathering", not "which date".
+ *
+ * Depth is not lost, it moved: the event page's date rail (lib/events/series-dates.ts) carries the
+ * other dates, and every block keeps its "See all events" link.
+ *
+ * ⚠️ Consequence for the operator kill switch (cardsPerSeries = 60): it restores one-card-per-date on
+ * the deep lists, NOT on these blocks. A block that shows sixty dates of one series shows nothing
+ * else, which is the failure, not the escape from it.
+ */
+export const TEASER_CARDS_PER_SERIES = 1
 /** Dates offered on an event page's series rail. Operator-tunable. */
 export const DEFAULT_RAIL_DATES = 5
 /** Hard cap on the `dates` array a group carries, so a daily series cannot hand a card 61 entries. */
@@ -96,6 +113,13 @@ export interface CollapseOptions {
   /** Default true; an undefined is_cancelled always passes. */
   dropCancelled?: boolean
   maxDates?: number
+  /**
+   * WHICH date represents a series. 'earliest' (the default) is "what's next", the right answer on
+   * every upcoming browse surface. 'latest' is "what happened", and exists for exactly one caller:
+   * the PAST half of search's partition, where electing the earliest row hands a query the series'
+   * opening night from years ago. `dates` stays earliest-first either way.
+   */
+  elect?: 'earliest' | 'latest'
 }
 
 export interface CollapseResult<T> {
@@ -203,7 +227,10 @@ export function collapseSeries<T extends SeriesRow>(
     const anchorRow = bucket.find((r) => isSeriesAnchor(r)) ?? null
     // A row is part of a series if it carries a parent, or it is an anchor with a real cadence.
     const recurring = bucket.some((r) => r.parent_event_id != null || isSeriesAnchor(r))
-    const representatives = byDate.slice(0, perSeries)
+    // Election order. Sorting `dates` is not enough on its own: a past-events reader needs the LAST
+    // date to stand for the series, and reversing the input array would not do it — this fold
+    // elects by INSTANT, not by input position.
+    const representatives = (opts.elect === 'latest' ? [...byDate].reverse() : byDate).slice(0, perSeries)
 
     const group: SeriesGroup<T> = {
       key,
@@ -242,6 +269,42 @@ function isDuplicate<T extends SeriesRow>(rows: T[], index: number): boolean {
 /** The rows-only wrapper every simple call site uses. */
 export function collapseSeriesRows<T extends SeriesRow>(rows: T[], opts?: CollapseOptions): T[] {
   return collapseSeries(rows, opts).rows
+}
+
+/**
+ * SEARCH's fold, for a reader that has run TWO reads around the wall-clock floor: `upcoming`
+ * ascending from the floor, `past` DESCENDING below it. Each half folds SEPARATELY and the results
+ * concatenate, so a still-running series is represented by its NEXT date and a finished one by its
+ * LAST.
+ *
+ * WHY TWO READS AT ALL. Both search readers (app/(main)/search/page.tsx, app/api/search/route.ts)
+ * had NO date floor and ordered ascending, so their window was the OLDEST N matching rows from the
+ * beginning of time. Folding that single window would elect a series' very first date ever — a
+ * worse bug than the duplication, and one that only shows on long-running series. The partition is
+ * what lets search keep answering for past events while a live series still leads with its next date.
+ *
+ * The floor applies to the UPCOMING half only. Passing it to the past half would drop every past
+ * row by construction, since "past" is defined as below that same floor.
+ */
+export function collapseSeriesAroundFloor<T extends SeriesRow>(
+  upcoming: T[],
+  past: T[],
+  limit: number,
+  opts: CollapseOptions = {},
+): T[] {
+  const up = collapseSeriesRows(upcoming, opts)
+  // The past half elects the LATEST date it holds. The default election ("what's next") would hand
+  // a search for a five-year-old cowork series its opening night, because the fold elects by
+  // instant and the oldest row in the window wins.
+  const back = collapseSeriesRows(past, { ...opts, upcomingFrom: undefined, elect: 'latest' })
+  // The halves are disjoint by starts_at but a SERIES straddles the floor, so a weekly cowork
+  // appears in both — once as "next Tuesday" and once as "last Tuesday", in one result list.
+  // Dedupe on the series key, keeping the UPCOMING representative: a live series must never be
+  // shown by a date that already happened.
+  const live = new Set(up.map((row) => seriesKey(row)))
+  const merged = [...up, ...back.filter((row) => !live.has(seriesKey(row)))]
+  const cap = typeof limit === 'number' && limit > 0 ? Math.floor(limit) : 1
+  return merged.slice(0, cap)
 }
 
 /**

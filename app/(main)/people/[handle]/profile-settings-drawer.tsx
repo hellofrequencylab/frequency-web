@@ -25,6 +25,7 @@ export function ProfileSettingsDrawer({
   spotlightPublished,
   canModerate,
   isJanitor,
+  triggerClassName,
 }: {
   profileId: string
   handle: string
@@ -34,6 +35,10 @@ export function ProfileSettingsDrawer({
   spotlightPublished: boolean
   canModerate: boolean
   isJanitor: boolean
+  /** Class for the trigger. Defaults to the page-canvas chrome control; a caller that places
+   *  this ON A COVER PHOTO must pass HERO_ACTION_CLASS_ADAPTIVE, because `text-muted` over an
+   *  arbitrary photo is a token that was never meant to leave the page surface. */
+  triggerClassName?: string
 }) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState(initialName)
@@ -65,7 +70,7 @@ export function ProfileSettingsDrawer({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        className={triggerClassName ?? 'inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text'}
       >
         <Settings className="h-3.5 w-3.5" /> Settings
       </button>

@@ -85,9 +85,11 @@ describe('sendServiceEnquiry — guards', () => {
     expect(adminInsert).not.toHaveBeenCalled()
   })
 
-  it('opens the thread, seeds the enquiry, and returns its url', async () => {
+  // Returns the conversation ID, not a /messages URL: the caller opens the chat dock over the
+  // listing (ADR-896). A URL here would re-create the navigation the consolidation removed.
+  it('opens the thread, seeds the enquiry, and returns its conversation id', async () => {
     const res = await sendServiceEnquiry('p-1')
-    expect(res).toEqual({ url: '/messages/conv-1' })
+    expect(res).toEqual({ conversationId: 'conv-1' })
     expect(findOrCreate).toHaveBeenCalledWith(expect.anything(), 'buyer-1', 'owner-1')
     expect(adminInsert).toHaveBeenCalledWith(
       expect.objectContaining({ conversation_id: 'conv-1', sender_id: 'buyer-1', body: expect.stringContaining('Deep tissue massage') }),

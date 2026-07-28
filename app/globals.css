@@ -1450,6 +1450,109 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* ── Content-aware hero text, per ZONE (ADR-894, extends ADR-830) ──────────────
+   One tone for a whole header is a lie on a split cover. Each ZONE (the identity lockup,
+   the on-cover action cluster) resolves its OWN tone and its OWN local treatment from the
+   pixels behind IT, because one photo is routinely dark under the name and bright under
+   the buttons. HeroAdaptiveText stamps each `.hero-zone`:
+     data-media-tone="light"  → the backdrop under THIS zone is bright, flip to dark copy
+     data-media-plate="0..3"  → 0 nothing · 1 halo · 2 halo+plate · 3 halo+strong plate
+
+   A zone with NO data-media-plate has not been measured yet — which is what the server
+   renders, on purpose. It keeps the per-glyph halo and NO plate: the pre-ADR-830 baseline,
+   known to read on real photos. It must NEVER add a plate on top of the light default,
+   because `--color-on-media` defaults to the LIGHT copy and that composites light-on-light
+   at about 1.13:1 on a bright cover — the exact failure this work exists to fix, wearing a
+   plate. The section-level rules above stay as the default for a hero with no zones.
+
+   COLOUR SPACE, do not "improve" this: the plate is authored in plain `srgb` and
+   lib/images/hero-contrast.ts models the composite in gamma-encoded sRGB to match
+   (compositeOverSrgb). Switching the mix to `srgb-linear` does NOT change the composite —
+   mixing with `transparent` yields a colour carrying an ALPHA whatever space is named, and
+   the alpha blend still runs in the destination space. Modelling it in linear light instead
+   overstates a dark plate by roughly 4x, which is how a 3.5:1 plate got called 8:1.
+   Tokens only, no raw hex, no rgba. */
+.hero-adaptive-text .hero-zone {
+  --hero-text-backdrop: var(--color-ink);
+  --hero-plate-alpha: 0%;
+  --hero-plate-blur: 0px;
+  position: relative;
+  border-radius: var(--radius-card);
+}
+.hero-adaptive-text .hero-zone[data-media-tone="dark"] {
+  --color-on-media: var(--color-on-media-light);
+  --hero-text-backdrop: var(--color-ink);
+}
+.hero-adaptive-text .hero-zone[data-media-tone="light"] {
+  --color-on-media: var(--color-on-media-dark);
+  --hero-text-backdrop: var(--color-on-ink);
+}
+/* Rung 1 and the unmeasured baseline are the per-glyph halo, NOT a rectangle: it keeps a
+   clean photo clean, and it tracks the zone's own backdrop token so it stays the opposite
+   tone to the copy in front of it. */
+.hero-adaptive-text .hero-zone:not([data-media-plate]),
+.hero-adaptive-text .hero-zone[data-media-plate="1"] {
+  text-shadow:
+    0 1px 2px color-mix(in srgb, var(--hero-text-backdrop) 55%, transparent),
+    0 2px 12px color-mix(in srgb, var(--hero-text-backdrop) 45%, transparent);
+}
+/* Rungs 2 and 3 add a local pad. These alphas ARE HERO_PLATE_ALPHAS in
+   lib/images/hero-contrast.ts — change one, change both, or the resolver promises a contrast
+   the paint does not deliver. A drift guard asserts they agree. */
+.hero-adaptive-text .hero-zone[data-media-plate="2"] {
+  --hero-plate-alpha: 45%;
+  --hero-plate-blur: 4px;
+}
+.hero-adaptive-text .hero-zone[data-media-plate="3"] {
+  --hero-plate-alpha: 70%;
+  --hero-plate-blur: 8px;
+}
+/* The plate. `z-index: -1` is LOAD-BEARING: `.hero-zone` is `position: relative; z-index:
+   auto`, so it establishes NO stacking context and the negative-z pseudo-element paints
+   inside PageHero's `z-10` content div — above the cover and the overlay, below this zone's
+   own text. Without it, painting order puts a positioned descendant above the in-flow content
+   of the same stacking context and the ink wash lands ON TOP of the name.
+   The gradient runs from the modelled alpha at the top to a touch more at the bottom, so the
+   pad softens into the photo where the copy is sparsest while the resolver's number stays the
+   FLOOR of what is painted, never an overstatement. */
+.hero-adaptive-text .hero-zone[data-media-plate="2"]::before,
+.hero-adaptive-text .hero-zone[data-media-plate="3"]::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -0.5rem -0.875rem;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hero-text-backdrop) var(--hero-plate-alpha), transparent) 0%,
+    color-mix(in srgb, var(--hero-text-backdrop) calc(var(--hero-plate-alpha) + 12%), transparent) 100%
+  );
+  backdrop-filter: blur(var(--hero-plate-blur));
+  transition: background 200ms ease, backdrop-filter 200ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-adaptive-text .hero-zone[data-media-plate="2"]::before,
+  .hero-adaptive-text .hero-zone[data-media-plate="3"]::before {
+    transition: none;
+  }
+}
+
+/* The on-cover control for an ADAPTIVE hero (HERO_ACTION_CLASS_ADAPTIVE). Same glass as
+   HERO_ACTION_CLASS, except every colour derives from the ZONE's `--color-on-media`, so a chip
+   cluster sitting on the bright half of a cover goes dark while the name on the dark half stays
+   light. That is the whole reason --color-on-media has to reach the controls and not just the
+   two text runs it used to. */
+.hero-chip {
+  border: 1px solid color-mix(in srgb, var(--color-on-media) 42%, transparent);
+  background: color-mix(in srgb, var(--color-on-media) 12%, transparent);
+  color: var(--color-on-media);
+  backdrop-filter: blur(4px);
+}
+.hero-chip:hover {
+  background: color-mix(in srgb, var(--color-on-media) 22%, transparent);
+}
+
 /* Soft amber radial glow backdrop, e.g. behind a hero CTA or within a dark band.
    Place as an absolutely-positioned, pointer-events-none layer. */
 .amber-glow {

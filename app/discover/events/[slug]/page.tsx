@@ -10,6 +10,8 @@ import { DetailTemplate } from '@/components/templates'
 import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { seriesRobots, seriesSeoFactsBySlug, suppressPastNoindex } from '@/lib/events/series-seo'
+import { getSeriesDisplayConfig } from '@/lib/events/series-config'
 
 export const revalidate = 3600
 
@@ -33,13 +35,21 @@ export async function generateMetadata({
   // (noindex, follow). They're isolated in the sitemap too. The page itself stays
   // live until it's pruned, so an old shared link never 404s a real reader.
   const ended = hasEventEnded(event)
+  // Series rules apply to the twin too (ADR-897). The canonical below is only a HINT: Google is free
+  // to ignore it, so the directive is what actually keeps date twenty of a daily series out of the
+  // index. suppressPastNoindex rescues a live series' anchor page here for the same reason it does on
+  // /events/<slug>: its own starts_at is in the past forever while the series keeps meeting.
+  const facts = await seriesSeoFactsBySlug(event.slug)
+  const { indexedOccurrences } = await getSeriesDisplayConfig()
+  const pastRobots = ended && !suppressPastNoindex(facts) ? ({ index: false, follow: true } as const) : undefined
+  const robots = pastRobots ?? seriesRobots(facts, indexedOccurrences)
   return {
     title: event.title,
     description,
     // The canonical public event page is /events/<slug> (the in-app, shareable URL). This discover
     // detail stays crawlable but consolidates its SEO signal there, so the two don't compete.
     alternates: { canonical: `/events/${event.slug}` },
-    ...(ended ? { robots: { index: false, follow: true } } : {}),
+    ...(robots ? { robots } : {}),
     openGraph: {
       title: ogTitle,
       description,

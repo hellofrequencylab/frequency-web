@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireProfileId as getMyProfileId } from '@/lib/auth'
 import { isBlockedBetween } from '@/lib/blocking'
+import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
+import { dmThreadHref } from '@/lib/messages/dm-destination'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 
 // ── In-app message → CRM timeline adapter (ADR-372 Phase 1) ────────────────────────────────────────
@@ -83,7 +85,10 @@ export async function startConversation(otherProfileId: string) {
       .maybeSingle()
 
     if (shared) {
-      redirect(`/messages/${shared.conversation_id}`)
+      // dmThreadHref, not a template string: once the DM route retires this must land in the
+      // dock directly rather than bounce off a redirecting page (ADR-896). Flag off = the
+      // identical /messages/<id> string this line always produced.
+      redirect(await dmThreadHref(shared.conversation_id as string))
     }
   }
 
@@ -104,7 +109,58 @@ export async function startConversation(otherProfileId: string) {
   ])
   if (partError) throw new Error('Failed to start the conversation')
 
-  redirect(`/messages/${conv.id}`)
+  redirect(await dmThreadHref(conv.id as string))
+}
+
+// ── openDirectConversation ────────────────────────────────────────────
+// The NON-NAVIGATING twin of startConversation (ADR-896, chat consolidation). Same three
+// gates in the same order, but it RETURNS the conversation id instead of redirecting into
+// /messages/<id>, so the caller can open the chat dock in place and the member keeps the
+// page and the scroll position they were on. That is the whole point: the owner's report was
+// that pressing "Reconnect with …" threw them onto a chat page.
+//
+// startConversation STAYS. Five CRM actions still want the redirect, and the profile /
+// circle buttons were its only non-CRM callers.
+//
+// It never throws for a policy refusal. A thrown Error inside a client-invoked action reaches
+// the browser as an opaque production digest, which is the wrong shape for "you need to be
+// friends first" — the member would read a crash where a plain sentence belongs. Refusals
+// come back as { ok: false, error } and the caller renders the sentence.
+export async function openDirectConversation(
+  otherProfileId: string,
+): Promise<{ ok: true; conversationId: string } | { ok: false; error: string }> {
+  const myProfileId = await getMyProfileId()
+
+  if (myProfileId === otherProfileId) return { ok: false, error: 'You cannot message yourself.' }
+
+  // Blocking gate: neither party may open a thread if either has blocked the other.
+  if (await isBlockedBetween(myProfileId, otherProfileId)) {
+    return { ok: false, error: 'You cannot message this member.' }
+  }
+
+  const admin = createAdminClient()
+
+  // Friendship gate, byte-for-byte the same ordered-pair lookup startConversation does. Two
+  // copies of a gate drift; this one is short enough that the risk is worth less than the
+  // risk of refactoring the redirecting action that five CRM surfaces depend on.
+  const friendPair = myProfileId < otherProfileId
+    ? { user_a_id: myProfileId, user_b_id: otherProfileId }
+    : { user_a_id: otherProfileId, user_b_id: myProfileId }
+  const { data: friendship } = await admin
+    .from('friendships')
+    .select('id')
+    .match({ ...friendPair, status: 'accepted' })
+    .maybeSingle()
+  if (!friendship) return { ok: false, error: 'You need to be friends before you can message.' }
+
+  try {
+    // The find-or-create seam is shared with the marketplace enquiry path. It is UNGATED by
+    // contract, which is safe here only because all three gates above already ran.
+    const conversationId = await findOrCreateDirectConversation(admin, myProfileId, otherProfileId)
+    return { ok: true, conversationId }
+  } catch {
+    return { ok: false, error: 'We could not open that conversation. Try again.' }
+  }
 }
 
 // ── sendMessage ───────────────────────────────────────────────────────

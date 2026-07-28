@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { startConversation } from '@/app/(main)/messages/actions'
+import { MessageMemberButton } from '@/components/messages/message-member-button'
 import { Composer } from '@/components/feed/composer'
 import { ProfileFeed } from '@/components/feed/profile-feed'
 import { ProfilePosts } from '@/components/feed/profile-posts'
@@ -42,7 +42,11 @@ import { ProfileAwards } from '@/components/profile/profile-awards'
 import { FrequencySignature } from '@/components/profile/frequency-signature'
 import { getLinkedContactForProfile } from '@/lib/connections/matching'
 import { PrivateContactPanel } from '@/components/connections/private-contact-panel'
-import { DetailTemplate, PageHero, HERO_ACTION_CLASS } from '@/components/templates'
+import { ProfileAssociations } from '@/components/profile/profile-associations'
+// HERO_ACTION_CLASS is gone from this page on purpose: every control that rides this cover now
+// takes its colour from the hero ZONE's --color-on-media (ADR-894), and the fixed white-on-glass
+// original cannot do that. It stays exported and untouched for the seven non-adaptive heroes.
+import { DetailTemplate, PageHero, HERO_ACTION_CLASS_ADAPTIVE } from '@/components/templates'
 import { resolveHeaderElement } from '@/lib/elements/header'
 import { ProfileAvatar } from '@/components/profile/profile-avatar'
 import { ProfileSpotlightBlocks } from '@/components/profile/profile-spotlight-blocks'
@@ -188,7 +192,14 @@ export default async function ProfilePage({
     journeysFinishedThisSeason(profileId),
     admin.from('crew_completions').select('id', { count: 'exact', head: true }).eq('profile_id', profileId),
     admin.from('posts').select('id', { count: 'exact', head: true }).eq('author_id', profileId).is('parent_id', null).is('hidden_at', null),
-    admin.from('memberships').select('circles!circle_id ( id, name, slug )').eq('profile_id', profileId).eq('status', 'active'),
+    // Circle memberships — the ONLY thing this still feeds is the `Circle Up` achievement chip,
+    // which is public. It therefore carries the listing gate (ADR-895): the extra columns are read
+    // so the rows can be narrowed below to circles a stranger could find by browsing. Before this,
+    // the read was unfiltered and the band printed "{n} circles" with a deep link, so a visitor
+    // learned that this member belonged to exactly one UNLISTED Circle and received its slug. The
+    // band line is gone; narrowing the read is what stops the achievement republishing the same bit
+    // three DOM nodes away.
+    admin.from('memberships').select('circles!circle_id ( id, name, slug, unlisted, status, space_id )').eq('profile_id', profileId).eq('status', 'active'),
     // The Frequency Signature — the member's practice spread across the four Pillars
     // (docs/JOURNEYS.md §9.2), the identity centerpiece below.
     getMemberSignature(profileId),
@@ -235,8 +246,17 @@ export default async function ProfilePage({
   // crew-completions subtotal, which read 0 for Zaps earned from posts/reactions/joins.
   const lifetimeZaps = (profile as { lifetime_zaps?: number | null }).lifetime_zaps ?? 0
 
-  const circles = ((circlesResult.data ?? []) as unknown as { circles: { id: string; name: string; slug: string } | null }[])
-    .map(m => m.circles).filter((c): c is { id: string; name: string; slug: string } => !!c)
+  // Circles a stranger could find by browsing: not hidden from the index, in a status whose ROW an
+  // ordinary member may read (`archived` needs host+, `draft` needs guide+), and not owned by a
+  // Space (the Space wall is a RESTRICTIVE policy, and this page reads through the admin client
+  // where it never fires). Same allowlist as lib/people/associations.ts tier A.
+  const LISTABLE_CIRCLE_STATUS = ['forming', 'active', 'inactive']
+  const circles = ((circlesResult.data ?? []) as unknown as {
+    circles: { id: string; name: string; slug: string; unlisted: boolean; status: string; space_id: string | null } | null
+  }[])
+    .map(m => m.circles)
+    .filter((c): c is { id: string; name: string; slug: string; unlisted: boolean; status: string; space_id: string | null } =>
+      !!c && c.unlisted === false && LISTABLE_CIRCLE_STATUS.includes(c.status) && c.space_id === null)
 
   // Rank, next tier, and progress come from the one canonical source (season-ranks),
   // so the profile shows the same ladder as the feed, crew home, and leaderboard.
@@ -305,7 +325,7 @@ export default async function ProfilePage({
   // The owner's on-cover header action is just Save contact (when they expose a vCard); Edit profile moved
   // to a right-aligned admin row BELOW the header (see the band), so it doesn't ride the cover photo.
   const ownerActions = vcardEnabled ? (
-    <a href={`${profilePath}/vcard`} className={HERO_ACTION_CLASS}>
+    <a href={`${profilePath}/vcard`} className={HERO_ACTION_CLASS_ADAPTIVE}>
       <Contact className="h-3.5 w-3.5" />
       Save contact
     </a>
@@ -333,20 +353,25 @@ export default async function ProfilePage({
   const viewerActions = user ? (
     <>
       <div className="contents">
-        {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
+        {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} onMedia />}
         {vcardEnabled && (
-          <a href={`${profilePath}/vcard`} className={HERO_ACTION_CLASS}>
+          <a href={`${profilePath}/vcard`} className={HERO_ACTION_CLASS_ADAPTIVE}>
             <Contact className="w-3.5 h-3.5" />
             Save contact
           </a>
         )}
         {!isBlocked && friendState.kind === 'accepted' && (
-          <form action={startConversation.bind(null, profileId)}>
-            <button type="submit" className={HERO_ACTION_CLASS}>
-              <MessageSquare className="w-3.5 h-3.5" />
-              Message
-            </button>
-          </form>
+          /* Opens the chat dock in place (ADR-896) — the same shared control as the
+             Reconnect panel below and the circle roster, so the three cannot drift. */
+          <MessageMemberButton
+            profileId={profileId}
+            threadTitle={firstName}
+            className={HERO_ACTION_CLASS_ADAPTIVE}
+            errorClassName="max-w-[16rem] text-2xs text-on-media"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            Message
+          </MessageMemberButton>
         )}
         {!isBlocked && canTipRecipient && (
           <TipButton toProfileId={profileId} recipientName={firstName} />
@@ -363,6 +388,7 @@ export default async function ProfilePage({
             spotlightPublished={spotlightPublished}
             canModerate={canModerateProfile}
             isJanitor={isJanitorViewer}
+            triggerClassName={HERO_ACTION_CLASS_ADAPTIVE}
           />
         )}
       </div>
@@ -438,6 +464,11 @@ export default async function ProfilePage({
             // dark copy from the pixels behind them (and the overlay setting), live as the rail
             // edits the photo / focus / overlay.
             adaptiveText
+            // PER ZONE (ADR-894): the lockup and the chip cluster resolve separately, because this
+            // member's cover is a bright subject beside dark timber and the name sits on the timber.
+            // No `initialZoneTones` is passed: the server does not know the answer, and the honest
+            // unmeasured render (halo, no plate, no tone guess) is what the sensor then corrects.
+            actionsLabel="Profile actions"
             leading={<ProfileAvatar src={profile.avatar_url} name={profile.display_name} initials={initials} dimmed={isDemo} focus={avatarFocus} />}
             eyebrow={roleBadge}
             title={profile.display_name}
@@ -445,7 +476,7 @@ export default async function ProfilePage({
             actions={
               <>
                 {isOwner ? ownerActions : viewerActions}
-                <QrShareDropdown manager={isOwner} className={HERO_ACTION_CLASS} />
+                <QrShareDropdown manager={isOwner} className={HERO_ACTION_CLASS_ADAPTIVE} />
               </>
             }
           />
@@ -461,14 +492,10 @@ export default async function ProfilePage({
                   <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
                 )}
                 <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
-                {circles.length > 0 && (
-                  <Link
-                    href={circles.length === 1 ? `/circles/${circles[0]!.slug}` : '/circles'}
-                    className="flex items-center gap-1 transition-colors hover:text-text"
-                  >
-                    <Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}
-                  </Link>
-                )}
+                {/* The "{n} circles" item that used to sit here is GONE (ADR-895). It counted an
+                    unfiltered membership read and deep-linked the single one, so it published the
+                    name and slug of an UNLISTED Circle to any visitor. What a member is part of now
+                    reads in the associations panel below, which is filtered per viewer. */}
                 {/* Status chips (Ghost rank, Founder, Supporter, demo) sit at the END of the stats line. */}
                 {badges}
                 {/* Block · Act as — moved off the cover onto this line (owner directive, 2026-07-28). */}
@@ -488,6 +515,21 @@ export default async function ProfilePage({
         {/* CONTENT (2/3) — practice, the relationship panels, composer, timeline.
             (Bio now reads with the identity band above the header rule.) */}
         <div className="order-2 min-w-0 space-y-6 xl:order-1 xl:col-span-2">
+          {/* Associations (ADR-895) — the answer to "why is this page here": what this member runs,
+              what you have in common, and (for the owner) their own full picture. Streams in its own
+              boundary so a six-read fan-out never blocks the hero's first byte; a null fallback,
+              because a section that may legitimately render nothing must not flash furniture. */}
+          <Suspense fallback={null}>
+            <ProfileAssociations
+              profileId={profileId}
+              handle={profile.handle as string}
+              firstName={firstName}
+              viewerProfileId={myProfileId}
+              isOwner={isOwner}
+              blocked={isBlocked}
+            />
+          </Suspense>
+
           {/* Your private contact card — only the viewer who merged their own personal
               contact with this member sees this (their own logged data). */}
           {myLinkedContact && <PrivateContactPanel card={myLinkedContact} memberName={firstName} />}

@@ -23,7 +23,10 @@ describe('the /events index folds repeating series', () => {
 
   it('applies the fold, passing the query floor straight through as the fold floor', () => {
     expect(indexData).toContain('collapseSeriesRows(filteredEvents')
-    expect(indexData).toContain('perSeries: CARDS_PER_SERIES')
+    // The count is the OPERATOR knob now (ADR-897 §7.3), not a module constant: a hardcoded
+    // CARDS_PER_SERIES here made the console write a row nobody read. The knob's own consumer
+    // guard lives in lib/events/series-config.test.ts.
+    expect(indexData).toContain('perSeries: cardsPerSeries')
     // One value for both, so the query and the fold can never disagree about "upcoming".
     expect(indexData).toContain('upcomingFrom: listableFrom')
   })

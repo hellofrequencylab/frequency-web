@@ -4,7 +4,7 @@
 // page-chrome.ts for the matching rail treatment.
 
 export { PageHeading } from './page-heading'
-export { PageHero, HERO_ACTION_CLASS, type PageHeroProps, type PageHeroVariant, type PageHeroSize, type HeroOverlayStyle } from './page-hero'
+export { PageHero, HERO_ACTION_CLASS, HERO_ACTION_CLASS_ADAPTIVE, type PageHeroProps, type PageHeroVariant, type PageHeroSize, type HeroOverlayStyle, type HeroZoneName } from './page-hero'
 export { IndexTemplate } from './index-template'
 export { StreamTemplate } from './stream-template'
 export { DetailTemplate, type DetailTab } from './detail-template'

@@ -9,6 +9,7 @@ import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { isError } from '@/lib/action-result'
 import { messageHost } from '@/app/(main)/events/[slug]/social-actions'
+import { openDockThread } from '@/lib/messages/dock-open'
 import type { HostLite } from '@/lib/events/active-event'
 
 // The PERSON Host credit inside the Host & Co Hosts section — a client island so the row can open a
@@ -34,7 +35,10 @@ export function HostPersonCredit({
   const [open, setOpen] = useState(false)
   const [body, setBody] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [sentHref, setSentHref] = useState<string | null>(null)
+  // The conversation id, NOT a href (ADR-896). This used to hold `/messages/<id>` and render
+  // a Link, which threw the attendee off the event page they were reading; the dock opens over
+  // it instead.
+  const [sentConversationId, setSentConversationId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   const firstName = host.display_name.trim().split(/\s+/)[0] || host.display_name
@@ -43,7 +47,7 @@ export function HostPersonCredit({
     setOpen(false)
     setBody('')
     setError(null)
-    setSentHref(null)
+    setSentConversationId(null)
   }
 
   function submit() {
@@ -55,7 +59,7 @@ export function HostPersonCredit({
       if (isError(result)) {
         setError(result.error)
       } else {
-        setSentHref(`/messages/${result.data.conversationId}`)
+        setSentConversationId(result.data.conversationId)
       }
     })
   }
@@ -112,7 +116,7 @@ export function HostPersonCredit({
             </div>
           </div>
 
-          {sentHref ? (
+          {sentConversationId ? (
             <>
               <p className="mt-5 text-sm text-muted">Your message is on its way to {firstName}.</p>
               <div className="mt-5 flex justify-end gap-2">
@@ -123,12 +127,16 @@ export function HostPersonCredit({
                 >
                   Done
                 </button>
-                <Link
-                  href={sentHref}
+                <button
+                  type="button"
+                  onClick={() => {
+                    openDockThread({ kind: 'dm', id: sentConversationId, title: host.display_name })
+                    close()
+                  }}
                   className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                 >
                   Open the conversation
-                </Link>
+                </button>
               </div>
             </>
           ) : (

@@ -7,6 +7,15 @@ import { rateLimitOk, clientIp, tooMany } from '@/lib/rate-limit'
 import { getViewerHats } from '@/lib/core/viewer-hats'
 import { accessTo } from '@/lib/core/access-matrix'
 import { matchDestinations } from '@/lib/search/destinations'
+import { HOME_TZ, dayInZone } from '@/lib/time/zone'
+import {
+  SERIES_COLUMNS,
+  TEASER_CARDS_PER_SERIES,
+  collapseSeriesAroundFloor,
+  seriesFetchLimit,
+  seriesUpcomingFloor,
+  type SeriesRow,
+} from '@/lib/events/series'
 
 // Live search for the in-app search overlay (components/search/search-overlay.tsx).
 // Returns a small slice of people / posts / events / leads for a query as JSON, so
@@ -19,6 +28,16 @@ import { matchDestinations } from '@/lib/search/destinations'
 // so we resolve the viewer through connectionsOwnerId() and skip the query otherwise.
 
 const EMPTY = { people: [], posts: [], events: [], leads: [], pages: [] }
+
+/** Event rows the overlay shows, counting REPEATING EVENTS rather than dates. */
+const EVENT_RESULTS = 6
+
+type OverlayEventRow = SeriesRow & {
+  title: string
+  location: string | null
+  is_cancelled: boolean
+  is_demo: boolean
+}
 
 export async function GET(request: Request) {
   if (!(await rateLimitOk('search', clientIp(request), 60, '60 s'))) return tooMany()
@@ -47,7 +66,24 @@ export async function GET(request: Request) {
     .map((d) => ({ href: d.href, label: d.label, group: d.group }))
 
   const admin = createAdminClient()
-  const [peopleRes, postsRes, eventsRes, leads] = await Promise.all([
+
+  // Events read TWICE, around the wall-clock floor (ADR-897). This read had no date predicate and
+  // ordered ascending, so its window was the OLDEST six matching rows from the beginning of time —
+  // folding that single window would elect a series' very first date ever. A FACTORY, not one
+  // shared builder: PostgrestFilterBuilder mutates and returns `this` and .order() concatenates, so
+  // a shared instance would fire one query carrying both predicates and match nothing.
+  const eventFloor = seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ))
+  const eventFetchLimit = seriesFetchLimit(EVENT_RESULTS)
+  const eventsBase = () =>
+    admin
+      .from('events')
+      .select(`id, title, slug, starts_at, location, is_cancelled, is_demo, ${SERIES_COLUMNS}`)
+      .or(`title.ilike.%${safeQ}%,description.ilike.%${safeQ}%`)
+      .eq('status', 'published')
+      .eq('visibility', 'public')
+      .eq('is_cancelled', false)
+
+  const [peopleRes, postsRes, eventsUpcomingRes, eventsPastRes, leads] = await Promise.all([
     admin
       .from('profiles')
       .select('id, display_name, handle, avatar_url, community_role, is_demo')
@@ -67,23 +103,33 @@ export async function GET(request: Request) {
       .is('hidden_at', null)
       .order('created_at', { ascending: false })
       .limit(6),
-    admin
-      .from('events')
-      .select('id, title, slug, starts_at, location, is_cancelled, is_demo')
-      .or(`title.ilike.%${safeQ}%,description.ilike.%${safeQ}%`)
-      .eq('status', 'published')
-      .eq('visibility', 'public')
-      .eq('is_cancelled', false)
+    eventsBase()
+      .gte('starts_at', eventFloor)
       .order('starts_at', { ascending: true })
-      .limit(6),
+      .limit(eventFetchLimit),
+    // NEWEST first, so the window below the floor holds the most RECENT past dates. The fold elects
+    // the latest of them, so a finished series answers with its last date, not its opening night.
+    eventsBase()
+      .lt('starts_at', eventFloor)
+      .order('starts_at', { ascending: false })
+      .limit(eventFetchLimit),
     stewardId ? searchVisibleLeads(stewardId, q, { includeNetwork: true }) : Promise.resolve([]),
   ])
+
+  // One row per repeating event, showing its next date. An overlay with six slots cannot spend
+  // three of them on three Wednesdays of the same cowork.
+  const events = collapseSeriesAroundFloor(
+    (eventsUpcomingRes.data ?? []) as unknown as OverlayEventRow[],
+    (eventsPastRes.data ?? []) as unknown as OverlayEventRow[],
+    EVENT_RESULTS,
+    { upcomingFrom: eventFloor, perSeries: TEASER_CARDS_PER_SERIES },
+  )
 
   return NextResponse.json({
     pages,
     people: peopleRes.data ?? [],
     posts: postsRes.data ?? [],
-    events: eventsRes.data ?? [],
+    events,
     leads: leads ?? [],
   })
 }
