@@ -1771,7 +1771,7 @@ export default async function EventDetailPage({
 
             {/* The series date rail: the next real dates, each linking to that date's own live
                 page (ADR-897). Renders nothing for a one-off or a single-date series. */}
-            <SeriesDatesRail dates={seriesRailDates} timeZone={event.time_zone} className="pt-1" />
+            <SeriesDatesRail dates={seriesRailDates} timeZone={eventTz} className="pt-1" />
 
             {/* WHERE THIS EVENT BELONGS: its Circle, its Space, and its Journey, each a link.
                 This replaces the bare unlabeled Circle name that used to sit here, which said
