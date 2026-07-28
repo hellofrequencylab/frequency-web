@@ -35,6 +35,23 @@ export function dateToWallClockIso(date: string | null | undefined): string | nu
   return Number.isNaN(d.getTime()) ? null : d.toISOString()
 }
 
+// An explicit-offset suffix (Z or ±hh[:]mm): the string names its own zone, so parsing it
+// is runtime-zone-independent and `new Date(...)` is safe.
+const EXPLICIT_OFFSET = /(?:Z|[+-]\d{2}:?\d{2})$/
+
+/** A caller-supplied start time that is EITHER a `datetime-local` wall-clock (kept literally,
+ *  the storage convention above) OR an ISO string carrying its own offset (already an exact
+ *  instant, e.g. a server-computed `toISOString()`) → the stored ISO. Any OTHER tz-less shape
+ *  is rejected (null) rather than handed to `new Date(...)`, which would parse it in the
+ *  SERVER's zone and only look right because prod Node runs UTC. */
+export function eventStartInputToIso(input: string | null | undefined): string | null {
+  const wall = wallClockToIso(input)
+  if (wall) return wall
+  if (!input || !EXPLICIT_OFFSET.test(input)) return null
+  const d = new Date(input)
+  return Number.isNaN(d.getTime()) ? null : d.toISOString()
+}
+
 /** A stored ISO instant → the `YYYY-MM-DDTHH:mm` a `<input type="datetime-local">` wants,
  *  reading UTC parts so the field shows the same wall-clock that was stored. '' when empty. */
 export function isoToWallClockInput(iso: string | null | undefined): string {

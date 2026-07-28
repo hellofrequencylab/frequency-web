@@ -15,7 +15,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { HOME_TZ, zoneAbbrev, eventInstant, resolveZone } from '@/lib/time/zone'
+import { eventInstant, resolveZone } from '@/lib/time/zone'
+import { formatAbsolute } from '@/lib/events/follower-reminders'
 import type { Database } from '@/lib/database.types'
 import {
   sendEventReminderEmail,
@@ -86,23 +87,9 @@ async function stampReminder(rsvpId: string, sentColumn: string): Promise<void> 
     .eq('id', rsvpId)
 }
 
-function formatAbsolute(iso: string): string {
-  // starts_at holds the event's wall-clock as UTC PARTS. Render those parts
-  // (timeZone:'UTC') to show the event's own local time, then label it with the
-  // community's HOME zone abbrev (PST/PDT) instead of the literal "UTC" the old
-  // formatter printed. NOTE: reminders default the label to HOME; the send WINDOW
-  // itself (the .gte/.lt on starts_at below) still compares real instants against
-  // wall-clock parts and can fire ~offset hours off for non-HOME events — a proper
-  // fix widens the SQL window and filters in code by eventInstant(starts_at, tz).
-  const d = new Date(iso)
-  const base = d.toLocaleString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric',
-    hour: 'numeric', minute: '2-digit',
-    timeZone: 'UTC',
-  }).replace(',', '').replace(' at ', ' · ')
-  const abbr = zoneAbbrev(iso, HOME_TZ)
-  return abbr ? `${base} ${abbr}` : base
-}
+// The when-line comes from the shared, tested formatter (lib/events/follower-reminders):
+// the event's own wall-clock (UTC parts) labeled with the EVENT's zone abbrev, so a New
+// York event reads "7:00 PM EDT" here exactly as it does in the follower reminder.
 
 function formatRelative(lead: ReminderLead): string {
   if (lead === '7d')  return 'in about a week'
@@ -216,7 +203,7 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
               recipientName:      profile.display_name,
               recipientProfileId: profile.id,
               eventTitle:         ev.title,
-              whenAbsolute:       formatAbsolute(ev.starts_at),
+              whenAbsolute:       formatAbsolute(ev.starts_at, ev.time_zone),
               location:           ev.location,
               eventUrl,
               warmProof,
@@ -228,7 +215,7 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
               recipientProfileId: profile.id,
               eventTitle:         ev.title,
               whenLabel:          formatRelative(lead),
-              whenAbsolute:       formatAbsolute(ev.starts_at),
+              whenAbsolute:       formatAbsolute(ev.starts_at, ev.time_zone),
               location:           ev.location,
               eventUrl,
               lead,

@@ -2,10 +2,10 @@
 // (components/admin/modules/event-settings-module.tsx) and its server-side validation
 // (app/(main)/events/admin-actions.ts). Framework-free (no React, no server deps) so it
 // imports cleanly into client components and 'use server' actions alike. The value spaces
-// mirror the events table CHECK constraints (supabase/migrations/20260609230000_* +
-// 20260625000000_event_geolocation). The create/edit form (event-form.tsx) still inlines
-// the same lists; this module is where the admin surface + validation share one definition
-// (folding the form's copy in here is a clean follow-up).
+// come from supabase/migrations/20260609230000_* + 20260625000000_event_geolocation —
+// but note events.category has NO DB CHECK behind it (see the validation-sets note below).
+// The create form, the /events index facets, and the discover hub catalog all read this
+// module too (check:vocab keeps it that way — no surface hand-copies these lists).
 
 export interface EventOption {
   value: string
@@ -53,9 +53,12 @@ export const ATTENDANCE_OPTIONS: { value: EventAttendanceMode; label: string }[]
   { value: 'hybrid', label: 'Both' },
 ]
 
-// ── Validation sets (mirror the DB CHECK constraints) ────────────────────────────────────
-// Use these to validate untrusted form input on the server before writing a constrained
-// column (an unlisted value would otherwise 500 on the CHECK, or worse, write garbage).
+// ── Validation sets ───────────────────────────────────────────────────────────────────────
+// Use these to validate untrusted form input on the server before writing one of these
+// columns. NOTE: events.category carries NO DB CHECK constraint (verified against prod,
+// 2026-07-28 — 20260609230000 created it as plain `text default 'gathering'`), so for
+// category this server-side validation is the ONLY gate; nothing downstream will 500 on an
+// off-list value, it will simply be stored and then dropped by closed-set readers.
 
 export const CATEGORY_VALUES: ReadonlySet<string> = new Set(CATEGORY_OPTIONS.map((o) => o.value))
 export const VISIBILITY_VALUES: ReadonlySet<string> = new Set(VISIBILITY_OPTIONS.map((o) => o.value))
@@ -74,4 +77,14 @@ export function coerceEnergyTag(raw: unknown): string | null {
  *  the events code). */
 export function coerceAttendanceMode(raw: unknown): EventAttendanceMode {
   return typeof raw === 'string' && ATTENDANCE_VALUES.has(raw) ? (raw as EventAttendanceMode) : 'in_person'
+}
+
+/** ADR-883's visibility step-down rule, applied at every write seam (create, edit, /manage).
+ *  `circle_only` only means something on a circle-scoped event — the RLS branch that reads it
+ *  keys on scope_type='circle', so on any other scope the value strands the event with no
+ *  audience its own setting can name. It steps down to `unlisted`, never `public`: the host
+ *  asked for a narrow audience, and publishing an event they meant to keep close trades an
+ *  invisible event for an over-broadcast one (the clearPlacementPatch rule, lib/events/placement). */
+export function coerceVisibilityForScope(visibility: string, scopeType: string | null | undefined): string {
+  return visibility === 'circle_only' && scopeType !== 'circle' ? 'unlisted' : visibility
 }

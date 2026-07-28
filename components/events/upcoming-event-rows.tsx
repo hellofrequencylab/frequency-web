@@ -14,12 +14,18 @@ export interface UpcomingEventRow {
   starts_at: string
 }
 
+// starts_at is stored UTC-naive (the event's wall-clock kept as UTC parts — lib/events/datetime),
+// so every formatter here pins timeZone:'UTC' / reads UTC parts. Without the pin these render in
+// the SERVER's zone and every row shifts on a non-UTC runtime (same convention as the edit page's
+// toInput round-trip).
+
 export function formatShort(iso: string) {
   const d = new Date(iso)
   return d.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
+    timeZone: 'UTC',
   })
 }
 
@@ -27,13 +33,14 @@ export function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
+    timeZone: 'UTC',
   })
 }
 
 export function DateChip({ iso }: { iso: string }) {
   const d = new Date(iso)
-  const month = d.toLocaleDateString('en-US', { month: 'short' })
-  const day = d.getDate()
+  const month = d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
+  const day = d.getUTCDate()
   return (
     <div className="flex flex-col items-center justify-center w-9 h-9 rounded-lg bg-primary-bg text-primary-strong shrink-0">
       <span className="text-3xs font-semibold uppercase leading-none">{month}</span>

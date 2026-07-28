@@ -130,10 +130,20 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
 
 // ── City × category hubs ──────────────────────────────────────────────────────
 // Indexable hubs whose value is unique DATA, not boilerplate (EVENTS-REWORK SEO).
-// The category catalog is the locked taxonomy from
-// 20260609230000_events_p0_capacity_visibility (events.category) plus a member-
-// facing label + a short, plain hub intro. Slugs are lowercase + hyphenated so a
-// URL stays clean and stable. Categories not listed here are not given a hub.
+// The catalog below maps hub slugs onto the REAL event vocabulary — the ten
+// CATEGORY_OPTIONS values in lib/events/options.ts, the one source — plus a
+// member-facing label and the plain nouns the hub copy composes with. Slugs are
+// lowercase + hyphenated so a URL stays clean and stable.
+//
+// NOTE: events.category is NOT backed by a DB CHECK constraint (verified against
+// prod, 2026-07-28 — the column is plain `text default 'gathering'`). The
+// server-side validation against CATEGORY_VALUES is the only gate, so an
+// off-list value CAN exist in a row. categoryForValue() below drops any value
+// without a hub, which correctly keeps junk out of the index — but it equally
+// hides a REAL category this catalog forgot, which is exactly how six of the ten
+// went missing from the hub index and app/sitemap.ts before 2026-07-28.
+// scripts/check-vocab.mjs (CI, `pnpm check:vocab`) now asserts this catalog and
+// lib/events/options.ts agree in BOTH directions, so that drift fails the build.
 
 export type EventCategory = {
   /** URL slug, e.g. "movement". */
@@ -148,15 +158,21 @@ export type EventCategory = {
   nounSingular: string
 }
 
-// One hub per durable category. Labels + nouns pass CONTENT-VOICE (plain, no
-// hype, no em dashes); names stay NAMING-compliant ("Event" stays generic).
+// One hub per real category — every `values` key is a live CATEGORY_OPTIONS
+// value, and every CATEGORY_OPTIONS value has a hub (check:vocab holds both
+// directions). Labels + nouns pass CONTENT-VOICE (plain, no hype, no em dashes);
+// names stay NAMING-compliant (Circle keeps its capital, "Event" stays generic).
 export const EVENT_CATEGORIES: EventCategory[] = [
   { slug: 'gatherings', values: ['gathering'], label: 'Gatherings', noun: 'gatherings', nounSingular: 'gathering' },
-  { slug: 'movement', values: ['movement', 'fitness'], label: 'Movement', noun: 'movement sessions', nounSingular: 'movement session' },
-  { slug: 'workshops', values: ['workshop', 'class'], label: 'Workshops', noun: 'workshops and classes', nounSingular: 'workshop' },
-  { slug: 'ceremony', values: ['ceremony', 'ritual'], label: 'Ceremony', noun: 'ceremonies', nounSingular: 'ceremony' },
-  { slug: 'social', values: ['social', 'meal'], label: 'Social', noun: 'social gatherings', nounSingular: 'social gathering' },
-  { slug: 'outdoors', values: ['outdoors', 'adventure'], label: 'Outdoors', noun: 'outdoor gatherings', nounSingular: 'outdoor gathering' },
+  { slug: 'movement', values: ['movement'], label: 'Movement', noun: 'movement sessions', nounSingular: 'movement session' },
+  { slug: 'ceremony', values: ['ceremony'], label: 'Ceremony', noun: 'ceremonies', nounSingular: 'ceremony' },
+  { slug: 'circle-rituals', values: ['circle_ritual'], label: 'Circle Rituals', noun: 'Circle rituals', nounSingular: 'Circle ritual' },
+  { slug: 'learning', values: ['learning'], label: 'Learning', noun: 'learning sessions', nounSingular: 'learning session' },
+  { slug: 'social', values: ['social'], label: 'Social', noun: 'social gatherings', nounSingular: 'social gathering' },
+  { slug: 'service', values: ['service'], label: 'Service', noun: 'service projects', nounSingular: 'service project' },
+  { slug: 'meetups', values: ['external_meetup'], label: 'Meetups', noun: 'meetups', nounSingular: 'meetup' },
+  { slug: 'retreats', values: ['retreat'], label: 'Retreats', noun: 'retreats', nounSingular: 'retreat' },
+  { slug: 'online', values: ['online'], label: 'Online', noun: 'online gatherings', nounSingular: 'online gathering' },
 ]
 
 export function getCategoryBySlug(slug: string): EventCategory | undefined {
@@ -206,6 +222,11 @@ export type CityCategoryHub = {
   events: EnrichedPublicEvent[]
 }
 
+// LOUD DROP-THROUGH WARNING: an event whose stored category matches no hub row is
+// EXCLUDED from the hub index and therefore from app/sitemap.ts, with no error and
+// no log. That is the right call for junk (events.category has no DB CHECK, so an
+// off-list value can exist) — and exactly why the catalog above must cover every
+// real vocabulary value. check:vocab fails CI if it stops doing so.
 function categoryForValue(value: string): EventCategory | undefined {
   return EVENT_CATEGORIES.find((c) => c.values.includes(value))
 }

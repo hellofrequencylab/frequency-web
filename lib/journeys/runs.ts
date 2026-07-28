@@ -6,6 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { spaceIdForCircle } from '@/lib/circles/store'
+import { eventStartInputToIso } from '@/lib/events/datetime'
 import { buildJourneyTree, type BlockRow } from './tree'
 import { aggregateCohort, type MemberCompletion, type CohortProgress } from './cohort'
 
@@ -104,6 +105,11 @@ export async function scheduleKickoff(input: {
   journeyTitle: string
 }): Promise<string | null> {
   const admin = db()
+  // The host's picked kickoff is a datetime-local wall-clock: keep it literally (the events
+  // storage convention, lib/events/datetime) — `new Date(...)` would parse it in the SERVER's
+  // zone and shift it on any non-UTC runtime. An explicit-offset ISO also passes through.
+  const startsIso = eventStartInputToIso(input.startsAt)
+  if (!startsIso) return null
   const slug = `kickoff-${input.runId.slice(0, 8)}-${Math.random().toString(36).slice(2, 6)}`
   // A circle's events belong to the circle's Space too (ADR-857).
   const kickoffSpaceId = await spaceIdForCircle(input.circleId)
@@ -114,7 +120,7 @@ export async function scheduleKickoff(input: {
       description: 'The opening meetup for this Journey. Meet your Circle, set the pace, and start together.',
       scope_id: input.circleId,
       scope_type: 'circle',
-      starts_at: new Date(input.startsAt).toISOString(),
+      starts_at: startsIso,
       host_id: input.hostId,
       slug,
       ...(kickoffSpaceId ? { space_id: kickoffSpaceId } : {}),
@@ -172,6 +178,10 @@ export async function setPhaseEvent(input: {
   startsAt: string
 }): Promise<string | null> {
   const admin = db()
+  // Same convention as scheduleKickoff: a wall-clock stays literal, an explicit-offset ISO
+  // (run-actions passes `toISOString()`) passes through, anything else fails closed.
+  const startsIso = eventStartInputToIso(input.startsAt)
+  if (!startsIso) return null
   const slug = `${input.kind}-${input.runId.slice(0, 8)}-${input.phaseId.slice(0, 8)}-${Math.random().toString(36).slice(2, 5)}`
   // A circle's events belong to the circle's Space too (ADR-857).
   const phaseSpaceId = await spaceIdForCircle(input.circleId)
@@ -185,7 +195,7 @@ export async function setPhaseEvent(input: {
           : 'A weekend Gathering for this week of the Journey.',
       scope_id: input.circleId,
       scope_type: 'circle',
-      starts_at: new Date(input.startsAt).toISOString(),
+      starts_at: startsIso,
       host_id: input.hostId,
       slug,
       ...(phaseSpaceId ? { space_id: phaseSpaceId } : {}),

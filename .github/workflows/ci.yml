@@ -58,6 +58,8 @@ jobs:
         run: pnpm check:collective
       - name: CRM / comms parity guard (ADR-817 — shared comms modules, no per-surface forks)
         run: pnpm check:crm-parity
+      - name: Vocabulary contract guard (ADR-879/887 — one source per category vocabulary)
+        run: pnpm check:vocab
       - name: RLS coverage (static shift-left of the DB advisors)
         run: pnpm check:rls
       - name: Migration filename contract (unique versions — a collision silently skips a migration)

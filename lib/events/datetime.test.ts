@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { wallClockToIso, dateToWallClockIso, isoToWallClockInput } from './datetime'
+import {
+  wallClockToIso,
+  dateToWallClockIso,
+  isoToWallClockInput,
+  eventStartInputToIso,
+} from './datetime'
 
 describe('wallClockToIso', () => {
   it('keeps the wall-clock literally as UTC (no offset shift)', () => {
@@ -26,6 +31,26 @@ describe('dateToWallClockIso', () => {
   it('returns null for empty input', () => {
     expect(dateToWallClockIso('')).toBeNull()
     expect(dateToWallClockIso(null)).toBeNull()
+  })
+})
+
+describe('eventStartInputToIso', () => {
+  it('keeps a datetime-local wall-clock literally (the storage convention)', () => {
+    // The journey-runs bug this pins down: new Date('2026-06-26T19:00').toISOString()
+    // parses a tz-LESS string in the SERVER's zone — right only because prod Node is UTC.
+    expect(eventStartInputToIso('2026-06-26T19:00')).toBe('2026-06-26T19:00:00.000Z')
+  })
+
+  it('passes an explicit-offset ISO through unchanged (already an exact instant)', () => {
+    expect(eventStartInputToIso('2026-06-26T19:00:00.000Z')).toBe('2026-06-26T19:00:00.000Z')
+    expect(eventStartInputToIso('2026-06-26T19:00:00+02:00')).toBe('2026-06-26T17:00:00.000Z')
+  })
+
+  it('rejects any OTHER tz-less shape instead of parsing it in the server zone', () => {
+    expect(eventStartInputToIso('2026-06-26 19:00')).toBeNull()
+    expect(eventStartInputToIso('not-a-date')).toBeNull()
+    expect(eventStartInputToIso('')).toBeNull()
+    expect(eventStartInputToIso(null)).toBeNull()
   })
 })
 
