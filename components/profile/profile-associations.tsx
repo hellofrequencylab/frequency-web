@@ -110,6 +110,14 @@ export async function ProfileAssociations({
                 icon={k.icon}
                 // Events is the one kind with a real per-host index.
                 href={stat.kind === 'events' ? `/discover/events/organizer/${handle}` : k.href}
+                // The tile reads "3 / Circles / Hosting" and links to the directory, which without
+                // this says "3 Circles live in there". Name whose number it is and where the link
+                // goes; only the Events tile has a genuinely per-person destination.
+                title={
+                  stat.kind === 'events'
+                    ? `${stat.approximate ? 'At least ' : ''}${stat.count} upcoming ${stat.count === 1 ? 'event' : 'events'} ${isOwner ? 'you are' : `${firstName} is`} hosting. Opens their events.`
+                    : `${stat.count} ${k.label.toLowerCase()} ${isOwner ? 'you' : firstName} ${k.detail.toLowerCase()}. Opens the ${k.label.toLowerCase()} directory.`
+                }
               />
             )
           })}
@@ -122,6 +130,10 @@ export async function ProfileAssociations({
             <li key={`${item.chip}-${item.id}`}>
               <Link
                 href={item.href}
+                // The label is `truncate`, so a long Circle or Space name is cut mid-word with no
+                // way to read the rest. The title carries the full name plus what it is, which is
+                // the only place the chip's meaning and the clipped text are both recoverable.
+                title={`${item.label} (${item.chip})`}
                 className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-text transition-colors hover:bg-surface-elevated"
               >
                 <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
@@ -142,6 +154,10 @@ export async function ProfileAssociations({
               <Link
                 key={c.id}
                 href={c.href}
+                // A bare pill with a name does not say it is a link to that Circle, and this row's
+                // heading ("Circles you are both in") is the only context; the title restates the
+                // destination so the pill stands on its own.
+                title={`Open ${c.label}`}
                 className="inline-flex items-center gap-1.5 rounded-full bg-surface-elevated/60 px-2.5 py-1 text-xs font-medium text-text transition-colors hover:bg-surface-elevated"
               >
                 <CircleDot className="h-3 w-3 shrink-0 text-subtle" aria-hidden />

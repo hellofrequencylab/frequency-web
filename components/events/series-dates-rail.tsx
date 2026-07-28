@@ -49,6 +49,10 @@ export function SeriesDatesRail({
             <li key={d.id}>
               <Link
                 href={`/events/${d.slug ?? ''}`}
+                // The chip reads "Sat, Aug 8", which says WHEN but not that it is its own page with
+                // its own RSVP. That is the one thing a member cannot infer from a date, so the
+                // hover title says it rather than leaving the chip to imply it.
+                title={`Go to ${label}, which has its own page and RSVP`}
                 className="inline-flex items-center rounded-control border border-border px-3 py-1.5 text-sm text-muted transition-colors hover:border-primary hover:text-text"
               >
                 {label}

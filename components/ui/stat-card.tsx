@@ -46,6 +46,7 @@ export function StatCard({
   bordered = false,
   size = 'md',
   sparkline,
+  title,
 }: {
   label: React.ReactNode
   value: React.ReactNode
@@ -63,6 +64,12 @@ export function StatCard({
   /** Optional trend series rendered as a sparkline under the stat (ADR-233: value +
    *  delta + context visual — never a bare number). */
   sparkline?: number[]
+  /** Hover/assistive text for the whole tile. A stat tile is three terse fragments (value, label,
+   *  detail) and, when it links, the destination is implied by none of them: "Circles / 3 / Hosting"
+   *  pointing at the Circles directory reads as "3 Circles are in there". Pass this wherever the
+   *  number's scope or the link's destination is not recoverable from the visible text. Optional, so
+   *  every existing caller is unchanged. */
+  title?: string
 }) {
   const t = delta ? TREND[delta.trend ?? 'flat'] : null
   const sm = size === 'sm'
@@ -109,11 +116,12 @@ export function StatCard({
   return href ? (
     <Link
       href={href}
+      title={title}
       className={`${cls} transition-colors hover:bg-surface-elevated motion-reduce:transition-none`}
     >
       {inner}
     </Link>
   ) : (
-    <div className={cls}>{inner}</div>
+    <div className={cls} title={title}>{inner}</div>
   )
 }
