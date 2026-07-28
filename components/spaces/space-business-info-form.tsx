@@ -22,7 +22,8 @@ const PRICE_RANGE_OPTIONS: readonly { value: '' | SpacePriceRange; label: string
   { value: '$$$', label: '$$$ Premium' },
   { value: '$$$$', label: '$$$$ High-end' },
 ]
-import { SPACE_CATEGORIES, normalizeSpaceCategory, spaceCategoryLabel, type SpaceCategory } from '@/lib/spaces/categories'
+import { SPACE_KINDS, isSpaceKind, spaceKindLabel } from '@/lib/spaces/categories'
+import { SUBJECTS, isSubjectKey } from '@/lib/taxonomy/subjects'
 
 // THE INFO & CONNECT FORM (Space rail Section 2 — the standardized rail, ADR-535). The ONE place an
 // operator writes the forward-facing marketing + connect content a Spotlight/profile shows: About (a short
@@ -58,8 +59,11 @@ export function SpaceInfoConnectForm({
   // socials[] the model stores.
   const socialMap: Record<string, string> = {}
   for (const s of business.socials ?? []) socialMap[s.platform] = s.url
+  // Subject + kind hold the RAW stored strings (ADR-879): an off-list value stays selected + marked
+  // below, so saving any other field never silently relabels the Space.
   const [biz, setBiz] = useState({
-    category: normalizeSpaceCategory(business.category),
+    subject: business.subject ?? '',
+    kind: business.kind ?? '',
     categoryLabel: business.categoryLabel ?? '',
     story: business.about ?? '',
     address: business.address ?? '',
@@ -70,14 +74,14 @@ export function SpaceInfoConnectForm({
     priceRange: business.priceRange ?? '',
     socials: socialMap,
   })
-  const setBizField = (key: Exclude<keyof typeof biz, 'category' | 'socials'>, value: string) =>
+  const setBizField = (key: Exclude<keyof typeof biz, 'subject' | 'kind' | 'socials'>, value: string) =>
     setBiz((f) => ({ ...f, [key]: value }))
   const setSocial = (key: string, value: string) =>
     setBiz((f) => ({ ...f, socials: { ...f.socials, [key]: value } }))
-  // Picking a category is a deliberate choice, so persist it right away (a state change fires no blur to
-  // autosave on — commit on the next frame with the updated value, mirroring the Vera-draft path).
-  const pickCategory = (category: SpaceCategory) => {
-    setBiz((f) => ({ ...f, category }))
+  // Picking a subject or kind is a deliberate choice, so persist it right away (a select fires no blur
+  // to autosave on — commit on the next frame with the updated value, mirroring the Vera-draft path).
+  const pickListing = (key: 'subject' | 'kind', value: string) => {
+    setBiz((f) => ({ ...f, [key]: value }))
     requestAnimationFrame(() => saveRef.current())
   }
 
@@ -107,16 +111,17 @@ export function SpaceInfoConnectForm({
         platform: p.key,
         url: (biz.socials[p.key] ?? '').trim(),
       })).filter((s) => s.url)
-      // The custom pill name only persists when it actually differs from the category's own label — a blank
-      // or "same as the category" override drops out, so the pill cleanly falls back to the category label.
+      // The custom pill name only persists when it actually differs from the kind's own label — a blank
+      // or "same as the kind" override drops out, so the pill cleanly falls back to the kind label.
       const pill = biz.categoryLabel.trim()
-      const categoryLabel = pill && pill !== spaceCategoryLabel(biz.category) ? pill : ''
+      const categoryLabel = pill && pill !== spaceKindLabel(biz.kind) ? pill : ''
       // Two writes, one Save: the About column + the central business blob (Story + contact + socials).
       // Ratings live in the Settings section; setSpaceBusinessInfo MERGES, so omitting them preserves them.
       const [colResult, bizResult] = await Promise.all([
         updateSpaceProfile(spaceId, { about: about.trim() || null }),
         setSpaceBusinessInfo(slug, {
-          category: biz.category,
+          subject: biz.subject,
+          kind: biz.kind,
           categoryLabel,
           about: biz.story.trim(),
           address: biz.address.trim(),
@@ -155,47 +160,68 @@ export function SpaceInfoConnectForm({
       onBlur={onFieldBlur}
     >
       <fieldset disabled={readOnly} className="contents">
-        {/* CATEGORY — how this Space shows up in the directory (a browse facet, not the profile chip). A
-            clear button + dropdown (closed by default), matching the Header / Page style dropdowns. */}
+        {/* DIRECTORY LISTING — the two ADR-887 axes as selects (a browse facet, not the profile chip):
+            SUBJECT (what you are about, the shared vocabulary the directory pills filter by) and KIND
+            (what shape of thing you are, the card pill). Off-list stored values stay selectable and
+            MARKED (ADR-879), so saving any other field never silently relabels the Space. */}
         <details className="group">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 text-sm font-bold text-text [&::-webkit-details-marker]:hidden">
-            Category
+            Directory listing
             <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
           </summary>
-          <div className="space-y-3 pt-3">
-            <p className="text-xs text-subtle">
-              Pick the one that fits best. It groups you in the directory so the right people find you.
-            </p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {SPACE_CATEGORIES.map((c) => {
-                const selected = biz.category === c.key
-                return (
-                  <button
-                    key={c.key}
-                    type="button"
-                    onClick={() => pickCategory(c.key)}
-                    aria-pressed={selected}
-                    className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
-                      selected
-                        ? 'border-primary bg-primary-bg'
-                        : 'border-border bg-surface hover:border-primary/40'
-                    }`}
-                  >
-                    <c.Icon
-                      className={`mt-0.5 h-5 w-5 shrink-0 ${selected ? 'text-primary-strong' : 'text-subtle'}`}
-                      aria-hidden
-                    />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold">{c.label}</span>
-                      <span className="block text-xs text-subtle">{c.blurb}</span>
-                    </span>
-                  </button>
-                )
-              })}
+          <div className="space-y-4 pt-3">
+            <div>
+              <Label htmlFor="biz-subject" className="mb-1 block font-semibold">
+                Subject
+              </Label>
+              <select
+                id="biz-subject"
+                value={biz.subject}
+                onChange={(e) => pickListing('subject', e.target.value)}
+                className={fieldClasses}
+              >
+                <option value="">Not set</option>
+                {biz.subject !== '' && !isSubjectKey(biz.subject) && (
+                  <option value={biz.subject}>{biz.subject} (not a standard subject)</option>
+                )}
+                {SUBJECTS.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-subtle">
+                What your Space is about. The directory filters by this, so pick the closest fit.
+              </p>
             </div>
 
-            {/* CUSTOM PILL NAME (optional) — override just the DISPLAYED name on the public category pill
-                while keeping the category above for the directory. Blank falls back to the category label. */}
+            <div>
+              <Label htmlFor="biz-kind" className="mb-1 block font-semibold">
+                Kind
+              </Label>
+              <select
+                id="biz-kind"
+                value={biz.kind}
+                onChange={(e) => pickListing('kind', e.target.value)}
+                className={fieldClasses}
+              >
+                <option value="">Not set (shows as Business)</option>
+                {biz.kind !== '' && !isSpaceKind(biz.kind) && (
+                  <option value={biz.kind}>{biz.kind} (not a standard kind)</option>
+                )}
+                {SPACE_KINDS.map((k) => (
+                  <option key={k.key} value={k.key}>
+                    {k.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-subtle">
+                The shape of what you run: a studio, a shop, one-on-one work. Shows on your directory card.
+              </p>
+            </div>
+
+            {/* CUSTOM PILL NAME (optional) — override just the DISPLAYED name on the public kind pill
+                while keeping the kind above for the directory. Blank falls back to the kind label. */}
             <div>
               <Label htmlFor="biz-category-label" className="mb-1 block font-semibold">
                 Custom name (optional)
@@ -204,11 +230,11 @@ export function SpaceInfoConnectForm({
                 id="biz-category-label"
                 value={biz.categoryLabel}
                 maxLength={60}
-                placeholder={spaceCategoryLabel(biz.category)}
+                placeholder={spaceKindLabel(biz.kind)}
                 onChange={(e) => setBiz((f) => ({ ...f, categoryLabel: e.target.value }))}
               />
               <p className="mt-1 text-xs text-subtle">
-                Shown on your card in place of the category name. Leave blank to use &ldquo;{spaceCategoryLabel(biz.category)}&rdquo;.
+                Shown on your card in place of the kind name. Leave blank to use &ldquo;{spaceKindLabel(biz.kind)}&rdquo;.
               </p>
             </div>
           </div>

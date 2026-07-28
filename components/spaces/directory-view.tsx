@@ -18,7 +18,8 @@ import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { listNetworkedSpacesPage, type NetworkedSpace, type SpaceSort } from '@/lib/spaces/discovery'
-import { spaceCategoryLabel } from '@/lib/spaces/categories'
+import { isSpaceKind, spaceKindLabel } from '@/lib/spaces/categories'
+import { findSubject } from '@/lib/taxonomy/subjects'
 import { SpaceCard } from '@/components/spaces/space-card'
 
 // SHARED Business Spaces directory body — the grid + pager + "Go Business" sell + skeleton, factored out
@@ -45,9 +46,12 @@ export function normalizePage(value: string | undefined): number {
   return Number.isInteger(n) && n >= 1 ? n : 1
 }
 
-/** The current filters an in-flight browse carries, so paging + page-size links preserve them. */
+/** The current filters an in-flight browse carries, so paging + page-size links preserve them.
+ *  `subject` is the toolbar's pill facet (ADR-887); `category` is the LEGACY kind param, preserved
+ *  so an old shared link keeps its narrowed view while paging. */
 export interface DirectoryUrlBase {
   q?: string
+  subject?: string
   category?: string
   following?: string
   sort?: string
@@ -65,6 +69,7 @@ export function buildDirectoryHref(
 ): string {
   const sp = new URLSearchParams()
   if (base.q) sp.set('q', base.q)
+  if (base.subject) sp.set('subject', base.subject)
   if (base.category) sp.set('category', base.category)
   if (base.following) sp.set('following', base.following)
   if (base.sort) sp.set('sort', base.sort)
@@ -225,7 +230,8 @@ export function SpacesResults({
   spaces,
   total,
   q,
-  category,
+  subject,
+  kind,
   following,
   page,
   per,
@@ -236,7 +242,10 @@ export function SpacesResults({
   spaces: readonly NetworkedSpace[]
   total: number
   q?: string
-  category?: string
+  /** The active SUBJECT pill (the `?subject=` param, ADR-887). Feeds the no-results copy. */
+  subject?: string
+  /** The active KIND filter (the legacy `?category=` param on an old shared link). */
+  kind?: string
   following: boolean
   page: number
   per: number
@@ -246,8 +255,10 @@ export function SpacesResults({
   gridClassName?: string
 }) {
   if (total === 0) {
-    const filtering = !!((q ?? '').trim() || (category ?? '').trim() || following)
-    const categoryLabel = category ? spaceCategoryLabel(category) : null
+    const filtering = !!((q ?? '').trim() || (subject ?? '').trim() || (kind ?? '').trim() || following)
+    // The word the no-results line names: the subject door first (the toolbar's own facet), else the
+    // kind a legacy link narrowed to. Off-list values fall through to the generic line.
+    const facetLabel = findSubject(subject)?.label ?? (isSpaceKind(kind) ? spaceKindLabel(kind) : null)
     return (
       <>
         <EmptyState
@@ -264,8 +275,8 @@ export function SpacesResults({
             following
               ? 'Follow a Space from its profile and it shows up here.'
               : filtering
-                ? categoryLabel
-                  ? `No ${categoryLabel} Spaces matched. Try a different category or a wider search.`
+                ? facetLabel
+                  ? `No ${facetLabel} Spaces matched. Try a different filter or a wider search.`
                   : 'Try a different filter or a wider search.'
                 : 'This is where practitioners, businesses, and organizations in the network will live. Check back soon.'
           }
@@ -298,7 +309,8 @@ export function SpacesResults({
 export async function SpacesGrid({
   basePath,
   q,
-  category,
+  subject,
+  kind,
   following,
   sort,
   page,
@@ -309,7 +321,10 @@ export async function SpacesGrid({
 }: {
   basePath: string
   q?: string
-  category?: string
+  /** The `?subject=` pill value (the shared vocabulary, ADR-887). */
+  subject?: string
+  /** The legacy `?category=` kind value (old shared links keep narrowing). */
+  kind?: string
   following: boolean
   sort: SpaceSort
   page: number
@@ -321,7 +336,7 @@ export async function SpacesGrid({
   gridClassName?: string
 }) {
   const { spaces, total } = await listNetworkedSpacesPage(
-    { q, category, followerProfileId: viewerProfileId, onlyFollowed: following, sort },
+    { q, subject, kind, followerProfileId: viewerProfileId, onlyFollowed: following, sort },
     { limit: per, offset: (page - 1) * per },
   )
   return (
@@ -330,7 +345,8 @@ export async function SpacesGrid({
       spaces={spaces}
       total={total}
       q={q}
-      category={category}
+      subject={subject}
+      kind={kind}
       following={following}
       page={page}
       per={per}

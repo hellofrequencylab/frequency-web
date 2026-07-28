@@ -8,7 +8,9 @@ import {
   formatServiceDeposit,
   formatServicePackage,
   isServiceListed,
-  spaceCategoryPillLabel,
+  spaceKind,
+  spaceSubject,
+  spaceKindPillLabel,
   SPACE_SOCIAL_PLATFORMS,
 } from './profile-data'
 
@@ -152,22 +154,111 @@ describe('readProfileData', () => {
     expect(data.socials).toEqual([{ platform: 'threads', url: 'https://threads.net/x' }])
   })
 
-  it('reads + trims the custom category pill-name override, dropping blanks', () => {
+  it('reads + trims the custom kind pill-name override, dropping blanks', () => {
     expect(readProfileData({ profileData: { categoryLabel: '  Nadia’s Corner  ' } }).categoryLabel).toBe('Nadia’s Corner')
     expect(readProfileData({ profileData: { categoryLabel: '   ' } }).categoryLabel).toBeUndefined()
   })
 })
 
-describe('spaceCategoryPillLabel (item: custom pill-name override)', () => {
-  it('shows the override when set, else the category label', () => {
-    // Override present → the custom name, category kept for taxonomy.
-    expect(spaceCategoryPillLabel({ preferences: { profileData: { category: 'maker', categoryLabel: 'Nadia’s Corner' } } }))
+// ── The two ADR-887 axes: SUBJECT (shared vocabulary) + KIND (Space-only shape) ─────────────────────
+
+describe('readProfileData: subject + kind (ADR-887)', () => {
+  it('reads the canonical kind key', () => {
+    expect(readProfileData({ profileData: { kind: 'studio' } }).kind).toBe('studio')
+  })
+
+  it('FALLS BACK to the legacy category key when kind is absent (read compatibility)', () => {
+    expect(readProfileData({ profileData: { category: 'maker' } }).kind).toBe('maker')
+  })
+
+  it('prefers kind over a lingering legacy category when both exist', () => {
+    expect(readProfileData({ profileData: { kind: 'venue', category: 'maker' } }).kind).toBe('venue')
+  })
+
+  it('preserves an OFF-LIST subject / kind verbatim (ADR-879: never silently rewritten)', () => {
+    const data = readProfileData({ profileData: { subject: 'astral-projection', kind: 'food-truck' } })
+    expect(data.subject).toBe('astral-projection')
+    expect(data.kind).toBe('food-truck')
+  })
+
+  it('trims, bounds, and drops empty / non-string subject + kind (totality on junk jsonb)', () => {
+    expect(readProfileData({ profileData: { subject: '  meditation  ' } }).subject).toBe('meditation')
+    expect(readProfileData({ profileData: { subject: '   ', kind: '' } })).toEqual({})
+    expect(readProfileData({ profileData: { subject: 42, kind: { nested: true }, category: ['x'] } })).toEqual({})
+    expect(readProfileData({ profileData: { subject: 'x'.repeat(200) } }).subject).toHaveLength(60)
+    expect(readProfileData({ profileData: null })).toEqual({})
+    expect(readProfileData('garbage')).toEqual({})
+  })
+})
+
+describe('spaceKind (total reader, legacy fallback, business default)', () => {
+  it('resolves the canonical key, the legacy key, and defaults to business', () => {
+    expect(spaceKind({ preferences: { profileData: { kind: 'coach' } } })).toBe('coach')
+    expect(spaceKind({ preferences: { profileData: { category: 'studio' } } })).toBe('studio') // pre-migration row
+    expect(spaceKind({ preferences: { profileData: {} } })).toBe('business')
+    expect(spaceKind({ preferences: {} })).toBe('business')
+    expect(spaceKind(null)).toBe('business')
+    expect(spaceKind(undefined)).toBe('business')
+  })
+
+  it('coerces an off-list stored value to business (the pill keeps the raw text separately)', () => {
+    expect(spaceKind({ preferences: { profileData: { kind: 'food-truck' } } })).toBe('business')
+  })
+})
+
+describe('spaceSubject (shared vocabulary resolver)', () => {
+  it('resolves an on-list subject to its SubjectChoice', () => {
+    const subject = spaceSubject({ preferences: { profileData: { subject: 'meditation' } } })
+    expect(subject?.key).toBe('meditation')
+    expect(subject?.label).toBe('Meditation / Breathwork')
+  })
+
+  it('is undefined for unset / off-list / junk (no default subject)', () => {
+    expect(spaceSubject({ preferences: { profileData: {} } })).toBeUndefined()
+    expect(spaceSubject({ preferences: { profileData: { subject: 'astral-projection' } } })).toBeUndefined()
+    expect(spaceSubject({ preferences: 'junk' })).toBeUndefined()
+    expect(spaceSubject(null)).toBeUndefined()
+  })
+
+  it('never resolves a KIND key as a subject (the axes stay separate)', () => {
+    expect(spaceSubject({ preferences: { profileData: { subject: 'studio' } } })).toBeUndefined()
+  })
+})
+
+describe('spaceKindPillLabel (custom override, off-list text, sensible default)', () => {
+  it('shows the override when set, else the kind label', () => {
+    // Override present → the custom name, kind kept for taxonomy.
+    expect(spaceKindPillLabel({ preferences: { profileData: { kind: 'maker', categoryLabel: 'Nadia’s Corner' } } }))
       .toBe('Nadia’s Corner')
-    // No override → the category's own label.
-    expect(spaceCategoryPillLabel({ preferences: { profileData: { category: 'studio' } } })).toBe('Studios')
-    // Unset everything → the default category label.
-    expect(spaceCategoryPillLabel({ preferences: {} })).toBe('Business')
-    expect(spaceCategoryPillLabel(null)).toBe('Business')
+    // No override → the kind's own label, whether stored on the new or the legacy key.
+    expect(spaceKindPillLabel({ preferences: { profileData: { kind: 'studio' } } })).toBe('Studios')
+    expect(spaceKindPillLabel({ preferences: { profileData: { category: 'studio' } } })).toBe('Studios')
+    expect(spaceKindPillLabel({ preferences: { profileData: { kind: 'coach' } } })).toBe('Guides / Coaches')
+    // Unset everything → the default kind label (the 10 Spaces with neither value set read Business).
+    expect(spaceKindPillLabel({ preferences: {} })).toBe('Business')
+    expect(spaceKindPillLabel(null)).toBe('Business')
+  })
+
+  it('keeps an off-list kind’s own text (ADR-879: the label keeps its words)', () => {
+    expect(spaceKindPillLabel({ preferences: { profileData: { kind: 'Herbal apothecary' } } })).toBe('Herbal apothecary')
+  })
+})
+
+describe('withProfileData: subject + kind round-trip (write-time migration)', () => {
+  it('persists subject + kind and clears them with a blank patch', () => {
+    const next = withProfileData({}, { subject: 'gardening', kind: 'maker' })
+    expect(readProfileData(next)).toEqual({ subject: 'gardening', kind: 'maker' })
+    const cleared = withProfileData(next, { subject: '', kind: '' })
+    expect('profileData' in cleared).toBe(false)
+  })
+
+  it('migrates a legacy category blob onto kind on ANY save (and never resurrects it)', () => {
+    const prefs = { profileData: { category: 'studio', address: 'Old' } }
+    const next = withProfileData(prefs, { address: 'New' })
+    const stored = (next as { profileData: Record<string, unknown> }).profileData
+    expect(stored.kind).toBe('studio') // moved onto the canonical key
+    expect('category' in stored).toBe(false) // legacy key retired by the round-trip
+    expect(readProfileData(next)).toEqual({ kind: 'studio', address: 'New' })
   })
 })
 
