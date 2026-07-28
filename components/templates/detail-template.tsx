@@ -5,9 +5,13 @@
 // over a tab row over the body. The body is itself usually a Stream or Index —
 // templates nest, you reuse not rebuild.
 //
-// NOTE on the right rail: a Detail page's scope-scoped rail is rendered by the
-// global shell via the route layout's `sidebar` slot (AppShell) — NOT here.
-// Rendering a second rail inside the page is the double-sidebar trap we avoid.
+// NOTE on the right rail: by DEFAULT a Detail page has no rail of its own — the global shell
+// renders the community rail beside it (AppShell), and rendering a second rail inside the page
+// would be the double-sidebar trap. The ONE exception is the `sidebar` slot below (§3 Template C
+// always specified a scope-aware `rightRail`): a page that fills it MUST also register as
+// 'scoped' in lib/layout/page-chrome.ts so the global rail is suppressed and there is still
+// exactly one right column. Today that is the Channel detail page. Omit the slot and every other
+// Detail page renders byte-identically to before.
 //
 // Presentational + server-friendly (no hooks). `tabs[].active` is precomputed by
 // the page, so this works in a server component.
@@ -34,6 +38,7 @@ export function DetailTemplate({
   band,
   tabs,
   stickyNav,
+  sidebar,
   titleScale = 'default',
   children,
 }: {
@@ -71,6 +76,12 @@ export function DetailTemplate({
    *  The node OWNS its sticky positioner + hairlines (see SpaceStickyNav); this slot only positions it as
    *  a root-level child so the containing block is correct. Suppresses the default `tabs` row. */
   stickyNav?: React.ReactNode
+  /** OPTIONAL in-body SCOPE RAIL — the entity's own right column (its pulse, what is coming up,
+   *  what is attached to it), rendered beside the body from `lg` up and BELOW it on mobile so the
+   *  content still comes first. Geometry matches HeaderSidebarTemplate's sidebar (Template D), so
+   *  the two read as one system. A page that passes this MUST be 'scoped' in
+   *  lib/layout/page-chrome.ts (see the rail note at the top of this file). */
+  sidebar?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
@@ -163,8 +174,16 @@ export function DetailTemplate({
           self-suppresses on Space profiles, so the sticky band above is the only rule there. */}
       <PageAdminBar asDivider />
 
-      {/* Body — usually a Stream or Index */}
-      {children}
+      {/* Body — usually a Stream or Index. With a `sidebar` it splits into the content column
+          plus the entity's own scope rail (content first on mobile, side by side from lg). */}
+      {sidebar ? (
+        <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+          <div className="min-w-0 flex-1">{children}</div>
+          <aside className="lg:w-80 lg:shrink-0">{sidebar}</aside>
+        </div>
+      ) : (
+        children
+      )}
     </div>
   )
 }

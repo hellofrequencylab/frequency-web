@@ -3,11 +3,13 @@
 // never reach into the shell to toggle the rail. To reframe a route, edit the
 // lists here — that is the entire API.
 //
-//   'global'  → the community right rail. The DEFAULT for every member page now
+//   'global'  → the community right rail. The DEFAULT for every member page
 //               (owner directive, 2026-06-20: the right rail shows site-wide) —
 //               browse / stream / dashboard AND compose / edit / settings surfaces.
 //   'scoped'  → the global rail is suppressed because the entity DETAIL page
 //               renders its OWN scope rail in-body (avoids the double-rail trap).
+//               Today: the Channel detail page (owner request, 2026-07-28 — see
+//               SCOPED_PATTERNS for the directive that narrows the 2026-06-20 one).
 //   'none'    → no right rail. Reserved for just two cases: the /admin/* operator
 //               workspace (it mounts its OWN info rail — no double-railing) and the
 //               full-viewport takeovers (the practice timer, scanner, auth gate,
@@ -47,11 +49,13 @@ const FULL_TAKEOVER_PREFIXES = [
 const FOCUS_NONE_PREFIXES: readonly string[] = ['/apply', '/waitlist']
 
 // SCOPED — entity-detail sections that render their OWN in-body scope rail
-// (the double-rail trap is avoided by suppressing the global rail). Nothing is
-// scoped today: every section (including member PROFILES) keeps the GLOBAL community
-// rail — the site's right rail is always present. A profile's own standing +
-// Frequency Signature live in its interior content column, not a rail. Re-add a
-// prefix here only if a section grows a genuine in-body rail.
+// (the double-rail trap is avoided by suppressing the global rail).
+//
+// PREFIX list (below) vs PATTERN list (further down): a prefix here matches the route AND
+// everything beneath it (`startsWith(s) && length > s.length`), so it can only be used when a
+// whole SUBTREE renders an in-body rail. The Channel detail page does not qualify: its /manage
+// console and /edit form sit under the same prefix and have no rail of their own, so they must
+// keep the global one. Those go in SCOPED_PATTERNS, which matches an exact route shape.
 const SCOPED_PREFIXES: string[] = [
   // The entity-space PROFILE (/spaces/<slug> + tabs) keeps the GLOBAL community rail like the rest
   // of the app (operator request): a profile reads as a normal Detail page beside the site's Quest
@@ -68,6 +72,25 @@ const SCOPED_PREFIXES: string[] = [
   // player (/learn) or the editor (/edit), and the player's syllabus is an in-content
   // pane, not a shell rail. So journey routes now keep the standard GLOBAL community rail
   // like the rest of the app. Re-add a prefix here only if a section grows a real in-body rail.
+]
+
+// SCOPED — the EXACT-SHAPE half of the same rule, for a detail page whose siblings under the
+// same prefix must keep the global rail. Anchored patterns, so only the route shape listed here
+// is scoped; anything deeper falls through to 'global'.
+//
+// OWNER DIRECTIVE UPDATE (2026-07-28) — this supersedes the 2026-06-20 "the right rail shows on
+// every page" directive FOR THIS ONE ROUTE, at the owner's request: "Redesign the Channel pages.
+// Give it a right column for activity, upcoming event, associated circles, etc." The Channel
+// DETAIL page now renders its own in-body scope rail (activity pulse · upcoming events across the
+// Circles practicing it · the Circles themselves), which is exactly the case 'scoped' exists for:
+// the generic member rail beside a channel-specific one would be two right columns of unrelated
+// content. Every OTHER route, including the /channels index and the Channel's own /manage and
+// /edit surfaces, still keeps the global rail. The 2026-06-20 directive stands everywhere else.
+const SCOPED_PATTERNS: readonly RegExp[] = [
+  // The Channel detail page (/channels/<id-or-slug>) and only it. Its tabs are query params
+  // (?tab=feed|circles|about), so every tab shares this one pathname; the deeper /channels/<id>/manage
+  // console and /channels/<id>/edit form do NOT match and keep the global community rail.
+  /^\/channels\/[^/]+$/,
 ]
 
 // The global MEMBER left rail (the one site menu) frames EVERY in-app page now,
@@ -219,9 +242,11 @@ export function railFor(pathname: string): Rail {
   )
   if (isFocusFlow) return 'none'
 
-  const isScopedDetail = SCOPED_PREFIXES.some(
-    (s) => pathname.startsWith(s) && pathname.length > s.length,
-  )
+  // Entity-detail surfaces with their OWN in-body scope rail: a whole subtree (SCOPED_PREFIXES)
+  // or a single exact route shape (SCOPED_PATTERNS — today the Channel detail page).
+  const isScopedDetail =
+    SCOPED_PREFIXES.some((s) => pathname.startsWith(s) && pathname.length > s.length) ||
+    SCOPED_PATTERNS.some((re) => re.test(pathname))
   if (isScopedDetail) return 'scoped'
 
   return 'global'
