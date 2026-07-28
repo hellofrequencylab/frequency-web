@@ -8,6 +8,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { assertCanCreate } from '@/lib/core/load-capabilities'
 import { remixTemplate, publishCircle } from '@/lib/circles/remix'
 import { generateCircleEvents } from '@/lib/circles/events'
 import { getTemplateById } from '@/lib/circles/templates-data'
@@ -29,6 +30,10 @@ async function callerProfileId(): Promise<string> {
 
 export async function remixTemplateAction(templateId: string): Promise<{ slug: string; circleId: string }> {
   const profileId = await callerProfileId()
+  // Remixing mints a Circle the caller HOSTS, so it is the same act as creating one:
+  // the ADR-414 Crew gate applies (Crew is free during the beta — a one-tap upsell,
+  // not a wall). ADR-891 closed the hole where Remix skipped the gate /circles/new enforces.
+  await assertCanCreate('circle.create')
   // A Program's blueprint (owner_space_id set, ADR-864) is not open-remixable:
   // cloning it here would mint an off-Program copy with no Chapter stamp. The
   // only path into an owned blueprint is startChapter, which stamps the channel.
@@ -45,6 +50,10 @@ export async function remixTemplateAction(templateId: string): Promise<{ slug: s
 
 export async function publishCircleAction(circleId: string): Promise<{ slug: string }> {
   const profileId = await callerProfileId()
+  // Publishing turns a draft into a LIVE Circle — the moment of creation as far as the
+  // community is concerned, so it re-checks the same gate (ADR-414 / ADR-891). A member
+  // who drafted while Crew and lapsed cannot publish around the gate.
+  await assertCanCreate('circle.create')
   const res = await publishCircle({ circleId, profileId })
   revalidatePath('/circles')
   revalidatePath(`/circles/${res.slug}`)

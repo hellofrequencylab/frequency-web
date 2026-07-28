@@ -82,7 +82,7 @@ export async function getEventAdminData(slug: string) {
   const { data } = await admin
     .from('events')
     .select(
-      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, details, geog, hide_address, join_mode',
+      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, details, geog, hide_address, join_mode, scope_type',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -176,6 +176,9 @@ type EventAdminRow = {
   hide_address: boolean | null
   /** ADR-826: how people join — auto / rsvp (first come first served) / tickets. */
   join_mode: 'auto' | 'rsvp' | 'tickets' | null
+  /** The event's ONE home (ADR-883). The settings module needs it so the "My circle"
+   *  visibility option is only offered when there IS a circle to scope to. */
+  scope_type: string | null
 }
 
 /** Cancel or reinstate the event — the host control that used to live in the

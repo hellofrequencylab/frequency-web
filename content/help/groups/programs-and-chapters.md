@@ -66,9 +66,10 @@ Open the Program's Channel and tap **Start a Chapter**. Here is what happens nex
 There's no approval step and no waiting. The draft is yours from the first tap, and
 nothing is public until you publish it.
 
-You need to be signed in to start a Chapter. If you're new to hosting, read
-[how to start a Circle](/help/leading/how-to-start-a-circle) first. Everything in it
-applies to a Chapter, because a Chapter is a Circle.
+Starting a Chapter is a Crew thing, same as starting a Circle, and Crew is free
+during the beta: if you're not Crew yet, the button offers a one-tap upgrade. If
+you're new to hosting, read [how to start a Circle](/help/leading/how-to-start-a-circle)
+first. Everything in it applies to a Chapter, because a Chapter is a Circle.
 
 ## What does the blueprint decide?
 

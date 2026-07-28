@@ -15865,3 +15865,35 @@ The durable rule: **a closed vocabulary is only closed if a machine checks the d
 **Consequences.** 67 tests across the lane (tab order, both authorities refused independently, the patch routing ban, picker filter). Ledger reconciled 566 ⇄ 566. The help article gains a "Running your Circle day to day" section, because a front door that exists deserves a sentence telling people it exists.
 
 The durable rule: **when a user reports a wrong order, first check whether they could reach the surface at all — an unreachable correct design is indistinguishable from a wrong one.**
+
+## ADR-891 — Starting a Chapter, Remixing, and publishing a draft all take the circle.create gate (2026-07-28)
+
+**Status.** Accepted.
+
+**Context.** ADR-414 made creation a capability: `circle.create` is granted to paid tiers, Crew, and staff, every create page checks `canCreate`, and every create action re-checks `assertCanCreate` because "the button is convenience; the server re-check is the authority." The Chapter and Remix paths never got the memo. `startChapterAction`, `remixTemplateAction`, and `publishCircleAction` gated only on signed-in-and-not-demo — `startChapterAction`'s own comment declared it mirrored Remix "EXACTLY," and it did: both were missing the same check. Net effect, verified end to end: a free member blocked at `/circles/new` could reach the identical outcome (a live Circle they host) through Start a Chapter on any Program Channel, Remix on any Starter card, or the Starter claim banner. A test locked the weaker gate in, and two help articles promised it ("anyone signed in can start a Chapter") while a third promised the opposite ("Starting a Circle is a Crew thing").
+
+**Decision.**
+
+1. **The gate follows the outcome, not the entry point.** A Chapter is a Circle the caller hosts; a Remix mints one; publishing makes a draft live. All three actions now call `assertCanCreate('circle.create')` after the real-member guard. `publishCircleAction` re-checks even though the draft already exists — creation happens at publish as far as the community is concerned, and a member who drafted while Crew and lapsed does not publish around the gate.
+2. **The affordance matches the law.** `StartChapterButton`, `RemixButton`, and `StarterClaim` accept `canCreate` and swap themselves for `CrewGateButton` (`reason="create-circle"`, the free-beta upsell popup) when it is false — the same UX every other create entry point has had since ADR-414. The mounting pages pass `canCreate('circle.create')` server-side.
+3. **The help copy stops disagreeing with itself.** `programs-and-chapters.md` and `run-a-program.md` now say what `how-to-start-a-circle.md` always said: it is a Crew thing, and Crew is free during the beta.
+
+**Alternatives considered.** *Loosening `circle.create` to any member instead*: rejected — ADR-414 is the platform rule, the architecture doc and the flagship help article both promise it, and during the beta the gate costs one tap, so tightening breaks nobody. *Server check only, no UI affordance*: rejected — a server error where a popup belongs reads as a bug, and the popup is the conversion surface. *Gating `startChapter`/`remixTemplate` in lib instead of the actions*: rejected — capability checks live at the action seam everywhere else (ADR-274); the lib layer stays mechanism.
+
+**Consequences.** The three ungated doors are closed with one rule and five small diffs. The action test that pinned the weaker gate now pins the stronger one, including a no-capability rejection. Program spread during beta is unchanged in practice (Crew is a free one-tap upgrade), and at launch the four create verbs flip together instead of leaking through the side doors.
+
+The durable rule: **gate by what the action produces, not by which button led to it — every alternate path to the same outcome takes the same gate.**
+
+## ADR-892 — The founding Channels carry their door's name (2026-07-28)
+
+**Status.** Accepted. Applied to production 2026-07-28 (`scripts/final-sweep-2026-07-28.sql`).
+
+**Context.** ADR-887 gave Channels and Spaces one subject vocabulary with owner-approved door labels ("Friendship / Relationships", "Movement / Fitness"), and the two drifted rows were remapped by key. But five founding Channels still wore their pre-vocabulary names: "Human Relating" (the label ADR-887's own text calls "the label nobody says out loud"), "Mental / Emotional Health", "Movement", "Activism", "Creative". A member browsing /channels saw the old name on the card and the new name on the category chip — two vocabularies at once.
+
+**Decision.** A Channel that IS a subject door carries the door's label verbatim: `human-relating` → "Friendship / Relationships", `mental-emotional-health` → "Mental Health / Recovery", `movement` → "Movement / Fitness", `activism` → "Service / Activism", `creative` → "Creative / Arts". Slugs are permalinks and did not move; every rename is guarded by slug + current name so a re-run matches nothing. Channels that are not subject doors (Meld Community Cowork, a Program's Channel) keep their own names — the rule binds doors, not communities. "Spirituality", "Holistic Health", and "Business Support" already matched.
+
+**Alternatives considered.** *Renaming slugs to match*: rejected — the permalink-rename 404 cycle was this session's own bug (ADR-890 context); names are display, slugs are addresses. *Deriving channel display names from the vocabulary at read time*: rejected — a Channel's name is its own column with an editor; a derived name would make the Channel admin's name field a lie.
+
+**Consequences.** The directory speaks one vocabulary end to end: card, chip, picker, and SEO hub agree. The same applied script records the deletion of the `templeofaset-archived` Space (the abandoned first attempt at the live Temple of Aset — archived, zero events, zero circles; owner-directed cleanup, executed through the same single-row delete + cascade the product's own deleteSpace uses).
+
+The durable rule: **when a vocabulary is the law, the founding rows obey it too — grandfathered names are drift with seniority.**

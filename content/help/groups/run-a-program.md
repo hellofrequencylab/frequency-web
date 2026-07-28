@@ -52,9 +52,10 @@ Three things happen at once:
 - Your flagship circle becomes **Chapter one**, listed on the Channel like every
   Chapter that follows.
 
-From then on, anyone signed in can open your Channel and start a Chapter. They get a
-private draft built from your blueprint, they shape it, and they publish it when
-it's ready.
+From then on, any Crew member can open your Channel and start a Chapter (Crew is
+free during the beta, so the button offers a one-tap upgrade to anyone who isn't
+yet). They get a private draft built from your blueprint, they shape it, and they
+publish it when it's ready.
 
 ## What can I change later?
 
@@ -120,7 +121,7 @@ city. What you own is the model and the Channel it lives on.
 
 ### Can I stop someone from starting a Chapter?
 
-Not one person at a time. Starting a Chapter is open to any signed-in member while
+Not one person at a time. Starting a Chapter is open to any Crew member while
 your Program is running, which is what makes a Program spread. If you need to stop
 new Chapters entirely, pause the Program.
 

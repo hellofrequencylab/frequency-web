@@ -354,7 +354,7 @@ export default async function ChannelPage({
 
   // Shared blocks (Home strip + directory tab render the same pieces).
   const startGroupCta = isProgramChannel ? (
-    <StartChapterButton channelId={channel.id} label="Start the first Chapter" />
+    <StartChapterButton channelId={channel.id} label="Start the first Chapter" canCreate={canStartCircle} />
   ) : (
     <NewCircleCompose
       topicalChannelId={channel.id}
@@ -438,10 +438,12 @@ export default async function ChannelPage({
                   )}
                   {isProgramChannel ? (
                     // A program channel's one create verb: Start a Chapter (the
-                    // Remix flow). Same gate as Remix, so no crew popup here.
+                    // Remix flow). Same gate as Remix AND as starting a Circle —
+                    // a Chapter is one (ADR-891), so the crew popup applies here too.
                     <StartChapterButton
                       channelId={channel.id}
                       className={`${HERO_ACTION_CLASS} whitespace-nowrap`}
+                      canCreate={canStartCircle}
                     />
                   ) : (
                     // Kept, but demoted to a secondary button: on a hub the one

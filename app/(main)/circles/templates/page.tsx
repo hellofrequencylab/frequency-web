@@ -7,6 +7,7 @@ import { EntityCard } from '@/components/cards/entity-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TemplateCover } from '@/components/circles/template-art'
 import { getCallerProfile } from '@/lib/auth'
+import { canCreate } from '@/lib/core/load-capabilities'
 import { PILLAR_SLUGS, type PillarSlug } from '@/lib/pillars'
 import { getActiveTemplates, templatesEnabled } from '@/lib/circles/templates-data'
 import { RemixButton } from '@/components/circles/builder/remix-button'
@@ -56,6 +57,9 @@ export default async function StarterCirclesPage() {
   }
 
   const templates = await getActiveTemplates()
+  // A Remix mints a Circle the caller hosts, so the card buttons carry the same
+  // ADR-414 gate the builder route enforces; the action re-checks it (ADR-891).
+  const canRemix = await canCreate('circle.create')
 
   return (
     <IndexTemplate
@@ -110,7 +114,7 @@ export default async function StarterCirclesPage() {
                       title={t.name}
                       context={PILLAR_LABELS[t.primaryPillar]}
                       description={t.card || t.oneLiner}
-                      footer={<RemixButton templateId={t.id} />}
+                      footer={<RemixButton templateId={t.id} canCreate={canRemix} />}
                     />
                   ))}
                 </div>
