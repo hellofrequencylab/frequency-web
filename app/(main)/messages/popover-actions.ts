@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { dmTitle } from '@/lib/messages/dm-title'
 
 export interface MessagesSummary {
   totalUnread: number
@@ -197,9 +198,16 @@ export type DockRoomMessage = {
   id: string; room_id: string; author_id: string; body: string; created_at: string; author: DockPeer | null
 }
 
-/** Load a 1:1/group DM for inline rendering in the dock (mirrors messages/[id]/page.tsx). */
+/** Load a 1:1/group DM for inline rendering in the dock (mirrors messages/[id]/page.tsx).
+ *
+ *  `name` is the RAW `conversations.name` and `title` is the DERIVED display string. The dock's
+ *  rename field must prefill from `name`: prefilling from `title` would put the derived label
+ *  ("Aisha, Ben") in the input, and one Save would silently promote a label that never existed
+ *  in the database into a stored name nobody chose. The page has always had both (it passes
+ *  `conv.name` to ConversationRenameButton while rendering `displayName`); the dock only ever
+ *  received the collapsed one. */
 export async function loadDockDmThread(conversationId: string): Promise<
-  { myProfileId: string; participants: DockPeer[]; messages: DockDmMessage[]; title: string } | null
+  { myProfileId: string; participants: DockPeer[]; messages: DockDmMessage[]; title: string; name: string | null } | null
 > {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -222,11 +230,12 @@ export async function loadDockDmThread(conversationId: string): Promise<
     .map((p) => peerMap.get(p.profile_id))
     .filter((p): p is DockPeer => !!p)
   const messages = ((msgRes.data ?? []) as unknown as DockDmMessage[]).reverse()
-  const others = participants.filter((p) => p.id !== myProfileId)
-  const title = (convRes.data.name as string | null)
-    || (others.length > 1
-      ? others.slice(0, 3).map((p) => p.display_name.split(' ')[0]).join(', ')
-      : others[0]?.display_name ?? 'Conversation')
+  const name = (convRes.data.name as string | null) ?? null
+  // Shared rule (lib/messages/dm-title.ts), not a third hand-rolled copy. The dock can now
+  // clear a conversation's name, and the client has to fall back to the same derived label the
+  // server would produce. This inlined version had already drifted from the page's: it dropped
+  // the `+N` overflow, so a six-person thread read differently in the two renderers.
+  const title = dmTitle(name, participants, myProfileId)
 
   await supabase
     .from('conversation_participants')
@@ -234,7 +243,7 @@ export async function loadDockDmThread(conversationId: string): Promise<
     .eq('conversation_id', conversationId)
     .eq('profile_id', myProfileId)
 
-  return { myProfileId, participants, messages, title }
+  return { myProfileId, participants, messages, title, name }
 }
 
 /** Load a room for inline rendering in the dock. RoomThread marks itself read on mount. */

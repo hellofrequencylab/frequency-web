@@ -16,6 +16,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import type { ProfileIdentity } from '@/lib/types/profile'
+import { dmThreadHref } from '@/lib/messages/dm-destination'
 
 type Profile = ProfileIdentity & {
   id: string
@@ -480,7 +481,14 @@ function RoomRowItem({ room }: { room: RoomRow }) {
   )
 }
 
-function DMRowItem({ conv, myProfileId, onlineIds }: { conv: ConversationRow; myProfileId: string; onlineIds: Set<string> }) {
+// THE LAST DM ENTRY POINT that hand-built the retiring URL (ADR-896 phase 2). Every server-side
+// redirector already routes through `dmThreadHref`; this row did not, so with
+// `chat_dm_routes_retired` ON, tapping a conversation in the inbox hit the retired route's gate and
+// bounced the member onto /feed — off the very list they were reading. Async server component (this
+// file has no 'use client'), and `chatDmRoutesRetiredFlag` is React-cached, so the whole render
+// shares ONE round trip no matter how many rows ask. With the flag OFF this returns exactly the
+// string that was hardcoded here, so today's behaviour is byte-identical.
+async function DMRowItem({ conv, myProfileId, onlineIds }: { conv: ConversationRow; myProfileId: string; onlineIds: Set<string> }) {
   const hasUnread = conv.unreadCount > 0
   const isGroup = conv.participants.length > 1
   const peerOnline = !isGroup && !!conv.participants[0] && onlineIds.has(conv.participants[0].id)
@@ -488,10 +496,12 @@ function DMRowItem({ conv, myProfileId, onlineIds }: { conv: ConversationRow; my
     ? conv.participants.slice(0, 3).map(p => p.display_name.split(' ')[0]).join(', ') +
       (conv.participants.length > 3 ? ` +${conv.participants.length - 3}` : '')
     : conv.participants[0]?.display_name ?? 'Unknown')
+  // Opens the dock OVER the inbox once retired, so the member keeps their place in the list.
+  const href = await dmThreadHref(conv.id, '/messages')
 
   return (
     <Link
-      href={`/messages/${conv.id}`}
+      href={href}
       className={`flex items-center gap-3 rounded-lg px-3 py-3 transition-colors ${
         hasUnread
           ? 'bg-primary-bg/70 hover:bg-primary-bg dark:hover:bg-primary-bg'
