@@ -13,6 +13,7 @@ import { EntityManageConsole } from '@/components/admin/modules/entity-manage-co
 import { PlacementApprovals } from '@/components/events/placement-approvals'
 import { CIRCLE_HUB_SECTIONS, asCircleHubSection, type CircleHubSection } from './hub'
 import { CircleMemberViewer } from './circle-member-viewer'
+import { CircleEventsSection } from './events-section'
 
 // The circle OWNER CONSOLE as a MANAGE HUB (ADR-441 EM1-2; restructured per ADR-828 so events,
 // Spaces, and circles feel like ONE system). The unified `/{entity}/[id]/manage` surface, now
@@ -68,10 +69,10 @@ export default async function CircleManagePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ section?: string }>
+  searchParams: Promise<{ section?: string; saved?: string; error?: string }>
 }) {
   const { slug } = await params
-  const { section: rawSection } = await searchParams
+  const { section: rawSection, saved, error } = await searchParams
   const admin = createAdminClient()
 
   // Resolve the circle by slug (same loader shape as the detail page; archived circles
@@ -135,6 +136,22 @@ export default async function CircleManagePage({
             <PlacementApprovals target={{ type: 'circle', id: circle.id }} />
           </Suspense>
         </>
+      )}
+
+      {section === 'events' && (
+        <section>
+          {/* The Events area (the Channel hub's sections idiom, ADR-870): what the circle is
+              gathering for next, plus the owner-asked "add an already created event" door. The
+              add action re-checks circle.editSettings AND event.editSettings (ADR-274/883). */}
+          <SectionHeader title="Events" />
+          <Suspense fallback={<Skeleton className="h-40 rounded-2xl" />}>
+            <CircleEventsSection
+              circleId={circle.id}
+              slug={circle.slug}
+              notice={{ saved: saved === '1', error }}
+            />
+          </Suspense>
+        </section>
       )}
 
       {section === 'settings' && <EntityManageConsole caps={[...caps]} />}

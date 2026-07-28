@@ -6,7 +6,7 @@
 // the shared EntityManageConsole under the Settings tab.
 
 /** A hub tab id. `home` is the command-center landing: the stat strip + the message center. */
-export type CircleHubSection = 'home' | 'settings'
+export type CircleHubSection = 'home' | 'events' | 'settings'
 
 /** The hub tabs, in display order. Home leads (stats + the message center, the owner directive:
  *  messaging sits up front on every primary management dashboard). */
@@ -19,6 +19,11 @@ export const CIRCLE_HUB_SECTIONS: readonly {
     key: 'home',
     label: 'Home',
     blurb: 'Your command center: the numbers at a glance, and a direct line to every member.',
+  },
+  {
+    key: 'events',
+    label: 'Events',
+    blurb: 'What your circle is gathering for next, and a way to bring an event you already run onto this circle.',
   },
   {
     key: 'settings',
