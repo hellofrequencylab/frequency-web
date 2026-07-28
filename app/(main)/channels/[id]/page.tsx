@@ -26,6 +26,7 @@ import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { canCreate, getChannelCapabilities } from '@/lib/core/load-capabilities'
 import { DetailTemplate, PageHero, HERO_ACTION_CLASS, type DetailTab } from '@/components/templates'
 import { resolveHeaderElement } from '@/lib/elements/header'
+import { buttonClasses } from '@/components/ui/button'
 import { ModuleCard } from '@/components/modules/module-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -383,7 +384,7 @@ export default async function ChannelPage({
     <p className="mt-4 text-xs text-muted leading-relaxed">
       Circles are local crews of up to 50 people who meet regularly, in-person or
       online. Each one declares a Channel as its practice. Start one from the header
-      above and you are its first host.
+      above and you are its first Host.
     </p>
   )
 
@@ -467,7 +468,9 @@ export default async function ChannelPage({
                         channelId={channel.id}
                         slug={channel.slug}
                         size="md"
-                        className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-md hover:bg-primary-hover transition-colors"
+                        // The kit's primary tokens + the hero lift (§8.5: primary CTAs on a
+                        // cover stay bg-primary with shadow-md) — never a hand-rolled string.
+                        className={buttonClasses('primary', 'md', 'shrink-0 shadow-md')}
                       />
                     )
                   }
@@ -476,7 +479,7 @@ export default async function ChannelPage({
                 // Signed-out visitors still get the one primary join CTA.
                 <Link
                   href={`/sign-in?next=/channels/${channel.slug}`}
-                  className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-md hover:bg-primary-hover transition-colors"
+                  className={buttonClasses('primary', 'md', 'shrink-0 shadow-md')}
                 >
                   Sign in to tune in
                 </Link>

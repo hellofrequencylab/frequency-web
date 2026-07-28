@@ -19,7 +19,7 @@ import { join } from 'node:path'
 //   5. The retired circle-flavored copy ("No hub or nexus required") stays gone.
 //   6. It carries its OWN scope rail (owner request, 2026-07-28: "a right column for activity,
 //      upcoming event, associated circles") through DetailTemplate's `sidebar` slot, and that
-//      rail is paired with the 'scoped' entry in lib/layout/page-chrome.ts so the page never
+//      rail is IN-BODY content beside the global member rail (owner reversal 2026-07-28) and never
 //      grows a second right column.
 
 const src = readFileSync(
@@ -80,19 +80,23 @@ describe('channel page (source shape): a Channel renders as a focus-area home', 
     expect(src).toContain('<NewCircleCompose')
   })
 
-  it('fills the Detail `sidebar` slot with the Channel scope rail, and is registered as scoped', () => {
+  it('fills the Detail `sidebar` slot with the Channel column, and the route stays GLOBAL', () => {
     expect(src).toContain('<ChannelRail')
     expect(src).toContain('sidebar={')
     // The rail is fed the Circles the page already loaded (no second read) and the tab, so it
     // can drop the directory module on the directory tab.
     expect(src).toContain('groups={groupCards}')
     expect(src).toContain('tab={tab}')
-    // Paired with the chrome map: without this the page would render TWO right columns.
+    // Paired with the chrome map, in the direction the owner settled 2026-07-28: the sidebar is
+    // IN-BODY page content, and the site's member rail renders beside it. Scoping this route
+    // shipped for a few hours, the owner saw the member rail gone and reversed it ("You dropped
+    // the right rail of the website"). This guard now holds the reversal: no /channels pattern
+    // may reappear in SCOPED_PATTERNS.
     const chrome = readFileSync(
       join(__dirname, '..', '..', '..', '..', 'lib', 'layout', 'page-chrome.ts'),
       'utf8',
     )
-    expect(chrome).toContain('/^\\/channels\\/[^/]+$/')
+    expect(chrome).not.toContain('/^\\/channels\\/[^/]+$/')
   })
 
   it('retired the circle-flavored empty-state copy', () => {

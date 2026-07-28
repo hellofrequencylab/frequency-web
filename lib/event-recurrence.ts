@@ -101,6 +101,11 @@ const INHERITED_COLUMNS = [
   'postal_code',
   'geog',
   'hide_address',
+  // Associations (ADR-884): the Journey a series belongs to travels to its occurrences, or the
+  // "Part of" chip and the events-of-Journey read (the partial index exists for it) silently skip
+  // every materialized row. Found by the meta sweep as a seam between two parallel lanes: one
+  // added the column, the other closed the drift list, neither saw the other.
+  'journey_id',
   // Provenance (a posted/scanned event's attribution + its poster's edit rights).
   'source',
   'is_demo',

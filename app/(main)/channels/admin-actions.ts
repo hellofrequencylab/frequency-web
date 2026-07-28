@@ -343,7 +343,9 @@ export async function updateChannelCoverFocus(
 
 /**
  * Set the Channel hero's HEIGHT from the shared Short / Standard / Tall ladder. Staff (admin+) only.
- * Same bag, same read-modify-write, same drop-the-default rule as the focal point above.
+ * Same bag, same read-modify-write — but NOT the drop-the-default rule: an explicitly chosen
+ * 'standard' is STORED (ADR-886 §2), because the header ELEMENT config also has an opinion about
+ * height and a dropped key would silently hand the decision back to it.
  */
 export async function updateChannelHeroHeight(
   id: string,

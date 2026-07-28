@@ -7,9 +7,9 @@
 //               (owner directive, 2026-06-20: the right rail shows site-wide) —
 //               browse / stream / dashboard AND compose / edit / settings surfaces.
 //   'scoped'  → the global rail is suppressed because the entity DETAIL page
-//               renders its OWN scope rail in-body (avoids the double-rail trap).
-//               Today: the Channel detail page (owner request, 2026-07-28 — see
-//               SCOPED_PATTERNS for the directive that narrows the 2026-06-20 one).
+//               renders its OWN scope rail in-body. NOTHING is scoped today (see
+//               SCOPED_PATTERNS): the owner tried it on the Channel page for a few
+//               hours on 2026-07-28 and reversed it the same night.
 //   'none'    → no right rail. Reserved for just two cases: the /admin/* operator
 //               workspace (it mounts its OWN info rail — no double-railing) and the
 //               full-viewport takeovers (the practice timer, scanner, auth gate,
@@ -78,20 +78,17 @@ const SCOPED_PREFIXES: string[] = [
 // same prefix must keep the global rail. Anchored patterns, so only the route shape listed here
 // is scoped; anything deeper falls through to 'global'.
 //
-// OWNER DIRECTIVE UPDATE (2026-07-28) — this supersedes the 2026-06-20 "the right rail shows on
-// every page" directive FOR THIS ONE ROUTE, at the owner's request: "Redesign the Channel pages.
-// Give it a right column for activity, upcoming event, associated circles, etc." The Channel
-// DETAIL page now renders its own in-body scope rail (activity pulse · upcoming events across the
-// Circles practicing it · the Circles themselves), which is exactly the case 'scoped' exists for:
-// the generic member rail beside a channel-specific one would be two right columns of unrelated
-// content. Every OTHER route, including the /channels index and the Channel's own /manage and
-// /edit surfaces, still keeps the global rail. The 2026-06-20 directive stands everywhere else.
-const SCOPED_PATTERNS: readonly RegExp[] = [
-  // The Channel detail page (/channels/<id-or-slug>) and only it. Its tabs are query params
-  // (?tab=feed|circles|about), so every tab shares this one pathname; the deeper /channels/<id>/manage
-  // console and /channels/<id>/edit form do NOT match and keep the global community rail.
-  /^\/channels\/[^/]+$/,
-]
+// EMPTY AGAIN, and the history matters (both directives are the same owner, five hours apart):
+// the Channel redesign (ADR-885, 2026-07-28) briefly listed /channels/<slug> here, reading "give
+// it a right column" as replacing the member rail with the Channel's own. The owner saw it
+// deployed and corrected course the same night: "You dropped the right rail of the website. Fix
+// that." So the 2026-06-20 rule — THE RIGHT RAIL SHOWS ON EVERY PAGE — is back to universal, with
+// no exceptions. The Channel's activity/upcoming/Circles column did not go away: it renders
+// IN-BODY through DetailTemplate's `sidebar` slot, inside the content area, beside the shell rail.
+// The two coexist because they are different things: one is the page's own facts, the other is
+// the site's chrome. Re-add a pattern here only with an explicit owner decision that names the
+// route AND acknowledges it hides the member rail there.
+const SCOPED_PATTERNS: readonly RegExp[] = []
 
 // The global MEMBER left rail (the one site menu) frames EVERY in-app page now,
 // including the admin workspace (owner directive): admin uses the same left menu as

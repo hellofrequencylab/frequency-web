@@ -5,13 +5,13 @@
 // over a tab row over the body. The body is itself usually a Stream or Index —
 // templates nest, you reuse not rebuild.
 //
-// NOTE on the right rail: by DEFAULT a Detail page has no rail of its own — the global shell
-// renders the community rail beside it (AppShell), and rendering a second rail inside the page
-// would be the double-sidebar trap. The ONE exception is the `sidebar` slot below (§3 Template C
-// always specified a scope-aware `rightRail`): a page that fills it MUST also register as
-// 'scoped' in lib/layout/page-chrome.ts so the global rail is suppressed and there is still
-// exactly one right column. Today that is the Channel detail page. Omit the slot and every other
-// Detail page renders byte-identically to before.
+// NOTE on the right rail: the `sidebar` slot below is an IN-BODY column (§3 Template C's
+// scope-aware `rightRail`) — the entity's own facts, rendered inside the content area. It does
+// NOT replace the site's global rail, and a page that fills it stays 'global' in
+// lib/layout/page-chrome.ts: the shell rail is site chrome, this slot is page content, and the
+// owner's standing directive (2026-06-20, reaffirmed 2026-07-28 after a brief 'scoped'
+// experiment on the Channel page was reversed the same night) is that the right rail shows on
+// every page. Omit the slot and a Detail page renders byte-identically to before it existed.
 //
 // Presentational + server-friendly (no hooks). `tabs[].active` is precomputed by
 // the page, so this works in a server component.
@@ -79,8 +79,8 @@ export function DetailTemplate({
   /** OPTIONAL in-body SCOPE RAIL — the entity's own right column (its pulse, what is coming up,
    *  what is attached to it), rendered beside the body from `lg` up and BELOW it on mobile so the
    *  content still comes first. Geometry matches HeaderSidebarTemplate's sidebar (Template D), so
-   *  the two read as one system. A page that passes this MUST be 'scoped' in
-   *  lib/layout/page-chrome.ts (see the rail note at the top of this file). */
+   *  the two read as one system. This is page CONTENT, not shell chrome: the page keeps the
+   *  global member rail (see the rail note at the top of this file). */
   sidebar?: React.ReactNode
   children: React.ReactNode
 }) {

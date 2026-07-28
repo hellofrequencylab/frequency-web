@@ -17,7 +17,8 @@
 // PURE + total: no server/Next imports, tolerant of malformed blobs.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { isSpaceCategory, normalizeSpaceCategory, spaceCategoryLabel, type SpaceCategory } from './categories'
+import { normalizeSpaceKind, spaceKindLabel, isSpaceKind, type SpaceKind } from './categories'
+import { findSubject, type SubjectChoice } from '@/lib/taxonomy/subjects'
 
 /** One social / business-presence link (branded chip). `platform` keys the icon + label. */
 export interface SpaceSocialLink {
@@ -102,13 +103,21 @@ export interface SpaceOffering {
 /** The central, single-source Space profile data. All optional + fail-safe. Business facts first,
  *  then the editorial story. Offerings / callout / section copy join here in a later phase. */
 export interface SpaceProfileData {
-  /** The PUBLIC directory category (the "business style" browse facet, lib/spaces/categories.ts). Absent
-   *  reads as the default 'business'. Distinct from the profile TYPE chip and the internal mode_variant
-   *  Focus. */
-  category?: SpaceCategory
-  /** An OPTIONAL custom name for the public category pill. Keeps `category` for taxonomy + directory
-   *  filtering, but overrides only the DISPLAYED label (e.g. category 'maker' but the pill reads "Nadia's
-   *  Corner"). Blank / unset falls back to the category's own label. */
+  /** What this Space is ABOUT (ADR-887): a key from the SHARED subject vocabulary
+   *  (lib/taxonomy/subjects.ts, the same fifteen keys Channels use). Stored as the RAW string: an
+   *  off-list value is PRESERVED, never silently rewritten (the ADR-879 rule) — normalize at the
+   *  point of use via `spaceSubject`. Absent = the Space has not picked one (no default). */
+  subject?: string
+  /** What SHAPE of thing this Space is (ADR-887): a key from lib/spaces/categories.ts (business /
+   *  practitioner / coach / studio / maker / venue). Stored as the RAW string: an off-list value is
+   *  PRESERVED (ADR-879); normalize via `spaceKind`, which defaults to 'business'. READ COMPATIBLE:
+   *  legacy rows store this under `profileData.category`; the reader falls back to that key until
+   *  scripts/adr-887-space-kind-migration.sql moves the data (order-independent). */
+  kind?: string
+  /** An OPTIONAL custom name for the public kind pill. Keeps `kind` for taxonomy + display defaults,
+   *  but overrides only the DISPLAYED label (e.g. kind 'maker' but the pill reads "Nadia's Corner").
+   *  Blank / unset falls back to the kind's own label. Stored under its HISTORICAL `categoryLabel`
+   *  key (a pure label override; no data move needed for the ADR-887 rename). */
   categoryLabel?: string
   /** Street address (also powers the map link on the Contact card). */
   address?: string
@@ -232,11 +241,17 @@ export function readProfileData(preferences: unknown): SpaceProfileData {
     })
     .filter((o): o is SpaceOffering => o !== null)
   const out: SpaceProfileData = {}
-  // The directory category: kept only when it is a KNOWN key (an unknown / absent value is dropped, so
-  // the reader default of 'business' applies rather than persisting a junk value).
-  if (isSpaceCategory(p.category)) out.category = p.category
+  // SUBJECT (what it is about, ADR-887): kept as the RAW bounded string. An off-list value is
+  // preserved, never rewritten at read time (ADR-879) — the settings select marks it instead.
+  const subject = str(p.subject)?.slice(0, 60)
+  if (subject) out.subject = subject
+  // KIND (what shape of thing it is): the canonical `kind` key, FALLING BACK to the legacy `category`
+  // key so pre-migration rows keep reading correctly (ADR-887 read compatibility — the data move in
+  // scripts/adr-887-space-kind-migration.sql can run whenever). Raw + bounded; off-list preserved.
+  const kind = (str(p.kind) ?? str(p.category))?.slice(0, 60)
+  if (kind) out.kind = kind
   // The custom pill-name override: a plain, bounded string; blank / absent drops out so the resolver falls
-  // back to the category label.
+  // back to the kind label.
   const categoryLabel = str(p.categoryLabel)?.slice(0, 60)
   if (categoryLabel) out.categoryLabel = categoryLabel
   const address = str(p.address)
@@ -262,20 +277,31 @@ export function readProfileData(preferences: unknown): SpaceProfileData {
   return out
 }
 
-/** The Space's PUBLIC directory category, normalized. Reads `preferences.profileData.category` off a
- *  Space (or any preferences-bearing object) and coerces it to a known key, defaulting to 'business'
- *  when unset / unknown. PURE + total (fail-safe on any malformed blob). The directory groups + filters
- *  by this. */
-export function spaceCategory(space: { preferences?: unknown } | null | undefined): SpaceCategory {
-  return normalizeSpaceCategory(readProfileData(space?.preferences).category)
+/** The Space's KIND, normalized. Reads `preferences.profileData.kind` (falling back to the legacy
+ *  `category` key inside readProfileData) off a Space (or any preferences-bearing object) and coerces
+ *  it to a known key, defaulting to 'business' when unset / unknown. PURE + total (fail-safe on any
+ *  malformed blob). The directory card pill + the kind filter key on this. */
+export function spaceKind(space: { preferences?: unknown } | null | undefined): SpaceKind {
+  return normalizeSpaceKind(readProfileData(space?.preferences).kind)
 }
 
-/** The label the PUBLIC category pill shows for a Space: the operator's custom pill-name override when set,
- *  else the category's own label. The category itself is unchanged (taxonomy + directory filtering still key
- *  on it) — only the displayed word differs. PURE + total (fail-safe on any malformed blob). */
-export function spaceCategoryPillLabel(space: { preferences?: unknown } | null | undefined): string {
+/** The Space's SUBJECT (what it is about, ADR-887), resolved against the SHARED vocabulary
+ *  (lib/taxonomy/subjects.ts), or undefined when unset / off-list. The raw stored string stays
+ *  available via readProfileData().subject for the settings form's marked off-list option. PURE +
+ *  total (fail-safe on any malformed blob). */
+export function spaceSubject(space: { preferences?: unknown } | null | undefined): SubjectChoice | undefined {
+  return findSubject(readProfileData(space?.preferences).subject)
+}
+
+/** The label the PUBLIC kind pill shows for a Space, first match wins: the operator's custom pill-name
+ *  override; an OFF-LIST stored kind's own text (ADR-879: the label keeps its own words, never
+ *  silently relabeled); else the kind's canonical label — which is 'Business' for the Spaces that
+ *  never picked one, so every card pill reads something sensible. PURE + total. */
+export function spaceKindPillLabel(space: { preferences?: unknown } | null | undefined): string {
   const data = readProfileData(space?.preferences)
-  return data.categoryLabel ?? spaceCategoryLabel(data.category)
+  if (data.categoryLabel) return data.categoryLabel
+  if (data.kind && !isSpaceKind(data.kind)) return data.kind
+  return spaceKindLabel(data.kind)
 }
 
 /** The fields a Business Info form can submit (the writable central data). Same shape as the read
@@ -284,7 +310,9 @@ export type ProfileDataPatch = SpaceProfileData
 
 /** Immutably merge a patch into the preferences' profileData, dropping empties so the stored blob
  *  never accumulates blank keys. Pure: returns a NEW preferences object, input untouched. Unknown
- *  patch keys are ignored (only the known fields survive the readProfileData round-trip). */
+ *  patch keys are ignored (only the known fields survive the readProfileData round-trip). Note the
+ *  round-trip also MIGRATES on write: a legacy `category` key reads in as `kind` and persists as
+ *  `kind`, so any save moves a row onto the ADR-887 shape without waiting for the data script. */
 export function withProfileData(preferences: unknown, patch: ProfileDataPatch): Record<string, unknown> {
   const prefs = preferences && typeof preferences === 'object' && !Array.isArray(preferences)
     ? { ...(preferences as Record<string, unknown>) }

@@ -21,12 +21,13 @@ import {
 // THE CHANNEL SCOPE RAIL (owner request, 2026-07-28: "Give it a right column for activity,
 // upcoming event, associated circles").
 //
-// This is an IN-BODY rail, not the shell rail: lib/layout/page-chrome.ts marks
-// /channels/<id> as `'scoped'`, so the global community rail is suppressed and this
-// channel-specific column takes its place. That is the whole point of the change: the old page
-// put generic member modules (Your Quest, Your stats) beside a Channel and left the Channel's
-// own facts nowhere. See docs/PAGE-FRAMEWORK.md §3 Template C ("rail: program, circles-in-topic,
-// events") and §6, which already specified this shape.
+// This is an IN-BODY column, not the shell rail, and it renders BESIDE the global community
+// rail, not instead of it. (For a few hours on 2026-07-28 the route was 'scoped' and the member
+// rail was suppressed here; the owner reversed that the same night: "You dropped the right rail
+// of the website." The 2026-06-20 rule that the right rail shows on every page is universal
+// again.) What this column fixes is unchanged: the old page left the Channel's own facts
+// nowhere. See docs/PAGE-FRAMEWORK.md §3 Template C ("rail: program, circles-in-topic, events")
+// and §6, which already specified this shape.
 //
 // THREE MODULES, in order:
 //   1. Activity  — the Channel's pulse (tuned in · Circles · forum posts · open-room traffic),
@@ -172,9 +173,9 @@ function ChannelUpcoming({
   return (
     <div>
       <div className="[&:not(:only-child)]:hidden">
-        {/* Matches the widget's own heading exactly, so the empty and populated states of this
-            module read as the same module. */}
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-subtle">Upcoming</h2>
+        {/* Matches the widget's own heading exactly (the house SectionHeader, drill-down and
+            all), so the empty and populated states of this module read as the same module. */}
+        <SectionHeader title="Upcoming" href="/events" />
         <p className="px-1 text-sm leading-relaxed text-muted">
           {scopeIds.length === 0
             ? `Nothing scheduled. Once a Circle practices ${channelName}, its Events show up here.`
@@ -186,11 +187,12 @@ function ChannelUpcoming({
   )
 }
 
-/** Dimension-matched placeholder: the widget's heading row plus one event row. */
+/** Dimension-matched placeholder: the widget's SectionHeader row (text-sm heading, mb-3)
+ *  plus one event row. */
 function UpcomingSkeleton() {
   return (
     <div aria-hidden>
-      <Skeleton className="mb-3 h-4 w-24" />
+      <Skeleton className="mb-3 h-5 w-24" />
       <Skeleton className="h-16 rounded-xl" />
     </div>
   )
@@ -219,7 +221,7 @@ function ChannelGroupsModule({
           description={
             groupNoun === 'Chapter'
               ? `Start the first Chapter of ${channelName} where you live.`
-              : `Start the first ${channelName} Circle where you live. You are its host.`
+              : `Start the first ${channelName} Circle where you live. You are its Host.`
           }
           action={startGroupCta}
         />

@@ -16,9 +16,9 @@ import { ChannelEditForm } from './channel-edit-form'
 // channels are platform-curated), and anyone else gets a 404 so the route confirms nothing. Every
 // action re-checks the same capability server-side (ADR-274); this is only the affordance.
 //
-// Chrome: FocusTemplate, the single-task work surface. The rail stays as page-chrome already
-// registers it for /channels/* (scoped), so the admin rail's Channel modules remain one tap away
-// rather than being suppressed mid-edit.
+// Chrome: FocusTemplate, the single-task work surface. This route keeps the GLOBAL community rail
+// (lib/layout/page-chrome.ts pins /channels/<id>/edit as 'global'; only the Channel DETAIL page is
+// 'scoped', via SCOPED_PATTERNS), so the admin rail's Channel modules remain one tap away.
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Edit Channel' }

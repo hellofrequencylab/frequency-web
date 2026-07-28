@@ -19,8 +19,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { listFollowedSpaceIds } from './follows'
 import { normalizeSpaceType } from './types'
 import type { SpaceType } from './types'
-import { spaceCategory, spaceCategoryPillLabel } from './profile-data'
-import { isSpaceCategory, type SpaceCategory } from './categories'
+import { spaceKind, spaceKindPillLabel } from './profile-data'
+import { isSpaceKind, type SpaceKind } from './categories'
+import { isSubjectKey } from '@/lib/taxonomy/subjects'
 import { readHeaderCtaPreference, resolveHeaderCta } from './header-cta'
 import { defaultPrimaryCtaLabel } from './profile-config'
 import { foundingBadgesForSpaces } from '@/lib/founding/status'
@@ -40,12 +41,12 @@ export interface NetworkedSpace {
   /** Display brand name when set, else the plain Space name (resolved here so cards stay dumb). */
   name: string
   type: SpaceType
-  /** The PUBLIC directory category (the "business style" browse facet). Read from
-   *  preferences.profileData.category; a null / unknown value reads as 'business'. */
-  category: SpaceCategory
-  /** The label the category pill DISPLAYS: the operator's custom pill-name override when set, else the
-   *  category's own label. Keeps `category` for taxonomy/filtering while the pill can read a custom word. */
-  categoryLabel: string
+  /** The Space's KIND (what shape of thing it is, ADR-887). Read from preferences.profileData.kind
+   *  (falling back to the legacy `category` key); a null / unknown value reads as 'business'. */
+  kind: SpaceKind
+  /** The label the kind pill DISPLAYS: the operator's custom pill-name override when set, else the
+   *  kind's own label. Keeps `kind` for taxonomy/filtering while the pill can read a custom word. */
+  kindLabel: string
   /** One-line positioning. Null when the Space hasn't set one. */
   tagline: string | null
   /** Operator-supplied logo URL, or null. Rendered via a plain <img> (an arbitrary URL). */
@@ -85,10 +86,16 @@ export interface DiscoveryFilters {
   /** Narrow the result to the Spaces `followerProfileId` follows (the "Following" pill). Ignored
    *  when no `followerProfileId` is given (a signed-out viewer follows nothing). */
   onlyFollowed?: boolean
-  /** Narrow to one directory category (business / practitioner / coach / studio / maker / venue).
-   *  Absent, 'all', or an unknown value = no category filter. A null-or-missing stored category reads
-   *  as 'business', so the 'business' filter also matches Spaces that never picked one. */
-  category?: SpaceCategory | 'all' | string
+  /** Narrow to one SUBJECT (the shared vocabulary, lib/taxonomy/subjects.ts — the directory's primary
+   *  pills, ADR-887). Absent, 'all', or an off-list value = no subject filter. There is no default
+   *  subject, so a Space that never picked one matches no subject pill. */
+  subject?: string
+  /** Narrow to one KIND (business / practitioner / coach / studio / maker / venue). Absent, 'all', or
+   *  an unknown value = no kind filter. Resolved in APP CODE through the same total reader the card
+   *  pill uses (spaceKind: legacy `category` fallback + 'business' default), so the 'business' filter
+   *  also matches Spaces that never picked one and pre-migration rows filter exactly like migrated
+   *  ones. */
+  kind?: SpaceKind | 'all' | string
   /** Catalog ordering: name (A–Z, default) / newest (created_at desc) / members (member count desc). */
   sort?: SpaceSort
 }
@@ -110,14 +117,17 @@ export function normalizeSpaceSort(value: string | null | undefined): SpaceSort 
 // The columns the directory projects. `visibility` is selected too (it's the discovery filter) but
 // is reached through the untyped client below, so it never hits the typed-row overload. `created_at`
 // backs the "Newest" sort.
-// `preferences` is projected so each row can resolve its directory category + its operator-configured
-// header CTA action in app code (both live in the jsonb blob).
+// `preferences` is projected so each row can resolve its subject + kind + its operator-configured
+// header CTA action in app code (all live in the jsonb blob).
 const COLS =
   'id, slug, name, type, status, brand_name, brand_logo_url, cover_image_url, tagline, created_at, preferences'
 
-/** The jsonb path to a Space's stored directory category (preferences.profileData.category), used to
- *  filter in the DB. A missing path reads as NULL, which the 'business' filter treats as 'business'. */
-const CATEGORY_PATH = 'preferences->profileData->>category'
+/** The jsonb path to a Space's stored SUBJECT (preferences.profileData.subject), used to filter in the
+ *  DB. A missing path reads as NULL, which matches no subject (there is no default subject). The KIND
+ *  filter deliberately does NOT get a DB path: its legacy-key fallback + 'business' default live in the
+ *  spaceKind reader, so it filters in app code over the bounded fetch (same as the Following filter)
+ *  and can never drift from what the card pill shows. */
+const SUBJECT_PATH = 'preferences->profileData->>subject'
 
 // `spaces.visibility` / `spaces.brand_*` aren't fully in the generated DB types, so reach the table
 // through an untyped `from` accessor (ADR-246) and type the builder loosely here — the same shape
@@ -285,7 +295,7 @@ async function upcomingEventCountsFor(spaceIds: string[]): Promise<Map<string, n
  * that ordering is applied in app code). FAIL-SAFE: `[]` on any error. REQUEST-CACHED.
  */
 export const listNetworkedSpaces = cache(
-  async ({ type, q, followerProfileId, onlyFollowed, category, sort }: DiscoveryFilters = {}): Promise<NetworkedSpace[]> => {
+  async ({ type, q, followerProfileId, onlyFollowed, subject, kind, sort }: DiscoveryFilters = {}): Promise<NetworkedSpace[]> => {
     try {
       // The "Following" filter: resolve the viewer's followed Space ids up front. A signed-out viewer
       // (no profile) follows nothing, so the filtered directory is correctly empty. Fail-safe to an
@@ -304,15 +314,11 @@ export const listNetworkedSpaces = cache(
       const wantType = (type ?? '').trim()
       if (wantType) query = query.eq('type', wantType)
 
-      // Narrow to one directory category when a KNOWN key is passed ('all' / absent / unknown = no
-      // filter). The category lives in the preferences jsonb (CATEGORY_PATH); a null / missing value
-      // reads as 'business', so the 'business' filter ALSO matches Spaces that never picked one (match
-      // the literal 'business' OR a null path). Any other category matches the literal only.
-      if (isSpaceCategory(category)) {
-        query =
-          category === 'business'
-            ? query.or(`${CATEGORY_PATH}.eq.business,${CATEGORY_PATH}.is.null`)
-            : query.eq(CATEGORY_PATH, category)
+      // Narrow to one SUBJECT when a KNOWN key is passed ('all' / absent / off-list = no filter). The
+      // subject lives in the preferences jsonb (SUBJECT_PATH) and has NO default, so a plain literal
+      // match is exact: a Space that never picked a subject matches no subject pill.
+      if (isSubjectKey(subject)) {
+        query = query.eq(SUBJECT_PATH, subject)
       }
 
       // Free-text: case-insensitive substring over name, brand name, and slug.

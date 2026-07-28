@@ -31,14 +31,28 @@ const CHANNELS_LIST = ['components', 'widgets', 'channels', 'channels-list.tsx']
 const SETTINGS_MODULE = ['components', 'admin', 'modules', 'channel-settings-module.tsx']
 
 describe('CHANNEL_CATEGORIES', () => {
-  it('is the seven-key closed set, in select order', () => {
+  it('is the fifteen-key closed set, in select order (the shared subject list, ADR-887)', () => {
+    // Owner directive 2026-07-28: door names may say the plain wellness word out loud, so
+    // Spirituality and Holistic Health stayed, and the set widened to fifteen. Five original keys
+    // survive unchanged; `human-relating` retired to `friendship` and the Mental / Emotional
+    // Health Channel moved from `holistic-health` to the new `mental-health` (both rows remapped
+    // by scripts/adr-887-subject-remap.sql). Order is the arc every picker lists: doors first,
+    // practice-adjacent depth in the middle, civic and work last.
     expect(CHANNEL_CATEGORIES.map((c) => c.key)).toEqual([
       'spirituality',
+      'meditation',
       'movement',
+      'outdoors',
       'holistic-health',
-      'human-relating',
-      'activism',
+      'functional-medicine',
+      'mental-health',
+      'friendship',
       'creative',
+      'crafts-hobbies',
+      'food',
+      'gardening',
+      'parenting',
+      'activism',
       'business-support',
     ])
   })

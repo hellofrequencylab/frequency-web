@@ -77,6 +77,7 @@ update public.events c set
   postal_code = a.postal_code,
   geog = a.geog,
   hide_address = a.hide_address,
+  journey_id = a.journey_id,
   source = a.source,
   is_demo = a.is_demo,
   posted_by_profile_id = a.posted_by_profile_id,
