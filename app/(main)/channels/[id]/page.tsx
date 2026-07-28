@@ -2,14 +2,6 @@ import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Sparkles,
-  Activity,
-  Heart,
-  MessagesSquare,
-  Megaphone,
-  Palette,
-  Briefcase,
-  Radio,
   Users,
   Circle as CircleIcon,
   MapPin,
@@ -17,7 +9,12 @@ import {
   Settings,
   LayoutDashboard,
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import {
+  CHANNEL_CATEGORY_ICON,
+  FALLBACK_CHANNEL_CATEGORY_ICON,
+  channelCategoryAccent,
+  channelCategoryLabel,
+} from '@/lib/channels/categories'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { relativeTime } from '@/lib/utils'
@@ -98,35 +95,10 @@ type GroupCardData = {
   cap: number
 }
 
-const CATEGORY_ICON: Record<string, LucideIcon> = {
-  spirituality:     Sparkles,
-  movement:         Activity,
-  'holistic-health': Heart,
-  'human-relating': MessagesSquare,
-  activism:         Megaphone,
-  creative:         Palette,
-  'business-support': Briefcase,
-}
-
-const CATEGORY_ACCENT: Record<string, string> = {
-  spirituality:     'text-signal-strong bg-signal-bg/40',
-  movement:         'text-signal-strong bg-success-bg/40',
-  'holistic-health': 'text-danger bg-danger-bg',
-  'human-relating': 'text-signal-strong bg-signal-bg',
-  activism:         'text-warning dark:text-primary bg-warning-bg',
-  creative:         'text-warning bg-warning-bg/40',
-  'business-support': 'text-muted dark:text-subtle bg-surface',
-}
-
-const CATEGORY_LABEL: Record<string, string> = {
-  spirituality:     'Spirituality',
-  movement:         'Movement',
-  'holistic-health': 'Holistic Health',
-  'human-relating': 'Human Relating',
-  activism:         'Activism',
-  creative:         'Creative',
-  'business-support': 'Business Support',
-}
+// The category icon, accent, and label all come from lib/channels/categories (ADR-879), the same
+// file the staff settings select reads, so an operator can no longer pick a category this page
+// does not know. Every reader is total: an off-list legacy value keeps its own text and the
+// generic Radio icon.
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -366,9 +338,9 @@ export default async function ChannelPage({
   // the /channels/[id]/manage console — mirroring the event header's Edit + Manage pair.
   const canManageChannel = channelCaps.has('channel.manage')
 
-  const Icon = CATEGORY_ICON[channel.category] ?? Radio
-  const accent = CATEGORY_ACCENT[channel.category] ?? 'text-muted bg-surface'
-  const categoryLabel = CATEGORY_LABEL[channel.category] ?? channel.category
+  const Icon = CHANNEL_CATEGORY_ICON[channel.category] ?? FALLBACK_CHANNEL_CATEGORY_ICON
+  const accent = channelCategoryAccent(channel.category)
+  const categoryLabel = channelCategoryLabel(channel.category)
 
   // Defensive: the 20240206 migration rewrites the seeded descriptions to
   // remove em dashes, but until it lands on every environment we strip

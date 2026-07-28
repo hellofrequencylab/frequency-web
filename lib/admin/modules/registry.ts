@@ -495,7 +495,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   {
     id: 'channel.settings',
     label: 'Channel settings',
-    desc: 'Name, description, category, and visibility. Platform-curated, staff only.',
+    desc: 'Cover, name, description, category, Pillar, order, URL, and visibility. Platform-curated, staff only.',
     Icon: Hash,
     scopes: ['channel'],
     requiredCapability: 'channel.manage',

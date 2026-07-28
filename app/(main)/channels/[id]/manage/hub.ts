@@ -41,7 +41,7 @@ export const CHANNEL_HUB_SECTIONS: readonly {
   {
     key: 'settings',
     label: 'Settings',
-    blurb: 'Name, description, category, and visibility, edited in place.',
+    blurb: 'Cover, name, description, category, Pillar, order, URL, and visibility, edited in place.',
   },
 ]
 
