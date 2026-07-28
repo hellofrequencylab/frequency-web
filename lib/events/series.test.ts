@@ -5,7 +5,9 @@ import {
   DEFAULT_CARDS_PER_SERIES,
   SERIES_COLUMNS,
   SERIES_FETCH_CEILING,
+  TEASER_CARDS_PER_SERIES,
   collapseSeries,
+  collapseSeriesAroundFloor,
   collapseSeriesRows,
   isSeriesAnchor,
   isSeriesCadence,
@@ -328,6 +330,75 @@ describe('seriesDates + fetch sizing + predicates', () => {
   it('seriesKey is parent_event_id ?? id', () => {
     expect(seriesKey(row({ id: 'c', parent_event_id: 'a' }))).toBe('a')
     expect(seriesKey(row({ id: 'x' }))).toBe('x')
+  })
+})
+
+describe('collapseSeriesAroundFloor — the search partition', () => {
+  // Search reads TWICE around the floor because it must still answer for past events. Each half
+  // folds on its own, so a running series leads with its NEXT date and a finished one with its LAST.
+  const past = (id: string, at: string, parent: string | null = null) =>
+    row({ id, starts_at: at, parent_event_id: parent })
+
+  it('34. the upcoming half comes first, in its own order', () => {
+    const upcoming = [row({ id: 'u1', starts_at: '2027-03-06T19:00:00Z' })]
+    const back = [past('p1', '2027-02-20T19:00:00Z')]
+    expect(ids(collapseSeriesAroundFloor(upcoming, back, 10, { upcomingFrom: FLOOR }))).toEqual([
+      'u1',
+      'p1',
+    ])
+  })
+
+  it('34b. a series straddling the floor is emitted ONCE, by its upcoming date', () => {
+    // Without the cross-half dedupe the same weekly cowork reads as "next Tuesday" and
+    // "last Tuesday" in one result list.
+    const upcoming = [row({ id: 'c9', starts_at: '2027-03-09T19:00:00Z', parent_event_id: 'a' })]
+    const back = [past('c8', '2027-02-23T19:00:00Z', 'a')]
+    const out = collapseSeriesAroundFloor(upcoming, back, 10, { upcomingFrom: FLOOR })
+    expect(ids(out)).toEqual(['c9'])
+  })
+
+  it('34c. the limit counts SERIES across the concatenation, not rows', () => {
+    const upcoming = weekly(4) // one series, four dates + anchor
+    const back = [past('p1', '2027-02-20T19:00:00Z'), past('p2', '2027-02-10T19:00:00Z')]
+    const out = collapseSeriesAroundFloor(upcoming, back, 2, {
+      upcomingFrom: FLOOR,
+      perSeries: 1,
+    })
+    expect(ids(out)).toEqual(['a', 'p1'])
+  })
+
+  it('34d. an empty upcoming half still answers with the past half', () => {
+    // The past half must NOT receive the floor: "past" is defined as below it, so every row would
+    // be dropped by construction and search would go silent for finished events.
+    const back = [past('p1', '2027-02-20T19:00:00Z'), past('p2', '2027-02-10T19:00:00Z')]
+    expect(ids(collapseSeriesAroundFloor([], back, 10, { upcomingFrom: FLOOR }))).toEqual([
+      'p1',
+      'p2',
+    ])
+  })
+
+  it('34e. a finished series is represented by its LAST date, never its opening night', () => {
+    // The killer case: the caller's past read is newest-first, but the fold elects by INSTANT, so
+    // without the 'latest' election a search for a long-running series answers with a date from
+    // years ago.
+    const back = [past('c8', '2027-02-23T19:00:00Z', 'a'), past('c1', '2026-12-01T19:00:00Z', 'a')]
+    expect(ids(collapseSeriesAroundFloor([], back, 10, { upcomingFrom: FLOOR, perSeries: 1 }))).toEqual([
+      'c8',
+    ])
+  })
+
+  it('the upcoming half keeps the default election, so it still shows the NEXT date', () => {
+    const out = collapseSeriesAroundFloor(weekly(3), [], 10, { upcomingFrom: FLOOR, perSeries: 1 })
+    expect(ids(out)).toEqual(['a'])
+  })
+
+  it('a teaser block asks for one card per series', () => {
+    expect(TEASER_CARDS_PER_SERIES).toBe(1)
+    const out = collapseSeriesAroundFloor(weekly(6), [], 5, {
+      upcomingFrom: FLOOR,
+      perSeries: TEASER_CARDS_PER_SERIES,
+    })
+    expect(ids(out)).toEqual(['a'])
   })
 })
 

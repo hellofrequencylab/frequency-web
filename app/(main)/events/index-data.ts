@@ -17,16 +17,12 @@ import { viewerHidesDemo } from '@/lib/demo-preference'
 import { resolvePageContent } from '@/lib/page-content'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import { CATEGORY_OPTIONS } from '@/lib/events/options'
-import { collapseSeriesRows, DEFAULT_CARDS_PER_SERIES, SERIES_WIDE_READ } from '@/lib/events/series'
+import { collapseSeriesRows, SERIES_WIDE_READ } from '@/lib/events/series'
+import { getSeriesDisplayConfig } from '@/lib/events/series-config'
 import type { CatalogFacet } from './events-filter-bar'
 import type { SortOption } from './events-sort'
 import type { EventMapPin } from '@/components/events/events-map'
 import type { Json } from '@/lib/database.types'
-
-/** Cards a repeating series may occupy on the Events index (ADR-897). Owner directive, 2026-07-28:
- *  show the next three dates of a series here, with the rest reachable from the event page's date
- *  rail. One constant so the number is tuned in one place. */
-const CARDS_PER_SERIES = DEFAULT_CARDS_PER_SERIES
 
 export type EventRow = {
   id: string
@@ -370,6 +366,12 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
 
   const hideDemo = !(await demoModeEnabled()) || (await viewerHidesDemo())
 
+  // How many cards one repeating series may occupy here (ADR-897). Operator-tunable with no deploy
+  // (/admin/events > Repeating events); zero configuration is DEFAULT_CARDS_PER_SERIES = 3, and a
+  // failed settings read returns the same 3, so the knob can only ever show fewer duplicates, never
+  // an empty index. Read ONCE per surface, at the top of the loader, never per row.
+  const { cardsPerSeries } = await getSeriesDisplayConfig()
+
   // The columns we read for the card + facets. category / attendance_mode /
   // capacity / price_cents / cover_image_path are newer than the generated DB
   // types — read them through an untyped client (repo convention for
@@ -656,7 +658,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   // weekly one ~9 (the production read: "Meld - Community Cowork" and "Breathe Connect Expand"
   // filling the index).
   const collapsedEvents = collapseSeriesRows(filteredEvents, {
-    perSeries: CARDS_PER_SERIES,
+    perSeries: cardsPerSeries,
     upcomingFrom: listableFrom,
   })
 

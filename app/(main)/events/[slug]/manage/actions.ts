@@ -9,6 +9,7 @@ import { isEventCohost } from '@/lib/events/cohosts'
 import { viewerActsAsEventHost } from '@/lib/events/host-gate'
 import { loadEventCrmAccess } from '@/lib/events/crm-access'
 import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
+import { dmThreadHref } from '@/lib/messages/dm-destination'
 import {
   createQuestion,
   updateQuestion,
@@ -157,5 +158,8 @@ export async function openFollowUpDm(eventId: string, memberProfileId: string) {
     memberProfileId,
   )
   // redirect throws, so it sits outside any try/catch (Next server-action rule).
-  redirect(`/messages/${conversationId}`)
+  // Flag-aware destination (ADR-896): with the DM route retired this lands the operator in
+  // the chat dock in ONE hop instead of bouncing off a redirecting page. Flag off (today's
+  // default) it returns the identical /messages/<id> string this line used to hardcode.
+  redirect(await dmThreadHref(conversationId))
 }

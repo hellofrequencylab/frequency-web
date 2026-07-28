@@ -8,6 +8,9 @@ import { ClaimButton } from '@/app/events/claim/[token]/claim-button'
 import { CalendarDays, MapPin, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadSeriesDates } from '@/lib/events/series-dates'
+import { SERIES_COLUMNS } from '@/lib/events/series'
+import { getSeriesDisplayConfig } from '@/lib/events/series-config'
+import { seriesRobots, seriesSeoFacts, suppressPastNoindex } from '@/lib/events/series-seo'
 import { SeriesDatesRail } from '@/components/events/series-dates-rail'
 import { createClient } from '@/lib/supabase/server'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
@@ -150,11 +153,16 @@ export async function generateMetadata({
   const admin = createAdminClient()
   const { data: ev } = await admin
     .from('events')
-    .select('title, description, starts_at, ends_at, visibility, status, is_cancelled')
+    // The three recurrence columns ride along on the read generateMetadata already does, so the
+    // series robots rules cost this page ZERO extra round trips for a one-off (see seriesSeoFacts).
+    .select(
+      `id, title, description, starts_at, ends_at, visibility, status, is_cancelled, ${SERIES_COLUMNS}`,
+    )
     .eq('slug', slug)
     .maybeSingle()
   if (!ev) return { title: 'Event not found' }
   const event = ev as {
+    id: string
     title: string
     description: string | null
     starts_at: string
@@ -162,6 +170,9 @@ export async function generateMetadata({
     visibility: string | null
     status: string | null
     is_cancelled: boolean | null
+    recurrence_type: string | null
+    recurrence_until: string | null
+    parent_event_id: string | null
   }
 
   // The admin read bypasses RLS, so mirror the page body's visibility gate here:
@@ -193,13 +204,31 @@ export async function generateMetadata({
   // the event's real end, not the server's UTC clock.
   const isPast = isEventPast(event.starts_at, event.ends_at, HOME_TZ)
 
+  // ── Series robots (ADR-897) ───────────────────────────────────────────────
+  // Two corrections, in one call that costs a one-off nothing (it short-circuits on the row above
+  // before touching the database):
+  //   D1 — a long-running series' ANCHOR row keeps its original, now-past starts_at forever, so the
+  //        page that IS the series was reading as "ended" and dropping out of the index while its
+  //        third date stayed in. suppressPastNoindex cancels that while any date is still ahead.
+  //   The occurrence rule — past the operator's allowance, a date goes noindex,follow. It stays
+  //        live, RSVP-able and SELF-canonical (a rel=canonical to the series page would tell Google
+  //        this URL is a duplicate that should not rank, deleting the "the next dates are indexed"
+  //        half of the design), and it keeps passing its links up to the series page.
+  // `indexedOccurrences` is the same operator knob the sitemap sizes its fold with. The two must
+  // agree: a sitemap advertising date three while this page answers noindex is a contradictory
+  // crawl signal, and it is the kind that resolves in Google's favour, not ours.
+  const facts = await seriesSeoFacts(event)
+  const { indexedOccurrences } = await getSeriesDisplayConfig()
+  const pastRobots = isPast && !suppressPastNoindex(facts) ? { index: false, follow: true } as const : undefined
+  const robots = pastRobots ?? seriesRobots(facts, indexedOccurrences)
+
   // The share image is the dynamic OG card (opengraph-image.tsx) — Next injects it into
   // openGraph.images automatically, and Twitter inherits it as a large summary image. So
   // every event gets a card here without a per-event cover lookup.
   return {
     title: event.title,
     description,
-    ...(isPast ? { robots: { index: false, follow: true } } : {}),
+    ...(robots ? { robots } : {}),
     // /events/<slug> is the canonical public event URL (the discover detail points here too),
     // so search + AI engines consolidate on this one page.
     alternates: { canonical: `/events/${slug}` },
@@ -799,10 +828,18 @@ export default async function EventDetailPage({
   // The next real dates of this series, for the date rail under the header (ADR-897). Every
   // occurrence keeps its own live page; the rail is how a member reaches the dates the browse index
   // no longer lists separately. Fail-safe: [] on any error, and the rail renders nothing.
+  //
+  // How many dates it offers is the operator knob (/admin/events > Repeating events), read HERE and
+  // passed in rather than resolved inside loadSeriesDates: the surface owns the number, so it is
+  // read once per page and the fetch helper stays a helper. Zero configuration is
+  // DEFAULT_RAIL_DATES = 5, which is also what a failed settings read returns. The read is
+  // sequential because the limit sizes the query, and it is one request-cached settings row.
+  const { railDates } = await getSeriesDisplayConfig()
   const seriesRailDates = await loadSeriesDates({
     eventId: event.id,
     parentEventId: event.parent_event_id,
     recurrenceType: event.recurrence_type,
+    limit: railDates,
   })
 
   const nextRecurrence =

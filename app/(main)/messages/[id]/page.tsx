@@ -9,6 +9,8 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { PageHeading } from '@/components/templates'
 import { leaveConversation } from '../actions'
 import { ConversationRenameButton } from '@/components/messages/conversation-rename-button'
+import { chatDmRoutesRetiredFlag } from '@/lib/platform-flags'
+import { DOCK_DEFAULT_PATH, dockThreadPath } from '@/lib/messages/dock-open'
 
 export default async function ConversationPage({
   params,
@@ -16,6 +18,24 @@ export default async function ConversationPage({
   params: Promise<{ id: string }>
 }) {
   const { id: conversationId } = await params
+
+  // ── The retirement gate (ADR-896, chat consolidation) ────────────────────────────────────
+  // The owner: "All chats happen in the pop up on the lower right… that page should not
+  // exist." When the flag is on, this route stops rendering a chat page and hands the
+  // conversation to the dock instead. The route FILE stays: /messages/* is a registered iOS
+  // universal-link path (public/.well-known/apple-app-site-association), and a link that 404s
+  // is worse than one that opens the dock. Ships OFF; see the flag for what still blocks it.
+  //
+  // The request travels in the URL, not in an event. An event dispatched before the launcher
+  // mounts is lost with no trace, and after a full page load the launcher has not mounted yet.
+  // The landing pad (parseDockRequest in the launcher) shipped in Phase 1, already tested.
+  //
+  // Ahead of the auth check on purpose: a signed-out member gets a sign-in redirect from the
+  // dock's own read, and doing it here would otherwise mean bouncing them through a page that
+  // no longer exists to get there.
+  if (await chatDmRoutesRetiredFlag()) {
+    redirect(dockThreadPath(DOCK_DEFAULT_PATH, { kind: 'dm', id: conversationId }))
+  }
 
   // RLS convergence surface 5 (migration 20260602195209): the whole DM thread now
   // runs on the user-scoped client. conversations / conversation_participants /

@@ -20,12 +20,24 @@ export type FriendState =
 export function FriendButton({
   targetProfileId,
   state,
+  onMedia = false,
 }: {
   targetProfileId: string
   state: FriendState
+  /** True when this button rides a cover photo (an adaptive PageHero's `actions` slot). The
+   *  neutral states then take their border/glass/text from the hero ZONE's `--color-on-media`
+   *  instead of the page-canvas tokens, which are unreadable over an arbitrary photo. The
+   *  PRIMARY states ("Add Friend" / "Accept") deliberately keep `bg-primary text-on-primary`:
+   *  an accent CTA is opaque, is meant to stand out, and reads on any backdrop. */
+  onMedia?: boolean
 }) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  // Same geometry either way; only the colour source changes. `.hero-chip` lives in globals.css
+  // and is the class half of HERO_ACTION_CLASS_ADAPTIVE.
+  const neutralClass = onMedia
+    ? 'hero-chip flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium disabled:opacity-50 transition-colors'
+    : 'flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-elevated disabled:opacity-50 transition-colors'
 
   // Run a friend action and surface its ActionResult error instead of swallowing it.
   function run(action: () => Promise<ActionResult>) {
@@ -59,7 +71,7 @@ export function FriendButton({
           if (!confirm('Cancel this friend request?')) return
           run(() => cancelFriendRequest(targetProfileId))
         }}
-        className="flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-elevated disabled:opacity-50 transition-colors"
+        className={neutralClass}
         title="Click to cancel"
       >
         <Clock className="w-3.5 h-3.5" />
@@ -82,7 +94,7 @@ export function FriendButton({
           type="button"
           disabled={isPending}
           onClick={() => run(() => declineFriendRequest(targetProfileId))}
-          className="flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-elevated disabled:opacity-50 transition-colors"
+          className={neutralClass}
           aria-label="Decline"
         >
           <X className="w-3.5 h-3.5" />
@@ -99,7 +111,7 @@ export function FriendButton({
           if (!confirm('Unfriend this person?')) return
           run(() => unfriend(targetProfileId))
         }}
-        className="group flex items-center gap-1.5 rounded-lg border border-success bg-success-bg/30 px-3 py-1.5 text-sm font-medium text-success hover:border-danger hover:bg-danger-bg hover:text-danger dark:hover:bg-danger-bg dark:hover:text-danger disabled:opacity-50 transition-colors"
+        className={`group ${onMedia ? neutralClass : 'flex items-center gap-1.5 rounded-lg border border-success bg-success-bg/30 px-3 py-1.5 text-sm font-medium text-success disabled:opacity-50 transition-colors'} hover:border-danger hover:bg-danger-bg hover:text-danger dark:hover:bg-danger-bg dark:hover:text-danger`}
         title="Click to unfriend"
       >
         <UserCheck className="w-3.5 h-3.5 group-hover:hidden" />
@@ -113,7 +125,9 @@ export function FriendButton({
   return (
     <div className="flex flex-col gap-1">
       {content}
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {/* The refusal has to read where the button reads. On a cover the danger token is a
+          page-canvas colour, so it takes the zone's on-media tone with the halo behind it. */}
+      {error && <p className={onMedia ? 'max-w-[16rem] text-xs text-on-media' : 'text-xs text-danger'}>{error}</p>}
     </div>
   )
 }

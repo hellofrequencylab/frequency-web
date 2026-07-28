@@ -18,6 +18,7 @@ import Link from 'next/link'
 import { MessageCircle, Check, Tag } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { submitListingContact, type OfferTargetKind } from '@/lib/marketplace/listing-offers'
+import { openDockThread } from '@/lib/messages/dock-open'
 import { cn } from '@/lib/utils'
 
 /** Cents to a plain USD label, e.g. 29900 -> "$299", 29950 -> "$299.50". Whole dollars drop the cents. */
@@ -131,12 +132,19 @@ export function ListingContactDialog({
                 Message sent. {sellerName} will see it in messages.
               </p>
               <div className="flex items-center gap-2">
-                <Link
-                  href={`/messages/${sent.conversationId}`}
+                {/* Opens the chat dock in place instead of navigating to the DM page
+                    (ADR-896). The buyer keeps the listing they were reading, which is the
+                    whole reason they opened this dialog. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    openDockThread({ kind: 'dm', id: sent.conversationId, title: sellerName })
+                    close()
+                  }}
                   className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary/90"
                 >
                   Open messages
-                </Link>
+                </button>
                 <button
                   type="button"
                   onClick={close}

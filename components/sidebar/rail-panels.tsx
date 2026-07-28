@@ -2,6 +2,16 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { MapPin, Megaphone, Zap, Gem, Flame, Compass, ArrowRight, Users, Trophy, Sparkles, CalendarDays, CircleDot } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { HOME_TZ, dayInZone } from '@/lib/time/zone'
+import {
+  SERIES_COLUMNS,
+  TEASER_CARDS_PER_SERIES,
+  collapseSeriesRows,
+  seriesFetchLimit,
+  seriesUpcomingFloor,
+  type SeriesFields,
+} from '@/lib/events/series'
+import { circleEventVisibilities } from '@/lib/events/circle-upcoming'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { RANK_LABELS, seasonRankStyle, rankForCompletion, journeysFinishedThisSeason, SEASON_RANKS, type SeasonRank } from '@/lib/season-ranks'
@@ -30,38 +40,76 @@ function DateChip({ iso }: { iso: string }) {
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
+/** Rows the panel shows. Three, and a repeating series may only have ONE of them. */
+const EVENT_PANEL_SLOTS = 3
+
 export async function EventsPanel({ circleIds }: { circleIds: string[] }) {
   const admin = createAdminClient()
-  const now = new Date().toISOString()
-  type EventRow = { id: string; title: string; slug: string; location: string | null; starts_at: string }
+  // The floor is WALL CLOCK in the community's zone, not `new Date()`: events.starts_at stores the
+  // host's wall clock kept as UTC parts, so at 5:01pm Pacific `new Date().toISOString()` is already
+  // tomorrow and tonight's 7pm gathering drops out of the rail. One value feeds the query AND the
+  // fold, so the two can never disagree about "upcoming".
+  const floor = seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ))
+  type EventRow = SeriesFields & {
+    id: string
+    title: string
+    slug: string
+    location: string | null
+    starts_at: string
+  }
+
+  // This panel is the surface the duplication was REPORTED on: one cowork series held all three
+  // slots. Both branches therefore over-fetch (a post-query fold spends the LIMIT on rows it then
+  // discards) and collapse to one card per repeating event before slicing back to three.
+  const fetchLimit = seriesFetchLimit(EVENT_PANEL_SLOTS)
+  const fold = (raw: unknown) =>
+    collapseSeriesRows((raw ?? []) as EventRow[], {
+      upcomingFrom: floor,
+      perSeries: TEASER_CARDS_PER_SERIES,
+    }).slice(0, EVENT_PANEL_SLOTS)
 
   // The viewer's circle events first.
+  //
+  // GATE: this reads through the ADMIN client, which bypasses RLS, so the query IS the policy.
+  // It used to filter `is_cancelled` alone, which made drafts, invite-only events and
+  // staff-removed events eligible for the rail. `circleIds` is the viewer's ACTIVE memberships
+  // (components/sidebar/right-sidebar.tsx), so members-only events of THOSE circles are legitimately
+  // listable here — the same rule the Circle's own block applies, from the same one list.
   let events: EventRow[] = []
   if (circleIds.length > 0) {
     const { data: raw } = await admin
       .from('events')
-      .select('id, title, slug, location, starts_at')
+      .select(`id, title, slug, location, starts_at, ${SERIES_COLUMNS}`)
       .in('scope_id', circleIds)
       .in('scope_type', ['circle', 'group'])
+      .eq('status', 'published')
+      .in('visibility', circleEventVisibilities(true))
       .eq('is_cancelled', false)
-      .gte('starts_at', now)
+      .is('removed_at', null)
+      .gte('starts_at', floor)
       .order('starts_at', { ascending: true })
-      .limit(3)
-    events = (raw ?? []) as EventRow[]
+      .limit(fetchLimit)
+    events = fold(raw)
   }
 
   // Always-populated: if the viewer's circles have nothing coming up, surface what's
   // happening across the community so the events tile stays useful (engagement rail).
+  //
+  // This branch is UNSCOPED — every member sees the same rows — so the only safe set is what any
+  // visitor could already see: public, published, live.
   const fellBack = events.length === 0
   if (fellBack) {
     const { data: anyUpcoming } = await admin
       .from('events')
-      .select('id, title, slug, location, starts_at')
+      .select(`id, title, slug, location, starts_at, ${SERIES_COLUMNS}`)
+      .eq('status', 'published')
+      .eq('visibility', 'public')
       .eq('is_cancelled', false)
-      .gte('starts_at', now)
+      .is('removed_at', null)
+      .gte('starts_at', floor)
       .order('starts_at', { ascending: true })
-      .limit(3)
-    events = (anyUpcoming ?? []) as EventRow[]
+      .limit(fetchLimit)
+    events = fold(anyUpcoming)
   }
   if (events.length === 0) return null
 

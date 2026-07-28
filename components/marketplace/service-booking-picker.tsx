@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { bookServiceAction, sendServiceEnquiry } from '@/app/(main)/market/service-actions'
 import { buttonClasses } from '@/components/ui/button'
+import { openDockThread } from '@/lib/messages/dock-open'
 
 // The member-facing slot picker for a bookable service (Phase 4, ADR-596). Server-fetched open slots
 // (from the Space's availability calendar) rendered as buttons; a click calls bookServiceAction, which
@@ -38,7 +39,11 @@ export function ServiceBookingPicker({
         setError(res.error)
         return
       }
-      if (res.url) window.location.href = res.url
+      // The dock, not a navigation (ADR-896). A buyer mid-enquiry should keep the service
+      // they were looking at; sending them to a chat page was the behaviour the owner asked
+      // us to remove. bookServiceAction's `url` below is Stripe checkout, a different thing,
+      // and still navigates.
+      if (res.conversationId) openDockThread({ kind: 'dm', id: res.conversationId })
     })
   }
 

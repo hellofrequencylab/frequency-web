@@ -7,7 +7,10 @@ export interface MessagesSummary {
   rooms: Array<{
     id: string
     name: string
-    visibility: 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost'
+    // 'channel' was missing from this union while the inbox reads rooms with
+    // `.eq('visibility', 'channel')` (messages/page.tsx), so a channel room flowed through the
+    // dock mis-typed and its label rendered from a value the type said could not exist.
+    visibility: 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost' | 'channel'
     last_message_at: string | null
     unread: number
   }>
@@ -69,10 +72,6 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
     .select('room_id, last_read_at')
     .eq('profile_id', myProfileId)
 
-  const roomReadMap: Record<string, string | null> = {}
-  for (const m of myRoomMemberships ?? []) {
-    roomReadMap[m.room_id as string] = (m.last_read_at as string | null) ?? null
-  }
   const roomIds = (myRoomMemberships ?? []).map(m => m.room_id as string)
 
   let rooms: MessagesSummary['rooms'] = []
@@ -84,20 +83,24 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
       .order('last_message_at', { ascending: false, nullsFirst: false })
       .limit(5)
 
-    // Count unread messages per room
     const roomList = (roomsData ?? []) as Array<{ id: string; name: string; visibility: MessagesSummary['rooms'][number]['visibility']; last_message_at: string | null }>
 
-    rooms = await Promise.all(roomList.map(async r => {
-      const lastRead = roomReadMap[r.id]
-      const sinceCutoff = lastRead ?? '1970-01-01T00:00:00Z'
-      const { count } = await supabase
-        .from('room_messages')
-        .select('id', { count: 'exact', head: true })
-        .eq('room_id', r.id)
-        .neq('author_id', myProfileId)
-        .gt('created_at', sinceCutoff)
-      return { ...r, unread: count ?? 0 }
-    }))
+    // Unread per room in ONE grouped read. This used to be an N+1: a `count(*)` query per room,
+    // fired on every dock open AND warmed on every page mount by prefetchDockSummary, so the
+    // dock cost more round-trips than the whole inbox page it summarises. The inbox itself
+    // already folds this into room_unread_counts (migration 20261012000000, scoped to the
+    // caller's own memberships via auth.uid()); the dock now uses the same RPC.
+    // FAIL-SAFE: an RPC error yields 0 unread, never a broken dock.
+    const rpc = supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: unknown }>
+    const { data: unreadRows } = await (rpc('room_unread_counts', {
+      _rooms: roomList.map(r => r.id),
+    }) as Promise<{ data: Array<{ room_id: string; unread_count: number }> | null }>)
+    const unreadMap = new Map((unreadRows ?? []).map(r => [r.room_id, Number(r.unread_count) || 0]))
+
+    rooms = roomList.map(r => ({ ...r, unread: unreadMap.get(r.id) ?? 0 }))
   }
 
   // ── DMs (top 5 by recent activity) — 1:1 only (Phase B) ────────────

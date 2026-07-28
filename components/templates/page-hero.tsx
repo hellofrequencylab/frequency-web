@@ -14,6 +14,16 @@ import { HeroAdaptiveText } from './hero-adaptive-text'
 //                header for Journeys and personal profiles (they used to fall back to a plain band).
 //   • minimal  — cover + scrim only (no overlaid copy), for surfaces that genuinely want a quiet band.
 //
+// FIRST PAINT, stated plainly because it is the part most easily got wrong (ADR-894):
+// the SERVER renders every zone UNMEASURED — no `data-media-tone`, no `data-media-plate` — and
+// the CSS answers that with the per-glyph halo and NO plate, i.e. the known-good pre-ADR-830
+// baseline. It deliberately does not guess: `--color-on-media` defaults to the LIGHT copy, so an
+// "unmeasured" state that kept that default and added a plate would still be a tone guess, and on
+// a bright cover it composites light-on-light at about 1.13:1 — the exact read the owner
+// photographed, wearing a plate. The sensor corrects it on the first frame after hydration, and
+// again on any cover / focus / overlay / theme change and on a debounced resize. A caller that
+// already KNOWS the answer can skip the correction entirely by passing `initialZoneTones`.
+//
 // TOKENS ONLY (no hardcoded hex): the scrim is a `var(--color-ink)` color-mix, the eyebrow is
 // `text-primary`, the title/subtitle are `text-on-ink`. `amber-glow` / `light-strip` / `font-display`
 // are house utilities from globals.css. Presentational + server-friendly (no hooks), so it renders in a
@@ -65,9 +75,25 @@ export interface PageHeroProps {
    *  sample the cover pixels behind the lockup (factoring the overlay mode/color) to pick light
    *  or dark copy — the on-media token pair — with a subtle token scrim only when even the
    *  better tone misses the readability floor. Wired on the profile header; Space/event heroes
-   *  can opt in with this one prop. Default off (the shipped halo treatment). */
+   *  can opt in with this one prop. Default off (the shipped halo treatment).
+   *
+   *  PER ZONE since ADR-894: with this on, the lockup and the action cluster each carry
+   *  `data-hero-zone` and resolve their OWN tone and their OWN plate rung, because one photo can
+   *  be dark under the name and bright under the buttons. */
   adaptiveText?: boolean
+  /** Accessible name for the on-cover action cluster, so a screen reader announces it as
+   *  something other than an unlabelled run of buttons. Sentence case, e.g. "Profile actions". */
+  actionsLabel?: string
+  /** Server-known tone/plate per zone, stamped straight onto the zone divs so the FIRST paint
+   *  is already right instead of flashing a guess. OMIT for "not measured" — which is the honest
+   *  default and what every caller passes today (see the first-paint note in the file header).
+   *  Read only when `adaptiveText` is on. */
+  initialZoneTones?: Partial<Record<HeroZoneName, { tone: 'dark' | 'light'; plate: 0 | 1 | 2 | 3 }>>
 }
+
+/** The text zones an adaptive hero resolves independently. `lockup` is the eyebrow + title +
+ *  subtitle stack; `actions` is the on-cover control cluster. */
+export type HeroZoneName = 'lockup' | 'actions'
 
 // The overlay gradients, parameterized by color (tokens by default) so they theme + dark-mode. `shadow`
 // is the darker-top/bottom scrim (identity variant lightens the top so the bottom lockup reads); `fade`
@@ -87,6 +113,35 @@ function fadeScrim(color: string): string {
 export const HERO_ACTION_CLASS =
   'inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/40 bg-white/10 px-3 py-1.5 text-sm font-semibold text-on-ink backdrop-blur-sm transition-colors hover:bg-white/20'
 
+/** The header-action button style for an ADAPTIVE hero (`adaptiveText`). Same geometry as
+ *  HERO_ACTION_CLASS, but its border, glass and text colour all derive from the ZONE's
+ *  `--color-on-media` via `.hero-chip` in globals.css — so a chip cluster sitting on the bright
+ *  half of a cover goes dark while the name on the dark half stays light. HERO_ACTION_CLASS is
+ *  fixed white-on-glass and cannot do that, which is why this is a SECOND constant rather than an
+ *  edit: seven non-profile heroes depend on that one byte for byte, and a test names it.
+ *  Use this for any button in the `actions` slot of a hero with `adaptiveText` on. */
+export const HERO_ACTION_CLASS_ADAPTIVE =
+  'hero-chip inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors'
+
+/** The data attributes that make an element a resolvable text zone. Returns nothing at all when
+ *  the hero is not adaptive (so a non-adaptive hero's DOM is byte-identical to before) and, when
+ *  it is, emits `data-media-tone` / `data-media-plate` ONLY if the caller supplied a measurement.
+ *  An absent attribute is the signal for "unmeasured" that the CSS keys its safe baseline on, so
+ *  it must never be filled with a placeholder. */
+function zoneProps(
+  name: HeroZoneName,
+  adaptiveText: boolean,
+  initial: PageHeroProps['initialZoneTones'],
+): Record<string, string | undefined> {
+  if (!adaptiveText) return {}
+  const measured = initial?.[name]
+  return {
+    'data-hero-zone': name,
+    'data-media-tone': measured?.tone,
+    'data-media-plate': measured ? String(measured.plate) : undefined,
+  }
+}
+
 export function PageHero({
   coverImage,
   coverFocus,
@@ -104,6 +159,8 @@ export function PageHero({
   overlayStyle,
   overlayColor,
   adaptiveText = false,
+  actionsLabel,
+  initialZoneTones,
 }: PageHeroProps) {
   const focalStyle = coverFocus ? { objectPosition: coverFocus } : undefined
   const dim = dimmed ? ' dimmed' : ''
@@ -138,9 +195,13 @@ export function PageHero({
       {coverImage ? (
         rawImg ? (
           // eslint-disable-next-line @next/next/no-img-element -- arbitrary operator host, next/image can't allowlist it
-          <img src={coverImage} alt="" fetchPriority="high" style={focalStyle} className={`absolute inset-0 h-full w-full object-cover${dim}`} />
+          <img src={coverImage} alt="" data-hero-cover="" fetchPriority="high" style={focalStyle} className={`absolute inset-0 h-full w-full object-cover${dim}`} />
         ) : (
-          <Image src={coverImage} alt="" fill sizes="100vw" preload style={focalStyle} className={`object-cover${dim}`} />
+          // `data-hero-cover` is how the sensor finds THE COVER rather than "the first image in
+          // the section". With no cover this branch does not render at all and the `leading`
+          // slot's avatar becomes the only <img> here, so a bare querySelector('img') would
+          // resolve the header's tone from the member's own face.
+          <Image src={coverImage} alt="" fill sizes="100vw" preload data-hero-cover="" style={focalStyle} className={`object-cover${dim}`} />
         )
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg" aria-hidden />
@@ -172,8 +233,11 @@ export function PageHero({
               bottom-RIGHT, both over the cover. Stats/meta live BELOW in the DetailTemplate band. */}
           <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
             <div className="flex min-w-0 items-end gap-3">
+              {/* The avatar sits OUTSIDE the lockup zone on purpose. A rounded plate painted
+                  behind an 80px circle is a visible artefact, and the avatar's own pixels are not
+                  behind any glyph — including them would drag the statistic toward a face. */}
               {leading && <span className="shrink-0">{leading}</span>}
-              <div className="min-w-0">
+              <div className={`min-w-0${adaptiveText ? ' hero-zone' : ''}`} {...zoneProps('lockup', adaptiveText, initialZoneTones)}>
                 {eyebrow && (
                   <div className="mb-1.5 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary sm:text-sm">{eyebrow}</div>
                 )}
@@ -187,24 +251,51 @@ export function PageHero({
             </div>
             {/* Actions ALWAYS right-aligned: `ml-auto` pushes the cluster to the right of the row, and when
                 the row wraps (narrow), the cluster lands alone on its line and `ml-auto` keeps it right —
-                never left/centered. `justify-end` right-aligns the buttons within the cluster too. */}
-            {actions && <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">{actions}</div>}
+                never left/centered. `justify-end` right-aligns the buttons within the cluster too.
+                It is its OWN zone: on a split cover the chips routinely sit on the opposite half
+                from the name and need the opposite tone. */}
+            {actions && (
+              <div
+                role={adaptiveText ? 'group' : undefined}
+                aria-label={adaptiveText ? (actionsLabel ?? 'Header actions') : undefined}
+                className={`ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2${adaptiveText ? ' hero-zone' : ''}`}
+                {...zoneProps('actions', adaptiveText, initialZoneTones)}
+              >
+                {actions}
+              </div>
+            )}
           </div>
         </div>
       ) : (
         // Overlay (default): centered content, fixed min-height so every hero is the same size.
         <div className={`relative z-10 mx-auto flex ${HEADER_MIN_H[resolvedSize]} max-w-3xl flex-col items-center justify-center px-6 py-8 text-center sm:py-12${legible}`}>
-          {eyebrow && (
-            <p className="mb-3 text-sm font-bold uppercase tracking-[0.25em] text-primary sm:mb-4">{eyebrow}</p>
-          )}
-          <h1 className={`font-display uppercase leading-[0.95] text-balance ${titleTone} text-[clamp(1.75rem,6vw,3.75rem)]`}>
-            {title}
-          </h1>
-          {subtitle && (
-            <p className={`mx-auto mt-3 max-w-2xl text-base leading-relaxed ${adaptiveText ? 'text-on-media/85' : fade ? 'text-text/80' : 'text-on-ink/80'} sm:mt-5 sm:text-lg`}>{subtitle}</p>
-          )}
+          {/* This branch is NOT reachable only by the directory heroes. A surface that passes
+              `variant={header.layout}` hands the choice to the operator, and an operator flipping
+              /admin/elements to `overlay` lands the adaptive profile header right here. So the
+              centered lockup and its actions carry zones too; an adaptive branch with no zone
+              would render `text-on-media` that nothing ever resolves. */}
+          <div className={adaptiveText ? 'hero-zone' : undefined} {...zoneProps('lockup', adaptiveText, initialZoneTones)}>
+            {eyebrow && (
+              <p className="mb-3 text-sm font-bold uppercase tracking-[0.25em] text-primary sm:mb-4">{eyebrow}</p>
+            )}
+            <h1 className={`font-display uppercase leading-[0.95] text-balance ${titleTone} text-[clamp(1.75rem,6vw,3.75rem)]`}>
+              {title}
+            </h1>
+            {subtitle && (
+              <p className={`mx-auto mt-3 max-w-2xl text-base leading-relaxed ${adaptiveText ? 'text-on-media/85' : fade ? 'text-text/80' : 'text-on-ink/80'} sm:mt-5 sm:text-lg`}>{subtitle}</p>
+            )}
+          </div>
           {search && <div className="mt-4 w-full max-w-lg sm:mt-6">{search}</div>}
-          {actions && <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:mt-6 sm:gap-3">{actions}</div>}
+          {actions && (
+            <div
+              role={adaptiveText ? 'group' : undefined}
+              aria-label={adaptiveText ? (actionsLabel ?? 'Header actions') : undefined}
+              className={`mt-4 flex flex-wrap items-center justify-center gap-2 sm:mt-6 sm:gap-3${adaptiveText ? ' hero-zone' : ''}`}
+              {...zoneProps('actions', adaptiveText, initialZoneTones)}
+            >
+              {actions}
+            </div>
+          )}
         </div>
       )}
       <div className="light-strip absolute inset-x-0 bottom-0 z-10" aria-hidden />

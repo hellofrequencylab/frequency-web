@@ -233,6 +233,35 @@ export const veraBreakerArmedFlag = cache(async (): Promise<boolean> => {
   }
 })
 
+// Chat consolidation (ADR-896, platform_flags.chat_dm_routes_retired) — when TRUE the full-page
+// DM route stops rendering and hands the conversation to the chat dock instead. The owner's ask
+// was blunt: "All chats happen in the pop up on the lower right… that page should not exist."
+//
+// A FLAG rather than a deleted route, and rather than a next.config.ts redirect, for three
+// reasons. (1) A config redirect is evaluated before routing and cannot read a database row, so
+// it is only revertible by a deploy. (2) /messages/* is registered as an iOS universal-link path
+// in public/.well-known/apple-app-site-association, so the route must keep EXISTING and answer;
+// a render-time redirect does that, a deleted file does not. (3) The dock is not yet at parity
+// with the page for legacy GROUP conversations (rename / leave / roster), so this ships OFF and
+// the owner flips it once those land and they have seen the dock carry real traffic.
+//
+// Defaults FALSE on a missing row OR any read error. That direction is not a coin toss: a
+// transient DB hiccup must never be able to make a member's messages unreachable, and "the old
+// page still works" is the safe failure. Cached per request.
+export const chatDmRoutesRetiredFlag = cache(async (): Promise<boolean> => {
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('platform_flags')
+      .select('value')
+      .eq('key', 'chat_dm_routes_retired')
+      .maybeSingle()
+    return data?.value ?? false
+  } catch {
+    return false
+  }
+})
+
 export interface FlagEvent {
   id: string
   flagKey: string

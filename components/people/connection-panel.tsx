@@ -1,5 +1,5 @@
 import { Sparkles, MapPin, Globe, CalendarDays, Users, Clock, MessageSquare } from 'lucide-react'
-import { startConversation } from '@/app/(main)/messages/actions'
+import { MessageMemberButton } from '@/components/messages/message-member-button'
 import { getMyOrbit, ORBIT_LABEL, resonanceContext, type OrbitMember } from '@/lib/connections/resonance'
 import { getConnectionSettings } from '@/lib/connections/connection-settings'
 import { relativeTime } from '@/lib/utils'
@@ -92,15 +92,18 @@ export async function ConnectionPanel({
             <p className="mb-2 flex items-center gap-1.5 text-2xs text-subtle">
               <Clock className="h-3.5 w-3.5" /> It’s been a while. Say hi?
             </p>
-            <form action={startConversation.bind(null, profileId)}>
-              <button
-                type="submit"
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-on-primary transition-colors hover:bg-primary-hover"
-              >
-                <MessageSquare className="h-3.5 w-3.5" />
-                Reconnect with {firstName}
-              </button>
-            </form>
+            {/* Opens the chat dock in place (ADR-896). It used to submit a navigating form,
+                which threw the member onto /messages/<id> and cost them their place on this
+                profile — the exact behaviour the owner reported. */}
+            <MessageMemberButton
+              profileId={profileId}
+              threadTitle={firstName}
+              wrapperClassName="w-full"
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-on-primary transition-colors hover:bg-primary-hover"
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              Reconnect with {firstName}
+            </MessageMemberButton>
           </div>
         )}
       </section>

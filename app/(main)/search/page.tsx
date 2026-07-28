@@ -13,6 +13,15 @@ import { getViewerHats } from '@/lib/core/viewer-hats'
 import { accessTo } from '@/lib/core/access-matrix'
 import { matchDestinations } from '@/lib/search/destinations'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { HOME_TZ, dayInZone } from '@/lib/time/zone'
+import {
+  SERIES_COLUMNS,
+  TEASER_CARDS_PER_SERIES,
+  collapseSeriesAroundFloor,
+  seriesFetchLimit,
+  seriesUpcomingFloor,
+  type SeriesFields,
+} from '@/lib/events/series'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -33,7 +42,7 @@ type PostRow = {
   author: { display_name: string; handle: string; avatar_url: string | null; community_role: string } | null
 }
 
-type EventRow = {
+type EventRow = SeriesFields & {
   id: string
   title: string
   slug: string
@@ -43,6 +52,9 @@ type EventRow = {
   is_demo: boolean
   host: { display_name: string; handle: string } | null
 }
+
+/** Event results the tab shows, counting REPEATING EVENTS rather than dates. */
+const EVENT_RESULTS = 20
 
 const TABS = ['people', 'posts', 'events'] as const
 type Tab = (typeof TABS)[number]
@@ -127,19 +139,46 @@ export default async function SearchPage({
       }
 
       // tab === 'events' (rawTab is validated to one of TABS at the top)
-      const { data } = await admin
-        .from('events')
-        .select(
-          `id, title, slug, starts_at, location, is_cancelled, is_demo,
-           host:profiles!host_id ( display_name, handle )`
-        )
-        .or(`title.ilike.%${safe}%,description.ilike.%${safe}%`)
-        .eq('status', 'published')
-        .eq('visibility', 'public')
-        .eq('is_cancelled', false)
-        .order('starts_at', { ascending: true })
-        .limit(20)
-      return { ...empty, events: (data ?? []) as unknown as EventRow[] }
+      //
+      // TWO READS, AROUND THE FLOOR. This tab had no date predicate and ordered ascending, so its
+      // window was the OLDEST twenty matching rows from the beginning of time. Folding that single
+      // window would elect a series' very first date ever, which is a worse bug than the
+      // duplication. Splitting it lets a running series lead with its NEXT date while a finished
+      // one still answers with its LAST.
+      //
+      // A FACTORY, never one shared builder: PostgrestFilterBuilder mutates `this` and returns
+      // `this`, and .order() concatenates, so calling .gte() on one instance and .lt() on the same
+      // instance fires a single request carrying BOTH predicates and a doubled order — twice, and
+      // it matches nothing.
+      const eventsBase = () =>
+        admin
+          .from('events')
+          .select(
+            `id, title, slug, starts_at, location, is_cancelled, is_demo, ${SERIES_COLUMNS},
+             host:profiles!host_id ( display_name, handle )`
+          )
+          .or(`title.ilike.%${safe}%,description.ilike.%${safe}%`)
+          .eq('status', 'published')
+          .eq('visibility', 'public')
+          .eq('is_cancelled', false)
+
+      const floor = seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ))
+      const fetchLimit = seriesFetchLimit(EVENT_RESULTS)
+      const [upcoming, past] = await Promise.all([
+        eventsBase().gte('starts_at', floor).order('starts_at', { ascending: true }).limit(fetchLimit),
+        // NEWEST first, so the window below the floor is the most RECENT past dates rather than a
+        // series' opening months. (The fold then elects the latest of them; the two together are
+        // what stop a search for a long-running cowork answering with a date from years ago.)
+        eventsBase().lt('starts_at', floor).order('starts_at', { ascending: false }).limit(fetchLimit),
+      ])
+
+      const events = collapseSeriesAroundFloor(
+        (upcoming.data ?? []) as unknown as EventRow[],
+        (past.data ?? []) as unknown as EventRow[],
+        EVENT_RESULTS,
+        { upcomingFrom: floor, perSeries: TEASER_CARDS_PER_SERIES },
+      )
+      return { ...empty, events }
     })()
 
   // getViewerHats does its own auth read internally; fired here it overlaps the getUser() below.

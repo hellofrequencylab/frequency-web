@@ -17,6 +17,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distanceKm } from '@/lib/distance'
+import { seriesKey } from '@/lib/events/series'
 
 // ── Hybrid weights (exported so the UI/tests can reason about the blend) ───────
 export const INTEREST_WEIGHT = 0.45 // α — semantic interest match
@@ -80,6 +81,8 @@ type EventRow = {
   scope_id: string
   scope_type: string
   is_cancelled: boolean
+  /** ADR-897: null on an anchor / one-off, the anchor's id on an occurrence. */
+  parent_event_id?: string | null
 }
 
 /**
@@ -104,7 +107,7 @@ export async function scoreEventsForViewer(
   if (eventIds && eventIds.length > 0) {
     const { data } = await client
       .from('events')
-      .select('id, starts_at, scope_id, scope_type, is_cancelled')
+      .select('id, starts_at, scope_id, scope_type, is_cancelled, parent_event_id')
       .in('id', eventIds)
       .eq('is_cancelled', false)
       .gte('starts_at', nowIso)
@@ -120,7 +123,7 @@ export async function scoreEventsForViewer(
     if (circleIds.length === 0) return []
     const { data } = await client
       .from('events')
-      .select('id, starts_at, scope_id, scope_type, is_cancelled')
+      .select('id, starts_at, scope_id, scope_type, is_cancelled, parent_event_id')
       .in('scope_id', circleIds)
       .eq('is_cancelled', false)
       .gte('starts_at', nowIso)
@@ -133,15 +136,38 @@ export async function scoreEventsForViewer(
   const ids = events.map((e) => e.id)
 
   // ── interest: viewer embedding × event embeddings ──────────────────────────
+  // ADR-897 E1. Every occurrence of a series has BYTE-IDENTICAL embedding source text —
+  // buildEventText is title + description + category + energy_tag, with no date in it — so the index
+  // is about to carry ONE vector per series, stored on the anchor id, instead of ~61 copies for a
+  // daily one. This lookup therefore asks for the row's own id AND its series key, and falls back to
+  // the series key's vector when the occurrence has none of its own.
+  //
+  // 🔴 ORDER MATTERS: this fan-out must ship, deploy and be verified BEFORE the backfill narrows to
+  // anchors. The other order is silent — every occurrence's interest score drops to zero with no
+  // error and no log, and the blend just quietly loses 45% of its signal.
+  const keys = new Set<string>(ids)
+  const keyForRow = new Map<string, string>()
+  for (const e of events) {
+    const key = seriesKey(e)
+    keyForRow.set(e.id, key)
+    keys.add(key)
+  }
   const [{ data: meRow }, { data: embRows }] = await Promise.all([
     client.from('profiles').select('embedding, home_lat, home_lng').eq('id', profileId).maybeSingle(),
-    client.from('event_embeddings').select('event_id, embedding').in('event_id', ids),
+    client.from('event_embeddings').select('event_id, embedding').in('event_id', [...keys]),
   ])
   const viewerVec = parseVector((meRow as { embedding?: unknown } | null)?.embedding)
-  const eventVec: Record<string, number[]> = {}
+  const byKey: Record<string, number[]> = {}
   for (const r of (embRows ?? []) as { event_id: string; embedding: unknown }[]) {
     const v = parseVector(r.embedding)
-    if (v) eventVec[r.event_id] = v
+    if (v) byKey[r.event_id] = v
+  }
+  // Fan back out to the row ids the scorer works in. The row's own vector wins while both exist, so
+  // this is behaviour-identical today and correct after the backfill narrows.
+  const eventVec: Record<string, number[]> = {}
+  for (const e of events) {
+    const own = byKey[e.id] ?? byKey[keyForRow.get(e.id) ?? e.id]
+    if (own) eventVec[e.id] = own
   }
 
   // ── social: circle-mates + connections who are 'going' ─────────────────────

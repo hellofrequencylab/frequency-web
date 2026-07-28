@@ -29,9 +29,15 @@ describe('the Channel upcoming strip cannot widen past what a visitor may see', 
     expect(src).toContain(".eq('visibility', 'public')")
   })
 
-  it('still excludes cancelled events and anything already started', () => {
+  it('still excludes cancelled events and anything before today', () => {
     expect(src).toContain(".eq('is_cancelled', false)")
-    expect(src).toContain(".gte('starts_at', now)")
+    // The floor moved from a raw instant to midnight TODAY in the community's zone (ADR-897), and
+    // that is the fix, not a widening: starts_at is the host's wall clock kept as UTC parts, so
+    // `new Date().toISOString()` is already tomorrow by 5pm Pacific and dropped tonight's gathering
+    // off the strip. The same string floors the query and the fold, so they cannot disagree.
+    expect(src).toContain(".gte('starts_at', floor)")
+    expect(src).toContain('seriesUpcomingFloor(dayInZone(')
+    expect(src).not.toContain(".gte('starts_at', new Date().toISOString())")
   })
 
   it('does not reach for the viewer-aware visibilities this surface cannot authorize', () => {

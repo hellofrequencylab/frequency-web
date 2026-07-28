@@ -7,6 +7,7 @@ import { buildMemberDetail } from '@/lib/crm/member-detail'
 import { listEventCrmMemberIds } from '@/lib/events/crm-roster'
 import { loadEventCrmAccess, eventCrmLockedError } from '@/lib/events/crm-access'
 import { openScopedDm } from '@/lib/messages/scoped-dm'
+import { dmThreadHref } from '@/lib/messages/dm-destination'
 import { fail, type ActionResult } from '@/lib/action-result'
 import type { CrmMemberDetail } from '@/components/people/member-viewer'
 
@@ -73,5 +74,8 @@ export async function openEventAttendeeDm(slug: string, profileId: string): Prom
     return fail(err instanceof Error ? err.message : 'Something went wrong. Try again.')
   }
   // redirect throws NEXT_REDIRECT, so it sits outside the try/catch (Next server-action rule).
-  redirect(`/messages/${conversationId}`)
+  // Flag-aware destination (ADR-896): with the DM route retired this lands the operator in
+  // the chat dock in ONE hop instead of bouncing off a redirecting page. Flag off (today's
+  // default) it returns the identical /messages/<id> string this line used to hardcode.
+  redirect(await dmThreadHref(conversationId))
 }
