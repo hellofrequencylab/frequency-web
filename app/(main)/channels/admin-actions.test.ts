@@ -61,6 +61,10 @@ vi.mock('@/lib/supabase/admin', () => ({
         },
       }),
     }),
+    rpc: async (fn: string, args: Record<string, unknown>) => {
+      deleteSpy({ rpc: fn, args })
+      return { error: deleteError() }
+    },
   }),
 }))
 
@@ -375,9 +379,17 @@ describe('saveChannelEdits writes the whole record in one commit', () => {
 })
 
 describe('deleteChannel', () => {
-  it('deletes the row by id and revalidates the Channel and the directory', async () => {
+  // NOT a bare table delete. A Channel owns an open room and a forum through POLYMORPHIC scope
+  // columns that carry no FK, so a `.delete()` on the row would strand both (a live room still
+  // postable by anyone with the link, pointing at a Channel that no longer exists). The RPC does
+  // the whole thing in one transaction; asserting on the RPC is asserting we did not regress to
+  // the orphan-making version.
+  it('goes through the atomic RPC, not a bare table delete, and revalidates both handles', async () => {
     expect(await deleteChannel(CHANNEL, 'meld')).toEqual({})
-    expect(deleteSpy).toHaveBeenCalledWith({ table: 'topical_channels', col: 'id', val: CHANNEL })
+    expect(deleteSpy).toHaveBeenCalledWith({
+      rpc: 'delete_topical_channel',
+      args: { p_channel_id: CHANNEL },
+    })
     const paths = revalidatePath.mock.calls.map((c) => c[0])
     expect(paths).toContain('/channels/meld')
     expect(paths).toContain('/channels')

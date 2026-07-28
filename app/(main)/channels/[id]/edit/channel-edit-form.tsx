@@ -221,7 +221,9 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
           <Button type="submit" disabled={pending}>
             {pending ? 'Saving…' : 'Save changes'}
           </Button>
-          <Button asChild variant="secondary" type="button">
+          {/* No `type` here: asChild renders the Link, and a `type` attribute on an anchor is
+              meaningless. It is outside the form's submit path either way. */}
+          <Button asChild variant="secondary">
             <Link href={`/channels/${channel.slug}`}>Cancel</Link>
           </Button>
         </div>

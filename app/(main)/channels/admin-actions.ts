@@ -100,6 +100,11 @@ type UntypedUpdate = {
   }
 }
 
+/** Same seam for the delete RPC, which post-dates the generated types. */
+type UntypedRpc = {
+  rpc: (fn: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>
+}
+
 /**
  * Patch a topical channel's curated fields in place. Staff (admin+) only.
  *
@@ -241,18 +246,27 @@ export async function saveChannelEdits(
 }
 
 /**
- * Delete a Channel outright. Staff (admin+) only.
+ * Delete a Channel outright, through the `delete_topical_channel` RPC. Staff (admin+) only.
  *
- * What goes with it is decided by the schema, not by this action: memberships and the room/taxonomy
- * rows cascade, while `circles.topical_channel_id` is ON DELETE SET NULL, so every Circle that
- * practiced here SURVIVES and simply stops belonging to a Channel. That is the whole reason the
- * editor still offers Archive as the softer option, and why the copy says so before the click.
+ * NOT a bare `.delete()` on the table, and that is the whole point. Only two things hold a foreign
+ * key to `topical_channels`: memberships (CASCADE) and `circles.topical_channel_id` (SET NULL, so a
+ * Circle outlives the Channel it practiced and simply stops belonging to one). A Channel owns two
+ * MORE things through polymorphic scope columns that carry no FK and therefore cannot cascade:
+ *   • its open room  — rooms WHERE visibility = 'channel' AND scope_id = <channel id>
+ *   • its forum      — posts WHERE scope_id = <channel id>
+ * Deleting the row alone would strand both: a live room still postable by anyone holding the link,
+ * still listed in the Messages of everyone who joined it, pointing at a Channel that no longer
+ * exists. Three sequential PostgREST deletes cannot fix that either, since each gets its own
+ * transaction and a failure part-way leaves exactly the orphan we are trying to avoid. The RPC does
+ * all of it in one transaction, and re-checks staff itself (it is SECURITY DEFINER).
  */
 export async function deleteChannel(id: string, slug: string): Promise<{ error?: string }> {
   if (!(await isChannelManager())) return { error: 'Unauthorized' }
 
   const admin = createAdminClient()
-  const { error } = await admin.from('topical_channels').delete().eq('id', id)
+  const { error } = await (admin as unknown as UntypedRpc).rpc('delete_topical_channel', {
+    p_channel_id: id,
+  })
   if (error) return { error: error.message }
 
   revalidateChannel(id, slug)
