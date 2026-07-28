@@ -41,8 +41,8 @@ The platform-curated Channels are:
 
 Some Channels run a **Program**: a community model with a blueprint anyone can start locally. Each local group is a **Chapter**, a regular Circle that runs the Program's model in its own city.
 
-- On a Program's Channel page you'll see **Chapters of the Program** instead of a plain Circle list. Tap **Near me** to sort them by distance.
-- **Start a Chapter** gives you a private draft built from the Program's blueprint. Shape it, then publish when you're ready. Your Chapter is a real Circle: same caps, same tools, same home in the directory.
-- Programs are run by Frequency or by a business Space on the platform. The blueprint keeps every Chapter true to the model; the people make each one its own.
+- On a Program's Channel page you'll see **Chapters of the Program** instead of a plain Circle list. Tap **Near me** to sort them by distance, or **Start a Chapter** to run one where you live.
+- Full details: [Programs and Chapters](/help/groups/programs-and-chapters).
+- Run a business Space and want a Program of your own? See [run a Program](/help/groups/run-a-program).
 
 The founding topic Channels are curated by the platform team, so that list stays focused and meaningful.
