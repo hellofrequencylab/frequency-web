@@ -16,6 +16,7 @@ import {
   VISIBILITY_VALUES,
   coerceEnergyTag,
   coerceAttendanceMode,
+  coerceVisibilityForScope,
 } from '@/lib/events/options'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
 import { validateRecurrenceUntil, type RecurrenceType } from '@/lib/events/recurrence'
@@ -249,7 +250,11 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   // events.details.rsvpWindow so the poster-harvest keys survive. Both blank clears the window.
   const opensAt = wallClockToIso(fd.get('rsvp_opens_at') as string)
   const closesAt = wallClockToIso(fd.get('rsvp_closes_at') as string)
-  const { data: currentBags } = await admin.from('events').select('details, theme').eq('id', id).maybeSingle()
+  const { data: currentBags } = await admin
+    .from('events')
+    .select('details, theme, scope_type')
+    .eq('id', id)
+    .maybeSingle()
   const baseDetails = ((currentBags as { details?: Record<string, unknown> | null } | null)?.details ?? {}) as Record<
     string,
     unknown
@@ -284,7 +289,16 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
       details: nextDetails as Json,
       ...(timeZone ? { time_zone: timeZone } : {}),
       ...(category ? { category } : {}),
-      ...(visibility ? { visibility } : {}),
+      // circle_only on a non-circle scope steps down to unlisted (ADR-883) — the same
+      // coercion createEvent/updateEvent apply, so /manage cannot strand an event either.
+      ...(visibility
+        ? {
+            visibility: coerceVisibilityForScope(
+              visibility,
+              (currentBags as { scope_type?: string | null } | null)?.scope_type,
+            ),
+          }
+        : {}),
       // Hidden address (ADR-825): written ONLY when the form carries the field (a controlled
       // hidden input, 'on'/'off'), so a form without the control can never silently reset it.
       ...(fd.get('hide_address') != null

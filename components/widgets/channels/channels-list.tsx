@@ -3,6 +3,7 @@ import {
   Radio, Users, Circle as CircleIcon,
 } from 'lucide-react'
 import { CHANNEL_CATEGORY_ICON, FALLBACK_CHANNEL_CATEGORY_ICON } from '@/lib/channels/categories'
+import { readChannelCoverFocus, channelCoverFocusStyle } from '@/lib/channels/hero'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { TuneInButton, TunedInButton } from '@/app/(main)/channels/channel-toggle'
@@ -28,6 +29,10 @@ type TopicalChannel = {
   cover_image: string | null
   display_order: number
   pillar_id: string | null
+  /** The header settings bag (ADR-886) — carries the operator's cover focal point. `theme`
+   *  post-dates lib/database.types.ts, so the row reads through unknown (ADR-246, the same seam
+   *  app/(main)/channels/admin-actions.ts uses). */
+  theme: unknown
 }
 
 type Pillar = {
@@ -65,13 +70,15 @@ export async function ChannelsList() {
       .eq('is_active', true)
       .order('display_order', { ascending: true }),
     (admin).from('topical_channels')
-      .select('id, name, slug, category, description, cover_image, display_order, pillar_id')
+      .select('id, name, slug, category, description, cover_image, display_order, pillar_id, theme')
       .eq('is_active', true)
       .order('display_order', { ascending: true }),
   ])
 
   const domains = (pillarsData ?? []) as Pillar[]
-  const channelList = (channels ?? []) as TopicalChannel[]
+  // `theme` post-dates the generated types, so the typed select narrows to a query-error union and
+  // the rows read through unknown (ADR-246, the admin-actions seam).
+  const channelList = (channels ?? []) as unknown as TopicalChannel[]
   const channelIds = channelList.map((c) => c.id)
 
   const memberCounts: Record<string, number> = {}
@@ -300,7 +307,16 @@ function ChannelCard({
       href={`/channels/${channel.slug}`}
       anchor={
         channel.cover_image ? (
-          <Image src={channel.cover_image} alt={channel.name} width={48} height={48} className="h-12 w-12 rounded-2xl object-cover" />
+          // The cropped-cover render seam (ADR-886): pair object-cover with the operator's chosen
+          // focal point, so the directory card crops the same way the Channel page hero does.
+          <Image
+            src={channel.cover_image}
+            alt={channel.name}
+            width={48}
+            height={48}
+            className="h-12 w-12 rounded-2xl object-cover"
+            style={channelCoverFocusStyle(readChannelCoverFocus(channel.theme))}
+          />
         ) : (
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
             <Icon className="h-6 w-6" />

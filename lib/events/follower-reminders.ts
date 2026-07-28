@@ -30,7 +30,7 @@
 // regenerated DB types (ADR-246 closed), so reads/writes use the typed admin client.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { HOME_TZ, zoneAbbrev, eventInstant, resolveZone } from '@/lib/time/zone'
+import { zoneAbbrev, eventInstant, resolveZone } from '@/lib/time/zone'
 import { shouldSend, wantsSpaceEventReminders } from '@/lib/notification-preferences'
 import { isSuppressed } from '@/lib/suppression'
 import { listSpaceFollowerIds } from '@/lib/spaces/follows'
@@ -73,16 +73,18 @@ function whenLabelFor(lead: ReminderLead): string {
   return 'soon'
 }
 
-function formatAbsolute(iso: string): string {
-  // starts_at holds the event's wall-clock as UTC PARTS. Render those parts as the
-  // event's own local time, then label with the community HOME zone abbrev.
+/** The email/SMS when-line: starts_at holds the event's wall-clock as UTC PARTS, so render
+ *  those parts (timeZone:'UTC') as the event's own local time, then label with the EVENT's
+ *  zone abbrev — never a fixed HOME label, which read "7:00 PM PDT" for a New York event.
+ *  Exported so the RSVP reminder cron shares one tested formatter instead of a drifting copy. */
+export function formatAbsolute(iso: string, timeZone: string | null | undefined): string {
   const d = new Date(iso)
   const base = d.toLocaleString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit',
     timeZone: 'UTC',
   }).replace(',', '').replace(' at ', ' · ')
-  const abbr = zoneAbbrev(iso, HOME_TZ)
+  const abbr = zoneAbbrev(iso, resolveZone(timeZone))
   return abbr ? `${base} ${abbr}` : base
 }
 
@@ -376,7 +378,7 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
         spaceName:          space.name,
         eventTitle:         ev.title,
         whenLabel:          whenLabelFor(lead),
-        whenAbsolute:       formatAbsolute(ev.starts_at),
+        whenAbsolute:       formatAbsolute(ev.starts_at, ev.time_zone),
         location:           ev.location,
         eventUrl:           `${appUrl}/events/${ev.slug}`,
       })

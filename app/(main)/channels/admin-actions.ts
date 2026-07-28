@@ -8,6 +8,7 @@ import { getPillars } from '@/lib/pillars'
 import { isLoomPublicImageUrl } from '@/lib/loom/urls'
 import { slugify } from '@/lib/utils'
 import { writeChannelCoverFocus, writeChannelHeroHeight } from '@/lib/channels/hero'
+import { isChannelCategory } from '@/lib/channels/categories'
 
 // In-place "Channel settings" admin module (EMBEDDED-ADMIN.md / ADR-133, PX.5). Topical channels are
 // PLATFORM-CURATED — there is no per-channel host, so both the read and every write gate on staff
@@ -140,7 +141,16 @@ export async function updateChannelSettings(id: string, slug: string, fd: FormDa
     if (!name) throw new Error('Name is required')
     patch.name = name
   }
-  if (fd.has('category')) patch.category = text('category') || 'general'
+  if (fd.has('category')) {
+    // The vocabulary is CLOSED on the write side, same as the create action — but an update
+    // cannot refuse the way create does. The drawer surfaces a legacy off-list value as a marked
+    // <option> and autosaves the WHOLE form, so an off-list (or empty) submission means "the
+    // operator did not pick a new category". SKIP the field — leave the stored value untouched —
+    // never write it and never throw (a throw would bounce the entire autosave snapshot over an
+    // unrelated edit). This is the ADR-879 preservation rule applied to the write side.
+    const category = text('category')
+    if (isChannelCategory(category)) patch.category = category
+  }
   if (fd.has('description')) patch.description = text('description') || null
   if (fd.has('pillar_id')) patch.pillar_id = text('pillar_id') || null
   if (fd.has('is_active')) patch.is_active = fd.get('is_active') === 'on'
@@ -243,11 +253,18 @@ export async function saveChannelEdits(
     name,
     slug: nextSlug,
     description: text('description') || null,
-    category: text('category') || 'general',
     pillar_id: text('pillar_id') || null,
     display_order: Number.isFinite(order) ? order : 0,
     is_active: fd.get('is_active') === 'on',
   }
+
+  // Category is the ONE exception to "the editor writes the whole record": the vocabulary is
+  // closed (lib/channels/categories.ts) and an off-list stored value is preserved, never
+  // rewritten (ADR-879). The editor surfaces a legacy off-list value as a marked <option>, so an
+  // off-list (or empty) submission is that legacy value coming back around — SKIP the field and
+  // leave the stored value alone rather than writing it or failing the whole save.
+  const category = text('category')
+  if (isChannelCategory(category)) patch.category = category
 
   const { error } = await (admin as unknown as UntypedUpdate)
     .from('topical_channels')

@@ -200,13 +200,35 @@ describe('the fields ADR-879 added', () => {
     expect(patch()).toEqual({ display_order: 0 })
   })
 
-  it('writes the category verbatim, so an off-list legacy value is preserved when re-saved', async () => {
+  it('writes an on-list category, and SKIPS an off-list one so the stored value is never rewritten', async () => {
     await updateChannelSettings(CHANNEL, 'meld', form({ category: 'creative' }))
     expect(patch()).toEqual({ category: 'creative' })
 
+    // 'general' is off-list BY DESIGN (ADR-879: the old free-text default). The drawer surfaces a
+    // stored off-list value as a marked <option> and autosaves the whole form, so this submission
+    // is that legacy value coming back around, not an operator choice. The old behavior wrote it
+    // verbatim (and defaulted empty to 'general'), which let arbitrary text past the closed
+    // vocabulary the CREATE action enforces. The right move is to SKIP the field — not throw
+    // (that would bounce the whole autosave over an unrelated edit) and not write — leaving the
+    // stored value exactly as it was: preservation, on the write side.
     updateSpy.mockClear()
+    revalidatePath.mockClear()
     await updateChannelSettings(CHANNEL, 'meld', form({ category: 'general' }))
-    expect(patch()).toEqual({ category: 'general' })
+    expect(updateSpy).not.toHaveBeenCalled() // category was the only field → nothing to write
+    expect(revalidatePath).not.toHaveBeenCalled()
+  })
+
+  it('an EMPTY category submission leaves the stored value alone (no more silent "general" default)', async () => {
+    // Before this change an empty submission wrote 'general' — an off-list value — into the row.
+    // Empty now reads as "not chosen": the field is skipped and the stored category survives.
+    await updateChannelSettings(CHANNEL, 'meld', form({ category: '' }))
+    expect(updateSpy).not.toHaveBeenCalled()
+    expect(revalidatePath).not.toHaveBeenCalled()
+  })
+
+  it('an off-list category submitted ALONGSIDE a real edit is skipped, not fatal — the rest still saves', async () => {
+    await updateChannelSettings(CHANNEL, 'meld', form({ category: 'wellness', description: 'A calmer feed.' }))
+    expect(patch()).toEqual({ description: 'A calmer feed.' })
   })
 
   it('archives and restores through the on/off visibility control', async () => {
@@ -303,6 +325,20 @@ describe('saveChannelEdits writes the whole record in one commit', () => {
       display_order: 3,
       is_active: true,
     })
+  })
+
+  it('skips an off-list category rather than writing or throwing, while the rest of the record saves', async () => {
+    // The editor always renders every field, but category is the ONE deliberate exception to
+    // "a blanked field means clear it": the vocabulary is closed and an off-list stored value is
+    // preserved, never rewritten (ADR-879). The editor surfaces a legacy off-list value as a
+    // marked <option>, so submitting it back (or submitting empty) means "no new pick" — the
+    // field is left unchanged in the row, and the save must not fail over it.
+    const fd = full()
+    fd.set('category', 'general') // off-list by design (the old free-text default)
+    const res = await saveChannelEdits(CHANNEL, 'meld-community-cowork', fd)
+    expect(res).toEqual({ slug: 'meld-community-cowork' })
+    expect(patch()).not.toHaveProperty('category')
+    expect(patch()).toMatchObject({ name: 'Meld Community Cowork', is_active: true })
   })
 
   it('a cleared description is written as null, not skipped', async () => {

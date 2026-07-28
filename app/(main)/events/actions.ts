@@ -23,6 +23,7 @@ import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
 import { stampEventSpaceId } from '@/lib/events/store'
 import { spaceIdForCircle } from '@/lib/circles/store'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
+import { coerceVisibilityForScope } from '@/lib/events/options'
 import { HOME_TZ, isValidTimeZone, isEventPast, zoneAbbrev, resolveZone } from '@/lib/time/zone'
 import { embedEvent } from '@/lib/events/embeddings'
 import { saveEventLocation, type AttendanceMode } from '@/lib/events/geocode'
@@ -194,9 +195,10 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
 
   const visibilityRaw = (formData.get('visibility') as string | null) || 'circle_only'
   let visibility = VALID_VISIBILITY.includes(visibilityRaw) ? visibilityRaw : 'circle_only'
-  // Only a circle event has a circle to scope to — a public OR space event can't be circle_only,
-  // so fall those back to public.
-  if (scopeChoice !== 'circle' && visibility === 'circle_only') visibility = 'public'
+  // Only a circle event has a circle to scope to — a public OR space event can't be circle_only.
+  // Step DOWN to unlisted, never up to public (ADR-883: a host who picked the narrow option
+  // never gets broadcast instead). Same rule as updateEvent, via the one shared helper.
+  visibility = coerceVisibilityForScope(visibility, scopeType)
 
   const category = (formData.get('category') as string | null)?.trim() || 'gathering'
 
@@ -463,7 +465,11 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   const capacity = Number.isFinite(capacityParsed) && capacityParsed > 0 ? capacityParsed : null
 
   const visibilityRaw = (formData.get('visibility') as string | null) || 'circle_only'
-  const visibility = VALID_VISIBILITY.includes(visibilityRaw) ? visibilityRaw : 'circle_only'
+  // Validated here, COERCED below once the row's scope_type is in hand: circle_only on a
+  // non-circle scope steps down to unlisted (ADR-883), exactly like createEvent. Without the
+  // coercion an edit that picked "My circle" on a public-scoped event made it readable by its
+  // host alone (the RLS circle_only branch only matches circle scopes) while staying link-open.
+  const visibilityRequested = VALID_VISIBILITY.includes(visibilityRaw) ? visibilityRaw : 'circle_only'
   const category = (formData.get('category') as string | null)?.trim() || 'gathering'
   const energyRaw = (formData.get('energyTag') as string | null) || ''
   const energyTag = VALID_ENERGY.includes(energyRaw) ? energyRaw : null
@@ -497,14 +503,19 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   const admin = createAdminClient()
   const { data: ev } = await admin
     .from('events')
-    .select('slug, parent_event_id, details')
+    .select('slug, parent_event_id, details, scope_type')
     .eq('id', eventId)
     .maybeSingle()
-  const evRow = ev as { slug: string; parent_event_id: string | null; details: unknown } | null
+  const evRow = ev as {
+    slug: string; parent_event_id: string | null; details: unknown; scope_type: string | null
+  } | null
   const slug = evRow?.slug
   if (!slug) return fail('This event could not be found.')
   // Recurrence is an anchor-only concern (a child occurrence cannot itself recur).
   const isAnchor = !evRow?.parent_event_id
+  // The scope is fixed on edit, so the row's own scope_type is the authority the
+  // visibility coercion (ADR-883 step-down) keys on.
+  const visibility = coerceVisibilityForScope(visibilityRequested, evRow?.scope_type)
 
   // Merge the note into whatever details the event already carries (object only; anything else
   // resets to a fresh object). Only computed when a note was actually submitted.
@@ -640,7 +651,7 @@ async function sendRsvpConfirmation(
 
   // The SMS leg is independent of the email leg (a member may want one and not the
   // other), so it runs in its own gated, self-contained try/catch below.
-  void sendRsvpConfirmationSms(eventId, profileId, status, ev.title, ev.starts_at)
+  void sendRsvpConfirmationSms(eventId, profileId, status, ev.title, ev.starts_at, evTz)
 
   try {
     if (!(await shouldSend(profileId, 'email', 'events'))) return
@@ -703,6 +714,7 @@ async function sendRsvpConfirmationSms(
   status: 'going' | 'waitlist',
   eventTitle: string,
   startsAt: string,
+  eventTimeZone: string,
 ): Promise<void> {
   try {
     const admin = createAdminClient()
@@ -714,7 +726,9 @@ async function sendRsvpConfirmationSms(
       .maybeSingle()
     const timeZone = (profile as { home_timezone?: string | null } | null)?.home_timezone ?? null
 
-    const when = formatEventWhen(startsAt)
+    // The event's OWN zone labels the when-line (a New York event must never read "PDT");
+    // `timeZone` below is the MEMBER's home zone and only drives the quiet-hours gate.
+    const when = formatEventWhen(startsAt, eventTimeZone)
     const body =
       status === 'going'
         ? `Frequency: You're going to ${eventTitle} on ${when}. Reply STOP to opt out.`

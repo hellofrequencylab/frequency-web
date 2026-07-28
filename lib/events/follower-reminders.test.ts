@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   selectFollowerReminderRecipients,
   followerReminderEventEligible,
   reminderWindow,
+  formatAbsolute,
   type FollowerReminderCandidate,
   type FollowerReminderEvent,
 } from './follower-reminders'
@@ -142,5 +145,65 @@ describe('reminderWindow', () => {
     const { start, end } = reminderWindow('2h', now)
     expect(start).toBe(now + 2 * 60 * 60 * 1000)
     expect(end - start).toBe(30 * 60 * 1000)
+  })
+})
+
+// ── The when-line labels the EVENT's zone, never a fixed HOME label ────────────────────────────
+//
+// starts_at stores the event's wall-clock as UTC PARTS, so the when-line renders those parts
+// (timeZone:'UTC') and labels them with the event's OWN zone abbrev. The bug this pins down:
+// formatAbsolute used to label with zoneAbbrev(iso, HOME_TZ) unconditionally, so a New York
+// event read "7:00 PM PDT". Latent (all live events are America/Los_Angeles), but wrong the
+// day the first non-HOME event ships.
+describe('formatAbsolute labels the event zone', () => {
+  const july = '2026-07-30T19:00:00.000Z' // stored wall-clock: 7:00 PM
+
+  it('labels a New York event EDT (summer), not the HOME PDT', () => {
+    expect(formatAbsolute(july, 'America/New_York')).toBe('Thu Jul 30, 7:00 PM EDT')
+  })
+
+  it('labels a Los Angeles event PDT', () => {
+    expect(formatAbsolute(july, 'America/Los_Angeles')).toBe('Thu Jul 30, 7:00 PM PDT')
+  })
+
+  it('tracks DST: the same New York wall-clock in January reads EST', () => {
+    expect(formatAbsolute('2026-01-15T19:00:00.000Z', 'America/New_York')).toBe(
+      'Thu Jan 15, 7:00 PM EST',
+    )
+  })
+
+  it('falls back to HOME for a null/invalid zone (resolveZone), keeping the wall-clock literal', () => {
+    expect(formatAbsolute(july, null)).toBe('Thu Jul 30, 7:00 PM PDT')
+    expect(formatAbsolute(july, 'not-a-zone')).toBe('Thu Jul 30, 7:00 PM PDT')
+  })
+})
+
+// Source-shape guards for the two callers this formatter serves plus the RSVP-confirmation SMS
+// twin. The failure they prevent is an ABSENT argument (formatAbsolute(ev.starts_at) alone
+// compiles fine only while the parameter is optional somewhere), so assert the call sites
+// literally — the precedent is components/events/upcoming-widget.test.ts.
+describe('every reminder/confirmation when-line threads the event time zone', () => {
+  it('the follower reminder passes ev.time_zone', () => {
+    const src = readFileSync(join(__dirname, 'follower-reminders.ts'), 'utf8')
+    expect(src).toContain('formatAbsolute(ev.starts_at, ev.time_zone)')
+  })
+
+  it('the RSVP reminder cron imports THIS formatter and passes ev.time_zone', () => {
+    const src = readFileSync(
+      join(__dirname, '../../app/api/cron/event-reminders/route.ts'),
+      'utf8',
+    )
+    expect(src).toContain("import { formatAbsolute } from '@/lib/events/follower-reminders'")
+    expect(src).toContain('formatAbsolute(ev.starts_at, ev.time_zone)')
+    // The route must not regrow a private copy that pins HOME again.
+    expect(src).not.toContain('function formatAbsolute')
+  })
+
+  it('the RSVP confirmation SMS threads the event zone into its when-line', () => {
+    const src = readFileSync(join(__dirname, '../../app/(main)/events/actions.ts'), 'utf8')
+    // The caller hands the event zone through...
+    expect(src).toContain('sendRsvpConfirmationSms(eventId, profileId, status, ev.title, ev.starts_at, evTz)')
+    // ...and the SMS body formats with it (never the bare HOME default).
+    expect(src).toContain('formatEventWhen(startsAt, eventTimeZone)')
   })
 })

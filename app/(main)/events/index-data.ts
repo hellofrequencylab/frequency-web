@@ -16,6 +16,7 @@ import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { resolvePageContent } from '@/lib/page-content'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
+import { CATEGORY_OPTIONS } from '@/lib/events/options'
 import type { CatalogFacet } from './events-filter-bar'
 import type { SortOption } from './events-sort'
 import type { EventMapPin } from '@/components/events/events-map'
@@ -71,19 +72,9 @@ export type EventRow = {
   host: { id: string; display_name: string; handle: string } | null
 }
 
-// Library taxonomy (events.category) — the discovery facet, Eventbrite-style.
-const CATEGORY_OPTIONS: { value: string; label: string }[] = [
-  { value: 'ceremony', label: 'Ceremony' },
-  { value: 'movement', label: 'Movement' },
-  { value: 'circle_ritual', label: 'Circle ritual' },
-  { value: 'learning', label: 'Learning' },
-  { value: 'social', label: 'Social' },
-  { value: 'service', label: 'Service' },
-  { value: 'external_meetup', label: 'External meetup' },
-  { value: 'retreat', label: 'Retreat' },
-  { value: 'online', label: 'Online' },
-  { value: 'gathering', label: 'Gathering' },
-]
+// Library taxonomy (events.category) — the discovery facet, Eventbrite-style. Read from the ONE
+// vocabulary source (lib/events/options.ts); this file used to inline a near-copy with drifted
+// label casing, which is exactly the drift check:vocab now fails the build on.
 
 // Attendance mode (events.attendance_mode) — the Format facet (EVENTS-DESIGN §3.2).
 const FORMAT_OPTIONS: { value: string; label: string }[] = [

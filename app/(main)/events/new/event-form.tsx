@@ -11,6 +11,9 @@ import { ImageUpload } from '@/components/ui/image-upload'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
 import type { PlaceResult } from '@/lib/geocode'
+// The category vocabulary comes from the ONE source (lib/events/options.ts) — this form used to
+// inline an identical copy, which is exactly the drift check:vocab now fails the build on.
+import { CATEGORY_OPTIONS } from '@/lib/events/options'
 
 // The draggable-pin location picker runs MapLibre, which must never touch the server, so it
 // lazy-mounts client-only (ssr:false) — the same dynamic-import pattern as EventLocationMap.
@@ -56,20 +59,6 @@ const RECURRENCE_OPTIONS: { value: RecurrenceType; label: string; helper: string
   { value: 'daily',   label: 'Every day', helper: 'Same time each day'                    },
   { value: 'weekly',  label: 'Weekly',    helper: 'Same day & time each week'             },
   { value: 'monthly', label: 'Monthly',   helper: 'Same date each month'                  },
-]
-
-// Friendly Title Case labels — what the event *is*, no jargon.
-const CATEGORY_OPTIONS: { value: string; label: string }[] = [
-  { value: 'gathering',       label: 'Gathering'        },
-  { value: 'ceremony',        label: 'Ceremony'         },
-  { value: 'movement',        label: 'Movement'         },
-  { value: 'circle_ritual',   label: 'Circle Ritual'    },
-  { value: 'learning',        label: 'Learning'         },
-  { value: 'social',          label: 'Social'           },
-  { value: 'service',         label: 'Service'          },
-  { value: 'external_meetup', label: 'External Meetup'  },
-  { value: 'retreat',         label: 'Retreat'          },
-  { value: 'online',          label: 'Online'           },
 ]
 
 // Who can see the event once it is live.
@@ -167,6 +156,7 @@ export function EventForm({
   initial,
   eventId,
   currentScopeName,
+  scopeIsCircle,
   backHref,
   defaultGroupId,
   home,
@@ -180,6 +170,10 @@ export function EventForm({
   eventId?: string
   /** In edit mode, where the event lives now (the scope can't be changed here). */
   currentScopeName?: string
+  /** In edit mode, whether that fixed scope IS a circle (scope_type='circle'). Drives whether
+   *  the "My circle" visibility is offered — it only means something on a circle event, and the
+   *  server steps it down to unlisted everywhere else (ADR-883). Absent = treated as a circle. */
+  scopeIsCircle?: boolean
   /** Where the Cancel link returns to (defaults to /events). */
   backHref?: string
   /** Pre-selected scope on create (from the `?circle=` deep link, already validated to one
@@ -232,8 +226,13 @@ export function EventForm({
   const [recurrenceUntil, setRecurrenceUntil] = useState(initial?.recurrenceUntil ?? '')
   const [capacity, setCapacity] = useState(initial?.capacity ?? '')
   // Default visibility to Anyone, matching the default PUBLIC scope. The server re-coerces an
-  // invalid combination (e.g. circle_only on a public event) so this can never save a bad pair.
-  const [visibility, setVisibility] = useState(initial?.visibility ?? (isEdit ? 'circle_only' : 'public'))
+  // invalid combination (e.g. circle_only on a public event steps down to unlisted, ADR-883)
+  // so this can never save a bad pair; the same step-down seeds edit mode here so a stored
+  // bad pair rounds a broken row to what the next save would write anyway.
+  const [visibility, setVisibility] = useState(() => {
+    const seeded = initial?.visibility ?? (isEdit ? 'circle_only' : 'public')
+    return isEdit && scopeIsCircle === false && seeded === 'circle_only' ? 'unlisted' : seeded
+  })
   const [category, setCategory] = useState(initial?.category ?? 'gathering')
   const [energyTag, setEnergyTag] = useState(initial?.energyTag ?? '')
   const [attendanceMode, setAttendanceMode] = useState<'in_person' | 'online' | 'hybrid'>(
@@ -270,6 +269,18 @@ export function EventForm({
   // Split the scope options into their two optgroups (circles you host / spaces you run).
   const circleOptions = useMemo(() => groups.filter((g) => g.kind !== 'space'), [groups])
   const spaceOptions = useMemo(() => groups.filter((g) => g.kind === 'space'), [groups])
+
+  // Whether the SELECTED scope is a circle: fixed by prop on edit (the scope can't change
+  // there), derived live from the select on create (a bare circle id = circle; the public
+  // sentinel and the space: prefix are not).
+  const selectedScopeIsCircle = isEdit
+    ? scopeIsCircle ?? true
+    : scopeId !== PUBLIC_SCOPE && !scopeId.startsWith(SPACE_PREFIX)
+  // "My circle" is only offered when there IS a circle to scope to. On any other target the
+  // server steps it down to unlisted anyway (ADR-883), so the dead option never renders.
+  const visibilityOptions = selectedScopeIsCircle
+    ? VISIBILITY_OPTIONS
+    : VISIBILITY_OPTIONS.filter((o) => o.value !== 'circle_only')
 
   // The Journey field only renders when there is a real choice to make, AND when the event's
   // CURRENT link is one of the offered options. An event can be linked by a Journey's author to a
@@ -769,7 +780,18 @@ export function EventForm({
               <select
                 id="event-scope"
                 value={scopeId}
-                onChange={(e) => setScopeId(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value
+                  setScopeId(next)
+                  // Moving off a circle removes the "My circle" option below — step the held
+                  // value down to unlisted (never public), mirroring the server rule.
+                  if (
+                    (next === PUBLIC_SCOPE || next.startsWith(SPACE_PREFIX)) &&
+                    visibility === 'circle_only'
+                  ) {
+                    setVisibility('unlisted')
+                  }
+                }}
                 required
                 disabled={isPending}
                 className={fieldClasses}
@@ -837,7 +859,7 @@ export function EventForm({
             disabled={isPending}
             className={fieldClasses}
           >
-            {VISIBILITY_OPTIONS.map(({ value, label }) => (
+            {visibilityOptions.map(({ value, label }) => (
               <option key={value} value={value}>
                 {label}
               </option>

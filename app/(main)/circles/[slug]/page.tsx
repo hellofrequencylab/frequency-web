@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Users, MapPin, Settings, EyeOff } from 'lucide-react'
+import { Users, MapPin, Settings, EyeOff, LayoutDashboard } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle } from '../actions'
@@ -20,6 +20,7 @@ import { DetailTemplate, PageHero, HERO_ACTION_CLASS } from '@/components/templa
 import { resolveHeaderElement } from '@/lib/elements/header'
 import { isoDaysAgo } from '@/lib/utils'
 import { getCircleEarnedZaps } from '@/lib/circles/earned'
+import { readCircleCoverFocus, readCircleHeroHeight, hasCircleHeroHeight } from '@/lib/circles/hero'
 import { SITE_NAME } from '@/lib/site'
 import { ClaimCircle } from '@/components/circles/claim-circle'
 // The circle BODY (feed + info-rail) is now the page-settings module engine (ADR-270/294): the
@@ -95,7 +96,7 @@ export default async function CirclePage({
     .from('circles')
     .select(
       `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo, resonance_public,
-       latitude, longitude, neighborhood, city, sidebar_order,
+       latitude, longitude, neighborhood, city, sidebar_order, theme,
        host:profiles!host_id ( id, display_name, handle, avatar_url ),
        hub:hubs!hub_id (
          id, name, slug,
@@ -114,6 +115,17 @@ export default async function CirclePage({
 
   if (!rawCircle) notFound()
   const circle = rawCircle as unknown as CircleDetail
+  // The saved header settings (circles.theme, the ADR-886 pattern applied to Circles). The column
+  // is newer than the generated types and CircleDetail, so it is read off the raw row through the
+  // ADR-246 seam. An untouched circle resolves to the centered default and NO explicit height,
+  // which is exactly today's render.
+  //
+  // savedHeroHeight is deliberately null-unless-chosen rather than always a value: the header
+  // ELEMENT config (resolveHeaderElement, ADR-793) also has an opinion about height, and it should
+  // keep deciding for every circle no host has tuned. Once a host picks one, theirs wins.
+  const circleTheme = (rawCircle as unknown as { theme?: unknown }).theme
+  const circleCoverFocus = readCircleCoverFocus(circleTheme)
+  const savedHeroHeight = hasCircleHeroHeight(circleTheme) ? readCircleHeroHeight(circleTheme) : null
 
   // The members read (needs circle.id) and the viewer's session (needs nothing) are independent,
   // so fetch them together instead of letting auth.getUser() wait behind the members read.
@@ -343,9 +355,10 @@ export default async function CirclePage({
         hero={
           <PageHero
             variant={header.layout}
-            size={header.height}
+            size={savedHeroHeight ?? header.height}
             overlayStyle={header.overlayStyle}
             coverImage={circle.image_url}
+            coverFocus={circleCoverFocus}
             eyebrow="Circle"
             title={circle.name}
             subtitle={
@@ -394,9 +407,16 @@ export default async function CirclePage({
                 <OpenAdminBarButton
                   scope={{ kind: 'circle', id: circle.id }}
                   caps={Array.from(caps)}
-                  label="Edit Circle"
+                  label="Edit"
                   icon={<Settings className="h-4 w-4" />}
                 />
+                <Link
+                  href={`/circles/${circle.slug}/manage`}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                >
+                  <LayoutDashboard className="h-4 w-4 text-subtle" />
+                  Manage
+                </Link>
               </div>
             )}
 

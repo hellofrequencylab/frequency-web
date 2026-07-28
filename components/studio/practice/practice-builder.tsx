@@ -19,6 +19,11 @@ import { updatePracticeAction, setPracticeTagsAction, setPracticeRewardAction, d
 import type { PracticeEdit, WeightClass, FocusDetail, TimerKind, MindlessMode } from '@/lib/practices'
 import { isTierAllowed, clampTierToDuration, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
 import { AUTHORED_WARMUP_PRESETS, BREATH_PATTERNS, WARMUP_MESSAGE_MAX } from '@/lib/on-air'
+// Practices share the Channel subject vocabulary (they are browsed under the same doors), so the
+// category select reads THE one source (lib/channels/categories.ts, the ADR-887 view onto
+// lib/taxonomy/subjects.ts) — never a hand-copied list. The old six-item copy here was missing
+// `activism` and rendered lowercase key-derived labels; a stored `activism` displayed as "None".
+import { CHANNEL_CATEGORIES, isChannelCategory } from '@/lib/channels/categories'
 import {
   MOVEMENT_MODES, STRENGTH_PRESETS, YOGA_PRESETS,
   WALK_DURATION_PRESETS, RUN_DURATION_PRESETS, STRETCH_DURATION_PRESETS,
@@ -34,7 +39,6 @@ import {
 // icon — the kit is composed-from, not a rigid template.
 
 const CADENCES = ['Daily', 'A few times a week', 'Weekly', 'As needed']
-const CATEGORIES = ['movement', 'holistic-health', 'spirituality', 'creative', 'business-support', 'human-relating']
 const ICONS: { key: string; Icon: LucideIcon }[] = [
   { key: 'sparkles', Icon: Sparkles }, { key: 'waves', Icon: Waves }, { key: 'footprints', Icon: Footprints },
   { key: 'snowflake', Icon: Snowflake }, { key: 'brain', Icon: Brain }, { key: 'flame', Icon: Flame },
@@ -478,7 +482,12 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         <StudioField label="Category">
           <select value={category} onChange={(e) => { setCategory(e.target.value); queueSave({ category: e.target.value || null }) }} className={FIELD}>
             <option value="">None</option>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/-/g, ' ')}</option>)}
+            {/* An off-list stored value (e.g. the retired `human-relating`) stays selectable and
+                MARKED, never silently rewritten or shown as "None" (the ADR-879 rule). */}
+            {category !== '' && !isChannelCategory(category) && (
+              <option value={category}>{category} (not a standard category)</option>
+            )}
+            {CHANNEL_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
           </select>
         </StudioField>
         <StudioField label="Sub Focus">

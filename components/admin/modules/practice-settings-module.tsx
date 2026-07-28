@@ -16,6 +16,10 @@ import {
 } from '@/app/(main)/practices/admin-actions'
 import { deleteOwnPracticeAction } from '@/app/(main)/practices/actions'
 import { DangerDelete } from '@/components/admin/danger-delete'
+// Practices share the Channel subject vocabulary (lib/channels/categories.ts, the ADR-887 view
+// onto lib/taxonomy/subjects.ts). A select over the one source, not free text: free text in front
+// of a fixed vocabulary is the silent-breakage machine ADR-879 closed.
+import { CHANNEL_CATEGORIES, isChannelCategory } from '@/lib/channels/categories'
 
 // In-place "Practice settings" (EMBEDDED-ADMIN.md / ADR-133) on /practices/[id]. The rail section header
 // is the single title. The main fields autosave and reflect live (RailAutosaveForm); the cover self-saves;
@@ -129,7 +133,19 @@ export function PracticeSettingsModule() {
           </label>
           <label className="block space-y-1.5">
             <span className={fieldLabel}>Category</span>
-            <input name="category" defaultValue={data.category ?? ''} placeholder="Optional" className={input} />
+            <select name="category" defaultValue={data.category ?? ''} className={input}>
+              <option value="">None</option>
+              {/* An off-list stored value stays selectable and MARKED (ADR-879): the form
+                  autosaves as a whole, so re-submitting it must never rewrite the field. */}
+              {data.category && !isChannelCategory(data.category) && (
+                <option value={data.category}>{data.category} (not a standard category)</option>
+              )}
+              {CHANNEL_CATEGORIES.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
       </RailAutosaveForm>

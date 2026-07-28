@@ -178,6 +178,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
         initial={initial}
         eventId={ev.id}
         currentScopeName={scopeName ?? undefined}
+        scopeIsCircle={ev.scope_type === 'circle'}
         backHref={`/events/${slug}`}
       />
 
