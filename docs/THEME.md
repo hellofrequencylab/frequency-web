@@ -546,11 +546,66 @@ and the operator layer is a fail-safe **merge over** them, never a replacement. 
 
 ---
 
+## 15. The Space page theme axis (`data-space-theme`)
+
+> **In one line.** A fifth, **slug-scoped** axis (ADR-578, treatment contract ADR-893): the
+> operator picks a typography + shape identity for a Space's public profile, applied as
+> `data-space-theme="<id>"` on the profile's `AccentScope` wrapper, so it themes only that
+> Space's subtree and never the app shell. Colour-free by design: the DAWN palette and the
+> Space's brand accent carry through unchanged.
+
+Registry: [`lib/theme/space-themes.ts`](../lib/theme/space-themes.ts) (six ids: `bold` the
+no-op default, `editorial`, `classic`, `playful`, `accessible`, `modern`). Persisted on
+`spaces.preferences.theme` (jsonb, read fail-safe by `parseSpaceTheme`). Guardrail:
+[`space-themes.test.ts`](../lib/theme/space-themes.test.ts) reads `app/globals.css` from disk
+and enforces the full contract below, including `bold`'s deliberate absence.
+
+**The knob vars** (each theme's `[data-space-theme="<id>"]` block in `app/globals.css`):
+
+| Knob | Token | Consumed by |
+|---|---|---|
+| Display face | `--font-display` | `.font-display` headlines (design blocks, Events heading, canvas) and the design-block header default |
+| Heading face | `--font-heading` | `.font-section` (cover title + section headers), falling back through `--font-body` to Nunito, so an unset var is a computed no-op |
+| Body face | `--font-body` | the shared `[data-space-theme]` rule applies it to the whole subtree |
+| Card shape | `--radius-card` | `rounded-card` surfaces in the subtree (cards, CTA buttons, brand anchor) |
+| Control shape | `--radius-control` | `rounded-control` controls (tab pills, compact buttons); `playful` sets 9999px for pills |
+| Cover shape | `--radius-cover` | the cover media frame, `rounded-[var(--radius-cover,0.75rem)]` (fallback = today's look) |
+
+**Treatment, not family swap (ADR-893).** A family swap alone leaves Anton's caps styling on
+every face, so each non-`bold` theme also authors unlayered
+`[data-space-theme="<id>"] .font-<role>` rules retuning **weight, case, tracking, and leading**
+per role. The three roles: `.font-display` (headlines), `.font-section` (cover title + section
+headers), `.font-eyebrow` (a bare marker class with no base rule; only per-theme rules give it
+effect). The per-theme typography table lives in ADR-893 and is pinned by the guardrail test.
+
+**The baseline pin (generation interplay).** The shared `[data-space-theme]` rule pins
+`--radius-card: 1rem; --radius-control: 0.5rem` because the skin + generation axes retune those
+tokens on app-shell ancestors: the pin makes the SPACE's chosen shape (not the viewer's feel
+preset) govern the profile subtree, and makes a `bold` Space resolve to exactly the baseline
+literals under every skin and generation.
+
+**`bold` is enforced absence.** It authors font vars only: no radius, no `--font-heading`, no
+treatment rule anywhere. The guardrail test asserts that absence (the `skins.test.ts`
+negative-assertion pattern), so an existing Space renders byte-identically and a future edit
+that styles `bold` fails CI.
+
+**Add a Space theme** (the §5 recipe shape): (1) CSS — the var block (all six knobs) plus the
+three `.font-<role>` treatment rules; (2) registry — extend `SpaceThemeId` + `SPACE_THEMES`
+(label, plain-voice description, the two face names; a new face also needs its `next/font`
+registration in `app/layout.tsx` and an entry in the test's face→var map); (3) the test's
+knob-totality loop covers the new id automatically.
+
+**Font loading note.** The five theme-only faces register with `preload: false` (self-hosted,
+fetched only when matched by rendered text); Fraunces loads `axes: ["opsz", "SOFT"]` because
+`editorial`'s light treatment depends on them and `next/font` ships only `wght` by default.
+
+---
+
 ## See also
 
 - [`app/globals.css`](../app/globals.css): the CSS axes, source-order precedence, `@theme inline` bridge.
-- [`lib/theme/`](../lib/theme/): the registries (`skins.ts`, `generations.ts`, `occasions.ts`), the
-  cookie (`cookie.ts`), the server resolver (`server/resolve.ts`).
+- [`lib/theme/`](../lib/theme/): the registries (`skins.ts`, `generations.ts`, `occasions.ts`,
+  `space-themes.ts`), the cookie (`cookie.ts`), the server resolver (`server/resolve.ts`).
 - [`docs/SPACES.md`](SPACES.md): Spaces own the skin (and the per-Space generation default).
 - [`docs/DESIGN.md`](DESIGN.md): the DAWN design language the `balanced` / `default` baseline encodes.
 - [`docs/DECISIONS.md`](DECISIONS.md): [ADR-257](DECISIONS.md) (the four-axis model),

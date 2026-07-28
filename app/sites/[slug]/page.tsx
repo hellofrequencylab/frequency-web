@@ -5,6 +5,7 @@ import { ArrowRight, Radio } from 'lucide-react'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType } from '@/lib/spaces/profile-config'
+import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { AccentScope } from '@/components/spaces/accent-scope'
 
 // THE EXTERNAL SPACE WEBSITE (ADR-508 U4-B) is ON HOLD. Rather than render the standalone micro-site, the
@@ -41,7 +42,9 @@ export default async function SpaceWebsiteComingSoon({
   const accentVars = resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
 
   return (
-    <AccentScope vars={accentVars}>
+    // The Space's PAGE THEME rides the same wrapper as the accent (ADR-578): without it this surface
+    // fell back to the default Anton display for every Space regardless of the owner's pick.
+    <AccentScope vars={accentVars} theme={parseSpaceTheme(space.preferences)}>
       <main className="flex min-h-dvh items-center justify-center bg-canvas px-6 py-16 text-text">
         <div className="w-full max-w-md text-center">
           <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">

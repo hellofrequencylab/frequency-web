@@ -156,11 +156,13 @@ function AnchorSection({ anchor, children }: { anchor: string; children: React.R
 // radius, surface, padding). SOLID: a real surface with a full border and a soft shadow, so each
 // section reads as a deliberate, well-defined card that stands off the canvas (the old hairline
 // translucent treatment washed out and read as cramped). `ink` swaps to the dark-band treatment for
-// legibility. One radius/spacing/elevation rhythm across the whole set.
+// legibility. One radius/spacing/elevation rhythm across the whole set. `rounded-card` (not a
+// rounded-2xl literal): the Space's page theme shapes its cards (ADR-578 — editorial squares them,
+// playful pillows them); the [data-space-theme] baseline pin keeps `bold` at exactly today's 1rem.
 function InfoCard({ children, ink, className = '' }: { children: React.ReactNode; ink?: boolean; className?: string }) {
   return (
     <div
-      className={`rounded-2xl border ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm'} p-6 sm:p-8 ${className}`}
+      className={`rounded-card border ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm'} p-6 sm:p-8 ${className}`}
     >
       {children}
     </div>
@@ -169,17 +171,19 @@ function InfoCard({ children, ink, className = '' }: { children: React.ReactNode
 
 // A quiet card-title lockup (eyebrow + heading), calmer than the marketing DisplayHeading -- this set
 // is a profile, not a landing page, so headings are plain bold, never full-bleed display type.
+// `font-section` / `font-eyebrow`: the page theme's per-role treatment hooks (ADR-578) -- both resolve
+// to exactly these computed styles for a `bold` (default) Space, so only the five styled themes shift.
 function CardTitle({ eyebrow, heading, ink }: { eyebrow?: string; heading?: string; ink?: boolean }) {
   if (!eyebrow && !heading) return null
   return (
     <div className="mb-6">
       {eyebrow && (
-        <p className={`text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+        <p className={`font-eyebrow text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
           {eyebrow}
         </p>
       )}
       {heading && (
-        <h2 className={`mt-1.5 text-xl font-bold tracking-tight sm:text-2xl ${ink ? 'text-on-ink' : 'text-text'}`}>
+        <h2 className={`font-section mt-1.5 text-xl font-bold tracking-tight sm:text-2xl ${ink ? 'text-on-ink' : 'text-text'}`}>
           {heading}
         </h2>
       )}
@@ -830,7 +834,7 @@ export function SpaceBookingBlock({
         </span>
         <div className="min-w-0 flex-1">
           {heading && (
-            <h2 className={`text-xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>
+            <h2 className={`font-section text-xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>
           )}
           {body && <p className={`mt-1.5 text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{body}</p>}
           <div className="mt-5">
@@ -1143,7 +1147,7 @@ export function SpaceCTABlock({
   if (!heading && !ctaLabel) return null
   return (
     <InfoCard ink={ink} className={`text-center${accent ? ' border-primary/30 bg-primary-bg/30' : ''}`}>
-      {heading && <h2 className={`text-xl font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>}
+      {heading && <h2 className={`font-section text-xl font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>}
       {body && <p className={`mx-auto mt-2 max-w-xl text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{body}</p>}
       {ctaLabel && (
         <div className="mt-5 flex justify-center">
@@ -1224,11 +1228,11 @@ export function SpaceSectionTitleBlock({
   return (
     <div className={centered ? 'text-center' : ''}>
       {eyebrow && (
-        <p className={`text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+        <p className={`font-eyebrow text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
           {eyebrow}
         </p>
       )}
-      <h2 className={`mt-1.5 text-3xl font-bold tracking-tight sm:text-4xl ${ink ? 'text-on-ink' : 'text-text'}`}>
+      <h2 className={`font-section mt-1.5 text-3xl font-bold tracking-tight sm:text-4xl ${ink ? 'text-on-ink' : 'text-text'}`}>
         {heading}
       </h2>
       {subheading && (
@@ -1283,12 +1287,12 @@ export function SpaceCalloutBlock({
       }`}
     >
       {eyebrow && (
-        <p className={`text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+        <p className={`font-eyebrow text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
           {eyebrow}
         </p>
       )}
       {heading && (
-        <h2 className={`mt-1.5 text-2xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>
+        <h2 className={`font-section mt-1.5 text-2xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>
       )}
       {body && (
         <p

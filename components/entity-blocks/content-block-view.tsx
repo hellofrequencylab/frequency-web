@@ -207,7 +207,8 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
             dangerouslySetInnerHTML={{ __html: eyebrowHtml }}
           />
         )}
-        {title && <InlineRichText as="h3" value={title} className="text-2xl font-bold text-text" />}
+        {/* font-section: the Space page theme's heading face (ADR-578); a computed no-op for `bold`. */}
+        {title && <InlineRichText as="h3" value={title} className="font-section text-2xl font-bold text-text" />}
       </div>
     ) : null
 
@@ -262,12 +263,14 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
               {label && <InlineRichText as="div" value={label} className="mt-2 text-sm leading-relaxed text-muted" />}
             </>
           )
+          // rounded-card (was a rounded-2xl literal): the Space page theme shapes these cards
+          // (ADR-578); the [data-space-theme] baseline pin keeps `bold` at exactly today's 1rem.
           return it.link ? (
-            <a key={i} href={it.link} className="block rounded-2xl border border-border bg-surface p-6 text-center transition-colors hover:border-primary">
+            <a key={i} href={it.link} className="block rounded-card border border-border bg-surface p-6 text-center transition-colors hover:border-primary">
               {stat}
             </a>
           ) : (
-            <div key={i} className="rounded-2xl border border-border bg-surface p-6 text-center">
+            <div key={i} className="rounded-card border border-border bg-surface p-6 text-center">
               {stat}
             </div>
           )
@@ -299,7 +302,8 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
               </div>
             </>
           )
-          const cardCls = 'flex flex-col overflow-hidden rounded-2xl border border-border bg-surface'
+          // rounded-card (was rounded-2xl): themable card shape (ADR-578); pinned to 1rem for `bold`.
+          const cardCls = 'flex flex-col overflow-hidden rounded-card border border-border bg-surface'
           return it.link ? (
             <a key={i} href={it.link} className={`${cardCls} transition-colors hover:border-primary`}>
               {card}
@@ -377,7 +381,8 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
               ? 'aspect-square'
               : 'h-48'
       return (
-        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+        // rounded-card (was rounded-2xl): themable card shape (ADR-578); pinned to 1rem for `bold`.
+        <div className="overflow-hidden rounded-card border border-border bg-surface">
           {image && (
             // eslint-disable-next-line @next/next/no-img-element -- operator-supplied arbitrary URL
             <img src={image} alt="" className={`w-full object-cover ${calloutAspect}`} />
@@ -407,7 +412,8 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       const text = s(props, 'text')
       // Render through the inline-rich path so a heading authored with a <br> (or a Bold / Italic / Link mark)
       // shows a real line break / mark on the page, EXACTLY as the editor canvas does — not a literal `<BR>`.
-      return text ? <InlineRichText as="h2" value={text} className="text-2xl font-bold text-text" /> : null
+      // font-section: the Space page theme's heading face (ADR-578); a computed no-op for `bold`.
+      return text ? <InlineRichText as="h2" value={text} className="font-section text-2xl font-bold text-text" /> : null
     }
     case 'button': {
       // A labeled call-to-action link (shared with Email Studio). A no-link button falls back to '#' until

@@ -180,7 +180,7 @@ interface SpaceBrandingData {
   /** The per-type default CTA label, shown as the placeholder when no override is set. */
   defaultCtaLabel: string
   /** The Space PAGE STYLE (ADR-578): the typography + shape identity id (preferences.theme), so the rail's
-   *  Identity & Branding section can render the 5-option style chooser with the current pick selected. */
+   *  Identity & Branding section can render the six-option style chooser with the current pick selected. */
   pageTheme: SpaceThemeId
   readOnly: boolean
 }

@@ -124,6 +124,10 @@ export function SpaceBrandEditor({
                     type="button"
                     aria-pressed={selected}
                     onClick={() => setPageTheme(t.id)}
+                    // Each card PREVIEWS its own theme (ADR-578): `data-space-theme` scopes the theme's
+                    // font vars + treatment rules to this card (they live on <html>, so this works
+                    // outside AccentScope), and `font-display` renders the label in that theme's face.
+                    data-space-theme={t.id}
                     className={`rounded-xl border p-3 text-left transition-colors ${
                       selected
                         ? 'border-primary bg-primary-bg/50 ring-1 ring-primary'
@@ -131,7 +135,7 @@ export function SpaceBrandEditor({
                     }`}
                   >
                     <span className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold text-text">{t.label}</span>
+                      <span className="font-display text-sm font-semibold text-text">{t.label}</span>
                       {selected && <Check className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />}
                     </span>
                     <span className="mt-0.5 block text-2xs font-medium uppercase tracking-wide text-subtle">

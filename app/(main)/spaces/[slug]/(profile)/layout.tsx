@@ -68,9 +68,11 @@ import { FoundingBusinessBadge } from '@/lib/community-roles'
 // to the avatar (the buttons were shrunk down a notch from `md`). On a photo (Hero overlay) a bordered
 // translucent-white chip over a backdrop blur reads legibly on any cover (the gradient scrim guarantees
 // the ≥4.5:1 floor); off-cover uses the canonical secondary token. Tokens only — no hardcoded hex; the
-// translucent whites are legibility scrims.
+// translucent whites are legibility scrims. `rounded-control` (not a rounded-lg literal): buttons are
+// CONTROLS, so the Space's page theme shapes them (ADR-578 — playful pills them); the [data-space-theme]
+// baseline pin resolves it to exactly today's 0.5rem for `bold` under every skin + generation.
 const SM_BUTTON_GEOMETRY =
-  'inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors'
+  'inline-flex items-center justify-center gap-1.5 rounded-control px-3 py-1.5 text-sm font-semibold transition-colors'
 const onInkSecondaryClasses = cn(
   SM_BUTTON_GEOMETRY,
   'border border-white/40 bg-white/10 text-on-ink backdrop-blur-sm hover:bg-white/20',
@@ -412,7 +414,9 @@ export default async function SpaceProfileChromeLayout({
       {heroEyebrow && (
         <p
           className={cn(
-            'mb-1 text-2xs font-semibold uppercase tracking-wide',
+            // `font-eyebrow`: the page theme's per-role kicker treatment (ADR-578) — a bare marker with
+            // no bold-scoped rule, so a `bold` Space keeps this exact computed style.
+            'font-eyebrow mb-1 text-2xs font-semibold uppercase tracking-wide',
             onInk ? 'text-on-ink-muted' : 'text-primary-strong',
           )}
         >
@@ -424,7 +428,10 @@ export default async function SpaceProfileChromeLayout({
           identity reads as name -> tagline without a redundant type chip. */}
       <h1
         className={cn(
-          'min-w-0 break-words text-2xl font-bold leading-tight sm:text-3xl',
+          // `font-section`: the cover title joins the page theme's heading face (ADR-578 — the owner's
+          // "from header to end"). With no theme (or `bold`) it resolves to the body stack this h1
+          // already inherits, so the default look is untouched.
+          'font-section min-w-0 break-words text-2xl font-bold leading-tight sm:text-3xl',
           onInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : 'text-text',
         )}
       >
@@ -461,7 +468,14 @@ export default async function SpaceProfileChromeLayout({
   const heroScrimGradient =
     coverScrim === 'none' ? null : heroOnInk ? 'from-ink/80 via-ink/30 to-transparent' : 'from-canvas via-canvas/40 to-transparent'
   const heroCoverNode = (
-    <div className={cn('relative w-full overflow-hidden rounded-xl bg-surface-elevated', coverH)}>
+    // The cover's corner rounding is themable (`--radius-cover`, set only by non-bold themes); the
+    // fallback 0.75rem IS today's rounded-xl, so a `bold` Space renders pixel-identically.
+    <div
+      className={cn(
+        'relative w-full overflow-hidden rounded-[var(--radius-cover,0.75rem)] bg-surface-elevated',
+        coverH,
+      )}
+    >
       {coverImage}
       {heroScrimGradient && <div className={cn('absolute inset-0 bg-gradient-to-t', heroScrimGradient)} />}
       <div className={cn('absolute inset-x-0 bottom-0 p-6 sm:p-8', coverScrim === 'none' && 'on-image-text')}>
@@ -492,7 +506,13 @@ export default async function SpaceProfileChromeLayout({
   // sits half on the image, half below it. The name + actions live in the infoBand, cleared below it.
   const headerCoverNode = (
     <div className="relative w-full">
-      <div className={cn('relative w-full overflow-hidden rounded-xl bg-surface-elevated', coverH)}>
+      {/* Same themable cover rounding as the Hero size (fallback 0.75rem = today's rounded-xl). */}
+      <div
+        className={cn(
+          'relative w-full overflow-hidden rounded-[var(--radius-cover,0.75rem)] bg-surface-elevated',
+          coverH,
+        )}
+      >
         {coverImage}
       </div>
       <div className="absolute -bottom-10 left-5 sm:-bottom-12 sm:left-6">

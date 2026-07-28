@@ -374,7 +374,9 @@ export function EditorialSectionBlock({
     </>
   )
   return surface === 'soft-card' ? (
-    <div className="rounded-2xl border border-border bg-surface p-6 shadow-pop sm:p-10">{inner}</div>
+    // rounded-card (was rounded-2xl): the Space page theme shapes this card (ADR-578); the
+    // [data-space-theme] baseline pin keeps `bold` at exactly today's 1rem.
+    <div className="rounded-card border border-border bg-surface p-6 shadow-pop sm:p-10">{inner}</div>
   ) : (
     inner
   )
@@ -446,7 +448,8 @@ export function CardGridBlock({
           {shown.map((card, i) => (
             <article
               key={i}
-              className="flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-pop"
+              // rounded-card (was rounded-2xl): themable card shape (ADR-578); pinned to 1rem for `bold`.
+              className="flex flex-col overflow-hidden rounded-card border border-border bg-surface shadow-pop"
             >
               {/* A photo card shows its image on top whenever one is set (email overhaul: not only the
                   media / testimonial roles). */}

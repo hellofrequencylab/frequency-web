@@ -186,8 +186,10 @@ export async function updateSpaceProfile(
     return fail('Could not save your changes. Try again.')
   }
 
-  // Refresh the profile (band subtitle + about module) and the directory (tagline card).
+  // Refresh the profile (band subtitle + about module) and the directory (tagline card). The external
+  // /sites surface renders the same theme (ADR-578), so a theme save must reach it too.
   revalidatePath(`/spaces/${space.slug}`, 'layout')
   revalidatePath('/spaces/directory')
+  revalidatePath(`/sites/${space.slug}`)
   return ok()
 }

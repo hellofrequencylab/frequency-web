@@ -89,9 +89,11 @@ export function Eyebrow({ children, ink }: { children: React.ReactNode; ink?: bo
   return (
     // `data-text-role="eyebrow"` marks this element for PER-ELEMENT text styling (ADR-580, item 4): the block
     // editor's Eyebrow controls target it alone, and the Body controls skip it (it is itself a <p>).
+    // `font-eyebrow` is the SEPARATE Space page theme hook (ADR-578): per-theme kicker treatment with no
+    // bold-scoped rule, so the default look keeps this exact computed style.
     <p
       data-text-role="eyebrow"
-      className={`text-sm font-bold uppercase tracking-[0.25em] mb-4 ${
+      className={`font-eyebrow text-sm font-bold uppercase tracking-[0.25em] mb-4 ${
         ink ? 'text-primary' : 'text-primary-strong'
       }`}
     >
@@ -130,8 +132,11 @@ export function Kicker({ children, ink }: { children: React.ReactNode; ink?: boo
 
 export type CtaVariant = 'primary' | 'secondary' | 'ghost'
 
-// One canonical CTA button — locked padding/radius, three variants. `onInk`
-// recolors the secondary/ghost outlines for dark backgrounds.
+// One canonical CTA button — locked padding, three variants. `onInk` recolors the secondary/ghost
+// outlines for dark backgrounds. `rounded-card` (was rounded-2xl, the same 1rem at baseline): inside a
+// Space subtree the page theme shapes it (ADR-578) while the [data-space-theme] baseline pin keeps
+// `bold` at exactly today's 16px — kept on the CARD token, not rounded-control, precisely because
+// mapping this big CTA to the 0.5rem control baseline would shrink bold's corners.
 export function CtaButton({
   href,
   label,
@@ -145,7 +150,7 @@ export function CtaButton({
   onInk?: boolean
   withArrow?: boolean
 }) {
-  const base = 'inline-flex items-center gap-2 rounded-2xl px-8 py-3.5 text-base font-bold transition-colors'
+  const base = 'inline-flex items-center gap-2 rounded-card px-8 py-3.5 text-base font-bold transition-colors'
   const styles =
     variant === 'primary'
       ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop'

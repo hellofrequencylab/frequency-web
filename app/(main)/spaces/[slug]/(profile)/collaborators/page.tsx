@@ -22,7 +22,8 @@ export default async function SpaceCollaboratorsProfilePage({ params }: { params
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-text">Collaborators</h2>
+        {/* font-section: the page theme's heading face (ADR-578); a computed no-op for `bold`. */}
+        <h2 className="font-section text-xl font-bold text-text">Collaborators</h2>
         <p className="text-sm text-muted">Businesses that operate together with {brandName}.</p>
       </div>
       {collaborators.length === 0 ? (
