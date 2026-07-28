@@ -30,7 +30,7 @@ All of this bills through Stripe subscriptions and one-time payments.
 
 | Capability | Plan floor | The rule |
 |---|---|---|
-| Collaborator hosting | Collective (Non Profit clears it) | Hosting an event or a venue WITH Collaborator Spaces needs the HOST Space on Collective (feature gate `space_collaborators`, ADR-835). Being a Collaborator on someone else's event stays free on every plan. A member-hosted event has no host Space, so it can never take on Collaborators; a person helping run an event is a Cohost. During open beta the gate is soft (billing off means nothing blocks); the Collective badge previews the post-launch model. |
+| Collaborator hosting | Collective (Non Profit clears it) | Hosting an event or a venue WITH Collaborator Spaces needs the HOST Space on Collective (feature gate `space_collaborators`, ADR-835). Being a Collaborator on someone else's event stays free on every plan. A member-hosted event has no host Space, so it can never take on Collaborators; a person helping run an event is a Cohost. During the beta the gate is soft (nothing blocks until the paid-gates date, `beta_grace`); the Collective badge previews the post-launch model. |
 
 ## 2. Payouts (money through)
 
@@ -59,7 +59,14 @@ when, old to new) in `platform_flag_events`.
 
 - **`billing_live` (the master switch).** The one switch that turns billing on. While it is off, nobody is
   charged and everyone keeps full access. It only takes effect when the **Stripe keys are also set** in
-  the environment.
+  the environment. It answers ONE question: **may we charge.** It does not decide whether paid features
+  lock (see the next line, ADR-874).
+- **The paid-gates date (`beta_grace`, at `/admin/pricing` under Beta controls).** The day the paid feature
+  gates start blocking, set to **2026-09-01**. Until it arrives, billing can be fully live and every plan
+  can sell while every member and Space keeps their paid features. On that date at 00:00 UTC the ladder
+  starts biting, with no further operator action. The date itself is the first enforced day, so the last
+  free day is Aug 31. Clearing the field means "no grace window": paid features would lock the moment
+  billing goes live. **This is the only date on this page that changes access.**
 - **`plan_business_enabled` / `plan_collective_enabled` / `plan_nonprofit_enabled` /
   `plan_independent_enabled`.** Show and sell each Space plan. A plan sells only when its switch **and**
   the master switch are both on.
@@ -67,8 +74,9 @@ when, old to new) in `platform_flag_events`.
 - **`host_payouts_enabled`** (at `/admin/payments`). Turns the tips, ticket, and storefront payout
   marketplace on. Off means none of those payment controls appear anywhere.
 - **The feature gates** (`/admin/pricing`, Feature gates). Each paid feature names the plan it needs. A gate
-  that is turned **off** never blocks. This is the lever for "free during beta": with billing live but the
-  paid gates disabled, every member keeps paid features for free.
+  that is turned **off** never blocks. Use this to permanently ungate one feature. For "free during beta"
+  use the paid-gates date above instead: it covers every gate at once and turns them all on by itself on
+  the day you set, so nothing depends on remembering a dozen toggles.
 
 ## The beta "free until Sept 1" setup (current state)
 
@@ -80,16 +88,21 @@ every CTA only navigates; nothing checks out. Going live is a deliberate two-par
 Stripe keys and turn `billing_live` on at `/admin/pricing`, and have an engineer flip
 `PLACEHOLDER_PRICING` to false.
 
-On top of that, two beta pieces are currently set:
+On top of that, three beta pieces are currently set:
 
-- **The paid feature gates are turned off**, so every member and Space keeps paid features for free.
-  On September 1 you turn the gates back on and paid features lock to paying members.
+- **The paid-gates date (`beta_grace`) is `2026-09-01`.** This is what makes "explore every level, pay on
+  Sept 1" work. You can turn `billing_live` on **today** and start selling plans: nobody loses a feature,
+  because the gates do not begin until that date. No action is needed on Sept 1; the gates turn themselves
+  on at 00:00 UTC.
 - **The countdown clock (`beta_ends_at`)** is set to `2026-09-01`. It drives the "Summer of Frequency ends
   Sept 1" banner only; it changes nothing about access on its own. The founding beta prices ($19 Business,
   $49 Collective) auto-revert to list on the same date in code.
+- **`gamification_full_member`** is on, comping free members the full gamification loop. Turn it back off
+  when you want the Crew minimum to apply.
 
-To lock paid features on Sept 1: re-enable the feature gates in `/admin/pricing` (turn each back on), and
-turn `gamification_full_member` back off.
+The pricing console states both switches in one line at the top: whether billing is live, whether the paid
+gates are enforced, and the grace date. If you ever need the old all-or-nothing behavior, clear the
+paid-gates date and the gates will follow the master billing switch exactly.
 
 ## Setting prices and syncing to Stripe
 

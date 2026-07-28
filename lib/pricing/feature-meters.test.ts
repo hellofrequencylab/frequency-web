@@ -244,23 +244,23 @@ describe('the gauge as upsell — nearAllowanceLimit + the one shared nudge line
 describe('the enforcement seam — nothing charges / nothing hard-blocks while billing is off', () => {
   it('withinAllowance ALWAYS returns true while billing is off, even far over the allowance', () => {
     // Free CRM allowance is 250 contacts (§2); 10x over it must still not be blocked while billing is off.
-    expect(withinAllowance('space_crm', 'free', 1_000_000, { billingLive: false })).toBe(true)
+    expect(withinAllowance('space_crm', 'free', 1_000_000, { gatesLive: false })).toBe(true)
     // Every metered feature, at its free floor, wildly over allowance → still true (informational only).
     for (const key of FEATURE_METER_KEYS) {
-      expect(withinAllowance(key, 'free', Number.MAX_SAFE_INTEGER, { billingLive: false })).toBe(true)
+      expect(withinAllowance(key, 'free', Number.MAX_SAFE_INTEGER, { gatesLive: false })).toBe(true)
     }
   })
 
   it('a non-metered or unknown feature is never blocked, even once billing is live', () => {
-    expect(withinAllowance('space_whitelabel', 'free', 999, { billingLive: true })).toBe(true)
-    expect(withinAllowance('made-up', 'free', 999, { billingLive: true })).toBe(true)
+    expect(withinAllowance('space_whitelabel', 'free', 999, { gatesLive: true })).toBe(true)
+    expect(withinAllowance('made-up', 'free', 999, { gatesLive: true })).toBe(true)
   })
 
   it('with billing LIVE it enforces the seam (usage vs allowance) — the go-live behavior', () => {
     // At/under the free cap passes; over it fails; an unlimited tier always passes.
-    expect(withinAllowance('space_crm', 'free', 250, { billingLive: true })).toBe(true)
-    expect(withinAllowance('space_crm', 'free', 251, { billingLive: true })).toBe(false)
-    expect(withinAllowance('space_crm', 'business', Number.MAX_SAFE_INTEGER, { billingLive: true })).toBe(true)
+    expect(withinAllowance('space_crm', 'free', 250, { gatesLive: true })).toBe(true)
+    expect(withinAllowance('space_crm', 'free', 251, { gatesLive: true })).toBe(false)
+    expect(withinAllowance('space_crm', 'business', Number.MAX_SAFE_INTEGER, { gatesLive: true })).toBe(true)
   })
 
   it('nothing charges: the module exposes no price mutation or charge path (allowances are data only)', () => {

@@ -3,9 +3,13 @@
 // FAIL-SAFE: every read falls back to the seeded code defaults so a transient DB hiccup, or the
 // pre-migration state, never breaks a price display or wrongly turns billing on.
 //
-// EVERYTHING SHIPS OFF (ADR-362, docs/PRICING.md). The LIVE gate is `billingLive()` =
+// EVERYTHING SHIPS OFF (ADR-362, docs/PRICING.md). The CHARGING gate is `billingLive()` =
 // billingEnabled() (the Stripe env keys, lib/billing/stripe.ts) AND the `billing_live` platform
 // flag — so even a fully configured Stripe env stays OFF until an operator flips the master switch.
+//
+// TWO SWITCHES, NOT ONE (ADR-874). `billingLive()` answers "may we CHARGE". `featureGatesLive()`
+// answers "do the paid feature GATES bite yet" = billingLive() AND the `beta_grace` window has ended.
+// Charging paths take the first; every feature-gating path takes the second. Do not re-conflate them.
 //
 // The values mirror the migration seed exactly; this module is the code source of truth for the
 // DEFAULTS (the table only overrides them), the same contract gates.ts / page-chrome.ts use.
@@ -18,6 +22,7 @@ import {
   HOUSEHOLD_BUNDLE_DEFAULT,
   type HouseholdBundleConfig,
 } from './bundle'
+import { asBetaGrace, betaGraceActive, BETA_GRACE_DEFAULT, type BetaGraceConfig } from './beta'
 import { asFoundingConfig, FOUNDING_DEFAULT, type FoundingConfig } from './founding'
 
 // ── The seeded DEFAULT values (kept in sync with 20260723010000_pricing_foundation.sql) ──
@@ -101,10 +106,13 @@ const SETTING_DEFAULTS: Record<string, unknown> = {
   annual_discount: PRICING_DEFAULTS.annual_discount,
 }
 
-/** Read ALL pricing settings as a key -> jsonb map, merged over the seeded defaults. REQUEST-CACHED;
- *  FAIL-SAFE: any error (or missing table) yields the full defaults, so prices always render. The
- *  pricing_settings table isn't in the generated types yet (ADR-246) — reached untyped. */
-export const loadPricingSettings = cache(async (): Promise<Record<string, unknown>> => {
+/** The raw settings read: the defaults-merged map PLUS whether the DB read actually SUCCEEDED.
+ *  REQUEST-CACHED. Internal — loadPricingSettings below is the public, values-only view that every
+ *  price display uses. The `ok` bit exists for the one reader whose FAIL-SAFE DIRECTION depends on
+ *  telling "the operator stored nothing" apart from "we could not read what the operator stored":
+ *  featureGatesLive() (ADR-874) must never enforce the paid gates on the strength of a failed read.
+ *  The pricing_settings table isn't in the generated types yet (ADR-246) — reached untyped. */
+const readPricingSettings = cache(async (): Promise<{ values: Record<string, unknown>; ok: boolean }> => {
   const out: Record<string, unknown> = { ...SETTING_DEFAULTS }
   try {
     const db = createAdminClient()
@@ -115,15 +123,21 @@ export const loadPricingSettings = cache(async (): Promise<Record<string, unknow
     })
       .from('pricing_settings')
       .select('key, value')
-    if (error || !data) return out
+    if (error || !data) return { values: out, ok: false }
     for (const r of data) {
       const key = typeof r.key === 'string' ? r.key : null
       if (key && r.value != null) out[key] = r.value
     }
-    return out
+    return { values: out, ok: true }
   } catch {
-    return out
+    return { values: out, ok: false }
   }
+})
+
+/** Read ALL pricing settings as a key -> jsonb map, merged over the seeded defaults. REQUEST-CACHED;
+ *  FAIL-SAFE: any error (or missing table) yields the full defaults, so prices always render. */
+export const loadPricingSettings = cache(async (): Promise<Record<string, unknown>> => {
+  return (await readPricingSettings()).values
 })
 
 /** The full, typed pricing values (DB merged over defaults). FAIL-SAFE to PRICING_DEFAULTS. */
@@ -221,13 +235,59 @@ export async function billingLiveFlag(): Promise<boolean> {
   return flags.billing_live
 }
 
-/** Is billing ACTUALLY live? The single gate: the Stripe env keys (billingEnabled) AND the
- *  operator master switch (billing_live). OFF by default even with env keys present, so nothing
- *  charges in P1. Every charging/gating path checks this — and while it's false, featureAllowed
- *  grants everything (today's behavior). FAIL-SAFE FALSE. */
+/** Is billing ACTUALLY live? The single CHARGING gate: the Stripe env keys (billingEnabled) AND the
+ *  operator master switch (billing_live). OFF by default even with env keys present, so nothing charges
+ *  in P1. This answers ONE question — MAY WE CHARGE / is checkout sellable — and every charging path
+ *  (checkout creation, *Sellable, webhook reconciliation, dunning) checks it. FAIL-SAFE FALSE.
+ *
+ *  It deliberately does NOT answer "are the feature gates enforced". That is featureGatesLive() below
+ *  (ADR-874); passing this into featureAllowed is the conflation that ADR fixed. */
 export async function billingLive(): Promise<boolean> {
   try {
     return billingEnabled() && (await billingLiveFlag())
+  } catch {
+    return false
+  }
+}
+
+// ── The FEATURE-GATE switch (ADR-874) — separate from the charging switch ─────────────────────────
+// Selling and gating are two decisions on two dates. `billingLive()` says we may CHARGE; this says the
+// paid-feature ladder actually BITES. Turning billing on to open checkout must not, in the same instant,
+// revoke paid features from every free Space — members explore the levels through the beta grace window
+// and start paying when it ends.
+
+/** The `beta_grace` window config (ADR-874), merged over the code default. Kept out of the typed
+ *  PricingDefaults core and read through here, exactly like getFoundingConfig / getHouseholdBundle: the
+ *  settings layer already falls back to code defaults for an ABSENT key, so no migration seeds this row.
+ *  FAIL-SAFE to BETA_GRACE_DEFAULT (grace ON), never to no-grace. */
+export async function getBetaGrace(): Promise<BetaGraceConfig> {
+  try {
+    return asBetaGrace((await readPricingSettings()).values.beta_grace)
+  } catch {
+    return BETA_GRACE_DEFAULT
+  }
+}
+
+/** Are the paid FEATURE GATES enforced right now? TRUE only when billing is live AND the beta grace
+ *  window has ENDED. This is what featureAllowed / every plan-ladder wall consults — never billingLive().
+ *
+ *  - billing OFF                  -> false (nothing is gated; the pre-launch behavior, unchanged).
+ *  - billing ON, in grace         -> false (checkout sells, every Space keeps exploring the levels).
+ *  - billing ON, grace ended/none -> true  (the ladder bites).
+ *
+ *  FAIL-SAFE FALSE, and note the direction: false here means GRANT. A transient read error must never
+ *  enforce the gates early and strip a member's or a Space's features, so any failure degrades to grace
+ *  still on, matching this repo's never-lock-out posture everywhere else in pricing. (billingLive() is
+ *  the opposite direction on purpose: it fails closed, because its failure mode is charging someone.) */
+export async function featureGatesLive(): Promise<boolean> {
+  try {
+    if (!(await billingLive())) return false
+    const { values, ok } = await readPricingSettings()
+    // A FAILED read is not "the operator configured no grace window". Falling through to the code
+    // default here would enforce the gates the moment that default date passed, on the strength of a
+    // DB hiccup — the exact early lockout this fail-safe exists to prevent. Degrade to grace ON.
+    if (!ok) return false
+    return !betaGraceActive(asBetaGrace(values.beta_grace))
   } catch {
     return false
   }

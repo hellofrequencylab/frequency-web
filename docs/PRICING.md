@@ -166,7 +166,9 @@ The feature → minimum-entitlement map is **data**. The code map in `lib/pricin
 FAIL-SAFE **override layer** merged OVER it, exactly the way `lib/layout/page-chrome.ts` merges
 operator chrome overrides over code defaults (`mergeGate` mirrors `mergeChrome`).
 
-`featureAllowed(feature, account, { billingLive })` is the single resolver. Seeded features:
+`featureAllowed(feature, account, { gatesLive })` is the single resolver. **`gatesLive` is
+`featureGatesLive()`, NOT `billingLive()`** (ADR-874): "may we charge" and "do the gates bite" are
+different decisions on different dates, and the gates ride the second one. Seeded features:
 
 | Feature | Axis | Needs |
 |---|---|---|
@@ -183,12 +185,18 @@ price order" above).
 
 ## How OFF preserves current behavior 🔴 important
 
-`billing_live` defaults OFF, and the live gate is `billingLive()` = `billingEnabled()` (the Stripe
+`billing_live` defaults OFF, and the CHARGING gate is `billingLive()` = `billingEnabled()` (the Stripe
 env keys) **AND** the `billing_live` flag — so billing is OFF even with env keys present until an
-operator flips the master switch. While OFF:
+operator flips the master switch.
 
-- `featureAllowed(...)` **short-circuits to `true`** (grant everything). No surface that consults it
-  changes behavior.
+The GATING gate is separate (ADR-874): `featureGatesLive()` = `billingLive()` **AND** the `beta_grace`
+window has ended (`{ until: '2026-09-01' }` by code default; no migration seeds it). So turning billing
+on opens checkout **without** taking any feature away, and the ladder starts biting on the grace date at
+00:00 UTC. `billingLive()` fails CLOSED (its failure charges someone); `featureGatesLive()` fails OPEN to
+grant (its failure strips someone). While EITHER is off:
+
+- `featureAllowed(...)` **short-circuits to `true`** (grant everything) whenever the GATES are not live.
+  No surface that consults it changes behavior.
 - `setSpacePlan(...)` is a **no-op** (returns `billing_off`), so no Space's entitlements change.
 - Per-tier/plan `*_enabled` switches are all OFF; the gamification toggles mirror the existing
   derive-from-tier default (crew/supporter full, member earn-only).

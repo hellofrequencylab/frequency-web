@@ -11,11 +11,12 @@ import { shouldShowTease, teaseCapSpent, TEASE_DEFAULT_CAP } from '@/lib/pricing
 // the surface, it sits beside the win the member just had.
 //
 // THE GATE (the whole Phase E invariant, the pure predicate in lib/pricing/upsell-tease.ts):
-//   it renders ONLY when billing is LIVE, the target capability is LOCKED for this account, and the
-//   per-tease frequency cap has not been spent. While `billing_live` is OFF, `live` is false and this
-//   renders NOTHING — no prompt that did not exist before the flip. The server resolves `live`
-//   (billingLive()) and `locked` (the capability gate) and passes them in; this island only adds the
-//   dismiss / cap state.
+//   it renders ONLY when the paid feature GATES are live, the target capability is LOCKED for this
+//   account, and the per-tease frequency cap has not been spent. While the gates are not live (billing
+//   off, or the beta grace window still open, ADR-874) `live` is false and this renders NOTHING — no
+//   prompt that did not exist before the flip, and no claim of a lock that is not being enforced. The
+//   server resolves `live` (featureGatesLive()) and `locked` (the capability gate) and passes them in;
+//   this island only adds the dismiss / cap state.
 //
 // PRESENTATION-NEUTRAL (ADR-018): the target, the copy, and the href are PROPS. This component never
 // names a feature or writes a sentence — each wiring site supplies honest, concrete copy (CONTENT-VOICE
@@ -47,7 +48,8 @@ export interface UpsellTeaseProps {
   /** A STABLE key identifying this tease (the target capability), e.g. 'contacts-crm', 'qr-studio'.
    *  Drives the frequency cap so the same tease never nags. PRESENTATION-NEUTRAL: a key, not shown. */
   target: string
-  /** Is billing ACTUALLY live? Resolved server-side via lib/pricing/settings.ts billingLive(). */
+  /** Are the paid feature GATES live? Resolved server-side via lib/pricing/settings.ts
+   *  featureGatesLive(). Not billingLive(): a tease claims a lock, so it waits for the lock (ADR-874). */
   live: boolean
   /** Is the target capability LOCKED for this account? Resolved server-side (the capability gate).
    *  When false, the member already has it, so there is nothing to upsell and this renders nothing. */
@@ -64,8 +66,8 @@ export interface UpsellTeaseProps {
   cap?: number
 }
 
-/** A success-moment upsell tease. Renders nothing unless billing is live, the capability is locked, and
- *  the tease is under its frequency cap. Mount it INLINE where the win just happened. */
+/** A success-moment upsell tease. Renders nothing unless the gates are live, the capability is locked,
+ *  and the tease is under its frequency cap. Mount it INLINE where the win just happened. */
 export function UpsellTease({
   target,
   live,
@@ -83,7 +85,7 @@ export function UpsellTease({
 
   useEffect(() => {
     // Only consult the meter when the server-side gate would even allow a tease — keeps OFF a true no-op.
-    if (!shouldShowTease({ billingLive: live, locked })) return
+    if (!shouldShowTease({ gatesLive: live, locked })) return
     const spent = teaseCapSpent(readSeen()[target], cap)
     // Count this appearance toward the cap so the next success moment stays quiet.
     if (!spent) markSeen(target, cap)
@@ -98,7 +100,7 @@ export function UpsellTease({
 
   // The pure predicate is the single source of truth. `ready` keeps it client-only (post-cap-read).
   if (!ready) return null
-  if (!shouldShowTease({ billingLive: live, locked, dismissed })) return null
+  if (!shouldShowTease({ gatesLive: live, locked, dismissed })) return null
 
   const onDismiss = () => {
     setDismissed(true)

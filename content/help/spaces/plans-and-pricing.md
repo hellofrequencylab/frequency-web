@@ -75,6 +75,9 @@ You can change plans whenever you like. See [Billing](/help/spaces/billing) for 
 
 ## During the beta
 
-Billing is not switched on yet. Every Space has full access while we finish the launch, and the price
-you lock during the Opening Beta is the price you keep. Nothing charges your card until billing goes
-live, and you will know before it does.
+**Every Space has full access until September 1**, whatever plan it is on. Take your time, try the
+tools, and find out what you actually need before you pay for it.
+
+You can subscribe now if you want to. The price you lock during the Opening Beta is the price you
+keep, and paying early is what holds it. On September 1 the plans start doing what they say: the
+tools each one includes stay with that plan.

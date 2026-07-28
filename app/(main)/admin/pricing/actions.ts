@@ -342,6 +342,30 @@ export async function setBetaFlag(key: string, value: boolean): Promise<ActionRe
   }
 }
 
+/** Save the BETA GRACE date (`beta_grace` pricing_settings, ADR-874): the day the paid FEATURE GATES
+ *  start blocking. This is the second of the two switches — `billing_live` decides whether we may
+ *  CHARGE, this decides whether the paid ladder BITES — so turning billing on to sell plans no longer
+ *  revokes paid features from every free Space in the same instant.
+ *
+ *  Accepts a calendar date ('2026-09-01'; stored as-is, read as 00:00 UTC on that day, so the date is
+ *  the first ENFORCED day) or an empty string, which stores `{ until: null }` = no grace window, i.e.
+ *  the gates follow `billing_live` exactly. Janitor-gated; unlike saveBetaEndsAt this one DOES change
+ *  access, so it rejects an unparseable value rather than storing it. */
+export async function saveBetaGrace(value: string): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  const raw = value.trim()
+  if (raw && Number.isNaN(Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T00:00:00.000Z` : raw))) {
+    return fail('Enter a valid date (for example 2026-09-01).')
+  }
+  try {
+    await setPricingSetting('beta_grace', { until: raw || null }, ctx.profileId)
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the date.')
+  }
+}
+
 /** Save the beta countdown date (`beta_ends_at`, platform_settings text). DISPLAY-ONLY: it drives the
  *  countdown banner and nothing else — it grants no access. Accepts an empty string (clears the banner)
  *  or a parseable date (stored as an ISO string). Janitor-gated. */

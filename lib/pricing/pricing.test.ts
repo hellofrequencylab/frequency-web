@@ -238,23 +238,23 @@ describe('mergeGate (DB override over code default, like mergeChrome)', () => {
 describe('featureAllowed — OFF preserves current behavior', () => {
   it('grants EVERYTHING when billing is not live (the OFF invariant)', async () => {
     // Even a free account on a gated feature is allowed while billing is OFF.
-    expect(await featureAllowed('space_crm', { tier: 'free', plan: 'free' }, { billingLive: false })).toBe(true)
-    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { billingLive: false })).toBe(true)
-    expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { billingLive: false })).toBe(true)
+    expect(await featureAllowed('space_crm', { tier: 'free', plan: 'free' }, { gatesLive: false })).toBe(true)
+    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { gatesLive: false })).toBe(true)
+    expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { gatesLive: false })).toBe(true)
   })
 
   it('an unknown feature is ungated (default-allow for an undeclared key)', async () => {
-    expect(await featureAllowed('never_declared', { tier: 'free' }, { billingLive: true })).toBe(true)
+    expect(await featureAllowed('never_declared', { tier: 'free' }, { gatesLive: true })).toBe(true)
   })
 
   // The exact gate wired into the Vault cash-in server action (app/(main)/crew/store/actions.ts, P3):
   // OFF must preserve today's behavior (free can still be checked by canCashIn above, the gate is a
   // no-op); when billing is live the gate applies the crew minimum (free blocked, paid allowed).
   it('vault_cash_in: OFF is a no-op (free allowed); ON blocks free, allows crew+', async () => {
-    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { billingLive: false })).toBe(true)
-    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { billingLive: true })).toBe(false)
-    expect(await featureAllowed('vault_cash_in', { tier: 'crew' }, { billingLive: true })).toBe(true)
-    expect(await featureAllowed('vault_cash_in', { tier: 'supporter' }, { billingLive: true })).toBe(true)
+    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { gatesLive: false })).toBe(true)
+    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { gatesLive: true })).toBe(false)
+    expect(await featureAllowed('vault_cash_in', { tier: 'crew' }, { gatesLive: true })).toBe(true)
+    expect(await featureAllowed('vault_cash_in', { tier: 'supporter' }, { gatesLive: true })).toBe(true)
   })
 })
 
