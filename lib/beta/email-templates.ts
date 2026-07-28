@@ -82,7 +82,7 @@ The Frequency team`,
 
 You've been here since the early days, so we want to offer you something before it opens to everyone: Founding Member status.
 
-Founding Members lock in the lowest price we will ever set and keep it for good. You get a founding badge that says you were here first, and a direct line to shape what we build next.
+Founding Members lock in the lowest price we will ever set and keep it for good. Take the year before September 1 and you also get the founding badge on your profile, plus a direct line to shape what we build next.
 
 [Become a Founding Member](https://frequencylocal.com/pricing)
 
@@ -101,7 +101,7 @@ The Frequency team`,
 
 You run something local, and the people on Frequency are your neighbors. We would like to offer you a Founding Business spot before this opens up.
 
-A Founding Business gets its own Space to post events and offers, a founding badge, and the lowest rate we will ever set, kept for good. We will help you set the whole thing up ourselves.
+A Founding Business gets its own Space to post events and offers and the lowest rate we will ever set, kept for good. Take the year before September 1 and the Space also wears the Founding Business badge. We will help you set the whole thing up ourselves.
 
 [Claim a Founding Business spot](https://frequencylocal.com/pricing)
 

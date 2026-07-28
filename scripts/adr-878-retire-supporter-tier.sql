@@ -1,5 +1,16 @@
 -- ADR-878 · RETIRE THE $12 SUPPORTER TIER FROM THE SELLABLE MEMBER LADDER
 --
+-- APPLIED to production 2026-07-28. Preconditions matched the assumptions below exactly
+-- (flag true, tier.supporter at $12/$120, tier.crew carrying the 1200 anchor, and ZERO profiles on
+-- either membership_tier = 'supporter' or is_supporter). All three verify-after checks returned true:
+-- supporter_row_gone, crew_anchor_cleared, flag_off; tier.crew now reads {monthly_cents: 900,
+-- annual_cents: 9000} with no anchor. Kept in the repo because every statement is idempotent and the
+-- file is the record of what was run.
+--
+-- Safe to run BEFORE the code deploy, which is why it went first: the then-live code read this row via
+-- `pick('tier.supporter', PRICING_DEFAULTS.tier.supporter)`, so a missing row falls back to a constant
+-- rather than throwing, and its `tier_supporter_enabled` default was already false.
+--
 -- The founder's canonical member ladder is exactly Member (free) and Crew ($9/mo). Supporter had
 -- already stopped being a TIER (ADR-458 turned it into the pay-what-you-want `profiles.is_supporter`
 -- badge); this removes what was left of it as something we SELL and SHOW, and clears the crossed-out

@@ -243,7 +243,7 @@ const FOUNDING_MEMBER_WELCOME: EmailPreset = {
           {
             icon: '🎖️',
             title: 'A founding badge',
-            text: 'A small mark on your profile that says you were here at the start.',
+            text: 'Take the year before September 1 and a small mark goes on your profile that says you were here at the start.',
           },
           {
             icon: '📣',
@@ -292,7 +292,7 @@ const FOUNDING_BUSINESS_INVITE: EmailPreset = {
       content: {
         eyebrow: 'What you get',
         title: 'A real home for your business',
-        body: 'A Founding Business gets its own Space to post events and offers, a founding badge, and the lowest rate we will ever set, kept for good.',
+        body: 'A Founding Business gets its own Space to post events and offers and the lowest rate we will ever set, kept for good. Take the year before September 1 and the Space also wears the Founding Business badge.',
       },
     },
     {
