@@ -1,25 +1,7 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-// maplibre-gl 6 is ESM-only with named exports; the namespace import keeps the maplibregl.* call sites unchanged.
-import * as maplibregl from 'maplibre-gl'
-import 'maplibre-gl/dist/maplibre-gl.css'
-
-// Match circle-map.tsx: OpenFreeMap (free vector tiles, no API key) out of the
-// box, overridable with a Mapbox/MapTiler style URL via NEXT_PUBLIC_MAP_STYLE.
-const STYLE = process.env.NEXT_PUBLIC_MAP_STYLE || 'https://tiles.openfreemap.org/styles/positron'
-
-// Escape user-controlled text before it goes into popup HTML (setHTML) — same
-// pattern as circle-map.tsx. A circle/event titled `<img src=x onerror=…>` must
-// never become stored XSS for everyone who opens its popup.
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
+import { MapCanvas } from '@/components/maps/map-canvas'
+import type { MapPin } from '@/components/maps/types'
 
 export type GroupMapVenue = {
   /** The circle's PUBLIC meeting location. NEVER a member's home/live location (ADR-186). */
@@ -44,8 +26,12 @@ export type GroupMapEvent = {
 // and each upcoming event that carries public coordinates as a secondary pin.
 // PRIVACY (ADR-186): only public venue coordinates are ever plotted here — no
 // member home/live locations, no member pins. Loaded behind the maps-enabled
-// gate by the server wrapper; rendered client-side so maplibre never runs on
-// the server.
+// gate by the server wrapper.
+//
+// Composes the map seam (ADR-901) instead of a map library directly: Google when a browsable
+// key is configured, MapLibre + keyless OpenFreeMap tiles otherwise. Pin colours now come
+// from the DAWN tokens the seam resolves (primary for the circle, secondary for its events)
+// rather than the hardcoded hex this file used to carry.
 export default function GroupMap({
   venue,
   events = [],
@@ -55,70 +41,6 @@ export default function GroupMap({
   events?: GroupMapEvent[]
   className?: string
 }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<maplibregl.Map | null>(null)
-
-  useEffect(() => {
-    if (!venue) return
-    const container = containerRef.current
-    if (!container) return
-
-    const map = new maplibregl.Map({
-      container,
-      style: STYLE,
-      center: [venue.longitude, venue.latitude],
-      zoom: 13,
-      attributionControl: { compact: true },
-    })
-    mapRef.current = map
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
-
-    // Only events that carry public coordinates get a pin (ADR-186).
-    const locatedEvents = events.filter(
-      (e): e is GroupMapEvent & { latitude: number; longitude: number } =>
-        e.latitude != null && e.longitude != null,
-    )
-
-    map.on('load', () => {
-      // ── Primary marker: the circle's public meeting location (amber). ──
-      const venuePopup = new maplibregl.Popup({ offset: 14, closeButton: false }).setHTML(
-        `<div style="font-weight:600;color:#A8631B">${escapeHtml(venue.name)}</div>` +
-          (venue.place
-            ? `<div style="font-size:12px;color:#8a7a66;margin-top:2px">${escapeHtml(venue.place)}</div>`
-            : ''),
-      )
-      new maplibregl.Marker({ color: '#E2912F' })
-        .setLngLat([venue.longitude, venue.latitude])
-        .setPopup(venuePopup)
-        .addTo(map)
-
-      // ── Secondary markers: upcoming events with public coordinates (slate). ──
-      for (const ev of locatedEvents) {
-        const evPopup = new maplibregl.Popup({ offset: 12, closeButton: false }).setHTML(
-          `<div style="font-weight:600;color:#2A1B06">${escapeHtml(ev.title)}</div>` +
-            `<div style="font-size:12px;color:#8a7a66;margin-top:2px">${escapeHtml(ev.dateLabel)}</div>`,
-        )
-        new maplibregl.Marker({ color: '#5B7083' })
-          .setLngLat([ev.longitude, ev.latitude])
-          .setPopup(evPopup)
-          .addTo(map)
-      }
-
-      // Fit to all markers; with only the circle pin, stay centered at a sensible zoom.
-      if (locatedEvents.length > 0) {
-        const bounds = new maplibregl.LngLatBounds()
-        bounds.extend([venue.longitude, venue.latitude])
-        for (const ev of locatedEvents) bounds.extend([ev.longitude, ev.latitude])
-        map.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 0 })
-      }
-    })
-
-    return () => {
-      map.remove()
-      mapRef.current = null
-    }
-  }, [venue, events])
-
   // Graceful no-coordinates case: a tasteful panel instead of an empty map.
   if (!venue) {
     return (
@@ -128,13 +50,39 @@ export default function GroupMap({
     )
   }
 
-  // Subtle warm filter so the cool base tiles sit on the cream palette — matches
-  // circle-map.tsx. Amber/slate pins stay true.
+  const pins: MapPin[] = [
+    {
+      id: 'venue',
+      lat: venue.latitude,
+      lng: venue.longitude,
+      title: venue.name,
+      subtitle: venue.place,
+      tone: 'primary',
+    },
+    // Only events that carry public coordinates get a pin (ADR-186).
+    ...events
+      .filter(
+        (e): e is GroupMapEvent & { latitude: number; longitude: number } =>
+          e.latitude != null && e.longitude != null,
+      )
+      .map((e) => ({
+        id: e.id,
+        lat: e.latitude,
+        lng: e.longitude,
+        title: e.title,
+        subtitle: e.dateLabel,
+        tone: 'secondary' as const,
+      })),
+  ]
+
   return (
-    <div
-      ref={containerRef}
+    <MapCanvas
+      center={[venue.longitude, venue.latitude]}
+      zoom={13}
+      pins={pins}
+      // Fit only once there is more than the circle pin; with just the venue, stay at zoom 13.
+      fit={{ padding: 60, maxZoom: 14, singleZoom: null }}
       className={className}
-      style={{ filter: 'sepia(0.22) saturate(1.08) hue-rotate(-8deg) brightness(1.02)' }}
     />
   )
 }
