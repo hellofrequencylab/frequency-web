@@ -30,15 +30,20 @@ const FIELD =
   'w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 type Group = { id: string; name: string; kind?: 'circle' | 'space' }
+/** A Journey the manual form may link the event to. Passed straight through — the Spark's wizard
+ *  path does not ask about Journeys, so this only reaches EventForm. */
+type JourneyOption = { id: string; title: string }
 
 export function EventSpark({
   groups,
+  journeys,
   defaultGroupId,
   initial,
   startInManual,
   home,
 }: {
   groups: Group[]
+  journeys?: JourneyOption[]
   defaultGroupId?: string
   /** Prefill for the manual form (used by Duplicate event — a cloned draft). */
   initial?: Partial<EventFormInitial>
@@ -78,7 +83,15 @@ export function EventSpark({
   const [description, setDescription] = useState('')
 
   if (mode === 'manual')
-    return <EventForm groups={groups} defaultGroupId={defaultGroupId} initial={initial} home={home} />
+    return (
+      <EventForm
+        groups={groups}
+        journeys={journeys}
+        defaultGroupId={defaultGroupId}
+        initial={initial}
+        home={home}
+      />
+    )
 
   const onReview = step === 5
   const total = usingFlyer ? 2 : 5

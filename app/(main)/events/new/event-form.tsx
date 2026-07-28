@@ -42,6 +42,12 @@ type Group = {
   label?: string
 }
 
+// A Journey the caller may link this event to. Deliberately NOT a `Group`: a Journey is an
+// ASSOCIATION, not a scope — linking one does not change where the event lives, so it gets its own
+// field rather than an optgroup in "Where does it live?". The page offers only Journeys the caller
+// can edit, and the server re-checks that same authority on submit.
+type JourneyOption = { id: string; title: string }
+
 type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly'
 type PriceMode = 'free' | 'paid'
 
@@ -129,6 +135,8 @@ export interface EventFormInitial {
   venueLng?: number
   /** Host-only practical notes (parking, what to bring, door code, accessibility). */
   specialInstructions?: string
+  /** The Journey this event is part of (events.journey_id), or '' for none. */
+  journeyId?: string
 }
 
 // A grouped, tokenized section wrapper so the form reads as five clear steps instead of a
@@ -155,6 +163,7 @@ function FormSection({
 
 export function EventForm({
   groups,
+  journeys,
   initial,
   eventId,
   currentScopeName,
@@ -163,6 +172,8 @@ export function EventForm({
   home,
 }: {
   groups: Group[]
+  /** Journeys the caller may link this event to (create AND edit). Empty/absent hides the field. */
+  journeys?: JourneyOption[]
   /** When set (with `eventId`), the form prefills and edits the event. */
   initial?: Partial<EventFormInitial>
   /** When set, the form edits this event via updateEvent instead of createEvent. */
@@ -206,6 +217,8 @@ export function EventForm({
   // Default to PUBLIC on create (any member can post a local event); a circle/space is opt-in.
   // A deep-link circle/space or a Duplicate prefill wins when present.
   const [scopeId, setScopeId] = useState(initial?.scopeId ?? encodedDefaultGroupId ?? PUBLIC_SCOPE)
+  // The Journey this event is part of — a separate axis from the scope above. '' = not part of one.
+  const [journeyId, setJourneyId] = useState(initial?.journeyId ?? '')
   // PART 2: on create, the date field defaults to the viewer's current (active) local day at a
   // sensible hour, so it is never blank or tz-shifted to yesterday. Edit keeps the event's real
   // stored time. `localToday()` is read once at mount (a stable seed).
@@ -257,6 +270,16 @@ export function EventForm({
   // Split the scope options into their two optgroups (circles you host / spaces you run).
   const circleOptions = useMemo(() => groups.filter((g) => g.kind !== 'space'), [groups])
   const spaceOptions = useMemo(() => groups.filter((g) => g.kind === 'space'), [groups])
+
+  // The Journey field only renders when there is a real choice to make, AND when the event's
+  // CURRENT link is one of the offered options. An event can be linked by a Journey's author to a
+  // Journey this host does not run: the select could not show it, so leaving the field on would let
+  // an unrelated save silently detach it. Hidden means no `journeyId` is submitted at all, and the
+  // action treats an absent field as "leave the link exactly as it is".
+  const journeyOptions = useMemo(() => journeys ?? [], [journeys])
+  const showJourneyField =
+    journeyOptions.length > 0 &&
+    (!initial?.journeyId || journeyOptions.some((j) => j.id === initial.journeyId))
 
   // A venue/address autocomplete pick fills the structured fields AND drops the map pin at the
   // resolved point, which recenters the picker — the "map recenters when the address is
@@ -312,6 +335,12 @@ export function EventForm({
     }
     fd.set('scopeType', scopeType)
     fd.set('scopeId', outScopeId)
+
+    // The Journey link rides SEPARATELY from the scope, because it is not one: the server writes it
+    // to its own column and never touches the placement. Sent only when the field was shown, so a
+    // form that could not offer the current link leaves it untouched instead of clearing it. Blank
+    // is a real value here (detach); the server re-checks the Journey authority before attaching.
+    if (showJourneyField) fd.set('journeyId', journeyId)
 
     fd.set('startsAt', startsAt)
     if (endsAt) fd.set('endsAt', endsAt)
@@ -773,6 +802,32 @@ export function EventForm({
             </>
           )}
         </div>
+
+        {/* Part of a Journey — an association, not a placement. Offered on create AND edit (unlike
+            the scope, which is fixed once the event exists), because a Journey link can be made and
+            undone at any time without moving the event. */}
+        {showJourneyField && (
+          <div className="space-y-1.5">
+            <Label className="text-sm text-text" htmlFor="event-journey">Part of a Journey?</Label>
+            <select
+              id="event-journey"
+              value={journeyId}
+              onChange={(e) => setJourneyId(e.target.value)}
+              disabled={isPending}
+              className={fieldClasses}
+            >
+              <option value="">Not part of a Journey</option>
+              {journeyOptions.map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.title}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-2xs text-muted">
+              Optional. This does not move the event. It stays where it lives above.
+            </p>
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <Label className="text-sm text-text" htmlFor="event-visibility">Who can see this?</Label>

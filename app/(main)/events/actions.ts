@@ -5,17 +5,18 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
-import { getEventCapabilities } from '@/lib/core/load-capabilities'
+import { getEventCapabilities, getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { slugify } from '@/lib/utils'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { markVerifiedByAttendance } from '@/lib/verification/attendance'
-import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
+import { propagateAnchorEditsToOccurrences, generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 import { validateRecurrenceUntil } from '@/lib/events/recurrence'
 import { resolveRegionScopeId } from '@/lib/events/event-drafts'
-import { listCircleStewardIds, listSpaceEventCreatorIds } from '@/lib/events/placement'
+import { listSpaceEventCreatorIds, journeyLinkPatch } from '@/lib/events/placement'
+import { canEditJourney } from '@/lib/journeys/authoring'
 import { cancelAudit } from '@/lib/events/event-lifecycle'
 import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
@@ -60,6 +61,38 @@ function parseGalleryPaths(raw: string | null): string[] {
 function parsePriceCents(raw: string | null): number | null {
   const n = raw ? parseInt(raw.trim(), 10) : NaN
   return Number.isFinite(n) && n > 0 ? n : null
+}
+
+// THE JOURNEY LINK (events.journey_id). An ASSOCIATION, like space_id — not a placement. Attaching
+// or detaching a Journey never moves the event: its home stays the bare scope_id + scope_type pair,
+// so a Circle's event stays on its Circle and a public event stays in its region. The one column
+// this writes comes from journeyLinkPatch (lib/events/placement.ts), never a hand-rolled set.
+//
+// Three outcomes, and the first one matters as much as the others: a form that does not SEND
+// `journeyId` leaves the existing link alone. The event editor is not the only writer of an event
+// (the draft publish path, Vera's spark, the poster scanner), and a patch built from "the field is
+// absent" rather than "the field is empty" is what keeps one of those from silently un-linking an
+// event it never knew was part of a Journey. Blank means detach; only a real id attaches.
+//
+// AUTHORITY is `canEditJourney` — the ONE Journey gate (author, platform operator, or a manager of
+// the owning Space), the same rule the Journey editor route and every Journey editor action ask.
+// The picker offers exactly what this admits (ADR-883 §3: the offer and the gate are one rule), and
+// this re-derives it server-side because the client's list is a convenience, never an authority.
+// Detaching needs no Journey authority: the caller already had to hold event.editSettings to get
+// here, and taking your own event back out of someone's Journey is their business, not the
+// Journey author's.
+type JourneyLink = { ok: true; patch: Record<string, unknown> } | { ok: false; message: string }
+const NO_JOURNEY_CHANGE: JourneyLink = { ok: true, patch: {} }
+
+async function resolveJourneyLink(formData: FormData, profileId: string | null): Promise<JourneyLink> {
+  const raw = formData.get('journeyId')
+  if (raw === null) return NO_JOURNEY_CHANGE
+  const journeyId = typeof raw === 'string' ? raw.trim() : ''
+  if (!journeyId) return { ok: true, patch: journeyLinkPatch(null) }
+  if (!(await canEditJourney(journeyId, profileId))) {
+    return { ok: false, message: 'You can only add an event to a Journey you run.' }
+  }
+  return { ok: true, patch: journeyLinkPatch(journeyId) }
 }
 
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
@@ -224,9 +257,24 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   // client's scope list. `space_id` for a space event is set below (that column = instant placement).
   let spaceIdForPlacement: string | null = null
   if (scopeChoice === 'circle') {
-    const stewards = await listCircleStewardIds(formScopeId as string)
-    if (!stewards.includes(myProfileId)) {
-      return fail('You can only add an event to a circle you host.')
+    // The circle has to EXIST before its authority is asked for: a staff viewer resolves
+    // circle.editSettings on any circle id, including one that names no row, and `scope_id` has no
+    // foreign key to catch it. Fail closed on a target that is not there.
+    const { data: targetCircle } = await createAdminClient()
+      .from('circles')
+      .select('id')
+      .eq('id', formScopeId as string)
+      .neq('status', 'archived')
+      .maybeSingle()
+    if (!targetCircle) return fail('That Circle could not be found.')
+    // ONE circle authority: `circle.editSettings` — its host (by FK or stewardship edge), platform
+    // staff, or the guide/mentor over its hub/nexus. The old check read circles.host_id alone, so
+    // someone who runs the Circle everywhere else (and may even APPROVE another host's placement
+    // into it, viewerIsSteward in placement-actions.ts) could not create its events. Same rule on
+    // both sides now. "If you run the scope, you run its events."
+    const circleCaps = await getCircleCapabilities(formScopeId as string)
+    if (!circleCaps.has('circle.editSettings')) {
+      return fail('You can only add an event to a Circle you run.')
     }
     // A circle's events belong to the circle's Space too (ADR-857): derive the placement from
     // the circle so the event lands on BOTH the circle page (scope_id) and the Space calendar
@@ -241,6 +289,12 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
     }
     spaceIdForPlacement = formScopeId
   }
+
+  // The Journey this event is part of, if any — resolved and AUTHORIZED before the insert, so a
+  // link the caller may not make fails the create outright instead of leaving a created event with
+  // a silently dropped association (the failure mode ADR-883 catalogued for the circle path).
+  const journeyLink = await resolveJourneyLink(formData, myProfileId)
+  if (!journeyLink.ok) return fail(journeyLink.message)
 
   // Resolve the base scope_id column: a circle event uses the chosen circle; a public OR space
   // event is region-scoped (a space event additionally carries space_id, set at insert below).
@@ -302,6 +356,9 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
       // host; registrations and ticket money route through it). host_id stays the personal operator
       // axis (edit rights, notifications). Distinct from space_id, which is pure tenancy/placement.
       ...(scopeChoice === 'space' && spaceIdForPlacement ? { host_space_id: spaceIdForPlacement } : {}),
+      // The Journey association (journey_id), authorized above. Empty when the form sent no link,
+      // so this is the only place the column is touched on create and it can never carry a scope.
+      ...journeyLink.patch,
     } as never).select('id').single()
 
   if (error || !inserted) {
@@ -349,6 +406,8 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   // A space event surfaces on its Space's Calendar console, public Calendar tab, and .ics
   // feed — refresh those too so a create/edit/cancel/delete shows up there without a wait.
   revalidatePath('/spaces', 'layout')
+  // A linked event shows on its Journey, so refresh that tree when the link was touched.
+  if (Object.keys(journeyLink.patch).length > 0) revalidatePath('/journeys', 'layout')
   // Navigation happens client-side off this result (a server redirect would
   // short-circuit returning the ActionResult).
   return ok({ slug })
@@ -429,6 +488,12 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   const siRaw = formData.get('specialInstructions')
   const specialInstructions = typeof siRaw === 'string' ? siRaw.trim() : null
 
+  // Attach / detach the Journey (events.journey_id). Absent field = leave the link alone; blank =
+  // detach; an id = attach, gated on the one Journey authority. Resolved BEFORE the write so a
+  // rejected link fails the whole save rather than persisting the other edits without it.
+  const journeyLink = await resolveJourneyLink(formData, await getMyProfileId())
+  if (!journeyLink.ok) return fail(journeyLink.message)
+
   const admin = createAdminClient()
   const { data: ev } = await admin
     .from('events')
@@ -472,6 +537,9 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
       ...(isAnchor
         ? { recurrence_type: recurrenceTypeEdit, recurrence_until: recurrenceUntilEdit }
         : {}),
+      // The Journey association (journey_id), authorized above. Empty when the form sent no link,
+      // so an editor that does not surface the field can never wipe one.
+      ...journeyLink.patch,
     } as never)
     .eq('id', eventId)
   if (error) {
@@ -488,6 +556,22 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
     )
   }
 
+  // PROPAGATE the edit onto occurrences that already exist (ADR-884). generateOccurrencesForAnchor
+  // above only MINTS missing occurrences and dedupes with ignoreDuplicates, so on its own an edit
+  // changed the anchor and left every materialised child holding whatever it was born with. That
+  // was visible in production as an anchor titled "Meld - Community Cowork" whose seven children
+  // still read "MELD - A Community Cowork".
+  //
+  // Runs for ANY anchor, not just a still-recurring one: turning a series off must not strand the
+  // occurrences it already made. Upcoming rows only (a past occurrence is a record of what
+  // happened), and best-effort, because the anchor is already saved and a propagation failure must
+  // not report the save as failed.
+  if (isAnchor) {
+    propagateAnchorEditsToOccurrences(eventId).catch((e) =>
+      console.error('[updateEvent] occurrence propagation:', e),
+    )
+  }
+
   // Re-persist the structured address + re-geocode the venue (best-effort; never fails the save).
   await geocodeEventOnCreate(eventId, formData)
   // Re-embed for the matching engine (fire-and-forget; no-ops if AI off).
@@ -501,6 +585,8 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   // A space event surfaces on its Space's Calendar console, public Calendar tab, and .ics
   // feed — refresh those too so a create/edit/cancel/delete shows up there without a wait.
   revalidatePath('/spaces', 'layout')
+  // A linked event shows on its Journey, so refresh that tree when the link was touched.
+  if (Object.keys(journeyLink.patch).length > 0) revalidatePath('/journeys', 'layout')
   // Navigation happens client-side off this result (a server redirect would
   // short-circuit returning the ActionResult).
   return ok({ slug })

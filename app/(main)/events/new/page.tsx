@@ -1,12 +1,14 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { getEventCapabilities } from '@/lib/core/load-capabilities'
+import { getEventCapabilities, getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { EventSpark } from '../event-spark'
 import { getViewerHome } from '../admin-actions'
 import type { EventFormInitial } from './event-form'
 import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import { listLinkableJourneys, resolveJourneyRef } from '@/lib/events/placement'
+import { canEditJourney } from '@/lib/journeys/authoring'
 
 // Build a prefill from a SOURCE event for the Duplicate flow: clone every field the
 // create form sets EXCEPT the date (the new copy defaults to the active day, PART 2) and
@@ -71,9 +73,14 @@ async function buildDuplicateInitial(sourceId: string): Promise<Partial<EventFor
 export default async function NewEventPage({
   searchParams,
 }: {
-  searchParams: Promise<{ circle?: string; space?: string; duplicate?: string }>
+  searchParams: Promise<{ circle?: string; space?: string; duplicate?: string; journey?: string }>
 }) {
-  const { circle: circleParam, space: spaceParam, duplicate: duplicateParam } = await searchParams
+  const {
+    circle: circleParam,
+    space: spaceParam,
+    duplicate: duplicateParam,
+    journey: journeyParam,
+  } = await searchParams
   const supabase = await createClient()
   const {
     data: { user },
@@ -107,6 +114,26 @@ export default async function NewEventPage({
     .neq('status', 'archived')
     .order('name', { ascending: true })
   const circles = (hostedCircles ?? []) as { id: string; name: string; space_id: string | null }[]
+
+  // A `?circle=` deep link (the circle rail's "New event", the circle header Create menu, the
+  // context actions) can name a Circle the caller RUNS without being its `host_id` row — a guide
+  // or mentor over its hub/nexus, a stewardship-edge host, an operator. The host_id query above
+  // cannot see those, so the link used to fall through to a personal public event with no notice
+  // (the Royal Temple bug, in its circle form). Re-resolve a link that missed through the ONE
+  // circle authority (circle.editSettings, exactly what createEvent now re-checks) and offer it.
+  if (circleParam && !circles.some((c) => c.id === circleParam)) {
+    const { data: linked } = await admin
+      .from('circles')
+      .select('id, name, space_id')
+      .eq('id', circleParam)
+      .neq('status', 'archived')
+      .maybeSingle()
+    const linkedCircle = linked as { id: string; name: string; space_id: string | null } | null
+    if (linkedCircle && (await getCircleCapabilities(linkedCircle.id)).has('circle.editSettings')) {
+      circles.push(linkedCircle)
+      circles.sort((a, b) => a.name.localeCompare(b.name))
+    }
+  }
 
   // Spaces the caller RUNS: the owner, plus any space where they are an ACTIVE admin member.
   const { data: ownedSpaces } = await admin
@@ -172,6 +199,38 @@ export default async function NewEventPage({
     return owner ? `In ${c.name} (circle in ${owner})` : `In ${c.name} (circle you host)`
   }
 
+  // WHICH JOURNEY CAN IT BE PART OF — a different question from "where does it live", and answered
+  // by a different authority. A Journey link is an ASSOCIATION (events.journey_id, beside space_id),
+  // so it never becomes the event's home; the picker therefore offers Journeys by the rule that
+  // governs Journeys, not the rule that governs placement:
+  //
+  //   • Journeys the caller AUTHORED, plus Journeys owned by a Space they manage (owner / admin /
+  //     editor — team authoring). That is exactly the set `canEditJourney` admits, which is what
+  //     createEvent re-checks on submit. ADR-883's third defect was an offer wider or narrower than
+  //     the gate behind it; here the list and the gate read the same rule.
+  //   • NOT "Journeys I am enrolled in" or "public Journeys". Being on someone's Journey is not
+  //     authority over it, and linking is the Journey's business: an open picker would let any
+  //     member hang their event off the community's flagship Journey.
+  //
+  // A platform operator passes `canEditJourney` on every Journey in the library, which is not a
+  // list worth rendering, so the deep link below re-resolves through the real authority instead —
+  // the same shape as the `?circle=` re-resolve above.
+  const journeys = await listLinkableJourneys(profile.id, root)
+  let defaultJourneyId: string | undefined
+  if (journeyParam) {
+    if (journeys.some((j) => j.id === journeyParam)) {
+      defaultJourneyId = journeyParam
+    } else if (await canEditJourney(journeyParam, profile.id)) {
+      const linked = await resolveJourneyRef(journeyParam)
+      if (linked) {
+        journeys.push(linked)
+        defaultJourneyId = linked.id
+      }
+    }
+  }
+  journeys.sort((a, b) => a.title.localeCompare(b.title))
+  const journeyOptions = journeys.map((j) => ({ id: j.id, title: j.title }))
+
   // Grouped, labeled scope options for the form: circles you host, then spaces you run. `kind`
   // lets the form encode each option's target type without a second lookup on submit.
   const scopeOptions = [
@@ -211,6 +270,22 @@ export default async function NewEventPage({
   // The deep link named a space the caller does not help run (or that does not exist). Say so
   // instead of quietly building a personal public event they thought was the space's.
   const droppedSpaceLink = !!spaceParam && !spaces.some((s) => s.id === spaceParam)
+  // Same honesty for a `?circle=` link that survived neither the hosted list nor the capability
+  // re-resolve above: the event below will be personal, and the host should hear it here. Silent
+  // when a valid `?space=` already claimed the scope, so the two notices never contradict.
+  const droppedCircleLink =
+    !!circleParam && !circles.some((c) => c.id === circleParam) && !defaultGroupId
+  // And for a `?journey=` link that neither the authored/team list nor the capability re-resolve
+  // could honor. The event still gets created; it just will not be part of that Journey, and the
+  // host hears it here rather than discovering the missing link on the Journey later.
+  const droppedJourneyLink = !!journeyParam && !defaultJourneyId
+
+  // The manual form's prefill. A `?journey=` deep link seeds the Journey field the same way
+  // `?circle=` seeds the scope; a Duplicate prefill keeps everything it already carried.
+  const formInitial: Partial<EventFormInitial> | undefined =
+    duplicateInitial || defaultJourneyId
+      ? { ...(duplicateInitial ?? {}), ...(defaultJourneyId ? { journeyId: defaultJourneyId } : {}) }
+      : undefined
 
   return (
     <EventEditorWindow backHref="/events">
@@ -220,10 +295,23 @@ export default async function NewEventPage({
           event. To create it for the space, ask its owner to make you an editor first.
         </p>
       )}
+      {droppedCircleLink && (
+        <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-sm leading-relaxed text-text">
+          You opened this from a Circle you do not run, so the event below will be a personal
+          event. To create it for the Circle, ask its host to add it for you.
+        </p>
+      )}
+      {droppedJourneyLink && (
+        <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-sm leading-relaxed text-text">
+          You opened this from a Journey you do not run, so the event below will not be part of it.
+          To add it to the Journey, ask whoever runs the Journey to link it.
+        </p>
+      )}
       <EventSpark
         groups={scopeOptions}
+        journeys={journeyOptions}
         defaultGroupId={defaultGroupId}
-        initial={duplicateInitial ?? undefined}
+        initial={formInitial}
         startInManual={!!duplicateInitial}
         home={viewerHome}
       />

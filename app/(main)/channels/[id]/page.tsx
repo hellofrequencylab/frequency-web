@@ -4,7 +4,6 @@ import Link from 'next/link'
 import {
   Users,
   Circle as CircleIcon,
-  MapPin,
   Hash,
   Settings,
   LayoutDashboard,
@@ -30,10 +29,11 @@ import { resolveHeaderElement } from '@/lib/elements/header'
 import { ModuleCard } from '@/components/modules/module-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
-import { UpcomingEventsWidget } from '@/components/events/upcoming-widget'
 import { isProgram, listChapters, type ChapterSummary } from '@/lib/channels/programs'
 import { StartChapterButton } from '@/components/channels/start-chapter-button'
 import { ChaptersNearMe } from '@/components/channels/chapters-near-me'
+import { ChannelRail } from '@/components/channels/channel-rail'
+import { GroupCard, type GroupCardData } from '@/components/channels/group-card'
 import type { CircleBase } from '@/lib/types/circle'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -59,6 +59,14 @@ import type { CircleBase } from '@/lib/types/circle'
 //   6. A quiet about block explains what joining means, so newcomers orient
 //      without a tutorial (Skool about panel / Circle.so onboarding guidance:
 //      https://linodash.com/skool-vs-circle/).
+//   7. SCOPE RAIL (owner request, 2026-07-28: "Give it a right column for activity, upcoming
+//      event, associated circles"). The page fills DetailTemplate's `sidebar` slot with
+//      <ChannelRail>, and lib/layout/page-chrome.ts marks /channels/<id> as 'scoped' so the
+//      GLOBAL member rail is suppressed here. Before this, a wide, sparse content column sat
+//      beside a rail of generic member modules (Your Quest, Your stats) that said nothing about
+//      the Channel. Now the column carries the conversation and the rail carries the Channel's
+//      own facts. docs/PAGE-FRAMEWORK.md §6 always specified exactly this shape for this route:
+//      "rail: program, circles-in-topic, events".
 // ─────────────────────────────────────────────────────────────────────────────
 
 type TopicalChannel = {
@@ -82,18 +90,9 @@ type CircleRow = CircleBase & {
   host: { display_name: string; handle: string } | null
 }
 
-/** One normalized card shape for the Circles/Chapters strips and grids, so the
- *  program and non-program branches render through the SAME card component. */
-type GroupCardData = {
-  id: string
-  name: string
-  slug: string
-  type: 'in-person' | 'online'
-  city: string | null
-  neighborhood: string | null
-  members: number
-  cap: number
-}
+// The normalized Circle/Chapter card shape (GroupCardData) and its card component now live in
+// components/channels/group-card.tsx, because the scope RAIL renders the same card as the body
+// directory. One component, two placements, no drift.
 
 // The category icon, accent, and label all come from lib/channels/categories (ADR-879), the same
 // file the staff settings select reads, so an operator can no longer pick a category this page
@@ -101,39 +100,6 @@ type GroupCardData = {
 // generic Radio icon.
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-/** The compact Circle/Chapter card, byte-matched to the ChaptersNearMe card so
- *  the directory reads identically with or without the geo re-sort. */
-function GroupCard({ group }: { group: GroupCardData }) {
-  return (
-    <Link
-      href={`/circles/${group.slug}`}
-      className="block rounded-2xl border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-text truncate">{group.name}</span>
-        <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium shrink-0 ${
-          group.type === 'in-person'
-            ? 'bg-success-bg text-success'
-            : 'bg-signal-bg text-signal-strong'
-        }`}>
-          {group.type === 'in-person' ? 'In-person' : 'Online'}
-        </span>
-      </div>
-      <div className="mt-1 flex items-center gap-2 text-xs text-muted">
-        {(group.city || group.neighborhood) && (
-          <span className="flex items-center gap-0.5">
-            <MapPin className="w-2.5 h-2.5" />
-            {group.neighborhood || group.city}
-          </span>
-        )}
-        <span>
-          {group.members}/{group.cap} members
-        </span>
-      </div>
-    </Link>
-  )
-}
 
 /** Home-tab forum preview: the three latest posts through the SAME visibility
  *  RPC FeedList uses (scoped_feed_for_viewer), so a non-member previews only
@@ -331,7 +297,6 @@ export default async function ChannelPage({
         city: c.city, neighborhood: c.neighborhood,
         members: c.member_count, cap: c.member_cap,
       }))
-  const groupScopeIds = groupCards.map((g) => g.id)
 
   // Staff-only in-place Edit (ADR-515 Phase 5): channel.manage resolves to staff only.
   // When held, the header carries the standardized admin-bar trigger PLUS the link into
@@ -546,6 +511,26 @@ export default async function ChannelPage({
           </div>
         }
         tabs={tabs}
+        sidebar={
+          /* ── THE CHANNEL SCOPE RAIL (pattern 7) ────────────────────────────────────────────
+             Activity · Upcoming · the {groupNounPlural} practicing this Channel. The global
+             member rail is suppressed on this exact route by lib/layout/page-chrome.ts
+             (SCOPED_PATTERNS), so there is still exactly one right column. Nothing here is
+             awaited on the page's top-level path: the two modules that read the database sit
+             behind their own <Suspense> inside the rail, and the directory module renders the
+             Circles this page already loaded. */
+          <ChannelRail
+            tab={tab}
+            channelId={channel.id}
+            channelName={channel.name}
+            groupNoun={groupNoun}
+            groupNounPlural={groupNounPlural}
+            groups={groupCards}
+            groupCount={groupCount}
+            groupsHref={groupsHref}
+            startGroupCta={myProfileId ? startGroupCta : undefined}
+          />
+        }
       >
         <div className="space-y-8">
           {/* ── HOME: orientation + a taste of everything, each section pointing
@@ -559,6 +544,9 @@ export default async function ChannelPage({
                 </p>
               </ModuleCard>
 
+              {/* The content column carries the CONVERSATION. The Channel's facts (its pulse,
+                  what is coming up, the {groupNounPlural} practicing it) live in the scope rail
+                  beside it, so neither column repeats the other (pattern 7). */}
               <section>
                 <SectionHeader title="Latest in the forum" href={feedHref} />
                 <Suspense fallback={<div className="h-24 rounded-2xl bg-surface animate-pulse" />}>
@@ -570,32 +558,6 @@ export default async function ChannelPage({
                   />
                 </Suspense>
               </section>
-
-              <section>
-                <SectionHeader
-                  title={isProgramChannel ? 'Chapters' : `Circles practicing ${channel.name}`}
-                  count={groupCount}
-                  href={groupsHref}
-                />
-                {groupCards.length === 0 ? (
-                  emptyDirectory
-                ) : (
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {groupCards.slice(0, 4).map((g) => (
-                      <GroupCard key={g.id} group={g} />
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              {/* Upcoming events across this Channel's Circles/Chapters (pattern 5).
-                  Reuses the existing UpcomingEventsWidget query (events by scope_id);
-                  it renders nothing when there is nothing coming up. */}
-              {groupScopeIds.length > 0 && (
-                <Suspense fallback={<div className="h-16 rounded-2xl bg-surface animate-pulse" />}>
-                  <UpcomingEventsWidget scopeIds={groupScopeIds} />
-                </Suspense>
-              )}
             </>
           )}
 

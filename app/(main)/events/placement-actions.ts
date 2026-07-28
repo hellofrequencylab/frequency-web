@@ -14,10 +14,14 @@ import {
   listSpaceStewardIds,
   listSpaceEventCreatorIds,
   listCircleStewardIds,
+  livePlacementPatch,
+  clearPlacementPatch,
   NO_PLACEMENT,
   type PlacementView,
   type PlacementTargetType,
 } from '@/lib/events/placement'
+import { spaceIdForCircle } from '@/lib/circles/store'
+import { resolveRegionScopeId } from '@/lib/events/event-drafts'
 
 // "Where does this event live" — request / approve / decline / clear placement of an event
 // under a Space or Circle. The host asks; a steward of the target consents before the event
@@ -105,15 +109,21 @@ async function notifyRequesterOfDecision(
   }
 }
 
-/** Set (or clear) the event column that makes it live under a target. Returns whether the
- *  write LANDED — the Royal Temple bug: this update's error was dropped, so a failed write
- *  reported "Lives here" while the row never changed. Callers must surface a false. */
+/** Set the columns that make the event live under a target. Returns whether the write LANDED —
+ *  the Royal Temple bug: this update's error was dropped, so a failed write reported "Lives here"
+ *  while the row never changed. Callers must surface a false.
+ *
+ *  A CIRCLE placement writes the bare `scope_id` / `scope_type` pair alongside the typed
+ *  `scope_circle_id` (see livePlacementPatch): the typed column alone is invisible to every
+ *  circle reader, so placing an event in a Circle used to say "Lives here" while the Circle page,
+ *  the members' RLS read, and the host's management rights all stayed unchanged. */
 async function setEventPlacementColumn(
   admin: SupabaseClient,
   eventId: string,
   target: PlacementTarget,
 ): Promise<boolean> {
-  const patch = target.type === 'space' ? { space_id: target.id } : { scope_circle_id: target.id }
+  const circleSpaceId = target.type === 'circle' ? await spaceIdForCircle(target.id) : null
+  const patch = livePlacementPatch(target, { circleSpaceId })
   const { error } = await admin.from('events').update(patch).eq('id', eventId)
   if (error) {
     console.error('[event-placement] events update failed', {
@@ -344,11 +354,36 @@ export async function clearEventPlacement(
   const admin = untyped()
   const actorId = await getMyProfileId()
 
+  // A CIRCLE-scoped event has to leave the bare scope pair too, or "Remove" clears the typed
+  // column while the event keeps showing on the Circle (see clearPlacementPatch). It lands where
+  // a standalone public event lands: the host's region.
+  const { data: evRow } = await admin
+    .from('events')
+    .select('host_id, scope_type, visibility')
+    .eq('id', eventId)
+    .maybeSingle()
+  const current = evRow as { host_id: string | null; scope_type: string | null; visibility: string | null } | null
+  const regionId =
+    current?.scope_type === 'circle'
+      ? await resolveRegionScopeId(current.host_id ?? actorId ?? '')
+      : null
+  // scope_id is NOT NULL: with no region to move to we cannot untie the bare pair, so say so
+  // rather than report a removal that only half happened.
+  if (current?.scope_type === 'circle' && !regionId) {
+    return fail('Could not remove this event from where it lives. Please try again.')
+  }
+
   // Clearing where it lives also clears the HOSTING entity (ADR-819): an event that no longer
   // lives under any space cannot stay billed/displayed as that space's event.
   const { error: clearErr } = await admin
     .from('events')
-    .update({ space_id: null, scope_circle_id: null, host_space_id: null })
+    .update(
+      clearPlacementPatch({
+        scopeType: current?.scope_type ?? null,
+        visibility: current?.visibility ?? null,
+        regionId,
+      }),
+    )
     .eq('id', eventId)
   if (clearErr) {
     console.error('[clearEventPlacement]', { code: clearErr.code, message: clearErr.message, eventId })

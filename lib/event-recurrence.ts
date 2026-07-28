@@ -8,6 +8,15 @@
 // /api/cron/event-occurrences runs daily to roll this forward.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createHash } from 'crypto'
+
+function sanitizeForLog(value: unknown): string {
+  return String(value).replace(/[\r\n]+/g, '')
+}
+
+function logToken(value: unknown): string {
+  return createHash('sha256').update(String(value)).digest('hex').slice(0, 16)
+}
 
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly'
 
@@ -26,6 +35,203 @@ type Anchor = {
   slug:             string
   recurrence_type:  RecurrenceType
   recurrence_until: string | null
+  is_cancelled:     boolean | null
+  removed_at:       string | null
+} & Partial<Record<InheritedColumn, unknown>>
+
+// ── WHAT A MATERIALISED OCCURRENCE INHERITS ─────────────────────────────────────────────────
+//
+// An occurrence row IS the anchor, on another date. Anything not copied here falls to the
+// COLUMN DEFAULT, and the defaults are not neutral: `visibility` defaults to 'circle_only',
+// `price_cents` to NULL (free), `time_zone` to America/Los_Angeles, and the
+// `events_default_space_id` trigger rewrites a NULL `space_id` to the ROOT space. So an
+// un-copied column does not merely go missing, it silently contradicts the anchor — a $22
+// weekly series materialised free occurrences, scoped to a Circle the region-scoped event has
+// no membership for (so RLS hid them from every member but the host), tenanted to root instead
+// of the hosting Business Space, with no venue, no map point and no cover image (ADR-883 shape:
+// the write never reaches the columns the readers consult).
+//
+// The list is ONE constant used for BOTH the anchor SELECT and the child payload, so a column
+// can never be read without being written (which is exactly how the two halves drifted).
+//
+// DELIBERATELY NOT inherited, each for a reason:
+//   • parent_event_id / recurrence_* / slug / starts_at / ends_at — the occurrence's own identity.
+//   • claim_token / claimed_at        — a claim link is one-per-event by construction.
+//   • cancelled_* / removed_*         — per-occurrence lifecycle; a cancelled anchor is skipped.
+//   • mux_stream_id / mux_playback_id — a live stream belongs to one broadcast.
+//   • featured_at                     — operator curation of a specific date, not a property.
+//   • scope_circle_id / scope_region_id — derived from the bare pair by trg_events_sync_scope_arc.
+const INHERITED_COLUMNS = [
+  'title',
+  'description',
+  'host_id',
+  'scope_id',
+  'scope_type',
+  'location',
+  // Audience + money. The two whose defaults actively contradict the anchor.
+  'visibility',
+  'status',
+  'published_at',
+  'price_cents',
+  'currency',
+  'capacity',
+  'venmo_handle',
+  'join_mode',
+  // Taxonomy + presentation.
+  'category',
+  'energy_tag',
+  'time_zone',
+  'cover_image_path',
+  'gallery_image_paths',
+  'poster_path',
+  'theme',
+  'details',
+  // Placement + tenancy (space_id is trigger-defaulted to ROOT when absent).
+  'space_id',
+  'host_space_id',
+  'domain_id',
+  // Where + how to attend.
+  'attendance_mode',
+  'online_url',
+  'venue_name',
+  'street',
+  'city',
+  'region',
+  'country',
+  'postal_code',
+  'geog',
+  'hide_address',
+  // Provenance (a posted/scanned event's attribution + its poster's edit rights).
+  'source',
+  'is_demo',
+  'posted_by_profile_id',
+  'organizer_name',
+  'organizer_contact',
+] as const
+
+type InheritedColumn = (typeof INHERITED_COLUMNS)[number]
+
+// The anchor SELECT: the occurrence's own identity columns plus everything it inherits.
+const ANCHOR_SELECT = [
+  'id',
+  'starts_at',
+  'ends_at',
+  'slug',
+  'recurrence_type',
+  'recurrence_until',
+  'is_cancelled',
+  'removed_at',
+  ...INHERITED_COLUMNS,
+].join(', ')
+
+/**
+ * PURE. The insert payload for ONE materialised occurrence of `anchor` starting at `start`.
+ *
+ * Every inherited column is copied verbatim, EXCEPT `geog`: PostgREST hands a PostGIS geography
+ * back as an EWKB hex STRING (verified against production), which Postgres accepts straight back
+ * on insert — but some setups serialize it as a GeoJSON OBJECT, and writing that object would
+ * error and abort the whole batch. So the point is carried only in its round-trippable string
+ * form; anything else is dropped, which is exactly today's behaviour (no point at all) rather
+ * than a new failure mode.
+ */
+export function occurrenceRow(
+  anchor: Anchor,
+  start: Date,
+  durationMs: number | null,
+): Record<string, unknown> {
+  const row: Record<string, unknown> = {}
+  for (const col of INHERITED_COLUMNS) {
+    const value = anchor[col]
+    if (value === undefined) continue
+    if (col === 'geog' && value !== null && typeof value !== 'string') continue
+    row[col] = value
+  }
+
+  row.starts_at = start.toISOString()
+  row.ends_at = durationMs != null ? new Date(start.getTime() + durationMs).toISOString() : null
+  row.slug = `${anchor.slug}-${start.toISOString().slice(0, 10)}`
+  row.parent_event_id = anchor.id
+  // A materialised occurrence never itself recurs (a DB CHECK enforces it).
+  row.recurrence_type = 'none'
+  row.recurrence_until = null
+
+  return row
+}
+
+/**
+ * PURE. The patch that brings an existing occurrence back in line with its anchor.
+ *
+ * The same INHERITED_COLUMNS list that builds a NEW occurrence, minus the occurrence's own
+ * identity, which `occurrenceRow` sets and this must never touch: `starts_at`, `ends_at`, `slug`
+ * and `parent_event_id` are what make one occurrence different from another, and `recurrence_type`
+ * / `recurrence_until` are anchor-only (a DB CHECK forbids a materialised occurrence from
+ * recurring). Sharing the list is the point: an anchor edit propagates exactly what a fresh
+ * occurrence would have inherited, so the two paths cannot disagree about what "same as the
+ * anchor" means.
+ */
+export function propagationPatch(anchor: Anchor): Record<string, unknown> {
+  const patch: Record<string, unknown> = {}
+  for (const col of INHERITED_COLUMNS) {
+    const value = anchor[col]
+    if (value === undefined) continue
+    // Same geog caveat as occurrenceRow: only the round-trippable EWKB-hex form travels.
+    if (col === 'geog' && value !== null && typeof value !== 'string') continue
+    patch[col] = value
+  }
+  return patch
+}
+
+/**
+ * Push an anchor's current details onto its UPCOMING occurrences.
+ *
+ * Editing a series used to change the anchor alone, so its already-materialised occurrences kept
+ * whatever they were minted with. That was visible in production as an anchor titled
+ * "Meld - Community Cowork" whose seven children still read "MELD - A Community Cowork", and it is
+ * also how a repaired series would silently re-drift the next time anyone edited it.
+ *
+ * PAST occurrences are left alone on purpose. A past occurrence is the record of an event that
+ * already happened; rewriting its price, capacity or venue after the fact would be inventing
+ * history rather than correcting it.
+ *
+ * Best-effort by contract: the caller has already saved the anchor, and a failure here must not
+ * fail that save. Returns the number of rows brought back in line, or 0.
+ */
+export async function propagateAnchorEditsToOccurrences(anchorId: string): Promise<number> {
+  const admin = createAdminClient()
+
+  const { data: anchorRow, error: anchorErr } = await admin
+    .from('events')
+    .select(ANCHOR_SELECT)
+    .eq('id', anchorId)
+    .is('parent_event_id', null)
+    .maybeSingle()
+  if (anchorErr || !anchorRow) return 0
+
+  const anchor = anchorRow as unknown as Anchor
+  const { data, error } = await admin
+    .from('events')
+    .update(propagationPatch(anchor) as never)
+    .eq('parent_event_id', anchorId)
+    .gte('starts_at', new Date().toISOString())
+    .select('id')
+  // supabase-js RESOLVES with { data, error } on a DB failure rather than throwing, so read it.
+  if (error) {
+    console.error(
+      '[propagateAnchorEditsToOccurrences]',
+      `anchor=${logToken(anchorId)}`,
+      sanitizeForLog(error.message),
+    )
+    return 0
+  }
+  return (data ?? []).length
+}
+
+/** True when an anchor must NOT keep spawning occurrences: cancelled, or moderator-removed.
+ *  Without this, cancelling a weekly series stopped nothing — the daily cron kept rolling the
+ *  horizon forward and minting fresh, NON-cancelled occurrences of a series the host had ended
+ *  (and of a spam series staff had removed, since removal sets is_cancelled too). */
+export function anchorIsDormant(anchor: Pick<Anchor, 'is_cancelled' | 'removed_at'>): boolean {
+  return !!anchor.is_cancelled || anchor.removed_at != null
 }
 
 // Days in a given UTC month (month is 0-indexed; carry handled by the caller).
@@ -117,10 +323,7 @@ export async function generateOccurrencesForAnchor(anchorId: string): Promise<nu
 
   const { data: anchorRow, error: anchorErr } = await admin
     .from('events')
-    .select(
-      'id, title, description, host_id, scope_id, scope_type, location, ' +
-      'starts_at, ends_at, slug, recurrence_type, recurrence_until'
-    )
+    .select(ANCHOR_SELECT)
     .eq('id', anchorId)
     .is('parent_event_id', null)
     .maybeSingle()
@@ -128,6 +331,8 @@ export async function generateOccurrencesForAnchor(anchorId: string): Promise<nu
   if (anchorErr || !anchorRow) return 0
   const anchor = anchorRow as unknown as Anchor
   if (anchor.recurrence_type === 'none') return 0
+  // A cancelled or removed series is over: never mint another occurrence of it.
+  if (anchorIsDormant(anchor)) return 0
 
   const dates = computeOccurrenceDates(anchor)
   if (!dates.length) return 0
@@ -153,26 +358,11 @@ export async function generateOccurrencesForAnchor(anchorId: string): Promise<nu
     ? new Date(anchor.ends_at).getTime() - new Date(anchor.starts_at).getTime()
     : null
 
+  // ONE row shape, built by the pure occurrenceRow above, so an occurrence inherits the anchor's
+  // audience, price, venue and tenancy instead of silently falling to the column defaults.
   const rows = dates
     .filter((d) => !existingDays.has(d.toISOString().slice(0, 10)))
-    .map((d) => {
-      const endsAt = durationMs != null
-        ? new Date(d.getTime() + durationMs).toISOString()
-        : null
-      return {
-        title:           anchor.title,
-        description:     anchor.description,
-        host_id:         anchor.host_id,
-        scope_id:        anchor.scope_id,
-        scope_type:      anchor.scope_type,
-        location:        anchor.location,
-        starts_at:       d.toISOString(),
-        ends_at:         endsAt,
-        slug:            `${anchor.slug}-${d.toISOString().slice(0, 10)}`,
-        parent_event_id: anchor.id,
-        recurrence_type: 'none',
-      }
-    })
+    .map((d) => occurrenceRow(anchor, d, durationMs))
 
   if (!rows.length) return 0
 
@@ -182,7 +372,10 @@ export async function generateOccurrencesForAnchor(anchorId: string): Promise<nu
   // happy path (no collisions) inserts exactly the same rows as a plain insert.
   const { error: insErr } = await admin
     .from('events')
-    .upsert(rows, { onConflict: 'slug', ignoreDuplicates: true })
+    // occurrenceRow builds the payload from INHERITED_COLUMNS, so its static type is a plain
+    // record; cast past the generated Insert shape (ADR-246 repo convention). The COLUMN NAMES
+    // are the thing under test — lib/event-recurrence.test.ts pins every inherited key.
+    .upsert(rows as never, { onConflict: 'slug', ignoreDuplicates: true })
   if (insErr) {
     console.error('[generateOccurrencesForAnchor] insert error:', insErr.message)
     return 0
@@ -199,11 +392,16 @@ export async function generateAllOccurrences(): Promise<{
   const admin = createAdminClient()
   const now = new Date().toISOString()
 
+  // A cancelled or moderator-removed anchor is skipped here as well as in the per-anchor path:
+  // the cron rolls the horizon forward every day, so without this filter ending a weekly series
+  // stopped nothing — a fresh, NON-cancelled occurrence appeared each time the window advanced.
   const { data: anchors } = await admin
     .from('events')
     .select('id, recurrence_until')
     .neq('recurrence_type', 'none')
     .is('parent_event_id', null)
+    .eq('is_cancelled', false)
+    .is('removed_at', null)
     .or(`recurrence_until.is.null,recurrence_until.gt.${now}`)
 
   let total = 0

@@ -17,6 +17,10 @@ import { join } from 'node:path'
 //   4. The manager surface is intact: OpenAdminBarButton on channel.manage plus
 //      the link into /channels/[id]/manage.
 //   5. The retired circle-flavored copy ("No hub or nexus required") stays gone.
+//   6. It carries its OWN scope rail (owner request, 2026-07-28: "a right column for activity,
+//      upcoming event, associated circles") through DetailTemplate's `sidebar` slot, and that
+//      rail is paired with the 'scoped' entry in lib/layout/page-chrome.ts so the page never
+//      grows a second right column.
 
 const src = readFileSync(
   join(__dirname, 'page.tsx'),
@@ -70,6 +74,21 @@ describe('channel page (source shape): a Channel renders as a focus-area home', 
     expect(src).toContain('<StartChapterButton')
     expect(src).toContain('<ChaptersNearMe')
     expect(src).toContain('<NewCircleCompose')
+  })
+
+  it('fills the Detail `sidebar` slot with the Channel scope rail, and is registered as scoped', () => {
+    expect(src).toContain('<ChannelRail')
+    expect(src).toContain('sidebar={')
+    // The rail is fed the Circles the page already loaded (no second read) and the tab, so it
+    // can drop the directory module on the directory tab.
+    expect(src).toContain('groups={groupCards}')
+    expect(src).toContain('tab={tab}')
+    // Paired with the chrome map: without this the page would render TWO right columns.
+    const chrome = readFileSync(
+      join(__dirname, '..', '..', '..', '..', 'lib', 'layout', 'page-chrome.ts'),
+      'utf8',
+    )
+    expect(chrome).toContain('/^\\/channels\\/[^/]+$/')
   })
 
   it('retired the circle-flavored empty-state copy', () => {

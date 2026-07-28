@@ -18,7 +18,8 @@ describe('railFor — the single source of truth for page chrome', () => {
       '/people',
       '/people/ada', // profiles intentionally use the global rail
       '/circles/sunrise-sit', // circle detail uses the global community rail (like events)
-      '/channels/breathwork', // channel detail now uses the global rail too (folds its scope content inline)
+      // NOTE: /channels/<slug> is deliberately absent — it is the ONE 'scoped' surface now
+      // (it renders its own in-body rail). See the dedicated test below.
       '/settings/profile', // the profile editor keeps the rail (ADR-117), unlike other /settings
       '/friends',
       '/messages', // the inbox keeps the rail
@@ -44,14 +45,36 @@ describe('railFor — the single source of truth for page chrome', () => {
     }
   })
 
-  it('has no scoped entity-detail pages — both Circle and Channel detail ride the global rail', () => {
-    // Nothing renders an in-body scope rail anymore: Circle and Channel detail both
-    // fold their scope content into the main column and use the GLOBAL rail (like
-    // events). The indexes are global too.
-    expect(railFor('/channels/breathwork')).toBe('global')
+  it('scopes the CHANNEL DETAIL page only — it is the one surface with its own in-body rail', () => {
+    // WHY this differs from the 2026-06-20 "the right rail shows on every page" directive:
+    // the owner asked (2026-07-28) for the Channel page to get "a right column for activity,
+    // upcoming event, associated circles". The Channel detail page now fills DetailTemplate's
+    // `sidebar` slot with <ChannelRail>, so the GLOBAL member rail is suppressed here and the
+    // channel-specific one takes its place. Two right columns of unrelated content is exactly
+    // what 'scoped' exists to prevent. The 2026-06-20 directive still governs everywhere else,
+    // which is why every assertion below this one is still 'global'.
+    expect(railFor('/channels/breathwork')).toBe('scoped')
+    expect(railFor('/channels/meld-community-cowork')).toBe('scoped')
+    // A UUID id resolves the same as a slug (the route accepts either).
+    expect(railFor('/channels/3f6b2c1a-0000-4000-8000-000000000000')).toBe('scoped')
+    // Tabs are QUERY params (?tab=feed), not path segments, so every tab shares this one
+    // pathname and the whole page is scoped by the single rule above.
+
+    // The INDEX is not a detail page — it keeps the global community rail.
+    expect(railFor('/channels')).toBe('global')
+
+    // The Channel's own DEEPER surfaces have no in-body rail of their own, so they must keep the
+    // global one. This is why the scoped rule is an anchored PATTERN and not a `/channels/`
+    // prefix: SCOPED_PREFIXES matches a whole subtree, which would have swallowed these two.
+    expect(railFor('/channels/breathwork/manage')).toBe('global')
+    expect(railFor('/channels/breathwork/edit')).toBe('global')
+    // Any future sub-route inherits the same safe default.
+    expect(railFor('/channels/breathwork/manage/circles')).toBe('global')
+
+    // Circles are untouched: circle detail folds its scope content into the main column and
+    // keeps the global rail.
     expect(railFor('/circles/sunrise-sit')).toBe('global')
     expect(railFor('/circles')).toBe('global')
-    expect(railFor('/channels')).toBe('global')
   })
 
   it('keeps the global rail on compose / edit / settings / thread surfaces (owner directive: every page has the right rail)', () => {
