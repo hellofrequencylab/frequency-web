@@ -25,15 +25,15 @@ describe('REMAINING-WORK #5 — gamification_full standalone gate is INERT while
   it('grants full gamification to EVERY tier while billing is not live (today behavior)', async () => {
     // The standalone gate routes through featureAllowed('gamification_full'), which short-circuits to
     // true while OFF — so a free member is NOT blocked, exactly as today.
-    expect(await featureAllowed('gamification_full', { tier: 'free' }, { billingLive: false })).toBe(true)
-    expect(await featureAllowed('gamification_full', { tier: 'crew' }, { billingLive: false })).toBe(true)
-    expect(await featureAllowed('gamification_full', { tier: 'supporter' }, { billingLive: false })).toBe(true)
+    expect(await featureAllowed('gamification_full', { tier: 'free' }, { gatesLive: false })).toBe(true)
+    expect(await featureAllowed('gamification_full', { tier: 'crew' }, { gatesLive: false })).toBe(true)
+    expect(await featureAllowed('gamification_full', { tier: 'supporter' }, { gatesLive: false })).toBe(true)
   })
 
   it('ON: blocks free (earn-only), allows crew+ (the crew minimum)', async () => {
-    expect(await featureAllowed('gamification_full', { tier: 'free' }, { billingLive: true })).toBe(false)
-    expect(await featureAllowed('gamification_full', { tier: 'crew' }, { billingLive: true })).toBe(true)
-    expect(await featureAllowed('gamification_full', { tier: 'supporter' }, { billingLive: true })).toBe(true)
+    expect(await featureAllowed('gamification_full', { tier: 'free' }, { gatesLive: true })).toBe(false)
+    expect(await featureAllowed('gamification_full', { tier: 'crew' }, { gatesLive: true })).toBe(true)
+    expect(await featureAllowed('gamification_full', { tier: 'supporter' }, { gatesLive: true })).toBe(true)
   })
 })
 
@@ -71,11 +71,11 @@ describe('REMAINING-WORK #2 — resolveGamificationAccessWithFlags (the live con
 
 describe('REMAINING-WORK #3 — vera_unlimited gate is INERT while billing OFF', () => {
   it('grants unlimited Vera to a free member while billing is not live (cap never bites)', async () => {
-    expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { billingLive: false })).toBe(true)
+    expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { gatesLive: false })).toBe(true)
   })
   it('ON: a free member is gated (cap applies), crew+ is unlimited', async () => {
-    expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { billingLive: true })).toBe(false)
-    expect(await featureAllowed('vera_unlimited', { tier: 'crew' }, { billingLive: true })).toBe(true)
+    expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { gatesLive: true })).toBe(false)
+    expect(await featureAllowed('vera_unlimited', { tier: 'crew' }, { gatesLive: true })).toBe(true)
   })
 })
 
@@ -88,18 +88,18 @@ describe('REMAINING-WORK #4 — space_* feature gates resolve consistently via f
   })
 
   it('OFF: every space_* feature is allowed regardless of plan (today behavior)', async () => {
-    expect(await featureAllowed('space_crm', { plan: 'free' }, { billingLive: false })).toBe(true)
-    expect(await featureAllowed('space_email', { plan: 'free' }, { billingLive: false })).toBe(true)
+    expect(await featureAllowed('space_crm', { plan: 'free' }, { gatesLive: false })).toBe(true)
+    expect(await featureAllowed('space_email', { plan: 'free' }, { gatesLive: false })).toBe(true)
   })
 
   it('ON: the collapsed plan ladder bites (the paid floor for space_* is business · ADR-552)', async () => {
     // The coarse plan-rank gate is now a single paid floor of 'business'; the fine per-feature gating is
     // the entitlement-key union (spaceHasEntitlement), not this ladder.
-    expect(await featureAllowed('space_crm', { plan: 'free' }, { billingLive: true })).toBe(false)
-    expect(await featureAllowed('space_crm', { plan: 'business' }, { billingLive: true })).toBe(true)
-    expect(await featureAllowed('space_email', { plan: 'free' }, { billingLive: true })).toBe(false)
+    expect(await featureAllowed('space_crm', { plan: 'free' }, { gatesLive: true })).toBe(false)
+    expect(await featureAllowed('space_crm', { plan: 'business' }, { gatesLive: true })).toBe(true)
+    expect(await featureAllowed('space_email', { plan: 'free' }, { gatesLive: true })).toBe(false)
     // A legacy label narrows to business through asSpacePlan inside the gate, so it still clears.
-    expect(await featureAllowed('space_email', { plan: 'pro' as never }, { billingLive: true })).toBe(true)
+    expect(await featureAllowed('space_email', { plan: 'pro' as never }, { gatesLive: true })).toBe(true)
   })
 })
 
@@ -157,14 +157,16 @@ describe('REMAINING-WORK #8 — season-reset conversion timing (pure)', () => {
   })
 })
 
-// Belt-and-suspenders: the IO wrappers, with billing forced OFF, are no-ops. We force OFF by mocking
-// billingLive so the test never depends on env/DB, proving the OFF invariant of the wrappers directly.
-describe('OFF invariant of the IO wrappers (billing forced OFF)', () => {
-  it('gamificationFullAllowed returns true (grant) for every tier while OFF', async () => {
+// Belt-and-suspenders: the IO wrappers, with the GATES forced off, are no-ops. We force off by mocking
+// featureGatesLive so the test never depends on env/DB, proving the OFF invariant of the wrappers
+// directly. featureGatesLive() is false both before billing goes live AND during the beta grace window
+// (ADR-874), so this covers the founder's "explore until Sept 1" window too.
+describe('OFF invariant of the IO wrappers (feature gates forced off)', () => {
+  it('gamificationFullAllowed returns true (grant) for every tier while the gates are off', async () => {
     vi.resetModules()
     vi.doMock('./settings', async () => {
       const actual = await vi.importActual<typeof import('./settings')>('./settings')
-      return { ...actual, billingLive: async () => false }
+      return { ...actual, featureGatesLive: async () => false }
     })
     const { gamificationFullAllowed } = await import('./gamification-access')
     expect(await gamificationFullAllowed('free')).toBe(true)
@@ -173,11 +175,11 @@ describe('OFF invariant of the IO wrappers (billing forced OFF)', () => {
     vi.resetModules()
   })
 
-  it('veraDailyCapReached returns false (never capped) for a free member while OFF', async () => {
+  it('veraDailyCapReached returns false (never capped) for a free member while the gates are off', async () => {
     vi.resetModules()
     vi.doMock('./settings', async () => {
       const actual = await vi.importActual<typeof import('./settings')>('./settings')
-      return { ...actual, billingLive: async () => false }
+      return { ...actual, featureGatesLive: async () => false }
     })
     const { veraDailyCapReached } = await import('@/lib/ai/vera/usage-gate')
     expect(await veraDailyCapReached('profile-1', 'free')).toBe(false)

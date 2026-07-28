@@ -8,23 +8,23 @@ import { shouldShowTease, teaseCapSpent, TEASE_DEFAULT_CAP } from './upsell-teas
 
 describe('shouldShowTease — the pure visibility predicate (ON + locked + under cap)', () => {
   it('OFF: never shows, regardless of locked / dismissed (the master invariant)', () => {
-    expect(shouldShowTease({ billingLive: false, locked: true })).toBe(false)
-    expect(shouldShowTease({ billingLive: false, locked: false })).toBe(false)
-    expect(shouldShowTease({ billingLive: false, locked: true, dismissed: false })).toBe(false)
+    expect(shouldShowTease({ gatesLive: false, locked: true })).toBe(false)
+    expect(shouldShowTease({ gatesLive: false, locked: false })).toBe(false)
+    expect(shouldShowTease({ gatesLive: false, locked: true, dismissed: false })).toBe(false)
   })
 
   it('ON + locked + not dismissed: shows (the only positive case)', () => {
-    expect(shouldShowTease({ billingLive: true, locked: true })).toBe(true)
-    expect(shouldShowTease({ billingLive: true, locked: true, dismissed: false })).toBe(true)
+    expect(shouldShowTease({ gatesLive: true, locked: true })).toBe(true)
+    expect(shouldShowTease({ gatesLive: true, locked: true, dismissed: false })).toBe(true)
   })
 
   it('ON but UNLOCKED: never shows (they already have the capability — no upsell)', () => {
-    expect(shouldShowTease({ billingLive: true, locked: false })).toBe(false)
-    expect(shouldShowTease({ billingLive: true, locked: false, dismissed: false })).toBe(false)
+    expect(shouldShowTease({ gatesLive: true, locked: false })).toBe(false)
+    expect(shouldShowTease({ gatesLive: true, locked: false, dismissed: false })).toBe(false)
   })
 
   it('ON + locked but DISMISSED / capped: never shows (never nag)', () => {
-    expect(shouldShowTease({ billingLive: true, locked: true, dismissed: true })).toBe(false)
+    expect(shouldShowTease({ gatesLive: true, locked: true, dismissed: true })).toBe(false)
   })
 })
 
@@ -55,7 +55,7 @@ describe('teaseCapSpent — the frequency-cap arithmetic (never nag)', () => {
 
   it('the cap result threads into the predicate as `dismissed` (capped → no show)', () => {
     const seen = 1
-    expect(shouldShowTease({ billingLive: true, locked: true, dismissed: teaseCapSpent(seen) })).toBe(false)
-    expect(shouldShowTease({ billingLive: true, locked: true, dismissed: teaseCapSpent(0) })).toBe(true)
+    expect(shouldShowTease({ gatesLive: true, locked: true, dismissed: teaseCapSpent(seen) })).toBe(false)
+    expect(shouldShowTease({ gatesLive: true, locked: true, dismissed: teaseCapSpent(0) })).toBe(true)
   })
 })

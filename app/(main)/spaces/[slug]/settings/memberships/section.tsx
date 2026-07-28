@@ -4,7 +4,7 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listAllMembershipTiers } from '@/lib/spaces/memberships'
 import { listSpaceEventAccess } from '@/lib/events/space-event-access'
 import { featureAllowed } from '@/lib/pricing/gates'
-import { billingLive } from '@/lib/pricing/settings'
+import { featureGatesLive } from '@/lib/pricing/settings'
 import { asSpacePlan } from '@/lib/pricing/plans'
 import { isError } from '@/lib/action-result'
 import { MembershipTierForm } from '@/components/spaces/membership-tier-form'
@@ -113,7 +113,7 @@ async function EventAccessLoader({
       featureAllowed(
         'space_membership_tickets',
         { plan: asSpacePlan(space.plan) },
-        { billingLive: await billingLive() },
+        { gatesLive: await featureGatesLive() },
       ))(),
   ])
   const rows = isError(access) ? [] : access.data.rows

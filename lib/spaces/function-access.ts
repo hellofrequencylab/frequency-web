@@ -9,12 +9,15 @@
 // Supabase/Next), so it cannot do the async featureAllowed IO. This thin server-only seam composes
 // the pure resolver with the (async) gate.
 //
-// CRITICAL — OFF preserves current behavior (the ABSOLUTE INVARIANT, ADR-370): while billing_live is
-// OFF, featureAllowed short-circuits to TRUE, so this returns EXACTLY what the pure spaceFunctionAccess
-// returns today (the spaceHasEntitlement read + the role check). Only once billing is live does the
-// plan-ladder gate add a second, consistent check. The DB feature-gate overrides + ladder math only
-// ever matter once an operator turns billing on. FAIL-SAFE: any error degrades to the pure resolver
-// (today's behavior), never to a lockout.
+// CRITICAL — OFF preserves current behavior (the ABSOLUTE INVARIANT, ADR-370): while the FEATURE GATES
+// are not live, featureAllowed short-circuits to TRUE, so this returns EXACTLY what the pure
+// spaceFunctionAccess returns today (the spaceHasEntitlement read + the role check). Only once the gates
+// go live does the plan-ladder gate add a second, consistent check.
+//
+// THE GATE SWITCH IS featureGatesLive(), NOT billingLive() (ADR-874). Selling and gating are separate
+// decisions on separate dates: billing turns on so Spaces can BUY, and the ladder starts biting only when
+// the beta grace window ends. Reading billingLive() here would revoke every free Space's paid features
+// the instant checkout opened. FAIL-SAFE: any error degrades to the pure resolver, never to a lockout.
 
 import type { SpaceRole } from './membership'
 import {
@@ -29,7 +32,7 @@ import {
 import { spaceFunctionAccess, spaceFunctionDef, type SpaceFunctionKey } from './functions'
 import { featureAllowed } from '@/lib/pricing/gates'
 import { asSpacePlan } from '@/lib/pricing/plans'
-import { billingLive } from '@/lib/pricing/settings'
+import { featureGatesLive } from '@/lib/pricing/settings'
 
 /** The plan-gated Space function entitlement key → the pricing feature-gate key. Only functions that
  *  carry an entitlement (CRM, email, shop's 'storefront') map here; a universal function
@@ -76,10 +79,10 @@ export async function spaceFunctionAccessLive(
   if (!featureKey) return true
 
   try {
-    const live = await billingLive()
-    // While OFF this short-circuits to true; the spaceHasEntitlement read above already governed the
-    // result, so OFF is byte-for-byte today's behavior.
-    return await featureAllowed(featureKey, { plan: asSpacePlan(plan ?? space?.plan ?? null) }, { billingLive: live })
+    const gatesLive = await featureGatesLive()
+    // While the gates are not live this short-circuits to true; the spaceHasEntitlement read above
+    // already governed the result, so not-live is byte-for-byte today's behavior.
+    return await featureAllowed(featureKey, { plan: asSpacePlan(plan ?? space?.plan ?? null) }, { gatesLive })
   } catch {
     // FAIL-SAFE: degrade to the pure result (which already passed) rather than lock out.
     return true
@@ -93,23 +96,23 @@ export async function spaceFunctionAccessLive(
 // BEING a collaborator (the guest side, incl. an event Collaborator) is free for any active Business /
 // Non Profit Space. This is the SERVER-SIDE authority the collaboration + event-share actions call
 // before writing (invite, feature-request, and every accept), so the free→paid wall cannot be bypassed
-// by driving the actions directly. While billing is OFF, featureAllowed short-circuits to TRUE, so
-// hosting stays free + universal (today's behavior) until go-live. FAIL-SAFE: an error degrades to
-// GRANTED, matching every other billing-OFF-preserving reader (never a lockout).
+// by driving the actions directly. While the gates are not live (billing off, or the beta grace window
+// still open), featureAllowed short-circuits to TRUE, so hosting stays free + universal (today's
+// behavior). FAIL-SAFE: an error degrades to GRANTED, matching every other reader (never a lockout).
 
 /** May this space HOST collaborators (venue grain) / host events with Collaborators (event grain)
  *  under its current plan, LIVE? Collective/Non Profit pass; a free or Business space is gated once
- *  billing is live (and sees the locked preview meanwhile). Pass the plan explicitly, or it reads
+ *  the gates are live (and sees the locked preview meanwhile). Pass the plan explicitly, or it reads
  *  space.plan. FAIL-SAFE to granted. */
 export async function spaceCanHostCollaborators(
   space: ({ plan?: string | null } & SpaceLike) | null | undefined,
   plan?: string | null,
 ): Promise<boolean> {
   try {
-    const live = await billingLive()
-    return await featureAllowed('space_collaborators', { plan: asSpacePlan(plan ?? space?.plan ?? null) }, { billingLive: live })
+    const gatesLive = await featureGatesLive()
+    return await featureAllowed('space_collaborators', { plan: asSpacePlan(plan ?? space?.plan ?? null) }, { gatesLive })
   } catch {
-    // FAIL-SAFE: degrade to granted (billing-OFF-preserving), never a lockout on a read error.
+    // FAIL-SAFE: degrade to granted (grace-preserving), never a lockout on a read error.
     return true
   }
 }
@@ -117,7 +120,7 @@ export async function spaceCanHostCollaborators(
 // ── AI-depth access (Resonance Engine Phase 6 · ADR-387) ─────────────────────────────────────────
 // The LIVE gate for the three AI-depth capabilities, the per-Space analog of spaceFunctionAccessLive
 // for the Resonance Engine's paid depth. Each AI-depth key maps to a pricing feature-gate so the same
-// featureAllowed plan-ladder governs it once billing is live; while billing is OFF, featureAllowed
+// featureAllowed plan-ladder governs it once the gates are live; while they are not, featureAllowed
 // short-circuits to true and the result is EXACTLY the pure spaces.entitlements read (today's
 // behavior + whatever a plan has flipped on). FAIL-CLOSED is the contract here, NOT fail-open: an
 // AI-depth capability is a paid LEVER, so any error degrades to the free WEDGE (no depth), never an
@@ -144,8 +147,8 @@ async function aiDepthCapabilityLive(
   // The pure entitlement gate first (default-deny). If the blob does not grant it, it is OFF.
   if (!pureHas) return false
   try {
-    const live = await billingLive()
-    return await featureAllowed(featureKey, { plan: asSpacePlan(plan ?? space?.plan ?? null) }, { billingLive: live })
+    const gatesLive = await featureGatesLive()
+    return await featureAllowed(featureKey, { plan: asSpacePlan(plan ?? space?.plan ?? null) }, { gatesLive })
   } catch {
     // FAIL-CLOSED for a paid lever: degrade to the pure read (which already passed). The pure read is
     // itself default-deny, so this can only ever GRANT what the entitlements blob already grants.
@@ -185,7 +188,7 @@ export async function spaceCanUseResonanceAiLive(
 
 /** The Space's resolved AI-depth tier (the pure reader, re-exported here so the cockpit can read the
  *  whole ladder in one call). FAIL-CLOSED to the free `wedge`. The LIVE per-capability gates above
- *  layer the plan ladder on top once billing is live. */
+ *  layer the plan ladder on top once the gates are live. */
 export function aiDepthFor(space: SpaceLike | null | undefined): AiDepthTier {
   return spaceAiDepth(space)
 }

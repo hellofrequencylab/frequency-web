@@ -17,7 +17,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { featureAllowed } from '@/lib/pricing/gates'
-import { billingLive } from '@/lib/pricing/settings'
+import { featureGatesLive } from '@/lib/pricing/settings'
 import { asSpacePlan } from '@/lib/pricing/plans'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -155,7 +155,7 @@ export async function setSpaceEventAccess(
   const allowed = await featureAllowed(
     'space_membership_tickets',
     { plan: asSpacePlan(spRow?.plan) },
-    { billingLive: await billingLive() },
+    { gatesLive: await featureGatesLive() },
   )
   if (!allowed) return fail('Membership-only tickets are part of the Collective plan.')
 

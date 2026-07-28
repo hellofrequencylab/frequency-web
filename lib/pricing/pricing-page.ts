@@ -110,8 +110,8 @@ export interface TierAddonCell {
 
 /** One commercial tier column of the pricing table. Pure data the page renders. */
 export interface PricingTier {
-  /** A stable id for keys + JSON-LD (`free` / `business` / `collective` / `nonprofit`). */
-  id: 'free' | 'business' | 'nonprofit' | 'collective'
+  /** A stable id for keys + JSON-LD (`free` / `business` / `collective` / `nonprofit` / `independent`). */
+  id: 'free' | 'business' | 'nonprofit' | 'collective' | 'independent'
   /** The display name. */
   name: string
   /** The rung identity in a few words (the card's one-liner, e.g. "Own your audience."). */
@@ -241,6 +241,25 @@ export function pricingTiers(betaActive: boolean = isBetaPricingActive()): Prici
       addons: tierAddons,
       takeRate: '0%, always',
       cta: { label: 'Get verified', href: '/spaces' },
+    },
+    {
+      // Independent (ADR-811): the whole platform under your own brand and domain, standalone and off
+      // the network. Priced from the code catalog like every other tier; no founding discount, so it
+      // shows a single price and never a struck anchor. Represented on every ladder surface (owner,
+      // 2026-07: "make sure all of our pricing tiers are represented").
+      id: 'independent',
+      name: 'Independent',
+      tagline: 'Your own brand, standalone.',
+      priceKind: 'flat',
+      price: { month: cat.independent_base.month, year: cat.independent_base.year },
+      featured: false,
+      forWho: 'Organizations that want the whole platform under their own name and domain.',
+      billing: 'Monthly or yearly. Yearly is two months free.',
+      coreIncluded:
+        'Everything in Collective, plus your own brand and custom domain. Standalone, off the network, so there is no network take-rate at all.',
+      addons: tierAddons,
+      takeRate: '0%, always',
+      cta: { label: 'Start a Space', href: '/spaces' },
     },
   ]
 }

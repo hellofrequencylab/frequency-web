@@ -4,14 +4,14 @@
 // billingLive() so the cap is INERT while billing is OFF (anyone can still create, today's behavior) and
 // only bites at go-live.
 //
-// The rule (owner decision, ADR-810):
-//   • Free member            → 0 spaces (must go Crew to create the first one).
-//   • Crew / Supporter       → exactly 1 space (the taste — run your own page).
+// The rule (owner decision, ADR-810; FIRST SPACE OPENED to everyone, ADR-876):
+//   • Any member             → exactly 1 space. A free Space is open to anyone, so the first one is
+//                              never gated on a personal tier. This is what /pricing promises.
 //   • Owns a paid space      → unlimited (a Business / Non Profit plan is the "run multiple" unlock).
 // Owning even one paid Business/Non Profit space is what lifts the cap, so the second space (and beyond)
 // is the Business upgrade, exactly as the funnel intends.
 
-import { isPaid, type EntitlementTier } from '@/lib/core/entitlement'
+import type { EntitlementTier } from '@/lib/core/entitlement'
 import { asSpacePlan } from './plans'
 
 /** The facts the pure rule needs: the caller's personal tier, how many active spaces they already own,
@@ -32,8 +32,8 @@ export function isPaidSpacePlan(plan: string | null | undefined): boolean {
 export function canCreateSpace(ctx: SpaceCreationContext): boolean {
   // Owning a paid space lifts the cap entirely — the Business plan is the multi-space unlock.
   if (ctx.ownsPaidSpace) return true
-  // Otherwise a paid PERSONAL tier (Crew+) unlocks exactly one space.
-  if (!isPaid(ctx.tier ?? 'free')) return false
+  // The FIRST space is open to every member, whatever their personal tier (ADR-876): a free Space
+  // costs nothing and /pricing says so, so the tier check that used to sit here is gone.
   return ctx.ownedSpaceCount < 1
 }
 
@@ -41,8 +41,6 @@ export function canCreateSpace(ctx: SpaceCreationContext): boolean {
  *  allowed. Distinguishes "go Crew for your first space" from "go Business to run more than one". PURE. */
 export function spaceCreationBlockReason(ctx: SpaceCreationContext): string | null {
   if (canCreateSpace(ctx)) return null
-  if (!isPaid(ctx.tier ?? 'free')) {
-    return 'Creating a space is a Crew feature. Join Crew to stand up your first space.'
-  }
+  // The only remaining block is the SECOND space: the first is free to everyone (ADR-876).
   return 'Your plan includes one space. Upgrade a space to Business to run more than one.'
 }

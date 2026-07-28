@@ -6,7 +6,7 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listSpaceMembers, type SpaceRole, type SpaceMemberStatus } from '@/lib/spaces/membership'
 import { listInvites } from '@/lib/spaces/invites'
 import { getSeatUsage } from '@/lib/spaces/seats'
-import { billingLive } from '@/lib/pricing/settings'
+import { featureGatesLive } from '@/lib/pricing/settings'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { PersonCard } from '@/components/cards/person-card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -84,11 +84,12 @@ export async function MembersBody({ slug }: { slug: string }) {
   const pendingInvites = caps.canManageMembers ? await listInvites(space.id) : []
 
   // SEAT USAGE (Phase D, ADR-465). A manager (owner / admin) sees a "X of Y operator seats used"
-  // counter + an "add a seat" link to the plan and billing page. While billing is OFF this is a
-  // PREVIEW (the limit is not enforced yet); when billing goes live the same counter reflects the real
-  // licensed allowance + enforcement. Read once here (two cheap queries) for managers only.
-  const [seatUsage, billingIsLive] = caps.canManageMembers
-    ? await Promise.all([getSeatUsage(space.id), billingLive()])
+  // counter + an "add a seat" link to the plan and billing page. While the seat wall is not enforced
+  // this is a PREVIEW; when it goes live the same counter reflects the real licensed allowance +
+  // enforcement. It reads featureGatesLive() so this label tracks checkSeatForOperatorInvite exactly
+  // (ADR-874) instead of promising enforcement the moment checkout opens. Managers only, read once.
+  const [seatUsage, seatsEnforced] = caps.canManageMembers
+    ? await Promise.all([getSeatUsage(space.id), featureGatesLive()])
     : [null, false]
 
   // The team: the OWNER first (always seated as Owner), then members (active + suspended; an invited
@@ -152,7 +153,7 @@ export async function MembersBody({ slug }: { slug: string }) {
           <SeatCounter
             usage={seatUsage}
             billingHref={`/spaces/${space.slug}/settings/billing`}
-            enforced={billingIsLive}
+            enforced={seatsEnforced}
             canManage={caps.canManageMembers}
           />
         </section>

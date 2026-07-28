@@ -494,26 +494,27 @@ export function nearAllowanceLimit(featureKey: string, tier: string, usage: numb
   return Math.max(0, usage) / allowance >= USAGE_UPGRADE_THRESHOLD
 }
 
-// ── THE ENFORCEMENT SEAM (billing OFF ⇒ always true; nothing hard-blocks) ────────────────────────────
+// ── THE ENFORCEMENT SEAM (gates not live ⇒ always true; nothing hard-blocks) ─────────────────────────
 
 /** Is this usage WITHIN the tier's allowance for a feature? THE single enforcement seam for the metered
  *  model (ADR-519).
  *
- *   - Returns `true` (never blocks) while `billing_live` is OFF, so the meters are INFORMATIONAL / preview
- *     during the beta: nothing charges and no usage is hard-blocked. This is today's behavior.
+ *   - Returns `true` (never blocks) while the paid feature GATES are not live, so the meters are
+ *     INFORMATIONAL / preview through the beta: nothing is hard-blocked. This is today's behavior.
  *   - Returns `true` for a NON-METERED feature (no usage dimension) or an unknown key (default-allow).
- *   - Once billing is live, compares `usage` to the tier's allowance (null allowance = unlimited = true).
+ *   - Once the gates are live, compares `usage` to the tier's allowance (null allowance = unlimited).
  *
- *  The real hard limit plugs in HERE when billing goes live; nothing else needs to change. `billingLive`
- *  is passed in (resolved by the caller via lib/pricing/settings.ts billingLive()), keeping this pure. */
+ *  The real hard limit plugs in HERE when the gates go live; nothing else needs to change. `gatesLive`
+ *  is passed in (resolved by the caller via lib/pricing/settings.ts featureGatesLive(), NOT billingLive()
+ *  — this is a gating seam, not a charging one, ADR-874), keeping this pure. */
 export function withinAllowance(
   featureKey: string,
   tier: string,
   usage: number,
-  opts: { billingLive: boolean },
+  opts: { gatesLive: boolean },
 ): boolean {
-  // OFF = the metered model is preview-only: informational meters, never a hard block. Today's behavior.
-  if (!opts.billingLive) return true
+  // NOT LIVE = the metered model is preview-only: informational meters, never a hard block.
+  if (!opts.gatesLive) return true
   const allowance = allowanceAt(featureKey, tier)
   if (allowance == null) return true // not metered, or an unlimited tier → never blocked
   return usage <= allowance

@@ -9,12 +9,13 @@
 //      the deferred build (REMAINING-WORK #2) was missing.
 //   2. gamificationFullAllowed(tier) — the STANDALONE gate for the full gamification entitlement
 //      (REMAINING-WORK #5), routed through featureAllowed('gamification_full', …) so it is INERT
-//      while billing is OFF (short-circuits to grant) and only bites once an operator turns
-//      billing on. It mirrors how vault_cash_in routes through featureAllowed (P3).
+//      while the feature gates are not live (short-circuits to grant) and only bites once the beta
+//      grace window ends. It mirrors how vault_cash_in routes through featureAllowed (P3).
 //
 // CRITICAL — OFF preserves current behavior (the ABSOLUTE INVARIANT, ADR-370):
-//   * While billing_live is OFF, gamificationFullAllowed short-circuits to TRUE (featureAllowed
-//     grants everything), so nothing a surface gates on this changes.
+//   * While featureGatesLive() is false (billing off, or the beta grace window still open, ADR-874),
+//     gamificationFullAllowed short-circuits to TRUE (featureAllowed grants everything), so nothing a
+//     surface gates on this changes.
 //   * resolveViewerGamificationAccess folds in the per-role flags whose DEFAULTS already mirror
 //     today's derive-from-tier line (crew/supporter = full, member = earn_only), so with the
 //     seeded flags it returns EXACTLY what deriveGamificationAccess(tier) returns today.
@@ -31,7 +32,7 @@ import {
   deriveGamificationAccess,
   resolveGamificationAccess,
 } from './gamification'
-import { billingLive, loadPricingFlags } from './settings'
+import { featureGatesLive, loadPricingFlags } from './settings'
 
 /** The per-role gamification_full_* flag key for a tier (the operator's per-tier override). */
 const GAMIFICATION_FLAG: Record<EntitlementTier, 'gamification_full_member' | 'gamification_full_crew' | 'gamification_full_supporter'> = {
@@ -99,16 +100,16 @@ export async function resolveViewerGamificationAccess(): Promise<GamificationAcc
 }
 
 /** The STANDALONE gate for the full gamification entitlement (REMAINING-WORK #5). Routed through
- *  featureAllowed('gamification_full', …) so it is INERT while billing is OFF (grants everything)
- *  and only applies the crew minimum once billing goes live. The single point a surface asks "may
+ *  featureAllowed('gamification_full', …) so it is INERT while the gates are not live (grants
+ *  everything) and only applies the crew minimum once the beta grace window ends (ADR-874). The single point a surface asks "may
  *  this viewer use the full gamification loop (compete / claim / spend)?" by tier. FAIL-SAFE: any
  *  error degrades to TRUE (today's behavior — never lock anyone out). */
 export async function gamificationFullAllowed(tier: EntitlementTier | null | undefined): Promise<boolean> {
   try {
-    const live = await billingLive()
-    // While OFF this short-circuits to true inside featureAllowed; we pass it explicitly so the
-    // resolver stays free of its own flag IO (the same contract vault_cash_in uses).
-    return await featureAllowed('gamification_full', { tier: tier ?? 'free' }, { billingLive: live })
+    const gatesLive = await featureGatesLive()
+    // While the gates are not live this short-circuits to true inside featureAllowed; we pass it
+    // explicitly so the resolver stays free of its own flag IO (the contract vault_cash_in uses).
+    return await featureAllowed('gamification_full', { tier: tier ?? 'free' }, { gatesLive })
   } catch {
     return true
   }

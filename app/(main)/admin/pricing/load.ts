@@ -3,7 +3,15 @@
 // read-only Stripe status. EVERYTHING reads FAIL-SAFE to the seeded code defaults, so the page
 // renders correct launch values even before the migration is applied / with billing OFF.
 
-import { getPricingValues, loadPricingFlags, getFoundingConfig, type PricingDefaults, type PricingFlagKey } from '@/lib/pricing/settings'
+import {
+  getPricingValues,
+  loadPricingFlags,
+  getFoundingConfig,
+  getBetaGrace,
+  type PricingDefaults,
+  type PricingFlagKey,
+} from '@/lib/pricing/settings'
+import { betaGraceActive } from '@/lib/pricing/beta'
 import { loadCatalogConfig, type CatalogConfig } from '@/lib/pricing/catalog-config'
 import { type FoundingConfig } from '@/lib/pricing/founding'
 import { FEATURE_GATES, loadFeatureGateOverrides, mergeGate, type FeatureGate } from '@/lib/pricing/gates'
@@ -44,6 +52,18 @@ export interface PricingConsoleData {
     /** The raw `beta_ends_at` value (ISO string or empty). Display-only; grants no access. */
     endsAt: string
   }
+  /** THE TWO SWITCHES, read apart (ADR-874). Selling and gating are different decisions on different
+   *  dates, so the console states both plainly instead of implying one flag governs both. */
+  gating: {
+    /** May we CHARGE right now? (billingLive() = Stripe keys AND the master switch.) */
+    billingLive: boolean
+    /** Do the paid feature GATES bite right now? (billingLive AND the beta grace window has ended.) */
+    gatesLive: boolean
+    /** The `beta_grace.until` date, or null when no grace window is configured. */
+    graceUntil: string | null
+    /** Is the grace window still open at read time? */
+    graceOpen: boolean
+  }
   gates: FeatureGateRow[]
   stripe: {
     /** Stripe env keys present (billingEnabled). */
@@ -64,7 +84,7 @@ export interface PricingConsoleData {
 }
 
 export async function getPricingConsoleData(): Promise<PricingConsoleData> {
-  const [values, catalog, flags, founding, overrides, priceMap, betaEndsAtRaw, betaInvite, betaPrompts] =
+  const [values, catalog, flags, founding, overrides, priceMap, betaEndsAtRaw, betaInvite, betaPrompts, grace] =
     await Promise.all([
       getPricingValues(),
       loadCatalogConfig(),
@@ -75,6 +95,7 @@ export async function getPricingConsoleData(): Promise<PricingConsoleData> {
       getPlatformSetting('beta_ends_at', ''),
       betaInviteOnly(),
       betaHostPromptsFlag(),
+      getBetaGrace(),
     ])
 
   // The feature->entitlement matrix: every code-declared feature, merged with any DB override, plus
@@ -129,6 +150,15 @@ export async function getPricingConsoleData(): Promise<PricingConsoleData> {
     flags,
     founding,
     beta: { inviteOnly: betaInvite, hostPrompts: betaPrompts, endsAt: betaEndsAtRaw },
+    // Derived from the SAME pure helper featureGatesLive() uses, so the readout can never claim a state
+    // the runtime is not in (ADR-874). billingLive here is `configured && masterLive`, byte-identical to
+    // billingLive()'s own definition.
+    gating: {
+      billingLive: configured && masterLive,
+      gatesLive: configured && masterLive && !betaGraceActive(grace),
+      graceUntil: grace.until,
+      graceOpen: betaGraceActive(grace),
+    },
     gates,
     stripe: {
       configured,

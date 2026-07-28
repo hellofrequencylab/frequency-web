@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { ArrowRight, Check } from 'lucide-react'
+import { ArrowRight, Check, Minus } from 'lucide-react'
 import {
   PhotoHero,
   Section,
@@ -14,138 +14,169 @@ import { Illustration } from '@/components/marketing/illustrations'
 import { breadcrumbSchema, faqSchema, productSchema } from '@/lib/jsonld'
 import { PricingBillingToggle } from '@/components/marketing/pricing-billing-toggle'
 import { PricingComparison } from '@/components/marketing/pricing-comparison'
+import { getPricingValues } from '@/lib/pricing/settings'
+import { catalogConfigByKey, loadCatalogConfig } from '@/lib/pricing/catalog-config'
+import { annualDiscountNote, trialNote } from '@/lib/pricing/display'
 import {
-  pricingTiers,
-  tierHeadline,
-  tierListAnchor,
-  loadoutStrip,
-  proAddonPrice,
-  priceStrings,
-  PLAN_STORY,
-  PRICING_ADDONS,
-  MISSION_FRAMING,
-  CREW_NOTE,
-  type PricingTier,
-} from '@/lib/pricing/pricing-page'
-import type { BillingInterval } from '@/lib/billing/pricing-keys'
+  memberFeatureGrid,
+  memberOfferings,
+  planExtras,
+  spaceFeatureGrid,
+  spaceOfferings,
+  type FeatureGrid,
+  type GridCell,
+  type Offering,
+  type PlanExtra,
+  type PricingGridInput,
+} from '@/lib/pricing/pricing-grid'
+import { MISSION_FRAMING, PLAN_STORY } from '@/lib/pricing/pricing-page'
 
-// Every dollar figure in the copy below interpolates from the ONE code catalog (priceStrings), so no
-// sentence on this page can quote a price the catalog does not carry.
-const P = priceStrings()
-
-// FAST: the commercial pricing page is STATIC (revalidate is a courtesy for the rare catalog-config
-// edit; the page itself reads only the CODE catalog defaults via lib/pricing/pricing-page, so there are
-// ZERO per-request DB billing reads). The monthly/yearly toggle is the only client island; both
-// intervals are rendered at build time and the toggle flips which is shown.
+// EVERY figure on this page is READ, never written. Prices, the yearly deal, the trial length, the
+// per-tier take-rate, the add-on and seat amounts, and every cell of the comparison grid come from
+// lib/pricing/pricing-grid.ts, which derives them from the operator-editable pricing config
+// (pricing_settings, edited at /admin/pricing) and from the entitlement key sets the product actually
+// gates on. So an operator changing a price changes this page with no deploy, and moving a capability
+// between tiers moves it in the grid. There is no dollar figure, and no percentage, in this file.
+//
+// SPEED: the page is ISR (revalidate below). The two config reads are request-cached and happen once per
+// revalidation, not per visitor. The monthly/yearly toggle is the only client island; both intervals are
+// rendered and CSS flips which one shows.
 export const revalidate = 3600
 
-// The Community Collective pricing model (ADR-811, owner overhaul 2026-07): a tier ladder that starts
-// FREE (Free Space, the first level of Space) and climbs Business $29, Collective $79, Non Profit $39,
-// with Opening Beta anchors ($19 Business, $49 Collective) that auto-revert to list on 2026-09-01
-// (lib/pricing/beta.ts). A take-rate ONLY on network-sourced business. You keep 100% of your own
-// bookings; we earn only on the business the collective sends you.
-export const metadata: Metadata = {
-  title: 'Pricing for Spaces',
-  description:
-    `Connection is free on Frequency. Businesses pay for reach and scale, never for access to people. Start a Space free; paid plans raise the limits. Business is ${P.businessList} a month (${P.businessBeta} at the Opening Beta price), Collective is ${P.collectiveList} (${P.collectiveBeta} Opening Beta), Non Profit is ${P.nonprofit}. Two months free on yearly.`,
-  alternates: { canonical: '/pricing' },
-  openGraph: {
-    title: 'Frequency pricing: connection is free, paid plans raise the limits',
-    description:
-      `A community collective, not a tax on your work. Start a Space free, keep 100% of what you bring in; we earn only on network-sourced sales. Business ${P.businessList} (${P.businessBeta} Opening Beta), Collective ${P.collectiveList} (${P.collectiveBeta} Opening Beta), Non Profit ${P.nonprofit}.`,
-    url: '/pricing',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Frequency pricing: connection is free, paid plans raise the limits',
-    description:
-      `Start a Space free. Keep 100% of your own bookings; we earn only on business the network sends you. Business ${P.businessList} (${P.businessBeta} Opening Beta), Collective ${P.collectiveList} (${P.collectiveBeta} Opening Beta), Non Profit ${P.nonprofit}.`,
-  },
+/** Resolve the whole pricing model from the operator-editable config. One place, so the metadata, the
+ *  JSON-LD, the cards, and the grid can never quote different numbers. */
+async function pricingInput(): Promise<PricingGridInput> {
+  const [values, catalog] = await Promise.all([getPricingValues(), loadCatalogConfig()])
+  return { values, catalog: catalogConfigByKey(catalog) }
 }
 
-// The answer-first FAQ, mirrored into the FAQPage schema so the structured data matches the page.
-const PRICING_FAQ: { q: string; a: string }[] = [
-  {
-    q: 'How does Frequency pricing work?',
-    a: `Connection is free; paid plans raise the limits. A Free Space is the first level: your storefront, your page, events, posts, and members, free for as long as you want. Business is ${P.businessList} a month (${P.businessBeta} at the Opening Beta price): own your audience, with unlimited contacts, campaigns at volume, email branding, exports, and the full CRM. Collective is ${P.collectiveList} a month (${P.collectiveBeta} Opening Beta): be the venue, with team seats, automations, membership tickets, multiple pipelines, and hosting events with Collaborator Spaces. Non Profit is ${P.nonprofit} a month flat, the full Collective toolkit for verified 501(c)(3) organizations.`,
-  },
-  {
-    q: 'Can I run a Space for free?',
-    a: 'Yes. A Free Space is a real Space, not a trial: your storefront, your page, events, posts, members, and a place for your people to gather. You can even be a Collaborator on other Spaces’ events. No card, no clock. Upgrade to Business when you want to reach more people at once.',
-  },
-  {
-    q: 'What stays free forever?',
-    a: 'The people part. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. A business never pays for access to people; a paid plan buys reach and scale, higher limits on the same tools every Space already has.',
-  },
-  {
-    q: 'Do you take a cut of my sales?',
-    a: 'Not of your own. You keep 100% of the bookings and sales you bring in yourself, always. We earn a share only of the business the network sends you, a referral or a discovery inside the collective, and that rate drops as your plan rises: 5% on Business, 3% on Collective, and 0% for nonprofits. A paid plan buys down your rate.',
-  },
-  {
-    q: 'What happens if I downgrade?',
-    a: 'Nothing disappears. Your contacts, posts, events, and history stay visible and stay yours; you just go back to the free limits, so you cannot add past the caps until you upgrade again. You can export your contacts and your data before, during, or after, anytime.',
-  },
-  {
-    q: 'What is the Vera AI add-on?',
-    a: `Vera AI turns your community's signals into live matches and next-best actions. It is an optional add-on on any paid plan at ${P.veraAi} a month, has a 14-day trial, and you can turn it on or off anytime.`,
-  },
-  {
-    q: 'What does yearly billing save?',
-    a: 'Yearly billing is two months free: you pay for ten months and get twelve. Monthly is the low-friction default; yearly is the way to save on any plan.',
-  },
-  {
-    q: 'Can I leave and take my people with me?',
-    a: 'Yes. Month to month, and your people are yours. You can export your contacts and your data any time. We earn your stay, we do not trap it.',
-  },
-  {
-    q: 'Is there a personal plan?',
-    a: `Yes, two, and neither is a business tool. Crew is the personal tier at ${CREW_NOTE.foundingLabel} a month or $90 a year at the Opening Beta price, under a ${CREW_NOTE.listLabel} list: the Crew badge, the full rewards loop, and a way to back the community. Supporter is ${CREW_NOTE.supporterLabel} a month: everything in Crew, plus the Supporter badge for backing the Foundation. Both live on the personal upgrade page, not on this commercial page.`,
-  },
-  {
-    q: 'Where does the money go?',
-    a: MISSION_FRAMING,
-  },
-]
+/** The plain "Business is X, Collective is Y" ladder sentence, built from the offerings. */
+function ladderSentence(offerings: Offering[]): string {
+  return offerings
+    .filter((o) => o.monthlyCents > 0)
+    .map((o) => `${o.label} is ${o.monthly}${o.listAnchor ? ` at the beta rate, under ${o.listAnchor}` : ''}`)
+    .join(', ')
+}
 
-// The value ladder: the whole climb, made legible on the surface that lists tiers. Each rung adds depth
-// and buys down the network take-rate, from belonging for free to running standalone at zero. Member is
-// free and Independent/Non Profit are 0%; the paid-tier take-rates (5% / 3%) are the canonical
-// network-only rates (they match each tier's takeRate copy). Crew's price reads from the CREW_NOTE
-// constant so it never drifts from the Crew card below. No dollar amount here is one the catalog renders
-// beside it.
-const VALUE_LADDER: { name: string; line: string; fee: string }[] = [
-  { name: 'Member', line: 'Belong to everything. The full community, free forever.', fee: 'Free' },
-  { name: 'Crew', line: 'The Crew badge, the whole Quest, and a way to back the community. Never a business tool.', fee: `${CREW_NOTE.foundingLabel}/mo` },
-  { name: 'Supporter', line: 'Everything in Crew, plus the Supporter badge for backing the Foundation.', fee: `${CREW_NOTE.supporterLabel}/mo` },
-  { name: 'Free Space', line: 'Put your business on the map: your storefront, page, events, and members.', fee: 'Free' },
-  { name: 'Business', line: 'Own your audience: unlimited contacts, campaigns at volume, email branding, and exports.', fee: '5% network' },
-  { name: 'Collective', line: 'Be the venue: team seats, automations, membership tickets, and Collaborator hosting.', fee: '3% network' },
-  { name: 'Non Profit', line: 'The full Collective toolkit, verified, for 501(c)(3) organizations.', fee: '0%' },
-]
+export async function generateMetadata(): Promise<Metadata> {
+  const input = await pricingInput()
+  const ladder = ladderSentence(spaceOfferings(input))
+  const crew = memberOfferings(input)[1]!
+  const description = `Connection is free on Frequency. Businesses pay for reach and scale, never for access to people. Start a Space free; paid plans raise the limits. ${ladder}. Crew, the personal tier, is ${crew.monthly}. ${annualDiscountNote(input.values)}`
+  return {
+    title: 'Pricing: every plan, side by side',
+    description,
+    alternates: { canonical: '/pricing' },
+    openGraph: {
+      title: 'Frequency pricing: connection is free, paid plans raise the limits',
+      description,
+      url: '/pricing',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Frequency pricing: connection is free, paid plans raise the limits',
+      description,
+    },
+  }
+}
 
-export default function PricingPage() {
-  const tiers = pricingTiers()
-  const strip = loadoutStrip()
+/** The answer-first FAQ, built from the live model so no answer can quote a stale price. Mirrored into
+ *  the FAQPage schema, so the structured data matches the page. */
+function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
+  const spaces = spaceOfferings(input)
+  const [member, crew] = memberOfferings(input)
+  const extras = planExtras(input)
+  const ai = extras.find((e) => e.key === 'ai')!
+  const seats = extras.find((e) => e.key === 'seats')!
+  const ladder = spaces
+    .map((s) => `${s.label} is ${s.monthly}${s.listAnchor ? ` at the beta rate, under ${s.listAnchor}` : ''}: ${s.tagline.toLowerCase()} ${s.forWho}`)
+    .join(' ')
+  const trial = trialNote(input.values)
+  const rates = spaces.map((s) => `${s.label} ${s.takeRate.split(', ')[1]}`).join(', ')
+
+  return [
+    {
+      q: 'How does Frequency pricing work?',
+      a: `Connection is free; paid plans raise the limits. There are two ladders. Membership: ${member!.label} is free forever, and ${crew!.label} is ${crew!.monthly} for full access to member programs and everything else. Spaces: ${ladder} ${annualDiscountNote(input.values)}`,
+    },
+    {
+      q: 'Can I run a Space for free?',
+      a: `Yes, and anyone can. A free Space is a real Space, not a trial: your storefront, your page, events, posts, members, and a place for your people to gather. You do not need Crew to run one. No card, no clock. Upgrade when you want to reach more people at once.`,
+    },
+    {
+      q: 'What stays free forever?',
+      a: 'The people part. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. A business never pays for access to people; a paid plan buys reach and scale, higher limits on the same tools every Space already has.',
+    },
+    {
+      q: 'What is the beta rate, and do I keep it?',
+      a: `Two plans are sold at a beta rate below their list price: ${spaces
+        .filter((s) => s.listAnchor)
+        .map((s) => `${s.label} at ${s.monthly} under ${s.listAnchor}`)
+        .join(' and ')}. If you subscribe on that rate you keep it for as long as you keep the plan. The other plans have one price, and we do not cross out a number we never charged.`,
+    },
+    {
+      q: 'Do you take a cut of my sales?',
+      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, always. We earn a share only of the business the network sends you, a referral or a discovery inside the collective, and that rate drops as your plan rises: ${rates}. A paid plan buys down your rate.`,
+    },
+    {
+      q: 'How do team seats work?',
+      a: `Your own seat is included on every plan. ${seats.availability} ${seats.detail} ${seats.price === 'Owner-priced today' ? 'Seats are owner-priced today, so you bring on the people you need without a locked public per-seat price.' : `Extra seats are ${seats.price}.`}`,
+    },
+    {
+      q: 'What is the Vera AI add-on?',
+      a: `${ai.detail} ${ai.availability} It is ${ai.price}${trial ? `, with a ${trial.toLowerCase().replace(/\.$/, '')}` : ''}.`,
+    },
+    {
+      q: 'Is there a free trial?',
+      a: trial
+        ? `${trial} on every paid Space plan, card upfront, cancel before it ends and you are not billed. Members need no trial: the free tier is the trial, for as long as you want it.`
+        : 'A free Space and a free membership are open-ended, so the free tier is the trial for as long as you want it.',
+    },
+    {
+      q: 'What does yearly billing save?',
+      a: `${annualDiscountNote(input.values)} You pay for ten months and get twelve. Monthly is the low-friction default; yearly is the way to save on any plan.`,
+    },
+    {
+      q: 'What happens if I downgrade?',
+      a: 'Nothing disappears. Your contacts, posts, events, and history stay visible and stay yours; you just go back to the free limits, so you cannot add past the caps until you upgrade again. You can export your contacts and your data before, during, or after, anytime.',
+    },
+    {
+      q: 'Can I leave and take my people with me?',
+      a: 'Yes. Month to month, and your people are yours. You can export your contacts and your data any time. We earn your stay, we do not trap it.',
+    },
+    {
+      q: 'Where does the money go?',
+      a: MISSION_FRAMING,
+    },
+  ]
+}
+
+export default async function PricingPage() {
+  const input = await pricingInput()
+  const members = memberOfferings(input)
+  const spaces = spaceOfferings(input)
+  const extras = planExtras(input)
+  const faq = pricingFaq(input)
+  const ladder = ladderSentence(spaces)
 
   return (
     <>
       <JsonLd
         data={[
           breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]),
-          faqSchema(PRICING_FAQ),
-          // One Product/Offer per PAID tier, priced at the monthly founding amount (the real price
-          // today). The Free Space column is not an Offer (a $0 Product reads as spam to answer
-          // engines; the FAQ carries the free story instead). The `!t.preview` guard is a defensive
-          // no-op kept for a future not-yet-sellable tier. Built from the same catalog the table
-          // renders, so the schema never drifts.
-          ...tiers
-            .filter((t) => !t.preview && t.price.month.foundingCents > 0)
-            .map((t) =>
+          faqSchema(faq),
+          // One Product/Offer per PAID offering, priced at the amount actually charged today (the beta
+          // rate where there is one). A free tier is not an Offer (a zero-price Product reads as spam to
+          // answer engines; the FAQ carries the free story instead). Built from the same model the page
+          // renders, so the schema never drifts from the table.
+          ...[...members, ...spaces]
+            .filter((o) => o.monthlyCents > 0)
+            .map((o) =>
               productSchema({
-                title: `Frequency ${t.name}`,
-                description: t.forWho,
-                priceCents: t.price.month.foundingCents,
+                title: `Frequency ${o.label}`,
+                description: o.forWho,
+                priceCents: o.monthlyCents,
                 currency: 'usd',
                 path: '/pricing',
                 sellerName: 'Frequency',
@@ -166,14 +197,14 @@ export default function PricingPage() {
         image="/images/site/lab-lounge.jpg"
         alt="The connection bar inside The Lab, warm and low-lit"
         focal="object-center"
-        eyebrow="Pricing for Spaces"
+        eyebrow="Every plan, side by side"
         title={
           <>
             Connection is free.
             <br className="hidden sm:block" /> Paid plans <span className="text-primary">raise the limits.</span>
           </>
         }
-        subtitle={`Frequency is where your local community happens. Businesses pay for reach and scale, never for access to people. Start a Space free; you keep 100% of what you bring in yourself, and we never take a cut of your own bookings. Business is ${P.businessList} a month, Collective is ${P.collectiveList}, and Non Profit is ${P.nonprofit}.`}
+        subtitle={`Frequency is where your local community happens. Businesses pay for reach and scale, never for access to people. Being a member is free and running a Space is free. ${ladder}. You keep 100% of what you bring in yourself.`}
       >
         <Button href="/spaces">
           Start a Space <ArrowRight className="h-5 w-5" />
@@ -188,67 +219,92 @@ export default function PricingPage() {
         <p className="text-center text-lg leading-relaxed text-muted sm:text-xl">{MISSION_FRAMING}</p>
       </Section>
 
-      {/* The pricing table: Free Space, Business, Collective, Non Profit, with the monthly/yearly toggle island. */}
-      <Section tone="surface" pad="pt-6 pb-20 sm:pb-24">
+      {/* THE PLANS. Two ladders, seven plans, every one of them sellable: the personal membership
+          (Member, Crew) and the Space plans (Free through Independent). One billing toggle governs both,
+          so a reader compares monthly against monthly. */}
+      <Section tone="surface" pad="pt-6 pb-16 sm:pb-20">
         <div className="mb-10 text-center">
-          <p className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">
-            The ladder
+          <p className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">The plans</p>
+          <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">Pick the plan that fits.</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted">
+            Two ladders. One for you as a member, one for the Space you run. You can be on both, and you
+            can start on the free rung of either.
           </p>
-          <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">
-            Pick the plan that fits.
-          </h2>
         </div>
 
-        <PricingBillingToggle>
-          <PricingTable tiers={tiers} />
+        <PricingBillingToggle yearlyNote={annualDiscountNote(input.values)}>
+          <div className="mb-12">
+            <LadderHeading
+              title="For you"
+              kicker="Being a member is free, forever. Crew is the paid personal tier."
+            />
+            <div className="grid gap-5 sm:grid-cols-2">
+              {members.map((o) => (
+                <OfferingCard key={o.id} offering={o} />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <LadderHeading
+              title="For your Space"
+              kicker="A Space is free for anyone to start. The paid plans raise the limits and buy down the fee."
+            />
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {spaces.map((o) => (
+                <OfferingCard key={o.id} offering={o} />
+              ))}
+            </div>
+          </div>
         </PricingBillingToggle>
 
-        <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-relaxed text-subtle">
+        <p className="mx-auto mt-10 max-w-2xl text-center text-sm leading-relaxed text-subtle">
           {PLAN_STORY.meters} And you keep 100% of your own bookings, always: the take-rate applies only
           to business the network sends you, and it drops as your plan rises.
         </p>
-
-        {/* Add-ons that ride on any paid plan: Vera AI (priced from the catalog) and extra operator
-            seats. Seats are an OWNER-SET placeholder (CATALOG operator_seat is placeholder:true), so we
-            surface them as available and owner-priced WITHOUT locking a public per-seat number. */}
-        <p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-subtle">
-          Two add-ons ride on any paid plan. Vera AI is optional at {proAddonPrice('ai')}, or {P.veraAiYear} a
-          year. And when your team grows, you can add operator seats: these are owner-priced today, so
-          you bring on the people you need without a locked public per-seat price.
-        </p>
       </Section>
 
-      {/* The value ladder: the climb made legible, each rung adding depth and buying down the take-rate. */}
-      <Section tone="canvas" pad="py-14 sm:py-16">
-        <div className="mb-8 text-center">
-          <p className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">
-            The climb
-          </p>
-          <h2 className="font-display uppercase text-text text-3xl sm:text-4xl">
-            Every step buys down the fee.
-          </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-            Start where you are and climb as you grow. Each rung adds depth and lowers the network
-            take-rate, from belonging for free to a verified nonprofit at zero.
-          </p>
-        </div>
-        <ol className="mx-auto flex max-w-3xl flex-col gap-3">
-          {VALUE_LADDER.map((rung, i) => (
-            <li
-              key={rung.name}
-              className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-5"
-            >
-              <span className="font-display text-2xl leading-none text-subtle">{i + 1}</span>
-              <div className="flex-1">
-                <h3 className="font-display uppercase text-text text-xl">{rung.name}</h3>
-                <p className="text-sm leading-relaxed text-muted">{rung.line}</p>
-              </div>
-              <span className="shrink-0 rounded-md bg-primary-bg px-3 py-1 text-center font-display text-sm text-primary-strong">
-                {rung.fee}
-              </span>
-            </li>
+      {/* Seats + the AI add-on: the two things you can add to a plan, priced from the same config, and
+          both also rows in the comparison below so the difference between tiers stays visible. */}
+      <Section tone="canvas">
+        <SectionHeading
+          eyebrow="Add to any plan"
+          title="Seats and AI, priced in the open."
+          kicker="Two things ride on top of a plan instead of being one. Neither is a surprise line item, and both show up in the comparison below."
+        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          {extras.map((extra) => (
+            <ExtraCard key={extra.key} extra={extra} />
           ))}
-        </ol>
+        </div>
+      </Section>
+
+      {/* THE COMPARISON. The centerpiece: what every tier actually gets, derived from the entitlement
+          key sets, the feature gates, and the usage ladders, so it cannot drift from the product. */}
+      <Section tone="surface">
+        <SectionHeading
+          eyebrow="The full comparison"
+          title="What each plan gets."
+          kicker="Every row below is read from the same rules the product runs on, so this table says what your account will actually do."
+        />
+
+        <ComparisonBlock
+          title="Membership"
+          kicker="What you get as a person, on the free tier and on Crew."
+          grid={memberFeatureGrid(input)}
+          offerings={members}
+          openId="crew"
+        />
+
+        <div className="mt-14">
+          <ComparisonBlock
+            title="Spaces"
+            kicker="What a Space gets on each plan, from free to Independent."
+            grid={spaceFeatureGrid(input)}
+            offerings={spaces}
+            openId="business"
+          />
+        </div>
       </Section>
 
       {/* The value comparison: every Business feature vs the separate tool it replaces, totaled against the
@@ -299,48 +355,6 @@ export default function PricingPage() {
         </div>
       </Section>
 
-      {/* "By who you are": each Mode -> its recommended loadout + monthly total, linking to its page. */}
-      <Section tone="canvas">
-        <SectionHeading
-          eyebrow="By who you are"
-          title="One system, presented by who you are."
-          kicker="The same Frequency, presented by who you are. Start on Business and grow into Collective as your community and your team grow."
-        />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {strip.map((row) => (
-            <a
-              key={row.id}
-              href={row.href}
-              className="group flex flex-col rounded-2xl border border-border bg-surface p-6 transition-colors hover:border-primary"
-            >
-              <div className="flex items-baseline justify-between gap-3">
-                <h3 className="font-display uppercase text-text text-2xl">{row.label}</h3>
-                <span className="font-display text-2xl text-primary-strong">{row.totalLabel}</span>
-              </div>
-              {row.breakdownLabel && (
-                <p className="mt-1 text-right text-xs font-semibold text-subtle">{row.breakdownLabel}</p>
-              )}
-              <p className="mt-2 text-sm leading-relaxed text-muted">{row.note}</p>
-              <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-primary-strong">
-                See the details
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
-              </span>
-            </a>
-          ))}
-        </div>
-      </Section>
-
-      {/* Member pricing (Crew + Supporter), noted plainly with a link to the upgrade page. */}
-      <Section tone="surface" pad="py-12 sm:py-16">
-        <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 rounded-2xl border border-border bg-surface-elevated/60 px-6 py-8 text-center">
-          <h3 className="font-display uppercase text-text text-2xl">{CREW_NOTE.name}</h3>
-          <p className="text-base leading-relaxed text-muted">{CREW_NOTE.line}</p>
-          <Button href={CREW_NOTE.href} variant="secondary">
-            See member pricing
-          </Button>
-        </div>
-      </Section>
-
       <Statement tone="canvas">
         You pay for the parts of the business{' '}
         <span className="text-primary">you actually run.</span>
@@ -362,7 +376,7 @@ export default function PricingPage() {
 
       <Section tone="canvas">
         <SectionHeading eyebrow="Straight answers" title="Questions, answered plainly." />
-        <FaqList items={PRICING_FAQ} />
+        <FaqList items={faq} />
       </Section>
 
       <BetaCTA
@@ -373,181 +387,247 @@ export default function PricingPage() {
   )
 }
 
-// ── The pricing table ─────────────────────────────────────────────────────────
-// One header row of plan columns (Business + Nonprofit), then a labelled row per dimension (price,
-// billing, for, core, the Resonance Engine add-on, take-rate, CTA). Each price cell renders BOTH intervals
-// (month + year), each wrapped in a span the toggle CSS shows/hides. Semantic DAWN tokens only (ADR-590).
+// ── The plan cards ───────────────────────────────────────────────────────────
+// One card per offering. Every string comes off the Offering (which is built from the pricing config),
+// so a card holds no pricing logic of its own. Semantic DAWN tokens only.
 
-function PricingTable({ tiers }: { tiers: PricingTier[] }) {
+function LadderHeading({ title, kicker }: { title: string; kicker: string }) {
   return (
-    <>
-      {/* Mobile: stacked cards (a table is unreadable narrow). */}
-      <div className="grid gap-6 lg:hidden">
-        {tiers.map((t) => (
-          <TierCard key={t.id} tier={t} />
-        ))}
-      </div>
-
-      {/* Desktop: the real table. Wide content scrolls inside its own container (PAGE-FRAMEWORK) so the
-          four tier columns never clip on a narrow desktop. */}
-      <div className="hidden overflow-x-auto rounded-2xl border border-border lg:block">
-        <table className="w-full text-left">
-          <caption className="sr-only">Frequency Space pricing by tier</caption>
-          <thead>
-            <tr className="border-b border-border bg-surface-elevated">
-              <th scope="col" className="px-5 py-4" />
-              {tiers.map((t) => (
-                <th
-                  key={t.id}
-                  scope="col"
-                  className={`px-5 py-4 align-bottom ${t.featured ? 'bg-primary-bg/30' : ''}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="font-display uppercase text-text text-2xl">{t.name}</span>
-                    {t.featured && (
-                      <span className="rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
-                        Most chosen
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 text-xs font-semibold normal-case tracking-normal text-muted">
-                    {t.tagline}
-                  </p>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="text-sm">
-            <Row label="Price" tiers={tiers}>{(t) => <PriceCell tier={t} />}</Row>
-            <Row label="Billing" tiers={tiers}>{(t) => <span className="text-muted">{t.billing}</span>}</Row>
-            <Row label="For" tiers={tiers}>{(t) => <span className="text-muted">{t.forWho}</span>}</Row>
-            <Row label="Core included" tiers={tiers}>
-              {(t) => <span className="text-muted">{t.coreIncluded}</span>}
-            </Row>
-            {PRICING_ADDONS.map((a) => (
-              <Row key={a.key} label={`${a.glyph} ${a.label}`} tiers={tiers}>
-                {(t) => <AddonCell tier={t} addon={a.key} />}
-              </Row>
-            ))}
-            <Row label="Take-rate" tiers={tiers}>
-              {(t) => <span className="font-semibold text-text">{t.takeRate}</span>}
-            </Row>
-            <Row label="" tiers={tiers}>
-              {(t) => (
-                <Button href={t.cta.href} variant={t.featured ? 'primary' : 'secondary'} size="sm">
-                  {t.cta.label}
-                </Button>
-              )}
-            </Row>
-          </tbody>
-        </table>
-      </div>
-    </>
-  )
-}
-
-function Row({
-  label,
-  tiers,
-  children,
-}: {
-  label: string
-  tiers: PricingTier[]
-  children: (tier: PricingTier) => React.ReactNode
-}) {
-  return (
-    <tr className="border-b border-border last:border-0">
-      <th scope="row" className="px-5 py-4 align-top font-semibold text-text">
-        {label}
-      </th>
-      {tiers.map((t) => (
-        <td key={t.id} className={`px-5 py-4 align-top ${t.featured ? 'bg-primary-bg/15' : ''}`}>
-          {children(t)}
-        </td>
-      ))}
-    </tr>
-  )
-}
-
-function PriceCell({ tier }: { tier: PricingTier }) {
-  return (
-    <div>
-      {(['month', 'year'] as BillingInterval[]).map((interval) => {
-        const anchor = tierListAnchor(tier, interval)
-        return (
-          <span key={interval} data-interval-show={interval} className="flex items-baseline gap-2">
-            {anchor && <span className="text-base text-subtle line-through">{anchor}</span>}
-            <span className="font-display text-text text-2xl leading-none">
-              {tierHeadline(tier, interval)}
-            </span>
-          </span>
-        )
-      })}
-      {/* The Opening Beta caption shows ONLY where an anchor exists (a list struck over a lower beta
-          rate) — i.e. Business's $19-under-$29 and Collective's $49-under-$79. It auto-clears when the
-          beta window ends (effectiveCatalogAmounts collapses founding to list, so tierListAnchor returns
-          null). Free / Non Profit at list must NOT claim a discount (skeptic test, CONTENT-VOICE). The
-          framing is the honest founding lock (grandfathering, lib/pricing/beta.ts): the Summer of
-          Frequency rate holds through September 1 and stays with a Space that starts on it. */}
-      {tierListAnchor(tier, 'month') && (
-        <span className="mt-1 block text-xs text-primary-strong">
-          Opening Beta price through September 1, yours for as long as you keep the plan
-        </span>
-      )}
+    <div className="mb-5">
+      <h3 className="font-display uppercase text-text text-2xl">{title}</h3>
+      <p className="mt-1 text-sm leading-relaxed text-muted">{kicker}</p>
     </div>
   )
 }
 
-function AddonCell({ tier, addon }: { tier: PricingTier; addon: string }) {
-  const cell = tier.addons.find((a) => a.addon === addon)
-  // The Free Space column carries no add-on cells: add-ons ride paid plans only.
-  if (!cell) return <span className="text-subtle">On paid plans</span>
-  const included = cell.value === 'Included'
-  return (
-    <span className={`inline-flex items-center gap-1.5 ${included ? 'text-success' : 'text-text'}`}>
-      {included && <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />}
-      {cell.value}
-    </span>
-  )
-}
-
-// The mobile stacked card for one tier (the table is desktop-only).
-function TierCard({ tier }: { tier: PricingTier }) {
+function OfferingCard({ offering }: { offering: Offering }) {
   return (
     <div
-      className={`rounded-2xl border bg-surface p-6 ${
-        tier.featured ? 'border-2 border-primary ring-4 ring-primary-bg' : 'border-border'
+      className={`flex flex-col rounded-2xl border bg-surface p-6 ${
+        offering.featured ? 'border-2 border-primary ring-4 ring-primary-bg' : 'border-border'
       }`}
     >
-      <div className="mb-1 flex items-center gap-2">
-        <h3 className="font-display uppercase text-text text-2xl">{tier.name}</h3>
-        {tier.featured && (
+      <div className="mb-1 flex flex-wrap items-center gap-2">
+        <h4 className="font-display uppercase text-text text-2xl">{offering.label}</h4>
+        {offering.featured && (
           <span className="rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
             Most chosen
           </span>
         )}
       </div>
-      <p className="mb-3 text-sm font-semibold text-muted">{tier.tagline}</p>
-      <div className="mb-4">
-        <PriceCell tier={tier} />
-        <p className="mt-1 text-sm text-muted">{tier.billing}</p>
-      </div>
-      <p className="mb-2 text-sm text-muted">{tier.forWho}</p>
-      <p className="mb-4 text-sm text-muted">{tier.coreIncluded}</p>
-      <ul className="mb-4 space-y-2 text-sm">
-        {PRICING_ADDONS.map((a) => (
-          <li key={a.key} className="flex items-center justify-between gap-3">
-            <span className="text-text">
-              {a.glyph} {a.label}
-            </span>
-            <AddonCell tier={tier} addon={a.key} />
-          </li>
-        ))}
-      </ul>
-      <p className="mb-4 text-sm font-semibold text-text">Take-rate: {tier.takeRate}</p>
-      <Button href={tier.cta.href} variant={tier.featured ? 'primary' : 'secondary'} className="w-full">
-        {tier.cta.label}
+      <p className="mb-4 text-sm font-semibold text-muted">{offering.tagline}</p>
+
+      <PriceBlock offering={offering} />
+
+      <p className="mt-3 text-sm text-muted">{offering.billing}</p>
+      {offering.trial && <p className="mt-1 text-sm font-semibold text-text">{offering.trial}</p>}
+      <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">{offering.forWho}</p>
+      <p className="mt-3 text-sm text-subtle">{offering.takeRate}</p>
+
+      <Button
+        href={offering.cta.href}
+        variant={offering.featured ? 'primary' : 'secondary'}
+        className="mt-5 w-full"
+      >
+        {offering.cta.label}
       </Button>
     </div>
   )
+}
+
+/** The headline price. Renders BOTH intervals (the toggle CSS shows one), with the crossed-out list
+ *  anchor where the config carries one, and the beta lock line only beside a real anchor. */
+function PriceBlock({ offering }: { offering: Offering }) {
+  const intervals: { key: 'month' | 'year'; label: string | null }[] = [
+    { key: 'month', label: offering.monthly },
+    { key: 'year', label: offering.yearly ?? offering.monthly },
+  ]
+  return (
+    <div>
+      {intervals.map(({ key, label }) => (
+        <span key={key} data-interval-show={key} className="flex items-baseline gap-2">
+          {key === 'month' && offering.listAnchor && (
+            <span className="text-base text-subtle line-through">{offering.listAnchor}</span>
+          )}
+          <span className="font-display text-text text-3xl leading-none">{label}</span>
+        </span>
+      ))}
+      {offering.betaNote && (
+        <span className="mt-2 block text-xs font-semibold text-primary-strong">{offering.betaNote}</span>
+      )}
+    </div>
+  )
+}
+
+function ExtraCard({ extra }: { extra: PlanExtra }) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="font-display uppercase text-text text-2xl">{extra.label}</h3>
+        <span className="font-display text-primary-strong text-xl">{extra.price}</span>
+      </div>
+      <p className="mt-2 text-sm leading-relaxed text-muted">{extra.detail}</p>
+      <p className="mt-2 text-sm font-semibold text-text">{extra.availability}</p>
+    </div>
+  )
+}
+
+// ── The comparison grid ──────────────────────────────────────────────────────
+// Two presentations of the same pure model, so it is readable at any width:
+//   * MOBILE: one collapsible section per plan (native <details>, no client JS), each listing every
+//     group and row for that plan. A squashed multi-column table is unreadable on a phone.
+//   * DESKTOP: the real table, scrolling inside its own container (PAGE-FRAMEWORK) so wide content
+//     never makes the page scroll sideways.
+
+function ComparisonBlock({
+  title,
+  kicker,
+  grid,
+  offerings,
+  openId,
+}: {
+  title: string
+  kicker: string
+  grid: FeatureGrid
+  offerings: Offering[]
+  openId: string
+}) {
+  const priceById = new Map(offerings.map((o) => [o.id, o]))
+  return (
+    <div>
+      <div className="mb-5">
+        <h3 className="font-display uppercase text-text text-2xl">{title}</h3>
+        <p className="mt-1 text-sm leading-relaxed text-muted">{kicker}</p>
+      </div>
+
+      {/* Mobile: one collapsible per plan. */}
+      <div className="space-y-3 lg:hidden">
+        {grid.columns.map((column, i) => {
+          const offering = priceById.get(column.id)
+          return (
+            <details
+              key={column.id}
+              open={column.id === openId}
+              className="rounded-2xl border border-border bg-surface"
+            >
+              <summary className="flex cursor-pointer items-baseline justify-between gap-3 px-5 py-4">
+                <span className="font-display uppercase text-text text-xl">{column.label}</span>
+                <span className="text-sm font-bold text-primary-strong">{offering?.monthly}</span>
+              </summary>
+              <div className="border-t border-border px-5 pb-5 pt-2">
+                {grid.groups.map((group) => (
+                  <div key={group.key} className="mt-4 first:mt-2">
+                    <h4 className="mb-2 text-2xs font-black uppercase tracking-wider text-subtle">
+                      {group.label}
+                    </h4>
+                    <dl className="space-y-2">
+                      {group.rows.map((row) => (
+                        <div key={row.key} className="flex items-start justify-between gap-4">
+                          <dt className="text-sm text-muted">{row.label}</dt>
+                          <dd className="shrink-0 text-right text-sm">
+                            <Cell cell={row.cells[i]!} />
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )
+        })}
+      </div>
+
+      {/* Desktop: the real table. */}
+      <div className="hidden overflow-x-auto rounded-2xl border border-border lg:block">
+        <table className="w-full text-left">
+          <caption className="sr-only">{`${title}: what each plan includes`}</caption>
+          <thead>
+            <tr className="border-b border-border bg-surface-elevated">
+              <th scope="col" className="w-64 px-5 py-4 align-bottom text-sm font-bold text-text">
+                Feature
+              </th>
+              {grid.columns.map((column) => {
+                const offering = priceById.get(column.id)
+                return (
+                  <th
+                    key={column.id}
+                    scope="col"
+                    className={`px-5 py-4 align-bottom ${offering?.featured ? 'bg-primary-bg/30' : ''}`}
+                  >
+                    <span className="block font-display uppercase text-text text-xl">{column.label}</span>
+                    <span className="mt-1 flex items-baseline gap-1.5">
+                      {offering?.listAnchor && (
+                        <span className="text-2xs font-semibold text-subtle line-through">
+                          {offering.listAnchor}
+                        </span>
+                      )}
+                      <span className="text-sm font-bold normal-case text-primary-strong">
+                        {offering?.monthly}
+                      </span>
+                    </span>
+                  </th>
+                )
+              })}
+            </tr>
+          </thead>
+          {grid.groups.map((group) => (
+            <tbody key={group.key} className="text-sm">
+              <tr className="border-b border-border bg-surface-elevated/60">
+                <th
+                  scope="colgroup"
+                  colSpan={grid.columns.length + 1}
+                  className="px-5 py-2 text-2xs font-black uppercase tracking-wider text-subtle"
+                >
+                  {group.label}
+                </th>
+              </tr>
+              {group.rows.map((row) => (
+                <tr key={row.key} className="border-b border-border last:border-0">
+                  <th scope="row" className="px-5 py-3 align-top font-semibold text-text">
+                    {row.label}
+                    <span className="mt-0.5 block text-xs font-normal leading-relaxed text-subtle">
+                      {row.detail}
+                    </span>
+                  </th>
+                  {row.cells.map((cell, i) => (
+                    <td
+                      key={grid.columns[i]!.id}
+                      className={`px-5 py-3 align-top ${
+                        priceById.get(grid.columns[i]!.id)?.featured ? 'bg-primary-bg/15' : ''
+                      }`}
+                    >
+                      <Cell cell={cell} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          ))}
+        </table>
+      </div>
+    </div>
+  )
+}
+
+/** One resolved cell. A yes reads as a check, a no reads as a muted dash with its reason, and a value
+ *  (an allowance, a rate, an add-on price) reads plainly. The text is always present for screen readers. */
+function Cell({ cell }: { cell: GridCell }) {
+  if (cell.kind === 'yes') {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-success">
+        <Check className="h-4 w-4 shrink-0" aria-hidden />
+        {cell.text}
+      </span>
+    )
+  }
+  if (cell.kind === 'no') {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-subtle">
+        <Minus className="h-4 w-4 shrink-0" aria-hidden />
+        {cell.text}
+      </span>
+    )
+  }
+  return <span className="font-semibold text-text">{cell.text}</span>
 }

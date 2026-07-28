@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { featureAllowed } from '@/lib/pricing/gates'
-import { billingLive } from '@/lib/pricing/settings'
+import { featureGatesLive } from '@/lib/pricing/settings'
 import { asSpacePlan } from '@/lib/pricing/plans'
 
 // Shared ticket-tier logic (EVENTS-SYSTEM §2.2). Named tiers with richer pricing
@@ -153,7 +153,7 @@ async function validateSpaceAccess(
   const allowed = await featureAllowed(
     'space_membership_tickets',
     { plan },
-    { billingLive: await billingLive() },
+    { gatesLive: await featureGatesLive() },
   )
   if (!allowed) {
     throw new Error('Membership-only tickets are part of the Collective plan.')

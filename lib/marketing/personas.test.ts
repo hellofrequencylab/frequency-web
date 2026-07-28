@@ -142,9 +142,9 @@ describe('loadout-strip math (computed from the catalog, never hardcoded)', () =
 })
 
 describe('pricing table model', () => {
-  it('leads with Free Space, then Business/Collective/Non Profit; no Independent (2026-07 overhaul)', () => {
+  it('leads with Free Space and carries every tier through Independent (owner, 2026-07)', () => {
     const tiers = pricingTiers(true)
-    expect(tiers.map((t) => t.id)).toEqual(['free', 'business', 'collective', 'nonprofit'])
+    expect(tiers.map((t) => t.id)).toEqual(['free', 'business', 'collective', 'nonprofit', 'independent'])
     expect(tiers.find((t) => t.id === 'business')!.featured).toBe(true)
     // GO-LIVE: every paid tier is sellable from the code catalog; nothing is a preview row.
     for (const t of tiers) expect(t.preview).toBeFalsy()

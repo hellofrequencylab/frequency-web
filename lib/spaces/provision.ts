@@ -33,7 +33,7 @@ import { isSafeSlug } from '@/lib/theme/validate'
 import { slugify } from '@/lib/utils'
 import { buildBusinessStarter, type BusinessIntake } from '@/lib/spaces/business-starter'
 import { type ActionResult, fail } from '@/lib/action-result'
-import { billingLive } from '@/lib/pricing/settings'
+import { featureGatesLive } from '@/lib/pricing/settings'
 import { isPaidSpacePlan, spaceCreationBlockReason } from '@/lib/pricing/space-limits'
 
 /** The fields the create wizard collects. `visibility` defaults to 'network' (discoverable). The
@@ -114,10 +114,11 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   if (!profileId) return fail('Sign in to create a space.')
 
   // FUNNEL GATE (ADR-810): cap how many spaces a member may create — Crew unlocks the first space, and
-  // owning a paid Business/Non Profit space unlocks unlimited. Gated on billingLive() so while billing is
-  // OFF anyone can still create (today's behavior); the cap only bites at go-live. FAIL-SAFE: any read
-  // error inside listOwnedSpacePlans degrades to an empty list, never a false lockout of a paid member.
-  if (await billingLive()) {
+  // owning a paid Business/Non Profit space unlocks unlimited. Gated on featureGatesLive() so while the
+  // gates are not live anyone can still create (today's behavior); the cap bites when the beta grace
+  // window ends (ADR-874), not the moment checkout opens. FAIL-SAFE: any read error inside
+  // listOwnedSpacePlans degrades to an empty list, never a false lockout of a paid member.
+  if (await featureGatesLive()) {
     const caller = await getCallerProfile()
     const owned = await listOwnedSpacePlans(profileId)
     const blocked = spaceCreationBlockReason({

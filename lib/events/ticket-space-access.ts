@@ -8,7 +8,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listMembershipTiers } from '@/lib/spaces/memberships'
 import { featureAllowed } from '@/lib/pricing/gates'
-import { billingLive } from '@/lib/pricing/settings'
+import { featureGatesLive } from '@/lib/pricing/settings'
 import { asSpacePlan } from '@/lib/pricing/plans'
 
 /** Membership-linked access context (ADR-823): the event's hosting Space, its membership tiers,
@@ -45,7 +45,7 @@ export async function loadSpaceAccessContext(eventId: string): Promise<SpaceAcce
       featureAllowed(
         'space_membership_tickets',
         { plan: asSpacePlan(space.plan) },
-        { billingLive: await billingLive() },
+        { gatesLive: await featureGatesLive() },
       ))(),
   ])
   return {

@@ -29,6 +29,7 @@ import {
   persistSpaceSubscriptionItems,
   seatQuantityFromItems,
 } from './space-subscription-items'
+import { grantBetaFounding } from './beta-founding'
 import { setSpaceSeatQuantity } from '@/lib/spaces/seats'
 import { syncTierCircleAccess } from '@/lib/spaces/tier-circle'
 
@@ -107,11 +108,17 @@ export async function reconcileSpacePlanSubscription(sub: Stripe.Subscription): 
   // space reverts to free + the billing namespace clears); otherwise map the present items to the plan.
   const items = isCanceled ? [] : reconciledItemsFromSubscription(sub)
 
+  // The plan this reconcile settles on, for the founding hook at the bottom. Deliberately left
+  // UNINITIALIZED: both branches below assign it, so a placeholder would be dead (CodeQL) and would
+  // quietly become the value if a future branch forgot to. Definite assignment is the guard.
+  let settledPlan: SpacePlan
+
   if (items.length > 0) {
     // Multi-item Phase B path: the live items ARE the plan. Set-to-target the billing namespace from
     // the base plan + active add-on set the items imply.
     const itemKeys = items.map((i) => i.itemKey)
     const plan = planForItemKeys(itemKeys)
+    settledPlan = plan
     const addons = addonsForItemKeys(itemKeys)
     await setSpaceAddons(spaceId, { plan, addons })
     await persistSpaceSubscriptionItems(spaceId, items, itemStatusForSubscription(status))
@@ -123,6 +130,7 @@ export async function reconcileSpacePlanSubscription(sub: Stripe.Subscription): 
     // Fallback: a canceled sub, or a legacy single-price sub with no recognized catalog items. Use the
     // metadata.plan (canceled -> free) via the base-plan writer, and cancel any persisted item rows.
     const plan = planForSubscription(sub.metadata?.plan, status)
+    settledPlan = plan
     await setSpacePlan(spaceId, plan)
     await persistSpaceSubscriptionItems(spaceId, [], 'canceled')
     // No live plan (canceled / legacy) -> no purchased operator seats; clear to the base owner seat.
@@ -143,6 +151,20 @@ export async function reconcileSpacePlanSubscription(sub: Stripe.Subscription): 
       ...(customerId ? { stripe_customer_id: customerId } : {}),
     })
     .eq('id', spaceId)
+
+  // BETA FOUNDER PUSH (ADR-875). A Space that took a PAID plan before memberships start becomes a
+  // Founding Business, granted HERE (the reconciliation point, the same truth the plan itself is
+  // written from) rather than on the checkout success page a browser may never load. The cutoff reads
+  // `sub.created`, fixed at purchase, so every renewal event re-decides identically and the grant is
+  // idempotent. A canceled sub (settledPlan 'free') earns nothing. Never throws.
+  if (settledPlan !== 'free') {
+    await grantBetaFounding({
+      kind: 'business',
+      spaceId,
+      atMs: sub.created * 1000,
+      lockedRateCents: sub.items?.data?.[0]?.price?.unit_amount ?? null,
+    })
+  }
 }
 
 /** Reconcile a `space_membership` subscription event: upsert the membership's subscription id +

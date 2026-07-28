@@ -216,6 +216,7 @@ export function Detail({
           target="contacts-crm"
           live={crmTease.live}
           locked={crmTease.locked}
+          notice={crmTease.notice}
           href="/upgrade"
           title="Keep every contact organized"
           body="Crew turns saved contacts into a pipeline: follow-up reminders, tags, and notes that stay with you across everyone you meet."

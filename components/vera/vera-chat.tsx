@@ -141,6 +141,7 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
             target="vera-depth"
             live={veraTease.live}
             locked={veraTease.locked}
+          notice={veraTease.notice}
             href="/upgrade"
             title="Keep talking to Vera without limits"
             body="The free tier caps how much you can ask Vera each day. Crew lifts the cap, so she is there whenever you need her."

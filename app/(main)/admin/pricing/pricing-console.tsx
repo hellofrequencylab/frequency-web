@@ -30,6 +30,7 @@ import {
   setOperatorSeatActive,
   setBetaFlag,
   saveBetaEndsAt,
+  saveBetaGrace,
 } from './actions'
 import type { FoundingConfig } from '@/lib/pricing/founding'
 
@@ -63,11 +64,13 @@ export function PricingConsole({ data }: { data: PricingConsoleData }) {
           : 'Off means everything granted, nothing charged. While the master switch is off, every member and space keeps full access exactly as today and no card is ever charged. Editing prices here is safe: nothing goes live until you flip the master switch.'}
       </Banner>
 
+      <GatingReadout gating={data.gating} />
+
       <SwitchesSection flags={data.flags} />
       <CatalogSection catalog={data.catalog} operatorSeatActive={data.flags.catalog_operator_seat_active} />
       <PlansSection values={data.values} />
       <FoundingConfigSection founding={data.founding} />
-      <BetaControlsSection beta={data.beta} />
+      <BetaControlsSection beta={data.beta} gating={data.gating} />
       <FeatureGatesSection gates={data.gates} />
       <FounderSection />
       <StripeStatusSection stripe={data.stripe} />
@@ -564,7 +567,13 @@ function FoundingBusinessRow({ founding }: { founding: FoundingConfig }) {
 // The invite gate and the host-prompt surface are audited platform flags. The countdown date is a text
 // setting that is DISPLAY-ONLY: it feeds the countdown banner and grants no access.
 
-function BetaControlsSection({ beta }: { beta: PricingConsoleData['beta'] }) {
+function BetaControlsSection({
+  beta,
+  gating,
+}: {
+  beta: PricingConsoleData['beta']
+  gating: PricingConsoleData['gating']
+}) {
   return (
     <AdminSection
       title="Beta controls"
@@ -590,8 +599,58 @@ function BetaControlsSection({ beta }: { beta: PricingConsoleData['beta'] }) {
       >
         <BetaEndsAtRow initial={beta.endsAt} />
       </FormSection>
+
+      <FormSection
+        title="Paid gates start"
+        description="The date the paid feature gates start blocking. This one DOES change access. Until it arrives, billing can be live and plans can sell while every member and Space keeps paid features. Clear it to make the gates follow the master billing switch instead, which locks paid features the moment billing goes live."
+      >
+        <BetaGraceRow initial={gating.graceUntil} />
+      </FormSection>
     </AdminSection>
   )
+}
+
+// ── The two switches, stated apart (ADR-874) ────────────────────────────────────────────────────────
+// Selling and gating are different decisions on different dates. One line so an operator never has to
+// infer the second from the first: can we charge, do the paid gates bite, and when the grace ends.
+
+function GatingReadout({ gating }: { gating: PricingConsoleData['gating'] }) {
+  const graceLabel = gating.graceUntil
+    ? `${graceDay(gating.graceUntil)}${gating.graceOpen ? '' : ' (passed)'}`
+    : 'None set'
+  return (
+    <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-border bg-surface-elevated px-4 py-3">
+      <span className="inline-flex items-center gap-2 text-sm text-text">
+        <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Billing</span>
+        <StatusChip tone={gating.billingLive ? 'success' : 'neutral'}>
+          {gating.billingLive ? 'Live, checkout sells' : 'Off, nothing charges'}
+        </StatusChip>
+      </span>
+      <span className="inline-flex items-center gap-2 text-sm text-text">
+        <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Paid gates</span>
+        <StatusChip tone={gating.gatesLive ? 'warning' : 'neutral'}>
+          {gating.gatesLive ? 'Enforced' : 'Not enforced, everyone keeps access'}
+        </StatusChip>
+      </span>
+      <span className="inline-flex items-center gap-2 text-sm text-text">
+        <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Beta grace ends</span>
+        <span className="text-sm font-semibold tabular-nums text-text">{graceLabel}</span>
+      </span>
+      <p className="w-full text-2xs text-subtle">
+        Two switches, not one. Billing decides whether anyone can be charged. The beta grace date decides
+        when the paid feature gates start blocking. Turning billing on sells plans without taking anything
+        away; the gates begin on the grace date at 00:00 UTC. Edit the date under Beta controls.
+      </p>
+    </div>
+  )
+}
+
+/** The calendar day (YYYY-MM-DD) of a stored grace value, for display. Falls back to the raw string. */
+function graceDay(raw: string): string {
+  const bare = raw.trim()
+  if (/^\d{4}-\d{2}-\d{2}$/.test(bare)) return bare
+  const ms = Date.parse(bare)
+  return Number.isNaN(ms) ? bare : new Date(ms).toISOString().slice(0, 10)
 }
 
 function BetaFlagRow({ flagKey, initial, label }: { flagKey: string; initial: boolean; label: string }) {
@@ -1418,6 +1477,77 @@ function PriceMapTable({ prices, foundingLabel }: { prices: PricingConsoleData['
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+/** The BETA GRACE date editor (ADR-874): the day the paid feature gates start blocking. Mirrors
+ *  BetaEndsAtRow's shape (date input, Save, Clear), but this one is NOT display-only, so its helper copy
+ *  says plainly what changes. Blank = no grace window = the gates follow the master billing switch. */
+function BetaGraceRow({ initial }: { initial: string | null }) {
+  const initialDay = (() => {
+    const raw = (initial ?? '').trim()
+    if (!raw) return ''
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw
+    const ms = Date.parse(raw)
+    return Number.isNaN(ms) ? '' : new Date(ms).toISOString().slice(0, 10)
+  })()
+  const [value, setValue] = useState(initialDay)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, start] = useTransition()
+
+  function persist(next: string) {
+    setError(null)
+    setSaved(false)
+    start(async () => {
+      const res = await saveBetaGrace(next)
+      if (isError(res)) setError(res.error)
+      else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    })
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
+          Gates start
+          <input
+            type="date"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            className="rounded-md border border-border bg-canvas px-2 py-1 text-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+          />
+        </label>
+        <div className="flex items-center gap-2">
+          <SaveCue pending={pending} saved={saved} />
+          <Button size="sm" variant="secondary" onClick={() => persist(value.trim())} disabled={pending}>
+            Save
+          </Button>
+          {value.trim() && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setValue('')
+                persist('')
+              }}
+              disabled={pending}
+            >
+              Clear
+            </Button>
+          )}
+        </div>
+      </div>
+      <p className="text-2xs text-subtle">
+        {value.trim()
+          ? `Paid features stay open to everyone through the day before, and the gates begin on ${value.trim()} at 00:00 UTC.`
+          : 'No grace window. The paid gates follow the master billing switch, so they start blocking as soon as billing goes live.'}
+      </p>
+      {error && <p className="text-xs text-danger">{error}</p>}
     </div>
   )
 }

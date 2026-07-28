@@ -26,12 +26,12 @@
 //     seat is consumed when the invitee ACCEPTS (acceptInvite), where enforcement re-checks.
 //
 // THE BILLING-LIVE GATE (the P1 invariant — nothing blocks while billing is OFF): every enforcement
-// path is GATED on billingLive(). While OFF the grant-all behavior is preserved (an invite never hits
+// path is GATED on featureGatesLive(). While not live the grant-all behavior is preserved (an invite never hits
 // a seat wall), so Phase D ships dark exactly like A/B/C. The limit activates the moment billing flips
 // live, with no further code change.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { billingLive } from '@/lib/pricing/settings'
+import { featureGatesLive } from '@/lib/pricing/settings'
 import { atLeastSpaceRole, type SpaceRole } from './membership'
 
 // ── PURE: the seat arithmetic (no IO, fully testable) ───────────────────────────────────────────
@@ -182,9 +182,9 @@ export interface SeatCheck {
 }
 
 /** Whether adding ONE more operator member at `role` is allowed, ENFORCING the licensed seat limit.
- *  GATED on billingLive(): while billing is OFF this ALWAYS allows (grant-all preserved, the P1
- *  invariant) so the seat wall never blocks an invite in the dark phase; it activates the moment
- *  billing flips live. A non-seat role (viewer) always passes (it consumes no seat). Server-only.
+ *  GATED on featureGatesLive(): while the gates are not live this ALWAYS allows (grant-all preserved,
+ *  the P1 invariant) so the seat wall never blocks an invite during the beta; it activates when the
+ *  beta grace window ends (ADR-874). A non-seat role (viewer) always passes (it consumes no seat). Server-only.
  *
  *  Re-check server-side in the action (never trust the client): the invite/role actions call this
  *  after their own authorization, so the limit is enforced where the write happens, not on the page. */
@@ -195,8 +195,10 @@ export async function checkSeatForOperatorInvite(
   const usage = await getSeatUsage(spaceId)
   // A viewer / non-operator role never consumes a seat, so it always passes (even while live).
   if (!operatorRoleConsumesSeat(role)) return { allowed: true, usage }
-  // GATE: while billing is OFF, grant-all is preserved (no seat wall in the dark phase).
-  if (!(await billingLive())) return { allowed: true, usage }
+  // GATE: while the feature gates are not live, grant-all is preserved (no seat wall). This rides
+  // featureGatesLive(), NOT billingLive() (ADR-874): opening checkout must not instantly cap a team
+  // that grew during the beta. The wall arrives when the beta grace window ends.
+  if (!(await featureGatesLive())) return { allowed: true, usage }
   if (seatLimitReached(usage.used, usage.licensed)) {
     return {
       allowed: false,

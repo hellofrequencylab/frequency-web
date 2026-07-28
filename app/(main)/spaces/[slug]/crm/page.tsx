@@ -15,6 +15,8 @@ import { SpaceContactDetail } from '@/components/spaces/crm/space-contact-detail
 import { SpaceStageList } from '@/components/spaces/crm/space-stage-list'
 import { CrmViewTabs, type CrmView } from '@/components/spaces/crm/crm-view-tabs'
 import { FeatureMeterUpsell } from '@/components/pricing/feature-meter-upsell'
+import { UpsellTease } from '@/components/upsell/upsell-tease'
+import { resolveSpaceTeaseGate } from '@/lib/pricing/tease-gate'
 import { CrmBody, ListSkeleton } from './crm-body'
 
 // PER-SPACE CRM BOARD (CRM-STRATEGY §6/§7, ADR-361 P3). The paid, full-width Dashboard a Space runs:
@@ -178,6 +180,14 @@ export default async function SpaceCrmBoardPage({
     },
   }
 
+  // BETA FOUNDER PUSH (ADR-875) / Phase E tease (ADR-466). This Space is running the CRM, which is
+  // Business depth. While the beta grace window is open that is a GRANT, not a purchase, so the
+  // resolver hands back a warm notice ("You are using Business tools", the date memberships start, and
+  // the founder invite) instead of a lock claim. Once the gates bite it becomes the ordinary tease.
+  // Only for someone who can act on the plan; a Space that already pays, by Stripe or by cash, and a
+  // Founding Business are all resolved out inside the resolver.
+  const crmTease = caps.canManageMembers ? await resolveSpaceTeaseGate(space, 'crm') : null
+
   return (
     <DashboardTemplate
       eyebrow={brandName}
@@ -190,6 +200,18 @@ export default async function SpaceCrmBoardPage({
       }
       width="wide"
     >
+      {crmTease && (
+        <UpsellTease
+          target="space-crm"
+          live={crmTease.live}
+          locked={crmTease.locked}
+          notice={crmTease.notice}
+          href={`/spaces/${space.slug}/settings/billing`}
+          title="Keep your Space CRM as you grow"
+          body="Business keeps the pipeline, the stages, and every contact your Space works, with the allowance to match."
+          cta="See what Business adds"
+        />
+      )}
       {/* The board itself (tabs + the active view) is the chrome-free <CrmBody>, shared with the inline
           `?panel=crm` workspace (Stage D5). This page frames it in the DashboardTemplate + stats slot; the
           panel bounds it under the profile hero. CrmBody re-derives the same space + caps, so the standalone

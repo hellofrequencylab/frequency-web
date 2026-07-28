@@ -316,6 +316,7 @@ export default async function PracticeDetailPage({ params }: Params) {
           target="practice-programs"
           live={programsTease.live}
           locked={programsTease.locked}
+          notice={programsTease.notice}
           href="/upgrade"
           title="Turn your practices into a Program"
           body="Crew lets you build a Program: line up practices into a path others can follow day by day."

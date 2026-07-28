@@ -3,19 +3,20 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 // LICENSED SEATS + SEAT-LIMIT ENFORCEMENT (Pricing ladder Phase D, ADR-465). Two halves locked here:
 //   1. The PURE seat arithmetic (operatorRoleConsumesSeat / licensedSeats / seatLimitReached /
 //      seatsRemaining) — no IO, the seat-counting rule made explicit.
-//   2. The billing_live-GATED enforcement (checkSeatForOperatorInvite): grant-all while OFF (the P1
-//      invariant), the licensed limit enforced when live, viewers never consuming a seat.
-// The DB (used-seat count + the licensed count) and billingLive() are mocked so the gate is the unit
-// under test.
+//   2. The featureGatesLive-GATED enforcement (checkSeatForOperatorInvite, ADR-874): grant-all while
+//      the gates are off (the P1 invariant, and the beta grace window), the licensed limit enforced
+//      when they are live, viewers never consuming a seat.
+// The DB (used-seat count + the licensed count) and featureGatesLive() are mocked so the gate is the
+// unit under test.
 
-const { mockBillingLive, seatQuantityMaybeSingle, membersCount } = vi.hoisted(() => ({
-  mockBillingLive: vi.fn(),
+const { mockGatesLive, seatQuantityMaybeSingle, membersCount } = vi.hoisted(() => ({
+  mockGatesLive: vi.fn(),
   seatQuantityMaybeSingle: vi.fn(),
   membersCount: vi.fn(),
 }))
 
 vi.mock('@/lib/pricing/settings', () => ({
-  billingLive: mockBillingLive,
+  featureGatesLive: mockGatesLive,
 }))
 
 vi.mock('@/lib/supabase/admin', () => ({
@@ -137,14 +138,14 @@ describe('checkSeatForOperatorInvite (the billing_live-GATED enforcement)', () =
   })
 
   it('GATED: while billing is OFF, an operator invite is ALWAYS allowed (grant-all preserved)', async () => {
-    mockBillingLive.mockResolvedValue(false)
+    mockGatesLive.mockResolvedValue(false)
     const res = await checkSeatForOperatorInvite('s1', 'editor')
     expect(res.allowed).toBe(true)
     expect(res.usage.full).toBe(true) // the usage still reports full, but the gate does not block
   })
 
   it('when billing is LIVE and the space is full, an operator invite is BLOCKED with a clean reason', async () => {
-    mockBillingLive.mockResolvedValue(true)
+    mockGatesLive.mockResolvedValue(true)
     const res = await checkSeatForOperatorInvite('s1', 'admin')
     expect(res.allowed).toBe(false)
     expect(res.reason).toBeTruthy()
@@ -153,7 +154,7 @@ describe('checkSeatForOperatorInvite (the billing_live-GATED enforcement)', () =
   })
 
   it('when billing is LIVE but a seat is free, an operator invite is allowed', async () => {
-    mockBillingLive.mockResolvedValue(true)
+    mockGatesLive.mockResolvedValue(true)
     membersCount.mockResolvedValue({ count: 1, error: null }) // used 1 of licensed 2
     const res = await checkSeatForOperatorInvite('s1', 'moderator')
     expect(res.allowed).toBe(true)
@@ -161,11 +162,11 @@ describe('checkSeatForOperatorInvite (the billing_live-GATED enforcement)', () =
   })
 
   it('a VIEWER invite never consumes a seat, so it passes even when full + live', async () => {
-    mockBillingLive.mockResolvedValue(true)
+    mockGatesLive.mockResolvedValue(true)
     const res = await checkSeatForOperatorInvite('s1', 'viewer')
     expect(res.allowed).toBe(true)
-    // billingLive is never even consulted for a non-seat role (short-circuit before the gate).
-    expect(mockBillingLive).not.toHaveBeenCalled()
+    // featureGatesLive is never even consulted for a non-seat role (short-circuit before the gate).
+    expect(mockGatesLive).not.toHaveBeenCalled()
   })
 
   it('getSeatUsage composes the licensed + used reads into the rendered shape', async () => {

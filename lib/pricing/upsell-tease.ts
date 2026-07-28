@@ -3,31 +3,43 @@
 // success-moment tease may show. Kept here, framework-free and IO-free, so it unit-tests on its own
 // and the component (components/upsell/upsell-tease.tsx) is a thin client island around it.
 //
-// THE INVARIANT (mirrors every other Phase A-D gate): nothing new appears while billing is OFF. A
-// tease shows ONLY when ALL hold:
-//   1. billing is actually LIVE (billingLive() — the Stripe env keys AND the master switch),
+// THE INVARIANT (mirrors every other Phase A-D gate): nothing new appears until the paid feature GATES
+// are live. A tease shows ONLY when ALL hold:
+//   1. the feature gates are actually LIVE (featureGatesLive() — billing on AND the beta grace window
+//      ended, ADR-874; a tease claims a lock, so it must not fire while nothing is locked),
 //   2. the target capability is LOCKED for this account (an unlocked account already has it — no
 //      reason to upsell), and
 //   3. the optional frequency cap has NOT been spent (so a tease never nags on every success).
-// While billing is OFF, condition 1 is false, so the tease renders nothing. There is no path that
-// surfaces a prompt that did not exist before the flip.
+// While the gates are not live, condition 1 is false, so the tease renders nothing. There is no path
+// that surfaces a prompt that did not exist before the flip.
 //
 // PRESENTATION-NEUTRAL (ADR-018): this module decides ONLY visibility. The target, copy, and href
 // are the component's props; this file never names a feature or writes a sentence.
 
-/** What the server resolves and hands the <UpsellTease> island: is billing live, and is the target
- *  capability locked for this account. Client-safe (no server-only deps), so a client component can
- *  carry it as a prop. The server resolvers in lib/pricing/tease-gate.ts produce it. */
+import type { BetaNotice } from './beta-notice'
+
+/** What the server resolves and hands the <UpsellTease> island: are the gates live, is the target
+ *  capability locked for this account, and (ADR-875) the beta grace NOTICE that speaks in the tease's
+ *  place while the gates are still soft. Client-safe (no server-only deps), so a client component can
+ *  carry it as a prop. The server resolvers in lib/pricing/tease-gate.ts produce it.
+ *
+ *  `live` and `notice` are mutually exclusive by construction: `live` means the gates bite (so the
+ *  tease is the true thing to say) and `notice` means the beta grace window is still open (so the
+ *  warm, non-blocking line is). Neither set = this surface says nothing. */
 export interface TeaseGate {
   live: boolean
   locked: boolean
+  /** The beta grace notice, or null. Present ONLY while the gates are not live (ADR-875). */
+  notice?: BetaNotice | null
 }
 
-/** The inputs the visibility rule needs. All resolved by the caller (the server resolves `billingLive`
+/** The inputs the visibility rule needs. All resolved by the caller (the server resolves `gatesLive`
  *  + `locked`; the client island resolves `dismissed` from per-tease local state). PURE. */
 export interface TeaseVisibilityInput {
-  /** Is billing ACTUALLY live? (lib/pricing/settings.ts billingLive()). The master gate. */
-  billingLive: boolean
+  /** Are the paid feature GATES live? (lib/pricing/settings.ts featureGatesLive()). The master gate.
+   *  Deliberately not billingLive(): during the beta grace window billing sells but nothing is locked,
+   *  and a tease that claims a lock in that window is untrue (ADR-874). */
+  gatesLive: boolean
   /** Is the target capability LOCKED for this account? (false = they already have it → no upsell). */
   locked: boolean
   /** Has the member dismissed this tease (or spent its frequency cap)? Default false. */
@@ -35,14 +47,14 @@ export interface TeaseVisibilityInput {
 }
 
 /**
- * May this success-moment tease show? TRUE only when billing is live AND the capability is locked AND
- * the tease has not been dismissed / capped. PURE — the whole Phase E gate in one predicate, so the
+ * May this success-moment tease show? TRUE only when the gates are live AND the capability is locked
+ * AND the tease has not been dismissed / capped. PURE — the whole Phase E gate in one predicate, so the
  * "shows only when ON + locked + under cap" contract is directly unit-tested. FAIL-CLOSED: any missing
- * input reads as not-shown (e.g. an undefined `dismissed` defaults to false, but a falsy `billingLive`
+ * input reads as not-shown (e.g. an undefined `dismissed` defaults to false, but a falsy `gatesLive`
  * or `locked` hides it).
  */
 export function shouldShowTease(input: TeaseVisibilityInput): boolean {
-  if (!input.billingLive) return false // OFF = nothing new ever shows
+  if (!input.gatesLive) return false // not live = nothing new ever shows
   if (!input.locked) return false // they already have it — never upsell an unlocked capability
   if (input.dismissed) return false // dismissed / cap spent — never nag
   return true

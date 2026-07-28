@@ -9,10 +9,13 @@
 // A feature names which ladder it sits on via `axis`. featureAllowed takes the account's tier
 // and/or plan and answers a single boolean.
 //
-// CRITICAL — OFF preserves current behavior: while `billing_live` is OFF, billing has not gone
-// live and gating must behave EXACTLY as today, so featureAllowed SHORT-CIRCUITS to `true` (grant)
-// when billing is not live. The DB merge + ladder math only ever matters once an operator turns
-// billing on (P2/P3). The reader is fail-safe to the code map on any DB error.
+// CRITICAL — the gates are OFF until they are switched ON, and that switch is NOT the billing
+// switch (ADR-874). featureAllowed SHORT-CIRCUITS to `true` (grant) whenever `opts.gatesLive` is
+// false, which covers both "billing has not gone live" and "billing is live but the beta grace
+// window is still open" — the founder's shape: sell now, gate on the date the beta runs out. The
+// caller resolves that ONE boolean with lib/pricing/settings.ts featureGatesLive(), never with
+// billingLive(). The DB merge + ladder math only ever matters once the gates are live. The reader
+// is fail-safe to the code map on any DB error.
 
 import { ENTITLEMENT_TIERS, type EntitlementTier } from '@/lib/core/entitlement'
 import { SPACE_PLANS, asSpacePlan, isSpacePlanLabel, type SpacePlan } from './plans'
@@ -74,8 +77,8 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // Enforced where hosting is granted — collaborations-actions.ts (venue grain) and events/
   // share-actions.ts (event grain: invite, feature-request, and every accept) — so the wall cannot be
   // bypassed. Free spaces get the LOCKED PREVIEW (the surface renders with an upgrade prompt). Non
-  // Profit clears it via the shared full-depth set. While billing is OFF this short-circuits to
-  // granted (today's free universal behavior), so nothing changes until go-live.
+  // Profit clears it via the shared full-depth set. While the gates are not live this short-circuits
+  // to granted (today's free universal behavior), so nothing changes until the grace window ends.
   space_collaborators: { axis: 'plan', minEntitlement: 'collective', enabled: true },
   // Membership-linked ticket access (ADR-823): restricting an event ticket tier to the hosting
   // Space's own members (space_members_only / space_tier_id on event_ticket_types) is Collective
@@ -90,16 +93,16 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // default; the multi-page "Pages" manager is a paid UPSELL tied to the full website (not built yet).
   // DISABLED here so this coarse plan-ladder gate never binds; the LOCK is enforced by the pure
   // `space_full_website` ENTITLEMENT key (spaceCanUseFullWebsite, lib/spaces/entitlements.ts), which
-  // stays default-deny regardless of billingLive (featureAllowed would short-circuit to granted while
-  // billing is off, which would un-gate the upsell — so the enforcement deliberately does NOT ride it).
+  // stays default-deny regardless of the gate switch (featureAllowed would short-circuit to granted
+  // while the gates are not live, which would un-gate the upsell — the enforcement does NOT ride it).
   space_full_website: { axis: 'plan', minEntitlement: 'business', enabled: false },
 
   // §5 space AI-depth (Resonance Engine Phase 6 · ADR-387). The paid DEPTH of the engine. The free
   // wedge (Today suggest-only + summaries + read-only scoring) is NEVER a gate, so it has no entry
   // here. Business grants governed playbooks + advanced segments; the AI Engine add-on grants the
   // resonance surface + the full Resonance Graph. The plan-rank floor is 'business' for all three; the
-  // resonance keys additionally gate on their entitlement key (the AI Engine add-on). While billing is
-  // OFF, featureAllowed short-circuits to true and these never bind (today's behavior).
+  // resonance keys additionally gate on their entitlement key (the AI Engine add-on). While the gates
+  // are not live, featureAllowed short-circuits to true and these never bind (today's behavior).
   space_crm_playbooks: { axis: 'plan', minEntitlement: 'business', enabled: true },
   space_crm_resonance: { axis: 'plan', minEntitlement: 'business', enabled: true },
   space_crm_resonance_ai: { axis: 'plan', minEntitlement: 'business', enabled: true },
@@ -239,19 +242,21 @@ export interface GateAccount {
 /** Is `feature` ALLOWED for this account? The single entitlements resolver. It reads the DB
  *  override merged over the code default, FAIL-SAFE (DB error → code default), and:
  *
- *   - SHORT-CIRCUITS to `true` (grant) when billing is NOT live, so turning billing OFF preserves
- *     today's behavior exactly (no surface that consults this changes while OFF).
+ *   - SHORT-CIRCUITS to `true` (grant) when the gates are NOT live, so nothing is gated while
+ *     billing is off AND nothing is gated during the beta grace window (ADR-874).
  *   - Otherwise applies the merged gate's ladder check.
  *
- *  The `billingLive` flag is passed in (resolved by the caller via lib/pricing/settings.ts
- *  billingLive()), keeping this resolver free of its own env/flag IO and easy to test. */
+ *  `gatesLive` is passed in (resolved by the caller via lib/pricing/settings.ts featureGatesLive()),
+ *  keeping this resolver free of its own env/flag IO and easy to test. It is deliberately NOT
+ *  billingLive(): "may we charge" and "do the gates bite" are different decisions on different
+ *  dates, and passing the charging switch in here is exactly the bug ADR-874 fixed. */
 export async function featureAllowed(
   feature: FeatureKey,
   account: GateAccount,
-  opts: { billingLive: boolean },
+  opts: { gatesLive: boolean },
 ): Promise<boolean> {
-  // OFF = current behavior preserved: nothing is gated until billing actually goes live.
-  if (!opts.billingLive) return true
+  // NOT LIVE = grant everything: pre-launch, and through the beta grace window after billing turns on.
+  if (!opts.gatesLive) return true
   let overrides: FeatureGateOverrides = {}
   try {
     overrides = await loadFeatureGateOverrides()
