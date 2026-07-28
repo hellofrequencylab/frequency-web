@@ -55,6 +55,15 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  // TYPECHECKING IS CI'S JOB, NOT THE BUILD'S (2026-07-28). `next build` ran a FULL
+  // TypeScript pass on top of the compile, and as the repo grew that second pass began
+  // exhausting the Vercel build container: the worker took a SIGKILL with an OOM event
+  // reported, so a green PR failed to reach production. The pass is redundant, not
+  // load-bearing: .github/workflows/ci.yml runs `pnpm exec tsc --noEmit` as a REQUIRED
+  // check on every PR, and main only ever receives merged PRs, so a type error still
+  // cannot land. Turning it off here removes the duplicate work, not the safety net.
+  // If the typecheck ever stops gating CI, this MUST come back.
+  typescript: { ignoreBuildErrors: true },
   // Server Action request bodies default to 1MB, which silently rejects image uploads
   // before they reach the action — our hero/cover uploaders accept up to 8MB
   // (uploadPageHero, uploadCircleCover). Raise the limit so the framework lets those

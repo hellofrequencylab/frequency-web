@@ -798,9 +798,11 @@ function formatCentsLabel(cents: number): string {
 
 // ── Switches: master billing_live (prominent) + per-tier/plan + per-role gamification ─────
 
+// Crew is the only sellable member tier (ADR-878), so it is the only sell switch here. There is
+// deliberately NO Supporter row: `tier_supporter_enabled` is inert (memberTierSellable refuses
+// regardless of it), and a toggle that changes nothing is worse than no toggle at all.
 const TIER_FLAGS: { key: PricingFlagKey; label: string }[] = [
   { key: 'tier_crew_enabled', label: 'Crew' },
-  { key: 'tier_supporter_enabled', label: 'Supporter' },
 ]
 const PLAN_FLAGS: { key: PricingFlagKey; label: string }[] = [
   { key: 'plan_business_enabled', label: 'Business' },
@@ -935,17 +937,17 @@ function FlagRow({
 
 // ── Plans & prices ────────────────────────────────────────────────────────────────────
 
-// Crew shows a MONTHLY list anchor (the Opening Beta price sits under it, ADR-463). Supporter is sold
-// again at $12 (2026-07 pricing overhaul): everything in Crew plus the Supporter badge, no list anchor.
+// The member ladder is Member (free) and Crew (ADR-878), so Crew is the only editable member price.
+// Crew ships ONE clean price with no list anchor; the anchor field stays available so an operator can
+// set a deliberate one, and the display derives the strike from that value alone (ADR-463 idiom).
 const TIER_PRICE_ROWS: { key: string; label: string; list?: boolean }[] = [
   { key: 'tier.crew', label: 'Crew', list: true },
-  { key: 'tier.supporter', label: 'Supporter' },
 ]
 
 function PlansSection({ values }: { values: PricingDefaults }) {
   return (
     <AdminSection title="Plans and prices" description="Every price in dollars. Leave an annual price blank for a monthly only plan.">
-      <FormSection title="Member plans" description="The personal membership tiers: Crew ($9 Opening Beta under the $12 list) and Supporter ($12, Crew plus the badge).">
+      <FormSection title="Member plans" description="The personal membership ladder: Member is free, and Crew is $9 a month or $90 a year. Leave the list price blank to show one clean price.">
         <div className="space-y-4">
           {TIER_PRICE_ROWS.map((r) => (
             <PriceRow
@@ -953,7 +955,7 @@ function PlansSection({ values }: { values: PricingDefaults }) {
               settingKey={r.key}
               label={r.label}
               showList={r.list}
-              price={values.tier[r.key.split('.')[1] as 'crew' | 'supporter']}
+              price={values.tier[r.key.split('.')[1] as 'crew']}
             />
           ))}
         </div>
@@ -965,7 +967,7 @@ function PlansSection({ values }: { values: PricingDefaults }) {
       >
         <p className="text-sm text-muted">
           Edit Business, Collective, Non Profit, and Independent in the Catalog above, then run the
-          catalog sync. Member plans (Crew, Supporter) stay here.
+          catalog sync. The member plan (Crew) stays here.
         </p>
       </FormSection>
 

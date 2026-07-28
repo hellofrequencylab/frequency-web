@@ -6,11 +6,12 @@
 // billingLive() + the per-tier/plan switch (everything ships OFF, so OFF renders a tasteful disabled
 // "coming soon" CTA, never a broken button).
 //
-// Voice: plain, no em dashes (CONTENT-VOICE §10). Labels come from the naming canon (Crew, Supporter,
-// Business, Non Profit).
+// Voice: plain, no em dashes (CONTENT-VOICE §10). Labels come from the naming canon (Crew, Business,
+// Non Profit).
 
 import type { PricingDefaults, TierPrice } from './settings'
 import { SPACE_PLAN_LABEL, type SpacePlan } from './plans'
+import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
 
 /** The PAID space plans, in ladder order (ADR-811). `free` is the baseline, not a paid row. Keyed to
  *  the `pricing_settings.plan.*` VALUE shape, so every sellable Space tier has a display row. */
@@ -70,13 +71,36 @@ export function priceRow(key: string, label: string, price: TierPrice): PriceRow
   }
 }
 
-/** The two member tiers (Crew, Supporter) as display rows, in ladder order. PURE — pass the resolved
+/** The PAID member tiers as display rows, in ladder order. Today that is exactly ONE row, Crew: the
+ *  member ladder is Member (free) and Crew (ADR-878), and free is the baseline, not a priced row.
+ *  Supporter is not here and cannot be: it left the sellable ladder (ADR-878, after ADR-458 retired it
+ *  as a tier), and `values.tier` no longer carries a Supporter price to shape. PURE — pass the resolved
  *  pricing values (getPricingValues()). */
 export function memberTierRows(values: PricingDefaults): PriceRow[] {
-  return [
-    priceRow('crew', 'Crew', values.tier.crew),
-    priceRow('supporter', 'Supporter', values.tier.supporter),
-  ]
+  return [priceRow('crew', 'Crew', values.tier.crew)]
+}
+
+/** The prices a surface should SHOW for a plan given the beta window (ADR-880). The display twin of
+ *  lib/pricing/beta.ts effectiveCatalogAmounts, and for the same reason: the table must resolve a price
+ *  the way the checkout charges it, or the page quotes a number the checkout will not take. PURE.
+ *
+ *  DURING the beta window the row is unchanged: the beta `monthly_cents` under its `list_cents` anchor.
+ *  ON/AFTER the cutover the checkout switches to the LIST price key (space-plan-checkout.ts
+ *  resolveLoadoutPriceId reads `!isBetaPricingActive()`), so the list BECOMES the price: it moves into
+ *  `monthly_cents`, the anchor is dropped (nothing to cross out; we do not strike a number we now
+ *  charge), and the annual re-derives from it through yearlyFromMonthly, the single source of the
+ *  two-months-free math the catalog itself uses. A plan with no anchor (Non Profit, Independent) never
+ *  moves. */
+export function effectiveTierPrice(price: TierPrice, betaActive: boolean): TierPrice {
+  if (betaActive) return price
+  const list = price.list_cents
+  if (list == null || list <= price.monthly_cents) return price // no beta anchor: nothing reverts
+  const { list_cents: _anchor, ...rest } = price
+  return {
+    ...rest,
+    monthly_cents: list,
+    annual_cents: price.annual_cents == null ? null : yearlyFromMonthly(list),
+  }
 }
 
 /** The PAID space plans as display rows, in ladder order: Business, Collective, Non Profit, Independent
@@ -86,9 +110,15 @@ export function memberTierRows(values: PricingDefaults): PriceRow[] {
  *  Whether a row shows a crossed-out anchor is DERIVED from its own values (priceRow: an anchor reads
  *  only when `list_cents` is strictly above `monthly_cents`), so Business and Collective render their
  *  beta rate under a list while Non Profit and Independent render a single price. No tier can claim a
- *  discount the config does not carry. */
-export function spacePlanRows(values: PricingDefaults): PriceRow[] {
-  return PAID_SPACE_PLANS.map((plan) => priceRow(plan, SPACE_PLAN_LABEL[plan], values.plan[plan]))
+ *  discount the config does not carry.
+ *
+ *  `betaActive` is REQUIRED by the caller (ADR-880), because this ladder had no clock: the anchor rule
+ *  is only "list is above monthly", which stays permanently true after the cutover while the checkout
+ *  has already moved to list. Pass the SAME answer the checkout asks (isBetaPricingActive()). */
+export function spacePlanRows(values: PricingDefaults, betaActive: boolean): PriceRow[] {
+  return PAID_SPACE_PLANS.map((plan) =>
+    priceRow(plan, SPACE_PLAN_LABEL[plan], effectiveTierPrice(values.plan[plan], betaActive)),
+  )
 }
 
 /** The plain yearly-billing line for the operator-set annual discount, e.g. "Yearly is two months free."

@@ -260,11 +260,25 @@ describe('featureAllowed — OFF preserves current behavior', () => {
 })
 
 describe('seeded defaults are sane (mirror the migration)', () => {
-  it('crew is cheaper than supporter; annual saves vs 12x monthly', () => {
-    expect(PRICING_DEFAULTS.tier.crew.monthly_cents).toBeLessThan(PRICING_DEFAULTS.tier.supporter.monthly_cents)
+  it('the member ladder is Member (free) and Crew alone; annual saves vs 12x monthly (ADR-878)', () => {
+    // The founder's canonical ladder. `tier` carries exactly one priced rung, so no surface can read a
+    // second member price out of the config, and `supporter` is not even a key here.
+    expect(Object.keys(PRICING_DEFAULTS.tier)).toEqual(['crew'])
+    expect(PRICING_DEFAULTS.tier).not.toHaveProperty('supporter')
     const crew = PRICING_DEFAULTS.tier.crew
+    expect(crew.monthly_cents).toBe(900) // $9/mo, the plain price
     expect(crew.annual_cents).not.toBeNull()
     expect(crew.annual_cents!).toBeLessThan(crew.monthly_cents * 12)
+  })
+
+  it('Crew ships ONE clean price: no struck $12 anchor in the code default (ADR-878)', () => {
+    // The $12 anchor echoed the retired $12 Supporter tier. With Supporter gone, Crew is a plain $9.
+    expect(PRICING_DEFAULTS.tier.crew.list_cents).toBeUndefined()
+    const row = priceRow('crew', 'Crew', PRICING_DEFAULTS.tier.crew)
+    expect(row.list).toBeNull()
+    expect(row.listCents).toBeNull()
+    expect(row.monthly).toBe('$9')
+    expect(row.annual).toBe('$90')
   })
 
   it('take-rate: free usage 5%, paying Business + Non Profit 3% (ADR-552 Phase 3)', () => {
@@ -335,16 +349,33 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     expect(row.annualCents).toBe(19000)
   })
 
-  it('memberTierRows lists Crew then Supporter from the operator values', () => {
+  it('memberTierRows is Crew alone, from the operator values, with no strike (ADR-878)', () => {
     const rows = memberTierRows(PRICING_DEFAULTS)
-    expect(rows.map((r) => r.key)).toEqual(['crew', 'supporter'])
+    expect(rows.map((r) => r.key)).toEqual(['crew'])
     expect(rows[0].monthly).toBe('$9')
     expect(rows[0].annual).toBe('$90')
-    expect(rows[1].monthly).toBe('$12') // Supporter, sold again at $12 (2026-07 overhaul)
+    expect(rows[0].list).toBeNull() // one clean price, never a crossed-out $12
+  })
+
+  it('no member row anywhere renders a $12 price (ADR-878)', () => {
+    // The whole member ladder, priced. Nothing on it may read $12: that was the retired Supporter
+    // rate AND the retired Crew anchor, and both are gone.
+    const labels = memberTierRows(PRICING_DEFAULTS).flatMap((r) => [r.monthly, r.annual, r.list])
+    expect(labels).not.toContain('$12')
+    expect(memberTierRows(PRICING_DEFAULTS).some((r) => r.monthlyCents === 1200)).toBe(false)
+    expect(memberTierRows(PRICING_DEFAULTS).some((r) => r.listCents === 1200)).toBe(false)
+  })
+
+  it('an operator-set anchor is still honored (the config decides, not the code)', () => {
+    // Removing the DEFAULT anchor does not remove the capability: an operator who deliberately sets
+    // tier.crew.list_cents at /admin/pricing still gets a strike, exactly as the plan rows do.
+    const row = priceRow('crew', 'Crew', { monthly_cents: 900, annual_cents: 9000, list_cents: 1500 })
+    expect(row.list).toBe('$15')
   })
 
   it('spacePlanRows lists the WHOLE paid ladder, in order (ADR-811)', () => {
-    const rows = spacePlanRows(PRICING_DEFAULTS)
+    // betaActive is explicit now (ADR-880): the ladder resolves the way the checkout charges.
+    const rows = spacePlanRows(PRICING_DEFAULTS, true)
     expect(rows.map((r) => r.key)).toEqual(['business', 'collective', 'nonprofit', 'independent'])
     expect(rows.map((r) => r.label)).toEqual(['Business', 'Collective', 'Non Profit', 'Independent'])
     // every paid plan carries an annual line (two months free)

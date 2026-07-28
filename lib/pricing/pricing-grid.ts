@@ -39,7 +39,8 @@ import {
   type PriceRow,
 } from './display'
 import { allowanceLabel, currentMeterStepIndex, featureMeter } from './feature-meters'
-import { FEATURE_GATES, meetsGate, type GateAxis } from './gates'
+import { isBetaPricingActive } from './beta'
+import { meetsGate, mergeGate, type FeatureGateOverrides, type GateAxis } from './gates'
 import {
   ADDON_ENTITLEMENT_KEYS,
   SPACE_PLANS,
@@ -60,6 +61,22 @@ export interface PricingGridInput {
   values: PricingDefaults
   /** The resolved catalog items, keyed (catalogConfigByKey(loadCatalogConfig())). */
   catalog: Record<CatalogItemKey, ResolvedCatalogItem>
+  /** Is the Opening Beta pricing window still open (isBetaPricingActive())? The page passes the SAME
+   *  answer the checkout asks, so the table can never quote a rate the checkout has stopped charging
+   *  (ADR-880). Omitted = the live clock, which is still the honest answer; it is a parameter so the
+   *  grid stays pure and both sides of the cutover are testable. */
+  betaActive?: boolean
+  /** The operator's feature-gate overrides (loadFeatureGateOverrides()), merged over the code map the
+   *  way featureAllowed does. Omitted = the code map alone. Threading them in is what keeps a gate an
+   *  operator RAISED from still reading "Included" on /pricing (ADR-880); resolving them here would
+   *  make this module server-only, so the page resolves and hands them down. */
+  gateOverrides?: FeatureGateOverrides
+}
+
+/** The beta-window answer for an input: explicit when the caller resolved it, else the live clock (the
+ *  same call the checkout makes). PURE-ish by construction: every consumer takes it from here. */
+function betaActiveFor(input: PricingGridInput): boolean {
+  return input.betaActive ?? isBetaPricingActive()
 }
 
 // ── Offerings: the seven sellable columns, each fully priced ─────────────────────────────────────────
@@ -207,7 +224,10 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
  *  crossed-out anchor appears exactly where the config carries one. */
 export function spaceOfferings(input: PricingGridInput): Offering[] {
   const { values } = input
-  const paid = spacePlanRows(values)
+  // BETA AUTO-REVERT (ADR-880): the ladder is shaped through the beta window, so on the cutover the
+  // list price becomes the price, the strike disappears, and the beta note goes with it. Before that,
+  // the beta rate reads under its anchor exactly as it does today.
+  const paid = spacePlanRows(values, betaActiveFor(input))
   const trial = trialNote(values)
   const rate = (plan: SpacePlan): string =>
     `0% on your own bookings, ${formatBps(values.take_rate.network_bps[plan])} on network-sourced sales`
@@ -340,10 +360,14 @@ function entitlementCell(key: string, column: GridColumn): GridCell {
   return planEntitlementKeys(column.tier as SpacePlan).includes(key) ? YES : NO
 }
 
-/** Resolve a GATE cell from the real feature gate (lib/pricing/gates.ts). A feature with no gate entry
- *  is ungated, which reads as included (matching featureAllowed's default-allow for an undeclared key). */
-function gateCell(feature: string, column: GridColumn): GridCell {
-  const gate = FEATURE_GATES[feature]
+/** Resolve a GATE cell from the real feature gate (lib/pricing/gates.ts), the CODE map with the
+ *  operator's overrides merged over it: exactly what featureAllowed resolves at enforcement time, and
+ *  what ADR-875's beta-notice targetForGate already reads. Reading FEATURE_GATES alone (the bug ADR-880
+ *  fixes) meant an operator who raised `space_crm` to Collective left /pricing still promising
+ *  "Included" on Business. A feature with no gate entry and no override is ungated, which reads as
+ *  included (matching featureAllowed's default-allow for an undeclared key). */
+function gateCell(feature: string, column: GridColumn, overrides: FeatureGateOverrides): GridCell {
+  const gate = mergeGate(feature, overrides)
   if (!gate) return YES
   const account = column.axis === 'plan' ? { plan: column.tier as SpacePlan } : { tier: column.tier as EntitlementTier }
   return meetsGate(gate, account) ? YES : NO
@@ -404,7 +428,7 @@ export function resolveCell(source: RowSource, column: GridColumn, input: Pricin
     case 'entitlement':
       return entitlementCell(source.key, column)
     case 'gate':
-      return gateCell(source.feature, column)
+      return gateCell(source.feature, column, input.gateOverrides ?? {})
     case 'meter':
       return meterCell(source.feature, column)
     case 'takeRate': {

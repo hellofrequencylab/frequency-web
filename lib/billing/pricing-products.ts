@@ -40,7 +40,6 @@ const PRODUCT_META_KEY = 'frequency_pricing_key'
 /** Human label for a Product (operator/SEO copy — plain voice, no em dashes). */
 const PRODUCT_LABEL: Record<MemberTierKey | SpacePlanKey, string> = {
   crew: 'Frequency Crew',
-  supporter: 'Frequency Supporter',
   business: 'Frequency Business (Space)',
   nonprofit: 'Frequency Non Profit (Space)',
 }

@@ -184,10 +184,10 @@ describe('betaNoticeCopy (what a member actually reads)', () => {
 
   it('invites a Space to the Founding Business badge, and a member to the Founder badge', () => {
     expect(betaNoticeCopy(collective, SEPT)!.invite).toBe(
-      'Subscribe before September 1 to hold the beta rate and add the Founding Business badge to your Space.',
+      'Take the yearly plan before September 1 to hold the beta rate and add the Founding Business badge to your Space.',
     )
     expect(betaNoticeCopy(crew, SEPT)!.invite).toBe(
-      'Subscribe before September 1 to hold the beta rate and add the Founder badge to your profile.',
+      'Take the yearly plan before September 1 to hold the beta rate and add the Founder badge to your profile.',
     )
   })
 

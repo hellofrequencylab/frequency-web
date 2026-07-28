@@ -44,7 +44,7 @@ vi.mock('@/lib/pricing/settings', () => ({
   })),
 }))
 
-import { grantFoundingStatus, reserveFounding } from './status'
+import { grantFoundingStatus, lapseFoundingStatus, reserveFounding } from './status'
 import { asFoundingConfig, foundingBusinessSpotsRemaining, FOUNDING_DEFAULT } from '@/lib/pricing/founding'
 
 beforeEach(() => {
@@ -112,5 +112,83 @@ describe('grantFoundingStatus - grant correctness + no-charge', () => {
     const patch = updates.find((u) => u.table === 'founding_members')?.patch as Record<string, unknown>
     expect(patch.status).toBe('active')
     expect('charged_at' in patch).toBe(false)
+  })
+})
+
+// ── LAPSE: the other half of the lifecycle (ADR-880) ─────────────────────────────────────────────
+// ADR-875 promises the founding rate "for as long as the subscription is maintained". Until now
+// NOTHING in the repo ever wrote status='lapsed', so a founder who stopped paying stayed one forever,
+// badge and locked rate. These lock the write, and lock how NARROW it is.
+
+describe('lapseFoundingStatus', () => {
+  it('flips an ACTIVE space founder to lapsed', async () => {
+    maybeSingle.mockResolvedValue({
+      data: { id: 'f-9', space_id: 'space-1', kind: 'business', status: 'active', reserved_at: 'x' },
+      error: null,
+    })
+    const res = await lapseFoundingStatus({ spaceId: 'space-1' })
+    expect(res).toEqual({ data: { lapsed: true } })
+    const patch = updates.find((u) => u.table === 'founding_members')?.patch as Record<string, unknown>
+    expect(patch.status).toBe('lapsed')
+    // A Space founder is not a member founder: no profiles write.
+    expect(updates.some((u) => u.table === 'profiles')).toBe(false)
+  })
+
+  it('a member founder ALSO loses profiles.is_founding_member (the lifetime founder PRICE flag)', async () => {
+    maybeSingle
+      .mockResolvedValueOnce({
+        data: { id: 'f-10', profile_id: 'p-9', kind: 'member', status: 'active', reserved_at: 'x' },
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: { meta: {} }, error: null }) // the profiles meta read
+    const res = await lapseFoundingStatus({ profileId: 'p-9' })
+    expect(res).toEqual({ data: { lapsed: true } })
+    expect(updates.find((u) => u.table === 'profiles')?.patch).toEqual({ is_founding_member: false })
+  })
+
+  it('a FOUNDERS ROUND buyer keeps the flag they bought outright, even as the row lapses', async () => {
+    maybeSingle
+      .mockResolvedValueOnce({
+        data: { id: 'f-11', profile_id: 'p-10', kind: 'member', status: 'active', reserved_at: 'x' },
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: { meta: { founder: { founder_round: true, tier: 'member' } } }, error: null })
+    await lapseFoundingStatus({ profileId: 'p-10' })
+    expect(updates.some((u) => u.table === 'profiles')).toBe(false)
+  })
+
+  it('a RESERVED spot is not a granted status, so it is left exactly as it is', async () => {
+    maybeSingle.mockResolvedValue({
+      data: { id: 'f-12', space_id: 'space-2', kind: 'business', status: 'reserved', reserved_at: 'x' },
+      error: null,
+    })
+    expect(await lapseFoundingStatus({ spaceId: 'space-2' })).toEqual({ data: { lapsed: false } })
+    expect(updates).toEqual([])
+  })
+
+  it('NO founding row (a Space that never earned one) writes nothing', async () => {
+    maybeSingle.mockResolvedValue({ data: null, error: null })
+    expect(await lapseFoundingStatus({ spaceId: 'space-3' })).toEqual({ data: { lapsed: false } })
+    expect(updates).toEqual([])
+  })
+
+  it('re-lapsing an already-lapsed founder is a no-op (idempotent)', async () => {
+    maybeSingle.mockResolvedValue({
+      data: { id: 'f-13', space_id: 'space-4', kind: 'business', status: 'lapsed', reserved_at: 'x' },
+      error: null,
+    })
+    expect(await lapseFoundingStatus({ spaceId: 'space-4' })).toEqual({ data: { lapsed: false } })
+    expect(updates).toEqual([])
+  })
+
+  it('no subject is a clean refusal, never a table-wide flip', async () => {
+    const res = await lapseFoundingStatus({})
+    expect('error' in res).toBe(true)
+    expect(updates).toEqual([])
+  })
+
+  it('NEVER THROWS: a DB failure returns a result, so a badge cannot bounce a settled payment', async () => {
+    maybeSingle.mockRejectedValue(new Error('founding_members is unreachable'))
+    await expect(lapseFoundingStatus({ spaceId: 'space-5' })).resolves.toBeTruthy()
   })
 })

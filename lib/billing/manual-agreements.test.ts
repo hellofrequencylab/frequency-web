@@ -29,7 +29,9 @@ const store: {
   rows: Row[]
   updates: { patch: Row }[]
   forceInsertError: { code?: string; message?: string } | null
-} = { rows: [], updates: [], forceInsertError: null }
+  /** Force the UPDATE leg to fail the way supabase-js really does: RESOLVE with { error }. */
+  forceUpdateError: { code?: string; message?: string } | null
+} = { rows: [], updates: [], forceInsertError: null, forceUpdateError: null }
 let nextId = 1
 
 vi.mock('@/lib/supabase/admin', () => ({
@@ -72,6 +74,7 @@ function makeBuilder() {
       return { data: created, error: null }
     }
     if (mode === 'update') {
+      if (store.forceUpdateError) return { data: null, error: store.forceUpdateError }
       const rows = matching()
       for (const r of rows) Object.assign(r, pendingPatch)
       store.updates.push({ patch: pendingPatch as Row })
@@ -145,6 +148,7 @@ beforeEach(() => {
   store.rows = []
   store.updates = []
   store.forceInsertError = null
+  store.forceUpdateError = null
 })
 
 // ── 1. Pure interval math (UTC calendar days, clamped) ─────────────────────────────────────
@@ -355,14 +359,28 @@ describe('agreementsDue / stampAgreementTouch', () => {
     expect(found?.id).toBe(active.id)
     expect(await activeAgreementForSpace('space-none')).toBeNull()
   })
-  it('stampAgreementTouch writes exactly the one stamp column', async () => {
+  it('stampAgreementTouch writes exactly the one stamp column, and reports that it landed', async () => {
     const row = seedRow()
-    await stampAgreementTouch(row.id as string, 'reminder_7_sent_at')
+    expect(await stampAgreementTouch(row.id as string, 'reminder_7_sent_at')).toBe(true)
     const patch = store.updates[0]?.patch as Row
     expect(typeof patch.reminder_7_sent_at).toBe('string')
     expect(patch.reminder_30_sent_at).toBeUndefined()
     expect(patch.overdue_notice_sent_at).toBeUndefined()
     expect(store.rows[0].reminder_7_sent_at).toBe(patch.reminder_7_sent_at)
+  })
+
+  // ADR-880. supabase-js RESOLVES with { error } instead of throwing, so this used to return void and
+  // the cron counted a failed stamp as a sent touch. Nothing suppressed the reminder, so the same
+  // owner got the same email again tomorrow, and the day after, behind a clean cron log.
+  it('a FAILED stamp reports false (so the caller does not count the touch as sent)', async () => {
+    const row = seedRow()
+    store.forceUpdateError = { message: 'permission denied for table space_billing_agreements' }
+    expect(await stampAgreementTouch(row.id as string, 'overdue_notice_sent_at')).toBe(false)
+    expect(store.rows[0].overdue_notice_sent_at).toBeNull()
+  })
+
+  it('a stamp that matched NO row reports false (nothing was suppressed)', async () => {
+    expect(await stampAgreementTouch('does-not-exist', 'reminder_30_sent_at')).toBe(false)
   })
 })
 

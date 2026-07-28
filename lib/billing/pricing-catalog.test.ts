@@ -155,9 +155,12 @@ describe('retired legacy keys (kept resolvable, never deleted)', () => {
     expect(RETIRED_CATALOG_KEYS).toContain('practitioner_monthly')
     expect(RETIRED_CATALOG_KEYS).toContain('organization_monthly')
     expect(RETIRED_CATALOG_KEYS).toContain('whitelabel_monthly')
-    // Supporter is SOLD AGAIN at $12 (2026-07 overhaul), so its keys are NOT retired anymore.
-    expect(RETIRED_CATALOG_KEYS).not.toContain('supporter_monthly')
-    expect(RETIRED_CATALOG_KEYS).not.toContain('supporter_monthly_founder')
+    // Supporter left the SELLABLE ladder (ADR-878), so its member-tier keys are retired: never synced
+    // again, but kept RESOLVABLE so a grandfathered subscription or locked_price_id still resolves.
+    expect(RETIRED_CATALOG_KEYS).toContain('supporter_monthly')
+    expect(RETIRED_CATALOG_KEYS).toContain('supporter_annual')
+    expect(RETIRED_CATALOG_KEYS).toContain('supporter_monthly_founder')
+    expect(RETIRED_CATALOG_KEYS).toContain('supporter_annual_founder')
     // The retired CATALOG items: Pro base + Organization (ADR-552), Marketing/Team/Branding (ADR-472).
     expect(RETIRED_CATALOG_KEYS).toContain('pro_base_month')
     expect(RETIRED_CATALOG_KEYS).toContain('pro_base_year_list')

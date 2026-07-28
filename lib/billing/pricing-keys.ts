@@ -13,8 +13,11 @@ import { type SpacePlan, asSpacePlan } from '@/lib/pricing/plans'
 /** A subscription billing period. */
 export type BillingPeriod = 'monthly' | 'annual'
 
-/** The member (personal) tiers that are sold (free is never a paid key). */
-export const MEMBER_TIER_KEYS = ['crew', 'supporter'] as const
+/** The member (personal) tiers that are SOLD (free is never a paid key). Crew alone: the member ladder
+ *  is Member (free) and Crew (ADR-878). Supporter left this list when it left the sellable ladder; its
+ *  legacy `supporter_*` price keys stay RESOLVABLE via RETIRED_CATALOG_KEYS so any grandfathered row or
+ *  locked price id still resolves, and the sync archives rather than deletes them. */
+export const MEMBER_TIER_KEYS = ['crew'] as const
 export type MemberTierKey = (typeof MEMBER_TIER_KEYS)[number]
 
 /** The space-plan price-catalog keys that are SOLD self-serve (ADR-552). Collapsed to Business +
@@ -28,7 +31,6 @@ export type SpacePlanKey = (typeof SPACE_PLAN_KEYS)[number]
  *  source of truth for "is there an annual price?". */
 export const PERIODS_BY_KEY: Record<MemberTierKey | SpacePlanKey, readonly BillingPeriod[]> = {
   crew: ['monthly', 'annual'],
-  supporter: ['monthly', 'annual'],
   business: ['monthly', 'annual'],
   nonprofit: ['monthly', 'annual'],
 }
@@ -323,6 +325,16 @@ export function yearlyFromMonthly(monthlyCents: number): number {
   return Math.floor(monthlyCents * 10)
 }
 
+/** The MONTHLY rate a yearly amount represents: the exact inverse of yearlyFromMonthly (two months
+ *  free, so a year bills ten months). PURE. Use this, never `/12`, to normalize a yearly Stripe amount
+ *  back to the rate the plan is locked at: a $190/yr founder is locked at $19/mo, which is the rate they
+ *  keep if they ever switch to monthly. Dividing by 12 would record $15.83, a rate we never promised and
+ *  never charge. Rounds to whole cents. Returns 0 for a non-positive / non-finite input. */
+export function monthlyFromYearly(yearlyCents: number): number {
+  if (!Number.isFinite(yearlyCents) || yearlyCents <= 0) return 0
+  return Math.round(yearlyCents / 10)
+}
+
 /** Build a CatalogItem's month + year grids from a monthly list + monthly founding amount, deriving
  *  both yearly amounts as two months free. PURE. */
 function amountsFromMonthly(listMonthlyCents: number, foundingMonthlyCents: number): {
@@ -466,9 +478,11 @@ export function addonKeyForCatalogItem(key: CatalogItemKey): 'ai' | null {
 // Every retired key is kept RESOLVABLE (never deleted) so a legacy `pricing_stripe_prices` row + a member
 // already locked to one of those price ids still RESOLVE:
 //   1. The pre-ladder per-plan tiers (practitioner / organization / whitelabel) on the legacy
-//      KEY axis (practitioner_monthly, organization_monthly, whitelabel_monthly). Supporter WAS here
-//      (retired to a PWYW badge, ADR-458) and is SOLD AGAIN at $12 (2026-07 pricing overhaul), so its
-//      keys left this list and the member-tier sync mints them like Crew's.
+//      KEY axis (practitioner_monthly, organization_monthly, whitelabel_monthly), plus the SUPPORTER
+//      member-tier keys (supporter_monthly / supporter_annual + their _founder variants). Supporter is
+//      off the sellable ladder for good (ADR-878, after ADR-458 retired it as a tier), so the sync no
+//      longer mints its prices; the keys stay resolvable here so a grandfathered subscription or a
+//      locked_price_id pointing at one still resolves instead of 404-ing at renewal.
 //   2. The retired CATALOG items whose depth folded into the Business tier (ADR-552): the former Pro base
 //      and Organization plan, plus the ADR-472 Marketing / Team / Branding add-on items
 //      (pro_base_*, organization_*, addon_marketing_*, addon_team_*, addon_branding_* on the catalog KEY
@@ -498,6 +512,12 @@ const RETIRED_LEGACY_PLAN_PERIODS: Record<string, readonly BillingPeriod[]> = {
  *  refreshes. */
 export const RETIRED_CATALOG_KEYS: readonly string[] = (() => {
   const keys: string[] = []
+  // The retired MEMBER-tier keys (ADR-878): Supporter offered monthly + annual, and the founder lock
+  // applies to personal tiers, so all four variants stay resolvable.
+  for (const period of ['monthly', 'annual'] as const) {
+    keys.push(`supporter_${period}`)
+    keys.push(`supporter_${period}_founder`)
+  }
   // The retired legacy per-plan price keys (`<plan>_<period>` + founder variant).
   for (const [base, periods] of Object.entries(RETIRED_LEGACY_PLAN_PERIODS)) {
     for (const period of periods) {

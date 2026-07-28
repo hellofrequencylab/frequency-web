@@ -1,8 +1,8 @@
 import Image from 'next/image'
 import {
-  Sparkles, Activity, Heart, MessagesSquare, Megaphone, Palette, Briefcase, Radio, Users, Circle as CircleIcon,
+  Radio, Users, Circle as CircleIcon,
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { CHANNEL_CATEGORY_ICON, FALLBACK_CHANNEL_CATEGORY_ICON } from '@/lib/channels/categories'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { TuneInButton, TunedInButton } from '@/app/(main)/channels/channel-toggle'
@@ -40,15 +40,8 @@ type Pillar = {
   display_order: number
 }
 
-const CATEGORY_ICON: Record<string, LucideIcon> = {
-  spirituality: Sparkles,
-  movement: Activity,
-  'holistic-health': Heart,
-  'human-relating': MessagesSquare,
-  activism: Megaphone,
-  creative: Palette,
-  'business-support': Briefcase,
-}
+// The card icon comes from lib/channels/categories (ADR-879), the one file the channel page and
+// the staff settings select also read, so the three can never disagree about the vocabulary.
 
 // Pillars = Mind / Body / Spirit / Expression, read from the `pillars` table so they stay
 // data-editable. The existing Interests/Topics (topical_channels) sort underneath each Channel.
@@ -300,7 +293,7 @@ function ChannelCard({
   isTunedIn: boolean
   canToggle: boolean
 }) {
-  const Icon = CATEGORY_ICON[channel.category] ?? Radio
+  const Icon = CHANNEL_CATEGORY_ICON[channel.category] ?? FALLBACK_CHANNEL_CATEGORY_ICON
 
   return (
     <EntityCard

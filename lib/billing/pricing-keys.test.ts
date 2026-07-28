@@ -39,8 +39,9 @@ describe('priceKey', () => {
 })
 
 describe('offersPeriod', () => {
-  it('crew/supporter/business/nonprofit offer monthly + annual (ADR-552)', () => {
-    for (const base of ['crew', 'supporter', 'business', 'nonprofit'] as const) {
+  it('crew/business/nonprofit offer monthly + annual (ADR-552, ADR-878)', () => {
+    // Supporter is off the sellable ladder (ADR-878), so it is no longer a key with periods at all.
+    for (const base of ['crew', 'business', 'nonprofit'] as const) {
       expect(offersPeriod(base, 'monthly')).toBe(true)
       expect(offersPeriod(base, 'annual')).toBe(true)
     }
@@ -65,14 +66,20 @@ describe('the key catalog', () => {
     expect(keys.every((k) => !k.endsWith('_founder'))).toBe(true)
   })
 
-  it('founder keys are personal-tier only (crew/supporter), monthly + annual', () => {
+  it('founder keys are personal-tier only (crew), monthly + annual', () => {
     const keys = allFounderPriceKeys()
     expect(keys).toContain('crew_monthly_founder')
     expect(keys).toContain('crew_annual_founder')
-    expect(keys).toContain('supporter_monthly_founder')
+    // Supporter left the sellable ladder (ADR-878): the sync no longer MINTS its founder variants.
+    // They stay RESOLVABLE via RETIRED_CATALOG_KEYS (asserted in pricing-catalog.test.ts).
+    expect(keys.some((k) => k.startsWith('supporter'))).toBe(false)
     // no space plans get a founder variant
     expect(keys.some((k) => k.startsWith('business'))).toBe(false)
     expect(keys.every((k) => k.endsWith('_founder'))).toBe(true)
+  })
+
+  it('no public key sells Supporter (ADR-878)', () => {
+    expect(allPublicPriceKeys().some((k) => k.startsWith('supporter'))).toBe(false)
   })
 
   it('PERIODS_BY_KEY: business + nonprofit both offer monthly + annual', () => {
@@ -83,9 +90,9 @@ describe('the key catalog', () => {
 })
 
 describe('narrowing helpers (default-deny)', () => {
-  it('asMemberTierKey accepts only crew/supporter', () => {
+  it('asMemberTierKey accepts only crew; supporter is no longer a sellable key (ADR-878)', () => {
     expect(asMemberTierKey('crew')).toBe('crew')
-    expect(asMemberTierKey('supporter')).toBe('supporter')
+    expect(asMemberTierKey('supporter')).toBeNull()
     expect(asMemberTierKey('free')).toBeNull()
     expect(asMemberTierKey(null)).toBeNull()
     expect(asMemberTierKey('nonsense')).toBeNull()
@@ -192,8 +199,8 @@ describe('founder-lock price-key selection', () => {
     expect(memberCheckoutPriceKey({ base: 'crew', period: 'monthly', isFoundingMember: true })).toBe(
       'crew_monthly_founder',
     )
-    expect(memberCheckoutPriceKey({ base: 'supporter', period: 'annual', isFoundingMember: true })).toBe(
-      'supporter_annual_founder',
+    expect(memberCheckoutPriceKey({ base: 'crew', period: 'annual', isFoundingMember: true })).toBe(
+      'crew_annual_founder',
     )
   })
 })

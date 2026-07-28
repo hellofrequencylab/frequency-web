@@ -16,6 +16,8 @@ import { PricingBillingToggle } from '@/components/marketing/pricing-billing-tog
 import { PricingComparison } from '@/components/marketing/pricing-comparison'
 import { getPricingValues } from '@/lib/pricing/settings'
 import { catalogConfigByKey, loadCatalogConfig } from '@/lib/pricing/catalog-config'
+import { isBetaPricingActive } from '@/lib/pricing/beta'
+import { loadFeatureGateOverrides } from '@/lib/pricing/gates'
 import { annualDiscountNote, trialNote } from '@/lib/pricing/display'
 import {
   memberFeatureGrid,
@@ -44,10 +46,28 @@ import { MISSION_FRAMING, PLAN_STORY } from '@/lib/pricing/pricing-page'
 export const revalidate = 3600
 
 /** Resolve the whole pricing model from the operator-editable config. One place, so the metadata, the
- *  JSON-LD, the cards, and the grid can never quote different numbers. */
+ *  JSON-LD, the cards, and the grid can never quote different numbers.
+ *
+ *  Two resolutions ride along (ADR-880), because a page that resolves either one differently from the
+ *  product is a page that lies:
+ *   • `betaActive` is the SAME question the checkout asks (isBetaPricingActive()), so on the cutover
+ *     instant this table, its JSON-LD Offers, the OG description, and the FAQ all move to the list
+ *     price in step with what Stripe starts charging.
+ *   • `gateOverrides` are the operator's live feature-gate rows, merged over the code map exactly the
+ *     way featureAllowed merges them at enforcement time, so a gate an operator RAISED cannot leave
+ *     this page promising a feature the product will refuse. */
 async function pricingInput(): Promise<PricingGridInput> {
-  const [values, catalog] = await Promise.all([getPricingValues(), loadCatalogConfig()])
-  return { values, catalog: catalogConfigByKey(catalog) }
+  const [values, catalog, gateOverrides] = await Promise.all([
+    getPricingValues(),
+    loadCatalogConfig(),
+    loadFeatureGateOverrides(),
+  ])
+  return {
+    values,
+    catalog: catalogConfigByKey(catalog),
+    betaActive: isBetaPricingActive(),
+    gateOverrides,
+  }
 }
 
 /** The plain "Business is X, Collective is Y" ladder sentence, built from the offerings. */
@@ -95,6 +115,22 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
   const trial = trialNote(input.values)
   const rates = spaces.map((s) => `${s.label} ${s.takeRate.split(', ')[1]}`).join(', ')
 
+  // The beta answer only exists while there IS a beta rate. Once the window closes every plan has one
+  // price, the anchors are gone from the model, and an answer about "the rate you keep" would be
+  // describing an offer nobody can take (ADR-880). The question drops out with the offer.
+  const betaPlans = spaces.filter((s) => s.listAnchor)
+  const betaFaq =
+    betaPlans.length > 0
+      ? [
+          {
+            q: 'What is the beta rate, and do I keep it?',
+            a: `Two plans are sold at a beta rate below their list price: ${betaPlans
+              .map((s) => `${s.label} at ${s.monthly} under ${s.listAnchor}`)
+              .join(' and ')}. If you subscribe on that rate you keep it for as long as you keep the plan. The other plans have one price, and we do not cross out a number we never charged.`,
+          },
+        ]
+      : []
+
   return [
     {
       q: 'How does Frequency pricing work?',
@@ -108,13 +144,7 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
       q: 'What stays free forever?',
       a: 'The people part. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. A business never pays for access to people; a paid plan buys reach and scale, higher limits on the same tools every Space already has.',
     },
-    {
-      q: 'What is the beta rate, and do I keep it?',
-      a: `Two plans are sold at a beta rate below their list price: ${spaces
-        .filter((s) => s.listAnchor)
-        .map((s) => `${s.label} at ${s.monthly} under ${s.listAnchor}`)
-        .join(' and ')}. If you subscribe on that rate you keep it for as long as you keep the plan. The other plans have one price, and we do not cross out a number we never charged.`,
-    },
+    ...betaFaq,
     {
       q: 'Do you take a cut of my sales?',
       a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, always. We earn a share only of the business the network sends you, a referral or a discovery inside the collective, and that rate drops as your plan rises: ${rates}. A paid plan buys down your rate.`,

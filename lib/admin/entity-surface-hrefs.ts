@@ -81,6 +81,9 @@ export function hrefForEntitySurface(appId: string, scope: EntitySurfaceScope | 
     // without this explicit case the row would resolve null and draw nothing. The manage route accepts
     // the DB id or the slug, so a raw-uuid scope still lands.
     if (appId === 'channel.manage') return `/channels/${entitySlug}/manage`
+    // The full Channel editor (ADR-882). Like channel.manage this is a `link` row with no prefix
+    // fallback, so it needs its own case or it resolves null and draws nothing. Also id-or-slug.
+    if (appId === 'channel.edit') return `/channels/${entitySlug}/edit`
     if (appId === 'event.crm') return `/events/${entitySlug}/manage`
     if (appId === 'circle.crm') return `/circles/${entitySlug}/manage`
     if (appId === 'hub.crm') return `/hubs/${entitySlug}/crm`

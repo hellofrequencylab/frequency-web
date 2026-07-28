@@ -7,10 +7,12 @@
 //   STRIPE_SECRET_KEY      — sk_test_… (sandbox) or sk_live_…
 //   STRIPE_WEBHOOK_SECRET  — whsec_… (from the webhook endpoint)
 //   STRIPE_PRICE_CREW      — price_… for the paid membership (the "Crew" tier)
-//   STRIPE_PRICE_SUPPORTER — price_… for the Supporter tier (optional)
 //   NEXT_PUBLIC_APP_URL    — the public origin for success/cancel redirects
-// Optional inline-price amounts (cents) when no price id is set:
-//   STRIPE_MEMBERSHIP_AMOUNT (Crew, default 1000) · STRIPE_SUPPORTER_AMOUNT (default 2500)
+// Optional inline-price amount (cents) when no price id is set:
+//   STRIPE_MEMBERSHIP_AMOUNT (Crew, default 1000)
+//
+// Crew is the ONLY sellable member tier (ADR-878). STRIPE_PRICE_SUPPORTER / STRIPE_SUPPORTER_AMOUNT are
+// no longer read anywhere: setting them in the env buys a Supporter checkout exactly nothing.
 
 import Stripe from 'stripe'
 import type { EntitlementTier } from '@/lib/core/entitlement'
@@ -28,10 +30,12 @@ if (SECRET && !process.env.STRIPE_WEBHOOK_SECRET) {
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? ''
 
 /** Explicit price id for a paid tier, if the owner configured one. Optional — when
- *  absent, checkout builds an inline price (see createMembershipCheckout). */
+ *  absent, checkout builds an inline price (see createMembershipCheckout).
+ *
+ *  Crew is the only sellable member tier (ADR-878), so every other label resolves to null and cannot
+ *  start a purchase. A historical `supporter` row reads null here, never a $12 price. */
 export function priceFor(tier: EntitlementTier): string | null {
   if (tier === 'crew') return process.env.STRIPE_PRICE_CREW ?? null
-  if (tier === 'supporter') return process.env.STRIPE_PRICE_SUPPORTER ?? null
   return null
 }
 
@@ -41,20 +45,18 @@ export function billingEnabled(): boolean {
   return !!stripe
 }
 
-/** Monthly amount in cents for a tier's inline-price fallback. Crew defaults to $10;
- *  Supporter is the pay-more tier (default $25). Overridable per-tier via env. */
-export function membershipAmount(tier: EntitlementTier = 'crew'): number {
-  const raw = tier === 'supporter'
-    ? process.env.STRIPE_SUPPORTER_AMOUNT
-    : process.env.STRIPE_MEMBERSHIP_AMOUNT
-  const n = Number(raw)
+/** Monthly amount in cents for the Crew inline-price fallback (default $10), overridable via
+ *  STRIPE_MEMBERSHIP_AMOUNT. There is one sellable member tier, so there is one amount (ADR-878). */
+export function membershipAmount(): number {
+  const n = Number(process.env.STRIPE_MEMBERSHIP_AMOUNT)
   if (Number.isFinite(n) && n > 0) return Math.round(n)
-  return tier === 'supporter' ? 2500 : 1000
+  return 1000
 }
 
-/** The tier a Stripe price id maps back to (for the webhook). */
-export function tierForPrice(priceId: string | null | undefined): EntitlementTier {
-  if (priceId && priceId === process.env.STRIPE_PRICE_SUPPORTER) return 'supporter'
+/** The tier a Stripe price id maps back to (for the webhook). Always Crew: Crew is the only member
+ *  subscription that is sold (ADR-878), and a legacy Supporter subscription is access-preserved as Crew
+ *  exactly like the read-time `supporter -> crew` mapping in lib/core/entitlement.ts (ADR-458). */
+export function tierForPrice(_priceId?: string | null): EntitlementTier {
   return 'crew'
 }
 

@@ -30,6 +30,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { routeSpaceSubscription, subscriptionKind } from '@/lib/billing/space-subscriptions'
 import { grantFounderFromSession } from '@/lib/billing/founders'
 import { grantBetaFounding } from '@/lib/billing/beta-founding'
+import { foundingPaymentSignal } from '@/lib/billing/founding-payment'
+import { lapseFoundingStatus } from '@/lib/founding/status'
 import { persistAccount } from '@/lib/billing/connect'
 import { recordTipFromSession } from '@/lib/billing/tips'
 import { recordTicketFromSession, recordTicketRefundFromCharge } from '@/lib/billing/tickets'
@@ -180,17 +182,27 @@ export async function POST(req: Request) {
           const status = sub.status
           if (status === 'active' || status === 'trialing') {
             await setTier(profileId, paidTier, null, 'active', event.created)
-            // BETA FOUNDER PUSH (ADR-875). A member subscription that STARTED before memberships
-            // start earns founding status, granted here at the reconciliation point rather than on
-            // the success page (a redirect a browser may never follow). `sub.created` is fixed at
-            // purchase, so every later renewal event re-decides the same way and the grant is a
-            // no-op. Never throws: a badge must not bounce a settled payment.
-            await grantBetaFounding({
-              kind: 'member',
-              profileId,
-              atMs: sub.created * 1000,
-              lockedRateCents: sub.items?.data?.[0]?.price?.unit_amount ?? null,
-            })
+            // BETA FOUNDER PUSH (ADR-875, tightened by ADR-880). A member earns founding status when
+            // ALL THREE hold: money MOVED, they bought the YEAR, and it happened before memberships
+            // start. Granted here at the reconciliation point rather than on the success page (a
+            // redirect a browser may never follow).
+            //
+            // WHAT CHANGED: this used to grant for `active || trialing` on the strength of the tier
+            // write alone, so a trial, a $0 promo-code subscription, or a card that never cleared
+            // minted a permanent Founder badge AND set profiles.is_founding_member, which
+            // resolveMemberPriceId then honors as a lifetime founder price. foundingPaymentSignal is
+            // the money + interval test (pure); `sub.created` still fixes the cutoff at purchase, so a
+            // renewal re-decides identically. The locked rate is the BASE item's rate normalized to a
+            // month, never items.data[0]'s raw unit_amount. Never throws.
+            const payment = foundingPaymentSignal(sub)
+            if (payment.earnsFounding) {
+              await grantBetaFounding({
+                kind: 'member',
+                profileId,
+                atMs: sub.created * 1000,
+                lockedRateCents: payment.monthlyRateCents,
+              })
+            }
           } else if (status === 'past_due') {
             // Dunning grace (ADR-370): a failed renewal must NOT instantly downgrade a paying
             // member. Keep the paid tier and mark past_due so the recovery banner shows while
@@ -199,6 +211,10 @@ export async function POST(req: Request) {
           } else if (status === 'unpaid' || status === 'canceled' || status === 'incomplete_expired') {
             // Terminal: Stripe gave up (unpaid) or the subscription ended → revert to free.
             await setTier(profileId, 'free', null, 'canceled', event.created)
+            // ...and the founding status the subscription was maintaining ends with it (ADR-880).
+            // Fail-quiet by contract, and narrow: only an ACTIVE founding row lapses, and a Founders
+            // Round member keeps the flag they bought outright.
+            await lapseFoundingStatus({ profileId })
           }
           // incomplete / paused: no confirmed entitlement change — leave the current state as-is.
         }
@@ -211,7 +227,10 @@ export async function POST(req: Request) {
         // event.created keeps the deletion in the same ordering stream as the updates.
         if (await routeSpaceSubscription(sub, event.created)) break
         const profileId = sub.metadata?.profile_id
-        if (profileId) await setTier(profileId, 'free', null, 'canceled', event.created)
+        if (profileId) {
+          await setTier(profileId, 'free', null, 'canceled', event.created)
+          await lapseFoundingStatus({ profileId }) // ADR-880: the rate holds while the plan is kept
+        }
         break
       }
 

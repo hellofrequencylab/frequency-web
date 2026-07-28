@@ -18,8 +18,8 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // Membership is the ENTITLEMENT axis (profiles.membership_tier), orthogonal to the
 // community role (ADR-163 §11.2). Upgrading no longer touches community_role — Crew is
-// a pure stewardship role now. During beta this is a free self-serve toggle; real
-// upgrades (free → member → supporter) route through billing (P2.2).
+// a pure stewardship role now. During beta this is a free self-serve toggle; the real
+// upgrade (free → crew) routes through billing (P2.2).
 export async function toggleMembership(): Promise<ActionResult<{ tier: string }>> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -34,7 +34,7 @@ export async function toggleMembership(): Promise<ActionResult<{ tier: string }>
 
   if (!profile) return fail('Profile not found')
 
-  // Beta toggle: free ↔ crew (the paid membership). 'supporter' is reserved for billing.
+  // Beta toggle: free ↔ crew (the paid membership). The only two rungs on the member ladder.
   const current = (profile.membership_tier ?? 'free') as string
   const next = current === 'free' ? 'crew' : 'free'
 
@@ -49,13 +49,12 @@ export async function toggleMembership(): Promise<ActionResult<{ tier: string }>
   return ok({ tier: next })
 }
 
-// Real membership purchase — a Stripe Checkout session for a paid tier (P2.2/P2.4).
-// Crew is the standard membership; Supporter is the pay-more tier (P2.4). Returns the
-// hosted-checkout URL; the webhook (and the success-redirect fallback) flip
-// membership_tier on completion. Only reachable when billing is configured.
-export async function startMembershipCheckout(
-  tier: 'crew' | 'supporter' = 'crew',
-): Promise<ActionResult<{ url: string }>> {
+// Real membership purchase — a Stripe Checkout session for CREW, the one sellable member tier
+// (ADR-878). It takes no tier argument on purpose: there is nothing else on the member ladder to buy,
+// so there is no parameter a caller could pass to open a Supporter purchase. Returns the hosted-checkout
+// URL; the webhook (and the success-redirect fallback) flip membership_tier on completion. Only
+// reachable when billing is configured.
+export async function startMembershipCheckout(): Promise<ActionResult<{ url: string }>> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return fail('Not signed in')
@@ -67,7 +66,7 @@ export async function startMembershipCheckout(
     .maybeSingle()
   if (!profile) return fail('Profile not found')
 
-  const url = await createMembershipCheckout({ profileId: profile.id, email: user.email, tier })
+  const url = await createMembershipCheckout({ profileId: profile.id, email: user.email, tier: 'crew' })
   if (!url) return fail('Billing isn’t available right now.')
   return ok({ url })
 }

@@ -14,7 +14,10 @@ import type { EntitlementTier } from '@/lib/core/entitlement'
 import { resolveStripePriceId } from './pricing-prices'
 import { asMemberTierKey, memberCheckoutPriceKey, offersPeriod, type BillingPeriod } from './pricing-keys'
 
-type PaidTier = Exclude<EntitlementTier, 'free'>
+/** The member tier a checkout may be opened for. Crew, and only Crew: the sellable member ladder is
+ *  Member (free) and Crew (ADR-878). Narrowing this here is what makes a Supporter purchase
+ *  unrepresentable rather than merely unreachable. */
+type PaidTier = 'crew'
 
 /** Resolve the Stripe price id for a member checkout, HONORING the founder lock (Pricing P2, ADR-363):
  *  a founding member with an explicit profiles.locked_price_id is charged at that exact price; else a
@@ -73,8 +76,8 @@ export async function createMembershipCheckout(opts: {
         quantity: 1,
         price_data: {
           currency: 'usd',
-          product_data: { name: opts.tier === 'supporter' ? 'Frequency Supporter' : 'Frequency Membership (Crew)' },
-          unit_amount: membershipAmount(opts.tier),
+          product_data: { name: 'Frequency Membership (Crew)' },
+          unit_amount: membershipAmount(),
           recurring: { interval: period === 'annual' ? 'year' : 'month' },
         },
       }
@@ -118,8 +121,10 @@ export async function confirmCheckout(sessionId: string, profileId: string): Pro
   // flip the member to Crew for a one-time payment. Mirrors the webhook's routing.
   if (session.mode !== 'subscription' || session.metadata?.kind) return null
 
-  // Supporter retired as a tier (ADR-458): write 'crew' + the is_supporter PWYW badge,
-  // never 'supporter' (which the membership_tier CHECK now rejects).
+  // READ TOLERANCE, not a sell path. Nothing opens a Supporter checkout any more (ADR-878), but a
+  // session minted before this change could still land here: honor it as 'crew' + the is_supporter
+  // PWYW badge, never 'supporter' (which the membership_tier CHECK rejects). Access-preserving, the
+  // same direction as the `supporter -> crew` read mapping in lib/core/entitlement.ts (ADR-458).
   const isSupporter = session.metadata?.tier === 'supporter'
   const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id
   const { error } = await createAdminClient()

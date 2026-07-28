@@ -271,16 +271,33 @@ export async function agreementsDue(now: Date): Promise<{
 }
 
 /** Stamp ONE reminder touch as sent (idempotency for the cron: the stamp is what suppresses a
- *  repeat). `column` is one of the three stamp columns. Best-effort by contract at the call
- *  site: the cron stamps AFTER the send so a failed send retries next run. */
+ *  repeat). `column` is one of the three stamp columns. Returns whether the stamp actually LANDED.
+ *
+ *  It used to return void, discarding the `{ error }` supabase-js RESOLVES with (it does not throw),
+ *  so the cron counted a failed stamp as done — and an unstamped touch re-sends the same reminder to
+ *  the same owner every single day until the window closes. The caller now only counts a touch as sent
+ *  when this is true (ADR-880). Never throws: a transport error reads as "not stamped", which is the
+ *  retry-tomorrow direction, the same direction a failed send takes. */
 export async function stampAgreementTouch(
   agreementId: string,
   column: 'reminder_30_sent_at' | 'reminder_7_sent_at' | 'overdue_notice_sent_at',
-): Promise<void> {
-  await db()
-    .from('space_billing_agreements')
-    .update({ [column]: new Date().toISOString(), updated_at: new Date().toISOString() })
-    .eq('id', agreementId)
-    .select('id')
-    .maybeSingle()
+): Promise<boolean> {
+  try {
+    const { data, error } = await db()
+      .from('space_billing_agreements')
+      .update({ [column]: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('id', agreementId)
+      .select('id')
+      .maybeSingle()
+    if (error) {
+      console.error('[manual-agreements] stamp failed:', agreementId, column, error)
+      return false
+    }
+    // No row came back = the update matched nothing (a deleted / renamed agreement). Nothing was
+    // stamped, so nothing may be counted as sent.
+    return !!data
+  } catch (e) {
+    console.error('[manual-agreements] stamp threw:', agreementId, column, e)
+    return false
+  }
 }

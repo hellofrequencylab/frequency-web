@@ -29,12 +29,21 @@
 > [COMMUNITY-COLLECTIVE-STRATEGY.md](COMMUNITY-COLLECTIVE-STRATEGY.md) · plan:
 > [COMMUNITY-COLLECTIVE-BUILD-PLAN.md](COMMUNITY-COLLECTIVE-BUILD-PLAN.md) · [ADR-811](DECISIONS.md).
 >
-> **The PUBLIC ladder (owner overhaul 2026-07-25, ADR-818):** Member $0 · Crew $9 Opening Beta ($90/yr)
-> under a $12 list · **Supporter $12** (Crew + the badge, sold again) · **Free Space** (the first level of
+> **The PUBLIC ladder (founder's ladder, ADR-878, 2026-07-28):** Member $0 · **Crew $9** ($90/yr), ONE
+> plain price with no list anchor · **Free Space** (the first level of
 > Space) · Business $29 ($19 Opening Beta) · Collective $79 ($49 Opening Beta) · Non Profit $39 flat ·
 > the **Vera AI** add-on +$20 (catalog key `addon_ai`) · operator seats owner-priced. **Independent
 > (~$249) is NOT listed or sold** (`plan_independent_enabled` OFF; machinery dormant, grandfathered
 > spaces keep resolving). All founder-vocabulary surfaces read "Opening Beta price."
+>
+> **Supporter is NOT on the ladder (ADR-878).** ADR-458 retired it as a tier (it became the
+> pay-what-you-want `profiles.is_supporter` badge); ADR-818 briefly sold it again at $12; ADR-878 removed
+> it from the sell + display paths for good, and cleared Crew's $12 anchor with it. `tier.supporter` is
+> gone from `PricingDefaults`, `memberTierSellable('supporter')` refuses regardless of the flag, and the
+> `supporter_*` price keys are RETIRED-but-resolvable. The read-time `supporter -> crew` mapping in
+> `lib/core/entitlement.ts` STAYS, so a historical row never loses access. The Supporter BADGE and its
+> PWYW contribution channel are untouched. Operator SQL: `scripts/adr-878-retire-supporter-tier.sql`.
+> Every mention of a sellable Supporter tier below this line is historical.
 >
 > **Billing went LIVE 2026-07-25** (owner flipped `billing_live` + the plan switches; Stripe
 > configured). After any price change here or in code, re-run BOTH Stripe syncs in the admin pricing

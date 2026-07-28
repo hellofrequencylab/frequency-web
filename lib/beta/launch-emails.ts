@@ -171,7 +171,7 @@ const FOUNDING_MEMBER: BetaLaunchEmail = {
       content: {
         eyebrow: 'What you lock in',
         title: 'The lowest price, for good',
-        body: 'Founding Members lock in the lowest price we will ever set and keep it for good. You get a founding badge that says you were here first, and a direct line to shape what we build next.',
+        body: 'Founding Members lock in the lowest price we will ever set and keep it for good. Take the year before September 1 and you also get the founding badge on your profile, plus a direct line to shape what we build next.',
       },
     },
     { id: 'divider', content: {} },
@@ -220,7 +220,7 @@ const FOUNDING_BUSINESS: BetaLaunchEmail = {
       content: {
         eyebrow: 'What you get',
         title: 'Your own Space, set up with you',
-        body: 'A Founding Business gets its own Space to post events and offers, a founding badge, and the lowest rate we will ever set, kept for good. We will help you set the whole thing up ourselves.',
+        body: 'A Founding Business gets its own Space to post events and offers and the lowest rate we will ever set, kept for good. Take the year before September 1 and the Space also wears the Founding Business badge. We will help you set the whole thing up ourselves.',
       },
     },
     { id: 'divider', content: {} },

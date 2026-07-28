@@ -418,21 +418,18 @@ export function loadoutStrip(betaActive: boolean = isBetaPricingActive()): Loado
 export const MISSION_FRAMING =
   'Frequency is a community collective. We exist to support and create community. A paid plan keeps the collective independent and funds the people and infrastructure behind it, so a Space is funding the work, not just renting software.'
 
-/** The member (personal) pricing note for the pricing page, from the settings code defaults. Crew is the
- *  personal tier ($9 a month or $90 a year at the Opening Beta price, under a $12 list); Supporter is $12
- *  a month, everything in Crew plus the Supporter badge for backing the Foundation. Both live on the
- *  personal upgrade page; the commercial page notes them and links there. */
+/** The member (personal) pricing note for the pricing page, from the settings code defaults. The member
+ *  ladder is exactly two rungs (ADR-878): Member is free, and Crew is $9 a month or $90 a year. ONE clean
+ *  price, no crossed-out anchor, and no third tier. The personal ladder lives on /upgrade; the commercial
+ *  page notes it and links there. */
 export const CREW_NOTE = (() => {
-  // The personal-tier amounts flow from the ONE placeholder price map (feature-tiers), so this note can
-  // never drift from the in-app ladder. The $12 list anchor mirrors PRICING_DEFAULTS (settings.ts).
+  // The personal-tier amount flows from the ONE placeholder price map (feature-tiers), so this note can
+  // never drift from the in-app ladder.
   const crew = formatLoadoutCents(PLACEHOLDER_MEMBER_PRICE_CENTS.crew)
-  const supporter = formatLoadoutCents(PLACEHOLDER_MEMBER_PRICE_CENTS.supporter)
   return {
     name: 'Member pricing',
-    listLabel: '$12',
     foundingLabel: crew,
-    supporterLabel: supporter,
-    line: `Being a member is free, and stays free: joining, Circles, events, and the people. Crew is the personal tier at ${crew} a month or $90 a year at the Opening Beta price, under a $12 list: the Crew badge, the full rewards loop, and a way to back the community. Never a business tool. Supporter is ${supporter} a month or $120 a year, everything in Crew plus the Supporter badge for backing the Foundation. Both live on the personal upgrade page.`,
+    line: `Being a member is free, and stays free: joining, Circles, events, and the people. Crew is the personal tier at ${crew} a month or $90 a year: the Crew badge, the full rewards loop, and a way to back the community. Never a business tool. It lives on the personal upgrade page.`,
     href: '/upgrade',
   } as const
 })()
@@ -454,9 +451,8 @@ export function pricingLadderSummary(): string[] {
     lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key)}, optional on any paid plan.`)
   }
   lines.push('- Operator seats: add-on seats for your team on any paid plan, owner-priced.')
-  lines.push(
-    `- Crew: ${CREW_NOTE.foundingLabel}/mo or $90/yr at the Opening Beta price, the personal tier (list ${CREW_NOTE.listLabel}).`,
-  )
-  lines.push(`- Supporter: ${CREW_NOTE.supporterLabel}/mo or $120/yr, everything in Crew plus the Supporter badge.`)
+  // The member ladder, stated in full: Member is free and Crew is one plain price (ADR-878).
+  lines.push('- Member: free, forever. Joining, Circles, events, and the people.')
+  lines.push(`- Crew: ${CREW_NOTE.foundingLabel}/mo or $90/yr, the personal tier.`)
   return lines
 }

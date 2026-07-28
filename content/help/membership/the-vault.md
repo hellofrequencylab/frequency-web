@@ -28,4 +28,4 @@ Either way, everything you earn keeps building: your Gems, your season trophies,
 
 ## During the beta
 
-Everything you earned in the free beta stays yours. Crew is the paid personal tier: $9 a month or $90 a year at the Opening Beta price, under a $12 list. Supporter is $12 a month: everything in Crew, plus the Supporter badge for backing the Foundation. Both live on the upgrade page.
+Everything you earned in the free beta stays yours. Crew is the paid personal tier, and the only one: $9 a month, or $90 a year. It lives on the upgrade page. If you want to put more in, the Supporter badge on the same page lets you back the Foundation for whatever amount you choose.
