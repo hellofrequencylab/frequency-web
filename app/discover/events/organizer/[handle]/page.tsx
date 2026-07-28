@@ -17,12 +17,15 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 export const revalidate = 3600
 
-// ── Data: a host's public/unlisted events (Events B-4) ───────────────────────
-// One crawlable link with everything a host is running (Partiful pattern). Reads
-// the public_organizer_events RPC, which returns city only (never the venue) and
-// only public/unlisted events (never circle_only/private). The RPC always returns
-// the host identity (one host-only row when they have no listable events), so we
-// can render the profile even before any event is public.
+// ── Data: a host's PUBLIC events (Events B-4, narrowed by ADR-899) ───────────
+// One crawlable link with everything a host is running publicly (Partiful
+// pattern). Reads the public_organizer_events RPC, which returns city only (never
+// the venue) and only PUBLISHED, PUBLIC, non-removed, non-demo events on a
+// network-visible active Space. Never draft, removed, unlisted, circle_only or
+// private: this page is self-canonical, sitemap-enumerated and emits Event
+// JSON-LD, so it is a listing, and 'unlisted' is a link, not a listing (ADR-202).
+// The RPC always returns the host identity (one host-only row when they have no
+// listable events), so we can render the profile even before any event is public.
 
 type OrganizerRow = {
   host_id: string

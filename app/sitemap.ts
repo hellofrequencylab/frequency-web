@@ -28,8 +28,10 @@ import { COMPARISONS, comparisonPath } from "@/lib/marketing/comparisons";
 import { funnelSlugs } from "@/lib/marketing/funnel-config";
 
 // Organizer profiles (/discover/events/organizer/[handle]) — one URL per host with
-// at least one upcoming public/unlisted event. Reads the redaction-safe RPC, which
-// never enumerates hosts of circle_only/private events (Events B-4).
+// at least one upcoming PUBLIC event. Reads the redaction-safe RPC, which carries the
+// same gate as the page itself (ADR-899), so this never submits a URL that renders its
+// empty state: never a host whose only upcoming events are draft, removed, unlisted,
+// demo, circle_only or private, or tenanted to a walled Space (Events B-4).
 // Published Spotlight profiles (/spotlight/[handle]) — public when published. The
 // published flag lives in profiles.meta (RLS-protected), so this reads server-side with
 // the admin client; only the handle crosses out (never meta/contact/geo).

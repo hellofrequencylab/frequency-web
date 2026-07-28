@@ -16001,3 +16001,171 @@ The durable rule: **when the ask is "delete this", ship the flag first and let t
 **Consequences.** `lib/events/series.ts` + `series-dates.ts` + `series-seo.ts` + `series-config.ts`, the `/events` index, five browse surfaces, the event page rail, the sitemap and embeddings. Calendars and every `.ics` route deliberately do NOT fold: the owner requires all dates there, and a fold on those is a regression, asserted by a NEVER list in the wiring tests.
 
 The durable rule: **browse answers "which gathering", a calendar answers "which date". Fold the first, never the second.**
+
+## ADR-899 — A crawlable listing is public-only, and a SECURITY DEFINER re-applies the RLS it bypasses (2026-07-28)
+
+**Status.** Accepted. Narrows two anon `security definer` reads; supersedes the gate written in `20260613120000_event_calendar_follows.sql` §4/§5. Extends ADR-202 (unlisted means link-only) and ADR-800 (the master calendar feed is public-only). Nothing here widens any read. Migration: `20270123000000_public_organizer_events_narrow.sql`.
+
+**Context.** `public_organizer_events` (the organizer page) and `public_organizer_handles` (the sitemap) are both `security definer` and both granted to `anon`, so RLS on `events` does not run inside them and their `ON`/`WHERE` predicates are 100% of the gate. `lib/supabase/public.ts`'s header claims the anon client means "RLS is fully enforced", which is true of table reads and false inside these functions — plausibly why nobody looked. Both gated only `is_cancelled` + `visibility in ('public','unlisted')`, which meant: a DRAFT event with `visibility = 'public'` was served to anonymous callers and emitted as `Event` JSON-LD (20260613130000 is explicit that a draft stays owner-only "even if its visibility is 'public'"); a staff-REMOVED event kept being served (masked today only because `removeEvent` also sets `is_cancelled`); a link-only UNLISTED event was published to a self-canonical, sitemap-submitted page; and a public event tenanted to a private or suspended Space was crawlable through its host, because a definer bypasses the RESTRICTIVE `can_view_space_content` policy (20260711090000). The root cause is staleness, not carelessness: `20260613120000` is the migration immediately before `20260613130000` added `events.status` and `events.removed_at`. The gate predates the draft/removal lifecycle by one file. Two people had already routed around it rather than fix it — `lib/events/series-seo.ts:19-24` names this exact bug class and ships `visibility = 'public'` singular for the sitemap, and `lib/people/associations.ts` reads `events` directly under a stricter gate. This ADR fixes the thing they routed around.
+
+**Decision.** ONE gate, applied identically to both organizer RPCs: `status = 'published'` + `removed_at is null` + `visibility = 'public'` + `is_demo = false` on the event **and** on the host profile + the home Space is `network`/`active` (or the event has no Space), on top of the existing `is_cancelled = false` and 180-day past tail. The page and the sitemap must share a gate: a divergent one manufactures soft-404s, pointing crawlers at pages that correctly render empty. `create or replace`, not `drop` + `create`: all 14 OUT columns of `public_organizer_events` and both of `public_organizer_handles` keep identical names, order and types, so 42P13 cannot fire, the anon grant is never rewritten, and `lib/database.types.ts` needs no regeneration. Every event predicate stays inside the `LEFT JOIN`'s `ON` clause — the organizer page 404s on an empty row set and relies on the host-only row to render its empty state, so one predicate moved to the outer `WHERE` turns a security narrowing into an availability regression. That property is pinned by `test/contract/public-organizer-rpc-gate.test.ts`.
+
+**Alternatives considered.** *Keep `unlisted` on the organizer page* (rejected — it is a listing, and `public_calendar_feed` and the sitemap's own event reader had both already excluded it; the page's copy already promises "public", and the event stays fully reachable by its link and on its Space's `.ics`). *Different gates for the page and the sitemap* (rejected — soft-404s). *The `demo_mode`-conditional idiom used by the in-app feeds* (rejected — an operator toggle must not re-publish fictional `Event` and `Person` structured data to a search index; discovery reads hard-exclude, per `circles_near`). *`associations.ts`'s blunter `space_id is null`* (rejected — SQL can express the real Space rule, and dropping every legitimate Space event would gut the page for exactly the hosts who use Spaces). *A `LEFT JOIN LATERAL` rewrite* (rejected — a correlated `EXISTS` references only `e`, so the Space gate fits inside the existing `ON` clause for six added lines instead of restructuring the query whose LEFT-JOIN semantics the page depends on). *`drop` + `create`* (rejected — OUT columns unchanged, so replace is legal and is the smaller diff on a security fix). *Gate `profiles.suspended_at` or `discoverable_by`* (deferred — no read-side suspension convention exists anywhere in the repo, and inventing one inside a security PR is a product decision wearing a bugfix's clothes). *Fold in `public_events` / `public_event_by_slug`* (deferred — those have no visibility, status, `removed_at` or `is_demo` gate at all and leak `circle_only` and `private` events to anon on `/discover/events`; a strictly larger leak that needs its own ADR and its own PR, and it is still open).
+
+**Consequences.** Hosts whose only upcoming events are draft, removed, unlisted, demo or walled-Space stop being submitted to search engines and now render the page's existing empty state instead of a listing — a real, visible product change for anyone using `unlisted` as a soft listing, and the reason this belongs in the PR description and not only here. The sitemap gets smaller on purpose; that is a correction, not an accidental deindexing. `eventListSchema([])` already emits a valid zero-item `ItemList`, so no caller code changes: the comment corrections in `app/discover/events/organizer/[handle]/page.tsx`, `app/sitemap.ts` and `lib/people/associations.ts` are the whole app-side diff. The profile Events tile is unaffected — `lib/people/associations.ts` never called this RPC, it reads `events` directly — but the tile now over-counts relative to the page it links to by exactly the host's unlisted events; dropping `'unlisted'` from that one `.in(...)` is the follow-up, held back because its assertion lives in a `components/profile/` wiring test. `check-rls.mjs` and `check-authz-guards.mjs` do not read function bodies, so nothing machine-checks this class: a `check-public-rpc-gates.mjs` asserting these predicates across every `security definer` function granted to `anon` would have caught all of it at once, and is the recommended follow-up.
+
+The durable rule: **a crawlable listing is public-only — `unlisted` is a link, not a listing — and a `SECURITY DEFINER` function granted to `anon` must re-apply, in its own body, every gate the RLS it bypasses would have applied.**
+
+## ADR-900 — A phone is a different layout, not a smaller one: the profile's mobile pass is fenced at 640px (2026-07-28)
+
+**Status.** Accepted. Scopes the mobile half of the profile redesign (`docs/PROFILE-REDESIGN-PLAN.md` §5.1.1 / M1 / M2). Sits under ADR-894 (per-zone adaptive header) and the owner's 2026-07-28 ruling that removed the plate; changes no contrast behaviour and paints no backdrop. Desktop rendering is unchanged by construction, proved in `components/templates/page-hero-mobile.test.tsx` and in the emitted stylesheet.
+
+**Context.** Owner directive: "Leave the web mode as shipped. Create a better mobile experience." Reading the shipped classNames at 320 / 375 / 390px turned up one defect that loses content outright rather than merely crowding it. `PageHero`'s identity action cluster is `shrink-0` inside a `flex-wrap` row, and `shrink-0` on a wrapping flex container pins its flex base size to **max-content** (every chip on one line) *and* forbids it shrinking to the line it landed on. On a phone that is roughly 500px of chips for a signed-in friend, and 620px for a staff viewer, inside a ~245-290px box — and the hero section's own `overflow-hidden` painted the surplus off the page. Message, Tip and the staff Settings drawer were in the DOM, styled, focusable by keyboard, and unreachable by touch. No horizontal scrollbar ever appeared to signal it, because the shell root carries `overflow-x-clip`: on this codebase "the page does not scroll sideways" is structurally guaranteed and therefore proves nothing. The test that means something is "nothing is clipped". Two smaller wastes rode along: an on-cover refusal capped at `max-w-[16rem]` (272px) is wider than the entire hero content box at 320px, so a failed friend request was itself clipped; and `Block` / `Act as` trailed the tail of a four-row wrap of grey micro-text, with the owner's `Edit profile` landing left-aligned because a one-item flex line under `justify-between` packs to flex-start.
+
+**Decision.** Every change is one of exactly two shapes, and nothing else is allowed: a `max-sm:`-prefixed utility (Tailwind v4 emits these inside `@media (width < 40rem)`; `rem` in a media query resolves against the initial 16px, **not** this repo's 17px `--density-root`, so the boundary is 640 CSS px on the nose — the same px `sm:` turns on at), or a relaxed base utility that an existing `sm:` already overrides. The cluster gets `max-sm:w-full`, which forces it onto its own flex line at exactly the container width so `flex-wrap` finally has a line box to wrap inside; the identity content box drops to `px-5 py-5` under the untouched `sm:px-8 sm:py-8`, buying the cluster width and the band height so the wrap fits inside the 15rem phone `min-height` instead of growing the cover; `Block` / `Act as` take their own right-aligned row; `Edit profile` gets `max-sm:ml-auto`; both on-cover refusals narrow to 13rem below `sm` and restore 16rem above it. The name's `clamp(1.25rem,3vw,2rem)` is deliberately **not** touched: at 640px `3vw` is 19.2px, which is below the 21.25px floor, so the clamp sits on its floor at exactly the freeze line and any change to that floor is visible on desktop — a clamp is the one thing a breakpoint cannot fence.
+
+**Alternatives considered.** *A separate mobile action band* (rejected, as in the plan — it double-mounts stateful client components and two `FriendButton` instances diverge the moment one runs an action). *Icon-only chips below `sm` via `max-sm:sr-only` labels* (rejected — it buys one wrapped row at the cost of showing a first-time visitor a row of glyphs, which is the opposite of "one obvious next action"; wrapping to two or three labelled rows still fits the band). *Raising the name's clamp floor on phones* (rejected — the arithmetic above; a `max-sm:` font size would buy ~2px and cost extra wrapping at 320px). *Reordering the body stack so the composer and timeline precede Standing / Signature / Achievements / Awards* (**not done**, deliberately — those panels live inside the `aside` and the content lives in its sibling, so a CSS-only reorder needs `display: contents` plus wrapper divs, and `ProfileAwards` renders `null` when empty, so an empty wrapper would still take a `space-y-4` margin and shift the **desktop** column. The associations panel — the "what are they part of" answer — is already first on a phone, which is the part of the bar that mattered). *A 44px tap-target bump* (not done — a chip is ~34px, over the house `--tap-min: 32px`; raising it would add ~33px of cover height and would not reach the primary `bg-primary` button, which is not a `.hero-chip`, so the row would end up mismatched).
+
+**Consequences.** `page-hero.tsx`'s identity branch is shared, so the clipping fix also lands on `/circles/<slug>`, `/journeys/<slug>`, `/journeys/<slug>/learn` and `/channels/<id>` below 640px — the same bug, the same fix, and nothing at or above 640px. The height budget, re-derived at 17px root against the real `min-h-[15rem]` (255px, not the plan's assumed 240px): at 375px a five-chip friend viewer wraps to two rows for ~210px of used band, so the cover **does not grow**; a staff viewer's sixth chip takes a third row at ~252px, still inside it. At 320px the same clusters need three or four rows and the band grows to roughly 295px. That is the trade this pass accepts — a cover that is taller on the narrowest phones instead of one that hides controls. The plan's stricter "must not exceed 240px" was never reachable: `min-h-[15rem]` alone is 255px, and getting under it needs Tip and the staff Settings drawer off the cover entirely, which is a desktop change and out of bounds here. Desktop neutrality is proved twice: a render test strips `max-sm:` from the cluster and asserts the remainder is byte-identical to the shipped string, and the compiled stylesheet puts every `max-sm:` utility inside `@media not all and (min-width:40rem)` with `.sm:px-8` / `.sm:max-w-[16rem]` emitted later in the sheet than the relaxed base utilities they override. What is **not** proved is how it looks: there is no browser, no Playwright and no `@testing-library/react` here, so the 320 / 375 / 390px render has not been observed, only derived.
+
+The durable rule: **on this codebase "no horizontal scroll" proves nothing — the shell clips it — so the mobile test is "nothing is clipped"; and a phone-only fix is either `max-sm:`-prefixed or a base utility an existing `sm:` already overrides, never a new unprefixed declaration and never a backdrop behind header text.**
+
+
+---
+
+## ADR-901 — One map seam, two engines: Google renders when a *browsable* key exists, MapLibre always answers otherwise (2026-07-28)
+
+**Context.** Maps stopped rendering: the basemap paints as a flat cream rectangle with the
+marker still drawn on top. The owner also asked for Google Maps with Google data in live
+venue search, believing the Google Maps API had already been "activated".
+
+Two facts had to be separated before anything could be built.
+
+1. **Google was never rendering anything.** `GOOGLE_MAPS_API_KEY` is server-only and powers
+   Places venue *search* behind `/api/geocode/venues`. Every map tile in this app has always
+   come from MapLibre GL + keyless OpenFreeMap vector tiles. "We activated Google Maps" was
+   true only of Places search, and only when that key is set.
+2. **The blank basemap is a MapLibre 6 regression**, not a CSP block and not a missing key.
+   v6 stopped inlining its web worker; it resolves `dist/maplibre-gl-worker.mjs` at runtime
+   from `import.meta.url` through a *template literal*, which no bundler can statically emit,
+   so under Next 16 + Turbopack the worker URL is `''` or a 404 and the worker never starts.
+   Vector tiles are decoded in that worker, so nothing paints — while the style JSON still
+   loads on the main thread (hence positron's flat background colour filling the canvas) and
+   markers/controls survive because they are plain DOM. Full evidence in `scope-maps.md`.
+
+**Decision.**
+
+- **One seam.** `components/maps/map-canvas.tsx` is the only door to a map engine. Surfaces
+  describe *what to plot* with a provider-agnostic spec (`components/maps/types.ts`) and
+  never import a map library. Two implementations sit behind it: `google-canvas.tsx` and
+  `maplibre-canvas.tsx`, both mounted with `dynamic(..., { ssr: false })`.
+- **Two keys, never one.** `GOOGLE_MAPS_API_KEY` stays server-only and secret (Places).
+  Browser rendering uses a **second, different** key,
+  `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY`, which is public by construction and must be HTTP-
+  referrer restricted and API-restricted to the Maps JavaScript API. Putting the Places key
+  in a `NEXT_PUBLIC_` var would publish it and expose the billing account. A drift-guard test
+  asserts the browsable key is read in exactly one module and that no `NEXT_PUBLIC_*GOOGLE_MAPS_API_KEY`
+  identifier exists anywhere in the tree.
+- **Absence degrades, it does not break.** No browsable key ⇒ MapLibre, exactly as shipped
+  today. A Google loader promise that *rejects* at runtime (bad key, referrer denied, quota,
+  offline, blocked) re-renders the MapLibre canvas in place, so a misconfigured key costs
+  nobody their map rather than showing a grey "for development purposes only" tile.
+- **Popups are DOM, not HTML.** The per-map `escapeHtml` helpers and `setHTML` calls are
+  replaced by one builder that assigns `textContent`. A pin title is fully attacker-
+  controlled; removing the HTML parse step removes the injection surface instead of escaping
+  around it, and there is no longer a guard anyone can forget to call.
+- **No warm filter on the Google canvas.** MapLibre wears a sepia filter so OpenFreeMap's
+  cool tiles sit on the cream palette. Google's terms forbid altering their logo and
+  attribution, and a container filter would recolour both — Google is tinted through an
+  optional Cloud styled Map ID (`NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`) instead.
+- **Live search extends, it does not move.** `/api/geocode/venues` already prefers Google
+  Places server-side and falls back to Nominatim. It stays server-side (the key stays secret,
+  the auth gate and rate limit stay). `PlaceResult` gains `placeId` (Google's stable
+  identifier, previously fetched and discarded) and `provider` (`'google' | 'nominatim' |
+  'photon'`), so a pick can be re-resolved later and the fallback is visible in the UI and in
+  tests.
+- **MapLibre keeps an escape hatch.** `NEXT_PUBLIC_MAPLIBRE_WORKER_URL` points the v6 worker
+  at a self-hosted copy, repairing rendering without a dependency change. Empty is a no-op
+  and is correct on v5.
+
+**Consequences.**
+
+- Five user-facing canvases now compose the seam: event venue map, events library map, event
+  location picker, circle/group venue map, marketplace listing map.
+- Three data-driven canvases still render MapLibre directly and are listed as pending in the
+  drift guard: `circle-map`, `discover-map`, `admin/qr/scan-map`. They use GeoJSON sources,
+  data-driven circle paint and symbol layers, which the current spec does not express.
+  Deleting a row from `PENDING_MIGRATION` is how that debt gets paid.
+- CSP grows four hosts: `maps.googleapis.com` + `maps.gstatic.com` on `script-src` and
+  `connect-src`, `fonts.googleapis.com` on `style-src`, `fonts.gstatic.com` on `font-src`.
+  None is contacted when no browsable key is set. A test pins the CSP to the loader.
+- `NEXT_PUBLIC_*` is inlined at **build** time. On Vercel the browsable key must be present
+  when `next build` runs; a runtime-only value leaves every map silently on MapLibre.
+- **Still open (not decided here):** whether to pin `maplibre-gl` back to `^5.24.0` or
+  self-host the v6 worker. Both fix the blank basemap at the root; the seam makes either a
+  one-file change. That decision touches `pnpm-lock.yaml` and belongs to whoever can run a
+  real install.
+
+---
+
+## ADR-902 — The event detail layout is a template, not a page (2026-07-28)
+
+**Context.** The owner photographed `/events/<slug>` and said: "Make this block layout the standard
+for All events. Change them all over to this layout and make it the standard template." The photo
+shows a full-bleed cover, a display-scale H1, a chip row, a stacked identity block (when · where ·
+belonging · hosted by · posted by · check-in reward), a top-right action column, and a two-column
+body (description + composer + venue map on the left; RSVP card, details, host and "Good to know" on
+the right).
+
+An inventory of all 18 event routes found the shape existed **nowhere as a component**. It was three
+stacked layers: `DetailTemplate` supplied the header lockup, the module engine's `main-side` grid
+(arranged by `/events/*` in `lib/page-settings/default-layouts.ts`) supplied the two columns, and
+~340 lines of glue in `app/(main)/events/[slug]/page.tsx` supplied everything else — the `pb-24`
+bottom-bar reservation, the JSON-LD, four banners, the claim band, the gallery and the sticky RSVP
+bar. Any second event surface could only get the same page by copying it. There was no fork yet;
+there was no way to avoid one.
+
+**Decision.** Extract the glue into `EventDetailTemplate`
+(`components/templates/event-detail-template.tsx`), an **entity composition** that *wraps*
+`DetailTemplate` rather than replacing or copying it. The kit keeps nine shells; this is a
+composition of one of them, documented in PAGE-FRAMEWORK §8.1.1.
+
+Three things make it a standard rather than a helper:
+
+1. **The identity stack is ORDERED, named slots** (`when → where → cadence → nextDate → seriesRail →
+   belonging → hostedBy → credit → reward`), not one opaque `subtitle` blob. A blob standardises the
+   container and nothing in it, so the next surface could still put "Hosted by" above the date and
+   claim to compose the template. Named slots make the *shape* the contract.
+2. **A surface differs by an ABSENT SLOT, never a fork.** No `variant`, no `isPublic`, no
+   `anonymous` — the drift guard fails the build if one appears. The signed-out twin has no operator
+   actions because it omits `actions`, not because the template knows who is looking.
+3. **The interior accepts either the module engine or an explicit main/side pair**, rendered through
+   byte-identical grid classes. A public route has no `setEventContext` and no `page_settings`
+   layout row, so a single `interior` slot would have meant "migrate the public twin" ⇒ "give a
+   marketing route the widget registry, the layout store and 20+ RSCs". Both interiors are the same
+   3:2 split with the side column stacked first on a phone.
+
+**Consumers.** `app/(main)/events/[slug]/page.tsx` (the photographed page),
+`app/discover/events/[slug]/page.tsx` (the public unauthenticated twin), and that route's
+`loading.tsx`. Operator consoles (`manage`, `crm`, `settings`, `edit`) stay on Dashboard / Studio:
+they are a metric-led archetype, and putting them on the public Detail lockup would be a redesign,
+not a standardisation.
+
+**Consequences.**
+- *Byte-identity is proven, not asserted.* `event-detail-template.equivalence.test.tsx` renders a
+  verbatim copy of the page's pre-extraction JSX skeleton (leaves replaced by sentinels) and asserts
+  `renderToStaticMarkup` equality against the template. A token-level diff of the page's return block
+  shows the change is pure re-parenting: zero changed string literals, zero changed class names.
+- *The loading skeleton stops drifting.* It had been painting a 2:1 `lg:grid-cols-3` interior with a
+  trailing aside while the live page rendered a 3:2 `lg:grid-cols-5` with the side column first. It
+  now composes the template, so the two cannot disagree again.
+- *The public twin gains the standard geometry.* Its marketing frame (arcs, vertical rhythm) and
+  every word of its copy are unchanged, but its title takes the display scale, its back-link moves
+  into the template's single `back` affordance, and its beta-capture moves into the side column —
+  the position the standard reserves for the RSVP card. Its wrapper widened from `max-w-3xl` to
+  `max-w-5xl` so two columns have room.
+- *One duplication is accepted and pinned.* The `main-side` grid classes are copied from
+  `components/widgets/page-modules.tsx` rather than imported, on module-graph-weight grounds. A
+  string-equality assertion in the drift guard fails if either side changes.
+- *Header order is now a template decision.* A future event surface wanting a different order has to
+  argue with the template instead of writing its own JSX. That is the point, and it is the cost.
