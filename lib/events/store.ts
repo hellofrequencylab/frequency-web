@@ -216,6 +216,18 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // The co-hosting need ADR-898 was reaching for is real, but `event_cohosts` is keyed by PROFILE,
 // so it cannot express "this Space co-hosts" — only "this person does". `host_space_id` is the
 // column that expresses it, and it is single-valued (see ADR-905 for the two-Space gap).
+//
+// MEASURED STATE OF `host_space_id`, 2026-07-29, because it is easy to misread in both directions:
+// it IS written by a UI path (lib/events/event-drafts.ts stamps space_id AND host_space_id when a
+// draft names a Space), so it is not migration-only. But across production, 11 events carry it and
+// ZERO have it differing from space_id — every writer sets the two equal. So today it is a
+// redundant mirror of tenancy, which is why it contributes 0 rows beyond `space_id` here.
+//
+// That does NOT make it dead weight, and it should not be removed as such: it is the only column
+// that CAN express "this event lives in Space A but is hosted by Space B", and keeping the read
+// means the day a UI sets them independently, the calendar already honours it. 33 events have
+// space_id with a null host_space_id, so the mirror is not even applied consistently — a
+// consistency wart, not a bug, since both axes are read.
 
 /**
  * A space's events for its calendar tab (Events EC2), from `fromDay` (YYYY-MM-DD, inclusive) forward,
