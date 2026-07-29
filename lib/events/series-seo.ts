@@ -17,12 +17,14 @@ import {
 // routinely a mid-series date rather than the series page a member should land on.
 //
 // THREE THINGS LIVE HERE AND NOWHERE ELSE:
-//   1. THE CRAWL GATE, written once. `public_events` (20260612020000_public_events_price.sql:33-36)
-//      filters ONLY `is_cancelled = false AND starts_at >= now()` — no visibility, no status, no
-//      removed_at. The sitemap has therefore been advertising unlisted and draft events, and events
-//      a moderator removed, since that RPC shipped. This module reads `events` directly under the
-//      full gate instead of loosening a SECURITY DEFINER WHERE clause that other callers depend on.
-//      The gate here is strictly NARROWER than the RPC's. It never widens.
+//   1. THE CRAWL GATE, written once. When this module was built, `public_events`
+//      (20260612020000_public_events_price.sql:33-36) filtered ONLY `is_cancelled = false AND
+//      starts_at >= now()` — no visibility, no status, no removed_at — so the sitemap had been
+//      advertising unlisted and draft events, and events a moderator removed, since that RPC
+//      shipped. Rather than loosen a SECURITY DEFINER WHERE clause other callers depend on, this
+//      module read `events` directly under the full gate. ADR-903 has since narrowed the RPC to the
+//      same shape, so the two agree; this reader stays direct because it also needs the recurrence
+//      columns the RPC does not project. The gate here is never wider than the RPC's.
 //   2. THE ORDINAL. A row's position among the still-live dates of its series, 0 = the earliest one
 //      (the series home). Robots directives are a pure function of that number.
 //   3. THE ONE-OFF SHORT CIRCUIT. `events.recurrence_type` is `text NOT NULL DEFAULT 'none'`

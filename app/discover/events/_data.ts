@@ -10,8 +10,14 @@
 // schema.org Event and the city × category hubs need. The events SELECT RLS
 // (20260612000000 / 20260625010000_standalone_public_events) already restricts
 // the anon role to public/unlisted rows, so a cast read that selects ONLY the
-// privacy-safe columns is sanctioned and leaks nothing the RPC wouldn't. We never
-// SELECT location / street / venue_name / geog / online_url here.
+// privacy-safe columns is sanctioned. We never SELECT location / street /
+// venue_name / geog / online_url here.
+//
+// That public/unlisted RLS gate is now exactly the gate public_event_by_slug
+// carries too (ADR-903), so the enrichment and the RPC row it upgrades resolve
+// the same set of events. Before ADR-903 the RPC was the LOOSER of the two: it
+// gated no visibility at all, so a circle_only event returned RPC fields here
+// with null enrichment.
 //
 // New columns (attendance_mode / region / country / status) are untyped against
 // lib/database.types (we don't regenerate types). Per the repo convention + the
