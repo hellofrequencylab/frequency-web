@@ -3,12 +3,16 @@ import { getListing as getMarketListing, LISTING_KINDS } from '@/lib/marketplace
 import { getListing as getBaseListing } from '@/lib/listings'
 import { getHousingDetail, propertyTypeLabel } from '@/lib/listings/housing'
 import { claimCardResponse, CLAIM_OG_SIZE } from '@/lib/og/claim-card'
+import { OG_CONTENT_TYPE } from '@/lib/og/deliver'
 import { SITE_NAME } from '@/lib/site'
 
 export const runtime = 'nodejs'
 export const alt = `Claim your listing on ${SITE_NAME}`
 export const size = CLAIM_OG_SIZE
-export const contentType = 'image/png'
+// JPEG, not PNG. claimCardResponse re-encodes Satori's lossless output (lib/og/deliver.ts):
+// this card is a photograph across the full canvas, which is 1,776KB as PNG and 151KB as JPEG.
+// This literal must match the bytes deliverCard actually serves or og:image:type is a lie.
+export const contentType = OG_CONTENT_TYPE
 
 // The share card for a SEEDED LISTING claim link (/listings/claim/<token>), classifieds + housing. A
 // marketing pitch aimed at the real poster: the listing's own photo + title, the category pill (the

@@ -1,11 +1,14 @@
-import { ImageResponse } from 'next/og'
 import { getPillars } from '@/lib/pillars'
 import { SITE_NAME } from '@/lib/site'
+import { cardResponse, OG_CONTENT_TYPE } from '@/lib/og/deliver'
 
 export const runtime = 'nodejs'
 export const alt = `Practices by pillar on ${SITE_NAME}`
 export const size = { width: 1200, height: 630 }
-export const contentType = 'image/png'
+// JPEG, not PNG. next/og emits lossless PNG, and a photographic 1200x630 card measures
+// ~1,776KB that way against ~151KB as JPEG. cardResponse re-encodes and adds the CDN
+// cache headers (lib/og/deliver.ts).
+export const contentType = OG_CONTENT_TYPE
 
 // Per-pillar dynamic OG image for /discover/practices/pillar/[slug].
 // Falls back to a generic branded card when the pillar isn't found.
@@ -21,7 +24,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const title = pillarName ? `${pillarName} Practices` : 'Practices'
   const isFallback = !pillar
 
-  return new ImageResponse(
+  return cardResponse(
     (
       <div
         style={{

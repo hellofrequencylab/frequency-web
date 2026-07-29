@@ -1,4 +1,3 @@
-import { ImageResponse } from 'next/og'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { getSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
@@ -8,12 +7,16 @@ import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { fetchRemoteImage } from '@/lib/og/remote-image'
 import { loadNunito } from '@/lib/og/load-nunito'
+import { cardResponse, OG_CONTENT_TYPE } from '@/lib/og/deliver'
 import { SITE_NAME } from '@/lib/site'
 
 export const runtime = 'nodejs'
 export const alt = `A space on ${SITE_NAME}`
 export const size = { width: 1200, height: 630 }
-export const contentType = 'image/png'
+// JPEG, not PNG. This card puts the entity's cover across the full 1200x630 canvas, and
+// next/og emits lossless PNG: 1,776KB measured, against 151KB as JPEG. cardResponse
+// re-encodes and adds the CDN cache headers (lib/og/deliver.ts).
+export const contentType = OG_CONTENT_TYPE
 
 // Per-Space dynamic OG image (SEO/AIO) — the share card for /spaces/<slug> and every business
 // sub-page under it (/book, custom pages, community, reviews all inherit this segment's image), and
@@ -56,7 +59,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   if (!isPublic || !space) {
     // Neutral card: DAWN ink ground + the primary accent bar, no identity, no fonts to fetch (the
     // built-in font carries it, so it can never slow or fail a crawl of a private link).
-    return new ImageResponse(
+    return cardResponse(
       (
         <div
           style={{
@@ -140,7 +143,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     { name: 'Nunito', data: bold, weight: 700 as const, style: 'normal' as const },
   ]
 
-  return new ImageResponse(
+  return cardResponse(
     (
       <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', fontFamily: 'Nunito' }}>
         {/* Cover photo background — the page hero's own image. */}

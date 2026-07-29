@@ -3,12 +3,16 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { claimCardResponse, CLAIM_OG_SIZE } from '@/lib/og/claim-card'
+import { OG_CONTENT_TYPE } from '@/lib/og/deliver'
 import { SITE_NAME } from '@/lib/site'
 
 export const runtime = 'nodejs'
 export const alt = `Claim your business on ${SITE_NAME}`
 export const size = CLAIM_OG_SIZE
-export const contentType = 'image/png'
+// JPEG, not PNG. claimCardResponse re-encodes Satori's lossless output (lib/og/deliver.ts):
+// this card is a photograph across the full canvas, which is 1,776KB as PNG and 151KB as JPEG.
+// This literal must match the bytes deliverCard actually serves or og:image:type is a lie.
+export const contentType = OG_CONTENT_TYPE
 
 // The share card for a SEEDED SPACE claim link (/spaces/claim/<token>). A marketing pitch aimed at the
 // real owner: the Space's own cover + name so they recognize it, the DESIGNATOR pill (Coach /
