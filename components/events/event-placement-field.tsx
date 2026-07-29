@@ -17,6 +17,7 @@ import { labelClasses } from '@/components/ui/field'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import type { PlacementView, PlacementTargetType } from '@/lib/events/placement'
+import { EventHostOfferField } from '@/components/events/event-host-offer-field'
 
 type HandleHit = { id: string; handle: string; display_name: string; avatar_url: string | null }
 
@@ -77,9 +78,12 @@ export function EventPlacementField({ eventId, slug }: { eventId: string; slug: 
 
   return (
     <div className="space-y-2 rounded-xl border border-border bg-surface-elevated/40 p-3">
+      {/* VENUE, not "where does this event live" (ADR-911). The old wording sat directly above the
+          "Hosted by" control, and because setEventHostEntity wrote BOTH columns the two really were
+          one thing — so two labels described one axis and neither was true. This is placement only:
+          whose calendar calls the event home. It carries no money and no rights. */}
       <span className={labelClasses}>
-        Where does this event live{' '}
-        <span className="font-normal text-subtle">(a Space or Circle can host it)</span>
+        Venue <span className="font-normal text-subtle">(the Space or Circle it lives in)</span>
       </span>
 
       {view.status === 'live' && view.target ? (
@@ -99,9 +103,18 @@ export function EventPlacementField({ eventId, slug }: { eventId: string; slug: 
 
       {/* WHO HOSTS IT (ADR-819) — the hosting entity: you personally, or a Space you help run.
           Space-hosted = the space is the billed + displayed host ("Hosted by <space>"), and ticket
-          money routes through it. Distinct from placement above (where it shows up). */}
+          money routes through it. Genuinely distinct from the Venue above now: setting a host no
+          longer re-homes the event (ADR-911), so "at Royal Temple, hosted by Audrey DeWitt" is a
+          state the two controls can actually express. */}
       <div className="border-t border-border pt-2">
         <HostEntityControl eventId={eventId} slug={slug} />
+      </div>
+
+      {/* HANDING HOSTING OUT (ADR-911). The select above only offers Spaces the caller already helps
+          run, which is correct for a payee and is also a dead end for a venue handing an event to the
+          business running it. This is the two-sided path for that case. */}
+      <div className="border-t border-border pt-2">
+        <EventHostOfferField eventId={eventId} slug={slug} />
       </div>
 
       {/* Transfer host — hand the event to another member. Kept in this box because "where the event

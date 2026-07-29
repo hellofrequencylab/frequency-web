@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 
 import {
-  associatedSpaceId,
+  hostingSpaceId,
+  venueSpaceId,
   circleScopeId,
   isCircleScope,
   journeyIsLinkable,
@@ -50,23 +51,63 @@ describe('circleScopeId', () => {
   })
 })
 
-describe('associatedSpaceId', () => {
-  it('is the placement Space when the event carries one', () => {
-    expect(associatedSpaceId({ spaceId: SPACE }, ROOT_SPACE)).toBe(SPACE)
+describe('hostingSpaceId (the billed, displayed host)', () => {
+  it('is the placement Space when the event carries one and no explicit host', () => {
+    // ⚠️ The PRE-ADR-819 fallback, and it must stay: a legacy event created inside a Space's
+    // calendar carries only space_id, and its tickets already pay that Space's owner. Dropping this
+    // would silently re-route money on every legacy row.
+    expect(hostingSpaceId({ spaceId: SPACE }, ROOT_SPACE)).toBe(SPACE)
   })
 
   it('prefers the explicit hosting Space (ADR-819) over the placement column', () => {
-    expect(associatedSpaceId({ spaceId: SPACE, hostSpaceId: 'other-space' }, ROOT_SPACE)).toBe('other-space')
+    expect(hostingSpaceId({ spaceId: SPACE, hostSpaceId: 'other-space' }, ROOT_SPACE)).toBe('other-space')
   })
 
   it('drops the ROOT Space, which every event inherits and which names nothing', () => {
-    expect(associatedSpaceId({ spaceId: ROOT_SPACE }, ROOT_SPACE)).toBeNull()
-    expect(associatedSpaceId({ spaceId: SPACE, hostSpaceId: ROOT_SPACE }, ROOT_SPACE)).toBeNull()
+    expect(hostingSpaceId({ spaceId: ROOT_SPACE }, ROOT_SPACE)).toBeNull()
+    expect(hostingSpaceId({ spaceId: SPACE, hostSpaceId: ROOT_SPACE }, ROOT_SPACE)).toBeNull()
   })
 
   it('is null with no Space at all, and survives an unresolvable root', () => {
-    expect(associatedSpaceId({ spaceId: null }, ROOT_SPACE)).toBeNull()
-    expect(associatedSpaceId({ spaceId: SPACE }, null)).toBe(SPACE)
+    expect(hostingSpaceId({ spaceId: null }, ROOT_SPACE)).toBeNull()
+    expect(hostingSpaceId({ spaceId: SPACE }, null)).toBe(SPACE)
+  })
+})
+
+describe('venueSpaceId (where it lives, when that is not the host)', () => {
+  it('names the venue when a DIFFERENT Space hosts', () => {
+    // 🔴 The case that could not be expressed before: Royal Temple is the venue, Audrey DeWitt
+    // hosts. The read path collapsed to `hostSpaceId ?? spaceId` and the write path forced the two
+    // columns equal, so naming the host moved the event out of the venue.
+    expect(venueSpaceId({ spaceId: SPACE, hostSpaceId: 'other-space' }, ROOT_SPACE)).toBe(SPACE)
+  })
+
+  it('is null when the venue IS the host, so the same Space is never named twice', () => {
+    // Structural, not conditional: every event where the axes agree has exactly one Space to name,
+    // and the host line names it. A caller cannot forget to dedupe.
+    expect(venueSpaceId({ spaceId: SPACE, hostSpaceId: SPACE }, ROOT_SPACE)).toBeNull()
+    // Same conclusion via the legacy fallback, where host resolves THROUGH space_id.
+    expect(venueSpaceId({ spaceId: SPACE }, ROOT_SPACE)).toBeNull()
+  })
+
+  it('drops the root Space and a missing placement', () => {
+    expect(venueSpaceId({ spaceId: ROOT_SPACE, hostSpaceId: 'other-space' }, ROOT_SPACE)).toBeNull()
+    expect(venueSpaceId({ spaceId: null, hostSpaceId: 'other-space' }, ROOT_SPACE)).toBeNull()
+  })
+
+  it('the two resolvers never return the same id', () => {
+    // The invariant the whole split rests on. If both ever name one Space, the page prints it twice.
+    for (const row of [
+      { spaceId: SPACE, hostSpaceId: 'other-space' },
+      { spaceId: SPACE, hostSpaceId: SPACE },
+      { spaceId: SPACE },
+      { spaceId: ROOT_SPACE, hostSpaceId: SPACE },
+      { spaceId: null, hostSpaceId: SPACE },
+    ]) {
+      const host = hostingSpaceId(row, ROOT_SPACE)
+      const venue = venueSpaceId(row, ROOT_SPACE)
+      if (host && venue) expect(host).not.toBe(venue)
+    }
   })
 })
 

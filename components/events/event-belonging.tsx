@@ -75,20 +75,25 @@ async function loadJourneyRef(
 export async function EventBelonging({
   eventId,
   circle,
-  space,
   canManage = false,
 }: {
   eventId: string
   /** The Circle this Event is placed in, already resolved by the page. Null unless
    *  `scope_type` actually names a Circle. */
   circle: { name: string | null; slug: string | null } | null
-  /** The Space this Event lives under, already resolved by the page (root Space excluded). */
-  space: { name: string | null; slug: string | null } | null
   /** Whether the viewer manages this Event. A manager also sees a Journey that is not public yet. */
   canManage?: boolean
 }) {
   const journey = await loadJourneyRef(eventId)
-  const links = resolveEventBelonging({ circle, space, journey }, { viewerCanManage: canManage })
+  // 🔴 NO SPACE CHIP (ADR-911). This strip used to take a `space` prop the page resolved through
+  // `associatedSpaceId`, which returned `hostSpaceId ?? spaceId` — the HOST. So "Part of <Space>"
+  // and "Hosted by <Space>" printed the same name on the same screen, and once the two axes were
+  // allowed to differ it would have printed the HOST under a label that means placement.
+  //
+  // The Space now appears exactly once, as the "at <Space>" venue credit on the host line
+  // (components/events/venue-credit.tsx). Dropping the prop rather than passing null makes the
+  // duplicate impossible to reintroduce by wiring: there is nowhere to put it.
+  const links = resolveEventBelonging({ circle, space: null, journey }, { viewerCanManage: canManage })
   if (links.length === 0) return null
 
   return (
