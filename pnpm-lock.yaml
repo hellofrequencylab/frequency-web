@@ -97,6 +97,9 @@ importers:
       resend:
         specifier: ^6.18.0
         version: 6.18.0
+      sharp:
+        specifier: '>=0.35.0'
+        version: 0.35.3(@types/node@26.1.2)
       stripe:
         specifier: ^22.3.2
         version: 22.3.2(@types/node@26.1.2)
@@ -155,9 +158,6 @@ importers:
       jsdom:
         specifier: ^30.0.0
         version: 30.0.0(@noble/hashes@1.8.0)
-      sharp:
-        specifier: ^0.35.3
-        version: 0.35.3(@types/node@26.1.2)
       supabase:
         specifier: ^2.110.0
         version: 2.110.0
