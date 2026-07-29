@@ -74,3 +74,26 @@ describe('loading them touches no network', () => {
     expect(Date.now() - t0).toBeLessThan(20)
   })
 })
+
+describe('the faces reach the serverless runtime', () => {
+  const cfg = readFileSync('next.config.ts', 'utf8')
+
+  it('public/fonts is in outputFileTracingIncludes', () => {
+    // Next's tracer follows JS imports, NOT a path built inside a function with join(process.cwd()).
+    // This repo already had to do this explicitly for the resvg .wasm, with a comment describing the
+    // same failure. An OG card that cannot load a font does not degrade politely: Satori throws on
+    // an empty `fonts` array, so a missed include swaps a SLOW card for a BROKEN one.
+    expect(cfg).toContain("'./public/fonts/*.ttf'")
+  })
+
+  it('and it did not displace the help content on the same key', () => {
+    // 🔴 A second '/**' key is a TS error AND the later one silently wins. Adding one here would
+    // have dropped './content/help/**/*' and left "Ask Vera" deflecting every question — the exact
+    // failure that key's own comment warns about. Caught by tsc while writing this; pinned so the
+    // next person folds into the key instead of adding another.
+    expect(cfg).toContain("'/**': ['./content/help/**/*', './public/fonts/*.ttf']")
+    const block = cfg.match(/outputFileTracingIncludes:\s*\{([\s\S]*?)\n {2}\}/)?.[1] ?? ''
+    const keys = [...block.matchAll(/^\s*'([^']+)':/gm)].map((m) => m[1])
+    expect(keys.length).toBe(new Set(keys).size)
+  })
+})

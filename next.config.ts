@@ -108,7 +108,19 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/api/cron/embed-help': ['./content/help/**/*'],
     '/admin/vera-ai': ['./content/help/**/*'],
-    '/**': ['./content/help/**/*'],
+    // Also the OG share-card fonts (lib/og/load-nunito.ts), read from public/fonts at RUNTIME with
+    // readFile — the same derived-path shape as the .wasm below. Next's tracer follows the JS entry
+    // but not a path built inside the function, and an OG card that cannot load a font does not
+    // degrade politely: Satori throws on an empty `fonts` array.
+    //
+    // Belt-and-braces rather than a known break (five OG routes already read from public/ this way),
+    // but these fonts exist specifically to stop Apple Mail timing out on the claim card, and
+    // shipping a fix that swapped a slow card for a broken one would be worse than not shipping it.
+    //
+    // ⚠️ FOLDED INTO THIS KEY, not added as a second '/**'. A duplicate key is a TS error and, worse,
+    // the later one silently wins — which would have dropped the help content above and left
+    // "Ask Vera" deflecting every question, the exact failure its own comment warns about.
+    '/**': ['./content/help/**/*', './public/fonts/*.ttf'],
     // The resvg WASM rasterizer (lib/qr/raster.ts) reads index_bg.wasm from node_modules at
     // RUNTIME via fs (the package is in serverExternalPackages, so it is never bundled). Next's
     // tracer follows the JS entry but NOT that derived `readFile` path, so without an explicit
@@ -118,6 +130,17 @@ const nextConfig: NextConfig = {
     '/api/qr': ['./node_modules/@resvg/resvg-wasm/index_bg.wasm'],
     // `*` (not the literal `[slug]`, which globs as a character class) matches the dynamic segment.
     '/api/entry-points/*/flyer': ['./node_modules/@resvg/resvg-wasm/index_bg.wasm'],
+    // The OG share-card fonts (lib/og/load-nunito.ts) are read from public/fonts at RUNTIME with
+    // readFile, the same derived-path shape as the .wasm above. Next's tracer follows the JS entry
+    // but not a path built inside the function, and an OG card that cannot load a font does not
+    // degrade politely: Satori throws on an empty `fonts` array.
+    //
+    // This is belt-and-braces rather than a known break: five OG routes already read from public/
+    // this way. But the fonts exist SPECIFICALLY to stop Apple Mail timing out on the claim card,
+    // and shipping a fix that swaps a slow card for a broken one would be worse than not shipping
+    // it. 250KB per lambda is a fair price for removing the doubt. Applied to '/**' because every
+    // opengraph-image and twitter-image route needs them.
+
   },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]
