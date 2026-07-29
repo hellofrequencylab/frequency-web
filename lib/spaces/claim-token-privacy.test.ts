@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync } from 'node:fs'
 
 // ── 🔴 The claim token must never be reachable by a browser client ────────────────────────
 //
@@ -121,5 +121,46 @@ describe('no app code can reach the claim token from a browser client', () => {
     expect(idx).toBeGreaterThan(-1)
     // The ownership check sits in the same ternary that builds the URL.
     expect(page.slice(Math.max(0, idx - 400), idx)).toContain('myProfileId === postedById')
+  })
+})
+
+// ── The claim link an operator emails must keep working ───────────────────────────────────
+describe('minting a claim token is idempotent', () => {
+  const src = readFileSync('lib/spaces/claim.ts', 'utf8')
+
+  it('returns the live token instead of rotating it', () => {
+    // 🔴 approveBusinessImport explicitly permits re-running on an already-applied intake and calls
+    // the mint again. Unconditional overwrite meant re-approving silently killed every claim link
+    // already emailed to a real business owner: they get a 404 on a link we sent, and we hear
+    // nothing. A token is only ever replaced deliberately, never as an import side effect.
+    const mint = src.slice(src.indexOf('export async function mintSpaceClaimToken'))
+    const body = mint.slice(0, mint.indexOf('\n}\n'))
+    expect(body).toContain('const existing = await getSpaceClaimToken(spaceId)')
+    expect(body).toContain('if (existing) return existing')
+  })
+
+  it('compare-and-sets on claim_token is null, so a race cannot clobber', () => {
+    const mint = src.slice(src.indexOf('export async function mintSpaceClaimToken'))
+    const body = mint.slice(0, mint.indexOf('\n}\n'))
+    expect(body).toContain(".is('claim_token', null)")
+    // Losing the race must read THEIRS back — returning a token that is not in the row is how a
+    // dead link gets emailed.
+    expect(body).toContain('return await getSpaceClaimToken(spaceId)')
+  })
+})
+
+describe('a dead claim link lands somewhere sane', () => {
+  it('the claim route has its own not-found and error boundaries', () => {
+    // Without these, notFound() and any throw fell to the ROOT boundary, which is written for a
+    // signed-in member — the wrong frame for a business owner arriving from an email with no account.
+    expect(existsSync('app/spaces/claim/not-found.tsx')).toBe(true)
+    expect(existsSync('app/spaces/claim/error.tsx')).toBe(true)
+  })
+
+  it('the 404 copy confirms nothing to someone who guessed a token', () => {
+    const nf = readFileSync('app/spaces/claim/not-found.tsx', 'utf8')
+    // "already used" is offered as a possibility, never as a fact about this token.
+    expect(nf).toContain('may have already been used')
+    expect(nf).not.toMatch(/this business (is|was) claimed by/i)
   })
 })

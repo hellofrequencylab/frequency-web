@@ -184,8 +184,12 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
         <div className="border-b border-primary/20 bg-primary-bg/40">
           <div className={cn(CLAIM_COLUMN, "flex items-start gap-2 py-2.5 text-sm text-primary-strong")}>
             <Zap className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            {/* "so people nearby could find you" was not true for every Space that renders here. An
+                unlisted seed is `visibility = 'private'` and never appears in the directory, and this
+                page deliberately bypasses the visibility gate so it renders anyway. The claim below
+                holds in both cases: the page exists, and claiming it is what makes it theirs. */}
             <span>
-              Frequency built this page so people nearby could find you. If it is yours, claim it to make it your own.
+              Frequency built this page for your business. If it is yours, claim it to make it your own.
             </span>
           </div>
         </div>
