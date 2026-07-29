@@ -60,6 +60,22 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
   const rawLayout = prefsObj ? (prefsObj.profileLayoutDraft ?? prefsObj.profileLayout) : null
   const saved = parseEntityLayout(rawLayout)
 
+  // UNPUBLISHED CHANGES (owner report, 2026-07-29): "I changed events to the card view, but they are
+  // not showing up as cards on the public page."
+  //
+  // Nothing was broken. The owner was looking at their DRAFT (this component) and comparing it to the
+  // PUBLISHED render every visitor sees, and the two genuinely differed because the draft had never
+  // been published. The split is correct and worth keeping — what was missing is any way to TELL. The
+  // owner's own page looked like the finished thing, so "it is not live" was indistinguishable from
+  // "it is broken", and the only Publish affordance is gated on the admin rail being open.
+  //
+  // Compared on the RAW nodes, not the parsed ones: parseEntityLayout normalises and would report two
+  // materially different arrangements as equal once they round-trip to the same shape.
+  const hasUnpublishedChanges =
+    !!prefsObj &&
+    Object.prototype.hasOwnProperty.call(prefsObj, 'profileLayoutDraft') &&
+    JSON.stringify(prefsObj.profileLayoutDraft ?? null) !== JSON.stringify(prefsObj.profileLayout ?? null)
+
   // The draft/published VISIBILITY flag (preferences.profilePublished) seeds the publish bar's "Visible on
   // network" toggle. Defaults TRUE when absent, so a Space that predates the flag is never shown as hidden.
   const profilePublished = !prefsObj || prefsObj.profilePublished !== false
@@ -105,6 +121,7 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
         initialStyle={saved?.style ?? {}}
         spaceSlug={context.slug}
         profilePublished={profilePublished}
+        hasUnpublishedChanges={hasUnpublishedChanges}
         uploadImage={uploadImage}
       />
     </div>

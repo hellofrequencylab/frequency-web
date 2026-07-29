@@ -1,6 +1,5 @@
 import { resolveSpaceClaim } from '@/lib/spaces/claim'
 import { getSpaceById } from '@/lib/spaces/store'
-import { resolveMode } from '@/lib/spaces/modes'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { claimCardResponse, CLAIM_OG_SIZE } from '@/lib/og/claim-card'
@@ -37,7 +36,12 @@ export default async function Image({ params }: { params: Promise<{ token: strin
   }
 
   const brandName = space.brandName?.trim() || space.name
-  const pill = resolveMode(space.type, space.modeVariant)?.modeLabel ?? spaceTypeLabel(space.type)
+  // The DESIGNATOR only (Business / Non Profit). NOT the Mode registry's modeLabel: that resolves a
+  // FOCUS (mode_variant) like "Service business", which docs/NAMING.md keeps internal — a FOCUS is
+  // how an operator classifies a Space, never a label a member or a business owner is shown. The
+  // owner spotted "Service business" on their own share card, which is exactly the leak the canon
+  // forbids.
+  const pill = spaceTypeLabel(space.type)
   const noun = space.type === 'nonprofit' ? 'nonprofit' : 'business'
   const accent =
     space.brandAccent && /^#[0-9a-fA-F]{6}$/.test(space.brandAccent)

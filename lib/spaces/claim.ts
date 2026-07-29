@@ -12,6 +12,7 @@
 // The claim_token / claimed_by / claimed_at columns are not in database.types yet, so this reaches them
 // through a narrow untyped handle (repo convention, ADR-246), exactly like lib/listing-seeder/claim.ts.
 
+import { cache } from 'react'
 import { randomBytes } from 'node:crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { addSpaceMember, removeSpaceMember } from '@/lib/spaces/membership'
@@ -40,15 +41,32 @@ function spacesTable(): ClaimQuery {
  * behind the admin publish path.
  */
 export async function mintSpaceClaimToken(spaceId: string): Promise<string | null> {
+  // 🔴 IDEMPOTENT ON PURPOSE. This used to overwrite `claim_token` unconditionally, bound only to
+  // (id, unclaimed). approveBusinessImport explicitly permits re-running on an already-applied
+  // intake and calls this again on that path — so re-approving an intake silently ROTATED the token
+  // and killed every claim link already emailed to the real business owner. The owner gets a 404 on
+  // a link we sent them, we hear nothing, and the outreach is simply lost.
+  //
+  // Return the live token when one exists. A token is only ever replaced deliberately, by a rotate
+  // path, never as a side effect of an operator re-running an import.
+  const existing = await getSpaceClaimToken(spaceId)
+  if (existing) return existing
+
   const token = mintClaimToken()
   try {
     const { data, error } = await spacesTable()
       .update({ claim_token: token })
+      // Compare-and-set on `claim_token is null` as well as (id, unclaimed): two concurrent
+      // approvals would otherwise both pass the read above and the second would clobber the first.
+      // No match means someone else won the race, so read theirs back rather than returning ours —
+      // returning a token that is not in the row is how a dead link gets emailed.
       .eq('id', spaceId)
       .is('claimed_at', null)
+      .is('claim_token', null)
       .select('id')
       .maybeSingle()
-    if (error || !data?.id) return null
+    if (error) return null
+    if (!data?.id) return await getSpaceClaimToken(spaceId)
     return token
   } catch {
     return null
@@ -116,7 +134,13 @@ export interface ResolvedSpaceClaimAny extends ResolvedSpaceClaim {
   claimed: boolean
   ownerProfileId: string | null
 }
-export async function resolveSpaceClaimAny(token: string): Promise<ResolvedSpaceClaimAny | null> {
+// REQUEST-CACHED: the claim page resolves the same token TWICE per request — once in
+// generateMetadata (to author the share card) and once in the page body. Without this that is two
+// round trips for one render, on the page a business owner lands on from an email. React's cache()
+// dedupes within a single request only, so nothing is shared between visitors or between tokens.
+export const resolveSpaceClaimAny = cache(async function resolveSpaceClaimAny(
+  token: string,
+): Promise<ResolvedSpaceClaimAny | null> {
   if (!token || token.length < 8) return null
   try {
     const { data } = await spacesTable()
@@ -134,7 +158,7 @@ export async function resolveSpaceClaimAny(token: string): Promise<ResolvedSpace
   } catch {
     return null
   }
-}
+})
 
 /**
  * Claim a seeded Space: transfer ownership to `profileId`. A COMPARE-AND-SET filtered on (token,
