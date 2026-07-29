@@ -207,46 +207,114 @@ describe('filterSharedByHomeSpace (EC3 leak gate: a share cannot out-live its ho
   })
 })
 
-describe('space calendar membership (ADR-898): the drift guard', () => {
-  // The owner report behind ADR-898: a Space whose owner hosted every event personally rendered an
-  // EMPTY calendar, because tenancy (space_id) was the only membership rule. These assertions pin the
-  // widened membership in BOTH the store read and the .ics RPC migration, so neither side can silently
-  // narrow back to tenancy-only (the exact drift that shipped the bug) and the grid ⇄ feed lockstep
-  // holds without a live database.
+describe('space calendar membership (ADR-905, narrowing ADR-898): the drift guard', () => {
+  // The owner's rule: "Space calendars should only show events, features and programs offered by
+  // that space." ADR-898 had widened membership with two OWNER-IDENTITY axes — the owner's
+  // personally-hosted events and their accepted cohost invites — and on production those placed 11
+  // events on Space calendars that did not belong there and 0 that did. One owner's event appeared
+  // on all ten Spaces they own.
+  //
+  // These assertions pin membership as three DECLARATIONS (tenancy, the hosting axis, accepted
+  // shares) in BOTH the store read and the .ics RPC, so the grid ⇄ feed lockstep holds without a
+  // live database — AND they pin the absence of the owner axes, because re-adding either one is
+  // silent: it breaks no test, throws nothing, and simply starts leaking other Spaces' events.
   const storeSrc = readFileSync('lib/events/store.ts', 'utf8')
   const feedSql = readFileSync(
-    'supabase/migrations/20270122000000_space_calendar_hosted_events.sql',
+    'supabase/migrations/20270125000000_space_calendar_owner_identity_removed.sql',
     'utf8',
   )
+  // Both files EXPLAIN the removed axes by naming them — the header comments, and the RPC's own
+  // `comment on function` docstring, which is a string literal rather than a comment. So assertions
+  // about ABSENCE run against executable code only: the `$$ … $$` body for SQL, comment-stripped
+  // source for TS. (Three drift guards in this repo have already failed by matching their own
+  // prose; this is the same trap in its SQL form.)
+  const storeCode = storeSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+  const feedBody = (() => {
+    const open = feedSql.indexOf('as $$')
+    const close = feedSql.indexOf('$$;', open)
+    // Guard the extraction itself: a vacuous empty string would pass every not.toContain below.
+    expect(open).toBeGreaterThan(-1)
+    expect(close).toBeGreaterThan(open)
+    return feedSql.slice(open, close)
+  })()
+  const feedCode = feedBody.replace(/^\s*--.*$/gm, '')
 
-  it('the store read carries every membership axis: tenancy, hosting, owner-hosted, owner-cohosted, shares', () => {
-    expect(storeSrc).toContain(`host_space_id.eq.\${sid}`)
-    expect(storeSrc).toContain(`host_id.eq.\${ownerId}`)
-    expect(storeSrc).toContain(`spaceOwnerProfileId(admin, sid)`)
-    expect(storeSrc).toContain(`acceptedCohostEventIds(admin, ownerId)`)
-    expect(storeSrc).toContain(`acceptedShareEventIds(admin, sid)`)
+  it('the store read carries the three declaration axes: tenancy, hosting, shares', () => {
+    expect(storeCode).toContain(`.eq('space_id', sid)`)
+    expect(storeCode).toContain(`.eq('host_space_id', sid)`)
+    expect(storeCode).toContain(`host_space_id.eq.\${sid}`) // the tab gate's .or() twin
+    expect(storeCode).toContain(`acceptedShareEventIds(admin, sid)`)
   })
 
-  it('the .ics RPC migration carries the SAME membership axes', () => {
-    expect(feedSql).toContain('e.host_space_id = t.id')
-    expect(feedSql).toContain('e.host_id = t.owner_profile_id')
-    expect(feedSql).toContain("c.status = 'accepted'")
-    expect(feedSql).toContain("sh.status = 'accepted'")
+  it('the store read has NO owner-identity axis, in either call site', () => {
+    // Scoped to the two CALENDAR functions, not the whole file: `host_id` is a real events column
+    // that other reads in this module legitimately select (SpaceEvent carries it, COLS lists it).
+    // A file-wide ban would forbid the column rather than the rule, and would be deleted the first
+    // time someone needed an event's host for an unrelated read.
+    const calendarCode = (() => {
+      const start = storeCode.indexOf('export async function listSpaceCalendarEvents')
+      const end = storeCode.indexOf('export async function', storeCode.indexOf(
+        'export async function spaceHasPublicUpcomingEvents',
+      ) + 1)
+      expect(start).toBeGreaterThan(-1)
+      expect(end).toBeGreaterThan(start)
+      return storeCode.slice(start, end)
+    })()
+    expect(calendarCode).not.toContain('host_id.eq')
+    expect(calendarCode).not.toContain('event_cohosts')
+    expect(calendarCode).not.toContain('acceptedCohostEventIds')
+    expect(calendarCode).not.toContain('spaceOwnerProfileId')
+    expect(calendarCode).not.toContain('owner_profile_id')
+    // The helpers themselves are gone from the module, so nothing can call them back cheaply.
+    expect(storeCode).not.toContain('async function acceptedCohostEventIds')
+    expect(storeCode).not.toContain('async function spaceOwnerProfileId')
   })
 
-  it('the visibility gate did NOT widen with the membership (the non-negotiable half)', () => {
-    // The RPC re-applies published + public/unlisted + non-cancelled in BOTH branches.
-    expect(feedSql.match(/e\.visibility in \('public', 'unlisted'\)/g)?.length).toBe(2)
-    expect(feedSql.match(/coalesce\(e\.status, 'published'\) = 'published'/g)?.length).toBe(2)
-    expect(feedSql.match(/e\.is_cancelled = false/g)?.length).toBe(2)
+  it('the .ics RPC carries the SAME three axes', () => {
+    expect(feedCode).toContain('e.space_id = t.id')
+    expect(feedCode).toContain('e.host_space_id = t.id')
+    expect(feedCode).toContain("sh.status = 'accepted'")
+  })
+
+  it('the .ics RPC has NO owner-identity axis, and stops selecting the owner at all', () => {
+    expect(feedCode).not.toContain('owner_profile_id')
+    expect(feedCode).not.toContain('event_cohosts')
+    expect(feedCode).not.toContain('e.host_id')
+  })
+
+  it('the visibility gate did NOT move when membership narrowed (the non-negotiable half)', () => {
+    // The RPC re-applies published + public/unlisted + non-cancelled in BOTH branches. Narrowing
+    // membership must not tempt anyone to relax the per-row gate that makes membership safe.
+    expect(feedCode.match(/e\.visibility in \('public', 'unlisted'\)/g)?.length).toBe(2)
+    expect(feedCode.match(/coalesce\(e\.status, 'published'\) = 'published'/g)?.length).toBe(2)
+    expect(feedCode.match(/e\.is_cancelled = false/g)?.length).toBe(2)
     // The TARGET space is gated network + active in-function (the walling contract).
-    expect(feedSql).toContain("s.visibility = 'network'")
-    expect(feedSql).toContain("s.status = 'active'")
+    expect(feedCode).toContain("s.visibility = 'network'")
+    expect(feedCode).toContain("s.status = 'active'")
+    // Every non-tenancy row still re-gates its HOME space's walling.
+    expect(feedCode.match(/home\.visibility = 'network' and home\.status = 'active'/g)?.length).toBe(2)
   })
 
-  it('every value interpolated into an .or() filter is UUID-guarded', () => {
-    expect(storeSrc).toContain('UUID_RE.test(sid)')
-    expect(storeSrc).toContain('owner && UUID_RE.test(owner)')
-    expect(storeSrc).toContain('awayIds.filter((id) => UUID_RE.test(id))')
+  it('every value still interpolated into an .or() filter is UUID-guarded', () => {
+    // One .or() survives (the tab gate); the calendar read now uses .eq(), which parameterises.
+    expect(storeCode).toContain('UUID_RE.test(sid)')
+    expect(storeCode).toContain('awayIds.filter((id) => UUID_RE.test(id))')
+  })
+
+  it('the grid and the feed agree on the axis count, so neither can drift alone', () => {
+    // Three axes each. If someone adds a fourth to one side, this fails rather than letting the
+    // on-page grid and the subscribed .ics quietly disagree about what the Space offers.
+    const storeAxes = [
+      storeCode.includes(`.eq('space_id', sid)`),
+      storeCode.includes(`.eq('host_space_id', sid)`),
+      storeCode.includes('acceptedShareEventIds'),
+    ].filter(Boolean).length
+    const feedAxes = [
+      feedCode.includes('e.space_id = t.id'),
+      feedCode.includes('e.host_space_id = t.id'),
+      feedCode.includes('event_space_shares'),
+    ].filter(Boolean).length
+    expect(storeAxes).toBe(3)
+    expect(feedAxes).toBe(3)
   })
 })
