@@ -107,6 +107,10 @@ function toPlaceResult(p: NominatimPlace): PlaceResult | null {
     region,
     country,
     postalCode,
+    // Nominatim has no Google place identifier; the field exists so a consumer never has to
+    // branch on which provider answered (ADR-901).
+    placeId: null,
+    provider: 'nominatim',
   }
 }
 

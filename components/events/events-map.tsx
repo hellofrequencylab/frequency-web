@@ -1,27 +1,15 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-// maplibre-gl 6 is ESM-only with named exports; the namespace import keeps the maplibregl.* call sites unchanged.
-import * as maplibregl from 'maplibre-gl'
-import 'maplibre-gl/dist/maplibre-gl.css'
+import { MapCanvas } from '@/components/maps/map-canvas'
+import type { MapPin } from '@/components/maps/types'
 
 // Events library map (Events B-4). Plots in-person events at their HOSTING
 // CIRCLE'S public meeting location (city/approx) — the same public coordinate the
-// circle venue map already uses, NEVER the exact event address (ADR-186). Keyless
-// vector tiles out of the box (same default as the circles/discover maps);
-// override with NEXT_PUBLIC_MAP_STYLE.
-const STYLE = process.env.NEXT_PUBLIC_MAP_STYLE || 'https://tiles.openfreemap.org/styles/positron'
-
-// Escape user-controlled text before it goes into popup HTML (setHTML) — same
-// guard as the circle/discover maps; a title is fully attacker-controlled.
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
+// circle venue map already uses, NEVER the exact event address (ADR-186).
+//
+// Composes the map seam (ADR-901) instead of a map library directly: Google when a browsable
+// key is configured, MapLibre + keyless OpenFreeMap tiles otherwise. Popup bodies are built
+// as DOM nodes by the seam, so an event title is inert text and can never become stored XSS.
 
 export type EventMapPin = {
   id: string
@@ -36,8 +24,8 @@ export type EventMapPin = {
   lng: number
 }
 
-// Rendered via next/dynamic({ ssr:false }) from the client wrapper — maplibre must
-// never run on the server.
+// Rendered via next/dynamic({ ssr:false }) from the client wrapper — no map engine may
+// run on the server.
 export default function EventsMap({
   pins,
   className = 'h-[420px] w-full overflow-hidden rounded-2xl border border-border',
@@ -45,60 +33,6 @@ export default function EventsMap({
   pins: EventMapPin[]
   className?: string
 }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<maplibregl.Map | null>(null)
-
-  useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-
-    const map = new maplibregl.Map({
-      container,
-      style: STYLE,
-      center: pins.length > 0 ? [pins[0].lng, pins[0].lat] : [-117.28, 33.1],
-      zoom: 9,
-      attributionControl: { compact: true },
-    })
-    mapRef.current = map
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
-
-    // The popup HTML + the SVG marker live OUTSIDE React (maplibre owns that DOM), so
-    // they can't wear Tailwind classes. Drive them off the DAWN tokens instead: the
-    // popup reads the CSS variables directly (they cascade from :root, so it tracks the
-    // active theme), and the marker takes the token's resolved value. No hardcoded hex.
-    const markerColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim()
-
-    map.on('load', () => {
-      for (const p of pins) {
-        const popup = new maplibregl.Popup({ offset: 14, closeButton: false }).setHTML(
-          `<div style="font-weight:600;color:var(--color-text)">${escapeHtml(p.title)}</div>` +
-            `<div style="font-size:12px;color:var(--color-muted);margin-top:2px">${escapeHtml(p.whenLabel)}${
-              p.cityLabel ? ` · ${escapeHtml(p.cityLabel)}` : ''
-            }</div>` +
-            `<a href="/events/${encodeURIComponent(p.slug)}" style="font-size:13px;color:var(--color-primary-strong);text-decoration:none;display:inline-block;margin-top:4px">View event &rarr;</a>`,
-        )
-        new maplibregl.Marker(markerColor ? { color: markerColor } : undefined)
-          .setLngLat([p.lng, p.lat])
-          .setPopup(popup)
-          .addTo(map)
-      }
-
-      // Fit to all pins so the whole set is visible at a sensible zoom.
-      if (pins.length > 1) {
-        const bounds = new maplibregl.LngLatBounds()
-        for (const p of pins) bounds.extend([p.lng, p.lat])
-        map.fitBounds(bounds, { padding: 60, maxZoom: 13, duration: 0 })
-      } else if (pins.length === 1) {
-        map.easeTo({ center: [pins[0].lng, pins[0].lat], zoom: 12, duration: 0 })
-      }
-    })
-
-    return () => {
-      map.remove()
-      mapRef.current = null
-    }
-  }, [pins])
-
   // Graceful empty case: a tasteful panel instead of a blank map.
   if (pins.length === 0) {
     return (
@@ -111,13 +45,23 @@ export default function EventsMap({
     )
   }
 
-  // Warm filter so the cool base tiles sit on the cream palette — matches the
-  // circle/discover maps. Amber pins stay true.
+  const mapPins: MapPin[] = pins.map((p) => ({
+    id: p.id,
+    lat: p.lat,
+    lng: p.lng,
+    title: p.title,
+    subtitle: p.cityLabel ? `${p.whenLabel} · ${p.cityLabel}` : p.whenLabel,
+    href: `/events/${encodeURIComponent(p.slug)}`,
+    hrefLabel: 'View event →',
+  }))
+
   return (
-    <div
-      ref={containerRef}
+    <MapCanvas
+      center={[pins[0].lng, pins[0].lat]}
+      zoom={9}
+      pins={mapPins}
+      fit={{ padding: 60, maxZoom: 13, singleZoom: 12 }}
       className={className}
-      style={{ filter: 'sepia(0.22) saturate(1.08) hue-rotate(-8deg) brightness(1.02)' }}
     />
   )
 }

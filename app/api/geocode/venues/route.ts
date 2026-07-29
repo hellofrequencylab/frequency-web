@@ -15,6 +15,10 @@ import { googlePlacesSearch } from '@/lib/events/google-places'
 // its result is used when it yields anything, and ANY Google failure — or a Google miss —
 // falls back to the keyless Nominatim cascade, so search always degrades gracefully.
 //
+// Every row carries `provider` ('google' | 'nominatim') and, on the Google path, Google's
+// stable `placeId` (ADR-901) — so the caller can tell which backend answered and can
+// re-resolve a pick later (hours, photos, ratings) without a second search.
+//
 // Guarded two ways so we can't be used as an open geocoding proxy: an auth gate (the
 // editor caller is always a signed-in host) and a per-IP rate limit. The shared
 // in-process serialiser keeps us within Nominatim's ~1 req/sec courtesy limit, and

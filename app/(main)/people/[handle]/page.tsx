@@ -339,7 +339,11 @@ export default async function ProfilePage({
       scope={{ kind: 'profile', id: profileId }}
       label="Edit profile"
       icon={<Pencil className="h-4 w-4" />}
-      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+      // `max-sm:ml-auto`: on a phone this wraps onto its own line under the facts, and a
+      // one-item flex line under `justify-between` packs to flex-START — so the owner's
+      // Edit profile landed left, not right as designed. The auto margin restores the
+      // intended right edge below 640px and declares nothing at or above it.
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text max-sm:ml-auto"
     />
   ) : null
 
@@ -367,7 +371,9 @@ export default async function ProfilePage({
             profileId={profileId}
             threadTitle={firstName}
             className={HERO_ACTION_CLASS_ADAPTIVE}
-            errorClassName="max-w-[16rem] text-2xs text-on-media"
+            // Same phone cap as FriendButton: 16rem is wider than a 320px hero content box, so an
+            // un-narrowed refusal is clipped rather than read.
+            errorClassName="max-w-[13rem] text-2xs text-on-media sm:max-w-[16rem]"
           >
             <MessageSquare className="w-3.5 h-3.5" />
             Message
@@ -398,8 +404,15 @@ export default async function ProfilePage({
   // Block · janitor "Act as" — the secondary controls, rendered UNDER the cover on the join-date
   // line (owner directive, 2026-07-28). Small text links: they must not compete with
   // Friends/Message/Settings for weight, and off the photo they never collide with the name lockup.
+  // PHONE (< sm): these get their own right-aligned row instead of trailing a four-row wrap of
+  // grey micro-text. On a 375px screen the facts line already spends its first row on region +
+  // "Joined <Month Year>", so Block and "Act as" landed as the tail of the third or fourth wrapped
+  // row — the two highest-consequence controls on the page reading as noise. `max-sm:w-full` puts
+  // them on their own flex line; `max-sm:justify-end` keeps them right, away from the facts they
+  // are not part of. Nothing is declared at or above 640px, so the single-line desktop layout is
+  // untouched.
   const secondaryControls = user && hasSecondary ? (
-    <span className="flex items-center gap-3">
+    <span className="flex items-center gap-3 max-sm:w-full max-sm:justify-end">
       {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} variant="link" />}
       {/* Janitor full control: become this member (session swap). The server action
           re-checks the real janitor web_role before swapping. */}
@@ -515,21 +528,6 @@ export default async function ProfilePage({
         {/* CONTENT (2/3) — practice, the relationship panels, composer, timeline.
             (Bio now reads with the identity band above the header rule.) */}
         <div className="order-2 min-w-0 space-y-6 xl:order-1 xl:col-span-2">
-          {/* Associations (ADR-895) — the answer to "why is this page here": what this member runs,
-              what you have in common, and (for the owner) their own full picture. Streams in its own
-              boundary so a six-read fan-out never blocks the hero's first byte; a null fallback,
-              because a section that may legitimately render nothing must not flash furniture. */}
-          <Suspense fallback={null}>
-            <ProfileAssociations
-              profileId={profileId}
-              handle={profile.handle as string}
-              firstName={firstName}
-              viewerProfileId={myProfileId}
-              isOwner={isOwner}
-              blocked={isBlocked}
-            />
-          </Suspense>
-
           {/* Your private contact card — only the viewer who merged their own personal
               contact with this member sees this (their own logged data). */}
           {myLinkedContact && <PrivateContactPanel card={myLinkedContact} memberName={firstName} />}
@@ -616,6 +614,23 @@ export default async function ProfilePage({
         {/* SIDEBAR (1/3) — tiled info: Standing, Frequency Signature, Achievements. Scrolls
             with the main content (no sticky) so the whole column reads as one page. */}
         <aside className="order-1 min-w-0 space-y-4 self-start xl:order-2 xl:col-span-1">
+          {/* Associations (ADR-895) — what this member runs, what you have in common, and (for the
+              owner) their own full picture. Owner ruling, 2026-07-28: this belongs in the RIGHT
+              column as a plain preview of their Spaces, Circles and Journeys, with no card
+              background, so it reads as a glance rather than another boxed panel in a column that
+              already has several. Streams in its own boundary so a six-read fan-out never blocks
+              the hero's first byte; a null fallback, because a section that may legitimately
+              render nothing must not flash furniture. */}
+          <Suspense fallback={null}>
+            <ProfileAssociations
+              profileId={profileId}
+              handle={profile.handle as string}
+              firstName={firstName}
+              viewerProfileId={myProfileId}
+              isOwner={isOwner}
+              blocked={isBlocked}
+            />
+          </Suspense>
           {/* Standing — Zaps · Gems · Streak · Rank, shown on every profile (the owner asked
               for everyone's stats to be public, not just paid-tier members). */}
           <ProfileStandingCard

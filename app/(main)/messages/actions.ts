@@ -8,6 +8,7 @@ import { isBlockedBetween } from '@/lib/blocking'
 import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
 import { dmThreadHref } from '@/lib/messages/dm-destination'
 import { recordContactInteraction } from '@/lib/crm/interactions'
+import { ok, fail, type ActionResult } from '@/lib/action-result'
 
 // ── In-app message → CRM timeline adapter (ADR-372 Phase 1) ────────────────────────────────────────
 // Fold a sent 1:1 DM onto the ONE interaction timeline (contact_interactions) so the contact card shows
@@ -311,7 +312,12 @@ export async function renameConversation(conversationId: string, name: string) {
   revalidatePath('/messages')
 }
 
-export async function leaveConversation(conversationId: string) {
+// ── Leaving a conversation: one gate, two exits ───────────────────────────────────────────
+// The delete is SAFE BY CONSTRUCTION rather than by an explicit membership check: it is scoped
+// to `profile_id = <the caller>`, so the only row it can ever remove is the caller's own. That
+// is the whole authorization story, and it lives here once so neither exit can drift away from
+// it. Server-side, not UI-side: hiding the button is not a gate.
+async function deleteMyParticipation(conversationId: string): Promise<void> {
   const myProfileId = await getMyProfileId()
   const admin = createAdminClient()
 
@@ -322,5 +328,40 @@ export async function leaveConversation(conversationId: string) {
     .eq('profile_id', myProfileId)
 
   revalidatePath('/messages')
+}
+
+/** The NAVIGATING exit, used by the DM page's form. Unchanged behaviour: leave, then land on
+ *  the inbox. Stays exactly as it was while the retirement flag is off and the page renders. */
+export async function leaveConversation(conversationId: string) {
+  await deleteMyParticipation(conversationId)
   redirect('/messages')
+}
+
+/**
+ * The NON-NAVIGATING twin, for the chat dock (ADR-896 parity).
+ *
+ * `leaveConversation` cannot be reused from the dock: per
+ * node_modules/next/dist/docs/01-app/03-api-reference/04-functions/redirect.md (line 11,
+ * "When used in a Server Action, it will serve a 303 HTTP redirect response to the caller"),
+ * and node_modules/next/dist/docs/01-app/02-guides/server-actions.md §48 ("Calls `redirect`.
+ * The response navigates the router and streams the destination's RSC Payload"), invoking it
+ * from a client component would navigate the member to /messages — the exact page the dock
+ * exists to replace. Leaving from the dock must leave the member where they were standing.
+ *
+ * Same precedent as openDirectConversation/startConversation above: a redirect-free twin over
+ * one shared core, rather than a second copy of the gate.
+ *
+ * Returns a result instead of throwing, for the same reason openDirectConversation does: a
+ * thrown Error in a client-invoked action reaches the browser as an opaque production digest,
+ * which is the wrong shape for a sentence a member is meant to read.
+ */
+export async function leaveConversationInPlace(
+  conversationId: string,
+): Promise<ActionResult<void>> {
+  try {
+    await deleteMyParticipation(conversationId)
+    return ok()
+  } catch {
+    return fail('We could not leave this conversation. Try again.')
+  }
 }

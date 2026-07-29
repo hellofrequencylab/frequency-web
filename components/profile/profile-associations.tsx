@@ -91,12 +91,18 @@ export async function ProfileAssociations({
     }
   }
 
+  // NO CARD BACKGROUND (owner ruling, 2026-07-28): "No back ground, just a Preview card for any
+  // Spaces, Circles, Journeys etc." In the right column this sits beside genuinely boxed panels
+  // (Standing, Signature, Achievements), and a fourth box turns a glance into more furniture.
+  // The tiles inside keep their own quiet surface, so the content still reads as grouped.
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <section className="space-y-1">
       <SectionHeader title={isOwner ? 'What you run' : `What ${firstName} runs`} />
 
+      {/* Two-up at every width: this now lives in the 1/3 rail, where the old sm:grid-cols-3
+          squeezed each tile below a readable width. */}
       {tiles.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2">
           {tiles.map((stat) => {
             const k = KIND[stat.kind]
             return (

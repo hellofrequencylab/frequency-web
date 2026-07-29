@@ -198,11 +198,16 @@ export function resolveMediaTone({
  *  already know reads on real covers. A bar only appears when the pixels genuinely demand one. */
 export type HeroPlateRung = 0 | 1 | 2 | 3
 
-/** The plate's alpha per rung. THIS IS ONE CONTRACT WITH app/globals.css — the
- *  `.hero-adaptive-text .hero-zone[data-media-plate="N"]` rules set `--hero-plate-alpha` to
- *  exactly these numbers as percentages. Change one, change both, or the resolver promises a
- *  contrast the paint does not deliver. A drift guard asserts they agree. */
-export const HERO_PLATE_ALPHAS: Record<HeroPlateRung, number> = { 0: 0, 1: 0, 2: 0.45, 3: 0.7 }
+/** The plate's alpha per rung, ALL ZERO since the owner ruling of 2026-07-28: "I do not want the
+ *  dark boxes behind header content." No rung paints a rectangle any more; the only on-media
+ *  treatment is the per-glyph shadow under LIGHT copy (app/globals.css, .hero-zone).
+ *
+ *  The ladder itself is kept rather than deleted, because the MEASUREMENT is what resolves the
+ *  right tone on a split cover, and rung is still the honest way to say "this zone is hard to
+ *  read". A future treatment that is not a box can hang off it. Until then this stays all
+ *  zeroes and the CSS paints nothing, and the drift guard asserts the two agree so a bar cannot
+ *  come back on one side of the contract alone. */
+export const HERO_PLATE_ALPHAS: Record<HeroPlateRung, number> = { 0: 0, 1: 0, 2: 0, 3: 0 }
 
 /** WCAG AA for large text. Between this and MIN_HERO_CONTRAST the halo alone is enough; below
  *  it, the zone needs a plate. */

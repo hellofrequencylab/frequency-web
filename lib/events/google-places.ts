@@ -71,8 +71,10 @@ function pick(components: AddressComponent[], type: string): AddressComponent | 
   return components.find((c) => c.types?.includes(type))
 }
 
-/** Map one resolved Place Details payload → our PlaceResult, or null if it has no point. */
-function toPlaceResult(d: PlaceDetails): PlaceResult | null {
+/** Map one resolved Place Details payload → our PlaceResult, or null if it has no point.
+ *  `placeId` is carried through from the prediction so a pick can be re-resolved later
+ *  (hours, photos, ratings) and deduped across searches (ADR-901). */
+function toPlaceResult(d: PlaceDetails, placeId: string): PlaceResult | null {
   const lat = Number(d.geometry?.location?.lat)
   const lng = Number(d.geometry?.location?.lng)
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
@@ -100,7 +102,19 @@ function toPlaceResult(d: PlaceDetails): PlaceResult | null {
     .join(', ')
   const label = d.formatted_address?.trim() || constructed || name || ''
 
-  return { label, lat, lng, name, street, city, region, country, postalCode }
+  return {
+    label,
+    lat,
+    lng,
+    name,
+    street,
+    city,
+    region,
+    country,
+    postalCode,
+    placeId,
+    provider: 'google',
+  }
 }
 
 /**
@@ -152,7 +166,7 @@ export async function googlePlacesSearch(
         dUrl.searchParams.set('fields', 'geometry,formatted_address,name,address_components')
         try {
           const d = (await getJson(dUrl, signal)) as DetailsResponse
-          return d.status === 'OK' && d.result ? d.result : null
+          return d.status === 'OK' && d.result ? { placeId, result: d.result } : null
         } catch {
           return null // one detail miss must not sink the whole result set
         }
@@ -163,7 +177,7 @@ export async function googlePlacesSearch(
     const out: PlaceResult[] = []
     for (const d of details) {
       if (!d) continue
-      const r = toPlaceResult(d)
+      const r = toPlaceResult(d.result, d.placeId)
       if (!r || !r.label || seen.has(r.label)) continue
       seen.add(r.label)
       out.push(r)

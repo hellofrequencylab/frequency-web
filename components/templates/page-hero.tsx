@@ -228,7 +228,11 @@ export function PageHero({
         </div>
       ) : variant === 'identity' ? (
         // Entity header: the lockup anchored bottom-left, an optional leading chip beside the title.
-        <div className={`relative z-10 flex ${HEADER_MIN_H[resolvedSize]} flex-col justify-end px-6 py-6 sm:px-8 sm:py-8${legible}`}>
+        // PHONE PADDING (< sm only): 20px instead of 24px. It buys the action cluster ~9px of
+        // usable width and gives the band ~17px of height back, which is what lets the cluster
+        // wrap inside the 15rem min-height instead of growing the cover. The `sm:` pair below is
+        // untouched, so from 640px up this element's padding is byte-identical to before.
+        <div className={`relative z-10 flex ${HEADER_MIN_H[resolvedSize]} flex-col justify-end px-5 py-5 sm:px-8 sm:py-8${legible}`}>
           {/* Space-page parity: the leading avatar/icon + identity anchored bottom-LEFT, the actions
               bottom-RIGHT, both over the cover. Stats/meta live BELOW in the DetailTemplate band. */}
           <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
@@ -253,12 +257,24 @@ export function PageHero({
                 the row wraps (narrow), the cluster lands alone on its line and `ml-auto` keeps it right —
                 never left/centered. `justify-end` right-aligns the buttons within the cluster too.
                 It is its OWN zone: on a split cover the chips routinely sit on the opposite half
-                from the name and need the opposite tone. */}
+                from the name and need the opposite tone.
+
+                🔴 `max-sm:w-full` is a BUG FIX, not a style tweak (2026-07-28). `shrink-0` on a
+                wrapping flex container pins its flex base size to MAX-CONTENT — every chip on one
+                line — and forbids it shrinking to the line it landed on. On a phone that is ~500px
+                of chips (a friend viewer) inside a ~245px box, and the section's own
+                `overflow-hidden` PAINTED THE OVERFLOW OFF THE PAGE: Message, Tip and the staff
+                Settings drawer were rendered outside the clip and unreachable by touch. No
+                horizontal scrollbar ever appeared to signal it, because the shell root carries
+                `overflow-x-clip`. Giving the cluster an explicit 100% width below `sm` forces it
+                onto its own flex line at exactly the container width, so `flex-wrap` finally has a
+                line box to wrap INSIDE. From 640px up there is still no width declaration at all,
+                so the computed style is identical to before. */}
             {actions && (
               <div
                 role={adaptiveText ? 'group' : undefined}
                 aria-label={adaptiveText ? (actionsLabel ?? 'Header actions') : undefined}
-                className={`ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2${adaptiveText ? ' hero-zone' : ''}`}
+                className={`ml-auto flex max-sm:w-full shrink-0 flex-wrap items-center justify-end gap-2${adaptiveText ? ' hero-zone' : ''}`}
                 {...zoneProps('actions', adaptiveText, initialZoneTones)}
               >
                 {actions}

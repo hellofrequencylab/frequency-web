@@ -8,6 +8,13 @@ export { PageHero, HERO_ACTION_CLASS, HERO_ACTION_CLASS_ADAPTIVE, type PageHeroP
 export { IndexTemplate } from './index-template'
 export { StreamTemplate } from './stream-template'
 export { DetailTemplate, type DetailTab } from './detail-template'
+// The standard block layout for every page-like EVENT surface — a composition of DetailTemplate,
+// not a sixth shell. See components/templates/event-detail-template.tsx.
+export {
+  EventDetailTemplate,
+  type EventDetailTemplateProps,
+  type EventIdentitySlots,
+} from './event-detail-template'
 export { FocusTemplate } from './focus-template'
 export { WizardShell, wizardPrimaryClass, wizardSecondaryClass } from './wizard-shell'
 export { WizardProgress } from './wizard-progress'

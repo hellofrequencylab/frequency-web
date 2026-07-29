@@ -25,14 +25,20 @@ const csp = [
   "form-action 'self'",
   // 'unsafe-inline' retained for Next's inline RSC scripts; 'unsafe-eval' is dev-only
   // (React debug); 'wasm-unsafe-eval' for the resvg WASM rasterizer + maplibre.
-  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com https://va.vercel-scripts.com https://*.vercel.live`,
-  "style-src 'self' 'unsafe-inline'",
+  // maps.googleapis.com + maps.gstatic.com: the Google Maps JS API loader and the chunks it
+  // pulls in, used ONLY when NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY is set (ADR-901). With no
+  // browsable key nothing from those hosts is ever requested — the maps run on MapLibre.
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com https://va.vercel-scripts.com https://*.vercel.live https://maps.googleapis.com https://maps.gstatic.com`,
+  // fonts.googleapis.com: the Maps JS API injects a Roboto stylesheet link at runtime.
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
-  "font-src 'self' data:",
+  // fonts.gstatic.com serves the font files that stylesheet references.
+  "font-src 'self' data: https://fonts.gstatic.com",
   // connect-src is the exfiltration gate — every runtime fetch/XHR/WS target is listed:
   // Supabase (REST + realtime), GA (incl. GA4's region-routed /g/collect endpoint), Vercel
-  // insights/live, OpenFreeMap tiles (maplibre), Photon (address geocoding), ipapi (IP geo).
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://vitals.vercel-insights.com https://*.vercel.live https://tiles.openfreemap.org https://photon.komoot.io https://ipapi.co",
+  // insights/live, OpenFreeMap tiles (maplibre), Google Maps tiles/metadata (the keyed path,
+  // ADR-901), Photon (address geocoding), ipapi (IP geo).
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://vitals.vercel-insights.com https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co",
   // frame-src — the only hosts we may embed. Spotlight media embeds (lib/spotlight/embeds.ts)
   // reconstruct iframe srcs ONLY for these allowlisted players; keep the two lists in sync.
   "frame-src 'self' https://*.vercel.live https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com",

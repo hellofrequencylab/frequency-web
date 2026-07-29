@@ -29,7 +29,15 @@ export type PlaceResult = PlaceSuggestion & {
   region: string | null // state / province
   country: string | null
   postalCode: string | null
+  /** Google's stable place identifier when Google answered, else null (ADR-901). Lets a pick
+   *  be re-resolved later (hours, photos, ratings) and deduped across searches. */
+  placeId: string | null
+  /** Which provider produced this row. Makes the fallback visible in the UI and in tests. */
+  provider: PlaceProvider
 }
+
+/** The geocoding backends behind venue search, in preference order. */
+export type PlaceProvider = 'google' | 'nominatim' | 'photon'
 
 const PHOTON_URL = 'https://photon.komoot.io/api/'
 

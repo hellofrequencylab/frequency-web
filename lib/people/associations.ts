@@ -179,9 +179,12 @@ const readBuilt = cache(async (profileId: string): Promise<AssociationStat[]> =>
       }
     })(),
 
-    // EVENTS hosted, upcoming. Stricter than the `public_organizer_events` RPC the plan cited as its
-    // basis: that RPC filters only `is_cancelled` + `visibility`, so it would count DRAFT and
-    // moderator-REMOVED events. `status`, `removed_at` and `space_id` are all load-bearing here.
+    // EVENTS hosted, upcoming. This gate was written stricter than `public_organizer_events` because
+    // that RPC filtered only `is_cancelled` + `visibility`, so it would have counted DRAFT and
+    // moderator-REMOVED events. ADR-899 has since narrowed the RPC to match on `status`,
+    // `removed_at` and the Space wall, so the two now agree except on `unlisted`: the RPC dropped it
+    // (a crawlable listing is public-only) and this counter still admits it. `status`, `removed_at`
+    // and `space_id` remain load-bearing here — this reads `events` directly, under no RPC's gate.
     // The recurrence columns are what make the fold real — a SELECT without them makes
     // `collapseSeriesRows` a silent no-op and the tile reads "Events 12" for one weekly cowork.
     (async (): Promise<Peek> => {

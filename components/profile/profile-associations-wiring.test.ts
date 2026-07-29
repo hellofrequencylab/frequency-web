@@ -192,11 +192,28 @@ describe('the panel is composed from the kit, and a null count never renders as 
     expect(panel).toContain('(s.count ?? 0) > 0')
   })
 
-  it('is mounted first in the content column behind its own Suspense', () => {
+  it('is mounted at the TOP of the right column, behind its own Suspense', () => {
+    // Owner ruling, 2026-07-28: this moved out of the 2/3 content column into the 1/3 rail, so
+    // the guard moved with it. Pinning placement matters because the panel fans out six reads;
+    // dropping its Suspense or burying it below the tiled panels are both silent regressions.
+    const aside = page.indexOf('<aside className="order-1 min-w-0')
+    // Match the Suspense that wraps THIS panel, not the first one on the page: the profile has
+    // several null-fallback boundaries and indexOf on the bare tag found an earlier one.
     const suspense = page.indexOf('<Suspense fallback={null}>\n            <ProfileAssociations')
-    const contact = page.indexOf('<PrivateContactPanel')
-    expect(suspense).toBeGreaterThan(-1)
-    expect(contact).toBeGreaterThan(suspense)
+    const asideClose = page.indexOf('</aside>')
+    expect(aside).toBeGreaterThan(-1)
+    expect(asideClose).toBeGreaterThan(-1)
+    // Structural, not word-matching: the panel opens INSIDE the aside and closes before it does.
+    // (An earlier attempt compared against the string "Standing", which also appears higher up
+    // the file in the season-standing block, so it proved nothing.)
+    expect(suspense).toBeGreaterThan(aside)
+    expect(suspense).toBeLessThan(asideClose)
+  })
+
+  it('carries NO card background, so the rail does not gain a fourth box', () => {
+    // The other half of the same ruling: "No back ground, just a Preview card."
+    expect(panel).toContain('<section className="space-y-1">')
+    expect(panel).not.toMatch(/<section className="[^"]*bg-surface/)
   })
 })
 
