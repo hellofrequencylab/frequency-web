@@ -68,12 +68,29 @@ describe('both warnings are actually wired', () => {
     expect(fab).toContain("window.removeEventListener('beforeunload'")
   })
 
-  it('CLOSE THE PANEL: the admin bar guards BOTH close call sites', () => {
+  it('CLOSE THE PANEL: EVERY dismissal path is guarded, not just the X button', () => {
     expect(bar).toContain('hasUnpublishedWork()')
     expect(bar).toContain('UNPUBLISHED_WARNING')
-    // Desktop rail and mobile sheet. One guarded and one not is the same bug half-fixed.
+
+    // 1. The X button on the desktop rail and on the mobile sheet.
     expect(bar.match(/onClose=\{closeGuarded\}/g)?.length).toBe(2)
     expect(bar).not.toContain('onClose={() => setOpen(false)}')
+
+    // 2. 🔴 ESCAPE. The standard slide-over dismissal, and the likeliest way to lose a draft
+    //    because it takes no aim and leaves no trace. It called setOpen(false) directly and
+    //    bypassed the guard entirely. Read through a ref so the [open] effect does not re-bind.
+    expect(bar).toContain('closeGuardedRef.current()')
+    expect(bar).not.toMatch(/if \(e\.key === 'Escape'\) setOpen\(false\)/)
+
+    // 3. 🔴 THE MOBILE SCRIM. A second, full-screen control also labelled "Close settings", and
+    //    the PRIMARY dismissal gesture on a phone. It uses onClick, not the onClose prop — which
+    //    is exactly why the first version of THIS test reported full coverage while missing it.
+    expect(bar).toContain('onClick={closeGuarded}')
+
+    // Only ONE bare setOpen(false) may remain: the mobile route-change effect, where a confirm
+    // would be pointless because navigation has already happened. Any other is an unguarded exit.
+    const bare = bar.match(/setOpen\(false\)/g) ?? []
+    expect(bare.length).toBe(2) // one inside closeGuarded itself, one in the route-change effect
   })
 
   it('the flag is cleared on unmount, so a stale warning cannot outlive the editor', () => {

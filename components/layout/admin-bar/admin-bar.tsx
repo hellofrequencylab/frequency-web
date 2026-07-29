@@ -153,6 +153,11 @@ export function AdminBar({
     if (hasUnpublishedWork() && !window.confirm(UNPUBLISHED_WARNING)) return
     setOpen(false)
   }, [setOpen])
+
+  // The Escape listener registers once per open (deps [open]) and must not re-bind on every
+  // render, so it reads the guard through a ref rather than closing over it.
+  const closeGuardedRef = useRef(closeGuarded)
+  closeGuardedRef.current = closeGuarded
   const { hasContent } = model
   // Resets the drill screen + query on route/scope change (the desktop bar persists across nav).
   const resetKey = `${pathname}::${detail?.scope?.kind ?? ''}`
@@ -185,11 +190,14 @@ export function AdminBar({
     return () => window.removeEventListener(OPEN_ADMIN_BAR, onTyped)
   }, [])
 
-  // Close on Escape while open (both surfaces).
+  // Close on Escape while open (both surfaces). GUARDED: Escape is the standard slide-over
+  // dismissal and was the single most likely way to lose track of an unpublished draft, since it
+  // takes no aim and leaves no trace. It bypassed closeGuarded entirely until an adversarial pass
+  // caught it.
   useEffect(() => {
     if (!open) return
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') closeGuardedRef.current()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -369,7 +377,11 @@ export function AdminBar({
       <button
         type="button"
         aria-label="Close settings"
-        onClick={() => setOpen(false)}
+        // GUARDED. This backdrop is a second, full-screen "Close settings" control and is the
+        // PRIMARY dismissal gesture on a phone. It uses onClick rather than the onClose prop, which
+        // is why the first drift guard (matching `onClose=`) missed it while reporting the surface
+        // as fully covered.
+        onClick={closeGuarded}
         className="absolute inset-0 bg-black/40"
       />
       {/* Sheet — full-width on a phone (w-full), a right-side sheet on a tablet (max-w-md). */}

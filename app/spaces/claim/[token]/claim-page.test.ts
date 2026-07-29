@@ -110,11 +110,21 @@ describe('an owner can tell their page has unpublished changes', () => {
   const grid = readFileSync('components/entity-blocks/live-profile-grid.tsx', 'utf8')
   const fab = readFileSync('components/entity-blocks/space-publish-fab.tsx', 'utf8')
 
-  it('the draft/published comparison runs on the RAW nodes', () => {
-    // parseEntityLayout normalises, so comparing parsed nodes would report two materially different
-    // arrangements as equal once they round-trip to the same shape.
+  it('the draft/published comparison runs on the RAW nodes, CANONICALLY', () => {
+    // parseEntityLayout normalises, so comparing PARSED nodes would report two materially different
+    // arrangements as equal once they round-trip to the same shape. Hence raw.
     expect(preview).toContain('hasUnpublishedChanges')
-    expect(preview).toContain('JSON.stringify(prefsObj.profileLayoutDraft ?? null)')
+    expect(preview).toContain('prefsObj.profileLayoutDraft')
+
+    // But raw JSON.stringify is key-ORDER sensitive, which made the flag effectively ONE-WAY: an
+    // owner who made an edit and undid it could land on a logically identical layout serialised in
+    // a different key order and stay permanently "unpublished", arming a beforeunload prompt on
+    // their own Space with no way to clear it but publishing a no-op.
+    expect(preview).toContain('canonicalJson(prefsObj.profileLayoutDraft ?? null)')
+    expect(preview).toContain('canonicalJson(prefsObj.profileLayout ?? null)')
+    expect(preview).not.toContain('JSON.stringify(prefsObj.profileLayoutDraft')
+    // And the helper must actually sort, or it is stringify wearing a different name.
+    expect(preview).toMatch(/function canonicalJson[\s\S]{0,400}\.sort\(/)
   })
 
   it('the publish bar mounts OUTSIDE edit mode when there is something to publish', () => {
