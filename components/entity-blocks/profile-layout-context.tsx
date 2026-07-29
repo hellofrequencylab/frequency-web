@@ -87,6 +87,11 @@ interface EntityLayoutContextValue {
   /** Seed the store from the persisted layout. Idempotent — only the FIRST seed wins per mount. */
   seed: (rows: RowDef[], hidden: string[], content?: Record<string, Record<string, unknown>>, style?: Record<string, BlockStyle>) => void
   saving: boolean
+  /** An edit has landed but its debounced save has not started yet. Distinct from `saving`, which only
+   *  flips once flush() is already in flight. 🔴 Without this there was a ~600ms window after every
+   *  keystroke where nothing anywhere knew there was unpersisted work: a hard reload landing in it lost
+   *  the edit silently, because the leave-guard reads `saving`. */
+  dirty: boolean
   error: string | null
 }
 
@@ -109,6 +114,8 @@ export function EntityLayoutProvider({
   const [content, setContent] = useState<Record<string, Record<string, unknown>>>({})
   const [style, setStyle] = useState<Record<string, BlockStyle>>({})
   const [saving, setSaving] = useState(false)
+  // See `dirty` on the context type: the debounce window, which `saving` does not cover.
+  const [dirty, setDirty] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // Shared selection (live-page edit mode): the block whose settings the rail should focus. Set by the live
   // grid on a block click and read by the in-rail builder; a plain piece of client state, persisted nowhere.
@@ -152,6 +159,9 @@ export function EntityLayoutProvider({
       setError(e instanceof Error ? e.message : 'Could not save your layout.')
     } finally {
       setSaving(false)
+      // Only clear if nothing landed WHILE this save was in flight. `flush` nulls `pending` before it
+      // awaits, so a mid-flight edit repopulates it and must keep the page marked dirty.
+      setDirty(pending.current !== null)
     }
   }, [save])
 
@@ -177,6 +187,7 @@ export function EntityLayoutProvider({
       setStyle(next.style ?? {})
       setSeeded(true)
       pending.current = next
+      setDirty(true)
       if (timer.current) clearTimeout(timer.current)
       timer.current = setTimeout(() => void flush(), SAVE_DEBOUNCE_MS)
     },
@@ -250,7 +261,7 @@ export function EntityLayoutProvider({
 
   return (
     <EntityLayoutCtx.Provider
-      value={{ kind, seeded, rows, hidden, content, style, selectedId, select, selectedItemIndex, selectItem, bench, apply, undo, canUndo, applyContent, applyStyle, seed, saving, error }}
+      value={{ kind, seeded, rows, hidden, content, style, selectedId, select, selectedItemIndex, selectItem, bench, apply, undo, canUndo, applyContent, applyStyle, seed, saving, dirty, error }}
     >
       {children}
     </EntityLayoutCtx.Provider>

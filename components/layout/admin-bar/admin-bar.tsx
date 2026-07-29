@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom'
 import { usePathname } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 import { useSettingsPanel, useIsDesktop } from '@/components/layout/settings-panel'
-import { hasUnpublishedWork, UNPUBLISHED_WARNING } from '@/lib/layout/unpublished-work'
+import { hasUnpublishedWork, subscribeUnpublishedWork, UNPUBLISHED_WARNING } from '@/lib/layout/unpublished-work'
+import { cn } from '@/lib/utils'
 import { AdminBarBody } from '@/components/layout/admin-bar/admin-bar-body'
 import { OPEN_ADMIN_BAR, type OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 
@@ -19,11 +20,17 @@ function AdminBarTopBar({
   onQueryChange,
   onClose,
   closeRef,
+  unpublished = false,
 }: {
   query: string
   onQueryChange: (value: string) => void
   onClose: () => void
   closeRef?: React.Ref<HTMLButtonElement>
+  /** There is saved-but-unpublished work on the page behind this rail. Changes only how the close
+   *  control READS, never what it does — closeGuarded already asks. Without it the only signal
+   *  arrived as a confirm() AFTER the operator had committed to closing, which is a warning about a
+   *  decision already made rather than a label on the control. */
+  unpublished?: boolean
 }) {
   return (
     <div className="flex items-center gap-2 border-b border-border bg-surface px-3 py-3">
@@ -49,10 +56,18 @@ function AdminBarTopBar({
         ref={closeRef}
         type="button"
         onClick={onClose}
-        aria-label="Close settings"
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface text-muted transition-colors hover:bg-surface-elevated hover:text-text motion-reduce:transition-none"
+        aria-label={unpublished ? 'Close settings. You have unpublished changes' : 'Close settings'}
+        title={unpublished ? 'You have changes that are not published yet' : undefined}
+        className={cn(
+          'relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface text-muted transition-colors hover:bg-surface-elevated hover:text-text motion-reduce:transition-none',
+          unpublished && 'text-primary-strong',
+        )}
       >
         <X className="h-5 w-5" aria-hidden />
+        {/* A dot, not a count: the state is binary and the rail is dense. aria carries the meaning. */}
+        {unpublished && (
+          <span aria-hidden className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary ring-2 ring-surface" />
+        )}
       </button>
     </div>
   )
@@ -149,6 +164,13 @@ export function AdminBar({
   // the admin rail, not member-facing chrome, and a native dialog is the only thing that reliably
   // interrupts a click that is already closing the panel. If this ever moves to member-facing UI it
   // needs the house Dialog instead.
+  // The close control's LOOK, not its behaviour. hasUnpublishedWork() is a module variable read at click
+  // time, which is right for the guard but cannot repaint anything; this subscription is what the flag's
+  // `subscribeUnpublishedWork` export was written for and had no consumer for. Without it the operator's
+  // only signal was a confirm() that fired AFTER they had already committed to closing.
+  const [unpublished, setUnpublished] = useState(false)
+  useEffect(() => subscribeUnpublishedWork(setUnpublished), [])
+
   const closeGuarded = useCallback(() => {
     if (hasUnpublishedWork() && !window.confirm(UNPUBLISHED_WARNING)) return
     setOpen(false)
@@ -358,6 +380,7 @@ export function AdminBar({
             query={query}
             onQueryChange={setQuery}
             onClose={closeGuarded}
+            unpublished={unpublished}
             closeRef={closeButtonRef}
           />
 
@@ -390,7 +413,7 @@ export function AdminBar({
       <div className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-border bg-surface shadow-pop">
         {/* The fixed top bar (search + close) sits ABOVE the scroll region, so nothing can render above the
             search on scroll — the search is the top of the sheet (ADR-516 Phase E). */}
-        <AdminBarTopBar query={query} onQueryChange={setQuery} onClose={closeGuarded} />
+        <AdminBarTopBar query={query} onQueryChange={setQuery} onClose={closeGuarded} unpublished={unpublished} />
         <div ref={bodyScrollRef} className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
           <AdminBarBody key={resetKey} model={model} query={query} onQueryChange={setQuery} />
         </div>

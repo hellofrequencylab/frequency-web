@@ -63,8 +63,10 @@ describe('both warnings are actually wired', () => {
     // which is why the in-page copy has to carry the message too.
     expect(fab).toContain('e.preventDefault()')
     expect(fab).toContain("e.returnValue = ''")
-    // Covers BOTH states: bytes in flight, and saved-but-not-published.
-    expect(fab).toContain('const unsavedOrUnpublished = saving || hasUnpublishedChanges')
+    // Covers ALL THREE states: the debounce window, bytes in flight, and saved-but-not-published.
+    // (Pinned in full by the DEBOUNCE WINDOW case below; asserted here so a regression that drops one
+    // state fails on the guard that consumes it, not only on the guard that defines it.)
+    expect(fab).toContain('const unsavedOrUnpublished = saving || dirty || hasUnpublishedChanges')
     // And it must be removed again, or every later navigation prompts.
     expect(fab).toContain("window.removeEventListener('beforeunload'")
   })
@@ -127,6 +129,34 @@ describe('both warnings are actually wired', () => {
     // would be pointless because navigation has already happened. Any other is an unguarded exit.
     const bare = bar.match(/setOpen\(false\)/g) ?? []
     expect(bare.length).toBe(2) // one inside closeGuarded itself, one in the route-change effect
+  })
+
+  it('SAY IT BEFORE THE CLICK: the close control itself carries the state', () => {
+    // 🔴 `subscribeUnpublishedWork` shipped with a doc comment naming the admin bar as its consumer and
+    // had NO non-test consumer. The X rendered identically either way, so the only signal an operator
+    // got arrived as a confirm() AFTER they had committed to closing — a warning about a decision
+    // already made, not a label on the control. The module variable is read at click time (correct for
+    // the guard) and cannot repaint anything; this subscription is what does.
+    expect(bar).toContain('subscribeUnpublishedWork(setUnpublished)')
+    expect(bar.match(/unpublished=\{unpublished\}/g)?.length).toBe(2) // desktop rail + mobile sheet
+    // The meaning must reach assistive tech, not only the dot.
+    expect(bar).toContain("'Close settings. You have unpublished changes'")
+  })
+
+  it('DEBOUNCE WINDOW: an edit counts before its save has even started', () => {
+    // 🔴 `saving` only flips inside flush(), which the ~600ms debounce delays. Every keystroke opened a
+    // window where the page held unpersisted work and every guard here believed it did not, so a hard
+    // reload landing in it lost the edit silently.
+    const ctx = readFileSync('components/entity-blocks/profile-layout-context.tsx', 'utf8')
+    expect(ctx).toContain('dirty: boolean')
+    expect(ctx).toContain('setDirty(true)')
+    // Cleared only when nothing landed WHILE the save was in flight: flush() nulls `pending` before it
+    // awaits, so a mid-flight edit must keep the page dirty.
+    expect(ctx).toContain('setDirty(pending.current !== null)')
+    // And seeding must NOT arm it, or merely opening your own page prompts on the way out.
+    const seed = ctx.slice(ctx.indexOf('const seed = useCallback'))
+    expect(seed.slice(0, seed.indexOf('  )'))).not.toContain('setDirty')
+    expect(fab).toContain('const unsavedOrUnpublished = saving || dirty || hasUnpublishedChanges')
   })
 
   it('the flag is cleared on unmount, so a stale warning cannot outlive the editor', () => {

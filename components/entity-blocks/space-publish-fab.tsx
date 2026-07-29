@@ -55,6 +55,9 @@ export function SpacePublishFab({
   const [error, setError] = useState<string | null>(null)
 
   const saving = !!store?.saving
+  // The DEBOUNCE window too, not just the in-flight save. `saving` only flips once flush() has started,
+  // so for ~600ms after every edit the guards below believed there was nothing to lose.
+  const dirty = !!store?.dirty
   const canUndo = !!store?.canUndo
 
   // ── LEAVING WITH WORK NOBODY ELSE CAN SEE ───────────────────────────────────────────────
@@ -62,15 +65,21 @@ export function SpacePublishFab({
   // page looked finished and nothing said otherwise. Autosave makes that worse, not better —
   // "Draft · Saved" is literally true and reads as "live".
   //
-  // Two distinct states, and the warning covers both:
-  //   saving                -> bytes still in flight, closing now loses the last edit outright
+  // THREE distinct states, and the warning covers all three:
+  //   dirty                 -> an edit landed, its debounced save has not started yet
+  //   saving                -> bytes in flight, closing now loses the last edit outright
   //   hasUnpublishedChanges -> saved safely, but no visitor can see it until Publish
+  //
+  // 🔴 `dirty` was missing, and `saving` does not cover it: setSaving(true) happens inside flush(),
+  // which the debounce delays by ~600ms. Every keystroke therefore opened a window where the page had
+  // unpersisted work and none of the guards below knew it. `seed` deliberately does not set it, so
+  // merely opening your own page never arms a prompt.
   //
   // Same shape as the repo's other editors (admin/walkthroughs, pages/splash): preventDefault +
   // returnValue is all a browser honours. The string is ignored by every modern browser, which is
   // exactly why the in-page copy below has to carry the message too — this dialog can only ask
   // "leave?", it cannot explain why.
-  const unsavedOrUnpublished = saving || hasUnpublishedChanges
+  const unsavedOrUnpublished = saving || dirty || hasUnpublishedChanges
 
   // Publish the same fact to the app shell, whose admin-bar close button lives in a different React
   // tree and cannot read this store. Cleared on unmount so navigating away does not leave a stale
