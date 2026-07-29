@@ -64,21 +64,32 @@ export interface SpaceCalendarEvent {
 
 const CALENDAR_COLS = 'id, slug, title, starts_at, ends_at, location, time_zone, is_cancelled'
 
-/** A calendar event row with the gate columns (status/visibility) alongside the display fields. */
+/** A calendar event row with the gate columns (status/visibility/removed_at/is_demo) alongside the
+ *  display fields. */
 export type SpaceCalendarEventRow = SpaceCalendarEvent & {
   status?: string | null
   visibility?: string | null
+  removed_at?: string | null
+  is_demo?: boolean | null
 }
 
 /** The PER-SPACE calendar gate, applied on the event's OWN row in every branch (the leak contract):
- *  published + public/unlisted + non-cancelled + starting on/after `fromDay`. This is the exact set the
- *  space feed RPC (space_public_calendar_feed) enforces in SQL; kept pure here so the store readers and
- *  the shared-event UNION apply the identical gate on each event's OWN row. Pure + unit-tested. */
+ *  published + public/unlisted + non-cancelled + not staff-removed + not demo + starting on/after
+ *  `fromDay`. This is the exact set the space feed RPC (space_public_calendar_feed, recreated by
+ *  20270126000000) enforces in SQL; kept pure here so the store readers and the shared-event UNION
+ *  apply the identical gate on each event's OWN row. Pure + unit-tested.
+ *
+ *  removed_at and is_demo were ADDED 2026-07-29: removeEvent also sets is_cancelled today, so the
+ *  hole was masked in practice — but that is one function's courtesy, not a contract, and this feed
+ *  is handed to anonymous .ics subscribers. Same defence-in-depth call as ADR-899/903 made for the
+ *  discover RPCs. */
 export function passesCalendarGate(e: SpaceCalendarEventRow, fromDayIso: string): boolean {
   return (
     !e.is_cancelled &&
     (e.status ?? 'published') === 'published' &&
     (e.visibility === 'public' || e.visibility === 'unlisted') &&
+    !e.removed_at &&
+    e.is_demo !== true &&
     startsOnOrAfter(e.starts_at, fromDayIso)
   )
 }
@@ -240,10 +251,12 @@ export async function listSpaceCalendarEvents(
     // unioned in-app; the DB feed (space_public_calendar_feed) does the same UNION server-side.
     const ownedQ = admin
       .from('events')
-      .select(`${CALENDAR_COLS}, status, visibility`)
+      .select(`${CALENDAR_COLS}, status, visibility, removed_at, is_demo`)
       .eq('space_id', sid)
       .eq('status', 'published')
       .in('visibility', ['public', 'unlisted'])
+      .is('removed_at', null)
+      .eq('is_demo', false)
       .gte('starts_at', fromDayIso)
       .order('starts_at', { ascending: true })
       .limit(limit)
@@ -252,20 +265,24 @@ export async function listSpaceCalendarEvents(
     // necessary is gone with it — the value is parameterised by PostgREST instead.
     const hostedQ = admin
       .from('events')
-      .select(`${CALENDAR_COLS}, status, visibility, space_id`)
+      .select(`${CALENDAR_COLS}, status, visibility, removed_at, is_demo, space_id`)
       .eq('host_space_id', sid)
       .eq('status', 'published')
       .in('visibility', ['public', 'unlisted'])
+      .is('removed_at', null)
+      .eq('is_demo', false)
       .gte('starts_at', fromDayIso)
       .order('starts_at', { ascending: true })
       .limit(limit)
     const sharedQ = awayIds.length
       ? admin
           .from('events')
-          .select(`${CALENDAR_COLS}, status, visibility, space_id`)
+          .select(`${CALENDAR_COLS}, status, visibility, removed_at, is_demo, space_id`)
           .in('id', awayIds)
           .eq('status', 'published')
           .in('visibility', ['public', 'unlisted'])
+          .is('removed_at', null)
+          .eq('is_demo', false)
           .gte('starts_at', fromDayIso)
           .order('starts_at', { ascending: true })
           .limit(limit)
@@ -321,6 +338,8 @@ export async function spaceHasPublicUpcomingEvents(spaceId: string | null | unde
       .eq('status', 'published')
       .eq('is_cancelled', false)
       .in('visibility', ['public', 'unlisted'])
+      .is('removed_at', null)
+      .eq('is_demo', false)
       .gte('starts_at', fromDayIso)
       .limit(1)
     if (!error && Array.isArray(owned) && owned.length > 0) return true
@@ -349,6 +368,8 @@ export async function spaceHasPublicUpcomingEvents(spaceId: string | null | unde
       .eq('status', 'published')
       .eq('is_cancelled', false)
       .in('visibility', ['public', 'unlisted'])
+      .is('removed_at', null)
+      .eq('is_demo', false)
       .gte('starts_at', fromDayIso)
     if (cErr || !Array.isArray(candidates) || candidates.length === 0) return false
     const rows = candidates as Array<{ id: string; space_id?: string | null }>

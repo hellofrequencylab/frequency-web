@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 
 // Phase 0 ownership contract for EVENTS (ENTITY-SPACES-BUILD Epic 0.3 / §4.3). Locks two things:
 //   1. STAMP — a new event defaults its space_id to the ROOT space (the canary).
@@ -111,6 +111,8 @@ function row(over: Partial<SpaceCalendarEventRow>): SpaceCalendarEventRow {
     is_cancelled: over.is_cancelled ?? false,
     status: over.status ?? 'published',
     visibility: over.visibility ?? 'public',
+    removed_at: over.removed_at ?? null,
+    is_demo: over.is_demo ?? null,
   }
 }
 
@@ -125,6 +127,14 @@ describe('passesCalendarGate (per-space feed: public + unlisted, never leaks)', 
     expect(passesCalendarGate(row({ status: 'draft' }), FROM)).toBe(false)
     expect(passesCalendarGate(row({ is_cancelled: true }), FROM)).toBe(false)
     expect(passesCalendarGate(row({ starts_at: '2026-06-01T19:00:00Z' }), FROM)).toBe(false)
+  })
+  it('rejects staff-removed and demo rows, WITHOUT relying on is_cancelled (20270126000000)', () => {
+    // removeEvent happens to set is_cancelled today, which masked this hole. The gate must hold
+    // on removed_at alone, for the next removal path that does not extend the courtesy.
+    expect(passesCalendarGate(row({ removed_at: '2026-07-01T00:00:00Z' }), FROM)).toBe(false)
+    expect(passesCalendarGate(row({ is_demo: true }), FROM)).toBe(false)
+    // Rows fetched without the columns (undefined) still pass — same default direction as status.
+    expect(passesCalendarGate(row({}), FROM)).toBe(true)
   })
 })
 
@@ -219,10 +229,13 @@ describe('space calendar membership (ADR-905, narrowing ADR-898): the drift guar
   // live database — AND they pin the absence of the owner axes, because re-adding either one is
   // silent: it breaks no test, throws nothing, and simply starts leaking other Spaces' events.
   const storeSrc = readFileSync('lib/events/store.ts', 'utf8')
-  const feedSql = readFileSync(
-    'supabase/migrations/20270125000000_space_calendar_owner_identity_removed.sql',
-    'utf8',
-  )
+  // The guard must read the migration that LAST recreated the function — an older file passing its
+  // assertions proves nothing about what production runs. Glob rather than hardcode, so the next
+  // recreation is covered automatically (the workflow audit called out the hardcoded-path trap).
+  const feedMigrations = readdirSync('supabase/migrations')
+    .filter((f) => /space_calendar/.test(f))
+    .sort()
+  const feedSql = readFileSync(`supabase/migrations/${feedMigrations[feedMigrations.length - 1]}`, 'utf8')
   // Both files EXPLAIN the removed axes by naming them — the header comments, and the RPC's own
   // `comment on function` docstring, which is a string literal rather than a comment. So assertions
   // about ABSENCE run against executable code only: the `$$ … $$` body for SQL, comment-stripped
@@ -288,6 +301,12 @@ describe('space calendar membership (ADR-905, narrowing ADR-898): the drift guar
     expect(feedCode.match(/e\.visibility in \('public', 'unlisted'\)/g)?.length).toBe(2)
     expect(feedCode.match(/coalesce\(e\.status, 'published'\) = 'published'/g)?.length).toBe(2)
     expect(feedCode.match(/e\.is_cancelled = false/g)?.length).toBe(2)
+    // Added 20270126000000: staff removal and demo seeding, gated independently of is_cancelled.
+    expect(feedCode.match(/e\.removed_at is null/g)?.length).toBe(2)
+    expect(feedCode.match(/e\.is_demo = false/g)?.length).toBe(2)
+    // And the app-side twin carries the same two, in the pure gate every reader funnels through.
+    expect(storeCode).toContain('!e.removed_at')
+    expect(storeCode).toContain('e.is_demo !== true')
     // The TARGET space is gated network + active in-function (the walling contract).
     expect(feedCode).toContain("s.visibility = 'network'")
     expect(feedCode).toContain("s.status = 'active'")
