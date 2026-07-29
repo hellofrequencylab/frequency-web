@@ -137,9 +137,18 @@ Run these in DevTools on the failing page. Each one splits the problem.
 2. **Console: `document.getElementById('frequency-google-maps-js')`.** `null` means Google was
    never selected, so the browsable key is not in the bundle → step 3. An element means Google
    was selected and failed at runtime → check the Network tab for `maps/api/js` and `main.js`.
-3. **Sources → `Ctrl/Cmd+Shift+F` for the literal `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY`.** A
-   **hit proves the var was absent when Vercel ran `next build`** (Turbopack leaves the read in
-   place against an empty process shim). No hit means it was substituted.
+3. **Sources → `Ctrl/Cmd+Shift+F` for `env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY`.** Search the
+   string **with the `env.` prefix**. A **hit proves the var was absent when Vercel ran
+   `next build`**: Turbopack leaves the read in place as
+   `(…env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY??"").trim()` against an empty process shim. No
+   hit means it was substituted, and the chunk instead contains `"AIza…".trim()`.
+
+   🔴 **Do not search the bare name.** `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY` on its own hits in
+   **both** cases, because the loader ships its own rejection message
+   `'NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY is not set'` as a string literal. Verified by building
+   this repo twice, once with a dummy key and once without (ADR-904): with the key set the bare
+   name still appeared in 1 chunk and `env.`-prefixed in 0; without it, 6 and 5 respectively.
+   Only the `env.`-prefixed form discriminates.
 4. **Network, filter `pbf`.** Zero requests on a MapLibre map means the web worker never
    started. Requests returning 200 while the map stays blank means the fault is below the
    tiles: WebGL, then glyphs, then sprite.
