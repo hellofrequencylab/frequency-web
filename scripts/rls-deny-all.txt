@@ -113,3 +113,4 @@ space_collaborations
 event_space_shares
 space_venue_holds
 space_follower_event_reminders_sent
+claim_tokens

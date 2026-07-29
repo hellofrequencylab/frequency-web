@@ -202,6 +202,7 @@ export function LiveProfileGrid({
           slug={spaceSlug}
           initialPublished={profilePublished}
           hasUnpublishedChanges={hasUnpublishedChanges}
+          editable={editable}
         />
       )}
     </>
