@@ -7,6 +7,18 @@
 // (never neighborhood/latitude/longitude), posts expose only a safe author
 // shape. This is the ONLY data source the anon /discover pages use.
 //
+// The two event RPCs also carry the VISIBILITY gate now, and they carry
+// different ones on purpose (ADR-903). Both are SECURITY DEFINER, so RLS on
+// `events` never runs inside them and their WHERE clauses are the whole gate:
+//   • getPublicEvents  → a LISTING. Upcoming, published, non-removed, non-demo,
+//     `visibility = 'public'` only, and never owned by a walled Space. Unlisted
+//     is a link, not a listing (ADR-202), so it is absent here by design.
+//   • getPublicEventBySlug → a LINK RESOLVER. Same gate except it admits
+//     'unlisted' too, because the slug IS the link that makes it readable, and
+//     it has no upcoming floor so a finished event's page still renders.
+// Before ADR-903 neither gated visibility at all, so both returned circle_only
+// and private events to anonymous callers.
+//
 // The server Supabase client is untyped (lib/supabase/server.ts is not
 // parametrised with Database), so .rpc()/.from() return loosely-typed data —
 // we cast to the explicit row shapes below.

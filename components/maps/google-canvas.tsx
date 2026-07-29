@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { loadGoogleMaps } from '@/lib/maps/google-loader'
+import { loadGoogleMaps, onGoogleMapsAuthFailure } from '@/lib/maps/google-loader'
 import { googleMapsMapId } from '@/lib/maps/provider'
 import { buildPopupContent } from './popup-content'
 import type {
@@ -79,6 +79,21 @@ export default function GoogleCanvas({
   useEffect(() => {
     onErrorRef.current = onProviderError
   }, [onProviderError])
+
+  // 🔴 THE FAILURE THAT NEVER REJECTS. A key with billing not activated, a denied referrer,
+  // or an API that was never enabled still returns HTTP 200 and still lets `new maps.Map()`
+  // succeed — Google just paints its own grey "can't load Google Maps correctly" watermark
+  // and calls `window.gm_authFailure`. The loader promise resolves, so `.catch` below never
+  // runs. Without this subscription the seam would leave a member looking at Google's error
+  // tile, which is strictly worse than the MapLibre map we already ship.
+  useEffect(() => {
+    return onGoogleMapsAuthFailure(() => {
+      setFailed(true)
+      onErrorRef.current?.(
+        'Google Maps rejected the browsable key (billing not activated, referrer denied, API not enabled, or bad key)',
+      )
+    })
+  }, [])
 
   // The latest first pin, for the async gap below. Unlike MapLibre, this canvas builds its map
   // only after the loader script resolves, so the parent can move the pin while it is in
@@ -217,11 +232,13 @@ export default function GoogleCanvas({
           )
         }
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (cancelled) return
-        // Bad key, referrer denied, quota, offline, blocked — degrade to MapLibre in place.
+        // No key, script blocked, no API surface, key already rejected, watchdog timeout —
+        // degrade to MapLibre in place, CARRYING THE REASON. Swallowing it here is what kept
+        // a deterministic loader bug invisible for three rounds; the seam logs it.
         setFailed(true)
-        onErrorRef.current?.()
+        onErrorRef.current?.(error instanceof Error ? error.message : String(error))
       })
 
     return () => {

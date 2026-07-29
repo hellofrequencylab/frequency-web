@@ -16106,6 +16106,102 @@ Two facts had to be separated before anything could be built.
   one-file change. That decision touches `pnpm-lock.yaml` and belongs to whoever can run a
   real install.
 
+> **⚠️ Correction (2026-07-29) — this ADR's diagnosis failed its own test.** Point 2 above
+> asserts "the blank basemap **is** a MapLibre 6 regression, not a CSP block and not a missing
+> key." `maplibre-gl` was pinned back to `^5.24.0` (e64c8ba) and **the blank basemap
+> persisted**, so that claim did not survive contact. It is left in place, not quietly edited,
+> because an ADR that records a wrong call is worth ten that get tidied up. What actually kept
+> production on the fallback is **ADR-904**: the Google loader settled on the script tag's
+> `load` event, which fires before Google's real API script has run, so it rejected on every
+> first mount and the Google path never rendered a single tile. The `scope-maps.md` this ADR
+> cites for "full evidence" was never checked in and no longer exists; the durable map
+> reference is [`MAPS.md`](MAPS.md). One more correction: this ADR says the v6 worker URL
+> resolves to `''` **or** a 404 — under Turbopack `import.meta.url` is always an `https:` URL,
+> so it is always a **404**, never `''`. Grep the Network tab for `maplibre-gl-worker.mjs`.
+
+---
+
+## ADR-904 — The Google Maps loader settles on Google's `callback`, never on the script tag's `load` (2026-07-29)
+
+**Status:** Accepted · corroborated by `lib/maps/google-loader.ts` +
+`lib/maps/google-loader.test.ts`
+
+**Context.** With a browsable key set in Vercel across all environments and redeployed, a
+production event page still rendered the MapLibre fallback: OpenFreeMap attribution, blank
+cream basemap, our own pin and zoom controls, and **no console error at all**. Three separate
+theories were chased (missing key, CSP block, MapLibre 6 worker regression) because nothing in
+the stack said anything when it failed.
+
+The cause is in the loader, and it is deterministic rather than a race.
+`https://maps.googleapis.com/maps/api/js` does **not** return the Maps API. It returns a ~13 KB
+bootstrap that defines only `google.maps.Load` / `.modules` / `.__gjsload__` and then appends a
+**second** script (`…/maps-api-v3/api/js/<ver>/main.js`), which is what attaches `Map`,
+`Marker`, `InfoWindow`, `LatLngBounds`, `Circle`, `SymbolPath` and `importLibrary`. A
+script-inserted tag is async, so our tag's `load` event fires at the end of the bootstrap's
+synchronous run — **strictly before** main.js executes. The loader settled on that `load`
+event, found an empty namespace, and rejected with "loaded without the expected API surface"
+**100% of the time**. `google-canvas.tsx` caught it in a bare `.catch(() => …)` that discarded
+the message, the seam re-rendered MapLibre, and the failure was indistinguishable from "no key
+was ever set". The Google path had never rendered a tile in production.
+
+Two further facts, both verified against Google's served bytes:
+
+1. **`libraries=core,maps` does not withhold `Marker`.** It ships in the legacy namespace
+   unconditionally, so the readiness check is sound. Do not "fix" the `libraries` param.
+2. **An auth failure never rejects.** A key with billing not activated, a denied referrer, a
+   disabled API or a bad key all return HTTP 200, let `new maps.Map()` succeed, and report
+   themselves **only** through `window.gm_authFailure` — which was wired nowhere in the repo.
+   So fixing the timing bug alone would have traded a working fallback for a dead grey Google
+   error tile on the owner's free-trial account.
+
+**Decision.**
+
+- **Resolve on `&callback=`, the documented handshake, and never on `load`.** The loader
+  installs one global (`__frequencyGoogleMapsReady`), passes its name alongside the
+  `loading=async` flag that exists precisely to pair with it, and fans the callback out to
+  every waiting promise. The drift guard asserts `addEventListener('load'` appears nowhere in
+  the loader.
+- **A watchdog is part of the fail-safe contract.** A script that is blocked, hangs, or loads
+  without ever calling back now rejects after 10s instead of leaving an empty `<div>` forever.
+- **`window.gm_authFailure` is wired, sticky, and fans out.** It marks the key rejected so no
+  later mount retries, notifies every mounted canvas so they fall back in place, and emits one
+  diagnostic naming the three things to check (billing activated, pathful HTTP-referrer
+  patterns, Maps JavaScript API *enabled* and not merely allowed on the key).
+- **A second mount joins the shared callback, it does not wait on a spent `load` event.**
+  Previously the second `<MapCanvas>` on a page could hang forever with no rejection and
+  therefore no fallback.
+- **Failures carry their reason.** `onProviderError` widened from `() => void` to
+  `(reason: string) => void`; the six distinct rejection strings now reach the log.
+- **Every silent path emits one structured, deduped line** (`lib/maps/diagnostics.ts`):
+  provider fallback, Google auth failure, MapLibre `error`, and "no tile ever arrived". Each
+  line names the build SHA, so *"did the fix deploy?"* is answerable from a screenshot. It
+  never prints the key — `keyPresent` is a boolean.
+- **`GET /api/status` publishes build identity** (`commit`, `ref`, `env`). The route is already
+  `force-static`, so those values are frozen into the deployment that serves them. A redeploy
+  rebuilds the deployment you clicked, not `main`, so "I merged it and redeployed" was never
+  evidence; one `curl` now settles it.
+
+**Provider-selection semantics are UNCHANGED**: Google when a browsable key is set, MapLibre
+otherwise, MapLibre on any Google failure.
+
+**Consequences.**
+
+- **CSP needed no change.** The Google host set was audited host by host and is complete;
+  `next.config.ts` now records that audit so the next person does not re-derive it. It also
+  records the trap for the ADR-170 nonce follow-up: Google's bootstrap copies
+  `document.querySelector('script[nonce]').nonce` onto the main.js tag it appends, so a
+  nonce-based `script-src` requires the nonce on our injected tag or the map dies with nothing
+  to fall back on.
+- `NEXT_PUBLIC_MAPLIBRE_WORKER_URL` is documented as **v6-only, leave empty**. `.env.example`
+  previously told an operator to point it at a `maplibre-gl-worker.mjs` this repo does not
+  ship — which on v5 reproduces the exact blank basemap it was written to cure, permanently.
+- The `import * as maplibregl` form is **kept**, not reverted to a default import: v5.24.0's
+  `dist/maplibre-gl.d.ts` has no `export default`, so the default form is a compile error
+  today. `components/maps/maplibre-interop.test.ts` is now the one map test that actually
+  imports the library, because every other one is a source-text grep and a total interop break
+  would pass all of them.
+- Full reference and browser triage checklist: [`MAPS.md`](MAPS.md).
+
 ---
 
 ## ADR-902 — The event detail layout is a template, not a page (2026-07-28)
@@ -16169,3 +16265,17 @@ not a standardisation.
   string-equality assertion in the drift guard fails if either side changes.
 - *Header order is now a template decision.* A future event surface wanting a different order has to
   argue with the template instead of writing its own JSX. That is the point, and it is the cost.
+
+## ADR-903 — A listing is public-only; a link resolver honours the link (2026-07-29)
+
+**Status.** Accepted. Narrows two anon `security definer` reads; supersedes the gate written in `20240211000000_public_discover_reads.sql` and re-adopted verbatim by `20260612020000_public_events_price.sql`. Closes the item ADR-899 deferred in its own Alternatives block. Extends ADR-202 (unlisted means link-only) and applies ADR-899's closing rule. Nothing here widens any read. Migration: `20270124000000_public_events_narrow.sql`.
+
+**Context.** `public.public_events` (the /discover listings and every marketing splash strip) and `public.public_event_by_slug` (the /discover/events/`<slug>` twin) are both `security definer` and both granted to `anon`, so RLS on `events` does not run inside them and their `WHERE` clauses are 100% of the gate. They gated `e.is_cancelled = false`, plus `e.starts_at >= now()` on the listing, and nothing else. No visibility gate at all — so the title, description, city, dates and ticket price of `circle_only` and `private` events were served to anonymous callers. That is a strictly larger leak than the one ADR-899 closed on the organizer RPCs, which at least carried `visibility in ('public','unlisted')`. Two of the four missing gates were added to `events` after these bodies were written: `status` and `removed_at` by `20260613130000_poster_events.sql`, one day later, and `space_id` by `20260711020000_object_space_id.sql`, about a month later. The other two were inherited rather than stale — `visibility` (`20260609230000`) and `is_demo` (`20260603000001`) already existed, and `20260612020000` copied a 2024 body forward in order to add one column, its own header saying the bodies are "verbatim from 20240211000000". Three parties in the repo had already routed around this instead of fixing it: `lib/events/series-seo.ts` writes its own `visibility = 'public'` for the sitemap and names this bug class in its header, `app/discover/events/_data.ts` reads `events` directly under RLS, and `app/sitemap.ts` documents the RPC as advertising "unlisted, draft and moderator-removed events". ADR-899's own text left this open: "those have no visibility, status, `removed_at` or `is_demo` gate at all... a strictly larger leak that needs its own ADR and its own PR, and it is still open."
+
+**Decision.** Four gates applied identically to both functions — `status = 'published'`, `removed_at is null`, `is_demo = false`, and the Space wall (`space_id is null` or the owning Space is `network` + `active`, standing in for the RESTRICTIVE `can_view_space_content` policy from `20260711090000` that a definer bypasses — and standing in *more strictly* than the helper itself, which admits any Space that is merely not `private` and never inspects `spaces.status`, so events owned by an `unlisted` Space (the tier `20261142000000` added) or by a `suspended`/`archived` one now drop off these surfaces too; both are narrowings, and both match the wall ADR-899 shipped one day earlier so the sibling anon event surfaces cannot drift apart) — plus a visibility gate that **deliberately differs by surface**. `public_events` is a LISTING: `visibility = 'public'`, singular, because unlisted is link-only (ADR-202) and this backs crawlable, enumerated pages. `public_event_by_slug` is a LINK RESOLVER: `visibility in ('public','unlisted')`, because the caller already holds the slug and that slug *is* the link ADR-202 makes unlisted readable by. ADR-899's closing rule decides this rather than contradicting it: the rule says re-apply every gate the bypassed RLS would have applied, and the bypassed RLS makes public and unlisted alike readable by anyone. The canonical in-app twin `app/(main)/events/[slug]/page.tsx` already re-applies exactly that rule by hand under the admin client. `starts_at >= now()` stays on the listing only, so a finished event's page keeps rendering for `hasEventEnded` and `suppressPastNoindex`. `create or replace`, not `drop` + `create`: all ten OUT columns and both argument names keep identical names, order and types, so 42P13 cannot fire, the anon grant is never rewritten, and `lib/database.types.ts` needs no regeneration. Every new predicate goes in the outer `WHERE` — ADR-899's ON-clause trick does **not** transfer, because there the driving table was `profiles` and here it is `events`, so an `e.` predicate parked in the circles `ON` clause would filter nothing and only blank the circle columns. What must not change is the join staying `LEFT`, or every standalone event (ADR-254) disappears. Both properties are pinned by `test/contract/public-events-rpc-gate.test.ts`.
+
+**Alternatives considered.** *One gate for both functions, `visibility = 'public'`* (rejected — it would 404 /discover/events/`<slug>` for an unlisted event while /events/`<slug>`, the URL that page canonicalises to, kept rendering: a regression dressed as a narrowing. Crawl safety does not require it either, since `app/sitemap.ts` emits /events/`<slug>` and never the discover twin, and with the listing narrowed no on-site link reaches an unlisted discover detail page). *One gate for both, `in ('public','unlisted')`* (rejected — that is the exact crawl leak ADR-899 closed, and `public_calendar_feed` in `20261196000000` had already excluded unlisted with a comment saying why). *Copy ADR-899's ON-clause placement* (rejected as a silent no-op — the join direction is inverted here, so it would ship a security fix that secures nothing). *Add `starts_at >= now()` to the resolver for symmetry* (rejected — the detail page's ended state and its past-event robots handling both need the row). *`drop` + `create`* (rejected — OUT columns unchanged, so replace is legal and is the smaller diff on a security fix). *Leave `is_demo` off the resolver* (rejected — no demo event seeding with public visibility exists in `lib/demo/`, and `demo_mode` has defaulted off since `20260817000000`, so the expected row delta is ~0; the cost of the gate is nil and the cost of omitting it is fictional structured data). *Fix the callers instead of the RPC* (rejected — that is what the three route-arounds already did, and it left the definer wide open for every future caller).
+
+**Consequences.** The loud one: `events.visibility` is `not null default 'circle_only'` (`20260609230000`) and `coerceVisibilityForScope` steps a mis-scoped event down to `'unlisted'`, never to `'public'`, so the upcoming corpus may skew heavily non-public and narrowing the listing **may empty /discover/events and flatten the /discover/places city buckets**. This could not be measured here — no database is reachable from the build environment — so a `select visibility, status, count(*) from public.events where is_cancelled = false and starts_at >= now() group by 1,2` belongs in the PR before merge. It fails safe: every affected surface has a designed empty state, `eventListSchema([])` emits a valid zero-item `ItemList`, and no page 404s that did not already. It is nonetheless a visible product change and belongs in the PR description, not only here. Availability holds elsewhere by construction: /discover/places/[citySlug] and its sitemap URLs both derive from the same `loadCityBuckets`, so they narrow in lockstep and no soft-404 is manufactured; /discover/cities/[citySlug] gates its 404 on `getDensitySignal`, decoupled from the RPC; and /discover/events/[slug] 404-ing for a `circle_only` slug is the fix, not a side effect. The six marketing splash pages take three events from `lib/page-editor/live-data.ts` and may show a shorter strip; each call site is already `.catch()`-wrapped. No caller code changes — the comment corrections in `lib/discover.ts`, `app/sitemap.ts`, `lib/events/series-seo.ts` and `app/discover/events/_data.ts` are the whole app-side diff, and `lib/events/series-seo.ts` is unchanged behaviourally because it never called these RPCs. The follow-up ADR-899 recommended is now overdue: `check-rls.mjs` and `check-authz-guards.mjs` do not read function bodies, so nothing machine-checks this class across the schema, and a `check-public-rpc-gates.mjs` asserting these predicates on every `security definer` function granted to `anon` would have caught both ADRs' bugs in one pass. Until it exists, the per-migration contract test is the only guard, and it pins one file — a future migration redefining these functions would not fail it, which is precisely how `20260612020000` re-adopted a 2024 gate without anyone noticing.
+
+The durable rule: **a listing is public-only and a link resolver honours the link — so two RPCs over the same table get two different visibility gates, chosen by what the surface DOES, and the gate placement follows the join's driving table, never a sibling migration's habit.**

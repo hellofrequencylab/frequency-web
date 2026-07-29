@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
+import { mapDiag } from '@/lib/maps/diagnostics'
 import { mapProvider } from '@/lib/maps/provider'
 import type { MapCanvasProps } from './types'
 
@@ -27,7 +28,22 @@ export function MapCanvas(props: MapCanvasProps) {
   const useGoogle = mapProvider() === 'google' && !googleUnavailable
 
   if (useGoogle) {
-    return <GoogleCanvas {...props} onProviderError={() => setGoogleUnavailable(true)} />
+    return (
+      <GoogleCanvas
+        {...props}
+        onProviderError={(reason) => {
+          // THE seam event. One line, naming the reason and the build it came from, so the
+          // next "why is this map wrong?" starts at the cause instead of at zero. Deduped in
+          // lib/maps/diagnostics.ts, so eight maps on a page produce one line.
+          mapDiag('maps.provider_fallback', {
+            from: 'google',
+            to: 'maplibre',
+            reason,
+          })
+          setGoogleUnavailable(true)
+        }}
+      />
+    )
   }
   return <MapLibreCanvas {...props} />
 }

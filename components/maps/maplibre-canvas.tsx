@@ -1,9 +1,13 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-// maplibre-gl 6 is ESM-only with named exports; the namespace import keeps the maplibregl.* call sites unchanged.
+// Namespace import, NOT a default import: we are pinned to maplibre-gl 5, whose UMD dist
+// declares no `export default` in its .d.ts (the default form is a compile error). The form
+// was introduced for v6 and kept through the v5 pin; components/maps/maplibre-interop.test.ts
+// is the one test that imports the library for real and would catch it drifting again.
 import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { mapDiag } from '@/lib/maps/diagnostics'
 import { MAPLIBRE_STYLE, MAPLIBRE_WORKER_URL, WARM_FILTER } from '@/lib/maps/provider'
 import { buildPopupContent } from './popup-content'
 import type { MapImplProps, MapPinTone } from './types'
@@ -15,11 +19,20 @@ import type { MapImplProps, MapPinTone } from './types'
 // Loaded only through <MapCanvas>, which mounts it via next/dynamic({ssr:false}) — maplibre
 // must never run on the server.
 
-// MapLibre 6 externalised its web worker and resolves it from `import.meta.url` via a
-// template literal, which no bundler can statically emit; under Turbopack the worker never
-// starts and the vector tiles never paint. Setting `config.WORKER_URL` at a self-hosted copy
-// repairs that. Guarded by a feature check so this is an inert no-op on v5 (which inlines
-// its worker) and when the env var is unset.
+// ESCAPE HATCH FOR MAPLIBRE 6 ONLY. WE ARE ON 5, SO THIS MUST STAY UNSET.
+//
+// v6 externalised its web worker and resolves it from `import.meta.url` via a template
+// literal that no bundler can statically emit, so under Turbopack the worker URL 404s, the
+// worker never starts, and the vector tiles never paint. Pointing `config.WORKER_URL` at a
+// self-hosted copy repairs that WITHOUT a dependency change.
+//
+// ⚠️ It is inert on v5 only because the var is EMPTY, not because the feature check fails —
+// v5 does export `config` (dist/maplibre-gl.d.ts declares it), and its UMD intro already
+// calls `setWorkerUrl(URL.createObjectURL(new Blob([…])))` at module-eval time, so
+// `config.WORKER_URL` is truthy and the guard below declines to overwrite it. Setting this
+// var on v5 therefore does nothing at best and, if it ever pointed at a missing file, would
+// reproduce the exact blank-cream-basemap symptom it was written to cure. `mapDiag` reports
+// its value on failure precisely so that footgun names itself.
 if (MAPLIBRE_WORKER_URL) {
   const config = (maplibregl as unknown as { config?: { WORKER_URL?: string } }).config
   if (config && !config.WORKER_URL) config.WORKER_URL = MAPLIBRE_WORKER_URL
@@ -29,6 +42,10 @@ const TONE_VAR: Record<MapPinTone, string> = {
   primary: '--color-primary',
   secondary: '--color-info',
 }
+
+/** How long a map may show zero tiles before that is worth one line in the console. Long
+ *  enough that a cold cache on a slow phone is not reported as a failure. */
+const TILE_WATCHDOG_MS = 8_000
 
 /** Resolve a DAWN token to its computed colour. Map DOM sits outside Tailwind, so markers
  *  and paint layers read the custom property directly instead of hardcoding a value. */
@@ -104,6 +121,52 @@ export default function MapLibreCanvas({
     if (interactive) {
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
     }
+
+    // ── Diagnostics ─────────────────────────────────────────────────────────────
+    // MapLibre routes EVERY style, sprite, glyph, worker and tile failure into this one
+    // event. With no subscriber it only console.errors from deep inside the library, which is
+    // why a blank basemap has never once told us which request failed. One line per distinct
+    // (source, status) pair, so forty dead tiles do not become forty lines.
+    map.on('error', (e) => {
+      const detail = e as unknown as {
+        error?: { message?: string; status?: number; url?: string }
+        sourceId?: string
+      }
+      const sourceId = detail.sourceId ?? null
+      const status = detail.error?.status ?? null
+      mapDiag(
+        'maps.maplibre_error',
+        {
+          style: MAPLIBRE_STYLE,
+          sourceId,
+          status,
+          url: detail.error?.url ?? null,
+          message: detail.error?.message ?? 'unknown',
+          workerUrl: MAPLIBRE_WORKER_URL || null,
+        },
+        `maps.maplibre_error:${sourceId}:${status}`,
+      )
+    })
+
+    // THE BLANK-BASEMAP SIGNATURE, which had no signal at all until now. Vector tiles are
+    // fetched AND decoded inside the web worker, so a worker that never starts looks exactly
+    // like a healthy map: the style JSON parses on the main thread, the background layer
+    // paints, the attribution renders, and the DOM pin and +/- controls appear. Nothing is
+    // broken except that no tile ever arrives. So count tiles, and if none has landed by the
+    // time a slow phone would have finished, say so once.
+    let tiles = 0
+    map.on('sourcedata', (e) => {
+      if (e.tile) tiles++
+    })
+    const tileWatchdog = setTimeout(() => {
+      if (tiles > 0) return
+      mapDiag('maps.no_tiles', {
+        style: MAPLIBRE_STYLE,
+        workerUrl: MAPLIBRE_WORKER_URL || null,
+        styleLoaded: map.isStyleLoaded(),
+        fix: 'No vector tile reached the canvas. Check the Network tab for .pbf requests: none at all means the MapLibre web worker never started (look for a 404 on maplibre-gl-worker.mjs, or a NEXT_PUBLIC_MAPLIBRE_WORKER_URL pointing at a file that does not exist); requests that are blocked mean the tile host is missing from connect-src in next.config.ts.',
+      })
+    }, TILE_WATCHDOG_MS)
 
     // ── Pins ────────────────────────────────────────────────────────────────────
     // Added SYNCHRONOUSLY, not on 'load': a marker is DOM, not a style layer, so it needs
@@ -185,6 +248,7 @@ export default function MapLibreCanvas({
     }
 
     return () => {
+      clearTimeout(tileWatchdog)
       map.remove()
       mapRef.current = null
       pinRef.current = null

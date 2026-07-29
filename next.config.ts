@@ -47,6 +47,23 @@ const csp = [
   'report-uri /api/csp-report', // keep reporting even while enforcing — catch any miss
 ].join('; ')
 
+// 🔴 THE GOOGLE MAPS HOST SET IS COMPLETE — audited host by host, NO directive change needed.
+// Recorded here because "CSP must be blocking the tiles" is the most natural guess when a
+// keyed map falls back to MapLibre, and it cost real time. The Maps JS API pulls
+// bootstrap + main.js + util.js + map.js + onion.js + controls.js, all from
+// maps.googleapis.com (`script-src` ✅); its raster and vector tile images are covered by
+// `img-src … https:` ✅; its /maps/vt XHRs and its own /maps/api/mapsjs/gen_204?csp_test=true
+// probe go to maps.googleapis.com (`connect-src` ✅); it injects a Roboto stylesheet from
+// fonts.googleapis.com (`style-src` ✅) whose files come from fonts.gstatic.com
+// (`font-src` ✅). It creates no iframe, so `frame-src` is not involved, and it calls neither
+// `eval()` nor `new Function()`, so production's lack of `'unsafe-eval'` is fine.
+//
+// ⚠️ FOR THE ADR-170 NONCE FOLLOW-UP: a nonce-based script-src WILL break this loader. The
+// Google bootstrap propagates the nonce itself by copying
+// `document.querySelector('script[nonce]').nonce` onto the main.js tag it appends, so the
+// nonce must be on our injected tag in lib/maps/google-loader.ts or the second script is
+// blocked and the map dies with no rejection to fall back on.
+
 // Baseline security headers applied to every route. X-Frame-Options is SAMEORIGIN (not
 // DENY) so the Puck editor's same-origin preview iframe keeps working while cross-origin
 // clickjacking is still blocked. CSP is now ENFORCED (graduated from report-only).

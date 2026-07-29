@@ -227,9 +227,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // out of a GLOBAL 200-row cap — so a single daily series could crowd real one-offs out of the
       // sitemap entirely. Now a series contributes its page plus the next `indexedOccurrences`
       // dates; the rest stay live and reachable but go noindex,follow on the page itself. The reader
-      // also applies the full public gate, which the public_events RPC never did (it filters only
-      // is_cancelled + starts_at, so unlisted, draft and moderator-removed events have been
-      // advertised here since it shipped).
+      // also applies the full public gate directly, which is why it exists: for its first year the
+      // public_events RPC gated nothing but is_cancelled + starts_at, so unlisted, draft and
+      // moderator-removed events were advertised here. ADR-903 closed that at the RPC, but this
+      // reader stays a direct table read — it needs the recurrence columns the RPC never projected.
       listSitemapEventEntries({ occurrences: indexedOccurrences }),
       listPublicJourneys(),
       getOrganizerRoutes(now),
