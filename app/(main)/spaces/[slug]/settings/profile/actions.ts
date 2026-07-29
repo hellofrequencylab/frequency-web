@@ -22,6 +22,7 @@ import { getSpaceById, getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { profileBlockById, type ProfileBlockId } from '@/lib/spaces/profile-blocks'
 import { sanitizeEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
+import { layoutRendersSame } from '@/lib/entity-blocks/layout-equal'
 import { sanitizeBlockContent } from '@/lib/entity-blocks/block-content'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { getIntakeBySpaceId } from '@/lib/importer/store'
@@ -108,6 +109,21 @@ export async function saveSpaceProfileLayout(
   if (node) current[target] = node
   else delete current[target]
 
+  // 🔴 A DRAFT THAT MATCHES THE PUBLISHED PAGE IS NOT A DRAFT. Autosave writes on every edit and
+  // only Publish ever deleted the key, so an owner who dragged a block and then hit Undo kept a
+  // draft node forever. That is not cosmetic: `hasUnpublishedChanges` arms a beforeunload prompt
+  // and a window.confirm on EVERY admin-rail dismissal, so one edit-then-undo left them confirming
+  // a dialog on their own Space with no exit but publishing a change they had already rejected.
+  //
+  // Compared on what RENDERS (layoutRendersSame), not on stored bytes: a Space that never published
+  // has no `profileLayout` at all, and hiding a block leaves its id in both `rows.cells` and
+  // `hidden` where the seed path strips it — two encodings of one arrangement that could never
+  // match as bytes. Drafts only; a write to the PUBLISHED node is the owner's explicit act and is
+  // never second-guessed.
+  if (target === 'profileLayoutDraft' && layoutRendersSame(node, current.profileLayout ?? null, 'space')) {
+    delete current.profileLayoutDraft
+  }
+
   if (!(await updateSpacePreferences(space.id, current))) {
     return fail('Could not save your layout. Try again.')
   }
@@ -182,6 +198,45 @@ export async function publishSpaceProfileLayout(slug: string): Promise<{ error?:
 
   if (!(await updateSpacePreferences(space.id, current))) {
     return { error: 'Could not publish your page. Try again.' }
+  }
+
+  revalidatePath(`/spaces/${space.slug}`)
+  revalidatePath(`/spaces/${space.slug}/profile-preview`)
+  return {}
+}
+
+/**
+ * THROW THE DRAFT AWAY: delete `preferences.profileLayoutDraft` so the editor resumes from the
+ * PUBLISHED layout and the "unpublished changes" state clears. Owner/admin/editor-gated server-side
+ * (fail-closed, mirroring publishSpaceProfileLayout) and non-destructive to every other preferences
+ * key, including `profileLayout` itself — discarding a draft can never touch the live page.
+ *
+ * 🔴 WHY THIS HAD TO EXIST. Publish was the ONLY thing that ever removed the draft key, so the
+ * draft system had a way in and no way out: an owner who tried an arrangement and decided against
+ * it was left permanently flagged as having unpublished work, which arms a beforeunload prompt and
+ * a confirm on every rail dismissal. Auto-clearing an identical draft (saveSpaceProfileLayout)
+ * covers the undo case; this covers "I changed my mind" and any residual the render comparison is
+ * deliberately conservative about.
+ */
+export async function discardSpaceProfileDraft(slug: string): Promise<{ error?: string }> {
+  const caller = await getCallerProfile()
+  const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
+  if (!space) return { error: 'Space not found.' }
+
+  const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
+  if (!canManage) return { error: 'You do not have permission to edit this space.' }
+
+  const current =
+    space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
+      ? { ...(space.preferences as Record<string, unknown>) }
+      : {}
+
+  // Nothing to discard is a SUCCESS, not an error: the caller's goal (no draft pending) already holds.
+  if (!Object.prototype.hasOwnProperty.call(current, 'profileLayoutDraft')) return {}
+  delete current.profileLayoutDraft
+
+  if (!(await updateSpacePreferences(space.id, current))) {
+    return { error: 'Could not discard your draft. Try again.' }
   }
 
   revalidatePath(`/spaces/${space.slug}`)

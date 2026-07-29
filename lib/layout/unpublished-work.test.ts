@@ -5,6 +5,7 @@ import {
   setUnpublishedWork,
   subscribeUnpublishedWork,
   UNPUBLISHED_WARNING,
+  UNPUBLISHED_LEAVE_WARNING,
 } from './unpublished-work'
 
 // ── Warning an operator that their work is not live ───────────────────────────────────────
@@ -56,7 +57,7 @@ describe('both warnings are actually wired', () => {
   const fab = readFileSync('components/entity-blocks/space-publish-fab.tsx', 'utf8')
   const bar = readFileSync('components/layout/admin-bar/admin-bar.tsx', 'utf8')
 
-  it('EXIT THE PAGE: the publish bar registers beforeunload while work is pending', () => {
+  it('EXIT THE PAGE, HARD: the publish bar registers beforeunload while work is pending', () => {
     expect(fab).toContain("window.addEventListener('beforeunload'")
     // preventDefault + returnValue is all any modern browser honours; the custom string is ignored,
     // which is why the in-page copy has to carry the message too.
@@ -66,6 +67,33 @@ describe('both warnings are actually wired', () => {
     expect(fab).toContain('const unsavedOrUnpublished = saving || hasUnpublishedChanges')
     // And it must be removed again, or every later navigation prompts.
     expect(fab).toContain("window.removeEventListener('beforeunload'")
+  })
+
+  it('EXIT THE PAGE, SOFT: an in-app link click is guarded too', () => {
+    // 🔴 THE GAP THE FIRST FIX LEFT. `beforeunload` does NOT fire on an App Router client
+    // transition, and a click on the nav rail or a Space header tab is how an owner ACTUALLY leaves
+    // their page. So the guard written for "the draft sat unpublished for days" was silent on the
+    // majority path, and the test above passed while covering the minority one.
+    expect(fab).toContain("document.addEventListener('click', onClick, true)")
+    expect(fab).toContain("document.removeEventListener('click', onClick, true)")
+    // CAPTURE phase, or the router's own handler has already navigated.
+    expect(fab).toMatch(/addEventListener\('click', onClick, true\)/)
+    expect(fab).toContain('UNPUBLISHED_LEAVE_WARNING')
+
+    // It must NOT hijack the clicks that lose nothing. Each of these leaves the editor open.
+    expect(fab).toContain('e.metaKey || e.ctrlKey || e.shiftKey || e.altKey')  // new tab / new window
+    expect(fab).toContain("anchor.hasAttribute('download')")
+    expect(fab).toContain("anchor.target && anchor.target !== '_self'")
+    expect(fab).toContain('url.origin !== window.location.origin')            // leaving the app entirely
+    expect(fab).toContain('e.button !== 0')                                    // middle / right click
+  })
+
+  it('and the leave warning describes LEAVING, not closing', () => {
+    // The panel's warning ends "Close anyway?", which describes the wrong consequence on a click
+    // that navigates. Same fact, correct verb; both live in one module so they cannot drift.
+    expect(UNPUBLISHED_LEAVE_WARNING).toContain('Leave anyway?')
+    expect(UNPUBLISHED_LEAVE_WARNING).not.toContain('Close anyway?')
+    expect(UNPUBLISHED_LEAVE_WARNING).not.toContain('—')
   })
 
   it('CLOSE THE PANEL: EVERY dismissal path is guarded, not just the X button', () => {
@@ -78,8 +106,16 @@ describe('both warnings are actually wired', () => {
 
     // 2. 🔴 ESCAPE. The standard slide-over dismissal, and the likeliest way to lose a draft
     //    because it takes no aim and leaves no trace. It called setOpen(false) directly and
-    //    bypassed the guard entirely. Read through a ref so the [open] effect does not re-bind.
-    expect(bar).toContain('closeGuardedRef.current()')
+    //    bypassed the guard entirely.
+    //
+    //    Called DIRECTLY, not through a ref. The first fix mirrored closeGuarded into a ref and
+    //    assigned `ref.current` in the render body to hold the effect deps at [open]; that is the
+    //    react-hooks/refs "Cannot access refs during render" violation and it failed CI. The ref
+    //    bought nothing: closeGuarded is a useCallback over [setOpen], and a useState setter is
+    //    stable for the component's life, so the listener still binds once per open.
+    expect(bar).toContain("if (e.key === 'Escape') closeGuarded()")
+    expect(bar).toContain('}, [open, closeGuarded])')
+    expect(bar).not.toContain('closeGuardedRef')
     expect(bar).not.toMatch(/if \(e\.key === 'Escape'\) setOpen\(false\)/)
 
     // 3. 🔴 THE MOBILE SCRIM. A second, full-screen control also labelled "Close settings", and

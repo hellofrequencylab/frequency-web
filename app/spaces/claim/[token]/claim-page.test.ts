@@ -28,6 +28,21 @@ describe('the share card is the business, not the site (owner: no preview in App
     expect(pageCode).toContain('url: `${SITE_URL}/spaces/claim/${token}`')
   })
 
+  it('opts the title OUT of the root template, so the brand is not doubled', () => {
+    // 🔴 app/layout.tsx declares `title.template = '%s · Frequency'`, which wraps every child title
+    // that is not absolute. Both titles here already end in the site name, so a plain string renders
+    // "... on Frequency · Frequency" in the browser tab AND in og:title — on the one page whose whole
+    // job is to look like a real business's page. Silent: nothing throws, the tab is just wrong.
+    const titles = pageCode.match(/title: \{ absolute:/g) ?? []
+    expect(titles.length).toBe(2) // the named branch and the dead-token branch
+    // Indent-anchored: a bare `title,` at the METADATA root (4 spaces) is the templated bug. The one
+    // inside `openGraph:` (6 spaces) is correct and must stay — og:title takes no template, so the
+    // shorthand there is the plain, already-branded string the share card should show.
+    expect(pageCode).not.toMatch(/\n {4}title,\n/)
+    expect(pageCode).toMatch(/\n {6}title,\n/)
+    expect(pageCode).not.toMatch(/title: 'Claim this business',/)
+  })
+
   it('still noindexes, because noindex and no-preview are different things', () => {
     // Messaging clients and mail previewers do not read robots directives. The card must be rich
     // AND the page must stay out of the index — dropping either is a regression.
@@ -90,6 +105,53 @@ describe('the footer sells only what actually ships (docs/CONTENT-VOICE.md)', ()
 
   it('carries no em dash', () => {
     expect(bar).not.toContain('—')
+  })
+})
+
+describe('the fixed claim bar reserves its own height, not a guessed one', () => {
+  it('reserves space with an invisible clone, never with hand-tuned padding', () => {
+    // 🔴 THE BUG. The page reserved room with `pb-48 sm:pb-28` — a guess at the bar's rendered
+    // height. It was measured against the ORIGINAL footer copy and never revisited when that copy
+    // grew ~50% longer, so at 375px the sell wraps to about seven lines and the bar overlapped the
+    // last profile block. Nothing links the padding to the copy, so every future edit re-breaks it.
+    expect(pageCode).not.toMatch(/pb-48|sm:pb-28/)
+    expect(pageCode).toContain('<div aria-hidden inert className="invisible border-t border-border')
+    // `invisible` (visibility:hidden) still occupies space; `hidden` (display:none) does not and
+    // would reserve nothing at all while looking identical in review.
+    expect(pageCode).not.toContain('aria-hidden inert className="hidden')
+  })
+
+  it('authors the bar content ONCE, so the clone cannot drift from the real bar', () => {
+    // A spacer that is a hand-copy of the bar is the same staleness bug wearing different markup.
+    expect(pageCode.match(/<ClaimBarContent /g)?.length).toBe(2)
+    expect(pageCode.match(/function ClaimBarContent/g)?.length).toBe(1)
+  })
+
+  it('and the duplicate button is inert, so there are not two claim controls', () => {
+    // Without `inert` the clone is tabbable and clickable despite being invisible: two controls
+    // named "Claim this business", one of which cannot be seen.
+    expect(pageCode).toContain('aria-hidden inert')
+  })
+})
+
+describe('one spaces read per request, not two', () => {
+  it('generateMetadata and the body share a request-cached read', () => {
+    // 🔴 Next runs generateMetadata and the page in the SAME request scope. resolveSpaceClaimAny is
+    // cache()d at its definition; getSpaceById is NOT, so every claim pageview paid for a second
+    // full-column `spaces` select on the render path of a page whose whole job is to paint fast.
+    expect(pageCode).toContain('const claimTargetSpace = cache(')
+    expect(pageCode.match(/claimTargetSpace\(token\)/g)?.length).toBe(2)
+    // getSpaceById may only be reached THROUGH the wrapper. A direct call is the duplication back.
+    expect(pageCode.match(/getSpaceById\(/g)?.length).toBe(1)
+  })
+
+  it('wraps it locally instead of caching getSpaceById globally', () => {
+    // getSpaceById has ~168 call sites, including server actions that read a Space, write it, and
+    // read it again in one request (lib/importer/materialize.ts). A global cache() would hand those
+    // the pre-write snapshot: a silent correctness change bought for one page's perf.
+    const store = readFileSync('lib/spaces/store.ts', 'utf8')
+    expect(store).toContain('export async function getSpaceById(')
+    expect(store).not.toContain('export const getSpaceById = cache(')
   })
 })
 

@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Check, ChevronUp, Globe, Loader2, Undo2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Check, ChevronUp, Globe, Loader2, Trash2, Undo2 } from 'lucide-react'
 import { useProfileLayout } from './profile-layout-context'
-import { setUnpublishedWork } from '@/lib/layout/unpublished-work'
+import { setUnpublishedWork, UNPUBLISHED_LEAVE_WARNING } from '@/lib/layout/unpublished-work'
 import {
+  discardSpaceProfileDraft,
   publishSpaceProfileLayout,
   setProfilePublished,
 } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
@@ -44,9 +46,11 @@ export function SpacePublishFab({
   editable?: boolean
 }) {
   const store = useProfileLayout()
+  const router = useRouter()
   const [open, setOpen] = useState(editable)
   const [published, setPublished] = useState(initialPublished)
   const [publishBusy, setPublishBusy] = useState(false)
+  const [discardBusy, setDiscardBusy] = useState(false)
   const [visibleBusy, setVisibleBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -86,6 +90,42 @@ export function SpacePublishFab({
     return () => window.removeEventListener('beforeunload', h)
   }, [unsavedOrUnpublished])
 
+  // ── LEAVING THE PAGE THE WAY PEOPLE ACTUALLY LEAVE IT ───────────────────────────────────
+  //
+  // 🔴 `beforeunload` above covers only HARD unloads: reload, tab close, typing a new URL. It does
+  // NOT fire on an App Router client transition, which is how an owner actually leaves their Space
+  // page — a click on the nav rail, a Space header tab, any <Link>. So the guard that exists to stop
+  // a draft being forgotten was silent on the majority path, which is exactly the "it sat
+  // unpublished for days" report it was written for.
+  //
+  // Intercepted at the DOCUMENT in the CAPTURE phase rather than per-<Link>, so it covers every
+  // in-app anchor including ones rendered by components this file knows nothing about, and it runs
+  // before the router's own handler gets the click. Only same-origin, plain left-clicks are
+  // guarded: a modified click (new tab), a `target` that is not this frame, a download, and any
+  // non-http scheme all leave this page open and lose nothing.
+  //
+  // ⚠️ Browser BACK is still unguarded, and cannot be guarded without pushing a decoy history entry
+  // (which breaks the back button in its own way). No work is lost either way: the layout store
+  // flushes its pending save on unmount.
+  useEffect(() => {
+    if (!unsavedOrUnpublished) return
+    function onClick(e: MouseEvent) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+      const anchor = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null
+      if (!anchor || anchor.hasAttribute('download')) return
+      if (anchor.target && anchor.target !== '_self') return
+      const url = new URL(anchor.href, window.location.href)
+      if (url.origin !== window.location.origin) return
+      // A same-page hash jump is not leaving.
+      if (url.pathname === window.location.pathname && url.search === window.location.search) return
+      if (window.confirm(UNPUBLISHED_LEAVE_WARNING)) return
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    document.addEventListener('click', onClick, true)
+    return () => document.removeEventListener('click', onClick, true)
+  }, [unsavedOrUnpublished])
+
   // Promote the draft onto the published node (go live now), then CLOSE the bar.
   async function onPublish() {
     setError(null)
@@ -98,6 +138,23 @@ export function SpacePublishFab({
     }
     setPublished(true)
     setOpen(false)
+  }
+
+  // Throw the draft away and go back to what visitors see. DESTRUCTIVE and irreversible (the draft is
+  // deleted server-side), so it confirms first. `router.refresh()` re-runs the server component that
+  // computed hasUnpublishedChanges, so the bar and the warnings clear in the same beat.
+  async function onDiscard() {
+    if (!window.confirm('Discard your unpublished changes and go back to the page visitors see? This cannot be undone.'))
+      return
+    setError(null)
+    setDiscardBusy(true)
+    const res = await discardSpaceProfileDraft(slug)
+    setDiscardBusy(false)
+    if (res?.error) {
+      setError(res.error)
+      return
+    }
+    router.refresh()
   }
 
   // Persist-and-step-away: autosave already writes the draft on every edit, so this just confirms + minimizes
@@ -210,6 +267,27 @@ export function SpacePublishFab({
         {/* Actions sit at the FAR RIGHT, off the edge (a right margin), each on ONE row at a legible size.
             The old two-line label + sublabel is gone; the intent rides along as a title tooltip. */}
         <div className="ml-auto mr-1 flex items-center gap-2 sm:mr-3">
+          {/* DISCARD — the missing half of a draft system. Publish was the only thing that ever
+              removed the draft node, so an owner who tried an arrangement and decided against it
+              had no way out of the "unpublished changes" state, which arms a confirm on every rail
+              dismissal. Only shown when there is actually something to throw away, and it can never
+              touch the live page (the action deletes the draft key alone). */}
+          {hasUnpublishedChanges && (
+            <button
+              type="button"
+              onClick={() => void onDiscard()}
+              disabled={discardBusy}
+              title="Go back to the page visitors see"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-danger disabled:opacity-60"
+            >
+              {discardBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Trash2 className="h-4 w-4" aria-hidden />
+              )}
+              Discard
+            </button>
+          )}
           <button
             type="button"
             onClick={onSaveDraft}

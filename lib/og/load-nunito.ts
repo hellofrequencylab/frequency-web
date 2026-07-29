@@ -15,13 +15,16 @@ import { join } from "node:path";
 // fell back to the icon-only layout. Reported three times as "no preview appeared".
 //
 // The faces are now committed under `public/fonts/` and read with `readFile`: sub-millisecond, no
-// network, no throttling, byte-identical output. It also removes the build-time dependency on
-// Google being reachable, which is the failure the previous implementation's fallback existed to
-// survive in the first place.
+// network, no throttling. It also removes the build-time dependency on Google being reachable,
+// which is the failure the previous implementation's fallback existed to survive in the first place.
+//
+// ⚠️ Same family and weights, NOT byte-identical output, and an earlier version of this comment
+// claimed otherwise. The old path drew with a Google-served SUBSET of the Nunito VARIABLE font;
+// these are committed STATIC instances. Worth knowing before chasing an apparent weight shift.
 //
 // ⚠️ FULL faces, not `&text=` subsets. The old code subset each font to the exact string being
 // drawn, so a name containing a glyph outside that subset rendered as tofu. A full Nunito weight
-// is ~53KB and is read once per process, so the subsetting bought nothing.
+// is ~125KB and is read once per process, so the subsetting bought nothing.
 
 /** Memoised per process, but only ONCE A READ HAS SUCCEEDED.
  *
@@ -54,16 +57,10 @@ function read(file: string): Promise<ArrayBuffer> {
  * That is the honest behaviour and it is the right one: an OG route that throws returns a 500 and
  * the previewer falls back to a text card, which is recoverable. Swallowing the error and handing
  * Satori an empty `fonts` array crashes it on `fontFamily.split(...)` with a far worse message.
- * next.config.ts declares ./public/fonts/*.ttf in outputFileTracingIncludes so the directory does
- * ship; this doc exists so the next person does not trust a promise the code cannot keep.
- *
- * `text` is accepted and ignored, kept so call sites did not need rewriting when subsetting was
- * removed.
+ * next.config.ts names each of these faces in outputFileTracingIncludes so they do ship; this doc
+ * exists so the next person does not trust a promise the code cannot keep.
  */
-export async function loadNunito(
-  weight: number,
-  _text?: string,
-): Promise<ArrayBuffer> {
+export async function loadNunito(weight: number): Promise<ArrayBuffer> {
   const key = weight >= 800 ? 900 : 700;
   const hit = cache.get(key);
   if (hit) return hit;

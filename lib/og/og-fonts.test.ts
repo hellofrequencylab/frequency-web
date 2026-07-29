@@ -96,12 +96,29 @@ describe('loading them touches no network', () => {
 describe('the faces reach the serverless runtime', () => {
   const cfg = readFileSync('next.config.ts', 'utf8')
 
-  it('public/fonts is in outputFileTracingIncludes', () => {
+  it('every face load-nunito can open is in outputFileTracingIncludes', () => {
     // Next's tracer follows JS imports, NOT a path built inside a function with join(process.cwd()).
     // This repo already had to do this explicitly for the resvg .wasm, with a comment describing the
     // same failure. An OG card that cannot load a font does not degrade politely: Satori throws on
     // an empty `fonts` array, so a missed include swaps a SLOW card for a BROKEN one.
-    expect(cfg).toContain("'./public/fonts/*.ttf'")
+    //
+    // Derived from the loader rather than hardcoded, so adding a weight there without shipping it
+    // here fails HERE instead of at request time on a route nobody opens in development.
+    const loader = readFileSync('lib/og/load-nunito.ts', 'utf8')
+    const faces = [...loader.matchAll(/["']([A-Za-z-]+\.ttf)["']/g)].map((m) => m[1])
+    expect(faces.length).toBeGreaterThanOrEqual(3) // Nunito Bold + Black, and the Liberation fallback
+    for (const face of new Set(faces)) expect(cfg).toContain(`'./public/fonts/${face}'`)
+  })
+
+  it('and does NOT sweep in the faces nothing reads', () => {
+    // 🔴 The first version used './public/fonts/*.ttf', which also shipped LiberationSans-Regular
+    // (410,820 bytes) into EVERY lambda in the app. Nothing opens it from disk — flyer-raster.ts
+    // fetches its faces over HTTP — so it was pure weight on every cold start.
+    // Asserted on the tracing BLOCK, not the whole file: the comment beside the key names the face
+    // it deliberately excludes, and a whole-file match would fail on the explanation.
+    const block = cfg.match(/outputFileTracingIncludes:\s*\{([\s\S]*?)\n {2}\}/)?.[1] ?? ''
+    expect(block).not.toContain("'./public/fonts/*.ttf'")
+    expect(block).not.toContain("'./public/fonts/LiberationSans-Regular.ttf'")
   })
 
   it('and it did not displace the help content on the same key', () => {
@@ -109,9 +126,11 @@ describe('the faces reach the serverless runtime', () => {
     // have dropped './content/help/**/*' and left "Ask Vera" deflecting every question — the exact
     // failure that key's own comment warns about. Caught by tsc while writing this; pinned so the
     // next person folds into the key instead of adding another.
-    expect(cfg).toContain("'/**': ['./content/help/**/*', './public/fonts/*.ttf']")
+    expect(cfg).toContain("'./content/help/**/*'")
     const block = cfg.match(/outputFileTracingIncludes:\s*\{([\s\S]*?)\n {2}\}/)?.[1] ?? ''
     const keys = [...block.matchAll(/^\s*'([^']+)':/gm)].map((m) => m[1])
     expect(keys.length).toBe(new Set(keys).size)
+    // The '/**' key must still carry the help content, not just exist somewhere in the file.
+    expect(block).toMatch(/'\/\*\*': \[[\s\S]*?'\.\/content\/help\/\*\*\/\*'/)
   })
 })

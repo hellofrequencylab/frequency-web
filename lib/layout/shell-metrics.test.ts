@@ -109,10 +109,13 @@ describe('the claim page consumes it instead of restating it', () => {
     expect(code).not.toContain('max-w-6xl')
   })
 
-  it('nests the column inside the row box, at all three call sites', () => {
+  it('nests the column inside the row box, at every call site', () => {
     // The `100%` in the calc is the ROW's inner width. Used without that wrapper it resolves
     // against whatever ancestor happens to be there and the width is meaningless.
-    expect(code.match(/className=\{CLAIM_ROW\}/g)?.length).toBe(3)
+    // FOUR rows: the ribbon, the body, the fixed claim bar, and the invisible spacer that reserves
+    // the bar's height in flow. THREE columns, because the bar and its spacer render the same
+    // ClaimBarContent, which carries the column class once.
+    expect(code.match(/className=\{CLAIM_ROW\}/g)?.length).toBe(4)
     expect(code.match(/CLAIM_COLUMN/g)?.length).toBe(4) // 1 definition + 3 uses
   })
 })

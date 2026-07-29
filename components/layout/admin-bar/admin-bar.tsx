@@ -154,10 +154,6 @@ export function AdminBar({
     setOpen(false)
   }, [setOpen])
 
-  // The Escape listener registers once per open (deps [open]) and must not re-bind on every
-  // render, so it reads the guard through a ref rather than closing over it.
-  const closeGuardedRef = useRef(closeGuarded)
-  closeGuardedRef.current = closeGuarded
   const { hasContent } = model
   // Resets the drill screen + query on route/scope change (the desktop bar persists across nav).
   const resetKey = `${pathname}::${detail?.scope?.kind ?? ''}`
@@ -194,14 +190,20 @@ export function AdminBar({
   // dismissal and was the single most likely way to lose track of an unpublished draft, since it
   // takes no aim and leaves no trace. It bypassed closeGuarded entirely until an adversarial pass
   // caught it.
+  //
+  // Depends on `closeGuarded` DIRECTLY, not through a ref. The first version mirrored the callback
+  // into a ref and assigned `ref.current` in the render body to keep the deps at [open] — which is
+  // the "Cannot access refs during render" violation (react-hooks/refs), and it fails CI. No ref is
+  // needed: closeGuarded is a useCallback over [setOpen], and a useState setter is referentially
+  // stable for the life of the component, so this listener still binds exactly once per open.
   useEffect(() => {
     if (!open) return
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') closeGuardedRef.current()
+      if (e.key === 'Escape') closeGuarded()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open])
+  }, [open, closeGuarded])
 
   // ── Mobile-only: close when the route changes (navigating away closes the sheet — mobile
   // expectation). The desktop slide-over deliberately persists across navigation. ──

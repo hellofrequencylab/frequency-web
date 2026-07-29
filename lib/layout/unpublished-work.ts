@@ -50,7 +50,13 @@ export function subscribeUnpublishedWork(fn: Listener): () => void {
   }
 }
 
-/** The one sentence shown when someone tries to close the editor with work pending. Kept here so
+/** The one sentence shown when someone tries to close the EDIT PANEL with work pending. Kept here so
  *  the panel and any future surface cannot word it differently. No em dashes (CONTENT-VOICE). */
 export const UNPUBLISHED_WARNING =
   'You have changes that are saved but not published. Nobody else can see them until you hit Publish. Close anyway?'
+
+/** Same fact, different act: shown when a click would NAVIGATE AWAY from the page being edited.
+ *  Split from the close warning only in its last four words, because "Close anyway?" on a click that
+ *  actually leaves the page describes the wrong consequence. */
+export const UNPUBLISHED_LEAVE_WARNING =
+  'You have changes that are saved but not published. Nobody else can see them until you hit Publish. Leave anyway?'

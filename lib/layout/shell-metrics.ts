@@ -17,8 +17,9 @@
 // widens a rail in app-shell.tsx and does not update this file, the test fails rather than the
 // claim page silently drifting again.
 
-/** The row's own max width. `max-w-[105rem]` on the shell's flex row. */
-export const SHELL_ROW_MAX = '105rem'
+// (There was a `SHELL_ROW_MAX = '105rem'` export here with no importers anywhere. The row's max
+// width already lives in SHELL_ROW_CLASS at the bottom of this file, which is what pages actually
+// use; a second, unused spelling of the same number is a place for the two to disagree.)
 
 /** Left navigation rail: `w-48` = 12rem. `hidden md:flex`, so it costs nothing below `md`. */
 export const LEFT_RAIL = 12 // rem
@@ -49,8 +50,14 @@ export const GAP_LG = 2.5 // rem, at lg and up
  *  column is the remainder, so these are exactly what the claim page must subtract to match.
  *
  *   below md   both rails hidden                                          -> 0
- *   md..lg     left rail + one gap                                        -> 12 + 2      = 14
- *   lg and up  left + gap + right + its ml-3 + gap                        -> 12+2.5+18+0.75+2.5 = 35.75
+ *   md..lg     left rail + one gap                                        -> 12 + 2 = 14rem
+ *   lg and up  left + gap + right + its ml-3 + gap                        -> 17.75rem AND 288px
+ *
+ *  ⚠️ THE lg BAND DOES NOT REDUCE TO ONE NUMBER, and an earlier version of this block wrote it as
+ *  `12+2.5+18+0.75+2.5 = 35.75` — the exact reverted arithmetic RIGHT_RAIL_PX exists to prevent,
+ *  sitting directly above the constant that corrects it. The right rail is 288 PIXELS; folding it
+ *  in as "18rem" is only true at a 16px root, and this app's root is 17px. The rem part and the px
+ *  part stay separate all the way into the calc().
  */
 export const RAILS_MD = LEFT_RAIL + GAP // 14rem — all rem, converts cleanly
 

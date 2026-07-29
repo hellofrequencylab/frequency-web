@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Suspense } from 'react'
+import { Suspense, cache } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound, redirect } from 'next/navigation'
@@ -45,6 +45,25 @@ export const dynamic = 'force-dynamic'
 const CLAIM_ROW = SHELL_ROW_CLASS
 const CLAIM_COLUMN = SHELL_CONTENT_WIDTH_CLASS
 
+// ONE `spaces` row read per request, shared by generateMetadata and the page body.
+//
+// 🔴 Next runs generateMetadata and the page component in the SAME request scope, so anything both
+// of them call runs twice unless it is request-cached. `resolveSpaceClaimAny` already is (it is
+// wrapped in cache() at its definition); `getSpaceById` is NOT, so every claim pageview paid for a
+// second full-column `spaces` select — on the render path of the one page whose entire job is to
+// paint a button fast. lib/spaces/operated.ts even carries a comment asserting getSpaceById is
+// request-cached, which it is not; that is how this went unnoticed.
+//
+// Wrapped HERE rather than at the definition on purpose. getSpaceById has ~168 call sites,
+// including server actions that read a Space, write it, and read it again inside one request
+// (lib/importer/materialize.ts does exactly that). Caching it globally would hand those the
+// pre-write snapshot — a silent correctness change traded for a perf win on one page. A local
+// wrapper gets the dedupe with none of the blast radius.
+const claimTargetSpace = cache(async (token: string) => {
+  const claim = await resolveSpaceClaimAny(token)
+  return claim && !claim.claimed ? await getSpaceById(claim.spaceId) : null
+})
+
 // Never index a claim landing. This page renders the SAME block body as the live
 // /spaces/<slug> profile, so an indexed copy would compete with the canonical Space
 // page for its own brand terms — the exact cannibalization robots.ts avoids for the
@@ -65,14 +84,13 @@ export async function generateMetadata({
   params: Promise<{ token: string }>
 }): Promise<Metadata> {
   const { token } = await params
-  const claim = await resolveSpaceClaimAny(token)
-  const space = claim && !claim.claimed ? await getSpaceById(claim.spaceId) : null
+  const space = await claimTargetSpace(token)
 
   // Unknown, used, or removed: a neutral card that names no business. The OG image already
   // falls back the same way, so the two never disagree about what a dead token reveals.
   if (!space) {
     return {
-      title: 'Claim this business',
+      title: { absolute: `Claim this business · ${SITE_NAME}` },
       robots: { index: false },
       openGraph: {
         title: `Claim your business on ${SITE_NAME}`,
@@ -84,6 +102,11 @@ export async function generateMetadata({
   }
 
   const brandName = space.brandName?.trim() || space.name
+  // 🔴 ABSOLUTE, not a plain string. The root layout declares `title.template = '%s · Frequency'`
+  // (app/layout.tsx), which wraps every child title that is not absolute — and this one already
+  // ends in the site name, so the browser tab and the og:title read
+  // "…Claim your business on Frequency · Frequency". `absolute` opts this segment out of the
+  // template; the site name stays because it is written here deliberately, once.
   const title = `${brandName} · Claim your business on ${SITE_NAME}`
   // The page's own words, so the preview reads like the page rather than like the site:
   // the tagline the owner will actually see under their name in the hero.
@@ -92,7 +115,7 @@ export async function generateMetadata({
     : `Frequency built a page for ${brandName}. Claim it to edit it and run it from your own account.`
 
   return {
-    title,
+    title: { absolute: title },
     robots: { index: false },
     // Declared explicitly so NOTHING is inherited from the root: an inherited `url` pointed
     // every claim preview at the homepage.
@@ -105,6 +128,56 @@ export async function generateMetadata({
     },
     twitter: { card: 'summary_large_image', title, description },
   }
+}
+
+// THE CLAIM BAR'S CONTENT, authored ONCE and rendered TWICE: once fixed to the viewport bottom, and
+// once invisibly in the document flow as a spacer.
+//
+// 🔴 WHY A CLONE AND NOT PADDING. The page reserved room for the fixed bar with a hand-tuned
+// `pb-48 sm:pb-28`. That is a guess at the bar's rendered height, and it went stale the moment the
+// footer copy was rewritten ~50% longer: at 375px the sell wraps to about seven lines and the bar
+// grew past the 12rem reserved for it, so it sat on top of the last profile block — worst exactly
+// where the page is hardest to scroll around it. Any future copy edit re-breaks it silently,
+// because nothing connects the two numbers.
+//
+// An invisible clone cannot go stale: it IS the bar, laid out by the same rules in the same column
+// at the same breakpoint, so it reserves the exact height at every width with no number to maintain.
+// `invisible` is visibility:hidden (it still occupies space, unlike `hidden`), and `inert` +
+// `aria-hidden` keep the duplicate button out of the tab order, off the accessibility tree, and
+// unclickable — without it there would be two controls named "Claim this business".
+function ClaimBarContent({ token, signedIn }: { token: string; signedIn: boolean }) {
+  return (
+    <div className={cn(CLAIM_COLUMN, 'flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between')}>
+      {/* The sell names what actually ships TODAY, and nothing else. Deliberately absent:
+          "take bookings" (paid booking is double-gated behind a Stripe key AND the
+          host_payouts_enabled flag, which defaults OFF, so it promises money that cannot
+          move), and the CRM / Email / Automation modules (marketed as freemium but sitting
+          behind a Business-plan floor in FEATURE_GATES, so a free claimer would lose them the
+          day that flag flips). Memberships, tickets and donations are record-only in v1 and
+          would read as a revenue promise beside the rest. Every noun here is canon
+          (docs/NAMING.md) and there are no em dashes (docs/CONTENT-VOICE.md). */}
+      <p className="text-sm text-text">
+        <span className="font-semibold">Is this your business?</span> This page is already built and
+        already found. Claim it to edit anything on it, list your events and let people book a time,
+        and answer the people who show up. It takes one tap.
+      </p>
+      <div className="shrink-0 sm:w-64">
+        {signedIn ? (
+          <ClaimSpaceButton token={token} size="lg" />
+        ) : (
+          <div className="space-y-1.5">
+            <Link
+              href={`/sign-in?next=/spaces/claim/${token}`}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-base font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+            >
+              <Zap className="h-5 w-5" aria-hidden /> Claim this business
+            </Link>
+            <p className="text-center text-xs text-subtle">Signing in creates your account in a minute.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 // The claim landing the real business owner reaches from an operator's outreach. PUBLIC (outside the
@@ -129,7 +202,11 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
   // Resolve the FULL Space by id (admin read — bypasses the active-only RLS AND the visibility gate, so an
   // unlisted seeded Space still renders here, unlike getVisibleSpaceBySlug). Stamp it active so the
   // self-fetching dynamic profile blocks read THIS tenant's rows.
-  const space = await getSpaceById(claim.spaceId)
+  //
+  // Through the request-cached wrapper, so generateMetadata's read of the same row is reused rather
+  // than repeated. Safe to reach for it after the `claim.claimed` branch above: the wrapper returns
+  // null for a claimed token, and a claimed token has already redirected or 404'd by now.
+  const space = await claimTargetSpace(token)
   if (!space) notFound()
   setActiveSpace(space)
 
@@ -174,9 +251,9 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
 
   return (
     <AccentScope vars={accentVars} theme={spaceTheme}>
-      {/* Generous bottom padding so the fixed claim bar never overlaps the last block. The bar is a
-          single row at sm+ but stacks (message + big button + helper line) on mobile, so it needs more. */}
-      <div className="min-h-screen bg-canvas pb-48 sm:pb-28">
+      {/* No bottom padding here: the room for the fixed claim bar is reserved by an exact invisible
+          clone of it at the end of this column (see ClaimBarContent). */}
+      <div className="min-h-screen bg-canvas px-safe">
         {/* Claim ribbon — sets the context above the page it introduces. Its inner content aligns to the
             same column as the page below it. */}
         <div className="border-b border-primary/20 bg-primary-bg/40">
@@ -275,41 +352,22 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
           </main>
           </div>
         </div>
+
+        {/* THE SPACER. An invisible, inert clone of the fixed bar below, in the document flow, so the
+            page reserves the bar's EXACT height at every breakpoint instead of a hand-tuned padding
+            that goes stale the next time this copy is edited. `border-t` is matched too, because it
+            adds a pixel to the real bar's box. */}
+        <div aria-hidden inert className="invisible border-t border-border pb-[env(safe-area-inset-bottom)]">
+          <div className={CLAIM_ROW}>
+            <ClaimBarContent token={token} signedIn={!!myProfileId} />
+          </div>
+        </div>
       </div>
 
       {/* The always-visible claim bar — the big button rides along the whole page. */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-pop backdrop-blur">
+      <div className="px-safe fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-pop backdrop-blur">
         <div className={CLAIM_ROW}>
-          <div className={cn(CLAIM_COLUMN, "flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between")}>
-          {/* The sell names what actually ships TODAY, and nothing else. Deliberately absent:
-              "take bookings" (paid booking is double-gated behind a Stripe key AND the
-              host_payouts_enabled flag, which defaults OFF, so it promises money that cannot
-              move), and the CRM / Email / Automation modules (marketed as freemium but sitting
-              behind a Business-plan floor in FEATURE_GATES, so a free claimer would lose them the
-              day that flag flips). Memberships, tickets and donations are record-only in v1 and
-              would read as a revenue promise beside the rest. Every noun here is canon
-              (docs/NAMING.md) and there are no em dashes (docs/CONTENT-VOICE.md). */}
-          <p className="text-sm text-text">
-            <span className="font-semibold">Is this your business?</span> This page is already
-            built and already found. Claim it to edit anything on it, list your events and let
-            people book a time, and answer the people who show up. It takes one tap.
-          </p>
-          <div className="shrink-0 sm:w-64">
-            {myProfileId ? (
-              <ClaimSpaceButton token={token} size="lg" />
-            ) : (
-              <div className="space-y-1.5">
-                <Link
-                  href={`/sign-in?next=/spaces/claim/${token}`}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-base font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
-                >
-                  <Zap className="h-5 w-5" aria-hidden /> Claim this business
-                </Link>
-                <p className="text-center text-xs text-subtle">Signing in creates your account in a minute.</p>
-              </div>
-            )}
-          </div>
-          </div>
+          <ClaimBarContent token={token} signedIn={!!myProfileId} />
         </div>
       </div>
     </AccentScope>

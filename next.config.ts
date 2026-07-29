@@ -120,7 +120,18 @@ const nextConfig: NextConfig = {
     // ⚠️ FOLDED INTO THIS KEY, not added as a second '/**'. A duplicate key is a TS error and, worse,
     // the later one silently wins — which would have dropped the help content above and left
     // "Ask Vera" deflecting every question, the exact failure its own comment warns about.
-    '/**': ['./content/help/**/*', './public/fonts/*.ttf'],
+    //
+    // ⚠️ NAMED, not `*.ttf`. The glob also swept in LiberationSans-Regular (410,820 bytes), which
+    // nothing reads from disk — lib/entry-points/flyer-raster.ts fetches its faces over HTTP — so
+    // every lambda in the app carried it for nothing. The two faces below are the ones load-nunito
+    // actually opens: the Nunito pair it draws with, and LiberationSans-Bold, its same-directory
+    // fallback (~665KB total, down from ~1.05MB).
+    '/**': [
+      './content/help/**/*',
+      './public/fonts/Nunito-Bold.ttf',
+      './public/fonts/Nunito-Black.ttf',
+      './public/fonts/LiberationSans-Bold.ttf',
+    ],
     // The resvg WASM rasterizer (lib/qr/raster.ts) reads index_bg.wasm from node_modules at
     // RUNTIME via fs (the package is in serverExternalPackages, so it is never bundled). Next's
     // tracer follows the JS entry but NOT that derived `readFile` path, so without an explicit

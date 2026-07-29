@@ -18,10 +18,9 @@ export default async function Image() {
   );
   const heroSrc = `data:image/jpeg;base64,${heroData.toString("base64")}`;
 
-  const glyphs = `${wordmark}${label}`;
   const [black, bold] = await Promise.all([
-    loadNunito(900, glyphs),
-    loadNunito(700, glyphs),
+    loadNunito(900),
+    loadNunito(700),
   ]);
 
   const fonts = [
