@@ -64,6 +64,13 @@ const claimTargetSpace = cache(async (token: string) => {
   return claim && !claim.claimed ? await getSpaceById(claim.spaceId) : null
 })
 
+/** The business's display name, TRIMMED. generateMetadata trimmed and the page body did not, so a
+ *  Space whose `brand_name` is whitespace produced a correctly-named share card above a blank <h1>
+ *  and blank BrandAnchor initials. One helper, so the two cannot disagree again. */
+function displayBrandName(brandName: string | null | undefined, fallback: string): string {
+  return brandName?.trim() || fallback?.trim() || ''
+}
+
 // Never index a claim landing. This page renders the SAME block body as the live
 // /spaces/<slug> profile, so an indexed copy would compete with the canonical Space
 // page for its own brand terms — the exact cannibalization robots.ts avoids for the
@@ -101,7 +108,7 @@ export async function generateMetadata({
     }
   }
 
-  const brandName = space.brandName?.trim() || space.name
+  const brandName = displayBrandName(space.brandName, space.name)
   // 🔴 ABSOLUTE, not a plain string. The root layout declares `title.template = '%s · Frequency'`
   // (app/layout.tsx), which wraps every child title that is not absolute — and this one already
   // ends in the site name, so the browser tab and the og:title read
@@ -210,7 +217,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
   if (!space) notFound()
   setActiveSpace(space)
 
-  const name = space.brandName || space.name || claim.name || 'Your business'
+  const name = displayBrandName(space.brandName, space.name) || claim.name || 'Your business'
 
   // The HERO + cover resolved EXACTLY as the live (profile) layout does, so the claim page reads as the real
   // page: the operator's hero copy (eyebrow / heading / tagline), their chosen cover scrim + focal point, and
@@ -272,9 +279,14 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
         </div>
 
         {/* ONE content column, matching the business space page's boundaries: hero + body sit inside the
-            same max-width + padding. */}
+            same max-width + padding.
+
+            <main> WRAPS THE HERO TOO, not just the module body. It used to open below the header, which
+            left the <h1> outside every landmark — so a screen-reader scan by landmark reached the page's
+            content and never its title. The claim bar gets its own labelled region below for the same
+            reason: it is the one action this page exists for and it was in no landmark at all. */}
         <div className={CLAIM_ROW}>
-          <div className={cn(CLAIM_COLUMN, "py-6")}>
+          <main className={cn(CLAIM_COLUMN, "py-6")}>
           {/* The REAL live hero — the SAME node the (profile) page renders. The three theme-carrying
               classes below (`--radius-cover`, `font-eyebrow`, `font-section`) are what make it read as
               the owner's page rather than a generic one: on the 'classic' theme they resolve to
@@ -345,12 +357,17 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
               fixed claim bar all waited on it — so the one thing this page exists to show (the
               claim button) was the last thing to paint. The live Space page already wraps the
               equivalent body; this matches it. */}
-          <main className="py-8">
+          {/* `@container` is load-bearing, not decoration. ProfileBodySkeleton lays its cards out with
+              `@lg:grid-cols-2`, which needs an @container ANCESTOR — and the only one on this route
+              (`@container/profile`) is inside the Suspense CHILD, so it does not exist while the
+              fallback is showing. Without this the skeleton was always a tall single column and the
+              page visibly snapped to two when the body streamed in. */}
+          <div className="@container py-8">
             <Suspense fallback={<ProfileBodySkeleton />}>
               <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
             </Suspense>
-          </main>
           </div>
+          </main>
         </div>
 
         {/* THE SPACER. An invisible, inert clone of the fixed bar below, in the document flow, so the
@@ -364,12 +381,16 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
         </div>
       </div>
 
-      {/* The always-visible claim bar — the big button rides along the whole page. */}
-      <div className="px-safe fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-pop backdrop-blur">
+      {/* The always-visible claim bar — the big button rides along the whole page. A labelled
+          <section> so it is reachable by landmark: it is the page's only CTA and sat outside every
+          landmark, which a landmark-driven scan skips entirely. */}
+      <section
+        aria-label="Claim this business"
+        className="px-safe fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-pop backdrop-blur">
         <div className={CLAIM_ROW}>
           <ClaimBarContent token={token} signedIn={!!myProfileId} />
         </div>
-      </div>
+      </section>
     </AccentScope>
   )
 }

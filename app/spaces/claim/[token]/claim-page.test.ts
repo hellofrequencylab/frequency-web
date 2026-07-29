@@ -155,6 +155,41 @@ describe('one spaces read per request, not two', () => {
   })
 })
 
+describe('the page is navigable and does not snap while it streams', () => {
+  it('the h1 and the CTA both sit inside a landmark', () => {
+    // 🔴 <main> used to open BELOW the header, so the page's own <h1> was in no landmark, and the
+    // fixed claim bar — the single action this page exists for — was in none either. A screen-reader
+    // scan by landmark reached the body content and never the title or the button.
+    expect(pageCode).toContain('<main className={cn(CLAIM_COLUMN, "py-6")}>')
+    expect(pageCode).toContain('aria-label="Claim this business"')
+    expect(pageCode).toMatch(/<section\s+aria-label="Claim this business"/)
+    // The hero must be INSIDE main, i.e. main opens before the <header>.
+    const main = pageCode.indexOf('<main className={cn(CLAIM_COLUMN')
+    const header = pageCode.indexOf('<header className={cn(')
+    expect(main).toBeGreaterThan(-1)
+    expect(header).toBeGreaterThan(main)
+  })
+
+  it('the Suspense fallback has the @container it lays out against', () => {
+    // 🔴 ProfileBodySkeleton grids with `@lg:grid-cols-2`, which needs an @container ANCESTOR. The
+    // only one on this route is `@container/profile` INSIDE the Suspense child, so it does not exist
+    // while the fallback is showing: the skeleton was always a tall single column and the page
+    // visibly snapped to two the moment the body streamed in. Silent — it renders fine, just wrong.
+    expect(readFileSync('components/spaces/profile-body-skeleton.tsx', 'utf8')).toContain('@lg:grid-cols-2')
+    expect(pageCode).toContain('<div className="@container py-8">')
+    const container = pageCode.indexOf('className="@container py-8"')
+    expect(pageCode.indexOf('<Suspense')).toBeGreaterThan(container)
+  })
+
+  it('one name helper, so the share card and the h1 cannot disagree', () => {
+    // generateMetadata trimmed and the body did not, so a Space whose brand_name is whitespace got a
+    // correctly-named share card above a blank <h1> and blank BrandAnchor initials.
+    expect(pageCode).toContain('function displayBrandName')
+    expect(pageCode.match(/displayBrandName\(space\.brandName/g)?.length).toBe(2)
+    expect(pageCode).not.toMatch(/space\.brandName \|\| space\.name/)
+  })
+})
+
 describe('the claim button paints before the page body (PAGE-FRAMEWORK section 5)', () => {
   it('wraps the module body in Suspense', () => {
     // SpaceProfileModules awaits getSpaceContentData. Unwrapped, the ribbon, hero and the fixed
