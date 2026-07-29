@@ -15,7 +15,15 @@ import { canEditJourney } from '@/lib/journeys/authoring'
 // the cover/gallery images (a fresh event starts without inherited media). The title gets
 // a plain "(copy)" suffix so the operator can tell the draft apart at a glance. Gated by
 // the same `event.editSettings` capability as editing the source, so authz never loosens.
-async function buildDuplicateInitial(sourceId: string): Promise<Partial<EventFormInitial> | null> {
+/** The form prefill PLUS the source's Space. `spaceId` is returned beside the prefill rather than
+ *  inside it because it is not a form field — it feeds `defaultGroupId`, the scope selector's
+ *  default. Putting it in EventFormInitial would imply the form renders it. */
+interface DuplicatePrefill {
+  initial: Partial<EventFormInitial>
+  spaceId?: string
+}
+
+async function buildDuplicateInitial(sourceId: string): Promise<DuplicatePrefill | null> {
   const caps = await getEventCapabilities(sourceId)
   if (!caps.has('event.editSettings')) return null
 
@@ -25,6 +33,12 @@ async function buildDuplicateInitial(sourceId: string): Promise<Partial<EventFor
     .select(
       'title, description, location, scope_id, scope_type, capacity, visibility, category, energy_tag, ' +
         'attendance_mode, online_url, venue_name, street, city, region, postal_code, country, ' +
+        // space_id carries the SPACE the source event belongs to. Without it, duplicating from a
+        // Space's Calendar console produced a root-attributed personal event: the Duplicate link is
+        // `/events/new?duplicate=<id>` with no `?space=`, so defaultGroupId below had nothing to
+        // resolve. That is precisely the failure the comment on defaultGroupId calls "the Royal
+        // Temple bug", reproduced by a different entry point.
+        'space_id, ' +
         'recurrence_type, recurrence_until, price_cents',
     )
     .eq('id', sourceId)
@@ -45,6 +59,8 @@ async function buildDuplicateInitial(sourceId: string): Promise<Partial<EventFor
       : ''
 
   return {
+    spaceId: str(src.space_id) || undefined,
+    initial: {
     title: `${str(src.title)} (copy)`.trim(),
     description: str(src.description),
     location: str(src.location),
@@ -67,6 +83,7 @@ async function buildDuplicateInitial(sourceId: string): Promise<Partial<EventFor
     // Carry the ticket price forward (0/absent = a free RSVP event).
     priceCents: typeof src.price_cents === 'number' ? src.price_cents : undefined,
     // Date is intentionally omitted so the copy defaults to the active day.
+    },
   }
 }
 
@@ -238,18 +255,6 @@ export default async function NewEventPage({
     ...spaces.map((s) => ({ id: s.id, name: s.name, kind: 'space' as const, label: `In ${s.name} (space you run)` })),
   ]
 
-  // Honor a scope deep link — `?circle=` (the circle-host affordance) or `?space=` (the space
-  // Calendar console "New event" affordance) — but only when it names a scope the caller actually
-  // helps run (a circle they host or a space where they are editor+), never letting the param scope
-  // to someone else's. `?space=` wins when both are present since it is the more specific console
-  // entry point. A param that FAILS the check is surfaced (droppedSpaceLink below), never silently
-  // swallowed — a silent drop is how a Business Space's event ended up root-attributed + personal.
-  const defaultGroupId = spaces.some((s) => s.id === spaceParam)
-    ? spaceParam
-    : circles.some((c) => c.id === circleParam)
-      ? circleParam
-      : undefined
-
   // Duplicate flow (`?duplicate=<id>`): clone a source event into a prefilled manual form,
   // skipping Vera's wizard. The prefill is null when the source is missing or the viewer
   // lacks edit rights on it (same gate as editing), in which case we fall back to a fresh
@@ -258,9 +263,41 @@ export default async function NewEventPage({
   // Only keep the cloned circle scope when the viewer can actually pick it in this form
   // (it's one of the circles they host); otherwise drop it so the form falls back to its
   // default rather than holding a circle the select can't show.
-  if (duplicateInitial?.scopeId && !circles.some((c) => c.id === duplicateInitial!.scopeId)) {
-    duplicateInitial = { ...duplicateInitial, scopeId: undefined }
+  if (
+    duplicateInitial?.initial.scopeId &&
+    !circles.some((c) => c.id === duplicateInitial!.initial.scopeId)
+  ) {
+    duplicateInitial = {
+      ...duplicateInitial,
+      initial: { ...duplicateInitial.initial, scopeId: undefined },
+    }
   }
+
+  // Honor a scope deep link — `?circle=` (the circle-host affordance) or `?space=` (the space
+  // Calendar console "New event" affordance) — but only when it names a scope the caller actually
+  // helps run (a circle they host or a space where they are editor+), never letting the param scope
+  // to someone else's. `?space=` wins when both are present since it is the more specific console
+  // entry point. A param that FAILS the check is surfaced (droppedSpaceLink below), never silently
+  // swallowed — a silent drop is how a Business Space's event ended up root-attributed + personal.
+  //
+  // A DUPLICATE inherits its source's Space when the caller runs that Space. Ranked BELOW an
+  // explicit `?space=` (an operator who deep-linked from a console meant that one) and ABOVE
+  // `?circle=`, matching the same most-specific-wins order. Without this, Duplicate dropped the
+  // Space entirely — the Duplicate link carries no `?space=`, so a copy of a Business Space's
+  // event was created as a root-attributed personal event. Re-checked against `spaces` here, so
+  // duplicating someone else's event can never place the copy in their Space.
+  const duplicateSpaceId =
+    duplicateInitial?.spaceId && spaces.some((sp) => sp.id === duplicateInitial!.spaceId)
+      ? duplicateInitial.spaceId
+      : undefined
+
+  const defaultGroupId = spaces.some((s) => s.id === spaceParam)
+    ? spaceParam
+    : duplicateSpaceId
+      ? duplicateSpaceId
+      : circles.some((c) => c.id === circleParam)
+        ? circleParam
+        : undefined
 
   // The viewer's saved home, to DEFAULT the venue autocomplete's location bias before any
   // pin exists (local-first address search — people almost always post events near home).
@@ -284,7 +321,10 @@ export default async function NewEventPage({
   // `?circle=` seeds the scope; a Duplicate prefill keeps everything it already carried.
   const formInitial: Partial<EventFormInitial> | undefined =
     duplicateInitial || defaultJourneyId
-      ? { ...(duplicateInitial ?? {}), ...(defaultJourneyId ? { journeyId: defaultJourneyId } : {}) }
+      ? {
+          ...(duplicateInitial?.initial ?? {}),
+          ...(defaultJourneyId ? { journeyId: defaultJourneyId } : {}),
+        }
       : undefined
 
   return (
