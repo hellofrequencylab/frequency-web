@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound, redirect } from 'next/navigation'
 import { Zap } from 'lucide-react'
+import { SITE_NAME, SITE_URL } from '@/lib/site'
 import { getMyProfileId } from '@/lib/auth'
 import { resolveSpaceClaimAny } from '@/lib/spaces/claim'
 import { getSpaceById } from '@/lib/spaces/store'
@@ -19,9 +21,31 @@ import { cn } from '@/lib/utils'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { BrandAnchor } from '@/components/spaces/brand-anchor'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
+import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 import { ClaimSpaceButton } from './claim-button'
 
 export const dynamic = 'force-dynamic'
+
+// ONE column literal for the whole page: the ribbon, the body and the fixed claim bar all use it.
+// They were three independent copies of `max-w-6xl`, which matched only by luck and would desync the
+// first time one was edited.
+//
+// WHY 69rem. The public Space page has no max-width of its own — its body is whatever is left of the
+// app shell row after both rails, so it is FLUID and this page is FIXED. There is no literal that
+// matches at every breakpoint; this matches at the width that matters, the widest:
+//
+//   shell row      max-w-[105rem]  1680
+//   minus lg:px-8   -64            1616
+//   minus left rail w-48 + gap-10  -232
+//   minus right rail w-72 + ml-3 + gap-10  -340
+//   = Space page body               ~1044
+//   + this page's own lg:px-8       +64
+//   = 1108  ->  69rem (1104)        (was max-w-6xl = 1152, i.e. 1088 of content)
+//
+// The remaining difference the owner sees is NOT width, it is that this page renders outside the
+// (main) route group, so the shell never mounts and there are no rails to flank the column. That is
+// deliberate: a signed-out business owner must be able to see what they are claiming.
+const CLAIM_COLUMN = 'mx-auto w-full max-w-[69rem] px-4 sm:px-6 lg:px-8'
 
 // Never index a claim landing. This page renders the SAME block body as the live
 // /spaces/<slug> profile, so an indexed copy would compete with the canonical Space
@@ -29,9 +53,60 @@ export const dynamic = 'force-dynamic'
 // /spaces/directory twin. It is also a one-time token URL: indexing it publishes a
 // single-use claim link. Same posture as the (capture) funnel pages, which pair a
 // per-page noindex with a robots.ts Disallow.
-export const metadata: Metadata = {
-  title: 'Claim this business',
-  robots: { index: false },
+//
+// 🔴 NOINDEX IS NOT NO-PREVIEW. A static `metadata` object with only `title` + `robots`
+// INHERITS the root layout's entire openGraph/twitter block, because Next shallow-merges
+// metadata down the segment tree and a segment that never declares `openGraph` keeps the
+// parent's verbatim. That is why pasting a claim link into Apple Mail produced
+// "Frequency · The Community Collective / frequencylocal.com" pointing at the homepage:
+// not a malformed tag, an INHERITED one. Messaging clients and mail previewers do not read
+// robots directives, so the card must be authored here even though the page is noindexed.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>
+}): Promise<Metadata> {
+  const { token } = await params
+  const claim = await resolveSpaceClaimAny(token)
+  const space = claim && !claim.claimed ? await getSpaceById(claim.spaceId) : null
+
+  // Unknown, used, or removed: a neutral card that names no business. The OG image already
+  // falls back the same way, so the two never disagree about what a dead token reveals.
+  if (!space) {
+    return {
+      title: 'Claim this business',
+      robots: { index: false },
+      openGraph: {
+        title: `Claim your business on ${SITE_NAME}`,
+        description: 'Frequency builds a page for local businesses. If one is yours, claim it.',
+        type: 'website',
+      },
+      twitter: { card: 'summary_large_image' },
+    }
+  }
+
+  const brandName = space.brandName?.trim() || space.name
+  const title = `${brandName} · Claim your business on ${SITE_NAME}`
+  // The page's own words, so the preview reads like the page rather than like the site:
+  // the tagline the owner will actually see under their name in the hero.
+  const description = space.tagline?.trim()
+    ? `${space.tagline.trim()} Claim this page to edit it and run it from your own account.`
+    : `Frequency built a page for ${brandName}. Claim it to edit it and run it from your own account.`
+
+  return {
+    title,
+    robots: { index: false },
+    // Declared explicitly so NOTHING is inherited from the root: an inherited `url` pointed
+    // every claim preview at the homepage.
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      siteName: SITE_NAME,
+      url: `${SITE_URL}/spaces/claim/${token}`,
+    },
+    twitter: { card: 'summary_large_image', title, description },
+  }
 }
 
 // The claim landing the real business owner reaches from an operator's outreach. PUBLIC (outside the
@@ -107,7 +182,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
         {/* Claim ribbon — sets the context above the page it introduces. Its inner content aligns to the
             same column as the page below it. */}
         <div className="border-b border-primary/20 bg-primary-bg/40">
-          <div className="mx-auto flex max-w-6xl items-start gap-2 px-4 py-2.5 text-sm text-primary-strong sm:px-6 lg:px-8">
+          <div className={cn(CLAIM_COLUMN, "flex items-start gap-2 py-2.5 text-sm text-primary-strong")}>
             <Zap className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <span>
               Frequency built this page so people nearby could find you. If it is yours, claim it to make it your own.
@@ -117,7 +192,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
 
         {/* ONE content column, matching the business space page's boundaries: hero + body sit inside the
             same max-width + padding. */}
-        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className={cn(CLAIM_COLUMN, "py-6")}>
           {/* The REAL live hero — the SAME node the (profile) page renders: the operator's Hero-size cover
               with the identity (logo + eyebrow + name + tagline) overlaid on a bottom scrim. Visitor view:
               no Follow / owner actions. Mirrors layout.tsx `heroCoverNode`. */}
@@ -167,18 +242,34 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
           </header>
 
           {/* The REAL public profile body — byte-for-byte the visitor render, minus the shell chrome. */}
+          {/* PAGE-FRAMEWORK section 5: never block the shell on a slow await. SpaceProfileModules
+              awaits getSpaceContentData, and without a boundary the claim ribbon, the hero and the
+              fixed claim bar all waited on it — so the one thing this page exists to show (the
+              claim button) was the last thing to paint. The live Space page already wraps the
+              equivalent body; this matches it. */}
           <main className="py-8">
-            <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
+            <Suspense fallback={<ProfileBodySkeleton />}>
+              <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
+            </Suspense>
           </main>
         </div>
       </div>
 
       {/* The always-visible claim bar — the big button rides along the whole page. */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-pop backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <div className={cn(CLAIM_COLUMN, "flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between")}>
+          {/* The sell names what actually ships TODAY, and nothing else. Deliberately absent:
+              "take bookings" (paid booking is double-gated behind a Stripe key AND the
+              host_payouts_enabled flag, which defaults OFF, so it promises money that cannot
+              move), and the CRM / Email / Automation modules (marketed as freemium but sitting
+              behind a Business-plan floor in FEATURE_GATES, so a free claimer would lose them the
+              day that flag flips). Memberships, tickets and donations are record-only in v1 and
+              would read as a revenue promise beside the rest. Every noun here is canon
+              (docs/NAMING.md) and there are no em dashes (docs/CONTENT-VOICE.md). */}
           <p className="text-sm text-text">
-            <span className="font-semibold">Is this your business?</span> Claim it to edit the page, post
-            updates, take bookings, and run it from your own account. It takes one tap.
+            <span className="font-semibold">Is this your business?</span> This page is already
+            built and already found. Claim it to edit anything on it, list your events and let
+            people book a time, and answer the people who show up. It takes one tap.
           </p>
           <div className="shrink-0 sm:w-64">
             {myProfileId ? (

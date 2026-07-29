@@ -39,6 +39,7 @@ export function LiveProfileGrid({
   initialStyle = {},
   spaceSlug,
   profilePublished = true,
+  hasUnpublishedChanges = false,
   uploadImage,
 }: {
   /** Every candidate block, pre-rendered server-side (UNSTYLED) and keyed by block id. */
@@ -57,6 +58,10 @@ export function LiveProfileGrid({
   /** The persisted preferences.profilePublished (SPACE owner preview only) — seeds the publish bar's
    *  "Visible on network" toggle. Defaults true; ignored on the member grid / visitor render. */
   profilePublished?: boolean
+  /** Draft differs from the published node. Mounts the publish bar even OUTSIDE edit mode, so an owner
+   *  who closed the admin rail can still see that their page has changes the network cannot see yet.
+   *  Owner report: card-view edits sat unpublished for days and read as a rendering bug. */
+  hasUnpublishedChanges?: boolean
   /** Gated image upload for the on-page photo popup (SPACE owner preview only; ADR-542). Threaded down to
    *  SpaceCanvasBlock so the popup can UPLOAD a file, not just PASTE a URL — the SAME owner-gated,
    *  service-role action the /manage/layout rail editor uses. Optional + fail-safe: when it is absent (a
@@ -192,8 +197,12 @@ export function LiveProfileGrid({
           `transform`, which would trap this `position: fixed` bar inside the rail's box and clip it out of
           view. Shown only for the Space owner in live-page edit mode (`editable`); it reads the shared store
           for autosave state + undo and calls the owner-gated publish / visibility actions by slug. */}
-      {editable && spaceSlug && (
-        <SpacePublishFab slug={spaceSlug} initialPublished={profilePublished} />
+      {(editable || hasUnpublishedChanges) && spaceSlug && (
+        <SpacePublishFab
+          slug={spaceSlug}
+          initialPublished={profilePublished}
+          hasUnpublishedChanges={hasUnpublishedChanges}
+        />
       )}
     </>
   )

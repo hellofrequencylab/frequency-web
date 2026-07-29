@@ -24,11 +24,17 @@ import {
 export function SpacePublishFab({
   slug,
   initialPublished = true,
+  hasUnpublishedChanges = false,
 }: {
   /** The Space slug — the owner-gated publish + visibility actions re-check ownership server-side by it. */
   slug: string
   /** The persisted preferences.profilePublished, seeding the "Visible on network" toggle (defaults true). */
   initialPublished?: boolean
+  /** The draft differs from what visitors see. Changes ONLY the wording: the bar leads with the fact
+   *  that the page has changes nobody else can see yet, instead of the neutral autosave cue. Without
+   *  this an owner who had already published read "Draft · Saved" as "live", which is how a card-view
+   *  change sat unpublished and was reported as a rendering bug. */
+  hasUnpublishedChanges?: boolean
 }) {
   const store = useProfileLayout()
   const [open, setOpen] = useState(true)
@@ -83,7 +89,8 @@ export function SpacePublishFab({
           onClick={() => setOpen(true)}
           className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/95 px-3.5 py-2 text-xs font-semibold text-text shadow-pop backdrop-blur transition-colors hover:bg-surface-elevated"
         >
-          <ChevronUp className="h-3.5 w-3.5" aria-hidden /> Editing tools
+          <ChevronUp className="h-3.5 w-3.5" aria-hidden />{' '}
+          {hasUnpublishedChanges ? 'Unpublished changes' : 'Editing tools'}
         </button>
       </div>
     )
@@ -107,6 +114,11 @@ export function SpacePublishFab({
             <>
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Draft · Saving
             </>
+          ) : hasUnpublishedChanges ? (
+            // The one thing the owner could not tell before: saved is not the same as live.
+            <span className="font-semibold text-primary-strong">
+              Saved, not yet live. Publish to show these changes to everyone.
+            </span>
           ) : (
             <>
               <Check className="h-3.5 w-3.5 text-success" aria-hidden /> Draft · Saved
