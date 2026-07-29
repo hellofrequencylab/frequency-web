@@ -75,6 +75,15 @@ describe('every route declares the bytes it actually serves', () => {
     expect(src).not.toContain("export const contentType = 'image/png'")
   })
 
+  it.each(ROUTES)('%s runs on the nodejs runtime, which sharp requires', (path) => {
+    // 🔴 SILENT IF MISSED. sharp is a native binary and cannot load on the edge runtime. deliverCard
+    // is fail-safe, so an edge route would not error — it would quietly serve the original 1.7MB PNG
+    // under a jpeg contentType. That is this exact bug coming back with a green test suite, which is
+    // how it survived three rounds of fixes. All 14 routes are nodejs today; this makes it a rule.
+    const src = readFileSync(path, 'utf8')
+    expect(src).toMatch(/export const runtime = ['"]nodejs['"]/)
+  })
+
   it.each(ROUTES)('%s has no un-delivered ImageResponse left on any branch', (path) => {
     // 🔴 Both entity cards have TWO return sites: a fallback branch and the main card. contentType
     // is one export for the whole route, so converting only the main path leaves the fallback
