@@ -12,6 +12,7 @@
 // The claim_token / claimed_by / claimed_at columns are not in database.types yet, so this reaches them
 // through a narrow untyped handle (repo convention, ADR-246), exactly like lib/listing-seeder/claim.ts.
 
+import { cache } from 'react'
 import { randomBytes } from 'node:crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { addSpaceMember, removeSpaceMember } from '@/lib/spaces/membership'
@@ -133,7 +134,13 @@ export interface ResolvedSpaceClaimAny extends ResolvedSpaceClaim {
   claimed: boolean
   ownerProfileId: string | null
 }
-export async function resolveSpaceClaimAny(token: string): Promise<ResolvedSpaceClaimAny | null> {
+// REQUEST-CACHED: the claim page resolves the same token TWICE per request — once in
+// generateMetadata (to author the share card) and once in the page body. Without this that is two
+// round trips for one render, on the page a business owner lands on from an email. React's cache()
+// dedupes within a single request only, so nothing is shared between visitors or between tokens.
+export const resolveSpaceClaimAny = cache(async function resolveSpaceClaimAny(
+  token: string,
+): Promise<ResolvedSpaceClaimAny | null> {
   if (!token || token.length < 8) return null
   try {
     const { data } = await spacesTable()
@@ -151,7 +158,7 @@ export async function resolveSpaceClaimAny(token: string): Promise<ResolvedSpace
   } catch {
     return null
   }
-}
+})
 
 /**
  * Claim a seeded Space: transfer ownership to `profileId`. A COMPARE-AND-SET filtered on (token,
