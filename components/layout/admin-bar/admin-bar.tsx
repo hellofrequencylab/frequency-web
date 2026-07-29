@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { usePathname } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 import { useSettingsPanel, useIsDesktop } from '@/components/layout/settings-panel'
+import { hasUnpublishedWork, UNPUBLISHED_WARNING } from '@/lib/layout/unpublished-work'
 import { AdminBarBody } from '@/components/layout/admin-bar/admin-bar-body'
 import { OPEN_ADMIN_BAR, type OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 
@@ -134,6 +135,24 @@ export function AdminBar({
   const pathname = usePathname()
   const isDesktop = useIsDesktop()
   const model = useSettingsPanel(detail)
+
+  // CLOSING THE EDIT PANEL WITH WORK NOBODY ELSE CAN SEE.
+  // The owner's report: layout edits sat unpublished and read as a rendering bug, and closing this
+  // panel gave no signal at all. `beforeunload` covers leaving the PAGE; this covers leaving the
+  // EDITOR, which is the more common way to lose track of a draft.
+  //
+  // The flag comes from lib/layout/unpublished-work.ts rather than a store, because the publish bar
+  // that knows about autosave + draft lives in the page body, in a different React tree from this
+  // shell component (see that file for why lifting a provider would be backwards).
+  //
+  // window.confirm is deliberate HERE, unlike in the chat dock: this is an operator surface inside
+  // the admin rail, not member-facing chrome, and a native dialog is the only thing that reliably
+  // interrupts a click that is already closing the panel. If this ever moves to member-facing UI it
+  // needs the house Dialog instead.
+  const closeGuarded = useCallback(() => {
+    if (hasUnpublishedWork() && !window.confirm(UNPUBLISHED_WARNING)) return
+    setOpen(false)
+  }, [setOpen])
   const { hasContent } = model
   // Resets the drill screen + query on route/scope change (the desktop bar persists across nav).
   const resetKey = `${pathname}::${detail?.scope?.kind ?? ''}`
@@ -328,7 +347,7 @@ export function AdminBar({
           <AdminBarTopBar
             query={query}
             onQueryChange={setQuery}
-            onClose={() => setOpen(false)}
+            onClose={closeGuarded}
             closeRef={closeButtonRef}
           />
 
@@ -357,7 +376,7 @@ export function AdminBar({
       <div className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-border bg-surface shadow-pop">
         {/* The fixed top bar (search + close) sits ABOVE the scroll region, so nothing can render above the
             search on scroll — the search is the top of the sheet (ADR-516 Phase E). */}
-        <AdminBarTopBar query={query} onQueryChange={setQuery} onClose={() => setOpen(false)} />
+        <AdminBarTopBar query={query} onQueryChange={setQuery} onClose={closeGuarded} />
         <div ref={bodyScrollRef} className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
           <AdminBarBody key={resetKey} model={model} query={query} onQueryChange={setQuery} />
         </div>

@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Check, ChevronUp, Globe, Loader2, Undo2 } from 'lucide-react'
 import { useProfileLayout } from './profile-layout-context'
+import { setUnpublishedWork } from '@/lib/layout/unpublished-work'
 import {
   publishSpaceProfileLayout,
   setProfilePublished,
@@ -51,6 +52,39 @@ export function SpacePublishFab({
 
   const saving = !!store?.saving
   const canUndo = !!store?.canUndo
+
+  // ── LEAVING WITH WORK NOBODY ELSE CAN SEE ───────────────────────────────────────────────
+  // The owner's report: edits sat unpublished for days and read as a rendering bug, because the
+  // page looked finished and nothing said otherwise. Autosave makes that worse, not better —
+  // "Draft · Saved" is literally true and reads as "live".
+  //
+  // Two distinct states, and the warning covers both:
+  //   saving                -> bytes still in flight, closing now loses the last edit outright
+  //   hasUnpublishedChanges -> saved safely, but no visitor can see it until Publish
+  //
+  // Same shape as the repo's other editors (admin/walkthroughs, pages/splash): preventDefault +
+  // returnValue is all a browser honours. The string is ignored by every modern browser, which is
+  // exactly why the in-page copy below has to carry the message too — this dialog can only ask
+  // "leave?", it cannot explain why.
+  const unsavedOrUnpublished = saving || hasUnpublishedChanges
+
+  // Publish the same fact to the app shell, whose admin-bar close button lives in a different React
+  // tree and cannot read this store. Cleared on unmount so navigating away does not leave a stale
+  // flag warning about a page the operator already left.
+  useEffect(() => {
+    setUnpublishedWork(!!unsavedOrUnpublished)
+    return () => setUnpublishedWork(false)
+  }, [unsavedOrUnpublished])
+
+  useEffect(() => {
+    if (!unsavedOrUnpublished) return
+    const h = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', h)
+    return () => window.removeEventListener('beforeunload', h)
+  }, [unsavedOrUnpublished])
 
   // Promote the draft onto the published node (go live now), then CLOSE the bar.
   async function onPublish() {

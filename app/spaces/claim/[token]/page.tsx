@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { notFound, redirect } from 'next/navigation'
 import { Zap } from 'lucide-react'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
+import { SHELL_ROW_CLASS, SHELL_CONTENT_WIDTH_CLASS } from '@/lib/layout/shell-metrics'
 import { getMyProfileId } from '@/lib/auth'
 import { resolveSpaceClaimAny } from '@/lib/spaces/claim'
 import { getSpaceById } from '@/lib/spaces/store'
@@ -26,26 +27,23 @@ import { ClaimSpaceButton } from './claim-button'
 
 export const dynamic = 'force-dynamic'
 
-// ONE column literal for the whole page: the ribbon, the body and the fixed claim bar all use it.
-// They were three independent copies of `max-w-6xl`, which matched only by luck and would desync the
-// first time one was edited.
+// THE COLUMN. Same width as the app shell's content column — the region between the two rails on
+// a live Space page — at EVERY breakpoint, and centred.
 //
-// WHY 69rem. The public Space page has no max-width of its own — its body is whatever is left of the
-// app shell row after both rails, so it is FLUID and this page is FIXED. There is no literal that
-// matches at every breakpoint; this matches at the width that matters, the widest:
+// 🔴 WHY IT IS TWO NESTED DIVS AND NOT A max-w CONSTANT. The shell's content column is
+// `flex-1 min-w-0`: it has no width of its own, it is the remainder after the rails, and the rails
+// hide at DIFFERENT breakpoints (left at `md`, right at `lg`). A single constant was tried here
+// (`max-w-[69rem]`, derived by hand from the 105rem case). It lands within 4px on a 1680px monitor
+// and **232px too wide at ~1000px**, where the right rail has already hidden — reported three
+// times by the owner as "still a random width, too wide".
 //
-//   shell row      max-w-[105rem]  1680
-//   minus lg:px-8   -64            1616
-//   minus left rail w-48 + gap-10  -232
-//   minus right rail w-72 + ml-3 + gap-10  -340
-//   = Space page body               ~1044
-//   + this page's own lg:px-8       +64
-//   = 1108  ->  69rem (1104)        (was max-w-6xl = 1152, i.e. 1088 of content)
-//
-// The remaining difference the owner sees is NOT width, it is that this page renders outside the
-// (main) route group, so the shell never mounts and there are no rails to flank the column. That is
-// deliberate: a signed-out business owner must be able to see what they are claiming.
-const CLAIM_COLUMN = 'mx-auto w-full max-w-[69rem] px-4 sm:px-6 lg:px-8'
+// So: OUTER reproduces the shell row's box (same max-width, same responsive padding), and INNER
+// subtracts exactly what the rails and gaps take at that breakpoint. `100%` inside the calc is the
+// outer's inner width, which is the same quantity the shell's flex row divides up. The numbers
+// live in lib/layout/shell-metrics.ts and are pinned against app-shell.tsx by a test, so widening
+// a rail there cannot silently desync this page again.
+const CLAIM_ROW = SHELL_ROW_CLASS
+const CLAIM_COLUMN = SHELL_CONTENT_WIDTH_CLASS
 
 // Never index a claim landing. This page renders the SAME block body as the live
 // /spaces/<slug> profile, so an indexed copy would compete with the canonical Space
@@ -182,7 +180,8 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
         {/* Claim ribbon — sets the context above the page it introduces. Its inner content aligns to the
             same column as the page below it. */}
         <div className="border-b border-primary/20 bg-primary-bg/40">
-          <div className={cn(CLAIM_COLUMN, "flex items-start gap-2 py-2.5 text-sm text-primary-strong")}>
+          <div className={CLAIM_ROW}>
+            <div className={cn(CLAIM_COLUMN, "flex items-start gap-2 py-2.5 text-sm text-primary-strong")}>
             <Zap className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             {/* "so people nearby could find you" was not true for every Space that renders here. An
                 unlisted seed is `visibility = 'private'` and never appears in the directory, and this
@@ -191,12 +190,14 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
             <span>
               Frequency built this page for your business. If it is yours, claim it to make it your own.
             </span>
+            </div>
           </div>
         </div>
 
         {/* ONE content column, matching the business space page's boundaries: hero + body sit inside the
             same max-width + padding. */}
-        <div className={cn(CLAIM_COLUMN, "py-6")}>
+        <div className={CLAIM_ROW}>
+          <div className={cn(CLAIM_COLUMN, "py-6")}>
           {/* The REAL live hero — the SAME node the (profile) page renders. The three theme-carrying
               classes below (`--radius-cover`, `font-eyebrow`, `font-section`) are what make it read as
               the owner's page rather than a generic one: on the 'classic' theme they resolve to
@@ -272,12 +273,14 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
               <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
             </Suspense>
           </main>
+          </div>
         </div>
       </div>
 
       {/* The always-visible claim bar — the big button rides along the whole page. */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-pop backdrop-blur">
-        <div className={cn(CLAIM_COLUMN, "flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between")}>
+        <div className={CLAIM_ROW}>
+          <div className={cn(CLAIM_COLUMN, "flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between")}>
           {/* The sell names what actually ships TODAY, and nothing else. Deliberately absent:
               "take bookings" (paid booking is double-gated behind a Stripe key AND the
               host_payouts_enabled flag, which defaults OFF, so it promises money that cannot
@@ -305,6 +308,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
                 <p className="text-center text-xs text-subtle">Signing in creates your account in a minute.</p>
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>
