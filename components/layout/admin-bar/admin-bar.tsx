@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom'
 import { usePathname } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 import { useSettingsPanel, useIsDesktop } from '@/components/layout/settings-panel'
+import { hasUnpublishedWork, subscribeUnpublishedWork, UNPUBLISHED_WARNING } from '@/lib/layout/unpublished-work'
+import { cn } from '@/lib/utils'
 import { AdminBarBody } from '@/components/layout/admin-bar/admin-bar-body'
 import { OPEN_ADMIN_BAR, type OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 
@@ -18,11 +20,17 @@ function AdminBarTopBar({
   onQueryChange,
   onClose,
   closeRef,
+  unpublished = false,
 }: {
   query: string
   onQueryChange: (value: string) => void
   onClose: () => void
   closeRef?: React.Ref<HTMLButtonElement>
+  /** There is saved-but-unpublished work on the page behind this rail. Changes only how the close
+   *  control READS, never what it does — closeGuarded already asks. Without it the only signal
+   *  arrived as a confirm() AFTER the operator had committed to closing, which is a warning about a
+   *  decision already made rather than a label on the control. */
+  unpublished?: boolean
 }) {
   return (
     <div className="flex items-center gap-2 border-b border-border bg-surface px-3 py-3">
@@ -48,10 +56,18 @@ function AdminBarTopBar({
         ref={closeRef}
         type="button"
         onClick={onClose}
-        aria-label="Close settings"
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface text-muted transition-colors hover:bg-surface-elevated hover:text-text motion-reduce:transition-none"
+        aria-label={unpublished ? 'Close settings. You have unpublished changes' : 'Close settings'}
+        title={unpublished ? 'You have changes that are not published yet' : undefined}
+        className={cn(
+          'relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface text-muted transition-colors hover:bg-surface-elevated hover:text-text motion-reduce:transition-none',
+          unpublished && 'text-primary-strong',
+        )}
       >
         <X className="h-5 w-5" aria-hidden />
+        {/* A dot, not a count: the state is binary and the rail is dense. aria carries the meaning. */}
+        {unpublished && (
+          <span aria-hidden className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary ring-2 ring-surface" />
+        )}
       </button>
     </div>
   )
@@ -134,6 +150,32 @@ export function AdminBar({
   const pathname = usePathname()
   const isDesktop = useIsDesktop()
   const model = useSettingsPanel(detail)
+
+  // CLOSING THE EDIT PANEL WITH WORK NOBODY ELSE CAN SEE.
+  // The owner's report: layout edits sat unpublished and read as a rendering bug, and closing this
+  // panel gave no signal at all. `beforeunload` covers leaving the PAGE; this covers leaving the
+  // EDITOR, which is the more common way to lose track of a draft.
+  //
+  // The flag comes from lib/layout/unpublished-work.ts rather than a store, because the publish bar
+  // that knows about autosave + draft lives in the page body, in a different React tree from this
+  // shell component (see that file for why lifting a provider would be backwards).
+  //
+  // window.confirm is deliberate HERE, unlike in the chat dock: this is an operator surface inside
+  // the admin rail, not member-facing chrome, and a native dialog is the only thing that reliably
+  // interrupts a click that is already closing the panel. If this ever moves to member-facing UI it
+  // needs the house Dialog instead.
+  // The close control's LOOK, not its behaviour. hasUnpublishedWork() is a module variable read at click
+  // time, which is right for the guard but cannot repaint anything; this subscription is what the flag's
+  // `subscribeUnpublishedWork` export was written for and had no consumer for. Without it the operator's
+  // only signal was a confirm() that fired AFTER they had already committed to closing.
+  const [unpublished, setUnpublished] = useState(false)
+  useEffect(() => subscribeUnpublishedWork(setUnpublished), [])
+
+  const closeGuarded = useCallback(() => {
+    if (hasUnpublishedWork() && !window.confirm(UNPUBLISHED_WARNING)) return
+    setOpen(false)
+  }, [setOpen])
+
   const { hasContent } = model
   // Resets the drill screen + query on route/scope change (the desktop bar persists across nav).
   const resetKey = `${pathname}::${detail?.scope?.kind ?? ''}`
@@ -166,15 +208,24 @@ export function AdminBar({
     return () => window.removeEventListener(OPEN_ADMIN_BAR, onTyped)
   }, [])
 
-  // Close on Escape while open (both surfaces).
+  // Close on Escape while open (both surfaces). GUARDED: Escape is the standard slide-over
+  // dismissal and was the single most likely way to lose track of an unpublished draft, since it
+  // takes no aim and leaves no trace. It bypassed closeGuarded entirely until an adversarial pass
+  // caught it.
+  //
+  // Depends on `closeGuarded` DIRECTLY, not through a ref. The first version mirrored the callback
+  // into a ref and assigned `ref.current` in the render body to keep the deps at [open] — which is
+  // the "Cannot access refs during render" violation (react-hooks/refs), and it fails CI. No ref is
+  // needed: closeGuarded is a useCallback over [setOpen], and a useState setter is referentially
+  // stable for the life of the component, so this listener still binds exactly once per open.
   useEffect(() => {
     if (!open) return
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') closeGuarded()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open])
+  }, [open, closeGuarded])
 
   // ── Mobile-only: close when the route changes (navigating away closes the sheet — mobile
   // expectation). The desktop slide-over deliberately persists across navigation. ──
@@ -328,7 +379,8 @@ export function AdminBar({
           <AdminBarTopBar
             query={query}
             onQueryChange={setQuery}
-            onClose={() => setOpen(false)}
+            onClose={closeGuarded}
+            unpublished={unpublished}
             closeRef={closeButtonRef}
           />
 
@@ -350,14 +402,18 @@ export function AdminBar({
       <button
         type="button"
         aria-label="Close settings"
-        onClick={() => setOpen(false)}
+        // GUARDED. This backdrop is a second, full-screen "Close settings" control and is the
+        // PRIMARY dismissal gesture on a phone. It uses onClick rather than the onClose prop, which
+        // is why the first drift guard (matching `onClose=`) missed it while reporting the surface
+        // as fully covered.
+        onClick={closeGuarded}
         className="absolute inset-0 bg-black/40"
       />
       {/* Sheet — full-width on a phone (w-full), a right-side sheet on a tablet (max-w-md). */}
       <div className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-border bg-surface shadow-pop">
         {/* The fixed top bar (search + close) sits ABOVE the scroll region, so nothing can render above the
             search on scroll — the search is the top of the sheet (ADR-516 Phase E). */}
-        <AdminBarTopBar query={query} onQueryChange={setQuery} onClose={() => setOpen(false)} />
+        <AdminBarTopBar query={query} onQueryChange={setQuery} onClose={closeGuarded} unpublished={unpublished} />
         <div ref={bodyScrollRef} className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
           <AdminBarBody key={resetKey} model={model} query={query} onQueryChange={setQuery} />
         </div>

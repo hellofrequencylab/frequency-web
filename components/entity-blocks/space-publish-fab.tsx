@@ -1,9 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import { Check, ChevronUp, Globe, Loader2, Undo2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Check, ChevronUp, Globe, Loader2, Trash2, Undo2 } from 'lucide-react'
 import { useProfileLayout } from './profile-layout-context'
+import { setUnpublishedWork, UNPUBLISHED_LEAVE_WARNING } from '@/lib/layout/unpublished-work'
 import {
+  discardSpaceProfileDraft,
   publishSpaceProfileLayout,
   setProfilePublished,
 } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
@@ -43,14 +46,94 @@ export function SpacePublishFab({
   editable?: boolean
 }) {
   const store = useProfileLayout()
+  const router = useRouter()
   const [open, setOpen] = useState(editable)
   const [published, setPublished] = useState(initialPublished)
   const [publishBusy, setPublishBusy] = useState(false)
+  const [discardBusy, setDiscardBusy] = useState(false)
   const [visibleBusy, setVisibleBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const saving = !!store?.saving
+  // The DEBOUNCE window too, not just the in-flight save. `saving` only flips once flush() has started,
+  // so for ~600ms after every edit the guards below believed there was nothing to lose.
+  const dirty = !!store?.dirty
   const canUndo = !!store?.canUndo
+
+  // ── LEAVING WITH WORK NOBODY ELSE CAN SEE ───────────────────────────────────────────────
+  // The owner's report: edits sat unpublished for days and read as a rendering bug, because the
+  // page looked finished and nothing said otherwise. Autosave makes that worse, not better —
+  // "Draft · Saved" is literally true and reads as "live".
+  //
+  // THREE distinct states, and the warning covers all three:
+  //   dirty                 -> an edit landed, its debounced save has not started yet
+  //   saving                -> bytes in flight, closing now loses the last edit outright
+  //   hasUnpublishedChanges -> saved safely, but no visitor can see it until Publish
+  //
+  // 🔴 `dirty` was missing, and `saving` does not cover it: setSaving(true) happens inside flush(),
+  // which the debounce delays by ~600ms. Every keystroke therefore opened a window where the page had
+  // unpersisted work and none of the guards below knew it. `seed` deliberately does not set it, so
+  // merely opening your own page never arms a prompt.
+  //
+  // Same shape as the repo's other editors (admin/walkthroughs, pages/splash): preventDefault +
+  // returnValue is all a browser honours. The string is ignored by every modern browser, which is
+  // exactly why the in-page copy below has to carry the message too — this dialog can only ask
+  // "leave?", it cannot explain why.
+  const unsavedOrUnpublished = saving || dirty || hasUnpublishedChanges
+
+  // Publish the same fact to the app shell, whose admin-bar close button lives in a different React
+  // tree and cannot read this store. Cleared on unmount so navigating away does not leave a stale
+  // flag warning about a page the operator already left.
+  useEffect(() => {
+    setUnpublishedWork(!!unsavedOrUnpublished)
+    return () => setUnpublishedWork(false)
+  }, [unsavedOrUnpublished])
+
+  useEffect(() => {
+    if (!unsavedOrUnpublished) return
+    const h = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', h)
+    return () => window.removeEventListener('beforeunload', h)
+  }, [unsavedOrUnpublished])
+
+  // ── LEAVING THE PAGE THE WAY PEOPLE ACTUALLY LEAVE IT ───────────────────────────────────
+  //
+  // 🔴 `beforeunload` above covers only HARD unloads: reload, tab close, typing a new URL. It does
+  // NOT fire on an App Router client transition, which is how an owner actually leaves their Space
+  // page — a click on the nav rail, a Space header tab, any <Link>. So the guard that exists to stop
+  // a draft being forgotten was silent on the majority path, which is exactly the "it sat
+  // unpublished for days" report it was written for.
+  //
+  // Intercepted at the DOCUMENT in the CAPTURE phase rather than per-<Link>, so it covers every
+  // in-app anchor including ones rendered by components this file knows nothing about, and it runs
+  // before the router's own handler gets the click. Only same-origin, plain left-clicks are
+  // guarded: a modified click (new tab), a `target` that is not this frame, a download, and any
+  // non-http scheme all leave this page open and lose nothing.
+  //
+  // ⚠️ Browser BACK is still unguarded, and cannot be guarded without pushing a decoy history entry
+  // (which breaks the back button in its own way). No work is lost either way: the layout store
+  // flushes its pending save on unmount.
+  useEffect(() => {
+    if (!unsavedOrUnpublished) return
+    function onClick(e: MouseEvent) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+      const anchor = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null
+      if (!anchor || anchor.hasAttribute('download')) return
+      if (anchor.target && anchor.target !== '_self') return
+      const url = new URL(anchor.href, window.location.href)
+      if (url.origin !== window.location.origin) return
+      // A same-page hash jump is not leaving.
+      if (url.pathname === window.location.pathname && url.search === window.location.search) return
+      if (window.confirm(UNPUBLISHED_LEAVE_WARNING)) return
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    document.addEventListener('click', onClick, true)
+    return () => document.removeEventListener('click', onClick, true)
+  }, [unsavedOrUnpublished])
 
   // Promote the draft onto the published node (go live now), then CLOSE the bar.
   async function onPublish() {
@@ -64,6 +147,23 @@ export function SpacePublishFab({
     }
     setPublished(true)
     setOpen(false)
+  }
+
+  // Throw the draft away and go back to what visitors see. DESTRUCTIVE and irreversible (the draft is
+  // deleted server-side), so it confirms first. `router.refresh()` re-runs the server component that
+  // computed hasUnpublishedChanges, so the bar and the warnings clear in the same beat.
+  async function onDiscard() {
+    if (!window.confirm('Discard your unpublished changes and go back to the page visitors see? This cannot be undone.'))
+      return
+    setError(null)
+    setDiscardBusy(true)
+    const res = await discardSpaceProfileDraft(slug)
+    setDiscardBusy(false)
+    if (res?.error) {
+      setError(res.error)
+      return
+    }
+    router.refresh()
   }
 
   // Persist-and-step-away: autosave already writes the draft on every edit, so this just confirms + minimizes
@@ -176,6 +276,27 @@ export function SpacePublishFab({
         {/* Actions sit at the FAR RIGHT, off the edge (a right margin), each on ONE row at a legible size.
             The old two-line label + sublabel is gone; the intent rides along as a title tooltip. */}
         <div className="ml-auto mr-1 flex items-center gap-2 sm:mr-3">
+          {/* DISCARD — the missing half of a draft system. Publish was the only thing that ever
+              removed the draft node, so an owner who tried an arrangement and decided against it
+              had no way out of the "unpublished changes" state, which arms a confirm on every rail
+              dismissal. Only shown when there is actually something to throw away, and it can never
+              touch the live page (the action deletes the draft key alone). */}
+          {hasUnpublishedChanges && (
+            <button
+              type="button"
+              onClick={() => void onDiscard()}
+              disabled={discardBusy}
+              title="Go back to the page visitors see"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-danger disabled:opacity-60"
+            >
+              {discardBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Trash2 className="h-4 w-4" aria-hidden />
+              )}
+              Discard
+            </button>
+          )}
           <button
             type="button"
             onClick={onSaveDraft}

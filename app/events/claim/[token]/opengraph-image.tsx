@@ -126,8 +126,8 @@ export default async function Image({ params }: { params: Promise<{ token: strin
     .toUpperCase()
 
   const [black, bold, mark] = await Promise.all([
-    loadNunito(900, displayName),
-    loadNunito(700, `${pitch}Event${initials}`),
+    loadNunito(900),
+    loadNunito(700),
     localImage('images/Frequency-Logo-Round-Icon-white.png'),
   ])
   const fonts = [

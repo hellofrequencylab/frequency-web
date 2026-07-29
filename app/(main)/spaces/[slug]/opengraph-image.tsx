@@ -126,11 +126,14 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     .join('')
     .toUpperCase()
 
-  // Nunito subsets for exactly the glyphs on the card (loadNunito falls back to a bundled TTF, never
-  // null, so the fonts array can never be empty and a crawl can never crash the render).
+  // FULL Nunito faces read from public/fonts, memoised per process (lib/og/load-nunito.ts). Not
+  // subsets: subsetting to the card's own glyphs rendered a name containing anything outside that
+  // subset as tofu. And loadNunito CAN reject if public/fonts is missing from the bundle, which
+  // returns a 500 and gets the previewer a text card. That is deliberate and recoverable, unlike
+  // handing Satori an empty `fonts` array, which crashes it inside fontFamily.split().
   const [black, bold] = await Promise.all([
-    loadNunito(900, name),
-    loadNunito(700, `${tagline ?? ''}${typeLabel}${initials}`),
+    loadNunito(900),
+    loadNunito(700),
   ])
   const fonts = [
     { name: 'Nunito', data: black, weight: 900 as const, style: 'normal' as const },

@@ -22,6 +22,16 @@ import { uploadSpaceBlockImage } from '@/app/(main)/spaces/[slug]/manage/layout/
 // non-manager gets nothing here (the visitor render stays the plain SpaceProfileModules), and with no
 // space-layout store mounted the grid falls straight back to the persisted server layout.
 
+/** JSON with object keys sorted at every depth, so two logically identical layouts compare equal
+ *  regardless of the order their keys happen to be serialised in. */
+function canonicalJson(value: unknown): string {
+  return JSON.stringify(value, (_k, v) =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+      : v,
+  )
+}
+
 export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
   const caller = await getCallerProfile()
   const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
@@ -72,15 +82,28 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
   // Compared on the RAW nodes, not the parsed ones: parseEntityLayout normalises and would report two
   // materially different arrangements as equal once they round-trip to the same shape.
   //
-  // GATED ON canManage, NOT on canManage||staffViewing. publishSpaceProfileLayout fails closed on
-  // canManage (settings/profile/actions.ts), so showing this to a staff PREVIEWER would offer a
-  // Publish button that returns "You do not have permission to edit this space." A control that
-  // cannot work is worse than no control.
+  // GATED ON canManage, NOT on canManage||staffViewing, matching publishSpaceProfileLayout which
+  // fails closed on canManage (settings/profile/actions.ts). A control that cannot work is worse
+  // than no control.
+  //
+  // ⚠️ The case this defends against is currently UNREACHABLE, and an earlier version of this
+  // comment wrongly implied otherwise. A janitor resolves to STAFF_CAPABILITIES with isAdmin true
+  // (lib/spaces/entitlements.ts), so canEditProfile is true and they read as canManage, never as
+  // staffViewing — they DO get the publish bar and publishing DOES work for them. That is the
+  // designed behaviour ("full operator authority over the content"), not a leak. The gate stays
+  // because it is the correct expression of the rule and would matter the day a read-only staff
+  // tier exists.
+  //
+  // ⚠️ CANONICAL compare, not raw JSON.stringify. stringify is key-ORDER sensitive, so an owner who
+  // made an edit and then undid it could round-trip to a logically identical layout with a
+  // different key order and stay permanently "unpublished" — arming a beforeunload prompt on their
+  // own Space forever, with no way to clear it but publishing a no-op. Sorting keys makes the
+  // comparison mean what it says.
   const hasUnpublishedChanges =
     canManage &&
     !!prefsObj &&
     Object.prototype.hasOwnProperty.call(prefsObj, 'profileLayoutDraft') &&
-    JSON.stringify(prefsObj.profileLayoutDraft ?? null) !== JSON.stringify(prefsObj.profileLayout ?? null)
+    canonicalJson(prefsObj.profileLayoutDraft ?? null) !== canonicalJson(prefsObj.profileLayout ?? null)
 
   // The draft/published VISIBILITY flag (preferences.profilePublished) seeds the publish bar's "Visible on
   // network" toggle. Defaults TRUE when absent, so a Space that predates the flag is never shown as hidden.

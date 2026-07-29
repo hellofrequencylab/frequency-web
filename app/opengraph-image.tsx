@@ -23,10 +23,9 @@ export default async function Image() {
   );
   const markSrc = `data:image/png;base64,${markData.toString("base64")}`;
 
-  const glyphs = `${wordmark}${tagline}`;
   const [black, bold] = await Promise.all([
-    loadNunito(900, glyphs),
-    loadNunito(700, glyphs),
+    loadNunito(900),
+    loadNunito(700),
   ]);
 
   const fonts = [

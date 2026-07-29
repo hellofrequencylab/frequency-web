@@ -73,8 +73,8 @@ export async function claimCardResponse(input: ClaimCardInput): Promise<ImageRes
     .toUpperCase()
 
   const [black, bold] = await Promise.all([
-    loadNunito(900, displayName),
-    loadNunito(700, `${pitch}${input.pill}${initials}`),
+    loadNunito(900),
+    loadNunito(700),
   ])
   const fonts = [
     { name: 'Nunito', data: black, weight: 900 as const, style: 'normal' as const },

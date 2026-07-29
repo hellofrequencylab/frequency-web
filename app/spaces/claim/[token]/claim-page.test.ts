@@ -28,6 +28,21 @@ describe('the share card is the business, not the site (owner: no preview in App
     expect(pageCode).toContain('url: `${SITE_URL}/spaces/claim/${token}`')
   })
 
+  it('opts the title OUT of the root template, so the brand is not doubled', () => {
+    // 🔴 app/layout.tsx declares `title.template = '%s · Frequency'`, which wraps every child title
+    // that is not absolute. Both titles here already end in the site name, so a plain string renders
+    // "... on Frequency · Frequency" in the browser tab AND in og:title — on the one page whose whole
+    // job is to look like a real business's page. Silent: nothing throws, the tab is just wrong.
+    const titles = pageCode.match(/title: \{ absolute:/g) ?? []
+    expect(titles.length).toBe(2) // the named branch and the dead-token branch
+    // Indent-anchored: a bare `title,` at the METADATA root (4 spaces) is the templated bug. The one
+    // inside `openGraph:` (6 spaces) is correct and must stay — og:title takes no template, so the
+    // shorthand there is the plain, already-branded string the share card should show.
+    expect(pageCode).not.toMatch(/\n {4}title,\n/)
+    expect(pageCode).toMatch(/\n {6}title,\n/)
+    expect(pageCode).not.toMatch(/title: 'Claim this business',/)
+  })
+
   it('still noindexes, because noindex and no-preview are different things', () => {
     // Messaging clients and mail previewers do not read robots directives. The card must be rich
     // AND the page must stay out of the index — dropping either is a regression.
@@ -93,6 +108,88 @@ describe('the footer sells only what actually ships (docs/CONTENT-VOICE.md)', ()
   })
 })
 
+describe('the fixed claim bar reserves its own height, not a guessed one', () => {
+  it('reserves space with an invisible clone, never with hand-tuned padding', () => {
+    // 🔴 THE BUG. The page reserved room with `pb-48 sm:pb-28` — a guess at the bar's rendered
+    // height. It was measured against the ORIGINAL footer copy and never revisited when that copy
+    // grew ~50% longer, so at 375px the sell wraps to about seven lines and the bar overlapped the
+    // last profile block. Nothing links the padding to the copy, so every future edit re-breaks it.
+    expect(pageCode).not.toMatch(/pb-48|sm:pb-28/)
+    expect(pageCode).toContain('<div aria-hidden inert className="invisible border-t border-border')
+    // `invisible` (visibility:hidden) still occupies space; `hidden` (display:none) does not and
+    // would reserve nothing at all while looking identical in review.
+    expect(pageCode).not.toContain('aria-hidden inert className="hidden')
+  })
+
+  it('authors the bar content ONCE, so the clone cannot drift from the real bar', () => {
+    // A spacer that is a hand-copy of the bar is the same staleness bug wearing different markup.
+    expect(pageCode.match(/<ClaimBarContent /g)?.length).toBe(2)
+    expect(pageCode.match(/function ClaimBarContent/g)?.length).toBe(1)
+  })
+
+  it('and the duplicate button is inert, so there are not two claim controls', () => {
+    // Without `inert` the clone is tabbable and clickable despite being invisible: two controls
+    // named "Claim this business", one of which cannot be seen.
+    expect(pageCode).toContain('aria-hidden inert')
+  })
+})
+
+describe('one spaces read per request, not two', () => {
+  it('generateMetadata and the body share a request-cached read', () => {
+    // 🔴 Next runs generateMetadata and the page in the SAME request scope. resolveSpaceClaimAny is
+    // cache()d at its definition; getSpaceById is NOT, so every claim pageview paid for a second
+    // full-column `spaces` select on the render path of a page whose whole job is to paint fast.
+    expect(pageCode).toContain('const claimTargetSpace = cache(')
+    expect(pageCode.match(/claimTargetSpace\(token\)/g)?.length).toBe(2)
+    // getSpaceById may only be reached THROUGH the wrapper. A direct call is the duplication back.
+    expect(pageCode.match(/getSpaceById\(/g)?.length).toBe(1)
+  })
+
+  it('wraps it locally instead of caching getSpaceById globally', () => {
+    // getSpaceById has ~168 call sites, including server actions that read a Space, write it, and
+    // read it again in one request (lib/importer/materialize.ts). A global cache() would hand those
+    // the pre-write snapshot: a silent correctness change bought for one page's perf.
+    const store = readFileSync('lib/spaces/store.ts', 'utf8')
+    expect(store).toContain('export async function getSpaceById(')
+    expect(store).not.toContain('export const getSpaceById = cache(')
+  })
+})
+
+describe('the page is navigable and does not snap while it streams', () => {
+  it('the h1 and the CTA both sit inside a landmark', () => {
+    // 🔴 <main> used to open BELOW the header, so the page's own <h1> was in no landmark, and the
+    // fixed claim bar — the single action this page exists for — was in none either. A screen-reader
+    // scan by landmark reached the body content and never the title or the button.
+    expect(pageCode).toContain('<main className={cn(CLAIM_COLUMN, "py-6")}>')
+    expect(pageCode).toContain('aria-label="Claim this business"')
+    expect(pageCode).toMatch(/<section\s+aria-label="Claim this business"/)
+    // The hero must be INSIDE main, i.e. main opens before the <header>.
+    const main = pageCode.indexOf('<main className={cn(CLAIM_COLUMN')
+    const header = pageCode.indexOf('<header className={cn(')
+    expect(main).toBeGreaterThan(-1)
+    expect(header).toBeGreaterThan(main)
+  })
+
+  it('the Suspense fallback has the @container it lays out against', () => {
+    // 🔴 ProfileBodySkeleton grids with `@lg:grid-cols-2`, which needs an @container ANCESTOR. The
+    // only one on this route is `@container/profile` INSIDE the Suspense child, so it does not exist
+    // while the fallback is showing: the skeleton was always a tall single column and the page
+    // visibly snapped to two the moment the body streamed in. Silent — it renders fine, just wrong.
+    expect(readFileSync('components/spaces/profile-body-skeleton.tsx', 'utf8')).toContain('@lg:grid-cols-2')
+    expect(pageCode).toContain('<div className="@container py-8">')
+    const container = pageCode.indexOf('className="@container py-8"')
+    expect(pageCode.indexOf('<Suspense')).toBeGreaterThan(container)
+  })
+
+  it('one name helper, so the share card and the h1 cannot disagree', () => {
+    // generateMetadata trimmed and the body did not, so a Space whose brand_name is whitespace got a
+    // correctly-named share card above a blank <h1> and blank BrandAnchor initials.
+    expect(pageCode).toContain('function displayBrandName')
+    expect(pageCode.match(/displayBrandName\(space\.brandName/g)?.length).toBe(2)
+    expect(pageCode).not.toMatch(/space\.brandName \|\| space\.name/)
+  })
+})
+
 describe('the claim button paints before the page body (PAGE-FRAMEWORK section 5)', () => {
   it('wraps the module body in Suspense', () => {
     // SpaceProfileModules awaits getSpaceContentData. Unwrapped, the ribbon, hero and the fixed
@@ -110,11 +207,21 @@ describe('an owner can tell their page has unpublished changes', () => {
   const grid = readFileSync('components/entity-blocks/live-profile-grid.tsx', 'utf8')
   const fab = readFileSync('components/entity-blocks/space-publish-fab.tsx', 'utf8')
 
-  it('the draft/published comparison runs on the RAW nodes', () => {
-    // parseEntityLayout normalises, so comparing parsed nodes would report two materially different
-    // arrangements as equal once they round-trip to the same shape.
+  it('the draft/published comparison runs on the RAW nodes, CANONICALLY', () => {
+    // parseEntityLayout normalises, so comparing PARSED nodes would report two materially different
+    // arrangements as equal once they round-trip to the same shape. Hence raw.
     expect(preview).toContain('hasUnpublishedChanges')
-    expect(preview).toContain('JSON.stringify(prefsObj.profileLayoutDraft ?? null)')
+    expect(preview).toContain('prefsObj.profileLayoutDraft')
+
+    // But raw JSON.stringify is key-ORDER sensitive, which made the flag effectively ONE-WAY: an
+    // owner who made an edit and undid it could land on a logically identical layout serialised in
+    // a different key order and stay permanently "unpublished", arming a beforeunload prompt on
+    // their own Space with no way to clear it but publishing a no-op.
+    expect(preview).toContain('canonicalJson(prefsObj.profileLayoutDraft ?? null)')
+    expect(preview).toContain('canonicalJson(prefsObj.profileLayout ?? null)')
+    expect(preview).not.toContain('JSON.stringify(prefsObj.profileLayoutDraft')
+    // And the helper must actually sort, or it is stringify wearing a different name.
+    expect(preview).toMatch(/function canonicalJson[\s\S]{0,400}\.sort\(/)
   })
 
   it('the publish bar mounts OUTSIDE edit mode when there is something to publish', () => {
