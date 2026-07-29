@@ -130,16 +130,6 @@ const nextConfig: NextConfig = {
     '/api/qr': ['./node_modules/@resvg/resvg-wasm/index_bg.wasm'],
     // `*` (not the literal `[slug]`, which globs as a character class) matches the dynamic segment.
     '/api/entry-points/*/flyer': ['./node_modules/@resvg/resvg-wasm/index_bg.wasm'],
-    // The OG share-card fonts (lib/og/load-nunito.ts) are read from public/fonts at RUNTIME with
-    // readFile, the same derived-path shape as the .wasm above. Next's tracer follows the JS entry
-    // but not a path built inside the function, and an OG card that cannot load a font does not
-    // degrade politely: Satori throws on an empty `fonts` array.
-    //
-    // This is belt-and-braces rather than a known break: five OG routes already read from public/
-    // this way. But the fonts exist SPECIFICALLY to stop Apple Mail timing out on the claim card,
-    // and shipping a fix that swaps a slow card for a broken one would be worse than not shipping
-    // it. 250KB per lambda is a fair price for removing the doubt. Applied to '/**' because every
-    // opengraph-image and twitter-image route needs them.
 
   },
   async headers() {

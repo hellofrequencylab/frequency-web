@@ -2,12 +2,12 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
   LEFT_RAIL,
-  RIGHT_RAIL,
+  RIGHT_RAIL_PX,
   RIGHT_RAIL_ML,
   GAP,
   GAP_LG,
   RAILS_MD,
-  RAILS_LG,
+  RAILS_LG_REM,
   SHELL_ROW_CLASS,
   SHELL_CONTENT_WIDTH_CLASS,
 } from './shell-metrics'
@@ -26,6 +26,15 @@ import {
 
 const shell = readFileSync('components/layout/app-shell.tsx', 'utf8')
 
+describe('the root font size is not 16px, which is why units matter here', () => {
+  it('globals.css sets a non-default root, so rem != 16px', () => {
+    // The whole unit bug lived here. If this ever returns to 100%, the old conversion would
+    // coincidentally start working and someone might "simplify" the mixed-unit calc back.
+    const css = readFileSync('app/globals.css', 'utf8')
+    expect(css).toContain('font-size: var(--density-root, 106.25%)')
+  })
+})
+
 describe('the numbers still match the shell', () => {
   it('the row max width and padding are the shell row', () => {
     expect(shell).toContain('max-w-[105rem]')
@@ -43,7 +52,10 @@ describe('the numbers still match the shell', () => {
   it('the right rail is still 288px and still hides below lg', () => {
     // Its width is an INLINE STYLE, not a class — easy to miss when reading for `w-*`.
     expect(shell).toContain('railCollapsed ? 56 : 288')
-    expect(RIGHT_RAIL).toBe(18) // 288px = 18rem
+    // 🔴 PIXELS, not rem. This app sets html{font-size:106.25%} so the root is 17px, and the
+    // original `18 // rem` conversion (correct only at 16px/rem) made the claim column 18px too
+    // narrow at lg — while THIS test, asserting 18, stayed green. Keeping the unit is what fixes it.
+    expect(RIGHT_RAIL_PX).toBe(288)
     expect(shell).toContain('lg:ml-3')
     expect(RIGHT_RAIL_ML).toBe(0.75) // ml-3
   })
@@ -55,8 +67,8 @@ describe('the numbers still match the shell', () => {
   })
 
   it('the derived totals are arithmetically right', () => {
-    expect(RAILS_MD).toBe(14) // 12 + 2
-    expect(RAILS_LG).toBe(35.75) // 12 + 2.5 + 18 + 0.75 + 2.5
+    expect(RAILS_MD).toBe(14) // 12 + 2, all rem
+    expect(RAILS_LG_REM).toBe(17.75) // 12 + 2.5 + 0.75 + 2.5, rem only — the 288px is separate
   })
 })
 
@@ -67,7 +79,11 @@ describe('the class string states those totals LITERALLY', () => {
     // CSS at build time, silently collapsing the column back to full width — the exact bug this
     // module exists to end. So the literals are asserted against the numbers.
     expect(SHELL_CONTENT_WIDTH_CLASS).toContain(`md:max-w-[calc(100%-${RAILS_MD}rem)]`)
-    expect(SHELL_CONTENT_WIDTH_CLASS).toContain(`lg:max-w-[calc(100%-${RAILS_LG}rem)]`)
+    // Mixed units ON PURPOSE: rem stays rem, the rail's absolute px stays px, and the browser
+    // resolves both against the real root size. A single rem total cannot express this correctly.
+    expect(SHELL_CONTENT_WIDTH_CLASS).toContain(
+      `lg:max-w-[calc(100%-${RAILS_LG_REM}rem-${RIGHT_RAIL_PX}px)]`,
+    )
     expect(SHELL_CONTENT_WIDTH_CLASS).not.toContain('${')
   })
 

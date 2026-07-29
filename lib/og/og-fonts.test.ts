@@ -54,6 +54,24 @@ describe('loading them touches no network', () => {
     expect(code).toContain('cache.set')
   })
 
+  it('caches only RESOLVED bytes, never a rejected promise', () => {
+    // 🔴 The first version cached the promise eagerly, so ONE transient filesystem failure made
+    // that lambda serve broken share cards for the rest of its life with no recovery path.
+    expect(code).toContain('const cache = new Map<number, ArrayBuffer>()')
+    expect(code).not.toContain('const cache = new Map<number, Promise<ArrayBuffer>>()')
+    // And concurrent cards must share one read rather than each starting their own.
+    expect(code).toContain('inflight')
+  })
+
+  it('the fallback preserves the weight it claims to serve', () => {
+    // The earlier fallback demoted 700 to LiberationSans-Regular while the caller still declared
+    // weight 700 to Satori, so a fallback render was silently the wrong weight.
+    // Quote-agnostic: prettier owns the quote style in that file and a literal match would break
+    // on a reformat rather than on a real regression.
+    expect(code).toMatch(/read\(\s*["']LiberationSans-Bold\.ttf["']\s*\)/)
+    expect(code).not.toContain('LiberationSans-Regular.ttf')
+  })
+
   it('returns real bytes for both weights, fast', async () => {
     const t0 = Date.now()
     const [bold, black] = await Promise.all([loadNunito(700), loadNunito(900)])

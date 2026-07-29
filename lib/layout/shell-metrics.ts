@@ -23,9 +23,19 @@ export const SHELL_ROW_MAX = '105rem'
 /** Left navigation rail: `w-48` = 12rem. `hidden md:flex`, so it costs nothing below `md`. */
 export const LEFT_RAIL = 12 // rem
 
-/** Right rail column. Its width is an INLINE STYLE, not a class: 288px open / 56px collapsed.
- *  18rem is the 288px default. `hidden lg:flex`, so it costs nothing below `lg`. */
-export const RIGHT_RAIL = 18 // rem
+/** Right rail column, in PIXELS. Its width is an INLINE STYLE, not a Tailwind class:
+ *  `settings.open ? settings.width : railCollapsed ? 56 : 288`.
+ *
+ *  🔴 STAYS IN PIXELS. It was first written as `18 // rem`, converting 288px at the browser
+ *  default of 16px/rem. This app sets `html { font-size: 106.25% }` (globals.css) — the root is
+ *  **17px** — so 18rem is 306px and the claim column came out **18px too narrow** at `lg`. Worse,
+ *  the drift guard asserted `RIGHT_RAIL === 18` and so was green while the page was wrong.
+ *
+ *  CSS `calc()` mixes units natively, so the correct move is not a better conversion but NO
+ *  conversion: keep the rem-based rails in rem, keep this one in px, and let the browser resolve
+ *  both against whatever the root size happens to be. That also survives a skin retuning
+ *  `--density-root`, which any hardcoded rem figure would silently break. */
+export const RIGHT_RAIL_PX = 288
 
 /** `lg:ml-3` on the right rail column — 0.75rem, added so the content↔right-rail gap visually
  *  matches the left one (ADR-404). It is real horizontal space and must be subtracted too. */
@@ -42,8 +52,11 @@ export const GAP_LG = 2.5 // rem, at lg and up
  *   md..lg     left rail + one gap                                        -> 12 + 2      = 14
  *   lg and up  left + gap + right + its ml-3 + gap                        -> 12+2.5+18+0.75+2.5 = 35.75
  */
-export const RAILS_MD = LEFT_RAIL + GAP // 14rem
-export const RAILS_LG = LEFT_RAIL + GAP_LG + RIGHT_RAIL + RIGHT_RAIL_ML + GAP_LG // 35.75rem
+export const RAILS_MD = LEFT_RAIL + GAP // 14rem — all rem, converts cleanly
+
+/** The REM part of the lg subtraction. The right rail's 288px is added separately in the calc,
+ *  because it is an absolute pixel width and must not be folded into a rem total. */
+export const RAILS_LG_REM = LEFT_RAIL + GAP_LG + RIGHT_RAIL_ML + GAP_LG // 17.75rem
 
 /**
  * Tailwind classes for a column that is EXACTLY as wide as the shell's content column, centred.
@@ -63,7 +76,7 @@ export const RAILS_LG = LEFT_RAIL + GAP_LG + RIGHT_RAIL + RIGHT_RAIL_ML + GAP_LG
  * source of truth and shell-metrics.test.ts asserts these literals still equal them.
  */
 export const SHELL_CONTENT_WIDTH_CLASS =
-  'mx-auto w-full md:max-w-[calc(100%-14rem)] lg:max-w-[calc(100%-35.75rem)]'
+  'mx-auto w-full md:max-w-[calc(100%-14rem)] lg:max-w-[calc(100%-17.75rem-288px)]'
 
 /** The shell row's own box, so a page outside the shell starts from the identical container. */
 export const SHELL_ROW_CLASS = 'mx-auto w-full max-w-[105rem] px-4 sm:px-6 lg:px-8'
