@@ -16123,6 +16123,67 @@ Two facts had to be separated before anything could be built.
 
 ---
 
+## ADR-907 — One claim-token system, hashed, expiring and off the entity (2026-07-29)
+
+**Status:** Accepted · completes [ADR-906](#adr-906) · corroborated by
+`supabase/migrations/20270130000000_claim_tokens_table.sql`, `lib/claims/tokens.ts`,
+`lib/claims/tokens.test.ts` and [`CLAIM-LINKS.md`](CLAIM-LINKS.md)
+
+**Context.** ADR-906 closed a live privilege escalation by revoking column grants on `spaces` and
+`events`. While designing the replacement, a survey of every table carrying a `claim_token` column
+found **two more**: `market_listings` (1 live token readable by `anon`) and `listings` (0 today, the
+column equally exposed). That is **four tables, one mistake, propagated by copy** —
+`20261137000000_listing_seeder.sql` says in its own header that it "mirrors events claim", and it
+mirrored the defect along with the pattern. Each instance was closed by its own revoke migration, but
+three near-identical migrations to fix one mistake is the signal that the *shape* is wrong, not the
+instances. A fifth claimable entity would have inherited it too, because adding
+`claim_token text` to an entity table is the obvious thing to do and nothing stopped it.
+
+**Decision.** One `public.claim_tokens` table, and adding a claimable entity is one enum value in
+two places rather than a new column. Five properties, each answering a specific failure:
+
+*Not on the entity* — nothing anon-readable carries a secret, so no future `grant select` can
+re-expose one. RLS enabled with **no policies** (deny-all) and no grants to `anon`/`authenticated`;
+`service_role` is the only reader. *Hashed at rest* — `sha256(token)`, so a database dump, a log
+line or a screenshot of a support query yields nothing usable; the plaintext exists exactly once, in
+the mint call's return value. *Expiring* — 30 days by default, because the four column-based
+predecessors never expired, which is precisely why 31 disclosed tokens are still live today.
+*Revocable and rotatable* — a kill switch that needs no schema change, and rotation is the supported
+way to "get the link again". *Audited* — who minted, when it was sent, when it was consumed and by
+whom; the old columns could not answer "did we ever send this?" at all.
+
+🔴 **`sha256`, unsalted, with no slow KDF, is correct here** and is not the password-hashing mistake
+it resembles. The token is 192 bits of CSPRNG output: there is no dictionary to attack, and a slow
+KDF would only tax our own verify path. Same reasoning as GitHub personal access tokens.
+
+**Idempotency is enforced by the database, not by application code.** A partial unique index
+(`where consumed_at is null and revoked_at is null`) permits one live token per subject, so even a
+race cannot mint two. This is not theoretical tidiness: `mintSpaceClaimToken` overwrote
+unconditionally and `approveBusinessImport` explicitly permits re-running on an applied intake, so
+re-approving **silently rotated the token and killed every claim link already emailed** — the owner
+gets a 404 on a link we sent them, and we hear nothing. A mint that finds a live token returns
+`{ minted: null, reason: 'exists' }` and deliberately **not** a fresh token, because returning a
+token the row does not carry is exactly how a dead link gets sent.
+
+**Alternatives considered.** *Keep columns, rely on the column-level grants from ADR-906* (rejected —
+that is three migrations maintaining a re-grant list forever, and it protects only the four tables
+that exist; the fifth inherits the bug). *Encrypt the column rather than hash it* (rejected —
+reversible storage is the property we are removing; if we can decrypt it, so can anything that
+reaches the key). *Store the plaintext in a `service_role`-only table* (rejected — it fixes exposure
+but not disclosure: a dump, a log or a support query still yields working links, and the whole point
+is that no artefact should). *Slow KDF (`argon2`/`bcrypt`)* (rejected — see above; wrong tool for a
+high-entropy capability token, and it taxes the hot verify path). *Migrate the four existing columns
+now* (rejected by the owner, correctly: rotation invalidates claim links already emailed to real
+business owners, and the exposure required an attacker to have already known to look. Tracked in
+`BACKLOG.md` §A for close-out when the outstanding links are consumed or abandoned).
+
+**Consequence, stated plainly because it will surprise someone.** A live token **cannot be read
+back** — there is nothing to read. "Copy the link again" is not implementable; the supported move is
+`rotateClaimToken`. That is the deliberate cost of not storing secrets, and it is the right trade: a
+system that can re-read a live token is a system that can leak one.
+
+---
+
 ## ADR-906 — A secret cannot live in a column of an anon-readable table (2026-07-29)
 
 **Status:** Accepted · corroborated by

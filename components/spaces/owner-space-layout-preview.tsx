@@ -71,7 +71,13 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
   //
   // Compared on the RAW nodes, not the parsed ones: parseEntityLayout normalises and would report two
   // materially different arrangements as equal once they round-trip to the same shape.
+  //
+  // GATED ON canManage, NOT on canManage||staffViewing. publishSpaceProfileLayout fails closed on
+  // canManage (settings/profile/actions.ts), so showing this to a staff PREVIEWER would offer a
+  // Publish button that returns "You do not have permission to edit this space." A control that
+  // cannot work is worse than no control.
   const hasUnpublishedChanges =
+    canManage &&
     !!prefsObj &&
     Object.prototype.hasOwnProperty.call(prefsObj, 'profileLayoutDraft') &&
     JSON.stringify(prefsObj.profileLayoutDraft ?? null) !== JSON.stringify(prefsObj.profileLayout ?? null)

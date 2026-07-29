@@ -25,6 +25,7 @@ export function SpacePublishFab({
   slug,
   initialPublished = true,
   hasUnpublishedChanges = false,
+  editable = true,
 }: {
   /** The Space slug — the owner-gated publish + visibility actions re-check ownership server-side by it. */
   slug: string
@@ -35,9 +36,14 @@ export function SpacePublishFab({
    *  this an owner who had already published read "Draft · Saved" as "live", which is how a card-view
    *  change sat unpublished and was reported as a rendering bug. */
   hasUnpublishedChanges?: boolean
+  /** True in live-page edit mode. Seeds whether the bar opens EXPANDED or as the compact pill.
+   *  Outside edit mode the bar exists only to say "you have changes nobody else can see yet", so
+   *  opening the full strip (Undo, Save draft, Visible on network) over the owner's page on every
+   *  ordinary visit would be chrome nobody asked for. Minimized, it is one pill. */
+  editable?: boolean
 }) {
   const store = useProfileLayout()
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(editable)
   const [published, setPublished] = useState(initialPublished)
   const [publishBusy, setPublishBusy] = useState(false)
   const [visibleBusy, setVisibleBusy] = useState(false)

@@ -197,10 +197,26 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
         {/* ONE content column, matching the business space page's boundaries: hero + body sit inside the
             same max-width + padding. */}
         <div className={cn(CLAIM_COLUMN, "py-6")}>
-          {/* The REAL live hero — the SAME node the (profile) page renders: the operator's Hero-size cover
+          {/* The REAL live hero — the SAME node the (profile) page renders. The three theme-carrying
+              classes below (`--radius-cover`, `font-eyebrow`, `font-section`) are what make it read as
+              the owner's page rather than a generic one: on the 'classic' theme they resolve to
+              Playfair and a 2px cover radius, and this copy had drifted to `rounded-xl` and the
+              inherited body face. They are the exact tokens app/(main)/spaces/[slug]/(profile)/
+              layout.tsx uses, and drift here is invisible on the default theme, which is why it
+              survived — every un-themed Space looks identical either way.
+
+              ⚠️ This hero is a SECOND COPY of that layout's heroCoverNode + nameLockup, and the
+              duplication is the actual defect. Three drifts had already accumulated. The durable fix
+              is extracting the lockup into one shared component with Follow / actions / badge as
+              optional slots; deliberately not folded in here because it touches the live Space page
+              too. The Founding Business badge is still absent from this copy on purpose: the claim
+              page never fetches foundingBadgeForSpace, and adding a second identity flourish beside
+              the fixed claim bar competes with the one action this page exists for.
+
+              Original note follows: the operator's Hero-size cover
               with the identity (logo + eyebrow + name + tagline) overlaid on a bottom scrim. Visitor view:
               no Follow / owner actions. Mirrors layout.tsx `heroCoverNode`. */}
-          <header className={cn('relative w-full overflow-hidden rounded-xl bg-surface-elevated', coverH)}>
+          <header className={cn('relative w-full overflow-hidden rounded-[var(--radius-cover,0.75rem)] bg-surface-elevated', coverH)}>
             <Image
               src={coverSrc}
               alt=""
@@ -220,7 +236,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
                   {hero.eyebrow && (
                     <p
                       className={cn(
-                        'mb-1 text-2xs font-semibold uppercase tracking-wide',
+                        'font-eyebrow mb-1 text-2xs font-semibold uppercase tracking-wide',
                         heroOnInk ? 'text-on-ink-muted' : 'text-primary-strong',
                       )}
                     >
@@ -229,7 +245,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
                   )}
                   <h1
                     className={cn(
-                      'min-w-0 break-words text-2xl font-bold leading-tight sm:text-3xl',
+                      'font-section min-w-0 break-words text-2xl font-bold leading-tight sm:text-3xl',
                       heroOnInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : 'text-text',
                     )}
                   >

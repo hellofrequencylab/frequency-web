@@ -75,6 +75,19 @@ follow-ups it surfaced. Full detail lives in the lettered sections below — thi
     Training (`/training`) and Crew Tasks under Leadership. Rename the nav label Lead → Leadership.
 
 ## A. Security and hardening
+- [ ] **⏳ Retire the 4 legacy `claim_token` columns** (ADR-907, `docs/CLAIM-LINKS.md` §5). The
+  columns on `spaces` / `events` / `market_listings` / `listings` were readable by **any anonymous
+  visitor** until 2026-07-29 (31 live tokens: 9 Spaces, 21 events, 1 listing), and possession of one
+  transfers ownership of that page. The leak is **closed** (`20270127` / `20270128` / `20270129`
+  revoked the table-wide grants), but **every token minted before that date must be treated as
+  disclosed** — they were readable for as long as the columns existed.
+  **Owner ruling 2026-07-29: do NOT rotate now.** Rotating invalidates claim links already emailed
+  to real business owners, and the exposure required an attacker to already know to look.
+  **Close out when:** the outstanding links are consumed or the outreach is abandoned — whichever is
+  first. Then: revoke the remaining live tokens, drop the four columns, and delete the three revoke
+  migrations' re-grant lists (which exist only to keep those columns hidden).
+  New claim flows must use `claim_tokens` (hashed, expiring, revocable, service-role only). Nothing
+  new may be built on the columns. (S)
 - D economy-column lock trigger, map XSS escape, open-redirect fix, gem-farm fix,
   private-reply authz, shared input sanitizer, baseline security headers.
 - D email-pipeline durability (email integrity — ADR-043): Resend webhook error
