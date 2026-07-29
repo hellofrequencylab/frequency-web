@@ -2,12 +2,13 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 
 // ── Drift guard: dock parity for rename, leave and the roster (ADR-896 acceptance) ────────
-// `chat_dm_routes_retired` ships OFF and stays off until the dock carries the three
-// capabilities that live only on app/(main)/messages/[id]/page.tsx. That makes every assertion
-// here a guard against a SILENT regression: with the flag off, losing any of these costs
-// nothing visible today and costs the whole DM surface on the day the owner flips the row.
-// Nothing would throw at that moment either, which is exactly why these are source-level, the
-// same reason message-member-button.test.ts and series-wiring.test.ts are.
+// `chat_dm_routes_retired` was gated on the dock carrying the three capabilities that used to
+// live only on app/(main)/messages/[id]/page.tsx. It does, and the flag is ON in production, so
+// these assertions have changed job: they were the acceptance criteria and they are now the
+// regression guard. With the page retired the dock is the ONLY way to rename a group, leave one,
+// or see who is in it — losing any of them would take the capability away outright, and nothing
+// would throw. That silence is why these are source-level, the same reason
+// message-member-button.test.ts and series-wiring.test.ts are.
 
 const dockChat = readFileSync('components/messages/dock-chat.tsx', 'utf8')
 const details = readFileSync('components/messages/dock-thread-details.tsx', 'utf8')

@@ -241,9 +241,15 @@ export const veraBreakerArmedFlag = cache(async (): Promise<boolean> => {
 // reasons. (1) A config redirect is evaluated before routing and cannot read a database row, so
 // it is only revertible by a deploy. (2) /messages/* is registered as an iOS universal-link path
 // in public/.well-known/apple-app-site-association, so the route must keep EXISTING and answer;
-// a render-time redirect does that, a deleted file does not. (3) The dock is not yet at parity
-// with the page for legacy GROUP conversations (rename / leave / roster), so this ships OFF and
-// the owner flips it once those land and they have seen the dock carry real traffic.
+// a render-time redirect does that, a deleted file does not. (3) Dock parity for legacy GROUP
+// conversations (rename / leave / roster) had to land first; it did, and the owner flipped this
+// ON, so the flag is now the revert path rather than a staging gate.
+//
+// SCOPE: this retires /messages/[id] — direct and group messages — and nothing else. Rooms live at
+// /messages/r/[roomId] and are read by Spaces and Channels; a static segment outranks a dynamic
+// one in Next's route matching, so a Room never falls into the gate below. That split is the
+// owner's ruling: "We have a Room function that I want for Space members and Channel
+// conversations. DMs and group messages are in the popup."
 //
 // Defaults FALSE on a missing row OR any read error. That direction is not a coin toss: a
 // transient DB hiccup must never be able to make a member's messages unreachable, and "the old
