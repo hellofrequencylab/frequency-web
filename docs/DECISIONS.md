@@ -15932,7 +15932,7 @@ The durable rule: **a theme that changes only the font family is not a theme —
 
 ## ADR-898 — A Space's calendar carries what the Space hosts, not just what it stores (2026-07-28)
 
-**Status.** Accepted. Extends the EC1/EC2/EC3 calendar contract (ADR-800); membership only, the visibility gate is untouched.
+**Status.** ⚠️ **Partly superseded by [ADR-905](#adr-905) (2026-07-29) — read that first.** Two of the five axes decided here (`host_id = spaces.owner_profile_id`, and the owner's accepted `event_cohosts`) key on the Space's OWNER rather than on the Space, and one day later they were found placing other Spaces' events on a Space's calendar: 11 wrong placements against 0 correct ones on production. They are removed. The three that remain — tenancy, `host_space_id`, accepted shares — stand, and the core insight below (that tenancy alone is too narrow, and that membership widens while the gate never does) is unchanged and still correct. Extends the EC1/EC2/EC3 calendar contract (ADR-800); membership only, the visibility gate is untouched.
 
 **Context.** Danny Kenduck Coaching's calendar tab and public `.ics` feed rendered empty while the Space's events were live in the community listings (owner report, 2026-07-28, with screenshot). The calendar's "owned" branch matched on `events.space_id` alone — pure tenancy, backfilled to ROOT for legacy rows (ADR-819) — so an event the Space hosts through the explicit hosting axis (`host_space_id`, added 20261218000000 for exactly this "Hosted by <space>" relationship and never read by the calendar), an event the owner hosts personally (`host_id`), or one the owner co-hosts (`event_cohosts`, accepted) never qualified. A coaching business whose operator hosts every gathering personally is the common case, not the edge.
 
@@ -15943,6 +15943,8 @@ The durable rule: **a theme that changes only the font family is not a theme —
 **Consequences.** `lib/events/store.ts` (membership helpers, both reads, UUID-guarded `.or()` interpolation), migration `20270122000000_space_calendar_hosted_events.sql`, drift-guard tests in `lib/events/store.test.ts` pinning the axes in BOTH the store source and the migration SQL so the grid ⇄ feed lockstep is machine-enforced. Consumers inherit: the calendar tab, the settings calendar, the profile-nav tab gate, and the collaborator calendar aggregate. Version note: `20270121000000` stays reserved for the events-series settings migration (EVENTS-SERIES-BUILD-PLAN).
 
 The durable rule: **tenancy is where an event lives; a calendar is about who is hosting. Widen membership, never the gate.**
+
+⚠️ **The correction ADR-905 makes to that rule.** "Who is hosting" must be answered by a DECLARATION on the event (`space_id`, `host_space_id`, an accepted share), never inferred from a person's identity. A Space's owner is a person; the Space is not that person. Widening membership is still right — widening it along an identity axis is what went wrong, because it scales with how many Spaces one human owns rather than with what any Space actually offers.
 
 ## ADR-895 — A member profile answers "what are they part of" in three tiers, and a count is a leak (2026-07-28)
 
@@ -16118,6 +16120,68 @@ Two facts had to be separated before anything could be built.
 > reference is [`MAPS.md`](MAPS.md). One more correction: this ADR says the v6 worker URL
 > resolves to `''` **or** a 404 — under Turbopack `import.meta.url` is always an `https:` URL,
 > so it is always a **404**, never `''`. Grep the Network tab for `maplibre-gl-worker.mjs`.
+
+---
+
+## ADR-905 — A Space calendar shows what the Space offers, never what its owner does (2026-07-29)
+
+**Status:** Accepted · narrows [ADR-898](#adr-898) · corroborated by
+`supabase/migrations/20270125000000_space_calendar_owner_identity_removed.sql`,
+`lib/events/store.ts` and the drift guard in `lib/events/store.test.ts`
+
+**Context.** ADR-898 (2026-07-28) fixed a real bug: Danny Kenduck Coaching's calendar tab and `.ics`
+feed rendered empty while the Space's own events sat in the community listings, because membership
+matched on `events.space_id` alone. It widened membership from one axis to five. Two of the four new
+axes key on the Space's **owner** rather than on the Space: `e.host_id = spaces.owner_profile_id`
+(the owner's personally-hosted events) and an accepted `event_cohosts` row for that owner. One day
+later the owner reported the consequence: the Breathe & Shine calendar was listing "Swami's Beach
+Gathering", an event whose home is the ROOT community space, and their rule was blunt — *"Space
+calendars should only show events, features and programs offered by that space."* The two owner axes
+were measured against production before removal, and the numbers are one-sided: `host_space_id`
+contributed **0** rows beyond tenancy, the owner's accepted cohosts contributed **0** (no such row
+exists anywhere in the database), and `host_id = owner` contributed **11 placements, every one of
+them wrong** — a single owner's two personally-hosted events appearing on all ten of the Spaces they
+own. The axis that was supposed to rescue empty calendars produced no correct rows at all, because
+tenancy already covered every real case; ADR-898's own motivating Space, Danny Kenduck, matches on
+tenancy and additionally carries `host_space_id` on both its events, so its calendar never depended
+on the owner axes it inspired.
+
+**Decision.** Membership is **three declarations, never an inference**: the event is homed here
+(`space_id`), the event names this Space as its host (`host_space_id`), or it was accepted-shared
+here (`event_space_shares`). Each is an explicit statement that the event belongs to this Space; none
+is a guess made from someone's identity. The principle is that **a person is not a Space** — owning a
+Space does not make everything you personally host that Space's programming, and the failure mode is
+not linear but multiplicative: the moment one person owns several Spaces, every event they host
+appears on all of them, and the calendar stops meaning anything. `host_space_id` is kept despite
+contributing nothing today precisely because it is the *supported* expression of the need ADR-898 was
+reaching for: a Space declaring that it hosts an event. The removal is applied in lockstep to both
+readers — the on-page grid (`listSpaceCalendarEvents`), the tab gate (`spaceHasPublicUpcomingEvents`,
+which must use the identical rule or the tab appears over an empty grid) and the anon `.ics` RPC
+(`space_public_calendar_feed`, DROPped and recreated; 42P13 has bitten this function on prod before).
+The `target` CTE stops selecting `owner_profile_id` at all, so re-adding the axis requires re-adding
+the column read — a visible step rather than a one-word edit. Verified safe before shipping: there
+are **zero** events with no home space hosted by a Space owner, so no calendar goes empty as a result;
+after the change Breathe & Shine shows its own two events and Danny Kenduck still shows both of his.
+The visibility gate is untouched and still re-applied per row in every branch, so this migration can
+only ever *remove* rows from a feed.
+
+**Alternatives considered.** *Keep the owner axes but exclude events whose home is the root space*
+(rejected — it special-cases the symptom; the same leak returns between any two Spaces one person
+owns, which is the common case for a coach with a personal and a business Space). *Keep them only
+when the Space has no events of its own* (rejected — the calendar's meaning would then change as the
+Space grows, which cannot be explained to a host: "your calendar shows other people's events until
+you add your own"). *Keep the owner's cohost axis alone, since it currently returns nothing*
+(rejected — zero rows today is not a property, it is a coincidence; the first accepted cohost invite
+would reintroduce exactly the reported bug, and a latent leak that nobody can see is worse than a
+visible one). *Add a Space-level cohost table now* (deferred — it is the right answer to the real
+need, but it is a schema addition with its own moderation and acceptance semantics, and it must not
+ride along on a fix that only removes rows).
+
+**Known gap, deliberately left open.** `host_space_id` is single-valued, so an event cannot declare
+two co-hosting Spaces, and `event_cohosts` cannot express it either because it is keyed by
+`profile_id` — it can only say "this person co-hosts", never "this Space does". Genuine Space-to-Space
+co-hosting needs its own join table and its own ADR. Inferring it from the owner's identity is
+precisely what this decision undoes.
 
 ---
 
