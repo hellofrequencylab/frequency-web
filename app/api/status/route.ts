@@ -9,10 +9,15 @@
 // learn what's available, and follow the links — instead of having to already know the
 // sub-paths exist.
 //
-// SAFE BY CONSTRUCTION. No DB query, no env var, no secret, no auth-scoped data: it
-// returns pure config + counts already published by the sibling routes. It reports NO
+// SAFE BY CONSTRUCTION. No DB query, no secret, no auth-scoped data: it returns pure config +
+// counts already published by the sibling routes, plus the build identity below. It reports NO
 // live measurement — only the static contract and where to read it. GET-only, cached
 // for an hour at the edge since the contract changes only on a deploy.
+//
+// ⚠️ It DOES now read env vars — the three VERCEL_GIT_*/VERCEL_ENV values in buildIdentity(),
+// which are build metadata rather than configuration. That is the only env access here, and
+// route.test.ts pins it: any other `process.env` read in this file fails the suite, because the
+// "no secret" promise above is what makes this endpoint safe to hand to anyone debugging.
 
 import { NextResponse } from 'next/server'
 import { SLOS, CRON_FRESHNESS } from '@/lib/observability/slos'
@@ -55,11 +60,21 @@ const ENDPOINTS = [
  *  SAFE TO PUBLISH: a short commit SHA on a deployed build, nothing more. Sentry already
  *  ships the same SHA as its release tag (lib/observability/sentry.ts). No token, no path,
  *  no environment secret. */
+/** Blank counts as absent. `??` does NOT cover this: an empty string is not nullish, so
+ *  `process.env.X ?? 'unknown'` yields `''`, and Vercel really does set these empty on a
+ *  deployment with no git link. `"commit": ""` in the triage output is the one answer worse
+ *  than no field at all — it reads as "this build has no identity" when it means "this is not
+ *  a git deploy". route.test.ts pins the empty case for that reason. */
+function envOrNull(value: string | undefined): string | null {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : null
+}
+
 function buildIdentity() {
   return {
-    commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'unknown',
-    ref: process.env.VERCEL_GIT_COMMIT_REF ?? null,
-    env: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? 'unknown',
+    commit: envOrNull(process.env.VERCEL_GIT_COMMIT_SHA)?.slice(0, 7) ?? 'unknown',
+    ref: envOrNull(process.env.VERCEL_GIT_COMMIT_REF),
+    env: envOrNull(process.env.VERCEL_ENV) ?? envOrNull(process.env.NODE_ENV) ?? 'unknown',
   }
 }
 

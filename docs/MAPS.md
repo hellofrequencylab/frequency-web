@@ -160,6 +160,12 @@ Run these in DevTools on the failing page. Each one splits the problem.
    serving the page. A redeploy rebuilds the deployment you clicked, **not `main`**, so
    "I merged it and redeployed" does not put the fix in production.
 
+   Three answers, three meanings. A **7-character SHA** is the build — `git log --oneline` it.
+   **`"unknown"`** means the deployment has no git link (a CLI deploy, or local). **No `build`
+   key at all** means the deployment predates ADR-904, which is itself the answer: the fix is
+   not there. `app/api/status/route.test.ts` pins all three, including the empty-string case
+   that used to render `""` and made the first two indistinguishable.
+
 ---
 
 ## 7. Surfaces
