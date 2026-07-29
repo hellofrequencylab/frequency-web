@@ -1,11 +1,14 @@
-import { ImageResponse } from 'next/og'
 import { getPublicCircleById } from '@/lib/discover'
 import { SITE_NAME } from '@/lib/site'
+import { cardResponse, OG_CONTENT_TYPE } from '@/lib/og/deliver'
 
 export const runtime = 'nodejs'
 export const alt = `A circle on ${SITE_NAME}`
 export const size = { width: 1200, height: 630 }
-export const contentType = 'image/png'
+// JPEG, not PNG. next/og emits lossless PNG, and a photographic 1200x630 card measures
+// ~1,776KB that way against ~151KB as JPEG. cardResponse re-encodes and adds the CDN
+// cache headers (lib/og/deliver.ts).
+export const contentType = OG_CONTENT_TYPE
 
 // Per-circle dynamic OG image for /discover/circles/[id] (site-audit SEO-2). Falls back to a
 // generic branded card when the circle isn't found. Visual language mirrors the practices /
@@ -18,7 +21,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const where = circle?.city ?? null
   const isFallback = !circle
 
-  return new ImageResponse(
+  return cardResponse(
     (
       <div
         style={{

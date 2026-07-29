@@ -96,7 +96,10 @@ const nextConfig: NextConfig = {
   },
   // Keep the wasm rasterizer (styled QR PNG export, lib/qr/raster.ts) external so the
   // bundler doesn't try to bundle its .wasm — it's loaded from node_modules at runtime.
-  serverExternalPackages: ['@resvg/resvg-wasm', 'pdf-parse', 'mammoth'],
+  // `sharp` is a NATIVE binary: it re-encodes every OG card from Satori's lossless PNG to a
+  // ~12x smaller JPEG (lib/og/deliver.ts). It must stay external or the bundler tries to trace a
+  // platform-specific .node file into the serverless output.
+  serverExternalPackages: ['@resvg/resvg-wasm', 'pdf-parse', 'mammoth', 'sharp'],
   // The help center is plain Markdown under content/help/**, read from disk at
   // RUNTIME by (a) the "Ask Vera" reindex — nightly cron + admin "Build index" —
   // and (b) the support launcher's search index in the (main) layout. Next's

@@ -1,4 +1,3 @@
-import { ImageResponse } from 'next/og'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -7,6 +6,7 @@ import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import type { EventDetailsWithMedia } from '@/lib/events/details-media'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { claimCardResponse, CLAIM_OG_SIZE } from '@/lib/og/claim-card'
+import { cardResponse, OG_CONTENT_TYPE } from '@/lib/og/deliver'
 import { fetchRemoteImage } from '@/lib/og/remote-image'
 import { loadNunito } from '@/lib/og/load-nunito'
 import { SITE_NAME } from '@/lib/site'
@@ -14,7 +14,10 @@ import { SITE_NAME } from '@/lib/site'
 export const runtime = 'nodejs'
 export const alt = `Claim your event on ${SITE_NAME}`
 export const size = CLAIM_OG_SIZE
-export const contentType = 'image/png'
+// JPEG, not PNG. claimCardResponse re-encodes Satori's lossless output (lib/og/deliver.ts):
+// this card is a photograph across the full canvas, which is 1,776KB as PNG and 151KB as JPEG.
+// This literal must match the bytes deliverCard actually serves or og:image:type is a lie.
+export const contentType = OG_CONTENT_TYPE
 
 // The share card for a SEEDED EVENT claim link (/events/claim/<token>). A marketing pitch aimed at the
 // real organizer: the event's OWN header/cover — the SAME image and SAME focal-point crop the public
@@ -135,7 +138,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
     { name: 'Nunito', data: bold, weight: 700 as const, style: 'normal' as const },
   ]
 
-  return new ImageResponse(
+  return cardResponse(
     (
       <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', fontFamily: 'Nunito' }}>
         {/* The event's own header/cover, cropped to the SAME focal point as the page hero. */}
