@@ -63,13 +63,18 @@ export async function spaceTakeRateCents(
   }
 }
 
-/** The application fee (cents) on a charge from an individual PAID-MEMBER seller (owner_kind='profile'):
- *  the Market listing ladder rate (member_bps, 8% today — ADR-596). A member sells at this higher rate;
- *  upgrading to a Business Space buys it down to the space rate. Reads the operator pricing_settings
- *  (fail-safe to the seeded defaults, then to the platform default fee — never 0, never under-collect). */
+/** The application fee (cents) on a charge from an individual (profile) seller (owner_kind='profile'):
+ *  the personal seller ladder — free Member 10%, paid Crew 8% (COMMUNITY-COLLECTIVE-STRATEGY §4);
+ *  upgrading to a Business Space buys it down further to the space rate (ADR-596). Reads the operator
+ *  pricing_settings (fail-safe to the seeded defaults, then to the platform default fee — never 0).
+ *
+ *  `sellerTier` is the seller's resolved personal entitlement tier (lib/core/entitlement deriveTier).
+ *  It DEFAULTS to 'crew' (the lower, paid rate), so an un-threaded caller can only ever under-charge a
+ *  free seller, never over-charge a paying one. */
 export async function memberTakeRateCents(
   grossCents: number,
   source: import('./pricing-keys').OrderSource = 'self',
+  sellerTier: 'free' | 'crew' | string | null | undefined = 'crew',
 ): Promise<number> {
   // A member's OWN sale is always 0% (the hard promise, ADR-811).
   if (source === 'self') return 0
@@ -80,8 +85,15 @@ export async function memberTakeRateCents(
       import('./pricing-keys'),
     ])
     const t = (await getPricingValues()).take_rate
-    const rate = { ...NETWORK_TAKE_RATE_DEFAULT, ...t.network_bps, member: t.member_bps ?? NETWORK_TAKE_RATE_DEFAULT.member }
-    return sourceAwareMemberTakeRateCents(grossCents, source, rate)
+    const rate = {
+      ...NETWORK_TAKE_RATE_DEFAULT,
+      ...t.network_bps,
+      member: t.member_bps ?? NETWORK_TAKE_RATE_DEFAULT.member,
+      // An operator row from before the personal split carries no member_free_bps: fall back to the
+      // paid rate rather than the seeded 10%, so a stale row never silently raises anyone's fee.
+      member_free: t.member_free_bps ?? t.member_bps ?? NETWORK_TAKE_RATE_DEFAULT.member_free,
+    }
+    return sourceAwareMemberTakeRateCents(grossCents, source, rate, sellerTier)
   } catch {
     return platformFeeCents(grossCents)
   }

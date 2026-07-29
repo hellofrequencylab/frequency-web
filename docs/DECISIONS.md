@@ -16123,6 +16123,87 @@ Two facts had to be separated before anything could be built.
 
 ---
 
+## ADR-908 — Crew is pay-what-you-want, and the Member/Crew line is "first one free" (2026-07-29)
+
+**Status:** Accepted · owner-decided 2026-07-29 · extends [ADR-811](#adr-811) (Community Collective)
+and [ADR-878](#adr-878) (the founder's ladder) · corroborated by `lib/pricing/catalog-config.ts`,
+`lib/pricing/gates.ts`, `lib/pricing/feature-meters.ts`, `lib/pricing/feature-tiers.ts`,
+`lib/billing/checkout.ts`, `lib/billing/pricing-keys.ts` and [`PRICING.md`](PRICING.md)
+
+**Context.** A survey of what the Crew tier actually gates found **three switches and two meters**:
+`vault_cash_in`, `gamification_full`, `vera_unlimited`, plus a Journey publish cap and an enrollee
+cap. Two of the three switches concern a currency (Gems) whose only sink is a cosmetics store. Every
+genuine act of leading — hosting a Circle, running an event, building practices — was either free or
+gated on the *earned* `community_role`, never on billing. So the paid membership tier had no
+coherent job, and $9 bought almost nothing a member could name.
+
+Separately, `member_bps` (the individual seller take-rate, ADR-596) shipped as a single flat 8%, so a
+free Member and a paying Crew member were charged identically. [`COMMUNITY-COLLECTIVE-STRATEGY.md`](COMMUNITY-COLLECTIVE-STRATEGY.md)
+§4 had already specified Member ~10% and Crew ~8%; the split was simply never implemented.
+
+**Decision, part 1: Crew is the leadership tier, and the line is FIRST ONE FREE.** A free Member can
+do anything **once**; Crew does it repeatedly, publicly, and for money. Nothing is walled, everything
+is metered, which is the usage-meter model [ADR-519](#adr-519) already committed to ("monetize using
+more of a feature, not pay per feature"). The free allowances (`circle_host` 1, `practice_publish` 3,
+`event_create` 2, `journey_publish` 1) are real leadership, not a demo.
+
+🔴 **This does not touch [ADR-207](#adr-207): `community_role` stays earned, never billing.** Hosting
+that first Circle still makes a free Member a **Host**. The four new gates
+(`event_paid_tickets`, `personal_payouts`, `journey_library_list`, `entry_points`) sit on the billing
+axis *beside* the role ladder, never on it. Gating the first Circle behind payment was considered and
+rejected: it would put a paywall in front of the Latent Leader, who [`CONTENT-VOICE.md`](CONTENT-VOICE.md)
+§2b names as the person the entire growth model runs on.
+
+**Decision, part 2: Crew is true pay-what-you-want, $4.99 floor, no comped tier.** A member picks any
+amount at or above the floor and **every amount buys identical access**. That invariant is the whole
+design: the moment $24.99 buys more than $4.99, it is a tier ladder and the "pay what it is worth to
+you" framing is a lie. Higher amounts buy *recognition* (the Supporter mark at or above the suggested
+amount) and fund the physical build, never capability.
+
+The implementation is an **inline `price_data` subscription**, which `createMembershipCheckout`
+already used as its no-price-id fallback: pass the chosen `unit_amount` with `recurring`, under a
+stable `STRIPE_PRODUCT_CREW` product so the ad-hoc prices roll up instead of littering the dashboard.
+A chosen amount **skips price resolution entirely**, including the founder lock. That skip is
+deliberate: a grandfathered price is meaningless when the member sets the price, and resolving one
+would pin a founding member to an old amount and silently ignore what they just picked.
+
+**The picker is anchored, not a bare field.** A blank box anchors people at the floor, so five preset
+amounts ship with the suggested one pre-selected, alongside an always-visible "another amount" field.
+Any amount at or above the floor is payable, so this is genuinely PWYW; the presets exist only to
+anchor. `maxCents` is a **soft** ceiling for a confirm step, not a limit on generosity: a very large
+recurring amount is more often a slip than a gift, and larger backing belongs on the one-time
+contribution path.
+
+**There is no comped Crew** (owner decision). "Never gate someone out" rests entirely on the free
+Member tier being complete, and it is: a person with no money joins unlimited Circles, runs the whole
+Quest, earns everything, hosts a Circle, runs free events and publishes a Journey. They are gated out
+of *scaling* what they lead, never out of Frequency. A pay-it-forward "covered seat" was designed and
+rejected; consequently **no per-amount label may claim to cover another member's seat**, because it
+would not be true.
+
+**Decision, part 3: collaboration becomes a ladder, not a wall.** `space_collaborators` moves from a
+Collective floor to **Business**, metered at 3 hosted collaborators, unlimited at Collective. A
+locked preview converts badly; a used feature with a ceiling converts well. The true Collective line
+moves to the new `space_revenue_splits` gate: **hosting a few partners is Business, sharing money
+with them automatically is the collaboration engine.**
+
+**Decision, part 4: the personal take-rate splits free/paid.** `NetworkTakeRate` gains `member_free`
+(1000 bps) beside `member` (800 bps), so Crew visibly buys the rate down exactly as a Space plan
+does. Two fail-safes: an omitted `sellerTier` defaults to the **paid** rate, so an un-threaded caller
+can only under-charge a free seller and never over-charge a paying one; and an operator row from
+before the split (no `member_free_bps`) falls back to `member_bps`, so a stale row can never silently
+*raise* someone's fee to the seeded 10%.
+
+**Consequences.** Non Profit keeps the full Collective depth at $39 (a deliberate mission subsidy,
+not an oversight; the $40 gap is held shut by 501(c)(3) verification alone). Everything here is
+**inert until the gates bite**: `featureAllowed` short-circuits to grant while `featureGatesLive()`
+is false, which is `billingLive()` AND the end of the beta grace window (`2026-09-01` by code
+default, [ADR-874](#adr-874)). Enforcement at the call sites (ticket-tier creation, personal Connect
+onboarding, circle creation, event creation) and the picker UI are **not** in this change; the map
+is, and the map is what the surfaces derive from.
+
+---
+
 ## ADR-907 — One claim-token system, hashed, expiring and off the entity (2026-07-29)
 
 **Status:** Accepted · completes [ADR-906](#adr-906) · corroborated by

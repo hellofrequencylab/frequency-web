@@ -61,8 +61,12 @@ export interface PricingDefaults {
   take_rate: {
     // Legacy flat fields — kept for the "you'd have saved $X" nudge + the admin console during transition.
     free_bps: number; business_bps: number; nonprofit_bps: number; member_bps: number
+    /** The individual seller rate on the FREE Member tier. Crew buys it down to `member_bps`, the
+     *  personal-axis sibling of the space buy-down (COMMUNITY-COLLECTIVE-STRATEGY §4). Optional so a
+     *  stored pre-split row still resolves (fail-safe: an absent value reads `member_bps`, never more). */
+    member_free_bps?: number
     // NETWORK-sourced take-rate per space tier (ADR-811 §A). `self` orders are 0 by rule (not stored).
-    // The rate drops as the tier rises; the individual member seller rate rides `member_bps`.
+    // The rate drops as the tier rises; the individual seller rates ride member_free_bps / member_bps.
     network_bps: { free: number; business: number; collective: number; nonprofit: number; independent: number }
   }
   /** Vera free-tier daily message cap. */
@@ -98,9 +102,10 @@ export const PRICING_DEFAULTS: PricingDefaults = {
     independent: { monthly_cents: 24900, annual_cents: 249000 }, // ~$249 white-label, network-disconnected (standard SaaS)
   },
   // Free usage → 5% (the self-funding trigger); paying Business → 3%; Non Profit → 3% (ADR-552 §3.2).
-  // Individual paid-member seller → 8% (the Market listing ladder; Business buys it down to 3%, ADR-596).
+  // Individual seller ladder: free Member → 10%, paid Crew → 8% (the personal buy-down,
+  // COMMUNITY-COLLECTIVE-STRATEGY §4); a Business Space buys it down further to 3% (ADR-596).
   take_rate: {
-    free_bps: 500, business_bps: 300, nonprofit_bps: 300, member_bps: 800,
+    free_bps: 500, business_bps: 300, nonprofit_bps: 300, member_bps: 800, member_free_bps: 1000,
     // Network-sourced rates (ADR-811 §A): Member 10% → Business 5% → Collective 3% → Non Profit 0 →
     // Independent 0 (left the graph). Launch low, earn the right to raise.
     network_bps: { free: 1000, business: 500, collective: 300, nonprofit: 0, independent: 0 },

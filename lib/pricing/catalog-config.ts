@@ -64,11 +64,25 @@ export interface SeatConfig {
   bundledFloor: number
 }
 
+/** Pay-what-you-want configuration. It drives TWO surfaces off one shape: the one-time Supporter
+ *  contribution (lib/billing/supporter.ts) and the RECURRING Crew membership, which is PWYW as of the
+ *  membership rework — a member picks any amount at or above `minCents` and every amount buys IDENTICAL
+ *  access. `presetCents` is the anchored choice architecture (a bare open field anchors people at the
+ *  floor); `suggestedCents` is the pre-selected default and the Supporter-mark threshold. */
 export interface PwywConfig {
-  /** The Supporter pay-what-you-want minimum, in cents. */
+  /** The pay-what-you-want minimum, in cents. The floor, and the only hard rule. */
   minCents: number
-  /** The suggested Supporter contribution, in cents. */
+  /** The suggested contribution, in cents. Pre-selected on the picker; at or above it a member carries
+   *  the Supporter mark (profiles.is_supporter). Always clamped to at least `minCents`. */
   suggestedCents: number
+  /** The soft ceiling for a RECURRING pick, in cents. Not a limit on generosity: above it the surface
+   *  asks for a confirmation, because a very large recurring amount is more often a slip than a gift,
+   *  and larger backing belongs on the one-time contribution path. */
+  maxCents: number
+  /** The preset amounts the picker offers, ascending, in cents. Every preset buys the same access; they
+   *  exist only to anchor the choice. An "another amount" field always sits beside them, so ANY amount
+   *  from `minCents` up is payable and this stays true pay-what-you-want. */
+  presetCents: number[]
 }
 
 /** The full resolved catalog config the admin console + the picker read. */
@@ -85,9 +99,14 @@ export interface CatalogConfig {
 /** The default seat config: a 3-seat bundled floor (the owner-locked nonprofit floor). */
 export const SEAT_CONFIG_DEFAULT: SeatConfig = { bundledFloor: 3 }
 
-/** The default PWYW config: a $5 minimum, $12 suggested (the retired Supporter tier's old rate as the
- *  suggested anchor). */
-export const PWYW_CONFIG_DEFAULT: PwywConfig = { minCents: 500, suggestedCents: 1200 }
+/** The default PWYW config: a $4.99 floor, $12 suggested (pre-selected), a $100 soft ceiling on a
+ *  recurring pick, and the five preset anchors. Every preset grants identical access. */
+export const PWYW_CONFIG_DEFAULT: PwywConfig = {
+  minCents: 499,
+  suggestedCents: 1200,
+  maxCents: 10000,
+  presetCents: [499, 900, 1200, 1800, 2499],
+}
 
 /** The `pricing_settings` key for one catalog item's amount override. */
 export function catalogConfigKey(item: CatalogItemKey): string {
@@ -160,13 +179,49 @@ export function asSeatConfig(raw: unknown): SeatConfig {
 }
 
 /** Narrow a raw jsonb value to a PwywConfig, FAIL-SAFE to the default. PURE. The suggested amount is
- *  clamped to at least the minimum so the surface never suggests below the floor. */
+ *  clamped to at least the minimum so the surface never suggests below the floor; the ceiling is clamped
+ *  to at least the suggested amount so an operator typo can never make the suggestion unpickable; and
+ *  the presets are cleaned to a sorted, de-duplicated set of in-range amounts (an out-of-range preset is
+ *  dropped rather than rendered, so the picker can never offer an amount checkout would reject). An
+ *  absent / unusable preset list falls back to the code default's presets, clamped the same way. */
 export function asPwywConfig(raw: unknown): PwywConfig {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return PWYW_CONFIG_DEFAULT
   const o = raw as Record<string, unknown>
-  const min = nonNegInt(o.minCents, PWYW_CONFIG_DEFAULT.minCents)
+  const min = Math.max(1, nonNegInt(o.minCents, PWYW_CONFIG_DEFAULT.minCents))
   const suggested = Math.max(min, nonNegInt(o.suggestedCents, PWYW_CONFIG_DEFAULT.suggestedCents))
-  return { minCents: min, suggestedCents: suggested }
+  const max = Math.max(suggested, nonNegInt(o.maxCents, PWYW_CONFIG_DEFAULT.maxCents))
+  const rawPresets = Array.isArray(o.presetCents) ? o.presetCents : PWYW_CONFIG_DEFAULT.presetCents
+  const presets = [
+    ...new Set(
+      rawPresets
+        .map((v) => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : NaN))
+        .filter((v) => Number.isFinite(v) && v >= min && v <= max),
+    ),
+  ].sort((a, b) => a - b)
+  return {
+    minCents: min,
+    suggestedCents: suggested,
+    maxCents: max,
+    // Never hand back an empty picker: fall back to the suggested amount as the single anchor.
+    presetCents: presets.length > 0 ? presets : [suggested],
+  }
+}
+
+/** Is a chosen RECURRING Crew amount valid for this config? PURE — the single predicate the picker and
+ *  the checkout action share, so the UI can never offer an amount the server would refuse. Any amount at
+ *  or above the floor is valid (that is what makes it true pay-what-you-want); the ceiling is enforced
+ *  separately by the surface's confirm step, not here. */
+export function isValidPwywAmount(amountCents: number, config: PwywConfig): boolean {
+  if (!Number.isFinite(amountCents)) return false
+  return Math.round(amountCents) >= config.minCents
+}
+
+/** Does this amount earn the Supporter mark (profiles.is_supporter)? At or above the suggested amount.
+ *  PURE. The mark is RECOGNITION ONLY: it never changes what a member can do, because every Crew amount
+ *  buys identical access. */
+export function earnsSupporterMark(amountCents: number, config: PwywConfig): boolean {
+  if (!Number.isFinite(amountCents)) return false
+  return Math.round(amountCents) >= config.suggestedCents
 }
 
 /** Narrow a raw jsonb value to the per-add-on enable map, FAIL-SAFE to ALL ENABLED (the add-ons ship

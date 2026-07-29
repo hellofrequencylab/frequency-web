@@ -55,6 +55,19 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   gamification_full: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // full loop; free = earn-only
   vera_unlimited: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // Vera beyond the free daily cap
 
+  // §4b personal LEADERSHIP gates (the Crew tier's real job). A free Member leads at the FIRST-ONE-FREE
+  // allowance (1 Circle hosted, 1 Journey published unlisted, 3 Practices, 2 active free events — the
+  // meters in feature-meters.ts); Crew leads at scale, in public, and for money. These four are the
+  // genuine ON/OFF splits that a quantity cannot express, so they gate rather than meter. A free Member
+  // is never gated out of Frequency, only out of scaling what they lead.
+  //
+  // The community_role ladder is UNTOUCHED (ADR-207: role is earned, never billing). Hosting the first
+  // Circle still makes a free Member a Host; these gates sit on the billing axis beside it.
+  event_paid_tickets: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // charge for your own event
+  personal_payouts: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // personal Stripe Connect payouts
+  journey_library_list: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // list a Journey publicly
+  entry_points: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // QR codes, short links, flyers
+
   // §5 space plans (reuse spaces.plan). COLLAPSED to the new ladder (ADR-552): the paid floor is
   // 'business' for every paid space feature, since free-vs-paid is a usage state within Business rather
   // than a tier ladder. The fine-grained "does this space have email / the AI engine / branding" decision
@@ -79,7 +92,19 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // bypassed. Free spaces get the LOCKED PREVIEW (the surface renders with an upgrade prompt). Non
   // Profit clears it via the shared full-depth set. While the gates are not live this short-circuits
   // to granted (today's free universal behavior), so nothing changes until the grace window ends.
-  space_collaborators: { axis: 'plan', minEntitlement: 'collective', enabled: true },
+  // COLLABORATION IS NOW A LADDER, NOT A WALL. Hosting collaborators opens at BUSINESS (basic: a small
+  // metered number of hosted collaborators + co-hosted events, see feature-meters space_collaborators);
+  // the Collective depth is what a collective actually needs, and it rides `space_revenue_splits` below.
+  // A free Space still gets the locked preview, and BEING a collaborator stays free for any active
+  // Business / Non Profit Space. Moving the floor down converts a locked preview (which converts badly)
+  // into a used feature with a ceiling (which converts well), the same usage-meter model as every other
+  // dimension (ADR-519).
+  space_collaborators: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  // Splitting money automatically with your collaborators is the true Collective line: hosting a few
+  // partners is Business, sharing revenue with them is the collaboration ENGINE.
+  space_revenue_splits: { axis: 'plan', minEntitlement: 'collective', enabled: true },
+  // Group SMS to your own members (rides the A2P 10DLC registration, docs/A2P-REGISTRATION.md).
+  space_sms: { axis: 'plan', minEntitlement: 'collective', enabled: true },
   // Membership-linked ticket access (ADR-823): restricting an event ticket tier to the hosting
   // Space's own members (space_members_only / space_tier_id on event_ticket_types) is Collective
   // depth — it sells the Space's membership program, which is the Collective offer. Enforced where

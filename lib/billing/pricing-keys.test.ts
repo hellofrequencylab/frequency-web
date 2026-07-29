@@ -13,6 +13,7 @@ import {
   asSpacePlanKey,
   takeRateBpsForPlan,
   takeRateCents,
+  memberNetworkTakeRateBps,
   memberTakeRateBps,
   memberTakeRateCents,
   monthlyTakeRateSavingsCents,
@@ -170,6 +171,42 @@ describe('member seller take-rate (ADR-596: paid member 8%, Business buys it dow
 
   it('a paid member pays more than a paying Business (the upgrade is real)', () => {
     expect(memberTakeRateBps(TAKE_RATE)).toBeGreaterThan(takeRateBpsForPlan('business', TAKE_RATE, true))
+  })
+})
+
+describe('the personal seller ladder (free Member 10%, Crew 8% — Crew buys the rate down)', () => {
+  it('a free Member pays member_free and Crew pays the bought-down member rate', () => {
+    expect(memberNetworkTakeRateBps('free')).toBe(1000)
+    expect(memberNetworkTakeRateBps('crew')).toBe(800)
+  })
+
+  it('the buy-down is real: paying for Crew always costs less per network sale than staying free', () => {
+    expect(memberNetworkTakeRateBps('crew')).toBeLessThan(memberNetworkTakeRateBps('free'))
+  })
+
+  it('a paid-but-not-crew label (a legacy supporter row) reads as paid, never as free', () => {
+    // deriveTier collapses supporter -> crew, so anything that is not literally 'free' is paid here.
+    expect(memberNetworkTakeRateBps('supporter')).toBe(800)
+  })
+
+  it('an absent member_free on a pre-split operator row falls back to the PAID rate, never higher', () => {
+    // A stale row must not silently RAISE a free seller's fee to the seeded 10%.
+    const legacy = { ...NETWORK_TAKE_RATE_DEFAULT, member_free: undefined as unknown as number }
+    expect(memberNetworkTakeRateBps('free', legacy)).toBe(800)
+  })
+
+  it('sourceAwareMemberTakeRateCents charges the seller tier rate on a network sale', () => {
+    expect(sourceAwareMemberTakeRateCents(10000, 'network', NETWORK_TAKE_RATE_DEFAULT, 'free')).toBe(1000)
+    expect(sourceAwareMemberTakeRateCents(10000, 'network', NETWORK_TAKE_RATE_DEFAULT, 'crew')).toBe(800)
+  })
+
+  it('an omitted tier keeps the pre-split Crew contract (never over-charges a paying member)', () => {
+    expect(sourceAwareMemberTakeRateCents(10000, 'network')).toBe(800)
+  })
+
+  it("a seller's OWN sale is still 0% at every tier (the hard promise)", () => {
+    expect(sourceAwareMemberTakeRateCents(10000, 'self', NETWORK_TAKE_RATE_DEFAULT, 'free')).toBe(0)
+    expect(sourceAwareMemberTakeRateCents(10000, 'self', NETWORK_TAKE_RATE_DEFAULT, 'crew')).toBe(0)
   })
 })
 

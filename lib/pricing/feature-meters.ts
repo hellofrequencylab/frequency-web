@@ -110,9 +110,22 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   space_vera: { free: 10, business: 200 },
   space_crm_playbooks: { free: 0, business: 5_000 },
   space_crm_resonance_ai: { free: 10, business: 2_000 },
+  // Collaboration is a LADDER, not a wall: a free Space previews it, Business hosts a few collaborators
+  // (basic collaboration), Collective hosts unlimited (the collaboration engine, plus revenue splits
+  // which are a separate on/off gate). Mirrors the gate floor moving to 'business' in gates.ts.
+  space_collaborators: { free: 0, business: 3, collective: null },
+  // Membership tiers a Space may define. Free runs one tier (the §2 "10 active, 1 tier" row), Business
+  // runs a small ladder, Collective is unlimited (multi-tier pricing is the Collective offer).
+  space_membership_tiers: { free: 1, business: 3, collective: null },
   vera_unlimited: { free: 10, crew: null },
-  journey_publish: { free: 1, crew: 25 },
+  // FIRST ONE FREE — the personal leadership allowances. A free Member leads at one of each; Crew leads
+  // at scale. Nothing here is a wall: a free Member still hosts a real Circle and is still made a Host
+  // (community_role stays earned, never billing — ADR-207).
+  journey_publish: { free: 1, crew: null },
   journey_enrollees: { free: 10, crew: null },
+  circle_host: { free: 1, crew: null },
+  practice_publish: { free: 3, crew: null },
+  event_create: { free: 2, crew: null },
 }
 
 // ── The per-feature raw meter config (dimension + per-tier allowance) ────────────────────────────────
@@ -255,6 +268,32 @@ const RAW_METERS: Record<string, RawMeter> = {
     // unlimited.
     allowances: PLACEHOLDER_METER_LIMITS.space_multi_pipeline!,
   },
+  space_collaborators: {
+    axis: 'plan',
+    title: 'Collaborator hosting',
+    dimension: 'Hosted collaborators',
+    unit: 'collaborators',
+    period: null,
+    // Free: preview only. Business: basic collaboration, a few hosted collaborators. Collective:
+    // unlimited, the collaboration engine (revenue splits ride the separate space_revenue_splits gate).
+    // Being a collaborator stays free for any active Business / Non Profit Space; only HOSTING meters.
+    allowances: PLACEHOLDER_METER_LIMITS.space_collaborators!,
+    allowanceTextByTier: {
+      free: 'Preview only, and be a Collaborator on other Spaces for free',
+      business: 'Host up to 3 collaborators',
+      collective: 'Host unlimited collaborators, with revenue splits',
+    },
+  },
+  space_membership_tiers: {
+    axis: 'plan',
+    title: 'Membership tiers',
+    dimension: 'Membership tiers',
+    unit: 'tiers',
+    period: null,
+    // Free: 1 tier (§2 "10 active, 1 tier"). Business: a small ladder. Collective: unlimited, which is
+    // what a membership program actually needs.
+    allowances: PLACEHOLDER_METER_LIMITS.space_membership_tiers!,
+  },
   // ── Space AI depth (plan axis; the Resonance Engine metered usage · ADR-387) ─────────────────────
   space_vera: {
     axis: 'plan',
@@ -300,7 +339,8 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'journeys',
     period: null,
     // Free: 1 published Journey — the LIVE personal cap (publish-limits.ts FREE_PUBLISHED_JOURNEY_LIMIT
-    // now reads THIS row, ADR-838). Crew: 25 placeholder (a higher cap; was unlimited pre-838).
+    // now reads THIS row, ADR-838). Crew: unlimited (the leadership tier does not ration publishing;
+    // LISTING one publicly is the separate journey_library_list gate).
     allowances: PLACEHOLDER_METER_LIMITS.journey_publish!,
   },
   journey_enrollees: {
@@ -312,6 +352,40 @@ const RAW_METERS: Record<string, RawMeter> = {
     // Free: 10 active enrollees across a personal Journey (mirrors space_journey's free 10). Crew:
     // unlimited. resolveJourneyAccess reads this row for the personal enroll allotment (ADR-838).
     allowances: PLACEHOLDER_METER_LIMITS.journey_enrollees!,
+  },
+  // FIRST ONE FREE — the three leadership quantities that split Member from Crew. A free Member really
+  // does lead (hosts a Circle, builds practices, runs free gatherings); Crew is what leading at scale
+  // costs. These meter the SECOND one, never the first, so the Latent Leader is never met with a wall.
+  circle_host: {
+    axis: 'tier',
+    title: 'Circles you host',
+    dimension: 'Circles hosted',
+    unit: 'circles',
+    period: null,
+    // Free: host 1 real Circle (and become a Host by doing it — role stays earned, ADR-207).
+    // Crew: unlimited.
+    allowances: PLACEHOLDER_METER_LIMITS.circle_host!,
+    allowanceTextByTier: { free: 'Host 1 Circle' },
+  },
+  practice_publish: {
+    axis: 'tier',
+    title: 'Practices you publish',
+    dimension: 'Published Practices',
+    unit: 'practices',
+    period: null,
+    // Free: publish 3 Practices others can adopt. Crew: unlimited.
+    allowances: PLACEHOLDER_METER_LIMITS.practice_publish!,
+  },
+  event_create: {
+    axis: 'tier',
+    title: 'Events you run',
+    dimension: 'Active events',
+    unit: 'events',
+    period: null,
+    // Free: 2 active events at a time, free or RSVP only (charging for one is the separate
+    // event_paid_tickets gate). Crew: unlimited, including recurring series.
+    allowances: PLACEHOLDER_METER_LIMITS.event_create!,
+    allowanceTextByTier: { free: 'Up to 2 active events, free or RSVP' },
   },
 }
 
@@ -335,13 +409,23 @@ export const NON_METERED_FEATURES: Record<string, string> = {
   vault_cash_in: 'On/off unlock (spend Gems / claim rewards); the Gem balance is the natural limit.',
   // The full rewards loop (streaks, seasons, ladder) is an on/off experience, not a "use more" dial.
   gamification_full: 'On/off experience (the full rewards loop), no natural quantity to meter.',
-  // Collaborator hosting (hosting collaborator spaces / hosting events with Collaborators) is an
-  // on/off Collective capability of the HOST side (ADR-810/ADR-835), not a metered quantity — the
-  // collaborator pays for their own space (being one is free), so the host is never charged per guest.
-  space_collaborators: 'On/off capability (Collaborator hosting: collaborator spaces + events with Collaborators), free to host per guest.',
   // Restricting a ticket tier to the space's own members (ADR-823) is an on/off gate on the tier
   // editor, not a quantity — ticket volume is already the space's own sales, never charged per use.
   space_membership_tickets: 'On/off capability (members-only ticket tiers), no natural quantity to meter.',
+  // Splitting revenue with collaborators is an on/off capability of the collaboration engine: you can
+  // share money automatically or you cannot. The NUMBER of collaborators is metered separately on
+  // space_collaborators, so this carries no second quantity.
+  space_revenue_splits: 'On/off capability (automatic revenue splits with collaborators); the collaborator count is metered on space_collaborators.',
+  // Group SMS volume is governed by the carrier A2P 10DLC registration and its throughput, not by the
+  // plan (docs/A2P-REGISTRATION.md), so a per-tier send allowance here would invent a second, wrong cap.
+  space_sms: 'On/off capability (group SMS); send volume is governed by the A2P 10DLC registration, not the plan.',
+  // ── Personal leadership on/off unlocks (tier axis). The QUANTITIES that pair with these are metered
+  // above (circle_host, practice_publish, event_create, journey_publish); these four are the genuine
+  // switches a number cannot express.
+  event_paid_tickets: 'On/off capability (charge for your own event); the event count is metered on event_create.',
+  personal_payouts: 'On/off capability (personal Stripe Connect payouts), no natural quantity to meter.',
+  journey_library_list: 'On/off capability (list a Journey in the public library); the publish count is metered on journey_publish.',
+  entry_points: 'On/off capability (entry points: QR codes, short links, flyers); per-Space QR volume is metered on space_qr.',
 }
 
 // ── Allowance label + readout formatting (pure) ──────────────────────────────────────────────────────

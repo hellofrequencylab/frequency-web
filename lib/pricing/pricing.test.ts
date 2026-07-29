@@ -195,11 +195,24 @@ describe('feature gate ladder math (meetsGate)', () => {
     expect(meetsGate({ ...tierGate, enabled: false }, { tier: 'free' })).toBe(true)
   })
 
-  it('collaborators is a Collective-plan gate (ADR-811): free + business are below; collective/nonprofit/independent clear it', () => {
+  it('collaborator HOSTING opens at Business: only a free Space is below it', () => {
+    // Collaboration is a LADDER, not a wall. Business hosts a metered few (basic collaboration);
+    // Collective hosts unlimited. A locked preview converts badly, a used feature with a ceiling
+    // converts well, so the floor moved down to Business and the depth moved to revenue splits.
     const gate = FEATURE_GATES.space_collaborators
+    expect(gate).toEqual({ axis: 'plan', minEntitlement: 'business', enabled: true })
+    expect(meetsGate(gate, { plan: 'free' })).toBe(false)
+    expect(meetsGate(gate, { plan: 'business' })).toBe(true)
+    expect(meetsGate(gate, { plan: 'collective' })).toBe(true)
+    expect(meetsGate(gate, { plan: 'nonprofit' })).toBe(true)
+    expect(meetsGate(gate, { plan: 'independent' })).toBe(true)
+  })
+
+  it('revenue splits are the Collective line: free + business are below it', () => {
+    const gate = FEATURE_GATES.space_revenue_splits
     expect(gate).toEqual({ axis: 'plan', minEntitlement: 'collective', enabled: true })
     expect(meetsGate(gate, { plan: 'free' })).toBe(false)
-    expect(meetsGate(gate, { plan: 'business' })).toBe(false) // Business is below Collective now
+    expect(meetsGate(gate, { plan: 'business' })).toBe(false)
     expect(meetsGate(gate, { plan: 'collective' })).toBe(true)
     expect(meetsGate(gate, { plan: 'nonprofit' })).toBe(true)
     expect(meetsGate(gate, { plan: 'independent' })).toBe(true)
