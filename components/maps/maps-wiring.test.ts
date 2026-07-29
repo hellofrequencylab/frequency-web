@@ -121,6 +121,7 @@ describe('each migrated surface composes the template rather than hand-rolling a
 describe('the seam degrades instead of breaking', () => {
   const canvas = readFileSync('components/maps/map-canvas.tsx', 'utf8')
   const google = readFileSync('components/maps/google-canvas.tsx', 'utf8')
+  const loader = readFileSync('lib/maps/google-loader.ts', 'utf8')
 
   it('renders MapLibre whenever the provider is not google', () => {
     expect(canvas).toContain('mapProvider()')
@@ -133,12 +134,89 @@ describe('the seam degrades instead of breaking', () => {
     expect(canvas).toContain('onProviderError')
     expect(canvas).toContain('setGoogleUnavailable(true)')
     expect(google).toContain('.catch(')
-    expect(google).toContain('onErrorRef.current?.()')
+    // The REASON travels with the fallback. It used to be `onErrorRef.current?.()` — six
+    // distinct diagnostic strings thrown away at the one place that knew which had happened,
+    // which is how a deterministic loader bug read as a key or CSP problem for three rounds.
+    expect(google).toMatch(/onErrorRef\.current\?\.\(\s*error instanceof Error/)
+    expect(google).not.toContain('onErrorRef.current?.()')
+  })
+
+  it('an auth failure ALSO falls back, even though it never rejects', () => {
+    // A key with billing not activated, a denied referrer or a disabled API returns HTTP 200,
+    // lets `new maps.Map()` succeed, and reports itself ONLY through `window.gm_authFailure`.
+    // Nothing rejects, so without this subscription the member is left on Google's grey
+    // "can't load Google Maps correctly" tile instead of the MapLibre map we already ship.
+    expect(loader).toContain('gm_authFailure')
+    expect(loader).toContain('onGoogleMapsAuthFailure')
+    expect(google).toContain('onGoogleMapsAuthFailure')
   })
 
   it('both engines are client-only', () => {
     expect(canvas).toContain("dynamic(() => import('./maplibre-canvas'), { ssr: false })")
     expect(canvas).toContain("dynamic(() => import('./google-canvas'), { ssr: false })")
+  })
+})
+
+describe('the Google loader waits for Google, not for the script tag', () => {
+  const loader = readFileSync('lib/maps/google-loader.ts', 'utf8')
+
+  it('settles on the `callback` handshake and never on the script `load` event', () => {
+    // maps/api/js is a BOOTSTRAP. It defines google.maps.Load/.modules/.__gjsload__ and then
+    // appends a second script (main.js) which is what attaches Map/Marker/InfoWindow/etc.
+    // Our tag's `load` fires before that second script runs, so gating on `load` inspected an
+    // empty namespace and rejected on every first mount — silently pinning production to the
+    // MapLibre fallback for the whole life of the Google path. Behaviour is covered by
+    // lib/maps/google-loader.test.ts; this is the cheap drift guard that keeps a well-meaning
+    // "restore the load listener" edit from reintroducing it.
+    expect(loader).toContain("url.searchParams.set('callback', CALLBACK_NAME)")
+    expect(loader).not.toMatch(/addEventListener\(\s*'load'/)
+  })
+
+  it('has a watchdog, so a hung script falls back instead of leaving an empty div', () => {
+    expect(loader).toContain('LOAD_TIMEOUT_MS')
+    expect(loader).toContain('setTimeout')
+  })
+})
+
+describe('a map failure announces itself', () => {
+  // THE reason this bug survived three rounds: a blank map and no signal anywhere. Every
+  // silent path now emits exactly one structured, deduped line naming the build and the cause.
+  const diag = readFileSync('lib/maps/diagnostics.ts', 'utf8')
+  const canvas = readFileSync('components/maps/map-canvas.tsx', 'utf8')
+  const maplibre = readFileSync('components/maps/maplibre-canvas.tsx', 'utf8')
+  const loader = readFileSync('lib/maps/google-loader.ts', 'utf8')
+
+  it('the seam logs which provider it fell back from, and why', () => {
+    expect(canvas).toContain("mapDiag('maps.provider_fallback'")
+    expect(canvas).toContain('reason')
+  })
+
+  it('MapLibre reports its own failures instead of dying quietly', () => {
+    // MapLibre routes style, sprite, glyph, worker and tile failures into one `error` event
+    // that nothing was subscribed to.
+    expect(maplibre).toContain("map.on('error'")
+    expect(maplibre).toMatch(/mapDiag\(\s*'maps\.maplibre_error'/)
+    // The blank-basemap signature: style parses, controls render, no tile ever arrives.
+    expect(maplibre).toContain("mapDiag('maps.no_tiles'")
+  })
+
+  it('a rejected key is reported, since it is the failure that never throws', () => {
+    expect(loader).toContain("mapDiag('maps.google_auth_failure'")
+  })
+
+  it('never prints the key itself', () => {
+    // A browsable key is public by construction, but a console line travels into screenshots
+    // and pasted transcripts. `keyPresent` is a boolean, on purpose.
+    expect(loader).toContain('keyPresent')
+    expect(diag).toContain('keyPresent')
+    for (const src of [diag, canvas, maplibre, loader]) {
+      expect(src).not.toMatch(/mapDiag\([^)]*googleMapsBrowserKey\(\)\s*[,}]/)
+    }
+  })
+
+  it('is deduped, so a failing tile host cannot flood the console', () => {
+    expect(diag).toContain('dedupeKey')
+    expect(diag).toContain('reported.has')
   })
 })
 

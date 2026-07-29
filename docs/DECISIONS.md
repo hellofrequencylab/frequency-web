@@ -16106,6 +16106,102 @@ Two facts had to be separated before anything could be built.
   one-file change. That decision touches `pnpm-lock.yaml` and belongs to whoever can run a
   real install.
 
+> **⚠️ Correction (2026-07-29) — this ADR's diagnosis failed its own test.** Point 2 above
+> asserts "the blank basemap **is** a MapLibre 6 regression, not a CSP block and not a missing
+> key." `maplibre-gl` was pinned back to `^5.24.0` (e64c8ba) and **the blank basemap
+> persisted**, so that claim did not survive contact. It is left in place, not quietly edited,
+> because an ADR that records a wrong call is worth ten that get tidied up. What actually kept
+> production on the fallback is **ADR-904**: the Google loader settled on the script tag's
+> `load` event, which fires before Google's real API script has run, so it rejected on every
+> first mount and the Google path never rendered a single tile. The `scope-maps.md` this ADR
+> cites for "full evidence" was never checked in and no longer exists; the durable map
+> reference is [`MAPS.md`](MAPS.md). One more correction: this ADR says the v6 worker URL
+> resolves to `''` **or** a 404 — under Turbopack `import.meta.url` is always an `https:` URL,
+> so it is always a **404**, never `''`. Grep the Network tab for `maplibre-gl-worker.mjs`.
+
+---
+
+## ADR-904 — The Google Maps loader settles on Google's `callback`, never on the script tag's `load` (2026-07-29)
+
+**Status:** Accepted · corroborated by `lib/maps/google-loader.ts` +
+`lib/maps/google-loader.test.ts`
+
+**Context.** With a browsable key set in Vercel across all environments and redeployed, a
+production event page still rendered the MapLibre fallback: OpenFreeMap attribution, blank
+cream basemap, our own pin and zoom controls, and **no console error at all**. Three separate
+theories were chased (missing key, CSP block, MapLibre 6 worker regression) because nothing in
+the stack said anything when it failed.
+
+The cause is in the loader, and it is deterministic rather than a race.
+`https://maps.googleapis.com/maps/api/js` does **not** return the Maps API. It returns a ~13 KB
+bootstrap that defines only `google.maps.Load` / `.modules` / `.__gjsload__` and then appends a
+**second** script (`…/maps-api-v3/api/js/<ver>/main.js`), which is what attaches `Map`,
+`Marker`, `InfoWindow`, `LatLngBounds`, `Circle`, `SymbolPath` and `importLibrary`. A
+script-inserted tag is async, so our tag's `load` event fires at the end of the bootstrap's
+synchronous run — **strictly before** main.js executes. The loader settled on that `load`
+event, found an empty namespace, and rejected with "loaded without the expected API surface"
+**100% of the time**. `google-canvas.tsx` caught it in a bare `.catch(() => …)` that discarded
+the message, the seam re-rendered MapLibre, and the failure was indistinguishable from "no key
+was ever set". The Google path had never rendered a tile in production.
+
+Two further facts, both verified against Google's served bytes:
+
+1. **`libraries=core,maps` does not withhold `Marker`.** It ships in the legacy namespace
+   unconditionally, so the readiness check is sound. Do not "fix" the `libraries` param.
+2. **An auth failure never rejects.** A key with billing not activated, a denied referrer, a
+   disabled API or a bad key all return HTTP 200, let `new maps.Map()` succeed, and report
+   themselves **only** through `window.gm_authFailure` — which was wired nowhere in the repo.
+   So fixing the timing bug alone would have traded a working fallback for a dead grey Google
+   error tile on the owner's free-trial account.
+
+**Decision.**
+
+- **Resolve on `&callback=`, the documented handshake, and never on `load`.** The loader
+  installs one global (`__frequencyGoogleMapsReady`), passes its name alongside the
+  `loading=async` flag that exists precisely to pair with it, and fans the callback out to
+  every waiting promise. The drift guard asserts `addEventListener('load'` appears nowhere in
+  the loader.
+- **A watchdog is part of the fail-safe contract.** A script that is blocked, hangs, or loads
+  without ever calling back now rejects after 10s instead of leaving an empty `<div>` forever.
+- **`window.gm_authFailure` is wired, sticky, and fans out.** It marks the key rejected so no
+  later mount retries, notifies every mounted canvas so they fall back in place, and emits one
+  diagnostic naming the three things to check (billing activated, pathful HTTP-referrer
+  patterns, Maps JavaScript API *enabled* and not merely allowed on the key).
+- **A second mount joins the shared callback, it does not wait on a spent `load` event.**
+  Previously the second `<MapCanvas>` on a page could hang forever with no rejection and
+  therefore no fallback.
+- **Failures carry their reason.** `onProviderError` widened from `() => void` to
+  `(reason: string) => void`; the six distinct rejection strings now reach the log.
+- **Every silent path emits one structured, deduped line** (`lib/maps/diagnostics.ts`):
+  provider fallback, Google auth failure, MapLibre `error`, and "no tile ever arrived". Each
+  line names the build SHA, so *"did the fix deploy?"* is answerable from a screenshot. It
+  never prints the key — `keyPresent` is a boolean.
+- **`GET /api/status` publishes build identity** (`commit`, `ref`, `env`). The route is already
+  `force-static`, so those values are frozen into the deployment that serves them. A redeploy
+  rebuilds the deployment you clicked, not `main`, so "I merged it and redeployed" was never
+  evidence; one `curl` now settles it.
+
+**Provider-selection semantics are UNCHANGED**: Google when a browsable key is set, MapLibre
+otherwise, MapLibre on any Google failure.
+
+**Consequences.**
+
+- **CSP needed no change.** The Google host set was audited host by host and is complete;
+  `next.config.ts` now records that audit so the next person does not re-derive it. It also
+  records the trap for the ADR-170 nonce follow-up: Google's bootstrap copies
+  `document.querySelector('script[nonce]').nonce` onto the main.js tag it appends, so a
+  nonce-based `script-src` requires the nonce on our injected tag or the map dies with nothing
+  to fall back on.
+- `NEXT_PUBLIC_MAPLIBRE_WORKER_URL` is documented as **v6-only, leave empty**. `.env.example`
+  previously told an operator to point it at a `maplibre-gl-worker.mjs` this repo does not
+  ship — which on v5 reproduces the exact blank basemap it was written to cure, permanently.
+- The `import * as maplibregl` form is **kept**, not reverted to a default import: v5.24.0's
+  `dist/maplibre-gl.d.ts` has no `export default`, so the default form is a compile error
+  today. `components/maps/maplibre-interop.test.ts` is now the one map test that actually
+  imports the library, because every other one is a source-text grep and a total interop break
+  would pass all of them.
+- Full reference and browser triage checklist: [`MAPS.md`](MAPS.md).
+
 ---
 
 ## ADR-902 — The event detail layout is a template, not a page (2026-07-28)

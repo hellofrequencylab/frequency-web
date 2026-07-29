@@ -1,7 +1,10 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-// maplibre-gl 6 is ESM-only with named exports; the namespace import keeps the maplibregl.* call sites unchanged.
+// Namespace import, NOT a default import: we are pinned to maplibre-gl 5, whose UMD dist
+// declares no `export default` in its .d.ts (the default form is a compile error). The form
+// was introduced for v6 and kept through the v5 pin; components/maps/maplibre-interop.test.ts
+// is the one test that imports the library for real and would catch it drifting again.
 import * as maplibregl from 'maplibre-gl'
 // v6 no longer re-exports the GeoJSON type globals; import them explicitly.
 import type * as GeoJSON from 'geojson'

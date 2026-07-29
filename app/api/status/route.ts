@@ -43,6 +43,26 @@ const ENDPOINTS = [
   },
 ] as const
 
+/** Which build is answering. `dynamic = 'force-static'` means this route is rendered at
+ *  BUILD time, so these values are frozen into the deployment that serves them — which is
+ *  exactly what makes them trustworthy.
+ *
+ *  WHY THIS IS HERE. A production bug was chased for three rounds partly because nothing this
+ *  app served carried build identity, so "did the fix actually deploy?" was unanswerable
+ *  without the Vercel dashboard. A redeploy rebuilds the deployment you clicked, not `main`,
+ *  so "I merged it and redeployed" is not evidence. One curl now settles it forever.
+ *
+ *  SAFE TO PUBLISH: a short commit SHA on a deployed build, nothing more. Sentry already
+ *  ships the same SHA as its release tag (lib/observability/sentry.ts). No token, no path,
+ *  no environment secret. */
+function buildIdentity() {
+  return {
+    commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'unknown',
+    ref: process.env.VERCEL_GIT_COMMIT_REF ?? null,
+    env: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? 'unknown',
+  }
+}
+
 export function GET() {
   // Cheap, derived-from-config counts — no measurement, just shape of the contract.
   const pageCount = SLOS.filter((s) => s.onBreach === 'page').length
@@ -50,6 +70,8 @@ export function GET() {
 
   return NextResponse.json(
     {
+      // Which commit is live. Frozen at build time; see buildIdentity() for why it belongs here.
+      build: buildIdentity(),
       // A timestamp so a consumer can tell roughly when it read the index; the
       // contract itself only changes on deploy (the response is statically cached).
       generatedAt: new Date().toISOString(),

@@ -57,5 +57,10 @@ export type MapCanvasProps = {
 }
 
 /** Props the two implementations receive. `onProviderError` is how the Google canvas asks
- *  the seam to fall back to MapLibre. */
-export type MapImplProps = MapCanvasProps & { onProviderError?: () => void }
+ *  the seam to fall back to MapLibre.
+ *
+ *  It carries the REASON. The loader rejects with six distinct diagnostic strings (no key,
+ *  script blocked, no API surface, auth rejected, watchdog timeout, server render) and the
+ *  seam logs whichever one it was — an argument-less callback threw all six away, which is
+ *  how a deterministic loader bug survived three rounds of debugging unseen. */
+export type MapImplProps = MapCanvasProps & { onProviderError?: (reason: string) => void }
