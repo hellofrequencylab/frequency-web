@@ -6,7 +6,9 @@ import { setPlatformFlag, setPlatformSetting } from '@/lib/platform-flags'
 import { setPricingSetting, getFoundingConfig, type TierPrice } from '@/lib/pricing/settings'
 import { sanitizeFoundingConfig, type FoundingConfig } from '@/lib/pricing/founding'
 import {
+  asPwywConfig,
   catalogConfigKey,
+  loadCatalogConfig,
   SEAT_CONFIG_KEY,
   PWYW_CONFIG_KEY,
   ADDON_ENABLED_KEY,
@@ -105,18 +107,31 @@ export async function saveSeatConfig(seat: SeatConfig): Promise<ActionResult> {
   }
 }
 
-/** Save the Supporter pay-what-you-want config (minimum + suggested). The suggested is clamped to at
- *  least the minimum so the surface never suggests below the floor. */
-export async function savePwywConfig(pwyw: PwywConfig): Promise<ActionResult> {
+/** Save the pay-what-you-want floor + suggested amount (the Crew membership picker and the one-time
+ *  Supporter contribution share this config). The suggested is clamped to at least the minimum so the
+ *  surface never suggests below the floor.
+ *
+ *  This console edits only those TWO fields, so it MERGES over the stored config rather than replacing
+ *  it: writing a bare `{ minCents, suggestedCents }` would silently drop the operator's ceiling and
+ *  preset amounts and reset the picker to the code defaults. `asPwywConfig` then re-clamps the whole
+ *  merged shape, so a raised floor automatically drops any preset that fell below it. */
+export async function savePwywConfig(
+  pwyw: Pick<PwywConfig, 'minCents' | 'suggestedCents'>,
+): Promise<ActionResult> {
   const ctx = await requireAdmin('janitor')
   const min = nonNegCents(pwyw.minCents)
-  const value: PwywConfig = { minCents: min, suggestedCents: Math.max(min, nonNegCents(pwyw.suggestedCents)) }
   try {
+    const current = (await loadCatalogConfig()).pwyw
+    const value: PwywConfig = asPwywConfig({
+      ...current,
+      minCents: min,
+      suggestedCents: Math.max(min, nonNegCents(pwyw.suggestedCents)),
+    })
     await setPricingSetting(PWYW_CONFIG_KEY, value, ctx.profileId)
     revalidatePath(PATH)
     return ok()
   } catch (e) {
-    return fail(e instanceof Error ? e.message : 'Could not save the Supporter config.')
+    return fail(e instanceof Error ? e.message : 'Could not save the pay-what-you-want config.')
   }
 }
 

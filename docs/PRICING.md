@@ -1,6 +1,52 @@
 # Pricing & entitlements
 
-> ## ✅ CURRENT: the public ladder is SEVEN sellable tiers, and `/pricing` DERIVES them (ADR-875, 2026-07-28).
+> ## ✅ CURRENT: Crew is PAY-WHAT-YOU-WANT and the Member/Crew line is "first one free" (ADR-908, 2026-07-29).
+>
+> **Crew is the leadership tier.** Before this, Crew gated three switches (`vault_cash_in`,
+> `gamification_full`, `vera_unlimited`) and two meters, none of which were about leading. It now
+> carries the acts of running community, split from the free tier by **first one free**: a Member does
+> anything once, Crew does it repeatedly, publicly, and for money.
+>
+> | | Free Member | Crew |
+> |---|---|---|
+> | Circles hosted | **1** (and you are made a Host: role stays earned, ADR-207) | unlimited |
+> | Journeys published | 1, share by link | unlimited, **listed in the public library** |
+> | Practices published | 3 | unlimited |
+> | Active events | 2, free or RSVP only | unlimited, incl. recurring series |
+> | Charge for an event | no | **yes** (`event_paid_tickets` + `personal_payouts`) |
+> | Entry points (QR, links, flyers) | no | **yes** |
+> | Vault, rewards loop, Vera | earn only · earn only · 10/day | spend · full loop · unlimited |
+> | Network-sourced sale rate | **10%** | **8%** |
+>
+> **Crew's price is chosen by the member.** Floor **$4.99**, suggested **$12** (pre-selected), five
+> preset anchors plus an always-visible "another amount", annual at **10x the chosen monthly**.
+> 🔴 **Every amount buys IDENTICAL access** — the moment a higher amount buys more, it is a tier ladder
+> and the framing is a lie. Higher amounts buy the Supporter mark (at or above the suggested amount)
+> and fund the build, never capability. Config: `PWYW_CONFIG_DEFAULT` + `isValidPwywAmount` /
+> `earnsSupporterMark` (`lib/pricing/catalog-config.ts`); operator-editable at `/admin/pricing`.
+>
+> **There is no comped Crew.** "Never gate someone out" rests on the free tier being genuinely
+> complete, and it is. No per-amount label may claim to cover another member's seat, because none does.
+>
+> **Checkout** bills an inline `price_data` subscription at the chosen `unit_amount` under a stable
+> `STRIPE_PRODUCT_CREW` product. A chosen amount **skips price resolution entirely, including the
+> founder lock** (a grandfathered price is meaningless when the member sets the price). With no chosen
+> amount, `createMembershipCheckout` behaves exactly as before.
+>
+> **Collaboration is a ladder, not a wall.** `space_collaborators` opens at **Business** (metered: 3
+> hosted collaborators) and goes unlimited at Collective. The true Collective line is the new
+> **`space_revenue_splits`**: hosting a few partners is Business, sharing money with them automatically
+> is the collaboration engine. New sibling gate: `space_sms` (Collective, rides A2P 10DLC).
+>
+> **The personal take-rate splits free/paid.** `NetworkTakeRate.member_free` (10%) beside `member` (8%),
+> so Crew buys the rate down as a Space plan does (COMMUNITY-COLLECTIVE-STRATEGY §4, finally
+> implemented). Both directions fail safe: an omitted `sellerTier` charges the PAID rate, and a
+> pre-split operator row falls back to `member_bps` rather than raising anyone to 10%.
+>
+> **Still inert.** Every gate short-circuits to grant while `featureGatesLive()` is false. Call-site
+> enforcement and the picker UI are follow-ups; this change is the MAP, which the surfaces derive from.
+
+> ## ✅ The public ladder is SEVEN sellable tiers, and `/pricing` DERIVES them (ADR-875, 2026-07-28).
 > **The ladder, all of it sellable:** Member $0 · **Crew $9** · **Free Space** · **Business $29 with a $19
 > beta rate** · **Collective $79 with a $49 beta rate** · **Non Profit $39** · **Independent $249**. The two
 > beta rates are grandfathered: a subscriber keeps the rate for as long as they keep the plan. Non Profit,

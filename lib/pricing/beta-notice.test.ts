@@ -46,7 +46,15 @@ describe('targetForGate (a feature names the tier its REAL gate sits on)', () =>
   it('a Collective feature resolves to the Collective tier', () => {
     expect(targetForGate(FEATURE_GATES.space_automation)).toEqual({ axis: 'plan', tier: 'collective' })
     expect(targetForGate(FEATURE_GATES.space_team)).toEqual({ axis: 'plan', tier: 'collective' })
-    expect(targetForGate(FEATURE_GATES.space_collaborators)).toEqual({ axis: 'plan', tier: 'collective' })
+    // Revenue splits are the true Collective line of the collaboration ladder: hosting a few
+    // collaborators is Business, sharing money with them automatically is the engine.
+    expect(targetForGate(FEATURE_GATES.space_revenue_splits)).toEqual({ axis: 'plan', tier: 'collective' })
+  })
+
+  it('collaborator HOSTING resolves to Business, its new opening rung', () => {
+    // Collaboration became a ladder rather than a wall: Business hosts a metered few, Collective is
+    // unlimited. The notice must point at where the feature actually opens, not at the depth tier.
+    expect(targetForGate(FEATURE_GATES.space_collaborators)).toEqual({ axis: 'plan', tier: 'business' })
   })
 
   it('a personal feature resolves to its membership tier', () => {

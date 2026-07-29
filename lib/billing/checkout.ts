@@ -44,17 +44,37 @@ export async function resolveMemberPriceId(opts: {
   return priceFor(opts.tier)
 }
 
-/** Create a subscription Checkout session for a membership tier; returns the URL. Honors the founder
- *  lock (Pricing P2): a founding member is charged at their locked / founder price. */
+/** Create a subscription Checkout session for a membership tier; returns the URL.
+ *
+ *  PAY WHAT YOU WANT (the Crew membership rework). When `amountCents` is passed, the member has CHOSEN
+ *  their own recurring amount, so the session bills an INLINE price at exactly that amount and the
+ *  founder-lock / synced-catalog price resolution is SKIPPED entirely. That skip is deliberate, not an
+ *  oversight: a grandfathered price is meaningless when the member sets the price themselves, and
+ *  resolving one would silently pin a founding member to an old amount and ignore what they just picked.
+ *
+ *  The amount MUST already be validated against the operator PWYW floor by the caller
+ *  (lib/pricing/catalog-config.ts isValidPwywAmount); this function refuses a non-positive amount but is
+ *  not the policy seam. ANNUAL is 10x the chosen monthly (two months free, the house convention), which
+ *  the caller computes so the member sees the annual figure before they commit to it.
+ *
+ *  With no `amountCents`, behavior is EXACTLY as before: the synced/founder/env price, else the flat
+ *  inline fallback. So every existing caller is untouched. */
 export async function createMembershipCheckout(opts: {
   profileId: string
   email?: string | null
   tier: PaidTier
   period?: BillingPeriod
+  /** The member's chosen PWYW amount in cents (already validated against the floor). */
+  amountCents?: number | null
 }): Promise<string | null> {
   if (!stripe) return null
 
   const period: BillingPeriod = opts.period ?? 'monthly'
+  const chosen =
+    typeof opts.amountCents === 'number' && Number.isFinite(opts.amountCents) && opts.amountCents > 0
+      ? Math.round(opts.amountCents)
+      : null
+
   const { data: profile } = await createAdminClient()
     .from('profiles')
     .select('stripe_customer_id, is_founding_member, locked_price_id')
@@ -64,20 +84,30 @@ export async function createMembershipCheckout(opts: {
     | { stripe_customer_id?: string | null; is_founding_member?: boolean | null; locked_price_id?: string | null }
     | null
 
-  const priceId = await resolveMemberPriceId({
-    tier: opts.tier,
-    period,
-    isFoundingMember: profileRow?.is_founding_member === true,
-    lockedPriceId: profileRow?.locked_price_id ?? null,
-  })
+  // A chosen amount bypasses price resolution entirely (see the PWYW note above).
+  const priceId = chosen
+    ? null
+    : await resolveMemberPriceId({
+        tier: opts.tier,
+        period,
+        isFoundingMember: profileRow?.is_founding_member === true,
+        lockedPriceId: profileRow?.locked_price_id ?? null,
+      })
+
+  // The stable Crew Product, so the ad-hoc PWYW prices every checkout mints roll up under ONE product
+  // in Stripe instead of littering the dashboard with a product per subscriber. Falls back to inline
+  // product_data when it is unset, which keeps a bare-connector install working.
+  const crewProductId = process.env.STRIPE_PRODUCT_CREW || null
   const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = priceId
     ? { price: priceId, quantity: 1 }
     : {
         quantity: 1,
         price_data: {
           currency: 'usd',
-          product_data: { name: 'Frequency Membership (Crew)' },
-          unit_amount: membershipAmount(),
+          ...(crewProductId
+            ? { product: crewProductId }
+            : { product_data: { name: 'Frequency Membership (Crew)' } }),
+          unit_amount: chosen ?? membershipAmount(),
           recurring: { interval: period === 'annual' ? 'year' : 'month' },
         },
       }
@@ -89,8 +119,22 @@ export async function createMembershipCheckout(opts: {
     line_items: [lineItem],
     ...(customer ? { customer } : { customer_email: opts.email ?? undefined }),
     client_reference_id: opts.profileId,
-    metadata: { profile_id: opts.profileId, tier: opts.tier, billing_period: period },
-    subscription_data: { metadata: { profile_id: opts.profileId, tier: opts.tier, billing_period: period } },
+    // The chosen amount rides the metadata so the success redirect + the webhook can resolve the
+    // Supporter mark from what the member actually picked, without re-reading the Stripe price.
+    metadata: {
+      profile_id: opts.profileId,
+      tier: opts.tier,
+      billing_period: period,
+      ...(chosen ? { pwyw_amount_cents: String(chosen) } : {}),
+    },
+    subscription_data: {
+      metadata: {
+        profile_id: opts.profileId,
+        tier: opts.tier,
+        billing_period: period,
+        ...(chosen ? { pwyw_amount_cents: String(chosen) } : {}),
+      },
+    },
     success_url: `${appUrl()}/settings/billing?upgraded=1&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl()}/upgrade`,
     allow_promotion_codes: true,
@@ -125,7 +169,20 @@ export async function confirmCheckout(sessionId: string, profileId: string): Pro
   // session minted before this change could still land here: honor it as 'crew' + the is_supporter
   // PWYW badge, never 'supporter' (which the membership_tier CHECK rejects). Access-preserving, the
   // same direction as the `supporter -> crew` read mapping in lib/core/entitlement.ts (ADR-458).
-  const isSupporter = session.metadata?.tier === 'supporter'
+  //
+  // PWYW: a member who chose at or above the suggested amount also earns the Supporter mark. The mark is
+  // RECOGNITION ONLY — every Crew amount buys identical access — so a failure to resolve it must never
+  // block the upgrade, hence the best-effort try/catch that degrades to "no mark".
+  let isSupporter = session.metadata?.tier === 'supporter'
+  const pwywAmount = Number(session.metadata?.pwyw_amount_cents)
+  if (!isSupporter && Number.isFinite(pwywAmount) && pwywAmount > 0) {
+    try {
+      const { loadCatalogConfig, earnsSupporterMark } = await import('@/lib/pricing/catalog-config')
+      isSupporter = earnsSupporterMark(pwywAmount, (await loadCatalogConfig()).pwyw)
+    } catch {
+      isSupporter = false
+    }
+  }
   const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id
   const { error } = await createAdminClient()
     .from('profiles')

@@ -14,6 +14,8 @@ import {
   asCatalogItemConfig,
   asSeatConfig,
   asPwywConfig,
+  earnsSupporterMark,
+  isValidPwywAmount,
   asAddonEnabled,
   amountsFromConfig,
   catalogConfigKey,
@@ -101,6 +103,40 @@ describe('seat / pwyw / add-on-enable config', () => {
     const c = asPwywConfig({ minCents: 1000, suggestedCents: 500 })
     expect(c.minCents).toBe(1000)
     expect(c.suggestedCents).toBe(1000) // suggested raised to the floor
+  })
+  it('ships the $4.99 floor and the five preset anchors, ascending', () => {
+    expect(PWYW_CONFIG_DEFAULT.minCents).toBe(499)
+    expect(PWYW_CONFIG_DEFAULT.suggestedCents).toBe(1200)
+    expect(PWYW_CONFIG_DEFAULT.presetCents).toEqual([499, 900, 1200, 1800, 2499])
+    // The pre-selected suggestion must itself be a preset, or the picker opens on nothing.
+    expect(PWYW_CONFIG_DEFAULT.presetCents).toContain(PWYW_CONFIG_DEFAULT.suggestedCents)
+  })
+  it('drops out-of-range presets and sorts + dedupes the rest (never offers a rejectable amount)', () => {
+    const c = asPwywConfig({ minCents: 500, suggestedCents: 1200, maxCents: 2000, presetCents: [1800, 100, 500, 1800, 5000] })
+    expect(c.presetCents).toEqual([500, 1800]) // 100 below the floor, 5000 above the ceiling, 1800 deduped
+  })
+  it('never hands back an empty picker: an all-invalid preset list falls back to the suggested amount', () => {
+    const c = asPwywConfig({ minCents: 500, suggestedCents: 900, presetCents: [1, 2] })
+    expect(c.presetCents).toEqual([900])
+  })
+  it('clamps the ceiling to at least the suggested amount (an operator typo cannot hide the suggestion)', () => {
+    expect(asPwywConfig({ minCents: 500, suggestedCents: 2000, maxCents: 100 }).maxCents).toBe(2000)
+  })
+  it('isValidPwywAmount accepts anything at or above the floor, and nothing below it', () => {
+    const c = PWYW_CONFIG_DEFAULT
+    expect(isValidPwywAmount(499, c)).toBe(true)
+    expect(isValidPwywAmount(498, c)).toBe(false)
+    expect(isValidPwywAmount(0, c)).toBe(false)
+    expect(isValidPwywAmount(NaN, c)).toBe(false)
+    // TRUE pay-what-you-want: an off-preset amount, and an amount above the soft ceiling, are both fine.
+    expect(isValidPwywAmount(733, c)).toBe(true)
+    expect(isValidPwywAmount(50_000, c)).toBe(true)
+  })
+  it('earnsSupporterMark trips at the suggested amount, and is recognition only', () => {
+    const c = PWYW_CONFIG_DEFAULT
+    expect(earnsSupporterMark(1199, c)).toBe(false)
+    expect(earnsSupporterMark(1200, c)).toBe(true)
+    expect(earnsSupporterMark(2499, c)).toBe(true)
   })
   it('add-ons default to all-enabled; only an explicit false disables one (only AI now, ADR-472)', () => {
     expect(asAddonEnabled(undefined)).toEqual({ ai: true })

@@ -190,11 +190,33 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
   },
   space_collaborators: {
     axis: 'plan',
-    minTier: 'collective',
+    minTier: 'business',
     title: 'Collaborator hosting',
+    // @placeholder 3 mirrors PLACEHOLDER_METER_LIMITS.space_collaborators (ADR-837). Collaboration opens
+    // at Business as a real, small allowance and goes unlimited at Collective, so the ladder reads as
+    // "use more" rather than "unlock".
     rungs: spaceRungs(
       'Be a Collaborator on other Spaces and events, and preview the hosting surface.',
-      'Host other businesses inside your space, and host events with Collaborator Spaces. They keep their own page and pay for their own space.',
+      'Host up to 3 other businesses inside your space, and co-host events with Collaborator Spaces. They keep their own page and pay for their own space. Collective hosts unlimited and adds revenue splits.',
+    ),
+  },
+  space_revenue_splits: {
+    axis: 'plan',
+    minTier: 'collective',
+    title: 'Revenue splits with collaborators',
+    rungs: spaceRungs(
+      'Host collaborators and settle up between yourselves.',
+      'Split the money automatically on shared events and bookings, so a collective can actually run its shared business.',
+      'collective',
+    ),
+  },
+  space_sms: {
+    axis: 'plan',
+    minTier: 'collective',
+    title: 'Group SMS',
+    rungs: spaceRungs(
+      'Email and in-app notifications.',
+      'Text your members about the things that cannot wait for an inbox. Sending needs your carrier registration.',
       'collective',
     ),
   },
@@ -282,6 +304,44 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     rungs: [
       { tier: 'free', unlocks: 'A handful of Vera messages each day.' },
       { tier: 'crew', unlocks: 'Vera without the daily cap.' },
+    ],
+  },
+  // ── Personal leadership (tier axis). Crew is the people who run the place, so these read as what Crew
+  // DOES, never as what a Member is missing. The free rung always names something real a Member can do.
+  event_paid_tickets: {
+    axis: 'tier',
+    minTier: 'crew',
+    title: 'Charge for your events',
+    rungs: [
+      { tier: 'free', unlocks: 'Run free and RSVP events, as many nights as you like.' },
+      { tier: 'crew', unlocks: 'Sell tickets to your own events and keep the money, minus the network rate.' },
+    ],
+  },
+  personal_payouts: {
+    axis: 'tier',
+    minTier: 'crew',
+    title: 'Get paid',
+    rungs: [
+      { tier: 'free', unlocks: 'Buy and book anywhere on Frequency.' },
+      { tier: 'crew', unlocks: 'Connect a payout account and take money for what you run.' },
+    ],
+  },
+  journey_library_list: {
+    axis: 'tier',
+    minTier: 'crew',
+    title: 'List a Journey in the library',
+    rungs: [
+      { tier: 'free', unlocks: 'Publish a Journey and share it by link.' },
+      { tier: 'crew', unlocks: 'List your Journeys in the public library, where the whole community finds them.' },
+    ],
+  },
+  entry_points: {
+    axis: 'tier',
+    minTier: 'crew',
+    title: 'Entry points',
+    rungs: [
+      { tier: 'free', unlocks: 'Share any page with a plain link.' },
+      { tier: 'crew', unlocks: 'Branded QR codes, short links, and print-ready flyers for the thing you run.' },
     ],
   },
 }
