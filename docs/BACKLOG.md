@@ -88,6 +88,21 @@ follow-ups it surfaced. Full detail lives in the lettered sections below — thi
   migrations' re-grant lists (which exist only to keep those columns hidden).
   New claim flows must use `claim_tokens` (hashed, expiring, revocable, service-role only). Nothing
   new may be built on the columns. (S)
+- [ ] **Move `flyer-raster.ts` off HTTP font fetches** (found 2026-07-29 while bundling the OG
+  faces, ADR docs in `lib/og/load-nunito.ts`). `lib/entry-points/flyer-raster.ts` fetches its two
+  Liberation faces over same-origin HTTP with a 5s timeout on every cold lambda, retried forever
+  (a failure nulls the cache), and its comment asserts "public/ isn't on the function filesystem"
+  — the exact opposite of what `next.config.ts`'s `outputFileTracingIncludes` and the OG loader now
+  rely on. Switch to `readFile`, scope the trace include to `/api/entry-points/*/flyer`, and correct
+  the comment. Not folded into the OG font work: different route family, and the fix is only correct
+  once the trace include exists. (S)
+- [ ] **`window.confirm` on the mobile admin sheet** (found 2026-07-29). The unpublished-work guard
+  uses a native `confirm()`, exempted as "an operator surface, not member-facing chrome". But
+  `components/messages/dock-parity.test.ts` states the house rule's reason as *mechanics*
+  ("unstyleable, and it freezes a mid-animation iOS sheet"), and the admin bar's mobile branch IS a
+  portaled sheet — so the exemption answers a different objection than the one the rule raises.
+  Either move the mobile branch to the house Dialog or restate the exemption in dock-parity's terms.
+  Unverified: whether the freeze actually reproduces (no handset or headless browser in the repo). (S)
 - D economy-column lock trigger, map XSS escape, open-redirect fix, gem-farm fix,
   private-reply authz, shared input sanitizer, baseline security headers.
 - D email-pipeline durability (email integrity — ADR-043): Resend webhook error
