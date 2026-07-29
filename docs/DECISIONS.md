@@ -16123,6 +16123,72 @@ Two facts had to be separated before anything could be built.
 
 ---
 
+## ADR-906 — A secret cannot live in a column of an anon-readable table (2026-07-29)
+
+**Status:** Accepted · corroborated by
+`supabase/migrations/20270127000000_revoke_claim_token_from_anon.sql`,
+`supabase/migrations/20270128000000_revoke_event_claim_token_from_anon.sql` and the drift guard in
+`lib/spaces/claim-token-privacy.test.ts`
+
+**Context.** `spaces.claim_token` and `events.claim_token` are one-time secrets: presenting one at
+`/spaces/claim/<token>` or `/events/claim/<token>` transfers ownership of that Space or event to
+whoever holds it, and nothing else is checked. Both were added as plain columns
+(`20261145000000_spaces_claim.sql` and its event sibling) on tables that are **deliberately
+anon-readable at the row level**, because the public directory and the public event listings depend
+on exactly that. Postgres RLS is ROW-level. The visibility-aware policy did its job perfectly — it
+returned the row — and handed over every column on that row, including the secret. Executed as
+`role anon` with RLS enforced against production, `select slug, claim_token from spaces where
+claim_token is not null` returned **9 live unclaimed Space tokens**, and the same query against
+`events` returned **21**. The anon publishable key ships inside every browser bundle by design, so
+the exploit required no credential, no privilege and no authentication: thirty real local
+businesses and posted events were one query away from takeover by any visitor. The Space hole was
+found by an audit lane; the **event** hole was found only because the drift guard written for the
+Space fix was made table-agnostic and immediately flagged two event readers.
+
+**Decision.** A secret never lives in a column of a table any browser client can read. Where one
+already does, the fix is **column-level privilege**, because that is the level the defect is at — a
+row policy cannot express "this row, minus this column". Concretely: `revoke select on <table> from
+anon, authenticated`, then `grant select (<every public column>)` back, explicitly enumerated so the
+migration is a readable record of what a browser may see. Writes to the token columns are revoked
+too; only the seeder and the claim action touch them, both under `service_role`, which column grants
+do not affect.
+
+🔴 **The trap that makes this ADR necessary.** The obvious fix — `revoke select (claim_token) on
+spaces from anon` — is a **silent no-op**. A column-level revoke can only remove a column-level
+grant; it cannot punch a hole in a table-wide one, and both roles held table-wide `SELECT`. It was
+applied first, reported success, and the exploit still returned every token. It was caught only by
+re-running the exploit as `anon` afterwards. **A migration's success status is not evidence that a
+privilege changed.** The guard therefore asserts the table-level form is present *and* that the
+column-level form is absent, so nobody "simplifies" it back.
+
+**Consequences, both deliberate.** *Fail-closed on new columns*: with no table-level grant, a column
+added to `spaces` or `events` later is unreadable by anon until explicitly granted. That is the
+correct default for tables that have now leaked a secret once, and it costs one line per new public
+column. *`select *` errors rather than omits*: under partial column grants Postgres raises
+`permission denied for column`, so a star-select would take a page down rather than leak. Verified
+before applying that the app issues no `select('*')` and no embedded `spaces(*)`/`events(*)` against
+either table; the drift guard keeps checking, and also asserts that every module selecting a
+`claim_token` does so on the admin client and that the event page still gates the rendered claim URL
+on `myProfileId === postedById`.
+
+**Alternatives considered.** *Move the tokens to their own table* (the structurally cleanest answer,
+and the right one eventually — a secret in its own `service_role`-only table cannot be re-exposed by
+a careless grant. Rejected for now only because it is a schema migration with a data move and two
+call-site rewrites, and the hole was live; the revoke stops the bleeding in one statement and does
+not preclude the move). *Hash the token and compare on presentation* (correct for credentials, but
+these are single-use capability URLs the operator must be able to read back to send; hashing them
+means they can never be re-displayed, which breaks the outreach flow the feature exists for).
+*A view that omits the column* (would work, but every existing reader would need repointing, and the
+base table stays exposed to anyone who queries it directly — it hides the column from the polite
+caller, not from the attacker). *Rely on the token's 192 bits of entropy* (irrelevant: the tokens
+were not being guessed, they were being **listed**).
+
+**Not covered.** Every token that existed before these migrations must be treated as disclosed.
+Rotation is deliberately not done in a migration — it invalidates claim links already emailed to
+real business owners, which is an operator's judgement call, not a schema change's.
+
+---
+
 ## ADR-905 — A Space calendar shows what the Space offers, never what its owner does (2026-07-29)
 
 **Status:** Accepted · narrows [ADR-898](#adr-898) · corroborated by
