@@ -16552,7 +16552,12 @@ not a standardisation.
 
 The durable rule: **a listing is public-only and a link resolver honours the link — so two RPCs over the same table get two different visibility gates, chosen by what the surface DOES, and the gate placement follows the join's driving table, never a sibling migration's habit.**
 
-## ADR-908 — A draft is only a draft when a visitor would see something different (2026-07-29)
+## ADR-912 — A draft is only a draft when a visitor would see something different (2026-07-29)
+
+> ⚠️ **Renumbered from ADR-908.** PR #1997 landed its own ADR-908 ("Crew is
+> pay-what-you-want") concurrently, so the number named two decisions. That one keeps 908
+> because `docs/PRICING.md` already cites it; this one moved, having no external references.
+> The commit that shipped this decision (PR #1995) still says ADR-908 in its message.
 
 **Status.** Accepted. Corrects the draft/publish split shipped with the in-rail Space page builder (ADR-516 Phase D) and the unpublished-work warnings added alongside it. Code: `lib/entity-blocks/layout-equal.ts`, `app/(main)/spaces/[slug]/settings/profile/actions.ts`, `components/entity-blocks/space-publish-fab.tsx`. No migration; `preferences.profileLayoutDraft` is untyped jsonb (ADR-246).
 
