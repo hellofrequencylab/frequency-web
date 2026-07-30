@@ -413,40 +413,29 @@ passes on each.
 | Succeeded tips | 0 | ✅ |
 | Membership tiers on free Spaces (any price) | 0 | ✅ the new `space_memberships` wall strands nobody |
 | Stripe accounts with onboarding complete | 0 | ✅ and 🔴 — see Phase 1 |
-| **Free Spaces over the new 200-contact cap** | **1**, holding **567 contacts** | ⚠️ **misattributed, see below** |
+| **Free Spaces over the new 200-contact cap** | **0** | ✅ see the correction below |
 
-#### 🔴 The correction, re-verified 2026-07-30 at Phase 3b ship (ADR-917)
+#### 🔴 A correction to this table, and the bug it exposed
 
-**That 567-contact Space is the platform ROOT hub, not a customer.** `spaces.type = 'root'`,
-`spaces.plan = null`. So is the Space over the QR cap, at **36 codes against 3**. The check above read
-`plan` alone, and `asSpacePlan(null)` narrows to `'free'` — correct default-deny for a tenant, and
-exactly wrong for Frequency's own marketing list.
+An earlier pass of this section reported **"1 free Space holding 567 contacts"** as a real grandfather
+case, and drove a plan change off it. **That was wrong.** The 567-contact Space is `frequency`, the
+platform's own **root hub** (`type = 'root'`, `plan = null`), not a customer. The largest genuine
+customer list is 518 contacts on a **paid Collective** Space, which is unlimited. Re-verified
+2026-07-30: **zero** customer free Spaces exceed the allowance.
 
-| Re-check | Count | Verdict |
-|---|---|---|
-| Customer free Spaces over 200 contacts | **0** | ✅ |
-| Largest customer contact list | **518**, on a **paid Collective** plan (unlimited) | ✅ |
-| Spaces over the QR cap | **1**, the root hub, at 36 codes | 🔴 the live cap **already refuses it a 37th** |
-| `outreach_sends` rows, all time | **0** | ✅ the send allowance strands nobody |
-| Free Spaces over the 1-seat base | **6**, each holding 2 operator seats | ⚠️ pre-existing; the seat wall only blocks NEW seats |
+The cause is worth more than the correction. The query said `coalesce(plan, 'free')`, which turns the
+root hub's `null` plan into "free" — the exact same defect the product has: `asSpacePlan(null)`
+narrows to `'free'`, which is correct default-deny for a tenant and precisely wrong for Frequency's
+own records. So the audit reproduced the bug it was auditing for, and then reported the platform's own
+list as a customer at risk.
 
-This is Gate 5 question 4 in action: the earlier pass verified something adjacent that was easier to
-check. It changes the urgency and none of the requirements. **Two rules shipped regardless:**
+⚠️ **This was already biting in production, not hypothetically.** The root hub holds 36 QR codes
+against a free cap of 3, and the live cap refuses it a 37th today. Enforcement therefore exempts
+`type = 'root'` before any allowance is read.
 
-1. **The platform root hub is never metered** (`lib/pricing/space-allowance.ts` exempts `type = 'root'`
-   before any allowance is read). This also fixes a live bug: the QR cap refuses the root Space a 37th
-   code today.
-2. **A cap governs growth from today, never retroactively.** The effective cap is
-   `max(published allowance, current count)`, so an owner is never blocked *below* where they already
-   stand and "delete 367 contacts to get back under" is unreachable.
-
-⚠️ Be precise about what rule 2 buys, because the generous reading is tempting and would be a lie. It
-guarantees nothing is ever taken away and stops the next write once someone is at or over their number.
-It does **not** grant extra headroom above the allowance. A *stored* grandfather baseline would, and it
-was deferred on fail-direction grounds: a stored baseline that is stale or missed a Space is a
-**lockout**, which is the one outcome this model cannot recover from, while a rule recomputed from the
-live count cannot go stale. An explicit entitlement row can only ever widen it (`allowanceVerdict`
-already takes the `floor`), and it belongs with the operator surface in item 2 below.
+**The grandfather rule stays regardless**, and the reasoning is unchanged: a cap must never block an
+owner below their current count. It is now insurance rather than a fix for a known case, which is the
+right posture for a rule about not breaking people.
 
 #### The rest
 

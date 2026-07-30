@@ -1,9 +1,10 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { Check, X } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyBetaToken } from '@/lib/beta-tokens'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import { Button, Outcome, OutcomeSkeleton } from '@/components/marketing/marketing-ui'
 
 export const metadata: Metadata = {
   title: 'Confirm your spot',
@@ -46,7 +47,22 @@ async function confirm(email: string): Promise<boolean> {
   return !error
 }
 
-export default async function BetaConfirmPage({
+// SPEED (PAGE-FRAMEWORK §5.3): the page itself awaits nothing, so the marketing chrome streams
+// immediately and only the confirm round-trip sits behind the boundary. Awaiting `searchParams` at the
+// page level would hold the whole document until the write returned.
+export default function BetaConfirmPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ e?: string; t?: string }>
+}) {
+  return (
+    <Suspense fallback={<OutcomeSkeleton />}>
+      <BetaConfirmOutcome searchParams={searchParams} />
+    </Suspense>
+  )
+}
+
+async function BetaConfirmOutcome({
   searchParams,
 }: {
   searchParams: Promise<{ e?: string; t?: string }>
@@ -56,50 +72,29 @@ export default async function BetaConfirmPage({
   const valid = !!email && !!t && verifyBetaToken(email, t)
   const ok = valid ? await confirm(email) : false
 
+  if (ok) {
+    return (
+      <Outcome
+        tone="success"
+        icon={Check}
+        title={<>You&apos;re on the list.</>}
+        action={<Button href="/">Back to Frequency</Button>}
+      >
+        Your spot is confirmed. We&apos;re opening the community to a small group at a time, and
+        we&apos;ll reach out the moment a spot opens for you.
+      </Outcome>
+    )
+  }
+
   return (
-    <section className="px-6 py-28 sm:py-32">
-      <div className="max-w-md mx-auto text-center">
-        {ok ? (
-          <>
-            <div className="mx-auto w-14 h-14 rounded-full bg-success-bg text-success flex items-center justify-center mb-6">
-              <Check className="w-7 h-7" strokeWidth={2.5} />
-            </div>
-            <h1 className="font-display uppercase text-text text-4xl sm:text-5xl mb-4">
-              You&apos;re on the list.
-            </h1>
-            <p className="text-lg text-muted leading-relaxed mb-8">
-              Your spot is confirmed. We&apos;re opening the community to a small
-              group at a time, and we&apos;ll reach out the moment a spot opens
-              for you.
-            </p>
-            <Link
-              href="/"
-              className="inline-flex rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors"
-            >
-              Back to Frequency
-            </Link>
-          </>
-        ) : (
-          <>
-            <div className="mx-auto w-14 h-14 rounded-full bg-danger-bg text-danger flex items-center justify-center mb-6">
-              <X className="w-7 h-7" strokeWidth={2.5} />
-            </div>
-            <h1 className="font-display uppercase text-text text-4xl sm:text-5xl mb-4">
-              This link didn&apos;t work.
-            </h1>
-            <p className="text-lg text-muted leading-relaxed mb-8">
-              It may have expired or been mistyped. Request a fresh confirmation
-              link and we&apos;ll send a new one.
-            </p>
-            <Link
-              href="/beta"
-              className="inline-flex rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors"
-            >
-              Join the Beta
-            </Link>
-          </>
-        )}
-      </div>
-    </section>
+    <Outcome
+      tone="danger"
+      icon={X}
+      title={<>This link didn&apos;t work.</>}
+      action={<Button href="/beta">Join the Beta</Button>}
+    >
+      It may have expired or been mistyped. Request a fresh confirmation link and we&apos;ll send a new
+      one.
+    </Outcome>
   )
 }

@@ -17,6 +17,10 @@ export type LivePost = {
 }
 export type LiveEvent = { id: string; title: string; starts_at: string; city: string | null; slug: string }
 export type LiveData = {
+  /** Resolved pricing figures a Tiers card can bind to, so a published CMS page never freezes a
+   *  price into its document (ADR-918). Keyed by offering id; absent/`{}` means fall back to the
+   *  janitor's typed text. */
+  pricing?: Record<string, { label: string; price: string; strikePrice: string | null; yearly: string | null; takeRate: string }>
   memberCount: number
   circleCount: number
   upcomingEvents: LiveEvent[]

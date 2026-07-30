@@ -11,6 +11,11 @@ import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
 
 // Every dollar figure in this template interpolates from the ONE code catalog (priceStrings /
 // pricingCatalog) and the CREW_NOTE labels, so the CMS fallback can never drift from /pricing.
+// 🔴 EVERY TIER CARD BELOW CARRIES A `livePriceKey` (ADR-918). The typed `price`/`strikePrice` beside
+// it is the fallback that renders only if the live config cannot be read; the bound key is what
+// normally shows. Without this, publishing the page would freeze today's prices into a jsonb document
+// and an /admin/pricing edit would move the generated page while the published one quoted stale
+// figures. Do not remove a key when editing this template.
 const P = priceStrings()
 
 // 🔴 RATES ARE DERIVED, NEVER TYPED (ADR-914). Every take-rate below reads the same vector the
@@ -98,7 +103,7 @@ export const data: Data = {
         kicker: 'Free to join, and both rungs sell. Crew takes the rate down and lifts the caps.',
         items: [
           {
-            name: 'Member', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
+            name: 'Member', livePriceKey: 'member', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
             tagline: 'The free tier. Show up and see who is here.',
             highlight: 'featured', badge: 'none',
             features: [
@@ -110,7 +115,7 @@ export const data: Data = {
             ctaLabel: 'Start free', ctaHref: '/sign-in', ctaStyle: 'primary',
           },
           {
-            name: 'Crew', price: CREW_NOTE.foundingLabel, strikePrice: '', cadence: '/mo',
+            name: 'Crew', livePriceKey: 'crew', price: CREW_NOTE.foundingLabel, strikePrice: '', cadence: '/mo',
             priceNote: `${CREW_NOTE.foundingLabel} a month, or ${CREW_NOTE.yearlyLabel} a year.`,
             tagline: 'The same selling at a lower rate, plus the full game, the Crew badge, and the tools that build your list.',
             highlight: 'normal', badge: 'none',
@@ -142,7 +147,7 @@ export const data: Data = {
         kicker: `Run your community as a Space. You keep 100% of your own bookings, always. The only take-rate is on business the network sends you, and each step up buys it down: Free ${RATE.free}, Business ${RATE.business}, Collective ${RATE.collective}, Non Profit ${RATE.nonprofit}.`,
         items: [
           {
-            name: 'Free Space', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
+            name: 'Free Space', livePriceKey: 'free', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
             tagline: 'Put your business on the map. A real Space, free for as long as you want.',
             highlight: 'normal', badge: 'none',
             features: [
@@ -153,7 +158,7 @@ export const data: Data = {
             ctaLabel: 'Start free', ctaHref: '/sign-in', ctaStyle: 'secondary',
           },
           {
-            name: 'Business', price: P.businessBeta, strikePrice: P.businessList, cadence: '/mo',
+            name: 'Business', livePriceKey: 'business', price: P.businessBeta, strikePrice: P.businessList, cadence: '/mo',
             priceNote: `Opening Beta price through 2026-09-01, then ${P.businessList}. Or ${BUSINESS_YEAR_BETA} a year. 0% on your own bookings, ${RATE.business} only on business the network sends you.`,
             tagline: 'Own your audience.',
             highlight: 'featured', badge: 'none',
@@ -166,7 +171,7 @@ export const data: Data = {
             ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'primary',
           },
           {
-            name: 'Collective', price: P.collectiveBeta, strikePrice: P.collectiveList, cadence: '/mo',
+            name: 'Collective', livePriceKey: 'collective', price: P.collectiveBeta, strikePrice: P.collectiveList, cadence: '/mo',
             priceNote: `Opening Beta price through 2026-09-01, then ${P.collectiveList}. Or ${COLLECTIVE_YEAR_BETA} a year. 0% on your own, ${RATE.collective} only on business the network sends you.`,
             tagline: 'Be the venue.',
             highlight: 'normal', badge: 'none',
@@ -192,7 +197,7 @@ export const data: Data = {
         kicker: '',
         items: [
           {
-            name: 'Non Profit', price: P.nonprofit, strikePrice: '', cadence: '/mo',
+            name: 'Non Profit', livePriceKey: 'nonprofit', price: P.nonprofit, strikePrice: '', cadence: '/mo',
             priceNote: `Flat, no beta discount. Or ${NONPROFIT_YEAR} a year. ${RATE.nonprofit} take-rate, always. Verified 501(c)(3).`,
             tagline: 'The full Collective toolkit for a verified 501(c)(3).',
             highlight: 'normal', badge: 'none',

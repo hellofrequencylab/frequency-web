@@ -1,14 +1,21 @@
 import type { Metadata } from 'next'
-import { ArrowRight, Check, Minus } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import {
   PhotoHero,
   Section,
   SectionHeading,
+  BlockHeading,
   Statement,
   BetaCTA,
   FaqList,
   Button,
+  Card,
 } from '@/components/marketing/marketing-ui'
+import {
+  ComparisonTable,
+  type ComparisonColumn,
+  type ComparisonGroup,
+} from '@/components/marketing/comparison-table'
 import { JsonLd } from '@/components/json-ld'
 import { Illustration } from '@/components/marketing/illustrations'
 import { breadcrumbSchema, faqSchema, productSchema } from '@/lib/jsonld'
@@ -26,7 +33,6 @@ import {
   spaceFeatureGrid,
   spaceOfferings,
   type FeatureGrid,
-  type GridCell,
   type Offering,
   type PlanExtra,
   type PricingGridInput,
@@ -296,20 +302,16 @@ export default async function PricingPage() {
       {/* THE PLANS. Two ladders, seven plans, every one of them sellable: the personal membership
           (Member, Crew) and the Space plans (Free through Independent). One billing toggle governs both,
           so a reader compares monthly against monthly. */}
-      <Section tone="surface" pad="pt-6 pb-16 sm:pb-20">
-        <div className="mb-10 text-center">
-          <p className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">The plans</p>
-          <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">Pick the plan that fits.</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-            Two ladders. One for you as a member, one for the Space you run. Every rung on both sells, so
-            the only thing that moves down the ladder is the rate. You can be on both, and you can start
-            on the free rung of either.
-          </p>
-        </div>
+      <Section tone="surface" pad="pt-6 pb-16 sm:pb-20" width="wide">
+        <SectionHeading
+          eyebrow="The plans"
+          title="Pick the plan that fits."
+          kicker="Two ladders. One for you as a member, one for the Space you run. Every rung on both sells, so the only thing that moves down the ladder is the rate. You can be on both, and you can start on the free rung of either."
+        />
 
         <PricingBillingToggle yearlyNote={annualDiscountNote(input.values)}>
           <div className="mb-12">
-            <LadderHeading
+            <BlockHeading
               title="For you"
               kicker="Being a member is free, forever. Both rungs sell; Crew takes the rate down and lifts the caps."
             />
@@ -321,7 +323,7 @@ export default async function PricingPage() {
           </div>
 
           <div>
-            <LadderHeading
+            <BlockHeading
               title="For your Space"
               kicker="A Space is free for anyone to start, and a free Space sells. The paid plans buy the rate down and lift the caps."
             />
@@ -333,7 +335,7 @@ export default async function PricingPage() {
           </div>
         </PricingBillingToggle>
 
-        <p className="mx-auto mt-10 max-w-2xl text-center text-sm leading-relaxed text-subtle">
+        <p className="mx-auto mt-10 max-w-2xl text-center text-base leading-relaxed text-muted">
           Never a wall in front of the transaction. {PLAN_STORY.meters} You keep 100% of your own
           bookings on every rung: the take-rate applies only to a sale the network introduced, and it
           drops as your plan rises. Once someone is yours, a follower, one of your members, a contact, or
@@ -359,7 +361,7 @@ export default async function PricingPage() {
 
       {/* THE COMPARISON. The centerpiece: what every tier actually gets, derived from the entitlement
           key sets, the feature gates, and the usage ladders, so it cannot drift from the product. */}
-      <Section tone="surface">
+      <Section tone="surface" width="wide">
         <SectionHeading
           eyebrow="The full comparison"
           title="What each plan gets."
@@ -387,7 +389,7 @@ export default async function PricingPage() {
 
       {/* The value comparison: every Business feature vs the separate tool it replaces, totaled against the
           one flat price. Reads the pure lib/pricing/comparison catalog. */}
-      <Section tone="canvas">
+      <Section tone="canvas" width="wide">
         <SectionHeading
           eyebrow="What it replaces"
           title="One price. The whole toolbox."
@@ -396,8 +398,10 @@ export default async function PricingPage() {
         <PricingComparison />
       </Section>
 
-      {/* The four brand promises that make it a collective, not a SaaS (ADR-811 §1a). */}
-      <Section tone="canvas">
+      {/* The four brand promises that make it a collective, not a SaaS (ADR-811 §1a). Surface, not
+          canvas: the value comparison above and the Statement below are both canvas, and three canvas
+          bands in a row read as one undifferentiated block. */}
+      <Section tone="surface">
         <SectionHeading
           eyebrow="Four promises"
           title="Why people stay."
@@ -425,10 +429,10 @@ export default async function PricingPage() {
               body: 'An honest receipt: the real dollars the collective sourced for you, and what our share of that was. Nothing hidden.',
             },
           ].map((p) => (
-            <div key={p.title} className="rounded-2xl border border-border bg-surface p-6">
+            <Card key={p.title} tone="feature">
               <h3 className="font-display uppercase text-text text-xl">{p.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted">{p.body}</p>
-            </div>
+            </Card>
           ))}
         </div>
       </Section>
@@ -469,22 +473,9 @@ export default async function PricingPage() {
 // One card per offering. Every string comes off the Offering (which is built from the pricing config),
 // so a card holds no pricing logic of its own. Semantic DAWN tokens only.
 
-function LadderHeading({ title, kicker }: { title: string; kicker: string }) {
-  return (
-    <div className="mb-5">
-      <h3 className="font-display uppercase text-text text-2xl">{title}</h3>
-      <p className="mt-1 text-sm leading-relaxed text-muted">{kicker}</p>
-    </div>
-  )
-}
-
 function OfferingCard({ offering }: { offering: Offering }) {
   return (
-    <div
-      className={`flex flex-col rounded-2xl border bg-surface p-6 ${
-        offering.featured ? 'border-2 border-primary ring-4 ring-primary-bg' : 'border-border'
-      }`}
-    >
+    <Card tone={offering.featured ? 'highlight' : 'feature'} className="flex flex-col">
       <div className="mb-1 flex flex-wrap items-center gap-2">
         <h4 className="font-display uppercase text-text text-2xl">{offering.label}</h4>
         {offering.featured && (
@@ -500,7 +491,8 @@ function OfferingCard({ offering }: { offering: Offering }) {
       <p className="mt-3 text-sm text-muted">{offering.billing}</p>
       {offering.trial && <p className="mt-1 text-sm font-semibold text-text">{offering.trial}</p>}
       <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">{offering.forWho}</p>
-      <p className="mt-3 text-sm text-subtle">{offering.takeRate}</p>
+
+      <RateLine takeRate={offering.takeRate} />
 
       <Button
         href={offering.cta.href}
@@ -509,7 +501,25 @@ function OfferingCard({ offering }: { offering: Offering }) {
       >
         {offering.cta.label}
       </Button>
-    </div>
+    </Card>
+  )
+}
+
+/** The rate line, which is the PAGE'S LEAD PROMISE and used to read as the quietest thing on the card
+ *  (`text-sm text-subtle`, last, undifferentiated). It now sits on its own ruled strip, with the half
+ *  that never changes carrying the weight and the network half staying quiet beside it.
+ *
+ *  The split is the same one the metadata and the FAQ already do (`takeRate.split(', ')`) — the string
+ *  is built as "<your own>, <the network's>" — and it falls back to the whole line if a rate ever
+ *  arrives without the comma, so a config change can soften the design but never lose the sentence. */
+function RateLine({ takeRate }: { takeRate: string }) {
+  const [own, ...rest] = takeRate.split(', ')
+  const network = rest.join(', ')
+  return (
+    <p className="mt-4 border-t border-border pt-3 text-sm leading-relaxed">
+      <span className="font-semibold text-text">{own}</span>
+      {network && <span className="text-subtle">, {network}</span>}
+    </p>
   )
 }
 
@@ -527,7 +537,8 @@ function PriceBlock({ offering }: { offering: Offering }) {
           {key === 'month' && offering.listAnchor && (
             <span className="text-base text-subtle line-through">{offering.listAnchor}</span>
           )}
-          <span className="font-display text-text text-3xl leading-none">{label}</span>
+          {/* The price outranks the plan name (text-2xl) instead of tying with it. */}
+          <span className="font-display text-text text-4xl leading-none">{label}</span>
         </span>
       ))}
       {offering.betaNote && (
@@ -539,23 +550,23 @@ function PriceBlock({ offering }: { offering: Offering }) {
 
 function ExtraCard({ extra }: { extra: PlanExtra }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
+    <Card tone="feature">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="font-display uppercase text-text text-2xl">{extra.label}</h3>
         <span className="font-display text-primary-strong text-xl">{extra.price}</span>
       </div>
       <p className="mt-2 text-sm leading-relaxed text-muted">{extra.detail}</p>
       <p className="mt-2 text-sm font-semibold text-text">{extra.availability}</p>
-    </div>
+    </Card>
   )
 }
 
 // ── The comparison grid ──────────────────────────────────────────────────────
-// Two presentations of the same pure model, so it is readable at any width:
-//   * MOBILE: one collapsible section per plan (native <details>, no client JS), each listing every
-//     group and row for that plan. A squashed multi-column table is unreadable on a phone.
-//   * DESKTOP: the real table, scrolling inside its own container (PAGE-FRAMEWORK) so wide content
-//     never makes the page scroll sideways.
+// This block used to carry its own desktop table, its own mobile stack, and its own `Cell` — a second
+// implementation of the one the value comparison further down the page already had. Both now compose
+// components/marketing/comparison-table.tsx. What is left here is the ADAPTER: the pure FeatureGrid
+// (columns + grouped rows, resolved from the entitlement key sets) mapped onto that renderer's shape,
+// with the price furniture a plan column carries in its header and on its mobile summary.
 
 function ComparisonBlock({
   title,
@@ -571,141 +582,47 @@ function ComparisonBlock({
   openId: string
 }) {
   const priceById = new Map(offerings.map((o) => [o.id, o]))
+
+  const columns: ComparisonColumn[] = grid.columns.map((column) => {
+    const offering = priceById.get(column.id)
+    return {
+      id: column.id,
+      label: column.label,
+      emphasis: offering?.featured ?? false,
+      summary: offering?.monthly,
+      note: (
+        <span className="flex items-baseline gap-1.5">
+          {offering?.listAnchor && (
+            <span className="text-2xs font-semibold text-subtle line-through">{offering.listAnchor}</span>
+          )}
+          <span className="text-sm font-bold text-primary-strong">{offering?.monthly}</span>
+        </span>
+      ),
+    }
+  })
+
+  const groups: ComparisonGroup[] = grid.groups.map((group) => ({
+    key: group.key,
+    label: group.label,
+    rows: group.rows.map((row) => ({
+      key: row.key,
+      label: row.label,
+      detail: row.detail,
+      cells: row.cells,
+    })),
+  }))
+
   return (
     <div>
-      <div className="mb-5">
-        <h3 className="font-display uppercase text-text text-2xl">{title}</h3>
-        <p className="mt-1 text-sm leading-relaxed text-muted">{kicker}</p>
-      </div>
-
-      {/* Mobile: one collapsible per plan. */}
-      <div className="space-y-3 lg:hidden">
-        {grid.columns.map((column, i) => {
-          const offering = priceById.get(column.id)
-          return (
-            <details
-              key={column.id}
-              open={column.id === openId}
-              className="rounded-2xl border border-border bg-surface"
-            >
-              <summary className="flex cursor-pointer items-baseline justify-between gap-3 px-5 py-4">
-                <span className="font-display uppercase text-text text-xl">{column.label}</span>
-                <span className="text-sm font-bold text-primary-strong">{offering?.monthly}</span>
-              </summary>
-              <div className="border-t border-border px-5 pb-5 pt-2">
-                {grid.groups.map((group) => (
-                  <div key={group.key} className="mt-4 first:mt-2">
-                    <h4 className="mb-2 text-2xs font-black uppercase tracking-wider text-subtle">
-                      {group.label}
-                    </h4>
-                    <dl className="space-y-2">
-                      {group.rows.map((row) => (
-                        <div key={row.key} className="flex items-start justify-between gap-4">
-                          <dt className="text-sm text-muted">{row.label}</dt>
-                          <dd className="shrink-0 text-right text-sm">
-                            <Cell cell={row.cells[i]!} />
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </div>
-                ))}
-              </div>
-            </details>
-          )
-        })}
-      </div>
-
-      {/* Desktop: the real table. */}
-      <div className="hidden overflow-x-auto rounded-2xl border border-border lg:block">
-        <table className="w-full text-left">
-          <caption className="sr-only">{`${title}: what each plan includes`}</caption>
-          <thead>
-            <tr className="border-b border-border bg-surface-elevated">
-              <th scope="col" className="w-64 px-5 py-4 align-bottom text-sm font-bold text-text">
-                Feature
-              </th>
-              {grid.columns.map((column) => {
-                const offering = priceById.get(column.id)
-                return (
-                  <th
-                    key={column.id}
-                    scope="col"
-                    className={`px-5 py-4 align-bottom ${offering?.featured ? 'bg-primary-bg/30' : ''}`}
-                  >
-                    <span className="block font-display uppercase text-text text-xl">{column.label}</span>
-                    <span className="mt-1 flex items-baseline gap-1.5">
-                      {offering?.listAnchor && (
-                        <span className="text-2xs font-semibold text-subtle line-through">
-                          {offering.listAnchor}
-                        </span>
-                      )}
-                      <span className="text-sm font-bold normal-case text-primary-strong">
-                        {offering?.monthly}
-                      </span>
-                    </span>
-                  </th>
-                )
-              })}
-            </tr>
-          </thead>
-          {grid.groups.map((group) => (
-            <tbody key={group.key} className="text-sm">
-              <tr className="border-b border-border bg-surface-elevated/60">
-                <th
-                  scope="colgroup"
-                  colSpan={grid.columns.length + 1}
-                  className="px-5 py-2 text-2xs font-black uppercase tracking-wider text-subtle"
-                >
-                  {group.label}
-                </th>
-              </tr>
-              {group.rows.map((row) => (
-                <tr key={row.key} className="border-b border-border last:border-0">
-                  <th scope="row" className="px-5 py-3 align-top font-semibold text-text">
-                    {row.label}
-                    <span className="mt-0.5 block text-xs font-normal leading-relaxed text-subtle">
-                      {row.detail}
-                    </span>
-                  </th>
-                  {row.cells.map((cell, i) => (
-                    <td
-                      key={grid.columns[i]!.id}
-                      className={`px-5 py-3 align-top ${
-                        priceById.get(grid.columns[i]!.id)?.featured ? 'bg-primary-bg/15' : ''
-                      }`}
-                    >
-                      <Cell cell={cell} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          ))}
-        </table>
-      </div>
+      <BlockHeading title={title} kicker={kicker} />
+      <ComparisonTable
+        caption={`${title}: what each plan includes`}
+        rowHeader="Feature"
+        columns={columns}
+        groups={groups}
+        mobile="by-column"
+        openId={openId}
+      />
     </div>
   )
-}
-
-/** One resolved cell. A yes reads as a check, a no reads as a muted dash with its reason, and a value
- *  (an allowance, a rate, an add-on price) reads plainly. The text is always present for screen readers. */
-function Cell({ cell }: { cell: GridCell }) {
-  if (cell.kind === 'yes') {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-success">
-        <Check className="h-4 w-4 shrink-0" aria-hidden />
-        {cell.text}
-      </span>
-    )
-  }
-  if (cell.kind === 'no') {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-subtle">
-        <Minus className="h-4 w-4 shrink-0" aria-hidden />
-        {cell.text}
-      </span>
-    )
-  }
-  return <span className="font-semibold text-text">{cell.text}</span>
 }

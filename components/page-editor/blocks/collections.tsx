@@ -416,6 +416,21 @@ export function ShowcaseBlock({
 
 type TierItem = {
   name?: string
+  /**
+   * Bind this card to a LIVE offering (ADR-918). When set and the offering resolves, `price`,
+   * `strikePrice` and the rate come from the pricing config instead of the typed text below, so a
+   * published document can never freeze a figure.
+   *
+   * 🔴 WHY THIS EXISTS. Everything under it is free text a janitor types, and Publish writes that text
+   * into a jsonb document. Without a binding, the first Publish of a pricing page turns every price on
+   * it into a snapshot, and an operator editing a rate at /admin/pricing moves the generated page
+   * while the published one keeps quoting the old number. That is the nine-disagreeing-sources problem
+   * this codebase spent a phase removing, reintroduced somewhere far harder to see.
+   *
+   * Empty is valid and common: an add-on, or a card like "Space Memberships: Owner-set", has no
+   * offering behind it and stays fully editorial.
+   */
+  livePriceKey?: string
   /** The big display price, e.g. "Free", "$10", "$25+". */
   price?: string
   /** Optional struck-through original price shown before `price` (beta-free look). */
@@ -447,6 +462,7 @@ export function TiersBlock({
   emphasis,
   cardStyle,
   density,
+  livePricing,
 }: {
   eyebrow?: string
   title?: React.ReactNode
@@ -457,6 +473,8 @@ export function TiersBlock({
   emphasis?: EmphasisValue
   cardStyle?: CardStyleValue
   density?: DensityValue
+  /** Resolved live figures keyed by offering id (ADR-918), threaded from page metadata. */
+  livePricing?: Record<string, { price: string; strikePrice: string | null; takeRate: string }>
 }) {
   const { scale, accent } = emphasisClasses(emphasis)
   const { gap, pad } = densityClasses(density)
@@ -480,7 +498,14 @@ export function TiersBlock({
         </div>
       )}
       <div className={`grid lg:grid-cols-3 items-start ${gap}`}>
-        {(items || []).map((tier, i) => {
+        {(items || []).map((raw, i) => {
+          // A bound card takes its figures from live config; an unbound one keeps the janitor's text.
+          // Fail-safe in the editorial direction: if the key does not resolve (a renamed offering, a
+          // failed config read), the typed text still renders rather than the card going blank.
+          const live = raw.livePriceKey ? livePricing?.[raw.livePriceKey] : undefined
+          const tier: TierItem = live
+            ? { ...raw, price: live.price, strikePrice: live.strikePrice ?? undefined }
+            : raw
           const featured = tier.highlight === 'featured'
           const cardTone = featured
             ? 'rounded-2xl bg-surface-elevated border-2 border-primary ring-4 ring-primary-bg lg:-translate-y-3 lg:scale-[1.02] shadow-pop'
@@ -935,7 +960,11 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
         label: 'Tiers',
         arrayFields: {
           name: { type: 'text', label: 'Name' },
-          price: { type: 'text', label: 'Price (e.g. Free, $10, $25+)' },
+          livePriceKey: {
+            type: 'text',
+            label: 'Live price key (optional: member, crew, free, business, collective, nonprofit, independent)',
+          },
+          price: { type: 'text', label: 'Price (ignored when a live price key is set)' },
           strikePrice: { type: 'text', label: 'Struck price (optional, e.g. $10)' },
           cadence: { type: 'text', label: 'Cadence (e.g. /mo, forever, during beta)' },
           priceNote: { type: 'textarea', label: 'Note under price (optional)' },
@@ -1017,9 +1046,13 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
       density: densityDefault,
       ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, title, titleAccent, kicker, items, footnote, emphasis, cardStyle, density, tone, width, align, layout }) => (
+    render: ({ eyebrow, title, titleAccent, kicker, items, footnote, emphasis, cardStyle, density, tone, width, align, layout, puck }) => (
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <TiersBlock
+          livePricing={
+            (puck?.metadata?.live as { pricing?: Record<string, { price: string; strikePrice: string | null; takeRate: string }> } | undefined)
+              ?.pricing
+          }
           eyebrow={eyebrow || undefined}
           title={accentize(title, titleAccent) || undefined}
           kicker={kicker || undefined}
