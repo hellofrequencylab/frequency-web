@@ -73,7 +73,7 @@ export const COMPARISONS: Comparison[] = [
     theyAreGoodAt:
       'Linktree gives you one clean link for all your other links. Fast to set up, tidy to share. For sending a follower to your stuff, it works.',
     theDifference:
-      'A Spotlight page on Frequency is a personal page too, but it points inward, not out. The goal is not one more click to somewhere else. It is to bring people into the same rooms you are in, so a tap turns into a table you both show up to. Selling from your page comes with Crew or a Space, and when you do sell, Frequency takes 0% on the people already yours. What your own work earns is yours.',
+      'A Spotlight page on Frequency is a personal page too, but it points inward, not out. The goal is not one more click to somewhere else. It is to bring people into the same rooms you are in, so a tap turns into a table you both show up to. Selling from your page is open on any account, and Frequency takes 0% on the people already yours. What your own work earns is yours.',
     contrast: [
       { dimension: 'What it is', them: 'A page of links to your other pages.', us: 'A personal page inside a real-world community.' },
       { dimension: 'Where it leads', them: 'Out, to your other profiles.', us: 'In, to Circles and events near you.' },
@@ -124,7 +124,7 @@ export const COMPARISONS: Comparison[] = [
     forReader:
       'You have been to plenty of events. You want the few that turn into people you keep seeing, not another ticket stub.',
     moneyBeat:
-      'Eventbrite charges a fee on every ticket you sell. Frequency takes 0% on your own bookings, always. Selling tickets comes with Crew or a Space, and what your work earns is yours. Frequency runs on one honest price and earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
+      'Eventbrite charges a fee on every ticket you sell, to everyone, every time. Frequency takes 0% on anyone already yours: a follower, a contact, or someone who bought from you before. You can sell on a free account from day one, and a paid plan buys down the rate on the people the network introduces you to. Frequency runs on one honest price and earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
   },
   {
     slug: 'mighty-networks',

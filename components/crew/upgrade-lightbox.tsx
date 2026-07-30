@@ -28,11 +28,11 @@ export const UPGRADE_COPY: Record<string, { title: string; blurb: string }> = {
     blurb:
       'Crew members design the journeys. Lay out a path others can walk, day by day, and turn what you know into something people finish together.',
   },
-  'sell-tickets': {
-    title: 'Sell tickets with Crew',
-    blurb:
-      'Your event can take free RSVPs on any account. Crew is what lets you charge for a seat, and Frequency takes nothing on anyone who already follows you, is on your list, or has booked with you before. We only take a cut the first time we bring you someone new.',
-  },
+  // 🔴 `sell-tickets` was here and is deliberately gone (ADR-914). It read "Crew is what lets you
+  // charge for a seat", which is no longer true: selling is free on every tier and the ladder is the
+  // RATE, not the permission. It was also dead, like `create-event` before it, with no call site
+  // anywhere. Do not re-add it. If a future surface needs to talk about the rate, that is an upsell
+  // about a NUMBER going down, not a lightbox about a locked door.
   'create-practice': {
     title: 'Share practices with Crew',
     blurb:
