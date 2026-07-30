@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import Image from 'next/image'
 import { Crown, Loader2 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
@@ -162,6 +162,43 @@ function HostSpaceSearch({ pending, onPick }: { pending: boolean; onPick: (space
   const [query, setQuery] = useState('')
   const [spaces, setSpaces] = useState<ScopeHit[]>([])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const boxRef = useRef<HTMLDivElement>(null)
+
+  // 🔴 THE RESULT LIST HAD NO WAY TO CLOSE. Owner report: "once the field of suggested spaces comes
+  // up, it doesn't close no matter what I do. I have to close the rail for it to turn off."
+  //
+  // Three exits were all missing, and the list is rendered IN FLOW (it has to be — the settings
+  // module's @container wrapper clips an absolute overlay), so it pushes the rest of the rail down
+  // and reads as stuck rather than as a dropdown. `ScopeSearch` in event-placement-field.tsx already
+  // clears query + hits after a pick; this is that, plus the two dismissals nothing in this rail had.
+  const dismiss = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    setQuery('')
+    setSpaces([])
+  }, [])
+
+  // Escape, the reflex for any open list. Bound to the box, not the window, so it cannot swallow the
+  // Escape that closes the admin rail itself when this picker is already empty.
+  const onKeyDown = useCallback(
+    (e: ReactKeyboardEvent) => {
+      if (e.key === 'Escape' && (query || spaces.length > 0)) {
+        e.stopPropagation()
+        dismiss()
+      }
+    },
+    [query, spaces.length, dismiss],
+  )
+
+  // A click anywhere outside. Capture phase so it lands before a click on some other rail control
+  // does its own work, and only mounted while there is something to close.
+  useEffect(() => {
+    if (spaces.length === 0) return
+    function onDocClick(e: MouseEvent) {
+      if (!boxRef.current?.contains(e.target as Node)) dismiss()
+    }
+    document.addEventListener('click', onDocClick, true)
+    return () => document.removeEventListener('click', onDocClick, true)
+  }, [spaces.length, dismiss])
 
   const search = useCallback((q: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -181,7 +218,7 @@ function HostSpaceSearch({ pending, onPick }: { pending: boolean; onPick: (space
   }, [])
 
   return (
-    <div className="mt-1.5">
+    <div className="mt-1.5" ref={boxRef} onKeyDown={onKeyDown}>
       <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5">
         <Crown className="h-4 w-4 shrink-0 text-subtle" />
         <input
@@ -205,7 +242,10 @@ function HostSpaceSearch({ pending, onPick }: { pending: boolean; onPick: (space
             <button
               key={h.id}
               type="button"
-              onClick={() => onPick(h.id)}
+              onClick={() => {
+                dismiss()
+                onPick(h.id)
+              }}
               disabled={pending}
               className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-elevated disabled:opacity-40"
             >
