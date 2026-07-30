@@ -25,7 +25,7 @@ import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
 import { getConnectStatus, payoutsLive } from './connect'
-import { platformFeeCents, platformFeePct, spaceTakeRateCents, memberTakeRateCents } from './fees'
+import { platformFeeCents, platformFeePct, spaceTakeRateCents, memberTakeRateCents, resolvedNetworkRate } from './fees'
 import { networkTakeRateBpsForPlan, memberNetworkTakeRateBps } from './pricing-keys'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
 import { TICKETS_NOT_READY } from '@/lib/events/ticket-eligibility'
@@ -353,7 +353,11 @@ export async function createTicketCheckout(opts: {
       // to self (ADR-811 §3), so it pays 0% even here (independent price is billed on the subscription).
       effectiveSource = effectiveOrderSource(source, spRow?.network_connected)
       fee = await spaceTakeRateCents(gross, plan, effectiveSource) // self → 0, network → tier bps
-      rateBps = effectiveSource === 'self' ? 0 : networkTakeRateBpsForPlan(plan)
+      // 🔴 The receipt must record the rate that was CHARGED, which means the OPERATOR-resolved vector,
+      // not the code default. Recomputing from the default agreed only because production has never
+      // had a network_bps row; the first save at /admin/pricing would have charged the new rate and
+      // stamped the old one. A receipt that disagrees with the charge is worse than no receipt.
+      rateBps = effectiveSource === 'self' ? 0 : networkTakeRateBpsForPlan(plan, await resolvedNetworkRate())
     }
   } else {
     // A PERSONAL event (no owning space): the host is an individual seller. 0% on their own sale, and
@@ -371,7 +375,7 @@ export async function createTicketCheckout(opts: {
       .maybeSingle()
     const payeeTier = (payeeProf as { membership_tier: string | null } | null)?.membership_tier ?? null
     fee = await memberTakeRateCents(gross, source, payeeTier)
-    rateBps = source === 'self' ? 0 : memberNetworkTakeRateBps(payeeTier)
+    rateBps = source === 'self' ? 0 : memberNetworkTakeRateBps(payeeTier, await resolvedNetworkRate())
   }
   const tierLabel = tier ? ` (${tier.name})` : ''
 
@@ -461,27 +465,33 @@ export async function createTicketCheckout(opts: {
   // which reads honestly as "no receipt recorded" rather than as a fabricated one.
   //
   // Untyped reach: the three columns are not in the generated types yet (repo convention, ADR-246).
-  try {
-    await (db() as unknown as {
-      from: (t: string) => {
-        update: (v: Record<string, unknown>) => {
-          eq: (c: string, v: string) => Promise<{ error: unknown }>
+  // NOT AWAITED. The buyer has a live Checkout session and is waiting on the redirect URL; making them
+  // wait on a bookkeeping UPDATE trades real conversion for a row nobody reads synchronously. Fired and
+  // explicitly caught so an unhandled rejection can never surface, and so a failure still leaves the
+  // columns NULL — honestly "no receipt recorded" rather than a fabricated one.
+  void (async () => {
+    try {
+      await (db() as unknown as {
+        from: (t: string) => {
+          update: (v: Record<string, unknown>) => {
+            eq: (c: string, v: string) => Promise<{ error: unknown }>
+          }
         }
-      }
-    })
-      .from('event_tickets')
-      .update({
-        order_source: effectiveSource,
-        // Only meaningful alongside the source that produced it. A disconnected Space collapses
-        // 'network' to 'self', and carrying the network ref onto that row would claim Frequency
-        // sourced a sale it charged 0% for.
-        attribution_ref: effectiveSource === source ? attributionRef : null,
-        take_rate_bps: rateBps,
       })
-      .eq('stripe_checkout_session_id', session.id)
-  } catch {
-    // swallowed on purpose — see above
-  }
+        .from('event_tickets')
+        .update({
+          order_source: effectiveSource,
+          // Only meaningful alongside the source that produced it. A disconnected Space collapses
+          // 'network' to 'self', and carrying the network ref onto that row would claim Frequency
+          // sourced a sale it charged 0% for.
+          attribution_ref: effectiveSource === source ? attributionRef : null,
+          take_rate_bps: rateBps,
+        })
+        .eq('stripe_checkout_session_id', session.id)
+    } catch {
+      // swallowed on purpose — see above
+    }
+  })()
 
   if (!session.url) return { error: 'Could not start checkout.' }
   return { url: session.url }

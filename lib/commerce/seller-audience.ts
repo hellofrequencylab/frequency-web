@@ -148,10 +148,26 @@ export async function buyerIsSellersAudience(input: {
     run: () => hasPriorSettledPurchase({ space, seller, buyer }),
   })
 
+  // 🔴 RUN THEM IN PARALLEL, NOT IN SEQUENCE. These used to run in a serial `for` loop that
+  // short-circuited on the first hit, which reads as an optimisation and is the opposite of one: this
+  // function sits on the checkout path, and the WORST case is the common case. A stranger buying a
+  // ticket from a Space matches nothing, so every check runs anyway — six serial round trips before
+  // the buyer sees a Stripe redirect. Short-circuiting only helps the case that was already cheap.
+  //
+  // The checks are independent, side-effect-free booleans, so awaiting them together produces the
+  // identical verdict at roughly the latency of the slowest one. Order still decides WHICH signal is
+  // reported when several match, because the winner is picked by scanning the settled results in the
+  // original order — the receipt a host is shown must not depend on which query returned first.
+  //
+  // `allSettled`, not `all`: a rejection here must degrade to "their audience" (0%), never propagate
+  // and fail a checkout. `found()` already traps its own errors; this is the second layer.
+  const settled = await Promise.allSettled(checks.map((c) => c.run()))
+
   let sawFailure = false
-  for (const check of checks) {
-    const hit = await check.run()
-    if (hit === true) return OWN(check.signal)
+  for (let i = 0; i < settled.length; i++) {
+    const r = settled[i]!
+    const hit = r.status === 'fulfilled' ? r.value : null
+    if (hit === true) return OWN(checks[i]!.signal)
     if (hit === null) sawFailure = true
   }
 

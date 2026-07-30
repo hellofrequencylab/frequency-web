@@ -90,6 +90,22 @@ function networkRate(offering: Offering): string {
   return offering.takeRate.split(', ')[1] ?? offering.takeRate
 }
 
+/** The COMPACT ladder for a meta description, where length is the constraint: label + price, no beta
+ *  prose, no free rung (the sentence before it already says selling is free on every plan). Separate
+ *  from `ladderSentence` on purpose — the page has room to explain the beta anchor and a `<meta>` tag
+ *  does not, and sharing one string forced the page's fuller phrasing past the SERP cut. */
+function ladderCompact(offerings: Offering[]): string {
+  return offerings
+    .filter((o) => o.monthlyCents > 0)
+    // Independent is dropped HERE ONLY. It is a real tier and the page lists it, but it is a
+    // network-disconnected white-label plan nobody arrives at from a search result, and at ~$249 it is
+    // the longest string on the ladder. Spending a quarter of the description's budget on the rung
+    // least likely to be the reader's next step is the wrong trade in a field this short.
+    .filter((o) => o.tier !== 'independent')
+    .map((o) => `${o.label} ${o.monthly}`)
+    .join(', ')
+}
+
 /** The plain "Business is X, Collective is Y" ladder sentence, built from the offerings. */
 function ladderSentence(offerings: Offering[]): string {
   return offerings
@@ -100,9 +116,19 @@ function ladderSentence(offerings: Offering[]): string {
 
 export async function generateMetadata(): Promise<Metadata> {
   const input = await pricingInput()
-  const ladder = ladderSentence(spaceOfferings(input))
-  const crew = memberOfferings(input)[1]!
-  const description = `Selling is free on every Frequency plan, and your own people are always free: we take nothing on a follower, a contact, or a past buyer. A paid plan buys down the rate on network-sourced sales. ${ladder}. Crew, the personal tier, is ${crew.monthly}.`
+  const ladder = ladderCompact(spaceOfferings(input))
+  // 🔴 THE PAYLOAD HAS TO FIT. This was 372 characters, so every derived figure sat past the ~155-160
+  // character SERP cut and truncation began mid-sentence at "A paid plan buys down t…". The one thing
+  // the derivation work exists to publish was the part nobody would ever read.
+  //
+  // Rebuilt around the two facts worth the space: the promise, and the plan ladder. The longer story
+  // lives on the page and in the FAQ schema, which have no length limit. Still fully interpolated, so
+  // an operator price change moves it.
+  // Phrased WITHOUT a literal percentage on purpose. The page-source guard bans any bare `\d{1,2}%`
+  // here, and it is right to: a typed figure in this file is exactly the drift the derivation work
+  // removed, and "0%" typed by hand is indistinguishable to the guard from "8%" typed by hand. Saying
+  // it in words costs nothing and keeps the rule absolute rather than carved with an exception.
+  const description = `We take nothing on your own people, ever. Selling is free on every plan. ${ladder}.`
   return {
     title: 'Pricing: your own people are always free',
     description,
@@ -223,24 +249,55 @@ export default async function PricingPage() {
   // has published silently downgrades /pricing from live figures to a snapshot. So there are two
   // rungs, not three, and the ordering says exactly what it means: a human's published words beat the
   // generated page, and nothing else does.
+  const input = await pricingInput()
+  const members = memberOfferings(input)
+  const spaces = spaceOfferings(input)
+
+  // 🔴 THE PRICE SCHEMA IS EMITTED ON BOTH BRANCHES, and hoisting it here is the whole point.
+  //
+  // One Product/Offer per PAID offering. A free tier is not an Offer (a zero-price Product reads as
+  // spam to answer engines; the FAQ carries the free story instead). Built from the same model the
+  // page renders, so the schema can never drift from the table.
+  //
+  // It sits ABOVE the published-document branch because these are pure DERIVED PRICE FACTS: they come
+  // from the offering model, not from anybody's copy, so they are equally true whichever body renders.
+  // Leaving them below meant one Publish at /edit/pricing silently deleted every price node from the
+  // highest-value answer-engine surface on the site — the exact asset this work exists to build, taken
+  // out by an operator editing a paragraph and having no way to know.
+  const priceSchema = [...members, ...spaces]
+    .filter((o) => o.monthlyCents > 0)
+    .map((o) =>
+      productSchema({
+        title: `Frequency ${o.label}`,
+        description: o.forWho,
+        priceCents: o.monthlyCents,
+        currency: 'usd',
+        // Every plan here is a MONTHLY subscription. Without this the Offer publishes a bare price and
+        // a $19/mo plan reads as a flat $19 purchase.
+        billingPeriodCode: 'MON',
+        path: '/pricing',
+        sellerName: 'Frequency',
+      }),
+    )
+
   const published = await getPublishedData('pricing')
   if (isRenderable(published)) {
     const live = await getLiveData(createAdminClient()).catch(() => null)
     return (
       <>
-        <JsonLd data={breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }])} />
+        <JsonLd data={[breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]), ...priceSchema]} />
         {/* Article schema for the published doc, the same way every other Puck-backed marketing route
             emits it (about, the-community, the-lab, the-quest). Without it a published /pricing ships
-            strictly less structured data than the generated one it replaces. */}
+            strictly less structured data than the generated one it replaces.
+            ⚠️ The FAQPage schema is deliberately NOT carried over: it is generated from the coded
+            page's own FAQ copy, and asserting those answers over a body an operator has rewritten
+            would publish text no visitor can see. The published document carries its own. */}
         <BlockDocJsonLd data={published} path="/pricing" />
         <BlockRender config={config} data={published} metadata={live ? { live } : {}} />
       </>
     )
   }
 
-  const input = await pricingInput()
-  const members = memberOfferings(input)
-  const spaces = spaceOfferings(input)
   const extras = planExtras(input)
   const faq = pricingFaq(input)
   const ladder = ladderSentence(spaces)
@@ -251,22 +308,7 @@ export default async function PricingPage() {
         data={[
           breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]),
           faqSchema(faq),
-          // One Product/Offer per PAID offering, priced at the amount actually charged today (the beta
-          // rate where there is one). A free tier is not an Offer (a zero-price Product reads as spam to
-          // answer engines; the FAQ carries the free story instead). Built from the same model the page
-          // renders, so the schema never drifts from the table.
-          ...[...members, ...spaces]
-            .filter((o) => o.monthlyCents > 0)
-            .map((o) =>
-              productSchema({
-                title: `Frequency ${o.label}`,
-                description: o.forWho,
-                priceCents: o.monthlyCents,
-                currency: 'usd',
-                path: '/pricing',
-                sellerName: 'Frequency',
-              }),
-            ),
+          ...priceSchema,
         ]}
       />
 

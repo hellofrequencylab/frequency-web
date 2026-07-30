@@ -43,6 +43,34 @@ export function platformFeeCents(grossCents: number): number {
 // seeded code default (no partial row can leave a tier undefined → NaN), and a thrown read falls back to
 // the flat platform fee — never to a 0% fee that under-collects.
 
+/** The OPERATOR-RESOLVED network take-rate vector: the code defaults with the operator's
+ *  pricing_settings merged over them, per field. The single place the live rate is assembled.
+ *
+ *  🔴 EXPORTED SO A RECEIPT CAN RECORD WHAT WAS ACTUALLY CHARGED. The fee paths resolve their rate
+ *  here, from operator config, while the receipt used to recompute it from the CODE DEFAULT. The two
+ *  agree today only because production has never had a `network_bps` row; the first time an operator
+ *  saves a rate at /admin/pricing, a ticket would be charged the new rate and stamped with the old
+ *  one. A receipt that disagrees with the charge is worse than no receipt, because it is evidence
+ *  that reads as authoritative and is wrong. */
+export async function resolvedNetworkRate(): Promise<import('./pricing-keys').NetworkTakeRate> {
+  const [{ getPricingValues }, { NETWORK_TAKE_RATE_DEFAULT }] = await Promise.all([
+    import('@/lib/pricing/settings'),
+    import('./pricing-keys'),
+  ])
+  try {
+    const t = (await getPricingValues()).take_rate
+    // Per-field fallback so a partial operator override can never leave a rung undefined (→ NaN fee).
+    return {
+      ...NETWORK_TAKE_RATE_DEFAULT,
+      ...t.network_bps,
+      member: t.member_bps ?? NETWORK_TAKE_RATE_DEFAULT.member,
+      memberFree: t.member_free_bps ?? NETWORK_TAKE_RATE_DEFAULT.memberFree,
+    }
+  } catch {
+    return NETWORK_TAKE_RATE_DEFAULT
+  }
+}
+
 /** The application fee (cents) on a Space charge: 0 for the Space's own audience, else the plan's
  *  network-sourced rate. Reads the operator pricing_settings (fail-safe to the seeded defaults, then to
  *  the flat platform fee — never 0). Server-only (dynamic imports keep the pure platformFee* helpers
@@ -56,19 +84,8 @@ export async function spaceTakeRateCents(
   if (source === 'self') return 0
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
   try {
-    const [{ getPricingValues }, { sourceAwareTakeRateCents, NETWORK_TAKE_RATE_DEFAULT }] = await Promise.all([
-      import('@/lib/pricing/settings'),
-      import('./pricing-keys'),
-    ])
-    const t = (await getPricingValues()).take_rate
-    // Build a complete NetworkTakeRate: per-field fallback to the code default so a partial operator
-    // override can never leave a tier undefined (→ NaN fee).
-    const rate = {
-      ...NETWORK_TAKE_RATE_DEFAULT,
-      ...t.network_bps,
-      member: t.member_bps ?? NETWORK_TAKE_RATE_DEFAULT.member,
-      memberFree: t.member_free_bps ?? NETWORK_TAKE_RATE_DEFAULT.memberFree,
-    }
+    const { sourceAwareTakeRateCents } = await import('./pricing-keys')
+    const rate = await resolvedNetworkRate()
     return sourceAwareTakeRateCents(grossCents, plan, source, rate)
   } catch {
     // Fail-safe to the platform default fee rather than 0 (never under-collect on a network sale error).
@@ -95,17 +112,8 @@ export async function memberTakeRateCents(
   if (source === 'self') return 0
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
   try {
-    const [{ getPricingValues }, { sourceAwareMemberTakeRateCents, NETWORK_TAKE_RATE_DEFAULT }] = await Promise.all([
-      import('@/lib/pricing/settings'),
-      import('./pricing-keys'),
-    ])
-    const t = (await getPricingValues()).take_rate
-    const rate = {
-      ...NETWORK_TAKE_RATE_DEFAULT,
-      ...t.network_bps,
-      member: t.member_bps ?? NETWORK_TAKE_RATE_DEFAULT.member,
-      memberFree: t.member_free_bps ?? NETWORK_TAKE_RATE_DEFAULT.memberFree,
-    }
+    const { sourceAwareMemberTakeRateCents } = await import('./pricing-keys')
+    const rate = await resolvedNetworkRate()
     return sourceAwareMemberTakeRateCents(grossCents, source, rate, sellerTier)
   } catch {
     return platformFeeCents(grossCents)

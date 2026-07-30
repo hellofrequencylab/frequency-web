@@ -115,7 +115,13 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   space_collaborators: { free: 0, business: 3, collective: null },
   // Membership tiers a Space may define. Free runs one tier (the §2 "10 active, 1 tier" row), Business
   // runs a small ladder, Collective is unlimited (multi-tier pricing is the Collective offer).
-  space_membership_tiers: { free: 1, business: 3, collective: null },
+  // 🔴 FREE IS ZERO, NOT ONE (ADR-914). Selling memberships is a WALL at Business, and this meter
+  // promised a free Space one tier. That is the "gated and metered = two promises to the same
+  // customer" class the drift guard exists to catch, and it slipped through only because the gate key
+  // (`space_memberships`) and the meter key (`space_membership_tiers`) differ by name. The guard
+  // compares keys, so a rename defeats it. Above the wall the tier COUNT is a real dial, so the meter
+  // stays; its floor just has to agree with the wall.
+  space_membership_tiers: { free: 0, business: 3, collective: null },
   vera_unlimited: { free: 10, crew: null },
   // FIRST ONE FREE — the personal leadership allowances. A free Member leads at one of each; Crew leads
   // at scale. Nothing here is a wall: a free Member still hosts a real Circle and is still made a Host

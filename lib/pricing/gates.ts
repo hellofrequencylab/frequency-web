@@ -240,10 +240,21 @@ export function mergeGate(
  *  the caller's RLS), REQUEST-CACHED. FAIL-SAFE: returns `{}` on ANY error (incl. a missing table
  *  pre-migration), so featureAllowed always falls back to the code map. The dynamic import keeps
  *  this server-only dependency out of the module top level (the pure helpers stay client-safe). */
+// 🔴 THE MEMO IS MODULE-LEVEL, AND IT HAS TO BE. `cache()` returns a NEW memoized function; calling it
+// inside the exported function built a fresh empty memo on every invocation, so the docstring's
+// "REQUEST-CACHED" was false and every call re-queried. Harmless today only because featureAllowed
+// short-circuits before reaching here while the gates are soft — the moment they go live, a settings
+// render resolving N gates would fire N identical selects.
+//
+// Created lazily on first use so the dynamic `import('react')` stays out of the module top level and the
+// pure helpers above remain client-safe, which is why it was written inline in the first place.
+let memoizedLoad: (() => Promise<FeatureGateOverrides>) | null = null
+
 export async function loadFeatureGateOverrides(): Promise<FeatureGateOverrides> {
   try {
-    const { cache } = await import('react')
-    const load = cache(async () => {
+    if (!memoizedLoad) {
+      const { cache } = await import('react')
+      memoizedLoad = cache(async () => {
       const { createAdminClient } = await import('@/lib/supabase/admin')
       const db = createAdminClient()
       // The table isn't in the generated types yet (ADR-246) — reach it untyped.
@@ -265,8 +276,9 @@ export async function loadFeatureGateOverrides(): Promise<FeatureGateOverrides> 
         }
       }
       return out
-    })
-    return await load()
+      })
+    }
+    return await memoizedLoad()
   } catch {
     return {}
   }

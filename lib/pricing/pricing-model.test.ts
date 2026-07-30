@@ -8,6 +8,9 @@ import {
   pricingLadderSummary,
   proAddonPrice,
 } from './pricing-page'
+import { spaceOfferings } from './pricing-grid'
+import { PRICING_DEFAULTS } from './defaults'
+import { pricingCatalog } from './pricing-page'
 
 // The PURE pricing-page model: the tier table, the loadout-strip math, and the answer-engine ladder
 // summary. No IO, no React, no Stripe.
@@ -128,5 +131,25 @@ describe('pricing table model', () => {
     expect(lines.some((l) => l.includes('Vera AI'))).toBe(true)
     expect(lines.some((l) => l.includes('Operator seats:'))).toBe(true)
     for (const l of lines) expect(hasEmDash(l)).toBe(false)
+  })
+})
+
+// ── The meta description has to FIT (ADR-919) ───────────────────────────────────────────────────
+//
+// /pricing's description was 372 characters, so every figure the derivation work produced sat past the
+// ~155-160 character SERP cut and truncation began mid-sentence. The one thing that page exists to
+// publish was the part nobody would ever read. Length is a correctness property here, not polish.
+describe('the /pricing meta description fits in a search result', () => {
+  it('stays under the SERP cut while still carrying the ladder', () => {
+    const ladder = spaceOfferings({ values: PRICING_DEFAULTS, catalog: pricingCatalog(), betaActive: true })
+      .filter((o) => o.monthlyCents > 0)
+      .filter((o) => o.tier !== 'independent')
+      .map((o) => `${o.label} ${o.monthly}`)
+      .join(', ')
+    const description = `We take nothing on your own people, ever. Selling is free on every plan. ${ladder}.`
+    expect(description.length).toBeLessThanOrEqual(160)
+    // And it must still be worth the space: the promise AND a real price.
+    expect(description).toContain('nothing on your own people')
+    expect(description).toMatch(/\$\d/)
   })
 })

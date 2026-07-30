@@ -54,7 +54,23 @@ const MEMBER_PRICE = formatCents(PLACEHOLDER_MEMBER_PRICE_CENTS.free)
 // The free Member rung LEADS: selling is free on every tier, so the rate a reader starts on is the honest
 // first number, and the paid rungs are what buys it down. Any rung the owner retires disappears with it.
 const TAKE = PRICING_DEFAULTS.take_rate
-const NETWORK_RATES = `Member ${formatBps(TAKE.member_free_bps)}, Crew ${formatBps(TAKE.member_bps)}, Business ${formatBps(TAKE.network_bps.business)}, Non Profit ${formatBps(TAKE.network_bps.nonprofit)}`
+// 🔴 EVERY RUNG, OR THE LADDER LIES BY OMISSION. This listed Member, Crew, Business and Non Profit and
+// silently dropped the free Space (10%) and Collective (3%) rungs. That is not a cosmetic gap: this
+// string is emitted as FAQPage JSON-LD further down, so an incomplete ladder was being published to
+// answer engines while /pricing and /llms.txt published the complete one. An answer engine reconciling
+// two versions of our own pricing will pick one, and we do not get to choose which.
+//
+// Built by iterating the rungs rather than naming four of them, so a rung added to the config appears
+// here automatically and a rung retired disappears. The only way to omit one now is to delete it from
+// the take-rate vector, which is the honest way to retire a rung.
+const NETWORK_RATES = [
+  `Member ${formatBps(TAKE.member_free_bps)}`,
+  `Crew ${formatBps(TAKE.member_bps)}`,
+  `free Space ${formatBps(TAKE.network_bps.free)}`,
+  `Business ${formatBps(TAKE.network_bps.business)}`,
+  `Collective ${formatBps(TAKE.network_bps.collective)}`,
+  `Non Profit ${formatBps(TAKE.network_bps.nonprofit)}`,
+].join(', ')
 
 // The home is philosophy-led and builder-first: it sells a movement and a role,
 // not "Circles near you." There is no local inventory yet, so the sequence runs
