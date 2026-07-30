@@ -534,19 +534,25 @@ Covered today: `space_crm`, `space_email`, `space_automation`, and (bespoke, not
 
 ### A4. Deletion candidates (Phase 7)
 
-| Candidate | Why |
+⚠️ **This list was written from a discovery pass and TWO of its top three entries were wrong.** The
+verdicts below are the post-verification ones (ADR-915). The durable lesson: *a duplicate is only dead
+if nothing can reach it, and "nothing" includes the operator.*
+
+| Candidate | Verdict |
 |---|---|
-| `lib/marketing/personas.ts` + test (247 lines) | **Orphan.** Zero importers. A second persona registry with the same five slugs as `funnel-config.ts` |
-| `lib/page-editor/templates/pricing.ts` (~270 lines) | Registered but **unreachable** — `/pricing` never calls `getTemplate('pricing')`. Duplicates the whole ladder with hardcoded rate prose |
+| `lib/marketing/personas.ts` + test | ✅ **DELETED.** Zero *production* importers confirmed (one test importer, repointed). Note the repo has FOUR persona registries; only this one was dead |
+| `lib/page-editor/templates/pricing.ts` (374 lines) | 🔴 **NOT DELETED — operator-reachable.** `pricing` is a row in `EDITABLE_PAGES`, so a janitor can open it at `/edit/pricing` today. The sweep found something worse than a dead file: that control is **inert**. A janitor can edit and Publish and a visitor sees nothing, because `/pricing` is 665 hand-coded lines that never read the published doc, unlike the six primaries. Needs a decision (wire it in, or drop it from `EDITABLE_PAGES`), not a deletion |
+| `app/(marketing)/beta/[slug]` | 🔴 **NOT DELETED — live.** `BETA_SEQUENCES` is not empty; it carries `breathwork` (ADR-619) and `/beta/breathwork` prerenders and serves. The sweep proposed deleting it because **the route's own header comment said the registry was empty** — a comment left stale when the funnel was added. A wrong comment nearly deleted a working route |
+| 15 × redirect stubs → `next.config.ts` | ⚠️ **RECOMMEND AGAINST.** Both emit **308**, so there is zero SEO gain, which was the entire case. Against: a config `source` that matches a real page silently shadows it with no build error, and this repo has already been burned exactly that way (`funnel-redirects.test.ts` exists because three `/for/*` rules 404'd live pages the sitemap was submitting). It would also blind `check:seo`, which carries all 15 with verified per-route reasons |
 | `FREQUENCY_BUSINESS_MONTHLY` / `FREQUENCY_ALL_IN_MONTHLY` | Stale literals rendering live |
 | `pricingTiers()` hardcoded rate + `coreIncluded` strings | Superseded by the derived grid. Point `/llms*.txt` at the grid and delete |
-| `PricingTier.preview` | Declared, never set |
+| `PricingTier.preview` | Worse than unused: it is **read** in `pricingLadderSummary` and assigned by nothing, so it is a live branch that can never be taken |
 | `UPGRADE_COPY['create-event']` | Dead copy. Event creation was ungated |
 | `app/(marketing)/beta/[slug]` | `BETA_SEQUENCES` is empty; every slug 404s |
 | 15 × 8-line redirect stubs | Correct as SEO stubs, but belong in `next.config.ts` as one table |
 | `components/teaser-gate.tsx` (1 mount site) | A third gating idiom beside `CrewGate` and `UpsellTease` |
 | `upgrade-crew` · `crew-preview-banner` · `space-crm-prompt` · `compete-locked` | Four bespoke nudges, four localStorage keys, four hand-written copies, none reading the feature config |
-| `app/page.tsx` hardcoded `$0` | The one literal money figure on the home page |
+| `app/page.tsx` hardcoded `$0` | ⚠️ **Leave as copy.** It is a proof-band claim ("To show up") beside `500+ mornings`, not a tier price. There is no catalog entry to derive it from, so binding it to a price source would be a category error |
 
 ### A5. Marketing page verdicts (Phase 6 worklist)
 

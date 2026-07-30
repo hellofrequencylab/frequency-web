@@ -118,6 +118,10 @@ export interface Offering {
   billing: string
   /** The network take-rate line for this offering. */
   takeRate: string
+  /** The NUMBER behind that line: the network-sourced take-rate for this offering, in basis points.
+   *  Carried alongside the sentence so a caller that needs the bare rate (an answer-engine line, a
+   *  comparison, a JSON-LD field) reads it instead of parsing the prose back apart. */
+  networkRateBps: number
   /** True for the one column the page highlights. */
   featured: boolean
   cta: { label: string; href: string }
@@ -201,8 +205,8 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
   // people. The 0% clause leads in both strings on purpose — it is the promise, and it is identical on
   // every rung, so the only thing that visibly differs is the number Crew buys down.
   const rateLine = (bps: number) => `0% on your own people, ${formatBps(bps)} on network-sourced sales`
-  const crewRate = rateLine(values.take_rate.member_bps)
-  const memberRate = rateLine(values.take_rate.member_free_bps)
+  const crewBps = values.take_rate.member_bps
+  const memberBps = values.take_rate.member_free_bps
   return [
     {
       id: 'member',
@@ -217,7 +221,8 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
       betaNote: null,
       trial: null,
       billing: 'Free forever. No card.',
-      takeRate: memberRate,
+      takeRate: rateLine(memberBps),
+      networkRateBps: memberBps,
       featured: false,
       cta: { label: 'Join free', href: '/join' },
     },
@@ -230,7 +235,8 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
       ...pricedOffering(crew),
       trial: null,
       billing: `Monthly or yearly. ${annualDiscountNote(values)}`,
-      takeRate: crewRate,
+      takeRate: rateLine(crewBps),
+      networkRateBps: crewBps,
       featured: false,
       cta: { label: 'Join Crew', href: '/upgrade' },
     },
@@ -249,8 +255,9 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
   // the beta rate reads under its anchor exactly as it does today.
   const paid = spacePlanRows(values, betaActiveFor(input))
   const trial = trialNote(values)
+  const rateBps = (plan: SpacePlan): number => values.take_rate.network_bps[plan]
   const rate = (plan: SpacePlan): string =>
-    `0% on your own bookings, ${formatBps(values.take_rate.network_bps[plan])} on network-sourced sales`
+    `0% on your own bookings, ${formatBps(rateBps(plan))} on network-sourced sales`
 
   const free: Offering = {
     id: 'free',
@@ -266,6 +273,7 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
     trial: null,
     billing: 'Free forever. No card.',
     takeRate: rate('free'),
+    networkRateBps: rateBps('free'),
     featured: false,
     cta: { label: 'Start a Space', href: '/spaces' },
   }
@@ -284,6 +292,7 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
         trial,
         billing: `Monthly or yearly. ${annualDiscountNote(values)}`,
         takeRate: rate(plan),
+        networkRateBps: rateBps(plan),
         featured: plan === 'business',
         cta: { label: plan === 'nonprofit' ? 'Get verified' : 'Start a Space', href: '/spaces' },
       }

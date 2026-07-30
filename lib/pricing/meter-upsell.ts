@@ -94,13 +94,20 @@ function perPeriod(period: MeterPeriod): string {
   return ''
 }
 
+/** The unit noun agreeing with a count, so a member with one Circle reads "1 circle" and not
+ *  "1 circles". Mirrors allowanceLabel's rule in feature-meters.ts, which drops the plural s at
+ *  exactly 1. Real caps here are 1 and 2 often enough that this is the common case, not an edge. PURE. */
+function countedUnit(n: number, unit: string): string {
+  return n === 1 ? unit.replace(/s$/, '') : unit
+}
+
 /** The sentence naming what the member ALREADY HAS (loss aversion, §1 #3). Both halves are about their
  *  own work: their count, then the allowance the rung they are on carries. PURE. */
 function haveSentence(used: number, cap: number, unit: string, period: MeterPeriod, currentLabel: string): string {
   const n = used.toLocaleString('en-US')
   const c = cap.toLocaleString('en-US')
   const verb = period === null ? 'You have' : 'You have used'
-  return `${verb} ${n} ${unit}${periodPhrase(period)}. ${currentLabel} carries ${c}${perPeriod(period)}.`
+  return `${verb} ${n} ${countedUnit(used, unit)}${periodPhrase(period)}. ${currentLabel} carries ${c}${perPeriod(period)}.`
 }
 
 /** The sentence naming WHAT CHANGES: the cap lift, then the rate improvement (§2, the rate is the
@@ -116,7 +123,7 @@ function changeSentence(
   const lift =
     next.allowance == null
       ? `${next.label} makes that unlimited`
-      : `${next.label} raises that to ${next.allowance.toLocaleString('en-US')} ${unit}${perPeriod(period)}`
+      : `${next.label} raises that to ${next.allowance.toLocaleString('en-US')} ${countedUnit(next.allowance, unit)}${perPeriod(period)}`
   const rateMoves =
     typeof currentBps === 'number' && typeof nextBps === 'number' && nextBps < currentBps
   return rateMoves

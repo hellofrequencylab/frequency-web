@@ -108,7 +108,7 @@ const FAQ = [
   },
   {
     q: 'How much does Frequency cost?',
-    a: `Connection is free: joining, Circles, and Events never cost anything, and a business never pays for access to people. Paid plans raise the limits. Frequency keeps 0% of your own bookings, always; we make our money only on a sale the network introduced, at ${NETWORK_RATES}. ${OWN_AUDIENCE_LINE} Plans run Member (free, which creates events and takes RSVPs), Crew (${CREW_NOTE.foundingLabel}, which adds tickets and payments), Business (${P.businessList}, beta ${P.businessBeta}), Collective (${P.collectiveList}, beta ${P.collectiveBeta}), Non Profit (${P.nonprofit}), and Independent (${INDEPENDENT_PRICE}). See the full ladder at /pricing.`,
+    a: `Connection is free: joining, Circles, and Events never cost anything, and a business never pays for access to people. Paid plans raise the limits. Frequency keeps 0% of your own bookings, always; we make our money only on a sale the network introduced, at ${NETWORK_RATES}. ${OWN_AUDIENCE_LINE} Plans run Member (free, which creates events, takes RSVPs, and sells tickets at the Member rate), Crew (${CREW_NOTE.foundingLabel}, which buys that rate down and lifts the caps), Business (${P.businessList}, beta ${P.businessBeta}), Collective (${P.collectiveList}, beta ${P.collectiveBeta}), Non Profit (${P.nonprofit}), and Independent (${INDEPENDENT_PRICE}). See the full ladder at /pricing.`,
   },
   {
     q: 'How does Frequency make money?',

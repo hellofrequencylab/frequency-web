@@ -147,7 +147,7 @@ describe('the Supporter DISPLAY surfaces are gone (ADR-878)', () => {
     const ladder = pricingLadderSummary().join('\n')
     expect(ladder).not.toMatch(/Supporter/)
     expect(ladder).not.toContain('$12')
-    expect(ladder).toContain('- Member: free, forever.')
+    expect(ladder).toContain('- Member: Free.')
     expect(ladder).toContain('- Crew: $9/mo')
   })
 

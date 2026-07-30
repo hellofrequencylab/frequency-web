@@ -218,7 +218,7 @@ export function comparisonCopy(c: Comparison): ComparisonCopy {
       : []),
     {
       q: `Is Frequency free?`,
-      a: `Yes. Frequency is free to join during the beta. You can browse Circles and events near you, join one, host your own gathering, and take RSVPs without paying anything. Selling tickets and taking payments comes with Crew or a Space, and Frequency takes 0% on your own bookings, always.`,
+      a: `Yes. Frequency is free to join during the beta. You can browse Circles and events near you, join one, host your own gathering, and take RSVPs without paying anything. Selling tickets and taking payments is free on every tier; what a paid tier buys is a lower rate on the sales the network introduces. Frequency takes 0% on your own bookings, always.`,
     },
     {
       q: `Who is Frequency for?`,

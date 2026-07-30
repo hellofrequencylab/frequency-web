@@ -10,7 +10,8 @@
 // NO em dashes, never "AI Engine" (the add-on is listed as Vera AI, 2026-07 overhaul; the Resonance Engine is the machinery, ADR-590), marketing email is
 // "Email + Automations" (never "Dispatch", a reserved broadcast term), the Space site is "Profile and
 // brand" / "your page", the CRM tool is "Contacts", the scheduler is "Bookings", the code tool is
-// "QR Studio". The free tier is the WHOLE toolset on starter caps (Contacts up to 250), not a subset.
+// "QR Studio". The free tier is the WHOLE toolset on starter caps, not a subset; the caps themselves are
+// never typed here, they live in lib/pricing/feature-meters.ts (ADR-837) and the copy stays qualitative.
 
 import type { SpaceType } from '@/lib/spaces/types'
 import { spaceCreatePath, type FunnelDestination } from '@/lib/onboarding/beta-sequences'

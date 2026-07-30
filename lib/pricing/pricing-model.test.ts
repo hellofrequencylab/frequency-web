@@ -60,8 +60,10 @@ describe('pricing table model', () => {
     const tiers = pricingTiers(true)
     expect(tiers.map((t) => t.id)).toEqual(['free', 'business', 'collective', 'nonprofit', 'independent'])
     expect(tiers.find((t) => t.id === 'business')!.featured).toBe(true)
-    // GO-LIVE: every paid tier is sellable from the code catalog; nothing is a preview row.
-    for (const t of tiers) expect(t.preview).toBeFalsy()
+    // Phase 5 (ADR-915): the columns are DERIVED from pricing-grid spaceOfferings, so the table cannot
+    // hold a tier the grid does not, or omit one it does. Independent is displayed on every public
+    // surface; whether it is offered as an in-app UPGRADE is the plan ladder's own, separate call.
+    for (const t of tiers) expect(t).not.toHaveProperty('preview')
   })
 
   it('the Free Space column reads Free at both intervals, with no anchor and no add-on cells', () => {
@@ -118,8 +120,9 @@ describe('pricing table model', () => {
     expect(lines.some((l) => l.includes('Free Space:'))).toBe(true)
     expect(lines.some((l) => l.includes('Business:'))).toBe(true)
     expect(lines.some((l) => l.includes('Non Profit:'))).toBe(true)
+    expect(lines.some((l) => l.includes('Independent:'))).toBe(true)
     // The member ladder is exactly Member (free) and Crew (ADR-878), and the citable summary says so.
-    expect(lines.some((l) => l.includes('Member: free'))).toBe(true)
+    expect(lines.some((l) => l.includes('- Member: Free.'))).toBe(true)
     expect(lines.some((l) => l.includes('Crew:'))).toBe(true)
     expect(lines.some((l) => l.includes('Supporter'))).toBe(false)
     expect(lines.some((l) => l.includes('Vera AI'))).toBe(true)

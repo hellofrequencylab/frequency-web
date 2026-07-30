@@ -198,6 +198,19 @@ describe('the copy rules', () => {
     }
   })
 
+  it('agrees in number with the count (the caps here really are 1 and 2)', () => {
+    // Measured, not assumed: this read "You have 1 seats" until the real output was printed. Half the
+    // free allowances in PLACEHOLDER_METER_LIMITS are 1, so the singular is the common case here.
+    const seats = buildMeterUpsell({ featureKey: 'space_team', currentTier: 'free', usage: 1, rates })!
+    expect(seats.have).toContain('1 seat.')
+    expect(seats.have).not.toContain('1 seats')
+    const circles = buildMeterUpsell({ featureKey: 'circle_host', currentTier: 'free', usage: 1, rates })!
+    expect(circles.have).toContain('1 circle.')
+    // And the plural survives above one.
+    const events = buildMeterUpsell({ featureKey: 'event_create', currentTier: 'free', usage: 2, rates })!
+    expect(events.have).toContain('2 events')
+  })
+
   it('states a metered flow with its period, not as a standing count', () => {
     const email = buildMeterUpsell({ featureKey: 'space_email', currentTier: 'free', usage: 280, rates })!
     expect(email.have).toContain('this month')

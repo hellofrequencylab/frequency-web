@@ -93,7 +93,7 @@ export const data: Data = {
           },
           {
             name: 'Crew', price: CREW_NOTE.foundingLabel, strikePrice: '', cadence: '/mo',
-            priceNote: `${CREW_NOTE.foundingLabel} a month, or $90 a year.`,
+            priceNote: `${CREW_NOTE.foundingLabel} a month, or ${CREW_NOTE.yearlyLabel} a year.`,
             tagline: 'The full game, the Crew badge, and dues that keep the lights on. Never a business tool.',
             highlight: 'normal', badge: 'none',
             features: [
@@ -107,7 +107,7 @@ export const data: Data = {
             ctaLabel: 'Upgrade', ctaHref: '/upgrade', ctaStyle: 'secondary',
           },
         ],
-        footnote: `Crew is one price: ${CREW_NOTE.foundingLabel} a month, or $90 a year.`,
+        footnote: `Crew is one price: ${CREW_NOTE.foundingLabel} a month, or ${CREW_NOTE.yearlyLabel} a year.`,
         tone: 'surface', width: 'wide', align: 'left', layout: L,
       },
     },
@@ -346,7 +346,7 @@ export const data: Data = {
         items: [
           { q: 'Is being a Member really free?', a: 'Yes. The Member tier is free, forever. You can browse Circles and Events, attend gatherings in person, earn Zaps, and message Vera up to 10 times a day, all without paying.' },
           { q: 'What is the Opening Beta price?', a: `The Opening Beta price is the lower rate every early Space plan holds while we are in beta: Business at ${P.businessBeta} under the ${P.businessList} list, and Collective at ${P.collectiveBeta} under the ${P.collectiveList} list. A plan you start during the beta keeps its rate. Crew is one plain price, ${CREW_NOTE.foundingLabel} a month, with no anchor above it.` },
-          { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. Crew adds the full game, with Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for ${CREW_NOTE.foundingLabel} a month or $90 a year. Those two are the whole member ladder.` },
+          { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. Crew adds the full game, with Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for ${CREW_NOTE.foundingLabel} a month or ${CREW_NOTE.yearlyLabel} a year. Those two are the whole member ladder.` },
           { q: 'What is the Opening Beta price on Space plans?', a: `Business and Collective are open at an Opening Beta price during our beta: Business at ${P.businessBeta} a month under the ${P.businessList} list, and Collective at ${P.collectiveBeta} a month under the ${P.collectiveList} list. Both hold through 2026-09-01, then revert to list. Non Profit (${P.nonprofit}) is flat, with no beta discount.` },
           { q: 'How does the take-rate work?', a: 'You keep 100% of your own bookings, always. There is a small take-rate only on business the network sends you, and it shrinks as your plan grows: a Free Space is 10%, Business is 5%, Collective is 3%, and Non Profit is 0%.' },
           { q: 'What about refunds?', a: 'Every plan is month to month, and you can cancel at any time. Cancel and your plan simply runs out its paid period. No contracts, no lock-in.' },

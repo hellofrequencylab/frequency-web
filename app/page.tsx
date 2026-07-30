@@ -38,7 +38,7 @@ import type { LiveEvent } from '@/components/marketing/blocks'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
 import { priceStrings, CREW_NOTE } from '@/lib/pricing/pricing-page'
-import { PLACEHOLDER_SPACE_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
+import { PLACEHOLDER_SPACE_PRICE_CENTS, PLACEHOLDER_MEMBER_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
 import { formatBps, formatCents } from '@/lib/pricing/display'
 import { PRICING_DEFAULTS } from '@/lib/pricing/settings'
 
@@ -46,6 +46,9 @@ import { PRICING_DEFAULTS } from '@/lib/pricing/settings'
 // priceStrings + the feature-tiers placeholder maps), so the strip can never drift from /pricing.
 const P = priceStrings()
 const INDEPENDENT_PRICE = formatCents(PLACEHOLDER_SPACE_PRICE_CENTS.independent)
+/** What it costs to show up: the free-Member price, read from the ONE member-price map. It was the
+ *  last literal dollar figure on this page. */
+const MEMBER_PRICE = formatCents(PLACEHOLDER_MEMBER_PRICE_CENTS.free)
 
 // And every PERCENTAGE interpolates from the take-rate config the fee code charges, for the same reason:
 // the rungs are Crew (an individual seller) and Business (a Space), with verified Non Profit at zero. Any
@@ -138,7 +141,7 @@ const HOME_FAQ = [
   },
   {
     q: 'What does it cost?',
-    a: `The community is free, forever. Browsing, joining a Circle, and showing up never cost anything, and a business never pays for access to people; paid plans raise the limits. A free member creates events and takes RSVPs; Crew is ${CREW_NOTE.foundingLabel} a month, turns on The Quest, adds tickets and payments, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only on a sale the network introduced (${NETWORK_RATES}), never on someone who is already yours. There is no card today, and your Opening Beta price is locked in for life.`,
+    a: `The community is free, forever. Browsing, joining a Circle, and showing up never cost anything, and a business never pays for access to people; paid plans raise the limits. A free member creates events, takes RSVPs, and sells tickets at the Member rate; Crew is ${CREW_NOTE.foundingLabel} a month, turns on The Quest, buys that rate down, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only on a sale the network introduced (${NETWORK_RATES}), never on someone who is already yours. There is no card today, and your Opening Beta price is locked in for life.`,
   },
   {
     q: 'Is there a catch?',
@@ -529,7 +532,7 @@ function Splash({
               </p>
             </div>
             <div>
-              <p className="font-display text-5xl sm:text-7xl text-primary">$0</p>
+              <p className="font-display text-5xl sm:text-7xl text-primary">{MEMBER_PRICE}</p>
               <p className="mt-3 text-xs uppercase tracking-widest font-bold text-white/50">
                 To show up
               </p>

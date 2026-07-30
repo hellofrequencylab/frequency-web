@@ -1,12 +1,20 @@
-// PRICING PAGE MODEL — the PURE shaping of the public commercial pricing page (Phase F1, Modes M6;
-// docs/PRICING-LADDER-PLAN.md §4 + docs/SPACE-MODES-PLAN.md §4b). The commercial /pricing page is
-// STATIC: it renders entirely from the CODE catalog (lib/billing/pricing-keys.ts CATALOG, surfaced via
-// lib/pricing/catalog-config.ts defaultCatalogConfig) and the pure loadout math (lib/pricing/loadout.ts
-// computeLoadoutTotal), so there are ZERO per-request DB billing reads. This module turns those code
-// defaults into the table model (Business / Non Profit) and the "by who you are" loadout strip the page
-// renders, plus the JSON-LD Offer inputs and the answer-engine ladder summary. PURE +
-// framework-independent (no React / Stripe / Supabase / Next), so it is trivially unit-testable and
-// shared by the page render, the JSON-LD spine, and the llms.txt ladder line.
+// PRICING COPY MODEL — the PURE shaping of the marketing/AIO pricing surfaces (the "by who you are"
+// loadout strip, the interpolable price strings every FAQ answer reads, and the answer-engine ladder
+// summary /llms.txt and /llms-full.txt print).
+//
+// THIS IS NOT A SECOND LADDER (Phase 5, ADR-915). lib/pricing/pricing-grid.ts is THE derived model:
+// every offering, every rate, every comparison cell is resolved there from the gates, the meters, the
+// entitlement key sets, and the operator-editable config. This module READS it (pricingTiers and
+// pricingLadderSummary both build on spaceOfferings / allOfferings) and adds only the copy the grid does
+// not carry. It used to type its own take-rate strings, which is how the answer-engine corpus published
+// a fee ladder /pricing had already stopped showing.
+//
+// PRICES come from the catalog (lib/billing/pricing-keys.ts CATALOG, surfaced through
+// lib/pricing/catalog-config.ts), defaulting to the CODE amounts so a static caller needs no DB read. A
+// caller that CAN reach the operator's config (the llms routes, which already read the DB) passes it in,
+// so an edit at /admin/pricing moves the published ladder in the same revalidation it moves /pricing.
+//
+// PURE + framework-independent (no React / Stripe / Supabase / Next), so it is trivially unit-testable.
 //
 // VOICE NOTE (CONTENT-VOICE §10): every string here is plain, honest, skeptic-proof, names what the
 // thing is, never narrates the reader's feelings, makes no health claim, and uses NO em dashes. The
@@ -25,7 +33,14 @@ import {
 import type { AddonKey } from './plans'
 import { PLACEHOLDER_MEMBER_PRICE_CENTS } from './feature-tiers'
 import { isBetaPricingActive, effectiveCatalogAmounts } from './beta'
-import type { BillingInterval, CatalogAmounts, CatalogItemKey } from '@/lib/billing/pricing-keys'
+import { PRICING_DEFAULTS, type PricingDefaults } from './defaults'
+import { allOfferings, spaceOfferings, type Offering } from './pricing-grid'
+import {
+  yearlyFromMonthly,
+  type BillingInterval,
+  type CatalogAmounts,
+  type CatalogItemKey,
+} from '@/lib/billing/pricing-keys'
 
 // ── A money amount rendered both intervals (the table + strip show monthly with a yearly toggle) ─────
 
@@ -134,9 +149,8 @@ export interface PricingTier {
   takeRate: string
   /** The CTA for this column: a label + href. */
   cta: { label: string; href: string }
-  /** True for a tier that is NOT yet sellable (Collective / Independent have no catalog entry until
-   *  go-live), so the page shows it as a "coming soon" preview row, never a live checkout (ADR-811). */
-  preview?: boolean
+  // `preview?: boolean` used to sit here, for a tier with no catalog entry. Every tier has one now, so
+  // nothing ever set it and the ladder summary's "(coming soon)" branch was unreachable. Deleted with it.
 }
 
 /** The metered add-ons in display order, with their plain marketing labels + the glyph the table prints
@@ -153,11 +167,24 @@ function addonItemKey(addon: AddonKey): CatalogItemKey {
   return `addon_${addon}` as CatalogItemKey
 }
 
-/** The add-on price string on a paid tier, e.g. "+$20/mo". PURE. */
-export function proAddonPrice(addon: AddonKey): string {
-  const item = pricingCatalog()[addonItemKey(addon)]
+/** The add-on price string on a paid tier, e.g. "+$20/mo". PURE. `catalog` defaults to the code catalog;
+ *  a caller holding the operator's resolved catalog passes it so the figure moves with an admin edit. */
+export function proAddonPrice(
+  addon: AddonKey,
+  catalog: Record<CatalogItemKey, ResolvedCatalogItem> = pricingCatalog(),
+): string {
+  const item = catalog[addonItemKey(addon)]
   const amount = formatLoadoutCents(item.month.foundingCents)
   return item.perSeat ? `+${amount}/seat/mo` : `+${amount}/mo`
+}
+
+/** The label an offering reads under in a FLAT ladder list (a table column, a bullet list, an
+ *  answer-engine line) rather than in a grid with a member/Space heading over it. The only adjustment is
+ *  the free Space, whose canon label is the bare word "Free": in a flat list beside the free Member rung
+ *  that is ambiguous, so it reads "Free Space". Every other label comes straight from the naming canon.
+ *  PURE, and shared by every flat-list caller so they cannot disagree. */
+export function offeringLadderLabel(offering: Offering): string {
+  return offering.axis === 'plan' && offering.tier === 'free' ? 'Free Space' : offering.label
 }
 
 /** The catalog item each SPACE tier is priced from. Free has none ($0 is not a Stripe price). PURE. */
@@ -235,8 +262,7 @@ export function pricingTiers(
     const item = id === 'free' ? null : cat[TIER_ITEM[id]]
     return {
       id,
-      // "Free Space" reads better than the bare plan label on a commercial table of Space tiers.
-      name: id === 'free' ? 'Free Space' : o.label,
+      name: offeringLadderLabel(o),
       tagline: o.tagline,
       priceKind: 'flat',
       price: item ? { month: eff(item.month), year: eff(item.year) } : { month: zero, year: zero },
@@ -405,41 +431,58 @@ export function loadoutStrip(betaActive: boolean = isBetaPricingActive()): Loado
 export const MISSION_FRAMING =
   'Frequency is a community collective. We exist to support and create community. A paid plan keeps the collective independent and funds the people and infrastructure behind it, so a Space is funding the work, not just renting software.'
 
-/** The member (personal) pricing note for the pricing page, from the settings code defaults. The member
- *  ladder is exactly two rungs (ADR-878): Member is free, and Crew is $9 a month or $90 a year. ONE clean
- *  price, no crossed-out anchor, and no third tier. The personal ladder lives on /upgrade; the commercial
- *  page notes it and links there. */
+/** The member (personal) pricing note every marketing and AIO surface interpolates. The member ladder is
+ *  exactly two rungs (ADR-878): Member is free, and Crew is one clean price, monthly or yearly. No
+ *  crossed-out anchor, no third tier. The personal ladder lives on /upgrade; the commercial page notes it
+ *  and links there.
+ *
+ *  BOTH figures are read, never typed (Phase 5, ADR-915): the monthly from the ONE member-price map
+ *  (feature-tiers), the yearly from the same two-months-free math the catalog itself uses. The yearly
+ *  used to be the literal "$90 a year" in this sentence. */
 export const CREW_NOTE = (() => {
-  // The personal-tier amount flows from the ONE placeholder price map (feature-tiers), so this note can
-  // never drift from the in-app ladder.
   const crew = formatLoadoutCents(PLACEHOLDER_MEMBER_PRICE_CENTS.crew)
+  const crewYear = formatLoadoutCents(yearlyFromMonthly(PLACEHOLDER_MEMBER_PRICE_CENTS.crew))
   return {
     name: 'Member pricing',
     foundingLabel: crew,
-    line: `Being a member is free, and stays free: joining, Circles, events, and the people. Crew is the personal tier at ${crew} a month or $90 a year: the Crew badge, the full rewards loop, and a way to back the community. Never a business tool. It lives on the personal upgrade page.`,
+    yearlyLabel: crewYear,
+    line: `Being a member is free, and stays free: joining, Circles, events, and the people. Crew is the personal tier at ${crew} a month or ${crewYear} a year: the Crew badge, the full rewards loop, and a way to back the community. Never a business tool. It lives on the personal upgrade page.`,
     href: '/upgrade',
   } as const
 })()
 
-/** The pricing-table summary an answer engine can lift: a short, plain ladder of the three commercial
- *  tiers plus the add-ons and the take-rates, built from the same catalog the page renders. PURE. The
- *  llms.txt route prints these lines so the ladder is citable. */
-export function pricingLadderSummary(): string[] {
-  const tiers = pricingTiers()
+/** The options every ANSWER-ENGINE surface (llms.txt, llms-full.txt) resolves its ladder from. All
+ *  optional: omitted, the summary reads the code defaults, which is what a pure/static caller wants.
+ *  A route that can reach the operator's config passes it, so an edit at /admin/pricing moves the
+ *  published corpus in the same revalidation as it moves /pricing. */
+export interface LadderSummaryInput {
+  values?: PricingDefaults
+  catalog?: Record<CatalogItemKey, ResolvedCatalogItem>
+  betaActive?: boolean
+}
+
+/** The pricing summary an answer engine can lift: the whole ladder, member rungs and Space rungs, plus
+ *  the add-ons and the per-rung take-rates. PURE.
+ *
+ *  DERIVED FROM THE GRID (Phase 5, ADR-915). Every line is built from lib/pricing/pricing-grid.ts
+ *  allOfferings, the same model /pricing renders, so the corpus an answer engine quotes is the page. It
+ *  used to be assembled from hand-typed take-rate strings, which is how /llms.txt spent a release
+ *  publishing a fee ladder the product had already retired. */
+export function pricingLadderSummary(input: LadderSummaryInput = {}): string[] {
+  const values = input.values ?? PRICING_DEFAULTS
+  const catalog = input.catalog ?? pricingCatalog()
+  const offerings = allOfferings({ values, catalog, betaActive: input.betaActive })
   const lines: string[] = [`- ${PLAN_STORY.spine}`]
-  for (const t of tiers) {
-    const headline = tierHeadline(t, 'month')
-    const anchor = tierListAnchor(t, 'month')
-    const price = anchor ? `${headline} (list ${anchor})` : headline
-    const soon = t.preview ? ' (coming soon)' : ''
-    lines.push(`- ${t.name}${soon}: ${price}. ${t.tagline} For ${t.forWho.toLowerCase()} Fee: ${t.takeRate}.`)
+  for (const o of offerings) {
+    const price = o.listAnchor ? `${o.monthly} (list ${o.listAnchor})` : o.monthly
+    const yearly = o.yearly ? ` or ${o.yearly}` : ''
+    lines.push(
+      `- ${offeringLadderLabel(o)}: ${price}${yearly}. ${o.tagline} ${o.forWho} Fee: ${o.takeRate}.`,
+    )
   }
   for (const a of PRICING_ADDONS) {
-    lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key)}, optional on any paid plan.`)
+    lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key, catalog)}, optional on any paid plan.`)
   }
   lines.push('- Operator seats: add-on seats for your team on any paid plan, owner-priced.')
-  // The member ladder, stated in full: Member is free and Crew is one plain price (ADR-878).
-  lines.push('- Member: free, forever. Joining, Circles, events, and the people.')
-  lines.push(`- Crew: ${CREW_NOTE.foundingLabel}/mo or $90/yr, the personal tier.`)
   return lines
 }

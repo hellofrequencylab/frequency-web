@@ -232,7 +232,9 @@ export function LoopSection({ config, prominent = false, echo = false }: { confi
 // ── Pricing (3-row beat; dollar amounts read from the catalog so they never drift) ────────────────
 
 function priceForRow(row: FunnelPriceRow): { price: string; anchor: string | null } {
-  if (row.kind === 'free') return { price: '$0', anchor: null }
+  // Free is a real price of zero, formatted by the same helper every other row uses, so the free row
+  // cannot be the one hardcoded dollar figure on the page.
+  if (row.kind === 'free') return { price: formatLoadoutCents(0), anchor: null }
   if (row.kind === 'resonance') {
     return { price: `+${formatLoadoutCents(catalogItem('addon_ai').month.foundingCents)}`, anchor: null }
   }
