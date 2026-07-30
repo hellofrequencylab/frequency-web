@@ -1090,9 +1090,13 @@ function Field({
   )
 }
 
-/** The take-rate editor. These five fields are the ones that ACTUALLY CHARGE: `take_rate.network_bps` per
- *  Space tier (what lib/billing/fees.ts spaceTakeRateCents applies) and `take_rate.member_bps` for an
- *  individual Crew seller (what memberTakeRateCents applies).
+/** The take-rate editor. These six fields are the ones that ACTUALLY CHARGE: `take_rate.network_bps` per
+ *  Space tier (what lib/billing/fees.ts spaceTakeRateCents applies) plus the two individual seller rungs,
+ *  `member_free_bps` and `member_bps`, which memberTakeRateCents picks between on the payee's real tier.
+ *
+ *  🔴 The FREE MEMBER field is the reference rate the whole ladder descends from (ADR-914) and the single
+ *  most-charged number in the product, since selling is free on every tier. It was absent from this
+ *  console until the rung came back; an operator could move every rate except the one most sales use.
  *
  *  It deliberately does NOT edit the legacy flat trio (free_bps / business_bps / nonprofit_bps). That was
  *  the bug this row shipped with: the console wrote those four fields, no charging path read them, and the
@@ -1104,6 +1108,7 @@ function Field({
 function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
   const pct = (bps: number) => String(bps / 100)
   const bps = (v: string) => Math.round((Number(v) || 0) * 100)
+  const [memberFree, setMemberFree] = useState(pct(rate.member_free_bps))
   const [crew, setCrew] = useState(pct(rate.member_bps))
   const [free, setFree] = useState(pct(rate.network_bps.free))
   const [business, setBusiness] = useState(pct(rate.network_bps.business))
@@ -1118,6 +1123,7 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
     setSaved(false)
     start(async () => {
       const res = await saveTakeRate({
+        member_free_bps: bps(memberFree),
         member_bps: bps(crew),
         network_bps: {
           free: bps(free),
@@ -1137,6 +1143,7 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-3">
+        <Field label="Free member %" value={memberFree} onChange={setMemberFree} />
         <Field label="Crew member %" value={crew} onChange={setCrew} />
         <Field label="Free Space %" value={free} onChange={setFree} />
         <Field label="Business %" value={business} onChange={setBusiness} />

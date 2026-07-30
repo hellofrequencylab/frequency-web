@@ -25,7 +25,8 @@ import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
 import { getConnectStatus, payoutsLive } from './connect'
-import { platformFeeCents, spaceTakeRateCents, memberTakeRateCents } from './fees'
+import { platformFeeCents, platformFeePct, spaceTakeRateCents, memberTakeRateCents } from './fees'
+import { networkTakeRateBpsForPlan, memberNetworkTakeRateBps } from './pricing-keys'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
 import { TICKETS_NOT_READY } from '@/lib/events/ticket-eligibility'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
@@ -319,16 +320,27 @@ export async function createTicketCheckout(opts: {
   // Hoisted above the classification because the RELATIONSHIP check needs it: "already your audience"
   // is asked of the selling SPACE (its followers, members, CRM) as well as the payee profile.
   const feeSpaceId = event.host_space_id ?? event.space_id
-  const { source } = await classifyOrderSource({
+  const { source, attributionRef } = await classifyOrderSource({
     buyerProfileId: opts.buyerProfileId,
     sellerProfileId: payeeProfileId,
     sellerSpaceId: feeSpaceId,
   })
   let fee: number
+  // THE RECEIPT (ADR-914). The rate actually applied, recorded rather than recomputed later.
+  // `platform_fee_cents / gross` cannot recover it: the fee FLOORS fractional cents, so a small ticket
+  // loses the rate to rounding, and an operator changing a rate at /admin/pricing would silently
+  // rewrite the history of every past sale if the rate were derived at read time. Captured at each
+  // branch beside the fee it belongs to, so the two can never disagree.
+  let rateBps: number
+  // `effectiveOrderSource` can collapse a network sale to self for a disconnected Space, so the source
+  // PERSISTED must be the effective one, not the classified one. Otherwise a receipt would read
+  // 'network' next to a 0% fee and look like a bug in exactly the audit this exists to satisfy.
+  let effectiveSource: typeof source = source
   if (feeSpaceId) {
     const root = await loadRootSpaceId()
     if (feeSpaceId === root) {
       fee = platformFeeCents(gross) // the platform's own event
+      rateBps = platformFeePct() * 100
     } else {
       const { data: sp } = await db()
         .from('spaces')
@@ -339,7 +351,9 @@ export async function createTicketCheckout(opts: {
       const plan = spRow?.plan ?? 'free'
       // A standalone (disconnected) Space has left the graph → no network-sourced revenue, source collapses
       // to self (ADR-811 §3), so it pays 0% even here (independent price is billed on the subscription).
-      fee = await spaceTakeRateCents(gross, plan, effectiveOrderSource(source, spRow?.network_connected)) // self → 0, network → tier bps
+      effectiveSource = effectiveOrderSource(source, spRow?.network_connected)
+      fee = await spaceTakeRateCents(gross, plan, effectiveSource) // self → 0, network → tier bps
+      rateBps = effectiveSource === 'self' ? 0 : networkTakeRateBpsForPlan(plan)
     }
   } else {
     // A PERSONAL event (no owning space): the host is an individual seller. 0% on their own sale, and
@@ -357,6 +371,7 @@ export async function createTicketCheckout(opts: {
       .maybeSingle()
     const payeeTier = (payeeProf as { membership_tier: string | null } | null)?.membership_tier ?? null
     fee = await memberTakeRateCents(gross, source, payeeTier)
+    rateBps = source === 'self' ? 0 : memberNetworkTakeRateBps(payeeTier)
   }
   const tierLabel = tier ? ` (${tier.name})` : ''
 
@@ -431,6 +446,41 @@ export async function createTicketCheckout(opts: {
         ? 'This ticket just sold out.'
         : 'Could not start checkout. Please try again.',
     }
+  }
+
+  // ── THE FEE RECEIPT (ADR-914, migration 20270202000000) ──────────────────────────────────
+  // Written as a PATCH on the row the RPC just inserted, keyed by the session id, rather than as
+  // three more arguments to `reserve_ticket_atomic`. That RPC holds a per-tier advisory lock while it
+  // re-checks committed capacity, and widening its signature to carry audit columns would put schema
+  // churn on the one path where a mistake oversells an event. The receipt is bookkeeping; the
+  // reservation is money. They do not belong in the same transaction.
+  //
+  // BEST-EFFORT BY CONSTRUCTION. The buyer already has a live Checkout session at this point, so a
+  // failure here must never surface as an error or expire the session: losing the explanation for a
+  // fee is bad, losing the sale to protect the explanation is worse. A miss leaves the columns NULL,
+  // which reads honestly as "no receipt recorded" rather than as a fabricated one.
+  //
+  // Untyped reach: the three columns are not in the generated types yet (repo convention, ADR-246).
+  try {
+    await (db() as unknown as {
+      from: (t: string) => {
+        update: (v: Record<string, unknown>) => {
+          eq: (c: string, v: string) => Promise<{ error: unknown }>
+        }
+      }
+    })
+      .from('event_tickets')
+      .update({
+        order_source: effectiveSource,
+        // Only meaningful alongside the source that produced it. A disconnected Space collapses
+        // 'network' to 'self', and carrying the network ref onto that row would claim Frequency
+        // sourced a sale it charged 0% for.
+        attribution_ref: effectiveSource === source ? attributionRef : null,
+        take_rate_bps: rateBps,
+      })
+      .eq('stripe_checkout_session_id', session.id)
+  } catch {
+    // swallowed on purpose — see above
   }
 
   if (!session.url) return { error: 'Could not start checkout.' }

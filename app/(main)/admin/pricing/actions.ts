@@ -170,9 +170,10 @@ export async function saveAddonEnabled(addon: string, enabled: boolean): Promise
  *  graph, so its network revenue is 0 by definition. */
 const NETWORK_TIER_KEYS = ['free', 'business', 'collective', 'nonprofit', 'independent'] as const
 
-/** Save the take-rate, in basis points (800 = 8%). Writes the fields that ACTUALLY CHARGE (ADR-913):
- *  `network_bps` (the per-Space-tier network-sourced vector `spaceTakeRateCents` reads) and `member_bps`
- *  (the individual Crew seller rung `memberTakeRateCents` reads). A sale to the seller's own audience is
+/** Save the take-rate, in basis points (800 = 8%). Writes the fields that ACTUALLY CHARGE (ADR-914):
+ *  `network_bps` (the per-Space-tier network-sourced vector `spaceTakeRateCents` reads) plus BOTH
+ *  individual seller rungs, `member_free_bps` (free Member) and `member_bps` (Crew), which
+ *  `memberTakeRateCents` picks between on the payee's real tier. A sale to the seller's own audience is
  *  0% by rule and is not a stored rate; tips carry no fee at all.
  *
  *  READ-MODIFY-WRITE, and that is load-bearing: `setPricingSetting` REPLACES the whole `take_rate` jsonb
@@ -181,6 +182,7 @@ const NETWORK_TIER_KEYS = ['free', 'business', 'collective', 'nonprofit', 'indep
  *  entirely and (b) meant an operator edited numbers that never reached a charge. Merging over the current
  *  values keeps the legacy flat trio and any tier this console does not render. */
 export async function saveTakeRate(rate: {
+  member_free_bps: number
   member_bps: number
   network_bps: Partial<PricingDefaults['take_rate']['network_bps']>
 }): Promise<ActionResult> {
@@ -195,6 +197,7 @@ export async function saveTakeRate(rate: {
     }
     const value: PricingDefaults['take_rate'] = {
       ...current,
+      member_free_bps: clamp(rate.member_free_bps),
       member_bps: clamp(rate.member_bps),
       network_bps: network,
     }
