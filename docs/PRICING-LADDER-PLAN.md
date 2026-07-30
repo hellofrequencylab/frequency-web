@@ -1,12 +1,14 @@
 # Pricing & Value Ladder — implementation plan
 
-> ## ⚠️ DOUBLY superseded. Read this first, then stop quoting numbers from this file.
+> ## ⚠️ TRIPLY superseded. Read this first, then stop quoting numbers from this file.
 >
-> The live ladder is the **Community Collective** one ([PRICING.md](PRICING.md), ADR-811 / ADR-875), and the
-> live money model is **ADR-913**: **tips carry no platform fee on any tier**, the **free tier does not
-> sell** (events + RSVPs only), and the take-rate applies to **network-sourced sales only** — **Crew 8% ·
-> Business and Collective 5% · Non Profit 0%**, with **0% whenever the buyer is already the seller's own
-> audience**. Every rate below, including the "flat 3% on every channel" line, is **history**.
+> **The live strategy is [VALUE-LADDER.md](VALUE-LADDER.md) (ADR-914).** Selling is free on every tier
+> and the RATE is the ladder: free Member **10%** · Crew **8%** · free Space **10%** · Business **5%** ·
+> Collective **3%** · Non Profit **0%**, and **0% whenever the buyer is already the seller's own
+> audience**. Tips carry no fee on any tier.
+>
+> ADR-913's rule that "the free tier does not sell" is **reversed** and must not be quoted from
+> anywhere. Every rate below, including the "flat 3% on every channel" line, is **history**.
 
 > ## ⚠️ Prior model: FLAT pricing (ADR-590). Also historical.
 >

@@ -1,36 +1,26 @@
 # Pricing & entitlements
 
-> ## ✅ CURRENT (money model): tips are FREE, the free tier does not sell, and the take-rate is only for introductions (ADR-913, 2026-07-30).
+> ## ✅ CURRENT (money model): selling is FREE on every tier; the RATE is the ladder (ADR-914, 2026-07-30).
 >
-> Owner-ruled, and it overrides every rate stated anywhere below this banner.
+> Owner-ruled. This overrides every rate and every seller rule stated anywhere below this banner.
+> **The full strategy, per-feature tier map, phased build and verification protocol live in
+> [VALUE-LADDER.md](VALUE-LADDER.md).** This file remains the MECHANICAL reference: the three-flag
+> model, the gate table, and the Stripe wiring.
 >
-> 1. **Tips carry NO platform fee. Zero, on every tier.** (Reverses ADR-812's "tips stay flat.") A tip is
->    a gift between two people; the platform is not in it.
-> 2. **The free Member tier does not sell.** It can create events and take **RSVPs**. It cannot sell
->    tickets and cannot take payments. Selling needs **Crew** (the paid personal tier) or a
->    **Business / Non Profit** Space.
-> 3. **The take-rate applies ONLY to network-sourced sales**, on two rungs plus the mission rate:
->
-> | Seller | Network-sourced | Own audience |
-> |---|---|---|
-> | Member (free) | cannot sell (RSVPs only) | cannot sell |
-> | **Crew** | **8%** | **0%** |
-> | **Business** (and Collective) | **5%** | **0%** |
-> | **Non Profit** | **0%** | **0%** |
-> | Independent | n/a (off the network) | 0% |
-> | **Tips, any tier** | **0%** | **0%** |
->
-> 4. **Always 0% when the buyer is already the seller's own audience**, and own-audience is a
->    **relationship, not a cookie**: the buyer follows the Space, is an active Space member, is in its
->    Space Contacts, is in the seller's own contact list, or has bought from them before. Any one of those
->    makes the order `self`. The framing, verbatim: **"Frequency charges once for the introduction. After
->    that they're your people, free."**
-> 5. **RETIRED rungs — never state them as current:** the `member_free` **10%** personal rung, the
->    **Free Space 10%** rung, and the **Collective 3%** rung. Collective sells on depth, not on a cheaper
->    fee; it pays the Business 5%.
->
-> Operator runbook: [PRICING-OPERATIONS.md](PRICING-OPERATIONS.md) §2 · member-facing:
-> `content/help/spaces/plans-and-pricing.md`.
+> 1. **A free Member can sell.** Tickets, donations, payouts, on day one, with no upgrade. The
+>    previous rule (ADR-913: "the free tier does not sell") is REVERSED. A free Member who hits a
+>    paywall does not upgrade, they send people to Venmo, and both the sale and the contact are lost
+>    permanently. **Never gate the transaction. Gate the repeat.**
+> 2. **The rate is the ladder**, on network-sourced sales only: free Member **10%** · Crew **8%** ·
+>    free Space **10%** · Business **5%** · Collective **3%** · Non Profit **0%** · Independent
+>    **0%** (off the network).
+> 3. **0% on your own audience, on every tier, forever.** A follow, an active membership, a CRM
+>    contact, a personal contact, or a prior settled purchase — any one proves the relationship
+>    (`lib/commerce/seller-audience.ts`). Frequency charges for the introduction, never the
+>    relationship.
+> 4. **Tips carry NO platform fee. Zero, on every tier.** Unchanged from ADR-913.
+> 5. **The three walls** are selling memberships (Business), campaigns and funnels (Business), and
+>    revenue splits (Collective). Everything else is a meter with a real free allowance.
 
 > ## ✅ Crew is PAY-WHAT-YOU-WANT and the Member/Crew line is "first one free" (ADR-908, 2026-07-29).
 >

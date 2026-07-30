@@ -1,9 +1,14 @@
 # The Value Ladder — strategy, tier map, and the phased build
 
 **Status:** 🔴 canonical as of 2026-07-30. This document SUPERSEDES the tier/rate strategy in
-`docs/PRICING-LADDER-PLAN.md` §1–§1b and the ladder copy in `docs/PRICING-OPTIONS-STRATEGY.md`.
-`docs/PRICING.md` remains the mechanical reference (three-flag model, gate table, Stripe wiring);
-where the two disagree on WHAT a tier includes or WHAT it costs, this document wins.
+`docs/PRICING-LADDER-PLAN.md` §1–§1b. `docs/PRICING.md` remains the mechanical reference (three-flag
+model, gate table, Stripe wiring); where the two disagree on WHAT a tier includes or WHAT it costs,
+this document wins.
+
+⚠️ It does **not** supersede `docs/PRICING-OPTIONS-STRATEGY.md`, which an earlier draft of this line
+wrongly claimed. That document is about what a *creator* charges *their own* customers (price modes,
+pay-what-you-want, sliding scale). This one is about what a creator pays *Frequency*. Two different
+pricing systems that share a vocabulary; conflating them is exactly the mistake to avoid.
 
 ---
 
@@ -363,12 +368,37 @@ passes on each.
 
 **Goal:** nobody's live product changes under them.
 
-1. Verified before any gate ships: 0 settled tickets all-time, 0 succeeded tips, 0 paid membership
-   tiers on free Spaces. Re-verify at ship time; the numbers move.
-2. Every new gate ships behind `featureGatesLive`, which is already false. Nothing bites until the
-   beta grace window closes.
-3. Any Space that has already used a now-gated feature gets an explicit grandfather entitlement row
-   rather than a silent break.
+#### Live verification, re-run 2026-07-30 against production
+
+| Check | Count | Verdict |
+|---|---|---|
+| Settled tickets, all time | 0 | ✅ no fee history to honour |
+| Succeeded tips | 0 | ✅ |
+| Membership tiers on free Spaces (any price) | 0 | ✅ the new `space_memberships` wall strands nobody |
+| Stripe accounts with onboarding complete | 0 | ✅ and 🔴 — see Phase 1 |
+| **Free Spaces over the new 200-contact cap** | **1**, holding **567 contacts** | 🔴 **a real grandfather case** |
+
+🔴 **The 567-contact Space is the one finding that changes the plan.** An earlier pass reported the
+grandfather surface as clean, and for four of the five checks it was. It was not clean here, and the
+gap is nearly 3× the cap. Had Phase 3b shipped a counted 200-contact limit without re-checking, that
+Space would have hit a wall 367 contacts *behind* where it already stands — the single worst thing
+this model can do to someone, since the whole promise is that your list is yours.
+
+**Therefore Phase 3b cannot ship a bare cap.** It must ship with a grandfather rule, and the rule
+should be the generous one: an existing Space is never blocked below its **current** count. A cap
+applies to growth from today, not retroactively to work already done. This is the same principle as
+"a meter never deletes what is already there", applied at the moment of enforcement rather than after.
+
+#### The rest
+
+1. Every new gate ships behind `featureGatesLive`, which is false. Nothing bites until the grace
+   window closes, which is why Phase 0 made that date visible and editable.
+2. Any Space already using a now-gated feature gets an explicit grandfather entitlement row rather
+   than a silent break.
+3. ⏳ The Phase 0 migrations are written but **not yet applied** — `beta_grace` is still absent and
+   all 11 gate override rows are still live in production. They apply on merge. Until then the fuse
+   described in Phase 0 is still lit.
+4. Re-run the table above immediately before enforcement goes live. It moved once already.
 
 ### Phase 9 — The verification protocol
 
