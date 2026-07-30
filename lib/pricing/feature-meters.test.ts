@@ -27,6 +27,10 @@ import {
 } from './feature-meters'
 import { tierRankOnAxis } from './feature-tiers'
 
+// Derived, never typed: the free CRM allowance moved 250 -> 200 (ADR-914) and three assertions here
+// hardcoded the old number. A test that restates a config value is a second source of truth for it.
+const FREE_CRM = PLACEHOLDER_METER_LIMITS.space_crm!.free!
+
 /** The tier-gated feature keys, derived from the code gate map: enabled AND ranked above the free floor
  *  on the gate's own axis. This is the set the metered model must ACCOUNT for (meter it, or mark it as
  *  consciously non-metered). */
@@ -212,7 +216,7 @@ describe('read helpers', () => {
   })
 
   it('allowanceAt returns the tier allowance, or null for unlimited / non-metered', () => {
-    expect(allowanceAt('space_crm', 'free')).toBe(250) // §2 free CRM allowance (ADR-552 Phase 3)
+    expect(allowanceAt('space_crm', 'free')).toBe(FREE_CRM) // the free CRM allowance (ADR-552 Phase 3)
     expect(allowanceAt('space_crm', 'business')).toBeNull() // unlimited
     expect(allowanceAt('space_crm', 'nonprofit')).toBeNull() // maps to business rung (unlimited)
     expect(allowanceAt('space_whitelabel', 'free')).toBeNull() // not metered
@@ -221,9 +225,13 @@ describe('read helpers', () => {
 
 describe('the gauge as upsell — nearAllowanceLimit + the one shared nudge line (ADR-837)', () => {
   it('trips at the threshold (80% of a finite allowance) and not below it', () => {
-    // Free CRM allowance is 250 → the nudge appears at 200 (0.8 exactly), not at 199.
-    expect(nearAllowanceLimit('space_crm', 'free', 199)).toBe(false)
-    expect(nearAllowanceLimit('space_crm', 'free', 200)).toBe(true)
+    // Derived from the allowance, not restated: the nudge appears at exactly 80% and never a unit below.
+    // This read "250 → the nudge at 200" until ADR-914 moved the allowance, at which point the numbers
+    // still passed while measuring the wrong ratio. A test that hardcodes a config value is a second
+    // source of truth for it.
+    const eighty = Math.ceil(FREE_CRM * 0.8)
+    expect(nearAllowanceLimit('space_crm', 'free', eighty - 1)).toBe(false)
+    expect(nearAllowanceLimit('space_crm', 'free', eighty)).toBe(true)
     expect(nearAllowanceLimit('space_crm', 'free', 10_000)).toBe(true)
   })
 
@@ -243,7 +251,7 @@ describe('the gauge as upsell — nearAllowanceLimit + the one shared nudge line
 
 describe('the enforcement seam — nothing charges / nothing hard-blocks while billing is off', () => {
   it('withinAllowance ALWAYS returns true while billing is off, even far over the allowance', () => {
-    // Free CRM allowance is 250 contacts (§2); 10x over it must still not be blocked while billing is off.
+    // Free CRM allowance is 200 contacts (ADR-914); 10x over it must still not be blocked while billing is off.
     expect(withinAllowance('space_crm', 'free', 1_000_000, { gatesLive: false })).toBe(true)
     // Every metered feature, at its free floor, wildly over allowance → still true (informational only).
     for (const key of FEATURE_METER_KEYS) {
@@ -258,8 +266,8 @@ describe('the enforcement seam — nothing charges / nothing hard-blocks while b
 
   it('with billing LIVE it enforces the seam (usage vs allowance) — the go-live behavior', () => {
     // At/under the free cap passes; over it fails; an unlimited tier always passes.
-    expect(withinAllowance('space_crm', 'free', 250, { gatesLive: true })).toBe(true)
-    expect(withinAllowance('space_crm', 'free', 251, { gatesLive: true })).toBe(false)
+    expect(withinAllowance('space_crm', 'free', FREE_CRM, { gatesLive: true })).toBe(true)
+    expect(withinAllowance('space_crm', 'free', FREE_CRM + 1, { gatesLive: true })).toBe(false)
     expect(withinAllowance('space_crm', 'business', Number.MAX_SAFE_INTEGER, { gatesLive: true })).toBe(true)
   })
 

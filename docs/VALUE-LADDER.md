@@ -262,20 +262,43 @@ can complete checkout, and the fee recorded is 10% of a network sale and 0 of an
 **Done when:** a table test asserts all five rungs × {own audience, network} = the ten expected
 outcomes, and the admin console round-trips a rate change without touching neighbours.
 
-### Phase 3 — Gates and meters reconciled
+### Phase 3 — Gates and meters reconciled ✅ shipped
 
 **Goal:** no feature is both gated and metered; every gate is enforced at a real call site.
 
-1. Add `space_memberships` (business) and `space_campaigns` (business). Lower
-   `space_membership_tickets` to business.
-2. Convert `space_crm` and `space_email` from gates to meters: 200 contacts, 300 sends on free.
-3. Delete every gate with **zero call sites**, or wire it. A decorative gate is a lie in a comment.
-4. `PLACEHOLDER_METER_LIMITS.space_crm`: 250 → 200.
-5. **Drift guard test:** every `FEATURE_GATES` key must have ≥1 enforcement call site OR be
-   explicitly listed as display-only, and no key may appear in both `FEATURE_GATES` and
-   `PLACEHOLDER_METER_LIMITS`.
+| # | Item | Status |
+|---|---|---|
+| 1 | `space_memberships` (business) + `space_campaigns` (business), both wired at a **write** chokepoint | ✅ |
+| 2 | `space_membership_tickets` lowered collective → business | ✅ |
+| 3 | `PLACEHOLDER_METER_LIMITS.space_crm` 250 → 200, and every restatement of it derived rather than typed | ✅ |
+| 4 | `space_memberships` meter deleted (it collided with its own new gate) | ✅ |
+| 5 | **Drift guard**, `lib/pricing/gate-meter-drift.test.ts` | ✅ |
+| 6 | Convert `space_crm` / `space_email` from gates to meters | ⏳ **Phase 3b** |
+| 7 | Delete or wire the remaining decorative gates | ⏳ **Phase 3b** |
 
-**Done when:** `pnpm test` includes a gate/meter contradiction check that fails on a new collision.
+**Why 6 and 7 did not ship with the rest.** Deleting the `space_crm` gate before contacts are
+actually counted would replace an *enforced* limit with an *unenforced* one, and hand free Spaces
+unlimited CRM. That is strictly worse than the contradiction it fixes. `withinAllowance()` — the
+declared meter-enforcement seam — has **zero call sites in the entire repo**, and contacts are
+written from more than twenty seams, so building the counting seam is its own piece of work.
+
+**The drift guard is the deliverable that makes the rest safe.** It fails CI on any *new* gate/meter
+collision and any *new* gate with no call site, while carrying the 9 existing collisions and 11
+existing decorative gates as named exceptions with a reason each. Both lists are **ratchets**: a test
+asserts that every exempted key is still genuinely in violation, so a fixed entry must be deleted and
+a stale exemption cannot shelter the next one.
+
+### Phase 3b — Make the meters real
+
+**Goal:** a published allowance is a number the product actually enforces.
+
+1. Build the counted write seam for `contacts`, then wire `withinAllowance('space_crm', ...)` to it
+   and delete the `space_crm` gate.
+2. Enforce `space_email` monthly sends. ⚠️ The only live cap today is a flat **500/day on every
+   plan** — about 15,000/mo, or **50× the published free allowance of 300**.
+3. Collapse the duplicate ladders onto the meters they shadow: `PLAN_CODE_CAPS` (which still carries
+   retired `starter`/`pro` labels), `BASE_SEAT_ALLOWANCE`, `vera_free_daily_cap`.
+4. Delete or wire the remaining decorative gates, shrinking the guard's exception lists to empty.
 
 ### Phase 4 — Upsell tooltips everywhere a meter exists
 

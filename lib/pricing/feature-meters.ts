@@ -74,7 +74,7 @@ export type MeterPeriod = 'month' | 'day' | null
  *  `withinAllowance` never hard-blocks (ADR-782 beta-soft). The real limits are the owner's go-live call.
  *
  *  Sources per row (mirrored, not invented, wherever the codebase already carries a number):
- *   - space_crm 250 free            — docs/BUSINESS-MODEL-PLAN §2 (also the console freeNote).
+ *   - space_crm 200 free            — docs/VALUE-LADDER.md §3 (lowered from 250 by ADR-914).
  *   - space_email 300/mo free       — §2; Business 5,000 and Collective 25,000 are the §2 "5k → 25k
  *                                     steps". Separately, lib/spaces/email.ts DAILY_SEND_CAP = 500/day is
  *                                     a LIVE per-day throttle on every plan (deliverability, not pricing).
@@ -96,12 +96,11 @@ export type MeterPeriod = 'month' | 'day' | null
  *                                     Crew 25 is a placeholder "higher cap" (was unlimited pre-838).
  *   - journey_enrollees 10 free     — mirrors space_journey's free 10 on the personal axis (ADR-838). */
 export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>> = {
-  space_crm: { free: 250, business: null, collective: null },
+  space_crm: { free: 200, business: null, collective: null },
   space_email: { free: 300, business: 5_000, collective: 25_000 },
   space_bookings: { free: 15, business: null },
   space_journey: { free: 10, business: null },
   space_journey_publish: { free: 1, business: null },
-  space_memberships: { free: 10, business: null },
   space_tickets: { free: 50, business: null },
   space_qr: { free: 3, business: 500, collective: null },
   space_automation: { free: 0, collective: 1_000 },
@@ -165,7 +164,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Contacts',
     unit: 'contacts',
     period: null,
-    // Free: 250 contacts (activation → scale lever, §2). Business and Collective: unlimited.
+    // Free: 200 contacts (ADR-914, docs/VALUE-LADDER.md §3). Business and Collective: unlimited.
     allowances: PLACEHOLDER_METER_LIMITS.space_crm!,
   },
   space_email: {
@@ -205,15 +204,6 @@ const RAW_METERS: Record<string, RawMeter> = {
     // Free: 1 published Journey (the LIVE free-space cap, owner decision 2026-07-18). Business:
     // unlimited (mirrors the live paid behavior). resolveJourneyAccess reads this row (ADR-838).
     allowances: PLACEHOLDER_METER_LIMITS.space_journey_publish!,
-  },
-  space_memberships: {
-    axis: 'plan',
-    title: 'Memberships',
-    dimension: 'Active memberships',
-    unit: 'members',
-    period: null,
-    // Free: 10 active members, one tier (scale lever, §2). Business: unlimited, multi-tier.
-    allowances: PLACEHOLDER_METER_LIMITS.space_memberships!,
   },
   space_tickets: {
     axis: 'plan',
@@ -413,6 +403,19 @@ export const NON_METERED_FEATURES: Record<string, string> = {
   // Restricting a ticket tier to the space's own members (ADR-823) is an on/off gate on the tier
   // editor, not a quantity — ticket volume is already the space's own sales, never charged per use.
   space_membership_tickets: 'On/off capability (members-only ticket tiers), no natural quantity to meter.',
+  // 🔴 SELLING MEMBERSHIPS IS A WALL, NOT A DIAL (ADR-914). It carried a `free: 10 active members`
+  // allowance until now, which was the wrong shape twice over. First, it made the key BOTH gated and
+  // metered, and those two answers disagree the moment the gates go live. Second, and worse, a cap on
+  // active members means telling a Space that its eleventh supporter cannot join — punishing the
+  // customer for succeeding at the one thing we asked them to do. The wall is at the START (may you
+  // sell a recurring promise at all), never in the middle of a growing member list, and above the wall
+  // there is no ceiling: the take rate already scales with volume, so capping members would charge
+  // twice for the same success.
+  space_memberships: 'On/off capability (sell recurring memberships). Deliberately UNMETERED above the wall: capping active members would punish a Space for growing, and the take rate already scales with volume.',
+  // Campaigns are the same shape. "One free campaign" is not enough to learn anything from, so it
+  // converts badly and teaches nothing; the honest line is between messaging your own people (metered
+  // by space_email sends, available free) and running an acquisition machine (paid).
+  space_campaigns: 'On/off capability (campaigns and funnels); the SEND volume that pairs with it is metered on space_email.',
   // Splitting revenue with collaborators is an on/off capability of the collaboration engine: you can
   // share money automatically or you cannot. The NUMBER of collaborators is metered separately on
   // space_collaborators, so this carries no second quantity.

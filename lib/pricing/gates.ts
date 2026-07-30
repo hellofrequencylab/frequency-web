@@ -113,12 +113,27 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   space_revenue_splits: { axis: 'plan', minEntitlement: 'collective', enabled: true },
   // Group SMS to your own members (rides the A2P 10DLC registration, docs/A2P-REGISTRATION.md).
   space_sms: { axis: 'plan', minEntitlement: 'collective', enabled: true },
-  // Membership-linked ticket access (ADR-823): restricting an event ticket tier to the hosting
-  // Space's own members (space_members_only / space_tier_id on event_ticket_types) is Collective
-  // depth — it sells the Space's membership program, which is the Collective offer. Enforced where
-  // the gate is WRITTEN (lib/events/ticket-tiers validateSpaceAccess); the checkout enforces the
-  // stored gate unconditionally.
-  space_membership_tickets: { axis: 'plan', minEntitlement: 'collective', enabled: true },
+  // ── THE THREE WALLS (ADR-914, docs/VALUE-LADDER.md §3) ──────────────────────────────────────
+  // Everything else on this ladder is a METER with a real free allowance, because a used feature with
+  // a ceiling converts and a locked preview does not. These are walls because a quantity cannot
+  // express the difference.
+  //
+  // SELLING A MEMBERSHIP is the most defensible wall in the product. A membership is a recurring
+  // promise to another person: they pay you every month expecting the thing to still be there. Helping
+  // someone make that promise from an account they might abandon next month is not a feature, and "one
+  // free membership" teaches nothing while creating exactly one stranded subscriber. Business floor.
+  space_memberships: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  // CAMPAIGNS AND FUNNELS. The line is between MESSAGING YOUR PEOPLE, which every Space can do inside
+  // its send allowance, and RUNNING AN ACQUISITION MACHINE, which is what someone is paying for. A
+  // metered "one free campaign" converts badly for the same reason a locked preview does: it is not
+  // enough to learn anything from. Business floor.
+  space_campaigns: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  // Membership-linked ticket access (ADR-823): restricting an event ticket tier to the hosting Space's
+  // own members. LOWERED from collective to business (ADR-914) so it sits with the membership program
+  // it sells — gating the membership at Business and then its own tickets a tier higher sold half a
+  // feature. Enforced where the gate is WRITTEN (lib/events/ticket-tiers validateSpaceAccess); the
+  // checkout enforces the stored gate unconditionally.
+  space_membership_tickets: { axis: 'plan', minEntitlement: 'business', enabled: true },
   // Storefront (ADR-39X/Z) — available from the FREE plan (a free Space can sell; the plan
   // only buys the rake down + features). A per-Space toggle decides ON/OFF.
   space_storefront: { axis: 'plan', minEntitlement: 'free', enabled: true },

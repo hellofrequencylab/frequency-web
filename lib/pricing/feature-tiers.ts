@@ -149,9 +149,9 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     axis: 'plan',
     minTier: 'business',
     title: 'CRM',
-    // @placeholder 250 mirrors PLACEHOLDER_METER_LIMITS.space_crm (ADR-837).
+    // @placeholder 200 mirrors PLACEHOLDER_METER_LIMITS.space_crm (ADR-837, lowered by ADR-914).
     rungs: spaceRungs(
-      'The pipeline with your first 250 contacts free.',
+      'The pipeline with your first 200 contacts free.',
       'The full CRM with unlimited contacts: pipeline, private notes, and governed playbooks. Multiple pipelines and team roles come with Collective.',
     ),
   },
@@ -220,14 +220,31 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
       'collective',
     ),
   },
+  space_memberships: {
+    axis: 'plan',
+    minTier: 'business',
+    title: 'Sell memberships',
+    rungs: spaceRungs(
+      'Sell tickets, take donations, and run your shop. Free members and followers, no limit.',
+      'Sell recurring memberships with their own tiers, benefits, and member-only spaces.',
+    ),
+  },
+  space_campaigns: {
+    axis: 'plan',
+    minTier: 'business',
+    title: 'Campaigns and funnels',
+    rungs: spaceRungs(
+      'Email your people directly, inside your send allowance.',
+      'Campaigns, funnels, and saved sequences that bring new people in and follow up for you.',
+    ),
+  },
   space_membership_tickets: {
     axis: 'plan',
-    minTier: 'collective',
+    minTier: 'business',
     title: 'Membership-included event tickets',
     rungs: spaceRungs(
       'Sell tickets to everyone.',
       'Reserve event tickets for your own members, or for one membership tier, so your membership includes your events.',
-      'collective',
     ),
   },
   space_multi_pipeline: {

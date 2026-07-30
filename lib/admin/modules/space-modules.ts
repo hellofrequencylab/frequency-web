@@ -112,7 +112,7 @@ export interface SpaceModule {
    *  them (ADR-846). Nesting is ONE level deep: a parent may never itself carry a `parent`. */
   parent?: string
   /** The free-tier LEVER shown as a sublabel on the console card (ADR-784): the cap a free Space hits or
-   *  the take-rate story, e.g. "250 contacts free" / "0% on your own people, always".
+   *  the take-rate story, e.g. "200 contacts free" / "0% on your own people, always".
    *  This makes the upgrade motivation legible instead of a bare Freemium/Premium badge. The numbers mirror
    *  lib/pricing/feature-meters.ts (RAW_METERS) + lib/pricing/settings.ts (take_rate); it is presentation
    *  only and never gates. Omit for a plain Included shell with no cap. */
@@ -159,7 +159,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Automation, Lead capture, Capture links, and Shared with team are TOOLS inside it (each
   // `parent: 'space.crm'`), so Audience reads as one CRM box with its workspaces nested instead of six
   // sibling rows. Each stays a first-class module (own gate + deepLink + reachable route).
-  { id: 'space.crm', label: 'CRM', desc: 'Your pipeline, contacts, private notes, and Vera autonomy.', Icon: Briefcase, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'panel', deepLink: (s) => `${base(s)}/crm`, order: 35, tier: 'primary', priority: 15, access: 'freemium', freeNote: '250 contacts free, then unlimited' },
+  { id: 'space.crm', label: 'CRM', desc: 'Your pipeline, contacts, private notes, and Vera autonomy.', Icon: Briefcase, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'panel', deepLink: (s) => `${base(s)}/crm`, order: 35, tier: 'primary', priority: 15, access: 'freemium', freeNote: '200 contacts free, then unlimited' },
   // The flat Inbox (ADR-786) is RETIRED (ADR-820): folded into Conversations; /crm/inbox redirects.
   // Conversations (ADR-812): the ticketed workspace over the comms_* spine, scoped to THIS space. Support,
   // outreach, and replies as one assignable, status-tracked thread with a per-thread reply address, so a

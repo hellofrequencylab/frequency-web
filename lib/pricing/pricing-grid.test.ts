@@ -269,7 +269,7 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
 
   it('a meter row reads the tier rung on the usage ladder, not a typed number', () => {
     const contacts = cellsByColumn(grid, 'space_crm')
-    expect(contacts.free).toBe('Up to 250 contacts')
+    expect(contacts.free).toBe('Up to 200 contacts')
     expect(contacts.business).toBe('Unlimited contacts')
     // A tier above the top rung reads the top rung, exactly as the enforcement seam resolves it.
     expect(contacts.independent).toBe('Unlimited contacts')

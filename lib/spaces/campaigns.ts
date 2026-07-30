@@ -177,9 +177,22 @@ async function readCampaign(id: string, spaceId: string): Promise<CampaignRow | 
 
 // ── Shared authz: resolve the Space + the editor gate in one place ──────────────────────────────
 
-/** Resolve a Space and check the caller may EDIT it (owner / admin / editor). Returns the spaceId on
- *  success or an ActionResult error to return. Centralizes the write gate so every mutation fails
- *  closed identically. */
+/** Resolve a Space and check the caller may EDIT it (owner / admin / editor) AND that the Space's plan
+ *  includes campaigns. Returns ok, or an ActionResult error to return. Centralizes both write gates so
+ *  every mutation fails closed identically.
+ *
+ *  🔴 THE PLAN CHECK LIVES HERE, not on the surface (ADR-914). Campaigns are one of the three walls in
+ *  the value ladder, and a wall enforced only where it renders is not a wall — every one of these
+ *  actions is directly callable. Putting it at the single chokepoint every mutation already passes
+ *  through means a new campaign action cannot forget it.
+ *
+ *  The line the wall encodes: MESSAGING YOUR OWN PEOPLE is free, metered by the `space_email` send
+ *  allowance. RUNNING AN ACQUISITION MACHINE is what a Business plan buys. Reading it is deliberately
+ *  NOT gated (listSpaceCampaigns is untouched), so a free Space sees the surface and what it does
+ *  rather than a locked door: a used feature with a ceiling converts, a locked preview does not.
+ *
+ *  Inert until the grace window closes — `featureAllowed` short-circuits to granted while
+ *  featureGatesLive() is false, and that resolver is fail-safe to false on any error. */
 async function requireSpaceEditor(spaceId: string): Promise<{ ok: true } | ActionResult<never>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to manage your campaigns.')
@@ -187,6 +200,19 @@ async function requireSpaceEditor(spaceId: string): Promise<{ ok: true } | Actio
   if (!space) return fail('Space not found.')
   const caps = await getSpaceCapabilities(space, profileId)
   if (!caps.canEditProfile) return fail('You do not have permission to manage campaigns for this space.')
+  const [{ featureAllowed }, { featureGatesLive }, { asSpacePlan }] = await Promise.all([
+    import('@/lib/pricing/gates'),
+    import('@/lib/pricing/settings'),
+    import('@/lib/pricing/plans'),
+  ])
+  const allowed = await featureAllowed(
+    'space_campaigns',
+    { plan: asSpacePlan(space.plan) },
+    { gatesLive: await featureGatesLive() },
+  )
+  if (!allowed) {
+    return fail('Campaigns come with Business. You can still email your people directly from this Space.')
+  }
   return { ok: true }
 }
 
