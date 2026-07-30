@@ -21,6 +21,9 @@ import { hostPayoutsEnabledFlag } from '@/lib/platform-flags'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 import { getPersonaStates } from '@/lib/personas'
+import { memberCanLead } from '@/lib/pricing/member-leadership'
+import { asSpacePlan } from '@/lib/pricing/plans'
+import type { EntitlementTier } from '@/lib/core/entitlement'
 
 /** The single live-gate for every Connect payout channel: a configured Stripe key
  *  AND the operator-controlled `host_payouts_enabled` flag (default OFF). Tips,
@@ -113,9 +116,46 @@ export async function getOrCreateConnectedAccount(profileId: string): Promise<st
   return account.id
 }
 
+/**
+ * May this profile connect a payout account at all (ADR-908, `personal_payouts`)?
+ *
+ * Taking money for what you personally run is a Crew capability. But `profiles.stripe_account_id` is
+ * ALSO the destination for a Space's sales, so gating on Crew alone would lock a free-tier member out
+ * of onboarding for a Business Space they own. Hence two ways through:
+ *   1. the Crew tier (the personal capability), or
+ *   2. owning any Space on a paid plan (the Space already bought selling).
+ *
+ * 🔴 Inert until the gates go live, and FAIL-SAFE to allowed: a read we cannot complete must never
+ * strand someone mid-onboarding with money already owed to them.
+ */
+async function payoutsAllowedFor(profileId: string): Promise<boolean> {
+  try {
+    const { data: p } = await db()
+      .from('profiles')
+      .select('membership_tier')
+      .eq('id', profileId)
+      .maybeSingle()
+    const tier = ((p as { membership_tier: string | null } | null)?.membership_tier ??
+      'free') as EntitlementTier
+    if (await memberCanLead('personal_payouts', tier)) return true
+
+    // The Space escape hatch: a paid Space they own needs this same connected account.
+    const { data: spaces } = await db()
+      .from('spaces')
+      .select('plan')
+      .eq('owner_profile_id', profileId)
+      .limit(50)
+    const rows = (spaces ?? []) as { plan: string | null }[]
+    return rows.some((s) => asSpacePlan(s.plan) !== 'free')
+  } catch {
+    return true
+  }
+}
+
 /** A fresh Stripe-hosted onboarding link for the profile's account (links expire). */
 export async function createOnboardingLink(profileId: string): Promise<string | null> {
   if (!stripe || !(await payoutsLive())) return null
+  if (!(await payoutsAllowedFor(profileId))) return null
   const accountId = await getOrCreateConnectedAccount(profileId)
   if (!accountId) return null
   const link = await stripe.accountLinks.create({

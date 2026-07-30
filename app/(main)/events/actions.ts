@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getEventCapabilities, getCircleCapabilities } from '@/lib/core/load-capabilities'
+import { memberWithinLeadershipAllowance, EVENT_CREATE_CAP_MESSAGE } from '@/lib/pricing/member-leadership'
+import type { EntitlementTier } from '@/lib/core/entitlement'
 import { slugify } from '@/lib/utils'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
@@ -158,6 +160,38 @@ async function geocodeEventOnCreate(eventId: string, fd: FormData): Promise<void
 // guard used to be a silent `return`, which left the editor open with no message
 // and nothing saved — indistinguishable from success. Navigation moved client-side
 // (the form redirects to the returned slug on ok).
+/**
+ * The personal `event_create` allowance check (ADR-908). Counts the member's UPCOMING personal
+ * events (host_id = them, no Space placement) against their tier's allowance.
+ *
+ * FAIL-SAFE to allowed in every failure path: a count we cannot complete, or a profile we cannot
+ * read, must never stop someone putting a gathering on the calendar.
+ */
+async function memberEventAllowanceOk(
+  profileId: string,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    const admin = createAdminClient()
+    const { data: p } = await admin
+      .from('profiles')
+      .select('membership_tier')
+      .eq('id', profileId)
+      .maybeSingle()
+    const tier = ((p as { membership_tier: string | null } | null)?.membership_tier ??
+      'free') as EntitlementTier
+    const { count } = await admin
+      .from('events')
+      .select('id', { count: 'exact', head: true })
+      .eq('host_id', profileId)
+      .is('space_id', null)
+      .gte('starts_at', new Date().toISOString())
+    if (await memberWithinLeadershipAllowance('event_create', tier, count ?? 0)) return { ok: true }
+    return { ok: false, message: EVENT_CREATE_CAP_MESSAGE }
+  } catch {
+    return { ok: true }
+  }
+}
+
 export async function createEvent(formData: FormData): Promise<ActionResult<{ slug: string }>> {
   const title = (formData.get('title') as string | null)?.trim()
   const description = (formData.get('description') as string | null)?.trim() || null
@@ -251,6 +285,16 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
 
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return fail('Sign in to create an event.')
+
+  // FIRST ONE FREE (ADR-908): a free Member runs the couple of events their membership includes;
+  // Crew runs unlimited. Scoped to PERSONAL events (not a 'space' placement) because an event under
+  // a Space is the Space plan's business, not the personal ladder. Counts only UPCOMING events, so
+  // the allowance is about what you are actually running, and past events never accumulate into a
+  // wall. 🔴 Inert until the gates go live, and fail-safe to allowed.
+  if (scopeChoice !== 'space') {
+    const capacityCheck = await memberEventAllowanceOk(myProfileId)
+    if (!capacityCheck.ok) return fail(capacityCheck.message)
+  }
 
   // AUTHZ RE-VALIDATION — the single most important guard here. The form only OFFERS circles the
   // caller hosts and spaces they run, but an attacker can POST any id. Because an owned target

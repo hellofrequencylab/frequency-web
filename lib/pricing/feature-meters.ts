@@ -124,7 +124,10 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   journey_publish: { free: 1, crew: null },
   journey_enrollees: { free: 10, crew: null },
   circle_host: { free: 1, crew: null },
-  practice_publish: { free: 3, crew: null },
+  // MIRRORS the LIVE gate: `practice.create` requires a paid tier or a crew+ steward
+  // (lib/core/capabilities.ts), so a free Member publishes none. The earlier free-3 in ADR-908
+  // invented a conflict with behavior that already ships; the map must never do that.
+  practice_publish: { free: 0, crew: null },
   event_create: { free: 2, crew: null },
 }
 
@@ -373,8 +376,10 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Published Practices',
     unit: 'practices',
     period: null,
-    // Free: publish 3 Practices others can adopt. Crew: unlimited.
+    // Free: none (authoring reusable library content is the Crew job, and `practice.create`
+    // already enforces it live). Crew: unlimited.
     allowances: PLACEHOLDER_METER_LIMITS.practice_publish!,
+    allowanceTextByTier: { free: 'Adopt any Practice in the library' },
   },
   event_create: {
     axis: 'tier',

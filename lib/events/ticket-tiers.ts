@@ -2,6 +2,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { featureAllowed } from '@/lib/pricing/gates'
 import { featureGatesLive } from '@/lib/pricing/settings'
 import { asSpacePlan } from '@/lib/pricing/plans'
+import { memberCanLead, EVENT_PAID_TICKETS_MESSAGE } from '@/lib/pricing/member-leadership'
+import type { EntitlementTier } from '@/lib/core/entitlement'
 
 // Shared ticket-tier logic (EVENTS-SYSTEM §2.2). Named tiers with richer pricing
 // modes + inventory, written ONLY through the service role (admin client). The
@@ -126,6 +128,62 @@ export function parseTicketTierInput(fd: FormData): TicketTierCatalogFields {
  *   3. a named space_tier_id to be a real membership tier OF that Space (no cross-space gates).
  * Throws a member-readable Error on any miss, exactly like parseTicketTierInput.
  */
+/**
+ * Validate that this event may carry a PAID ticket tier at all (ADR-908, `event_paid_tickets`).
+ *
+ * The rule: running free and RSVP events is the free Member's, charging for one is Crew's. A tier
+ * that takes money (any mode but `free`) therefore needs one of two things behind it:
+ *   1. a hosting SPACE on a paid plan — the Space's own plan already buys selling, so a Business or
+ *      Collective event is unaffected no matter who the organizer is; or
+ *   2. the event HOST on the Crew tier.
+ *
+ * Resolved here rather than passed in, so both writers (host Manage and the admin console) get the
+ * same answer without either having to remember to thread a tier. Reads the host's REAL tier
+ * (ADR-414) so a beta display override cannot lift a creation gate.
+ *
+ * 🔴 Inert until the gates go live: `memberCanLead` grants for everyone while `featureGatesLive()`
+ * is false, so this is a no-op today. An unresolvable host also grants (fail-safe): we never block a
+ * ticket sale on a read we could not complete.
+ */
+async function validatePaidTicketAccess(
+  eventId: string,
+  fields: Pick<TicketTierCatalogFields, 'pricing_mode'>,
+): Promise<void> {
+  if (fields.pricing_mode === 'free') return
+
+  const admin = createAdminClient()
+  const { data: ev } = await admin
+    .from('events')
+    .select('space_id, host_space_id, host_id')
+    .eq('id', eventId)
+    .maybeSingle()
+  const evRow = ev as
+    | { space_id: string | null; host_space_id: string | null; host_id: string | null }
+    | null
+
+  // A paid Space behind the event settles it: the Space plan already buys selling.
+  const spaceId = evRow?.host_space_id ?? evRow?.space_id ?? null
+  if (spaceId) {
+    const { data: sp } = await admin.from('spaces').select('plan').eq('id', spaceId).maybeSingle()
+    if (asSpacePlan((sp as { plan: string | null } | null)?.plan) !== 'free') return
+  }
+
+  const hostId = evRow?.host_id ?? null
+  if (!hostId) return // no resolvable organizer: fail-safe to allowed, never block on a missing read
+
+  const { data: host } = await admin
+    .from('profiles')
+    .select('membership_tier')
+    .eq('id', hostId)
+    .maybeSingle()
+  const tier = ((host as { membership_tier: string | null } | null)?.membership_tier ??
+    'free') as EntitlementTier
+
+  if (!(await memberCanLead('event_paid_tickets', tier))) {
+    throw new Error(EVENT_PAID_TICKETS_MESSAGE)
+  }
+}
+
 async function validateSpaceAccess(
   eventId: string,
   fields: Pick<TicketTierCatalogFields, 'space_members_only' | 'space_tier_id'>,
@@ -186,6 +244,7 @@ async function validateSpaceAccess(
 /** Create a ticket tier on an event. Authorization must already be checked. */
 export async function createEventTicketTier(eventId: string, fd: FormData): Promise<void> {
   const fields = parseTicketTierInput(fd)
+  await validatePaidTicketAccess(eventId, fields)
   await validateSpaceAccess(eventId, fields)
   const admin = createAdminClient()
   const { error } = await admin.from('event_ticket_types').insert({
@@ -204,6 +263,8 @@ export async function updateEventTicketTier(
   fd: FormData,
 ): Promise<void> {
   const fields = parseTicketTierInput(fd)
+  // Also on UPDATE: flipping a free tier to a paid mode is the same act as creating a paid one.
+  await validatePaidTicketAccess(eventId, fields)
   await validateSpaceAccess(eventId, fields)
   const admin = createAdminClient()
   const { error } = await admin
