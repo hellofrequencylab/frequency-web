@@ -25,8 +25,9 @@
 //     has. A full meter stops the next write and nothing else: it never hides, deletes, or blocks
 //     read/export of what is already there.
 //
-// Copy follows docs/CONTENT-VOICE.md: plain, no em dashes, names what you HAVE rather than what you
-// lack, and never invents urgency.
+// COST: the go-live SWITCH is resolved before the Space read, so through the whole beta grace window a
+// metered write costs one cached flag lookup and nothing else. Callers that must COUNT (contacts, the
+// month's sends) check the same switch before counting, for the same reason.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { featureGatesLive } from '@/lib/pricing/settings'
@@ -109,6 +110,20 @@ export async function spaceAllowanceVerdict(
   // A key with no meter row has no quantity to enforce. Answer before touching the database.
   if (!featureMeter(featureKey)) return granted(featureKey, 'free', used, true)
 
+  // Resolve the SWITCH before the Space read, so a meter that cannot bite costs nothing. Through the
+  // whole beta grace window this is the only line that runs for contacts and sends.
+  let gatesLive = false
+  if (opts.alwaysOn) {
+    gatesLive = true
+  } else {
+    try {
+      gatesLive = await featureGatesLive()
+    } catch {
+      gatesLive = false // RULE 1: a flag read that fails never turns a cap ON.
+    }
+  }
+  if (!gatesLive) return granted(featureKey, 'free', used, false)
+
   let row: SpacePlanRow | null = null
   try {
     row = await readSpacePlanRow(id)
@@ -120,17 +135,6 @@ export async function spaceAllowanceVerdict(
   const plan = asSpacePlan(row.plan ?? null)
   // RULE 2: the platform root hub is never a metered tenant.
   if ((row.type ?? '') === 'root') return granted(featureKey, plan, used, true)
-
-  let gatesLive = false
-  if (opts.alwaysOn) {
-    gatesLive = true
-  } else {
-    try {
-      gatesLive = await featureGatesLive()
-    } catch {
-      gatesLive = false // RULE 1: a flag read that fails never turns a cap ON.
-    }
-  }
 
   // RULE 3: pass the live count as the grandfather floor, so the cap governs growth from today only.
   const verdict = allowanceVerdict(featureKey, plan, used, { gatesLive, floor: used })
