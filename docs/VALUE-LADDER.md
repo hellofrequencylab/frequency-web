@@ -523,6 +523,9 @@ not proven" is an acceptable outcome. A confident claim about something unmeasur
 | 2 | Grandfather entitlement rows | ⏳ Phase 8. No affected rows exist today; re-verify at ship |
 | 3 | 31 disclosed claim tokens | ⏳ Owner ruling: leave as is, close out later (`docs/BACKLOG.md` §A) |
 | 4 | Annual billing discount | ⏳ Not in this pass |
+| 5 | `app/(marketing)/layout.tsx` awaits three `getMenu` reads before returning JSX | ⏳ Harmless on the 37 static marketing pages, which prerender. On the three genuinely dynamic routes (`/rsvp/[token]`, `/beta/confirm`, `/subscribe/confirm`) it runs per request and blocks the shell **ahead of** the Suspense boundaries added around their own data. Fixing it means pushing the menu promise into `MarketingHeader` behind its own boundary, which is a header refactor rather than a cheap change |
+| 6 | Value-comparison mobile parity | ✅ closed as a side effect of unifying the two grid renderers. The desktop table showed "what you get on Frequency" and the **mobile stack never rendered it at all**, so phone visitors saw a feature name, a competitor and a price, with our side of the comparison missing entirely |
+| 7 | Six Puck-backed pages carry two renderings each | ⏳ Owner call. Now less urgent: Appendix C settles which default wins on each route, so the second rendering is a documented fallback rather than an ambiguity |
 
 ---
 
