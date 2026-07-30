@@ -31,8 +31,16 @@ import { featureAllowed } from './gates'
 import { allowanceAt, withinAllowance } from './feature-meters'
 import { featureGatesLive } from './settings'
 
-/** The ON/OFF leadership unlocks (FEATURE_GATES, tier axis). A quantity cannot express these. */
-export type MemberLeadershipGate = 'event_paid_tickets' | 'personal_payouts' | 'entry_points'
+/** The ON/OFF leadership unlocks (FEATURE_GATES, tier axis). A quantity cannot express these.
+ *
+ *  🔴 `event_paid_tickets` and `personal_payouts` are NOT here, and must not be re-added. ADR-914
+ *  (owner ruling) deleted both: **selling is not a tier, the rate is the ladder.** A free Member sells
+ *  on day one at 10% and every paid rung buys the rate down. The failure mode a seller paywall misses
+ *  is not "they don't upgrade", it is that they send people to Venmo and neither the sale nor the
+ *  contact ever touches Frequency. Payout eligibility is `canReceivePayouts` (community role or
+ *  persona) and the only remaining condition is a completed Stripe onboarding, which is a banking
+ *  fact modelled as a setup step, never a permission. See docs/VALUE-LADDER.md. */
+export type MemberLeadershipGate = 'entry_points'
 
 /** The METERED leadership quantities (feature-meters.ts, tier axis). First one free, then Crew.
  *
@@ -98,12 +106,6 @@ export const CIRCLE_HOST_CAP_MESSAGE =
 
 export const EVENT_CREATE_CAP_MESSAGE =
   'You have as many events running as your free membership includes. Join Crew to run more, and to set up a series.'
-
-export const EVENT_PAID_TICKETS_MESSAGE =
-  'Free and RSVP events are yours to run. Charging for one is part of Crew.'
-
-export const PERSONAL_PAYOUTS_MESSAGE =
-  'Taking payments for what you run is part of Crew. Join Crew to connect a payout account.'
 
 export const ENTRY_POINTS_MESSAGE =
   'Entry points, the QR codes and flyers for the thing you run, are part of Crew.'

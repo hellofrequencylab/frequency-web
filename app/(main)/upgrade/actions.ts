@@ -7,7 +7,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createMembershipCheckout } from '@/lib/billing/checkout'
 import { stripe, appUrl } from '@/lib/billing/stripe'
 import { billingLive } from '@/lib/pricing/settings'
-import { loadCatalogConfig } from '@/lib/pricing/catalog-config'
+import { loadCatalogConfig, isValidPwywAmount } from '@/lib/pricing/catalog-config'
+import { formatCents } from '@/lib/pricing/display'
+import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
 import {
   SUPPORTER_CONTRIBUTION_KIND,
   isValidContributionAmount,
@@ -67,6 +69,56 @@ export async function startMembershipCheckout(): Promise<ActionResult<{ url: str
   if (!profile) return fail('Profile not found')
 
   const url = await createMembershipCheckout({ profileId: profile.id, email: user.email, tier: 'crew' })
+  if (!url) return fail('Billing isn’t available right now.')
+  return ok({ url })
+}
+
+/**
+ * PAY-WHAT-YOU-WANT Crew checkout (ADR-908). The member picks their own recurring amount and every
+ * amount buys IDENTICAL access; the number only decides what they contribute.
+ *
+ * The amount is validated SERVER-SIDE against the operator floor (`isValidPwywAmount`), because the
+ * picker is a client component and a floor enforced only in the browser is not a floor. Annual is
+ * 10x the chosen monthly (two months free, the house convention) and is computed HERE rather than
+ * trusted from the client, so the amount charged always matches the interval the member chose.
+ *
+ * There is deliberately no upper bound in this action: `maxCents` is a SOFT ceiling the picker uses
+ * to ask for confirmation, not a rule, and refusing a large gift at the server would be the opposite
+ * of pay-what-you-want.
+ */
+export async function startPwywMembershipCheckout(
+  amountCents: number,
+  period: 'monthly' | 'annual' = 'monthly',
+): Promise<ActionResult<{ url: string }>> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return fail('Not signed in')
+
+  const { data: profile } = await createAdminClient()
+    .from('profiles')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!profile) return fail('Profile not found')
+
+  const { pwyw } = await loadCatalogConfig()
+  const monthly = Math.round(Number(amountCents))
+  if (!isValidPwywAmount(monthly, pwyw)) {
+    return fail(`Please choose ${formatCents(pwyw.minCents)} a month or more.`)
+  }
+
+  // yearlyFromMonthly is THE annual math (two months free = 10x), shared with the space catalog so
+  // Crew's annual can never drift from the convention the rest of pricing uses.
+  const charged = period === 'annual' ? yearlyFromMonthly(monthly) : monthly
+  const url = await createMembershipCheckout({
+    profileId: profile.id,
+    email: user.email,
+    tier: 'crew',
+    period,
+    amountCents: charged,
+  })
   if (!url) return fail('Billing isn’t available right now.')
   return ok({ url })
 }

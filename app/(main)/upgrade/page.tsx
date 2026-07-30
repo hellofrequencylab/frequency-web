@@ -10,7 +10,7 @@ import { loadCatalogConfig } from '@/lib/pricing/catalog-config'
 import { formatCents, memberTierRows } from '@/lib/pricing/display'
 import { confirmSupporterContribution } from './actions'
 import { UpgradeToggle } from './upgrade-toggle'
-import { CheckoutButton } from './checkout-button'
+import { PwywPicker } from './pwyw-picker'
 import { SupporterBadge } from './supporter-badge'
 
 // MEMBER UPGRADE SURFACE (Pricing P3, ADR-362/363). Renders CREW, the one sellable member tier
@@ -152,13 +152,14 @@ export default async function UpgradePage({
           </div>
           <p className="text-2xl font-bold text-white mb-1">Join the Crew</p>
           <p className="text-primary-bg/80 text-sm">The personal tier: your badge, the whole game, and backing the community</p>
+          {/* PWYW (ADR-908): Crew has no single price to headline, so the hero states the FLOOR and
+              the picker below carries the choice. Never render a struck-through anchor here: there is
+              no list price to discount against when the member sets the amount. */}
           <div className="mt-4 flex items-baseline justify-center gap-1">
             {live ? (
               <>
-                {crew.list && (
-                  <span className="text-2xl font-black text-white line-through opacity-50 mr-1">{crew.list}</span>
-                )}
-                <span className="text-4xl font-black text-white">{crew.monthly}</span>
+                <span className="text-primary-strong text-sm mr-1">from</span>
+                <span className="text-4xl font-black text-white">{formatCents(catalog.pwyw.minCents)}</span>
                 <span className="text-primary-strong text-sm ml-1">/ month</span>
               </>
             ) : (
@@ -169,11 +170,8 @@ export default async function UpgradePage({
               </>
             )}
           </div>
-          {live && crew.list && (
-            <p className="mt-1 text-xs text-primary-strong/80">Opening Beta price. {crew.annual ? `Or ${crew.annual} a year, two months free.` : ''}</p>
-          )}
-          {live && !crew.list && crew.annual && (
-            <p className="mt-1 text-xs text-primary-strong/80">or {crew.annual} a year</p>
+          {live && (
+            <p className="mt-1 text-xs text-primary-strong/80">You choose the amount. Every amount gets the same Crew.</p>
           )}
         </div>
 
@@ -206,7 +204,12 @@ export default async function UpgradePage({
               Manage your membership <ArrowRight className="h-4 w-4" />
             </Link>
           ) : (
-            <CheckoutButton />
+            <PwywPicker
+              presetCents={catalog.pwyw.presetCents}
+              suggestedCents={catalog.pwyw.suggestedCents}
+              minCents={catalog.pwyw.minCents}
+              maxCents={catalog.pwyw.maxCents}
+            />
           )}
         </div>
       </div>
