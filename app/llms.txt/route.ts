@@ -33,7 +33,7 @@ async function pricingInput(): Promise<PricingGridInput> {
  *  read off the offerings, so a rung cannot be omitted and a number cannot go stale. */
 function takeRateStory(offerings: Offering[]): string {
   const rates = offerings.map((o) => `${offeringLadderLabel(o)} ${formatBps(o.networkRateBps)}`).join(', ')
-  return `The take-rate applies ONLY to a sale the network introduced: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free. Tips are always 0%. Selling is not gated on any tier: every rung can sell tickets and take payments, and what a paid rung buys is a lower rate.`
+  return `Selling is NOT gated on any tier. Every rung, including a free Member and a free Space, can sell tickets and take payments and donations from day one; what a paid rung buys is a lower rate plus the tools that build the list which takes that rate to zero. The take-rate applies ONLY to a sale the network introduced: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free. Tips are always 0%. Three capabilities do need a paid plan and nothing else does: selling memberships (Business), campaigns and funnels (Business), and revenue splits (Collective).`
 }
 
 /** The plain "the ladder is X, then Y" sentence, priced from the same offerings. */
@@ -187,7 +187,7 @@ export async function GET() {
     ...COMPARE.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
     '',
     '## Pricing for Spaces (a Community Collective, not a tax on your work)',
-    `The core promise: connection is free, and a business never pays for access to people; paid plans raise the limits. You keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective), and that rate drops as your plan rises. The whole ladder: ${ladderSentence(offerings)}. Monthly or yearly, two months free.`,
+    `The core promise: your own people are always free, on every tier, forever. Connection is free, selling is free, and a business never pays for access to people. You keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective), and that rate drops as your plan rises. The whole ladder: ${ladderSentence(offerings)}. Monthly or yearly, two months free.`,
     ...pricingLadderSummary(input),
     takeRateStory(offerings),
     '',

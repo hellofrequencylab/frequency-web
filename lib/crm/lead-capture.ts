@@ -39,6 +39,7 @@
 // behavior-preserving before the migration and correct after it.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { canAddSpaceContact } from '@/lib/crm/contact-allowance'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { isSuppressed } from '@/lib/suppression'
 import { escapeLike } from '@/lib/search-sanitize'
@@ -510,6 +511,10 @@ export async function captureLead(input: CaptureLeadInput): Promise<CaptureResul
 
     if (!contact) {
       if (!email) return null // phone-only capture with no existing row: no email column to seal on
+      // METERED WRITE (ADR-917): a NEW contact is the thing `space_crm` prices. An EXISTING contact
+      // is never re-checked below, so a re-scan, a consent lift, and every touchpoint keep working at
+      // a full list. Fail-safe to allowed; nothing bites while the gates are not live.
+      if (!(await canAddSpaceContact(spaceId))) return null
       const consent = consentStateForDoor(input.door, 'unknown', opts)
       const { data: inserted } = (await table('contacts')
         .insert([
@@ -664,6 +669,8 @@ export async function linkMemberToSpaceLead(input: {
     // join is recorded as a touchpoint, not by linking profile_id here.
     let contact = await findContactByEmail(email, spaceId)
     if (!contact) {
+      // METERED WRITE (ADR-917) — same rule as captureLead: only a NEW row consumes the allowance.
+      if (!(await canAddSpaceContact(spaceId))) return null
       const consent = consentStateForDoor(input.door, 'unknown', { offerUnlocked: input.offerUnlocked })
       const { data: inserted } = (await table('contacts')
         .insert([

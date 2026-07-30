@@ -606,3 +606,96 @@ export function withinAllowance(
   if (allowance == null) return true // not metered, or an unlimited tier → never blocked
   return usage <= allowance
 }
+
+// ── THE WRITE SEAM: may ONE MORE be added? (ADR-917, Phase 3b) ───────────────────────────────────
+//
+// `withinAllowance` answers a DISPLAY question ("is the usage I am showing inside the allowance?").
+// A write seam asks a different one: "may this Space add ONE more?" The two differ at the boundary
+// (200 contacts is WITHIN a 200 allowance and is also exactly FULL), and conflating them is how a
+// cap ends up off by one in the direction that wrongly refuses a member. So the write question gets
+// its own, explicitly-named answer.
+//
+// 🔴 THE GRANDFATHER RULE, and why it is not optional (docs/VALUE-LADDER.md Phase 8). A cap applies
+// to GROWTH FROM TODAY, never retroactively to work already done. The EFFECTIVE cap is therefore the
+// published allowance OR the owner's current count, whichever is HIGHER, so an existing owner is
+// never blocked BELOW where they already stand and no "delete 367 contacts to get back under the
+// limit" state is reachable. A full meter stops the NEXT write; it never hides, deletes, or blocks
+// read/export of what is already there (§1 dark pattern #1).
+//
+// `floor` is the seam for a MORE GENEROUS, explicitly granted grandfather entitlement (Phase 8 item
+// 2: a stored headroom row rather than a silent break). It is deliberately optional and deliberately
+// unused today: a stored floor that is stale or missed a Space is a LOCKOUT, and a lockout is the one
+// direction this model cannot recover from. Passing the live count (which every IO caller does)
+// gives the safe rule with no backfill to get wrong; a stored row can only ever widen it later.
+
+/** The full answer to a metered write, plain data so a surface can render it without re-deriving. */
+export interface AllowanceVerdict {
+  /** May ONE more be added right now? The only field a write seam needs. */
+  allowed: boolean
+  /** The tier's PUBLISHED allowance (a cap, or null = unlimited). What the pricing page promises. */
+  allowance: Allowance
+  /** The allowance actually applied, after the grandfather floor. Never below `used`. */
+  effective: Allowance
+  /** The usage this verdict was measured against (floored at 0, integral). */
+  used: number
+  /** Writes left before the effective cap, or null when unlimited. Never negative. */
+  remaining: number | null
+  /** True when the effective cap is above the published one, i.e. this owner is grandfathered. */
+  grandfathered: boolean
+  /** True when a finite cap is actually being applied (gates live AND the tier has a cap). */
+  enforced: boolean
+}
+
+/** THE metered-write seam: may this tier add ONE more on this feature, given `used` already in hand?
+ *
+ *   - Grants (and reports `enforced: false`) while the feature GATES are not live, so nothing bites
+ *     during the beta grace window. Same switch, same reason as `withinAllowance`.
+ *   - Grants for a NON-METERED feature, an unknown key, or an unlimited tier.
+ *   - Otherwise compares `used` against the EFFECTIVE cap = max(published allowance, grandfather
+ *     floor, used) — so the answer is only ever "no" for growth PAST where the owner already stands.
+ *
+ *  PURE. `gatesLive` is resolved by the caller (lib/pricing/settings.ts featureGatesLive()), and the
+ *  IO wrapper (lib/pricing/space-allowance.ts) is the one place that does the reads. */
+export function allowanceVerdict(
+  featureKey: string,
+  tier: string,
+  used: number,
+  opts: { gatesLive: boolean; floor?: number | null },
+): AllowanceVerdict {
+  const u = Math.max(0, Math.trunc(Number.isFinite(used) ? used : 0))
+  const allowance = allowanceAt(featureKey, tier)
+  const unmetered: AllowanceVerdict = {
+    allowed: true,
+    allowance,
+    effective: null,
+    used: u,
+    remaining: null,
+    grandfathered: false,
+    enforced: false,
+  }
+  if (!opts.gatesLive) return unmetered
+  if (allowance == null) return unmetered
+  // The grandfather floor: never below the owner's current count, and at least the published cap.
+  const floor = Math.max(u, Math.max(0, Math.trunc(opts.floor ?? 0)))
+  const effective = Math.max(allowance, floor)
+  return {
+    allowed: u < effective,
+    allowance,
+    effective,
+    used: u,
+    remaining: Math.max(0, effective - u),
+    grandfathered: effective > allowance,
+    enforced: true,
+  }
+}
+
+/** How many more writes fit, or null for unlimited / unenforced. The bulk form of `allowanceVerdict`
+ *  (a CSV import needs a headroom number, not a yes/no per row). PURE. */
+export function allowanceHeadroom(
+  featureKey: string,
+  tier: string,
+  used: number,
+  opts: { gatesLive: boolean; floor?: number | null },
+): number | null {
+  return allowanceVerdict(featureKey, tier, used, opts).remaining
+}

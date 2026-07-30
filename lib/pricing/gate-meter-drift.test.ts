@@ -19,45 +19,47 @@ import { PLACEHOLDER_METER_LIMITS, NON_METERED_FEATURES } from './feature-meters
 // fixed. They may only ever SHRINK. Adding a name to either is not a fix, it is a decision to ship the
 // contradiction, and it needs a reason in this file that a future reader can argue with.
 
-/** Keys that are BOTH gated and metered, pending resolution. Each is a real contradiction. */
+/** Keys that are BOTH gated and metered, pending resolution. Each is a real contradiction.
+ *
+ *  ✅ RESOLVED AND DELETED FROM THIS LIST BY PHASE 3b (ADR-917), recorded here so a future reader can
+ *  see the ratchet actually turned rather than trusting that it did:
+ *    · space_crm            — gate deleted. Contacts are COUNTED at the four write seams that create
+ *                             them (lib/crm/contact-allowance.ts), so the 200 free contacts the
+ *                             pricing page publishes is now the number the product enforces.
+ *    · space_email          — gate deleted. The monthly send allowance is enforced in the delivery
+ *                             core (lib/spaces/email.ts), beside, not instead of, the 500/day
+ *                             deliverability throttle those two limits had been conflated into.
+ *    · space_team           — gate deleted (it was decorative). lib/spaces/seats.ts now reads the
+ *                             meter as the plan's BASE seat count, which the seat wall enforces.
+ *    · space_multi_pipeline — gate deleted (decorative, and only the pricing grid's METER row read
+ *                             it). The meter stays honestly display-only until pipelines are counted.
+ */
 const KNOWN_GATE_METER_COLLISIONS: Record<string, string> = {
-  // The gate says a free Space gets NO CRM; the meter promises it 200 contacts. Today the meter's
-  // promise wins vacuously (nothing counts contacts, so free Spaces get unlimited CRM) and at
-  // gatesLive the gate wins and free Spaces lose the CRM the pricing page sold them.
-  //
-  // The resolution is the meter, per docs/VALUE-LADDER.md §3 — but it CANNOT ship until contacts are
-  // actually counted. Deleting the gate first would replace an enforced limit with an unenforced one
-  // and hand free Spaces unlimited CRM, which is strictly worse than the contradiction. Contacts are
-  // written from more than twenty seams, so the counting seam is its own piece of work (Phase 3b).
-  space_crm: 'Phase 3b: convert to a metered 200 contacts, once a counted write seam exists.',
-  // Same shape. Resolution differs: the SENDS stay metered (300/mo free) and the CAMPAIGNS become the
-  // wall, which `space_campaigns` now is. This row goes when the send meter is enforced and the
-  // page-level gate can be dropped. Note the live cap today is neither published number: a flat
-  // 500/day on every plan, which is ~15,000/mo, or 50x the published free allowance.
-  space_email: 'Phase 3b: keep the send meter, drop the gate now that space_campaigns is the wall.',
-  space_team: 'Phase 3b: the real cap is BASE_SEAT_ALLOWANCE; the meter and the gate are both mirrors of it.',
-  space_multi_pipeline: 'Phase 3b: pick the meter, delete the gate. Only the pricing grid reads it.',
   space_crm_resonance_ai: 'Phase 3b: pick the meter; the gate wrapper has no callers.',
   space_automation: 'Phase 3b: the real lock is the pure `automation` entitlement key, not this gate.',
   space_collaborators: 'Phase 3b: the ladder is genuinely metered; the gate marks the free preview.',
   space_crm_playbooks: 'Phase 3b: the gate wrapper has no callers; the meter is display only.',
   // The personal Vera gate DOES enforce (usage-gate.ts), against an operator cap in pricing_settings
-  // rather than against this meter. So the number a member is shown and the number they hit come from
-  // two different places, which is the same drift in a quieter form.
-  vera_unlimited: 'Phase 3b: the gate enforces against pricing_settings.vera_free_daily_cap, not this meter.',
+  // rather than against this meter. ADR-917 collapsed the NUMBERS (the operator cap now defaults to
+  // the meter's own free rung, so a member is shown and stopped at one figure), but the SHAPE is
+  // still both a gate and a meter. Resolving that means retiring the personal tease-gate path this
+  // key drives across six surfaces, which belongs with Phase 4, not with the counting work.
+  vera_unlimited: 'Phase 4: the numbers are collapsed (ADR-917); the gate SHAPE still drives the personal tease surfaces.',
 }
 
-/** Gates with no enforcement call site, pending wiring or deletion. */
+/** Gates with no enforcement call site, pending wiring or deletion.
+ *
+ *  ✅ DELETED FROM THIS LIST BY PHASE 3b (ADR-917): `space_team` and `space_multi_pipeline`, both by
+ *  removing the gate rather than by wiring it. A decorative gate is a claim that was never true; the
+ *  honest fix is usually deletion, not a call site invented to justify it. */
 const KNOWN_DECORATIVE_GATES: Record<string, string> = {
   space_crm_playbooks: 'spaceCanRunPlaybooksLive has zero callers. Wire it or delete it.',
   space_crm_resonance: 'spaceCanSeeResonanceLive has zero callers.',
   space_crm_resonance_ai: 'spaceCanUseResonanceAiLive has zero callers.',
-  space_revenue_splits: 'Zero references outside gates.ts and docs. The feature is not built.',
+  space_revenue_splits: 'Zero references outside gates.ts and docs. One of the three named walls (VALUE-LADDER §3), so it stays and is owed a call site when splits are built.',
   space_sms: 'Zero references outside gates.ts. Rides the A2P registration, which is not live.',
   journey_library_list: 'The real lock is canListJourneyInLibrary, a parallel ladder.',
-  entry_points: 'The real cap is the hardcoded PLAN_CODE_CAPS map.',
-  space_team: 'The real cap is BASE_SEAT_ALLOWANCE.',
-  space_multi_pipeline: 'Referenced only by the pricing grid.',
+  entry_points: 'The per-Space QR volume it stands in for is the space_qr METER, enforced in lib/qr/space-codes.ts (ADR-917). This tier-axis gate still has no call site of its own.',
   space_automation: 'The real lock is the pure `automation` entitlement key.',
   space_whitelabel: 'The real lock is the `whitelabel` entitlement key.',
   // Intentional and permanent: enforced by a PURE default-deny entitlement key precisely so it

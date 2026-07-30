@@ -10,21 +10,22 @@ import { priceStrings, pricingCatalog } from '@/lib/pricing/pricing-page'
 import { formatBps } from '@/lib/pricing/display'
 import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
 
-// The break-even graphic compares the TWO rungs that actually exist (ADR-913): selling as an individual
-// on Crew, and selling as a Business Space. Its whole math used to be the retired Free-Space-10% vs
-// Business-5% delta, which was a five-point saving nobody was ever charged. Both the rates and the
-// Business figure now read their real sources (the take-rate config + the ONE code catalog), so a rate or
-// price change reflows every label here.
+// The break-even graphic compares the TWO rungs a reader of this door is actually choosing between: the
+// free Space they can start today, and Business. Selling is free on every tier, so a free Space carries a
+// real rate of its own and the chart is a rate ladder, not a locked door. It used to plot Crew (a
+// PERSONAL tier) against Business on a page whose only CTA is "Start a Space", which compared two rungs
+// nobody picks between. Both rates and the Business figure read their real sources (the take-rate config
+// + the ONE code catalog), so a rate or price change reflows every label here.
 const P = priceStrings()
-const CREW_RATE_BPS = NETWORK_TAKE_RATE_DEFAULT.member
+const FREE_RATE_BPS = NETWORK_TAKE_RATE_DEFAULT.free
 const BUSINESS_RATE_BPS = NETWORK_TAKE_RATE_DEFAULT.business
-const CREW_RATE_LABEL = formatBps(CREW_RATE_BPS)
+const FREE_RATE_LABEL = formatBps(FREE_RATE_BPS)
 const BUSINESS_RATE_LABEL = formatBps(BUSINESS_RATE_BPS)
 // Where the plan pays for itself: the monthly network sales at which the points Business saves cover its
 // flat price, rounded to a friendly $50. Guarded so a config with no gap between the rungs (or an
 // inverted one) simply drops the label instead of dividing by zero.
 const BREAK_EVEN_LABEL = (() => {
-  const delta = (CREW_RATE_BPS - BUSINESS_RATE_BPS) / 10000
+  const delta = (FREE_RATE_BPS - BUSINESS_RATE_BPS) / 10000
   if (delta <= 0) return null
   const dollars = pricingCatalog().business_base.month.listCents / 100 / delta
   return `~$${(Math.round(dollars / 50) * 50).toLocaleString()}/mo`
@@ -425,11 +426,12 @@ export function BreakEvenGraphic({ className = '' }: { className?: string }) {
   // Plot area
   const x0 = 44, x1 = 396, y0 = 30, y1 = 196
   const cross = 210 // x of the crossing (dashed marker)
-  // Crew line: the individual seller rate on network-introduced sales, rising steeper from a low fixed cost.
-  const crewStart = { x: x0, y: 180 }
-  const crewEnd = { x: x1, y: 44 }
+  // Free Space line: no monthly price, but the highest rate on network-introduced sales, so it starts low
+  // and climbs steeper.
+  const freeStart = { x: x0, y: 180 }
+  const freeEnd = { x: x1, y: 44 }
   // Business line: the plan price plus the lower network rate, so a higher intercept and a flatter slope,
-  // crossing Crew where the points saved cover the plan (BREAK_EVEN_LABEL, computed from the real rungs).
+  // crossing the free line where the points saved cover the plan (BREAK_EVEN_LABEL, from the real rungs).
   const bizStart = { x: x0, y: 120 }
   const bizEnd = { x: x1, y: 78 }
   return (
@@ -450,10 +452,10 @@ export function BreakEvenGraphic({ className = '' }: { className?: string }) {
           <text x={cross} y={y1 + 18} textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="700">{BREAK_EVEN_LABEL}</text>
         )}
       </g>
-      {/* Crew line (quiet) */}
+      {/* Free Space line (quiet) */}
       <g className="text-subtle">
-        <line x1={crewStart.x} y1={crewStart.y} x2={crewEnd.x} y2={crewEnd.y} stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" />
-        <text x={crewEnd.x} y={crewEnd.y - 8} textAnchor="end" fill="currentColor" fontSize="11" fontWeight="600">Crew · {CREW_RATE_LABEL} network</text>
+        <line x1={freeStart.x} y1={freeStart.y} x2={freeEnd.x} y2={freeEnd.y} stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" />
+        <text x={freeEnd.x} y={freeEnd.y - 8} textAnchor="end" fill="currentColor" fontSize="11" fontWeight="600">Free Space · {FREE_RATE_LABEL} network</text>
       </g>
       {/* Business line (accent) */}
       <g className="text-primary-strong">

@@ -76,6 +76,13 @@ async function pricingInput(): Promise<PricingGridInput> {
   }
 }
 
+/** The NETWORK half of an offering's rate line ("5% on network-sourced sales"). The 0%-on-your-own half
+ *  is the promise every rung shares, so a sentence that already states it once reads the network half
+ *  alone rather than repeating the promise per rung. Read off the offering, never typed. */
+function networkRate(offering: Offering): string {
+  return offering.takeRate.split(', ')[1] ?? offering.takeRate
+}
+
 /** The plain "Business is X, Collective is Y" ladder sentence, built from the offerings. */
 function ladderSentence(offerings: Offering[]): string {
   return offerings
@@ -88,20 +95,20 @@ export async function generateMetadata(): Promise<Metadata> {
   const input = await pricingInput()
   const ladder = ladderSentence(spaceOfferings(input))
   const crew = memberOfferings(input)[1]!
-  const description = `Connection is free on Frequency. Businesses pay for reach and scale, never for access to people. Start a Space free; paid plans raise the limits. ${ladder}. Crew, the personal tier, is ${crew.monthly}. ${annualDiscountNote(input.values)}`
+  const description = `Selling is free on every Frequency plan, and your own people are always free: we take nothing on a follower, a contact, or a past buyer. A paid plan buys down the rate on network-sourced sales. ${ladder}. Crew, the personal tier, is ${crew.monthly}.`
   return {
-    title: 'Pricing: every plan, side by side',
+    title: 'Pricing: your own people are always free',
     description,
     alternates: { canonical: '/pricing' },
     openGraph: {
-      title: 'Frequency pricing: connection is free, paid plans raise the limits',
+      title: 'Frequency pricing: your own people are always free',
       description,
       url: '/pricing',
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'Frequency pricing: connection is free, paid plans raise the limits',
+      title: 'Frequency pricing: your own people are always free',
       description,
     },
   }
@@ -140,20 +147,24 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
   return [
     {
       q: 'How does Frequency pricing work?',
-      a: `Connection is free; paid plans raise the limits. There are two ladders. Membership: ${member!.label} is free forever and covers the whole social side, including hosting your own events and taking RSVPs, and ${crew!.label} is ${crew!.monthly} for full access to member programs plus selling tickets and taking payments. Spaces: ${ladder} ${annualDiscountNote(input.values)}`,
+      a: `Selling is free on every plan, and your own people are always free. What a paid plan buys is a lower rate on the sales the network introduces, plus the tools that build the list which takes that rate to zero. There are two ladders. Membership: ${member!.label} is free forever and already hosts events, takes RSVPs, sells tickets, and takes donations at ${networkRate(member!)}; ${crew!.label} is ${crew!.monthly} and takes that to ${networkRate(crew!)} with the caps off. Spaces: ${ladder} ${annualDiscountNote(input.values)}`,
     },
     {
       q: 'Can I run a Space for free?',
-      a: `Yes, and anyone can. A free Space is a real Space, not a trial: your storefront, your page, events, posts, members, and a place for your people to gather. You do not need Crew to run one. No card, no clock. Upgrade when you want to reach more people at once.`,
+      a: `Yes, and anyone can. A free Space is a real Space, not a trial: your storefront, your page, events, posts, members, a shop, and a place for your people to gather. It sells tickets and takes donations from day one, at ${networkRate(spaces[0]!)}. You do not need Crew to run one. No card, no clock.`,
+    },
+    {
+      q: 'What actually needs a paid plan?',
+      a: 'Three things, and we name them plainly. Selling memberships needs Business, because a membership is a recurring promise to another person. Campaigns and funnels need Business, which is the line between messaging your own people and running an acquisition machine. Splitting revenue between businesses needs Collective, because that is what a collective is for. Everything else is a meter with a real free allowance, and a full meter stops new writes without ever hiding, deleting, or locking what is already there.',
     },
     {
       q: 'What stays free forever?',
-      a: 'The people part. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. A business never pays for access to people; a paid plan buys reach and scale, higher limits on the same tools every Space already has.',
+      a: 'The people part, and the transaction. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. Taking money never sits behind a plan either: every rung sells tickets and takes donations, and tips carry no fee on any rung. A business never pays for access to people.',
     },
     ...betaFaq,
     {
       q: 'Do you take a cut of my sales?',
-      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, always, and tips are never touched. We earn a share only of a sale the network introduced, a referral or a discovery inside the collective, and that rate drops as your plan rises: ${rates}. Selling as a person rather than a Space runs on ${crew!.label}, at ${crew!.takeRate.split(', ')[1]}. Once a buyer is yours, meaning they follow you, they are one of your members, they are in your contacts, or they have bought before, we take nothing on them again: we charge once for the introduction, and after that they are your people, free.`,
+      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, always, and tips are never touched. We earn a share only of a sale the network introduced, a referral or a discovery inside the collective, and that rate drops as your plan rises: ${rates}. Selling as a person rather than a Space needs no plan at all: ${member!.label} sells at ${networkRate(member!)} and ${crew!.label} at ${networkRate(crew!)}. Once a buyer is yours, meaning they follow you, they are one of your members, they are in your contacts, or they have bought before, we take nothing on them again: we charge once for the introduction, and after that they are your people, free.`,
     },
     {
       q: 'How do team seats work?',
@@ -263,11 +274,11 @@ export default async function PricingPage() {
         eyebrow="Every plan, side by side"
         title={
           <>
-            Connection is free.
-            <br className="hidden sm:block" /> Paid plans <span className="text-primary">raise the limits.</span>
+            Your own people are
+            <br className="hidden sm:block" /> <span className="text-primary">always free.</span>
           </>
         }
-        subtitle={`Frequency is where your local community happens. Businesses pay for reach and scale, never for access to people. Being a member is free and running a Space is free. ${ladder}. You keep 100% of what you bring in yourself.`}
+        subtitle={`Selling is free on every plan. We take nothing on a follower, a member, a contact, or anyone who bought from you before. On a sale the network introduces we take a share, and every rung down the ladder makes it smaller. ${ladder}. The grid below is the proof.`}
       >
         <Button href="/spaces">
           Start a Space <ArrowRight className="h-5 w-5" />
@@ -290,8 +301,9 @@ export default async function PricingPage() {
           <p className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">The plans</p>
           <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">Pick the plan that fits.</h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-            Two ladders. One for you as a member, one for the Space you run. You can be on both, and you
-            can start on the free rung of either.
+            Two ladders. One for you as a member, one for the Space you run. Every rung on both sells, so
+            the only thing that moves down the ladder is the rate. You can be on both, and you can start
+            on the free rung of either.
           </p>
         </div>
 
@@ -311,7 +323,7 @@ export default async function PricingPage() {
           <div>
             <LadderHeading
               title="For your Space"
-              kicker="A Space is free for anyone to start. The paid plans raise the limits and buy down the fee."
+              kicker="A Space is free for anyone to start, and a free Space sells. The paid plans buy the rate down and lift the caps."
             />
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {spaces.map((o) => (
@@ -322,10 +334,11 @@ export default async function PricingPage() {
         </PricingBillingToggle>
 
         <p className="mx-auto mt-10 max-w-2xl text-center text-sm leading-relaxed text-subtle">
-          {PLAN_STORY.meters} And you keep 100% of your own bookings, always: the take-rate applies only
-          to a sale the network introduced, and it drops as your plan rises. Once someone is yours, a
-          follower, one of your members, a contact, or a past buyer, we take nothing on them again. We
-          charge once for the introduction. After that they are your people, free.
+          Never a wall in front of the transaction. {PLAN_STORY.meters} You keep 100% of your own
+          bookings on every rung: the take-rate applies only to a sale the network introduced, and it
+          drops as your plan rises. Once someone is yours, a follower, one of your members, a contact, or
+          a past buyer, we take nothing on them again. We charge once for the introduction. After that
+          they are your people, free.
         </p>
       </Section>
 

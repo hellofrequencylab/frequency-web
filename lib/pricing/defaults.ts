@@ -25,6 +25,12 @@ import {
   type CatalogItemKey,
 } from '@/lib/billing/pricing-keys'
 import { PLACEHOLDER_MEMBER_PRICE_CENTS } from './feature-tiers'
+import { PLACEHOLDER_METER_LIMITS } from './feature-meters'
+
+/** The free member's daily Vera message allowance, READ from the one quantity map (ADR-917) rather
+ *  than restated here. Falls back to 10 only if the meter row ever loses its free rung, which would be
+ *  a bug caught by the meter tests, not a number to silently invent. */
+const VERA_FREE_DAILY_MESSAGES: number = PLACEHOLDER_METER_LIMITS.vera_unlimited?.free ?? 10
 
 export interface TierPrice {
   monthly_cents: number
@@ -128,7 +134,12 @@ export const PRICING_DEFAULTS: PricingDefaults = {
       independent: NETWORK_TAKE_RATE_DEFAULT.independent,
     },
   },
-  vera_free_daily_cap: { messages: 10 },
+  // THE FREE VERA DAILY CAP, read from the meter (ADR-917). It used to be a hand-typed 10 here while
+  // `vera_unlimited` and `space_vera` each published their own free rung of 10, so the number a member
+  // was SHOWN and the number they HIT were two constants that only agreed by luck. This is now the
+  // operator OVERLAY's default: `pricing_settings.vera_free_daily_cap` still wins when an operator sets
+  // it (the admin console keeps working), and the meter is what it falls back to.
+  vera_free_daily_cap: { messages: VERA_FREE_DAILY_MESSAGES },
   trial: { days: 14 }, // 14-day free trial on Space plans (card upfront; members get none, the free tier is their trial)
   annual_discount: { months_free: 2 },
 }

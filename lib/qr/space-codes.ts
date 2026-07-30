@@ -40,30 +40,40 @@ import type { ScanRow } from './analytics'
 
 // ── Per-plan code cap ────────────────────────────────────────────────────────────────────────────
 //
-// How many managed codes a Space may own, by plan label (spaces.plan). DEFAULT-DENY-ish: an unknown
-// or unset plan falls to the FREE cap (the smallest), so a misconfigured plan never grants more than
-// free. The numbers are a sane starting policy (documented in the ADR + DATABASE.md); raising a cap
-// is a one-line change here, never a migration.
-const PLAN_CODE_CAPS: Record<string, number> = {
-  free: 3,
-  starter: 25,
-  pro: 100,
-  business: 500,
-  // Plans at or above Collective are effectively unlimited (the ADR-837 ladder shows Unlimited);
-  // a huge finite cap keeps the pure fail-small shape without a special case. Non Profit and
-  // Independent carry the full Collective toolkit (ADR-811).
-  collective: 100000,
-  nonprofit: 100000,
-  independent: 100000,
-}
-// The cap for an unset / unknown plan (the smallest, so a misconfigured plan is never over-granted).
-const DEFAULT_CODE_CAP = PLAN_CODE_CAPS.free
+// How many managed codes a Space may own, by plan label (spaces.plan). 🔴 THIS USED TO BE ITS OWN
+// HARDCODED LADDER (`PLAN_CODE_CAPS`), a third plan→number map beside the gates and the meters, and
+// it had drifted: it still carried `starter` and `pro`, two tiers retired by ADR-552, and it had no
+// `collective` row at all when Collective became a first-class tier. A Space on a retired label got a
+// number nobody had decided in years, and the number the pricing page published for QR codes was a
+// different number entirely.
+//
+// It now reads the ONE quantity map (`space_qr` in lib/pricing/feature-meters.ts), so the cap a Space
+// hits and the cap the ladder advertises are the same value, and the retired labels resolve through
+// `asSpacePlan` (pro / practitioner / partner → business, whitelabel → independent) instead of
+// carrying their own stale numbers.
+//
+// ⚠️ THIS CAP BITES TODAY, unlike the contact and send meters, and Phase 3b deliberately does not
+// change that. Routing it through `featureGatesLive()` would turn a live limit OFF, which is a
+// regression dressed as a refactor. It stays always-on, and gains the grandfather rule it never had
+// (see createSpaceCode): the effective cap is never below the count a Space already holds.
 
-/** The code cap for a plan label. An unset / unknown plan reads as the free cap (fail-small). Pure. */
+import { allowanceAt } from '@/lib/pricing/feature-meters'
+import { asSpacePlan } from '@/lib/pricing/plans'
+import { spaceAllowanceVerdict } from '@/lib/pricing/space-allowance'
+
+/** The meter key the QR code ladder is published on. */
+const QR_METER_KEY = 'space_qr'
+
+/** An unlimited rung still needs a finite number here, because the caller compares a count against it.
+ *  Large enough that no real Space reaches it, small enough to stay a plain integer. */
+const UNLIMITED_CODE_CAP = 100_000
+
+/** The code cap for a plan label, read from the `space_qr` meter. An unset / unknown / retired plan
+ *  narrows through `asSpacePlan` (unknown → 'free', the smallest, so a misconfigured plan is never
+ *  over-granted). An unlimited rung reads as UNLIMITED_CODE_CAP. PURE. */
 export function codeCapForPlan(plan: string | null | undefined): number {
-  if (!plan) return DEFAULT_CODE_CAP
-  const cap = PLAN_CODE_CAPS[plan.trim().toLowerCase()]
-  return typeof cap === 'number' ? cap : DEFAULT_CODE_CAP
+  const allowance = allowanceAt(QR_METER_KEY, asSpacePlan(plan ?? null))
+  return allowance == null ? UNLIMITED_CODE_CAP : allowance
 }
 
 // ── Types ────────────────────────────────────────────────────────────────────────────────────────
@@ -180,21 +190,6 @@ async function readSpaceCodes(spaceId: string): Promise<SpaceCode[]> {
   }
 }
 
-/** The Space's plan label (spaces.plan), read via an untyped select since plan isn't on the typed
- *  Space (ADR-246). FAIL-SAFE to null (which the cap reads as the smallest/free cap). */
-async function readSpacePlan(spaceId: string): Promise<string | null> {
-  try {
-    const { data } = (await createAdminClient()
-      .from('spaces')
-      .select('plan')
-      .eq('id', spaceId)
-      .maybeSingle()) as { data: { plan?: string | null } | null }
-    return data?.plan ?? null
-  } catch {
-    return null
-  }
-}
-
 /** Whether a slug is already taken by ANY code (service-role; slugs are globally unique on qr_codes).
  *  FAIL-CLOSED on error: treat as taken so a create never collides. */
 async function slugTaken(slug: string): Promise<boolean> {
@@ -282,11 +277,15 @@ export async function createSpaceCode(
   const targetUrl = input.targetUrl?.trim() ?? ''
   if (!isValidTargetUrl(targetUrl)) return fail('Use a full web address or a link that starts with /.')
 
-  // PER-PLAN CAP: count this Space's existing codes, refuse past the plan's cap.
+  // PER-PLAN CAP: count this Space's existing codes, refuse past the plan's allowance. Resolved
+  // through the shared meter seam (ADR-917), which reads the ONE quantity map, exempts the platform
+  // root hub, and applies the grandfather rule, so a Space already over its plan's number keeps every
+  // code it has and is only stopped from adding the next one. `alwaysOn` because this cap is live
+  // today and Phase 3b must not switch a working limit off.
   const existing = await readSpaceCodes(spaceId)
-  const cap = codeCapForPlan(await readSpacePlan(spaceId))
-  if (existing.length >= cap) {
-    return fail(`Your plan allows ${cap} codes. Remove one or upgrade to add more.`)
+  const verdict = await spaceAllowanceVerdict(spaceId, QR_METER_KEY, existing.length, { alwaysOn: true })
+  if (!verdict.allowed) {
+    return fail(`Your plan allows ${(verdict.effective ?? existing.length).toLocaleString('en-US')} codes. Remove one or upgrade to add more.`)
   }
 
   // Resolve a unique slug: a normalized custom slug if given + valid + free, else a generated one

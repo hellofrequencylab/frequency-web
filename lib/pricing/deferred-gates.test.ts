@@ -80,26 +80,32 @@ describe('REMAINING-WORK #3 — vera_unlimited gate is INERT while billing OFF',
 })
 
 describe('REMAINING-WORK #4 — space_* feature gates resolve consistently via featureAllowed', () => {
-  it('maps plan-gated functions to their pricing feature key; universal functions map to null', () => {
-    expect(featureKeyForFunction('crm')).toBe('space_crm')
-    expect(featureKeyForFunction('email')).toBe('space_email')
+  it('maps the one remaining plan-gated function to its key; metered + universal functions map to null', () => {
+    // 🔴 `crm` and `email` mapped to `space_crm` / `space_email` until ADR-917. They are METERED now,
+    // not gated: a free Space really does get a CRM and really can email its own people, up to the
+    // allowance the pricing page publishes. Enforcement moved to the counted write seams, so the
+    // CORRECT answer here is null. Re-adding either mapping re-creates the contradiction Phase 3b
+    // removed (a plan gate that takes the whole feature away instead of capping how much you use).
+    expect(featureKeyForFunction('crm')).toBeNull()
+    expect(featureKeyForFunction('email')).toBeNull()
+    expect(featureKeyForFunction('shop')).toBe('space_storefront')
     expect(featureKeyForFunction('members')).toBeNull() // universal
     expect(featureKeyForFunction('made-up')).toBeNull()
   })
 
   it('OFF: every space_* feature is allowed regardless of plan (today behavior)', async () => {
-    expect(await featureAllowed('space_crm', { plan: 'free' }, { gatesLive: false })).toBe(true)
-    expect(await featureAllowed('space_email', { plan: 'free' }, { gatesLive: false })).toBe(true)
+    expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: false })).toBe(true)
+    expect(await featureAllowed('space_campaigns', { plan: 'free' }, { gatesLive: false })).toBe(true)
   })
 
   it('ON: the collapsed plan ladder bites (the paid floor for space_* is business · ADR-552)', async () => {
     // The coarse plan-rank gate is now a single paid floor of 'business'; the fine per-feature gating is
     // the entitlement-key union (spaceHasEntitlement), not this ladder.
-    expect(await featureAllowed('space_crm', { plan: 'free' }, { gatesLive: true })).toBe(false)
-    expect(await featureAllowed('space_crm', { plan: 'business' }, { gatesLive: true })).toBe(true)
-    expect(await featureAllowed('space_email', { plan: 'free' }, { gatesLive: true })).toBe(false)
+    expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: true })).toBe(false)
+    expect(await featureAllowed('space_memberships', { plan: 'business' }, { gatesLive: true })).toBe(true)
+    expect(await featureAllowed('space_campaigns', { plan: 'free' }, { gatesLive: true })).toBe(false)
     // A legacy label narrows to business through asSpacePlan inside the gate, so it still clears.
-    expect(await featureAllowed('space_email', { plan: 'pro' as never }, { gatesLive: true })).toBe(true)
+    expect(await featureAllowed('space_campaigns', { plan: 'pro' as never }, { gatesLive: true })).toBe(true)
   })
 })
 

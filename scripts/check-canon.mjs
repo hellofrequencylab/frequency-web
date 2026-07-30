@@ -34,13 +34,22 @@ const BANNED = [
   { name: 'retired tagline "a place to be human"', re: /a\s+place\s+to\s+be\s+human/i, hint: 'tagline is "The Community Collective"' },
   { name: 'retired "one price, five doors"', re: /one\s+price,?\s+five\s+doors/i, hint: 'six-tier ladder now (ADR-811)' },
   { name: 'retired "flat 3%" take-rate', re: /flat\s+3\s?%/i, hint: 'take-rate is network-only + tier-declining, never a flat fee on your work' },
-  // The RETIRED RUNGS (ADR-913). The take-rate is charged on a network INTRODUCTION only, on two rungs
-  // (Crew and Business) plus verified Non Profit at zero. The 10% rung is gone from both ladders: the free
-  // Member cannot sell at all, and no surface may quote a rate for a tier that takes no payments. Every
-  // live rate should interpolate from the take-rate config anyway, so a hardcoded rung is itself the smell.
-  { name: 'retired 10% take-rate rung', re: /\b10\s?%\s+on\b/i, hint: 'the rungs are Crew + Business (interpolate from take_rate, never hardcode a rung)' },
-  { name: 'retired "Free Space <n>%" rung', re: /free\s+space\s+\d{1,2}\s?%/i, hint: 'a free Space quotes no rate of its own; the ladder is Crew, Business, Non Profit' },
-  { name: 'retired "halves the rate" math', re: /halv\w*\s+the\s+(network\s+)?rate/i, hint: 'that arithmetic was the retired Free-10%-to-Business-5% delta' },
+  // 🔴 THREE RULES WERE DELETED FROM HERE, AND THE REASON MATTERS (ADR-914, superseding ADR-913).
+  //
+  // This guard used to ban `/\b10\s?%\s+on\b/`, `/free\s+space\s+\d{1,2}\s?%/`, and "halves the rate",
+  // on the doctrine that "the free Member cannot sell at all, and no surface may quote a rate for a tier
+  // that takes no payments". That rule is REVERSED. Selling is free on every tier, 10% is the reference
+  // rate the entire ladder descends from, a free Space quotes exactly that rung, and Business really does
+  // halve it (10% -> 5%). All three patterns had become bans on CORRECT copy.
+  //
+  // They never actually fired, which is the part worth remembering: every live rate interpolates from the
+  // take-rate config, so the literal string never appears in source, and a stale ban sat here reading as
+  // canon while being unenforceable and wrong. A guard nobody trips is a guard nobody notices has rotted.
+  //
+  // What survives is the real invariant, and it is stronger than any of the three: a hardcoded rate in
+  // marketing source is the smell, whatever its value. lib/marketing/marketing-figures.test.ts enforces
+  // that directly by failing on any `$`+digit or percentage in a marketing source, which is why no
+  // per-rung regex is needed here at all.
   { name: 'banned "find your tribe"', re: /find\s+your\s+tribe/i, hint: 'off-voice (CONTENT-VOICE)' },
   { name: 'banned "on the same wavelength"', re: /on\s+the\s+same\s+wavelength/i, hint: 'off-voice vibe register (CONTENT-VOICE)' },
 ]

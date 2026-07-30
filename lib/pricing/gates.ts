@@ -85,12 +85,31 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // independent). Business ($29) = run-your-practice depth; Collective ($79) adds automation + team +
   // multi-pipeline + collaboration; Independent (~$249) adds white-label. Non Profit + Independent rank
   // at/above Collective, so a 'collective' floor is cleared by all three.
-  space_crm: { axis: 'plan', minEntitlement: 'business', enabled: true }, // the per-Space CRM
-  space_email: { axis: 'plan', minEntitlement: 'business', enabled: true }, // key 'email'
+  // 🔴 `space_crm` and `space_email` USED TO SIT HERE and are deliberately gone (ADR-917,
+  // docs/VALUE-LADDER.md Phase 3b). Both were BOTH gated and metered, which is two different promises
+  // to the same customer: the gate said a free Space gets no CRM and no email at all, while the meter
+  // (and the pricing page) promised it 200 contacts and 300 sends a month. Those disagree the moment
+  // the gates go live, and the gate is the one that contradicts what we sold.
+  //
+  // They are now METERS, and unlike before they are ENFORCED at the write: contacts count through
+  // lib/crm/contact-allowance.ts and sends count through the monthly allowance in lib/spaces/email.ts.
+  // Deleting the gates first would have replaced an enforced limit with an unenforced one, which is
+  // why Phase 3 left them and Phase 3b built the counting seams before removing them.
+  //
+  // The WALL that used to be smuggled inside `space_email` is `space_campaigns` below: messaging your
+  // own people is free inside the send allowance, running an acquisition machine is paid. Do not
+  // re-add either key; a plan ladder for these two lives in feature-meters.ts.
   space_automation: { axis: 'plan', minEntitlement: 'collective', enabled: true },
-  space_team: { axis: 'plan', minEntitlement: 'collective', enabled: true }, // Team seats
+  // 🔴 `space_team` and `space_multi_pipeline` USED TO SIT HERE and are deliberately gone (ADR-917).
+  // Both were decorative AND collided with their own meters: zero call sites outside this file, so
+  // neither ever refused anyone, while `space_team` simultaneously promised Collective three included
+  // seats through its meter and (had it ever fired) would have refused a free Space every seat at all.
+  //
+  // Seats are now genuinely metered: lib/spaces/seats.ts reads the `space_team` allowance as the
+  // plan's BASE seat count, which is what `checkSeatForOperatorInvite` has always enforced against.
+  // Pipelines stay display-only for now, honestly: nothing counts pipelines yet, and a gate that
+  // cannot fire is a worse answer than a meter that admits it is a preview.
   space_whitelabel: { axis: 'plan', minEntitlement: 'independent', enabled: true }, // Branding, Independent tier only
-  space_multi_pipeline: { axis: 'plan', minEntitlement: 'collective', enabled: true },
   // COLLABORATOR HOSTING (ADR-799 §B / ADR-810 / ADR-835). Hosting other businesses inside your space,
   // or hosting an EVENT with Collaborator Spaces, is a Collective capability of the HOST side only:
   // the venue / the event's home Space needs the plan, while BEING a collaborator (the guest, incl. an

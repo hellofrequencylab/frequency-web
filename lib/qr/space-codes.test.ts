@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { PLACEHOLDER_METER_LIMITS } from '@/lib/pricing/feature-meters'
 
 // SPACE-SCOPED CODES (ENTITY-SPACES-BUILD §C, Phase 2). All network-free (the supabase admin client +
 // auth + store + capability seam are mocked). Locked here:
@@ -225,14 +226,36 @@ function seedCode(over: Partial<CodeRow> = {}) {
 describe('codeCapForPlan (pure, fail-small)', () => {
   it('maps known plans', () => {
     expect(codeCapForPlan('free')).toBe(3)
-    expect(codeCapForPlan('starter')).toBe(25)
-    expect(codeCapForPlan('pro')).toBe(100)
     expect(codeCapForPlan('business')).toBe(500)
+    // The retired ADR-552 labels no longer carry their own stale numbers (`starter` 25, `pro` 100 were
+    // still in the hardcoded map years after both tiers were retired). They narrow through asSpacePlan
+    // to the tier that replaced them, so they read the ladder everyone else reads (ADR-917).
+    expect(codeCapForPlan('pro')).toBe(500) // -> business
+    expect(codeCapForPlan('practitioner')).toBe(500) // -> business
+    expect(codeCapForPlan('whitelabel')).toBe(codeCapForPlan('independent')) // -> independent
+    // Collective and above are unlimited on the meter, which resolves to the large finite ceiling.
+    expect(codeCapForPlan('collective')).toBeGreaterThan(500)
+    expect(codeCapForPlan('nonprofit')).toBe(codeCapForPlan('collective'))
   })
   it('falls to the free cap for unset / unknown plans', () => {
     expect(codeCapForPlan(null)).toBe(3)
     expect(codeCapForPlan(undefined)).toBe(3)
     expect(codeCapForPlan('enterprise-xl')).toBe(3)
+    expect(codeCapForPlan('starter')).toBe(3) // never a real plan label; unknown -> free (fail-small)
+  })
+})
+
+describe('the QR cap reads the ONE quantity map (ADR-917, no second ladder)', () => {
+  it('every rung of codeCapForPlan is the space_qr meter allowance, not a local number', () => {
+    // `PLAN_CODE_CAPS` used to live in this module: a third plan -> number map beside the gates and the
+    // meters, still carrying `starter` and `pro` years after ADR-552 retired both tiers. If this test
+    // fails, a second ladder has come back.
+    expect(codeCapForPlan('free')).toBe(PLACEHOLDER_METER_LIMITS.space_qr!.free)
+    expect(codeCapForPlan('business')).toBe(PLACEHOLDER_METER_LIMITS.space_qr!.business)
+    // An unlimited rung is the one value a count cannot compare against, so it resolves to a large
+    // finite ceiling. It must still be strictly above every finite rung.
+    expect(PLACEHOLDER_METER_LIMITS.space_qr!.collective).toBeNull()
+    expect(codeCapForPlan('collective')).toBeGreaterThan(codeCapForPlan('business')!)
   })
 })
 

@@ -84,7 +84,7 @@ export const COMPARISONS: Comparison[] = [
     forReader:
       'You have the followers and the links. You are missing the part where it turns into people you actually know.',
     moneyBeat:
-      'When your Spotlight page sells something, which Crew or a Space turns on, Frequency takes 0% on your own bookings, always. What your own work earns is yours. Frequency runs on one honest price and earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
+      'Selling from your Spotlight page is open on a free account, from day one. Frequency takes 0% on your own bookings, always, and 0% on anyone already yours: a follower, a contact, or someone who bought from you before. A paid plan does not switch selling on. It buys down the rate on the people the network introduces you to. One honest price, and never a cut of the business you bring yourself.',
   },
   {
     slug: 'calendly',
@@ -93,12 +93,12 @@ export const COMPARISONS: Comparison[] = [
     theyAreGoodAt:
       'Calendly kills the back-and-forth of finding a time. Send a link, someone picks a slot, the meeting lands on both calendars. For one-to-one scheduling, it is clean.',
     theDifference:
-      'Frequency schedules the opposite of a one-off meeting: a standing time a small group keeps without re-asking every week. A Circle picks one day and holds it, so the calendar fills with the same faces, not a stream of new slots. Paid bookings come with Crew or a Space, and Frequency takes 0% on your own bookings. The tool never taxes your work.',
+      'Frequency schedules the opposite of a one-off meeting: a standing time a small group keeps without re-asking every week. A Circle picks one day and holds it, so the calendar fills with the same faces, not a stream of new slots. Taking a paid booking is open on a free account, and Frequency takes 0% on your own bookings. The tool never taxes your work.',
     contrast: [
       { dimension: 'What it schedules', them: 'A one-to-one meeting, time by time.', us: 'A standing group time that repeats.' },
       { dimension: 'Who it is for', them: 'You and one other person.', us: 'A small group that meets as a Circle.' },
       { dimension: 'The pattern', them: 'A new slot every time.', us: 'The same day, every week or every other week.' },
-      { dimension: 'On a paid booking', them: 'Paid bookings sit behind paid tiers.', us: 'Paid bookings come with Crew or a Space, at 0% on your own bookings.' },
+      { dimension: 'On a paid booking', them: 'Paid bookings sit behind paid tiers.', us: 'Paid bookings on a free account, at 0% on your own bookings.' },
       { dimension: 'Cost', them: 'Free, with paid tiers.', us: 'Free to join during the beta.' },
     ],
     forReader:
@@ -113,7 +113,7 @@ export const COMPARISONS: Comparison[] = [
     theyAreGoodAt:
       'Eventbrite is built to sell tickets to a real event. The listing, the payments, the door: all handled, and for a big paid one-off, it is the standard.',
     theDifference:
-      'Frequency is built for the small, free, repeating room, not the ticketed one-off. Here is the sharpest line between them, and it is about money: Eventbrite charges a fee on every ticket you sell, while Frequency takes 0% on your own bookings, always. When you do charge for a gathering, which Crew or a Space turns on, what your work earns is yours. Frequency earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
+      'Frequency is built for the small, free, repeating room, not the ticketed one-off. Here is the sharpest line between them, and it is about money: Eventbrite charges a fee on every ticket you sell, while Frequency takes 0% on your own bookings, always. Charging for a gathering is open on a free account, from day one, and what your work earns is yours. Frequency earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
     contrast: [
       { dimension: 'What it is', them: 'A ticketed event, often one time.', us: 'A free Circle that keeps meeting.' },
       { dimension: 'Getting in', them: 'You buy a ticket.', us: 'You find a Circle and show up.' },
@@ -144,7 +144,7 @@ export const COMPARISONS: Comparison[] = [
     forReader:
       'You are in a few online communities already. What you are short on is people you can sit across a table from.',
     moneyBeat:
-      'Frequency takes 0% on your own bookings, always. When you sell a session, a class, or a membership through your own work, which Crew or a Space turns on, what it earns is yours. Frequency runs on one honest price and earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
+      'Frequency takes 0% on your own bookings, always. Selling a session, a class, or a ticket is open on a free account, from day one; selling recurring memberships runs on a Business Space. Either way, what your own work earns is yours. Frequency runs on one honest price and earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
   },
 ]
 

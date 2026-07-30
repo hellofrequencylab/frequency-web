@@ -8,7 +8,8 @@ import { featureTierLadder } from '@/lib/pricing/feature-tiers'
 // rung per tier, an accessible radiogroup, the current tier highlighted, and a CTA that NAVIGATES (a
 // link to the billing surface) rather than charging.
 
-const CRM = featureTierLadder('space_crm')!
+// A plan-axis ladder. Was `space_crm` until ADR-917 turned it into a meter with no unlock rung.
+const CRM = featureTierLadder('space_memberships')!
 const VERA = featureTierLadder('vera_unlimited')!
 
 function html(node: React.ReactElement): string {

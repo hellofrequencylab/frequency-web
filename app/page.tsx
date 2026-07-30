@@ -50,11 +50,11 @@ const INDEPENDENT_PRICE = formatCents(PLACEHOLDER_SPACE_PRICE_CENTS.independent)
  *  last literal dollar figure on this page. */
 const MEMBER_PRICE = formatCents(PLACEHOLDER_MEMBER_PRICE_CENTS.free)
 
-// And every PERCENTAGE interpolates from the take-rate config the fee code charges, for the same reason:
-// the rungs are Crew (an individual seller) and Business (a Space), with verified Non Profit at zero. Any
-// rung the owner retires disappears from this page with it (ADR-913).
+// And every PERCENTAGE interpolates from the take-rate config the fee code charges, for the same reason.
+// The free Member rung LEADS: selling is free on every tier, so the rate a reader starts on is the honest
+// first number, and the paid rungs are what buys it down. Any rung the owner retires disappears with it.
 const TAKE = PRICING_DEFAULTS.take_rate
-const NETWORK_RATES = `Crew ${formatBps(TAKE.member_bps)}, Business ${formatBps(TAKE.network_bps.business)}, Non Profit ${formatBps(TAKE.network_bps.nonprofit)}`
+const NETWORK_RATES = `Member ${formatBps(TAKE.member_free_bps)}, Crew ${formatBps(TAKE.member_bps)}, Business ${formatBps(TAKE.network_bps.business)}, Non Profit ${formatBps(TAKE.network_bps.nonprofit)}`
 
 // The home is philosophy-led and builder-first: it sells a movement and a role,
 // not "Circles near you." There is no local inventory yet, so the sequence runs
@@ -636,12 +636,12 @@ function Splash({
           </Faq>
           <Faq q="What does it cost?">
             The community is free, forever. Browsing, joining a Circle, and showing up never cost
-            anything, and a business never pays for access to people: paid plans raise the limits.
-            Crew is {CREW_NOTE.foundingLabel}/mo, turns on The Quest, and is free for the whole beta.
-            If you run a practice or a Space, you keep 100% of your own bookings on one honest price,
-            and we earn only a small, shrinking network-only take-rate on the business the network
-            sends you. There&apos;s no card today: join now and your Opening Beta price is locked in
-            for life.{' '}
+            anything, and a business never pays for access to people. Selling is free too: a free
+            member creates events, takes RSVPs, and sells tickets from day one. Crew is{' '}
+            {CREW_NOTE.foundingLabel}/mo, turns on The Quest, buys that rate down, and is free for the
+            whole beta. You keep 100% of your own bookings on every plan, and we earn only a small,
+            shrinking network-only take-rate on the business the network sends you. There&apos;s no
+            card today: join now and your Opening Beta price is locked in for life.{' '}
             <Link href="/pricing" className="font-semibold text-primary-strong hover:underline">
               See the full breakdown
             </Link>

@@ -198,27 +198,13 @@ function spaceRungs(free: string, unlock: string, unlockTier: SpacePlan = 'busin
 }
 
 const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
-  // ── Space functions (plan axis; the CRM/Email/… tier seam FUNCTION_FEATURE_KEY maps to) ──────────
-  space_crm: {
-    axis: 'plan',
-    minTier: 'business',
-    title: 'CRM',
-    // @placeholder 200 mirrors PLACEHOLDER_METER_LIMITS.space_crm (ADR-837, lowered by ADR-914).
-    rungs: spaceRungs(
-      'The pipeline with your first 200 contacts free.',
-      'The full CRM with unlimited contacts: pipeline, private notes, and governed playbooks. Multiple pipelines and team roles come with Collective.',
-    ),
-  },
-  space_email: {
-    axis: 'plan',
-    minTier: 'business',
-    title: 'Email',
-    // @placeholder 300 and 5,000 mirror PLACEHOLDER_METER_LIMITS.space_email (ADR-837).
-    rungs: spaceRungs(
-      'Up to 300 email sends each month.',
-      'Up to 5,000 sends a month, automations, and saved templates. Collective raises it to 25,000.',
-    ),
-  },
+  // ── Space functions (plan axis; the tier seam FUNCTION_FEATURE_KEY maps to) ──────────────────────
+  // 🔴 `space_crm`, `space_email`, `space_team` and `space_multi_pipeline` USED TO CARRY LADDERS HERE
+  // and no longer do (ADR-917). A ladder answers "which tier UNLOCKS this", and those four are not
+  // unlocked, they are METERED: the allowance ladder in feature-meters.ts is their display, and the
+  // coverage test below is what keeps this file and the gate map from drifting apart again. Their old
+  // rung copy also restated the meter numbers in prose ("your first 200 contacts free", "up to 300
+  // email sends"), which is the exact second source Phase 5 spent its whole budget deleting.
   space_automation: {
     axis: 'plan',
     minTier: 'collective',
@@ -227,18 +213,6 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     rungs: spaceRungs(
       'One pipeline, no automations.',
       'Governed playbooks and multi-step sequences that run the safe, reversible moves for you, with 1,000 runs included each month.',
-      'collective',
-    ),
-  },
-  space_team: {
-    axis: 'plan',
-    minTier: 'collective',
-    title: 'Team roles',
-    // @placeholder 3 included seats mirrors PLACEHOLDER_METER_LIMITS.space_team; more seats stay the
-    // ADR-799 per-seat add-on (never a wall).
-    rungs: spaceRungs(
-      'One operator seat.',
-      'Add teammates with roles: editor, moderator, and admin. Three seats included, add more per seat.',
       'collective',
     ),
   },
@@ -299,16 +273,6 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     rungs: spaceRungs(
       'Sell tickets to everyone.',
       'Reserve event tickets for your own members, or for one membership tier, so your membership includes your events.',
-    ),
-  },
-  space_multi_pipeline: {
-    axis: 'plan',
-    minTier: 'collective',
-    title: 'Multiple pipelines',
-    rungs: spaceRungs(
-      'One pipeline for your Space.',
-      'Multiple pipelines, one per segment or program.',
-      'collective',
     ),
   },
   space_whitelabel: {

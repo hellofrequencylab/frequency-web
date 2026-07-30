@@ -81,7 +81,7 @@ const COMMUNITY_FAQ = [
   },
   {
     q: 'How much does it cost to join Frequency?',
-    a: `Joining the community is free, forever. Membership is ${MEMBER_PRICE}, and connection never costs anything. The personal tier, Crew, is ${CREW_NOTE.foundingLabel} a month, and you never pay a cut of your own bookings.`,
+    a: `Joining the community is free, forever. Membership is ${MEMBER_PRICE}, and connection never costs anything. Hosting is free too, and so is charging for it: a free member can run a ticketed event and get paid on day one. The personal tier, Crew, is ${CREW_NOTE.foundingLabel} a month, and you never pay a cut of your own bookings on any tier.`,
   },
   {
     q: 'How does a Circle grow?',

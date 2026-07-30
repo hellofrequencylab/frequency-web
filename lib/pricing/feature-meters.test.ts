@@ -24,6 +24,8 @@ import {
   currentMeterStepIndex,
   nearAllowanceLimit,
   withinAllowance,
+  allowanceVerdict,
+  allowanceHeadroom,
 } from './feature-meters'
 import { tierRankOnAxis } from './feature-tiers'
 
@@ -246,6 +248,71 @@ describe('the gauge as upsell — nearAllowanceLimit + the one shared nudge line
     expect(ALLOWANCE_NUDGE).toBe('Nearly full. Move up a plan for a higher allowance.')
     expect(ALLOWANCE_NUDGE).not.toMatch(/[–—]/)
     expect(ALLOWANCE_NUDGE.toLowerCase()).not.toMatch(/hurry|now|last chance|only|don't|warning|limit reached/)
+  })
+})
+
+// ── THE WRITE SEAM + THE GRANDFATHER RULE (ADR-917, docs/VALUE-LADDER.md Phase 3b/Phase 8) ─────────
+// The dark pattern this batch exists to forbid: a cap that walls someone BEHIND where they already
+// stand. Production held a Space with 567 contacts against a published free allowance of 200 when
+// this was written, and a bare cap would have refused it 367 contacts backwards.
+
+describe('allowanceVerdict — the metered WRITE question, and the grandfather rule', () => {
+  it('never enforces while the gates are not live, however far over the allowance', () => {
+    for (const key of FEATURE_METER_KEYS) {
+      const v = allowanceVerdict(key, 'free', Number.MAX_SAFE_INTEGER, { gatesLive: false })
+      expect(v.allowed).toBe(true)
+      expect(v.enforced).toBe(false)
+    }
+  })
+
+  it('an unlimited tier and a non-metered key are never enforced', () => {
+    expect(allowanceVerdict('space_crm', 'business', 10_000_000, { gatesLive: true }).allowed).toBe(true)
+    expect(allowanceVerdict('space_whitelabel', 'free', 999, { gatesLive: true }).allowed).toBe(true)
+    expect(allowanceVerdict('made-up', 'free', 999, { gatesLive: true }).allowed).toBe(true)
+  })
+
+  it('gates live: room below the cap, refused AT the cap (a write asks for ONE MORE)', () => {
+    const under = allowanceVerdict('space_crm', 'free', FREE_CRM - 1, { gatesLive: true })
+    expect(under.allowed).toBe(true)
+    expect(under.remaining).toBe(1)
+    const at = allowanceVerdict('space_crm', 'free', FREE_CRM, { gatesLive: true })
+    expect(at.allowed).toBe(false)
+    expect(at.remaining).toBe(0)
+    // 🔴 The boundary that separates this from withinAllowance: FREE_CRM contacts is WITHIN a
+    // FREE_CRM allowance and is simultaneously FULL. Both answers are right to their own question.
+    expect(withinAllowance('space_crm', 'free', FREE_CRM, { gatesLive: true })).toBe(true)
+  })
+
+  it('🔴 THE GRANDFATHER RULE: the effective cap is never below the count already held', () => {
+    // The real production case: 567 contacts on a plan whose published allowance is 200.
+    const over = allowanceVerdict('space_crm', 'free', 567, { gatesLive: true })
+    expect(over.allowance).toBe(FREE_CRM) // what the pricing page publishes, unchanged
+    expect(over.effective).toBe(567) // what is actually applied: never below what they hold
+    expect(over.grandfathered).toBe(true)
+    // The cap governs GROWTH FROM TODAY. It is never retroactive, so `remaining` is never negative
+    // and there is no reachable "delete 367 contacts to get back under the limit" state.
+    expect(over.remaining).toBe(0)
+    expect(over.allowed).toBe(false)
+  })
+
+  it('an explicitly granted floor widens the cap and can only ever be MORE generous', () => {
+    const granted = allowanceVerdict('space_crm', 'free', 567, { gatesLive: true, floor: 1_000 })
+    expect(granted.effective).toBe(1_000)
+    expect(granted.allowed).toBe(true)
+    expect(granted.remaining).toBe(433)
+    // A floor BELOW the current count cannot narrow it (the grandfather rule wins).
+    expect(allowanceVerdict('space_crm', 'free', 567, { gatesLive: true, floor: 10 }).effective).toBe(567)
+  })
+
+  it('garbage usage floors to 0 rather than inventing a refusal', () => {
+    expect(allowanceVerdict('space_crm', 'free', Number.NaN, { gatesLive: true }).allowed).toBe(true)
+    expect(allowanceVerdict('space_crm', 'free', -50, { gatesLive: true }).used).toBe(0)
+  })
+
+  it('allowanceHeadroom is the bulk form: a number, or null when nothing is enforced', () => {
+    expect(allowanceHeadroom('space_crm', 'free', 10, { gatesLive: false })).toBeNull()
+    expect(allowanceHeadroom('space_crm', 'business', 10, { gatesLive: true })).toBeNull()
+    expect(allowanceHeadroom('space_crm', 'free', FREE_CRM - 5, { gatesLive: true })).toBe(5)
   })
 })
 

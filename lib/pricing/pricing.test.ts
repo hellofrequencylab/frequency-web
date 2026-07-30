@@ -29,6 +29,7 @@ import {
   type FeatureGate,
 } from './gates'
 import { PRICING_DEFAULTS } from './settings'
+import { PLACEHOLDER_METER_LIMITS } from './feature-meters'
 import { formatCents, priceRow, memberTierRows, spacePlanRows } from './display'
 import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
 
@@ -226,11 +227,11 @@ describe('feature gate ladder math (meetsGate)', () => {
 
 describe('mergeGate (DB override over code default, like mergeChrome)', () => {
   it('returns the code default when there is no override', () => {
-    expect(mergeGate('space_crm', {})).toEqual(FEATURE_GATES.space_crm)
+    expect(mergeGate('space_memberships', {})).toEqual(FEATURE_GATES.space_memberships)
   })
 
   it('an override wins for min_entitlement and enabled', () => {
-    const merged = mergeGate('space_crm', { space_crm: { minEntitlement: 'business', enabled: false } })
+    const merged = mergeGate('space_memberships', { space_memberships: { minEntitlement: 'business', enabled: false } })
     expect(merged?.minEntitlement).toBe('business')
     expect(merged?.enabled).toBe(false)
     // axis still comes from the code default
@@ -252,7 +253,7 @@ describe('mergeGate (DB override over code default, like mergeChrome)', () => {
 describe('featureAllowed — OFF preserves current behavior', () => {
   it('grants EVERYTHING when billing is not live (the OFF invariant)', async () => {
     // Even a free account on a gated feature is allowed while billing is OFF.
-    expect(await featureAllowed('space_crm', { tier: 'free', plan: 'free' }, { gatesLive: false })).toBe(true)
+    expect(await featureAllowed('space_memberships', { tier: 'free', plan: 'free' }, { gatesLive: false })).toBe(true)
     expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { gatesLive: false })).toBe(true)
     expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { gatesLive: false })).toBe(true)
   })
@@ -321,7 +322,9 @@ describe('seeded defaults are sane (mirror the migration)', () => {
   })
 
   it('vera free cap is the spec value (10/day)', () => {
-    expect(PRICING_DEFAULTS.vera_free_daily_cap.messages).toBe(10)
+    // DERIVED, never typed (ADR-917): the operator overlay's default IS the meter's free rung, so the
+    // number a member is shown and the number they hit cannot drift apart again.
+    expect(PRICING_DEFAULTS.vera_free_daily_cap.messages).toBe(PLACEHOLDER_METER_LIMITS.vera_unlimited!.free)
   })
 
   it('space plans carry a 14-day free trial (members have none)', () => {

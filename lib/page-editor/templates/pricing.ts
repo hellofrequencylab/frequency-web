@@ -5,7 +5,7 @@ import {
   BETA_CTA_SECONDARY_LABEL,
   BETA_CTA_SECONDARY_HREF,
 } from '@/lib/site'
-import { priceStrings, pricingCatalog, CREW_NOTE } from '@/lib/pricing/pricing-page'
+import { priceStrings, pricingCatalog, CREW_NOTE, MISSION_FRAMING } from '@/lib/pricing/pricing-page'
 import { formatLoadoutCents } from '@/lib/pricing/loadout'
 import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
 
@@ -35,9 +35,11 @@ const NONPROFIT_YEAR = formatLoadoutCents(CAT.nonprofit_seat.year.foundingCents)
 // ─────────────────────────────────────────────────────────────────────────────
 // PRICING — the honest, warm version. Copies THE COMMUNITY's shape and rhythm.
 //
-// The one idea: membership keeps the room open. Paying is how you hold the door
-// for the next person (circulation, per The Community), never how you buy features
-// or a place at the front. Member is free, forever, and featured.
+// The one idea (docs/VALUE-LADDER.md): never gate the transaction, gate the repeat.
+// Selling is free on every rung, and your own people are always free. Paying buys a
+// lower rate on the sales the network introduces, plus the tools that build the list
+// which takes that rate to zero. It never buys features you cannot otherwise reach,
+// and it never buys a place at the front. Member is free, forever, and featured.
 // Crew is the paid member tier (docs/NAMING.md: "Crew = paid"). Prices below are the
 // GA defaults (lib/pricing/settings.ts, PRICING_DEFAULTS) and are NOT to be edited.
 //
@@ -75,8 +77,8 @@ export const data: Data = {
       props: {
         id: 'pr-hero', variant: 'image',
         eyebrow: 'Pricing',
-        title: 'Free to show up. Paid to hold the door.', titleAccent: 'hold the door',
-        subtitle: "Being a Member is free, forever. Browse Circles and Events, show up, earn Zaps, and meet Vera. A business never pays for access to people either: paid plans raise the limits, and every dollar keeps the room open for the next person who walks in.",
+        title: 'Your own people are always free.', titleAccent: 'always free',
+        subtitle: "Being a Member is free, forever, and so is selling. Browse Circles and Events, show up, earn Zaps, meet Vera, and run a ticketed event and get paid on day one. A business never pays for access to people either. What a paid plan buys is a lower rate on the sales the network introduces, and your own people are always free.",
         image: '/images/site/lab-lounge.jpg', focal: 'center',
         minHeight: 'screen',
         ctaPrimaryLabel: BETA_CTA_LABEL, ctaPrimaryHref: BETA_CTA_HREF,
@@ -93,7 +95,7 @@ export const data: Data = {
         id: 'pr-membership',
         eyebrow: 'Membership',
         title: 'For people.', titleAccent: '',
-        kicker: 'Free to join. Pay when you want more, or pay so someone else can join too.',
+        kicker: 'Free to join, and both rungs sell. Crew takes the rate down and lifts the caps.',
         items: [
           {
             name: 'Member', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
@@ -110,10 +112,10 @@ export const data: Data = {
           {
             name: 'Crew', price: CREW_NOTE.foundingLabel, strikePrice: '', cadence: '/mo',
             priceNote: `${CREW_NOTE.foundingLabel} a month, or ${CREW_NOTE.yearlyLabel} a year.`,
-            tagline: 'The full game, the Crew badge, and dues that keep the lights on. Never a business tool.',
+            tagline: 'The same selling at a lower rate, plus the full game, the Crew badge, and the tools that build your list.',
             highlight: 'normal', badge: 'none',
             features: [
-              { text: 'Everything in Member' },
+              { text: 'Everything in Member, at a lower network rate' },
               { text: 'Full game: Gems and Vault cash-in' },
               { text: 'Author and share your own Quest' },
               { text: 'Vera, unlimited' },
@@ -348,7 +350,7 @@ export const data: Data = {
         items: [
           { icon: 'Shield', image: '', title: 'No card today', body: 'Being a Member is free. We do not ask for a card to join.', href: '' },
           { icon: 'Handshake', image: '', title: 'Leave anytime', body: 'No contracts, no lock-in. Switch plans or step away whenever you like.', href: '' },
-          { icon: 'Heart', image: '', title: 'Free stays free', body: 'The free Member tier is here to stay. Paid plans only add more.', href: '' },
+          { icon: 'Heart', image: '', title: 'Free stays free', body: 'The free Member tier is here to stay, and it sells. Paid plans only buy the rate down and lift the caps.', href: '' },
         ],
         tone: 'surface', width: 'default', align: 'left', layout: L,
       },
@@ -367,20 +369,20 @@ export const data: Data = {
           { q: 'How does the take-rate work?', a: `You keep 100% of the business you bring yourself, always, on every tier. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. There is a rate only on someone the network introduces, and every step up buys it down: a free Member or a free Space is ${RATE.memberFree}, Crew is ${RATE.member}, Business is ${RATE.business}, Collective is ${RATE.collective}, and Non Profit is ${RATE.nonprofit}.` },
           { q: 'What about refunds?', a: 'Every plan is month to month, and you can cancel at any time. Cancel and your plan simply runs out its paid period. No contracts, no lock-in.' },
           { q: 'Can I buy my way into a Host or Guide role?', a: 'No, and that is on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Those roles come from the community, never from a checkout page.' },
-          { q: 'Where does the money go?', a: 'Into keeping the room open. A membership sustains the physical spaces, the lights, the insurance, the thermal circuit, and the community that gathers in them. People who pay more hold the door for neighbors who cannot pay yet, so connection keeps circulating instead of sitting behind a paywall.' },
+          { q: 'Where does the money go?', a: MISSION_FRAMING },
         ],
         tone: 'canvas', width: 'default', align: 'left', layout: L,
       },
     },
 
     // ── Close ── the single ink beat. Shared beta CTA, quiet member link beside
-    // it. The promise is the whole page in one line: show up free, hold the door
-    // when you can. ──────────────────────────────────────────────────────────────
+    // it. The promise is the whole page in one line: show up free, sell free, and
+    // never pay on the people who were already yours. ───────────────────────────
     {
       type: 'CallToAction',
       props: {
         id: 'pr-cta', eyebrow: '', heading: 'Pull up a chair.', headingAccent: 'chair',
-        body: 'Being a Member is free. No card today, leave anytime. Find your people, and when you can, hold the door open for the next person.',
+        body: 'Being a Member is free, and it sells from day one. No card today, leave anytime. Find your people, and keep every dollar the ones you brought yourself spend.',
         ctaPrimaryLabel: BETA_CTA_LABEL, ctaPrimaryHref: BETA_CTA_HREF,
         ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL, ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
         tone: 'ink', width: 'default', align: 'center', layout: L,

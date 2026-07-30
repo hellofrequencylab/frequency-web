@@ -39,13 +39,15 @@ const SEPT = betaGraceEndsAtMs('2026-09-01') // the window's end, read the way t
 
 describe('targetForGate (a feature names the tier its REAL gate sits on)', () => {
   it('a Business feature resolves to the Business tier', () => {
-    expect(targetForGate(FEATURE_GATES.space_crm)).toEqual({ axis: 'plan', tier: 'business' })
-    expect(targetForGate(FEATURE_GATES.space_email)).toEqual({ axis: 'plan', tier: 'business' })
+    // `space_crm` / `space_email` were the examples here until ADR-917 turned both into meters, so
+    // the Business examples are now the two of the three named walls that sit at Business.
+    expect(targetForGate(FEATURE_GATES.space_memberships)).toEqual({ axis: 'plan', tier: 'business' })
+    expect(targetForGate(FEATURE_GATES.space_campaigns)).toEqual({ axis: 'plan', tier: 'business' })
   })
 
   it('a Collective feature resolves to the Collective tier', () => {
     expect(targetForGate(FEATURE_GATES.space_automation)).toEqual({ axis: 'plan', tier: 'collective' })
-    expect(targetForGate(FEATURE_GATES.space_team)).toEqual({ axis: 'plan', tier: 'collective' })
+    expect(targetForGate(FEATURE_GATES.space_sms)).toEqual({ axis: 'plan', tier: 'collective' })
     // Revenue splits are the true Collective line of the collaboration ladder: hosting a few
     // collaborators is Business, sharing money with them automatically is the engine.
     expect(targetForGate(FEATURE_GATES.space_revenue_splits)).toEqual({ axis: 'plan', tier: 'collective' })
@@ -73,8 +75,8 @@ describe('targetForGate (a feature names the tier its REAL gate sits on)', () =>
   })
 
   it('follows an OPERATOR OVERRIDE rather than the code default (the gate is the source)', () => {
-    // An operator raises the CRM floor to Collective: the notice must say Collective, not Business.
-    const gate = mergeGate('space_crm', { space_crm: { minEntitlement: 'collective' } })
+    // An operator raises the memberships floor to Collective: the notice must say Collective.
+    const gate = mergeGate('space_memberships', { space_memberships: { minEntitlement: 'collective' } })
     expect(targetForGate(gate)).toEqual({ axis: 'plan', tier: 'collective' })
   })
 })

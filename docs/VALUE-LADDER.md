@@ -282,8 +282,8 @@ outcomes, and the admin console round-trips a rate change without touching neigh
 | 3 | `PLACEHOLDER_METER_LIMITS.space_crm` 250 → 200, and every restatement of it derived rather than typed | ✅ |
 | 4 | `space_memberships` meter deleted (it collided with its own new gate) | ✅ |
 | 5 | **Drift guard**, `lib/pricing/gate-meter-drift.test.ts` | ✅ |
-| 6 | Convert `space_crm` / `space_email` from gates to meters | ⏳ **Phase 3b** |
-| 7 | Delete or wire the remaining decorative gates | ⏳ **Phase 3b** |
+| 6 | Convert `space_crm` / `space_email` from gates to meters | ✅ Phase 3b (ADR-917) |
+| 7 | Delete or wire the remaining decorative gates | ⏳ 10 of 12 remain after Phase 3b |
 
 **Why 6 and 7 did not ship with the rest.** Deleting the `space_crm` gate before contacts are
 actually counted would replace an *enforced* limit with an *unenforced* one, and hand free Spaces
@@ -297,17 +297,33 @@ existing decorative gates as named exceptions with a reason each. Both lists are
 asserts that every exempted key is still genuinely in violation, so a fixed entry must be deleted and
 a stale exemption cannot shelter the next one.
 
-### Phase 3b — Make the meters real
+### Phase 3b — Make the meters real ✅ shipped (ADR-917)
 
 **Goal:** a published allowance is a number the product actually enforces.
 
-1. Build the counted write seam for `contacts`, then wire `withinAllowance('space_crm', ...)` to it
-   and delete the `space_crm` gate.
-2. Enforce `space_email` monthly sends. ⚠️ The only live cap today is a flat **500/day on every
-   plan** — about 15,000/mo, or **50× the published free allowance of 300**.
-3. Collapse the duplicate ladders onto the meters they shadow: `PLAN_CODE_CAPS` (which still carries
-   retired `starter`/`pro` labels), `BASE_SEAT_ALLOWANCE`, `vera_free_daily_cap`.
-4. Delete or wire the remaining decorative gates, shrinking the guard's exception lists to empty.
+| # | Item | Status |
+|---|---|---|
+| 1 | Counted write seam for `contacts` (`lib/crm/contact-allowance.ts`), `space_crm` gate deleted | ✅ |
+| 2 | `space_email` monthly sends enforced in the delivery core, beside the 500/day throttle | ✅ |
+| 3 | `PLAN_CODE_CAPS` · `BASE_SEAT_ALLOWANCE` · `vera_free_daily_cap` collapsed onto their meters | ✅ |
+| 4 | Decorative gates: `space_team` + `space_multi_pipeline` deleted | ⏳ 10 of 12 remain |
+| 5 | The grandfather rule + the platform-root exemption (`lib/pricing/space-allowance.ts`) | ✅ |
+
+**The chokepoint finding.** There is no single database chokepoint for contacts. `contacts` is written
+from **four** modules — `captureLead` (the one engine behind all five lead-grab doors),
+`linkMemberToSpaceLead`, the CSV importer, and the graduation bridge. The ~20 seams an audit counts are
+*callers* of those four. One shared guard those four call is the architecture; twenty inline checks is
+not. Two writers are deliberately unguarded and say so in their own comments: the ticket buyer's contact
+row (written after the money moved) and `ensureSpaceMemberContact` (written after someone already
+joined). A meter stops new writes; it does not desynchronize the database.
+
+**What bites, and when.** Contacts, monthly sends, and seats ride `featureGatesLive()`, so nothing new
+bites during the beta grace window. The QR cap is **always on**, because it already bit before this
+phase and routing a live limit through a false flag would have switched it off.
+
+**What is enforced against.** The effective cap is `max(published allowance, current count)`, so a cap
+governs growth from today and is never retroactive. See Phase 8 for why, and for the correction to the
+production finding that shaped it.
 
 ### Phase 4 — Upsell tooltips everywhere a meter exists
 
@@ -397,18 +413,40 @@ passes on each.
 | Succeeded tips | 0 | ✅ |
 | Membership tiers on free Spaces (any price) | 0 | ✅ the new `space_memberships` wall strands nobody |
 | Stripe accounts with onboarding complete | 0 | ✅ and 🔴 — see Phase 1 |
-| **Free Spaces over the new 200-contact cap** | **1**, holding **567 contacts** | 🔴 **a real grandfather case** |
+| **Free Spaces over the new 200-contact cap** | **1**, holding **567 contacts** | ⚠️ **misattributed, see below** |
 
-🔴 **The 567-contact Space is the one finding that changes the plan.** An earlier pass reported the
-grandfather surface as clean, and for four of the five checks it was. It was not clean here, and the
-gap is nearly 3× the cap. Had Phase 3b shipped a counted 200-contact limit without re-checking, that
-Space would have hit a wall 367 contacts *behind* where it already stands — the single worst thing
-this model can do to someone, since the whole promise is that your list is yours.
+#### 🔴 The correction, re-verified 2026-07-30 at Phase 3b ship (ADR-917)
 
-**Therefore Phase 3b cannot ship a bare cap.** It must ship with a grandfather rule, and the rule
-should be the generous one: an existing Space is never blocked below its **current** count. A cap
-applies to growth from today, not retroactively to work already done. This is the same principle as
-"a meter never deletes what is already there", applied at the moment of enforcement rather than after.
+**That 567-contact Space is the platform ROOT hub, not a customer.** `spaces.type = 'root'`,
+`spaces.plan = null`. So is the Space over the QR cap, at **36 codes against 3**. The check above read
+`plan` alone, and `asSpacePlan(null)` narrows to `'free'` — correct default-deny for a tenant, and
+exactly wrong for Frequency's own marketing list.
+
+| Re-check | Count | Verdict |
+|---|---|---|
+| Customer free Spaces over 200 contacts | **0** | ✅ |
+| Largest customer contact list | **518**, on a **paid Collective** plan (unlimited) | ✅ |
+| Spaces over the QR cap | **1**, the root hub, at 36 codes | 🔴 the live cap **already refuses it a 37th** |
+| `outreach_sends` rows, all time | **0** | ✅ the send allowance strands nobody |
+| Free Spaces over the 1-seat base | **6**, each holding 2 operator seats | ⚠️ pre-existing; the seat wall only blocks NEW seats |
+
+This is Gate 5 question 4 in action: the earlier pass verified something adjacent that was easier to
+check. It changes the urgency and none of the requirements. **Two rules shipped regardless:**
+
+1. **The platform root hub is never metered** (`lib/pricing/space-allowance.ts` exempts `type = 'root'`
+   before any allowance is read). This also fixes a live bug: the QR cap refuses the root Space a 37th
+   code today.
+2. **A cap governs growth from today, never retroactively.** The effective cap is
+   `max(published allowance, current count)`, so an owner is never blocked *below* where they already
+   stand and "delete 367 contacts to get back under" is unreachable.
+
+⚠️ Be precise about what rule 2 buys, because the generous reading is tempting and would be a lie. It
+guarantees nothing is ever taken away and stops the next write once someone is at or over their number.
+It does **not** grant extra headroom above the allowance. A *stored* grandfather baseline would, and it
+was deferred on fail-direction grounds: a stored baseline that is stale or missed a Space is a
+**lockout**, which is the one outcome this model cannot recover from, while a rule recomputed from the
+live count cannot go stale. An explicit entitlement row can only ever widen it (`allowanceVerdict`
+already takes the `floor`), and it belongs with the operator surface in item 2 below.
 
 #### The rest
 
@@ -624,6 +662,15 @@ real enforcement will flip on". Nothing in the product counts and refuses throug
 | ✅ genuinely enforced | `journey_publish` · `space_journey_publish` (both bite today, both ignore `gatesLive`) |
 | ⚠️ shadowed by a duplicate hardcoded cap | `space_qr` (`PLAN_CODE_CAPS`) · `space_team` (`BASE_SEAT_ALLOWANCE`) · `space_email` (a 500/day cap, not the published monthly one) · `space_vera` · `journey_enrollees` |
 | 🔴 display only | the remaining 15 |
+
+✅ **Closed by Phase 3b (ADR-917).** The write question got its own seam, `allowanceVerdict` (
+`withinAllowance` stays, answering the display question it always answered, and the two differ at the
+boundary on purpose). Genuinely enforced now: `space_crm` at four contact-write seams, `space_email`
+per calendar month in the delivery core, `space_qr` at create (always on), `space_team` through the
+seat wall. All three duplicate ladders read their meter instead of a local number. Still display only:
+`space_multi_pipeline`, `space_bookings`, `space_tickets`, `space_journey`, `space_membership_tiers`,
+`space_collaborators`, `space_automation`, `space_crm_playbooks`, `space_crm_resonance_ai`, and the six
+tier-axis meters other than `journey_publish` / `journey_enrollees`.
 
 ### B3. The ten contradictions, by blast radius
 

@@ -39,8 +39,12 @@ import { featureGatesLive } from '@/lib/pricing/settings'
  *  (entitlement === null) is never plan-gated and resolves entirely on the pure path. Kept in lock-step
  *  with FEATURE_GATES (lib/pricing/gates.ts) §5 space features. */
 const FUNCTION_FEATURE_KEY: Record<string, string> = {
-  crm: 'space_crm',
-  email: 'space_email',
+  // 🔴 `crm` and `email` are deliberately absent (ADR-917, Phase 3b). They are METERED, not gated:
+  // a free Space really does get a CRM and really can email its own people, up to the allowance the
+  // pricing page publishes. The counted limits live at the WRITE seams, where a quantity can actually
+  // be measured (lib/crm/contact-allowance.ts, and the monthly send allowance in lib/spaces/email.ts).
+  // Mapping them here would re-create the contradiction Phase 3b removed: a plan-ladder check that
+  // takes the whole feature away instead of capping how much of it you use.
   storefront: 'space_storefront',
 }
 

@@ -213,23 +213,25 @@ describe('read helpers', () => {
   })
 
   it('isFeatureUnlockedAt: below the min tier is locked, at/above is unlocked', () => {
-    const crm = featureTierLadder('space_crm')!
-    expect(isFeatureUnlockedAt(crm, 'free')).toBe(false)
-    expect(isFeatureUnlockedAt(crm, 'business')).toBe(true)
+    // Was `space_crm` until ADR-917 made it a meter (a metered feature has no unlock ladder). The
+    // shape under test is a plan-axis gate at the Business floor, which `space_memberships` is.
+    const wall = featureTierLadder('space_memberships')!
+    expect(isFeatureUnlockedAt(wall, 'free')).toBe(false)
+    expect(isFeatureUnlockedAt(wall, 'business')).toBe(true)
     // Nonprofit ranks above business, so it clears the business floor.
-    expect(isFeatureUnlockedAt(crm, 'nonprofit')).toBe(true)
+    expect(isFeatureUnlockedAt(wall, 'nonprofit')).toBe(true)
     const vera = featureTierLadder('vera_unlimited')!
     expect(isFeatureUnlockedAt(vera, 'free')).toBe(false)
     expect(isFeatureUnlockedAt(vera, 'crew')).toBe(true)
   })
 
   it('currentStepIndex maps a viewer tier to the highest rung at/below it', () => {
-    const crm = featureTierLadder('space_crm')! // steps: free, business
-    expect(currentStepIndex(crm, 'free')).toBe(0)
-    expect(currentStepIndex(crm, 'business')).toBe(1)
+    const wall = featureTierLadder('space_memberships')! // steps: free, business
+    expect(currentStepIndex(wall, 'free')).toBe(0)
+    expect(currentStepIndex(wall, 'business')).toBe(1)
     // Nonprofit ranks above business (the top rung) → maps to the business rung.
-    expect(currentStepIndex(crm, 'nonprofit')).toBe(1)
+    expect(currentStepIndex(wall, 'nonprofit')).toBe(1)
     // Unknown tier → the free floor.
-    expect(currentStepIndex(crm, 'nonsense')).toBe(0)
+    expect(currentStepIndex(wall, 'nonsense')).toBe(0)
   })
 })

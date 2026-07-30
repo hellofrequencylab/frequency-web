@@ -10,8 +10,11 @@
 // NO em dashes, never "AI Engine" (the add-on is listed as Vera AI, 2026-07 overhaul; the Resonance Engine is the machinery, ADR-590), marketing email is
 // "Email + Automations" (never "Dispatch", a reserved broadcast term), the Space site is "Profile and
 // brand" / "your page", the CRM tool is "Contacts", the scheduler is "Bookings", the code tool is
-// "QR Studio". The free tier is the WHOLE toolset on starter caps, not a subset; the caps themselves are
-// never typed here, they live in lib/pricing/feature-meters.ts (ADR-837) and the copy stays qualitative.
+// "QR Studio". The free tier RUNS THE BUSINESS: it sells, takes payments, and holds a contact list, on
+// starter caps. Three things genuinely need a paid plan and the copy names them plainly rather than
+// implying a subset: selling memberships (Business), campaigns and funnels (Business), and revenue
+// splits (Collective). Everything else is a meter, and the caps are never typed here, they live in
+// lib/pricing/feature-meters.ts (ADR-837) and the copy stays qualitative.
 
 import type { SpaceType } from '@/lib/spaces/types'
 import { spaceCreatePath, type FunnelDestination } from '@/lib/onboarding/beta-sequences'
@@ -24,23 +27,34 @@ import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
 const P = priceStrings()
 
 // Every RATE interpolates from the same take-rate map lib/billing/fees.ts falls back to (kept pure, so
-// this config stays safe to import anywhere). Four doors used to repeat a hardcoded "10% on network
-// sales" for the free tier and "Business halves the rate", which described a ladder we retired (ADR-913).
-const RATE = { business: formatBps(NETWORK_TAKE_RATE_DEFAULT.business), collective: formatBps(NETWORK_TAKE_RATE_DEFAULT.collective) }
-/** The free-tier row's honest descriptor: a free Space runs the whole toolset on starter caps, and the
- *  take-rate story is the same on every tier (0% on the people already yours). */
-const FREE_ROW_DETAIL = 'Everything, on starter caps'
-/** The business row's descriptor: the only fee is on a sale the network introduced. */
-const BUSINESS_ROW_DETAIL = `${RATE.business} on network introductions`
+// this config stays safe to import anywhere), including the FREE Space rung. The free rung is quoted on
+// purpose: selling is free on every tier, so the free row has a real rate of its own and a paid row is a
+// lower number beside it, never a door that opens. The pricing beat is a ladder, not a gate.
+const RATE = {
+  free: formatBps(NETWORK_TAKE_RATE_DEFAULT.free),
+  business: formatBps(NETWORK_TAKE_RATE_DEFAULT.business),
+  collective: formatBps(NETWORK_TAKE_RATE_DEFAULT.collective),
+}
+/** The free-tier row's honest descriptor: a free Space sells from day one, at its own network rate. */
+const FREE_ROW_DETAIL = `Sell from day one, ${RATE.free} on network introductions`
+/** The business row's descriptor: what the plan actually adds, plus the lower fee on network sales. */
+const BUSINESS_ROW_DETAIL = `Memberships and campaigns, ${RATE.business} on network introductions`
 /** The break-even proof, stated once: the rate only ever applies to a NEW person the network brought. */
 function breakEvenCaption(keep: string): string {
-  return `You keep 100% of ${keep}. Frequency earns only when the network introduces someone new, and once they are yours it is 0% for good.`
+  return `You keep 100% of ${keep}, on every plan including the free one. Frequency earns only when the network introduces someone new, and once they are yours it is 0% for good.`
+}
+
+/** The shared pricing-beat intro. It leads with the rate promise, not the plan: nothing is behind a
+ *  wall, so what a paid rung buys is a smaller number and the tools that make it smaller still. The
+ *  per-niche clause names the moment a door's reader would actually step up. */
+function pricingIntro(stepUp: string): string {
+  return `Selling is never behind a plan. A free Space takes payments from day one, and your own people are always free. ${stepUp} No add-on menu, no surprise fees.`
 }
 
 /** The shared what-does-it-cost FAQ answer, with the per-niche "you keep 100% of ..." clause and an
  *  optional extra sentence (the community-builders Collective line). One template, five doors. */
 function costAnswer(keep: string, extra = ''): string {
-  return `Free to start. Business is ${P.businessList} a month, or ${P.businessBeta} at the Opening Beta price through September 1, 2026, and you keep 100% of ${keep}.${extra} We earn only on a sale the network introduces, at ${RATE.business} on Business, and it is 0% for good once that person is yours. You always see the full number, nothing hidden.`
+  return `Nothing to start selling. A free Space takes payments from day one at ${RATE.free} on the sales the network introduces, and 0% on the people already yours. Business is ${P.businessList} a month, or ${P.businessBeta} at the Opening Beta price through September 1, 2026: it takes that rate to ${RATE.business}, and adds memberships and campaigns. You keep 100% of ${keep} either way.${extra} You always see the full number, nothing hidden.`
 }
 
 // ── The small, consistent feature-icon set (drawn once, house tokens) ─────────────────────────────
@@ -82,8 +96,8 @@ export interface FunnelPriceRow {
   kind: 'free' | 'business' | 'nonprofit' | 'resonance'
   /** The plan name shown, e.g. "Free", "Business", "+ Resonance". */
   name: string
-  /** The right-hand descriptor, e.g. "Everything, on starter caps", "5% on network introductions",
-   *  "AI that works for you". Rates come from the shared RATE map, never typed here. */
+  /** The right-hand descriptor, e.g. "Sell from day one, 10% on network introductions", "AI that works
+   *  for you". Rates come from the shared RATE map, never typed here. */
   detail: string
   /** Featured row (the one the niche is steered toward). */
   featured?: boolean
@@ -235,7 +249,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: 'Start free, and stay free while you grow. When your practice takes off, one plan opens everything. No add-on menu, no surprise fees.',
+    intro: pricingIntro('When your practice takes off, Business buys the rate down and adds memberships and campaigns.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -325,7 +339,7 @@ export const STUDIOS_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: 'Start free, and stay free while you grow. When your studio fills, one plan opens everything. No add-on menu, no surprise fees.',
+    intro: pricingIntro('When your studio fills, Business buys the rate down and turns on memberships and class packs.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -415,7 +429,7 @@ export const EVENTS_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: 'Start free, and stay free while you grow. When your events take off, one plan opens everything. No add-on menu, no surprise fees.',
+    intro: pricingIntro('When your events take off, Business buys the rate down and adds campaigns and memberships.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -506,7 +520,7 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: 'Start free, and stay free while you grow. When your community grows a team, one plan opens everything. No add-on menu, no surprise fees.',
+    intro: pricingIntro('When your community grows a team, Business buys the rate down and turns on memberships and campaigns.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -602,7 +616,7 @@ export const NONPROFITS_FUNNEL: FunnelConfig = {
     header: 'Free to start. Nothing taken on what you raise.',
     intro: 'Start free, and stay free while you grow. Verified 501(c)(3) organizations run the Non Profit plan, flat and never per seat, with no take-rate on what you raise.',
     rows: [
-      { kind: 'free', name: 'Free', detail: 'Everything to start' },
+      { kind: 'free', name: 'Free', detail: `Take gifts from day one, ${RATE.free} on network introductions` },
       { kind: 'nonprofit', name: 'Non Profit', detail: '0% on what you raise', featured: true },
       { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
     ],

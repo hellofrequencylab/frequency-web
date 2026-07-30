@@ -91,7 +91,7 @@ const INSIDE: { icon: IconType; title: string; body: string }[] = [
   {
     icon: HeartHandshake,
     title: 'A door held open',
-    body: 'Your people join free, always. You keep 100% of the bookings you bring yourself, and the network earns only on the business it sends you.',
+    body: 'Your people join free, always, and a free Space sells from day one. You keep 100% of the bookings you bring yourself, and the network earns only on the business it sends you.',
   },
   {
     icon: LineChart,

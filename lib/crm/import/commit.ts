@@ -20,6 +20,7 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isPlatformStaff } from '@/lib/auth'
+import { spaceContactHeadroom } from '@/lib/crm/contact-allowance'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { getImport, updateImport, rememberCustomFields, getRootSpaceId } from './store'
 import { headerFingerprint } from './map'
@@ -259,6 +260,20 @@ async function commitToSpace(
   let merged = 0
   let skipped = 0
   let failed = 0
+  let overAllowance = 0
+
+  // METERED WRITE (ADR-917), the BULK form. A CSV is the biggest growth path in the product, so the
+  // headroom is read ONCE up front and decremented locally rather than re-counted per row (a count
+  // per row would be N queries for an answer that only moves by our own inserts). `null` = nothing is
+  // being enforced: an unlimited plan, the platform root hub, the gates not live, or a failed read.
+  // MERGES are never blocked: they touch rows the Space already has, and a meter stops NEW writes
+  // only. FAIL-SAFE: any error resolves to null, so an import can only ever be under-metered.
+  let headroom: number | null = null
+  try {
+    headroom = await spaceContactHeadroom(spaceId)
+  } catch {
+    headroom = null
+  }
 
   for (const p of plan.rows) {
     if (p.action === 'skip') {
@@ -274,6 +289,12 @@ async function commitToSpace(
     }
 
     if (p.action === 'create') {
+      // At the allowance: stop creating, keep going (a later row may still be a MERGE, which is
+      // always allowed). Counted as its own outcome so the report says why.
+      if (headroom !== null && headroom <= 0) {
+        overAllowance++
+        continue
+      }
       try {
         const { error } = await db.from('contacts').insert({
           space_id: spaceId,
@@ -287,6 +308,7 @@ async function commitToSpace(
         else {
           created++
           emails.add(ek)
+          if (headroom !== null) headroom--
         }
       } catch {
         failed++
@@ -320,7 +342,14 @@ async function commitToSpace(
     }
   }
 
-  return { created, merged, skipped, failed, total: row.source.rows.length }
+  return {
+    created,
+    merged,
+    skipped,
+    failed,
+    total: row.source.rows.length,
+    ...(overAllowance > 0 ? { overAllowance } : {}),
+  }
 }
 
 /** Merge two meta objects per strategy: overwrite = incoming wins; fill_empty = only add

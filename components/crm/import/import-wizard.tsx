@@ -781,7 +781,7 @@ export function ImportWizard({
           description={
             undone
               ? 'We removed the contacts this import added. You can import another file any time.'
-              : `Created ${result.created}, merged ${result.merged}, skipped ${result.skipped}${result.failed ? `, ${result.failed} could not be saved` : ''}. You can import another file any time.`
+              : `Created ${result.created}, merged ${result.merged}, skipped ${result.skipped}${result.failed ? `, ${result.failed} could not be saved` : ''}.${result.overAllowance ? ` ${result.overAllowance} are waiting: this space is at its contact allowance, and everything already here stays. Move up a plan to bring them in.` : ''} You can import another file any time.`
           }
           action={
             <div className="flex flex-wrap items-center justify-center gap-2">
