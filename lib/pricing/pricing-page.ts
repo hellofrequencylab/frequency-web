@@ -2,7 +2,7 @@
 // loadout strip, the interpolable price strings every FAQ answer reads, and the answer-engine ladder
 // summary /llms.txt and /llms-full.txt print).
 //
-// THIS IS NOT A SECOND LADDER (Phase 5, ADR-915). lib/pricing/pricing-grid.ts is THE derived model:
+// THIS IS NOT A SECOND LADDER (Phase 5, ADR-916). lib/pricing/pricing-grid.ts is THE derived model:
 // every offering, every rate, every comparison cell is resolved there from the gates, the meters, the
 // entitlement key sets, and the operator-editable config. This module READS it (pricingTiers and
 // pricingLadderSummary both build on spaceOfferings / allOfferings) and adds only the copy the grid does
@@ -223,7 +223,7 @@ const TIER_CTA: Record<PricingTier['id'], { label: string; href: string }> = {
 /** Build the FIVE public Space tier columns: Free Space FIRST (the first level of Space, where the core
  *  value lives), then Business, Collective, Non Profit, and Independent.
  *
- *  DERIVED FROM THE GRID (Phase 5, ADR-915). The column order, the labels, the taglines, the who-it-is-for
+ *  DERIVED FROM THE GRID (Phase 5, ADR-916). The column order, the labels, the taglines, the who-it-is-for
  *  lines, and every take-rate now come from lib/pricing/pricing-grid.ts spaceOfferings, the one derived
  *  model /pricing itself renders. This function used to type its own take-rate strings, which is how
  *  /llms.txt and /llms-full.txt ended up publishing a fee ladder an operator edit could not move. Prices
@@ -436,7 +436,7 @@ export const MISSION_FRAMING =
  *  crossed-out anchor, no third tier. The personal ladder lives on /upgrade; the commercial page notes it
  *  and links there.
  *
- *  BOTH figures are read, never typed (Phase 5, ADR-915): the monthly from the ONE member-price map
+ *  BOTH figures are read, never typed (Phase 5, ADR-916): the monthly from the ONE member-price map
  *  (feature-tiers), the yearly from the same two-months-free math the catalog itself uses. The yearly
  *  used to be the literal "$90 a year" in this sentence. */
 export const CREW_NOTE = (() => {
@@ -464,7 +464,7 @@ export interface LadderSummaryInput {
 /** The pricing summary an answer engine can lift: the whole ladder, member rungs and Space rungs, plus
  *  the add-ons and the per-rung take-rates. PURE.
  *
- *  DERIVED FROM THE GRID (Phase 5, ADR-915). Every line is built from lib/pricing/pricing-grid.ts
+ *  DERIVED FROM THE GRID (Phase 5, ADR-916). Every line is built from lib/pricing/pricing-grid.ts
  *  allOfferings, the same model /pricing renders, so the corpus an answer engine quotes is the page. It
  *  used to be assembled from hand-typed take-rate strings, which is how /llms.txt spent a release
  *  publishing a fee ladder the product had already retired. */

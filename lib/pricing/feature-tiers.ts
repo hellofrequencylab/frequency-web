@@ -15,7 +15,7 @@
 // while it is true every price below is a PREVIEW only and NOTHING charges (the selector's CTA is a link,
 // never a checkout). Flip it to false when real billing goes live.
 //
-// THE PRICES THEMSELVES ARE NO LONGER TYPED HERE (Phase 5, ADR-915). SPACE_PLAN_PRICE_CENTS is READ off
+// THE PRICES THEMSELVES ARE NO LONGER TYPED HERE (Phase 5, ADR-916). SPACE_PLAN_PRICE_CENTS is READ off
 // the code catalog the checkout bills from (lib/billing/pricing-keys.ts CATALOG), carrying the list
 // anchor and the Opening Beta rate for EVERY plan, so beta-vs-list is one shape rather than a per-tier
 // patch. The one number still written down here is the Crew price, which has no catalog item; the
@@ -56,7 +56,7 @@ const PLAN_CATALOG_ITEM: Record<Exclude<SpacePlan, 'free'>, CatalogItemKey> = {
   independent: 'independent_base',
 }
 
-/** THE Space price map, DERIVED (Phase 5, ADR-915). One row per plan, each carrying BOTH numbers the
+/** THE Space price map, DERIVED (Phase 5, ADR-916). One row per plan, each carrying BOTH numbers the
  *  ladder can ever need: `listCents` (the crossed-out anchor) and `foundingCents` (the Opening Beta rate
  *  actually charged today). Read straight off the code catalog the checkout bills from
  *  (lib/billing/pricing-keys.ts CATALOG), so a price is written down in exactly one place.

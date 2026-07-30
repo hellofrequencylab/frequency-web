@@ -15,7 +15,7 @@ import { formatBps } from '@/lib/pricing/display'
 import { allOfferings, type Offering, type PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { countUpcomingPublicSeries } from '@/lib/events/series-seo'
 
-// NOT ONE FIGURE IN THIS FILE IS TYPED (Phase 5, ADR-915). Every price and every percentage below is
+// NOT ONE FIGURE IN THIS FILE IS TYPED (Phase 5, ADR-916). Every price and every percentage below is
 // READ from lib/pricing/pricing-grid.ts, the same derived model /pricing renders, resolved against the
 // operator's editable config. This route is the single highest-leverage paragraph in the repo for what an
 // answer engine will quote about our fees, and it spent a release quoting a ladder we had retired, then a

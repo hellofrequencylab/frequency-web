@@ -10,7 +10,7 @@ import { allOfferings, spaceOfferings, type PricingGridInput } from '@/lib/prici
 import { pricingLadderSummary, pricingTiers } from '@/lib/pricing/pricing-page'
 import { SPACE_PLANS } from '@/lib/pricing/plans'
 
-// PHASE 5 GATE 2 — THE SINGLE-SOURCE ASSERTION (docs/VALUE-LADDER.md §6, ADR-915).
+// PHASE 5 GATE 2 — THE SINGLE-SOURCE ASSERTION (docs/VALUE-LADDER.md §6, ADR-916).
 //
 // The defect this file exists to prevent: nine structures enumerated what a tier gets, and six of them
 // could disagree. They disagreed by the ordinary mechanism, which is that a number was TYPED somewhere

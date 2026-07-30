@@ -36,7 +36,7 @@ export interface ComparisonGroup {
 // The Frequency anchor prices the stack is set against. Business is the flat plan; the all-in number is
 // Business with every metered add-on turned on.
 //
-// DERIVED, NOT TYPED (Phase 5, ADR-915). These were literals, and they had gone stale: $49 was neither
+// DERIVED, NOT TYPED (Phase 5, ADR-916). These were literals, and they had gone stale: $49 was neither
 // the Opening Beta rate the checkout charges nor the $29 list, and it rendered live on /pricing beside a
 // grid that quoted the real number. They now READ the same code catalog the checkout bills from
 // (lib/billing/pricing-keys.ts CATALOG), through the same beta-window rule every other pricing surface

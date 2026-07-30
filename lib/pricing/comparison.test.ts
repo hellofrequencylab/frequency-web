@@ -42,7 +42,7 @@ describe('pricing comparison catalog', () => {
     expect(yearlySaving()).toBe(monthlySaving() * 12)
   })
 
-  // Phase 5 (ADR-915). These anchors used to be literals and had gone stale: $49 was neither the beta
+  // Phase 5 (ADR-916). These anchors used to be literals and had gone stale: $49 was neither the beta
   // rate the checkout charges nor the $29 list, and it rendered live on /pricing. The lock is that they
   // are READ from the same catalog the checkout bills, resolved through the same beta window.
   it('anchors the stack against the REAL Business price, on both sides of the cutover', () => {

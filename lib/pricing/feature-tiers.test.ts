@@ -131,7 +131,7 @@ describe('placeholder pricing — nothing charges (the go-live switch)', () => {
     }
   })
 
-  // Phase 5 (ADR-915). These maps used to be typed literals, and Business's read $29 (the list) while
+  // Phase 5 (ADR-916). These maps used to be typed literals, and Business's read $29 (the list) while
   // /pricing quoted $19 (the beta rate the checkout actually charges). The lock is that the map is READ
   // from the catalog the checkout bills, carrying BOTH numbers for EVERY plan, so no tier can be the one
   // that was forgotten. Asserted against the catalog, never against a repeated literal.

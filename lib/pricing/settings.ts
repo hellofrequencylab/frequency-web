@@ -11,7 +11,7 @@
 // answers "do the paid feature GATES bite yet" = billingLive() AND the `beta_grace` window has ended.
 // Charging paths take the first; every feature-gating path takes the second. Do not re-conflate them.
 //
-// THIS MODULE IS THE OPERATOR OVERLAY, NOT A PRICE LIST (Phase 5, ADR-915). The code-default values live
+// THIS MODULE IS THE OPERATOR OVERLAY, NOT A PRICE LIST (Phase 5, ADR-916). The code-default values live
 // in lib/pricing/defaults.ts, where every one of them is DERIVED: Space prices from the code catalog the
 // checkout bills (lib/billing/pricing-keys.ts CATALOG), the take-rates from NETWORK_TAKE_RATE_DEFAULT (the
 // same vector lib/billing/fees.ts falls back to), the Crew price from the one pure member-price map

@@ -326,17 +326,34 @@ a stale exemption cannot shelter the next one.
 **Done when:** a test enumerates `PLACEHOLDER_METER_LIMITS` and asserts each key appears in the
 tooltip registry.
 
-### Phase 5 — One feature grid, generated
+### Phase 5 — One feature grid, generated ✅ shipped (ADR-916)
 
 **Goal:** two marketing pages can never again disagree about what a tier includes.
 
-1. `lib/pricing/feature-matrix.ts` (new): the map in §3 above as data, derived from `FEATURE_GATES` +
-   `PLACEHOLDER_METER_LIMITS` where possible so it cannot drift from enforcement.
-2. Every comparison grid on every marketing page renders from it. Hand-written grids are deleted.
-3. A test asserts no marketing page contains a hardcoded percentage or price string.
+No `feature-matrix.ts` was built. `lib/pricing/pricing-grid.ts` was ALREADY that module, so the work
+was pointing the other structures at it and deleting their copies, which is the whole shape of this
+phase: **a tenth source would have made it worse.**
 
-**Done when:** grepping the marketing routes for `%` or `$` finds only the components that read from
-the matrix.
+| # | Contradiction (A2) | Status |
+|---|---|---|
+| 1 | Business $29 vs $19 | ✅ `SPACE_PLAN_PRICE_CENTS` carries `{list, beta}` for every plan, read off the code catalog; `tierPriceCents` resolves through the beta window. `COLLECTIVE_BETA_CENTS` is now one cell of that map, not a patch. ⚠️ the in-app `plan-ladder.tsx` still renders list |
+| 2 | Three take-rate sources | ✅ collapsed to one code vector (`NETWORK_TAKE_RATE_DEFAULT`), which `PRICING_DEFAULTS.take_rate` now READS. The operator overlay layers on top wherever a DB read is available |
+| 3 | `pricingTiers()` rate literals | ✅ derived from `spaceOfferings`; both `/llms*.txt` routes resolve the operator's config, so an admin edit moves the corpus |
+| 4 | Stale `$49` comparison anchor | ✅ `FREQUENCY_BUSINESS_MONTHLY` / `FREQUENCY_ALL_IN_MONTHLY` read the catalog through the beta window |
+| 5 | Independent's display status | ✅ ruled: displayed on every PUBLIC surface, not an in-app upgrade path. Code and comment agree |
+| 6 | Ladder copy vs meter numbers | ✅ the comment became a test: any quantity a ladder line names must be an allowance its meter grants |
+
+1. `PRICING_DEFAULTS` moved to `lib/pricing/defaults.ts` (PURE), so the derived model can read the one
+   shape without dragging the service-role client into a client bundle. Every field is read, not typed.
+2. `lib/marketing/marketing-figures.test.ts` is the Gate 2 lock, in two halves: NEGATIVE (no marketing
+   surface contains a literal dollar figure, or any percentage but the structural `0%` / `100%`) and
+   POSITIVE (change one rate in the config and the grid, the tier table, and the published ladder all
+   move together, so "no literals" cannot be satisfied by a second copy of the numbers).
+
+**Not closed, deliberately.** `app/page.tsx` and `/what-is-frequency` interpolate at module scope and
+`app/(marketing)/layout.tsx` reads no `cookies()`/`getUser()`, so both still resolve the CODE defaults
+rather than the operator's rows. They are on the same SOURCE as everything else now, one layer below the
+overlay; moving them is a page-shape change and belongs with Phase 6.
 
 ### Phase 6 — Rewrite the marketing pages
 
@@ -489,14 +506,14 @@ not proven" is an acceptable outcome. A confident claim about something unmeasur
 | # | Structure | Path | Driven by |
 |---|---|---|---|
 | 1 | The Pricing Grid (7 offerings, 2 grids) | `lib/pricing/pricing-grid.ts` | ✅ fully derived from gates + meters + operator DB |
-| 2 | `pricingTiers()` (5 columns) | `lib/pricing/pricing-page.ts` | ⚠️ hybrid: code catalog + **hardcoded** rate strings |
-| 3 | `FEATURE_TIER_LADDERS` (21 ladders) | `lib/pricing/feature-tiers.ts` | ⚠️ hardcoded config, **list** prices not beta |
+| 2 | `pricingTiers()` (5 columns) | `lib/pricing/pricing-page.ts` | ✅ Phase 5: derived from `spaceOfferings`; the rate strings are gone |
+| 3 | `FEATURE_TIER_LADDERS` (21 ladders) | `lib/pricing/feature-tiers.ts` | ✅ Phase 5: prices read from the catalog, beta-aware |
 | 4 | `FEATURE_METERS` (22 ladders) | `lib/pricing/feature-meters.ts` | ⚠️ hardcoded quantities |
 | 5 | `FEATURE_GATES` | `lib/pricing/gates.ts` | ✅ the only structure enforcement reads |
-| 6 | `PlanLadder` in-app rungs | `…/settings/billing/plan-ladder.tsx` | 🔴 hardcoded `RUNGS` + hand-typed blurbs |
-| 7 | Value comparison anchors | `lib/pricing/comparison.ts` | 🔴 stale literals |
-| 8 | Puck pricing template | `lib/page-editor/templates/pricing.ts` | 🔴 unreachable + hardcoded rate prose |
-| 9 | Funnel plan rows (5 niches) | `lib/marketing/funnel-config.ts` | ⚠️ partly interpolated |
+| 6 | `PlanLadder` in-app rungs | `…/settings/billing/plan-ladder.tsx` | ⚠️ prices now derived, but it renders the LIST price, so Business reads $29 against /pricing's $19. One line to fix (`spacePlanPriceCents`) |
+| 7 | Value comparison anchors | `lib/pricing/comparison.ts` | ✅ Phase 5: read from the catalog through the beta window |
+| 8 | Puck pricing template | `lib/page-editor/templates/pricing.ts` | ⚠️ reachable from `/pages` (ADR-915), inert output; its `$90` literals are gone |
+| 9 | Funnel plan rows (5 niches) | `lib/marketing/funnel-config.ts` | ✅ Phase 5: on the one rate vector, no literals |
 
 ### A2. Six confirmed contradictions between them
 
@@ -509,8 +526,10 @@ not proven" is an acceptable outcome. A confident claim about something unmeasur
 | 5 | **Independent's display status** | `pricing-page.ts` comments "not displayed" and then returns it; the in-app ladder genuinely hides it. So `/llms*.txt` publishes a tier the app does not |
 | 6 | **Ladder copy vs meter numbers** | Kept in sync by a comment ("keep these lines in step"), not by a test |
 
-🔴 Every one of these is a Phase 5 target. The fix shape is the same each time: `pricing-grid.ts` is
-already correct and already derived, so the work is pointing the other eight at it and deleting them.
+✅ All six are closed by Phase 5 (ADR-916), with two residues named in the phase table above: the in-app
+`PlanLadder` still renders the list price, and the two static marketing pages still read the code
+defaults rather than the operator's rows. The fix shape was the same each time: `pricing-grid.ts` was
+already correct and already derived, so the work was pointing the other eight at it and deleting them.
 
 ### A3. Meters with no in-context upsell (Phase 4 worklist)
 
@@ -523,7 +542,7 @@ already correct and already derived, so the work is pointing the other eight at 
 | tier | `journey_publish` · `journey_enrollees` · `practice_publish` | prose in `AuthoringAccessNote`, no meter |
 | tier | `circle_host` | on-click lightbox only. No "1 of 1 Circles hosted" |
 | tier | `event_create` | 🔴 full gap. The gate was removed and nothing replaced it |
-| plan | `space_qr` · `space_bookings` · `space_tickets` · `space_memberships` | the settings section mounts `FeatureLockedNotice` **without** a `featureKey`, so no upsell renders |
+| plan | `space_qr` · `space_bookings` · `space_tickets` · `space_membership_tiers` | the settings section mounts `FeatureLockedNotice` **without** a `featureKey` |
 | plan | `space_membership_tiers` · `space_journey` · `space_journey_publish` | no surface at all |
 | plan | `space_multi_pipeline` · `space_collaborators` · `space_vera` · `space_crm_playbooks` | no meter mount |
 | plan | `space_team` | `SeatCounter` on the billing page only, nothing at `/settings/members` where seats are added |
@@ -531,6 +550,17 @@ already correct and already derived, so the work is pointing the other eight at 
 
 Covered today: `space_crm`, `space_email`, `space_automation`, and (bespoke, not meter-driven)
 `space_crm_resonance_ai`.
+
+🔴 **Two errors in the table above, found only by trying to act on it.** They are left visible rather
+than silently corrected, because both are the same mistake — reading a mount as a working surface.
+
+1. **Passing the missing `featureKey` fixes nothing on its own.** Those four `FeatureLockedNotice`
+   mounts only ever render `reason: 'role' | 'disabled'`, never `'plan'`, so they are the *locked*
+   state of a surface a free Space never reaches. A member at 80% of an allowance is by definition
+   using the feature successfully, so they never see that component. The prompt has to go on the
+   **working** surface, which is where Phase 4 put it.
+2. **`SeatCounter` is already on `/settings/members`.** What was missing was the upsell beside it,
+   not the counter.
 
 ### A4. Deletion candidates (Phase 7)
 

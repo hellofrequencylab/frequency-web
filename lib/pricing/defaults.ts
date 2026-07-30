@@ -1,4 +1,4 @@
-// PRICING DEFAULTS — the CODE-DEFAULT pricing values, and nothing else (Phase 5, ADR-915).
+// PRICING DEFAULTS — the CODE-DEFAULT pricing values, and nothing else (Phase 5, ADR-916).
 //
 // WHY THIS IS ITS OWN MODULE. These defaults used to live in lib/pricing/settings.ts, beside the
 // service-role reads. That made the one shape every price display resolves against server-only, so any

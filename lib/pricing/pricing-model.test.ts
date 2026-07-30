@@ -60,7 +60,7 @@ describe('pricing table model', () => {
     const tiers = pricingTiers(true)
     expect(tiers.map((t) => t.id)).toEqual(['free', 'business', 'collective', 'nonprofit', 'independent'])
     expect(tiers.find((t) => t.id === 'business')!.featured).toBe(true)
-    // Phase 5 (ADR-915): the columns are DERIVED from pricing-grid spaceOfferings, so the table cannot
+    // Phase 5 (ADR-916): the columns are DERIVED from pricing-grid spaceOfferings, so the table cannot
     // hold a tier the grid does not, or omit one it does. Independent is displayed on every public
     // surface; whether it is offered as an in-app UPGRADE is the plan ladder's own, separate call.
     for (const t of tiers) expect(t).not.toHaveProperty('preview')

@@ -22,7 +22,7 @@ export const revalidate = 3600
 /** Resolve the whole pricing model the way /pricing does: the operator's editable config layered over
  *  the code defaults. This route already reads the DB (the help center) and is ISR, so it can afford the
  *  same reads /pricing makes, and an edit at /admin/pricing now moves the answer-engine corpus in the
- *  same revalidation it moves the page. Before Phase 5 (ADR-915) it read the code defaults only, so a
+ *  same revalidation it moves the page. Before Phase 5 (ADR-916) it read the code defaults only, so a
  *  price or rate an operator changed was published here at the old number until the next deploy. */
 async function pricingInput(): Promise<PricingGridInput> {
   const [values, catalog] = await Promise.all([getPricingValues(), loadCatalogConfig()])
