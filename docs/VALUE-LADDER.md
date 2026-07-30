@@ -243,9 +243,13 @@ page promises.
 2. Remove `event_paid_tickets` and `personal_payouts` from `FEATURE_GATES`; add a migration that
    deletes any `pricing_feature_gates` override rows for those keys so the DB layer cannot
    resurrect them.
-3. **Connect onboarding at first sale**, not in settings. When a free seller publishes a priced
-   event, the ticket panel shows an inline "connect a payout account" step. Nothing is gated; the
-   money simply cannot move until Stripe has them, which is a legal fact, not a tier.
+3. **Connect onboarding at first sale**, not in settings. ⏳ **Partly done.** The price field now
+   names the payout account as a two-minute setup step with a link, rather than as a dead end. What
+   remains is the *conditional* version: showing it only when the payee is not already payout-ready.
+   That needs readiness threaded through four render sites (`events/new`, `events/[slug]/edit`,
+   `events/drafts/[id]`, `event-spark`), so it is tracked separately rather than half-built.
+   Nothing is gated either way; the money simply cannot move until Stripe has them, which is a
+   banking fact, not a tier.
 4. Ladder copy in `feature-tiers.ts` for these keys is deleted (the ladders exist only for gates).
 
 **Done when:** a `membership_tier = 'free'` profile with no Space can publish a priced event, a buyer
