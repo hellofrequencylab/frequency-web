@@ -382,8 +382,9 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Active events',
     unit: 'events',
     period: null,
-    // Free: 2 active events at a time, free or RSVP only (charging for one is the separate
-    // event_paid_tickets gate). Crew: unlimited, including recurring series.
+    // Free: 2 active events at a time. Crew: unlimited, including recurring series. Note this meters
+    // how many events run AT ONCE, never whether they may charge — selling is free on every tier
+    // (ADR-914), so a free Member's two events can both sell tickets.
     allowances: PLACEHOLDER_METER_LIMITS.event_create!,
     allowanceTextByTier: { free: 'Up to 2 active events, free or RSVP' },
   },
@@ -420,10 +421,9 @@ export const NON_METERED_FEATURES: Record<string, string> = {
   // plan (docs/A2P-REGISTRATION.md), so a per-tier send allowance here would invent a second, wrong cap.
   space_sms: 'On/off capability (group SMS); send volume is governed by the A2P 10DLC registration, not the plan.',
   // ── Personal leadership on/off unlocks (tier axis). The QUANTITIES that pair with these are metered
-  // above (circle_host, practice_publish, event_create, journey_publish); these four are the genuine
-  // switches a number cannot express.
-  event_paid_tickets: 'On/off capability (charge for your own event); the event count is metered on event_create.',
-  personal_payouts: 'On/off capability (personal Stripe Connect payouts), no natural quantity to meter.',
+  // above (circle_host, practice_publish, event_create, journey_publish); these two are the genuine
+  // switches a number cannot express. (`event_paid_tickets` and `personal_payouts` were listed here
+  // until ADR-914 retired both gates: selling is free on every tier, so there is no switch left.)
   journey_library_list: 'On/off capability (list a Journey in the public library); the publish count is metered on journey_publish.',
   entry_points: 'On/off capability (entry points: QR codes, short links, flyers); per-Space QR volume is metered on space_qr.',
 }

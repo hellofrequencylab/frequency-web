@@ -27,7 +27,7 @@ import { stripe, appUrl } from './stripe'
 import { getConnectStatus, payoutsLive } from './connect'
 import { platformFeeCents, spaceTakeRateCents, memberTakeRateCents } from './fees'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
-import { ticketSellerVerdict } from '@/lib/events/ticket-eligibility'
+import { TICKETS_NOT_READY } from '@/lib/events/ticket-eligibility'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -282,33 +282,29 @@ export async function createTicketCheckout(opts: {
     return { error: 'This event is free. No ticket needed.' }
   }
 
-  // ── MAY THIS EVENT SELL AT ALL? (ADR-913) ────────────────────────────────────────────────
-  // A free Member can create an event and take RSVPs; charging money is Crew or a Space. Checked
-  // HERE as well as at every write seam, because the write seams only govern events created AFTER
-  // this shipped: an event already carrying a price, or a host who lapses from Crew back to free
-  // mid-sale, would otherwise keep charging cards indefinitely. The buy path is the only place that
-  // sees every sale, so it is the backstop.
+  // ── MAY THIS EVENT SELL AT ALL? (ADR-914, reversing ADR-913) ─────────────────────────────
+  // ONE condition, on every tier: the payee (the hosting space's owner, else the personal host) can
+  // actually receive money. There is no longer a tier check here. A free Member sells at 10%, a free
+  // Space at 10%, Crew at 8%, Business at 5% — the ladder is the RATE, never the permission
+  // (docs/VALUE-LADDER.md §2). The `profiles.membership_tier` read this branch used to do is gone
+  // with it; the tier still decides the FEE, which is resolved further down from the same row the
+  // money routes to.
   //
-  // Reads the REAL tier straight off `profiles` rather than through resolveCaller: BETA_OPEN_ACCESS
-  // reports a granted tier to make the beta feel open, and a money gate must never honour that.
-  const { data: payeeProf } = await db()
-    .from('profiles')
-    .select('membership_tier')
-    .eq('id', payeeProfileId)
-    .maybeSingle()
-  const sellerVerdict = ticketSellerVerdict({
-    hostSpaceId: event.host_space_id,
-    payeeMembershipTier: (payeeProf as { membership_tier: string | null } | null)?.membership_tier ?? null,
-  })
-  if (!sellerVerdict.allowed) {
-    // The BUYER sees a neutral sentence — a stranger must never be told the host's billing tier.
-    // The host gets the real reason at the price field (components/events + the settings module).
-    return { error: 'Tickets aren’t on sale for this event.' }
-  }
-
-  // The payee (the hosting space's owner, else the personal host) must be able to receive money.
+  // Still checked HERE rather than only at the write seams, and the reason survives the reversal: the
+  // buy path is the only place that sees every sale. An account that was ready when the event was
+  // priced can be restricted or deauthorized by Stripe later, and this is where that is caught.
+  //
+  // Fail-closed on purpose. Everywhere else in the pricing model the safe direction is to under-
+  // collect, because charging a fee we promised not to is worse than missing one. Not here: letting a
+  // buyer pay into an account Stripe cannot pay out of does not under-collect, it takes someone's
+  // money and strands it between two parties who both think the other has it.
   const status = await getConnectStatus(payeeProfileId)
-  if (!status.accountId || !status.ready) return { error: 'Tickets aren’t available for this event yet.' }
+  if (!status.accountId || !status.ready) {
+    // The BUYER sees a neutral sentence. A stranger is never told anything about the host's account
+    // state; the HOST gets the real line (NEEDS_PAYOUT_ACCOUNT) beside the price control, where it is
+    // an actionable two-minute setup step rather than a dead end.
+    return { error: TICKETS_NOT_READY }
+  }
 
   const gross = ticketTotalCents(unitCents, qty)
   // Differential take-rate (ADR-811 §A). The hard promise holds on EVERY seller channel: 0% on a sale the
@@ -346,10 +342,21 @@ export async function createTicketCheckout(opts: {
       fee = await spaceTakeRateCents(gross, plan, effectiveOrderSource(source, spRow?.network_connected)) // self → 0, network → tier bps
     }
   } else {
-    // A PERSONAL event (no owning space): the host is an individual seller. 0% on their own sale; the
-    // member (Crew) network rate on a sale the collective sourced. The 100%-of-your-own promise now holds
-    // here too, not just on Space channels.
-    fee = await memberTakeRateCents(gross, source)
+    // A PERSONAL event (no owning space): the host is an individual seller. 0% on their own sale, and
+    // their TIER's rung on a sale the collective sourced — 10% on the free Member tier, 8% on Crew
+    // (ADR-914). This is the ladder's reference case: the free rung is what makes the 8% mean something.
+    //
+    // Reads the REAL `membership_tier` off `profiles` rather than through resolveCaller. BETA_OPEN_ACCESS
+    // reports 'crew' to every signed-in member to make the beta feel open, and billing someone the Crew
+    // rate on a tier they have not bought is charging for a discount they do not hold. Fail-safe on the
+    // read: an error leaves `payeeTier` null, which prices at the free rung (never under-collect).
+    const { data: payeeProf } = await db()
+      .from('profiles')
+      .select('membership_tier')
+      .eq('id', payeeProfileId)
+      .maybeSingle()
+    const payeeTier = (payeeProf as { membership_tier: string | null } | null)?.membership_tier ?? null
+    fee = await memberTakeRateCents(gross, source, payeeTier)
   }
   const tierLabel = tier ? ` (${tier.name})` : ''
 

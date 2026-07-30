@@ -308,24 +308,10 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
   },
   // ── Personal leadership (tier axis). Crew is the people who run the place, so these read as what Crew
   // DOES, never as what a Member is missing. The free rung always names something real a Member can do.
-  event_paid_tickets: {
-    axis: 'tier',
-    minTier: 'crew',
-    title: 'Charge for your events',
-    rungs: [
-      { tier: 'free', unlocks: 'Run free and RSVP events, as many nights as you like.' },
-      { tier: 'crew', unlocks: 'Sell tickets to your own events and keep the money, minus the network rate.' },
-    ],
-  },
-  personal_payouts: {
-    axis: 'tier',
-    minTier: 'crew',
-    title: 'Get paid',
-    rungs: [
-      { tier: 'free', unlocks: 'Buy and book anywhere on Frequency.' },
-      { tier: 'crew', unlocks: 'Connect a payout account and take money for what you run.' },
-    ],
-  },
+  // The `event_paid_tickets` and `personal_payouts` ladders are gone with their gates (ADR-914). A
+  // ladder here exists to DISPLAY a gate, and there is no longer a gate: selling and getting paid are
+  // free on every tier. What differs is the rate, which the pricing grid renders from the take-rate
+  // vector rather than from a per-feature ladder.
   journey_library_list: {
     axis: 'tier',
     minTier: 'crew',

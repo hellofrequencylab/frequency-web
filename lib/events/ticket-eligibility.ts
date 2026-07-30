@@ -1,65 +1,75 @@
-import { isPaid } from '@/lib/core/access-matrix'
-import { deriveTier } from '@/lib/core/entitlement'
-import type { EntitlementTier } from '@/lib/core/entitlement'
+// ── Who may SELL a ticket (ADR-914, superseding ADR-913) ───────────────────────────────────────
+//
+// Owner ruling, 2026-07-30: **a free Member can sell.** The rate differs, the permission does not.
+//
+// This module previously held the opposite rule — selling tickets was a Crew unlock — and reversing it
+// is the single highest-value change in the value-ladder build (docs/VALUE-LADDER.md Phase 1). The
+// reasoning, recorded here because the temptation to re-add the wall will recur:
+//
+// A free Member who wants to charge $10 a head for a house show, and hits a paywall, does not upgrade.
+// They send people to Venmo. That is a PERMANENT loss, because neither the transaction nor the contact
+// ever touched Frequency, and there is now a working habit that routes around the product. The wall
+// bought nothing and cost everything.
+//
+// So the wall moved off the transaction and onto the repeat. Selling is free on every tier; what the
+// paid tiers buy is a lower rate (10% → 8% → 5% → 3%) and the tools that build the list which takes the
+// rate to 0%. A seller's own success is what pushes them up the ladder, which is a far stronger engine
+// than a locked button. **Never gate the transaction. Gate the repeat.**
+//
+// 🔴 WHAT IS LEFT IS NOT A GATE. One condition still stops money moving: the payee must have a Stripe
+// Express account that has completed onboarding. That is a legal and banking fact, not a tier — Stripe
+// will not move money to an unverified account at any price. Modelling it as a SETUP STEP rather than a
+// permission is the whole point of this rewrite, because the two produce completely different surfaces:
+// a gate says "you cannot", a setup step says "two minutes and you can".
+//
+// That distinction is load-bearing right now. Production has exactly ONE profile with a Stripe account
+// and ZERO with onboarding complete, so nobody on the platform can receive money at all. The funnel is
+// open and correctly guarded; it has no completions because nothing ever asks. Hence the ruling that
+// onboarding is triggered AT FIRST SALE, on the surface where someone has just decided to charge, and
+// never buried in a settings page nobody visits.
 
-// ── Who may SELL a ticket (ADR-913) ────────────────────────────────────────────────────────
-//
-// Owner ruling, 2026-07-30: *"A member can create an event but must upgrade to Crew or Space to take
-// tickets. Members can have RSVP."*
-//
-// So a free Member gets the whole event product — create it, publish it, take RSVPs, run the door —
-// and the one thing behind the paywall is charging money for it. That is the highest-intent upgrade
-// moment in the product, and until now it was a dead end: `lib/pricing/gates.ts` has carried
-// `event_paid_tickets: { axis: 'tier', minEntitlement: 'crew', enabled: true }` since the gate
-// catalogue was written, with ladder copy already drafted in lib/pricing/feature-tiers.ts — and
-// **no call site anywhere in the repo**. A free Member could set a price, publish, and the buyer hit
-// "Tickets aren't available for this event yet" with nothing to act on.
-//
-// 🔴 WHY A SHARED PREDICATE AND NOT AN INLINE CHECK. The price can be set at FOUR independent seams
-// (the create/edit form's flat `price_cents`, the settings module's price field, the host ticket-tier
-// panel, and the admin console) and read at a fifth (the buy path). Any one of them left ungated is
-// a way to charge money the tier does not allow. One function, called by all of them, is the only
-// shape where "is this gated?" has a single answer.
+/** What the seller still has to do before this event can take money. `null` = nothing, sell away. */
+export type TicketSetupStep = 'connect_payouts' | null
 
 export interface TicketSellerContext {
-  /** The hosting Space, when a Space hosts the event (`events.host_space_id`). */
-  hostSpaceId?: string | null
   /**
-   * The payee's REAL membership tier — `profiles.membership_tier`, never the beta-granted one.
+   * Has the payee's Stripe Express account completed onboarding (`charges_enabled && payouts_enabled`)?
    *
-   * ⚠️ REAL, not effective. `BETA_OPEN_ACCESS` makes `resolveCaller` report a granted tier so the
-   * beta feels open, and every other creation gate in the repo deliberately reads
-   * `realMembershipTier` for exactly this reason (market/sell, journeys/new, commerce-actions). A
-   * money gate that read the granted tier would let the whole beta population charge cards.
+   * Passed in rather than read here so this stays PURE: the price can be written at four independent
+   * seams (the create/edit form, the settings module, the host ticket-tier panel, the admin console)
+   * and is read at a fifth (the buy path), and a pure predicate is the only shape where all five get
+   * the same answer without five round trips.
    */
-  payeeMembershipTier?: EntitlementTier | string | null
+  payoutsReady?: boolean | null
 }
 
-export type TicketSellerVerdict = { allowed: true; reason: null } | { allowed: false; reason: string }
+export type TicketSellerVerdict = { allowed: true; step: null } | { allowed: false; step: TicketSetupStep; reason: string }
 
-/** The one member-facing refusal, so all five seams say the same sentence. */
-export const TICKETS_NEED_CREW =
-  'Selling tickets is part of Crew. Your event can take free RSVPs on any account, and upgrading also gets you 0% on everyone who is already yours.'
+/** The one seller-facing line, so every seam says the same sentence. Not a refusal: an invitation with
+ *  a next action. CONTENT-VOICE §10 — plain, no guilt, names the time cost honestly. */
+export const NEEDS_PAYOUT_ACCOUNT =
+  'Add a payout account to start selling tickets. It takes about two minutes, and the money lands in your bank.'
+
+/** What a BUYER sees when the seller has not finished setup. A stranger is never told anything about
+ *  the host's account state. */
+export const TICKETS_NOT_READY = 'Tickets aren’t on sale for this event yet.'
 
 /**
  * May this event sell tickets?
  *
- * TWO ways to qualify, matching the owner ruling:
- *   • a SPACE hosts it — any Business / Non Profit Space, on any plan. Money was never the Space wall
- *     (ADR-552); the plan changes the RATE, not the permission.
- *   • or the personal payee is on a paid tier (Crew, which `deriveTier` also folds `supporter` into).
+ * ONE condition, on every tier: the payee can actually receive money. No tier, no plan, no membership
+ * check — a free Member, a free Space, and a Collective all clear this identically.
  *
- * PURE, so the four write seams and the buy path can all call it without a round trip. Fail-closed:
- * an unknown tier narrows to 'free' through `deriveTier` and is refused.
+ * PURE and total. Fail-closed on the setup question (an unknown `payoutsReady` reads as not ready),
+ * which is the safe direction here for a reason that is worth stating: letting a buyer pay into an
+ * account Stripe cannot pay out of does not "under-collect", it takes someone's money and strands it.
  */
 export function ticketSellerVerdict(ctx: TicketSellerContext): TicketSellerVerdict {
-  if (ctx.hostSpaceId?.trim()) return { allowed: true, reason: null }
-  const tier = deriveTier((ctx.payeeMembershipTier as EntitlementTier | null | undefined) ?? null)
-  if (isPaid(tier)) return { allowed: true, reason: null }
-  return { allowed: false, reason: TICKETS_NEED_CREW }
+  if (ctx.payoutsReady === true) return { allowed: true, step: null }
+  return { allowed: false, step: 'connect_payouts', reason: NEEDS_PAYOUT_ACCOUNT }
 }
 
-/** Convenience boolean for render-time gating (the upgrade lightbox around a price control). */
+/** Convenience boolean for render-time branching (showing the connect step beside a price control). */
 export function canSellTickets(ctx: TicketSellerContext): boolean {
   return ticketSellerVerdict(ctx).allowed
 }

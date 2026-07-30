@@ -37,7 +37,6 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 import { rewardConnectorAttendanceForCheckin } from '@/lib/rewards/connector'
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { ticketSellerVerdict } from '@/lib/events/ticket-eligibility'
 
 // Gallery images ride as a JSON array of storage paths (the form has no native array
 // shape). Parse defensively: a missing/garbage value, a non-array, or any non-string
@@ -159,38 +158,17 @@ async function geocodeEventOnCreate(eventId: string, fd: FormData): Promise<void
 // guard used to be a silent `return`, which left the editor open with no message
 // and nothing saved — indistinguishable from success. Navigation moved client-side
 // (the form redirects to the returned slug on ok).
-/**
- * Refuse a PRICE from someone whose tier cannot sell (ADR-913).
- *
- * The owner ruling: a free Member creates events and takes RSVPs; charging for a seat is Crew, or a
- * Space hosting it. This is the WRITE-side half — the buy path (lib/billing/tickets.ts) carries the
- * same check as a backstop for events that were already priced, or a host who lapses mid-sale.
- *
- * Reads the REAL tier off `profiles`, not the beta-granted one from resolveCaller: BETA_OPEN_ACCESS
- * reports a granted tier so the beta feels open, and every other creation gate in this repo reads the
- * real column for exactly that reason. A money gate must never honour the grant.
- *
- * Returns the member-facing refusal, or null when the price may be written. A price of null/0 is
- * always fine: turning an event free is not selling.
- */
-async function priceRefusal(
-  priceCents: number | null,
-  hostSpaceId: string | null,
-  profileId: string,
-): Promise<string | null> {
-  if (!priceCents || priceCents <= 0) return null
-  if (hostSpaceId) return null // a Space hosts it: money was never the Space wall (ADR-552)
-  const { data } = await createAdminClient()
-    .from('profiles')
-    .select('membership_tier')
-    .eq('id', profileId)
-    .maybeSingle()
-  const verdict = ticketSellerVerdict({
-    hostSpaceId: null,
-    payeeMembershipTier: (data as { membership_tier: string | null } | null)?.membership_tier ?? null,
-  })
-  return verdict.allowed ? null : verdict.reason
-}
+// ── SETTING A PRICE IS NOT GATED (ADR-914, reversing ADR-913) ──────────────────────────────────
+//
+// A `priceRefusal` helper used to sit here and block a free Member from writing a price at all. It is
+// gone: selling is free on every tier, and the ladder is the RATE, not the permission
+// (docs/VALUE-LADDER.md §1). Writing a price is now always allowed.
+//
+// What replaced it is not a check on this path at all. The one remaining condition — the payee has a
+// Stripe account that can actually receive money — is surfaced as a SETUP STEP next to the price
+// control, and enforced once, at the buy path (lib/billing/tickets.ts), which is the only place that
+// sees every sale. Refusing the WRITE would have been actively wrong here: someone should be able to
+// price their event and connect their bank in either order.
 
 export async function createEvent(formData: FormData): Promise<ActionResult<{ slug: string }>> {
   const title = (formData.get('title') as string | null)?.trim()
@@ -359,14 +337,6 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   // Cast: capacity/visibility/category/energy_tag/space_id are newer than the generated
   // DB types (lib/database.types.ts) — repo convention for not-yet-regenerated
   // columns (see lib/billing/*).
-  // 🔴 A PRICE IS A SALE (ADR-913). Refused BEFORE the row is written, so a free Member hears it at
-  // the moment they set a price rather than after a buyer bounces off checkout. A Space-hosted event
-  // passes regardless of the caller's personal tier: money was never the Space wall (ADR-552).
-  {
-    const refusal = await priceRefusal(priceCents, spaceIdForPlacement, myProfileId)
-    if (refusal) return fail(refusal)
-  }
-
   const { data: inserted, error } = await (supabase)
     .from('events').insert({
       title,
@@ -569,18 +539,6 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
       ? (evRow.details as Record<string, unknown>)
       : {}
   const mergedDetails = { ...existingDetails, specialInstructions }
-
-  // Same gate on EDIT (ADR-913): adding a price to an existing free event is the same sale. Uses the
-  // event's OWN hosting axis, and falls back to its placement Space the way every money reader does
-  // (`host_space_id ?? space_id`, ADR-819/911).
-  if (priceFieldSent && evRow?.host_id) {
-    const refusal = await priceRefusal(
-      priceCents,
-      evRow.host_space_id ?? evRow.space_id ?? null,
-      evRow.host_id, // the PAYEE, not the editor
-    )
-    if (refusal) return fail(refusal)
-  }
 
   const { error } = await admin
     .from('events')

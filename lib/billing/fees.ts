@@ -34,9 +34,9 @@ export function platformFeeCents(grossCents: number): number {
 // ── The NETWORK take-rate (ADR-811 §A, ruled ADR-913) ─────────────────────────────────────
 // A Space sale on Connect carries an application fee ONLY when the NETWORK sourced it. The rungs the
 // operator sets in pricing_settings.take_rate.network_bps (editable at /admin/pricing): Space free 10% →
-// Business 5% → Collective 3% → Non Profit 0% → Independent 0% (off the network). An individual Crew
-// seller pays `member_bps`, 8%. And 0%, always, when the buyer is the seller's own audience — that
-// short-circuits before any IO below.
+// Business 5% → Collective 3% → Non Profit 0% → Independent 0% (off the network). An individual seller
+// pays `member_free_bps` (10%) on the free Member tier or `member_bps` (8%) on Crew. And 0%, always,
+// when the buyer is the seller's own audience — that short-circuits before any IO below.
 //
 // The pure math lives in lib/billing/pricing-keys.ts (sourceAwareTakeRateCents); this IO wrapper reads the
 // operator rates and applies them. FAIL-SAFE in two layers: getPricingValues merges every field over the
@@ -63,7 +63,12 @@ export async function spaceTakeRateCents(
     const t = (await getPricingValues()).take_rate
     // Build a complete NetworkTakeRate: per-field fallback to the code default so a partial operator
     // override can never leave a tier undefined (→ NaN fee).
-    const rate = { ...NETWORK_TAKE_RATE_DEFAULT, ...t.network_bps, member: t.member_bps ?? NETWORK_TAKE_RATE_DEFAULT.member }
+    const rate = {
+      ...NETWORK_TAKE_RATE_DEFAULT,
+      ...t.network_bps,
+      member: t.member_bps ?? NETWORK_TAKE_RATE_DEFAULT.member,
+      memberFree: t.member_free_bps ?? NETWORK_TAKE_RATE_DEFAULT.memberFree,
+    }
     return sourceAwareTakeRateCents(grossCents, plan, source, rate)
   } catch {
     // Fail-safe to the platform default fee rather than 0 (never under-collect on a network sale error).
@@ -72,17 +77,19 @@ export async function spaceTakeRateCents(
 }
 
 /** The application fee (cents) on a charge from an individual (profile) seller (owner_kind='profile'):
- *  0% on a sale to their own audience, and the single Crew seller rung (`member_bps`, 8%) on a sale the
- *  network sourced. Moving the sale into a Business Space buys that down to the Space rate. Reads the
- *  operator pricing_settings (fail-safe to the seeded defaults, then to the flat platform fee — never 0).
+ *  0% on a sale to their own audience, and their tier's rung on a sale the network sourced — free Member
+ *  10% (`member_free_bps`), Crew 8% (`member_bps`). Moving the sale into a Business Space buys it down
+ *  further, to the Space rate. Reads the operator pricing_settings (fail-safe to the seeded defaults,
+ *  then to the flat platform fee — never 0).
  *
- *  There is no seller-tier argument: an individual seller is a Crew member by definition, because the free
- *  Member tier cannot sell tickets or take payments at all (ADR-913). A `sellerTier` param and a
- *  `member_free_bps` rung used to live here; both retired with that rule, since no free-member sale exists
- *  for them to price. */
+ *  `sellerTier` is the payee's REAL `profiles.membership_tier`, never the beta-granted one: BETA_OPEN_
+ *  ACCESS reports 'crew' to make the beta feel open, and billing the Crew rate to someone who has not
+ *  paid for Crew would be charging on a tier they do not hold. Omitting it prices at the free rung,
+ *  which is the never-under-collect direction. */
 export async function memberTakeRateCents(
   grossCents: number,
   source: import('./pricing-keys').OrderSource = 'self',
+  sellerTier?: string | null,
 ): Promise<number> {
   // A member's OWN sale is always 0% (the hard promise, ADR-811).
   if (source === 'self') return 0
@@ -97,8 +104,9 @@ export async function memberTakeRateCents(
       ...NETWORK_TAKE_RATE_DEFAULT,
       ...t.network_bps,
       member: t.member_bps ?? NETWORK_TAKE_RATE_DEFAULT.member,
+      memberFree: t.member_free_bps ?? NETWORK_TAKE_RATE_DEFAULT.memberFree,
     }
-    return sourceAwareMemberTakeRateCents(grossCents, source, rate)
+    return sourceAwareMemberTakeRateCents(grossCents, source, rate, sellerTier)
   } catch {
     return platformFeeCents(grossCents)
   }

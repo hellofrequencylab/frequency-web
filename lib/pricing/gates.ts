@@ -63,8 +63,16 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   //
   // The community_role ladder is UNTOUCHED (ADR-207: role is earned, never billing). Hosting the first
   // Circle still makes a free Member a Host; these gates sit on the billing axis beside it.
-  event_paid_tickets: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // charge for your own event
-  personal_payouts: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // personal Stripe Connect payouts
+  // 🔴 `event_paid_tickets` and `personal_payouts` USED TO SIT HERE and are deliberately gone
+  // (ADR-914, docs/VALUE-LADDER.md Phase 1). Selling is free on every tier; the ladder is the RATE,
+  // not the permission. Do not re-add them.
+  //
+  // Both were also decorative, which is worth recording so the deletion is not mistaken for a
+  // capability being removed. `personal_payouts` had ZERO call sites: eligibility to receive money is
+  // and always was `canReceivePayouts` (community role or persona), which never reads
+  // `membership_tier`. `event_paid_tickets` had zero call sites too — a parallel predicate
+  // (`ticketSellerVerdict`) enforced the rule instead, and that predicate is what Phase 1 reversed.
+  // So this deletion removes two claims that were never true, rather than opening two doors.
   journey_library_list: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // list a Journey publicly
   entry_points: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // QR codes, short links, flyers
 

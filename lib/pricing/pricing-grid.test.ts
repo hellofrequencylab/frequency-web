@@ -340,42 +340,46 @@ describe('member grid: Member and Crew on the personal ladder', () => {
     expect(cellsByColumn(grid, 'space')).toEqual({ member: 'Included', crew: 'Included' })
   })
 
-  it('quotes a take-rate on CREW only, and never under the free Member header (ADR-913)', () => {
-    // 🔴 THE BUG THIS TEST USED TO ENFORCE: it asserted cells.member === cells.crew, so the free Member
-    // column printed the Crew seller rate (8%) for someone the product does not let take a payment at all.
-    // A rate is only honest where a sale can happen.
+  it('quotes a rate on BOTH member columns, from config, with Crew lower (ADR-914)', () => {
+    // 🔴 WHAT THIS TEST HAS NOW ASSERTED THREE WAYS, and why the history matters. It originally checked
+    // member === crew, which printed the Crew rate under the free header. ADR-913 flipped it to assert
+    // the free column says "Selling is not included". ADR-914 reversed the rule itself: selling is free
+    // on every tier and the ladder IS the rate. So both columns must name a number, and the paid one
+    // must be lower — that is the entire upgrade argument, rendered.
     const cells = cellsByColumn(grid, 'take_rate')
     expect(cells.crew).toBe(`${PRICING_DEFAULTS.take_rate.member_bps / 100}%`)
-    expect(cells.member).toBe('Selling is not included')
-    expect(cells.member).not.toMatch(/\d%/)
+    expect(cells.member).toBe(`${PRICING_DEFAULTS.take_rate.member_free_bps / 100}%`)
+    expect(cells.member).toMatch(/\d%/)
+    expect(PRICING_DEFAULTS.take_rate.member_bps).toBeLessThan(PRICING_DEFAULTS.take_rate.member_free_bps)
   })
 
-  it('gates selling itself at Crew, from the real gate map (RSVPs stay free)', () => {
-    for (const feature of ['event_paid_tickets', 'personal_payouts']) {
-      const cells = cellsByColumn(grid, feature)
-      expect(cells.member, `${feature} @ member`).toBe('Not included')
-      expect(cells.crew, `${feature} @ crew`).toBe('Included')
+  it('does not gate selling at all: every member column can sell and take payments', () => {
+    // The two gates that used to drive these cells (`event_paid_tickets`, `personal_payouts`) are
+    // deleted. Asserted on the OUTPUT rather than on the gate map so the page's claim is what is
+    // locked: a reader of /pricing must never be told a tier cannot sell.
+    const cells = cellsByColumn(grid, 'sell_anything')
+    expect(cells.member).toBe('Included')
+    expect(cells.crew).toBe('Included')
+  })
+
+  it('🔴 no member column anywhere on the grid says selling is unavailable', () => {
+    // A belt-and-braces sweep over EVERY row, because the old claim lived in three places and was
+    // removed from three places. Any resurrection of a "selling is not included" cell fails here even if
+    // it comes back under a new row key.
+    for (const r of grid.groups.flatMap((g) => g.rows)) {
+      for (const cell of r.cells) {
+        expect(cell.text, `row ${r.key}`).not.toMatch(/selling is not included/i)
+      }
     }
   })
 
-  it('states no rate in the free Member offering line either, and the Crew rate from config', () => {
+  it('states the rate in both offering lines, and leads with the 0% promise on each', () => {
     const [member, crew] = memberOfferings(input)
-    expect(member!.takeRate).not.toMatch(/\d%/)
-    expect(member!.takeRate).toContain('RSVPs')
+    expect(member!.takeRate).toContain(`${PRICING_DEFAULTS.take_rate.member_free_bps / 100}%`)
     expect(crew!.takeRate).toContain(`${PRICING_DEFAULTS.take_rate.member_bps / 100}%`)
-    // The retired free-Member rung is quoted on neither member column. `member_free_bps` is GONE from the
-    // config shape (ADR-913: a free Member cannot sell, so the rung has no reachable surface), so the rate
-    // it used to hold is written out literally here — there is no field left to read it from.
-    const retired = `${1000 / 100}%`
-    for (const o of memberOfferings(input)) expect(o.takeRate).not.toContain(retired)
-  })
-
-  it('follows the gate when selling is opened up (the cell is derived, not typed)', () => {
-    const opened = memberFeatureGrid({ ...input, gateOverrides: { event_paid_tickets: { enabled: false } } })
-    const cells = Object.fromEntries(
-      opened.columns.map((c, i) => [c.id, row(opened, 'take_rate').cells[i]!.text]),
-    )
-    expect(cells.member).toBe(`${PRICING_DEFAULTS.take_rate.member_bps / 100}%`)
+    // The promise is identical on every rung, so it must LEAD on every rung. If it read as a paid
+    // feature the model would be misrepresented on the page that sells it.
+    for (const o of memberOfferings(input)) expect(o.takeRate).toMatch(/^0% on your own people/)
   })
 })
 

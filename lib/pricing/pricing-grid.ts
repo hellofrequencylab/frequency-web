@@ -29,7 +29,7 @@
 // Member, Crew, Space, Business, Collective, Non Profit, Independent.
 
 import { catalogItem, type CatalogItemKey } from '@/lib/billing/pricing-keys'
-import { ENTITLEMENT_LABEL, type EntitlementTier } from '@/lib/core/entitlement'
+import { ENTITLEMENT_LABEL, deriveTier, isPaid, type EntitlementTier } from '@/lib/core/entitlement'
 import type { ResolvedCatalogItem } from './catalog-config'
 import {
   annualDiscountNote,
@@ -175,18 +175,18 @@ function pricedOffering(
   }
 }
 
-/** Can an individual on this PERSONAL tier take a payment at all? Read from the real gate the product
- *  enforces (`event_paid_tickets`, which opens at Crew), with the operator's overrides merged the way
- *  featureAllowed merges them. A free Member creates events and takes RSVPs and never charges (ADR-913),
- *  so nothing on the page may quote that column a take-rate: there is no sale for a rate to apply to. */
-function personalSellingAllowed(tier: string, overrides: FeatureGateOverrides = {}): boolean {
-  const gate = mergeGate('event_paid_tickets', overrides)
-  if (!gate) return true
-  return meetsGate(gate, { tier: tier as EntitlementTier })
+/** Is a PERSONAL column a paid rung? The one predicate the whole repo uses (`isPaid(deriveTier(...))`),
+ *  so a legacy 'supporter' label folds into Crew here exactly as it does on the charging path and a
+ *  column can never quote a rate the fee math would not apply. PURE. */
+function isPaidTierLabel(tier: string): boolean {
+  return isPaid(deriveTier(tier as EntitlementTier))
 }
 
-/** The line a column reads when its tier cannot sell: no rate, and what it CAN do instead. */
-const NO_SELLING_LINE = 'Selling is not included. Events and RSVPs are free, and Crew turns on tickets and payments.'
+// `personalSellingAllowed` and its NO_SELLING_LINE used to sit here, reading the `event_paid_tickets`
+// gate so the free Member column printed "Selling is not included" instead of a rate. Both are gone
+// with that gate (ADR-914): EVERY column on this page can sell, so every column quotes a rate. That is
+// the page's central claim now, and a column that refused to name a number was the old model's most
+// visible artefact.
 
 /** The two MEMBER offerings, in ladder order: Member (free) and Crew. PURE.
  *
@@ -195,12 +195,14 @@ const NO_SELLING_LINE = 'Selling is not included. Events and RSVPs are free, and
 export function memberOfferings(input: PricingGridInput): Offering[] {
   const { values } = input
   const crew = priceRow('crew', ENTITLEMENT_LABEL.crew, values.tier.crew)
-  // THE TWO MEMBER COLUMNS DO NOT SHARE A RATE (ADR-913). Crew is the paid personal SELLING tier and is
-  // charged the member seller rate, `member_bps`, on network-sourced sales only. The free Member column
-  // used to read the SAME string, which printed a take-rate under the FREE header for someone the product
-  // does not let sell at all; it now reads the gate and says so.
-  const crewRate = `0% on your own people, ${formatBps(values.take_rate.member_bps)} on network-sourced sales`
-  const memberRate = personalSellingAllowed('free', input.gateOverrides) ? crewRate : NO_SELLING_LINE
+  // THE TWO MEMBER COLUMNS BOTH SELL, AT DIFFERENT RATES (ADR-914). Both quote the same shape, so the
+  // ladder reads as one number moving rather than as a feature appearing: a free Member pays
+  // `member_free_bps` on network-sourced sales, Crew pays `member_bps`, and BOTH pay 0% on their own
+  // people. The 0% clause leads in both strings on purpose — it is the promise, and it is identical on
+  // every rung, so the only thing that visibly differs is the number Crew buys down.
+  const rateLine = (bps: number) => `0% on your own people, ${formatBps(bps)} on network-sourced sales`
+  const crewRate = rateLine(values.take_rate.member_bps)
+  const memberRate = rateLine(values.take_rate.member_free_bps)
   return [
     {
       id: 'member',
@@ -451,12 +453,13 @@ export function resolveCell(source: RowSource, column: GridColumn, input: Pricin
       return meterCell(source.feature, column)
     case 'takeRate': {
       if (column.axis !== 'plan') {
-        // A rate is only honest where a sale can happen. The personal selling gates open at Crew, so the
-        // free Member column says selling is not included rather than printing the Crew rate under it.
-        if (!personalSellingAllowed(column.tier, input.gateOverrides ?? {})) {
-          return { kind: 'no', text: 'Selling is not included' }
+        // Every personal column can sell (ADR-914), so every one names a rate. Crew reads `member_bps`;
+        // the free Member column reads `member_free_bps`, the reference rate the ladder descends from.
+        const t = input.values.take_rate
+        return {
+          kind: 'value',
+          text: formatBps(isPaidTierLabel(column.tier) ? t.member_bps : t.member_free_bps),
         }
-        return { kind: 'value', text: formatBps(input.values.take_rate.member_bps) }
       }
       return { kind: 'value', text: formatBps(input.values.take_rate.network_bps[column.tier as SpacePlan]) }
     }
@@ -818,22 +821,16 @@ const MEMBER_GROUPS: GroupDef[] = [
     label: 'Selling',
     rows: [
       {
-        key: 'event_paid_tickets',
-        label: 'Sell tickets to your own events',
-        detail: 'Charge for an event you host. Free members create events and take RSVPs.',
-        source: { from: 'gate', feature: 'event_paid_tickets' },
-      },
-      {
-        key: 'personal_payouts',
-        label: 'Take payments and get paid out',
-        detail: 'Your own payouts, without running a Space.',
-        source: { from: 'gate', feature: 'personal_payouts' },
+        key: 'sell_anything',
+        label: 'Sell tickets and take payments',
+        detail: 'Charge for what you run and get paid out, on any account. Add a payout account once and you are selling.',
+        source: { from: 'always' },
       },
       {
         key: 'take_rate',
         label: 'Take-rate on network-sourced sales',
         detail:
-          'You keep 100% from anyone already yours: a follower, a contact, or someone who bought before. Frequency charges once for the introduction. After that they are your people, free. Running a Business Space buys the rate on new introductions down further.',
+          'You keep 100% from anyone already yours: a follower, a contact, or someone who bought before. Frequency charges once for the introduction. After that they are your people, free. Every paid rung buys the rate on new introductions down further.',
         source: { from: 'takeRate' },
       },
     ],
