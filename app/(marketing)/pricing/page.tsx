@@ -266,7 +266,7 @@ export default async function PricingPage() {
           <div className="mb-12">
             <LadderHeading
               title="For you"
-              kicker="Being a member is free, forever. Crew is the paid personal tier, and the one that sells."
+              kicker="Being a member is free, forever. Both rungs sell; Crew takes the rate down and lifts the caps."
             />
             <div className="grid gap-5 sm:grid-cols-2">
               {members.map((o) => (
