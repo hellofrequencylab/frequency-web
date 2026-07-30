@@ -43,7 +43,8 @@ import { type FactGuest } from '@/components/events/event-fact-panel'
 import { type RecapPhoto } from '@/components/events/recap-album'
 import { EventGallery } from '@/components/events/event-gallery'
 import { EventBelonging, EventBelongingSkeleton } from '@/components/events/event-belonging'
-import { circleScopeId, associatedSpaceId } from '@/lib/events/belonging'
+import { VenueCredit } from '@/components/events/venue-credit'
+import { circleScopeId, hostingSpaceId, venueSpaceId } from '@/lib/events/belonging'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { HostHovercard } from '@/components/events/host-hovercard'
 import { EventShareButton } from '@/components/events/event-share-button'
@@ -367,10 +368,13 @@ export default async function EventDetailPage({
   // lib/circles/store.ts spaceIdForCircle), so treating it as a placement attributed those events
   // to the platform's own brand instead of their person host, and pointed the membership-tier +
   // payout lookups at the root tenant. The edit page already made this exact check.
-  const eventSpaceId = associatedSpaceId(
-    { spaceId: extra?.space_id, hostSpaceId: extra?.host_space_id },
-    rootSpaceId,
-  )
+  const spaceAxes = { spaceId: extra?.space_id, hostSpaceId: extra?.host_space_id }
+  // THE HOST: billed, displayed, accountable. Drives attribution, the membership-tier lookup and
+  // the payout-readiness check below.
+  const eventSpaceId = hostingSpaceId(spaceAxes, rootSpaceId)
+  // THE VENUE: where the event lives, and ONLY when that is a different Space from the host — so
+  // the page can never name one Space twice (lib/events/belonging.ts).
+  const eventVenueSpaceId = venueSpaceId(spaceAxes, rootSpaceId)
   let spaceHost: SpaceHostLite | null = null
   // The HOSTING space's owner: for an explicitly space-hosted event (host_space_id set) this is
   // the payee whose Connect account tickets pay into (ADR-819) — the payout-readiness check below
@@ -391,6 +395,24 @@ export default async function EventDetailPage({
       spaceHost = { id: s.id, slug: s.slug, name: s.brand_name ?? s.name ?? 'Space', logoUrl: s.brand_logo_url }
       if (extra?.host_space_id === s.id) hostSpaceOwnerId = s.owner_profile_id
     }
+  }
+
+  // THE VENUE Space, when a DIFFERENT Space hosts (ADR-911). Name + slug only: a venue is a
+  // context credit on the host line, not an identity with a logo, and it carries no money and no
+  // rights. `venueSpaceId` already returned null when the venue IS the host, so this read only ever
+  // happens on an event that genuinely has two Spaces to name.
+  //
+  // Gated on `status === 'active'` exactly as the host is, so a suspended or archived venue silently
+  // drops to "Hosted by <host>" rather than linking a dead Space page.
+  let venueSpace: { slug: string; name: string } | null = null
+  if (eventVenueSpaceId) {
+    const { data: rawVenue } = await admin
+      .from('spaces')
+      .select('slug, name, brand_name, status')
+      .eq('id', eventVenueSpaceId)
+      .maybeSingle()
+    const v = rawVenue as { slug: string; name: string | null; brand_name: string | null; status: string | null } | null
+    if (v && v.status === 'active') venueSpace = { slug: v.slug, name: v.brand_name ?? v.name ?? 'Space' }
   }
 
   // Draft guard (ADR poster-events): an unpublished draft must never render on its
@@ -1827,7 +1849,6 @@ export default async function EventDetailPage({
             <EventBelonging
               eventId={event.id}
               circle={scopeSlug ? { name: scopeName, slug: scopeSlug } : null}
-              space={spaceHost ? { name: spaceHost.name, slug: spaceHost.slug } : null}
               canManage={canManage}
             />
           </Suspense>
@@ -1844,6 +1865,7 @@ export default async function EventDetailPage({
               {spaceHost.name}
             </Link>
             {collaboratorNames ? <span> with {collaboratorNames}</span> : null}
+            <VenueCredit venue={venueSpace} />
             {event.host ? (
               <span className="text-subtle"> · organized by {event.host.display_name}</span>
             ) : null}
@@ -1851,9 +1873,12 @@ export default async function EventDetailPage({
         ) : event.host ? (
           // In-network host: bold, clickable, with a hover/focus profile-preview popover
           // (items 2 + 3). An out-of-network organizer stays plain text below.
+          // The venue rides here too: a PERSON can host at a Space's venue, and before ADR-911 that
+          // combination silently dropped the Space (the belonging strip resolved the host axis).
           <p>
             Hosted by <HostHovercard host={event.host} />
             {collaboratorNames ? <span> with {collaboratorNames}</span> : null}
+            <VenueCredit venue={venueSpace} />
           </p>
         ) : isPostedEvent ? (
           <p className="text-subtle">

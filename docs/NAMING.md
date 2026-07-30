@@ -333,6 +333,41 @@ they must read as one idea on the event page:
   the internal person noun is "cohost" (one word) and the internal Space noun is "Collaborator".
   Never "Cohost" as a display heading, never "Co-Host".
 
+## Events: Venue is the fourth role, and Host is the one that gets paid (ADR-911, July 2026)
+
+Four roles, named by **what each one controls** rather than by how prominent it is. The one-line
+rule: **money follows the Host, calendars follow the Venue and Collaborators, rights follow the Host
+and Cohosts.**
+
+| Role | Internal noun / column | Controls | May be |
+|---|---|---|---|
+| **Venue** | `events.space_id` | Where it lives; whose calendar calls it home. No money, no rights. | Any Space |
+| **Host** | `events.host_space_id` | The money and the liability: registrations, payouts, refunds, attendee CRM. | A Space only |
+| **Collaborator** | `event_space_shares` | Reach: their calendar, a featured credit. No money, no rights. | Business / Non Profit Space |
+| **Cohost** | `event_cohosts` | Labour: management access to run it. | A person only |
+
+- **The Host is a Space because the Host is the PAYEE.** Only a Space has a Connect payout account,
+  so a person cannot hold the role — that, not prominence, is why hosting is Business / Non Profit
+  only. Use this reason in operator copy; "business accounts only" invites an argument that "the
+  Space is who the money pays" ends.
+- **Venue reads as "at <Space>" on the host line**, never as a "Part of" chip and never on the WHERE
+  line. "Hosted by Audrey DeWitt · at Royal Temple" is how a person says it out loud. The WHERE line
+  belongs to the PHYSICAL venue name + street address; a Space is an account, not a place.
+- **A Venue is not a credit.** No logo, no card, not bold. A venue that wants brand presence on the
+  event card becomes a **Collaborator** — an existing relation, so that is a data choice, never a
+  code change.
+- **The Venue disappears when it IS the Host,** which is nearly every event. `venueSpaceId` returns
+  null in that case, so the page names one Space and the duplicate is structurally impossible rather
+  than something a conditional has to remember (ADR-911).
+- **"Part of" now means Circle and Journey only.** It used to carry a Space chip resolved from the
+  HOST axis, so "Part of Royal Temple" and "Hosted by Royal Temple" printed the same name twice.
+- **Handing hosting over is a two-sided handshake**, because accepting means accepting the payout
+  liability and the refund obligation for other people's ticket sales. The side that raised an offer
+  can never answer it. Refused while an UPCOMING event has settled tickets; allowed once it is over.
+- **This changes no display label from ADR-834/835.** "Co Host" remains the member-facing label for
+  both Cohosts and Collaborators, and "Collaborator" still never appears as an event-page credit
+  heading. Venue is a new role with a new word, not a rename of an existing one.
+
 ## Events: a repeating event is a series of dates (ADR-897, July 2026)
 
 Recurrence is materialised: every date is a real event row with its own page, its own RSVP, and its

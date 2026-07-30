@@ -5,7 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { getEventCapabilities, getCircleCapabilities } from '@/lib/core/load-capabilities'
-import { getSpaceById } from '@/lib/spaces/store'
+import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
@@ -463,12 +463,27 @@ export async function setEventHostEntity(
   const ref = await resolvePlacementTarget({ type: 'space', id: host.spaceId })
   if (!ref) return fail('That space could not be found.')
 
+  // 🔴 THE HOST NO LONGER MOVES THE EVENT. This used to write `space_id: host.spaceId` alongside
+  // the hosting axis, which forced the two columns the schema deliberately separated (ADR-819:
+  // space_id is pure tenancy, host_space_id is "hosted by, billed, paid") to be equal. The effect
+  // was that naming a host RE-HOMED the event: an event at Royal Temple hosted by Audrey DeWitt
+  // could not be expressed, because choosing the host moved it out of the venue. Owner report.
+  //
+  // The original intent is still served. Writing space_id mattered for a SEEDED or platform event
+  // whose placement is null or the ROOT space ("the platform's lane"), where handing it to its real
+  // organizer's Space should also give it a home. So the placement is claimed ONLY when there is no
+  // meaningful venue yet, and a real venue Space is never clobbered.
+  const { data: currentRow } = await admin.from('events').select('space_id').eq('id', eventId).maybeSingle()
+  const currentSpaceId = ((currentRow as { space_id: string | null } | null)?.space_id ?? null)?.trim() || null
+  const rootSpaceId = await loadRootSpaceId()
+  const claimsPlacement = !currentSpaceId || currentSpaceId === rootSpaceId
+
+  const patch: Record<string, string> = { host_space_id: host.spaceId }
+  if (claimsPlacement) patch.space_id = host.spaceId
+
   // Surface a failed write (the Royal Temple bug: this error was dropped, so the UI read
   // success while host_space_id never changed).
-  const { error } = await admin
-    .from('events')
-    .update({ host_space_id: host.spaceId, space_id: host.spaceId })
-    .eq('id', eventId)
+  const { error } = await admin.from('events').update(patch).eq('id', eventId)
   if (error) {
     console.error('[setEventHostEntity]', { code: error.code, message: error.message, eventId, spaceId: host.spaceId })
     return fail('Could not make that space the host. Please try again.')

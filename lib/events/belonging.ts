@@ -40,12 +40,21 @@ export function circleScopeId(row: {
 }
 
 /**
- * The Space id an event is ASSOCIATED with, or null. The root Space is the single-tenant default
- * that every event inherits (a personal Circle derives it, lib/circles/store.ts spaceIdForCircle),
- * so it names nothing worth showing: treating it as a real placement labels every event "Frequency".
- * `hostSpaceId` (ADR-819, the explicit hosting entity) wins over the placement column when set.
+ * The Space that HOSTS an event, or null — the billed, displayed, accountable party.
+ *
+ * `hostSpaceId` (ADR-819, the explicit hosting axis) wins when set. When it is null this falls back
+ * to the placement column, which is the PRE-ADR-819 behaviour and must stay: an event created inside
+ * a Space's calendar before that migration carries only `space_id`, and its tickets already pay that
+ * Space's owner. Changing the fallback would silently re-route money on every legacy row.
+ *
+ * The root Space is excluded. Every event inherits it (a personal Circle derives it,
+ * lib/circles/store.ts spaceIdForCircle), so treating it as a real host labels every event
+ * "Frequency" and points the membership-tier + payout lookups at the platform tenant.
+ *
+ * ⚠️ THIS IS THE HOST, NOT THE VENUE, and it was called `associatedSpaceId` — a name vague enough
+ * that the two genuinely different ideas were read as one. Use `venueSpaceId` for placement.
  */
-export function associatedSpaceId(
+export function hostingSpaceId(
   row: { spaceId: string | null | undefined; hostSpaceId?: string | null | undefined },
   rootSpaceId: string | null,
 ): string | null {
@@ -53,6 +62,34 @@ export function associatedSpaceId(
   if (!id) return null
   if (rootSpaceId && id === rootSpaceId) return null
   return id
+}
+
+/**
+ * The Space an event LIVES IN when that is a different Space from the one hosting it, else null.
+ *
+ * 🔴 WHY THIS EXISTS. `events` has carried two distinct axes since ADR-819 — `space_id` is pure
+ * tenancy ("lives under") and `host_space_id` is "hosted by, billed, paid" — and nothing surfaced
+ * the difference. Both the read path (`hostSpaceId ?? spaceId`) and the write path
+ * (`setEventHostEntity` updating both columns) forced them equal, so an event at a venue hosted by
+ * a different business could not be expressed at all: naming the host moved the event out of the
+ * venue. Owner report: "hosted by Audrey DeWitt, at Royal Temple. I want it to say Part of Royal
+ * Temple but list Audrey as the host."
+ *
+ * Returns null when the venue IS the host, so the caller never renders the same Space twice. That
+ * makes the duplicate structurally impossible rather than a conditional someone can forget: on
+ * every event where the two axes agree (which is all of them today) there is exactly one Space to
+ * name, and the host line names it.
+ */
+export function venueSpaceId(
+  row: { spaceId: string | null | undefined; hostSpaceId?: string | null | undefined },
+  rootSpaceId: string | null,
+): string | null {
+  const venue = row.spaceId?.trim()
+  if (!venue) return null
+  // The root Space names nothing worth showing, exactly as for the host.
+  if (rootSpaceId && venue === rootSpaceId) return null
+  // Same Space on both axes: the host line already names it.
+  return venue === hostingSpaceId(row, rootSpaceId) ? null : venue
 }
 
 /** The three things an Event can belong to. */

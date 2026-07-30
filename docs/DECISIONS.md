@@ -16552,7 +16552,12 @@ not a standardisation.
 
 The durable rule: **a listing is public-only and a link resolver honours the link — so two RPCs over the same table get two different visibility gates, chosen by what the surface DOES, and the gate placement follows the join's driving table, never a sibling migration's habit.**
 
-## ADR-908 — A draft is only a draft when a visitor would see something different (2026-07-29)
+## ADR-912 — A draft is only a draft when a visitor would see something different (2026-07-29)
+
+> ⚠️ **Renumbered from ADR-908.** PR #1997 landed its own ADR-908 ("Crew is
+> pay-what-you-want") concurrently, so the number named two decisions. That one keeps 908
+> because `docs/PRICING.md` already cites it; this one moved, having no external references.
+> The commit that shipped this decision (PR #1995) still says ADR-908 in its message.
 
 **Status.** Accepted. Corrects the draft/publish split shipped with the in-rail Space page builder (ADR-516 Phase D) and the unpublished-work warnings added alongside it. Code: `lib/entity-blocks/layout-equal.ts`, `app/(main)/spaces/[slug]/settings/profile/actions.ts`, `components/entity-blocks/space-publish-fab.tsx`. No migration; `preferences.profileLayoutDraft` is untyped jsonb (ADR-246).
 
@@ -16597,3 +16602,37 @@ The actual numbers, measured on the real Breathe & Shine card: **1,776 KB**, re-
 ⚠️ **What is proven and what is not, stated because the previous three attempts were reported as fixed on weaker evidence.** The sizes, the timings and the headers are measured, and `lib/og/og-deliver.test.ts` re-measures them on every run — including a glob over every `opengraph-image.tsx` so a card added later cannot ship as an unguarded PNG. That Apple Mail's LinkPresentation specifically rejected the card *on payload grounds* is **inferred**, not proven: the evidence is the iMessage-renders / Mail-does-not split and Mail's shorter preview budget. It could not be verified here — the egress proxy denies `frequencylocal.com` by policy and there is no mail client in CI. Both defects are real on their own terms; if the card still does not appear in Mail after this deploys, the payload was not the constraint and the next place to look is the `og:image` URL Mail resolves, not the bytes behind it.
 
 The durable rule: **measure the case the user is actually in.** A 26KB render of a flat card proved nothing about a 1.7MB render of a photographic one, and reporting it as verification is what let this reach a fourth report.
+
+## ADR-911 — Venue and Host are different roles, and the difference is who gets paid (2026-07-29)
+
+**Status.** Accepted. Separates two `events` axes that have existed since ADR-819 but were forced equal by both the read path and the write path. Extends the four-role event model in `docs/NAMING.md` (ADR-834/835) with the role that had no name. Migration: `20270131000000_event_host_transfers.sql`. Code: `lib/events/belonging.ts`, `lib/events/host-transfer.ts`, `app/(main)/events/host-transfer-actions.ts`, `app/(main)/events/placement-actions.ts`, `components/events/venue-credit.tsx`, `components/events/event-host-offer-field.tsx`.
+
+**Context.** Owner report: *"This event is hosted by Audrey DeWitt, at Royal Temple. I want it to say Part of Royal Temple, but list Audrey as the host."* That state was unrepresentable, and not for want of schema. `events` already carried both axes, documented in `20261218000000_event_host_space.sql`: `space_id` is pure tenancy ("lives under") and `host_space_id` is the explicit hosting entity ("billed + displayed host; ticket payee routes through the space owner"). Two places collapsed them.
+
+1. **The write path.** `setEventHostEntity` updated `{ host_space_id, space_id: host.spaceId }`. Choosing a host *re-homed the event*, so naming Audrey would have moved the event out of Royal Temple.
+2. **The read path.** `associatedSpaceId` returned `hostSpaceId ?? spaceId`, and the "Part of" belonging strip rendered its result. So "Part of Royal Temple" and "Hosted by Royal Temple" printed the same name on the same screen — and once the axes were allowed to differ, that strip would have printed the HOST under a label meaning placement.
+
+The name `associatedSpaceId` is itself part of the story: vague enough that two genuinely different ideas read as one, on the one page where the difference decides who receives money.
+
+**Decision.** Four roles, each named by **what it controls** rather than by prominence:
+
+| Role | Column / table | Controls | May be |
+|---|---|---|---|
+| **Venue** | `events.space_id` | Where it lives; whose calendar calls it home. No money, no rights. | Any Space |
+| **Host** | `events.host_space_id` | The money and the liability: registrations, payouts, refunds, attendee CRM. | A Space only |
+| **Collaborator** | `event_space_shares` | Reach: their calendar, a featured credit. No money, no rights. | Business / Non Profit Space |
+| **Cohost** | `event_cohosts` | Labour: management access. | A person only |
+
+The one-line rule: **money follows the Host, calendars follow the Venue and Collaborators, rights follow the Host and Cohosts.** This also re-grounds the existing "Business Spaces only" rule for hosting on something self-evident — the Host is the payee, and only a Space has a Connect account, so a person *cannot* hold the role. That is a stronger justification than prominence and it is the rule members will accept without argument.
+
+Mechanically: `hostingSpaceId` (host, keeping the pre-ADR-819 `?? spaceId` fallback) and `venueSpaceId` (placement, returning null when the venue IS the host) replace `associatedSpaceId`. `setEventHostEntity` claims `space_id` only when there is no meaningful venue yet (null or root), preserving its original purpose — handing a seeded platform-lane event to its real organizer — without clobbering a real venue. The venue renders once, as an `at <Space>` credit on the host line; the Space chip leaves the belonging strip entirely, which makes the duplicate **structurally impossible** rather than a conditional someone can forget.
+
+`event_host_transfers` adds the missing self-serve path. `setEventHostEntity` requires the actor to already run the target Space — correct, since the host is the payee, and also a dead end for a venue handing an event to the business running it. A transfer is a two-sided handshake: the raiser cannot answer their own offer, and accepting is refused while an *upcoming* event has settled tickets, because accepting re-points future checkouts only and splitting one event's takings across two payees mid-sale is worse than refusing the handoff. Once the event is over the refusal lifts — there are no future checkouts left to split.
+
+**Alternatives considered.** *Suppress the duplicate with a conditional* (rejected — the same class of bug as the collapse itself; the next person adds a surface and forgets). *Put the venue on the WHERE line* (rejected — that line carries the physical venue name and street address and deep-links to Maps; a Space is an account, not a place, and would read as a second address). *Let the venue be a Collaborator instead of a role* (rejected as the default — a Collaborator gets a featured logo credit, which competes with the host on the one card; but it stays available as a data choice for a venue that wants brand presence, needing no code). *Widen `setEventHostEntity` so any event manager can name any host* (rejected — that makes a Space a payee without its consent). *Let platform staff accept on a Space's behalf* (rejected — staff keep their audited direct path; if they could accept, the consent record would claim a Space agreed to take payout liability when an operator did).
+
+**Consequences.** Nothing changes for the ~all events where the two axes agree: `venueSpaceId` returns null and the page names one Space, which also removes a duplicate that was already visible (Royal Temple appeared three times on its own event). ⚠️ The legacy money fallback is deliberately preserved: when `host_space_id` is null, `hostingSpaceId` still resolves through `space_id`, because a pre-ADR-819 event created inside a Space's calendar already pays that Space's owner and changing the fallback would silently re-route money on every legacy row. `event_host_transfers` is RLS-on-no-policy, service-role only (registered in `scripts/rls-deny-all.txt`), so the app-layer gates in `host-transfer-actions.ts` are the authority.
+
+One bug found by the tests written for this and worth recording, because the shape recurs: `hostTransferApproverSide` was first written as `initiatedBy === 'host' ? 'space' : 'host'`, so any unrecognised value fell through to `'host'` and the event's own host could accept a transfer they had raised. **A ternary over untrusted text fails open by construction** — the guard that made consent mean anything was one keystroke from being decorative.
+
+The durable rule: **when two columns mean different things, the names, the writes and the reads must all keep them apart — a vague resolver name is how a money axis and a placement axis become one field nobody can tell apart.**
