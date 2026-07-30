@@ -32,6 +32,12 @@ import {
   type PricingGridInput,
 } from '@/lib/pricing/pricing-grid'
 import { MISSION_FRAMING, PLAN_STORY } from '@/lib/pricing/pricing-page'
+import { BlockRender } from '@/lib/page-editor/block-render'
+import { config } from '@/lib/page-editor/config'
+import { getPublishedData } from '@/lib/page-editor/data'
+import { isRenderable } from '@/lib/page-editor/templates'
+import { getLiveData } from '@/lib/page-editor/live-data'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // EVERY figure on this page is READ, never written. Prices, the yearly deal, the trial length, the
 // per-tier take-rate, the add-on and seat amounts, and every cell of the comparison grid come from
@@ -183,6 +189,33 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
 }
 
 export default async function PricingPage() {
+  // ── OPERATOR-PUBLISHED CONTENT WINS (owner directive, ADR-916) ─────────────────────────────
+  //
+  // `pricing` has been a row in EDITABLE_PAGES all along, so a janitor could open /edit/pricing,
+  // rewrite the whole page, hit Publish, and see it saved. A visitor saw NONE of it, because this
+  // route never read the published document the way the six other Puck-backed marketing pages do. An
+  // operator control that silently does nothing is worse than no control: it invites someone to spend
+  // an afternoon on copy that will never ship, and gives them no signal that it did not.
+  //
+  // 🔴 THE FALLBACK IS THE CODED PAGE, NOT getTemplate('pricing'). Every other route falls back
+  // published -> template -> legacy, because their coded page is a last-resort relic. Here the
+  // relationship is inverted: the coded page below is the DERIVED one, reading live prices, live
+  // rates, and the real gate map, with no dollar figure or percentage typed anywhere in it. The Puck
+  // template is a static document. Slotting it in as a middle rung would mean any deploy where nobody
+  // has published silently downgrades /pricing from live figures to a snapshot. So there are two
+  // rungs, not three, and the ordering says exactly what it means: a human's published words beat the
+  // generated page, and nothing else does.
+  const published = await getPublishedData('pricing')
+  if (isRenderable(published)) {
+    const live = await getLiveData(createAdminClient()).catch(() => null)
+    return (
+      <>
+        <JsonLd data={breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }])} />
+        <BlockRender config={config} data={published} metadata={live ? { live } : {}} />
+      </>
+    )
+  }
+
   const input = await pricingInput()
   const members = memberOfferings(input)
   const spaces = spaceOfferings(input)

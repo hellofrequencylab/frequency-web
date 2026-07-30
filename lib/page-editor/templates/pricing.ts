@@ -7,10 +7,26 @@ import {
 } from '@/lib/site'
 import { priceStrings, pricingCatalog, CREW_NOTE } from '@/lib/pricing/pricing-page'
 import { formatLoadoutCents } from '@/lib/pricing/loadout'
+import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
 
 // Every dollar figure in this template interpolates from the ONE code catalog (priceStrings /
 // pricingCatalog) and the CREW_NOTE labels, so the CMS fallback can never drift from /pricing.
 const P = priceStrings()
+
+// 🔴 RATES ARE DERIVED, NEVER TYPED (ADR-914). Every take-rate below reads the same vector the
+// charging path applies (lib/billing/fees.ts), so a rate this template publishes is the rate a seller
+// is actually charged. It used to type them as prose, which is how a CMS document ships a fee ladder
+// the product stopped using: the free-Member rung did not exist here at all, and the free-Space rung
+// was written into one FAQ answer and nowhere else.
+const R = (bps: number) => `${bps / 100}%`
+const RATE = {
+  memberFree: R(NETWORK_TAKE_RATE_DEFAULT.memberFree),
+  member: R(NETWORK_TAKE_RATE_DEFAULT.member),
+  free: R(NETWORK_TAKE_RATE_DEFAULT.free),
+  business: R(NETWORK_TAKE_RATE_DEFAULT.business),
+  collective: R(NETWORK_TAKE_RATE_DEFAULT.collective),
+  nonprofit: R(NETWORK_TAKE_RATE_DEFAULT.nonprofit),
+}
 const CAT = pricingCatalog()
 const BUSINESS_YEAR_BETA = formatLoadoutCents(CAT.business_base.year.foundingCents)
 const COLLECTIVE_YEAR_BETA = formatLoadoutCents(CAT.collective_base.year.foundingCents)
@@ -121,7 +137,7 @@ export const data: Data = {
         id: 'pr-spaces-a',
         eyebrow: 'For Spaces',
         title: 'For practitioners and businesses.', titleAccent: '',
-        kicker: 'Run your community as a Space. You keep 100% of your own bookings, always. The only take-rate is on business the network sends you, and each step up buys it down: Business 5%, Collective 3%, Non Profit 0%.',
+        kicker: `Run your community as a Space. You keep 100% of your own bookings, always. The only take-rate is on business the network sends you, and each step up buys it down: Free ${RATE.free}, Business ${RATE.business}, Collective ${RATE.collective}, Non Profit ${RATE.nonprofit}.`,
         items: [
           {
             name: 'Free Space', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
@@ -136,7 +152,7 @@ export const data: Data = {
           },
           {
             name: 'Business', price: P.businessBeta, strikePrice: P.businessList, cadence: '/mo',
-            priceNote: `Opening Beta price through 2026-09-01, then ${P.businessList}. Or ${BUSINESS_YEAR_BETA} a year. 0% on your own bookings, 5% only on business the network sends you.`,
+            priceNote: `Opening Beta price through 2026-09-01, then ${P.businessList}. Or ${BUSINESS_YEAR_BETA} a year. 0% on your own bookings, ${RATE.business} only on business the network sends you.`,
             tagline: 'Own your audience.',
             highlight: 'featured', badge: 'none',
             features: [
@@ -149,7 +165,7 @@ export const data: Data = {
           },
           {
             name: 'Collective', price: P.collectiveBeta, strikePrice: P.collectiveList, cadence: '/mo',
-            priceNote: `Opening Beta price through 2026-09-01, then ${P.collectiveList}. Or ${COLLECTIVE_YEAR_BETA} a year. 0% on your own, 3% only on business the network sends you.`,
+            priceNote: `Opening Beta price through 2026-09-01, then ${P.collectiveList}. Or ${COLLECTIVE_YEAR_BETA} a year. 0% on your own, ${RATE.collective} only on business the network sends you.`,
             tagline: 'Be the venue.',
             highlight: 'normal', badge: 'none',
             features: [
@@ -175,7 +191,7 @@ export const data: Data = {
         items: [
           {
             name: 'Non Profit', price: P.nonprofit, strikePrice: '', cadence: '/mo',
-            priceNote: `Flat, no beta discount. Or ${NONPROFIT_YEAR} a year. 0% take-rate, always. Verified 501(c)(3).`,
+            priceNote: `Flat, no beta discount. Or ${NONPROFIT_YEAR} a year. ${RATE.nonprofit} take-rate, always. Verified 501(c)(3).`,
             tagline: 'The full Collective toolkit for a verified 501(c)(3).',
             highlight: 'normal', badge: 'none',
             features: [
@@ -346,9 +362,9 @@ export const data: Data = {
         items: [
           { q: 'Is being a Member really free?', a: 'Yes. The Member tier is free, forever. You can browse Circles and Events, attend gatherings in person, earn Zaps, and message Vera up to 10 times a day, all without paying.' },
           { q: 'What is the Opening Beta price?', a: `The Opening Beta price is the lower rate every early Space plan holds while we are in beta: Business at ${P.businessBeta} under the ${P.businessList} list, and Collective at ${P.collectiveBeta} under the ${P.collectiveList} list. A plan you start during the beta keeps its rate. Crew is one plain price, ${CREW_NOTE.foundingLabel} a month, with no anchor above it.` },
-          { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. Crew adds the full game, with Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for ${CREW_NOTE.foundingLabel} a month or ${CREW_NOTE.yearlyLabel} a year. Those two are the whole member ladder.` },
+          { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. Both tiers can sell: a free Member can run a ticketed event and get paid. Crew takes the rate on network-sourced sales from ${RATE.memberFree} down to ${RATE.member}, lifts the caps, and adds the full game, with Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for ${CREW_NOTE.foundingLabel} a month or ${CREW_NOTE.yearlyLabel} a year. Those two are the whole member ladder.` },
           { q: 'What is the Opening Beta price on Space plans?', a: `Business and Collective are open at an Opening Beta price during our beta: Business at ${P.businessBeta} a month under the ${P.businessList} list, and Collective at ${P.collectiveBeta} a month under the ${P.collectiveList} list. Both hold through 2026-09-01, then revert to list. Non Profit (${P.nonprofit}) is flat, with no beta discount.` },
-          { q: 'How does the take-rate work?', a: 'You keep 100% of your own bookings, always. There is a small take-rate only on business the network sends you, and it shrinks as your plan grows: a Free Space is 10%, Business is 5%, Collective is 3%, and Non Profit is 0%.' },
+          { q: 'How does the take-rate work?', a: `You keep 100% of the business you bring yourself, always, on every tier. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. There is a rate only on someone the network introduces, and every step up buys it down: a free Member or a free Space is ${RATE.memberFree}, Crew is ${RATE.member}, Business is ${RATE.business}, Collective is ${RATE.collective}, and Non Profit is ${RATE.nonprofit}.` },
           { q: 'What about refunds?', a: 'Every plan is month to month, and you can cancel at any time. Cancel and your plan simply runs out its paid period. No contracts, no lock-in.' },
           { q: 'Can I buy my way into a Host or Guide role?', a: 'No, and that is on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Those roles come from the community, never from a checkout page.' },
           { q: 'Where does the money go?', a: 'Into keeping the room open. A membership sustains the physical spaces, the lights, the insurance, the thermal circuit, and the community that gathers in them. People who pay more hold the door for neighbors who cannot pay yet, so connection keeps circulating instead of sitting behind a paywall.' },
