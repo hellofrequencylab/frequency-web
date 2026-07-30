@@ -13,12 +13,11 @@ import { Dialog } from '@/components/ui/dialog'
 
 // Per-context copy for the gate. Default is the Quest upsell; pass a `reason` (via
 // CrewGateButton) to tailor the headline + blurb to what the member just tried to do.
+// 🔴 NO 'create-event' KEY. Creating an event is NOT a paid feature (ADR-913): the CrewGateButton that
+// wrapped New Event was removed from components/marketplace/events-header-actions.tsx, and the server
+// never gated creation. The wall now lives at the price field (lib/events/ticket-eligibility.ts). Do not
+// reintroduce upgrade copy for the act of creating an event.
 export const UPGRADE_COPY: Record<string, { title: string; blurb: string }> = {
-  'create-event': {
-    title: 'Create events with Crew',
-    blurb:
-      'Crew members host the gatherings. Post an event, gather your people, and be the reason something happens near you. It is the heart of Frequency, and it is yours to start.',
-  },
   'create-circle': {
     title: 'Start a circle with Crew',
     blurb:
@@ -55,7 +54,7 @@ export function UpgradeLightbox({
 }: {
   open: boolean
   onClose: () => void
-  /** Optional tailored headline + blurb (e.g. for the create-event gate). */
+  /** Optional tailored headline + blurb (e.g. for the create-circle gate). */
   title?: string
   blurb?: string
 }) {
@@ -132,7 +131,7 @@ export function CrewGateButton({
   isCrew: boolean
   label: string
   buttonClassName?: string
-  /** Tailors the upgrade popup copy (key into UPGRADE_COPY, e.g. 'create-event'). */
+  /** Tailors the upgrade popup copy (key into UPGRADE_COPY, e.g. 'create-circle'). */
   reason?: string
   children?: ReactNode
 }) {

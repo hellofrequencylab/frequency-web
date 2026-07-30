@@ -38,6 +38,11 @@ export async function TicketsSection({
         label="Tickets"
         reason={spaceFunctionAccess(space, 'tickets', 'admin') ? 'role' : 'disabled'}
         canManageMembers={caps.canManageMembers}
+        // Phase 4 (docs/VALUE-LADDER.md A3): this notice mounted with NO featureKey, so a plan-reason
+        // gap rendered no upsell at all. Tickets SOLD is an order-level count, not in scope on the tier
+        // editor, so the standing ladder stays on the plan-and-usage hub.
+        featureKey="space_tickets"
+        currentPlan={space.plan}
       />
     )
   }

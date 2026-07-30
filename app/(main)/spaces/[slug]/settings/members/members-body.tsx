@@ -16,6 +16,7 @@ import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { InviteForm } from '@/components/spaces/invite-form'
 import { RosterManager, type RosterRow } from '@/components/spaces/roster-manager'
 import { SeatCounter } from '@/components/spaces/seat-counter'
+import { MeterUpsell } from '@/components/pricing/meter-upsell'
 
 // MEMBERS BODY — the chrome-free team-management UI (Entity Management Overhaul EM2-2), lifted out of the
 // standalone /settings/members page so it can render in TWO places from one source: (1) that page, wrapped
@@ -149,12 +150,22 @@ export async function MembersBody({ slug }: { slug: string }) {
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 
       {caps.canManageMembers && seatUsage && (
-        <section className="mb-8">
+        <section className="mb-8 space-y-4">
           <SeatCounter
             usage={seatUsage}
             billingHref={`/spaces/${space.slug}/settings/billing`}
             enforced={seatsEnforced}
             canManage={caps.canManageMembers}
+          />
+          {/* Phase 4 (docs/VALUE-LADDER.md A3): the space_team meter had a counter on the BILLING page
+              and nothing here, which is where seats are actually added. The seat usage is already
+              read above, so the prompt costs no extra IO. It appears at 80% of the seat allowance,
+              names the seats this Space already fills, and blocks no invite. */}
+          <MeterUpsell
+            featureKey="space_team"
+            currentTier={space.plan}
+            usage={seatUsage.used}
+            upgradeHref={`/spaces/${space.slug}/settings/billing`}
           />
         </section>
       )}

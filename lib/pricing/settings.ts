@@ -11,12 +11,17 @@
 // answers "do the paid feature GATES bite yet" = billingLive() AND the `beta_grace` window has ended.
 // Charging paths take the first; every feature-gating path takes the second. Do not re-conflate them.
 //
-// The values mirror the migration seed exactly; this module is the code source of truth for the
-// DEFAULTS (the table only overrides them), the same contract gates.ts / page-chrome.ts use.
+// THIS MODULE IS THE OPERATOR OVERLAY, NOT A PRICE LIST (Phase 5, ADR-915). The code-default values live
+// in lib/pricing/defaults.ts, where every one of them is DERIVED: Space prices from the code catalog the
+// checkout bills (lib/billing/pricing-keys.ts CATALOG), the take-rates from NETWORK_TAKE_RATE_DEFAULT (the
+// same vector lib/billing/fees.ts falls back to), the Crew price from the one pure member-price map
+// (lib/pricing/feature-tiers.ts). This file reads the `pricing_settings` table and layers it over them,
+// the same contract gates.ts / page-chrome.ts use.
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { billingEnabled } from '@/lib/billing/stripe'
+import { PRICING_DEFAULTS, type PricingDefaults } from './defaults'
 import {
   asHouseholdBundleConfig,
   HOUSEHOLD_BUNDLE_DEFAULT,
@@ -25,101 +30,13 @@ import {
 import { asBetaGrace, betaGraceActive, BETA_GRACE_DEFAULT, type BetaGraceConfig } from './beta'
 import { asFoundingConfig, FOUNDING_DEFAULT, type FoundingConfig } from './founding'
 
-// ── The seeded DEFAULT values (kept in sync with 20260723010000_pricing_foundation.sql) ──
-// Prices in CENTS. annual ≈ 2 months free (the spec). Business + Nonprofit both offer monthly + annual
-// (ADR-552). These are the launch-target values; all editable at /admin/pricing.
+// ── The seeded DEFAULT values ─────────────────────────────────────────────────────────────
+// They live in lib/pricing/defaults.ts, a PURE module, so the derived pricing model (pricing-grid,
+// pricing-page) can read the same shape without dragging the service-role client into a client bundle.
+// Re-exported here because this has always been the import site every price display reaches for.
 
-export interface TierPrice {
-  monthly_cents: number
-  annual_cents: number | null
-  /** Optional one-time setup fee in cents (legacy; retained for read-safe resolution of old rows). */
-  setup_cents?: number
-  /** Optional MONTHLY list anchor in cents (ADR-463): the crossed-out price the founding `monthly_cents`
-   *  sits under (e.g. Crew list $12, founding $9). Absent = no anchor (the monthly is shown plainly). */
-  list_cents?: number
-}
-
-export interface PricingDefaults {
-  /** The SELLABLE member ladder is exactly Member (free) and Crew (ADR-878). Free is the baseline, not
-   *  a priced row, so `tier` carries Crew alone. Supporter is NOT here on purpose: it left the sellable
-   *  ladder, and typing it out of the shape is what makes a $12 member price unrenderable rather than
-   *  merely unrendered. The `supporter` ENTITLEMENT label still exists for read tolerance (ADR-458,
-   *  lib/core/entitlement.ts maps supporter -> crew); that is a different axis from what we SELL. */
-  tier: { crew: TierPrice }
-  plan: {
-    business: TierPrice
-    collective: TierPrice
-    nonprofit: TierPrice
-    independent: TierPrice
-  }
-  /** Take-rate in basis points (500 = 5%). The LIVE rates are `network_bps` (per Space tier) plus the
-   *  two individual seller rungs, `member_free_bps` (free Member, 10%) and `member_bps` (Crew, 8%) — see
-   *  pricing-keys.ts sourceAware*TakeRateCents. They price NETWORK-sourced sales only: a sale to the
-   *  seller's own audience is 0% by rule, and tips carry no fee at all (ADR-913). All editable at
-   *  /admin/pricing. */
-  take_rate: {
-    // LEGACY flat fields (ADR-552's paying-state ladder). Nothing on the charging path reads them any
-    // more; they stay so a stored blob written before the network vector still resolves numbers rather
-    // than undefined. Edit `network_bps` / `member_bps`, never these.
-    free_bps: number; business_bps: number; nonprofit_bps: number
-    /** The two individual (profile) seller rungs (ADR-914). `member_free_bps` is what a FREE Member pays
-     *  on a network-sourced sale and is the reference rate the whole ladder descends from;
-     *  `member_bps` is the Crew rung. Both are 0% on the seller's own audience, always. */
-    member_free_bps: number
-    member_bps: number
-    // NETWORK-sourced take-rate per space tier (ADR-811 §A). `self` orders are 0 by rule (not stored).
-    // The rate drops as the tier rises; the individual seller rate rides member_bps.
-    network_bps: { free: number; business: number; collective: number; nonprofit: number; independent: number }
-  }
-  /** Vera free-tier daily message cap. */
-  vera_free_daily_cap: { messages: number }
-  trial: { days: number }
-  annual_discount: { months_free: number }
-}
-
-export const PRICING_DEFAULTS: PricingDefaults = {
-  tier: {
-    // Crew is ONE clean price: $9 a month or $90 a year, with NO list anchor (ADR-878). The $12 anchor
-    // is gone because the $12 Supporter tier it echoed is gone; the founder's member ladder is Member
-    // (free) and Crew ($9/mo), stated plainly. An operator may still set a deliberate anchor at
-    // /admin/pricing, and priceRow honors it, but no anchor ships in the code default.
-    crew: { monthly_cents: 900, annual_cents: 9000 },
-  },
-  plan: {
-    // Community Collective ladder (ADR-811). Annual = two months free (10x monthly).
-    //
-    // THE BETA ANCHOR IDIOM (ADR-463, owner-confirmed 2026-07): `monthly_cents` is the price a Space is
-    // CHARGED today and `list_cents` is the crossed-out anchor it sits under, exactly as `tier.crew`
-    // carries $9 under a $12 list. Business and Collective ship a beta rate ($19 under $29, $49 under
-    // $79); a Space that subscribes on it keeps it for as long as it keeps the plan (lib/pricing/beta.ts
-    // grandfathering). These now MATCH the catalog amounts the checkout charges (pricing-keys CATALOG
-    // business_base $29/$19, collective_base $79/$49), so the legacy `business_monthly` product this map
-    // mints can no longer be a higher price than the rate the pricing page promises.
-    //
-    // Non Profit and Independent carry NO beta rate (the owner set none), so they ship a single price:
-    // no `list_cents`, no strike-through, no invented discount.
-    business: { monthly_cents: 1900, annual_cents: 19000, list_cents: 2900 }, // $19 beta under the $29 list
-    collective: { monthly_cents: 4900, annual_cents: 49000, list_cents: 7900 }, // $49 beta under the $79 list
-    nonprofit: { monthly_cents: 3900, annual_cents: 39000 }, // $39 flat, verified 501c3, full Collective toolkit
-    independent: { monthly_cents: 24900, annual_cents: 249000 }, // ~$249 white-label, network-disconnected (standard SaaS)
-  },
-  take_rate: {
-    // LEGACY flat trio (the retired ADR-552 paying-state ladder). Off the charging path — kept only so a
-    // stored blob resolves numbers. The live rates are the two below.
-    free_bps: 500, business_bps: 300, nonprofit_bps: 300,
-    // The individual seller rungs (ADR-914): a free Member pays 10% on a network-sourced sale, a Crew
-    // seller 8%, and both pay 0% on their own audience. The free rung EQUALS the free-Space rung below
-    // on purpose — a free Space is held to the free-Member standard, so only paying moves the rate.
-    member_free_bps: 1000,
-    member_bps: 800,
-    // Network-sourced Space rates (ADR-811 §A): free Space 10% → Business 5% → Collective 3% → Non
-    // Profit 0 → Independent 0 (left the graph). Launch low, earn the right to raise.
-    network_bps: { free: 1000, business: 500, collective: 300, nonprofit: 0, independent: 0 },
-  },
-  vera_free_daily_cap: { messages: 10 },
-  trial: { days: 14 }, // 14-day free trial on Space plans (card upfront; members get none, the free tier is their trial)
-  annual_discount: { months_free: 2 },
-}
+export { PRICING_DEFAULTS } from './defaults'
+export type { PricingDefaults, TierPrice } from './defaults'
 
 // The key -> default-value map for the pricing_settings rows (matches the migration seed). The
 // Phase C catalog-config keys (catalog.<item>, catalog.seat, catalog.pwyw, catalog.addon_enabled,

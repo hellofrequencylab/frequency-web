@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { NewJourneyButton } from '@/components/studio/journey/new-journey-button'
 import { JourneyManageCard, type ManagePlan } from '@/components/journeys/journey-manage-card'
 import { AuthoringAccessNote } from '@/components/pricing/authoring-access-note'
+import { MeterUpsell } from '@/components/pricing/meter-upsell'
 import { resolveHeaderElement } from '@/lib/elements/header'
 
 export const metadata: Metadata = { title: 'Your Journeys' }
@@ -67,6 +68,10 @@ export default async function MyJourneysPage({ searchParams }: { searchParams: P
   // beta-granted tier. Personal journeys are owned by the member, so paid = the member's real tier.
   const caller = await getCallerProfile()
   const paidOwner = isPaid(caller?.realMembershipTier)
+  // PUBLISHED, as the publish cap counts it: anything past 'private' (unlisted is live to a space,
+  // public is live to the library). The "Published" stat above deliberately means public-in-library,
+  // which is a different question, so the meter does its own count rather than reusing that one.
+  const publishedCount = all.filter((p) => p.visibility !== 'private').length
   // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
   const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
 
@@ -83,6 +88,18 @@ export default async function MyJourneysPage({ searchParams }: { searchParams: P
     >
       <div className="max-w-4xl space-y-6">
         <AuthoringAccessNote kind="journey" paidOwner={paidOwner} />
+
+        {/* Phase 4 (docs/VALUE-LADDER.md A3): the journey_publish meter had prose in the access note
+            above and no meter. This is the in-context prompt, at 80% of the publish allowance. It
+            counts the same thing the live publish cap counts (visibility past private, so unlisted
+            and public both), reads the REAL tier so the number matches what bites at launch, and
+            refuses nothing: publishing is still governed by lib/journeys/publish-gate.ts. */}
+        <MeterUpsell
+          featureKey="journey_publish"
+          currentTier={caller?.realMembershipTier}
+          usage={publishedCount}
+          upgradeHref="/upgrade"
+        />
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard bordered size="sm" icon={Map} label="Journeys" value={all.length} />

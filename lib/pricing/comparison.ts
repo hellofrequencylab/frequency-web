@@ -8,6 +8,10 @@
 // own transaction fees on top, which the note calls out. Fee-based rows (events, donations) carry no fixed
 // monthly price, so they are shown but excluded from the subscription total. No em dashes.
 
+import { catalogItem, type CatalogItemKey } from '@/lib/billing/pricing-keys'
+import { effectiveCatalogAmounts, isBetaPricingActive } from './beta'
+import { ADDON_KEYS } from './plans'
+
 /** One feature row: what a business gets from Frequency, the separate tool they would otherwise buy, and
  *  that tool's typical monthly price (null for a fee-based tool with no fixed subscription). */
 export interface ComparisonRow {
@@ -29,10 +33,33 @@ export interface ComparisonGroup {
   rows: readonly ComparisonRow[]
 }
 
-// The Frequency anchor prices the stack is set against. Business is the flat plan (ADR-590); the all-in
-// number is Business with every add-on turned on. Constants so the copy + total stay in one place.
-export const FREQUENCY_BUSINESS_MONTHLY = 49
-export const FREQUENCY_ALL_IN_MONTHLY = 79
+// The Frequency anchor prices the stack is set against. Business is the flat plan; the all-in number is
+// Business with every metered add-on turned on.
+//
+// DERIVED, NOT TYPED (Phase 5, ADR-915). These were literals, and they had gone stale: $49 was neither
+// the Opening Beta rate the checkout charges nor the $29 list, and it rendered live on /pricing beside a
+// grid that quoted the real number. They now READ the same code catalog the checkout bills from
+// (lib/billing/pricing-keys.ts CATALOG), through the same beta-window rule every other pricing surface
+// resolves (lib/pricing/beta.ts), so this block cannot disagree with the table above it.
+//
+// Whole dollars, because the comparison reads in whole dollars (every competitor figure is rounded). The
+// beta answer is taken once at module load, which is exact for a build or a cold start and self-corrects
+// on the next one; monthlyDollars() takes an explicit `betaActive` for a caller that must be exact.
+
+/** The whole-dollar monthly price of a catalog item, resolved through the beta window (the Opening Beta
+ *  rate while it is open, the list price after). PURE. */
+function monthlyDollars(item: CatalogItemKey, betaActive: boolean = isBetaPricingActive()): number {
+  return Math.round(effectiveCatalogAmounts(catalogItem(item).month, betaActive).foundingCents / 100)
+}
+
+/** The Business plan's monthly price, in whole dollars, as the stack is set against it. */
+export const FREQUENCY_BUSINESS_MONTHLY = monthlyDollars('business_base')
+
+/** Business with every metered add-on turned on (today that is Vera AI alone, ADR-472), in whole dollars.
+ *  Derived by summing the add-on catalog rather than naming a total, so adding an add-on moves it. */
+export const FREQUENCY_ALL_IN_MONTHLY =
+  FREQUENCY_BUSINESS_MONTHLY +
+  ADDON_KEYS.reduce((sum, addon) => sum + monthlyDollars(`addon_${addon}` as CatalogItemKey), 0)
 
 export const COMPARISON_GROUPS: readonly ComparisonGroup[] = [
   {

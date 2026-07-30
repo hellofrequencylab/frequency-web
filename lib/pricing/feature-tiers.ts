@@ -13,10 +13,19 @@
 //
 // PLACEHOLDER PRICING — BILLING IS ON HOLD (ADR-518). `PLACEHOLDER_PRICING` is the ONE go-live switch:
 // while it is true every price below is a PREVIEW only and NOTHING charges (the selector's CTA is a link,
-// never a checkout). The amounts mirror the code catalog founding rates (lib/billing/pricing-keys.ts
-// CATALOG); when billing goes live, swap PLACEHOLDER_SPACE_PRICE_CENTS / PLACEHOLDER_MEMBER_PRICE_CENTS
-// (or point the builder at the operator catalog) and flip PLACEHOLDER_PRICING to false. That is the SINGLE
-// place real numbers drop in.
+// never a checkout). Flip it to false when real billing goes live.
+//
+// THE PRICES THEMSELVES ARE NO LONGER TYPED HERE (Phase 5, ADR-915). SPACE_PLAN_PRICE_CENTS is READ off
+// the code catalog the checkout bills from (lib/billing/pricing-keys.ts CATALOG), carrying the list
+// anchor and the Opening Beta rate for EVERY plan, so beta-vs-list is one shape rather than a per-tier
+// patch. The one number still written down here is the Crew price, which has no catalog item; the
+// operator settings layer (lib/pricing/settings.ts PRICING_DEFAULTS) reads it from here rather than
+// restating it.
+//
+// ⚠️ FEATURE_TIER_LADDERS is built ONCE at module load, so the beta-window answer baked into its rung
+// prices is the one that was true when the process started. That is exact for every practical case (a
+// build, a request, a cold start) and self-corrects on the next one; a caller that must be exact across
+// the cutover instant should call tierPriceLabel / tierPriceCents with an explicit `betaActive`.
 //
 // PURE + framework-independent (no Supabase/Next/React), like lib/pricing/plans.ts, so it is trivially
 // unit-testable and safe to import into a client component. Reuses the existing DISPLAY convention
@@ -24,8 +33,10 @@
 // docs/CONTENT-VOICE.md: plain, honest, no em dashes, no manufactured urgency, never a dark pattern.
 
 import { formatCents } from './display'
+import { effectiveCatalogAmounts, isBetaPricingActive } from './beta'
 import { SPACE_PLAN_LABEL, SPACE_PLANS, type SpacePlan } from './plans'
 import { ENTITLEMENT_LABEL, ENTITLEMENT_TIERS, deriveTier, type EntitlementTier } from '@/lib/core/entitlement'
+import { catalogItem, type CatalogAmounts, type CatalogItemKey } from '@/lib/billing/pricing-keys'
 import type { GateAxis } from './gates'
 
 // ── THE GO-LIVE SWITCH ────────────────────────────────────────────────────────────────────────────
@@ -36,32 +47,69 @@ import type { GateAxis } from './gates'
  *  set the real amounts in the price maps below). This is the single, obvious go-live flag. */
 export const PLACEHOLDER_PRICING = true
 
-/** @placeholder Monthly price point per Space plan, in cents. Mirrors the code catalog founding rates
- *  (lib/billing/pricing-keys.ts CATALOG): Business $29, Non Profit $39 flat (ADR-811); free at $0. THE ONE
- *  place to swap real Space prices when billing goes live. Preview only; never charged. */
-export const PLACEHOLDER_SPACE_PRICE_CENTS: Record<SpacePlan, number> = {
-  free: 0,
-  business: 2900, // $29 flat, all-in (ADR-811)
-  collective: 7900, // $79 list (beta $49 founding is COLLECTIVE_BETA_CENTS below)
-  nonprofit: 3900, // $39 flat, verified, full Collective toolkit
-  independent: 24900, // ~$249 white-label, network-disconnected (standard SaaS)
+/** The catalog item each PAID Space plan is billed from (space-plan-checkout catalogKeysForLoadout).
+ *  A free Space has no item because $0 is not a Stripe price. PURE. */
+const PLAN_CATALOG_ITEM: Record<Exclude<SpacePlan, 'free'>, CatalogItemKey> = {
+  business: 'business_base',
+  collective: 'collective_base',
+  nonprofit: 'nonprofit_seat',
+  independent: 'independent_base',
 }
 
-/** The Collective founding-BETA monthly price (cents): $49 under the $79 list (ADR-811). The ONE source
- *  both the marketing pricing page (pricing-page.ts) and the in-app plan ladder (plan-ladder.tsx) read, so
- *  the beta anchor can never drift between the two surfaces. */
-export const COLLECTIVE_BETA_CENTS = 4900
-
-/** @placeholder Monthly price point per SELLABLE personal membership tier, in cents. Mirrors the code
- *  defaults (lib/pricing/settings.ts PRICING_DEFAULTS): Member free, Crew $9. THE ONE place to swap real
- *  personal prices when billing goes live. Preview only; never charged.
+/** THE Space price map, DERIVED (Phase 5, ADR-915). One row per plan, each carrying BOTH numbers the
+ *  ladder can ever need: `listCents` (the crossed-out anchor) and `foundingCents` (the Opening Beta rate
+ *  actually charged today). Read straight off the code catalog the checkout bills from
+ *  (lib/billing/pricing-keys.ts CATALOG), so a price is written down in exactly one place.
  *
- *  Supporter has no entry (ADR-878): it is off the sellable ladder, so there is no member price to
- *  preview for it. A historical `supporter` tier is priced through tierPriceCents, which collapses it to
- *  Crew the same way deriveTier does, so a Supporter row previews Crew's price and never $12. */
+ *  BETA-VS-LIST IS REPRESENTED ONCE, HERE. It used to be a per-tier patch: this map held only the list
+ *  price, and Collective's beta rate rode alongside it in a one-off `COLLECTIVE_BETA_CENTS` constant.
+ *  Business had a beta rate too and never got a constant, so every in-app ladder quoted $29 while
+ *  /pricing quoted $19. A tier cannot be forgotten now: the shape carries both numbers for every plan,
+ *  and a plan with no beta rate simply has the two equal. */
+export const SPACE_PLAN_PRICE_CENTS: Record<SpacePlan, CatalogAmounts> = {
+  free: { listCents: 0, foundingCents: 0 },
+  business: catalogItem(PLAN_CATALOG_ITEM.business).month,
+  collective: catalogItem(PLAN_CATALOG_ITEM.collective).month,
+  nonprofit: catalogItem(PLAN_CATALOG_ITEM.nonprofit).month,
+  independent: catalogItem(PLAN_CATALOG_ITEM.independent).month,
+}
+
+/** @deprecated The LIST monthly price per Space plan, in cents. Derived from SPACE_PLAN_PRICE_CENTS and
+ *  kept only for the in-app plan ladder, which still reads a bare number. New callers want
+ *  `spacePlanPriceCents(plan, betaActive)`, which answers what a Space is charged TODAY. */
+export const PLACEHOLDER_SPACE_PRICE_CENTS: Record<SpacePlan, number> = {
+  free: SPACE_PLAN_PRICE_CENTS.free.listCents,
+  business: SPACE_PLAN_PRICE_CENTS.business.listCents,
+  collective: SPACE_PLAN_PRICE_CENTS.collective.listCents,
+  nonprofit: SPACE_PLAN_PRICE_CENTS.nonprofit.listCents,
+  independent: SPACE_PLAN_PRICE_CENTS.independent.listCents,
+}
+
+/** @deprecated The Collective Opening Beta monthly price (cents), now just one cell of
+ *  SPACE_PLAN_PRICE_CENTS. Kept as a named alias for the in-app plan ladder; it is no longer a
+ *  Collective-only patch, and no tier needs one. */
+export const COLLECTIVE_BETA_CENTS = SPACE_PLAN_PRICE_CENTS.collective.foundingCents
+
+/** The monthly price per SELLABLE personal membership tier, in cents: Member free, Crew $9 (ADR-878).
+ *  THE one place the Crew price is written down. It is not in the Stripe plan catalog (the member ladder
+ *  is not sold through the plan loadout), so this pure, client-safe map is the source, and
+ *  PRICING_DEFAULTS.tier.crew reads it rather than restating it.
+ *
+ *  Supporter has no entry (ADR-878): it is off the sellable ladder, so there is no member price for it.
+ *  A historical `supporter` tier is priced through tierPriceCents, which collapses it to Crew the same
+ *  way deriveTier does, so a Supporter row prices at Crew and never at $12. */
 export const PLACEHOLDER_MEMBER_PRICE_CENTS: Record<Exclude<EntitlementTier, 'supporter'>, number> = {
   free: 0,
   crew: 900,
+}
+
+/** What a Space on `plan` is CHARGED per month right now, in cents: the Opening Beta rate while the beta
+ *  window is open, the list price once it closes. The display twin of what the checkout resolves
+ *  (lib/pricing/beta.ts effectiveCatalogAmounts, the same rule space-plan-checkout bills on), so a rung
+ *  can never quote a price the checkout has stopped charging. PURE — pass `betaActive` to pin it. */
+export function spacePlanPriceCents(plan: SpacePlan, betaActive: boolean = isBetaPricingActive()): number {
+  return effectiveCatalogAmounts(SPACE_PLAN_PRICE_CENTS[plan] ?? SPACE_PLAN_PRICE_CENTS.free, betaActive)
+    .foundingCents
 }
 
 // ── The ascending display ladders per axis (a clean upgrade path) ───────────────────────────────────
@@ -95,21 +143,27 @@ export function tierLabelOnAxis(axis: GateAxis, tier: string): string {
   return ENTITLEMENT_LABEL[tier as EntitlementTier] ?? tier
 }
 
-/** The placeholder price cents for a tier on its axis. PURE. (Exported so the sibling meter ladder,
- *  lib/pricing/feature-meters.ts, prices its rungs from the SAME placeholder maps — one price source.) */
-export function tierPriceCents(axis: GateAxis, tier: string): number {
-  if (axis === 'plan') return PLACEHOLDER_SPACE_PRICE_CENTS[tier as SpacePlan] ?? 0
+/** The monthly price cents a tier is CHARGED on its axis. PURE. (Exported so the sibling meter ladder,
+ *  lib/pricing/feature-meters.ts, prices its rungs from the SAME map — one price source.)
+ *
+ *  Space plans resolve through the beta window, so a rung quotes the Opening Beta rate while it is open
+ *  and the list price after the cutover, matching /pricing and the checkout. Before Phase 5 this returned
+ *  the LIST price unconditionally, which is why every FeatureTierRange rung read $29 for Business while
+ *  /pricing read $19. */
+export function tierPriceCents(axis: GateAxis, tier: string, betaActive: boolean = isBetaPricingActive()): number {
+  if (axis === 'plan') {
+    return SPACE_PLAN_PRICE_CENTS[tier as SpacePlan] ? spacePlanPriceCents(tier as SpacePlan, betaActive) : 0
+  }
   // deriveTier collapses a historical 'supporter' to 'crew' (ADR-458/878), so a legacy row prices at
   // Crew rather than at a $12 tier nobody can buy.
   const sellable = deriveTier(tier as EntitlementTier) as Exclude<EntitlementTier, 'supporter'>
   return PLACEHOLDER_MEMBER_PRICE_CENTS[sellable] ?? 0
 }
 
-/** A plain, honest placeholder price label for a tier on its axis, reusing the shared display format
- *  (formatCents). "Free" for the floor; "$X/mo" for a flat tier. Non Profit is a FLAT $29/mo (ADR-590),
- *  never per-seat. PURE. */
-export function tierPriceLabel(axis: GateAxis, tier: string): string {
-  const cents = tierPriceCents(axis, tier)
+/** A plain, honest price label for a tier on its axis, reusing the shared display format (formatCents).
+ *  "Free" for the floor; "$X/mo" for a flat tier. Non Profit is FLAT, never per-seat. PURE. */
+export function tierPriceLabel(axis: GateAxis, tier: string, betaActive?: boolean): string {
+  const cents = tierPriceCents(axis, tier, betaActive)
   if (cents === 0) return 'Free'
   return `${formatCents(cents)}/mo`
 }

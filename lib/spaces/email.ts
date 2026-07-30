@@ -152,6 +152,40 @@ async function readEmailEnabled(spaceId: string): Promise<boolean> {
   }
 }
 
+/** Count this calendar month's (UTC) outreach_sends for a Space. DISPLAY ONLY (docs/VALUE-LADDER.md
+ *  Phase 4): the space_email meter is denominated in sends per month, so the usage readout beside it
+ *  has to count the same window. Nothing enforces against this number; the only live throttle is the
+ *  per-day DAILY_SEND_CAP above, which is a deliverability limit rather than a plan limit.
+ *  FAIL-SAFE 0, the opposite direction from countTodaySends: a failed read must not invent usage that
+ *  triggers an upsell prompt. */
+export async function countMonthSends(spaceId: string): Promise<number> {
+  const startOfMonth = new Date()
+  startOfMonth.setUTCDate(1)
+  startOfMonth.setUTCHours(0, 0, 0, 0)
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string, opts: { count: 'exact'; head: true }) => {
+          eq: (col: string, val: string) => {
+            neq: (col: string, val: string) => {
+              gte: (col: string, val: string) => Promise<{ count: number | null }>
+            }
+          }
+        }
+      }
+    }
+    const { count } = await db
+      .from('outreach_sends')
+      .select('id', { count: 'exact', head: true })
+      .eq('space_id', spaceId)
+      .neq('status', 'suppressed')
+      .gte('created_at', startOfMonth.toISOString())
+    return typeof count === 'number' ? count : 0
+  } catch {
+    return 0
+  }
+}
+
 /** Count today's (UTC) outreach_sends for a Space, so the daily cap can be enforced. Counts every row
  *  EXCEPT those skipped as 'suppressed' (a suppressed recipient never touched the provider, so it must
  *  not consume the send budget). FAIL-CLOSED for the cap: on a read error, return the cap so the send

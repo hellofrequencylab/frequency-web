@@ -14,6 +14,7 @@ import { MembershipCircleAccess } from '@/components/spaces/membership-circle-ac
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listCirclesForSpace } from '@/lib/circles/store'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
+import { MeterUpsell } from '@/components/pricing/meter-upsell'
 import { SectionHeader } from '@/components/ui/section-header'
 import type { Space } from '@/lib/spaces/types'
 
@@ -46,6 +47,12 @@ export async function MembershipsSection({
         label="Memberships"
         reason={spaceFunctionAccess(space, 'memberships', 'admin') ? 'role' : 'disabled'}
         canManageMembers={caps.canManageMembers}
+        // Phase 4 (docs/VALUE-LADDER.md A3): this notice mounted with NO featureKey, so a plan-reason
+        // gap rendered no upsell at all. The METERED quantity here is the number of membership TIERS a
+        // Space may define; active members are deliberately unmetered (capping them would punish a
+        // Space for growing, ADR-914).
+        featureKey="space_membership_tiers"
+        currentPlan={space.plan}
       />
     )
   }
@@ -54,6 +61,16 @@ export async function MembershipsSection({
 
   return (
     <div className="space-y-8">
+      {/* Phase 4 (docs/VALUE-LADDER.md): the space_membership_tiers meter's in-context prompt. The tier
+          list is already loaded, so the count is exact. Appears at 80% of the allowance, names the
+          tiers this Space already built, and blocks nothing. */}
+      <MeterUpsell
+        featureKey="space_membership_tiers"
+        currentTier={space.plan}
+        usage={tiers.length}
+        upgradeHref={`/spaces/${space.slug}/settings/billing`}
+      />
+
       {/* A disabled fieldset renders the editor READ-ONLY for a staff preview (it natively disables
           every nested control in the form). `display: contents` keeps it out of the layout box. */}
       <fieldset disabled={staffViewing} className="contents">

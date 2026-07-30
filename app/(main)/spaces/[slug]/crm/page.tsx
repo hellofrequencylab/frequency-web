@@ -8,13 +8,14 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { spaceManageHref, type SpaceType } from '@/lib/spaces/types'
 import { getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
-import { getDeals, countOpenTasks, computeMetrics, formatMoney, ensureSpaceStages } from '@/lib/crm/pipeline'
+import { getDeals, countOpenTasks, computeMetrics, formatMoney, ensureSpaceStages, countContacts } from '@/lib/crm/pipeline'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SpaceContactDetail } from '@/components/spaces/crm/space-contact-detail'
 import { SpaceStageList } from '@/components/spaces/crm/space-stage-list'
 import { CrmViewTabs, type CrmView } from '@/components/spaces/crm/crm-view-tabs'
 import { FeatureMeterUpsell } from '@/components/pricing/feature-meter-upsell'
+import { MeterUpsell } from '@/components/pricing/meter-upsell'
 import { UpsellTease } from '@/components/upsell/upsell-tease'
 import { resolveSpaceTeaseGate } from '@/lib/pricing/tease-gate'
 import { CrmBody, ListSkeleton } from './crm-body'
@@ -212,12 +213,46 @@ export default async function SpaceCrmBoardPage({
           cta="See what Business adds"
         />
       )}
+      {/* Phase 4 (docs/VALUE-LADDER.md): the space_crm meter had a surface only on the LOCKED state, so
+          the Space actually filling its CRM, which is every Space today, saw no allowance anywhere on
+          this board. This is the in-context prompt at 80% of the contact allowance. Streamed so the
+          head-only count never blocks the board (PAGE-FRAMEWORK §5), managers only (nobody else can
+          act on the plan), and it refuses nothing. */}
+      {caps.canManageMembers && (
+        <Suspense fallback={null}>
+          <CrmAllowancePrompt spaceId={space.id} slug={space.slug} plan={space.plan} />
+        </Suspense>
+      )}
       {/* The board itself (tabs + the active view) is the chrome-free <CrmBody>, shared with the inline
           `?panel=crm` workspace (Stage D5). This page frames it in the DashboardTemplate + stats slot; the
           panel bounds it under the profile hero. CrmBody re-derives the same space + caps, so the standalone
           render stays byte-identical. The deep sub-views (?contact=, ?stage=) stay on this route, above. */}
       <CrmBody slug={space.slug} activeView={activeView} />
     </DashboardTemplate>
+  )
+}
+
+// The contacts-allowance prompt for a Space that is USING its CRM (Phase 4). Self-fetching so the
+// board paints first. `countContacts` is a head-only count of the exact dimension the meter is
+// denominated in (contacts, not open deals), fail-safe 0. Display only: it blocks no write.
+async function CrmAllowancePrompt({
+  spaceId,
+  slug,
+  plan,
+}: {
+  spaceId: string
+  slug: string
+  plan?: string | null
+}) {
+  const contacts = await countContacts(spaceId)
+  return (
+    <MeterUpsell
+      featureKey="space_crm"
+      currentTier={plan}
+      usage={contacts}
+      upgradeHref={`/spaces/${slug}/settings/billing`}
+      className="mb-4"
+    />
   )
 }
 

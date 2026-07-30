@@ -160,108 +160,95 @@ export function proAddonPrice(addon: AddonKey): string {
   return item.perSeat ? `+${amount}/seat/mo` : `+${amount}/mo`
 }
 
-/** Build the FOUR public tier columns (owner overhaul, 2026-07): Free Space FIRST (the first level of
- *  Space, where the core value lives), then Business, Collective, and Non Profit, the paid ones priced
- *  from the CODE catalog. Independent is NOT displayed (the machinery stays dormant; plan_independent
- *  flag OFF). PURE — no DB, no per-request read. The add-on cells carry only Vera AI: priced on the paid
- *  tiers, not sold on Free. */
-export function pricingTiers(betaActive: boolean = isBetaPricingActive()): PricingTier[] {
-  const cat = pricingCatalog()
+/** The catalog item each SPACE tier is priced from. Free has none ($0 is not a Stripe price). PURE. */
+const TIER_ITEM: Record<Exclude<PricingTier['id'], 'free'>, CatalogItemKey> = {
+  business: 'business_base',
+  collective: 'collective_base',
+  nonprofit: 'nonprofit_seat',
+  independent: 'independent_base',
+}
+
+/** The core-included summary per tier. COPY ONLY, and deliberately free of any number: every figure a
+ *  column states (its price, its anchor, its take-rate, its add-on cell) is READ from the shared model
+ *  below, so a rewrite of this prose can never move a price and a price change can never leave this
+ *  prose stale. The lines that used to carry rate literals ("5% on network-sourced sales") are gone. */
+const TIER_CORE_INCLUDED: Record<PricingTier['id'], string> = {
+  free: 'Your storefront and page, host events, post, gather members, and be a Collaborator on other Spaces’ events.',
+  business:
+    'Unlimited contacts, campaigns at volume, email branding, and exports: the full CRM, email, reporting, bookings, tickets, memberships, and your own website.',
+  collective:
+    'Everything in Business, plus team seats, automations, membership-included tickets, multiple pipelines, and hosting events with Collaborator Spaces.',
+  nonprofit:
+    'The full Collective toolkit for verified nonprofits, with donations built in. Flat, never per seat.',
+  independent:
+    'Everything in Collective, plus your own brand and custom domain. Standalone, off the network, so there is no network take-rate at all.',
+}
+
+/** The CTA per tier. Copy + route only. */
+const TIER_CTA: Record<PricingTier['id'], { label: string; href: string }> = {
+  free: { label: 'Start free', href: '/spaces' },
+  business: { label: 'Start a Space', href: '/spaces' },
+  collective: { label: 'Start a Space', href: '/spaces' },
+  nonprofit: { label: 'Get verified', href: '/spaces' },
+  independent: { label: 'Start a Space', href: '/spaces' },
+}
+
+/** Build the FIVE public Space tier columns: Free Space FIRST (the first level of Space, where the core
+ *  value lives), then Business, Collective, Non Profit, and Independent.
+ *
+ *  DERIVED FROM THE GRID (Phase 5, ADR-915). The column order, the labels, the taglines, the who-it-is-for
+ *  lines, and every take-rate now come from lib/pricing/pricing-grid.ts spaceOfferings, the one derived
+ *  model /pricing itself renders. This function used to type its own take-rate strings, which is how
+ *  /llms.txt and /llms-full.txt ended up publishing a fee ladder an operator edit could not move. Prices
+ *  still come through the catalog here (the ladder lines need cents at both intervals, which an Offering
+ *  does not carry), from the SAME catalog the offerings are priced from.
+ *
+ *  INDEPENDENT IS DISPLAYED. The old comment here said it was not, and then returned it anyway, so the
+ *  answer-engine corpus published a tier the comment claimed was hidden. The ruling (Phase 5): Independent
+ *  is a real, published tier on every PUBLIC surface, exactly as /pricing already shows it; what it is not
+ *  is an upgrade path offered inside the app, which is the in-app plan ladder's own, separate decision.
+ *
+ *  PURE. `values` defaults to the code take-rates; a caller with the operator's resolved config (the
+ *  llms.txt routes) passes them in, so an edit at /admin/pricing moves the published ladder too. */
+export function pricingTiers(
+  betaActive: boolean = isBetaPricingActive(),
+  opts: { values?: PricingDefaults; catalog?: Record<CatalogItemKey, ResolvedCatalogItem> } = {},
+): PricingTier[] {
+  const cat = opts.catalog ?? pricingCatalog()
+  const values = opts.values ?? PRICING_DEFAULTS
+  const offerings = spaceOfferings({ values, catalog: cat, betaActive })
 
   // Vera AI is the only metered add-on. It is priced on, and available on, every paid tier.
-  const tierAddons: TierAddonCell[] = PRICING_ADDONS.map((a) => ({ addon: a.key, value: proAddonPrice(a.key) }))
+  const tierAddons: TierAddonCell[] = PRICING_ADDONS.map((a) => ({ addon: a.key, value: proAddonPrice(a.key, cat) }))
 
   // BETA AUTO-REVERT (ADR-811): during beta, Business/Collective show their Opening Beta anchor struck
   // under the list; once beta ends the list becomes the price (no strike, no beta caption).
   // effectiveCatalogAmounts mirrors what the checkout charges, so the table never quotes a price the
   // checkout won't honor.
-  const eff = (a: { listCents: number; foundingCents: number }) => effectiveCatalogAmounts(a, betaActive)
+  const eff = (a: CatalogAmounts) => effectiveCatalogAmounts(a, betaActive)
 
   // Free has no catalog item ($0 is not a Stripe price); a zeroed DualPrice renders as "Free".
   const zero: CatalogAmounts = { listCents: 0, foundingCents: 0 }
 
-  return [
-    {
-      id: 'free',
-      name: 'Free Space',
-      tagline: 'Put your business on the map.',
+  return offerings.map((o): PricingTier => {
+    const id = o.id as PricingTier['id']
+    const item = id === 'free' ? null : cat[TIER_ITEM[id]]
+    return {
+      id,
+      // "Free Space" reads better than the bare plan label on a commercial table of Space tiers.
+      name: id === 'free' ? 'Free Space' : o.label,
+      tagline: o.tagline,
       priceKind: 'flat',
-      price: { month: zero, year: zero },
-      featured: false,
-      forWho: 'Anyone starting out, for as long as you want.',
-      billing: 'Free. No card, no clock.',
-      coreIncluded:
-        'Your storefront and page, host events, post, gather members, and be a Collaborator on other Spaces’ events.',
-      addons: [],
-      takeRate: '0% on your own bookings, 10% on network-sourced sales',
-      cta: { label: 'Start free', href: '/spaces' },
-    },
-    {
-      id: 'business',
-      name: 'Business',
-      tagline: 'Own your audience.',
-      priceKind: 'flat',
-      price: { month: eff(cat.business_base.month), year: eff(cat.business_base.year) },
-      featured: true,
-      forWho: 'Coaches, service and product businesses, studios, and practitioners.',
-      billing: 'Monthly or yearly. Yearly is two months free.',
-      coreIncluded:
-        'Unlimited contacts, campaigns at volume, email branding, and exports: the full CRM, email, reporting, bookings, tickets, memberships, and your own website.',
-      addons: tierAddons,
-      takeRate: '0% on your own bookings, 5% on network-sourced sales',
-      cta: { label: 'Start a Space', href: '/spaces' },
-    },
-    {
-      id: 'collective',
-      name: 'Collective',
-      tagline: 'Be the venue.',
-      priceKind: 'flat',
-      // Priced from the code catalog (ADR-811 go-live): $79 list with the $49 beta founding anchor.
-      price: { month: eff(cat.collective_base.month), year: eff(cat.collective_base.year) },
-      featured: false,
-      forWho: 'Growing communities that collaborate and run a team.',
-      billing: 'Monthly or yearly. Opening Beta price locked for early Collectives.',
-      coreIncluded:
-        'Everything in Business, plus team seats, automations, membership-included tickets, multiple pipelines, and hosting events with Collaborator Spaces.',
-      addons: tierAddons,
-      takeRate: '0% on your own bookings, 3% on network-sourced sales',
-      cta: { label: 'Start a Space', href: '/spaces' },
-    },
-    {
-      id: 'nonprofit',
-      name: 'Non Profit',
-      tagline: 'The full toolkit, verified.',
-      priceKind: 'flat',
-      price: { month: cat.nonprofit_seat.month, year: cat.nonprofit_seat.year },
-      featured: false,
-      forWho: 'Verified 501(c)(3) organizations.',
-      billing: 'Monthly or yearly. Yearly is two months free.',
-      coreIncluded:
-        'The full Collective toolkit for verified nonprofits, with donations built in. Flat, never per seat.',
-      addons: tierAddons,
-      takeRate: '0%, always',
-      cta: { label: 'Get verified', href: '/spaces' },
-    },
-    {
-      // Independent (ADR-811): the whole platform under your own brand and domain, standalone and off
-      // the network. Priced from the code catalog like every other tier; no founding discount, so it
-      // shows a single price and never a struck anchor. Represented on every ladder surface (owner,
-      // 2026-07: "make sure all of our pricing tiers are represented").
-      id: 'independent',
-      name: 'Independent',
-      tagline: 'Your own brand, standalone.',
-      priceKind: 'flat',
-      price: { month: cat.independent_base.month, year: cat.independent_base.year },
-      featured: false,
-      forWho: 'Organizations that want the whole platform under their own name and domain.',
-      billing: 'Monthly or yearly. Yearly is two months free.',
-      coreIncluded:
-        'Everything in Collective, plus your own brand and custom domain. Standalone, off the network, so there is no network take-rate at all.',
-      addons: tierAddons,
-      takeRate: '0%, always',
-      cta: { label: 'Start a Space', href: '/spaces' },
-    },
-  ]
+      price: item ? { month: eff(item.month), year: eff(item.year) } : { month: zero, year: zero },
+      featured: o.featured,
+      forWho: o.forWho,
+      billing: o.billing,
+      coreIncluded: TIER_CORE_INCLUDED[id],
+      addons: item ? tierAddons : [],
+      takeRate: o.takeRate,
+      cta: TIER_CTA[id],
+    }
+  })
 }
 
 /** The headline price string for a tier at an interval, e.g. "$19/mo", "$12/seat/mo", "from $199/mo".

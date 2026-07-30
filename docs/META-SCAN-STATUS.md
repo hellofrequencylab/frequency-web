@@ -83,7 +83,7 @@ Also closed in the same pass, both flagged above as the highest user impact:
 - `/admin/elements` renders QR Studio toggles and role gates nothing consumes; saving them silently does nothing (`lib/elements/qr-studio.ts:83`).
 - The declared **CRM policy layer** and membrane contact-card primitive are unreferenced (`lib/crm/capabilities.ts:83`).
 - The embeddable-elements `<AppElement>` mounter is orphaned; every mount forks its own (`components/elements/app-element.tsx:25`).
-- `lib/marketing/personas.ts` is a second, unwired copy of the persona registry `/for/[niche]` actually uses.
+- ~~`lib/marketing/personas.ts` is a second, unwired copy of the persona registry `/for/[niche]` actually uses.~~ ✅ deleted (ADR-915). `lib/marketing/funnel-config.ts` is the one registry.
 - `app_instances` (0 rows, no reader or writer) is the Loom where-referenced backbone, shipped ahead of its code.
 
 **Correctness**

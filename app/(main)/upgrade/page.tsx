@@ -1,13 +1,18 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Zap, Check, MessageSquare, Users, Star, Radio, BarChart3, ArrowRight } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
-import { getPricingValues } from '@/lib/pricing/settings'
+import { getPricingValues, billingLive } from '@/lib/pricing/settings'
 import { memberTierSellable } from '@/lib/pricing/settings'
 import { loadCatalogConfig } from '@/lib/pricing/catalog-config'
 import { formatCents, memberTierRows } from '@/lib/pricing/display'
+import { FEATURE_METERS } from '@/lib/pricing/feature-meters'
+import { memberMeterUsage } from '@/lib/pricing/member-meter-usage'
+import { FeatureMeterRange } from '@/components/pricing/feature-meter-range'
+import { SectionHeader } from '@/components/ui/section-header'
 import { confirmSupporterContribution } from './actions'
 import { UpgradeToggle } from './upgrade-toggle'
 import { CheckoutButton } from './checkout-button'
@@ -24,6 +29,12 @@ import { SupporterBadge } from './supporter-badge'
 // toggle (unchanged) plus a tasteful disabled "coming soon" price preview, never a broken button.
 // When billing goes live, the CTA becomes a real Stripe checkout (CheckoutButton -> the existing
 // createMembershipCheckout, which already honors the founder lock). No em dashes (CONTENT-VOICE §10).
+
+// THE PERSONAL (tier-axis) USAGE METERS (docs/VALUE-LADDER.md Phase 4, Appendix A3). All six were
+// total gaps: the Space plan-and-usage hub filters to `axis === 'plan'`, and this page mounted no
+// meter component at all, so a member had nowhere in the product to see a single personal allowance.
+// This is the mirror of BillingBody's PLAN_USAGE_METERS, on the other axis, from the same source.
+const TIER_USAGE_METERS = Object.values(FEATURE_METERS).filter((m) => m.axis === 'tier')
 
 export default async function UpgradePage({
   searchParams,
@@ -211,6 +222,21 @@ export default async function UpgradePage({
         </div>
       </div>
 
+      {/* YOUR ALLOWANCES (docs/VALUE-LADDER.md Phase 4). The six personal meters, each with the
+          member's REAL count where it resolves, the rung they are on highlighted, and the shared 80%
+          nudge. Streamed behind Suspense so six counts never block the price card above
+          (PAGE-FRAMEWORK §5). Informational: nothing here charges, refuses, or removes anything. */}
+      <section className="mt-10">
+        <SectionHeader title="Your allowances" />
+        <p className="-mt-2 mb-4 text-sm text-muted">
+          What you have built so far, and what each one carries on Member and on Crew. Everything you
+          have already made stays yours on either.
+        </p>
+        <Suspense fallback={<MetersSkeleton />}>
+          <TierUsageMeters profileId={profile.id} tier={tier} />
+        </Suspense>
+      </section>
+
       {/* Mission framing (CONTENT-VOICE: plain, concrete, no narrating the reader's feelings, skeptic
           test). State plainly what the membership funds. */}
       <p className="mt-5 text-center text-xs leading-relaxed text-subtle px-4">
@@ -238,5 +264,39 @@ export default async function UpgradePage({
         </div>
       )}
     </FocusTemplate>
+  )
+}
+
+// The six personal usage meters, self-fetching so the price card paints first (PAGE-FRAMEWORK §5).
+// Each ladder is the SAME FeatureMeterRange the Space plan-and-usage hub mounts, so there is one
+// meter idiom in the product rather than a second one invented for members. `memberMeterUsage`
+// OMITS a key whose count could not be read, so a failed read renders the allowance ladder without a
+// wrong number instead of claiming zero.
+async function TierUsageMeters({ profileId, tier }: { profileId: string; tier: string }) {
+  const [usage, billingIsLive] = await Promise.all([memberMeterUsage(profileId), billingLive()])
+  return (
+    <div className="space-y-4">
+      {TIER_USAGE_METERS.map((ladder) => (
+        <FeatureMeterRange
+          key={ladder.featureKey}
+          ladder={ladder}
+          currentTier={tier}
+          upgradeHref="/upgrade"
+          live={billingIsLive}
+          usage={usage[ladder.featureKey]}
+        />
+      ))}
+    </div>
+  )
+}
+
+// Dimension-matched skeleton for the streamed meters (no CLS, PAGE-FRAMEWORK §5.4).
+function MetersSkeleton() {
+  return (
+    <div className="space-y-4">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="h-44 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
+      ))}
+    </div>
   )
 }

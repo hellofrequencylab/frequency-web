@@ -14,7 +14,7 @@ top-of-funnel marketing page**; a QR splash is a scan-time landing. Different th
 
 ## 2. Architecture: evolve the persona doors
 
-The five persona doors (`/for/[niche]`, `lib/marketing/personas.ts`, shipped in #1624) already are the five
+The five persona doors (`/for/[niche]`, `lib/marketing/funnel-config.ts`, shipped in #1624) already are the five
 niches as short SEO/pricing sell pages. Rather than a second near-identical surface competing for the same
 search terms, we **grow `/for/<niche>` into the full funnel template**: one surface per niche = SEO door +
 conversion funnel unified, keeping the sitemap / JSON-LD / pricing-catalog wiring it already has.
