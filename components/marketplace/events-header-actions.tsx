@@ -1,34 +1,36 @@
 import Link from 'next/link'
 import { EventCompose } from '@/app/(main)/events/event-compose'
-import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { CalendarSubscribe } from '@/components/events/calendar-subscribe'
-import { HERO_PRIMARY_BTN, HERO_SECONDARY_BTN } from './hero-buttons'
+import { HERO_SECONDARY_BTN } from './hero-buttons'
 
 // The member action cluster for the unified Events header on /events (the one events home; the
-// /marketplace/events twin was retired by ADR-866). New Event (the guided composer, wrapped in
-// CrewGateButton so non-Crew get the upgrade popup) shows to any signed-in member; Manage + My drafts
-// appear only once the member has added an event (the owner rule). Gating is unchanged from the old
-// /events home; it just lives in one place now. No em dashes.
+// /marketplace/events twin was retired by ADR-866). Manage + My drafts appear only once the member
+// has added an event (the owner rule). No em dashes.
+//
+// 🔴 NEW EVENT IS NO LONGER GATED (ADR-913). It was wrapped in CrewGateButton, so a free Member was
+// shown an upgrade popup for the act of creating an event at all — while the SERVER never gated
+// creation (app/(main)/events/actions.ts checks only "signed in + may place in this scope"). So the
+// wall was UI-only and in the wrong place.
+//
+// The owner ruling moved it: *"A member can create an event but must upgrade to Crew or Space to take
+// tickets. Members can have RSVP."* Creating and filling a room is the product; charging for a seat is
+// the paid part. The wall now lives at the price field (lib/events/ticket-eligibility.ts), which is
+// both the honest place for it and the highest-intent upgrade moment in the product.
 export function EventsHeaderActions({
   myProfileId,
-  isCrew,
+  isCrew: _isCrew,
   userHasEvents,
 }: {
   myProfileId: string | null
-  isCrew: boolean
+  /** @deprecated Unused since ADR-913 — creating an event is not a paid feature. Kept so the call
+   *  sites keep type-checking; remove once /events stops resolving it. */
+  isCrew?: boolean
   userHasEvents: boolean
 }) {
   if (!myProfileId) return null
   return (
     <>
-      <CrewGateButton
-        isCrew={isCrew}
-        label="New Event"
-        reason="create-event"
-        buttonClassName={HERO_PRIMARY_BTN}
-      >
-        <EventCompose />
-      </CrewGateButton>
+      <EventCompose />
       {/* The master Frequency calendar (Events EC3) — every upcoming public event on one grid + a
           subscribable feed. Shown to any signed-in member beside New Event. */}
       <Link href="/events/calendar" className={HERO_SECONDARY_BTN}>

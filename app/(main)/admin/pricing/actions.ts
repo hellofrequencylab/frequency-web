@@ -3,7 +3,13 @@
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
 import { setPlatformFlag, setPlatformSetting } from '@/lib/platform-flags'
-import { setPricingSetting, getFoundingConfig, type TierPrice } from '@/lib/pricing/settings'
+import {
+  setPricingSetting,
+  getFoundingConfig,
+  getPricingValues,
+  type TierPrice,
+  type PricingDefaults,
+} from '@/lib/pricing/settings'
 import { sanitizeFoundingConfig, type FoundingConfig } from '@/lib/pricing/founding'
 import {
   asPwywConfig,
@@ -158,29 +164,41 @@ export async function saveAddonEnabled(addon: string, enabled: boolean): Promise
   }
 }
 
-/** Save the take-rate (basis points per seller · ADR-552/596: free usage / paying Business / Non Profit,
- *  plus the individual PAID-MEMBER Market seller rate `member_bps`, default 800 = 8%). Free-vs-paid is a
- *  usage state within Business, so free usage carries its own higher rate. Every field is written so a
- *  legacy row that lacked `member_bps` gains it (getPricingValues also merges over the code default). */
+/** The network-tier keys the console may edit, as a TRUSTED constant. Every write target below comes from
+ *  this list, never from a caller-supplied property name. `independent` is deliberately editable too (it
+ *  is part of the stored vector), but the console does not render it: a disconnected Space has left the
+ *  graph, so its network revenue is 0 by definition. */
+const NETWORK_TIER_KEYS = ['free', 'business', 'collective', 'nonprofit', 'independent'] as const
+
+/** Save the take-rate, in basis points (800 = 8%). Writes the fields that ACTUALLY CHARGE (ADR-913):
+ *  `network_bps` (the per-Space-tier network-sourced vector `spaceTakeRateCents` reads) and `member_bps`
+ *  (the individual Crew seller rung `memberTakeRateCents` reads). A sale to the seller's own audience is
+ *  0% by rule and is not a stored rate; tips carry no fee at all.
+ *
+ *  READ-MODIFY-WRITE, and that is load-bearing: `setPricingSetting` REPLACES the whole `take_rate` jsonb
+ *  value, so writing a bare object is a silent delete of every field omitted. The previous version of this
+ *  action wrote only the four legacy flat fields, which (a) dropped the stored `network_bps` vector
+ *  entirely and (b) meant an operator edited numbers that never reached a charge. Merging over the current
+ *  values keeps the legacy flat trio and any tier this console does not render. */
 export async function saveTakeRate(rate: {
-  free_bps: number
-  business_bps: number
-  nonprofit_bps: number
   member_bps: number
+  network_bps: Partial<PricingDefaults['take_rate']['network_bps']>
 }): Promise<ActionResult> {
   const ctx = await requireAdmin('janitor')
   const clamp = (n: unknown) => Math.min(10000, Math.max(0, Math.round(Number(n) || 0)))
   try {
-    await setPricingSetting(
-      'take_rate',
-      {
-        free_bps: clamp(rate.free_bps),
-        business_bps: clamp(rate.business_bps),
-        nonprofit_bps: clamp(rate.nonprofit_bps),
-        member_bps: clamp(rate.member_bps),
-      },
-      ctx.profileId,
-    )
+    const current = (await getPricingValues()).take_rate
+    const network = { ...current.network_bps }
+    for (const tier of NETWORK_TIER_KEYS) {
+      const next = rate.network_bps[tier]
+      if (next != null) network[tier] = clamp(next)
+    }
+    const value: PricingDefaults['take_rate'] = {
+      ...current,
+      member_bps: clamp(rate.member_bps),
+      network_bps: network,
+    }
+    await setPricingSetting('take_rate', value, ctx.profileId)
     revalidatePath(PATH)
     return ok()
   } catch (e) {

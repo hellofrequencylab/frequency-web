@@ -290,7 +290,9 @@ pricing syncs after deploy.
 handling; send-gate precedence + consent backfill (scope wider than the "~46" note but
 intentional per its header); calendar-feed RLS gates (no private leak); collaborator/venue-hold/
 event-share authz (both-space checks, status-guarded races); follower-reminder cron windows;
-differential take-rate 0% collapse on all three fee paths; fee rounding; server-side price
+differential take-rate 0% collapse on all three fee paths (⚠️ **re-opened by ADR-913**: tips must now be
+0% on every tier, the `member_free` 10% rung is retired, and Business is 5% not 3%, so the tips fee path
+and the personal rungs need re-verification against the new model); fee rounding; server-side price
 re-derivation + `locked_price_id` honoring; operator_seat placeholder inertness; new-era
 migrations (`20261191`–`20261211200000`) additive/idempotent/RLS-correct.
 

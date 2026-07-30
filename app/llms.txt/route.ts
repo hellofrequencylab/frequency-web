@@ -8,11 +8,23 @@ import {
 import { createAdminClient } from '@/lib/supabase/admin'
 import { funnelSlugs, getFunnelConfig } from '@/lib/marketing/funnel-config'
 import { pricingLadderSummary, priceStrings, CREW_NOTE } from '@/lib/pricing/pricing-page'
+import { formatBps } from '@/lib/pricing/display'
+import { PRICING_DEFAULTS } from '@/lib/pricing/settings'
 import { countUpcomingPublicSeries } from '@/lib/events/series-seo'
 
 // Every dollar figure below interpolates from the ONE code catalog, so this file can never quote a
 // price /pricing does not carry.
 const P = priceStrings()
+
+// Every PERCENTAGE interpolates from the take-rate config the fee code charges, for the same reason. This
+// file is the single highest-leverage paragraph in the repo for what an answer engine will quote about our
+// fees, and it spent a release quoting a ladder we had retired ("Free Space 10%, Collective 3%").
+const T = PRICING_DEFAULTS.take_rate
+/** The two rungs plus the verified-nonprofit zero. Crew is the individual seller; Business is the Space. */
+const NETWORK_RATES = `Crew ${formatBps(T.member_bps)}, Business ${formatBps(T.network_bps.business)}, Non Profit ${formatBps(T.network_bps.nonprofit)}`
+/** The whole money model in one citable sentence pair (ADR-913). */
+const TAKE_RATE_STORY =
+  `The take-rate applies ONLY to a sale the network introduced: ${NETWORK_RATES}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free. Tips are always 0%.`
 
 // /llms.txt — the curated, short brand summary for language models (AIO,
 // docs/CONTENT-VOICE §8). This is the hand-written companion to /llms-full.txt
@@ -34,7 +46,7 @@ const PAGES: { path: string; label: string; desc: string }[] = [
   { path: '/the-community', label: 'The Community', desc: 'How you find your people, through Pillars, Channels, and Circles. For builders: host one Circle and we hand you the format and the first-night script.' },
   { path: '/the-quest', label: 'The Quest', desc: 'The light, in-person game: Zaps, Gems, season ranks, and Journeys.' },
   { path: '/the-lab', label: 'The Lab', desc: 'The physical third space, and why a community needs a room.' },
-  { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces: connection is free, paid plans raise the limits. You keep 100% of your own bookings; Frequency earns only on network-sourced business, at a rate that drops by tier (Free Space 10%, Business 5%, Collective 3%, Non Profit 0%). The ladder: a Free Space to start, Business ${P.businessList}/mo (${P.businessBeta} Opening Beta), Collective ${P.collectiveList}/mo (${P.collectiveBeta} Opening Beta), Non Profit ${P.nonprofit}/mo flat (verified 501c3). The personal ladder is Member (free) and Crew (${CREW_NOTE.foundingLabel}/mo).` },
+  { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces: connection is free, paid plans raise the limits. You keep 100% of your own bookings. ${TAKE_RATE_STORY} The ladder: a Free Space to start, Business ${P.businessList}/mo (${P.businessBeta} Opening Beta), Collective ${P.collectiveList}/mo (${P.collectiveBeta} Opening Beta), Non Profit ${P.nonprofit}/mo flat (verified 501c3). The personal ladder is Member (free), which creates events and takes RSVPs, and Crew (${CREW_NOTE.foundingLabel}/mo), which sells tickets and takes payments.` },
   { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer of the movement: what ${SITE_NAME} is, how it works (Circles, Events, The Lab), and why it exists.` },
   { path: '/about', label: 'About', desc: 'The mission and the people building it.' },
   { path: '/discover', label: 'Discover', desc: 'Live Circles and Events near you, sorted by Channel.' },
@@ -159,7 +171,8 @@ export async function GET() {
     '## Pricing for Spaces (a Community Collective, not a tax on your work)',
     `The core promise: connection is free, and a business never pays for access to people; paid plans raise the limits. You keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective), and that rate drops as your plan rises. The tier ladder: a Free Space to start, then Business ${P.businessList}/mo (${P.businessBeta} Opening Beta), Collective ${P.collectiveList}/mo (${P.collectiveBeta} Opening Beta), and Non Profit ${P.nonprofit}/mo flat (verified 501c3). The personal ladder is Member (free) and Crew (${CREW_NOTE.foundingLabel}/mo). Monthly or yearly, two months free.`,
     ...pricingLadderSummary(),
-    'Network-sourced take-rate by plan: Free Space 10%, Business 5%, Collective 3%, Non Profit 0%. Nothing is ever taken on a booking you bring in yourself.',
+    TAKE_RATE_STORY,
+    'A free Member creates events and takes RSVPs. Selling tickets and taking payments comes with Crew, or with running a Business or Non Profit Space.',
     '',
     '## Frequency by who you are (operator funnel doors)',
     ...funnelSlugs().map((slug) => {

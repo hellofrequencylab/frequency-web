@@ -243,14 +243,28 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     }
   })
 
-  it('the take-rate row is the real per-tier network rate (10 / 5 / 3 / 0 / 0)', () => {
-    expect(cellsByColumn(grid, 'take_rate')).toEqual({
-      free: '10%',
-      business: '5%',
-      collective: '3%',
-      nonprofit: '0%',
-      independent: '0%',
-    })
+  it('the take-rate row IS take_rate.network_bps, tier by tier (never a typed ladder)', () => {
+    // Pinning the numbers here is how the retired ladder ("Free Space 10%, Collective 3%") survived a
+    // rate change: the test restated the very literals it was meant to guard. The row must equal what the
+    // config carries, so an owner rate change moves the page and this test together (ADR-913).
+    const net = PRICING_DEFAULTS.take_rate.network_bps
+    const cells = cellsByColumn(grid, 'take_rate')
+    for (const plan of SPACE_PLANS) {
+      expect(cells[plan], `take_rate @ ${plan}`).toBe(`${net[plan] / 100}%`)
+    }
+  })
+
+  it('holds the model invariants: the rate only falls as the tier rises, and 0% at the top', () => {
+    const net = PRICING_DEFAULTS.take_rate.network_bps
+    // Non Profit takes nothing, and Independent is off the network entirely.
+    expect(net.nonprofit).toBe(0)
+    expect(net.independent).toBe(0)
+    // Across the PAID ladder the rate only ever falls, which is the claim the copy makes out loud
+    // ("the rate drops as your plan rises").
+    const paid = (['business', 'collective', 'nonprofit', 'independent'] as const).map((p) => net[p])
+    expect(paid).toEqual([...paid].sort((a, b) => b - a))
+    // Business is the rung the whole funnel steers to, so it is stated once, here.
+    expect(net.business).toBe(500)
   })
 
   it('a meter row reads the tier rung on the usage ladder, not a typed number', () => {
@@ -326,11 +340,42 @@ describe('member grid: Member and Crew on the personal ladder', () => {
     expect(cellsByColumn(grid, 'space')).toEqual({ member: 'Included', crew: 'Included' })
   })
 
-  it('reads the member seller take-rate from the config on both columns', () => {
+  it('quotes a take-rate on CREW only, and never under the free Member header (ADR-913)', () => {
+    // 🔴 THE BUG THIS TEST USED TO ENFORCE: it asserted cells.member === cells.crew, so the free Member
+    // column printed the Crew seller rate (8%) for someone the product does not let take a payment at all.
+    // A rate is only honest where a sale can happen.
     const cells = cellsByColumn(grid, 'take_rate')
-    const expected = `${PRICING_DEFAULTS.take_rate.member_bps / 100}%`
-    expect(cells.member).toBe(expected)
-    expect(cells.crew).toBe(expected)
+    expect(cells.crew).toBe(`${PRICING_DEFAULTS.take_rate.member_bps / 100}%`)
+    expect(cells.member).toBe('Selling is not included')
+    expect(cells.member).not.toMatch(/\d%/)
+  })
+
+  it('gates selling itself at Crew, from the real gate map (RSVPs stay free)', () => {
+    for (const feature of ['event_paid_tickets', 'personal_payouts']) {
+      const cells = cellsByColumn(grid, feature)
+      expect(cells.member, `${feature} @ member`).toBe('Not included')
+      expect(cells.crew, `${feature} @ crew`).toBe('Included')
+    }
+  })
+
+  it('states no rate in the free Member offering line either, and the Crew rate from config', () => {
+    const [member, crew] = memberOfferings(input)
+    expect(member!.takeRate).not.toMatch(/\d%/)
+    expect(member!.takeRate).toContain('RSVPs')
+    expect(crew!.takeRate).toContain(`${PRICING_DEFAULTS.take_rate.member_bps / 100}%`)
+    // The retired free-Member rung is quoted on neither member column. `member_free_bps` is GONE from the
+    // config shape (ADR-913: a free Member cannot sell, so the rung has no reachable surface), so the rate
+    // it used to hold is written out literally here — there is no field left to read it from.
+    const retired = `${1000 / 100}%`
+    for (const o of memberOfferings(input)) expect(o.takeRate).not.toContain(retired)
+  })
+
+  it('follows the gate when selling is opened up (the cell is derived, not typed)', () => {
+    const opened = memberFeatureGrid({ ...input, gateOverrides: { event_paid_tickets: { enabled: false } } })
+    const cells = Object.fromEntries(
+      opened.columns.map((c, i) => [c.id, row(opened, 'take_rate').cells[i]!.text]),
+    )
+    expect(cells.member).toBe(`${PRICING_DEFAULTS.take_rate.member_bps / 100}%`)
   })
 })
 

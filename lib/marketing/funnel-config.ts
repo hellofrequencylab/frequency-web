@@ -15,15 +15,31 @@
 import type { SpaceType } from '@/lib/spaces/types'
 import { spaceCreatePath, type FunnelDestination } from '@/lib/onboarding/beta-sequences'
 import { priceStrings } from '@/lib/pricing/pricing-page'
+import { formatBps } from '@/lib/pricing/display'
+import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
 
 // Every dollar figure in the funnel copy interpolates from the ONE code catalog (priceStrings), so no
 // FAQ answer here can quote a price the catalog does not carry.
 const P = priceStrings()
 
+// Every RATE interpolates from the same take-rate map lib/billing/fees.ts falls back to (kept pure, so
+// this config stays safe to import anywhere). Four doors used to repeat a hardcoded "10% on network
+// sales" for the free tier and "Business halves the rate", which described a ladder we retired (ADR-913).
+const RATE = { business: formatBps(NETWORK_TAKE_RATE_DEFAULT.business), collective: formatBps(NETWORK_TAKE_RATE_DEFAULT.collective) }
+/** The free-tier row's honest descriptor: a free Space runs the whole toolset on starter caps, and the
+ *  take-rate story is the same on every tier (0% on the people already yours). */
+const FREE_ROW_DETAIL = 'Everything, on starter caps'
+/** The business row's descriptor: the only fee is on a sale the network introduced. */
+const BUSINESS_ROW_DETAIL = `${RATE.business} on network introductions`
+/** The break-even proof, stated once: the rate only ever applies to a NEW person the network brought. */
+function breakEvenCaption(keep: string): string {
+  return `You keep 100% of ${keep}. Frequency earns only when the network introduces someone new, and once they are yours it is 0% for good.`
+}
+
 /** The shared what-does-it-cost FAQ answer, with the per-niche "you keep 100% of ..." clause and an
  *  optional extra sentence (the community-builders Collective line). One template, five doors. */
 function costAnswer(keep: string, extra = ''): string {
-  return `Free to start. Business is ${P.businessList} a month, or ${P.businessBeta} at the Opening Beta price through September 1, 2026, and you keep 100% of ${keep}.${extra} We earn only on business the network sends you, at a rate that drops as your plan rises${extra ? '' : ': 5% on Business, 3% on Collective'}. You always see the full number, nothing hidden.`
+  return `Free to start. Business is ${P.businessList} a month, or ${P.businessBeta} at the Opening Beta price through September 1, 2026, and you keep 100% of ${keep}.${extra} We earn only on a sale the network introduces, at ${RATE.business} on Business, and it is 0% for good once that person is yours. You always see the full number, nothing hidden.`
 }
 
 // ── The small, consistent feature-icon set (drawn once, house tokens) ─────────────────────────────
@@ -65,7 +81,8 @@ export interface FunnelPriceRow {
   kind: 'free' | 'business' | 'nonprofit' | 'resonance'
   /** The plan name shown, e.g. "Free", "Business", "+ Resonance". */
   name: string
-  /** The right-hand descriptor, e.g. "10% on network sales", "5% on network sales", "AI that works for you". */
+  /** The right-hand descriptor, e.g. "Everything, on starter caps", "5% on network introductions",
+   *  "AI that works for you". Rates come from the shared RATE map, never typed here. */
   detail: string
   /** Featured row (the one the niche is steered toward). */
   featured?: boolean
@@ -219,12 +236,11 @@ export const COACHES_FUNNEL: FunnelConfig = {
     header: 'One honest price.',
     intro: 'Start free, and stay free while you grow. When your practice takes off, one plan opens everything. No add-on menu, no surprise fees.',
     rows: [
-      { kind: 'free', name: 'Free', detail: '10% on network sales' },
-      { kind: 'business', name: 'Business', detail: '5% on network sales', featured: true },
+      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
+      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
       { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
     ],
-    breakEvenCaption:
-      'You keep 100% of the bookings you bring in yourself. Business halves the rate on the business the network sends you.',
+    breakEvenCaption: breakEvenCaption('the bookings you bring in yourself'),
     note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you're never locked in.",
   },
   faq: [
@@ -310,12 +326,11 @@ export const STUDIOS_FUNNEL: FunnelConfig = {
     header: 'One honest price.',
     intro: 'Start free, and stay free while you grow. When your studio fills, one plan opens everything. No add-on menu, no surprise fees.',
     rows: [
-      { kind: 'free', name: 'Free', detail: '10% on network sales' },
-      { kind: 'business', name: 'Business', detail: '5% on network sales', featured: true },
+      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
+      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
       { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
     ],
-    breakEvenCaption:
-      'You keep 100% of the memberships you sell yourself. Business halves the rate on the business the network sends you.',
+    breakEvenCaption: breakEvenCaption('the memberships you sell yourself'),
     note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.",
   },
   faq: [
@@ -401,12 +416,11 @@ export const EVENTS_FUNNEL: FunnelConfig = {
     header: 'One honest price.',
     intro: 'Start free, and stay free while you grow. When your events take off, one plan opens everything. No add-on menu, no surprise fees.',
     rows: [
-      { kind: 'free', name: 'Free', detail: '10% on network sales' },
-      { kind: 'business', name: 'Business', detail: '5% on network sales', featured: true },
+      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
+      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
       { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
     ],
-    breakEvenCaption:
-      'You keep 100% of the tickets you sell yourself. Business halves the rate on the business the network sends you.',
+    breakEvenCaption: breakEvenCaption('the tickets you sell yourself'),
     note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.",
   },
   faq: [
@@ -493,12 +507,11 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
     header: 'One honest price.',
     intro: 'Start free, and stay free while you grow. When your community grows a team, one plan opens everything. No add-on menu, no surprise fees.',
     rows: [
-      { kind: 'free', name: 'Free', detail: '10% on network sales' },
-      { kind: 'business', name: 'Business', detail: '5% on network sales', featured: true },
+      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
+      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
       { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
     ],
-    breakEvenCaption:
-      'You keep 100% of the memberships you sell yourself. Business halves the rate on the business the network sends you.',
+    breakEvenCaption: breakEvenCaption('the memberships you sell yourself'),
     note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.",
   },
   faq: [
@@ -507,7 +520,7 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
       q: 'What does it actually cost?',
       a: costAnswer(
         'the memberships you sell',
-        ` When you grow a team and host collaborators, Collective adds that for ${P.collectiveBeta} a month at the Opening Beta price under the ${P.collectiveList} list, at a 3% network rate.`,
+        ` When you grow a team and host collaborators, Collective adds that for ${P.collectiveBeta} a month at the Opening Beta price under the ${P.collectiveList} list, at a ${RATE.collective} network rate.`,
       ),
     },
     { q: 'Can I take my members with me?', a: 'Yes, any time. Export your whole member list whenever you want.' },

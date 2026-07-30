@@ -29,6 +29,11 @@ export const UPGRADE_COPY: Record<string, { title: string; blurb: string }> = {
     blurb:
       'Crew members design the journeys. Lay out a path others can walk, day by day, and turn what you know into something people finish together.',
   },
+  'sell-tickets': {
+    title: 'Sell tickets with Crew',
+    blurb:
+      'Your event can take free RSVPs on any account. Crew is what lets you charge for a seat, and Frequency takes nothing on anyone who already follows you, is on your list, or has booked with you before. We only take a cut the first time we bring you someone new.',
+  },
   'create-practice': {
     title: 'Share practices with Crew',
     blurb:

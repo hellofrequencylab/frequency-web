@@ -153,6 +153,9 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
     entryPoint: input.entryPoint ?? null,
     buyerProfileId: input.buyerProfileId,
     sellerProfileId: seller.owner_profile_id,
+    // A Space shop: the relationship check (ADR-913) asks the SPACE's followers / members / CRM too,
+    // not just the owner profile. Null for a profile or platform seller, which is correct.
+    sellerSpaceId: seller.owner_kind === 'space' ? seller.owner_space_id ?? null : null,
   })
   const charge = await resolveCharge(seller, gross, source)
   if ('error' in charge) return charge

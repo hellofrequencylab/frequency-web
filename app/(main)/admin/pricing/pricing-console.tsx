@@ -973,7 +973,7 @@ function PlansSection({ values }: { values: PricingDefaults }) {
 
       <FormSection
         title="Take-rate"
-        description="The platform share of a sale, as a percent. Free usage pays the higher rate; a paying Business and Non Profit pay the lower one. Member is the rate on an individual member's Market sale (a Business subscription buys it down)."
+        description="The share Frequency takes on a sale the network sourced, as a percent. A sale to the seller's own audience is always 0%, and tips carry no fee. Crew member is the rate an individual seller pays; the rest are Space plans, and a plan buys the rate down. Independent Spaces are off the network, so their rate stays 0%."
       >
         <TakeRateRow rate={values.take_rate} />
       </FormSection>
@@ -1090,11 +1090,25 @@ function Field({
   )
 }
 
+/** The take-rate editor. These five fields are the ones that ACTUALLY CHARGE: `take_rate.network_bps` per
+ *  Space tier (what lib/billing/fees.ts spaceTakeRateCents applies) and `take_rate.member_bps` for an
+ *  individual Crew seller (what memberTakeRateCents applies).
+ *
+ *  It deliberately does NOT edit the legacy flat trio (free_bps / business_bps / nonprofit_bps). That was
+ *  the bug this row shipped with: the console wrote those four fields, no charging path read them, and the
+ *  write dropped the stored network vector on the way past. An operator was editing numbers that never
+ *  reached a charge (fixed ADR-913). Independent is not rendered either: a disconnected Space is off the
+ *  network, so its network rate is 0 by definition, and the action preserves whatever is stored.
+ *
+ *  Percent in, basis points out (8 → 800). */
 function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
-  const [f, setF] = useState(String(rate.free_bps / 100))
-  const [b, setB] = useState(String(rate.business_bps / 100))
-  const [n, setN] = useState(String(rate.nonprofit_bps / 100))
-  const [m, setM] = useState(String(rate.member_bps / 100))
+  const pct = (bps: number) => String(bps / 100)
+  const bps = (v: string) => Math.round((Number(v) || 0) * 100)
+  const [crew, setCrew] = useState(pct(rate.member_bps))
+  const [free, setFree] = useState(pct(rate.network_bps.free))
+  const [business, setBusiness] = useState(pct(rate.network_bps.business))
+  const [collective, setCollective] = useState(pct(rate.network_bps.collective))
+  const [nonprofit, setNonprofit] = useState(pct(rate.network_bps.nonprofit))
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
@@ -1104,10 +1118,13 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
     setSaved(false)
     start(async () => {
       const res = await saveTakeRate({
-        free_bps: Math.round((Number(f) || 0) * 100),
-        business_bps: Math.round((Number(b) || 0) * 100),
-        nonprofit_bps: Math.round((Number(n) || 0) * 100),
-        member_bps: Math.round((Number(m) || 0) * 100),
+        member_bps: bps(crew),
+        network_bps: {
+          free: bps(free),
+          business: bps(business),
+          collective: bps(collective),
+          nonprofit: bps(nonprofit),
+        },
       })
       if (isError(res)) setError(res.error)
       else {
@@ -1120,10 +1137,11 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-3">
-        <Field label="Free %" value={f} onChange={setF} />
-        <Field label="Business %" value={b} onChange={setB} />
-        <Field label="Non Profit %" value={n} onChange={setN} />
-        <Field label="Member %" value={m} onChange={setM} />
+        <Field label="Crew member %" value={crew} onChange={setCrew} />
+        <Field label="Free Space %" value={free} onChange={setFree} />
+        <Field label="Business %" value={business} onChange={setBusiness} />
+        <Field label="Collective %" value={collective} onChange={setCollective} />
+        <Field label="Non Profit %" value={nonprofit} onChange={setNonprofit} />
         <div className="flex items-center gap-2">
           <SaveCue pending={pending} saved={saved} />
           <Button size="sm" variant="secondary" onClick={save} disabled={pending}>

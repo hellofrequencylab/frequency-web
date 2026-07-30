@@ -1,6 +1,38 @@
 # Pricing & entitlements
 
-> ## ✅ CURRENT: Crew is PAY-WHAT-YOU-WANT and the Member/Crew line is "first one free" (ADR-908, 2026-07-29).
+> ## ✅ CURRENT (money model): tips are FREE, the free tier does not sell, and the take-rate is only for introductions (ADR-913, 2026-07-30).
+>
+> Owner-ruled, and it overrides every rate stated anywhere below this banner.
+>
+> 1. **Tips carry NO platform fee. Zero, on every tier.** (Reverses ADR-812's "tips stay flat.") A tip is
+>    a gift between two people; the platform is not in it.
+> 2. **The free Member tier does not sell.** It can create events and take **RSVPs**. It cannot sell
+>    tickets and cannot take payments. Selling needs **Crew** (the paid personal tier) or a
+>    **Business / Non Profit** Space.
+> 3. **The take-rate applies ONLY to network-sourced sales**, on two rungs plus the mission rate:
+>
+> | Seller | Network-sourced | Own audience |
+> |---|---|---|
+> | Member (free) | cannot sell (RSVPs only) | cannot sell |
+> | **Crew** | **8%** | **0%** |
+> | **Business** (and Collective) | **5%** | **0%** |
+> | **Non Profit** | **0%** | **0%** |
+> | Independent | n/a (off the network) | 0% |
+> | **Tips, any tier** | **0%** | **0%** |
+>
+> 4. **Always 0% when the buyer is already the seller's own audience**, and own-audience is a
+>    **relationship, not a cookie**: the buyer follows the Space, is an active Space member, is in its
+>    Space Contacts, is in the seller's own contact list, or has bought from them before. Any one of those
+>    makes the order `self`. The framing, verbatim: **"Frequency charges once for the introduction. After
+>    that they're your people, free."**
+> 5. **RETIRED rungs — never state them as current:** the `member_free` **10%** personal rung, the
+>    **Free Space 10%** rung, and the **Collective 3%** rung. Collective sells on depth, not on a cheaper
+>    fee; it pays the Business 5%.
+>
+> Operator runbook: [PRICING-OPERATIONS.md](PRICING-OPERATIONS.md) §2 · member-facing:
+> `content/help/spaces/plans-and-pricing.md`.
+
+> ## ✅ Crew is PAY-WHAT-YOU-WANT and the Member/Crew line is "first one free" (ADR-908, 2026-07-29).
 >
 > **Crew is the leadership tier.** Before this, Crew gated three switches (`vault_cash_in`,
 > `gamification_full`, `vera_unlimited`) and two meters, none of which were about leading. It now
@@ -16,7 +48,7 @@
 > | Charge for an event | no | **yes** (`event_paid_tickets` + `personal_payouts`) |
 > | Entry points (QR, links, flyers) | no | **yes** |
 > | Vault, rewards loop, Vera | earn only · earn only · 10/day | spend · full loop · unlimited |
-> | Network-sourced sale rate | **10%** | **8%** |
+> | Network-sourced sale rate | **cannot sell** (RSVPs only, ADR-913) | **8%** |
 >
 > **Crew's price is chosen by the member.** Floor **$4.99**, suggested **$12** (pre-selected), five
 > preset anchors plus an always-visible "another amount", annual at **10x the chosen monthly**.
@@ -38,10 +70,13 @@
 > **`space_revenue_splits`**: hosting a few partners is Business, sharing money with them automatically
 > is the collaboration engine. New sibling gate: `space_sms` (Collective, rides A2P 10DLC).
 >
-> **The personal take-rate splits free/paid.** `NetworkTakeRate.member_free` (10%) beside `member` (8%),
-> so Crew buys the rate down as a Space plan does (COMMUNITY-COLLECTIVE-STRATEGY §4, finally
-> implemented). Both directions fail safe: an omitted `sellerTier` charges the PAID rate, and a
-> pre-split operator row falls back to `member_bps` rather than raising anyone to 10%.
+> **The personal take-rate is Crew's alone.** ⚠️ ADR-913 (the banner above) settled this: there is no free
+> personal rung to rate, because a free Member **cannot sell** (events + RSVPs only). `NetworkTakeRate`
+> carries **one** personal rate, `member` (**8%**), charged only on a **network-sourced** sale; the
+> seller's own audience is **0%** and a tip is **0%**. The `member_free` **10%** rung this section
+> originally introduced is **RETIRED** and must not be quoted as current. Fail-safe direction is
+> unchanged: an omitted or unrecognized `sellerTier` charges the paid rate (8%) rather than inventing a
+> higher one, and no operator row can raise anyone to 10%.
 >
 > **Still inert.** Every gate short-circuits to grant while `featureGatesLive()` is false. Call-site
 > enforcement and the picker UI are follow-ups; this change is the MAP, which the surfaces derive from.
@@ -308,7 +343,7 @@ assigned).
 |---|---|---|
 | `createMembershipCheckout` (extended) | member Crew/Supporter subscription; **honors the founder lock** (`locked_price_id` → founder Price → public Price → env fallback) | `billingEnabled` (existing path); founder lock applied at price resolution |
 | `createSpacePlanCheckout(spaceId, plan, period)` | Space owner buys a plan; customer = the space owner; metadata `{ kind:'space_plan', space_id, plan }` | `billingLive()` AND `plan_*_enabled` |
-| `createSpaceMembershipCheckout(spaceId, tierId, memberId)` | member joins a paid space tier; **Connect destination charge**, application fee = the SPACE plan's take-rate (8/5/3% from `pricing_settings`); metadata `{ kind:'space_membership', space_id, tier_id, member_id }` | `billingLive()` + owner Connect-ready |
+| `createSpaceMembershipCheckout(spaceId, tierId, memberId)` | member joins a paid space tier; **Connect destination charge**, application fee = the SPACE plan's take-rate (read from `pricing_settings`; the current rungs are in the ADR-913 banner at the top, not the legacy 8/5/3); metadata `{ kind:'space_membership', space_id, tier_id, member_id }` | `billingLive()` + owner Connect-ready |
 
 The pure price-key, take-rate, and founder-lock math lives in `lib/billing/pricing-keys.ts`
 (`priceKey`, `takeRateCents`, `memberCheckoutPriceKey`); the take-rate IO wrapper is
@@ -383,7 +418,8 @@ billing-managed namespace, ADR-458). It persists each item row (incl. `locked_pr
 `quantity`) and cancels rows for toggled-off items. A canceled subscription targets the **empty set**
 (revert to free). A legacy single-price subscription (no recognized catalog items) falls back to the
 `metadata.plan` path, so a grandfathered Phase A subscription still reconciles. Connect destination
-charge + application fee (5/3/custom) + the founder lock are unchanged.
+charge + application fee (the operator take-rate for the seller's tier, ADR-913) + the founder lock are
+unchanged.
 
 **Schema (Phase B migration, NOT applied).** `space_subscription_items` (one row per Stripe item on a
 Space: `space_id`, `item_key`, `stripe_subscription_item_id`, `status`, `trial_ends_at`, `quantity`,

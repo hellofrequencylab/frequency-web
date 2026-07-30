@@ -64,8 +64,8 @@ with tier. This is the one genuinely new subsystem (no attribution concept exist
 | `supabase/migrations/*` | Add an order **attribution** column (e.g. `commerce_orders.source` ∈ `self`/`network` + an optional `attribution_ref`). Default `self`. | 🆕 |
 | `lib/billing/fees.ts` | Add `source: 'self'|'network'` to `spaceTakeRateCents` / `memberTakeRateCents`; `self → 0 bps`, `network → tiered bps`. | ✏️ |
 | `lib/billing/pricing-keys.ts` | Source-aware `takeRateBps` math (per-tier network vector). | ✏️ |
-| `lib/commerce/checkout.ts`, `lib/commerce/orders.ts`, `lib/billing/tickets.ts`, `lib/billing/tips.ts` | Classify each order's source at creation (referral/discovery/marketplace cookie + entry-point → `network`; direct → `self`) and thread it into the fee call. | ✏️ |
-| Attribution source of truth | Reuse the existing `lib/attribution/*` + `lib/qr/referral.ts` cookies (`fq_ref`, first-touch, entry-point) to decide `network` vs `self`. | ✏️ |
+| `lib/commerce/checkout.ts`, `lib/commerce/orders.ts`, `lib/billing/tickets.ts` | Classify each order's source at creation and thread it into the fee call. **Relationship first** (ADR-913): a buyer who already follows the Space, is an active Space member, is in its Space Contacts, is on the seller's own contact list, or has bought before → `self`; otherwise a network entry-point → `network`; direct → `self`. `lib/billing/tips.ts` is out: a tip has no fee at all. | ✏️ |
+| Attribution source of truth | The buyer↔seller **relationship** decides first (follow, active membership, CRM contact, prior order); the existing `lib/attribution/*` + `lib/qr/referral.ts` entry-point signals (`fq_ref`, first-touch) only break the tie for a genuine stranger. A cookie alone never makes a sale `network` if the relationship already exists. | ✏️ |
 
 Dependency: Phase 1. Blocks Phase 5. **Correctness is the top risk** (see §A + Risks): default to `self`/0% on any ambiguity.
 
@@ -194,20 +194,28 @@ The single hard build. Today `lib/billing/fees.ts` resolves a rate purely from `
 **no concept of where a sale came from**. The new rule needs three layers:
 
 1. **Attribution at order creation.** Every commerce order records a `source ∈ {self, network}` (+ optional
-   `attribution_ref`). Classification uses the already-live signals: an order carrying a network entry-point
-   (a `fq_ref` referral, a discovery/marketplace click-through, a cross-space share) is `network`; a direct
+   `attribution_ref`). **Classification is relationship-first, not cookie-first** (ADR-913): the order is
+   `self` whenever the buyer is already the seller's own audience — follows the Space, is an active Space
+   member, is in its Space Contacts, is in the seller's own contact list, or has bought from them before.
+   Only when none of those hold does the entry-point signal decide, and an order is `network` when it
+   carries one (a `fq_ref` referral, a discovery/marketplace click-through, a cross-space share). A direct
    booking on the operator's own page is `self`. **Default to `self` on any ambiguity** (we never want to
-   charge a fee we promised not to).
+   charge a fee we promised not to). The promise this encodes: *Frequency charges once for the
+   introduction. After that they're your people, free.*
 2. **Source-aware fee math.** `spaceTakeRateCents(gross, plan, {source})`: `self → 0 bps`; `network → the
-   plan's network bps` (Member ~1000 / Crew ~800 / Business ~500 / Collective ~300 / Non Profit ~0). A
-   disconnected (Independent) space is `self` by definition (it left the graph) and pays the flat price only.
+   plan's network bps` (Crew ~800 / Business ~500 / Collective ~500 / Non Profit ~0). There is **no free
+   Member rung**: a free Member cannot sell at all (events + RSVPs only), and the old `member_free` ~1000
+   and Collective ~300 rungs are retired. A disconnected (Independent) space is `self` by definition (it
+   left the graph) and pays the flat price only. **Tips never reach this math: a tip is 0% on every tier.**
 3. **Provable receipt.** Phase 5 reads the same attribution back to show "$ the network earned you", so the
    fee is auditable by the member, which is what makes the take-rate feel like a partner's commission
    instead of a tax.
 
 Call sites to thread `source` through: `lib/commerce/checkout.ts` (L63-81 profile-vs-space branch),
-`lib/commerce/orders.ts`, `lib/billing/tickets.ts`, `lib/billing/tips.ts`. Pure math + classification is
-unit-tested; adversarial tests assert a self-booking can never be billed a network rate.
+`lib/commerce/orders.ts`, `lib/billing/tickets.ts`. `lib/billing/tips.ts` needs no source at all now that a
+tip carries **no** platform fee (ADR-913) — it takes 0, unconditionally. Pure math + classification is
+unit-tested; adversarial tests assert a self-booking can never be billed a network rate, and that no tip is
+ever charged a fee.
 
 ## §B — Marketing funnel nuance (how each funnel works, and what changes)
 

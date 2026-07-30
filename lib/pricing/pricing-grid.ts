@@ -11,7 +11,9 @@
 //     entitlement each feature is gated on.
 //   * a METER row reads the tier's rung on the feature's usage ladder — lib/pricing/feature-meters.ts,
 //     the one map of per-tier allowances.
-//   * the TAKE-RATE row reads take_rate.network_bps, the ACTUAL per-tier rate lib/billing/fees.ts charges.
+//   * the TAKE-RATE row reads take_rate.network_bps, the ACTUAL per-tier rate lib/billing/fees.ts charges,
+//     and on the PERSONAL ladder it first asks whether that tier can sell at all: a free Member takes
+//     RSVPs and never a payment (ADR-913), so its cell reads "selling is not included" instead of a rate.
 //   * the AI ADD-ON row reads ADDON_ENTITLEMENT_KEYS: the add-on keys are in no tier base, so the row
 //     resolves to the metered price on every paid tier and to "not available" on Free. Fold those keys
 //     into a tier base and the row flips to "Included" on its own.
@@ -130,7 +132,8 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
   },
   crew: {
     tagline: 'The whole member experience.',
-    forWho: 'Members who want full access to member programs and everything else the community runs.',
+    forWho:
+      'Members who want full access to member programs, and anyone selling tickets to their own events without running a Space.',
   },
   free: {
     tagline: 'Put your business on the map.',
@@ -172,6 +175,19 @@ function pricedOffering(
   }
 }
 
+/** Can an individual on this PERSONAL tier take a payment at all? Read from the real gate the product
+ *  enforces (`event_paid_tickets`, which opens at Crew), with the operator's overrides merged the way
+ *  featureAllowed merges them. A free Member creates events and takes RSVPs and never charges (ADR-913),
+ *  so nothing on the page may quote that column a take-rate: there is no sale for a rate to apply to. */
+function personalSellingAllowed(tier: string, overrides: FeatureGateOverrides = {}): boolean {
+  const gate = mergeGate('event_paid_tickets', overrides)
+  if (!gate) return true
+  return meetsGate(gate, { tier: tier as EntitlementTier })
+}
+
+/** The line a column reads when its tier cannot sell: no rate, and what it CAN do instead. */
+const NO_SELLING_LINE = 'Selling is not included. Events and RSVPs are free, and Crew turns on tickets and payments.'
+
 /** The two MEMBER offerings, in ladder order: Member (free) and Crew. PURE.
  *
  *  Members get no trial: the free tier IS the trial (space-plan-checkout only sets trial days on Space
@@ -179,10 +195,12 @@ function pricedOffering(
 export function memberOfferings(input: PricingGridInput): Offering[] {
   const { values } = input
   const crew = priceRow('crew', ENTITLEMENT_LABEL.crew, values.tier.crew)
-  // An individual seller (a person, not a Space) is charged the member seller rate, `member_bps`, on
-  // network-sourced sales. Both member columns read it, so the offering line and the grid's take-rate
-  // row can never quote different numbers for the same person.
-  const memberRate = `0% on what you bring in yourself, ${formatBps(values.take_rate.member_bps)} on network-sourced sales`
+  // THE TWO MEMBER COLUMNS DO NOT SHARE A RATE (ADR-913). Crew is the paid personal SELLING tier and is
+  // charged the member seller rate, `member_bps`, on network-sourced sales only. The free Member column
+  // used to read the SAME string, which printed a take-rate under the FREE header for someone the product
+  // does not let sell at all; it now reads the gate and says so.
+  const crewRate = `0% on your own people, ${formatBps(values.take_rate.member_bps)} on network-sourced sales`
+  const memberRate = personalSellingAllowed('free', input.gateOverrides) ? crewRate : NO_SELLING_LINE
   return [
     {
       id: 'member',
@@ -210,7 +228,7 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
       ...pricedOffering(crew),
       trial: null,
       billing: `Monthly or yearly. ${annualDiscountNote(values)}`,
-      takeRate: memberRate,
+      takeRate: crewRate,
       featured: false,
       cta: { label: 'Join Crew', href: '/upgrade' },
     },
@@ -433,6 +451,11 @@ export function resolveCell(source: RowSource, column: GridColumn, input: Pricin
       return meterCell(source.feature, column)
     case 'takeRate': {
       if (column.axis !== 'plan') {
+        // A rate is only honest where a sale can happen. The personal selling gates open at Crew, so the
+        // free Member column says selling is not included rather than printing the Crew rate under it.
+        if (!personalSellingAllowed(column.tier, input.gateOverrides ?? {})) {
+          return { kind: 'no', text: 'Selling is not included' }
+        }
         return { kind: 'value', text: formatBps(input.values.take_rate.member_bps) }
       }
       return { kind: 'value', text: formatBps(input.values.take_rate.network_bps[column.tier as SpacePlan]) }
@@ -593,7 +616,8 @@ const SPACE_GROUPS: GroupDef[] = [
       {
         key: 'take_rate',
         label: 'Take-rate on network-sourced sales',
-        detail: 'You keep 100% of the business you bring in yourself. This is the share of the business the network sends you.',
+        detail:
+          'You keep 100% of the business you bring in yourself, and 0% applies for good to anyone already in your world: a follower, one of your members, a contact, or someone who bought before. Frequency charges once for the introduction. After that they are your people, free.',
         source: { from: 'takeRate' },
       },
     ],
@@ -794,9 +818,22 @@ const MEMBER_GROUPS: GroupDef[] = [
     label: 'Selling',
     rows: [
       {
+        key: 'event_paid_tickets',
+        label: 'Sell tickets to your own events',
+        detail: 'Charge for an event you host. Free members create events and take RSVPs.',
+        source: { from: 'gate', feature: 'event_paid_tickets' },
+      },
+      {
+        key: 'personal_payouts',
+        label: 'Take payments and get paid out',
+        detail: 'Your own payouts, without running a Space.',
+        source: { from: 'gate', feature: 'personal_payouts' },
+      },
+      {
         key: 'take_rate',
         label: 'Take-rate on network-sourced sales',
-        detail: 'You keep 100% of what you bring in yourself. Running a paid Space buys this rate down.',
+        detail:
+          'You keep 100% from anyone already yours: a follower, a contact, or someone who bought before. Frequency charges once for the introduction. After that they are your people, free. Running a Business Space buys the rate on new introductions down further.',
         source: { from: 'takeRate' },
       },
     ],

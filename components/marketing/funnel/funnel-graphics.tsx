@@ -7,15 +7,27 @@
 
 import type { FunnelIconName } from '@/lib/marketing/funnel-config'
 import { priceStrings, pricingCatalog } from '@/lib/pricing/pricing-page'
+import { formatBps } from '@/lib/pricing/display'
+import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
 
-// The Business figure on the break-even graphic reads the ONE code catalog (never hardcoded), and the
-// crossing label is computed from it: the point where Business's halved network rate (10% -> 5%) covers
-// the flat monthly price, rounded to a friendly $50. A catalog change reflows both labels.
+// The break-even graphic compares the TWO rungs that actually exist (ADR-913): selling as an individual
+// on Crew, and selling as a Business Space. Its whole math used to be the retired Free-Space-10% vs
+// Business-5% delta, which was a five-point saving nobody was ever charged. Both the rates and the
+// Business figure now read their real sources (the take-rate config + the ONE code catalog), so a rate or
+// price change reflows every label here.
 const P = priceStrings()
+const CREW_RATE_BPS = NETWORK_TAKE_RATE_DEFAULT.member
+const BUSINESS_RATE_BPS = NETWORK_TAKE_RATE_DEFAULT.business
+const CREW_RATE_LABEL = formatBps(CREW_RATE_BPS)
+const BUSINESS_RATE_LABEL = formatBps(BUSINESS_RATE_BPS)
+// Where the plan pays for itself: the monthly network sales at which the points Business saves cover its
+// flat price, rounded to a friendly $50. Guarded so a config with no gap between the rungs (or an
+// inverted one) simply drops the label instead of dividing by zero.
 const BREAK_EVEN_LABEL = (() => {
-  const listCents = pricingCatalog().business_base.month.listCents
-  const dollars = listCents / 100 / 0.05 // the 5-point rate delta between Free (10%) and Business (5%)
-  return `~$${Math.round(dollars / 50) * 50}/mo`
+  const delta = (CREW_RATE_BPS - BUSINESS_RATE_BPS) / 10000
+  if (delta <= 0) return null
+  const dollars = pricingCatalog().business_base.month.listCents / 100 / delta
+  return `~$${(Math.round(dollars / 50) * 50).toLocaleString()}/mo`
 })()
 
 // A shared, calm rounded-rect "card" helper keeps the geometry consistent across graphics.
@@ -408,16 +420,16 @@ function loopGlyph(i: number): React.ReactNode {
   }
 }
 
-// ── BreakEvenGraphic — two cost lines crossing at ~$2,500/mo; shade the region where Business wins. ────
+// ── BreakEvenGraphic — two cost lines crossing where the plan pays for itself; shade where Business wins. ─
 export function BreakEvenGraphic({ className = '' }: { className?: string }) {
   // Plot area
   const x0 = 44, x1 = 396, y0 = 30, y1 = 196
   const cross = 210 // x of the crossing (dashed marker)
-  // Free line: 10% on network-sourced sales, rising steeper from origin (no fixed cost).
-  const freeStart = { x: x0, y: 180 }
-  const freeEnd = { x: x1, y: 44 }
-  // Business line: $29/mo + 5% on network-sourced sales (half the rate), higher intercept, flatter slope,
-  // crossing Free where the halved rate covers the $29 (about $600/mo of network sales).
+  // Crew line: the individual seller rate on network-introduced sales, rising steeper from a low fixed cost.
+  const crewStart = { x: x0, y: 180 }
+  const crewEnd = { x: x1, y: 44 }
+  // Business line: the plan price plus the lower network rate, so a higher intercept and a flatter slope,
+  // crossing Crew where the points saved cover the plan (BREAK_EVEN_LABEL, computed from the real rungs).
   const bizStart = { x: x0, y: 120 }
   const bizEnd = { x: x1, y: 78 }
   return (
@@ -434,17 +446,19 @@ export function BreakEvenGraphic({ className = '' }: { className?: string }) {
       {/* dashed crossing marker */}
       <g className="text-primary-strong">
         <line x1={cross} y1={y0} x2={cross} y2={y1} stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.8" />
-        <text x={cross} y={y1 + 18} textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="700">{BREAK_EVEN_LABEL}</text>
+        {BREAK_EVEN_LABEL && (
+          <text x={cross} y={y1 + 18} textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="700">{BREAK_EVEN_LABEL}</text>
+        )}
       </g>
-      {/* Free line (quiet) */}
+      {/* Crew line (quiet) */}
       <g className="text-subtle">
-        <line x1={freeStart.x} y1={freeStart.y} x2={freeEnd.x} y2={freeEnd.y} stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" />
-        <text x={freeEnd.x} y={freeEnd.y - 8} textAnchor="end" fill="currentColor" fontSize="11" fontWeight="600">Free · 10% network</text>
+        <line x1={crewStart.x} y1={crewStart.y} x2={crewEnd.x} y2={crewEnd.y} stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" />
+        <text x={crewEnd.x} y={crewEnd.y - 8} textAnchor="end" fill="currentColor" fontSize="11" fontWeight="600">Crew · {CREW_RATE_LABEL} network</text>
       </g>
       {/* Business line (accent) */}
       <g className="text-primary-strong">
         <line x1={bizStart.x} y1={bizStart.y} x2={bizEnd.x} y2={bizEnd.y} stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" />
-        <text x={bizEnd.x} y={bizEnd.y - 8} textAnchor="end" fill="currentColor" fontSize="11" fontWeight="700">Business · {P.businessList} + 5% network</text>
+        <text x={bizEnd.x} y={bizEnd.y - 8} textAnchor="end" fill="currentColor" fontSize="11" fontWeight="700">Business · {P.businessList} + {BUSINESS_RATE_LABEL} network</text>
       </g>
       {/* x-axis label */}
       <text x={(x0 + x1) / 2} y={224} textAnchor="middle" className="text-subtle" fill="currentColor" fontSize="11">Monthly network sales</text>

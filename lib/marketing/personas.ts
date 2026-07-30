@@ -29,10 +29,21 @@ import {
   type PersonaLoadout,
 } from '@/lib/pricing/pricing-page'
 import type { AddonKey } from '@/lib/pricing/plans'
+import { formatBps } from '@/lib/pricing/display'
+import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
 
 // Every dollar figure in the persona copy interpolates from the ONE code catalog (priceStrings), so no
 // sentence here can quote a price the catalog does not carry.
 const P = priceStrings()
+
+// Every RATE interpolates from the take-rate map the fee code falls back to, so no sentence here can
+// quote a rung the owner has retired (ADR-913). The take-rate only ever applies to a sale the network
+// INTRODUCED: once a buyer is yours, it is 0% for good.
+const RATE = {
+  business: formatBps(NETWORK_TAKE_RATE_DEFAULT.business),
+  collective: formatBps(NETWORK_TAKE_RATE_DEFAULT.collective),
+  nonprofit: formatBps(NETWORK_TAKE_RATE_DEFAULT.nonprofit),
+}
 
 /** One persona / package landing page. Pure data. The (type, variant) pins this persona to a Mode in
  *  lib/spaces/modes.ts, so its lexicon + recommended add-ons are read from the one Mode registry. The
@@ -107,7 +118,7 @@ export const PERSONAS: Persona[] = [
       'Circles, cohorts, and memberships in one place.',
       'A member CRM that keeps track of who is who.',
       'Vera AI turns your community signals into live matches between the right people.',
-      `Grow into Collective when you add a team and host collaborators, at ${P.collectiveBeta} a month at the Opening Beta price under the ${P.collectiveList} list, with a 3% network rate.`,
+      `Grow into Collective when you add a team and host collaborators, at ${P.collectiveBeta} a month at the Opening Beta price under the ${P.collectiveList} list, with a ${RATE.collective} network rate.`,
     ],
   },
   {
@@ -216,7 +227,7 @@ export function personaCopy(persona: Persona): PersonaCopy {
   const faq = [
     {
       q: `How much does Frequency cost for ${persona.audience.toLowerCase()}?`,
-      a: `${loadoutLine} You keep 100% of your own bookings, and we earn only on business the network sends you, at a rate that drops as your plan rises: 5% on Business, 3% on Collective, and 0% on the Non Profit plan.`,
+      a: `${loadoutLine} You keep 100% of your own bookings, and we earn only on a sale the network introduces, at ${RATE.business} on Business, ${RATE.collective} on Collective, and ${RATE.nonprofit} on the Non Profit plan. Once a buyer is yours, a follower, a member, a contact, or a past customer, it is 0% for good: we charge once for the introduction.`,
     },
     {
       q: `What is included for ${persona.audience.toLowerCase()}?`,

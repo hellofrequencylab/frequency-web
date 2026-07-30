@@ -3,7 +3,7 @@ title: Plans and pricing
 description: What each Space plan costs, what it includes, and how to pick the one that fits.
 category: spaces
 order: 2
-updated: 2026-07-27
+updated: 2026-07-30
 audience: member
 featureKeys: [billing]
 status: published
@@ -48,18 +48,31 @@ Every paid plan starts with a **14 day free trial**.
 
 ## What Frequency takes
 
-When money moves through Frequency, we take a percentage. It gets smaller as your plan grows:
+Two things to know before the numbers.
+
+**Tips are free.** Frequency takes nothing out of a tip. Not a percentage, not a cent.
+
+**A sale to your own people is free.** If the buyer already follows your Space, is an active member of
+it, sits in your Space Contacts or your own contact list, or has bought from you before, Frequency's
+share is **0%**. We charge once for the introduction. After that they are your people, free.
+
+That leaves the sales the network brings you: someone who found you through discovery, a referral, or
+the Market. Those are the only ones we take a percentage of:
 
 | Plan | Frequency's share of network-sourced sales |
 | --- | --- |
-| Free | 10% |
+| Free | Selling needs a paid plan, see below |
 | Business | 5% |
-| Collective | 3% |
+| Collective | 5% |
 | Non Profit | 0% |
-| Independent | 0% |
+| Independent | 0%, it is off the network, so there are no network-sourced sales |
 
-This applies to sales the network brings you. The idea is simple: we earn when you earn, and we earn
-less as you grow.
+A **Free** Space can create events, take RSVPs, and collect tips. To sell tickets or take payments, put
+your Space on **Business** or **Non Profit**, or go **Crew** on your personal account (8% on
+network-sourced sales, 0% on your own people, same as above).
+
+The idea is simple: we earn when the network earns you something, and never on the work you brought
+yourself.
 
 ## Picking a plan
 

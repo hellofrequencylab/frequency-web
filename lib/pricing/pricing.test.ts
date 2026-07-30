@@ -294,12 +294,26 @@ describe('seeded defaults are sane (mirror the migration)', () => {
     expect(row.annual).toBe('$90')
   })
 
-  it('take-rate: free usage 5%, paying Business + Non Profit 3% (ADR-552 Phase 3)', () => {
+  it('take-rate: the LIVE rungs are the network vector plus the single Crew seller rate (ADR-913)', () => {
     const t = PRICING_DEFAULTS.take_rate
-    expect(t.free_bps).toBe(500) // free usage pays the higher rate (the self-funding trigger)
-    expect(t.business_bps).toBe(300) // a paying Business pays the lower rate
+    // What actually charges (lib/billing/fees.ts): a Space pays its network-sourced rate, and only on a
+    // sale the network sourced. Business 5% → Collective 3% → Non Profit 0% → Independent 0% (off the graph).
+    expect(t.network_bps.business).toBe(500)
+    expect(t.network_bps.collective).toBe(300)
+    expect(t.network_bps.nonprofit).toBe(0)
+    expect(t.network_bps.independent).toBe(0)
+    // A free Space pays the HIGHEST rate, so an unresolved plan over-collects rather than charging 0%.
+    expect(t.network_bps.free).toBeGreaterThan(t.network_bps.business)
+    // The individual seller rung is a single Crew rate (8%), and a Space plan buys it down.
+    expect(t.member_bps).toBe(800)
+    expect(t.member_bps).toBeGreaterThan(t.network_bps.business)
+    // The free-Member seller rung is RETIRED: a free Member cannot sell or take payments, so there is no
+    // free-member sale for a rate to price. Asserted so the dead rung cannot quietly return.
+    expect(t).not.toHaveProperty('member_free_bps')
+    // The legacy flat trio survives for read-safety on stored blobs only; no charging path reads it.
+    expect(t.free_bps).toBe(500)
+    expect(t.business_bps).toBe(300)
     expect(t.nonprofit_bps).toBe(300)
-    expect(t.free_bps).toBeGreaterThan(t.business_bps)
   })
 
   it('vera free cap is the spec value (10/day)', () => {

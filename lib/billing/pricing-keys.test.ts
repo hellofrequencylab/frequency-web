@@ -26,8 +26,9 @@ import {
 } from './pricing-keys'
 import { SPACE_PLANS } from '@/lib/pricing/plans'
 
-// ADR-552 Phase 3: free usage 5% (500 bps) / paying Business 3% (300) / Non Profit 3% (300).
-// ADR-596: individual paid-member seller 8% (800 bps).
+// A stored LEGACY flat `take_rate` blob (the retired ADR-552 paying-state ladder). Nothing on the charging
+// path reads these fields any more — the live rates are the network vector + member_bps, exercised further
+// down — but the flat helpers must still resolve a stored blob to a number, which is what this fixture is.
 const TAKE_RATE = { free_bps: 500, business_bps: 300, nonprofit_bps: 300, member_bps: 800 }
 
 describe('priceKey', () => {
@@ -174,39 +175,33 @@ describe('member seller take-rate (ADR-596: paid member 8%, Business buys it dow
   })
 })
 
-describe('the personal seller ladder (free Member 10%, Crew 8% — Crew buys the rate down)', () => {
-  it('a free Member pays member_free and Crew pays the bought-down member rate', () => {
-    expect(memberNetworkTakeRateBps('free')).toBe(1000)
-    expect(memberNetworkTakeRateBps('crew')).toBe(800)
+describe('the individual seller rung — ONE Crew rate, no free-Member rung (ADR-913)', () => {
+  it('resolves the Crew rate from the rate blob', () => {
+    expect(memberNetworkTakeRateBps()).toBe(800) // the seeded 8%
+    expect(memberNetworkTakeRateBps({ ...NETWORK_TAKE_RATE_DEFAULT, member: 600 })).toBe(600)
   })
 
-  it('the buy-down is real: paying for Crew always costs less per network sale than staying free', () => {
-    expect(memberNetworkTakeRateBps('crew')).toBeLessThan(memberNetworkTakeRateBps('free'))
+  it('a partial operator blob with no `member` falls back to the seeded rate, never 0 and never NaN', () => {
+    const partial = { ...NETWORK_TAKE_RATE_DEFAULT, member: undefined as unknown as number }
+    expect(memberNetworkTakeRateBps(partial)).toBe(800)
   })
 
-  it('a paid-but-not-crew label (a legacy supporter row) reads as paid, never as free', () => {
-    // deriveTier collapses supporter -> crew, so anything that is not literally 'free' is paid here.
-    expect(memberNetworkTakeRateBps('supporter')).toBe(800)
+  it('carries NO free-Member rung: a free Member cannot sell, so there is no rate to read', () => {
+    // The retired `member_free` field is gone from the shape, so no surface can resolve a free-member
+    // seller rate. Asserted on the seeded default so re-adding the rung fails here first.
+    expect(NETWORK_TAKE_RATE_DEFAULT).not.toHaveProperty('member_free')
   })
 
-  it('an absent member_free on a pre-split operator row falls back to the PAID rate, never higher', () => {
-    // A stale row must not silently RAISE a free seller's fee to the seeded 10%.
-    const legacy = { ...NETWORK_TAKE_RATE_DEFAULT, member_free: undefined as unknown as number }
-    expect(memberNetworkTakeRateBps('free', legacy)).toBe(800)
+  it('sourceAwareMemberTakeRateCents charges the Crew rung on a network sale', () => {
+    expect(sourceAwareMemberTakeRateCents(10000, 'network')).toBe(800) // $100 → $8
+    expect(
+      sourceAwareMemberTakeRateCents(10000, 'network', { ...NETWORK_TAKE_RATE_DEFAULT, member: 500 }),
+    ).toBe(500)
   })
 
-  it('sourceAwareMemberTakeRateCents charges the seller tier rate on a network sale', () => {
-    expect(sourceAwareMemberTakeRateCents(10000, 'network', NETWORK_TAKE_RATE_DEFAULT, 'free')).toBe(1000)
-    expect(sourceAwareMemberTakeRateCents(10000, 'network', NETWORK_TAKE_RATE_DEFAULT, 'crew')).toBe(800)
-  })
-
-  it('an omitted tier keeps the pre-split Crew contract (never over-charges a paying member)', () => {
-    expect(sourceAwareMemberTakeRateCents(10000, 'network')).toBe(800)
-  })
-
-  it("a seller's OWN sale is still 0% at every tier (the hard promise)", () => {
-    expect(sourceAwareMemberTakeRateCents(10000, 'self', NETWORK_TAKE_RATE_DEFAULT, 'free')).toBe(0)
-    expect(sourceAwareMemberTakeRateCents(10000, 'self', NETWORK_TAKE_RATE_DEFAULT, 'crew')).toBe(0)
+  it("a seller's OWN sale is still 0% (the hard promise)", () => {
+    expect(sourceAwareMemberTakeRateCents(10000, 'self')).toBe(0)
+    expect(sourceAwareMemberTakeRateCents(10000, 'self', NETWORK_TAKE_RATE_DEFAULT)).toBe(0)
   })
 })
 

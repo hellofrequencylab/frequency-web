@@ -134,7 +134,7 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
   return [
     {
       q: 'How does Frequency pricing work?',
-      a: `Connection is free; paid plans raise the limits. There are two ladders. Membership: ${member!.label} is free forever, and ${crew!.label} is ${crew!.monthly} for full access to member programs and everything else. Spaces: ${ladder} ${annualDiscountNote(input.values)}`,
+      a: `Connection is free; paid plans raise the limits. There are two ladders. Membership: ${member!.label} is free forever and covers the whole social side, including hosting your own events and taking RSVPs, and ${crew!.label} is ${crew!.monthly} for full access to member programs plus selling tickets and taking payments. Spaces: ${ladder} ${annualDiscountNote(input.values)}`,
     },
     {
       q: 'Can I run a Space for free?',
@@ -147,7 +147,7 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
     ...betaFaq,
     {
       q: 'Do you take a cut of my sales?',
-      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, always. We earn a share only of the business the network sends you, a referral or a discovery inside the collective, and that rate drops as your plan rises: ${rates}. A paid plan buys down your rate.`,
+      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, always, and tips are never touched. We earn a share only of a sale the network introduced, a referral or a discovery inside the collective, and that rate drops as your plan rises: ${rates}. Selling as a person rather than a Space runs on ${crew!.label}, at ${crew!.takeRate.split(', ')[1]}. Once a buyer is yours, meaning they follow you, they are one of your members, they are in your contacts, or they have bought before, we take nothing on them again: we charge once for the introduction, and after that they are your people, free.`,
     },
     {
       q: 'How do team seats work?',
@@ -266,7 +266,7 @@ export default async function PricingPage() {
           <div className="mb-12">
             <LadderHeading
               title="For you"
-              kicker="Being a member is free, forever. Crew is the paid personal tier."
+              kicker="Being a member is free, forever. Crew is the paid personal tier, and the one that sells."
             />
             <div className="grid gap-5 sm:grid-cols-2">
               {members.map((o) => (
@@ -290,7 +290,9 @@ export default async function PricingPage() {
 
         <p className="mx-auto mt-10 max-w-2xl text-center text-sm leading-relaxed text-subtle">
           {PLAN_STORY.meters} And you keep 100% of your own bookings, always: the take-rate applies only
-          to business the network sends you, and it drops as your plan rises.
+          to a sale the network introduced, and it drops as your plan rises. Once someone is yours, a
+          follower, one of your members, a contact, or a past buyer, we take nothing on them again. We
+          charge once for the introduction. After that they are your people, free.
         </p>
       </Section>
 

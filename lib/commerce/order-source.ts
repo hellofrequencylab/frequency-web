@@ -33,15 +33,49 @@ export async function classifyOrderSource(opts?: {
   entryPoint?: 'discovery' | 'marketplace' | 'referral' | null
   buyerProfileId?: string | null
   sellerProfileId?: string | null
+  /** The selling Space, when there is one. Enables the RELATIONSHIP check below (ADR-913). */
+  sellerSpaceId?: string | null
 }): Promise<OrderSourceResult> {
   // A SELF-SCAN (the buyer IS the seller) is never network-sourced, even with an explicit network entry
   // point. Guard this FIRST so an operator buying their own listing off a marketplace/discovery surface
   // (or their own referral link) is never billed the network rate on their own booking (the hard promise).
   const selfScan = !!opts?.buyerProfileId && opts.buyerProfileId === opts?.sellerProfileId
-  // An explicit discovery/marketplace/referral entry point from the calling surface is authoritative
-  // (unless it is a self-scan).
-  if (opts?.entryPoint && !selfScan) return { source: 'network', attributionRef: `ep:${opts.entryPoint}` }
   if (selfScan) return { source: 'self', attributionRef: null }
+
+  // ── THE RELATIONSHIP CHECK (ADR-913) — authoritative, above the entry point AND the cookies ──
+  //
+  // "Once you have your contact, Frequency doesn't take a cut." A buyer who already follows the
+  // Space, is a member of it, sits in its CRM, is in the seller's own contact list, or has bought
+  // before is ALWAYS `self` → 0%. Frequency charges only for the INTRODUCTION.
+  //
+  // Placed above the entryPoint and referral branches ON PURPOSE, and this is a real trade-off worth
+  // naming: a third party who refers an existing follower gets no network credit. The alternative —
+  // letting a referral override an existing relationship — would mean a host could be charged for
+  // someone they already had, which is exactly the promise this model is built on. The owner's rule
+  // is absolute ("any member associated with their space gets a ZERO take rate"), so the simpler,
+  // more generous reading wins and the referral-credit case is knowingly given up.
+  //
+  // Fail-safe: buyerIsSellersAudience returns `isOwnAudience: true` on ANY read failure, so a database
+  // hiccup under-collects rather than charging a fee we promised not to.
+  if (opts?.buyerProfileId && (opts.sellerSpaceId || opts.sellerProfileId)) {
+    const { buyerIsSellersAudience } = await import('@/lib/commerce/seller-audience')
+    const verdict = await buyerIsSellersAudience({
+      sellerSpaceId: opts.sellerSpaceId ?? null,
+      sellerProfileId: opts.sellerProfileId ?? null,
+      buyerProfileId: opts.buyerProfileId,
+    })
+    if (verdict.isOwnAudience) {
+      return { source: 'self', attributionRef: verdict.signal ? `own:${verdict.signal}` : 'own:degraded' }
+    }
+  }
+
+  // An explicit discovery/marketplace/referral entry point from the calling surface is authoritative
+  // for a STRANGER. It sits below the relationship check on purpose: it used to run first, which meant
+  // a shop sale reached through a discovery surface was billed the network rate even when the buyer
+  // already followed the seller — the exact charge the promise forbids. Caught by
+  // "an existing relationship beats an explicit discovery entry point" in order-source.test.ts.
+  if (opts?.entryPoint) return { source: 'network', attributionRef: `ep:${opts.entryPoint}` }
+
   try {
     const jar = await cookies()
     const ref = jar.get(REF_COOKIE)?.value ?? null

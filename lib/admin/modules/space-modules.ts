@@ -112,7 +112,7 @@ export interface SpaceModule {
    *  them (ADR-846). Nesting is ONE level deep: a parent may never itself carry a `parent`. */
   parent?: string
   /** The free-tier LEVER shown as a sublabel on the console card (ADR-784): the cap a free Space hits or
-   *  the take-rate a paid plan buys down, e.g. "250 contacts free" / "0% on your own, 10% on network sales".
+   *  the take-rate story, e.g. "250 contacts free" / "0% on your own people, always".
    *  This makes the upgrade motivation legible instead of a bare Freemium/Premium badge. The numbers mirror
    *  lib/pricing/feature-meters.ts (RAW_METERS) + lib/pricing/settings.ts (take_rate); it is presentation
    *  only and never gates. Omit for a plain Included shell with no cap. */
@@ -204,8 +204,8 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // `always`): the box is the AREA, and the per-service function gates live on the tools inside it.
   { id: 'space.offerings', label: 'Offerings and money', desc: 'Everything your space charges for: booking, memberships, donations, enrollment, tickets, and check in.', Icon: HandCoins, family: 'offerings', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings`, order: 39.9, tier: 'primary', priority: 29.5, access: 'included' },
   { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#availability`, order: 40, tier: 'primary', priority: 30, access: 'freemium', freeNote: '15 bookings/mo free, then unlimited', parent: 'space.offerings' },
-  { id: 'space.memberships', label: 'Memberships', desc: 'The tiers members can join, and who has joined.', Icon: BadgeCheck, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'memberships' }, featureKey: 'memberships', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#memberships`, order: 45, tier: 'primary', priority: 31, access: 'freemium', freeNote: '10 members, 1 tier free · 0% on your own, 10% on network sales', parent: 'space.offerings' },
-  { id: 'space.donations', label: 'Donations', desc: 'The fund, a short description, and the amounts members can pick.', Icon: HeartHandshake, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'donations' }, featureKey: 'donations', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#donations`, order: 50, tier: 'primary', priority: 32, access: 'included', freeNote: '0% on your own, 10% on network sales', parent: 'space.offerings' },
+  { id: 'space.memberships', label: 'Memberships', desc: 'The tiers members can join, and who has joined.', Icon: BadgeCheck, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'memberships' }, featureKey: 'memberships', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#memberships`, order: 45, tier: 'primary', priority: 31, access: 'freemium', freeNote: '10 members, 1 tier free · 0% on your own people, always', parent: 'space.offerings' },
+  { id: 'space.donations', label: 'Donations', desc: 'The fund, a short description, and the amounts members can pick.', Icon: HeartHandshake, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'donations' }, featureKey: 'donations', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#donations`, order: 50, tier: 'primary', priority: 32, access: 'included', freeNote: '0% on your own people, always', parent: 'space.offerings' },
   // Enrollment deep-links to the ANCHORED section on the unified Offerings surface, exactly like its five
   // commerce siblings. The standalone /settings/enroll route is now a bare `redirect()` into that anchor
   // (its real body lives in settings/enroll/section.tsx, composed by Offerings), so pointing at it cost a
@@ -236,7 +236,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Shop is now a first-class GATEABLE feature keyed on the `shop` function (SpaceFunctionKey), so it can
   // be turned off, role-gated, and entitlement-gated (the `storefront` tier key) like every sibling
   // offering — it is no longer the always-on outlier. Free Spaces can sell; a paid plan lowers fees.
-  { id: 'space.services', label: 'Shop', desc: 'Your catalog, orders, and storefront.', Icon: Store, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'shop' }, featureKey: 'shop', render: 'link', deepLink: (s) => `${base(s)}/settings/shop`, order: 70, tier: 'primary', priority: 40, access: 'freemium', freeNote: 'Full store · 0% on your own, 10% on network sales' },
+  { id: 'space.services', label: 'Shop', desc: 'Your catalog, orders, and storefront.', Icon: Store, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'shop' }, featureKey: 'shop', render: 'link', deepLink: (s) => `${base(s)}/settings/shop`, order: 70, tier: 'primary', priority: 40, access: 'freemium', freeNote: 'Full store · 0% on your own people, always' },
   // Airwaves (ADR-608, P1): the Space's audio/video Recordings library. Upload a Recording into the Loom,
   // manage the catalog, and attach a Recording to any offering, journey, event, or the Space itself.
   { id: 'space.airwaves', label: 'Airwaves', desc: 'Your recordings, and where each one plays.', Icon: Radio, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'airwaves' }, featureKey: 'airwaves', render: 'link', deepLink: (s) => `${base(s)}/settings/airwaves`, order: 72, tier: 'primary', priority: 41, access: 'included', parent: 'space.content' },

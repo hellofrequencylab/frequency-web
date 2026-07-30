@@ -27,6 +27,7 @@ import { stripe, appUrl } from './stripe'
 import { getConnectStatus, payoutsLive } from './connect'
 import { platformFeeCents, spaceTakeRateCents, memberTakeRateCents } from './fees'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
+import { ticketSellerVerdict } from '@/lib/events/ticket-eligibility'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -281,6 +282,30 @@ export async function createTicketCheckout(opts: {
     return { error: 'This event is free. No ticket needed.' }
   }
 
+  // ── MAY THIS EVENT SELL AT ALL? (ADR-913) ────────────────────────────────────────────────
+  // A free Member can create an event and take RSVPs; charging money is Crew or a Space. Checked
+  // HERE as well as at every write seam, because the write seams only govern events created AFTER
+  // this shipped: an event already carrying a price, or a host who lapses from Crew back to free
+  // mid-sale, would otherwise keep charging cards indefinitely. The buy path is the only place that
+  // sees every sale, so it is the backstop.
+  //
+  // Reads the REAL tier straight off `profiles` rather than through resolveCaller: BETA_OPEN_ACCESS
+  // reports a granted tier to make the beta feel open, and a money gate must never honour that.
+  const { data: payeeProf } = await db()
+    .from('profiles')
+    .select('membership_tier')
+    .eq('id', payeeProfileId)
+    .maybeSingle()
+  const sellerVerdict = ticketSellerVerdict({
+    hostSpaceId: event.host_space_id,
+    payeeMembershipTier: (payeeProf as { membership_tier: string | null } | null)?.membership_tier ?? null,
+  })
+  if (!sellerVerdict.allowed) {
+    // The BUYER sees a neutral sentence — a stranger must never be told the host's billing tier.
+    // The host gets the real reason at the price field (components/events + the settings module).
+    return { error: 'Tickets aren’t on sale for this event.' }
+  }
+
   // The payee (the hosting space's owner, else the personal host) must be able to receive money.
   const status = await getConnectStatus(payeeProfileId)
   if (!status.accountId || !status.ready) return { error: 'Tickets aren’t available for this event yet.' }
@@ -293,11 +318,17 @@ export async function createTicketCheckout(opts: {
   //                            member (Crew) rate on a network-sourced sale (ADR-811, #4).
   //   • ROOT / platform event → Frequency's OWN event: the flat platform fee (internal, not a member sale).
   // Fail-safe: the space resolution is best-effort; any miss falls back to the flat fee (never under-collect).
-  const { source } = await classifyOrderSource({ buyerProfileId: opts.buyerProfileId, sellerProfileId: payeeProfileId })
-  let fee: number
   // The fee keys on the same entity the money routes to: the explicit hosting space when set,
   // else the placement space, else the personal host — so fee and payee always agree (ADR-819).
+  // Hoisted above the classification because the RELATIONSHIP check needs it: "already your audience"
+  // is asked of the selling SPACE (its followers, members, CRM) as well as the payee profile.
   const feeSpaceId = event.host_space_id ?? event.space_id
+  const { source } = await classifyOrderSource({
+    buyerProfileId: opts.buyerProfileId,
+    sellerProfileId: payeeProfileId,
+    sellerSpaceId: feeSpaceId,
+  })
+  let fee: number
   if (feeSpaceId) {
     const root = await loadRootSpaceId()
     if (feeSpaceId === root) {
@@ -439,9 +470,10 @@ export async function recordTicketFromSession(session: Stripe.Checkout.Session):
     .update({ status: 'succeeded', succeeded_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntentId })
     .eq('stripe_checkout_session_id', session.id)
     .eq('status', 'pending')
-    .select('id, ticket_type_id, qty, entity_id, platform_fee_cents, buyer_profile_id, currency')
+    .select('id, event_id, ticket_type_id, qty, entity_id, platform_fee_cents, buyer_profile_id, currency')
   const rows = (updated ?? []) as {
     id: string
+    event_id: string
     ticket_type_id: string | null
     qty: number
     entity_id: string
@@ -451,6 +483,16 @@ export async function recordTicketFromSession(session: Stripe.Checkout.Session):
   }[]
   for (const row of rows) {
     if (row.ticket_type_id) await adjustTierSold(row.ticket_type_id, row.qty ?? 1)
+    // A BUYER IS A CONTACT (ADR-913). This is what makes "we charge once for the introduction" true:
+    // the first sale from someone Frequency sourced is network-rated, this records the relationship,
+    // and every later sale to that person resolves to their own audience at 0%.
+    //
+    // 🔴 Without it the promise silently fails. Nothing else in the product turned a purchase into a
+    // contact — `contacts` rows only ever came from opt-in forms, CSV import, beta signup and lead
+    // capture — so a repeat buyer looked like a stranger on every visit and would have been charged
+    // the network rate forever. It also closes a real CRM gap: people who paid a Space were not in
+    // its CRM.
+    await recordBuyerAsContact(row.event_id, row.buyer_profile_id).catch(() => {})
     // Record the ENTITY's revenue on the partitioned ledger (ADR-246). A ticket is a
     // Connect destination charge: the gross goes to the host's account; the platform's
     // (entity's) revenue is the application fee. Idempotent per ticket; best-effort so a
@@ -467,6 +509,62 @@ export async function recordTicketFromSession(session: Stripe.Checkout.Session):
       idempotencyKey: `ticket:${row.id}`,
     }).catch(() => {})
   }
+}
+
+/**
+ * Record a settled buyer as a contact of the SELLING SPACE (ADR-913).
+ *
+ * Space-scoped only, deliberately: `contacts` is keyed on `space_id`, so a personal (Crew-hosted)
+ * event has no Space CRM to write into. That case is still covered for pricing — the audience check
+ * counts a prior settled purchase directly (`prior_purchase`) — so the promise holds either way and
+ * this write is a CRM convenience rather than the mechanism.
+ *
+ * Best-effort and idempotent-ish by design: it checks-then-inserts rather than upserting, because
+ * `contacts` has no unique constraint on (space_id, profile_id) to conflict against. A race can
+ * therefore produce a duplicate contact row, which is a CRM tidiness issue and never a money one —
+ * the audience check only asks whether ANY row exists. Every failure is swallowed by the caller: a
+ * ticket must never fail to settle because the CRM write did.
+ */
+async function recordBuyerAsContact(eventId: string, buyerProfileId: string | null): Promise<void> {
+  if (!buyerProfileId) return
+  const { data: ev } = await db()
+    .from('events')
+    .select('host_space_id, space_id')
+    .eq('id', eventId)
+    .maybeSingle()
+  const row = ev as { host_space_id: string | null; space_id: string | null } | null
+  const spaceId = (row?.host_space_id ?? row?.space_id)?.trim() || null
+  if (!spaceId) return
+
+  const { data: existing } = await db()
+    .from('contacts')
+    .select('id')
+    .eq('space_id', spaceId)
+    .eq('profile_id', buyerProfileId)
+    .limit(1)
+  if (((existing as unknown[] | null) ?? []).length > 0) return
+
+  // ⚠️ NO `email` HERE. `public.profiles` has no email column — a member's address lives in
+  // `auth.users`, reached via profiles.auth_user_id. Selecting it is not a null field but a
+  // REQUEST-level PostgREST error (42703) that nulls the WHOLE row, so `display_name` would have
+  // come back empty too and this contact write would have silently done nothing. Caught by
+  // lib/profiles/account-email.test.ts, which exists because five call sites already made this
+  // exact mistake. The contact is keyed on `profile_id`, so an address is not needed to record the
+  // relationship; the CRM can resolve one later through the proper accessor.
+  const { data: prof } = await db()
+    .from('profiles')
+    .select('display_name')
+    .eq('id', buyerProfileId)
+    .maybeSingle()
+  const p = prof as { display_name: string | null } | null
+
+  await db().from('contacts').insert({
+    space_id: spaceId,
+    profile_id: buyerProfileId,
+    display_name: p?.display_name ?? null,
+    // `source` is the introduction ledger the pricing model reads back.
+    source: 'event_ticket',
+  })
 }
 
 /** Webhook-independent reconcile on the success redirect; returns gross cents or null. */

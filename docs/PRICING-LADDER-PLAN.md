@@ -1,8 +1,16 @@
 # Pricing & Value Ladder — implementation plan
 
-> ## ⚠️ Superseded by the FLAT model (ADR-590). Read this first.
+> ## ⚠️ DOUBLY superseded. Read this first, then stop quoting numbers from this file.
 >
-> The current live pricing model is **flat, never per seat** ([ADR-590](DECISIONS.md)):
+> The live ladder is the **Community Collective** one ([PRICING.md](PRICING.md), ADR-811 / ADR-875), and the
+> live money model is **ADR-913**: **tips carry no platform fee on any tier**, the **free tier does not
+> sell** (events + RSVPs only), and the take-rate applies to **network-sourced sales only** — **Crew 8% ·
+> Business and Collective 5% · Non Profit 0%**, with **0% whenever the buyer is already the seller's own
+> audience**. Every rate below, including the "flat 3% on every channel" line, is **history**.
+
+> ## ⚠️ Prior model: FLAT pricing (ADR-590). Also historical.
+>
+> The pricing model that superseded this plan was **flat, never per seat** ([ADR-590](DECISIONS.md)):
 >
 > | Plan | Price | Who / what |
 > |---|---|---|

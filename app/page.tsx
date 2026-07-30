@@ -39,12 +39,19 @@ import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
 import { priceStrings, CREW_NOTE } from '@/lib/pricing/pricing-page'
 import { PLACEHOLDER_SPACE_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
-import { formatCents } from '@/lib/pricing/display'
+import { formatBps, formatCents } from '@/lib/pricing/display'
+import { PRICING_DEFAULTS } from '@/lib/pricing/settings'
 
 // Every dollar figure on the splash interpolates from the ONE price source (the code catalog via
 // priceStrings + the feature-tiers placeholder maps), so the strip can never drift from /pricing.
 const P = priceStrings()
 const INDEPENDENT_PRICE = formatCents(PLACEHOLDER_SPACE_PRICE_CENTS.independent)
+
+// And every PERCENTAGE interpolates from the take-rate config the fee code charges, for the same reason:
+// the rungs are Crew (an individual seller) and Business (a Space), with verified Non Profit at zero. Any
+// rung the owner retires disappears from this page with it (ADR-913).
+const TAKE = PRICING_DEFAULTS.take_rate
+const NETWORK_RATES = `Crew ${formatBps(TAKE.member_bps)}, Business ${formatBps(TAKE.network_bps.business)}, Non Profit ${formatBps(TAKE.network_bps.nonprofit)}`
 
 // The home is philosophy-led and builder-first: it sells a movement and a role,
 // not "Circles near you." There is no local inventory yet, so the sequence runs
@@ -131,7 +138,7 @@ const HOME_FAQ = [
   },
   {
     q: 'What does it cost?',
-    a: `The community is free, forever. Browsing, joining a Circle, and showing up never cost anything, and a business never pays for access to people; paid plans raise the limits. Crew is ${CREW_NOTE.foundingLabel} a month, turns on The Quest, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only a small, shrinking network-only take-rate on the business the network sends you (Business 5%, Collective 3%, Non Profit 0%). There is no card today, and your Opening Beta price is locked in for life.`,
+    a: `The community is free, forever. Browsing, joining a Circle, and showing up never cost anything, and a business never pays for access to people; paid plans raise the limits. A free member creates events and takes RSVPs; Crew is ${CREW_NOTE.foundingLabel} a month, turns on The Quest, adds tickets and payments, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only on a sale the network introduced (${NETWORK_RATES}), never on someone who is already yours. There is no card today, and your Opening Beta price is locked in for life.`,
   },
   {
     q: 'Is there a catch?',
@@ -559,10 +566,11 @@ function Splash({
           </p>
           <p>
             The money model matches. You keep 100% of your own bookings on one honest price, no
-            surprise invoices, and we earn only a small, shrinking network-only take-rate on the
-            business the network sends you (Business 5%, Collective 3%, Non Profit 0%). Physical
-            Spaces get funded a different way: a separate, community-owned vehicle where members
-            co-own the building, never platform margin.
+            surprise invoices, and we earn only on a sale the network introduced ({NETWORK_RATES}).
+            Once someone is yours, a follower, a member, a contact, or a past buyer, it is 0% for
+            good: we charge once for the introduction, and after that they are your people, free.
+            Physical Spaces get funded a different way: a separate, community-owned vehicle where
+            members co-own the building, never platform margin.
           </p>
         </Reveal>
       </Section>

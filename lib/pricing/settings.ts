@@ -52,21 +52,22 @@ export interface PricingDefaults {
     nonprofit: TierPrice
     independent: TierPrice
   }
-  /** Take-rate per seller state, in basis points (500 = 5%). A free space (no live paid subscription)
-   *  pays the higher `free_bps`; a paying Business pays `business_bps`; Non Profit pays `nonprofit_bps`
-   *  (ADR-552). `member_bps` is the individual PAID-MEMBER seller rate (owner_kind='profile'): the
-   *  Market listing ladder charges a paid member 8% and a Business Space 3%, so the subscription buys
-   *  down the fee (ADR-596). Free-vs-paid is a usage state within Business, so the space rate keys on
-   *  paying-state (a live subscription item), not the plan label — see pricing-keys.ts takeRateBpsForPlan. */
+  /** Take-rate in basis points (500 = 5%). The LIVE rates are `network_bps` (per Space tier) and
+   *  `member_bps` (the individual Crew seller rung, 8%) — see pricing-keys.ts sourceAwareTakeRateCents.
+   *  They price NETWORK-sourced sales only: a sale to the seller's own audience is 0% by rule, and tips
+   *  carry no fee at all (ADR-913). Both are editable at /admin/pricing. */
   take_rate: {
-    // Legacy flat fields — kept for the "you'd have saved $X" nudge + the admin console during transition.
-    free_bps: number; business_bps: number; nonprofit_bps: number; member_bps: number
-    /** The individual seller rate on the FREE Member tier. Crew buys it down to `member_bps`, the
-     *  personal-axis sibling of the space buy-down (COMMUNITY-COLLECTIVE-STRATEGY §4). Optional so a
-     *  stored pre-split row still resolves (fail-safe: an absent value reads `member_bps`, never more). */
-    member_free_bps?: number
+    // LEGACY flat fields (ADR-552's paying-state ladder). Nothing on the charging path reads them any
+    // more; they stay so a stored blob written before the network vector still resolves numbers rather
+    // than undefined. Edit `network_bps` / `member_bps`, never these.
+    free_bps: number; business_bps: number; nonprofit_bps: number
+    /** The individual (profile) seller rung: what a CREW seller pays on a network-sourced sale (ADR-913).
+     *  Its former sibling `member_free_bps` (a free-Member seller rate) is RETIRED — the free Member tier
+     *  cannot sell or take payments at all, so no free-member sale exists for a rate to price. Do not
+     *  re-add it. */
+    member_bps: number
     // NETWORK-sourced take-rate per space tier (ADR-811 §A). `self` orders are 0 by rule (not stored).
-    // The rate drops as the tier rises; the individual seller rates ride member_free_bps / member_bps.
+    // The rate drops as the tier rises; the individual seller rate rides member_bps.
     network_bps: { free: number; business: number; collective: number; nonprofit: number; independent: number }
   }
   /** Vera free-tier daily message cap. */
@@ -101,13 +102,15 @@ export const PRICING_DEFAULTS: PricingDefaults = {
     nonprofit: { monthly_cents: 3900, annual_cents: 39000 }, // $39 flat, verified 501c3, full Collective toolkit
     independent: { monthly_cents: 24900, annual_cents: 249000 }, // ~$249 white-label, network-disconnected (standard SaaS)
   },
-  // Free usage → 5% (the self-funding trigger); paying Business → 3%; Non Profit → 3% (ADR-552 §3.2).
-  // Individual seller ladder: free Member → 10%, paid Crew → 8% (the personal buy-down,
-  // COMMUNITY-COLLECTIVE-STRATEGY §4); a Business Space buys it down further to 3% (ADR-596).
   take_rate: {
-    free_bps: 500, business_bps: 300, nonprofit_bps: 300, member_bps: 800, member_free_bps: 1000,
-    // Network-sourced rates (ADR-811 §A): Member 10% → Business 5% → Collective 3% → Non Profit 0 →
-    // Independent 0 (left the graph). Launch low, earn the right to raise.
+    // LEGACY flat trio (the retired ADR-552 paying-state ladder). Off the charging path — kept only so a
+    // stored blob resolves numbers. The live rates are the two below.
+    free_bps: 500, business_bps: 300, nonprofit_bps: 300,
+    // The individual seller rung: a CREW seller pays 8% on a network-sourced sale, 0% on their own
+    // audience (ADR-913). There is no free-Member rung: a free Member cannot sell at all.
+    member_bps: 800,
+    // Network-sourced Space rates (ADR-811 §A): free Space 10% → Business 5% → Collective 3% → Non
+    // Profit 0 → Independent 0 (left the graph). Launch low, earn the right to raise.
     network_bps: { free: 1000, business: 500, collective: 300, nonprofit: 0, independent: 0 },
   },
   vera_free_daily_cap: { messages: 10 },

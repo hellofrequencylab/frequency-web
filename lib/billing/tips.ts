@@ -1,7 +1,8 @@
 // Tips — the first payout channel (Phase 2, ADR-176). A signed-in member tips a
 // host/partner; the money moves as a Stripe DESTINATION CHARGE: the platform
-// creates a one-off Checkout payment, keeps an application fee (lib/billing/fees),
-// and transfers the rest to the recipient's connected account (ADR-175). Server-only.
+// creates a one-off Checkout payment with a ZERO application fee (ADR-913 — a tip is a gratuity
+// between people and Frequency takes none of it) and transfers the full amount to the recipient's
+// connected account (ADR-175). Server-only.
 //
 // Flow: createTipCheckout validates + records a `pending` tip row + returns the
 // hosted Checkout URL. On success Stripe fires checkout.session.completed →
@@ -13,7 +14,6 @@ import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
 import { getConnectStatus, payoutsLive } from './connect'
-import { platformFeeCents } from './fees'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
 
@@ -59,10 +59,17 @@ export async function createTipCheckout(opts: {
   const name = recipientRow?.display_name ?? 'a host'
   const handle = recipientRow?.handle
 
-  // A tip is a profile → profile gratuity with NO space seller, so it keeps the FLAT platform fee (ADR-590);
-  // the paying-state take-rate ladder is a space-seller lever (memberships / storefront / space-hosted
-  // tickets), which does not apply here.
-  const fee = platformFeeCents(amount)
+  // 🔴 NO PLATFORM FEE ON A TIP (owner ruling, 2026-07-30). A tip is a gratuity between people: the
+  // sender is already someone the recipient earned, so charging it contradicts the promise the whole
+  // pricing model now rests on — "once you have your contact, Frequency doesn't take a cut" (ADR-913).
+  // It was also the ONLY money surface with no source classification at all, so a tip from a
+  // recipient's own follower was charged where the identical person buying a ticket was not.
+  //
+  // Zero, not "the self rate". A tip has no order source to classify and never will: there is no
+  // listing, no discovery surface, and nothing for Frequency to have sourced. Passing 0 as an
+  // explicit application fee (rather than omitting it) keeps the destination charge shape identical
+  // to the other channels, so the webhook + refund paths need no special case.
+  const fee = 0
   const message = opts.message?.trim().slice(0, 280) || null
 
   const session = await stripe.checkout.sessions.create({
