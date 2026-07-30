@@ -8,7 +8,7 @@ import { FocusTemplate } from '@/components/templates'
 import { getPricingValues, billingLive } from '@/lib/pricing/settings'
 import { memberTierSellable } from '@/lib/pricing/settings'
 import { loadCatalogConfig } from '@/lib/pricing/catalog-config'
-import { formatCents, memberTierRows } from '@/lib/pricing/display'
+import { formatBps, formatCents, memberTierRows } from '@/lib/pricing/display'
 import { FEATURE_METERS } from '@/lib/pricing/feature-meters'
 import { memberMeterUsage } from '@/lib/pricing/member-meter-usage'
 import { FeatureMeterRange } from '@/components/pricing/feature-meter-range'
@@ -91,17 +91,26 @@ export default async function UpgradePage({
   const live = crewSellable
   const crew = memberTierRows(values).find((r) => r.key === 'crew')!
 
-  // Crew is the personal tier: your Crew identity, the whole game, and a way to back the community.
-  // It is never a business tool, and it never sells back the community itself: joining, Circles,
-  // events, and Channels stay free for everyone. The list below is what Crew actually adds
-  // (lib/pricing/gates.ts: vault_cash_in, gamification_full, vera_unlimited) plus the badge.
+  // Crew never sells back the community itself: joining, Circles, events, and Channels stay free for
+  // everyone. The list below is what Crew actually adds (lib/pricing/gates.ts: vault_cash_in,
+  // gamification_full, vera_unlimited, journey_library_list, entry_points) plus the badge and the rate.
+  //
+  // 🔴 THE RATE LEADS, AND IT IS DERIVED (ADR-914). This page is the member-facing half of /pricing and
+  // used not to mention the rate at all, which left the two surfaces selling different products: the
+  // marketing page said the ladder IS the rate, and the actual upgrade screen listed a badge and some
+  // Gems. Selling is free on every tier now, so the single most concrete reason a member upgrades is
+  // that their fee on network-sourced sales drops. It is read from the same config /pricing renders, so
+  // an operator edit moves both, and the phrasing matches that page word for word.
+  const rateLine =
+    `Your fee on network-sourced sales drops from ${formatBps(values.take_rate.member_free_bps)} ` +
+    `to ${formatBps(values.take_rate.member_bps)}. Your own people stay 0%, as they are on every tier.`
   const benefits = [
-    { icon: Star, label: 'The Crew badge, worn on your profile' },
-    { icon: Zap, label: 'The full rewards loop: streaks, seasons, and the whole ladder' },
-    { icon: BarChart3, label: 'Spend your Gems in the Vault Store' },
+    { icon: BarChart3, label: rateLine },
+    { icon: Radio, label: 'Branded QR codes, short links, and print-ready flyers for what you run' },
     { icon: MessageSquare, label: 'Vera without the daily cap' },
-    { icon: Radio, label: 'List what you author in the public library' },
-    { icon: Users, label: 'You keep the community free for the next person' },
+    { icon: Zap, label: 'The full rewards loop: streaks, seasons, and the whole ladder' },
+    { icon: Star, label: 'Spend your Gems in the Vault Store, and wear the Crew badge' },
+    { icon: Users, label: 'List what you author in the public library' },
   ]
 
   return (

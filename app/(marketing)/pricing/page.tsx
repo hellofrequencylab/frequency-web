@@ -39,6 +39,7 @@ import {
 } from '@/lib/pricing/pricing-grid'
 import { MISSION_FRAMING, PLAN_STORY } from '@/lib/pricing/pricing-page'
 import { BlockRender } from '@/lib/page-editor/block-render'
+import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 import { isRenderable } from '@/lib/page-editor/templates'
@@ -228,6 +229,10 @@ export default async function PricingPage() {
     return (
       <>
         <JsonLd data={breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }])} />
+        {/* Article schema for the published doc, the same way every other Puck-backed marketing route
+            emits it (about, the-community, the-lab, the-quest). Without it a published /pricing ships
+            strictly less structured data than the generated one it replaces. */}
+        <BlockDocJsonLd data={published} path="/pricing" />
         <BlockRender config={config} data={published} metadata={live ? { live } : {}} />
       </>
     )

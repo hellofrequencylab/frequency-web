@@ -526,6 +526,45 @@ not proven" is an acceptable outcome. A confident claim about something unmeasur
 
 ---
 
+## Appendix C — how the CMS and the pricing model fit together
+
+Settled 2026-07-30 (ADR-918), because "an operator can edit it" and "the numbers stay live" pull in
+opposite directions and the resolution has to be written down.
+
+### The rule
+
+**A janitor edits the WORDS. The NUMBERS stay derived.**
+
+A `Tiers` card binds to an offering via `livePriceKey`; its price, struck anchor and rate resolve at
+render from the same config the checkout bills on. The typed `price` / `strikePrice` fields remain, and
+are the right choice for genuinely editorial cards (an add-on, "Space Memberships: Owner-set") that
+have no offering behind them. They also serve as the fallback if a key stops resolving.
+
+🔴 Without this, the first Publish of a pricing page would freeze every figure into a jsonb document,
+and an `/admin/pricing` edit would move the generated page while the published one quoted stale
+numbers. That is the nine-disagreeing-sources problem this document exists to fix, reintroduced
+somewhere strictly worse: a database row is not greppable, and no test can read it.
+
+### Why `/pricing` has two fallback rungs and the others have three
+
+| Route | Chain | Why |
+|---|---|---|
+| `/pricing` | published → **coded page** | Its coded page is the DERIVED one: live prices, live rates, the real gate map, no figure typed anywhere. The template is a static document, so inserting it as a middle rung would mean any deploy where nobody has published silently downgrades the page from live figures to a snapshot |
+| the other seven | published → template → legacy | Their coded page is a last-resort relic and the template is the designed version, so the template genuinely is the better default |
+
+Both chains say the same thing — **published words beat the best available default** — they just
+disagree about which default is best, for a reason specific to each page. That is a decision, not an
+inconsistency.
+
+### Where the member-facing half lives
+
+`/upgrade` is the member's half of `/pricing` and sits in `app/(main)` behind auth. It reads the same
+config and uses the same phrasing, and it **leads with the rate**, because selling is free on every
+tier and the rate drop is the most concrete thing a member buys. It listed a badge and some Gems until
+ADR-918, which meant the marketing page and the actual upgrade screen were selling different products.
+
+---
+
 ## Appendix A — the surface inventory (measured 2026-07-30)
 
 ### A1. Nine structures enumerate what a tier gets. They do not share one source.
