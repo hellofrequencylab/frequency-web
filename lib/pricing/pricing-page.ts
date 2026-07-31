@@ -483,7 +483,10 @@ export function pricingLadderSummary(input: LadderSummaryInput = {}): string[] {
   const lines: string[] = [`- ${PLAN_STORY.spine}`]
   for (const o of offerings) {
     const price = o.listAnchor ? `${o.monthly} (list ${o.listAnchor})` : o.monthly
-    const yearly = o.yearly ? ` or ${o.yearly}` : ''
+    // A pay-what-you-want rung carries "from" on BOTH figures, because each has to stand alone in a
+    // table cell. Read as one sentence they stutter ("from $4.99/mo or from $49.90/yr"), so the second
+    // "from" is dropped here — the qualifier is already established by the first.
+    const yearly = o.yearly ? ` or ${price.startsWith('from ') ? o.yearly.replace(/^from /, '') : o.yearly}` : ''
     lines.push(
       `- ${offeringLadderLabel(o)}: ${price}${yearly}. ${o.tagline} ${o.forWho} Fee: ${o.takeRate}.`,
     )
