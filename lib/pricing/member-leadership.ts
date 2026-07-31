@@ -27,7 +27,7 @@
 // never the beta-overridden display tier, so a beta comp cannot silently lift a creation cap.
 
 import type { EntitlementTier } from '@/lib/core/entitlement'
-import { allowanceAt, withinAllowance } from './feature-meters'
+import { withinAllowance } from './feature-meters'
 import { featureGatesLive } from './settings'
 
 // 🔴 THIS MODULE HAS NO ON/OFF GATE HELPER, ON PURPOSE.
@@ -74,14 +74,10 @@ export async function memberWithinLeadershipAllowance(
   }
 }
 
-/** The allowance a tier gets on a metered leadership quantity (a cap, or null = unlimited). PURE
- *  passthrough, exposed so a surface can show "1 of 1 used" without importing the meter module. */
-export function memberLeadershipAllowance(
-  meter: MemberLeadershipMeter,
-  tier: EntitlementTier | null | undefined,
-): number | null {
-  return allowanceAt(meter, tier ?? 'free')
-}
+// A `memberLeadershipAllowance` passthrough to `allowanceAt` also sat here, exposed for a surface
+// that might want to render "1 of 1 used". No surface ever did, so it was one more export with no
+// consumer, for the same reason as the gate helper above: written for an imagined caller. A future
+// surface should call `allowanceAt` directly, which is what this returned unchanged.
 
 // ── The upsell copy (docs/CONTENT-VOICE.md: plain, warm, no em dashes, no urgency) ──────────────────
 // Crew is the people who run the place, so every line names what Crew DOES and what the member has
