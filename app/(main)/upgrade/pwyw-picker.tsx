@@ -77,8 +77,8 @@ export function PwywPicker({
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-sm font-semibold text-foreground">Pay what it is worth to you.</p>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-sm font-semibold text-text">Pay what it is worth to you.</p>
+        <p className="mt-1 text-sm text-muted">
           {runningCostCents
             ? `A seat costs us about ${priceLabel(runningCostCents)} a month to run. Anything above that goes into building the first Outpost.`
             : 'Everything Crew does is the same at every amount. Anything above the cost of running a seat goes into building the first Outpost.'}
@@ -101,7 +101,7 @@ export function PwywPicker({
               className={`rounded-xl border px-3 py-3 text-sm font-semibold transition-colors ${
                 selected
                   ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border text-foreground hover:border-primary/50'
+                  : 'border-border text-text hover:border-primary/50'
               }`}
             >
               {priceLabel(c)}
@@ -111,9 +111,9 @@ export function PwywPicker({
       </div>
 
       <label className="block">
-        <span className="text-xs font-medium text-muted-foreground">Another amount</span>
+        <span className="text-xs font-medium text-muted">Another amount</span>
         <div className="mt-1 flex items-center gap-2 rounded-xl border border-border px-3 py-2 focus-within:border-primary">
-          <span className="text-sm text-muted-foreground">$</span>
+          <span className="text-sm text-muted">$</span>
           <input
             inputMode="decimal"
             value={custom}
@@ -123,13 +123,13 @@ export function PwywPicker({
             }}
             placeholder={(suggestedCents / 100).toString()}
             aria-label="Another amount per month, in dollars"
-            className="w-full bg-transparent text-sm text-foreground outline-none"
+            className="w-full bg-transparent text-sm text-text outline-none"
           />
-          <span className="text-xs text-muted-foreground">/mo</span>
+          <span className="text-xs text-muted">/mo</span>
         </div>
       </label>
 
-      <label className="flex items-center gap-2 text-sm text-muted-foreground">
+      <label className="flex items-center gap-2 text-sm text-muted">
         <input
           type="checkbox"
           checked={annual}
@@ -139,7 +139,7 @@ export function PwywPicker({
         {/* Two months free is the house convention; the server computes the charge from the monthly
             pick so the number shown here can never disagree with the number billed. */}
         Pay for a year and get two months free
-        {valid ? <span className="font-medium text-foreground">{` (${priceLabel(chosen * 10)})`}</span> : null}
+        {valid ? <span className="font-medium text-text">{` (${priceLabel(chosen * 10)})`}</span> : null}
       </label>
 
       <button
@@ -151,7 +151,7 @@ export function PwywPicker({
         {isPending ? 'Redirecting to checkout…' : 'Join the Crew'}
       </button>
 
-      <p className="text-center text-xs text-muted-foreground">
+      <p className="text-center text-xs text-muted">
         Change what you give any time, or stop. No penalty either way.
       </p>
       {error && <p className="text-center text-sm text-danger">{error}</p>}
