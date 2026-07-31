@@ -183,6 +183,29 @@ amount earns the **Supporter badge** (`profiles.is_supporter`) — recognition o
 - **Grandfathered SPACE rates are untouched.** The three cash-paid Collectives on `founding_members`
   ($490/yr, ADR-880) and the Founding Business cohort are a different mechanism on the plan axis.
 
+#### ⚠️ OPEN: two hard "you cannot sell" walls remain, and they contradict ADR-914
+
+ADR-914 says selling is not a tier: a free Member takes payments on day one and the paid rungs buy the
+**rate** down. Phase 1 removed the `event_paid_tickets` and `personal_payouts` gates on that basis, and
+`/pricing` now quotes a rate in every column instead of "Selling is not included."
+
+**The Market never got the same treatment.** Two surfaces still refuse a free Member outright:
+
+| Wall | File | What it does |
+|---|---|---|
+| The list-a-product page | `app/(main)/market/sell/page.tsx:25` | Renders "Selling is a paid feature" instead of the editor |
+| The commerce action | `app/(main)/marketplace/commerce-actions.ts:36` | `redirect('/upgrade')` |
+
+Both are hand-rolled `isPaid(profile.realMembershipTier)` checks that live **outside** `FEATURE_GATES`,
+so no gate audit, meter reconciliation, or `/pricing` cell can see them. That is the second defect: a
+wall the pricing page cannot know about is a wall the pricing page will contradict, and it does today.
+
+The fee path is already ready for the fix — `lib/commerce/checkout.ts` threads the payee's real tier, so
+a free-Member Market sale would settle at 10% exactly like a free-Member ticket. **This is a product
+call, not a cleanup**, so it is written down rather than changed: the owner's ruling named event
+tickets, and opening the Market is a separate decision. Whichever way it goes, the check should move
+into `FEATURE_GATES` so it stops being invisible.
+
 ### Space ladder (`spaces.plan`)
 
 | Capability | Free Space | Business ($29) | Collective ($79) | Non Profit ($39) | Independent (~$249) |

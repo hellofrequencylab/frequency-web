@@ -22,6 +22,10 @@ is how you actually run things. This page covers what each plan costs and what i
 | **Non Profit** | $39 | $390 | Verified nonprofits, with the full Collective toolkit |
 | **Independent** | $249 | $2,490 | White label, run on your own terms, disconnected from the network |
 
+Those are the list prices. **During the Opening Beta, Business is $19 a month and Collective is $49 a
+month**, and a Space that subscribes at the Opening Beta rate keeps that rate for as long as it keeps
+the plan. See "During the beta" below.
+
 Paying yearly gives you **two months free**: a yearly plan is ten months of the monthly price.
 
 Every paid plan starts with a **14 day free trial**.
@@ -61,15 +65,19 @@ the Market. Those are the only ones we take a percentage of:
 
 | Plan | Frequency's share of network-sourced sales |
 | --- | --- |
-| Free | Selling needs a paid plan, see below |
+| Free | 10% |
 | Business | 5% |
-| Collective | 5% |
+| Collective | 3% |
 | Non Profit | 0% |
 | Independent | 0%, it is off the network, so there are no network-sourced sales |
 
-A **Free** Space can create events, take RSVPs, and collect tips. To sell tickets or take payments, put
-your Space on **Business** or **Non Profit**, or go **Crew** on your personal account (8% on
-network-sourced sales, 0% on your own people, same as above).
+**Every plan can sell, including Free.** A Free Space creates events, takes RSVPs, sells tickets, and
+takes payments from day one. You do not buy the ability to charge, you buy the rate down. A paid plan
+lowers what Frequency takes on the sales the network brings you, and it gives you the tools that turn
+those buyers into your own people, where the rate is 0% on every plan.
+
+On your personal account the same shape applies: a free Member sells at 10%, and **Crew** brings that
+to 8%. Crew is pay what you want, from $4.99 a month.
 
 The idea is simple: we earn when the network earns you something, and never on the work you brought
 yourself.
