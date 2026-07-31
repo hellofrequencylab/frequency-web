@@ -44,9 +44,14 @@ export type { PricingDefaults, TierPrice } from './defaults'
 // ADR-463) are NOT seeded here: catalog-config.ts owns their code-default fallback per item, so an
 // absent row reads the Phase B CATALOG amount. Seeding them would duplicate that source of truth.
 const SETTING_DEFAULTS: Record<string, unknown> = {
-  'tier.crew': PRICING_DEFAULTS.tier.crew,
+  // No 'tier.crew' default either, and for a sharper reason (ADR-919): Crew is pay-what-you-want, so
+  // its only number is the PWYW floor and getPricingValues DERIVES the row from catalog.pwyw.minCents.
+  // Nothing picks this key any more. Seeding it would put a second Crew price back in the map for a
+  // future reader to find and trust, which is precisely the drift that shipped a $9 charge for a
+  // $4.99 offer. A stored row is still read into the raw map and simply never consumed.
+  //
   // No 'tier.supporter' default (ADR-878): Supporter is off the sellable ladder, so there is no member
-  // price for it to seed. A stored row is read into the raw settings map and simply never consumed.
+  // price for it to seed. Same treatment, same reason.
   'plan.business': PRICING_DEFAULTS.plan.business,
   // Collective + Independent are first-class sellable tiers (ADR-811), so they carry a default row here
   // like every other plan; an absent DB row still resolves through getPricingValues' per-key fallback.
