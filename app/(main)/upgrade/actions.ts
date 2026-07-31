@@ -51,27 +51,17 @@ export async function toggleMembership(): Promise<ActionResult<{ tier: string }>
   return ok({ tier: next })
 }
 
-// Real membership purchase — a Stripe Checkout session for CREW, the one sellable member tier
-// (ADR-878). It takes no tier argument on purpose: there is nothing else on the member ladder to buy,
-// so there is no parameter a caller could pass to open a Supporter purchase. Returns the hosted-checkout
-// URL; the webhook (and the success-redirect fallback) flip membership_tier on completion. Only
-// reachable when billing is configured.
-export async function startMembershipCheckout(): Promise<ActionResult<{ url: string }>> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return fail('Not signed in')
-
-  const { data: profile } = await createAdminClient()
-    .from('profiles')
-    .select('id')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  if (!profile) return fail('Profile not found')
-
-  const url = await createMembershipCheckout({ profileId: profile.id, email: user.email, tier: 'crew' })
-  if (!url) return fail('Billing isn’t available right now.')
-  return ok({ url })
-}
+// 🔴 THE NO-AMOUNT `startMembershipCheckout` USED TO SIT HERE, AND IS DELIBERATELY GONE.
+//
+// Crew is pay what you want (ADR-908), so a checkout that names no amount has nothing honest to
+// charge: it fell through to the fixed catalog price and billed $9 regardless of what the member
+// would have chosen. That is the exact bug the PWYW work exists to fix, and leaving the action
+// exported kept the path reachable even after the UI stopped calling it. Its only caller was
+// `checkout-button.tsx`, which is deleted with it.
+//
+// If a second membership purchase seam is ever needed, it takes an amount. Do not reintroduce one
+// that does not, and do not restore a default: the whole point is that nobody is charged a number
+// they did not pick. `startPwywMembershipCheckout` below is the one seam.
 
 /**
  * PAY-WHAT-YOU-WANT Crew checkout (ADR-908). The member picks their own recurring amount and every

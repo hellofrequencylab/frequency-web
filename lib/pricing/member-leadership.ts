@@ -27,20 +27,25 @@
 // never the beta-overridden display tier, so a beta comp cannot silently lift a creation cap.
 
 import type { EntitlementTier } from '@/lib/core/entitlement'
-import { featureAllowed } from './gates'
 import { allowanceAt, withinAllowance } from './feature-meters'
 import { featureGatesLive } from './settings'
 
-/** The ON/OFF leadership unlocks (FEATURE_GATES, tier axis). A quantity cannot express these.
- *
- *  🔴 `event_paid_tickets` and `personal_payouts` are NOT here, and must not be re-added. ADR-914
- *  (owner ruling) deleted both: **selling is not a tier, the rate is the ladder.** A free Member sells
- *  on day one at 10% and every paid rung buys the rate down. The failure mode a seller paywall misses
- *  is not "they don't upgrade", it is that they send people to Venmo and neither the sale nor the
- *  contact ever touches Frequency. Payout eligibility is `canReceivePayouts` (community role or
- *  persona) and the only remaining condition is a completed Stripe onboarding, which is a banking
- *  fact modelled as a setup step, never a permission. See docs/VALUE-LADDER.md. */
-export type MemberLeadershipGate = 'entry_points'
+// 🔴 THIS MODULE HAS NO ON/OFF GATE HELPER, ON PURPOSE.
+//
+// It shipped with a `memberCanLead(gate, tier)` wrapper over three gates. Two of them
+// (`event_paid_tickets`, `personal_payouts`) were deleted by ADR-914 — **selling is not a tier, the
+// rate is the ladder** — and must not be re-added: a free Member sells on day one at 10%, every paid
+// rung buys the rate down, and payout eligibility is `canReceivePayouts` plus a completed Stripe
+// onboarding, which is a banking fact modelled as a setup step rather than a permission.
+//
+// That left `entry_points`, which is ALREADY enforced by the nav registry (`minAccess: 'crew'` on
+// /entry-points). So the wrapper had zero call sites — a resolver that resolved nothing, which is
+// precisely the decorative-gate antipattern ADR-914 removed two of. It is gone rather than kept
+// "for later": an unused gate helper is how the next one gets added without a call site.
+//
+// What remains is the METERED half below, which is genuinely wired. If an on/off leadership gate is
+// ever needed, call `featureAllowed` directly at the site that enforces it, so the gate and its
+// enforcement are never more than one file apart.
 
 /** The METERED leadership quantities (feature-meters.ts, tier axis). First one free, then Crew.
  *
@@ -48,24 +53,6 @@ export type MemberLeadershipGate = 'entry_points'
  *  enforces it live as a paid-tier door, so its meter row exists only to DISPLAY that on /pricing.
  *  Adding a second enforcement path would either duplicate the rule or, worse, loosen it. */
 export type MemberLeadershipMeter = 'circle_host' | 'event_create'
-
-/**
- * Is this ON/OFF leadership capability allowed for a member's tier? FAIL-SAFE to allowed.
- *
- * Returns true for everyone while the gates are not live, so wiring this into an action is a NO-OP
- * today and starts enforcing on the grace date without a second change.
- */
-export async function memberCanLead(
-  gate: MemberLeadershipGate,
-  tier: EntitlementTier | null | undefined,
-): Promise<boolean> {
-  try {
-    return await featureAllowed(gate, { tier: tier ?? 'free' }, { gatesLive: await featureGatesLive() })
-  } catch {
-    // A gate we cannot resolve must never lock a member out of their own Circle.
-    return true
-  }
-}
 
 /**
  * Is a member still within their allowance for a metered leadership quantity? FAIL-SAFE to allowed.
@@ -106,6 +93,3 @@ export const CIRCLE_HOST_CAP_MESSAGE =
 
 export const EVENT_CREATE_CAP_MESSAGE =
   'You have as many events running as your free membership includes. Join Crew to run more, and to set up a series.'
-
-export const ENTRY_POINTS_MESSAGE =
-  'Entry points, the QR codes and flyers for the thing you run, are part of Crew.'

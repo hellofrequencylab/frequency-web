@@ -22,8 +22,11 @@ import { SupporterBadge } from './supporter-badge'
 //
 // OFF preserves today's behavior EXACTLY: while billing is not live, the page shows the free-beta
 // toggle (unchanged) plus a tasteful disabled "coming soon" price preview, never a broken button.
-// When billing goes live, the CTA becomes a real Stripe checkout (CheckoutButton -> the existing
-// createMembershipCheckout, which already honors the founder lock). No em dashes (CONTENT-VOICE §10).
+// When billing goes live, the CTA becomes the PWYW picker (PwywPicker -> startPwywMembershipCheckout
+// -> createMembershipCheckout with the member's chosen amount). There is no longer a no-amount
+// checkout seam: Crew is pay what you want, so a session that names no amount has nothing honest to
+// charge. The founder lock is deliberately skipped for a chosen amount (ADR-908), because a
+// grandfathered price is meaningless when the member sets the price. No em dashes (CONTENT-VOICE §10).
 
 export default async function UpgradePage({
   searchParams,
