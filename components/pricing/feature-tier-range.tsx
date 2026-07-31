@@ -145,14 +145,22 @@ export function FeatureTierRange({ ladder, currentTier, upgradeHref, live = fals
         )}
       </div>
 
-      {/* Honest about placeholder / beta pricing. No urgency, no dark pattern. */}
-      {ladder.placeholderPricing && (
+      {/* Honest about what the figures ARE. No urgency, no dark pattern.
+          🔴 THE "PLACEHOLDER" CLAIM IS NOW CONDITIONAL ON IT BEING TRUE. PLACEHOLDER_PRICING went false
+          when the ladder was finalised, so this note used to disappear entirely the moment the prices
+          became real — dropping the one line that told a member nothing is charged during the beta. The
+          two facts are separate: "these numbers are provisional" and "billing is not switched on". */}
+      {ladder.placeholderPricing ? (
         <p className="mt-2 text-2xs text-subtle">
           {live
             ? 'Prices shown are placeholders while we finish setting up billing. Nothing is charged here.'
             : 'Billing is not live yet. Prices are placeholders for preview, and nothing is charged.'}
         </p>
-      )}
+      ) : !live ? (
+        <p className="mt-2 text-2xs text-subtle">
+          These are the real prices. Billing is not live yet, so nothing is charged.
+        </p>
+      ) : null}
     </section>
   )
 }

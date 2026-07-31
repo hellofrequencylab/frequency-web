@@ -16,8 +16,8 @@ ladder, ADR-811; every yearly price is two months free):
 | **Collective** | a Space | $79/mo list, $49/mo founding beta charged today |
 | **Non Profit** | a verified 501(c)(3) Space | $39/mo flat, never per seat |
 | **Independent** | a Space going white-label, off the network | $249/mo flat, no founding discount |
-| **Crew** | a member | $9/mo under a $12 list anchor |
-| **Supporter** | a member | $12/mo (Crew plus the Supporter badge) |
+| **Crew** | a member | **Pay what you want**, from $4.99/mo (floor), $24.99 suggested |
+| **Supporter** | not a tier | A badge earned by paying at or above the suggested Crew amount |
 
 The founding beta anchors ($19 Business, $49 Collective) auto-revert to list on 2026-09-01
 (`lib/pricing/beta.ts`); a Space that bought at the founding rate keeps it. The Collective beta

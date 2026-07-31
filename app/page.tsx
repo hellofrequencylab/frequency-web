@@ -157,7 +157,7 @@ const HOME_FAQ = [
   },
   {
     q: 'What does it cost?',
-    a: `The community is free, forever. Browsing, joining a Circle, and showing up never cost anything, and a business never pays for access to people; paid plans raise the limits. A free member creates events, takes RSVPs, and sells tickets at the Member rate; Crew is ${CREW_NOTE.foundingLabel} a month, turns on The Quest, buys that rate down, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only on a sale the network introduced (${NETWORK_RATES}), never on someone who is already yours. There is no card today, and your Opening Beta price is locked in for life.`,
+    a: `The community is free, forever. Browsing, joining a Circle, and showing up never cost anything, and a business never pays for access to people; paid plans raise the limits. A free member creates events, takes RSVPs, and sells tickets at the Member rate; Crew is pay what you want, ${CREW_NOTE.fromLabel} a month, turns on The Quest, buys that rate down, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only on a sale the network introduced (${NETWORK_RATES}), never on someone who is already yours. There is no card today, and a Space that subscribes at the Opening Beta rate keeps that rate for as long as it keeps the plan.`,
   },
   {
     q: 'Is there a catch?',
@@ -296,7 +296,7 @@ function Splash({
             <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-sm text-white/55">
               <span>Member free</span>
               <span aria-hidden className="text-white/25">·</span>
-              <span>Crew {CREW_NOTE.foundingLabel}</span>
+              <span>Crew {CREW_NOTE.fromLabel}</span>
               <span aria-hidden className="text-white/25">·</span>
               <span>Business {P.businessList}</span>
               <span aria-hidden className="text-white/25">·</span>
@@ -309,7 +309,7 @@ function Splash({
             <p className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/55">
               <span className="font-semibold text-white/75">Free during the beta.</span>
               <span aria-hidden className="text-white/25">·</span>
-              <span>No card. Opening Beta price locked. Leave anytime.</span>
+              <span>No card. Crew is pay what you want. Leave anytime.</span>
             </p>
             <p className="mt-2 text-sm text-white/40">
               The first Lab is taking root in {FOUNDING_PLACE}.{' '}
@@ -653,11 +653,12 @@ function Splash({
           <Faq q="What does it cost?">
             The community is free, forever. Browsing, joining a Circle, and showing up never cost
             anything, and a business never pays for access to people. Selling is free too: a free
-            member creates events, takes RSVPs, and sells tickets from day one. Crew is{' '}
-            {CREW_NOTE.foundingLabel}/mo, turns on The Quest, buys that rate down, and is free for the
-            whole beta. You keep 100% of your own bookings on every plan, and we earn only a small,
+            member creates events, takes RSVPs, and sells tickets from day one. Crew is pay what you
+            want, {CREW_NOTE.fromLabel}/mo, turns on The Quest, buys that rate down, and is free for
+            the whole beta. You keep 100% of your own bookings on every plan, and we earn only a small,
             shrinking network-only take-rate on the business the network sends you. There&apos;s no
-            card today: join now and your Opening Beta price is locked in for life.{' '}
+            card today, and a Space that subscribes at the Opening Beta rate keeps it for as long as it
+            keeps the plan.{' '}
             <Link href="/pricing" className="font-semibold text-primary-strong hover:underline">
               See the full breakdown
             </Link>

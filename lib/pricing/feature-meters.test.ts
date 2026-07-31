@@ -138,9 +138,9 @@ describe('shape — every meter ladder is well-formed with per-tier placeholder 
   })
 
   it('the placeholder-allowance flag is on and stamped on every ladder', () => {
-    expect(PLACEHOLDER_ALLOWANCES).toBe(true)
+    expect(PLACEHOLDER_ALLOWANCES).toBe(false) // billing is live (ADR-920)
     for (const key of FEATURE_METER_KEYS) {
-      expect(FEATURE_METERS[key]!.placeholderAllowances).toBe(true)
+      expect(FEATURE_METERS[key]!.placeholderAllowances).toBe(false)
     }
   })
 })
@@ -343,7 +343,7 @@ describe('the enforcement seam — nothing charges / nothing hard-blocks while b
     // go-live. This asserts the informational contract holds for every ladder.
     for (const key of FEATURE_METER_KEYS) {
       const ladder = FEATURE_METERS[key]!
-      expect(ladder.placeholderAllowances).toBe(true)
+      expect(ladder.placeholderAllowances).toBe(false)
       // The free floor is always $0 (never a charge to be on the free allowance).
       expect(ladder.steps[0]!.priceCents).toBe(0)
     }

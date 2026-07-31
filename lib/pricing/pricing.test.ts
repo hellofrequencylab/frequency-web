@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { PWYW_CONFIG_DEFAULT } from './catalog-config'
 
 // Pricing P1 (ADR-362, docs/PRICING.md) — the PURE entitlement helpers (no IO). These are the
 // halves the admin console + the P2 webhook rely on; the IO readers (loadPricingSettings,
@@ -280,19 +281,21 @@ describe('seeded defaults are sane (mirror the migration)', () => {
     expect(Object.keys(PRICING_DEFAULTS.tier)).toEqual(['crew'])
     expect(PRICING_DEFAULTS.tier).not.toHaveProperty('supporter')
     const crew = PRICING_DEFAULTS.tier.crew
-    expect(crew.monthly_cents).toBe(900) // $9/mo, the plain price
+    // 🔴 CREW IS PAY-WHAT-YOU-WANT (owner ruling). This is the FLOOR, not a price: the member picks
+    // their own recurring amount at or above it. It was 900 while the offer had no fixed price at all.
+    expect(crew.monthly_cents).toBe(PWYW_CONFIG_DEFAULT.minCents)
     expect(crew.annual_cents).not.toBeNull()
     expect(crew.annual_cents!).toBeLessThan(crew.monthly_cents * 12)
   })
 
   it('Crew ships ONE clean price: no struck $12 anchor in the code default (ADR-878)', () => {
-    // The $12 anchor echoed the retired $12 Supporter tier. With Supporter gone, Crew is a plain $9.
+    // The $12 anchor echoed the retired $12 Supporter tier. Crew carries no anchor: it is PWYW.
     expect(PRICING_DEFAULTS.tier.crew.list_cents).toBeUndefined()
     const row = priceRow('crew', 'Crew', PRICING_DEFAULTS.tier.crew)
     expect(row.list).toBeNull()
     expect(row.listCents).toBeNull()
-    expect(row.monthly).toBe('$9')
-    expect(row.annual).toBe('$90')
+    expect(row.monthly).toBe('$4.99')
+    expect(row.annual).toBe('$49.90')
   })
 
   it('take-rate: the LIVE rungs are the network vector plus BOTH individual seller rates (ADR-914)', () => {
@@ -386,8 +389,10 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
   it('memberTierRows is Crew alone, from the operator values, with no strike (ADR-878)', () => {
     const rows = memberTierRows(PRICING_DEFAULTS)
     expect(rows.map((r) => r.key)).toEqual(['crew'])
-    expect(rows[0].monthly).toBe('$9')
-    expect(rows[0].annual).toBe('$90')
+    // Crew is pay-what-you-want, so the operator value is a FLOOR and every member-facing figure reads
+    // "from". A bare "$4.99" would quote the cheapest possible Crew as if it were the price.
+    expect(rows[0].monthly).toBe('from $4.99')
+    expect(rows[0].annual).toBe('from $49.90')
     expect(rows[0].list).toBeNull() // one clean price, never a crossed-out $12
   })
 

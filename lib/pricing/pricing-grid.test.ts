@@ -85,7 +85,8 @@ describe('offerings: every sellable tier is on the page', () => {
 
   it('prices every offering from the config, never from a literal', () => {
     const [, crew] = memberOfferings(input)
-    expect(crew!.monthly).toBe(`${formatCents(PRICING_DEFAULTS.tier.crew.monthly_cents)}/mo`)
+    // Crew is pay-what-you-want: the configured amount is the FLOOR, so the label reads "from".
+    expect(crew!.monthly).toBe(`from ${formatCents(PRICING_DEFAULTS.tier.crew.monthly_cents)}/mo`)
     for (const o of spaceOfferings(input)) {
       if (o.tier === 'free') {
         expect(o.monthly).toBe('Free')

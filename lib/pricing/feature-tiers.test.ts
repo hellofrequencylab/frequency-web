@@ -124,10 +124,12 @@ describe('shape — every ladder is well-formed with placeholder price points', 
 })
 
 describe('placeholder pricing — nothing charges (the go-live switch)', () => {
-  it('PLACEHOLDER_PRICING is on, so every ladder is preview-only', () => {
-    expect(PLACEHOLDER_PRICING).toBe(true)
+  it('PLACEHOLDER_PRICING is OFF: billing is live, so no ladder claims a preview', () => {
+    // Flipped with billing going live (ADR-920). While it was true, the pricing surfaces printed
+    // "nothing is charged" on the two pages where people actually pay.
+    expect(PLACEHOLDER_PRICING).toBe(false)
     for (const key of FEATURE_TIER_KEYS) {
-      expect(FEATURE_TIER_LADDERS[key]!.placeholderPricing).toBe(true)
+      expect(FEATURE_TIER_LADDERS[key]!.placeholderPricing).toBe(false)
     }
   })
 

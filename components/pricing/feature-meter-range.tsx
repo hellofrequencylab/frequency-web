@@ -177,13 +177,20 @@ export function FeatureMeterRange({ ladder, currentTier, upgradeHref, live = fal
 
       {/* Honest that the numbers are placeholders and nothing charges or blocks. No urgency, no dark
           pattern. */}
-      {ladder.placeholderAllowances && (
+      {/* 🔴 Same split as the tier ladder: PLACEHOLDER_ALLOWANCES going false must not silently delete
+          the line that says nothing is limited yet. "Provisional numbers" and "enforcement is off" are
+          two different claims and only one of them stopped being true. */}
+      {ladder.placeholderAllowances ? (
         <p className="mt-2 text-2xs text-subtle">
           {live
             ? 'These allowances are a preview while we finish setting up billing. Nothing is charged or limited here.'
             : 'Billing is not live yet. These allowances are a preview, and nothing is charged or limited.'}
         </p>
-      )}
+      ) : !live ? (
+        <p className="mt-2 text-2xs text-subtle">
+          These are the real allowances. Billing is not live yet, so nothing is charged or limited.
+        </p>
+      ) : null}
     </section>
   )
 }

@@ -7,7 +7,6 @@ import {
   setPricingSetting,
   getFoundingConfig,
   getPricingValues,
-  type TierPrice,
   type PricingDefaults,
 } from '@/lib/pricing/settings'
 import { sanitizeFoundingConfig, type FoundingConfig } from '@/lib/pricing/founding'
@@ -25,7 +24,6 @@ import {
 import { asCatalogItemKey } from '@/lib/billing/pricing-keys'
 import { ADDON_KEYS, asAddonKey } from '@/lib/pricing/plans'
 import { setFeatureGateOverride } from '@/lib/pricing/gates'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { billingEnabled } from '@/lib/billing/stripe'
 import { syncPricingCatalogToStripe, syncPricingProductsToStripe } from '@/lib/billing/pricing-products'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
@@ -46,27 +44,6 @@ export async function setPricingFlag(key: string, value: boolean): Promise<Actio
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the switch.')
-  }
-}
-
-/** Save a tier/plan PRICE (monthly/annual cents, optional setup cents). The key is one of
- *  'tier.crew' | 'plan.practitioner' | 'plan.business' | 'plan.organization' | 'plan.whitelabel'.
- *  Values are non-negative integer cents; null annual = monthly-only. 'tier.crew' is the only MEMBER
- *  price: Supporter left the sellable ladder (ADR-878) and the console offers no row for it. */
-export async function savePrice(key: string, price: TierPrice): Promise<ActionResult> {
-  const ctx = await requireAdmin('janitor')
-  const monthly = Math.max(0, Math.round(Number(price.monthly_cents) || 0))
-  const annual = price.annual_cents == null ? null : Math.max(0, Math.round(Number(price.annual_cents) || 0))
-  const value: TierPrice = { monthly_cents: monthly, annual_cents: annual }
-  if (price.setup_cents != null) value.setup_cents = Math.max(0, Math.round(Number(price.setup_cents) || 0))
-  // The optional MONTHLY list anchor (ADR-463): the crossed-out price the founding monthly sits under.
-  if (price.list_cents != null) value.list_cents = Math.max(0, Math.round(Number(price.list_cents) || 0))
-  try {
-    await setPricingSetting(key, value, ctx.profileId)
-    revalidatePath(PATH)
-    return ok()
-  } catch (e) {
-    return fail(e instanceof Error ? e.message : 'Could not save the price.')
   }
 }
 
@@ -285,36 +262,6 @@ export async function syncStripeCatalog(): Promise<
     return ok({ synced: res.synced.length, errors: res.errors })
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not sync the catalog to Stripe.')
-  }
-}
-
-/** Toggle the founding-member lock on a profile by member id (display + lock in P1; honored at
- *  checkout in P2). Sets is_founding_member; clears locked_price_id when turned off. */
-export async function setFoundingMember(profileId: string, value: boolean): Promise<ActionResult> {
-  await requireAdmin('janitor')
-  const id = profileId.trim()
-  if (!id) return fail('Enter a member id.')
-  // Validate the shape (SEC-8) — match the uuid checks economy/spotlight use.
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-    return fail('Enter a valid member id.')
-  }
-  try {
-    const db = createAdminClient()
-    const patch: Record<string, unknown> = { is_founding_member: value }
-    if (!value) patch.locked_price_id = null
-    const { error } = await (db as unknown as {
-      from: (t: string) => {
-        update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: { message?: string } | null }> }
-      }
-    })
-      .from('profiles')
-      .update(patch)
-      .eq('id', id)
-    if (error) return fail(error.message ?? 'Could not update the member.')
-    revalidatePath(PATH)
-    return ok()
-  } catch (e) {
-    return fail(e instanceof Error ? e.message : 'Could not update the member.')
   }
 }
 

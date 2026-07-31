@@ -24,7 +24,7 @@ without doing the work by hand.* Every paid rung buys back time and takes a slic
 result is a ladder people climb because their own success pushes them up it, not because we put a
 wall in front of the door.
 
-| | Free Member | Crew · $9/mo | Business Space · $29/mo | Collective · $79/mo | Non Profit · $39/mo |
+| | Free Member | Crew · pay what you want | Business Space · $29/mo | Collective · $79/mo | Non Profit · $39/mo |
 |---|---|---|---|---|---|
 | **Take rate, network-sourced** | 10% | 8% | 5% | 3% | 0% |
 | **Take rate, your own audience** | **0%** | **0%** | **0%** | **0%** | **0%** |
@@ -103,7 +103,7 @@ did you charge me for that sale?"
 | Seller | Rate on a Frequency-sourced sale | Why this number |
 |---|---|---|
 | Free Member | 10% | The reference rate. High enough that the ladder has somewhere to go, low enough to beat doing it yourself once you count the page, the checkout, and the list |
-| Crew ($9/mo) | 8% | Pays for itself at ~$450/mo of network-sourced sales. Deliberately reachable |
+| Crew (PWYW, from $4.99/mo) | 8% | At the $4.99 floor it pays for itself at ~$250/mo of network-sourced sales; at the $24.99 suggested amount, ~$1,250/mo. Deliberately reachable at either end |
 | Business Space ($29/mo) | 5% | The rate a working small business can build on |
 | Collective ($79/mo) | 3% | Near cost. A collective's volume is the point, not the rake |
 | Non Profit ($39/mo) | 0% | Verified 501(c)(3). We do not take money from donations to a nonprofit |
@@ -132,7 +132,7 @@ Legend: ✅ full · ◐ metered/limited · ⛔ not on this tier
 
 ### Personal ladder (`profiles.membership_tier`)
 
-| Capability | Member (free) | Crew ($9/mo) | The upgrade line |
+| Capability | Member (free) | Crew (PWYW, from $4.99/mo) | The upgrade line |
 |---|---|---|---|
 | Create + publish events | ✅ unlimited | ✅ | |
 | RSVPs | ✅ | ✅ | |
@@ -152,6 +152,36 @@ Legend: ✅ full · ◐ metered/limited · ⛔ not on this tier
 
 **Crew in one sentence:** *the rate goes down, the caps come off, and you get the tools that turn a
 crowd into a list.*
+
+#### Crew is PAY WHAT YOU WANT (owner decision, 2026-07-30)
+
+Crew has no price. The operator sets a **floor** ($4.99/mo), a **suggested** amount ($24.99/mo), and a
+row of presets; the member picks any monthly amount from the floor up, and **every amount buys
+identical access**. Annual is ten months of whatever they picked. Paying at or above the suggested
+amount earns the **Supporter badge** (`profiles.is_supporter`) — recognition only, never access.
+
+| Concern | Where it lives |
+|---|---|
+| The one operator control | `pricing_settings.catalog.pwyw` → `/admin/pricing` → "Member pricing (pay what you want)" |
+| The floor policy seam | `isValidPwywAmount()` (`lib/pricing/catalog-config.ts`), enforced server-side in `startMembershipCheckout` |
+| The badge line | `earnsSupporterMark()`, same module |
+| The charge | `createMembershipCheckout({ amountCents })` mints an inline recurring price at exactly that amount, under `STRIPE_PRODUCT_CREW` |
+| What every display reads | `getPricingValues().tier.crew` is **derived** from `catalog.pwyw.minCents`, so there is no second editable Crew price that could disagree |
+
+**Consequences, all deliberate:**
+
+- Every member-facing figure reads **"from $4.99"**, never a bare `$4.99`. The prefix is applied at the
+  single row builder (`memberTierRows`) and at `tierPriceLabel(axis === 'tier')`, so no caller can forget it.
+- `amountCents` is **required** on both `startMembershipCheckout` and `createMembershipCheckout`. An
+  optional amount implies a fallback price, and a fallback price for a priceless offer is exactly how a
+  hardcoded `$9` got charged for a release.
+- **The founding-member purchase path is removed.** A locked price is a promise about a fixed price, and
+  there is no longer one to lock. Gone: `lib/billing/founders.ts` (the one-time Founders Round grant),
+  its `kind: 'founders'` webhook branch, the `locked_price_id` read in the member checkout, the
+  "Founder price lock" admin section + `setFoundingMember`, and the Founders Round rate editor. Zero
+  profiles carried `is_founding_member`, so nothing was taken from anybody.
+- **Grandfathered SPACE rates are untouched.** The three cash-paid Collectives on `founding_members`
+  ($490/yr, ADR-880) and the Founding Business cohort are a different mechanism on the plan axis.
 
 ### Space ladder (`spaces.plan`)
 

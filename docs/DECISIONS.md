@@ -16727,3 +16727,36 @@ That correction removes the urgency and keeps every requirement. Two rules ship 
 **Consequences.** Nothing bites today: `featureGatesLive()` is false, so contacts and sends are counted only when it flips, and the QR cap behaves exactly as before except that the root hub is now exempt. ⚠️ Every read added here fails toward **granted** — there is no error path in `lib/pricing/space-allowance.ts` that returns a refusal, and the contact count fails to `0`, which is inside every allowance. Under-enforcing is recoverable; wrongly locking someone out of their own list is not. ⚠️ Five gate/meter collisions and ten decorative gates remain, each with a named reason in `lib/pricing/gate-meter-drift.test.ts`; both lists are still ratchets and both are shorter. ⚠️ A CSV import that exceeds the allowance now reports `overAllowance` separately from `skipped`, because "skipped" reads as "duplicate" and the owner deserves to know which rows are waiting and why.
 
 The durable rule: **a cap with no grandfather is a promise broken retroactively, and the safest grandfather is the one that cannot go stale — computed from what the customer holds right now, not from a snapshot somebody has to remember to take.**
+
+---
+
+## ADR-919 — Crew is pay what you want, so it has no price to lock (2026-07-30)
+
+**Status.** Accepted. Owner decision, restated and implemented: *"We decided that crew is true PWYW, suggested 4.99-24.99"* and *"Forget the founding member purchase path. Remove any of that."*
+
+**Context.** The pay-what-you-want machinery for Crew already existed and had existed for a release. `createMembershipCheckout` accepted an `amountCents`, minted an inline recurring price at exactly that amount under `STRIPE_PRODUCT_CREW`, wrote `pwyw_amount_cents` into the session metadata, and `earnsSupporterMark` read it back to grant the badge. `pricing_settings.catalog.pwyw` held the operator's real numbers in production: `{minCents: 499, suggestedCents: 2499}`. `isValidPwywAmount` was the floor policy seam, unit-tested.
+
+None of it was reachable. `app/(main)/upgrade/actions.ts` never passed an amount, so every member fell through to a fixed `crew_monthly` price. The single missing line was an argument.
+
+Around that gap, six other structures had each grown their own answer to "what does Crew cost":
+
+1. `PLACEHOLDER_MEMBER_PRICE_CENTS.crew = 900` — the pure map every in-app ladder priced its Crew rung from.
+2. `pricing_settings['tier.crew'] = {monthly_cents: 900, annual_cents: 9000}` — a **second, independently editable** operator price, stale against a live floor of 499.
+3. `PWYW_CONFIG_DEFAULT.suggestedCents = 1200` — a code default contradicting the stored 2499.
+4. `PLACEHOLDER_PRICING` / `PLACEHOLDER_ALLOWANCES` still `true`, so finalised figures published under a "these are placeholders" disclaimer.
+5. `/upgrade` rendered a hardcoded `$9 / month` header with a **separate** "become a Supporter" pay-what-you-want box underneath, teaching the page to read as "a $9 tier, and also a donation."
+6. `resolveMemberPriceId` ran a founder lock first, so a profile carrying `locked_price_id` would have been charged an old fixed price and had its chosen amount discarded.
+
+**Decision.**
+
+1. **Crew has no price; it has a floor.** `catalog.pwyw` is the ONE operator control. `getPricingValues().tier.crew` is now **derived** from `catalog.pwyw.minCents` via `crewFloorPrice()`, so the stale `tier.crew` row is ignored rather than migrated, and the two numbers are structurally incapable of disagreeing. The generic `PriceRow` editor and its `savePrice` action are deleted (`savePrice` also took an arbitrary settings key with no allowlist and had no caller left).
+2. **Every member-facing figure reads "from".** Applied at the single row builder (`memberTierRows`) and at `tierPriceLabel` when `axis === 'tier'`, so no caller can forget it. `pricing-grid.ts` now builds its Crew column from `memberTierRows` rather than a bare `priceRow`, which is what had it quoting `$4.99/mo` beside tables reading `from $4.99`.
+3. **`amountCents` is REQUIRED** on `startMembershipCheckout` and `createMembershipCheckout`. An optional amount implies a fallback price, and a fallback price for a priceless offer is exactly how the `$9` got charged. The floor is validated server-side against the operator's config, because a client posting its own amount is the obvious way to buy Crew for a cent.
+4. **The founding-member purchase path is removed.** Deleted: `lib/billing/founders.ts` + tests, the `kind: 'founders'` webhook branch, the `locked_price_id` / `is_founding_member` read in the member checkout, the "Founder price lock" console section + `setFoundingMember`, the Founders Round rate editor, and the founder-lock UI on `/upgrade`. **Zero** profiles carried `is_founding_member`, so nothing was taken from anybody.
+5. **`PLACEHOLDER_PRICING` and `PLACEHOLDER_ALLOWANCES` go false**, and the honesty note is split in two. "These numbers are provisional" and "billing is not switched on" are different claims; only the first stopped being true. The note now renders on `!live` regardless of the placeholder flag, without calling a real price a placeholder.
+
+**Alternatives considered.** *Migrate `pricing_settings['tier.crew']` to 499 and keep it editable* (rejected — it re-creates the two-controls-one-number defect the moment an operator edits one; deriving makes the drift unrepresentable). *Keep the founder lock and let it lose to a chosen amount* (rejected — a lock that silently loses is worse than no lock, and the console described it as honored at checkout). *Keep `grantFounderFromSession` dormant behind the metadata check* (rejected — it mints a **lifetime** entitlement off a metadata string an operator can type into the Stripe dashboard, and no route creates such a session). *Prefix "from" at each call site* (rejected — every site that had to remember it forgot it).
+
+**Consequences.** Production needs no migration: the stale `tier.crew` row is inert. ⚠️ The three cash-paid Collectives on `founding_members` ($490/yr) and the **Founding Business** cohort are a different mechanism on the plan axis and are untouched — this ADR removes the personal purchase path only. ⚠️ `grantFoundingStatus({kind:'member'})` still fires at beta graduation; it grants a badge and charges nothing, and its `locked_rate_cents` is now decorative. ⚠️ Space plan grandfathering (`lib/pricing/beta.ts`) is unaffected, but marketing copy that promised members an "Opening Beta price locked in for life" is corrected: members have no launch price to lock.
+
+The durable rule: **an offer with no price must have no place to put one.** Every fallback, every second editable field, and every "optional" amount is somewhere a made-up number will eventually be charged.

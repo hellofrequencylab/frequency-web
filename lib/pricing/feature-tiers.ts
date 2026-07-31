@@ -33,6 +33,7 @@
 // docs/CONTENT-VOICE.md: plain, honest, no em dashes, no manufactured urgency, never a dark pattern.
 
 import { formatCents } from './display'
+import { PWYW_CONFIG_DEFAULT } from './catalog-config'
 import { effectiveCatalogAmounts, isBetaPricingActive } from './beta'
 import { SPACE_PLAN_LABEL, SPACE_PLANS, type SpacePlan } from './plans'
 import { ENTITLEMENT_LABEL, ENTITLEMENT_TIERS, deriveTier, type EntitlementTier } from '@/lib/core/entitlement'
@@ -42,10 +43,14 @@ import type { GateAxis } from './gates'
 // ── THE GO-LIVE SWITCH ────────────────────────────────────────────────────────────────────────────
 
 /** THE placeholder-pricing switch (ADR-518, billing ON HOLD). While true, every price in this module is
- *  a PREVIEW and nothing charges: the selector shows the ladder + placeholder price points and its CTA is
- *  a plain link to the billing surface, never a checkout. Flip to false when real billing goes live (and
- *  set the real amounts in the price maps below). This is the single, obvious go-live flag. */
-export const PLACEHOLDER_PRICING = true
+ *  a PREVIEW and nothing charges. FLIPPED FALSE: billing IS live. `billing_live` is on, the Stripe
+ *  Price objects are synced, every amount here derives from the catalog the checkout bills from, and
+ *  Crew sells pay-what-you-want through createMembershipCheckout. Leaving it true printed "nothing is
+ *  charged" on the two pages where people pay.
+ *
+ *  ⚠️ NOT the feature-gate switch. `featureGatesLive()` (the beta grace window) is a separate decision
+ *  on a separate date, and that window exists so members keep FULL access while payments are open. */
+export const PLACEHOLDER_PRICING = false
 
 /** The catalog item each PAID Space plan is billed from (space-plan-checkout catalogKeysForLoadout).
  *  A free Space has no item because $0 is not a Stripe price. PURE. */
@@ -100,7 +105,19 @@ export const COLLECTIVE_BETA_CENTS = SPACE_PLAN_PRICE_CENTS.collective.foundingC
  *  way deriveTier does, so a Supporter row prices at Crew and never at $12. */
 export const PLACEHOLDER_MEMBER_PRICE_CENTS: Record<Exclude<EntitlementTier, 'supporter'>, number> = {
   free: 0,
-  crew: 900,
+  // 🔴 CREW IS PAY-WHAT-YOU-WANT. This is the FLOOR ($4.99), not a price: a member picks any amount at
+  // or above it and every amount buys identical access (PWYW_CONFIG_DEFAULT, lib/pricing/catalog-config).
+  // It carried a fixed 900 until now, which is why every surface quoted "$9/mo" for an offer that has
+  // no fixed price. Anything rendering this must read it as "from", never as "the price" — use
+  // `crewPriceLabel()` below rather than formatting it directly.
+  crew: PWYW_CONFIG_DEFAULT.minCents,
+}
+
+/** The Crew price label: "from $4.99" — never a bare amount, because Crew has no single price.
+ *  PURE. THE one place the member-tier price is turned into words, so no surface can quote a fixed
+ *  figure for a pay-what-you-want offer. */
+export function crewPriceLabel(minCents: number = PLACEHOLDER_MEMBER_PRICE_CENTS.crew): string {
+  return `from ${formatCents(minCents)}`
 }
 
 /** What a Space on `plan` is CHARGED per month right now, in cents: the Opening Beta rate while the beta
@@ -161,10 +178,16 @@ export function tierPriceCents(axis: GateAxis, tier: string, betaActive: boolean
 }
 
 /** A plain, honest price label for a tier on its axis, reusing the shared display format (formatCents).
- *  "Free" for the floor; "$X/mo" for a flat tier. Non Profit is FLAT, never per-seat. PURE. */
+ *  "Free" for the floor; "$X/mo" for a flat tier. Non Profit is FLAT, never per-seat. PURE.
+ *
+ *  The MEMBER axis is pay-what-you-want, so its number is a FLOOR, not a price: it reads "from $4.99/mo".
+ *  Printing it bare would quote the cheapest possible Crew as though it were the only Crew, which is both
+ *  wrong and the exact misread the picker at /upgrade exists to prevent. The plan axis is a real fixed
+ *  price and reads plainly. */
 export function tierPriceLabel(axis: GateAxis, tier: string, betaActive?: boolean): string {
   const cents = tierPriceCents(axis, tier, betaActive)
   if (cents === 0) return 'Free'
+  if (axis === 'tier') return `from ${formatCents(cents)}/mo`
   return `${formatCents(cents)}/mo`
 }
 

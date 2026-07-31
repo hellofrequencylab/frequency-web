@@ -21,7 +21,8 @@
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { billingEnabled } from '@/lib/billing/stripe'
-import { PRICING_DEFAULTS, type PricingDefaults } from './defaults'
+import { crewFloorPrice, PRICING_DEFAULTS, type PricingDefaults } from './defaults'
+import { asPwywConfig, PWYW_CONFIG_KEY } from './catalog-config'
 import {
   asHouseholdBundleConfig,
   HOUSEHOLD_BUNDLE_DEFAULT,
@@ -98,7 +99,15 @@ export async function getPricingValues(): Promise<PricingDefaults> {
   const pick = <T>(key: string, fallback: T): T => (raw[key] != null ? (raw[key] as T) : fallback)
   return {
     tier: {
-      crew: pick('tier.crew', PRICING_DEFAULTS.tier.crew),
+      // 🔴 CREW IS PAY-WHAT-YOU-WANT, so its "price" is the PWYW FLOOR and there is exactly ONE operator
+      // control for it: `catalog.pwyw.minCents`, the same number the picker offers and the checkout
+      // re-validates against. This used to `pick('tier.crew', ...)` a second, independently-editable
+      // price row, which meant an operator could set the floor to $4.99 and leave a stale $9 in
+      // `tier.crew` — and they had: production stored {900, 9000} against a live floor of 499. Every
+      // display would then quote a price no member could be charged. Deriving here is what makes those
+      // two numbers incapable of disagreeing; the stale row is ignored rather than migrated, so a
+      // database that still holds it is already correct.
+      crew: crewFloorPrice(asPwywConfig(raw[PWYW_CONFIG_KEY]).minCents),
     },
     plan: {
       business: pick('plan.business', PRICING_DEFAULTS.plan.business),

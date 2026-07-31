@@ -44,12 +44,16 @@ describe('FeatureTierRange — renders the ladder per tier', () => {
     expect(out.toLowerCase()).not.toContain('checkout')
   })
 
-  it('shows the honest placeholder-pricing note (billing not live) and nothing charges', () => {
+  it('says nothing is charged while billing is off, and does NOT call real prices placeholders', () => {
+    // PLACEHOLDER_PRICING is false now: the ladder is real. The beta-honesty line must survive that
+    // flip (it is about billing being switched off, not about the numbers being provisional), and it
+    // must stop claiming the prices are placeholders, which would be a lie about a real price.
     const out = html(
       <FeatureTierRange ladder={CRM} currentTier="free" upgradeHref="/spaces/x/settings/billing" live={false} />,
     )
     expect(out).toContain('Billing is not live yet')
     expect(out.toLowerCase()).toContain('nothing is charged')
+    expect(out.toLowerCase()).not.toContain('placeholder')
   })
 
   it('renders a personal (tier-axis) ladder just as well', () => {

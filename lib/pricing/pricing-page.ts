@@ -23,6 +23,7 @@
 import {
   catalogConfigByKey,
   defaultCatalogConfig,
+  PWYW_CONFIG_DEFAULT,
   type ResolvedCatalogItem,
 } from './catalog-config'
 import {
@@ -36,7 +37,6 @@ import { isBetaPricingActive, effectiveCatalogAmounts } from './beta'
 import { PRICING_DEFAULTS, type PricingDefaults } from './defaults'
 import { allOfferings, spaceOfferings, type Offering } from './pricing-grid'
 import {
-  yearlyFromMonthly,
   type BillingInterval,
   type CatalogAmounts,
   type CatalogItemKey,
@@ -440,13 +440,21 @@ export const MISSION_FRAMING =
  *  (feature-tiers), the yearly from the same two-months-free math the catalog itself uses. The yearly
  *  used to be the literal "$90 a year" in this sentence. */
 export const CREW_NOTE = (() => {
-  const crew = formatLoadoutCents(PLACEHOLDER_MEMBER_PRICE_CENTS.crew)
-  const crewYear = formatLoadoutCents(yearlyFromMonthly(PLACEHOLDER_MEMBER_PRICE_CENTS.crew))
+  // 🔴 CREW IS PAY-WHAT-YOU-WANT. `foundingLabel` is the FLOOR, not a price, and every surface that
+  // interpolates it must read as "from". It said "$9 a month" until now, which was a fixed figure for
+  // an offer that has no fixed figure.
+  const floor = formatLoadoutCents(PLACEHOLDER_MEMBER_PRICE_CENTS.crew)
+  const suggested = formatLoadoutCents(PWYW_CONFIG_DEFAULT.suggestedCents)
   return {
     name: 'Member pricing',
-    foundingLabel: crew,
-    yearlyLabel: crewYear,
-    line: `Being a member is free, and stays free: joining, Circles, events, and the people. Crew is the personal tier at ${crew} a month or ${crewYear} a year: the Crew badge, the full rewards loop, and a way to back the community. Never a business tool. It lives on the personal upgrade page.`,
+    foundingLabel: floor,
+    suggestedLabel: suggested,
+    /** The floor already carrying its "from", for the surfaces that interpolate ONE figure into a
+     *  sentence ("Crew is {x} a month"). Offered as a field rather than left to each caller because
+     *  every caller that had to remember the prefix forgot it, and the result was a marketing page
+     *  quoting the cheapest possible Crew as the price of Crew. */
+    fromLabel: `from ${floor}`,
+    line: `Being a member is free, and stays free: joining, Circles, events, and the people. Crew is the personal tier and you pick what you pay: anything from ${floor} a month, ${suggested} suggested. Every amount buys the same thing, so pay what it is worth to you. It lives on the personal upgrade page.`,
     href: '/upgrade',
   } as const
 })()

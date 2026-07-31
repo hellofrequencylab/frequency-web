@@ -7,110 +7,74 @@
 // is wired (the webhook then handles async events + cancellation).
 
 import type Stripe from 'stripe'
-import { stripe, priceFor, membershipAmount, appUrl } from './stripe'
+import { stripe, appUrl } from './stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
 import type { EntitlementTier } from '@/lib/core/entitlement'
-import { resolveStripePriceId } from './pricing-prices'
-import { asMemberTierKey, memberCheckoutPriceKey, offersPeriod, type BillingPeriod } from './pricing-keys'
+import type { BillingPeriod } from './pricing-keys'
 
 /** The member tier a checkout may be opened for. Crew, and only Crew: the sellable member ladder is
  *  Member (free) and Crew (ADR-878). Narrowing this here is what makes a Supporter purchase
  *  unrepresentable rather than merely unreachable. */
 type PaidTier = 'crew'
 
-/** Resolve the Stripe price id for a member checkout, HONORING the founder lock (Pricing P2, ADR-363):
- *  a founding member with an explicit profiles.locked_price_id is charged at that exact price; else a
- *  founding member is charged at the synced FOUNDER variant; else the current PUBLIC synced price. Falls
- *  back to the env price id (priceFor) only when nothing is synced (pre-P2 compatibility). Returns null
- *  to signal "use the inline-price fallback" (no synced or env price at all). */
-export async function resolveMemberPriceId(opts: {
-  tier: PaidTier
-  period: BillingPeriod
-  isFoundingMember: boolean
-  lockedPriceId: string | null
-}): Promise<string | null> {
-  // An explicit locked price always wins for a founding member (their grandfathered price object).
-  if (opts.isFoundingMember && opts.lockedPriceId) return opts.lockedPriceId
-  const base = asMemberTierKey(opts.tier)
-  if (base && offersPeriod(base, opts.period)) {
-    const key = memberCheckoutPriceKey({ base, period: opts.period, isFoundingMember: opts.isFoundingMember })
-    const synced = await resolveStripePriceId(key)
-    // A founder with no founder-variant synced falls back to the public synced price.
-    const resolved = synced ?? (opts.isFoundingMember ? await resolveStripePriceId(`${base}_${opts.period}`) : null)
-    if (resolved) return resolved
-  }
-  // Pre-P2 compatibility: the env-configured price id (lib/billing/stripe.ts).
-  return priceFor(opts.tier)
-}
-
-/** Create a subscription Checkout session for a membership tier; returns the URL.
+/** Create a subscription Checkout session for Crew; returns the URL.
  *
- *  PAY WHAT YOU WANT (the Crew membership rework). When `amountCents` is passed, the member has CHOSEN
- *  their own recurring amount, so the session bills an INLINE price at exactly that amount and the
- *  founder-lock / synced-catalog price resolution is SKIPPED entirely. That skip is deliberate, not an
- *  oversight: a grandfathered price is meaningless when the member sets the price themselves, and
- *  resolving one would silently pin a founding member to an old amount and ignore what they just picked.
+ *  🔴 CREW IS PAY WHAT YOU WANT, so `amountCents` is REQUIRED. The session always bills an INLINE
+ *  recurring price at exactly the amount the member picked. There is no catalog price to resolve, no
+ *  founder variant, and no grandfathered `locked_price_id` lookup, because all three are answers to
+ *  "what is the price of Crew" and Crew has no price: the member sets it and can change it.
+ *
+ *  THE FOUNDER LOCK IS GONE FROM THIS PATH ON PURPOSE (owner directive, 2026-07-30: "forget the founding
+ *  member purchase path"). It used to run first, so a profile carrying `locked_price_id` would have been
+ *  charged that old fixed price and the amount they had just chosen on the picker would have been
+ *  silently discarded. Making the amount required rather than optional is what makes that unrepresentable
+ *  instead of merely unreached: there is no longer a code path through this function that charges a
+ *  member anything other than what they picked.
  *
  *  The amount MUST already be validated against the operator PWYW floor by the caller
  *  (lib/pricing/catalog-config.ts isValidPwywAmount); this function refuses a non-positive amount but is
  *  not the policy seam. ANNUAL is 10x the chosen monthly (two months free, the house convention), which
- *  the caller computes so the member sees the annual figure before they commit to it.
- *
- *  With no `amountCents`, behavior is EXACTLY as before: the synced/founder/env price, else the flat
- *  inline fallback. So every existing caller is untouched. */
+ *  the caller computes so the member sees the annual figure before they commit to it. */
 export async function createMembershipCheckout(opts: {
   profileId: string
   email?: string | null
   tier: PaidTier
   period?: BillingPeriod
-  /** The member's chosen PWYW amount in cents (already validated against the floor). */
-  amountCents?: number | null
+  /** The member's chosen PWYW amount in cents (already validated against the operator floor). */
+  amountCents: number
 }): Promise<string | null> {
   if (!stripe) return null
 
   const period: BillingPeriod = opts.period ?? 'monthly'
   const chosen =
-    typeof opts.amountCents === 'number' && Number.isFinite(opts.amountCents) && opts.amountCents > 0
-      ? Math.round(opts.amountCents)
-      : null
+    Number.isFinite(opts.amountCents) && opts.amountCents > 0 ? Math.round(opts.amountCents) : null
+  // Default-deny: an unusable amount is a caller bug, and minting a session at some fallback price is
+  // exactly the "charged a number they never chose" failure this path exists to prevent.
+  if (chosen === null) return null
 
   const { data: profile } = await createAdminClient()
     .from('profiles')
-    .select('stripe_customer_id, is_founding_member, locked_price_id')
+    .select('stripe_customer_id')
     .eq('id', opts.profileId)
     .maybeSingle()
-  const profileRow = profile as
-    | { stripe_customer_id?: string | null; is_founding_member?: boolean | null; locked_price_id?: string | null }
-    | null
-
-  // A chosen amount bypasses price resolution entirely (see the PWYW note above).
-  const priceId = chosen
-    ? null
-    : await resolveMemberPriceId({
-        tier: opts.tier,
-        period,
-        isFoundingMember: profileRow?.is_founding_member === true,
-        lockedPriceId: profileRow?.locked_price_id ?? null,
-      })
+  const profileRow = profile as { stripe_customer_id?: string | null } | null
 
   // The stable Crew Product, so the ad-hoc PWYW prices every checkout mints roll up under ONE product
   // in Stripe instead of littering the dashboard with a product per subscriber. Falls back to inline
   // product_data when it is unset, which keeps a bare-connector install working.
   const crewProductId = process.env.STRIPE_PRODUCT_CREW || null
-  const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = priceId
-    ? { price: priceId, quantity: 1 }
-    : {
-        quantity: 1,
-        price_data: {
-          currency: 'usd',
-          ...(crewProductId
-            ? { product: crewProductId }
-            : { product_data: { name: 'Frequency Membership (Crew)' } }),
-          unit_amount: chosen ?? membershipAmount(),
-          recurring: { interval: period === 'annual' ? 'year' : 'month' },
-        },
-      }
+  const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = {
+    quantity: 1,
+    price_data: {
+      currency: 'usd',
+      ...(crewProductId
+        ? { product: crewProductId }
+        : { product_data: { name: 'Frequency Membership (Crew)' } }),
+      unit_amount: chosen,
+      recurring: { interval: period === 'annual' ? 'year' : 'month' },
+    },
+  }
 
   const customer = profileRow?.stripe_customer_id ?? undefined
 
@@ -125,14 +89,14 @@ export async function createMembershipCheckout(opts: {
       profile_id: opts.profileId,
       tier: opts.tier,
       billing_period: period,
-      ...(chosen ? { pwyw_amount_cents: String(chosen) } : {}),
+      pwyw_amount_cents: String(chosen),
     },
     subscription_data: {
       metadata: {
         profile_id: opts.profileId,
         tier: opts.tier,
         billing_period: period,
-        ...(chosen ? { pwyw_amount_cents: String(chosen) } : {}),
+        pwyw_amount_cents: String(chosen),
       },
     },
     success_url: `${appUrl()}/settings/billing?upgraded=1&session_id={CHECKOUT_SESSION_ID}`,

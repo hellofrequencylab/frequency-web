@@ -11,14 +11,16 @@
 //     entitlement each feature is gated on.
 //   * a METER row reads the tier's rung on the feature's usage ladder — lib/pricing/feature-meters.ts,
 //     the one map of per-tier allowances.
-//   * the TAKE-RATE row reads take_rate.network_bps, the ACTUAL per-tier rate lib/billing/fees.ts charges,
-//     and on the PERSONAL ladder it first asks whether that tier can sell at all: a free Member takes
-//     RSVPs and never a payment (ADR-913), so its cell reads "selling is not included" instead of a rate.
+//   * the TAKE-RATE row reads take_rate.network_bps, the ACTUAL per-tier rate lib/billing/fees.ts charges.
+//     EVERY column quotes a rate now, including free Member: selling is free on every tier (ADR-914), so
+//     the only thing that moves up the ladder is the number.
 //   * the AI ADD-ON row reads ADDON_ENTITLEMENT_KEYS: the add-on keys are in no tier base, so the row
 //     resolves to the metered price on every paid tier and to "not available" on Free. Fold those keys
 //     into a tier base and the row flips to "Included" on its own.
 //   * every PRICE reads the operator-editable pricing config (getPricingValues), through the shared
-//     display helpers (priceRow / formatCents), so a price change at /admin/pricing needs no deploy.
+//     display helpers (memberTierRows / spacePlanRows / formatCents), so a price change at
+//     /admin/pricing needs no deploy. Crew reads as "from $X/mo" because it is pay-what-you-want and the
+//     configured amount is its floor.
 //
 // PURE + framework-independent (no React / Supabase / Next / Stripe), like the rest of lib/pricing/*, so
 // the whole grid is unit-testable and the page is a renderer with no pricing logic of its own. The IO
@@ -35,7 +37,7 @@ import {
   annualDiscountNote,
   formatBps,
   formatCents,
-  priceRow,
+  memberTierRows,
   spacePlanRows,
   trialNote,
   type PriceRow,
@@ -99,12 +101,12 @@ export interface Offering {
   tagline: string
   /** One plain sentence on who it is for. */
   forWho: string
-  /** The monthly price label ("Free", "$9/mo"). */
+  /** The monthly price label ("Free", "$19/mo", or "from $4.99/mo" for pay-what-you-want Crew). */
   monthly: string
   /** The raw monthly cents behind that label (0 for a free tier), for callers that must compute: the
    *  JSON-LD Offer amount is the same number the page prints, never a second source. */
   monthlyCents: number
-  /** The yearly price label ("$90/yr"), or null when there is no yearly price (free tiers). */
+  /** The yearly price label ("$190/yr"), or null when there is no yearly price (free tiers). */
   yearly: string | null
   /** The crossed-out monthly LIST anchor ("$29") when this offering is sold at a lower beta rate, else
    *  null. Derived from the config (an anchor reads only when list_cents is above monthly_cents), so no
@@ -135,9 +137,11 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
     forWho: 'Anyone who wants to find their people, go to things, and join Circles.',
   },
   crew: {
-    tagline: 'The whole member experience.',
+    // Crew is pay-what-you-want, and that has to be SAID, not implied by a "from" in front of a number.
+    // An answer engine lifting this line otherwise reports the floor as the price.
+    tagline: 'The whole member experience, at a price you pick.',
     forWho:
-      'Members who want full access to member programs, and anyone selling tickets to their own events without running a Space.',
+      'Members who want full access to member programs, and anyone selling tickets to their own events without running a Space. Pick any monthly amount at or above the floor; every amount buys the same Crew.',
   },
   free: {
     tagline: 'Put your business on the map.',
@@ -198,7 +202,11 @@ function isPaidTierLabel(tier: string): boolean {
  *  plans), so no member column claims one. */
 export function memberOfferings(input: PricingGridInput): Offering[] {
   const { values } = input
-  const crew = priceRow('crew', ENTITLEMENT_LABEL.crew, values.tier.crew)
+  // THE SAME ROW /upgrade AND THE PRICE TABLES RENDER. memberTierRows is where the "from" prefix lives,
+  // because Crew is pay-what-you-want and its configured amount is a floor. Building the row with a bare
+  // priceRow() here is how this column came to quote "$4.99/mo" as though it were the price while the
+  // tables beside it read "from $4.99" — one offer, two figures. One builder, one figure.
+  const crew = memberTierRows(values)[0]!
   // THE TWO MEMBER COLUMNS BOTH SELL, AT DIFFERENT RATES (ADR-914). Both quote the same shape, so the
   // ladder reads as one number moving rather than as a feature appearing: a free Member pays
   // `member_free_bps` on network-sourced sales, Crew pays `member_bps`, and BOTH pay 0% on their own

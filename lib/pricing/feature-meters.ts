@@ -42,7 +42,7 @@ import type { GateAxis } from './gates'
  *  to false when the real limits are set (and fill the real numbers into the ALLOWANCES below). This is
  *  the single, obvious go-live flag for the QUANTITIES (the sibling PLACEHOLDER_PRICING in
  *  feature-tiers.ts is the flag for the PRICES). */
-export const PLACEHOLDER_ALLOWANCES = true
+export const PLACEHOLDER_ALLOWANCES = false
 
 /** @placeholder The fraction of a tier's allowance at which an inline usage meter shows a quiet "Upgrade"
  *  nudge (ADR-520 P2). 0.8 = the nudge appears once usage crosses 80% of the allowance. Informational

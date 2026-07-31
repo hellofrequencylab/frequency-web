@@ -90,16 +90,26 @@ function planPrice(item: CatalogItemKey): TierPrice {
   return month.listCents > month.foundingCents ? { ...price, list_cents: month.listCents } : price
 }
 
+/** Crew's TierPrice built from a pay-what-you-want FLOOR in cents: the floor itself as the monthly and
+ *  its ten-month equivalent as the annual, with no list anchor (a PWYW offer has nothing to strike
+ *  through). PURE, and the ONE conversion from "the operator's floor" to "the row every price display
+ *  renders" — getPricingValues calls it with the stored `catalog.pwyw.minCents` so the number members
+ *  see and the number checkout enforces are the same number. */
+export function crewFloorPrice(minCents: number): TierPrice {
+  return { monthly_cents: minCents, annual_cents: yearlyFromMonthly(minCents) }
+}
+
 export const PRICING_DEFAULTS: PricingDefaults = {
   tier: {
     // Crew is ONE clean price, with NO list anchor (ADR-878). The $12 anchor is gone because the $12
     // Supporter tier it echoed is gone; the founder's member ladder is Member (free) and Crew, stated
     // plainly. An operator may still set a deliberate anchor at /admin/pricing, and priceRow honors it,
     // but no anchor ships in the code default.
-    crew: {
-      monthly_cents: PLACEHOLDER_MEMBER_PRICE_CENTS.crew,
-      annual_cents: yearlyFromMonthly(PLACEHOLDER_MEMBER_PRICE_CENTS.crew),
-    },
+    // 🔴 CREW IS PAY-WHAT-YOU-WANT. These are the FLOOR, not a price: the member picks their own
+    // recurring amount at or above it and every amount buys identical access. `monthly_cents` is the
+    // PWYW minimum and `annual_cents` its ten-month equivalent, so any surface that must render a
+    // single figure renders the floor. Surfaces should say "from"; `crewPriceLabel()` does.
+    crew: crewFloorPrice(PLACEHOLDER_MEMBER_PRICE_CENTS.crew),
   },
   plan: {
     // Community Collective ladder (ADR-811). Annual = two months free (10x monthly).

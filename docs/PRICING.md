@@ -100,8 +100,9 @@
 > [COMMUNITY-COLLECTIVE-STRATEGY.md](COMMUNITY-COLLECTIVE-STRATEGY.md) · plan:
 > [COMMUNITY-COLLECTIVE-BUILD-PLAN.md](COMMUNITY-COLLECTIVE-BUILD-PLAN.md) · [ADR-811](DECISIONS.md).
 >
-> **The PUBLIC ladder (founder's ladder, ADR-878, 2026-07-28):** Member $0 · **Crew $9** ($90/yr), ONE
-> plain price with no list anchor · **Free Space** (the first level of
+> **The PUBLIC ladder (founder's ladder, ADR-878, updated 2026-07-30):** Member $0 · **Crew: pay what
+> you want**, floor $4.99/mo, $24.99 suggested, no list anchor (see "Crew is PWYW" below) ·
+> **Free Space** (the first level of
 > Space) · Business $29 ($19 Opening Beta) · Collective $79 ($49 Opening Beta) · Non Profit $39 flat ·
 > the **Vera AI** add-on +$20 (catalog key `addon_ai`) · operator seats owner-priced. **Independent
 > (~$249) is NOT listed or sold** (`plan_independent_enabled` OFF; machinery dormant, grandfathered
