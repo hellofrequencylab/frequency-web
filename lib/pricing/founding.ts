@@ -21,12 +21,28 @@ export interface FoundingConfig {
   member_one_time_cents: number
   /** How many Founding MEMBER seats the round holds (the first 150). */
   member_cap: number
-  /** The Founding BUSINESS locked MONTHLY membership rate. Must be <= the live Business list ($29, ADR-811);
-   *  the founding value is the LOCKED rate plus the bought-down take-rate, not a higher price. */
+
+  // ── 🔴 RETIRED: the three `business_*` fields below configure NOTHING (owner directive, 2026-07-31).
+  //
+  // The Founding BUSINESS per-city cohort is withdrawn. Its entire purchase path is deleted:
+  // `lib/founding/business-checkout.ts` and the `/spaces/[slug]/settings/billing/founding` route are
+  // gone, so no checkout reads these values and no Space can join the cohort.
+  //
+  // They survive as FIELDS ONLY so the existing `founding` pricing_settings row still narrows without
+  // a migration, and so the admin console (mid-rewrite on PR #1999) keeps compiling. ⚠️ That console
+  // still renders a Founding Business editor, which is now an operator control that does nothing:
+  // the deliberate cost of not editing a file another branch is rewriting. Deleting that row, these
+  // three fields, and the stored keys is the follow-up once #1999 lands.
+  //
+  // 🔴 NOT retired with them: the `founding_members` rows themselves. Three real Spaces paid cash for
+  // this and are grandfathered, and `foundingBadgeForSpace` still renders their chip. Withdrawing an
+  // offer is not the same as withdrawing recognition from the people who took it.
+
+  /** @deprecated Configures nothing. See the retirement note above. */
   business_monthly_cents: number
-  /** The Founding BUSINESS bought-down marketplace take-rate, in basis points (300 = 3%). */
+  /** @deprecated Configures nothing. See the retirement note above. */
   business_take_bps: number
-  /** The per-CITY Founding BUSINESS cap (spots-remaining is computed over this). */
+  /** @deprecated Configures nothing. See the retirement note above. */
   business_city_cap: number
 }
 

@@ -105,7 +105,12 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   space_tickets: { free: 50, business: null },
   space_qr: { free: 3, business: 500, collective: null },
   space_automation: { free: 0, collective: 1_000 },
-  space_team: { free: 1, collective: 3 },
+  // Business is stated EXPLICITLY at 1 rather than inheriting the free rung. It resolved to 1 either
+  // way (currentMeterStepIndex falls back to the highest rung at/below the tier), but a Business
+  // operator reading the ladder saw a gap where their own tier should be and had to know that rule to
+  // work out what they get. `space_team` gates at 'collective', so adding teammates genuinely starts
+  // there: Business runs on the owner's seat alone, and that is now said rather than implied.
+  space_team: { free: 1, business: 1, collective: 3 },
   space_multi_pipeline: { free: 1, collective: null },
   space_vera: { free: 10, business: 200 },
   space_crm_playbooks: { free: 0, business: 5_000 },
@@ -253,11 +258,20 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Team seats',
     unit: 'seats',
     period: null,
-    // Free: 1 seat, the owner's (BASE_SEAT_ALLOWANCE, ADR-799 / §2). Collective: 3 seats INCLUDED
-    // (placeholder); more seats are the ADR-799 per-seat add-on, so the top rung is never a wall.
+    // Free + Business: 1 seat, the owner's (BASE_SEAT_ALLOWANCE, ADR-799 / §2) — adding teammates is
+    // a Collective capability (`space_team` gates there), so Business runs on the owner alone.
+    // Collective: 3 seats INCLUDED (placeholder); more are the ADR-799 per-seat add-on, never a wall.
+    //
+    // ⚠️ "add more per seat" is an INTENT, not a live purchase. The `operator_seat` catalog item is
+    // `placeholder: true`, which makes the catalog sync SKIP it, so no Stripe price is minted and the
+    // item is dropped from checkout. Nobody can buy an extra seat today. The line stays because it
+    // describes the model honestly; it becomes true when the owner sets the real amount and clears the
+    // flag. ADR-811 names $12/seat while the placeholder holds $9, so that is a deliberate choice to
+    // make, not a value to inherit by accident.
     allowances: PLACEHOLDER_METER_LIMITS.space_team!,
     allowanceTextByTier: {
       free: '1 seat included (the owner)',
+      business: '1 seat included (the owner)',
       collective: '3 seats included, add more per seat',
     },
   },
