@@ -149,12 +149,16 @@ export function Section({
   className = '',
   pad,
   vis = '',
+  width = 'prose',
 }: {
   children: React.ReactNode
   tone?: 'surface' | 'canvas' | 'ink'
   className?: string
   pad?: string
   vis?: string
+  /** `'prose'` (default) is the reading measure. `'wide'` is for a section whose content is a
+   *  comparison table or a multi-column grid that a 3xl measure squeezes into a sideways scroll. */
+  width?: 'prose' | 'wide'
 }) {
   const bg =
     tone === 'canvas'
@@ -164,7 +168,7 @@ export function Section({
         : 'bg-surface'
   return (
     <section className={`px-6 ${pad ?? 'py-14 sm:py-20 lg:py-24'} ${bg} ${vis} ${className}`}>
-      <div className="max-w-3xl mx-auto">{children}</div>
+      <div className={`${width === 'wide' ? 'max-w-5xl' : 'max-w-3xl'} mx-auto`}>{children}</div>
     </section>
   )
 }
@@ -187,6 +191,18 @@ export function SectionHeading({
       )}
       <h2 className="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)]">{title}</h2>
       {kicker && <p className="mt-4 text-lg sm:text-xl italic text-muted">{kicker}</p>}
+    </div>
+  )
+}
+
+// The sub-section heading. SectionHeading is the h2 band that opens a Section; this is the h3 that
+// opens ONE BLOCK inside it (a ladder, a comparison table). It exists because three blocks on the
+// pricing page had each hand-stacked the same display-h3 + muted kicker pair.
+export function BlockHeading({ title, kicker }: { title: React.ReactNode; kicker?: string }) {
+  return (
+    <div className="mb-5">
+      <h3 className="font-display uppercase text-text text-2xl">{title}</h3>
+      {kicker && <p className="mt-1 text-sm leading-relaxed text-muted">{kicker}</p>}
     </div>
   )
 }
@@ -293,6 +309,32 @@ export function FaqList({ items }: { items: readonly { q: string; a: React.React
 // padding/radius/shadow wobbled page to page. `primary` is the amber action;
 // `secondary` is the quiet outline; `ghost` is the inline text link. Renders an
 // <a>/<Link> (every marketing CTA is a navigation).
+type ButtonVariant = 'primary' | 'secondary' | 'ghost'
+type ButtonSize = 'sm' | 'md' | 'lg'
+
+const BUTTON_SIZES: Record<ButtonSize, string> = {
+  sm: 'px-5 py-2.5 text-sm gap-1.5',
+  md: 'px-8 py-3.5 text-base gap-2',
+  lg: 'px-10 py-4 text-lg gap-2',
+}
+const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
+  primary: 'text-emboss bg-primary text-white hover:bg-primary-hover shadow-pop',
+  secondary: 'border border-border bg-surface text-text hover:bg-surface-elevated',
+  ghost: 'text-primary-strong hover:underline',
+}
+
+/** The button LOOK, without the element. `Button` is always a navigation, but a few marketing
+ *  surfaces need the identical chrome on a real `<button>` that fires a server action (the
+ *  double-opt-in confirm, the RSVP submit). Those call this instead of re-typing the classes,
+ *  which is how the padding/radius drifted the first time. */
+export function buttonClasses({
+  variant = 'primary',
+  size = 'md',
+  className = '',
+}: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {}) {
+  return `inline-flex items-center justify-center rounded-2xl font-bold transition-colors ${BUTTON_SIZES[size]} ${BUTTON_VARIANTS[variant]} ${className}`
+}
+
 export function Button({
   href,
   children,
@@ -302,27 +344,108 @@ export function Button({
 }: {
   href: string
   children: React.ReactNode
-  variant?: 'primary' | 'secondary' | 'ghost'
-  size?: 'sm' | 'md' | 'lg'
+  variant?: ButtonVariant
+  size?: ButtonSize
   className?: string
 }) {
-  const sizes = {
-    sm: 'px-5 py-2.5 text-sm gap-1.5',
-    md: 'px-8 py-3.5 text-base gap-2',
-    lg: 'px-10 py-4 text-lg gap-2',
-  } as const
-  const variants = {
-    primary: 'text-emboss bg-primary text-white hover:bg-primary-hover shadow-pop',
-    secondary: 'border border-border bg-surface text-text hover:bg-surface-elevated',
-    ghost: 'text-primary-strong hover:underline',
-  } as const
   return (
-    <Link
-      href={href}
-      className={`inline-flex items-center justify-center rounded-2xl font-bold transition-colors ${sizes[size]} ${variants[variant]} ${className}`}
-    >
+    <Link href={href} className={buttonClasses({ variant, size, className })}>
       {children}
     </Link>
+  )
+}
+
+// ── The outcome panel: one block for every "this worked / this did not" surface ───────────────
+// The confirm, RSVP, and double-opt-in landings each hand-stacked the same lockup (a tinted status
+// disc, a display heading, a muted line, one CTA) in five places, and they had already drifted in
+// icon size, CTA classes, and vertical rhythm. This is that lockup, once.
+
+type OutcomeTone = 'success' | 'danger' | 'primary' | 'neutral'
+
+const OUTCOME_TONES: Record<OutcomeTone, string> = {
+  success: 'bg-success-bg text-success',
+  danger: 'bg-danger-bg text-danger',
+  primary: 'bg-primary-bg text-primary-strong',
+  neutral: 'bg-surface-elevated text-subtle',
+}
+
+interface OutcomeProps {
+  /** Which status disc to draw. Omit `icon` and no disc renders at all (the pre-action state). */
+  tone?: OutcomeTone
+  /** A lucide icon component. The panel owns its size and stroke so the disc never drifts. */
+  icon?: React.ComponentType<{ className?: string; strokeWidth?: number }>
+  title: React.ReactNode
+  /** `h1` when this IS the page (a confirm landing); `h2` when it replaces a block inside one. */
+  as?: 'h1' | 'h2'
+  children?: React.ReactNode
+  /** The one CTA. A `<Button>`, or a real `<button>` wearing `buttonClasses()`. */
+  action?: React.ReactNode
+  /** Pass `'status'` when the panel appears in place of a form the visitor just submitted. */
+  role?: string
+}
+
+/** The panel alone, for a surface that already owns its section (an in-page success state). */
+export function OutcomePanel({
+  tone = 'neutral',
+  icon: Icon,
+  title,
+  as = 'h1',
+  children,
+  action,
+  role,
+}: OutcomeProps) {
+  const Heading = as
+  return (
+    <div role={role} className="text-center">
+      {Icon && (
+        <div
+          aria-hidden
+          className={`mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full ${OUTCOME_TONES[tone]}`}
+        >
+          <Icon className="h-7 w-7" strokeWidth={2.5} />
+        </div>
+      )}
+      <Heading
+        className={`font-display uppercase text-text ${
+          as === 'h1' ? 'text-4xl sm:text-5xl' : 'text-3xl sm:text-4xl'
+        }`}
+      >
+        {title}
+      </Heading>
+      {children && <div className="mt-4 text-lg leading-relaxed text-muted">{children}</div>}
+      {action && <div className="mt-8">{action}</div>}
+    </div>
+  )
+}
+
+/** The whole page: the panel, centered on the standard single-decision measure. */
+export function Outcome(props: OutcomeProps) {
+  return (
+    <section className="px-6 py-24 sm:py-32">
+      <div className="mx-auto max-w-md">
+        <OutcomePanel {...props} />
+      </div>
+    </section>
+  )
+}
+
+/** The Suspense fallback for an Outcome that has to wait on a round-trip (the confirm landings, the
+ *  RSVP capture). DIMENSION-MATCHED to the panel above — same section padding, same measure, same
+ *  disc, heading, body, and CTA heights — so the streamed result lands without shifting the page
+ *  (PAGE-FRAMEWORK §5.4). Lives beside `Outcome` precisely so the two cannot drift apart. */
+export function OutcomeSkeleton() {
+  return (
+    <section className="px-6 py-24 sm:py-32">
+      <div className="mx-auto max-w-md animate-pulse text-center" aria-hidden>
+        <div className="mx-auto mb-6 h-14 w-14 rounded-full bg-surface-elevated" />
+        <div className="mx-auto h-10 w-4/5 rounded-lg bg-surface-elevated sm:h-12" />
+        <div className="mt-4 space-y-2">
+          <div className="mx-auto h-5 w-full rounded bg-surface-elevated" />
+          <div className="mx-auto h-5 w-3/4 rounded bg-surface-elevated" />
+        </div>
+        <div className="mx-auto mt-8 h-12 w-48 rounded-2xl bg-surface-elevated" />
+      </div>
+    </section>
   )
 }
 
@@ -335,13 +458,16 @@ export function Card({
   className = '',
 }: {
   children: React.ReactNode
-  tone?: 'soft' | 'feature' | 'elevated'
+  tone?: 'soft' | 'feature' | 'elevated' | 'highlight'
   className?: string
 }) {
   const tones = {
     soft: 'bg-surface-elevated/60',
     feature: 'border border-border bg-surface shadow-sm',
     elevated: 'border border-border bg-surface shadow-pop',
+    // The one CHOSEN card in a set (the featured plan). A tone rather than a className override, so
+    // the border width cannot depend on which utility Tailwind happened to emit last.
+    highlight: 'border-2 border-primary bg-surface shadow-pop ring-4 ring-primary-bg',
   } as const
   return <div className={`rounded-2xl p-6 ${tones[tone]} ${className}`}>{children}</div>
 }

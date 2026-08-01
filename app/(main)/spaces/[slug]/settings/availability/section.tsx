@@ -45,6 +45,11 @@ export async function AvailabilitySection({
         label="Availability and bookings"
         reason={spaceFunctionAccess(space, 'availability', 'admin') ? 'role' : 'disabled'}
         canManageMembers={caps.canManageMembers}
+        // Phase 4 (docs/VALUE-LADDER.md A3): this notice mounted with NO featureKey, so a plan-reason
+        // gap rendered no upsell at all. The bookings meter key fixes that. Bookings-per-month has no
+        // cheap count on this surface, so the standing ladder stays on the plan-and-usage hub.
+        featureKey="space_bookings"
+        currentPlan={space.plan}
       />
     )
   }

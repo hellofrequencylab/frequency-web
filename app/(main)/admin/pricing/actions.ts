@@ -3,7 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
 import { setPlatformFlag, setPlatformSetting } from '@/lib/platform-flags'
-import { setPricingSetting, getFoundingConfig, type TierPrice } from '@/lib/pricing/settings'
+import {
+  setPricingSetting,
+  getFoundingConfig,
+  getPricingValues,
+  type PricingDefaults,
+} from '@/lib/pricing/settings'
 import { sanitizeFoundingConfig, type FoundingConfig } from '@/lib/pricing/founding'
 import {
   asPwywConfig,
@@ -19,7 +24,6 @@ import {
 import { asCatalogItemKey } from '@/lib/billing/pricing-keys'
 import { ADDON_KEYS, asAddonKey } from '@/lib/pricing/plans'
 import { setFeatureGateOverride } from '@/lib/pricing/gates'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { billingEnabled } from '@/lib/billing/stripe'
 import { syncPricingCatalogToStripe, syncPricingProductsToStripe } from '@/lib/billing/pricing-products'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
@@ -40,27 +44,6 @@ export async function setPricingFlag(key: string, value: boolean): Promise<Actio
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the switch.')
-  }
-}
-
-/** Save a tier/plan PRICE (monthly/annual cents, optional setup cents). The key is one of
- *  'tier.crew' | 'plan.practitioner' | 'plan.business' | 'plan.organization' | 'plan.whitelabel'.
- *  Values are non-negative integer cents; null annual = monthly-only. 'tier.crew' is the only MEMBER
- *  price: Supporter left the sellable ladder (ADR-878) and the console offers no row for it. */
-export async function savePrice(key: string, price: TierPrice): Promise<ActionResult> {
-  const ctx = await requireAdmin('janitor')
-  const monthly = Math.max(0, Math.round(Number(price.monthly_cents) || 0))
-  const annual = price.annual_cents == null ? null : Math.max(0, Math.round(Number(price.annual_cents) || 0))
-  const value: TierPrice = { monthly_cents: monthly, annual_cents: annual }
-  if (price.setup_cents != null) value.setup_cents = Math.max(0, Math.round(Number(price.setup_cents) || 0))
-  // The optional MONTHLY list anchor (ADR-463): the crossed-out price the founding monthly sits under.
-  if (price.list_cents != null) value.list_cents = Math.max(0, Math.round(Number(price.list_cents) || 0))
-  try {
-    await setPricingSetting(key, value, ctx.profileId)
-    revalidatePath(PATH)
-    return ok()
-  } catch (e) {
-    return fail(e instanceof Error ? e.message : 'Could not save the price.')
   }
 }
 
@@ -158,29 +141,44 @@ export async function saveAddonEnabled(addon: string, enabled: boolean): Promise
   }
 }
 
-/** Save the take-rate (basis points per seller · ADR-552/596: free usage / paying Business / Non Profit,
- *  plus the individual PAID-MEMBER Market seller rate `member_bps`, default 800 = 8%). Free-vs-paid is a
- *  usage state within Business, so free usage carries its own higher rate. Every field is written so a
- *  legacy row that lacked `member_bps` gains it (getPricingValues also merges over the code default). */
+/** The network-tier keys the console may edit, as a TRUSTED constant. Every write target below comes from
+ *  this list, never from a caller-supplied property name. `independent` is deliberately editable too (it
+ *  is part of the stored vector), but the console does not render it: a disconnected Space has left the
+ *  graph, so its network revenue is 0 by definition. */
+const NETWORK_TIER_KEYS = ['free', 'business', 'collective', 'nonprofit', 'independent'] as const
+
+/** Save the take-rate, in basis points (800 = 8%). Writes the fields that ACTUALLY CHARGE (ADR-914):
+ *  `network_bps` (the per-Space-tier network-sourced vector `spaceTakeRateCents` reads) plus BOTH
+ *  individual seller rungs, `member_free_bps` (free Member) and `member_bps` (Crew), which
+ *  `memberTakeRateCents` picks between on the payee's real tier. A sale to the seller's own audience is
+ *  0% by rule and is not a stored rate; tips carry no fee at all.
+ *
+ *  READ-MODIFY-WRITE, and that is load-bearing: `setPricingSetting` REPLACES the whole `take_rate` jsonb
+ *  value, so writing a bare object is a silent delete of every field omitted. The previous version of this
+ *  action wrote only the four legacy flat fields, which (a) dropped the stored `network_bps` vector
+ *  entirely and (b) meant an operator edited numbers that never reached a charge. Merging over the current
+ *  values keeps the legacy flat trio and any tier this console does not render. */
 export async function saveTakeRate(rate: {
-  free_bps: number
-  business_bps: number
-  nonprofit_bps: number
+  member_free_bps: number
   member_bps: number
+  network_bps: Partial<PricingDefaults['take_rate']['network_bps']>
 }): Promise<ActionResult> {
   const ctx = await requireAdmin('janitor')
   const clamp = (n: unknown) => Math.min(10000, Math.max(0, Math.round(Number(n) || 0)))
   try {
-    await setPricingSetting(
-      'take_rate',
-      {
-        free_bps: clamp(rate.free_bps),
-        business_bps: clamp(rate.business_bps),
-        nonprofit_bps: clamp(rate.nonprofit_bps),
-        member_bps: clamp(rate.member_bps),
-      },
-      ctx.profileId,
-    )
+    const current = (await getPricingValues()).take_rate
+    const network = { ...current.network_bps }
+    for (const tier of NETWORK_TIER_KEYS) {
+      const next = rate.network_bps[tier]
+      if (next != null) network[tier] = clamp(next)
+    }
+    const value: PricingDefaults['take_rate'] = {
+      ...current,
+      member_free_bps: clamp(rate.member_free_bps),
+      member_bps: clamp(rate.member_bps),
+      network_bps: network,
+    }
+    await setPricingSetting('take_rate', value, ctx.profileId)
     revalidatePath(PATH)
     return ok()
   } catch (e) {
@@ -264,36 +262,6 @@ export async function syncStripeCatalog(): Promise<
     return ok({ synced: res.synced.length, errors: res.errors })
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not sync the catalog to Stripe.')
-  }
-}
-
-/** Toggle the founding-member lock on a profile by member id (display + lock in P1; honored at
- *  checkout in P2). Sets is_founding_member; clears locked_price_id when turned off. */
-export async function setFoundingMember(profileId: string, value: boolean): Promise<ActionResult> {
-  await requireAdmin('janitor')
-  const id = profileId.trim()
-  if (!id) return fail('Enter a member id.')
-  // Validate the shape (SEC-8) — match the uuid checks economy/spotlight use.
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-    return fail('Enter a valid member id.')
-  }
-  try {
-    const db = createAdminClient()
-    const patch: Record<string, unknown> = { is_founding_member: value }
-    if (!value) patch.locked_price_id = null
-    const { error } = await (db as unknown as {
-      from: (t: string) => {
-        update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: { message?: string } | null }> }
-      }
-    })
-      .from('profiles')
-      .update(patch)
-      .eq('id', id)
-    if (error) return fail(error.message ?? 'Could not update the member.')
-    revalidatePath(PATH)
-    return ok()
-  } catch (e) {
-    return fail(e instanceof Error ? e.message : 'Could not update the member.')
   }
 }
 

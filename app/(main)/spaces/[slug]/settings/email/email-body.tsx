@@ -4,6 +4,8 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { isSpaceEmailEnabled } from '@/lib/spaces/email-toggle'
+import { countMonthSends } from '@/lib/spaces/email'
+import { MeterUpsell } from '@/components/pricing/meter-upsell'
 import { listAudienceTags } from '@/lib/spaces/audiences'
 import { listSpaceSegments } from '@/lib/spaces/segments'
 import { listSpaceEmailTemplates } from '@/lib/spaces/email-templates'
@@ -90,6 +92,15 @@ export async function EmailBody({ slug }: { slug: string }) {
           <EmailEnableCard spaceId={space.id} slug={space.slug} readOnly={staffViewing} />
         )}
 
+        {/* Phase 4 (docs/VALUE-LADDER.md): the space_email meter had a surface only on the LOCKED
+            state, so the Space actually sending saw no allowance here. This is the in-context prompt
+            at 80% of the monthly send allowance. Streamed so the head-only count never blocks the
+            composer (PAGE-FRAMEWORK §5). It refuses no send: the only live throttle is the per-day
+            deliverability cap in lib/spaces/email.ts, which is not a plan limit. */}
+        <Suspense fallback={null}>
+          <SendAllowancePrompt spaceId={space.id} slug={space.slug} plan={space.plan} />
+        </Suspense>
+
         <section>
           <SectionHeader title="New campaign" />
           <ComposerShell
@@ -131,6 +142,29 @@ export async function EmailBody({ slug }: { slug: string }) {
         </section>
       </div>
     </>
+  )
+}
+
+// The monthly send-allowance prompt (Phase 4). Self-fetching so the composer paints first. The count
+// is a head-only read of the SAME window the meter is denominated in (this calendar month), fail-safe
+// 0 so a read error never invents usage. Display only.
+async function SendAllowancePrompt({
+  spaceId,
+  slug,
+  plan,
+}: {
+  spaceId: string
+  slug: string
+  plan?: string | null
+}) {
+  const sends = await countMonthSends(spaceId)
+  return (
+    <MeterUpsell
+      featureKey="space_email"
+      currentTier={plan}
+      usage={sends}
+      upgradeHref={`/spaces/${slug}/settings/billing`}
+    />
   )
 }
 

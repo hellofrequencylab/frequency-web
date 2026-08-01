@@ -1,14 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import {
-  PERSONAS,
-  getPersona,
-  personaSlugs,
-  personaCopy,
-  personaLoadout,
-  personaMode,
-  addonLabel,
-} from './personas'
-import {
   PERSONA_LOADOUTS,
   pricingTiers,
   tierHeadline,
@@ -16,97 +7,24 @@ import {
   loadoutStrip,
   pricingLadderSummary,
   proAddonPrice,
-  stripTotalLabel,
-} from '@/lib/pricing/pricing-page'
-import { resolveMode } from '@/lib/spaces/modes'
+} from './pricing-page'
+import { spaceOfferings } from './pricing-grid'
+import { PRICING_DEFAULTS } from './defaults'
+import { pricingCatalog } from './pricing-page'
 
-// Phase F (ADR-467): the PURE persona registry + the pricing-page model (no IO / no React / no Stripe).
-// What is locked here:
-//   1. The persona registry: unique slugs, every persona pins to a registered Mode, every persona has a
-//      shared loadout entry, and the generated copy contains NO em dashes (the locked voice rule).
-//   2. The loadout-strip math: each persona's monthly total matches the plan figures, computed from the
-//      catalog (never hardcoded), so a catalog change reflows the page.
+// The PURE pricing-page model: the tier table, the loadout-strip math, and the answer-engine ladder
+// summary. No IO, no React, no Stripe.
+//
+// PROVENANCE (Phase 7 deletion sweep): these blocks used to live in lib/marketing/personas.test.ts,
+// alongside tests for a SECOND persona registry (lib/marketing/personas.ts) that nothing imported.
+// That orphan registry was deleted; this coverage was NOT, because it is the only test anywhere that
+// locks pricingTiers / tierHeadline / tierListAnchor / loadoutStrip / proAddonPrice. It lives here, next
+// to the module it covers, so a change to lib/pricing/pricing-page.ts is caught by a file named after it.
 
-// A single source for the em-dash guard so every copy assertion uses the same rule.
+// A single source for the em-dash guard (the locked voice rule, docs/CONTENT-VOICE §10).
 function hasEmDash(s: string): boolean {
   return s.includes('—') || s.includes('–')
 }
-
-describe('persona registry', () => {
-  it('has unique slugs', () => {
-    const slugs = personaSlugs()
-    expect(new Set(slugs).size).toBe(slugs.length)
-    expect(slugs.length).toBe(PERSONAS.length)
-  })
-
-  it('covers the five persona doors (ADR-590)', () => {
-    expect(personaSlugs().sort()).toEqual(
-      ['coaches-and-healers', 'community-builders', 'event-hosts', 'nonprofits', 'studios'].sort(),
-    )
-  })
-
-  it('getPersona resolves a known slug and rejects an unknown one', () => {
-    expect(getPersona('coaches-and-healers')?.audience).toBe('Coaches and healers')
-    expect(getPersona('not-a-persona')).toBeUndefined()
-  })
-
-  it('pins every persona to a registered Mode (no dead persona)', () => {
-    for (const p of PERSONAS) {
-      const mode = resolveMode(p.type, p.variant)
-      expect(mode, `persona ${p.slug} -> ${p.type}:${p.variant}`).not.toBeNull()
-      expect(personaMode(p)).not.toBeNull()
-    }
-  })
-
-  it('has a shared loadout entry for every persona', () => {
-    for (const p of PERSONAS) {
-      const def = PERSONA_LOADOUTS.find((l) => l.slug === p.slug)
-      expect(def, `loadout for ${p.slug}`).toBeDefined()
-    }
-  })
-})
-
-describe('persona copy is voice-compliant', () => {
-  it('contains no em or en dashes anywhere in generated copy', () => {
-    for (const p of PERSONAS) {
-      const copy = personaCopy(p)
-      const blobs = [
-        copy.h1,
-        copy.metaTitle,
-        copy.description,
-        copy.ogTitle,
-        copy.lede,
-        copy.loadoutLine,
-        ...copy.faq.flatMap((f) => [f.q, f.a]),
-        p.focus,
-        ...p.highlights,
-        p.audience,
-      ]
-      for (const b of blobs) {
-        expect(hasEmDash(b), `em dash in ${p.slug}: "${b}"`).toBe(false)
-      }
-    }
-  })
-
-  it('puts the founding price into the loadout line and description', () => {
-    for (const p of PERSONAS) {
-      const copy = personaCopy(p)
-      const total = stripTotalLabel(PERSONA_LOADOUTS.find((l) => l.slug === p.slug)!)
-      expect(copy.loadoutLine).toContain(total)
-      expect(copy.description).toContain(total)
-    }
-  })
-
-  it('builds an H1 of the form "Frequency for <audience>"', () => {
-    for (const p of PERSONAS) {
-      expect(personaCopy(p).h1).toBe(`Frequency for ${p.audience}`)
-    }
-  })
-
-  it('addonLabel maps the add-on to its display label (Vera AI, 2026-07 overhaul)', () => {
-    expect(addonLabel('ai')).toBe('Vera AI')
-  })
-})
 
 describe('loadout-strip math (computed from the catalog, never hardcoded)', () => {
   // ADR-811: the paid base is Business at its $19 founding anchor; Vera AI ($20) is the only
@@ -132,11 +50,10 @@ describe('loadout-strip math (computed from the catalog, never hardcoded)', () =
     expect(np.totalLabel).toBe('$39/mo')
   })
 
-  it('persona loadout total equals the strip total for the same slug', () => {
-    for (const p of PERSONAS) {
-      const row = personaLoadout(p)
-      const stripRow = loadoutStrip().find((r) => r.id === p.slug)!
-      expect(row.totalLabel).toBe(stripRow.totalLabel)
+  it('every shared loadout row has a strip row of the same id (no dead loadout)', () => {
+    const strip = loadoutStrip()
+    for (const l of PERSONA_LOADOUTS) {
+      expect(strip.find((r) => r.id === l.slug), l.slug).toBeDefined()
     }
   })
 })
@@ -146,8 +63,10 @@ describe('pricing table model', () => {
     const tiers = pricingTiers(true)
     expect(tiers.map((t) => t.id)).toEqual(['free', 'business', 'collective', 'nonprofit', 'independent'])
     expect(tiers.find((t) => t.id === 'business')!.featured).toBe(true)
-    // GO-LIVE: every paid tier is sellable from the code catalog; nothing is a preview row.
-    for (const t of tiers) expect(t.preview).toBeFalsy()
+    // Phase 5 (ADR-916): the columns are DERIVED from pricing-grid spaceOfferings, so the table cannot
+    // hold a tier the grid does not, or omit one it does. Independent is displayed on every public
+    // surface; whether it is offered as an in-app UPGRADE is the plan ladder's own, separate call.
+    for (const t of tiers) expect(t).not.toHaveProperty('preview')
   })
 
   it('the Free Space column reads Free at both intervals, with no anchor and no add-on cells', () => {
@@ -204,12 +123,33 @@ describe('pricing table model', () => {
     expect(lines.some((l) => l.includes('Free Space:'))).toBe(true)
     expect(lines.some((l) => l.includes('Business:'))).toBe(true)
     expect(lines.some((l) => l.includes('Non Profit:'))).toBe(true)
+    expect(lines.some((l) => l.includes('Independent:'))).toBe(true)
     // The member ladder is exactly Member (free) and Crew (ADR-878), and the citable summary says so.
-    expect(lines.some((l) => l.includes('Member: free'))).toBe(true)
+    expect(lines.some((l) => l.includes('- Member: Free.'))).toBe(true)
     expect(lines.some((l) => l.includes('Crew:'))).toBe(true)
     expect(lines.some((l) => l.includes('Supporter'))).toBe(false)
     expect(lines.some((l) => l.includes('Vera AI'))).toBe(true)
     expect(lines.some((l) => l.includes('Operator seats:'))).toBe(true)
     for (const l of lines) expect(hasEmDash(l)).toBe(false)
+  })
+})
+
+// ── The meta description has to FIT (ADR-919) ───────────────────────────────────────────────────
+//
+// /pricing's description was 372 characters, so every figure the derivation work produced sat past the
+// ~155-160 character SERP cut and truncation began mid-sentence. The one thing that page exists to
+// publish was the part nobody would ever read. Length is a correctness property here, not polish.
+describe('the /pricing meta description fits in a search result', () => {
+  it('stays under the SERP cut while still carrying the ladder', () => {
+    const ladder = spaceOfferings({ values: PRICING_DEFAULTS, catalog: pricingCatalog(), betaActive: true })
+      .filter((o) => o.monthlyCents > 0)
+      .filter((o) => o.tier !== 'independent')
+      .map((o) => `${o.label} ${o.monthly}`)
+      .join(', ')
+    const description = `We take nothing on your own people, ever. Selling is free on every plan. ${ladder}.`
+    expect(description.length).toBeLessThanOrEqual(160)
+    // And it must still be worth the space: the promise AND a real price.
+    expect(description).toContain('nothing on your own people')
+    expect(description).toMatch(/\$\d/)
   })
 })

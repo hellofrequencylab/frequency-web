@@ -7,12 +7,41 @@ import {
 } from '@/lib/site'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { funnelSlugs, getFunnelConfig } from '@/lib/marketing/funnel-config'
-import { pricingLadderSummary, priceStrings, CREW_NOTE } from '@/lib/pricing/pricing-page'
+import { pricingLadderSummary, offeringLadderLabel } from '@/lib/pricing/pricing-page'
+import { getPricingValues } from '@/lib/pricing/settings'
+import { catalogConfigByKey, loadCatalogConfig } from '@/lib/pricing/catalog-config'
+import { isBetaPricingActive } from '@/lib/pricing/beta'
+import { formatBps } from '@/lib/pricing/display'
+import { allOfferings, type Offering, type PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { countUpcomingPublicSeries } from '@/lib/events/series-seo'
 
-// Every dollar figure below interpolates from the ONE code catalog, so this file can never quote a
-// price /pricing does not carry.
-const P = priceStrings()
+// NOT ONE FIGURE IN THIS FILE IS TYPED (Phase 5, ADR-916). Every price and every percentage below is
+// READ from lib/pricing/pricing-grid.ts, the same derived model /pricing renders, resolved against the
+// operator's editable config. This route is the single highest-leverage paragraph in the repo for what an
+// answer engine will quote about our fees, and it spent a release quoting a ladder we had retired, then a
+// release quoting a rate an operator had already changed at /admin/pricing. Both failures had the same
+// cause: it kept its own copy of the numbers.
+
+/** Resolve the pricing model exactly as /pricing does: the operator's config over the code defaults.
+ *  This route already reads the DB for its live stats and is daily-ISR, so it can afford the same reads. */
+async function pricingInput(): Promise<PricingGridInput> {
+  const [values, catalog] = await Promise.all([getPricingValues(), loadCatalogConfig()])
+  return { values, catalog: catalogConfigByKey(catalog), betaActive: isBetaPricingActive() }
+}
+
+/** The whole money model in one citable sentence pair (ADR-913 / ADR-914), with the rate for EVERY rung
+ *  read off the offerings, so a rung cannot be omitted and a number cannot go stale. */
+function takeRateStory(offerings: Offering[]): string {
+  const rates = offerings.map((o) => `${offeringLadderLabel(o)} ${formatBps(o.networkRateBps)}`).join(', ')
+  return `Selling is NOT gated on any tier. Every rung, including a free Member and a free Space, can sell tickets and take payments and donations from day one; what a paid rung buys is a lower rate plus the tools that build the list which takes that rate to zero. The take-rate applies ONLY to a sale the network introduced: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free. Tips are always 0%. Three capabilities do need a paid plan and nothing else does: selling memberships (Business), campaigns and funnels (Business), and revenue splits (Collective).`
+}
+
+/** The plain "the ladder is X, then Y" sentence, priced from the same offerings. */
+function ladderSentence(offerings: Offering[]): string {
+  return offerings
+    .map((o) => `${offeringLadderLabel(o)} ${o.monthly}${o.listAnchor ? ` at the Opening Beta rate under the ${o.listAnchor} list` : ''}`)
+    .join(', ')
+}
 
 // /llms.txt — the curated, short brand summary for language models (AIO,
 // docs/CONTENT-VOICE §8). This is the hand-written companion to /llms-full.txt
@@ -28,13 +57,13 @@ export const revalidate = 86400
 const abs = (path: string) => `${SITE_URL}${path}`
 
 // The key public pages, each with a one-line description in the locked voice.
-const PAGES: { path: string; label: string; desc: string }[] = [
+const pages = (offerings: Offering[]): { path: string; label: string; desc: string }[] => [
   { path: '/', label: 'Home', desc: `${SITE_NAME}, the Community Collective. The short version of who it is for and how it works.` },
   { path: '/start', label: 'Start here', desc: 'Choose how you want to get involved, then join the beta.' },
   { path: '/the-community', label: 'The Community', desc: 'How you find your people, through Pillars, Channels, and Circles. For builders: host one Circle and we hand you the format and the first-night script.' },
   { path: '/the-quest', label: 'The Quest', desc: 'The light, in-person game: Zaps, Gems, season ranks, and Journeys.' },
   { path: '/the-lab', label: 'The Lab', desc: 'The physical third space, and why a community needs a room.' },
-  { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces: connection is free, paid plans raise the limits. You keep 100% of your own bookings; Frequency earns only on network-sourced business, at a rate that drops by tier (Free Space 10%, Business 5%, Collective 3%, Non Profit 0%). The ladder: a Free Space to start, Business ${P.businessList}/mo (${P.businessBeta} Opening Beta), Collective ${P.collectiveList}/mo (${P.collectiveBeta} Opening Beta), Non Profit ${P.nonprofit}/mo flat (verified 501c3). The personal ladder is Member (free) and Crew (${CREW_NOTE.foundingLabel}/mo).` },
+  { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces and members: connection is free, paid plans raise the limits. You keep 100% of your own bookings. ${takeRateStory(offerings)} The whole ladder: ${ladderSentence(offerings)}.` },
   { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer of the movement: what ${SITE_NAME} is, how it works (Circles, Events, The Lab), and why it exists.` },
   { path: '/about', label: 'About', desc: 'The mission and the people building it.' },
   { path: '/discover', label: 'Discover', desc: 'Live Circles and Events near you, sorted by Channel.' },
@@ -134,7 +163,8 @@ async function statsSection(): Promise<string[]> {
 }
 
 export async function GET() {
-  const stats = await statsSection()
+  const [stats, input] = await Promise.all([statsSection(), pricingInput()])
+  const offerings = allOfferings(input)
   const out: string[] = [
     `# ${SITE_NAME}`,
     '',
@@ -148,7 +178,7 @@ export async function GET() {
     '',
     ...stats,
     '## Key pages',
-    ...PAGES.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
+    ...pages(offerings).map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
     '',
     '## Problem-aware guides',
     ...GUIDES.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
@@ -157,9 +187,9 @@ export async function GET() {
     ...COMPARE.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
     '',
     '## Pricing for Spaces (a Community Collective, not a tax on your work)',
-    `The core promise: connection is free, and a business never pays for access to people; paid plans raise the limits. You keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective), and that rate drops as your plan rises. The tier ladder: a Free Space to start, then Business ${P.businessList}/mo (${P.businessBeta} Opening Beta), Collective ${P.collectiveList}/mo (${P.collectiveBeta} Opening Beta), and Non Profit ${P.nonprofit}/mo flat (verified 501c3). The personal ladder is Member (free) and Crew (${CREW_NOTE.foundingLabel}/mo). Monthly or yearly, two months free.`,
-    ...pricingLadderSummary(),
-    'Network-sourced take-rate by plan: Free Space 10%, Business 5%, Collective 3%, Non Profit 0%. Nothing is ever taken on a booking you bring in yourself.',
+    `The core promise: your own people are always free, on every tier, forever. Connection is free, selling is free, and a business never pays for access to people. You keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective), and that rate drops as your plan rises. The whole ladder: ${ladderSentence(offerings)}. Monthly or yearly, two months free.`,
+    ...pricingLadderSummary(input),
+    takeRateStory(offerings),
     '',
     '## Frequency by who you are (operator funnel doors)',
     ...funnelSlugs().map((slug) => {

@@ -28,9 +28,6 @@ vi.mock('@/lib/billing/space-subscriptions', () => ({
   routeSpaceSubscription: async () => false, // member path runs
   subscriptionKind: () => undefined,
 }))
-vi.mock('@/lib/billing/founders', () => ({
-  grantFounderFromSession: async () => { H.calls.push('founder') },
-}))
 vi.mock('@/lib/billing/connect', () => ({
   persistAccount: async () => { H.calls.push('account') },
 }))
@@ -184,11 +181,15 @@ describe('stripe webhook — consolidated payout-channel dispatch', () => {
     expect(H.calls).toEqual(['tip', 'ticket', 'supporter', 'order']) // every recorder fired
   })
 
-  it('grants a founders checkout without a subscription tier write', async () => {
+  it('IGNORES a legacy founders checkout: no grant, no tier write', async () => {
+    // The Founders Round one-time purchase is gone (owner directive, 2026-07-30). Nothing opens such a
+    // session any more, and the branch that granted a LIFETIME founding membership off a
+    // `kind: 'founders'` metadata string is deleted rather than left dormant. A stray legacy session
+    // must therefore change nothing about the member: no membership tier, no founding grant.
     H.event = plainEvent('checkout.session.completed', { metadata: { kind: 'founders', profile_id: 'p1' } })
     await post()
     expect(H.rpcCalls).toHaveLength(0) // NOT a membership-tier transition
-    expect(H.calls[0]).toBe('founder')
+    expect(H.calls).not.toContain('founder')
     expect(H.calls).toContain('order') // recorders still run (they no-op on a founders session)
   })
 

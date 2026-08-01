@@ -104,10 +104,13 @@ describe('seat / pwyw / add-on-enable config', () => {
     expect(c.minCents).toBe(1000)
     expect(c.suggestedCents).toBe(1000) // suggested raised to the floor
   })
-  it('ships the $4.99 floor and the five preset anchors, ascending', () => {
+  it('ships the $4.99 floor and $24.99 suggested, with presets spanning the range', () => {
+    // The owner's decision: Crew is pay-what-you-want, $4.99 floor, $24.99 suggested. This default
+    // carried 1200 while production carried 2499, so any surface reading the code default anchored
+    // people at $12 instead of the real suggestion.
     expect(PWYW_CONFIG_DEFAULT.minCents).toBe(499)
-    expect(PWYW_CONFIG_DEFAULT.suggestedCents).toBe(1200)
-    expect(PWYW_CONFIG_DEFAULT.presetCents).toEqual([499, 900, 1200, 1800, 2499])
+    expect(PWYW_CONFIG_DEFAULT.suggestedCents).toBe(2499)
+    expect(PWYW_CONFIG_DEFAULT.presetCents).toEqual([499, 900, 1499, 2499, 4900])
     // The pre-selected suggestion must itself be a preset, or the picker opens on nothing.
     expect(PWYW_CONFIG_DEFAULT.presetCents).toContain(PWYW_CONFIG_DEFAULT.suggestedCents)
   })
@@ -134,9 +137,11 @@ describe('seat / pwyw / add-on-enable config', () => {
   })
   it('earnsSupporterMark trips at the suggested amount, and is recognition only', () => {
     const c = PWYW_CONFIG_DEFAULT
-    expect(earnsSupporterMark(1199, c)).toBe(false)
-    expect(earnsSupporterMark(1200, c)).toBe(true)
-    expect(earnsSupporterMark(2499, c)).toBe(true)
+    // Derived from the config, not typed: the threshold IS the suggested amount, so moving the
+    // suggestion moves the badge with it and this test cannot drift from the rule it guards.
+    expect(earnsSupporterMark(c.suggestedCents - 1, c)).toBe(false)
+    expect(earnsSupporterMark(c.suggestedCents, c)).toBe(true)
+    expect(earnsSupporterMark(c.suggestedCents * 2, c)).toBe(true)
   })
   it('add-ons default to all-enabled; only an explicit false disables one (only AI now, ADR-472)', () => {
     expect(asAddonEnabled(undefined)).toEqual({ ai: true })

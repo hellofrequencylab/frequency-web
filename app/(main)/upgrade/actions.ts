@@ -5,6 +5,8 @@ import type Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createMembershipCheckout } from '@/lib/billing/checkout'
+import { isValidPwywAmount } from '@/lib/pricing/catalog-config'
+import { formatCents } from '@/lib/pricing/display'
 import { stripe, appUrl } from '@/lib/billing/stripe'
 import { billingLive } from '@/lib/pricing/settings'
 import { loadCatalogConfig } from '@/lib/pricing/catalog-config'
@@ -54,7 +56,7 @@ export async function toggleMembership(): Promise<ActionResult<{ tier: string }>
 // so there is no parameter a caller could pass to open a Supporter purchase. Returns the hosted-checkout
 // URL; the webhook (and the success-redirect fallback) flip membership_tier on completion. Only
 // reachable when billing is configured.
-export async function startMembershipCheckout(): Promise<ActionResult<{ url: string }>> {
+export async function startMembershipCheckout(amountCents: number): Promise<ActionResult<{ url: string }>> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return fail('Not signed in')
@@ -66,7 +68,29 @@ export async function startMembershipCheckout(): Promise<ActionResult<{ url: str
     .maybeSingle()
   if (!profile) return fail('Profile not found')
 
-  const url = await createMembershipCheckout({ profileId: profile.id, email: user.email, tier: 'crew' })
+  // 🔴 CREW IS PAY-WHAT-YOU-WANT, and this is the seam that was missing. createMembershipCheckout has
+  // accepted `amountCents` since the membership rework — it mints an inline recurring price at exactly
+  // the chosen amount. This action never passed one, so every member fell through to the fixed $9
+  // `crew_monthly` price and the whole PWYW system sat unused behind a hardcoded number.
+  //
+  // The amount is REQUIRED, not optional. An optional amount means a fallback price, and a fallback
+  // price for an offer that has no price is how the $9 got charged in the first place.
+  //
+  // The floor is enforced HERE, server-side, against the OPERATOR's config, because a client that posts
+  // its own amount is the obvious way to buy Crew for a cent. `isValidPwywAmount` is the one policy
+  // seam; the checkout deliberately is not (it only refuses non-positive amounts).
+  const chosen = Number.isFinite(amountCents) ? Math.round(amountCents) : NaN
+  const { pwyw } = await loadCatalogConfig()
+  if (!isValidPwywAmount(chosen, pwyw)) {
+    return fail(`Choose ${formatCents(pwyw.minCents)} a month or more.`)
+  }
+
+  const url = await createMembershipCheckout({
+    profileId: profile.id,
+    email: user.email,
+    tier: 'crew',
+    amountCents: chosen,
+  })
   if (!url) return fail('Billing isn’t available right now.')
   return ok({ url })
 }

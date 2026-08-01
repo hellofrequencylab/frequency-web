@@ -105,7 +105,7 @@ const FAQ = [
   },
   {
     q: 'What does it cost to start a Circle?',
-    a: 'Nothing. Starting a Circle and gathering a few people is free, and it stays free. Frequency is a Community Collective built to support every community effort, so you never pay to host and we never take a cut of your own bookings. If your Circle grows into something you sell tickets or services through, there is one honest price and you see exactly what the network earned you.',
+    a: 'Nothing. Starting a Circle and gathering a few people is free, and it stays free. Frequency is a Community Collective built to support every community effort, so you never pay to host and we never take a cut of your own bookings. If your Circle grows into something you sell tickets or services through, you do not need a plan for that either: selling is open on a free account from day one, at one honest price, and you see exactly what the network earned you.',
   },
 ]
 
@@ -294,7 +294,8 @@ export default function HowToStartACirclePage() {
           Frequency is a Community Collective, built to support every community
           effort and help everyone in it succeed. So you never pay to host, and we
           never take a cut of your own bookings. If your Circle later grows into
-          something you sell tickets or services through, there is one honest{' '}
+          something you sell tickets or services through, you do not need a plan for
+          that either: selling is open on a free account from day one, at one honest{' '}
           <a className="text-primary-strong font-semibold hover:underline" href="/pricing">
             price
           </a>

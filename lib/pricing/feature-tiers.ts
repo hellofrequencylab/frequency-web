@@ -13,10 +13,19 @@
 //
 // PLACEHOLDER PRICING — BILLING IS ON HOLD (ADR-518). `PLACEHOLDER_PRICING` is the ONE go-live switch:
 // while it is true every price below is a PREVIEW only and NOTHING charges (the selector's CTA is a link,
-// never a checkout). The amounts mirror the code catalog founding rates (lib/billing/pricing-keys.ts
-// CATALOG); when billing goes live, swap PLACEHOLDER_SPACE_PRICE_CENTS / PLACEHOLDER_MEMBER_PRICE_CENTS
-// (or point the builder at the operator catalog) and flip PLACEHOLDER_PRICING to false. That is the SINGLE
-// place real numbers drop in.
+// never a checkout). Flip it to false when real billing goes live.
+//
+// THE PRICES THEMSELVES ARE NO LONGER TYPED HERE (Phase 5, ADR-916). SPACE_PLAN_PRICE_CENTS is READ off
+// the code catalog the checkout bills from (lib/billing/pricing-keys.ts CATALOG), carrying the list
+// anchor and the Opening Beta rate for EVERY plan, so beta-vs-list is one shape rather than a per-tier
+// patch. The one number still written down here is the Crew price, which has no catalog item; the
+// operator settings layer (lib/pricing/settings.ts PRICING_DEFAULTS) reads it from here rather than
+// restating it.
+//
+// ⚠️ FEATURE_TIER_LADDERS is built ONCE at module load, so the beta-window answer baked into its rung
+// prices is the one that was true when the process started. That is exact for every practical case (a
+// build, a request, a cold start) and self-corrects on the next one; a caller that must be exact across
+// the cutover instant should call tierPriceLabel / tierPriceCents with an explicit `betaActive`.
 //
 // PURE + framework-independent (no Supabase/Next/React), like lib/pricing/plans.ts, so it is trivially
 // unit-testable and safe to import into a client component. Reuses the existing DISPLAY convention
@@ -24,44 +33,100 @@
 // docs/CONTENT-VOICE.md: plain, honest, no em dashes, no manufactured urgency, never a dark pattern.
 
 import { formatCents } from './display'
+import { PWYW_CONFIG_DEFAULT } from './catalog-config'
+import { effectiveCatalogAmounts, isBetaPricingActive } from './beta'
 import { SPACE_PLAN_LABEL, SPACE_PLANS, type SpacePlan } from './plans'
 import { ENTITLEMENT_LABEL, ENTITLEMENT_TIERS, deriveTier, type EntitlementTier } from '@/lib/core/entitlement'
+import { catalogItem, type CatalogAmounts, type CatalogItemKey } from '@/lib/billing/pricing-keys'
 import type { GateAxis } from './gates'
 
 // ── THE GO-LIVE SWITCH ────────────────────────────────────────────────────────────────────────────
 
 /** THE placeholder-pricing switch (ADR-518, billing ON HOLD). While true, every price in this module is
- *  a PREVIEW and nothing charges: the selector shows the ladder + placeholder price points and its CTA is
- *  a plain link to the billing surface, never a checkout. Flip to false when real billing goes live (and
- *  set the real amounts in the price maps below). This is the single, obvious go-live flag. */
-export const PLACEHOLDER_PRICING = true
+ *  a PREVIEW and nothing charges. FLIPPED FALSE: billing IS live. `billing_live` is on, the Stripe
+ *  Price objects are synced, every amount here derives from the catalog the checkout bills from, and
+ *  Crew sells pay-what-you-want through createMembershipCheckout. Leaving it true printed "nothing is
+ *  charged" on the two pages where people pay.
+ *
+ *  ⚠️ NOT the feature-gate switch. `featureGatesLive()` (the beta grace window) is a separate decision
+ *  on a separate date, and that window exists so members keep FULL access while payments are open. */
+export const PLACEHOLDER_PRICING = false
 
-/** @placeholder Monthly price point per Space plan, in cents. Mirrors the code catalog founding rates
- *  (lib/billing/pricing-keys.ts CATALOG): Business $29, Non Profit $39 flat (ADR-811); free at $0. THE ONE
- *  place to swap real Space prices when billing goes live. Preview only; never charged. */
-export const PLACEHOLDER_SPACE_PRICE_CENTS: Record<SpacePlan, number> = {
-  free: 0,
-  business: 2900, // $29 flat, all-in (ADR-811)
-  collective: 7900, // $79 list (beta $49 founding is COLLECTIVE_BETA_CENTS below)
-  nonprofit: 3900, // $39 flat, verified, full Collective toolkit
-  independent: 24900, // ~$249 white-label, network-disconnected (standard SaaS)
+/** The catalog item each PAID Space plan is billed from (space-plan-checkout catalogKeysForLoadout).
+ *  A free Space has no item because $0 is not a Stripe price. PURE. */
+const PLAN_CATALOG_ITEM: Record<Exclude<SpacePlan, 'free'>, CatalogItemKey> = {
+  business: 'business_base',
+  collective: 'collective_base',
+  nonprofit: 'nonprofit_seat',
+  independent: 'independent_base',
 }
 
-/** The Collective founding-BETA monthly price (cents): $49 under the $79 list (ADR-811). The ONE source
- *  both the marketing pricing page (pricing-page.ts) and the in-app plan ladder (plan-ladder.tsx) read, so
- *  the beta anchor can never drift between the two surfaces. */
-export const COLLECTIVE_BETA_CENTS = 4900
-
-/** @placeholder Monthly price point per SELLABLE personal membership tier, in cents. Mirrors the code
- *  defaults (lib/pricing/settings.ts PRICING_DEFAULTS): Member free, Crew $9. THE ONE place to swap real
- *  personal prices when billing goes live. Preview only; never charged.
+/** THE Space price map, DERIVED (Phase 5, ADR-916). One row per plan, each carrying BOTH numbers the
+ *  ladder can ever need: `listCents` (the crossed-out anchor) and `foundingCents` (the Opening Beta rate
+ *  actually charged today). Read straight off the code catalog the checkout bills from
+ *  (lib/billing/pricing-keys.ts CATALOG), so a price is written down in exactly one place.
  *
- *  Supporter has no entry (ADR-878): it is off the sellable ladder, so there is no member price to
- *  preview for it. A historical `supporter` tier is priced through tierPriceCents, which collapses it to
- *  Crew the same way deriveTier does, so a Supporter row previews Crew's price and never $12. */
+ *  BETA-VS-LIST IS REPRESENTED ONCE, HERE. It used to be a per-tier patch: this map held only the list
+ *  price, and Collective's beta rate rode alongside it in a one-off `COLLECTIVE_BETA_CENTS` constant.
+ *  Business had a beta rate too and never got a constant, so every in-app ladder quoted $29 while
+ *  /pricing quoted $19. A tier cannot be forgotten now: the shape carries both numbers for every plan,
+ *  and a plan with no beta rate simply has the two equal. */
+export const SPACE_PLAN_PRICE_CENTS: Record<SpacePlan, CatalogAmounts> = {
+  free: { listCents: 0, foundingCents: 0 },
+  business: catalogItem(PLAN_CATALOG_ITEM.business).month,
+  collective: catalogItem(PLAN_CATALOG_ITEM.collective).month,
+  nonprofit: catalogItem(PLAN_CATALOG_ITEM.nonprofit).month,
+  independent: catalogItem(PLAN_CATALOG_ITEM.independent).month,
+}
+
+/** @deprecated The LIST monthly price per Space plan, in cents. Derived from SPACE_PLAN_PRICE_CENTS and
+ *  kept only for the in-app plan ladder, which still reads a bare number. New callers want
+ *  `spacePlanPriceCents(plan, betaActive)`, which answers what a Space is charged TODAY. */
+export const PLACEHOLDER_SPACE_PRICE_CENTS: Record<SpacePlan, number> = {
+  free: SPACE_PLAN_PRICE_CENTS.free.listCents,
+  business: SPACE_PLAN_PRICE_CENTS.business.listCents,
+  collective: SPACE_PLAN_PRICE_CENTS.collective.listCents,
+  nonprofit: SPACE_PLAN_PRICE_CENTS.nonprofit.listCents,
+  independent: SPACE_PLAN_PRICE_CENTS.independent.listCents,
+}
+
+/** @deprecated The Collective Opening Beta monthly price (cents), now just one cell of
+ *  SPACE_PLAN_PRICE_CENTS. Kept as a named alias for the in-app plan ladder; it is no longer a
+ *  Collective-only patch, and no tier needs one. */
+export const COLLECTIVE_BETA_CENTS = SPACE_PLAN_PRICE_CENTS.collective.foundingCents
+
+/** The monthly price per SELLABLE personal membership tier, in cents: Member free, Crew $9 (ADR-878).
+ *  THE one place the Crew price is written down. It is not in the Stripe plan catalog (the member ladder
+ *  is not sold through the plan loadout), so this pure, client-safe map is the source, and
+ *  PRICING_DEFAULTS.tier.crew reads it rather than restating it.
+ *
+ *  Supporter has no entry (ADR-878): it is off the sellable ladder, so there is no member price for it.
+ *  A historical `supporter` tier is priced through tierPriceCents, which collapses it to Crew the same
+ *  way deriveTier does, so a Supporter row prices at Crew and never at $12. */
 export const PLACEHOLDER_MEMBER_PRICE_CENTS: Record<Exclude<EntitlementTier, 'supporter'>, number> = {
   free: 0,
-  crew: 900,
+  // 🔴 CREW IS PAY-WHAT-YOU-WANT. This is the FLOOR ($4.99), not a price: a member picks any amount at
+  // or above it and every amount buys identical access (PWYW_CONFIG_DEFAULT, lib/pricing/catalog-config).
+  // It carried a fixed 900 until now, which is why every surface quoted "$9/mo" for an offer that has
+  // no fixed price. Anything rendering this must read it as "from", never as "the price" — use
+  // `crewPriceLabel()` below rather than formatting it directly.
+  crew: PWYW_CONFIG_DEFAULT.minCents,
+}
+
+/** The Crew price label: "from $4.99" — never a bare amount, because Crew has no single price.
+ *  PURE. THE one place the member-tier price is turned into words, so no surface can quote a fixed
+ *  figure for a pay-what-you-want offer. */
+export function crewPriceLabel(minCents: number = PLACEHOLDER_MEMBER_PRICE_CENTS.crew): string {
+  return `from ${formatCents(minCents)}`
+}
+
+/** What a Space on `plan` is CHARGED per month right now, in cents: the Opening Beta rate while the beta
+ *  window is open, the list price once it closes. The display twin of what the checkout resolves
+ *  (lib/pricing/beta.ts effectiveCatalogAmounts, the same rule space-plan-checkout bills on), so a rung
+ *  can never quote a price the checkout has stopped charging. PURE — pass `betaActive` to pin it. */
+export function spacePlanPriceCents(plan: SpacePlan, betaActive: boolean = isBetaPricingActive()): number {
+  return effectiveCatalogAmounts(SPACE_PLAN_PRICE_CENTS[plan] ?? SPACE_PLAN_PRICE_CENTS.free, betaActive)
+    .foundingCents
 }
 
 // ── The ascending display ladders per axis (a clean upgrade path) ───────────────────────────────────
@@ -95,22 +160,34 @@ export function tierLabelOnAxis(axis: GateAxis, tier: string): string {
   return ENTITLEMENT_LABEL[tier as EntitlementTier] ?? tier
 }
 
-/** The placeholder price cents for a tier on its axis. PURE. (Exported so the sibling meter ladder,
- *  lib/pricing/feature-meters.ts, prices its rungs from the SAME placeholder maps — one price source.) */
-export function tierPriceCents(axis: GateAxis, tier: string): number {
-  if (axis === 'plan') return PLACEHOLDER_SPACE_PRICE_CENTS[tier as SpacePlan] ?? 0
+/** The monthly price cents a tier is CHARGED on its axis. PURE. (Exported so the sibling meter ladder,
+ *  lib/pricing/feature-meters.ts, prices its rungs from the SAME map — one price source.)
+ *
+ *  Space plans resolve through the beta window, so a rung quotes the Opening Beta rate while it is open
+ *  and the list price after the cutover, matching /pricing and the checkout. Before Phase 5 this returned
+ *  the LIST price unconditionally, which is why every FeatureTierRange rung read $29 for Business while
+ *  /pricing read $19. */
+export function tierPriceCents(axis: GateAxis, tier: string, betaActive: boolean = isBetaPricingActive()): number {
+  if (axis === 'plan') {
+    return SPACE_PLAN_PRICE_CENTS[tier as SpacePlan] ? spacePlanPriceCents(tier as SpacePlan, betaActive) : 0
+  }
   // deriveTier collapses a historical 'supporter' to 'crew' (ADR-458/878), so a legacy row prices at
   // Crew rather than at a $12 tier nobody can buy.
   const sellable = deriveTier(tier as EntitlementTier) as Exclude<EntitlementTier, 'supporter'>
   return PLACEHOLDER_MEMBER_PRICE_CENTS[sellable] ?? 0
 }
 
-/** A plain, honest placeholder price label for a tier on its axis, reusing the shared display format
- *  (formatCents). "Free" for the floor; "$X/mo" for a flat tier. Non Profit is a FLAT $29/mo (ADR-590),
- *  never per-seat. PURE. */
-export function tierPriceLabel(axis: GateAxis, tier: string): string {
-  const cents = tierPriceCents(axis, tier)
+/** A plain, honest price label for a tier on its axis, reusing the shared display format (formatCents).
+ *  "Free" for the floor; "$X/mo" for a flat tier. Non Profit is FLAT, never per-seat. PURE.
+ *
+ *  The MEMBER axis is pay-what-you-want, so its number is a FLOOR, not a price: it reads "from $4.99/mo".
+ *  Printing it bare would quote the cheapest possible Crew as though it were the only Crew, which is both
+ *  wrong and the exact misread the picker at /upgrade exists to prevent. The plan axis is a real fixed
+ *  price and reads plainly. */
+export function tierPriceLabel(axis: GateAxis, tier: string, betaActive?: boolean): string {
+  const cents = tierPriceCents(axis, tier, betaActive)
   if (cents === 0) return 'Free'
+  if (axis === 'tier') return `from ${formatCents(cents)}/mo`
   return `${formatCents(cents)}/mo`
 }
 
@@ -144,27 +221,13 @@ function spaceRungs(free: string, unlock: string, unlockTier: SpacePlan = 'busin
 }
 
 const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
-  // ── Space functions (plan axis; the CRM/Email/… tier seam FUNCTION_FEATURE_KEY maps to) ──────────
-  space_crm: {
-    axis: 'plan',
-    minTier: 'business',
-    title: 'CRM',
-    // @placeholder 250 mirrors PLACEHOLDER_METER_LIMITS.space_crm (ADR-837).
-    rungs: spaceRungs(
-      'The pipeline with your first 250 contacts free.',
-      'The full CRM with unlimited contacts: pipeline, private notes, and governed playbooks. Multiple pipelines and team roles come with Collective.',
-    ),
-  },
-  space_email: {
-    axis: 'plan',
-    minTier: 'business',
-    title: 'Email',
-    // @placeholder 300 and 5,000 mirror PLACEHOLDER_METER_LIMITS.space_email (ADR-837).
-    rungs: spaceRungs(
-      'Up to 300 email sends each month.',
-      'Up to 5,000 sends a month, automations, and saved templates. Collective raises it to 25,000.',
-    ),
-  },
+  // ── Space functions (plan axis; the tier seam FUNCTION_FEATURE_KEY maps to) ──────────────────────
+  // 🔴 `space_crm`, `space_email`, `space_team` and `space_multi_pipeline` USED TO CARRY LADDERS HERE
+  // and no longer do (ADR-917). A ladder answers "which tier UNLOCKS this", and those four are not
+  // unlocked, they are METERED: the allowance ladder in feature-meters.ts is their display, and the
+  // coverage test below is what keeps this file and the gate map from drifting apart again. Their old
+  // rung copy also restated the meter numbers in prose ("your first 200 contacts free", "up to 300
+  // email sends"), which is the exact second source Phase 5 spent its whole budget deleting.
   space_automation: {
     axis: 'plan',
     minTier: 'collective',
@@ -173,18 +236,6 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     rungs: spaceRungs(
       'One pipeline, no automations.',
       'Governed playbooks and multi-step sequences that run the safe, reversible moves for you, with 1,000 runs included each month.',
-      'collective',
-    ),
-  },
-  space_team: {
-    axis: 'plan',
-    minTier: 'collective',
-    title: 'Team roles',
-    // @placeholder 3 included seats mirrors PLACEHOLDER_METER_LIMITS.space_team; more seats stay the
-    // ADR-799 per-seat add-on (never a wall).
-    rungs: spaceRungs(
-      'One operator seat.',
-      'Add teammates with roles: editor, moderator, and admin. Three seats included, add more per seat.',
       'collective',
     ),
   },
@@ -220,24 +271,31 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
       'collective',
     ),
   },
+  space_memberships: {
+    axis: 'plan',
+    minTier: 'business',
+    title: 'Sell memberships',
+    rungs: spaceRungs(
+      'Sell tickets, take donations, and run your shop. Free members and followers, no limit.',
+      'Sell recurring memberships with their own tiers, benefits, and member-only spaces.',
+    ),
+  },
+  space_campaigns: {
+    axis: 'plan',
+    minTier: 'business',
+    title: 'Campaigns and funnels',
+    rungs: spaceRungs(
+      'Email your people directly, inside your send allowance.',
+      'Campaigns, funnels, and saved sequences that bring new people in and follow up for you.',
+    ),
+  },
   space_membership_tickets: {
     axis: 'plan',
-    minTier: 'collective',
+    minTier: 'business',
     title: 'Membership-included event tickets',
     rungs: spaceRungs(
       'Sell tickets to everyone.',
       'Reserve event tickets for your own members, or for one membership tier, so your membership includes your events.',
-      'collective',
-    ),
-  },
-  space_multi_pipeline: {
-    axis: 'plan',
-    minTier: 'collective',
-    title: 'Multiple pipelines',
-    rungs: spaceRungs(
-      'One pipeline for your Space.',
-      'Multiple pipelines, one per segment or program.',
-      'collective',
     ),
   },
   space_whitelabel: {
@@ -308,24 +366,10 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
   },
   // ── Personal leadership (tier axis). Crew is the people who run the place, so these read as what Crew
   // DOES, never as what a Member is missing. The free rung always names something real a Member can do.
-  event_paid_tickets: {
-    axis: 'tier',
-    minTier: 'crew',
-    title: 'Charge for your events',
-    rungs: [
-      { tier: 'free', unlocks: 'Run free and RSVP events, as many nights as you like.' },
-      { tier: 'crew', unlocks: 'Sell tickets to your own events and keep the money, minus the network rate.' },
-    ],
-  },
-  personal_payouts: {
-    axis: 'tier',
-    minTier: 'crew',
-    title: 'Get paid',
-    rungs: [
-      { tier: 'free', unlocks: 'Buy and book anywhere on Frequency.' },
-      { tier: 'crew', unlocks: 'Connect a payout account and take money for what you run.' },
-    ],
-  },
+  // The `event_paid_tickets` and `personal_payouts` ladders are gone with their gates (ADR-914). A
+  // ladder here exists to DISPLAY a gate, and there is no longer a gate: selling and getting paid are
+  // free on every tier. What differs is the rate, which the pricing grid renders from the take-rate
+  // vector rather than from a per-feature ladder.
   journey_library_list: {
     axis: 'tier',
     minTier: 'crew',

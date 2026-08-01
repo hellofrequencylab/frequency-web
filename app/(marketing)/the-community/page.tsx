@@ -40,6 +40,12 @@ import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { articleSchema, breadcrumbSchema, faqSchema } from '@/lib/jsonld'
 import { CREW_NOTE } from '@/lib/pricing/pricing-page'
+import { formatCents } from '@/lib/pricing/display'
+import { PLACEHOLDER_MEMBER_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
+
+/** The free-Member price, read from the ONE member-price map rather than typed as "$0". A zero is
+ *  still a price, and a page that types one is a page that can disagree with the ladder. */
+const MEMBER_PRICE = formatCents(PLACEHOLDER_MEMBER_PRICE_CENTS.free)
 import { ProductTour } from './tour'
 
 export const revalidate = 3600
@@ -75,7 +81,7 @@ const COMMUNITY_FAQ = [
   },
   {
     q: 'How much does it cost to join Frequency?',
-    a: `Joining the community is free, forever. Membership is $0, and connection never costs anything. The personal tier, Crew, is ${CREW_NOTE.foundingLabel} a month, and you never pay a cut of your own bookings.`,
+    a: `Joining the community is free, forever. Membership is ${MEMBER_PRICE}, and connection never costs anything. Hosting is free too, and so is charging for it: a free member can run a ticketed event and get paid on day one. The personal tier, Crew, is ${CREW_NOTE.foundingLabel} a month, and you never pay a cut of your own bookings on any tier.`,
   },
   {
     q: 'How does a Circle grow?',

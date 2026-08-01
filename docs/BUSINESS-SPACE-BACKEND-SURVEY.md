@@ -154,8 +154,12 @@ Space. Note: `lib/studio/*` is the **admin/global** engine; the space engine liv
 The panel host `settings/offerings/page.tsx` gates once, then stacks section bodies by `#hash`
 (`#availability`, `#memberships`, `#donations`, `#enroll`, `#tickets`, `#checkin`); each section
 re-checks its own function gate and each write re-checks `canEditProfile` + `spaceFunctionAccess`.
-**Take-rate model** (`lib/pricing/settings.ts`): 5% free space, 3% paying Business/Nonprofit, 8%
-individual member seller — but **only applied in Shop checkout** (and the dark booking-deposit path).
+**Take-rate model** (`lib/pricing/settings.ts`, ADR-913): **network-sourced sales only** — 8% for a Crew
+seller, 5% for a paying Business/Collective Space, 0% for Non Profit. **0% whenever the buyer is already
+the seller's own audience** (follows the Space, active Space member, in Space Contacts, on the seller's
+own contact list, or a past buyer), and **0% on tips, every tier**. A free seller has no rate because a
+free seller cannot sell (events + RSVPs only). Applied **only in Shop checkout** (and the dark
+booking-deposit path).
 
 | Module | Capability | Route / key files | Tables | Money in v1 | Status |
 |---|---|---|---|---|---|

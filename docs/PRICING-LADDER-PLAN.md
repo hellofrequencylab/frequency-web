@@ -1,8 +1,18 @@
 # Pricing & Value Ladder — implementation plan
 
-> ## ⚠️ Superseded by the FLAT model (ADR-590). Read this first.
+> ## ⚠️ TRIPLY superseded. Read this first, then stop quoting numbers from this file.
 >
-> The current live pricing model is **flat, never per seat** ([ADR-590](DECISIONS.md)):
+> **The live strategy is [VALUE-LADDER.md](VALUE-LADDER.md) (ADR-914).** Selling is free on every tier
+> and the RATE is the ladder: free Member **10%** · Crew **8%** · free Space **10%** · Business **5%** ·
+> Collective **3%** · Non Profit **0%**, and **0% whenever the buyer is already the seller's own
+> audience**. Tips carry no fee on any tier.
+>
+> ADR-913's rule that "the free tier does not sell" is **reversed** and must not be quoted from
+> anywhere. Every rate below, including the "flat 3% on every channel" line, is **history**.
+
+> ## ⚠️ Prior model: FLAT pricing (ADR-590). Also historical.
+>
+> The pricing model that superseded this plan was **flat, never per seat** ([ADR-590](DECISIONS.md)):
 >
 > | Plan | Price | Who / what |
 > |---|---|---|

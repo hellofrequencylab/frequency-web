@@ -63,8 +63,16 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   //
   // The community_role ladder is UNTOUCHED (ADR-207: role is earned, never billing). Hosting the first
   // Circle still makes a free Member a Host; these gates sit on the billing axis beside it.
-  event_paid_tickets: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // charge for your own event
-  personal_payouts: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // personal Stripe Connect payouts
+  // 🔴 `event_paid_tickets` and `personal_payouts` USED TO SIT HERE and are deliberately gone
+  // (ADR-914, docs/VALUE-LADDER.md Phase 1). Selling is free on every tier; the ladder is the RATE,
+  // not the permission. Do not re-add them.
+  //
+  // Both were also decorative, which is worth recording so the deletion is not mistaken for a
+  // capability being removed. `personal_payouts` had ZERO call sites: eligibility to receive money is
+  // and always was `canReceivePayouts` (community role or persona), which never reads
+  // `membership_tier`. `event_paid_tickets` had zero call sites too — a parallel predicate
+  // (`ticketSellerVerdict`) enforced the rule instead, and that predicate is what Phase 1 reversed.
+  // So this deletion removes two claims that were never true, rather than opening two doors.
   journey_library_list: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // list a Journey publicly
   entry_points: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // QR codes, short links, flyers
 
@@ -77,12 +85,31 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // independent). Business ($29) = run-your-practice depth; Collective ($79) adds automation + team +
   // multi-pipeline + collaboration; Independent (~$249) adds white-label. Non Profit + Independent rank
   // at/above Collective, so a 'collective' floor is cleared by all three.
-  space_crm: { axis: 'plan', minEntitlement: 'business', enabled: true }, // the per-Space CRM
-  space_email: { axis: 'plan', minEntitlement: 'business', enabled: true }, // key 'email'
+  // 🔴 `space_crm` and `space_email` USED TO SIT HERE and are deliberately gone (ADR-917,
+  // docs/VALUE-LADDER.md Phase 3b). Both were BOTH gated and metered, which is two different promises
+  // to the same customer: the gate said a free Space gets no CRM and no email at all, while the meter
+  // (and the pricing page) promised it 200 contacts and 300 sends a month. Those disagree the moment
+  // the gates go live, and the gate is the one that contradicts what we sold.
+  //
+  // They are now METERS, and unlike before they are ENFORCED at the write: contacts count through
+  // lib/crm/contact-allowance.ts and sends count through the monthly allowance in lib/spaces/email.ts.
+  // Deleting the gates first would have replaced an enforced limit with an unenforced one, which is
+  // why Phase 3 left them and Phase 3b built the counting seams before removing them.
+  //
+  // The WALL that used to be smuggled inside `space_email` is `space_campaigns` below: messaging your
+  // own people is free inside the send allowance, running an acquisition machine is paid. Do not
+  // re-add either key; a plan ladder for these two lives in feature-meters.ts.
   space_automation: { axis: 'plan', minEntitlement: 'collective', enabled: true },
-  space_team: { axis: 'plan', minEntitlement: 'collective', enabled: true }, // Team seats
+  // 🔴 `space_team` and `space_multi_pipeline` USED TO SIT HERE and are deliberately gone (ADR-917).
+  // Both were decorative AND collided with their own meters: zero call sites outside this file, so
+  // neither ever refused anyone, while `space_team` simultaneously promised Collective three included
+  // seats through its meter and (had it ever fired) would have refused a free Space every seat at all.
+  //
+  // Seats are now genuinely metered: lib/spaces/seats.ts reads the `space_team` allowance as the
+  // plan's BASE seat count, which is what `checkSeatForOperatorInvite` has always enforced against.
+  // Pipelines stay display-only for now, honestly: nothing counts pipelines yet, and a gate that
+  // cannot fire is a worse answer than a meter that admits it is a preview.
   space_whitelabel: { axis: 'plan', minEntitlement: 'independent', enabled: true }, // Branding, Independent tier only
-  space_multi_pipeline: { axis: 'plan', minEntitlement: 'collective', enabled: true },
   // COLLABORATOR HOSTING (ADR-799 §B / ADR-810 / ADR-835). Hosting other businesses inside your space,
   // or hosting an EVENT with Collaborator Spaces, is a Collective capability of the HOST side only:
   // the venue / the event's home Space needs the plan, while BEING a collaborator (the guest, incl. an
@@ -105,12 +132,27 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   space_revenue_splits: { axis: 'plan', minEntitlement: 'collective', enabled: true },
   // Group SMS to your own members (rides the A2P 10DLC registration, docs/A2P-REGISTRATION.md).
   space_sms: { axis: 'plan', minEntitlement: 'collective', enabled: true },
-  // Membership-linked ticket access (ADR-823): restricting an event ticket tier to the hosting
-  // Space's own members (space_members_only / space_tier_id on event_ticket_types) is Collective
-  // depth — it sells the Space's membership program, which is the Collective offer. Enforced where
-  // the gate is WRITTEN (lib/events/ticket-tiers validateSpaceAccess); the checkout enforces the
-  // stored gate unconditionally.
-  space_membership_tickets: { axis: 'plan', minEntitlement: 'collective', enabled: true },
+  // ── THE THREE WALLS (ADR-914, docs/VALUE-LADDER.md §3) ──────────────────────────────────────
+  // Everything else on this ladder is a METER with a real free allowance, because a used feature with
+  // a ceiling converts and a locked preview does not. These are walls because a quantity cannot
+  // express the difference.
+  //
+  // SELLING A MEMBERSHIP is the most defensible wall in the product. A membership is a recurring
+  // promise to another person: they pay you every month expecting the thing to still be there. Helping
+  // someone make that promise from an account they might abandon next month is not a feature, and "one
+  // free membership" teaches nothing while creating exactly one stranded subscriber. Business floor.
+  space_memberships: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  // CAMPAIGNS AND FUNNELS. The line is between MESSAGING YOUR PEOPLE, which every Space can do inside
+  // its send allowance, and RUNNING AN ACQUISITION MACHINE, which is what someone is paying for. A
+  // metered "one free campaign" converts badly for the same reason a locked preview does: it is not
+  // enough to learn anything from. Business floor.
+  space_campaigns: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  // Membership-linked ticket access (ADR-823): restricting an event ticket tier to the hosting Space's
+  // own members. LOWERED from collective to business (ADR-914) so it sits with the membership program
+  // it sells — gating the membership at Business and then its own tickets a tier higher sold half a
+  // feature. Enforced where the gate is WRITTEN (lib/events/ticket-tiers validateSpaceAccess); the
+  // checkout enforces the stored gate unconditionally.
+  space_membership_tickets: { axis: 'plan', minEntitlement: 'business', enabled: true },
   // Storefront (ADR-39X/Z) — available from the FREE plan (a free Space can sell; the plan
   // only buys the rake down + features). A per-Space toggle decides ON/OFF.
   space_storefront: { axis: 'plan', minEntitlement: 'free', enabled: true },
@@ -198,10 +240,21 @@ export function mergeGate(
  *  the caller's RLS), REQUEST-CACHED. FAIL-SAFE: returns `{}` on ANY error (incl. a missing table
  *  pre-migration), so featureAllowed always falls back to the code map. The dynamic import keeps
  *  this server-only dependency out of the module top level (the pure helpers stay client-safe). */
+// 🔴 THE MEMO IS MODULE-LEVEL, AND IT HAS TO BE. `cache()` returns a NEW memoized function; calling it
+// inside the exported function built a fresh empty memo on every invocation, so the docstring's
+// "REQUEST-CACHED" was false and every call re-queried. Harmless today only because featureAllowed
+// short-circuits before reaching here while the gates are soft — the moment they go live, a settings
+// render resolving N gates would fire N identical selects.
+//
+// Created lazily on first use so the dynamic `import('react')` stays out of the module top level and the
+// pure helpers above remain client-safe, which is why it was written inline in the first place.
+let memoizedLoad: (() => Promise<FeatureGateOverrides>) | null = null
+
 export async function loadFeatureGateOverrides(): Promise<FeatureGateOverrides> {
   try {
-    const { cache } = await import('react')
-    const load = cache(async () => {
+    if (!memoizedLoad) {
+      const { cache } = await import('react')
+      memoizedLoad = cache(async () => {
       const { createAdminClient } = await import('@/lib/supabase/admin')
       const db = createAdminClient()
       // The table isn't in the generated types yet (ADR-246) — reach it untyped.
@@ -223,8 +276,9 @@ export async function loadFeatureGateOverrides(): Promise<FeatureGateOverrides> 
         }
       }
       return out
-    })
-    return await load()
+      })
+    }
+    return await memoizedLoad()
   } catch {
     return {}
   }

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 
 // SUPPORTER IS OFF THE SELLABLE LADDER (ADR-878). The founder's member ladder is exactly Member (free)
-// and Crew ($9/mo). This file is the guard that it stays that way, and that retiring the SELL path did
+// and Crew (pay-what-you-want, from $4.99/mo). This file is the guard that it stays that way, and that retiring the SELL path did
 // not cost a historical member a single unit of access.
 //
 // The two halves, deliberately kept in one file so they are read together:
@@ -136,7 +136,7 @@ describe('the Supporter DISPLAY surfaces are gone (ADR-878)', () => {
     // CREW_NOTE is the member paragraph every marketing + AIO surface interpolates (/pricing, the
     // home page, /llms.txt, the page-editor pricing template), so it is the one place to assert the
     // ladder reads correctly in prose.
-    expect(CREW_NOTE.foundingLabel).toBe('$9')
+    expect(CREW_NOTE.foundingLabel).toBe('$4.99') // the PWYW floor, not a price
     expect(CREW_NOTE).not.toHaveProperty('supporterLabel')
     expect(CREW_NOTE).not.toHaveProperty('listLabel') // the struck $12 anchor is gone
     expect(CREW_NOTE.line).not.toMatch(/Supporter/)
@@ -147,16 +147,18 @@ describe('the Supporter DISPLAY surfaces are gone (ADR-878)', () => {
     const ladder = pricingLadderSummary().join('\n')
     expect(ladder).not.toMatch(/Supporter/)
     expect(ladder).not.toContain('$12')
-    expect(ladder).toContain('- Member: free, forever.')
-    expect(ladder).toContain('- Crew: $9/mo')
+    expect(ladder).toContain('- Member: Free.')
+    expect(ladder).toContain('- Crew: from $4.99/mo')
   })
 
   it('Crew renders ONE price: no crossed-out anchor on any member surface', () => {
     expect(PRICING_DEFAULTS.tier.crew.list_cents).toBeUndefined()
     expect(priceRow('crew', 'Crew', PRICING_DEFAULTS.tier.crew).list).toBeNull()
     const crew = memberOfferings(input).find((o) => o.id === 'crew')!
-    expect(crew.monthly).toBe('$9/mo')
-    expect(crew.yearly).toBe('$90/yr')
+    expect(crew.monthly).toBe('from $4.99/mo')
+    // The yearly is ten months of the FLOOR, so it reads as a floor too. A member paying more monthly
+    // pays ten times their own amount yearly; nothing here is the price, both are the minimum.
+    expect(crew.yearly).toBe('from $49.90/yr')
     expect(crew.listAnchor).toBeNull()
     // No anchor means no beta line either: the honest note only ever rides a real strike.
     expect(crew.betaNote).toBeNull()
@@ -189,6 +191,6 @@ describe('a HISTORICAL supporter row keeps every unit of access (ADR-458 toleran
 
   it('a supporter row prices at CREW, never at the retired $12', () => {
     expect(tierPriceCents('tier', 'supporter')).toBe(PLACEHOLDER_MEMBER_PRICE_CENTS.crew)
-    expect(tierPriceLabel('tier', 'supporter')).toBe('$9/mo')
+    expect(tierPriceLabel('tier', 'supporter')).toBe('from $4.99/mo')
   })
 })

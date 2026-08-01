@@ -83,7 +83,7 @@ Also closed in the same pass, both flagged above as the highest user impact:
 - `/admin/elements` renders QR Studio toggles and role gates nothing consumes; saving them silently does nothing (`lib/elements/qr-studio.ts:83`).
 - The declared **CRM policy layer** and membrane contact-card primitive are unreferenced (`lib/crm/capabilities.ts:83`).
 - The embeddable-elements `<AppElement>` mounter is orphaned; every mount forks its own (`components/elements/app-element.tsx:25`).
-- `lib/marketing/personas.ts` is a second, unwired copy of the persona registry `/for/[niche]` actually uses.
+- ~~`lib/marketing/personas.ts` is a second, unwired copy of the persona registry `/for/[niche]` actually uses.~~ ✅ deleted (ADR-915). `lib/marketing/funnel-config.ts` is the one registry.
 - `app_instances` (0 rows, no reader or writer) is the Loom where-referenced backbone, shipped ahead of its code.
 
 **Correctness**
@@ -290,7 +290,9 @@ pricing syncs after deploy.
 handling; send-gate precedence + consent backfill (scope wider than the "~46" note but
 intentional per its header); calendar-feed RLS gates (no private leak); collaborator/venue-hold/
 event-share authz (both-space checks, status-guarded races); follower-reminder cron windows;
-differential take-rate 0% collapse on all three fee paths; fee rounding; server-side price
+differential take-rate 0% collapse on all three fee paths (⚠️ **re-opened by ADR-913**: tips must now be
+0% on every tier, the `member_free` 10% rung is retired, and Business is 5% not 3%, so the tips fee path
+and the personal rungs need re-verification against the new model); fee rounding; server-side price
 re-derivation + `locked_price_id` honoring; operator_seat placeholder inertness; new-era
 migrations (`20261191`–`20261211200000`) additive/idempotent/RLS-correct.
 

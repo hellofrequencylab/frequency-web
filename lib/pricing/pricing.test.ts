@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { PWYW_CONFIG_DEFAULT } from './catalog-config'
 
 // Pricing P1 (ADR-362, docs/PRICING.md) — the PURE entitlement helpers (no IO). These are the
 // halves the admin console + the P2 webhook rely on; the IO readers (loadPricingSettings,
@@ -29,6 +30,7 @@ import {
   type FeatureGate,
 } from './gates'
 import { PRICING_DEFAULTS } from './settings'
+import { PLACEHOLDER_METER_LIMITS } from './feature-meters'
 import { formatCents, priceRow, memberTierRows, spacePlanRows } from './display'
 import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
 
@@ -226,11 +228,11 @@ describe('feature gate ladder math (meetsGate)', () => {
 
 describe('mergeGate (DB override over code default, like mergeChrome)', () => {
   it('returns the code default when there is no override', () => {
-    expect(mergeGate('space_crm', {})).toEqual(FEATURE_GATES.space_crm)
+    expect(mergeGate('space_memberships', {})).toEqual(FEATURE_GATES.space_memberships)
   })
 
   it('an override wins for min_entitlement and enabled', () => {
-    const merged = mergeGate('space_crm', { space_crm: { minEntitlement: 'business', enabled: false } })
+    const merged = mergeGate('space_memberships', { space_memberships: { minEntitlement: 'business', enabled: false } })
     expect(merged?.minEntitlement).toBe('business')
     expect(merged?.enabled).toBe(false)
     // axis still comes from the code default
@@ -252,7 +254,7 @@ describe('mergeGate (DB override over code default, like mergeChrome)', () => {
 describe('featureAllowed — OFF preserves current behavior', () => {
   it('grants EVERYTHING when billing is not live (the OFF invariant)', async () => {
     // Even a free account on a gated feature is allowed while billing is OFF.
-    expect(await featureAllowed('space_crm', { tier: 'free', plan: 'free' }, { gatesLive: false })).toBe(true)
+    expect(await featureAllowed('space_memberships', { tier: 'free', plan: 'free' }, { gatesLive: false })).toBe(true)
     expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { gatesLive: false })).toBe(true)
     expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { gatesLive: false })).toBe(true)
   })
@@ -279,31 +281,53 @@ describe('seeded defaults are sane (mirror the migration)', () => {
     expect(Object.keys(PRICING_DEFAULTS.tier)).toEqual(['crew'])
     expect(PRICING_DEFAULTS.tier).not.toHaveProperty('supporter')
     const crew = PRICING_DEFAULTS.tier.crew
-    expect(crew.monthly_cents).toBe(900) // $9/mo, the plain price
+    // 🔴 CREW IS PAY-WHAT-YOU-WANT (owner ruling). This is the FLOOR, not a price: the member picks
+    // their own recurring amount at or above it. It was 900 while the offer had no fixed price at all.
+    expect(crew.monthly_cents).toBe(PWYW_CONFIG_DEFAULT.minCents)
     expect(crew.annual_cents).not.toBeNull()
     expect(crew.annual_cents!).toBeLessThan(crew.monthly_cents * 12)
   })
 
   it('Crew ships ONE clean price: no struck $12 anchor in the code default (ADR-878)', () => {
-    // The $12 anchor echoed the retired $12 Supporter tier. With Supporter gone, Crew is a plain $9.
+    // The $12 anchor echoed the retired $12 Supporter tier. Crew carries no anchor: it is PWYW.
     expect(PRICING_DEFAULTS.tier.crew.list_cents).toBeUndefined()
     const row = priceRow('crew', 'Crew', PRICING_DEFAULTS.tier.crew)
     expect(row.list).toBeNull()
     expect(row.listCents).toBeNull()
-    expect(row.monthly).toBe('$9')
-    expect(row.annual).toBe('$90')
+    expect(row.monthly).toBe('$4.99')
+    expect(row.annual).toBe('$49.90')
   })
 
-  it('take-rate: free usage 5%, paying Business + Non Profit 3% (ADR-552 Phase 3)', () => {
+  it('take-rate: the LIVE rungs are the network vector plus BOTH individual seller rates (ADR-914)', () => {
     const t = PRICING_DEFAULTS.take_rate
-    expect(t.free_bps).toBe(500) // free usage pays the higher rate (the self-funding trigger)
-    expect(t.business_bps).toBe(300) // a paying Business pays the lower rate
+    // What actually charges (lib/billing/fees.ts): a Space pays its network-sourced rate, and only on a
+    // sale the network sourced. Business 5% → Collective 3% → Non Profit 0% → Independent 0% (off the graph).
+    expect(t.network_bps.business).toBe(500)
+    expect(t.network_bps.collective).toBe(300)
+    expect(t.network_bps.nonprofit).toBe(0)
+    expect(t.network_bps.independent).toBe(0)
+    // A free Space pays the HIGHEST rate, so an unresolved plan over-collects rather than charging 0%.
+    expect(t.network_bps.free).toBeGreaterThan(t.network_bps.business)
+    // TWO individual seller rungs (ADR-914): a free Member sells at 10%, Crew at 8%. Selling is free on
+    // every tier, so the ladder is these numbers descending rather than a capability appearing.
+    expect(t.member_free_bps).toBe(1000)
+    expect(t.member_bps).toBe(800)
+    // The whole ladder must descend monotonically, or a rung is being sold for nothing.
+    expect(t.member_free_bps).toBeGreaterThan(t.member_bps)
+    expect(t.member_bps).toBeGreaterThan(t.network_bps.business)
+    // A free Space is held to the free-Member standard, so those two rungs are EQUAL: moving a sale into
+    // a free Space must not change its rate. Only paying does.
+    expect(t.member_free_bps).toBe(t.network_bps.free)
+    // The legacy flat trio survives for read-safety on stored blobs only; no charging path reads it.
+    expect(t.free_bps).toBe(500)
+    expect(t.business_bps).toBe(300)
     expect(t.nonprofit_bps).toBe(300)
-    expect(t.free_bps).toBeGreaterThan(t.business_bps)
   })
 
   it('vera free cap is the spec value (10/day)', () => {
-    expect(PRICING_DEFAULTS.vera_free_daily_cap.messages).toBe(10)
+    // DERIVED, never typed (ADR-917): the operator overlay's default IS the meter's free rung, so the
+    // number a member is shown and the number they hit cannot drift apart again.
+    expect(PRICING_DEFAULTS.vera_free_daily_cap.messages).toBe(PLACEHOLDER_METER_LIMITS.vera_unlimited!.free)
   })
 
   it('space plans carry a 14-day free trial (members have none)', () => {
@@ -365,8 +389,10 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
   it('memberTierRows is Crew alone, from the operator values, with no strike (ADR-878)', () => {
     const rows = memberTierRows(PRICING_DEFAULTS)
     expect(rows.map((r) => r.key)).toEqual(['crew'])
-    expect(rows[0].monthly).toBe('$9')
-    expect(rows[0].annual).toBe('$90')
+    // Crew is pay-what-you-want, so the operator value is a FLOOR and every member-facing figure reads
+    // "from". A bare "$4.99" would quote the cheapest possible Crew as if it were the price.
+    expect(rows[0].monthly).toBe('from $4.99')
+    expect(rows[0].annual).toBe('from $49.90')
     expect(rows[0].list).toBeNull() // one clean price, never a crossed-out $12
   })
 

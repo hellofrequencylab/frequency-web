@@ -85,7 +85,8 @@ describe('offerings: every sellable tier is on the page', () => {
 
   it('prices every offering from the config, never from a literal', () => {
     const [, crew] = memberOfferings(input)
-    expect(crew!.monthly).toBe(`${formatCents(PRICING_DEFAULTS.tier.crew.monthly_cents)}/mo`)
+    // Crew is pay-what-you-want: the configured amount is the FLOOR, so the label reads "from".
+    expect(crew!.monthly).toBe(`from ${formatCents(PRICING_DEFAULTS.tier.crew.monthly_cents)}/mo`)
     for (const o of spaceOfferings(input)) {
       if (o.tier === 'free') {
         expect(o.monthly).toBe('Free')
@@ -243,19 +244,33 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     }
   })
 
-  it('the take-rate row is the real per-tier network rate (10 / 5 / 3 / 0 / 0)', () => {
-    expect(cellsByColumn(grid, 'take_rate')).toEqual({
-      free: '10%',
-      business: '5%',
-      collective: '3%',
-      nonprofit: '0%',
-      independent: '0%',
-    })
+  it('the take-rate row IS take_rate.network_bps, tier by tier (never a typed ladder)', () => {
+    // Pinning the numbers here is how the retired ladder ("Free Space 10%, Collective 3%") survived a
+    // rate change: the test restated the very literals it was meant to guard. The row must equal what the
+    // config carries, so an owner rate change moves the page and this test together (ADR-913).
+    const net = PRICING_DEFAULTS.take_rate.network_bps
+    const cells = cellsByColumn(grid, 'take_rate')
+    for (const plan of SPACE_PLANS) {
+      expect(cells[plan], `take_rate @ ${plan}`).toBe(`${net[plan] / 100}%`)
+    }
+  })
+
+  it('holds the model invariants: the rate only falls as the tier rises, and 0% at the top', () => {
+    const net = PRICING_DEFAULTS.take_rate.network_bps
+    // Non Profit takes nothing, and Independent is off the network entirely.
+    expect(net.nonprofit).toBe(0)
+    expect(net.independent).toBe(0)
+    // Across the PAID ladder the rate only ever falls, which is the claim the copy makes out loud
+    // ("the rate drops as your plan rises").
+    const paid = (['business', 'collective', 'nonprofit', 'independent'] as const).map((p) => net[p])
+    expect(paid).toEqual([...paid].sort((a, b) => b - a))
+    // Business is the rung the whole funnel steers to, so it is stated once, here.
+    expect(net.business).toBe(500)
   })
 
   it('a meter row reads the tier rung on the usage ladder, not a typed number', () => {
     const contacts = cellsByColumn(grid, 'space_crm')
-    expect(contacts.free).toBe('Up to 250 contacts')
+    expect(contacts.free).toBe('Up to 200 contacts')
     expect(contacts.business).toBe('Unlimited contacts')
     // A tier above the top rung reads the top rung, exactly as the enforcement seam resolves it.
     expect(contacts.independent).toBe('Unlimited contacts')
@@ -326,11 +341,46 @@ describe('member grid: Member and Crew on the personal ladder', () => {
     expect(cellsByColumn(grid, 'space')).toEqual({ member: 'Included', crew: 'Included' })
   })
 
-  it('reads the member seller take-rate from the config on both columns', () => {
+  it('quotes a rate on BOTH member columns, from config, with Crew lower (ADR-914)', () => {
+    // 🔴 WHAT THIS TEST HAS NOW ASSERTED THREE WAYS, and why the history matters. It originally checked
+    // member === crew, which printed the Crew rate under the free header. ADR-913 flipped it to assert
+    // the free column says "Selling is not included". ADR-914 reversed the rule itself: selling is free
+    // on every tier and the ladder IS the rate. So both columns must name a number, and the paid one
+    // must be lower — that is the entire upgrade argument, rendered.
     const cells = cellsByColumn(grid, 'take_rate')
-    const expected = `${PRICING_DEFAULTS.take_rate.member_bps / 100}%`
-    expect(cells.member).toBe(expected)
-    expect(cells.crew).toBe(expected)
+    expect(cells.crew).toBe(`${PRICING_DEFAULTS.take_rate.member_bps / 100}%`)
+    expect(cells.member).toBe(`${PRICING_DEFAULTS.take_rate.member_free_bps / 100}%`)
+    expect(cells.member).toMatch(/\d%/)
+    expect(PRICING_DEFAULTS.take_rate.member_bps).toBeLessThan(PRICING_DEFAULTS.take_rate.member_free_bps)
+  })
+
+  it('does not gate selling at all: every member column can sell and take payments', () => {
+    // The two gates that used to drive these cells (`event_paid_tickets`, `personal_payouts`) are
+    // deleted. Asserted on the OUTPUT rather than on the gate map so the page's claim is what is
+    // locked: a reader of /pricing must never be told a tier cannot sell.
+    const cells = cellsByColumn(grid, 'sell_anything')
+    expect(cells.member).toBe('Included')
+    expect(cells.crew).toBe('Included')
+  })
+
+  it('🔴 no member column anywhere on the grid says selling is unavailable', () => {
+    // A belt-and-braces sweep over EVERY row, because the old claim lived in three places and was
+    // removed from three places. Any resurrection of a "selling is not included" cell fails here even if
+    // it comes back under a new row key.
+    for (const r of grid.groups.flatMap((g) => g.rows)) {
+      for (const cell of r.cells) {
+        expect(cell.text, `row ${r.key}`).not.toMatch(/selling is not included/i)
+      }
+    }
+  })
+
+  it('states the rate in both offering lines, and leads with the 0% promise on each', () => {
+    const [member, crew] = memberOfferings(input)
+    expect(member!.takeRate).toContain(`${PRICING_DEFAULTS.take_rate.member_free_bps / 100}%`)
+    expect(crew!.takeRate).toContain(`${PRICING_DEFAULTS.take_rate.member_bps / 100}%`)
+    // The promise is identical on every rung, so it must LEAD on every rung. If it read as a paid
+    // feature the model would be misrepresented on the page that sells it.
+    for (const o of memberOfferings(input)) expect(o.takeRate).toMatch(/^0% on your own people/)
   })
 })
 

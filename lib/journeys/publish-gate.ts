@@ -89,6 +89,22 @@ export interface PublishCheck {
  */
 export async function checkJourneyPublish(planId: string, target: JourneyVisibility): Promise<PublishCheck> {
   if (!isPublishedVisibility(target)) return { ok: true }
+
+  // 🔴 HONOUR THE BETA GRACE WINDOW, like every other gate in the product (ADR-874).
+  //
+  // This was the ONE limit that bit during the beta. Every `featureAllowed` gate and every
+  // `withinAllowance` meter short-circuits to granted while featureGatesLive() is false; this file
+  // did not, so a free Member was capped at one published Journey right now while nothing else was
+  // capped at anything. Worse, it compounded with BETA_OPEN_ACCESS: that flag makes resolveCaller
+  // report 'crew', so the Studio told a member they were Crew and then the publish button refused
+  // them on the free allowance. There is no reading of that a member could make sense of.
+  //
+  // Placed before the row read so the grace path costs nothing, and read fail-safe: featureGatesLive()
+  // already returns false (= grant) on any error, so a settings hiccup keeps publishing open rather
+  // than locking someone out of their own work.
+  const { featureGatesLive } = await import('@/lib/pricing/settings')
+  if (!(await featureGatesLive())) return { ok: true }
+
   let row: OwnerRow | null = null
   try {
     const { data } = await createAdminClient()

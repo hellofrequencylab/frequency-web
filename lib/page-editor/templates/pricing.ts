@@ -5,12 +5,33 @@ import {
   BETA_CTA_SECONDARY_LABEL,
   BETA_CTA_SECONDARY_HREF,
 } from '@/lib/site'
-import { priceStrings, pricingCatalog, CREW_NOTE } from '@/lib/pricing/pricing-page'
+import { priceStrings, pricingCatalog, CREW_NOTE, MISSION_FRAMING } from '@/lib/pricing/pricing-page'
 import { formatLoadoutCents } from '@/lib/pricing/loadout'
+import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
 
 // Every dollar figure in this template interpolates from the ONE code catalog (priceStrings /
 // pricingCatalog) and the CREW_NOTE labels, so the CMS fallback can never drift from /pricing.
+// 🔴 EVERY TIER CARD BELOW CARRIES A `livePriceKey` (ADR-918). The typed `price`/`strikePrice` beside
+// it is the fallback that renders only if the live config cannot be read; the bound key is what
+// normally shows. Without this, publishing the page would freeze today's prices into a jsonb document
+// and an /admin/pricing edit would move the generated page while the published one quoted stale
+// figures. Do not remove a key when editing this template.
 const P = priceStrings()
+
+// 🔴 RATES ARE DERIVED, NEVER TYPED (ADR-914). Every take-rate below reads the same vector the
+// charging path applies (lib/billing/fees.ts), so a rate this template publishes is the rate a seller
+// is actually charged. It used to type them as prose, which is how a CMS document ships a fee ladder
+// the product stopped using: the free-Member rung did not exist here at all, and the free-Space rung
+// was written into one FAQ answer and nowhere else.
+const R = (bps: number) => `${bps / 100}%`
+const RATE = {
+  memberFree: R(NETWORK_TAKE_RATE_DEFAULT.memberFree),
+  member: R(NETWORK_TAKE_RATE_DEFAULT.member),
+  free: R(NETWORK_TAKE_RATE_DEFAULT.free),
+  business: R(NETWORK_TAKE_RATE_DEFAULT.business),
+  collective: R(NETWORK_TAKE_RATE_DEFAULT.collective),
+  nonprofit: R(NETWORK_TAKE_RATE_DEFAULT.nonprofit),
+}
 const CAT = pricingCatalog()
 const BUSINESS_YEAR_BETA = formatLoadoutCents(CAT.business_base.year.foundingCents)
 const COLLECTIVE_YEAR_BETA = formatLoadoutCents(CAT.collective_base.year.foundingCents)
@@ -19,9 +40,11 @@ const NONPROFIT_YEAR = formatLoadoutCents(CAT.nonprofit_seat.year.foundingCents)
 // ─────────────────────────────────────────────────────────────────────────────
 // PRICING — the honest, warm version. Copies THE COMMUNITY's shape and rhythm.
 //
-// The one idea: membership keeps the room open. Paying is how you hold the door
-// for the next person (circulation, per The Community), never how you buy features
-// or a place at the front. Member is free, forever, and featured.
+// The one idea (docs/VALUE-LADDER.md): never gate the transaction, gate the repeat.
+// Selling is free on every rung, and your own people are always free. Paying buys a
+// lower rate on the sales the network introduces, plus the tools that build the list
+// which takes that rate to zero. It never buys features you cannot otherwise reach,
+// and it never buys a place at the front. Member is free, forever, and featured.
 // Crew is the paid member tier (docs/NAMING.md: "Crew = paid"). Prices below are the
 // GA defaults (lib/pricing/settings.ts, PRICING_DEFAULTS) and are NOT to be edited.
 //
@@ -59,8 +82,8 @@ export const data: Data = {
       props: {
         id: 'pr-hero', variant: 'image',
         eyebrow: 'Pricing',
-        title: 'Free to show up. Paid to hold the door.', titleAccent: 'hold the door',
-        subtitle: "Being a Member is free, forever. Browse Circles and Events, show up, earn Zaps, and meet Vera. A business never pays for access to people either: paid plans raise the limits, and every dollar keeps the room open for the next person who walks in.",
+        title: 'Your own people are always free.', titleAccent: 'always free',
+        subtitle: "Being a Member is free, forever, and so is selling. Browse Circles and Events, show up, earn Zaps, meet Vera, and run a ticketed event and get paid on day one. A business never pays for access to people either. What a paid plan buys is a lower rate on the sales the network introduces, and your own people are always free.",
         image: '/images/site/lab-lounge.jpg', focal: 'center',
         minHeight: 'screen',
         ctaPrimaryLabel: BETA_CTA_LABEL, ctaPrimaryHref: BETA_CTA_HREF,
@@ -77,10 +100,10 @@ export const data: Data = {
         id: 'pr-membership',
         eyebrow: 'Membership',
         title: 'For people.', titleAccent: '',
-        kicker: 'Free to join. Pay when you want more, or pay so someone else can join too.',
+        kicker: 'Free to join, and both rungs sell. Crew takes the rate down and lifts the caps.',
         items: [
           {
-            name: 'Member', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
+            name: 'Member', livePriceKey: 'member', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
             tagline: 'The free tier. Show up and see who is here.',
             highlight: 'featured', badge: 'none',
             features: [
@@ -92,12 +115,12 @@ export const data: Data = {
             ctaLabel: 'Start free', ctaHref: '/sign-in', ctaStyle: 'primary',
           },
           {
-            name: 'Crew', price: CREW_NOTE.foundingLabel, strikePrice: '', cadence: '/mo',
-            priceNote: `${CREW_NOTE.foundingLabel} a month, or $90 a year.`,
-            tagline: 'The full game, the Crew badge, and dues that keep the lights on. Never a business tool.',
+            name: 'Crew', livePriceKey: 'crew', price: CREW_NOTE.foundingLabel, strikePrice: '', cadence: '/mo',
+            priceNote: `You pick the amount: anything from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested. Every amount buys the same thing.`,
+            tagline: 'The same selling at a lower rate, plus the full game, the Crew badge, and the tools that build your list.',
             highlight: 'normal', badge: 'none',
             features: [
-              { text: 'Everything in Member' },
+              { text: 'Everything in Member, at a lower network rate' },
               { text: 'Full game: Gems and Vault cash-in' },
               { text: 'Author and share your own Quest' },
               { text: 'Vera, unlimited' },
@@ -107,7 +130,7 @@ export const data: Data = {
             ctaLabel: 'Upgrade', ctaHref: '/upgrade', ctaStyle: 'secondary',
           },
         ],
-        footnote: `Crew is one price: ${CREW_NOTE.foundingLabel} a month, or $90 a year.`,
+        footnote: `Crew is pay what you want: from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested.`,
         tone: 'surface', width: 'wide', align: 'left', layout: L,
       },
     },
@@ -121,10 +144,10 @@ export const data: Data = {
         id: 'pr-spaces-a',
         eyebrow: 'For Spaces',
         title: 'For practitioners and businesses.', titleAccent: '',
-        kicker: 'Run your community as a Space. You keep 100% of your own bookings, always. The only take-rate is on business the network sends you, and each step up buys it down: Business 5%, Collective 3%, Non Profit 0%.',
+        kicker: `Run your community as a Space. You keep 100% of your own bookings, always. The only take-rate is on business the network sends you, and each step up buys it down: Free ${RATE.free}, Business ${RATE.business}, Collective ${RATE.collective}, Non Profit ${RATE.nonprofit}.`,
         items: [
           {
-            name: 'Free Space', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
+            name: 'Free Space', livePriceKey: 'free', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
             tagline: 'Put your business on the map. A real Space, free for as long as you want.',
             highlight: 'normal', badge: 'none',
             features: [
@@ -135,8 +158,8 @@ export const data: Data = {
             ctaLabel: 'Start free', ctaHref: '/sign-in', ctaStyle: 'secondary',
           },
           {
-            name: 'Business', price: P.businessBeta, strikePrice: P.businessList, cadence: '/mo',
-            priceNote: `Opening Beta price through 2026-09-01, then ${P.businessList}. Or ${BUSINESS_YEAR_BETA} a year. 0% on your own bookings, 5% only on business the network sends you.`,
+            name: 'Business', livePriceKey: 'business', price: P.businessBeta, strikePrice: P.businessList, cadence: '/mo',
+            priceNote: `Opening Beta price through 2026-09-01, then ${P.businessList}. Or ${BUSINESS_YEAR_BETA} a year. 0% on your own bookings, ${RATE.business} only on business the network sends you.`,
             tagline: 'Own your audience.',
             highlight: 'featured', badge: 'none',
             features: [
@@ -148,8 +171,8 @@ export const data: Data = {
             ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'primary',
           },
           {
-            name: 'Collective', price: P.collectiveBeta, strikePrice: P.collectiveList, cadence: '/mo',
-            priceNote: `Opening Beta price through 2026-09-01, then ${P.collectiveList}. Or ${COLLECTIVE_YEAR_BETA} a year. 0% on your own, 3% only on business the network sends you.`,
+            name: 'Collective', livePriceKey: 'collective', price: P.collectiveBeta, strikePrice: P.collectiveList, cadence: '/mo',
+            priceNote: `Opening Beta price through 2026-09-01, then ${P.collectiveList}. Or ${COLLECTIVE_YEAR_BETA} a year. 0% on your own, ${RATE.collective} only on business the network sends you.`,
             tagline: 'Be the venue.',
             highlight: 'normal', badge: 'none',
             features: [
@@ -174,8 +197,8 @@ export const data: Data = {
         kicker: '',
         items: [
           {
-            name: 'Non Profit', price: P.nonprofit, strikePrice: '', cadence: '/mo',
-            priceNote: `Flat, no beta discount. Or ${NONPROFIT_YEAR} a year. 0% take-rate, always. Verified 501(c)(3).`,
+            name: 'Non Profit', livePriceKey: 'nonprofit', price: P.nonprofit, strikePrice: '', cadence: '/mo',
+            priceNote: `Flat, no beta discount. Or ${NONPROFIT_YEAR} a year. ${RATE.nonprofit} take-rate, always. Verified 501(c)(3).`,
             tagline: 'The full Collective toolkit for a verified 501(c)(3).',
             highlight: 'normal', badge: 'none',
             features: [
@@ -332,7 +355,7 @@ export const data: Data = {
         items: [
           { icon: 'Shield', image: '', title: 'No card today', body: 'Being a Member is free. We do not ask for a card to join.', href: '' },
           { icon: 'Handshake', image: '', title: 'Leave anytime', body: 'No contracts, no lock-in. Switch plans or step away whenever you like.', href: '' },
-          { icon: 'Heart', image: '', title: 'Free stays free', body: 'The free Member tier is here to stay. Paid plans only add more.', href: '' },
+          { icon: 'Heart', image: '', title: 'Free stays free', body: 'The free Member tier is here to stay, and it sells. Paid plans only buy the rate down and lift the caps.', href: '' },
         ],
         tone: 'surface', width: 'default', align: 'left', layout: L,
       },
@@ -345,26 +368,26 @@ export const data: Data = {
         id: 'pr-faq', eyebrow: 'Straight answers', title: 'Questions, answered plainly.', titleAccent: '',
         items: [
           { q: 'Is being a Member really free?', a: 'Yes. The Member tier is free, forever. You can browse Circles and Events, attend gatherings in person, earn Zaps, and message Vera up to 10 times a day, all without paying.' },
-          { q: 'What is the Opening Beta price?', a: `The Opening Beta price is the lower rate every early Space plan holds while we are in beta: Business at ${P.businessBeta} under the ${P.businessList} list, and Collective at ${P.collectiveBeta} under the ${P.collectiveList} list. A plan you start during the beta keeps its rate. Crew is one plain price, ${CREW_NOTE.foundingLabel} a month, with no anchor above it.` },
-          { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. Crew adds the full game, with Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for ${CREW_NOTE.foundingLabel} a month or $90 a year. Those two are the whole member ladder.` },
+          { q: 'What is the Opening Beta price?', a: `The Opening Beta price is the lower rate every early Space plan holds while we are in beta: Business at ${P.businessBeta} under the ${P.businessList} list, and Collective at ${P.collectiveBeta} under the ${P.collectiveList} list. A plan you start during the beta keeps its rate. Crew is pay what you want: anything from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested, and every amount buys the same access.` },
+          { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. Both tiers can sell: a free Member can run a ticketed event and get paid. Crew takes the rate on network-sourced sales from ${RATE.memberFree} down to ${RATE.member}, lifts the caps, and adds the full game, with Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for whatever you choose to pay, from ${CREW_NOTE.foundingLabel} a month. Those two are the whole member ladder.` },
           { q: 'What is the Opening Beta price on Space plans?', a: `Business and Collective are open at an Opening Beta price during our beta: Business at ${P.businessBeta} a month under the ${P.businessList} list, and Collective at ${P.collectiveBeta} a month under the ${P.collectiveList} list. Both hold through 2026-09-01, then revert to list. Non Profit (${P.nonprofit}) is flat, with no beta discount.` },
-          { q: 'How does the take-rate work?', a: 'You keep 100% of your own bookings, always. There is a small take-rate only on business the network sends you, and it shrinks as your plan grows: a Free Space is 10%, Business is 5%, Collective is 3%, and Non Profit is 0%.' },
+          { q: 'How does the take-rate work?', a: `You keep 100% of the business you bring yourself, always, on every tier. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. There is a rate only on someone the network introduces, and every step up buys it down: a free Member or a free Space is ${RATE.memberFree}, Crew is ${RATE.member}, Business is ${RATE.business}, Collective is ${RATE.collective}, and Non Profit is ${RATE.nonprofit}.` },
           { q: 'What about refunds?', a: 'Every plan is month to month, and you can cancel at any time. Cancel and your plan simply runs out its paid period. No contracts, no lock-in.' },
           { q: 'Can I buy my way into a Host or Guide role?', a: 'No, and that is on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Those roles come from the community, never from a checkout page.' },
-          { q: 'Where does the money go?', a: 'Into keeping the room open. A membership sustains the physical spaces, the lights, the insurance, the thermal circuit, and the community that gathers in them. People who pay more hold the door for neighbors who cannot pay yet, so connection keeps circulating instead of sitting behind a paywall.' },
+          { q: 'Where does the money go?', a: MISSION_FRAMING },
         ],
         tone: 'canvas', width: 'default', align: 'left', layout: L,
       },
     },
 
     // ── Close ── the single ink beat. Shared beta CTA, quiet member link beside
-    // it. The promise is the whole page in one line: show up free, hold the door
-    // when you can. ──────────────────────────────────────────────────────────────
+    // it. The promise is the whole page in one line: show up free, sell free, and
+    // never pay on the people who were already yours. ───────────────────────────
     {
       type: 'CallToAction',
       props: {
         id: 'pr-cta', eyebrow: '', heading: 'Pull up a chair.', headingAccent: 'chair',
-        body: 'Being a Member is free. No card today, leave anytime. Find your people, and when you can, hold the door open for the next person.',
+        body: 'Being a Member is free, and it sells from day one. No card today, leave anytime. Find your people, and keep every dollar the ones you brought yourself spend.',
         ctaPrimaryLabel: BETA_CTA_LABEL, ctaPrimaryHref: BETA_CTA_HREF,
         ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL, ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
         tone: 'ink', width: 'default', align: 'center', layout: L,

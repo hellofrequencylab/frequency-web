@@ -246,7 +246,7 @@ describe('featureAllowed({ gatesLive })', () => {
   it('grants EVERYTHING while the gates are not live (billing off, or mid grace window)', async () => {
     expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { gatesLive: false })).toBe(true)
     expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { gatesLive: false })).toBe(true)
-    expect(await featureAllowed('space_crm', { plan: 'free' }, { gatesLive: false })).toBe(true)
+    expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: false })).toBe(true)
     expect(await featureAllowed('space_collaborators', { plan: 'free' }, { gatesLive: false })).toBe(true)
     expect(await featureAllowed('space_whitelabel', { plan: 'free' }, { gatesLive: false })).toBe(true)
   })
@@ -257,8 +257,8 @@ describe('featureAllowed({ gatesLive })', () => {
     expect(await featureAllowed('vault_cash_in', { tier: 'crew' }, { gatesLive: true })).toBe(true)
     expect(await featureAllowed('vault_cash_in', { tier: 'supporter' }, { gatesLive: true })).toBe(true)
     // plan axis: free < business < collective ~ nonprofit ~ independent
-    expect(await featureAllowed('space_crm', { plan: 'free' }, { gatesLive: true })).toBe(false)
-    expect(await featureAllowed('space_crm', { plan: 'business' }, { gatesLive: true })).toBe(true)
+    expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: true })).toBe(false)
+    expect(await featureAllowed('space_memberships', { plan: 'business' }, { gatesLive: true })).toBe(true)
     // Collaborator HOSTING opens at Business (basic collaboration, metered to a few collaborators);
     // the Collective depth is revenue splits.
     expect(await featureAllowed('space_collaborators', { plan: 'free' }, { gatesLive: true })).toBe(false)

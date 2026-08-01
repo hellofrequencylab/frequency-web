@@ -6,10 +6,14 @@ import { getSplashOverride } from '@/lib/onboarding/sequence-overrides'
 
 // Per-audience beta splash for CODE-shipped sequences: a shareable URL
 // (/beta/<slug>) whose copy + CTA carry the audience into the induction (?seq=).
-// The three launch templates retired with ADR (onboarding-splash overhaul), so
-// BETA_SEQUENCES is empty and every slug 404s — DB-built versions enter at
-// /onboarding/beta?seq=<slug> instead. The route stays so a code sequence can be
-// reintroduced without rebuilding it.
+// The three original launch templates retired with the onboarding-splash overhaul.
+//
+// 🔴 THIS ROUTE IS LIVE — do not delete it as dead. BETA_SEQUENCES is NOT empty:
+// it carries `breathwork`, the ADR-619 feature funnel, so /beta/breathwork
+// prerenders and serves. (The comment here used to say the registry was empty,
+// which is exactly why a deletion sweep proposed removing the route; see ADR-915.)
+// A slug that is not a CODE sequence still 404s by design — DB-built sequences
+// enter at /onboarding/beta?seq=<slug> instead.
 
 export const revalidate = 3600
 

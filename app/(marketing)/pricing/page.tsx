@@ -1,14 +1,21 @@
 import type { Metadata } from 'next'
-import { ArrowRight, Check, Minus } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import {
   PhotoHero,
   Section,
   SectionHeading,
+  BlockHeading,
   Statement,
   BetaCTA,
   FaqList,
   Button,
+  Card,
 } from '@/components/marketing/marketing-ui'
+import {
+  ComparisonTable,
+  type ComparisonColumn,
+  type ComparisonGroup,
+} from '@/components/marketing/comparison-table'
 import { JsonLd } from '@/components/json-ld'
 import { Illustration } from '@/components/marketing/illustrations'
 import { breadcrumbSchema, faqSchema, productSchema } from '@/lib/jsonld'
@@ -26,12 +33,18 @@ import {
   spaceFeatureGrid,
   spaceOfferings,
   type FeatureGrid,
-  type GridCell,
   type Offering,
   type PlanExtra,
   type PricingGridInput,
 } from '@/lib/pricing/pricing-grid'
 import { MISSION_FRAMING, PLAN_STORY } from '@/lib/pricing/pricing-page'
+import { BlockRender } from '@/lib/page-editor/block-render'
+import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
+import { config } from '@/lib/page-editor/config'
+import { getPublishedData } from '@/lib/page-editor/data'
+import { isRenderable } from '@/lib/page-editor/templates'
+import { getLiveData } from '@/lib/page-editor/live-data'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // EVERY figure on this page is READ, never written. Prices, the yearly deal, the trial length, the
 // per-tier take-rate, the add-on and seat amounts, and every cell of the comparison grid come from
@@ -70,6 +83,29 @@ async function pricingInput(): Promise<PricingGridInput> {
   }
 }
 
+/** The NETWORK half of an offering's rate line ("5% on network-sourced sales"). The 0%-on-your-own half
+ *  is the promise every rung shares, so a sentence that already states it once reads the network half
+ *  alone rather than repeating the promise per rung. Read off the offering, never typed. */
+function networkRate(offering: Offering): string {
+  return offering.takeRate.split(', ')[1] ?? offering.takeRate
+}
+
+/** The COMPACT ladder for a meta description, where length is the constraint: label + price, no beta
+ *  prose, no free rung (the sentence before it already says selling is free on every plan). Separate
+ *  from `ladderSentence` on purpose — the page has room to explain the beta anchor and a `<meta>` tag
+ *  does not, and sharing one string forced the page's fuller phrasing past the SERP cut. */
+function ladderCompact(offerings: Offering[]): string {
+  return offerings
+    .filter((o) => o.monthlyCents > 0)
+    // Independent is dropped HERE ONLY. It is a real tier and the page lists it, but it is a
+    // network-disconnected white-label plan nobody arrives at from a search result, and at ~$249 it is
+    // the longest string on the ladder. Spending a quarter of the description's budget on the rung
+    // least likely to be the reader's next step is the wrong trade in a field this short.
+    .filter((o) => o.tier !== 'independent')
+    .map((o) => `${o.label} ${o.monthly}`)
+    .join(', ')
+}
+
 /** The plain "Business is X, Collective is Y" ladder sentence, built from the offerings. */
 function ladderSentence(offerings: Offering[]): string {
   return offerings
@@ -80,22 +116,32 @@ function ladderSentence(offerings: Offering[]): string {
 
 export async function generateMetadata(): Promise<Metadata> {
   const input = await pricingInput()
-  const ladder = ladderSentence(spaceOfferings(input))
-  const crew = memberOfferings(input)[1]!
-  const description = `Connection is free on Frequency. Businesses pay for reach and scale, never for access to people. Start a Space free; paid plans raise the limits. ${ladder}. Crew, the personal tier, is ${crew.monthly}. ${annualDiscountNote(input.values)}`
+  const ladder = ladderCompact(spaceOfferings(input))
+  // 🔴 THE PAYLOAD HAS TO FIT. This was 372 characters, so every derived figure sat past the ~155-160
+  // character SERP cut and truncation began mid-sentence at "A paid plan buys down t…". The one thing
+  // the derivation work exists to publish was the part nobody would ever read.
+  //
+  // Rebuilt around the two facts worth the space: the promise, and the plan ladder. The longer story
+  // lives on the page and in the FAQ schema, which have no length limit. Still fully interpolated, so
+  // an operator price change moves it.
+  // Phrased WITHOUT a literal percentage on purpose. The page-source guard bans any bare `\d{1,2}%`
+  // here, and it is right to: a typed figure in this file is exactly the drift the derivation work
+  // removed, and "0%" typed by hand is indistinguishable to the guard from "8%" typed by hand. Saying
+  // it in words costs nothing and keeps the rule absolute rather than carved with an exception.
+  const description = `We take nothing on your own people, ever. Selling is free on every plan. ${ladder}.`
   return {
-    title: 'Pricing: every plan, side by side',
+    title: 'Pricing: your own people are always free',
     description,
     alternates: { canonical: '/pricing' },
     openGraph: {
-      title: 'Frequency pricing: connection is free, paid plans raise the limits',
+      title: 'Frequency pricing: your own people are always free',
       description,
       url: '/pricing',
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'Frequency pricing: connection is free, paid plans raise the limits',
+      title: 'Frequency pricing: your own people are always free',
       description,
     },
   }
@@ -134,20 +180,24 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
   return [
     {
       q: 'How does Frequency pricing work?',
-      a: `Connection is free; paid plans raise the limits. There are two ladders. Membership: ${member!.label} is free forever, and ${crew!.label} is ${crew!.monthly} for full access to member programs and everything else. Spaces: ${ladder} ${annualDiscountNote(input.values)}`,
+      a: `Selling is free on every plan, and your own people are always free. What a paid plan buys is a lower rate on the sales the network introduces, plus the tools that build the list which takes that rate to zero. There are two ladders. Membership: ${member!.label} is free forever and already hosts events, takes RSVPs, sells tickets, and takes donations at ${networkRate(member!)}; ${crew!.label} is ${crew!.monthly} and takes that to ${networkRate(crew!)} with the caps off. Spaces: ${ladder} ${annualDiscountNote(input.values)}`,
     },
     {
       q: 'Can I run a Space for free?',
-      a: `Yes, and anyone can. A free Space is a real Space, not a trial: your storefront, your page, events, posts, members, and a place for your people to gather. You do not need Crew to run one. No card, no clock. Upgrade when you want to reach more people at once.`,
+      a: `Yes, and anyone can. A free Space is a real Space, not a trial: your storefront, your page, events, posts, members, a shop, and a place for your people to gather. It sells tickets and takes donations from day one, at ${networkRate(spaces[0]!)}. You do not need Crew to run one. No card, no clock.`,
+    },
+    {
+      q: 'What actually needs a paid plan?',
+      a: 'Three things, and we name them plainly. Selling memberships needs Business, because a membership is a recurring promise to another person. Campaigns and funnels need Business, which is the line between messaging your own people and running an acquisition machine. Splitting revenue between businesses needs Collective, because that is what a collective is for. Everything else is a meter with a real free allowance, and a full meter stops new writes without ever hiding, deleting, or locking what is already there.',
     },
     {
       q: 'What stays free forever?',
-      a: 'The people part. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. A business never pays for access to people; a paid plan buys reach and scale, higher limits on the same tools every Space already has.',
+      a: 'The people part, and the transaction. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. Taking money never sits behind a plan either: every rung sells tickets and takes donations, and tips carry no fee on any rung. A business never pays for access to people.',
     },
     ...betaFaq,
     {
       q: 'Do you take a cut of my sales?',
-      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, always. We earn a share only of the business the network sends you, a referral or a discovery inside the collective, and that rate drops as your plan rises: ${rates}. A paid plan buys down your rate.`,
+      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, always, and tips are never touched. We earn a share only of a sale the network introduced, a referral or a discovery inside the collective, and that rate drops as your plan rises: ${rates}. Selling as a person rather than a Space needs no plan at all: ${member!.label} sells at ${networkRate(member!)} and ${crew!.label} at ${networkRate(crew!)}. Once a buyer is yours, meaning they follow you, they are one of your members, they are in your contacts, or they have bought before, we take nothing on them again: we charge once for the introduction, and after that they are your people, free.`,
     },
     {
       q: 'How do team seats work?',
@@ -183,9 +233,71 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
 }
 
 export default async function PricingPage() {
+  // ── OPERATOR-PUBLISHED CONTENT WINS (owner directive, ADR-916) ─────────────────────────────
+  //
+  // `pricing` has been a row in EDITABLE_PAGES all along, so a janitor could open /edit/pricing,
+  // rewrite the whole page, hit Publish, and see it saved. A visitor saw NONE of it, because this
+  // route never read the published document the way the six other Puck-backed marketing pages do. An
+  // operator control that silently does nothing is worse than no control: it invites someone to spend
+  // an afternoon on copy that will never ship, and gives them no signal that it did not.
+  //
+  // 🔴 THE FALLBACK IS THE CODED PAGE, NOT getTemplate('pricing'). Every other route falls back
+  // published -> template -> legacy, because their coded page is a last-resort relic. Here the
+  // relationship is inverted: the coded page below is the DERIVED one, reading live prices, live
+  // rates, and the real gate map, with no dollar figure or percentage typed anywhere in it. The Puck
+  // template is a static document. Slotting it in as a middle rung would mean any deploy where nobody
+  // has published silently downgrades /pricing from live figures to a snapshot. So there are two
+  // rungs, not three, and the ordering says exactly what it means: a human's published words beat the
+  // generated page, and nothing else does.
   const input = await pricingInput()
   const members = memberOfferings(input)
   const spaces = spaceOfferings(input)
+
+  // 🔴 THE PRICE SCHEMA IS EMITTED ON BOTH BRANCHES, and hoisting it here is the whole point.
+  //
+  // One Product/Offer per PAID offering. A free tier is not an Offer (a zero-price Product reads as
+  // spam to answer engines; the FAQ carries the free story instead). Built from the same model the
+  // page renders, so the schema can never drift from the table.
+  //
+  // It sits ABOVE the published-document branch because these are pure DERIVED PRICE FACTS: they come
+  // from the offering model, not from anybody's copy, so they are equally true whichever body renders.
+  // Leaving them below meant one Publish at /edit/pricing silently deleted every price node from the
+  // highest-value answer-engine surface on the site — the exact asset this work exists to build, taken
+  // out by an operator editing a paragraph and having no way to know.
+  const priceSchema = [...members, ...spaces]
+    .filter((o) => o.monthlyCents > 0)
+    .map((o) =>
+      productSchema({
+        title: `Frequency ${o.label}`,
+        description: o.forWho,
+        priceCents: o.monthlyCents,
+        currency: 'usd',
+        // Every plan here is a MONTHLY subscription. Without this the Offer publishes a bare price and
+        // a $19/mo plan reads as a flat $19 purchase.
+        billingPeriodCode: 'MON',
+        path: '/pricing',
+        sellerName: 'Frequency',
+      }),
+    )
+
+  const published = await getPublishedData('pricing')
+  if (isRenderable(published)) {
+    const live = await getLiveData(createAdminClient()).catch(() => null)
+    return (
+      <>
+        <JsonLd data={[breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]), ...priceSchema]} />
+        {/* Article schema for the published doc, the same way every other Puck-backed marketing route
+            emits it (about, the-community, the-lab, the-quest). Without it a published /pricing ships
+            strictly less structured data than the generated one it replaces.
+            ⚠️ The FAQPage schema is deliberately NOT carried over: it is generated from the coded
+            page's own FAQ copy, and asserting those answers over a body an operator has rewritten
+            would publish text no visitor can see. The published document carries its own. */}
+        <BlockDocJsonLd data={published} path="/pricing" />
+        <BlockRender config={config} data={published} metadata={live ? { live } : {}} />
+      </>
+    )
+  }
+
   const extras = planExtras(input)
   const faq = pricingFaq(input)
   const ladder = ladderSentence(spaces)
@@ -196,22 +308,7 @@ export default async function PricingPage() {
         data={[
           breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]),
           faqSchema(faq),
-          // One Product/Offer per PAID offering, priced at the amount actually charged today (the beta
-          // rate where there is one). A free tier is not an Offer (a zero-price Product reads as spam to
-          // answer engines; the FAQ carries the free story instead). Built from the same model the page
-          // renders, so the schema never drifts from the table.
-          ...[...members, ...spaces]
-            .filter((o) => o.monthlyCents > 0)
-            .map((o) =>
-              productSchema({
-                title: `Frequency ${o.label}`,
-                description: o.forWho,
-                priceCents: o.monthlyCents,
-                currency: 'usd',
-                path: '/pricing',
-                sellerName: 'Frequency',
-              }),
-            ),
+          ...priceSchema,
         ]}
       />
 
@@ -230,11 +327,11 @@ export default async function PricingPage() {
         eyebrow="Every plan, side by side"
         title={
           <>
-            Connection is free.
-            <br className="hidden sm:block" /> Paid plans <span className="text-primary">raise the limits.</span>
+            Your own people are
+            <br className="hidden sm:block" /> <span className="text-primary">always free.</span>
           </>
         }
-        subtitle={`Frequency is where your local community happens. Businesses pay for reach and scale, never for access to people. Being a member is free and running a Space is free. ${ladder}. You keep 100% of what you bring in yourself.`}
+        subtitle={`Selling is free on every plan. We take nothing on a follower, a member, a contact, or anyone who bought from you before. On a sale the network introduces we take a share, and every rung down the ladder makes it smaller. ${ladder}. The grid below is the proof.`}
       >
         <Button href="/spaces">
           Start a Space <ArrowRight className="h-5 w-5" />
@@ -252,21 +349,18 @@ export default async function PricingPage() {
       {/* THE PLANS. Two ladders, seven plans, every one of them sellable: the personal membership
           (Member, Crew) and the Space plans (Free through Independent). One billing toggle governs both,
           so a reader compares monthly against monthly. */}
-      <Section tone="surface" pad="pt-6 pb-16 sm:pb-20">
-        <div className="mb-10 text-center">
-          <p className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">The plans</p>
-          <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">Pick the plan that fits.</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-            Two ladders. One for you as a member, one for the Space you run. You can be on both, and you
-            can start on the free rung of either.
-          </p>
-        </div>
+      <Section tone="surface" pad="pt-6 pb-16 sm:pb-20" width="wide">
+        <SectionHeading
+          eyebrow="The plans"
+          title="Pick the plan that fits."
+          kicker="Two ladders. One for you as a member, one for the Space you run. Every rung on both sells, so the only thing that moves down the ladder is the rate. You can be on both, and you can start on the free rung of either."
+        />
 
         <PricingBillingToggle yearlyNote={annualDiscountNote(input.values)}>
           <div className="mb-12">
-            <LadderHeading
+            <BlockHeading
               title="For you"
-              kicker="Being a member is free, forever. Crew is the paid personal tier."
+              kicker="Being a member is free, forever. Both rungs sell; Crew takes the rate down and lifts the caps."
             />
             <div className="grid gap-5 sm:grid-cols-2">
               {members.map((o) => (
@@ -276,9 +370,9 @@ export default async function PricingPage() {
           </div>
 
           <div>
-            <LadderHeading
+            <BlockHeading
               title="For your Space"
-              kicker="A Space is free for anyone to start. The paid plans raise the limits and buy down the fee."
+              kicker="A Space is free for anyone to start, and a free Space sells. The paid plans buy the rate down and lift the caps."
             />
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {spaces.map((o) => (
@@ -288,9 +382,12 @@ export default async function PricingPage() {
           </div>
         </PricingBillingToggle>
 
-        <p className="mx-auto mt-10 max-w-2xl text-center text-sm leading-relaxed text-subtle">
-          {PLAN_STORY.meters} And you keep 100% of your own bookings, always: the take-rate applies only
-          to business the network sends you, and it drops as your plan rises.
+        <p className="mx-auto mt-10 max-w-2xl text-center text-base leading-relaxed text-muted">
+          Never a wall in front of the transaction. {PLAN_STORY.meters} You keep 100% of your own
+          bookings on every rung: the take-rate applies only to a sale the network introduced, and it
+          drops as your plan rises. Once someone is yours, a follower, one of your members, a contact, or
+          a past buyer, we take nothing on them again. We charge once for the introduction. After that
+          they are your people, free.
         </p>
       </Section>
 
@@ -311,7 +408,7 @@ export default async function PricingPage() {
 
       {/* THE COMPARISON. The centerpiece: what every tier actually gets, derived from the entitlement
           key sets, the feature gates, and the usage ladders, so it cannot drift from the product. */}
-      <Section tone="surface">
+      <Section tone="surface" width="wide">
         <SectionHeading
           eyebrow="The full comparison"
           title="What each plan gets."
@@ -339,7 +436,7 @@ export default async function PricingPage() {
 
       {/* The value comparison: every Business feature vs the separate tool it replaces, totaled against the
           one flat price. Reads the pure lib/pricing/comparison catalog. */}
-      <Section tone="canvas">
+      <Section tone="canvas" width="wide">
         <SectionHeading
           eyebrow="What it replaces"
           title="One price. The whole toolbox."
@@ -348,8 +445,10 @@ export default async function PricingPage() {
         <PricingComparison />
       </Section>
 
-      {/* The four brand promises that make it a collective, not a SaaS (ADR-811 §1a). */}
-      <Section tone="canvas">
+      {/* The four brand promises that make it a collective, not a SaaS (ADR-811 §1a). Surface, not
+          canvas: the value comparison above and the Statement below are both canvas, and three canvas
+          bands in a row read as one undifferentiated block. */}
+      <Section tone="surface">
         <SectionHeading
           eyebrow="Four promises"
           title="Why people stay."
@@ -377,10 +476,10 @@ export default async function PricingPage() {
               body: 'An honest receipt: the real dollars the collective sourced for you, and what our share of that was. Nothing hidden.',
             },
           ].map((p) => (
-            <div key={p.title} className="rounded-2xl border border-border bg-surface p-6">
+            <Card key={p.title} tone="feature">
               <h3 className="font-display uppercase text-text text-xl">{p.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted">{p.body}</p>
-            </div>
+            </Card>
           ))}
         </div>
       </Section>
@@ -421,22 +520,9 @@ export default async function PricingPage() {
 // One card per offering. Every string comes off the Offering (which is built from the pricing config),
 // so a card holds no pricing logic of its own. Semantic DAWN tokens only.
 
-function LadderHeading({ title, kicker }: { title: string; kicker: string }) {
-  return (
-    <div className="mb-5">
-      <h3 className="font-display uppercase text-text text-2xl">{title}</h3>
-      <p className="mt-1 text-sm leading-relaxed text-muted">{kicker}</p>
-    </div>
-  )
-}
-
 function OfferingCard({ offering }: { offering: Offering }) {
   return (
-    <div
-      className={`flex flex-col rounded-2xl border bg-surface p-6 ${
-        offering.featured ? 'border-2 border-primary ring-4 ring-primary-bg' : 'border-border'
-      }`}
-    >
+    <Card tone={offering.featured ? 'highlight' : 'feature'} className="flex flex-col">
       <div className="mb-1 flex flex-wrap items-center gap-2">
         <h4 className="font-display uppercase text-text text-2xl">{offering.label}</h4>
         {offering.featured && (
@@ -452,7 +538,8 @@ function OfferingCard({ offering }: { offering: Offering }) {
       <p className="mt-3 text-sm text-muted">{offering.billing}</p>
       {offering.trial && <p className="mt-1 text-sm font-semibold text-text">{offering.trial}</p>}
       <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">{offering.forWho}</p>
-      <p className="mt-3 text-sm text-subtle">{offering.takeRate}</p>
+
+      <RateLine takeRate={offering.takeRate} />
 
       <Button
         href={offering.cta.href}
@@ -461,7 +548,25 @@ function OfferingCard({ offering }: { offering: Offering }) {
       >
         {offering.cta.label}
       </Button>
-    </div>
+    </Card>
+  )
+}
+
+/** The rate line, which is the PAGE'S LEAD PROMISE and used to read as the quietest thing on the card
+ *  (`text-sm text-subtle`, last, undifferentiated). It now sits on its own ruled strip, with the half
+ *  that never changes carrying the weight and the network half staying quiet beside it.
+ *
+ *  The split is the same one the metadata and the FAQ already do (`takeRate.split(', ')`) — the string
+ *  is built as "<your own>, <the network's>" — and it falls back to the whole line if a rate ever
+ *  arrives without the comma, so a config change can soften the design but never lose the sentence. */
+function RateLine({ takeRate }: { takeRate: string }) {
+  const [own, ...rest] = takeRate.split(', ')
+  const network = rest.join(', ')
+  return (
+    <p className="mt-4 border-t border-border pt-3 text-sm leading-relaxed">
+      <span className="font-semibold text-text">{own}</span>
+      {network && <span className="text-subtle">, {network}</span>}
+    </p>
   )
 }
 
@@ -479,7 +584,8 @@ function PriceBlock({ offering }: { offering: Offering }) {
           {key === 'month' && offering.listAnchor && (
             <span className="text-base text-subtle line-through">{offering.listAnchor}</span>
           )}
-          <span className="font-display text-text text-3xl leading-none">{label}</span>
+          {/* The price outranks the plan name (text-2xl) instead of tying with it. */}
+          <span className="font-display text-text text-4xl leading-none">{label}</span>
         </span>
       ))}
       {offering.betaNote && (
@@ -491,23 +597,23 @@ function PriceBlock({ offering }: { offering: Offering }) {
 
 function ExtraCard({ extra }: { extra: PlanExtra }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
+    <Card tone="feature">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="font-display uppercase text-text text-2xl">{extra.label}</h3>
         <span className="font-display text-primary-strong text-xl">{extra.price}</span>
       </div>
       <p className="mt-2 text-sm leading-relaxed text-muted">{extra.detail}</p>
       <p className="mt-2 text-sm font-semibold text-text">{extra.availability}</p>
-    </div>
+    </Card>
   )
 }
 
 // ── The comparison grid ──────────────────────────────────────────────────────
-// Two presentations of the same pure model, so it is readable at any width:
-//   * MOBILE: one collapsible section per plan (native <details>, no client JS), each listing every
-//     group and row for that plan. A squashed multi-column table is unreadable on a phone.
-//   * DESKTOP: the real table, scrolling inside its own container (PAGE-FRAMEWORK) so wide content
-//     never makes the page scroll sideways.
+// This block used to carry its own desktop table, its own mobile stack, and its own `Cell` — a second
+// implementation of the one the value comparison further down the page already had. Both now compose
+// components/marketing/comparison-table.tsx. What is left here is the ADAPTER: the pure FeatureGrid
+// (columns + grouped rows, resolved from the entitlement key sets) mapped onto that renderer's shape,
+// with the price furniture a plan column carries in its header and on its mobile summary.
 
 function ComparisonBlock({
   title,
@@ -523,141 +629,47 @@ function ComparisonBlock({
   openId: string
 }) {
   const priceById = new Map(offerings.map((o) => [o.id, o]))
+
+  const columns: ComparisonColumn[] = grid.columns.map((column) => {
+    const offering = priceById.get(column.id)
+    return {
+      id: column.id,
+      label: column.label,
+      emphasis: offering?.featured ?? false,
+      summary: offering?.monthly,
+      note: (
+        <span className="flex items-baseline gap-1.5">
+          {offering?.listAnchor && (
+            <span className="text-2xs font-semibold text-subtle line-through">{offering.listAnchor}</span>
+          )}
+          <span className="text-sm font-bold text-primary-strong">{offering?.monthly}</span>
+        </span>
+      ),
+    }
+  })
+
+  const groups: ComparisonGroup[] = grid.groups.map((group) => ({
+    key: group.key,
+    label: group.label,
+    rows: group.rows.map((row) => ({
+      key: row.key,
+      label: row.label,
+      detail: row.detail,
+      cells: row.cells,
+    })),
+  }))
+
   return (
     <div>
-      <div className="mb-5">
-        <h3 className="font-display uppercase text-text text-2xl">{title}</h3>
-        <p className="mt-1 text-sm leading-relaxed text-muted">{kicker}</p>
-      </div>
-
-      {/* Mobile: one collapsible per plan. */}
-      <div className="space-y-3 lg:hidden">
-        {grid.columns.map((column, i) => {
-          const offering = priceById.get(column.id)
-          return (
-            <details
-              key={column.id}
-              open={column.id === openId}
-              className="rounded-2xl border border-border bg-surface"
-            >
-              <summary className="flex cursor-pointer items-baseline justify-between gap-3 px-5 py-4">
-                <span className="font-display uppercase text-text text-xl">{column.label}</span>
-                <span className="text-sm font-bold text-primary-strong">{offering?.monthly}</span>
-              </summary>
-              <div className="border-t border-border px-5 pb-5 pt-2">
-                {grid.groups.map((group) => (
-                  <div key={group.key} className="mt-4 first:mt-2">
-                    <h4 className="mb-2 text-2xs font-black uppercase tracking-wider text-subtle">
-                      {group.label}
-                    </h4>
-                    <dl className="space-y-2">
-                      {group.rows.map((row) => (
-                        <div key={row.key} className="flex items-start justify-between gap-4">
-                          <dt className="text-sm text-muted">{row.label}</dt>
-                          <dd className="shrink-0 text-right text-sm">
-                            <Cell cell={row.cells[i]!} />
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </div>
-                ))}
-              </div>
-            </details>
-          )
-        })}
-      </div>
-
-      {/* Desktop: the real table. */}
-      <div className="hidden overflow-x-auto rounded-2xl border border-border lg:block">
-        <table className="w-full text-left">
-          <caption className="sr-only">{`${title}: what each plan includes`}</caption>
-          <thead>
-            <tr className="border-b border-border bg-surface-elevated">
-              <th scope="col" className="w-64 px-5 py-4 align-bottom text-sm font-bold text-text">
-                Feature
-              </th>
-              {grid.columns.map((column) => {
-                const offering = priceById.get(column.id)
-                return (
-                  <th
-                    key={column.id}
-                    scope="col"
-                    className={`px-5 py-4 align-bottom ${offering?.featured ? 'bg-primary-bg/30' : ''}`}
-                  >
-                    <span className="block font-display uppercase text-text text-xl">{column.label}</span>
-                    <span className="mt-1 flex items-baseline gap-1.5">
-                      {offering?.listAnchor && (
-                        <span className="text-2xs font-semibold text-subtle line-through">
-                          {offering.listAnchor}
-                        </span>
-                      )}
-                      <span className="text-sm font-bold normal-case text-primary-strong">
-                        {offering?.monthly}
-                      </span>
-                    </span>
-                  </th>
-                )
-              })}
-            </tr>
-          </thead>
-          {grid.groups.map((group) => (
-            <tbody key={group.key} className="text-sm">
-              <tr className="border-b border-border bg-surface-elevated/60">
-                <th
-                  scope="colgroup"
-                  colSpan={grid.columns.length + 1}
-                  className="px-5 py-2 text-2xs font-black uppercase tracking-wider text-subtle"
-                >
-                  {group.label}
-                </th>
-              </tr>
-              {group.rows.map((row) => (
-                <tr key={row.key} className="border-b border-border last:border-0">
-                  <th scope="row" className="px-5 py-3 align-top font-semibold text-text">
-                    {row.label}
-                    <span className="mt-0.5 block text-xs font-normal leading-relaxed text-subtle">
-                      {row.detail}
-                    </span>
-                  </th>
-                  {row.cells.map((cell, i) => (
-                    <td
-                      key={grid.columns[i]!.id}
-                      className={`px-5 py-3 align-top ${
-                        priceById.get(grid.columns[i]!.id)?.featured ? 'bg-primary-bg/15' : ''
-                      }`}
-                    >
-                      <Cell cell={cell} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          ))}
-        </table>
-      </div>
+      <BlockHeading title={title} kicker={kicker} />
+      <ComparisonTable
+        caption={`${title}: what each plan includes`}
+        rowHeader="Feature"
+        columns={columns}
+        groups={groups}
+        mobile="by-column"
+        openId={openId}
+      />
     </div>
   )
-}
-
-/** One resolved cell. A yes reads as a check, a no reads as a muted dash with its reason, and a value
- *  (an allowance, a rate, an add-on price) reads plainly. The text is always present for screen readers. */
-function Cell({ cell }: { cell: GridCell }) {
-  if (cell.kind === 'yes') {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-success">
-        <Check className="h-4 w-4 shrink-0" aria-hidden />
-        {cell.text}
-      </span>
-    )
-  }
-  if (cell.kind === 'no') {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-subtle">
-        <Minus className="h-4 w-4 shrink-0" aria-hidden />
-        {cell.text}
-      </span>
-    )
-  }
-  return <span className="font-semibold text-text">{cell.text}</span>
 }

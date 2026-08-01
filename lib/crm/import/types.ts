@@ -185,6 +185,11 @@ export interface CommitResult {
   skipped: number
   failed: number
   total: number
+  /** Rows a Space import could not create because the Space is at its `space_crm` contact allowance
+   *  (ADR-917). Counted separately from `skipped` so the outcome says WHY rather than implying the
+   *  rows were duplicates. Absent on a personal import and on any import that stayed inside the
+   *  allowance. Nothing already imported is affected: a full meter stops new rows only. */
+  overAllowance?: number
 }
 
 // ── Status machine ───────────────────────────────────────────────────────────────

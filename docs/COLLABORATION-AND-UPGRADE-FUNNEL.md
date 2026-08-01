@@ -15,7 +15,7 @@ Three independent axes decide what someone can do (unchanged, [PRICING.md](PRICI
 |---|---|---|
 | **Personal tier** (`profiles.membership_tier`) | Visitor · Member (free) · **Crew** ($9) | self-serve billing |
 | **Community role** (`profiles.community_role`) | Member · Host · Guide · Mentor | **earned, never paid** (ADR-207) |
-| **Space plan** (`spaces.plan`) | Free · **Business** ($49) · **Non Profit** ($29) | self-serve billing |
+| **Space plan** (`spaces.plan`) | Free · **Business** ($29) · **Collective** ($79) · **Non Profit** ($39) | self-serve billing |
 
 **Best-practice principle (owner, ADR-552 + ADR-810): let them taste, gate the doing.** A member can
 create and use the core surfaces for free; the paid wall sits at **depth, scale, seats, and
@@ -48,14 +48,18 @@ Each row is one funnel point: a member plays with the value, hits a single clear
 | # | From | To | Trigger (the moment) | What it unlocks |
 |---|---|---|---|---|
 | 1 | Member (free) | **Crew** ($9) | wants the full game / to stand up their **first Space** | Vault cash-in, full gamification, unlimited Vera, **create 1 Space** |
-| 2 | Free Space | **Business** ($49) | wants to **host collaborators**, run a real team, or run **more than one Space** | collaborators, event co-hosting, seats, full CRM/email/automation, custom domain, unlimited Spaces |
-| 3 | Free Space | **Non Profit** ($29) | a verified 501(c)(3) wants the full depth at the mission price | everything in Business + donation framing, flat price |
+| 2 | Free Space | **Business** ($29) | wants to **host collaborators**, run a real team, or run **more than one Space** | collaborators, event co-hosting, seats, full CRM/email/automation, custom domain, unlimited Spaces |
+| 3 | Free Space | **Non Profit** ($39) | a verified 501(c)(3) wants the full depth at the mission price | everything in Business + donation framing, flat price |
 | 4 | Any paid Space | **+ Resonance Engine** (+$20) | CRM crosses enough contacts to want live matching | the AI matching + next-best-action depth |
 | 5 | Business | **more operator seats** (+per seat) | invites a 2nd operator to help run the back office | extra editor/moderator/admin seats (ADR-799 §A) |
 
-**Money exchange is never the wall** (ADR-552): every Space, free included, can take bookings,
-donations, tickets, memberships, and sell in its Shop. What you pay for is **depth, scale, seats, and
-collaboration**, so the free tier stays a genuine taste.
+**Selling IS a wall; being paid attention is not** (ADR-913, revising ADR-552's "money exchange is never
+the wall"). The free tier can create events, take **RSVPs**, and receive **tips** (tips are 0% on every
+tier, forever). It cannot **sell**: tickets and payments need **Crew** on the personal side or a
+**Business / Non Profit** Space. Above that line, what you pay for is still **depth, scale, seats, and
+collaboration**, and the take-rate only ever touches a sale the **network** sourced (Crew 8% · Business
+and Collective 5% · Non Profit 0%). A buyer who is already the seller's own audience is **0%**:
+Frequency charges once for the introduction, and after that they're your people, free.
 
 ## 4. What a member can do at each stage (the taste)
 
@@ -66,11 +70,15 @@ collaboration**, so the free tier stays a genuine taste.
 | Full game (cash-in, compete) | 🔴 | earn-only | ✅ | n/a | n/a |
 | Author Journeys / Practices / Circles | 🔴 | 🔴 (Crew+) | ✅ | ✅ | ✅ |
 | **Create a Space** | 🔴 | 🔴 (go Crew) | ✅ 1 space | — | ✅ unlimited |
-| Take money (bookings/tickets/donations) | 🔴 | via a Space | via a Space | ✅ (higher take-rate) | ✅ (lower take-rate) |
+| **Receive tips** (0% platform fee, always) | 🔴 | ✅ | ✅ | ✅ | ✅ |
+| **Sell** (tickets, bookings, payments) | 🔴 | 🔴 RSVPs only | ✅ 8% network-sourced | 🔴 RSVPs only | ✅ 5% network-sourced, Non Profit 0% |
 | **Host collaborators / co-host events** | 🔴 | 🔴 | 🔴 | 🔴 preview | ✅ Non Profit; Business previews (Collective floor, ADR-835) |
 | Team seats, full CRM/email/automation, custom domain | 🔴 | 🔴 | 🔴 | 🔴 preview | ✅ |
 
-Legend: ✅ available · 🔴 gated (upgrade prompt) · earn-only = plays but cannot cash in.
+Legend: ✅ available · 🔴 gated (upgrade prompt) · earn-only = plays but cannot cash in. Every rate shown
+is **network-sourced only**: a sale to the seller's own audience (a follower, an active Space member, a
+Space Contact, someone on the seller's own contact list, or a past buyer) is **0%**, and tips are 0%
+everywhere (ADR-913).
 
 ## 5. How it is enforced (and why OFF is safe)
 

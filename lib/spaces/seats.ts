@@ -32,13 +32,37 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { featureGatesLive } from '@/lib/pricing/settings'
+import { allowanceAt } from '@/lib/pricing/feature-meters'
+import { asSpacePlan } from '@/lib/pricing/plans'
 import { atLeastSpaceRole, type SpaceRole } from './membership'
 
 // ── PURE: the seat arithmetic (no IO, fully testable) ───────────────────────────────────────────
 
-/** The base operator allowance every Space gets free, before any licensed seats: the owner's seat.
- *  So the licensed total is BASE_SEAT_ALLOWANCE + spaces.seat_quantity. */
-export const BASE_SEAT_ALLOWANCE = 1 as const
+// ── THE BASE SEAT ALLOWANCE, read from the meter (ADR-917) ──────────────────────────────────────
+//
+// 🔴 `BASE_SEAT_ALLOWANCE = 1` used to be a hardcoded constant here, and the `space_team` meter in
+// lib/pricing/feature-meters.ts carried its own per-plan seat ladder (free 1, Collective 3 included).
+// Two ladders, one dimension: the pricing page advertised three included seats on Collective while the
+// code granted every plan exactly one, so a Collective Space that bought the tier for its team got the
+// free Space's base. The meter is now the source, and this module reads it.
+//
+// The direction of the change is deliberately the generous one: no plan loses a seat, and Collective /
+// Non Profit / Independent gain the two the ladder always promised them.
+
+/** The base operator seats a plan includes before any licensed add-on seats (the owner's seat, plus
+ *  whatever the plan includes). Read from the `space_team` meter, so the number a Space is sold and
+ *  the number it gets are one number. FAIL-SAFE to 1 (the historical base) for an unlimited or absent
+ *  rung, so this can never resolve to 0 and lock a Space out of its own owner seat. PURE. */
+export function baseSeatAllowance(plan: string | null | undefined): number {
+  const allowance = allowanceAt('space_team', asSpacePlan(plan ?? null))
+  return typeof allowance === 'number' && allowance > 0 ? Math.floor(allowance) : 1
+}
+
+/** The base operator allowance a FREE Space gets before any licensed seats: the owner's seat. Derived
+ *  from the meter's free rung rather than typed, and kept as a named export because the seat editor
+ *  and the downgrade floor both anchor on the free base. Prefer `baseSeatAllowance(plan)` in any new
+ *  code that knows the plan. */
+export const BASE_SEAT_ALLOWANCE: number = baseSeatAllowance('free')
 
 /** The active-member roles that consume an operator seat (admin / moderator / editor). The single
  *  source the `usedSeats` query filters on; kept in lock-step with operatorRoleConsumesSeat. */
@@ -52,12 +76,13 @@ export function operatorRoleConsumesSeat(role: SpaceRole | string | null | undef
   return atLeastSpaceRole(role, 'editor')
 }
 
-/** The total LICENSED operator seats for a Space: the base allowance (the owner) plus the licensed
- *  count the owner is billed for (spaces.seat_quantity). PURE. A null/garbage/negative count floors to
- *  0 added seats, so the minimum is the base allowance (1). */
-export function licensedSeats(seatQuantity: number | null | undefined): number {
+/** The total LICENSED operator seats for a Space: the plan's base allowance plus the licensed count
+ *  the owner is billed for (spaces.seat_quantity). PURE. A null/garbage/negative count floors to 0
+ *  added seats, so the minimum is the plan's base allowance. `plan` is optional and defaults to the
+ *  free base, which is exactly the pre-ADR-917 behavior for any caller that does not know the plan. */
+export function licensedSeats(seatQuantity: number | null | undefined, plan?: string | null): number {
   const n = typeof seatQuantity === 'number' && Number.isFinite(seatQuantity) ? Math.floor(seatQuantity) : 0
-  return BASE_SEAT_ALLOWANCE + Math.max(0, n)
+  return baseSeatAllowance(plan ?? 'free') + Math.max(0, n)
 }
 
 /** How many operator seats remain, given the used count + the licensed total. PURE, never negative. */
@@ -78,21 +103,32 @@ export function seatLimitReached(used: number, licensed: number): boolean {
 // membership.ts. Reads FAIL-SAFE (a hiccup never wrongly blocks an invite while OFF, and never wrongly
 // grants a seat while live — see each helper).
 
-/** Read a Space's LICENSED seat count (spaces.seat_quantity, the owner-set figure the Team /
- *  Nonprofit item bills). FAIL-SAFE to 0 (the base allowance still applies via licensedSeats). */
-export async function getSpaceSeatQuantity(spaceId: string): Promise<number> {
+/** Read a Space's LICENSED seat count + its plan in ONE query (spaces.seat_quantity is the owner-set
+ *  figure the Team / Nonprofit item bills; the plan decides the BASE allowance those seats sit on top
+ *  of, ADR-917). FAIL-SAFE to `{ seatQuantity: 0, plan: null }`, which resolves to the free base, the
+ *  smallest and therefore never an over-grant. */
+export async function getSpaceSeatRow(spaceId: string): Promise<{ seatQuantity: number; plan: string | null }> {
   try {
     const db = createAdminClient()
     const { data } = (await db
       .from('spaces')
-      .select('seat_quantity')
+      .select('seat_quantity, plan')
       .eq('id', spaceId)
-      .maybeSingle()) as { data: { seat_quantity?: number | null } | null }
+      .maybeSingle()) as { data: { seat_quantity?: number | null; plan?: string | null } | null }
     const n = data?.seat_quantity
-    return typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0
+    return {
+      seatQuantity: typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0,
+      plan: data?.plan ?? null,
+    }
   } catch {
-    return 0
+    return { seatQuantity: 0, plan: null }
   }
+}
+
+/** Read a Space's LICENSED seat count (spaces.seat_quantity). FAIL-SAFE to 0 (the base allowance
+ *  still applies via licensedSeats). */
+export async function getSpaceSeatQuantity(spaceId: string): Promise<number> {
+  return (await getSpaceSeatRow(spaceId)).seatQuantity
 }
 
 /** Count the USED operator seats of a Space in ONE query: the ACTIVE members whose role consumes a
@@ -130,6 +166,8 @@ export async function usedSeats(spaceId: string): Promise<number> {
 export interface SeatUsage {
   /** The owner-set licensed seat count (spaces.seat_quantity). */
   seatQuantity: number
+  /** The seats the PLAN itself includes, before any licensed add-on seats (ADR-917). */
+  base: number
   /** The total licensed operator seats (base allowance + seatQuantity). */
   licensed: number
   /** Active members consuming an operator seat (admin / moderator / editor). */
@@ -143,10 +181,13 @@ export interface SeatUsage {
 /** Resolve a Space's full seat usage in two parallel reads (the licensed count + the used count).
  *  FAIL-SAFE: a read error yields the base allowance with 0 used. Server-only. */
 export async function getSeatUsage(spaceId: string): Promise<SeatUsage> {
-  const [seatQuantity, used] = await Promise.all([getSpaceSeatQuantity(spaceId), usedSeats(spaceId)])
-  const licensed = licensedSeats(seatQuantity)
+  const [row, used] = await Promise.all([getSpaceSeatRow(spaceId), usedSeats(spaceId)])
+  const { seatQuantity, plan } = row
+  const base = baseSeatAllowance(plan)
+  const licensed = licensedSeats(seatQuantity, plan)
   return {
     seatQuantity,
+    base,
     licensed,
     used,
     remaining: seatsRemaining(used, licensed),

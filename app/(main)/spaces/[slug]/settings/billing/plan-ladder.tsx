@@ -1,6 +1,6 @@
 import { Check, Sparkles, ShieldCheck, Globe } from 'lucide-react'
 import { SPACE_PLAN_LABEL, type SpacePlan } from '@/lib/pricing/plans'
-import { PLACEHOLDER_SPACE_PRICE_CENTS, COLLECTIVE_BETA_CENTS } from '@/lib/pricing/feature-tiers'
+import { spacePlanPriceCents, SPACE_PLAN_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
 import { formatCents } from '@/lib/pricing/display'
 import { isBetaPricingActive } from '@/lib/pricing/beta'
 import { ChoosePlanButton } from './choose-plan'
@@ -38,7 +38,6 @@ const RUNGS: Rung[] = [
     plan: 'collective',
     icon: Sparkles,
     blurb: 'Be the venue: everything in Business, plus team seats, automations, membership tickets, multiple pipelines, and Collaborator hosting.',
-    note: `Opening Beta ${formatCents(COLLECTIVE_BETA_CENTS)}/mo`,
   },
   {
     plan: 'nonprofit',
@@ -73,10 +72,25 @@ function rungState(plan: SpacePlan, currentPlan: SpacePlan, sellable: Partial<Re
   return 'soon'
 }
 
-/** The plain, honest price label for a rung. "Free" never appears here (these are the paid rungs). */
+/** The plain, honest price label for a rung: what the Space would be charged TODAY.
+ *
+ *  🔴 It used to read the LIST price while /pricing quoted the beta one, so an operator comparing the
+ *  two saw Business at $29 here and $19 there, and the in-app number was the one that looked
+ *  authoritative. Collective had been patched around with a one-off beta constant; Business never was,
+ *  which is exactly what an ad-hoc patch buys you. `spacePlanPriceCents` resolves through the same beta
+ *  window the checkout does, so this rung and the marketing page cannot disagree again. */
 function priceLabel(plan: SpacePlan): string {
-  const cents = PLACEHOLDER_SPACE_PRICE_CENTS[plan]
+  const cents = spacePlanPriceCents(plan)
   return cents > 0 ? `${formatCents(cents)}/mo` : 'Free'
+}
+
+/** The Opening Beta note for a rung currently under its list price, else null. Derived, so a plan that
+ *  is not actually discounted can never advertise a discount, and every discounted plan says so rather
+ *  than only the one somebody remembered to hand-write a note for. */
+function betaNote(plan: SpacePlan): string | null {
+  const list = SPACE_PLAN_PRICE_CENTS[plan]?.listCents ?? 0
+  const now = spacePlanPriceCents(plan)
+  return list > now ? `Opening Beta ${formatCents(now)}/mo, list ${formatCents(list)}/mo` : null
 }
 
 /**
@@ -137,7 +151,9 @@ export function PlanLadder({
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                   <span className="text-sm font-bold text-text">{SPACE_PLAN_LABEL[rung.plan]}</span>
                   <span className="text-sm font-semibold text-text">{priceLabel(rung.plan)}</span>
-                  {rung.note && betaActive && <span className="text-2xs font-medium text-primary-strong">{rung.note}</span>}
+                  {(rung.note ?? betaNote(rung.plan)) && betaActive && (
+                    <span className="text-2xs font-medium text-primary-strong">{rung.note ?? betaNote(rung.plan)}</span>
+                  )}
                 </div>
                 <p className="mt-0.5 text-xs leading-relaxed text-muted">{rung.blurb}</p>
               </div>

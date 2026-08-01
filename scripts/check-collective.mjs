@@ -111,7 +111,8 @@ line('\nPhase 2 · Differential take-rate — attribution wiring')
   else {
     ok('fees.ts is source-aware (self/network); network vector lives in pricing-keys.ts')
     // Only the fee-BEARING seller paths must classify + thread a source. orders.ts is read/settlement
-    // only (fee comes from the stored column) and tips are flat (no space plan), so they are exempt.
+    // only (the fee comes from the stored column), and tips carry NO fee at all (ADR-913) — a tip has no
+    // take-rate to mis-bill, so there is nothing for a source to decide. Both are exempt.
     const callSites = ['lib/commerce/checkout.ts', 'lib/billing/tickets.ts']
     const missing = callSites.filter((p) => { const t = read(p); return t && !/classifyOrderSource|,\s*source\b/.test(t) })
     if (missing.length) fail(`take-rate source not classified/threaded into: ${missing.join(', ')} (a self-booking could be billed a network rate)`)

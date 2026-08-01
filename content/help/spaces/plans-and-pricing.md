@@ -3,7 +3,7 @@ title: Plans and pricing
 description: What each Space plan costs, what it includes, and how to pick the one that fits.
 category: spaces
 order: 2
-updated: 2026-07-27
+updated: 2026-07-30
 audience: member
 featureKeys: [billing]
 status: published
@@ -21,6 +21,10 @@ is how you actually run things. This page covers what each plan costs and what i
 | **Collective** | $79 | $790 | Scale and team: everything in Business plus automation, multiple pipelines, seats, and Programs |
 | **Non Profit** | $39 | $390 | Verified nonprofits, with the full Collective toolkit |
 | **Independent** | $249 | $2,490 | White label, run on your own terms, disconnected from the network |
+
+Those are the list prices. **During the Opening Beta, Business is $19 a month and Collective is $49 a
+month**, and a Space that subscribes at the Opening Beta rate keeps that rate for as long as it keeps
+the plan. See "During the beta" below.
 
 Paying yearly gives you **two months free**: a yearly plan is ten months of the monthly price.
 
@@ -48,7 +52,16 @@ Every paid plan starts with a **14 day free trial**.
 
 ## What Frequency takes
 
-When money moves through Frequency, we take a percentage. It gets smaller as your plan grows:
+Two things to know before the numbers.
+
+**Tips are free.** Frequency takes nothing out of a tip. Not a percentage, not a cent.
+
+**A sale to your own people is free.** If the buyer already follows your Space, is an active member of
+it, sits in your Space Contacts or your own contact list, or has bought from you before, Frequency's
+share is **0%**. We charge once for the introduction. After that they are your people, free.
+
+That leaves the sales the network brings you: someone who found you through discovery, a referral, or
+the Market. Those are the only ones we take a percentage of:
 
 | Plan | Frequency's share of network-sourced sales |
 | --- | --- |
@@ -56,10 +69,18 @@ When money moves through Frequency, we take a percentage. It gets smaller as you
 | Business | 5% |
 | Collective | 3% |
 | Non Profit | 0% |
-| Independent | 0% |
+| Independent | 0%, it is off the network, so there are no network-sourced sales |
 
-This applies to sales the network brings you. The idea is simple: we earn when you earn, and we earn
-less as you grow.
+**Every plan can sell, including Free.** A Free Space creates events, takes RSVPs, sells tickets, and
+takes payments from day one. You do not buy the ability to charge, you buy the rate down. A paid plan
+lowers what Frequency takes on the sales the network brings you, and it gives you the tools that turn
+those buyers into your own people, where the rate is 0% on every plan.
+
+On your personal account the same shape applies: a free Member sells at 10%, and **Crew** brings that
+to 8%. Crew is pay what you want, from $4.99 a month.
+
+The idea is simple: we earn when the network earns you something, and never on the work you brought
+yourself.
 
 ## Picking a plan
 

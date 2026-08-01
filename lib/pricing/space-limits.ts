@@ -22,10 +22,22 @@ export interface SpaceCreationContext {
   ownsPaidSpace: boolean
 }
 
-/** Is a space plan a PAID plan (Business or Non Profit)? Free is the only unpaid plan (ADR-552). PURE. */
+/** Is a space plan a PAID plan? `free` is the ONLY unpaid plan (ADR-552), so this asks the question in
+ *  the one shape that cannot go stale: everything above the floor is paid.
+ *
+ *  🔴 It used to enumerate — `p === 'business' || p === 'nonprofit'` — and the enumeration had gone
+ *  wrong: `collective` and `independent` were added to SPACE_PLANS afterwards and never added here, so
+ *  every paying Space read as unpaid. That was not hypothetical. All four paid Spaces in production are
+ *  `collective`, meaning every paying customer silently failed the multi-Space unlock this module
+ *  exists to grant. It was masked only because the caller wraps the block in featureGatesLive(), which
+ *  is false during the beta grace window and un-masks by itself when the window closes.
+ *
+ *  An allow-list of paid plans has to be edited every time a plan is added, and forgetting is invisible
+ *  until someone pays. Asking "is it the free floor" needs no edit and fails in the safe direction:
+ *  `asSpacePlan` narrows an unknown label to 'free' (default-deny), so a typo reads as unpaid rather
+ *  than granting the unlock. PURE. */
 export function isPaidSpacePlan(plan: string | null | undefined): boolean {
-  const p = asSpacePlan(plan)
-  return p === 'business' || p === 'nonprofit'
+  return asSpacePlan(plan) !== 'free'
 }
 
 /** May the caller create ANOTHER space, given the facts? PURE + total (see the rule above). */

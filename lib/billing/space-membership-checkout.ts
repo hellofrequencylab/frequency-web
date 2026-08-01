@@ -79,7 +79,11 @@ export async function createSpaceMembershipCheckout(
     // Differential take-rate (ADR-811 §A): a membership the space brings itself is 0% (the hard promise);
     // one the collective sourced (referral / discovery) pays the space plan's NETWORK rate. Fail-safe:
     // ambiguity classifies as self, so we never bill a network rate on an own booking.
-    const { source } = await classifyOrderSource({ buyerProfileId: memberId, sellerProfileId: space.owner_profile_id })
+    const { source } = await classifyOrderSource({
+      buyerProfileId: memberId,
+      sellerProfileId: space.owner_profile_id,
+      sellerSpaceId: space.id, // enables the relationship check (ADR-913)
+    })
     // A standalone (disconnected) Space has left the graph → no network-sourced revenue (ADR-811 §3), so
     // the source collapses to self and the fee is 0 regardless of any referral signal.
     const effective = effectiveOrderSource(source, space.network_connected)

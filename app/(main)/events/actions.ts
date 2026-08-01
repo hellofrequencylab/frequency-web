@@ -158,6 +158,18 @@ async function geocodeEventOnCreate(eventId: string, fd: FormData): Promise<void
 // guard used to be a silent `return`, which left the editor open with no message
 // and nothing saved — indistinguishable from success. Navigation moved client-side
 // (the form redirects to the returned slug on ok).
+// ── SETTING A PRICE IS NOT GATED (ADR-914, reversing ADR-913) ──────────────────────────────────
+//
+// A `priceRefusal` helper used to sit here and block a free Member from writing a price at all. It is
+// gone: selling is free on every tier, and the ladder is the RATE, not the permission
+// (docs/VALUE-LADDER.md §1). Writing a price is now always allowed.
+//
+// What replaced it is not a check on this path at all. The one remaining condition — the payee has a
+// Stripe account that can actually receive money — is surfaced as a SETUP STEP next to the price
+// control, and enforced once, at the buy path (lib/billing/tickets.ts), which is the only place that
+// sees every sale. Refusing the WRITE would have been actively wrong here: someone should be able to
+// price their event and connect their bank in either order.
+
 export async function createEvent(formData: FormData): Promise<ActionResult<{ slug: string }>> {
   const title = (formData.get('title') as string | null)?.trim()
   const description = (formData.get('description') as string | null)?.trim() || null
@@ -503,11 +515,14 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   const admin = createAdminClient()
   const { data: ev } = await admin
     .from('events')
-    .select('slug, parent_event_id, details, scope_type')
+    // host_id + the two Space axes come along for the ADR-913 price gate below: the tier that matters
+    // is the PAYEE's, not the editor's (a cohost may edit an event they are not paid for).
+    .select('slug, parent_event_id, details, scope_type, host_id, space_id, host_space_id')
     .eq('id', eventId)
     .maybeSingle()
   const evRow = ev as {
     slug: string; parent_event_id: string | null; details: unknown; scope_type: string | null
+    host_id: string | null; space_id: string | null; host_space_id: string | null
   } | null
   const slug = evRow?.slug
   if (!slug) return fail('This event could not be found.')

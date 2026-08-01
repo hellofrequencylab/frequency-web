@@ -64,9 +64,25 @@ async function resolveCharge(seller: ProductRow, grossCents: number, source: Ord
   if (seller.owner_kind === 'profile') {
     const status = await getConnectStatus(seller.owner_profile_id ?? '')
     if (!status.accountId || !status.ready) return { error: 'This seller can’t take payment yet.' }
-    // An individual paid-member seller: 0% on their OWN sale, the member (Crew) rate on a network-sourced
-    // one (ADR-811). Upgrading to a Business Space buys the network rate down (the space branch below).
-    return { platformFeeCents: await memberTakeRateCents(grossCents, source), sellerStripeAccountId: status.accountId, source }
+    // An individual seller: 0% on their OWN sale, and their TIER's rung on a network-sourced one — free
+    // Member 10%, Crew 8% (ADR-914). Moving the listing into a Business Space buys it down further (the
+    // space branch below).
+    //
+    // Reads the REAL `membership_tier`, not the beta-granted one: BETA_OPEN_ACCESS reports 'crew' to
+    // every signed-in member, and billing the Crew rate to someone who has not bought Crew charges them
+    // for a discount they do not hold. Fail-safe — an error leaves the tier null, which prices at the
+    // free rung (never under-collect).
+    const { data: sellerProf } = await db()
+      .from('profiles')
+      .select('membership_tier')
+      .eq('id', seller.owner_profile_id ?? '')
+      .maybeSingle()
+    const sellerTier = (sellerProf as { membership_tier: string | null } | null)?.membership_tier ?? null
+    return {
+      platformFeeCents: await memberTakeRateCents(grossCents, source, sellerTier),
+      sellerStripeAccountId: status.accountId,
+      source,
+    }
   }
   const { data } = await db()
     .from('spaces')
@@ -153,6 +169,9 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
     entryPoint: input.entryPoint ?? null,
     buyerProfileId: input.buyerProfileId,
     sellerProfileId: seller.owner_profile_id,
+    // A Space shop: the relationship check (ADR-913) asks the SPACE's followers / members / CRM too,
+    // not just the owner profile. Null for a profile or platform seller, which is correct.
+    sellerSpaceId: seller.owner_kind === 'space' ? seller.owner_space_id ?? null : null,
   })
   const charge = await resolveCharge(seller, gross, source)
   if ('error' in charge) return charge

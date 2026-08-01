@@ -7,7 +7,7 @@
 // variant. The founder variant is stored archived (not offered publicly) but referenced by a
 // founding member's profiles.locked_price_id at checkout.
 
-import type { EntitlementTier } from '@/lib/core/entitlement'
+import { deriveTier, isPaid, type EntitlementTier } from '@/lib/core/entitlement'
 import { type SpacePlan, asSpacePlan } from '@/lib/pricing/plans'
 
 /** A subscription billing period. */
@@ -83,6 +83,12 @@ export function asSpacePlanKey(plan: SpacePlan | string | null | undefined): Spa
   return (SPACE_PLAN_KEYS as readonly string[]).includes(plan ?? '') ? (plan as SpacePlanKey) : null
 }
 
+// ── LEGACY flat (paying-state) take-rate helpers · ADR-552 ────────────────────────────────────────────
+// Superseded by the DIFFERENTIAL network vector further down (ADR-811 §A / ADR-913). Nothing on the
+// charging path calls these any more: every live fee path resolves `take_rate.network_bps` + `member_bps`
+// through lib/billing/fees.ts. They stay because a stored `take_rate` blob still carries the flat fields
+// and must resolve to a number rather than undefined. Do not wire a new fee path to them.
+
 /** The take-rate basis points in pricing_settings.take_rate for a space, keyed on PAYING-STATE, not the
  *  plan label (ADR-552). In the collapsed model a free space and a paying Business can BOTH carry
  *  spaces.plan = 'business' (free-vs-paid is a usage state within Business), so the rate cannot key on
@@ -123,10 +129,12 @@ export function takeRateCents(
   return Math.floor((grossCents * bps) / 10000)
 }
 
-/** The take-rate bps for an individual PAID-MEMBER seller (owner_kind='profile') — the Market listing
- *  ladder rate (8% today, ADR-596). Distinct from the space plan rates: a member sells at member_bps,
- *  and upgrading their space to Business buys the fee down to business_bps. PURE. Fails safe to the
- *  higher free_bps if a legacy row lacks member_bps (never under-collect). */
+/** LEGACY (ADR-596), off the charging path. The take-rate bps for an individual seller (owner_kind=
+ *  'profile') read off the FLAT `take_rate` fields. Charging now goes through the network vector below
+ *  (memberNetworkTakeRateBps): the take-rate applies only to network-sourced sales, and a seller's own
+ *  audience is always 0%, which a flat rate cannot express. Kept only so a stored legacy blob still
+ *  resolves a number. PURE. Fails safe to the higher free_bps if a row lacks member_bps (never
+ *  under-collect). */
 export function memberTakeRateBps(takeRate: { member_bps?: number; free_bps: number }): number {
   return typeof takeRate.member_bps === 'number' ? takeRate.member_bps : takeRate.free_bps
 }
@@ -156,32 +164,40 @@ export type OrderSource = 'self' | 'network'
  *  vector holds only the network side. The rate DROPS as the tier rises; a disconnected Independent space
  *  has left the graph, so its network revenue is 0 by definition.
  *
- *  The two `member*` fields are the INDIVIDUAL (profile) seller ladder, the personal-axis sibling of the
- *  space ladder above (ADR-9xx): `member_free` = a seller on the free Member tier, `member` = a seller on
- *  paid Crew. Crew buying down the rate is what makes the personal subscription read as savings rather
- *  than rent, exactly as a space plan buys down the space rate (COMMUNITY-COLLECTIVE-STRATEGY §4). */
+ *  TWO individual (profile) seller rungs sit beside the space ladder (ADR-914): `memberFree` for a
+ *  seller on the free Member tier and `member` for a Crew seller. Their own audience is always 0% on
+ *  both; the rungs price only what the network sourced.
+ *
+ *  ⚠️ `memberFree` was deleted once, under ADR-913, on the reasoning that a free Member could not sell
+ *  at all so the rate could never be reached. ADR-914 reversed that rule — selling is free on every
+ *  tier and the ladder IS the rate — which makes this rung the single most-charged number in the
+ *  product rather than dead config. It is the reference rate the whole ladder descends from. */
 export interface NetworkTakeRate {
   free: number
   business: number
   collective: number
   nonprofit: number
   independent: number
-  /** Individual seller on the FREE Member tier (the higher rate Crew buys down). */
-  member_free: number
-  /** Individual seller on the paid CREW tier. */
+  /** Individual (profile) seller on the FREE Member tier — the reference rate (ADR-914). */
+  memberFree: number
+  /** Individual (profile) seller on the paid CREW tier. */
   member: number
 }
 
-/** The seeded default network take-rate: Space free 1000 (10%) · Business 500 · Collective 300 ·
- *  Non Profit 0 · Independent 0. Individual sellers: free Member 1000 (10%), Crew 800 (8%), the split
- *  COMMUNITY-COLLECTIVE-STRATEGY §4 specified. Launch low; earn the right to raise. */
+/** The seeded default network take-rate: Space free 1000 (10%) · Business 500 (5%) · Collective 300 (3%) ·
+ *  Non Profit 0 · Independent 0 (left the graph). The individual rungs are 1000 (10%) on the free Member
+ *  tier and 800 (8%) on Crew. Launch low; earn the right to raise.
+ *
+ *  The free Member rung deliberately EQUALS the free Space rung: a free Space is held to the free
+ *  Member standard (owner ruling), so moving a free sale into a free Space changes nothing. Only paying
+ *  changes the rate, which is the entire point of the ladder. */
 export const NETWORK_TAKE_RATE_DEFAULT: NetworkTakeRate = {
   free: 1000,
   business: 500,
   collective: 300,
   nonprofit: 0,
   independent: 0,
-  member_free: 1000,
+  memberFree: 1000,
   member: 800,
 }
 
@@ -209,33 +225,43 @@ export function sourceAwareTakeRateCents(
   return Math.floor((grossCents * networkTakeRateBpsForPlan(plan, rate)) / 10000)
 }
 
-/** The individual (profile) seller's NETWORK take-rate bps for a personal entitlement tier: free Member
- *  pays `member_free`, paid Crew pays the bought-down `member`. A legacy rate blob with no `member_free`
- *  falls back to `member`, so an un-migrated operator row can never charge MORE than today's 8%. PURE. */
+/** The individual (profile) seller's NETWORK take-rate bps for their tier: 10% on free Member, 8% on
+ *  Crew (ADR-914).
+ *
+ *  Takes the whole rate blob rather than a bare number so a partial operator override can never resolve
+ *  to `undefined` → a NaN fee: an absent rung falls back to the seeded rate, never to 0.
+ *
+ *  🔴 FAIL-SAFE DIRECTION IS THE SELLER'S, NOT OURS. Paid-ness is asked through `isPaid`, the repo's
+ *  canonical ALLOW-LIST predicate (crew | supporter), so anything unrecognised prices at the HIGHER
+ *  free rung. Note `deriveTier` alone is NOT enough here: it passes an unknown label straight through,
+ *  so a `!== 'free'` test would read a typo as PAID and hand out the discount. That exact inversion was
+ *  written first and caught by the test below; keep the allow-list. That is deliberate and it is the opposite of
+ *  the audience check's direction: there, an unproven answer means we do not charge, because the
+ *  0%-on-your-own-people promise is public. Here the question is only WHICH published rate applies to a
+ *  sale we have already established the network sourced, and quoting the lower rate to a seller whose
+ *  tier we could not read would be under-collecting on a sale nobody disputes. PURE. */
 export function memberNetworkTakeRateBps(
-  tier: 'free' | 'crew' | string | null | undefined,
+  sellerTier?: string | null,
   rate: NetworkTakeRate = NETWORK_TAKE_RATE_DEFAULT,
 ): number {
-  // Anything that is not the free tier is a paid member (deriveTier collapses supporter -> crew).
-  if (tier === 'free') return typeof rate.member_free === 'number' ? rate.member_free : rate.member
-  return rate.member
+  const paid = isPaid(deriveTier((sellerTier ?? null) as EntitlementTier | null))
+  const rung = paid ? rate.member : rate.memberFree
+  const fallback = paid ? NETWORK_TAKE_RATE_DEFAULT.member : NETWORK_TAKE_RATE_DEFAULT.memberFree
+  return typeof rung === 'number' ? rung : fallback
 }
 
 /** Source-aware application-fee cents for an individual (profile) seller. `self` → 0 (the hard promise);
- *  `network` → the seller's personal-tier rate. PURE. Floors fractional cents.
- *
- *  `tier` DEFAULTS TO 'crew' (the paid rate) so every existing caller keeps today's 8% contract
- *  unchanged; the IO wrapper (lib/billing/fees.ts memberTakeRateCents) always passes the seller's real
- *  tier, which is the path that actually charges. */
+ *  `network` → the seller's tier rung (free Member 10%, Crew 8%). PURE. Floors fractional cents so the
+ *  seller is never short by rounding. */
 export function sourceAwareMemberTakeRateCents(
   grossCents: number,
   source: OrderSource,
   rate: NetworkTakeRate = NETWORK_TAKE_RATE_DEFAULT,
-  tier: 'free' | 'crew' | string | null | undefined = 'crew',
+  sellerTier?: string | null,
 ): number {
   if (source === 'self') return 0
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
-  return Math.floor((grossCents * memberNetworkTakeRateBps(tier, rate)) / 10000)
+  return Math.floor((grossCents * memberNetworkTakeRateBps(sellerTier, rate)) / 10000)
 }
 
 /** The monthly take-rate saving (cents) a not-yet-paying space would get on paid Business: the bps

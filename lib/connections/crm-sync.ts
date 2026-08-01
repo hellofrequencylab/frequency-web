@@ -4,6 +4,7 @@
 // linked_contact_id. Server-only (contacts is service-role).
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { canAddSpaceContact } from '@/lib/crm/contact-allowance'
 import { fireSpaceTrigger } from '@/lib/spaces/drip-enroll'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 
@@ -109,6 +110,10 @@ export async function syncContactToSpaceCrm(input: {
         })
         .eq('id', contactId)
     } else {
+      // METERED WRITE (ADR-917): graduating a personal contact into a Space CRM creates a NEW row, so
+      // it consumes the `space_crm` allowance. A touch of an existing row (the branch above) never
+      // does. Fail-safe to allowed; nothing bites while the feature gates are not live.
+      if (!(await canAddSpaceContact(input.spaceId))) return null
       const { data: inserted } = await db
         .from('contacts')
         .insert({

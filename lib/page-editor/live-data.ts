@@ -33,13 +33,18 @@ function toLivePost(r: PublicPostRow): LivePost {
 // "People showing up for each other" section is never empty. `postsCurated`
 // flags which path won so the UI can credit Vera only on real picks.
 export async function getLiveData(supabase: SupabaseClient): Promise<LiveData> {
-  const [featuredResult, postsResult, memberCountResult, eventsResult, circleCountResult] =
+  // Pricing rides along so a Tiers card can bind to a live figure instead of freezing one into the
+  // published document (ADR-918). Resolved in the same Promise.all, so it costs no extra round trip
+  // on the critical path, and fail-safe to {} inside getLivePricing.
+  const { getLivePricing } = await import('./live-pricing')
+  const [featuredResult, postsResult, memberCountResult, eventsResult, circleCountResult, pricing] =
     await Promise.all([
       supabase.rpc('public_featured_posts', { _limit: 6 }),
       supabase.rpc('public_posts', { _limit: 3 }),
       supabase.rpc('public_member_count'),
       supabase.rpc('public_events', { _limit: 3 }),
       supabase.rpc('public_active_circle_count'),
+      getLivePricing(),
     ])
 
   const featured = ((featuredResult.data ?? []) as PublicPostRow[]).map(toLivePost)
@@ -49,6 +54,7 @@ export async function getLiveData(supabase: SupabaseClient): Promise<LiveData> {
     : ((postsResult.data ?? []) as PublicPostRow[]).map(toLivePost)
 
   return {
+    pricing,
     memberCount: (memberCountResult.data as number | null) ?? 0,
     circleCount: (circleCountResult.data as number | null) ?? 0,
     upcomingEvents: (eventsResult.data ?? []) as LiveEvent[],

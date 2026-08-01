@@ -19,6 +19,8 @@
 // Resend `send.` subdomain), SMS / A2P, AUP/DPA legal copy, SES at scale. v1 caps volume conservatively.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { spaceAllowanceHeadroom } from '@/lib/pricing/space-allowance'
+import { featureGatesLive } from '@/lib/pricing/settings'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -39,9 +41,18 @@ import { randomUUID } from 'crypto'
 // ── Tunables (documented v1 values) ─────────────────────────────────────────────────────────────
 
 /** The conservative per-Space per-day send CAP (v1). A Space may send at most this many emails per
- *  calendar day (UTC), counted from outreach_sends rows created today. This is the anti-spam volume
- *  guard: a v1 Space ramps reputation slowly, and a misconfigured or hostile send can never blast.
- *  Raised later per-plan; 500/day is a safe Resend-free-tier-friendly ceiling. */
+ *  calendar day (UTC), counted from outreach_sends rows created today.
+ *
+ *  🔴 THIS IS A DELIVERABILITY LIMIT, NOT A PLAN LIMIT (ADR-917). It is the anti-spam volume guard: a
+ *  v1 Space ramps reputation slowly, and a misconfigured or hostile send can never blast. It applies
+ *  identically on every plan, INCLUDING the paid ones, because Resend's shared sending domain does not
+ *  care what someone pays us.
+ *
+ *  Until Phase 3b it was also the ONLY live cap, which made a free Space's real ceiling ~15,000 sends
+ *  a month against a published free allowance of 300: fifty times the number on the pricing page. The
+ *  PLAN allowance is now enforced separately below (`space_email` in feature-meters.ts, per calendar
+ *  month), so the two limits are the two different things they always were. Whichever binds first
+ *  wins, which on the free plan is the monthly allowance and on Collective is this daily throttle. */
 export const DAILY_SEND_CAP = 500
 
 /** Hard ceiling on recipients accepted in a single sendSpaceCampaign call, so one request can never
@@ -149,6 +160,39 @@ async function readEmailEnabled(spaceId: string): Promise<boolean> {
     return data?.email_enabled === true
   } catch {
     return false
+  }
+}
+
+/** Count this calendar month's (UTC) outreach_sends for a Space. THE number the `space_email` plan
+ *  allowance is enforced against (ADR-917), and the same number the usage readout beside the meter
+ *  shows, so the figure a member is told and the figure they hit are one figure.
+ *  FAIL-SAFE 0, the opposite direction from countTodaySends: a failed read must not invent usage that
+ *  refuses a send or triggers an upsell prompt. Under-enforcing is recoverable. */
+export async function countMonthSends(spaceId: string): Promise<number> {
+  const startOfMonth = new Date()
+  startOfMonth.setUTCDate(1)
+  startOfMonth.setUTCHours(0, 0, 0, 0)
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string, opts: { count: 'exact'; head: true }) => {
+          eq: (col: string, val: string) => {
+            neq: (col: string, val: string) => {
+              gte: (col: string, val: string) => Promise<{ count: number | null }>
+            }
+          }
+        }
+      }
+    }
+    const { count } = await db
+      .from('outreach_sends')
+      .select('id', { count: 'exact', head: true })
+      .eq('space_id', spaceId)
+      .neq('status', 'suppressed')
+      .gte('created_at', startOfMonth.toISOString())
+    return typeof count === 'number' ? count : 0
+  } catch {
+    return 0
   }
 }
 
@@ -372,6 +416,26 @@ async function deliverSpaceCampaign(
     return fail(`This space hit its daily send limit of ${DAILY_SEND_CAP}. Try again tomorrow.`)
   }
 
+  // (c2) THE PLAN ALLOWANCE — sends per calendar month, the `space_email` meter (ADR-917). A separate
+  // question from the daily throttle above: that one protects the shared sending domain, this one is
+  // what the plan grants. `null` = nothing to enforce (an unlimited plan, the root hub, the gates not
+  // live, or a failed read), so the beta and every fail-safe path behave exactly as before.
+  // The grandfather rule rides along in spaceAllowanceHeadroom: a Space that already sent more than
+  // its allowance this month is stopped from sending MORE, never billed, blocked, or rolled back.
+  let monthHeadroom: number | null = null
+  try {
+    // Skip the month COUNT entirely while the gates are not live: the answer is fixed, and this runs
+    // on every campaign send through the whole beta.
+    if (await featureGatesLive()) {
+      monthHeadroom = await spaceAllowanceHeadroom(spaceId, 'space_email', await countMonthSends(spaceId))
+    }
+  } catch {
+    monthHeadroom = null
+  }
+  if (monthHeadroom !== null && monthHeadroom <= 0) {
+    return fail('This space has used its email allowance for this month. It resets on the 1st, and moving up a plan raises it.')
+  }
+
   const fallbackFrom = process.env.EMAIL_FROM ?? 'Frequency <noreply@send.frequencylocal.com>'
   const fromLine = spaceFromLine(space.brandName ?? space.name, fallbackFrom)
   // Reply-To: only set when the owner configured a real reply address; v1 has none on the Space, so
@@ -392,6 +456,10 @@ async function deliverSpaceCampaign(
     }
     // Stop once the day's live total reaches the cap (counts concurrent senders too).
     if (liveSentToday >= DAILY_SEND_CAP) break
+    // Stop once this month's PLAN allowance is used up. Decremented locally per accepted send rather
+    // than re-counted (the only rows moving the number are the ones this loop writes). A suppressed
+    // recipient never touched the provider, so it consumes neither budget.
+    if (monthHeadroom !== null && monthHeadroom <= 0) break
 
     // (d) CONSENT + SUPPRESSION (campaign double-opt-in, enforced): canEmailContact composes the
     // GLOBAL + this-Space suppression list AND the contact's marketing consent_state, then runs the
@@ -460,6 +528,8 @@ async function deliverSpaceCampaign(
         // Track our own accepted send against the live count so the cap holds between re-reads (a
         // fresh countTodaySends would also count this row; this keeps the in-window check honest).
         liveSentToday++
+        // Same for the month's PLAN allowance (ADR-917). Null means nothing is being enforced.
+        if (monthHeadroom !== null) monthHeadroom--
         await recordSend({
           id: sendId,
           spaceId,

@@ -920,10 +920,24 @@ export function EventForm({
                 />
               </div>
             )}
-            <p className="mt-1.5 text-2xs text-muted">
-              {priceMode === 'paid'
-                ? 'Sets a ticket price. Guests can buy a seat once you turn on payouts.'
-                : 'A free event people RSVP to. Switch to a price to sell tickets.'}
+            {/* SETTING A PRICE IS NOT GATED (ADR-914). Any account can sell; what the paid tiers buy is
+                a lower rate, not the permission. The one thing still required is a payout account,
+                because Stripe will not move money to an unverified one, and that is a banking fact
+                rather than a tier. So this reads as a SETUP STEP with somewhere to go, never as a
+                refusal: production has zero completed onboardings today precisely because the funnel
+                is open and nothing ever asks. */}
+            <p className="mt-1.5 text-2xs leading-relaxed text-muted">
+              {priceMode === 'paid' ? (
+                <>
+                  Sets a ticket price. To take the money you need a payout account.{' '}
+                  <Link href="/settings/billing" className="font-medium text-primary underline-offset-2 hover:underline">
+                    Set that up
+                  </Link>{' '}
+                  in about two minutes, before or after you publish.
+                </>
+              ) : (
+                'A free event people RSVP to. Switch to a price to sell tickets.'
+              )}
             </p>
           </div>
 

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { Check } from 'lucide-react'
+import { Button, OutcomePanel, buttonClasses } from '@/components/marketing/marketing-ui'
 import { submitEventGuest } from './actions'
 import type { GuestRsvpStatus } from '@/lib/events/guests'
 
@@ -36,23 +36,20 @@ export function RsvpForm({ token }: { token: string }) {
     }
   }
 
+  // The success state replaces the FORM, not the page: the event lockup above it stays, so this is
+  // the kit's `OutcomePanel` at h2 rather than the full-page `Outcome`.
   if (status === 'done') {
     return (
-      <div role="status" className="text-center">
-        <div className="mx-auto w-14 h-14 rounded-full bg-success-bg text-success flex items-center justify-center mb-6">
-          <Check className="w-7 h-7" strokeWidth={2.5} aria-hidden />
-        </div>
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-4">You’re on the list.</h2>
-        <p className="text-lg text-muted leading-relaxed mb-8">
-          The host has your RSVP. They’ll be in touch with the details.
-        </p>
-        <Link
-          href="/"
-          className="inline-flex rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors"
-        >
-          See what Frequency is
-        </Link>
-      </div>
+      <OutcomePanel
+        role="status"
+        as="h2"
+        tone="success"
+        icon={Check}
+        title="You’re on the list."
+        action={<Button href="/">See what Frequency is</Button>}
+      >
+        The host has your RSVP. They’ll be in touch with the details.
+      </OutcomePanel>
     )
   }
 
@@ -122,7 +119,7 @@ export function RsvpForm({ token }: { token: string }) {
       <button
         type="submit"
         disabled={status === 'loading'}
-        className="w-full rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors disabled:opacity-60"
+        className={buttonClasses({ className: 'w-full disabled:opacity-60' })}
       >
         {status === 'loading' ? 'One sec…' : 'Send RSVP'}
       </button>

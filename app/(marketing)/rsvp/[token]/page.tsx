@@ -1,9 +1,10 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { CalendarX } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyEventInviteToken } from '@/lib/qr/event-invite'
 import { formatEventDateTime } from '@/lib/utils'
+import { Button, Outcome, OutcomeSkeleton } from '@/components/marketing/marketing-ui'
 import { RsvpForm } from './form'
 
 // noindex: a per-invite capture surface reached only from a member's attributed QR. It is
@@ -14,6 +15,23 @@ export const metadata: Metadata = {
 }
 
 export const dynamic = 'force-dynamic'
+
+// ── HOW MUCH OF THE KIT THIS PAGE COMPOSES (Phase 6 Pass B judgement) ────────────────────────────
+// Partly, deliberately, and the seam is the point.
+//
+//  · Its FAILURE states (dead link, cancelled event) are the same "one outcome, one CTA" lockup the
+//    two confirm landings render, and they had already drifted from them in padding and CTA chrome.
+//    Those now come from the kit's `Outcome` block. That is where the duplication lived.
+//  · Its CAPTURE state stays bespoke. marketing-ui is an EDITORIAL block library (photo heroes,
+//    zig-zags, pull quotes, statements) for pages a visitor browses. This is a noindex, single-
+//    purpose, token-scoped form reached from one person's QR code: no hero, no nav intent, nothing
+//    to browse. Forcing it through an editorial block would mean inventing a marketing block that
+//    exists to hold a form, which is a worse abstraction than the twelve lines of layout it replaces.
+//
+// SPEED (PAGE-FRAMEWORK §5.3): this page is `force-dynamic` and its body needs two Supabase reads.
+// The page function itself awaits nothing, so the marketing chrome streams straight away and only
+// the invite panel waits, behind a dimension-matched skeleton.
+// ────────────────────────────────────────────────────────────────────────────────────────────────
 
 // What the public page renders about the event + inviter. PUBLIC-SAFE ONLY: the event's
 // own title/time and the inviter's display name. Never the inviter's contacts or any
@@ -59,48 +77,47 @@ async function loadInvite(token: string): Promise<InvitePublic | null> {
   }
 }
 
-export default async function EventRsvpPage({ params }: { params: Promise<{ token: string }> }) {
+export default function EventRsvpPage({ params }: { params: Promise<{ token: string }> }) {
+  return (
+    <Suspense fallback={<OutcomeSkeleton />}>
+      <RsvpInvite params={params} />
+    </Suspense>
+  )
+}
+
+async function RsvpInvite({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
   const invite = await loadInvite(token)
 
+  if (!invite || invite.cancelled) {
+    return (
+      <Outcome
+        tone="danger"
+        icon={CalendarX}
+        title={invite?.cancelled ? 'This event is off.' : 'This link didn’t work.'}
+        action={<Button href="/">See what Frequency is</Button>}
+      >
+        {invite?.cancelled
+          ? 'The host called this one off. Ask whoever invited you for the next one.'
+          : 'It may have expired. Ask the person who invited you to share a fresh one.'}
+      </Outcome>
+    )
+  }
+
   return (
     <section className="px-6 py-24 sm:py-28">
-      <div className="max-w-md mx-auto">
-        {!invite || invite.cancelled ? (
-          <div className="text-center">
-            <div className="mx-auto w-14 h-14 rounded-full bg-danger-bg text-danger flex items-center justify-center mb-6">
-              <CalendarX className="w-7 h-7" strokeWidth={2.5} aria-hidden />
-            </div>
-            <h1 className="font-display uppercase text-text text-4xl sm:text-5xl mb-4">
-              {invite?.cancelled ? 'This event is off.' : 'This link didn’t work.'}
-            </h1>
-            <p className="text-lg text-muted leading-relaxed mb-8">
-              {invite?.cancelled
-                ? 'The host called this one off. Ask whoever invited you for the next one.'
-                : 'It may have expired. Ask the person who invited you to share a fresh one.'}
+      <div className="mx-auto max-w-md">
+        <div className="mb-8">
+          {invite.inviterName && (
+            <p className="mb-3 text-sm font-bold uppercase tracking-wide text-primary">
+              {invite.inviterName} invited you
             </p>
-            <Link
-              href="/"
-              className="inline-flex rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors"
-            >
-              See what Frequency is
-            </Link>
-          </div>
-        ) : (
-          <>
-            <div className="mb-8">
-              {invite.inviterName && (
-                <p className="text-sm font-bold uppercase tracking-wide text-primary mb-3">
-                  {invite.inviterName} invited you
-                </p>
-              )}
-              <h1 className="font-display uppercase text-text text-4xl sm:text-5xl mb-3">{invite.eventTitle}</h1>
-              {invite.eventWhen && <p className="text-lg text-muted leading-relaxed">{invite.eventWhen}</p>}
-              {invite.eventLocation && <p className="text-base text-muted leading-relaxed">{invite.eventLocation}</p>}
-            </div>
-            <RsvpForm token={token} />
-          </>
-        )}
+          )}
+          <h1 className="mb-3 font-display uppercase text-text text-4xl sm:text-5xl">{invite.eventTitle}</h1>
+          {invite.eventWhen && <p className="text-lg leading-relaxed text-muted">{invite.eventWhen}</p>}
+          {invite.eventLocation && <p className="text-base leading-relaxed text-muted">{invite.eventLocation}</p>}
+        </div>
+        <RsvpForm token={token} />
       </div>
     </section>
   )
