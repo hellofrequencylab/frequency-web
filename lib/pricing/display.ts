@@ -77,7 +77,11 @@ export function priceRow(key: string, label: string, price: TierPrice): PriceRow
  *  as a tier), and `values.tier` no longer carries a Supporter price to shape. PURE — pass the resolved
  *  pricing values (getPricingValues()). */
 export function memberTierRows(values: PricingDefaults): PriceRow[] {
-  return [priceRow('crew', 'Crew', values.tier.crew)]
+  // 🔴 CREW IS PAY-WHAT-YOU-WANT, so its amount is a FLOOR and must read as one. Every surface that
+  // renders this row was quoting it as "the price" for an offer that has none. `from` is prefixed here,
+  // at the single row builder, so no caller has to remember and none can forget.
+  const row = priceRow('crew', 'Crew', values.tier.crew)
+  return [{ ...row, monthly: `from ${row.monthly}`, annual: row.annual ? `from ${row.annual}` : row.annual }]
 }
 
 /** The prices a surface should SHOW for a plan given the beta window (ADR-880). The display twin of

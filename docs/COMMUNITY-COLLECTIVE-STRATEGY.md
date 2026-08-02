@@ -5,6 +5,12 @@
 > [ADR-811](DECISIONS.md). Full implementation plan: [COMMUNITY-COLLECTIVE-BUILD-PLAN.md](COMMUNITY-COLLECTIVE-BUILD-PLAN.md).
 > Supersedes the flat single-Business pricing of ADR-552 / ADR-590 (grandfathered, see §9). **Everything
 > ships behind `billing_live` OFF** until one deliberate go-live flip.
+>
+> **Money model amended 2026-07-30 ([ADR-913](DECISIONS.md)):** tips carry **no** platform fee on any tier,
+> the free Member tier **does not sell** (events + RSVPs only), and the network take-rate is **Crew 8% ·
+> Business and Collective 5% · Non Profit 0%**, with **0% whenever the buyer is already the seller's own
+> audience**. §4 and §5 below carry the amended rates; the retired `member_free` 10%, Free Space 10%, and
+> Collective 3% rungs are gone.
 
 ## 1. The one-sentence version
 
@@ -39,30 +45,37 @@ default; leaving becomes a deliberate, expensive choice. That is the healthiest 
 
 ## 4. The tiers
 
-Take-rate shown is **network-sourced only**; a member's own bookings are **always 0%** (a hard promise).
+Take-rate shown is **network-sourced only**; a seller's **own audience is always 0%**, and a **tip is
+always 0%** on every tier (hard promises, ADR-913).
 
 | Tier | Price | Who / the job | Network take-rate |
 |---|---|---|---|
-| **Member** | $0 | Belong, be found, run a basic bookable page, take payments | ~10% |
-| **Crew** | $9/mo | The individual creator: the full game + author circles, journeys, programs | ~8% |
-| **Business** | **$29/mo flat, all-in** | Run your whole practice. One honest price, no add-on menu | ~5% |
-| **Collective** ⭐ | **$79/mo (beta $49)** | The collaboration engine: host collaborators, shared venue + events, shared pricing, revenue splits | ~3% |
-| **Non Profit** | **$39/mo flat, verified** | Full Collective toolkit, verified 501(c)(3), 3 seats included | ~0% |
+| **Member** | $0 | Belong, be found, run a basic page, **create events and take RSVPs**. Does not sell: no tickets, no payments | n/a (cannot sell) |
+| **Crew** | pay-what-you-want (ADR-908) | The individual creator: the full game + author circles, journeys, programs, **and the right to charge** | **8%** |
+| **Business** | **$29/mo flat, all-in** | Run your whole practice. One honest price, no add-on menu | **5%** |
+| **Collective** ⭐ | **$79/mo (beta $49)** | The collaboration engine: host collaborators, shared venue + events, shared pricing, revenue splits | **5%** (sells on depth, not on a cheaper fee) |
+| **Non Profit** | **$39/mo flat, verified** | Full Collective toolkit, verified 501(c)(3), 3 seats included | **0%** |
 | **Independent** | **~$249/mo** | White-label, `network_connected=false`. Standard SaaS. The anchor | n/a (left the network) |
+
+**"Own audience" is a relationship, never a cookie.** The fee is 0% whenever the buyer follows the Space,
+is an active Space member, is in its Space Contacts, is in the seller's own contact list, or has bought
+from them before. **Frequency charges once for the introduction. After that they're your people, free.**
 
 - **Add-ons (flat, never a %):** operator seat **+$12/mo** · Resonance Engine (AI) **+$20/mo** · Founding
   Steward patronage (opt-in, price-locked, capped) that backs the physical build.
 - **Beta:** Collective ships at a **$49 founding price** under a $79 list anchor, locked for the life of the
   subscription.
-- **The buy-down:** every paid tier lowers the network take-rate, so a subscription reads as savings and
-  power, never rent. Launch the rate low (8 to 10%) and earn the right to raise it as network-sourced
-  revenue grows (the Etsy / Airbnb playbook).
+- **The buy-down:** paying lowers the network take-rate (Crew 8% → Business 5% → Non Profit 0%), so a
+  subscription reads as savings and power, never rent. Launch the rate low (5 to 8%) and earn the right to
+  raise it as network-sourced revenue grows (the Etsy / Airbnb playbook).
 
 ## 5. The money principle (why it is aligned, not extractive)
 
 > **We never take a cut of the work you bring yourself. We take a small, shrinking cut of the success we
 > bring you, and we invite you (never require you) to help build what's next.**
 
+- **Tips: 0% platform fee, always, on every tier** (ADR-913). A tip is a gift between two people and we
+  are not in it. There is no rung where a tip is taxed.
 - **Own bookings, clients, classes: 0% platform fee, always, flat subscriptions only.** In this vertical a
   take-rate on a cash-poor solo's thin margins is the single most-resented cost; the tools people love
   (Punchpass, OfferingTree) win by taking 0%. Research: solo healers are genuinely cash-poor (41% of yoga

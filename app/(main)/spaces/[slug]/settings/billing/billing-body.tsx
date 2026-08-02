@@ -9,7 +9,6 @@ import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { getPricingValues, billingLive } from '@/lib/pricing/settings'
 import { spaceLoadoutSellable, operatorSeatsSellable } from '@/lib/billing/space-plan-checkout'
 import { loadCatalogConfig, catalogConfigByKey } from '@/lib/pricing/catalog-config'
-import { BASE_SEAT_ALLOWANCE } from '@/lib/spaces/seats'
 import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import { activeAgreementForSpace, type AgreementMethod } from '@/lib/billing/manual-agreements'
 import { formatAgreementRate } from '@/lib/billing/manual-agreement-dates'
@@ -138,7 +137,9 @@ export async function BillingBody({ slug }: { slug: string }) {
   // Downgrade floor: the licensed total (base + seatQuantity) must cover the operators already active, so
   // the minimum safe seatQuantity is used - the free base allowance. Reducing below it would leave active
   // operators over the licensed count. `used` counts member-operators only (the owner rides the base seat).
-  const minSeats = Math.max(0, seatUsage.used - BASE_SEAT_ALLOWANCE)
+  // `seatUsage.base` is the PLAN's included seats (ADR-917), not a flat 1: a Collective Space includes
+  // three, so flooring against the free base would demand licensed seats it does not need.
+  const minSeats = Math.max(0, seatUsage.used - seatUsage.base)
 
   // The old "you'd have saved $X on Business" nudge is RETIRED (ADR-811): it applied the take-rate delta
   // to a Space's WHOLE processed volume, which now misstates the promise (we take 0% on a Space's own

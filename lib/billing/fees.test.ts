@@ -8,8 +8,11 @@ afterEach(() => {
   else process.env.STRIPE_PLATFORM_FEE_PCT = ORIG
 })
 
-describe('platformFeePct', () => {
-  it('defaults to 3 when unset (ADR-590: flat 3% everywhere)', () => {
+// The flat platform fee is NOT the general rate any more (ADR-913). It prices the one channel with no
+// third-party seller, a root / platform-hosted event, and serves as the never-under-collect fallback when
+// a take-rate read throws. Tips carry no fee at all, and member/Space sales take the network take-rate.
+describe('platformFeePct (the platform-hosted-event fee + the fail-safe floor)', () => {
+  it('defaults to 3 when unset', () => {
     delete process.env.STRIPE_PLATFORM_FEE_PCT
     expect(platformFeePct()).toBe(3)
   })

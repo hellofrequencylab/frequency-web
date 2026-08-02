@@ -11,8 +11,12 @@ import {
   FEATURE_TIER_LADDERS,
   FEATURE_TIER_KEYS,
   PLACEHOLDER_PRICING,
-  PLACEHOLDER_SPACE_PRICE_CENTS,
   PLACEHOLDER_MEMBER_PRICE_CENTS,
+  SPACE_PLAN_PRICE_CENTS,
+  COLLECTIVE_BETA_CENTS,
+  spacePlanPriceCents,
+  tierPriceCents,
+  tierPriceLabel,
   featureTierLadder,
   isFeatureUnlockedAt,
   currentStepIndex,
@@ -25,6 +29,22 @@ function gatedFeatureKeys(): string[] {
   return Object.entries(FEATURE_GATES)
     .filter(([, g]) => g.enabled && tierRankOnAxis(g.axis, g.minEntitlement) > 0)
     .map(([k]) => k)
+}
+
+import { catalogItem, yearlyFromMonthly, type CatalogItemKey } from '@/lib/billing/pricing-keys'
+import { effectiveCatalogAmounts, isBetaPricingActive } from './beta'
+import { featureMeter } from './feature-meters'
+import { formatCents } from './display'
+import { PRICING_DEFAULTS } from './defaults'
+import { SPACE_PLANS, type SpacePlan } from './plans'
+
+/** The catalog item each PAID plan is billed from, restated here on purpose: the test asserts the
+ *  mapping the module makes rather than importing the module's own private copy of it. */
+const PLAN_ITEM: Record<Exclude<SpacePlan, 'free'>, CatalogItemKey> = {
+  business: 'business_base',
+  collective: 'collective_base',
+  nonprofit: 'nonprofit_seat',
+  independent: 'independent_base',
 }
 
 describe('coverage — every tier-gated FEATURE_GATES key has a ladder that matches the gate', () => {
@@ -104,23 +124,87 @@ describe('shape — every ladder is well-formed with placeholder price points', 
 })
 
 describe('placeholder pricing — nothing charges (the go-live switch)', () => {
-  it('PLACEHOLDER_PRICING is on, so every ladder is preview-only', () => {
-    expect(PLACEHOLDER_PRICING).toBe(true)
+  it('PLACEHOLDER_PRICING is OFF: billing is live, so no ladder claims a preview', () => {
+    // Flipped with billing going live (ADR-920). While it was true, the pricing surfaces printed
+    // "nothing is charged" on the two pages where people actually pay.
+    expect(PLACEHOLDER_PRICING).toBe(false)
     for (const key of FEATURE_TIER_KEYS) {
-      expect(FEATURE_TIER_LADDERS[key]!.placeholderPricing).toBe(true)
+      expect(FEATURE_TIER_LADDERS[key]!.placeholderPricing).toBe(false)
     }
   })
 
-  it('placeholder price maps mirror the code catalog founding rates', () => {
-    // Space: Business $29, Collective $79, Non Profit $39, Independent $249; free at $0 (ADR-811).
-    expect(PLACEHOLDER_SPACE_PRICE_CENTS.free).toBe(0)
-    expect(PLACEHOLDER_SPACE_PRICE_CENTS.business).toBe(2900)
-    expect(PLACEHOLDER_SPACE_PRICE_CENTS.collective).toBe(7900)
-    expect(PLACEHOLDER_SPACE_PRICE_CENTS.nonprofit).toBe(3900)
-    expect(PLACEHOLDER_SPACE_PRICE_CENTS.independent).toBe(24900)
-    // Personal: Crew $9; free at $0.
+  // Phase 5 (ADR-916). These maps used to be typed literals, and Business's read $29 (the list) while
+  // /pricing quoted $19 (the beta rate the checkout actually charges). The lock is that the map is READ
+  // from the catalog the checkout bills, carrying BOTH numbers for EVERY plan, so no tier can be the one
+  // that was forgotten. Asserted against the catalog, never against a repeated literal.
+  it('the Space price map is READ from the code catalog, list and beta, for every plan', () => {
+    expect(SPACE_PLAN_PRICE_CENTS.free).toEqual({ listCents: 0, foundingCents: 0 })
+    for (const [plan, item] of Object.entries(PLAN_ITEM)) {
+      expect(SPACE_PLAN_PRICE_CENTS[plan as SpacePlan], plan).toEqual(catalogItem(item).month)
+    }
+  })
+
+  it('beta-vs-list is one shape, not a per-tier patch: every plan resolves both sides of the cutover', () => {
+    for (const plan of SPACE_PLANS) {
+      const amounts = SPACE_PLAN_PRICE_CENTS[plan]
+      // During beta a plan is charged its founding amount; after the cutover the list becomes the price.
+      expect(spacePlanPriceCents(plan, true), plan).toBe(amounts.foundingCents)
+      expect(spacePlanPriceCents(plan, false), plan).toBe(amounts.listCents)
+      expect(tierPriceCents('plan', plan, true), plan).toBe(amounts.foundingCents)
+      expect(tierPriceCents('plan', plan, false), plan).toBe(amounts.listCents)
+    }
+    // The Collective-only beta constant is now just a cell of that map, kept as an alias.
+    expect(COLLECTIVE_BETA_CENTS).toBe(SPACE_PLAN_PRICE_CENTS.collective.foundingCents)
+    // Business has a beta rate too. That it had no constant of its own is exactly the bug.
+    expect(SPACE_PLAN_PRICE_CENTS.business.foundingCents).toBeLessThan(
+      SPACE_PLAN_PRICE_CENTS.business.listCents,
+    )
+  })
+
+  it('a ladder rung quotes the price the checkout charges TODAY, matching /pricing', () => {
+    const beta = isBetaPricingActive()
+    for (const plan of SPACE_PLANS) {
+      const charged = effectiveCatalogAmounts(SPACE_PLAN_PRICE_CENTS[plan], beta).foundingCents
+      expect(tierPriceLabel('plan', plan), plan).toBe(charged === 0 ? 'Free' : `${formatCents(charged)}/mo`)
+    }
+  })
+
+  it('the member price map is the ONE source the settings layer reads for Crew', () => {
     expect(PLACEHOLDER_MEMBER_PRICE_CENTS.free).toBe(0)
-    expect(PLACEHOLDER_MEMBER_PRICE_CENTS.crew).toBe(900)
+    expect(PRICING_DEFAULTS.tier.crew.monthly_cents).toBe(PLACEHOLDER_MEMBER_PRICE_CENTS.crew)
+    expect(PRICING_DEFAULTS.tier.crew.annual_cents).toBe(
+      yearlyFromMonthly(PLACEHOLDER_MEMBER_PRICE_CENTS.crew),
+    )
+  })
+})
+
+// ── Contradiction #6: the unlock copy used to mirror the meter numbers BY COMMENT ─────────────────────
+// "@placeholder 200 mirrors PLACEHOLDER_METER_LIMITS.space_crm ... keep these lines in step" is not a
+// mechanism, it is a hope. ADR-914 lowered the CRM allowance from 250 to 200 and the copy had to be
+// hand-chased. This asserts the relationship instead: any quantity a ladder line NAMES must be an
+// allowance the feature's meter actually grants on some tier.
+describe('ladder unlock copy cannot drift from the meter it describes', () => {
+  /** Every number token in a line ("200", "5,000"), as plain integers. */
+  function numbersIn(line: string): number[] {
+    return (line.match(/\b\d{1,3}(?:,\d{3})+\b|\b\d+\b/g) ?? []).map((n) => Number(n.replace(/,/g, '')))
+  }
+
+  it('every quantity in an unlock line is a real allowance on that feature meter', () => {
+    for (const key of FEATURE_TIER_KEYS) {
+      const meter = featureMeter(key)
+      if (!meter) continue
+      const allowances = new Set(
+        meter.steps.map((s) => s.allowance).filter((a): a is number => typeof a === 'number'),
+      )
+      for (const step of FEATURE_TIER_LADDERS[key]!.steps) {
+        for (const n of numbersIn(step.unlocks)) {
+          expect(
+            allowances.has(n),
+            `${key} rung "${step.tier}" names ${n}, which is not an allowance its meter grants (${[...allowances].join(', ')})`,
+          ).toBe(true)
+        }
+      }
+    }
   })
 })
 
@@ -131,23 +215,25 @@ describe('read helpers', () => {
   })
 
   it('isFeatureUnlockedAt: below the min tier is locked, at/above is unlocked', () => {
-    const crm = featureTierLadder('space_crm')!
-    expect(isFeatureUnlockedAt(crm, 'free')).toBe(false)
-    expect(isFeatureUnlockedAt(crm, 'business')).toBe(true)
+    // Was `space_crm` until ADR-917 made it a meter (a metered feature has no unlock ladder). The
+    // shape under test is a plan-axis gate at the Business floor, which `space_memberships` is.
+    const wall = featureTierLadder('space_memberships')!
+    expect(isFeatureUnlockedAt(wall, 'free')).toBe(false)
+    expect(isFeatureUnlockedAt(wall, 'business')).toBe(true)
     // Nonprofit ranks above business, so it clears the business floor.
-    expect(isFeatureUnlockedAt(crm, 'nonprofit')).toBe(true)
+    expect(isFeatureUnlockedAt(wall, 'nonprofit')).toBe(true)
     const vera = featureTierLadder('vera_unlimited')!
     expect(isFeatureUnlockedAt(vera, 'free')).toBe(false)
     expect(isFeatureUnlockedAt(vera, 'crew')).toBe(true)
   })
 
   it('currentStepIndex maps a viewer tier to the highest rung at/below it', () => {
-    const crm = featureTierLadder('space_crm')! // steps: free, business
-    expect(currentStepIndex(crm, 'free')).toBe(0)
-    expect(currentStepIndex(crm, 'business')).toBe(1)
+    const wall = featureTierLadder('space_memberships')! // steps: free, business
+    expect(currentStepIndex(wall, 'free')).toBe(0)
+    expect(currentStepIndex(wall, 'business')).toBe(1)
     // Nonprofit ranks above business (the top rung) → maps to the business rung.
-    expect(currentStepIndex(crm, 'nonprofit')).toBe(1)
+    expect(currentStepIndex(wall, 'nonprofit')).toBe(1)
     // Unknown tier → the free floor.
-    expect(currentStepIndex(crm, 'nonsense')).toBe(0)
+    expect(currentStepIndex(wall, 'nonsense')).toBe(0)
   })
 })

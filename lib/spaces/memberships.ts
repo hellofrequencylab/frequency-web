@@ -410,6 +410,39 @@ export async function setMembershipTiers(
   if (!spaceFunctionAccess(space, 'memberships', caps.role))
     return fail('Memberships is not turned on for this space, or your role cannot use it.')
 
+  // 🔴 THE PLAN WALL (ADR-914, docs/VALUE-LADDER.md §3). Selling a membership is the most defensible
+  // wall in the product, and it is enforced HERE, at the write, rather than on the settings surface:
+  // this action is directly callable, and a wall that only exists where it renders is decorative.
+  //
+  // Why a wall and not a meter. A membership is a recurring PROMISE to another person — they pay every
+  // month expecting the thing to still be there. Helping someone make that promise from an account
+  // they may abandon next month is not a feature. And "one free membership" would teach nothing while
+  // creating exactly one stranded subscriber, which is the worst possible outcome for both sides.
+  //
+  // Above the wall there is deliberately NO ceiling: the meter that capped a free Space at 10 active
+  // members is deleted, because telling a Space its eleventh supporter cannot join punishes the
+  // customer for succeeding at the one thing we asked them to do, and the take rate already scales
+  // with volume. The wall is at the start or nowhere.
+  //
+  // SETTING NO TIERS IS ALWAYS ALLOWED. A Space that downgrades must be able to clear its tiers, and
+  // refusing that would trap someone below the wall with a live membership program they cannot turn
+  // off. Checked before the gate for exactly that reason.
+  if (tiers.length > 0) {
+    const [{ featureAllowed }, { featureGatesLive }, { asSpacePlan }] = await Promise.all([
+      import('@/lib/pricing/gates'),
+      import('@/lib/pricing/settings'),
+      import('@/lib/pricing/plans'),
+    ])
+    const allowed = await featureAllowed(
+      'space_memberships',
+      { plan: asSpacePlan(space.plan) },
+      { gatesLive: await featureGatesLive() },
+    )
+    if (!allowed) {
+      return fail('Selling memberships comes with Business. Tickets, donations, and your shop stay open on every plan.')
+    }
+  }
+
   // Normalize + drop anything invalid. An empty result is a valid "no tiers" state.
   const clean = normalizeTierSet(tiers)
 

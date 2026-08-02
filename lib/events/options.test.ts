@@ -56,7 +56,11 @@ describe('every event visibility write routes through coerceVisibilityForScope',
   })
 
   it('updateEvent fetches the row scope_type and coerces against it', () => {
-    expect(actions).toContain("select('slug, parent_event_id, details, scope_type')")
+    // Column-wise, not the whole literal: the select gained host_id + the two Space axes for the
+    // ADR-913 price gate, and pinning the exact string made an additive change look like a break.
+    for (const col of ['slug', 'parent_event_id', 'details', 'scope_type']) {
+      expect(actions).toMatch(new RegExp(`select\\('[^']*\\b${col}\\b[^']*'\\)`))
+    }
     expect(actions).toContain('coerceVisibilityForScope(visibilityRequested, evRow?.scope_type)')
   })
 

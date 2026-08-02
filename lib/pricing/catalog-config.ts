@@ -99,13 +99,20 @@ export interface CatalogConfig {
 /** The default seat config: a 3-seat bundled floor (the owner-locked nonprofit floor). */
 export const SEAT_CONFIG_DEFAULT: SeatConfig = { bundledFloor: 3 }
 
-/** The default PWYW config: a $4.99 floor, $12 suggested (pre-selected), a $100 soft ceiling on a
- *  recurring pick, and the five preset anchors. Every preset grants identical access. */
+/** The default PWYW config for Crew: a **$4.99 floor**, **$24.99 suggested** (pre-selected), a $100
+ *  soft ceiling on a recurring pick, and five preset anchors spanning the range. Every preset grants
+ *  IDENTICAL access; they exist only to anchor the choice.
+ *
+ *  🔴 `suggestedCents` was 1200 here while production carried 2499 — the owner's decision was
+ *  configured in `pricing_settings` and never mirrored into the code default, so any surface reading
+ *  the default (a static render, a test, a cold path before the settings read) anchored people at $12
+ *  instead of $24.99. The stored row won at runtime, which is why nothing looked broken. Code and
+ *  config agree now. */
 export const PWYW_CONFIG_DEFAULT: PwywConfig = {
   minCents: 499,
-  suggestedCents: 1200,
+  suggestedCents: 2499,
   maxCents: 10000,
-  presetCents: [499, 900, 1200, 1800, 2499],
+  presetCents: [499, 900, 1499, 2499, 4900],
 }
 
 /** The `pricing_settings` key for one catalog item's amount override. */

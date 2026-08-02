@@ -882,6 +882,16 @@ export function productSchema(p: {
   priceCents?: number | null
   currency?: string | null
   inStock?: boolean
+  /**
+   * The billing period for a RECURRING price, e.g. 'MON' for a monthly subscription (UN/CEFACT code).
+   *
+   * 🔴 Omitting this on a subscription publishes a lie. A bare `price: "19.00"` on an Offer means a
+   * one-off nineteen dollars, so a $19/**mo** plan reads to an answer engine as a flat $19 purchase —
+   * and price is exactly the field those engines quote back verbatim. Pass 'MON' for a monthly plan.
+   * The sibling housing helper in this file already does this correctly with a UnitPriceSpecification;
+   * the plan tiers simply never did.
+   */
+  billingPeriodCode?: 'MON' | 'ANN' | null
   sellerName?: string | null
   /** Canonical app path, e.g. `/store/tote` or `/market/<id>`. */
   path: string
@@ -914,6 +924,19 @@ export function productSchema(p: {
             priceCurrency: (p.currency ?? 'usd').toUpperCase(),
             availability: p.inStock === false ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
             url,
+            // A recurring price also carries its period, so "$19" cannot be read as a one-off. `price`
+            // stays for consumers that only read the simple field; the specification is what makes the
+            // recurrence unambiguous.
+            ...(p.billingPeriodCode
+              ? {
+                  priceSpecification: {
+                    '@type': 'UnitPriceSpecification',
+                    price: ((p.priceCents as number) / 100).toFixed(2),
+                    priceCurrency: (p.currency ?? 'usd').toUpperCase(),
+                    unitCode: p.billingPeriodCode,
+                  },
+                }
+              : {}),
             ...(p.sellerName ? { seller: { '@type': 'Organization', name: p.sellerName } } : {}),
           },
         }

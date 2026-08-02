@@ -9,6 +9,7 @@ import { summarizeScans } from '@/lib/qr/analytics'
 import { QrSplashForm } from '@/components/spaces/qr-splash-form'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
+import { MeterUpsell } from '@/components/pricing/meter-upsell'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StatCard } from '@/components/ui/stat-card'
 
@@ -43,6 +44,9 @@ export async function QrBody({ slug }: { slug: string }) {
   if (!canManage && !staffViewing) return null
 
   const brandName = space.brandName ?? space.name
+  // The Space plan (spaces.plan is untyped on the projection, ADR-246). Read once: the code cap, the
+  // locked notice, and the usage meter all answer to it.
+  const spacePlan = (space as { plan?: string | null }).plan ?? null
 
   // PER-SPACE FUNCTION GATE (per-space-roles Phase 2). QR codes default to editor (the old
   // canEditProfile threshold); a staff janitor keeps the read-only preview (every write stays gated).
@@ -56,6 +60,11 @@ export async function QrBody({ slug }: { slug: string }) {
         label="QR codes"
         reason={spaceFunctionAccess(space, 'qr', 'admin') ? 'role' : 'disabled'}
         canManageMembers={caps.canManageMembers}
+        // Phase 4: the QR meter key, so a PLAN-reason notice carries the allowance ladder instead of
+        // rendering no upsell at all. Today this notice only ever fires for 'role' / 'disabled', so
+        // the key is inert here; the live prompt is the MeterUpsell on the working surface below.
+        featureKey="space_qr"
+        currentPlan={spacePlan}
       />
     )
   }
@@ -63,7 +72,7 @@ export async function QrBody({ slug }: { slug: string }) {
   const codes = await listSpaceCodes(space.id)
   // The per-plan cap drives whether the create form shows. The plan rides the untyped Space read in
   // space-codes.ts; here we just need the cap number for the form's note + gate.
-  const codeCap = codeCapForPlan((space as { plan?: string | null }).plan ?? null)
+  const codeCap = codeCapForPlan(spacePlan)
   const capReached = codes.length >= codeCap
 
   return (
@@ -80,6 +89,16 @@ export async function QrBody({ slug }: { slug: string }) {
 
         <section>
           <SectionHeader title="Codes" count={codes.length} />
+          {/* Phase 4 (docs/VALUE-LADDER.md): the space_qr meter's in-context prompt. The real count is
+              already in scope, so it names the codes this Space built and what the next plan changes,
+              at 80% of the allowance. Renders nothing below that, and it blocks nothing ever. */}
+          <MeterUpsell
+            featureKey="space_qr"
+            currentTier={spacePlan}
+            usage={codes.length}
+            upgradeHref={`/spaces/${space.slug}/settings/billing`}
+            className="mb-4"
+          />
           <QrSplashForm
             spaceId={space.id}
             slug={space.slug}

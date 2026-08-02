@@ -18,7 +18,7 @@ import { resolveStripePriceId } from './pricing-prices'
 import { catalogPriceKey, type BillingInterval } from './pricing-keys'
 import { reconciledItemsFromSubscription } from './space-subscription-items'
 import { operatorSeatsSellable } from './space-plan-checkout'
-import { usedSeats, BASE_SEAT_ALLOWANCE } from '@/lib/spaces/seats'
+import { usedSeats, baseSeatAllowance, getSpaceSeatRow } from '@/lib/spaces/seats'
 
 /** The largest licensed operator-seat count this editor will set in one change (mirrors the checkout
  *  picker's bound; a sane ceiling, not a plan limit). */
@@ -73,8 +73,10 @@ export async function updateOperatorSeats(spaceId: string, targetSeats: number):
   // re-derive the same floor here. Without it a direct call could license fewer seats than there are
   // ACTIVE operators — existing operators stay active (the seat wall only blocks new invites), so the
   // Space would under-pay indefinitely. Same wording as the editor: remove operators first.
-  const activeOperators = await usedSeats(spaceId)
-  const floorSeats = Math.max(0, activeOperators - BASE_SEAT_ALLOWANCE)
+  // The floor rides the PLAN's included seats (ADR-917), not a flat 1: a Collective Space includes
+  // three, so anchoring on the free base would demand licensed seats the plan already covers.
+  const [activeOperators, seatRow] = await Promise.all([usedSeats(spaceId), getSpaceSeatRow(spaceId)])
+  const floorSeats = Math.max(0, activeOperators - baseSeatAllowance(seatRow.plan))
   if (target < floorSeats) {
     return {
       ok: false,

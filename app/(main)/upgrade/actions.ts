@@ -51,32 +51,29 @@ export async function toggleMembership(): Promise<ActionResult<{ tier: string }>
   return ok({ tier: next })
 }
 
-// 🔴 THE NO-AMOUNT `startMembershipCheckout` USED TO SIT HERE, AND IS DELIBERATELY GONE.
-//
-// Crew is pay what you want (ADR-908), so a checkout that names no amount has nothing honest to
-// charge: it fell through to the fixed catalog price and billed $9 regardless of what the member
-// would have chosen. That is the exact bug the PWYW work exists to fix, and leaving the action
-// exported kept the path reachable even after the UI stopped calling it. Its only caller was
-// `checkout-button.tsx`, which is deleted with it.
-//
-// If a second membership purchase seam is ever needed, it takes an amount. Do not reintroduce one
-// that does not, and do not restore a default: the whole point is that nobody is charged a number
-// they did not pick. `startPwywMembershipCheckout` below is the one seam.
-
 /**
- * PAY-WHAT-YOU-WANT Crew checkout (ADR-908). The member picks their own recurring amount and every
- * amount buys IDENTICAL access; the number only decides what they contribute.
+ * PAY-WHAT-YOU-WANT Crew checkout (ADR-908/ADR-919). The member picks their own recurring amount and
+ * every amount buys IDENTICAL access; the number only decides what they contribute.
  *
- * The amount is validated SERVER-SIDE against the operator floor (`isValidPwywAmount`), because the
- * picker is a client component and a floor enforced only in the browser is not a floor. Annual is
- * 10x the chosen monthly (two months free, the house convention) and is computed HERE rather than
- * trusted from the client, so the amount charged always matches the interval the member chose.
+ * 🔴 THE AMOUNT IS REQUIRED, NOT OPTIONAL, and there is no second no-amount seam. An optional amount
+ * means a fallback price, and a fallback price for an offer that has no price is exactly how a $9
+ * charge shipped for a $4.99 offer: `createMembershipCheckout` had accepted `amountCents` since the
+ * membership rework, this action never passed one, and every member fell through to the fixed
+ * `crew_monthly` catalog price while the whole PWYW system sat unused behind a hardcoded number.
  *
- * There is deliberately no upper bound in this action: `maxCents` is a SOFT ceiling the picker uses
- * to ask for confirmation, not a rule, and refusing a large gift at the server would be the opposite
- * of pay-what-you-want.
+ * The floor is enforced HERE, server-side, against the OPERATOR's config, because a client that posts
+ * its own amount is the obvious way to buy Crew for a cent. `isValidPwywAmount` is the one policy
+ * seam; the checkout deliberately is not (it only refuses non-positive amounts).
+ *
+ * ANNUAL is computed here too, never trusted from the client, so the figure charged always matches the
+ * interval the member chose. `yearlyFromMonthly` is THE annual math (two months free = 10x), shared
+ * with the space catalog, so Crew's annual can never drift from the convention the rest of pricing uses.
+ *
+ * There is deliberately no upper bound: `maxCents` is a SOFT ceiling the picker uses to ask for
+ * confirmation, not a rule. Refusing a large gift at the server would be the opposite of
+ * pay-what-you-want.
  */
-export async function startPwywMembershipCheckout(
+export async function startMembershipCheckout(
   amountCents: number,
   period: 'monthly' | 'annual' = 'monthly',
 ): Promise<ActionResult<{ url: string }>> {
@@ -93,15 +90,13 @@ export async function startPwywMembershipCheckout(
     .maybeSingle()
   if (!profile) return fail('Profile not found')
 
+  const monthly = Number.isFinite(amountCents) ? Math.round(amountCents) : NaN
   const { pwyw } = await loadCatalogConfig()
-  const monthly = Math.round(Number(amountCents))
   if (!isValidPwywAmount(monthly, pwyw)) {
-    return fail(`Please choose ${formatCents(pwyw.minCents)} a month or more.`)
+    return fail(`Choose ${formatCents(pwyw.minCents)} a month or more.`)
   }
-
-  // yearlyFromMonthly is THE annual math (two months free = 10x), shared with the space catalog so
-  // Crew's annual can never drift from the convention the rest of pricing uses.
   const charged = period === 'annual' ? yearlyFromMonthly(monthly) : monthly
+
   const url = await createMembershipCheckout({
     profileId: profile.id,
     email: user.email,

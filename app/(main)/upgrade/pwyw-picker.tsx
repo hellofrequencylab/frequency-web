@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Zap, Loader2 } from 'lucide-react'
-import { startPwywMembershipCheckout } from './actions'
+import { startMembershipCheckout } from './actions'
 import { isError } from '@/lib/action-result'
 
 // THE CREW PAY-WHAT-YOU-WANT PICKER (ADR-908).
@@ -16,7 +16,7 @@ import { isError } from '@/lib/action-result'
 // which costs real ARPU; presets alone would not be pay-what-you-want. So the presets anchor, the
 // open field keeps the promise honest, and any amount at or above the floor is payable.
 //
-// The floor is re-validated SERVER-SIDE in startPwywMembershipCheckout. A floor enforced only here
+// The floor is re-validated SERVER-SIDE in startMembershipCheckout. A floor enforced only here
 // is not a floor. `maxCents` is a SOFT ceiling: crossing it asks for a confirmation (a very large
 // recurring amount is more often a slip than a gift) but never refuses.
 //
@@ -68,7 +68,7 @@ export function PwywPicker({
       if (!window.confirm(`That is ${monthly} a month, every month. Is that what you meant?`)) return
     }
     startTransition(async () => {
-      const r = await startPwywMembershipCheckout(chosen, annual ? 'annual' : 'monthly')
+      const r = await startMembershipCheckout(chosen, annual ? 'annual' : 'monthly')
       if (isError(r)) setError(r.error)
       else window.location.href = r.data.url
     })

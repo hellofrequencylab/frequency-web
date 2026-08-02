@@ -26,8 +26,9 @@ import {
 } from './pricing-keys'
 import { SPACE_PLANS } from '@/lib/pricing/plans'
 
-// ADR-552 Phase 3: free usage 5% (500 bps) / paying Business 3% (300) / Non Profit 3% (300).
-// ADR-596: individual paid-member seller 8% (800 bps).
+// A stored LEGACY flat `take_rate` blob (the retired ADR-552 paying-state ladder). Nothing on the charging
+// path reads these fields any more — the live rates are the network vector + member_bps, exercised further
+// down — but the flat helpers must still resolve a stored blob to a number, which is what this fixture is.
 const TAKE_RATE = { free_bps: 500, business_bps: 300, nonprofit_bps: 300, member_bps: 800 }
 
 describe('priceKey', () => {
@@ -174,39 +175,68 @@ describe('member seller take-rate (ADR-596: paid member 8%, Business buys it dow
   })
 })
 
-describe('the personal seller ladder (free Member 10%, Crew 8% — Crew buys the rate down)', () => {
-  it('a free Member pays member_free and Crew pays the bought-down member rate', () => {
-    expect(memberNetworkTakeRateBps('free')).toBe(1000)
-    expect(memberNetworkTakeRateBps('crew')).toBe(800)
+describe('the TWO individual seller rungs — free Member 10%, Crew 8% (ADR-914)', () => {
+  it('resolves each rung from the seller tier', () => {
+    expect(memberNetworkTakeRateBps('crew')).toBe(800) // the seeded 8%
+    expect(memberNetworkTakeRateBps('free')).toBe(1000) // the seeded 10%
+    expect(memberNetworkTakeRateBps('crew', { ...NETWORK_TAKE_RATE_DEFAULT, member: 600 })).toBe(600)
+    expect(memberNetworkTakeRateBps('free', { ...NETWORK_TAKE_RATE_DEFAULT, memberFree: 1200 })).toBe(1200)
   })
 
-  it('the buy-down is real: paying for Crew always costs less per network sale than staying free', () => {
-    expect(memberNetworkTakeRateBps('crew')).toBeLessThan(memberNetworkTakeRateBps('free'))
-  })
-
-  it('a paid-but-not-crew label (a legacy supporter row) reads as paid, never as free', () => {
-    // deriveTier collapses supporter -> crew, so anything that is not literally 'free' is paid here.
+  it('a legacy supporter row folds into Crew, exactly as deriveTier does everywhere else', () => {
+    // Otherwise a Supporter would be billed the free rung on a tier they paid more than Crew for.
     expect(memberNetworkTakeRateBps('supporter')).toBe(800)
   })
 
-  it('an absent member_free on a pre-split operator row falls back to the PAID rate, never higher', () => {
-    // A stale row must not silently RAISE a free seller's fee to the seeded 10%.
-    const legacy = { ...NETWORK_TAKE_RATE_DEFAULT, member_free: undefined as unknown as number }
-    expect(memberNetworkTakeRateBps('free', legacy)).toBe(800)
+  it('🔴 an unknown or missing tier prices at the HIGHER free rung, never the discount', () => {
+    // Fail-safe direction, and it is the opposite of the audience check on purpose. There, an unproven
+    // answer means we do not charge, because the 0%-on-your-own-people promise is public. Here the sale
+    // is already established as network-sourced and the only question is WHICH published rate applies;
+    // quoting the Crew discount to a seller whose tier we could not read is under-collecting on a sale
+    // nobody disputes.
+    expect(memberNetworkTakeRateBps(null)).toBe(1000)
+    expect(memberNetworkTakeRateBps(undefined)).toBe(1000)
+    expect(memberNetworkTakeRateBps('platinum')).toBe(1000)
   })
 
-  it('sourceAwareMemberTakeRateCents charges the seller tier rate on a network sale', () => {
-    expect(sourceAwareMemberTakeRateCents(10000, 'network', NETWORK_TAKE_RATE_DEFAULT, 'free')).toBe(1000)
-    expect(sourceAwareMemberTakeRateCents(10000, 'network', NETWORK_TAKE_RATE_DEFAULT, 'crew')).toBe(800)
+  it('a partial operator blob falls back to the seeded rung, never 0 and never NaN', () => {
+    const noCrew = { ...NETWORK_TAKE_RATE_DEFAULT, member: undefined as unknown as number }
+    const noFree = { ...NETWORK_TAKE_RATE_DEFAULT, memberFree: undefined as unknown as number }
+    expect(memberNetworkTakeRateBps('crew', noCrew)).toBe(800)
+    expect(memberNetworkTakeRateBps('free', noFree)).toBe(1000)
   })
 
-  it('an omitted tier keeps the pre-split Crew contract (never over-charges a paying member)', () => {
-    expect(sourceAwareMemberTakeRateCents(10000, 'network')).toBe(800)
+  it('the free-Member rung EQUALS the free-Space rung, so only paying moves the rate', () => {
+    // A free Space is held to the free-Member standard (owner ruling). If these ever diverged, moving a
+    // sale into a free Space would change its rate, and the ladder would have a rung nobody paid for.
+    expect(NETWORK_TAKE_RATE_DEFAULT.memberFree).toBe(NETWORK_TAKE_RATE_DEFAULT.free)
   })
 
-  it("a seller's OWN sale is still 0% at every tier (the hard promise)", () => {
-    expect(sourceAwareMemberTakeRateCents(10000, 'self', NETWORK_TAKE_RATE_DEFAULT, 'free')).toBe(0)
-    expect(sourceAwareMemberTakeRateCents(10000, 'self', NETWORK_TAKE_RATE_DEFAULT, 'crew')).toBe(0)
+  it('every paid rung is strictly cheaper than the free one (the upgrade is real at every step)', () => {
+    const r = NETWORK_TAKE_RATE_DEFAULT
+    expect(r.member).toBeLessThan(r.memberFree) // Crew beats free Member
+    expect(r.business).toBeLessThan(r.member) // Business beats Crew
+    expect(r.collective).toBeLessThan(r.business) // Collective beats Business
+    expect(r.nonprofit).toBeLessThanOrEqual(r.collective)
+  })
+
+  it('sourceAwareMemberTakeRateCents charges the seller tier\'s rung on a network sale', () => {
+    expect(sourceAwareMemberTakeRateCents(10000, 'network', undefined, 'crew')).toBe(800) // $100 -> $8
+    expect(sourceAwareMemberTakeRateCents(10000, 'network', undefined, 'free')).toBe(1000) // $100 -> $10
+    expect(
+      sourceAwareMemberTakeRateCents(10000, 'network', { ...NETWORK_TAKE_RATE_DEFAULT, member: 500 }, 'crew'),
+    ).toBe(500)
+  })
+
+  it('a sale to the seller\'s OWN audience is 0% on BOTH rungs, always', () => {
+    // The promise does not have a tier. This is the one assertion that must never be relaxed.
+    expect(sourceAwareMemberTakeRateCents(10000, 'self', undefined, 'free')).toBe(0)
+    expect(sourceAwareMemberTakeRateCents(10000, 'self', undefined, 'crew')).toBe(0)
+  })
+
+  it("a seller's OWN sale is still 0% (the hard promise)", () => {
+    expect(sourceAwareMemberTakeRateCents(10000, 'self')).toBe(0)
+    expect(sourceAwareMemberTakeRateCents(10000, 'self', NETWORK_TAKE_RATE_DEFAULT)).toBe(0)
   })
 })
 
@@ -277,8 +307,12 @@ describe('differential take-rate: 0% on own bookings, tier-declining on network-
     expect(sourceAwareTakeRateCents(Number.NaN, 'business', 'network')).toBe(0)
   })
 
-  it('sourceAwareMemberTakeRateCents charges the member (Crew) rate on a network sale', () => {
-    expect(sourceAwareMemberTakeRateCents(10000, 'network')).toBe(800) // 8%
+  it('sourceAwareMemberTakeRateCents charges the seller tier rung on a network sale', () => {
+    expect(sourceAwareMemberTakeRateCents(10000, 'network', undefined, 'crew')).toBe(800) // 8%
+    expect(sourceAwareMemberTakeRateCents(10000, 'network', undefined, 'free')).toBe(1000) // 10%
+    // 🔴 OMITTING the tier prices at the FREE rung, not the Crew one. A caller that forgets to thread
+    // the seller's tier must over-collect and be corrected, never silently hand out the paid discount.
+    expect(sourceAwareMemberTakeRateCents(10000, 'network')).toBe(1000)
     expect(sourceAwareMemberTakeRateCents(0, 'network')).toBe(0)
   })
 

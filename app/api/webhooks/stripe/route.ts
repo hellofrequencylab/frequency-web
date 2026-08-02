@@ -3,11 +3,11 @@
 // about through one endpoint / one signing secret:
 //  - account.updated (Connect) — mirror a connected host's capability flags onto the
 //    owning profile as they progress through onboarding.
-//  - checkout.session.completed — a single checkout can be a founders grant, a member
-//    Crew/Supporter subscription, a Space plan/membership, a tip, a ticket, a PWYW
-//    supporter contribution, or a store order. The member/founders/space branch runs
-//    first; the payout-channel recorders run after (each no-ops on a session that isn't
-//    its kind, so running all of them for every checkout is safe).
+//  - checkout.session.completed — a single checkout can be a member Crew subscription, a
+//    Space plan/membership, a tip, a ticket, a PWYW supporter contribution, or a store
+//    order. The member/space branch runs first; the payout-channel recorders run after
+//    (each no-ops on a session that isn't its kind, so running all of them for every
+//    checkout is safe).
 //  - customer.subscription.created / updated / deleted — reconcile the member's
 //    membership_tier (Space subscriptions route to their own reconcilers first).
 //  - invoice.paid — record membership dues on the Foundation ledger.
@@ -28,7 +28,6 @@ import type Stripe from 'stripe'
 import { stripe, STRIPE_WEBHOOK_SECRET, tierForPrice } from '@/lib/billing/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { routeSpaceSubscription, subscriptionKind } from '@/lib/billing/space-subscriptions'
-import { grantFounderFromSession } from '@/lib/billing/founders'
 import { grantBetaFounding } from '@/lib/billing/beta-founding'
 import { foundingPaymentSignal } from '@/lib/billing/founding-payment'
 import { lapseFoundingStatus } from '@/lib/founding/status'
@@ -129,12 +128,17 @@ export async function POST(req: Request) {
 
       case 'checkout.session.completed': {
         const s = event.data.object as Stripe.Checkout.Session
-        // Member / founders / Space membership entitlement (formerly /api/stripe/webhook).
-        if (s.metadata?.kind === 'founders') {
-          // Founders Round (ONE-TIME, mode:'payment'): grant the founding membership.
-          // Idempotent and shared with the success-page confirm action.
-          await grantFounderFromSession(s)
-        } else if (!subscriptionKind(s.metadata)) {
+        // Member / Space membership entitlement (formerly /api/stripe/webhook).
+        //
+        // 🔴 THE `kind === 'founders'` BRANCH IS GONE (owner directive, 2026-07-30). It granted a
+        // lifetime founding membership from a ONE-TIME Founders Round payment and wrote
+        // profiles.locked_price_id, a grandfathered member price. Nothing in the product opened such a
+        // session (there is no route that creates one) and nothing reads locked_price_id any more, since
+        // Crew is pay-what-you-want and the member sets their own amount. A branch that mints a lifetime
+        // entitlement is not something to leave standing "just in case" behind a metadata string an
+        // operator could set by hand in the Stripe dashboard. A stray legacy session now falls through
+        // to the guard below and is ignored.
+        if (!subscriptionKind(s.metadata) && s.metadata?.kind !== 'founders') {
           // A Space plan/membership checkout's entitlement write is done by the
           // subscription.created/updated event, so skip the member tier path for those kinds.
           const profileId = s.metadata?.profile_id ?? s.client_reference_id ?? null

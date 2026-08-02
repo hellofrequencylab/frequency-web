@@ -38,13 +38,39 @@ import type { LiveEvent } from '@/components/marketing/blocks'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
 import { priceStrings, CREW_NOTE } from '@/lib/pricing/pricing-page'
-import { PLACEHOLDER_SPACE_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
-import { formatCents } from '@/lib/pricing/display'
+import { PLACEHOLDER_SPACE_PRICE_CENTS, PLACEHOLDER_MEMBER_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
+import { formatBps, formatCents } from '@/lib/pricing/display'
+import { PRICING_DEFAULTS } from '@/lib/pricing/settings'
 
 // Every dollar figure on the splash interpolates from the ONE price source (the code catalog via
 // priceStrings + the feature-tiers placeholder maps), so the strip can never drift from /pricing.
 const P = priceStrings()
 const INDEPENDENT_PRICE = formatCents(PLACEHOLDER_SPACE_PRICE_CENTS.independent)
+/** What it costs to show up: the free-Member price, read from the ONE member-price map. It was the
+ *  last literal dollar figure on this page. */
+const MEMBER_PRICE = formatCents(PLACEHOLDER_MEMBER_PRICE_CENTS.free)
+
+// And every PERCENTAGE interpolates from the take-rate config the fee code charges, for the same reason.
+// The free Member rung LEADS: selling is free on every tier, so the rate a reader starts on is the honest
+// first number, and the paid rungs are what buys it down. Any rung the owner retires disappears with it.
+const TAKE = PRICING_DEFAULTS.take_rate
+// 🔴 EVERY RUNG, OR THE LADDER LIES BY OMISSION. This listed Member, Crew, Business and Non Profit and
+// silently dropped the free Space (10%) and Collective (3%) rungs. That is not a cosmetic gap: this
+// string is emitted as FAQPage JSON-LD further down, so an incomplete ladder was being published to
+// answer engines while /pricing and /llms.txt published the complete one. An answer engine reconciling
+// two versions of our own pricing will pick one, and we do not get to choose which.
+//
+// Built by iterating the rungs rather than naming four of them, so a rung added to the config appears
+// here automatically and a rung retired disappears. The only way to omit one now is to delete it from
+// the take-rate vector, which is the honest way to retire a rung.
+const NETWORK_RATES = [
+  `Member ${formatBps(TAKE.member_free_bps)}`,
+  `Crew ${formatBps(TAKE.member_bps)}`,
+  `free Space ${formatBps(TAKE.network_bps.free)}`,
+  `Business ${formatBps(TAKE.network_bps.business)}`,
+  `Collective ${formatBps(TAKE.network_bps.collective)}`,
+  `Non Profit ${formatBps(TAKE.network_bps.nonprofit)}`,
+].join(', ')
 
 // The home is philosophy-led and builder-first: it sells a movement and a role,
 // not "Circles near you." There is no local inventory yet, so the sequence runs
@@ -131,7 +157,7 @@ const HOME_FAQ = [
   },
   {
     q: 'What does it cost?',
-    a: `The community is free, forever. Browsing, joining a Circle, and showing up never cost anything, and a business never pays for access to people; paid plans raise the limits. Crew is ${CREW_NOTE.foundingLabel} a month, turns on The Quest, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only a small, shrinking network-only take-rate on the business the network sends you (Business 5%, Collective 3%, Non Profit 0%). There is no card today, and your Opening Beta price is locked in for life.`,
+    a: `The community is free, forever. Browsing, joining a Circle, and showing up never cost anything, and a business never pays for access to people; paid plans raise the limits. A free member creates events, takes RSVPs, and sells tickets at the Member rate; Crew is pay what you want, ${CREW_NOTE.fromLabel} a month, turns on The Quest, buys that rate down, and is free for the whole beta. If you run a practice or a Space, you keep 100% of your own bookings on one honest price, and we earn only on a sale the network introduced (${NETWORK_RATES}), never on someone who is already yours. There is no card today, and a Space that subscribes at the Opening Beta rate keeps that rate for as long as it keeps the plan.`,
   },
   {
     q: 'Is there a catch?',
@@ -270,7 +296,7 @@ function Splash({
             <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-sm text-white/55">
               <span>Member free</span>
               <span aria-hidden className="text-white/25">·</span>
-              <span>Crew {CREW_NOTE.foundingLabel}</span>
+              <span>Crew {CREW_NOTE.fromLabel}</span>
               <span aria-hidden className="text-white/25">·</span>
               <span>Business {P.businessList}</span>
               <span aria-hidden className="text-white/25">·</span>
@@ -283,7 +309,7 @@ function Splash({
             <p className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/55">
               <span className="font-semibold text-white/75">Free during the beta.</span>
               <span aria-hidden className="text-white/25">·</span>
-              <span>No card. Opening Beta price locked. Leave anytime.</span>
+              <span>No card. Crew is pay what you want. Leave anytime.</span>
             </p>
             <p className="mt-2 text-sm text-white/40">
               The first Lab is taking root in {FOUNDING_PLACE}.{' '}
@@ -522,7 +548,7 @@ function Splash({
               </p>
             </div>
             <div>
-              <p className="font-display text-5xl sm:text-7xl text-primary">$0</p>
+              <p className="font-display text-5xl sm:text-7xl text-primary">{MEMBER_PRICE}</p>
               <p className="mt-3 text-xs uppercase tracking-widest font-bold text-white/50">
                 To show up
               </p>
@@ -559,10 +585,11 @@ function Splash({
           </p>
           <p>
             The money model matches. You keep 100% of your own bookings on one honest price, no
-            surprise invoices, and we earn only a small, shrinking network-only take-rate on the
-            business the network sends you (Business 5%, Collective 3%, Non Profit 0%). Physical
-            Spaces get funded a different way: a separate, community-owned vehicle where members
-            co-own the building, never platform margin.
+            surprise invoices, and we earn only on a sale the network introduced ({NETWORK_RATES}).
+            Once someone is yours, a follower, a member, a contact, or a past buyer, it is 0% for
+            good: we charge once for the introduction, and after that they are your people, free.
+            Physical Spaces get funded a different way: a separate, community-owned vehicle where
+            members co-own the building, never platform margin.
           </p>
         </Reveal>
       </Section>
@@ -625,12 +652,13 @@ function Splash({
           </Faq>
           <Faq q="What does it cost?">
             The community is free, forever. Browsing, joining a Circle, and showing up never cost
-            anything, and a business never pays for access to people: paid plans raise the limits.
-            Crew is {CREW_NOTE.foundingLabel}/mo, turns on The Quest, and is free for the whole beta.
-            If you run a practice or a Space, you keep 100% of your own bookings on one honest price,
-            and we earn only a small, shrinking network-only take-rate on the business the network
-            sends you. There&apos;s no card today: join now and your Opening Beta price is locked in
-            for life.{' '}
+            anything, and a business never pays for access to people. Selling is free too: a free
+            member creates events, takes RSVPs, and sells tickets from day one. Crew is pay what you
+            want, {CREW_NOTE.fromLabel}/mo, turns on The Quest, buys that rate down, and is free for
+            the whole beta. You keep 100% of your own bookings on every plan, and we earn only a small,
+            shrinking network-only take-rate on the business the network sends you. There&apos;s no
+            card today, and a Space that subscribes at the Opening Beta rate keeps it for as long as it
+            keeps the plan.{' '}
             <Link href="/pricing" className="font-semibold text-primary-strong hover:underline">
               See the full breakdown
             </Link>

@@ -23,12 +23,26 @@ import { JsonLd } from '@/components/json-ld'
 import { articleSchema, faqSchema, howToSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { priceStrings, CREW_NOTE } from '@/lib/pricing/pricing-page'
 import { PLACEHOLDER_SPACE_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
-import { formatCents } from '@/lib/pricing/display'
+import { formatBps, formatCents } from '@/lib/pricing/display'
+import { PRICING_DEFAULTS } from '@/lib/pricing/settings'
 
 // Every dollar figure on this page interpolates from the ONE price source (the code catalog via
 // priceStrings + the feature-tiers placeholder maps), so the ladder here can never drift from /pricing.
 const P = priceStrings()
 const INDEPENDENT_PRICE = formatCents(PLACEHOLDER_SPACE_PRICE_CENTS.independent)
+
+// Every RATE interpolates from the take-rate config the fee code charges, so no answer here can quote a
+// rung the owner has retired. The free Member rung LEADS, because selling is free on every tier and the
+// reference rate is the one a reader starts on; the paid rungs are what buys it down. Verified Non Profit
+// is zero, and Independent is off the network.
+const TAKE = PRICING_DEFAULTS.take_rate
+const MEMBER_RATE = formatBps(TAKE.member_free_bps)
+const CREW_RATE = formatBps(TAKE.member_bps)
+const BUSINESS_RATE = formatBps(TAKE.network_bps.business)
+const NETWORK_RATES = `Member ${MEMBER_RATE}, Crew ${CREW_RATE}, Business ${BUSINESS_RATE}, Non Profit ${formatBps(TAKE.network_bps.nonprofit)}`
+/** The 0%-forever half of the model, stated the same way everywhere it appears. */
+const OWN_AUDIENCE_LINE =
+  'It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.'
 
 export const revalidate = 3600
 
@@ -96,11 +110,11 @@ const FAQ = [
   },
   {
     q: 'How much does Frequency cost?',
-    a: `Connection is free: joining, Circles, and Events never cost anything, and a business never pays for access to people. Paid plans raise the limits. Frequency keeps 0% of your own bookings, always; we make our money only on the business the network sends you, a small network-only take-rate that shrinks as your plan rises: Business 5%, Collective 3%, Non Profit 0%, Independent 0%. Plans run Member (free), Crew (${CREW_NOTE.foundingLabel}), Business (${P.businessList}, beta ${P.businessBeta}), Collective (${P.collectiveList}, beta ${P.collectiveBeta}), Non Profit (${P.nonprofit}), and Independent (${INDEPENDENT_PRICE}). See the full ladder at /pricing.`,
+    a: `Connection is free, and so is selling. Joining, Circles, and Events never cost anything, a business never pays for access to people, and every tier can sell tickets and take donations from day one. Frequency keeps 0% of your own bookings, always; we make our money only on a sale the network introduced, at ${NETWORK_RATES}. ${OWN_AUDIENCE_LINE} Plans run Member (free, which creates events, takes RSVPs, and sells tickets at the Member rate), Crew (${CREW_NOTE.foundingLabel}, which buys that rate down and lifts the caps), Business (${P.businessList}, beta ${P.businessBeta}), Collective (${P.collectiveList}, beta ${P.collectiveBeta}), Non Profit (${P.nonprofit}), and Independent (${INDEPENDENT_PRICE}). See the full ladder at /pricing.`,
   },
   {
     q: 'How does Frequency make money?',
-    a: 'Only on the business the network sends you, never on the work you bring yourself. Your own bookings, clients, and classes are 0%, always. When the network refers a client or sells your work to someone you would not have reached alone, we take a small network-only slice that shrinks as your plan rises: Business 5%, Collective 3%, Non Profit 0%, Independent 0%. The physical spaces are funded separately, through a community-owned vehicle, not skimmed off your margin.',
+    a: `Only on the business the network introduces, never on the work you bring yourself. Your own bookings, clients, and classes are 0%, always, and so are tips. When the network sells your work to someone you would not have reached alone, we take a small slice: ${NETWORK_RATES}. ${OWN_AUDIENCE_LINE} The physical spaces are funded separately, through a community-owned vehicle, not skimmed off your margin.`,
   },
   {
     q: 'What is the Community Collective?',
@@ -130,14 +144,14 @@ const STEPS = [
 ] as const
 
 // The tier ladder, lifted for AIO so an answer engine can quote the whole shape
-// in one place. Take-rate shown is network-sourced only: your own bookings are
-// always 0%. Prices mirror /pricing and the FAQ; every step up buys down the rate.
+// in one place. Take-rate shown is network-introduced only: anyone already yours
+// is 0% on every tier, for good. Prices and rates mirror /pricing and the FAQ.
 const TIERS = [
-  { name: 'Member', price: 'Free', take: '0% on your own bookings', who: 'Belong to everything. The full community, free forever.' },
-  { name: 'Crew', price: `${CREW_NOTE.foundingLabel}/mo`, take: '0% on your own bookings', who: 'The full game, plus author your own Circles and Journeys. Never a business tool.' },
-  { name: 'Business', price: `${P.businessList}/mo (beta ${P.businessBeta})`, take: '5% network only', who: 'Own your audience: unlimited contacts, campaigns at volume, and exports.' },
-  { name: 'Collective', price: `${P.collectiveList}/mo (beta ${P.collectiveBeta})`, take: '3% network only', who: 'Be the venue: team seats, automations, and Collaborator hosting.' },
-  { name: 'Non Profit', price: `${P.nonprofit}/mo`, take: '0% network only', who: 'The full Collective toolkit, verified 501(c)(3).' },
+  { name: 'Member', price: 'Free', take: `${MEMBER_RATE} network only`, who: 'Belong to everything, host events, take RSVPs, and sell tickets. The full community, free forever.' },
+  { name: 'Crew', price: `${CREW_NOTE.foundingLabel}/mo`, take: `${CREW_RATE} network only`, who: 'The same selling at a lower rate, plus the full game, your own Circles and Journeys, and the entry points that build your list.' },
+  { name: 'Business', price: `${P.businessList}/mo (beta ${P.businessBeta})`, take: `${BUSINESS_RATE} network only`, who: 'Own your audience: unlimited contacts, campaigns at volume, and exports.' },
+  { name: 'Collective', price: `${P.collectiveList}/mo (beta ${P.collectiveBeta})`, take: `${formatBps(TAKE.network_bps.collective)} network only`, who: 'Be the venue: team seats, automations, and Collaborator hosting.' },
+  { name: 'Non Profit', price: `${P.nonprofit}/mo`, take: `${formatBps(TAKE.network_bps.nonprofit)} network only`, who: 'The full Collective toolkit, verified 501(c)(3).' },
   { name: 'Independent', price: `${INDEPENDENT_PRICE}/mo`, take: 'Off the network', who: 'White-label and standalone. Standard software, no network lift.' },
 ] as const
 
@@ -356,8 +370,9 @@ export default function WhatIsFrequencyPage() {
         <Body>
           This is what makes Frequency a Community Collective. Independent hosts
           grow together instead of alone, share a Space and Events, and keep 100% of
-          their own bookings. We earn only on what the network sends them. Plans
-          climb from Member to Crew, Business, Collective, Non Profit, and
+          their own bookings. We earn only on what the network sends them. Nobody
+          has to buy a plan to take money: a free Member sells tickets on day one.
+          Plans climb from Member to Crew, Business, Collective, Non Profit, and
           Independent, and every step up lowers the small network-only take-rate
           instead of adding a bill. Four promises hold it honest: we never take a
           cut of your bookings, one honest price with no surprise invoices, month to
@@ -375,9 +390,10 @@ export default function WhatIsFrequencyPage() {
           How much does Frequency cost?
         </h2>
         <Lead>
-          Joining is free, forever, and you keep 100% of your own bookings on every
-          plan. We earn only on the business the network sends you, and each step up
-          the ladder buys that small rate down.
+          Joining is free, forever, and so is selling. Every plan below can sell
+          tickets and take donations, and every plan keeps 100% of the bookings you
+          bring in yourself. We earn only on the business the network sends you, and
+          each step up the ladder buys that small rate down.
         </Lead>
         <ul className="mt-8 space-y-3">
           {TIERS.map((t) => (

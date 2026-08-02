@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { canCreateSpace, isPaidSpacePlan, spaceCreationBlockReason } from './space-limits'
+import { SPACE_PLANS } from './plans'
 
 // Space-creation cap (ADR-810, opened by ADR-876), the PURE rule: ANY member → 1 space (a free Space
 // is open to everyone, which is what /pricing promises), owning a paid space → unlimited. These lock
@@ -12,6 +13,26 @@ describe('isPaidSpacePlan', () => {
     expect(isPaidSpacePlan('free')).toBe(false)
     expect(isPaidSpacePlan(null)).toBe(false)
     expect(isPaidSpacePlan(undefined)).toBe(false)
+  })
+
+  it('🔴 EVERY plan above the free floor is paid, including collective and independent', () => {
+    // The regression this exists for: the predicate was an allow-list of two labels, written before
+    // `collective` and `independent` joined SPACE_PLANS, and never updated. Every paid Space in
+    // production is `collective`, so every paying customer read as UNPAID and silently failed the
+    // multi-Space unlock this module grants. It was invisible because provision.ts wraps the block in
+    // featureGatesLive() — false during the beta grace window, and true by itself once it closes.
+    //
+    // Asserted by ITERATING SPACE_PLANS rather than by naming labels, so adding a plan and forgetting
+    // this predicate fails here instead of failing a customer.
+    for (const plan of SPACE_PLANS) {
+      expect(isPaidSpacePlan(plan), `${plan} should be ${plan === 'free' ? 'unpaid' : 'paid'}`).toBe(plan !== 'free')
+    }
+  })
+
+  it('an unknown label is NOT paid (default-deny through asSpacePlan)', () => {
+    // A typo must never grant the unlock. asSpacePlan narrows anything unrecognised to 'free'.
+    expect(isPaidSpacePlan('busines')).toBe(false)
+    expect(isPaidSpacePlan('')).toBe(false)
   })
 
   it('legacy paid labels narrow through asSpacePlan and read paid', () => {

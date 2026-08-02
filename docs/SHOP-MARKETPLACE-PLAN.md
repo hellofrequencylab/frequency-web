@@ -42,7 +42,7 @@ This doc is the source of truth for the whole effort. Each phase links back here
 | # | Decision |
 |---|---|
 | 1 | **Who sells** — Individual Makers are retired. **Any paid member** may list *products* with limited functions; **Business Spaces** get the full Shop (products + services + tickets). Free members cannot sell (trade only). |
-| 2 | **Take-rate ladder** — Paid member **8%**, Business **3%**. The subscription buys down the fee; the 5-point spread is the upgrade math. |
+| 2 | **Take-rate ladder** — **network-sourced sales only** (ADR-913): paid member (Crew) **8%**, Business **5%** (Collective the same, Non Profit **0%**). The subscription buys down the fee; the 3-point spread is the upgrade math. A sale to the seller's **own audience** is **0%**, and **tips are 0% on every tier**. |
 | 3 | **Forced on-platform checkout** — all transactional sales settle through Stripe Connect. No "contact to buy" for priced items. Connect-only is reserved for Classifieds. |
 | 4 | **Classifieds** — the peer board (offer / free / lend / request), connect-only, free members and up. Renamed from "General Marketplace". |
 | 5 | **Market is an umbrella** — one browse surface grouped by **type** (Products · Services · Tickets), not separate top-level verticals. Renamed from "Makers". |
@@ -55,11 +55,14 @@ This doc is the source of truth for the whole effort. Each phase links back here
 
 ## 2. The seller ladder
 
+Take rate below is **network-sourced only**; the seller's own audience is always **0%** and tips are
+always **0%** (ADR-913).
+
 | Tier | Classifieds | Market | Console | Take rate |
 |---|---|---|---|---|
-| **Free member** | ✅ trade only (offer / free / lend / request) | ❌ | — | — |
-| **Paid member** | ✅ | ✅ Products (thin editor + upgrade CTA) | none | **8%** |
-| **Business Space** | ✅ | ✅ Products · Services · Tickets | **full Shop console** | **3%** |
+| **Free member** | ✅ trade only (offer / free / lend / request) | ❌ | — | — (cannot sell) |
+| **Paid member** (Crew) | ✅ | ✅ Products (thin editor + upgrade CTA) | none | **8%** |
+| **Business Space** | ✅ | ✅ Products · Services · Tickets | **full Shop console** | **5%** |
 
 "Business Space" = a `spaces.type='business'` (or `nonprofit`) profile holding the
 `space_storefront` entitlement. Aligns with the existing designator canon
@@ -67,8 +70,8 @@ This doc is the source of truth for the whole effort. Each phase links back here
 (`lib/pricing/settings.ts`).
 
 **Open pricing knobs (owner to set, not blocking structure):** the exact paid-member
-listing cap (a natural upsell lever) and whether a reduced/0% "seller-brought" rate
-(the Faire Direct model) lands in a later phase.
+listing cap (a natural upsell lever). The "seller-brought" question is **settled**: an own-audience sale
+is **0%** (ADR-913), so the Faire Direct lever is now the model itself, not a later phase.
 
 ---
 
@@ -131,7 +134,10 @@ Store.
   visibility/price fields; the `offerings` node goes read-legacy then drops (Phase 9).
 
 **Take-rate ladder (shipped):** `lib/pricing/settings.ts` `take_rate.member_bps = 800`
-(8%) beside the existing `free_bps` 5% / `business_bps` 3%; pure helpers
+(8%, the Crew seller rung) beside `take_rate.network_bps` for Space sellers (**Business 500 · Collective
+500 · Non Profit 0 · Independent 0**), both charged on **network-sourced sales only**. The legacy flat trio
+(`free_bps` / `business_bps` / `nonprofit_bps`) is off the charging path, and there is no free rung at all:
+a free seller cannot sell (ADR-913). Pure helpers
 `memberTakeRateBps` / `memberTakeRateCents` (`lib/billing/pricing-keys.ts`) + the IO wrapper
 `memberTakeRateCents` (`lib/billing/fees.ts`); wired into the profile-seller branch of
 `lib/commerce/checkout.ts` (billing still gated OFF, so nothing charges yet).
@@ -243,16 +249,15 @@ into Products/Services/Tickets sections; mirror the `SpaceOfferingsBlock` card g
 | Principle | Applied as |
 |---|---|
 | Hybrid IA beats pure verticals; unified browse + typed filters + curation | Market = one surface, typed rails + collections |
-| 8% / 3% sits at the competitive floor (industry 5–20%, effective 8–15% w/ processing) | Ladder as specified; transparent fee shown in editor |
-| Faire Direct: 0% on seller-brought sales | Reserved lever, later phase |
+| 8% / 5% sits at the competitive floor (industry 5–20%, effective 8–15% w/ processing) | Ladder as specified, and only on network-sourced sales; transparent fee shown in editor |
+| Faire Direct: 0% on seller-brought sales | **Adopted** as the rule, not a lever: own-audience sales are 0% (ADR-913) |
 | One console, not many panels (sellers lose ~14 hrs/wk hopping) | Single 3-tab Shop console |
 | AI listing generation is table stakes | "Draft with Vera" in the editor |
 | Services need deposits + no-show protection (no-show 10–15%) | Booking engine + deposit + policy fields |
 | Structured data = AI-agent discoverability (agents ~25% of e-comm by 2030) | Rich catalog schema now |
 
 **Future-proofing reservations (build schema to accept, ship later):** digital products &
-memberships-as-products (`type` reserved); video / live commerce (media field); the
-seller-brought reduced rate.
+memberships-as-products (`type` reserved); video / live commerce (media field).
 
 ---
 

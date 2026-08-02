@@ -9,17 +9,16 @@ import { Toggle } from '@/components/admin/toggle'
 import { Button } from '@/components/ui/button'
 import { isError } from '@/lib/action-result'
 import type { PricingConsoleData, FeatureGateRow } from './load'
-import type { TierPrice, PricingDefaults, PricingFlagKey } from '@/lib/pricing/settings'
+import type { PricingDefaults, PricingFlagKey } from '@/lib/pricing/settings'
+import { formatCents } from '@/lib/pricing/display'
 import type { CatalogConfig, ResolvedCatalogItem } from '@/lib/pricing/catalog-config'
 import type { AddonKey } from '@/lib/pricing/plans'
 import { addonKeyForCatalogItem } from '@/lib/billing/pricing-keys'
 import {
   setPricingFlag,
-  savePrice,
   saveTakeRate,
   saveKnobs,
   saveFeatureGate,
-  setFoundingMember,
   syncStripeProducts,
   syncStripeCatalog,
   saveCatalogItem,
@@ -72,7 +71,6 @@ export function PricingConsole({ data }: { data: PricingConsoleData }) {
       <FoundingConfigSection founding={data.founding} />
       <BetaControlsSection beta={data.beta} gating={data.gating} />
       <FeatureGatesSection gates={data.gates} />
-      <FounderSection />
       <StripeStatusSection stripe={data.stripe} />
     </>
   )
@@ -165,9 +163,15 @@ function CatalogSection({
         <OperatorSeatRow item={byKey.operator_seat} active={operatorSeatActive} />
       </FormSection>
 
+      {/* THIS IS THE CREW PRICE CONTROL, not an extras box. It was labelled "Supporter (pay what you
+          want)" back when Supporter was a contribution ON TOP of a fixed $9 Crew. Crew itself is now
+          PWYW, so these two fields ARE the membership price: the floor is what /upgrade offers and what
+          the checkout re-validates, and the suggested amount is pre-selected on the picker and is the
+          line at which a member earns the Supporter mark. Mislabelling them hid the most consequential
+          pricing control in the console inside a section that read as optional. */}
       <FormSection
-        title="Supporter (pay what you want)"
-        description="A Crew member can add a Supporter contribution on top of membership. Set the minimum they can give and the amount you suggest."
+        title="Member pricing (pay what you want)"
+        description="Crew is pay what you want. The minimum is the lowest a member can choose and the floor every price display quotes as 'from'. The suggested amount is pre-selected on the picker, and a member paying it or more earns the Supporter badge."
       >
         <PwywConfigRow minCents={catalog.pwyw.minCents} suggestedCents={catalog.pwyw.suggestedCents} />
       </FormSection>
@@ -441,24 +445,24 @@ function OperatorSeatRow({ item, active }: { item: ResolvedCatalogItem; active: 
   )
 }
 
-// ── Founding config (Founders Round + Founding Businesses · ADR-599/803) ────────────────────────────
-// The one-time Founding MEMBER rate + cap, and the Founding BUSINESS locked monthly rate, bought-down
-// marketplace take-rate, and per-city cap. These are locked DISPLAY values: nothing here charges (the
-// money flip is the master switch). Amounts in dollars; the take-rate as a percent; caps as counts.
+// ── Founding config (Founding Businesses · ADR-599/803) ─────────────────────────────────────────────
+// The Founding BUSINESS locked monthly rate, bought-down marketplace take-rate, and per-city cap. These
+// are locked DISPLAY values: nothing here charges (the money flip is the master switch). Amounts in
+// dollars; the take-rate as a percent; caps as counts.
+//
+// 🔴 THE FOUNDERS ROUND (personal) EDITOR IS GONE, with the purchase path it configured (owner
+// directive, 2026-07-30). Its two fields priced a one-time $250 founding MEMBERSHIP locked for life,
+// and Crew is pay-what-you-want: there is no fixed member price to lock, nothing sold that round, and
+// zero profiles carry is_founding_member. Leaving an editor for it would keep an operator tuning the
+// terms of an offer that cannot be bought. The Founding BUSINESS cohort is a different offer (a Space,
+// per city, fee buydown) and is untouched.
 
 function FoundingConfigSection({ founding }: { founding: FoundingConfig }) {
   return (
     <AdminSection
       title="Founding rates"
-      description="The Founders Round (personal) and the Founding Businesses cohort. These are locked reference rates: a founder is grandfathered at their rate for life. Nothing here charges. The one-time Founding Member rate is the amount a member pays once, locked for life; the Founding Business rate is the locked monthly a Space pays."
+      description="The Founding Businesses cohort. These are locked reference rates: a Founding Business is grandfathered at its rate for as long as it keeps the plan. Nothing here charges."
     >
-      <FormSection
-        title="Founding Members"
-        description="The one-time Founding Member rate (locked for life) and how many seats the round holds."
-      >
-        <FoundingMemberRow founding={founding} />
-      </FormSection>
-
       <FormSection
         title="Founding Businesses"
         description="The locked monthly a Founding Business pays, its bought-down marketplace fee, and the per-city cap. The monthly matches the live Business plan; the fee is bought down from the standard ladder."
@@ -466,51 +470,6 @@ function FoundingConfigSection({ founding }: { founding: FoundingConfig }) {
         <FoundingBusinessRow founding={founding} />
       </FormSection>
     </AdminSection>
-  )
-}
-
-function FoundingMemberRow({ founding }: { founding: FoundingConfig }) {
-  const [oneTime, setOneTime] = useState(centsToDollars(founding.member_one_time_cents))
-  const [cap, setCap] = useState(String(founding.member_cap))
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [pending, start] = useTransition()
-
-  function save() {
-    setError(null)
-    setSaved(false)
-    start(async () => {
-      // Send ONLY this row's fields; the action merges them over the current stored config, so this
-      // never clobbers the business row's fields (which the `...founding` prop snapshot could be stale on).
-      const res = await saveFoundingConfig({
-        member_one_time_cents: dollarsToCents(oneTime),
-        member_cap: Math.max(0, Math.round(Number(cap) || 0)),
-      })
-      if (isError(res)) setError(res.error)
-      else {
-        setSaved(true)
-        setTimeout(() => setSaved(false), 2000)
-      }
-    })
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-end gap-3">
-        <Field label="One-time $" value={oneTime} onChange={setOneTime} />
-        <Field label="Seat cap" value={cap} onChange={setCap} />
-        <div className="flex items-center gap-2">
-          <SaveCue pending={pending} saved={saved} />
-          <Button size="sm" variant="secondary" onClick={save} disabled={pending}>
-            Save
-          </Button>
-        </div>
-      </div>
-      <p className="text-2xs text-subtle">
-        A Founding Member pays {formatDollars(oneTime)} once, locked for life. The round holds {cap || '0'} seats.
-      </p>
-      {error && <p className="text-xs text-danger">{error}</p>}
-    </div>
   )
 }
 
@@ -937,28 +896,22 @@ function FlagRow({
 
 // ── Plans & prices ────────────────────────────────────────────────────────────────────
 
-// The member ladder is Member (free) and Crew (ADR-878), so Crew is the only editable member price.
-// Crew ships ONE clean price with no list anchor; the anchor field stays available so an operator can
-// set a deliberate one, and the display derives the strike from that value alone (ADR-463 idiom).
-const TIER_PRICE_ROWS: { key: string; label: string; list?: boolean }[] = [
-  { key: 'tier.crew', label: 'Crew', list: true },
-]
-
 function PlansSection({ values }: { values: PricingDefaults }) {
   return (
     <AdminSection title="Plans and prices" description="Every price in dollars. Leave an annual price blank for a monthly only plan.">
-      <FormSection title="Member plans" description="The personal membership ladder: Member is free, and Crew is $9 a month or $90 a year. Leave the list price blank to show one clean price.">
-        <div className="space-y-4">
-          {TIER_PRICE_ROWS.map((r) => (
-            <PriceRow
-              key={r.key}
-              settingKey={r.key}
-              label={r.label}
-              showList={r.list}
-              price={values.tier[r.key.split('.')[1] as 'crew']}
-            />
-          ))}
-        </div>
+      {/* CREW HAS NO PRICE FIELD, ON PURPOSE. It is pay-what-you-want, so the only number behind it is
+          the floor, and that lives in ONE control: "Member pricing (pay what you want)" in the Catalog
+          section above. A second editable `tier.crew` row here is how an operator could set the floor to
+          one amount and leave every price display quoting another. This section states what it resolves
+          to and sends the operator to the single control. */}
+      <FormSection
+        title="Member plans"
+        description="Member is free. Crew is pay what you want, so it has no fixed price: the member picks any monthly amount at or above your floor and every amount buys the same Crew. Set the floor, the suggested amount, and the presets in Member pricing above."
+      >
+        <p className="text-sm text-muted">
+          Crew currently reads <span className="font-semibold text-text">from {formatCents(values.tier.crew.monthly_cents)} a month</span>
+          {values.tier.crew.annual_cents ? <> (from {formatCents(values.tier.crew.annual_cents)} a year)</> : null} everywhere it is shown.
+        </p>
       </FormSection>
 
       <FormSection
@@ -973,7 +926,7 @@ function PlansSection({ values }: { values: PricingDefaults }) {
 
       <FormSection
         title="Take-rate"
-        description="The platform share of a sale, as a percent. Free usage pays the higher rate; a paying Business and Non Profit pay the lower one. Member is the rate on an individual member's Market sale (a Business subscription buys it down)."
+        description="The share Frequency takes on a sale the network sourced, as a percent. A sale to the seller's own audience is always 0%, and tips carry no fee. Crew member is the rate an individual seller pays; the rest are Space plans, and a plan buys the rate down. Independent Spaces are off the network, so their rate stays 0%."
       >
         <TakeRateRow rate={values.take_rate} />
       </FormSection>
@@ -1003,66 +956,12 @@ function SaveCue({ pending, saved }: { pending: boolean; saved: boolean }) {
   return null
 }
 
-function PriceRow({
-  settingKey,
-  label,
-  price,
-  showSetup,
-  showList,
-}: {
-  settingKey: string
-  label: string
-  price: TierPrice
-  showSetup?: boolean
-  /** Show a MONTHLY list-anchor field (the founding monthly sits under it, ADR-463). */
-  showList?: boolean
-}) {
-  const [monthly, setMonthly] = useState(centsToDollars(price.monthly_cents))
-  const [annual, setAnnual] = useState(centsToDollars(price.annual_cents))
-  const [setup, setSetup] = useState(centsToDollars(price.setup_cents))
-  const [list, setList] = useState(centsToDollars(price.list_cents))
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [pending, start] = useTransition()
-
-  function save() {
-    setError(null)
-    setSaved(false)
-    start(async () => {
-      const next: TierPrice = {
-        monthly_cents: dollarsToCents(monthly),
-        annual_cents: annual.trim() === '' ? null : dollarsToCents(annual),
-      }
-      if (showSetup) next.setup_cents = setup.trim() === '' ? 0 : dollarsToCents(setup)
-      if (showList) next.list_cents = list.trim() === '' ? 0 : dollarsToCents(list)
-      const res = await savePrice(settingKey, next)
-      if (isError(res)) setError(res.error)
-      else {
-        setSaved(true)
-        setTimeout(() => setSaved(false), 2000)
-      }
-    })
-  }
-
-  return (
-    <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border/60 pb-4 last:border-0 last:pb-0">
-      <div className="text-sm font-semibold text-text">{label}</div>
-      <div className="flex flex-wrap items-end gap-3">
-        {showList && <Field label="List $ / mo" value={list} onChange={setList} placeholder="no anchor" />}
-        <Field label={showList ? 'Founding $ / mo' : 'Monthly $'} value={monthly} onChange={setMonthly} />
-        <Field label="Annual $" value={annual} onChange={setAnnual} placeholder="monthly only" />
-        {showSetup && <Field label="Setup $" value={setup} onChange={setSetup} />}
-        <div className="flex items-center gap-2">
-          <SaveCue pending={pending} saved={saved} />
-          <Button size="sm" variant="secondary" onClick={save} disabled={pending}>
-            Save
-          </Button>
-        </div>
-      </div>
-      {error && <p className="w-full text-xs text-danger">{error}</p>}
-    </div>
-  )
-}
+// 🔴 THE GENERIC `PriceRow` EDITOR IS GONE, along with the `savePrice` action behind it. It had exactly
+// one caller left, the Crew price row, and Crew is pay-what-you-want: its floor is set by the PWYW
+// control above and derived everywhere else, so a second editable price for it could only ever produce
+// a number the checkout would not honor. The Space plans were already retired from editing here in
+// favour of the Catalog. `savePrice` also took an arbitrary settings KEY with no allowlist, so leaving
+// it exported would have kept a writable path into any pricing_settings row with no surface using it.
 
 function Field({
   label,
@@ -1090,11 +989,30 @@ function Field({
   )
 }
 
+/** The take-rate editor. These six fields are the ones that ACTUALLY CHARGE: `take_rate.network_bps` per
+ *  Space tier (what lib/billing/fees.ts spaceTakeRateCents applies) plus the two individual seller rungs,
+ *  `member_free_bps` and `member_bps`, which memberTakeRateCents picks between on the payee's real tier.
+ *
+ *  🔴 The FREE MEMBER field is the reference rate the whole ladder descends from (ADR-914) and the single
+ *  most-charged number in the product, since selling is free on every tier. It was absent from this
+ *  console until the rung came back; an operator could move every rate except the one most sales use.
+ *
+ *  It deliberately does NOT edit the legacy flat trio (free_bps / business_bps / nonprofit_bps). That was
+ *  the bug this row shipped with: the console wrote those four fields, no charging path read them, and the
+ *  write dropped the stored network vector on the way past. An operator was editing numbers that never
+ *  reached a charge (fixed ADR-913). Independent is not rendered either: a disconnected Space is off the
+ *  network, so its network rate is 0 by definition, and the action preserves whatever is stored.
+ *
+ *  Percent in, basis points out (8 → 800). */
 function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
-  const [f, setF] = useState(String(rate.free_bps / 100))
-  const [b, setB] = useState(String(rate.business_bps / 100))
-  const [n, setN] = useState(String(rate.nonprofit_bps / 100))
-  const [m, setM] = useState(String(rate.member_bps / 100))
+  const pct = (bps: number) => String(bps / 100)
+  const bps = (v: string) => Math.round((Number(v) || 0) * 100)
+  const [memberFree, setMemberFree] = useState(pct(rate.member_free_bps))
+  const [crew, setCrew] = useState(pct(rate.member_bps))
+  const [free, setFree] = useState(pct(rate.network_bps.free))
+  const [business, setBusiness] = useState(pct(rate.network_bps.business))
+  const [collective, setCollective] = useState(pct(rate.network_bps.collective))
+  const [nonprofit, setNonprofit] = useState(pct(rate.network_bps.nonprofit))
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
@@ -1104,10 +1022,14 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
     setSaved(false)
     start(async () => {
       const res = await saveTakeRate({
-        free_bps: Math.round((Number(f) || 0) * 100),
-        business_bps: Math.round((Number(b) || 0) * 100),
-        nonprofit_bps: Math.round((Number(n) || 0) * 100),
-        member_bps: Math.round((Number(m) || 0) * 100),
+        member_free_bps: bps(memberFree),
+        member_bps: bps(crew),
+        network_bps: {
+          free: bps(free),
+          business: bps(business),
+          collective: bps(collective),
+          nonprofit: bps(nonprofit),
+        },
       })
       if (isError(res)) setError(res.error)
       else {
@@ -1120,10 +1042,12 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-3">
-        <Field label="Free %" value={f} onChange={setF} />
-        <Field label="Business %" value={b} onChange={setB} />
-        <Field label="Non Profit %" value={n} onChange={setN} />
-        <Field label="Member %" value={m} onChange={setM} />
+        <Field label="Free member %" value={memberFree} onChange={setMemberFree} />
+        <Field label="Crew member %" value={crew} onChange={setCrew} />
+        <Field label="Free Space %" value={free} onChange={setFree} />
+        <Field label="Business %" value={business} onChange={setBusiness} />
+        <Field label="Collective %" value={collective} onChange={setCollective} />
+        <Field label="Non Profit %" value={nonprofit} onChange={setNonprofit} />
         <div className="flex items-center gap-2">
           <SaveCue pending={pending} saved={saved} />
           <Button size="sm" variant="secondary" onClick={save} disabled={pending}>
@@ -1281,56 +1205,14 @@ function GateRow({ gate }: { gate: FeatureGateRow }) {
   )
 }
 
-// ── Founder lock ──────────────────────────────────────────────────────────────────────
-
-function FounderSection() {
-  const [id, setId] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState<string | null>(null)
-  const [pending, start] = useTransition()
-
-  function set(value: boolean) {
-    setError(null)
-    setDone(null)
-    start(async () => {
-      const res = await setFoundingMember(id, value)
-      if (isError(res)) setError(res.error)
-      else setDone(value ? 'Marked as a founding member.' : 'Founding member lock removed.')
-    })
-  }
-
-  return (
-    <AdminSection
-      title="Founding members"
-      description="Lock a member to their current price. This is a reference for now and is honored at checkout when billing goes live."
-    >
-      <FormSection
-        title="Founder price lock"
-        description="Paste a member id to set or clear their founding-member lock. The locked price is recorded and applied at checkout in a later phase."
-      >
-        <div className="space-y-3">
-          <input
-            type="text"
-            value={id}
-            placeholder="member profile id"
-            onChange={(e) => setId(e.target.value)}
-            className="w-full rounded-md border border-border bg-canvas px-3 py-2 text-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-          />
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="secondary" onClick={() => set(true)} disabled={pending || !id.trim()}>
-              Mark founding
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => set(false)} disabled={pending || !id.trim()}>
-              Remove lock
-            </Button>
-          </div>
-          {done && <p className="text-xs text-success">{done}</p>}
-          {error && <p className="text-xs text-danger">{error}</p>}
-        </div>
-      </FormSection>
-    </AdminSection>
-  )
-}
+// ── Founder lock: REMOVED ─────────────────────────────────────────────────────────────
+// The "Founder price lock" console section is gone with the founding-member purchase path (owner
+// directive, 2026-07-30). It set profiles.is_founding_member and promised the operator that the lock
+// would be "honored at checkout when billing goes live" — and after the PWYW rework it would not have
+// been: createMembershipCheckout charges the amount the member picks and reads no locked price. A
+// control that quietly stopped doing what its own description says is worse than no control. The
+// grandfathered SPACE rates (founding_members rows, lib/founding/status.ts) are a different mechanism
+// and are untouched.
 
 // ── Stripe status + product sync (Pricing P2) ─────────────────────────────────────────────
 

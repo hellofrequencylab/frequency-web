@@ -7,8 +7,12 @@ import {
   DEFAULT_SEQUENCE,
 } from './beta-sequences'
 import { isSafeInAppPath, funnelLanding } from './funnel-destination'
-import { COACHES_FUNNEL, funnelStartDestination } from '@/lib/marketing/funnel-config'
-import { PERSONAS, personaFunnelDestination } from '@/lib/marketing/personas'
+import {
+  COACHES_FUNNEL,
+  funnelSlugs,
+  getFunnelConfig,
+  funnelStartDestination,
+} from '@/lib/marketing/funnel-config'
 
 // Funnel routing (owner directive): "The general beta splash funnel should be the only one that goes to
 // the Beta list. All other funnels should take them to the section the funnel is targeted at." Locked
@@ -76,12 +80,17 @@ describe('marketing door destinations agree with the onboarding side (one source
     expect(funnelStartDestination(COACHES_FUNNEL)).toEqual(nicheFunnelDestination('coaches'))
   })
 
-  it('every /for persona door yields a safe direct Space-create destination', () => {
-    for (const persona of PERSONAS) {
-      const dest = personaFunnelDestination(persona)
+  // Phase 7 deletion sweep: this used to iterate a SECOND persona registry (lib/marketing/personas.ts)
+  // that nothing but tests imported. The registry is gone; the assertion now runs over the ONE registry
+  // /for/<slug> actually renders from, so it locks the live doors instead of a shadow copy of them.
+  it('every /for door yields a safe direct Space-create destination', () => {
+    for (const slug of funnelSlugs()) {
+      const config = getFunnelConfig(slug)
+      expect(config, slug).toBeDefined()
+      const dest = funnelStartDestination(config!)
       expect(dest.mode).toBe('direct')
       if (dest.mode === 'direct') {
-        expect(dest.url).toBe(`/spaces/new?mode=${persona.type}:${persona.variant}`)
+        expect(dest.url).toBe(`/spaces/new?mode=${config!.mode.type}:${config!.mode.variant}`)
         expect(isSafeInAppPath(dest.url)).toBe(true)
       }
     }

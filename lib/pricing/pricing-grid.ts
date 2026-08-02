@@ -12,11 +12,15 @@
 //   * a METER row reads the tier's rung on the feature's usage ladder — lib/pricing/feature-meters.ts,
 //     the one map of per-tier allowances.
 //   * the TAKE-RATE row reads take_rate.network_bps, the ACTUAL per-tier rate lib/billing/fees.ts charges.
+//     EVERY column quotes a rate now, including free Member: selling is free on every tier (ADR-914), so
+//     the only thing that moves up the ladder is the number.
 //   * the AI ADD-ON row reads ADDON_ENTITLEMENT_KEYS: the add-on keys are in no tier base, so the row
 //     resolves to the metered price on every paid tier and to "not available" on Free. Fold those keys
 //     into a tier base and the row flips to "Included" on its own.
 //   * every PRICE reads the operator-editable pricing config (getPricingValues), through the shared
-//     display helpers (priceRow / formatCents), so a price change at /admin/pricing needs no deploy.
+//     display helpers (memberTierRows / spacePlanRows / formatCents), so a price change at
+//     /admin/pricing needs no deploy. Crew reads as "from $X/mo" because it is pay-what-you-want and the
+//     configured amount is its floor.
 //
 // PURE + framework-independent (no React / Supabase / Next / Stripe), like the rest of lib/pricing/*, so
 // the whole grid is unit-testable and the page is a renderer with no pricing logic of its own. The IO
@@ -27,13 +31,13 @@
 // Member, Crew, Space, Business, Collective, Non Profit, Independent.
 
 import { catalogItem, type CatalogItemKey } from '@/lib/billing/pricing-keys'
-import { ENTITLEMENT_LABEL, type EntitlementTier } from '@/lib/core/entitlement'
+import { ENTITLEMENT_LABEL, deriveTier, isPaid, type EntitlementTier } from '@/lib/core/entitlement'
 import type { ResolvedCatalogItem } from './catalog-config'
 import {
   annualDiscountNote,
   formatBps,
   formatCents,
-  priceRow,
+  memberTierRows,
   spacePlanRows,
   trialNote,
   type PriceRow,
@@ -97,12 +101,12 @@ export interface Offering {
   tagline: string
   /** One plain sentence on who it is for. */
   forWho: string
-  /** The monthly price label ("Free", "$9/mo"). */
+  /** The monthly price label ("Free", "$19/mo", or "from $4.99/mo" for pay-what-you-want Crew). */
   monthly: string
   /** The raw monthly cents behind that label (0 for a free tier), for callers that must compute: the
    *  JSON-LD Offer amount is the same number the page prints, never a second source. */
   monthlyCents: number
-  /** The yearly price label ("$90/yr"), or null when there is no yearly price (free tiers). */
+  /** The yearly price label ("$190/yr"), or null when there is no yearly price (free tiers). */
   yearly: string | null
   /** The crossed-out monthly LIST anchor ("$29") when this offering is sold at a lower beta rate, else
    *  null. Derived from the config (an anchor reads only when list_cents is above monthly_cents), so no
@@ -116,6 +120,10 @@ export interface Offering {
   billing: string
   /** The network take-rate line for this offering. */
   takeRate: string
+  /** The NUMBER behind that line: the network-sourced take-rate for this offering, in basis points.
+   *  Carried alongside the sentence so a caller that needs the bare rate (an answer-engine line, a
+   *  comparison, a JSON-LD field) reads it instead of parsing the prose back apart. */
+  networkRateBps: number
   /** True for the one column the page highlights. */
   featured: boolean
   cta: { label: string; href: string }
@@ -129,8 +137,11 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
     forWho: 'Anyone who wants to find their people, go to things, and join Circles.',
   },
   crew: {
-    tagline: 'The whole member experience.',
-    forWho: 'Members who want full access to member programs and everything else the community runs.',
+    // Crew is pay-what-you-want, and that has to be SAID, not implied by a "from" in front of a number.
+    // An answer engine lifting this line otherwise reports the floor as the price.
+    tagline: 'The whole member experience, at a price you pick.',
+    forWho:
+      'Members who want full access to member programs, and anyone selling tickets to their own events without running a Space. Pick any monthly amount at or above the floor; every amount buys the same Crew.',
   },
   free: {
     tagline: 'Put your business on the map.',
@@ -172,17 +183,38 @@ function pricedOffering(
   }
 }
 
+/** Is a PERSONAL column a paid rung? The one predicate the whole repo uses (`isPaid(deriveTier(...))`),
+ *  so a legacy 'supporter' label folds into Crew here exactly as it does on the charging path and a
+ *  column can never quote a rate the fee math would not apply. PURE. */
+function isPaidTierLabel(tier: string): boolean {
+  return isPaid(deriveTier(tier as EntitlementTier))
+}
+
+// `personalSellingAllowed` and its NO_SELLING_LINE used to sit here, reading the `event_paid_tickets`
+// gate so the free Member column printed "Selling is not included" instead of a rate. Both are gone
+// with that gate (ADR-914): EVERY column on this page can sell, so every column quotes a rate. That is
+// the page's central claim now, and a column that refused to name a number was the old model's most
+// visible artefact.
+
 /** The two MEMBER offerings, in ladder order: Member (free) and Crew. PURE.
  *
  *  Members get no trial: the free tier IS the trial (space-plan-checkout only sets trial days on Space
  *  plans), so no member column claims one. */
 export function memberOfferings(input: PricingGridInput): Offering[] {
   const { values } = input
-  const crew = priceRow('crew', ENTITLEMENT_LABEL.crew, values.tier.crew)
-  // An individual seller (a person, not a Space) is charged the member seller rate, `member_bps`, on
-  // network-sourced sales. Both member columns read it, so the offering line and the grid's take-rate
-  // row can never quote different numbers for the same person.
-  const memberRate = `0% on what you bring in yourself, ${formatBps(values.take_rate.member_bps)} on network-sourced sales`
+  // THE SAME ROW /upgrade AND THE PRICE TABLES RENDER. memberTierRows is where the "from" prefix lives,
+  // because Crew is pay-what-you-want and its configured amount is a floor. Building the row with a bare
+  // priceRow() here is how this column came to quote "$4.99/mo" as though it were the price while the
+  // tables beside it read "from $4.99" — one offer, two figures. One builder, one figure.
+  const crew = memberTierRows(values)[0]!
+  // THE TWO MEMBER COLUMNS BOTH SELL, AT DIFFERENT RATES (ADR-914). Both quote the same shape, so the
+  // ladder reads as one number moving rather than as a feature appearing: a free Member pays
+  // `member_free_bps` on network-sourced sales, Crew pays `member_bps`, and BOTH pay 0% on their own
+  // people. The 0% clause leads in both strings on purpose — it is the promise, and it is identical on
+  // every rung, so the only thing that visibly differs is the number Crew buys down.
+  const rateLine = (bps: number) => `0% on your own people, ${formatBps(bps)} on network-sourced sales`
+  const crewBps = values.take_rate.member_bps
+  const memberBps = values.take_rate.member_free_bps
   return [
     {
       id: 'member',
@@ -197,7 +229,8 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
       betaNote: null,
       trial: null,
       billing: 'Free forever. No card.',
-      takeRate: memberRate,
+      takeRate: rateLine(memberBps),
+      networkRateBps: memberBps,
       featured: false,
       cta: { label: 'Join free', href: '/join' },
     },
@@ -210,7 +243,8 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
       ...pricedOffering(crew),
       trial: null,
       billing: `Monthly or yearly. ${annualDiscountNote(values)}`,
-      takeRate: memberRate,
+      takeRate: rateLine(crewBps),
+      networkRateBps: crewBps,
       featured: false,
       cta: { label: 'Join Crew', href: '/upgrade' },
     },
@@ -229,8 +263,9 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
   // the beta rate reads under its anchor exactly as it does today.
   const paid = spacePlanRows(values, betaActiveFor(input))
   const trial = trialNote(values)
+  const rateBps = (plan: SpacePlan): number => values.take_rate.network_bps[plan]
   const rate = (plan: SpacePlan): string =>
-    `0% on your own bookings, ${formatBps(values.take_rate.network_bps[plan])} on network-sourced sales`
+    `0% on your own bookings, ${formatBps(rateBps(plan))} on network-sourced sales`
 
   const free: Offering = {
     id: 'free',
@@ -246,6 +281,7 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
     trial: null,
     billing: 'Free forever. No card.',
     takeRate: rate('free'),
+    networkRateBps: rateBps('free'),
     featured: false,
     cta: { label: 'Start a Space', href: '/spaces' },
   }
@@ -264,6 +300,7 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
         trial,
         billing: `Monthly or yearly. ${annualDiscountNote(values)}`,
         takeRate: rate(plan),
+        networkRateBps: rateBps(plan),
         featured: plan === 'business',
         cta: { label: plan === 'nonprofit' ? 'Get verified' : 'Start a Space', href: '/spaces' },
       }
@@ -433,7 +470,13 @@ export function resolveCell(source: RowSource, column: GridColumn, input: Pricin
       return meterCell(source.feature, column)
     case 'takeRate': {
       if (column.axis !== 'plan') {
-        return { kind: 'value', text: formatBps(input.values.take_rate.member_bps) }
+        // Every personal column can sell (ADR-914), so every one names a rate. Crew reads `member_bps`;
+        // the free Member column reads `member_free_bps`, the reference rate the ladder descends from.
+        const t = input.values.take_rate
+        return {
+          kind: 'value',
+          text: formatBps(isPaidTierLabel(column.tier) ? t.member_bps : t.member_free_bps),
+        }
       }
       return { kind: 'value', text: formatBps(input.values.take_rate.network_bps[column.tier as SpacePlan]) }
     }
@@ -576,7 +619,14 @@ const SPACE_GROUPS: GroupDef[] = [
         key: 'space_memberships',
         label: 'Memberships',
         detail: 'Your own membership tiers, and the members on them.',
-        source: { from: 'meter', feature: 'space_memberships' },
+        // A GATE, not a meter (ADR-914). Selling a membership is one of the three walls, and the
+        // `space_memberships` METER that used to back this row was deleted when the wall replaced it
+        // (capping active members punishes a Space for growing). A meter source that names a deleted
+        // key resolves to `NO` on EVERY column, so this row was telling a prospective Business
+        // customer that memberships are not included at any price — the exact feature the wall sells.
+        // The gate source reads the same map `featureAllowed` enforces, so free reads No and every
+        // paid plan reads Included. The tier COUNT is a separate row's job (space_membership_tiers).
+        source: { from: 'gate', feature: 'space_memberships' },
       },
       {
         key: 'space_tickets',
@@ -593,7 +643,8 @@ const SPACE_GROUPS: GroupDef[] = [
       {
         key: 'take_rate',
         label: 'Take-rate on network-sourced sales',
-        detail: 'You keep 100% of the business you bring in yourself. This is the share of the business the network sends you.',
+        detail:
+          'You keep 100% of the business you bring in yourself, and 0% applies for good to anyone already in your world: a follower, one of your members, a contact, or someone who bought before. Frequency charges once for the introduction. After that they are your people, free.',
         source: { from: 'takeRate' },
       },
     ],
@@ -794,9 +845,16 @@ const MEMBER_GROUPS: GroupDef[] = [
     label: 'Selling',
     rows: [
       {
+        key: 'sell_anything',
+        label: 'Sell tickets and take payments',
+        detail: 'Charge for what you run and get paid out, on any account. Add a payout account once and you are selling.',
+        source: { from: 'always' },
+      },
+      {
         key: 'take_rate',
         label: 'Take-rate on network-sourced sales',
-        detail: 'You keep 100% of what you bring in yourself. Running a paid Space buys this rate down.',
+        detail:
+          'You keep 100% from anyone already yours: a follower, a contact, or someone who bought before. Frequency charges once for the introduction. After that they are your people, free. Every paid rung buys the rate on new introductions down further.',
         source: { from: 'takeRate' },
       },
     ],

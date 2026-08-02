@@ -10,7 +10,7 @@ import { breadcrumbSchema } from '@/lib/jsonld'
 export const metadata: Metadata = {
   title: 'Join the Beta',
   description:
-    "Request your spot in the Frequency community Beta. We're opening it to a small group at a time, free during the beta, no card, your Opening Beta price locked.",
+    "Request your spot in the Frequency community Beta. We're opening it to a small group at a time, free during the beta, no card, and membership is pay what you want when it launches.",
   alternates: { canonical: '/beta' },
   openGraph: {
     title: 'Join the Frequency Beta',
@@ -25,7 +25,10 @@ const WHAT_YOU_GET = [
   { Icon: Users, label: 'A local Circle near you', body: "A small group of neighbors built around what you practice, small enough to be missed when you don't show." },
   { Icon: CalendarHeart, label: 'Real gatherings, in person', body: 'Standing times to actually show up, on the bluff, at The Lab, around a table.' },
   { Icon: Sparkles, label: 'A say in what it becomes', body: 'Early members shape the Circles, the rituals, and the room from day one.' },
-  { Icon: ShieldCheck, label: 'Opening Beta price, locked', body: 'Free for the whole beta, no card. Lock your Opening Beta price for when paid memberships launch.' },
+  // Membership is PAY WHAT YOU WANT, so there is no launch price for a member to lock. This card used
+  // to promise one, which is a promise about a number that does not exist. Say the true version: the
+  // member picks the amount, and a Space that subscribes at the Opening Beta rate keeps that rate.
+  { Icon: ShieldCheck, label: 'You set what you pay', body: 'Free for the whole beta, no card. When paid membership launches it is pay what you want, and you can change your amount whenever.' },
 ]
 
 export default function BetaPage() {
@@ -45,7 +48,7 @@ export default function BetaPage() {
           <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/60">
             <span className="font-semibold text-white/80">Free during the beta.</span>
             <span aria-hidden className="text-white/30">·</span>
-            <span>No card · Opening Beta price locked · Leave anytime</span>
+            <span>No card · Pay what you want later · Leave anytime</span>
           </p>
         }
       />

@@ -16,8 +16,8 @@ ladder, ADR-811; every yearly price is two months free):
 | **Collective** | a Space | $79/mo list, $49/mo founding beta charged today |
 | **Non Profit** | a verified 501(c)(3) Space | $39/mo flat, never per seat |
 | **Independent** | a Space going white-label, off the network | $249/mo flat, no founding discount |
-| **Crew** | a member | $9/mo under a $12 list anchor |
-| **Supporter** | a member | $12/mo (Crew plus the Supporter badge) |
+| **Crew** | a member | **Pay what you want**, from $4.99/mo (floor), $24.99 suggested |
+| **Supporter** | not a tier | A badge earned by paying at or above the suggested Crew amount |
 
 The founding beta anchors ($19 Business, $49 Collective) auto-revert to list on 2026-09-01
 (`lib/pricing/beta.ts`); a Space that bought at the founding rate keeps it. The Collective beta
@@ -35,22 +35,35 @@ All of this bills through Stripe subscriptions and one-time payments.
 ## 2. Payouts (money through)
 
 When a member tips a host, buys an event ticket, or buys from a Space storefront, the money goes to that
-host or Space through **Stripe Connect**. Frequency keeps a platform fee (the **take-rate**) off the top,
-and the rule comes first: **a sale you bring yourself costs you nothing.** Every order is classified as
-`self` (your own booking, your own audience) or `network` (the network sourced it: referral, discovery,
-the marketplace). Self orders are always 0%. Network orders pay the ladder for the seller's tier:
+host or Space through **Stripe Connect**. Three rules come first (ADR-913):
 
-| Seller | Network-sourced take-rate | Self-sourced |
+1. **Tips carry no platform fee. Zero, on every tier.** A tip is a gift between two people; we are not
+   in it.
+2. **A sale to the seller's own audience costs them nothing.** Always 0%.
+3. **A free Member cannot sell.** They can create events and take RSVPs, but selling tickets or taking
+   payments needs **Crew** (the paid personal tier) or a **Business / Non Profit** Space.
+
+Every order that is not a tip is classified as `self` (the seller's own audience) or `network` (the
+network sourced it: referral, discovery, the marketplace). **Own-audience is a relationship, not a
+cookie**: the buyer follows the Space, is an active Space member, is in its Space Contacts, is in the
+seller's own contact list, or has bought from them before. Any one of those makes the order `self` and
+the fee 0%. Network orders pay the ladder for the seller's tier:
+
+| Seller | Network-sourced take-rate | Own audience |
 |---|---|---|
-| Free Space | 10% | 0% |
+| Member (free) | cannot sell (RSVPs only) | cannot sell |
+| Crew | 8% | 0% |
 | Business | 5% | 0% |
-| Collective | 3% | 0% |
+| Collective | 5% | 0% |
 | Non Profit | 0% | 0% |
 | Independent | 0% (off the network, so no network sales) | 0% |
-| Individual member seller on the Market | 8% | 0% |
+| Tips, any tier | **0%** | **0%** |
 
-Upgrading buys the fee down: Free 10% to Business 5% to Collective 3%. The rates are set in the pricing
+Upgrading buys the fee down: Crew 8% to Business 5% to Non Profit 0%. The rates are set in the pricing
 console (`/admin/pricing`, Take-rate); the seeded defaults live in `lib/pricing/settings.ts`.
+
+The one line to give a member who asks: **Frequency charges once for the introduction. After that
+they're your people, free.**
 
 ## Turning payments on and off
 
@@ -148,8 +161,10 @@ locked display value, and the money flip is still the master switch.
   While it is off, the seat is a placeholder the catalog sync skips (no Stripe price is minted). Turning
   it on drops the placeholder so the next **Sync the catalog to Stripe** mints the live seat price from
   the amount you set. Activation is audited in `platform_flag_events`.
-- **Member take-rate** (`Plans and prices` > `Take-rate`, the **Member %** field). The rate on an
-  individual member's Market sale (default 8%); a Business subscription buys it down.
+- **Member take-rate** (`Plans and prices` > `Take-rate`, the **Member %** field). The rate on a **Crew**
+  member's network-sourced Market sale (default 8%); their own audience is 0% regardless, and a
+  Business Space buys the network rate down to 5%. A free Member has no rate because a free Member
+  cannot sell.
 - **Beta controls** (`Beta controls` section). The **invite gate** (`beta_invite_only`) and **host
   prompts** (`beta_host_prompts`) switches, both audited, plus the **countdown date** (`beta_ends_at`).
   The countdown date is **display only**: it drives the "Summer of Frequency" banner and grants no

@@ -24,8 +24,14 @@ import {
   currentMeterStepIndex,
   nearAllowanceLimit,
   withinAllowance,
+  allowanceVerdict,
+  allowanceHeadroom,
 } from './feature-meters'
 import { tierRankOnAxis } from './feature-tiers'
+
+// Derived, never typed: the free CRM allowance moved 250 -> 200 (ADR-914) and three assertions here
+// hardcoded the old number. A test that restates a config value is a second source of truth for it.
+const FREE_CRM = PLACEHOLDER_METER_LIMITS.space_crm!.free!
 
 /** The tier-gated feature keys, derived from the code gate map: enabled AND ranked above the free floor
  *  on the gate's own axis. This is the set the metered model must ACCOUNT for (meter it, or mark it as
@@ -132,9 +138,9 @@ describe('shape — every meter ladder is well-formed with per-tier placeholder 
   })
 
   it('the placeholder-allowance flag is on and stamped on every ladder', () => {
-    expect(PLACEHOLDER_ALLOWANCES).toBe(true)
+    expect(PLACEHOLDER_ALLOWANCES).toBe(false) // billing is live (ADR-920)
     for (const key of FEATURE_METER_KEYS) {
-      expect(FEATURE_METERS[key]!.placeholderAllowances).toBe(true)
+      expect(FEATURE_METERS[key]!.placeholderAllowances).toBe(false)
     }
   })
 })
@@ -212,7 +218,7 @@ describe('read helpers', () => {
   })
 
   it('allowanceAt returns the tier allowance, or null for unlimited / non-metered', () => {
-    expect(allowanceAt('space_crm', 'free')).toBe(250) // §2 free CRM allowance (ADR-552 Phase 3)
+    expect(allowanceAt('space_crm', 'free')).toBe(FREE_CRM) // the free CRM allowance (ADR-552 Phase 3)
     expect(allowanceAt('space_crm', 'business')).toBeNull() // unlimited
     expect(allowanceAt('space_crm', 'nonprofit')).toBeNull() // maps to business rung (unlimited)
     expect(allowanceAt('space_whitelabel', 'free')).toBeNull() // not metered
@@ -221,9 +227,13 @@ describe('read helpers', () => {
 
 describe('the gauge as upsell — nearAllowanceLimit + the one shared nudge line (ADR-837)', () => {
   it('trips at the threshold (80% of a finite allowance) and not below it', () => {
-    // Free CRM allowance is 250 → the nudge appears at 200 (0.8 exactly), not at 199.
-    expect(nearAllowanceLimit('space_crm', 'free', 199)).toBe(false)
-    expect(nearAllowanceLimit('space_crm', 'free', 200)).toBe(true)
+    // Derived from the allowance, not restated: the nudge appears at exactly 80% and never a unit below.
+    // This read "250 → the nudge at 200" until ADR-914 moved the allowance, at which point the numbers
+    // still passed while measuring the wrong ratio. A test that hardcodes a config value is a second
+    // source of truth for it.
+    const eighty = Math.ceil(FREE_CRM * 0.8)
+    expect(nearAllowanceLimit('space_crm', 'free', eighty - 1)).toBe(false)
+    expect(nearAllowanceLimit('space_crm', 'free', eighty)).toBe(true)
     expect(nearAllowanceLimit('space_crm', 'free', 10_000)).toBe(true)
   })
 
@@ -241,9 +251,74 @@ describe('the gauge as upsell — nearAllowanceLimit + the one shared nudge line
   })
 })
 
+// ── THE WRITE SEAM + THE GRANDFATHER RULE (ADR-917, docs/VALUE-LADDER.md Phase 3b/Phase 8) ─────────
+// The dark pattern this batch exists to forbid: a cap that walls someone BEHIND where they already
+// stand. Production held a Space with 567 contacts against a published free allowance of 200 when
+// this was written, and a bare cap would have refused it 367 contacts backwards.
+
+describe('allowanceVerdict — the metered WRITE question, and the grandfather rule', () => {
+  it('never enforces while the gates are not live, however far over the allowance', () => {
+    for (const key of FEATURE_METER_KEYS) {
+      const v = allowanceVerdict(key, 'free', Number.MAX_SAFE_INTEGER, { gatesLive: false })
+      expect(v.allowed).toBe(true)
+      expect(v.enforced).toBe(false)
+    }
+  })
+
+  it('an unlimited tier and a non-metered key are never enforced', () => {
+    expect(allowanceVerdict('space_crm', 'business', 10_000_000, { gatesLive: true }).allowed).toBe(true)
+    expect(allowanceVerdict('space_whitelabel', 'free', 999, { gatesLive: true }).allowed).toBe(true)
+    expect(allowanceVerdict('made-up', 'free', 999, { gatesLive: true }).allowed).toBe(true)
+  })
+
+  it('gates live: room below the cap, refused AT the cap (a write asks for ONE MORE)', () => {
+    const under = allowanceVerdict('space_crm', 'free', FREE_CRM - 1, { gatesLive: true })
+    expect(under.allowed).toBe(true)
+    expect(under.remaining).toBe(1)
+    const at = allowanceVerdict('space_crm', 'free', FREE_CRM, { gatesLive: true })
+    expect(at.allowed).toBe(false)
+    expect(at.remaining).toBe(0)
+    // 🔴 The boundary that separates this from withinAllowance: FREE_CRM contacts is WITHIN a
+    // FREE_CRM allowance and is simultaneously FULL. Both answers are right to their own question.
+    expect(withinAllowance('space_crm', 'free', FREE_CRM, { gatesLive: true })).toBe(true)
+  })
+
+  it('🔴 THE GRANDFATHER RULE: the effective cap is never below the count already held', () => {
+    // The real production case: 567 contacts on a plan whose published allowance is 200.
+    const over = allowanceVerdict('space_crm', 'free', 567, { gatesLive: true })
+    expect(over.allowance).toBe(FREE_CRM) // what the pricing page publishes, unchanged
+    expect(over.effective).toBe(567) // what is actually applied: never below what they hold
+    expect(over.grandfathered).toBe(true)
+    // The cap governs GROWTH FROM TODAY. It is never retroactive, so `remaining` is never negative
+    // and there is no reachable "delete 367 contacts to get back under the limit" state.
+    expect(over.remaining).toBe(0)
+    expect(over.allowed).toBe(false)
+  })
+
+  it('an explicitly granted floor widens the cap and can only ever be MORE generous', () => {
+    const granted = allowanceVerdict('space_crm', 'free', 567, { gatesLive: true, floor: 1_000 })
+    expect(granted.effective).toBe(1_000)
+    expect(granted.allowed).toBe(true)
+    expect(granted.remaining).toBe(433)
+    // A floor BELOW the current count cannot narrow it (the grandfather rule wins).
+    expect(allowanceVerdict('space_crm', 'free', 567, { gatesLive: true, floor: 10 }).effective).toBe(567)
+  })
+
+  it('garbage usage floors to 0 rather than inventing a refusal', () => {
+    expect(allowanceVerdict('space_crm', 'free', Number.NaN, { gatesLive: true }).allowed).toBe(true)
+    expect(allowanceVerdict('space_crm', 'free', -50, { gatesLive: true }).used).toBe(0)
+  })
+
+  it('allowanceHeadroom is the bulk form: a number, or null when nothing is enforced', () => {
+    expect(allowanceHeadroom('space_crm', 'free', 10, { gatesLive: false })).toBeNull()
+    expect(allowanceHeadroom('space_crm', 'business', 10, { gatesLive: true })).toBeNull()
+    expect(allowanceHeadroom('space_crm', 'free', FREE_CRM - 5, { gatesLive: true })).toBe(5)
+  })
+})
+
 describe('the enforcement seam — nothing charges / nothing hard-blocks while billing is off', () => {
   it('withinAllowance ALWAYS returns true while billing is off, even far over the allowance', () => {
-    // Free CRM allowance is 250 contacts (§2); 10x over it must still not be blocked while billing is off.
+    // Free CRM allowance is 200 contacts (ADR-914); 10x over it must still not be blocked while billing is off.
     expect(withinAllowance('space_crm', 'free', 1_000_000, { gatesLive: false })).toBe(true)
     // Every metered feature, at its free floor, wildly over allowance → still true (informational only).
     for (const key of FEATURE_METER_KEYS) {
@@ -258,8 +333,8 @@ describe('the enforcement seam — nothing charges / nothing hard-blocks while b
 
   it('with billing LIVE it enforces the seam (usage vs allowance) — the go-live behavior', () => {
     // At/under the free cap passes; over it fails; an unlimited tier always passes.
-    expect(withinAllowance('space_crm', 'free', 250, { gatesLive: true })).toBe(true)
-    expect(withinAllowance('space_crm', 'free', 251, { gatesLive: true })).toBe(false)
+    expect(withinAllowance('space_crm', 'free', FREE_CRM, { gatesLive: true })).toBe(true)
+    expect(withinAllowance('space_crm', 'free', FREE_CRM + 1, { gatesLive: true })).toBe(false)
     expect(withinAllowance('space_crm', 'business', Number.MAX_SAFE_INTEGER, { gatesLive: true })).toBe(true)
   })
 
@@ -268,7 +343,7 @@ describe('the enforcement seam — nothing charges / nothing hard-blocks while b
     // go-live. This asserts the informational contract holds for every ladder.
     for (const key of FEATURE_METER_KEYS) {
       const ladder = FEATURE_METERS[key]!
-      expect(ladder.placeholderAllowances).toBe(true)
+      expect(ladder.placeholderAllowances).toBe(false)
       // The free floor is always $0 (never a charge to be on the free allowance).
       expect(ladder.steps[0]!.priceCents).toBe(0)
     }

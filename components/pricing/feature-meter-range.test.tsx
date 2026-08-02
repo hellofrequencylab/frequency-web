@@ -76,12 +76,15 @@ describe('FeatureMeterRange — renders the allowance ladder per tier', () => {
     expect(unlimited).not.toContain('Nearly full.')
   })
 
-  it('shows the honest placeholder note (billing not live) and states nothing is charged or limited', () => {
+  it('states nothing is charged or limited while billing is off, without calling the numbers a preview', () => {
+    // PLACEHOLDER_ALLOWANCES is false now: these are the real allowances. The "nothing is limited yet"
+    // line is about enforcement being off and must survive that flip on its own.
     const out = html(
       <FeatureMeterRange ladder={CRM} currentTier="free" upgradeHref="/spaces/x/settings/billing" live={false} />,
     )
     expect(out).toContain('Billing is not live yet')
     expect(out.toLowerCase()).toContain('nothing is charged or limited')
+    expect(out.toLowerCase()).not.toContain('preview')
   })
 
   it('renders a personal (tier-axis) meter just as well', () => {

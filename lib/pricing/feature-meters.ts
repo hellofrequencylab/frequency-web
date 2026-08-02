@@ -42,7 +42,7 @@ import type { GateAxis } from './gates'
  *  to false when the real limits are set (and fill the real numbers into the ALLOWANCES below). This is
  *  the single, obvious go-live flag for the QUANTITIES (the sibling PLACEHOLDER_PRICING in
  *  feature-tiers.ts is the flag for the PRICES). */
-export const PLACEHOLDER_ALLOWANCES = true
+export const PLACEHOLDER_ALLOWANCES = false
 
 /** @placeholder The fraction of a tier's allowance at which an inline usage meter shows a quiet "Upgrade"
  *  nudge (ADR-520 P2). 0.8 = the nudge appears once usage crosses 80% of the allowance. Informational
@@ -74,7 +74,7 @@ export type MeterPeriod = 'month' | 'day' | null
  *  `withinAllowance` never hard-blocks (ADR-782 beta-soft). The real limits are the owner's go-live call.
  *
  *  Sources per row (mirrored, not invented, wherever the codebase already carries a number):
- *   - space_crm 250 free            — docs/BUSINESS-MODEL-PLAN §2 (also the console freeNote).
+ *   - space_crm 200 free            — docs/VALUE-LADDER.md §3 (lowered from 250 by ADR-914).
  *   - space_email 300/mo free       — §2; Business 5,000 and Collective 25,000 are the §2 "5k → 25k
  *                                     steps". Separately, lib/spaces/email.ts DAILY_SEND_CAP = 500/day is
  *                                     a LIVE per-day throttle on every plan (deliverability, not pricing).
@@ -96,12 +96,11 @@ export type MeterPeriod = 'month' | 'day' | null
  *                                     Crew 25 is a placeholder "higher cap" (was unlimited pre-838).
  *   - journey_enrollees 10 free     — mirrors space_journey's free 10 on the personal axis (ADR-838). */
 export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>> = {
-  space_crm: { free: 250, business: null, collective: null },
+  space_crm: { free: 200, business: null, collective: null },
   space_email: { free: 300, business: 5_000, collective: 25_000 },
   space_bookings: { free: 15, business: null },
   space_journey: { free: 10, business: null },
   space_journey_publish: { free: 1, business: null },
-  space_memberships: { free: 10, business: null },
   space_tickets: { free: 50, business: null },
   space_qr: { free: 3, business: 500, collective: null },
   space_automation: { free: 0, collective: 1_000 },
@@ -121,7 +120,13 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   space_collaborators: { free: 0, business: 3, collective: null },
   // Membership tiers a Space may define. Free runs one tier (the §2 "10 active, 1 tier" row), Business
   // runs a small ladder, Collective is unlimited (multi-tier pricing is the Collective offer).
-  space_membership_tiers: { free: 1, business: 3, collective: null },
+  // 🔴 FREE IS ZERO, NOT ONE (ADR-914). Selling memberships is a WALL at Business, and this meter
+  // promised a free Space one tier. That is the "gated and metered = two promises to the same
+  // customer" class the drift guard exists to catch, and it slipped through only because the gate key
+  // (`space_memberships`) and the meter key (`space_membership_tiers`) differ by name. The guard
+  // compares keys, so a rename defeats it. Above the wall the tier COUNT is a real dial, so the meter
+  // stays; its floor just has to agree with the wall.
+  space_membership_tiers: { free: 0, business: 3, collective: null },
   vera_unlimited: { free: 10, crew: null },
   // FIRST ONE FREE — the personal leadership allowances. A free Member leads at one of each; Crew leads
   // at scale. Nothing here is a wall: a free Member still hosts a real Circle and is still made a Host
@@ -173,7 +178,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Contacts',
     unit: 'contacts',
     period: null,
-    // Free: 250 contacts (activation → scale lever, §2). Business and Collective: unlimited.
+    // Free: 200 contacts (ADR-914, docs/VALUE-LADDER.md §3). Business and Collective: unlimited.
     allowances: PLACEHOLDER_METER_LIMITS.space_crm!,
   },
   space_email: {
@@ -213,15 +218,6 @@ const RAW_METERS: Record<string, RawMeter> = {
     // Free: 1 published Journey (the LIVE free-space cap, owner decision 2026-07-18). Business:
     // unlimited (mirrors the live paid behavior). resolveJourneyAccess reads this row (ADR-838).
     allowances: PLACEHOLDER_METER_LIMITS.space_journey_publish!,
-  },
-  space_memberships: {
-    axis: 'plan',
-    title: 'Memberships',
-    dimension: 'Active memberships',
-    unit: 'members',
-    period: null,
-    // Free: 10 active members, one tier (scale lever, §2). Business: unlimited, multi-tier.
-    allowances: PLACEHOLDER_METER_LIMITS.space_memberships!,
   },
   space_tickets: {
     axis: 'plan',
@@ -401,8 +397,9 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Active events',
     unit: 'events',
     period: null,
-    // Free: 2 active events at a time, free or RSVP only (charging for one is the separate
-    // event_paid_tickets gate). Crew: unlimited, including recurring series.
+    // Free: 2 active events at a time. Crew: unlimited, including recurring series. Note this meters
+    // how many events run AT ONCE, never whether they may charge — selling is free on every tier
+    // (ADR-914), so a free Member's two events can both sell tickets.
     allowances: PLACEHOLDER_METER_LIMITS.event_create!,
     allowanceTextByTier: { free: 'Up to 2 active events, free or RSVP' },
   },
@@ -431,6 +428,19 @@ export const NON_METERED_FEATURES: Record<string, string> = {
   // Restricting a ticket tier to the space's own members (ADR-823) is an on/off gate on the tier
   // editor, not a quantity — ticket volume is already the space's own sales, never charged per use.
   space_membership_tickets: 'On/off capability (members-only ticket tiers), no natural quantity to meter.',
+  // 🔴 SELLING MEMBERSHIPS IS A WALL, NOT A DIAL (ADR-914). It carried a `free: 10 active members`
+  // allowance until now, which was the wrong shape twice over. First, it made the key BOTH gated and
+  // metered, and those two answers disagree the moment the gates go live. Second, and worse, a cap on
+  // active members means telling a Space that its eleventh supporter cannot join — punishing the
+  // customer for succeeding at the one thing we asked them to do. The wall is at the START (may you
+  // sell a recurring promise at all), never in the middle of a growing member list, and above the wall
+  // there is no ceiling: the take rate already scales with volume, so capping members would charge
+  // twice for the same success.
+  space_memberships: 'On/off capability (sell recurring memberships). Deliberately UNMETERED above the wall: capping active members would punish a Space for growing, and the take rate already scales with volume.',
+  // Campaigns are the same shape. "One free campaign" is not enough to learn anything from, so it
+  // converts badly and teaches nothing; the honest line is between messaging your own people (metered
+  // by space_email sends, available free) and running an acquisition machine (paid).
+  space_campaigns: 'On/off capability (campaigns and funnels); the SEND volume that pairs with it is metered on space_email.',
   // Splitting revenue with collaborators is an on/off capability of the collaboration engine: you can
   // share money automatically or you cannot. The NUMBER of collaborators is metered separately on
   // space_collaborators, so this carries no second quantity.
@@ -439,10 +449,9 @@ export const NON_METERED_FEATURES: Record<string, string> = {
   // plan (docs/A2P-REGISTRATION.md), so a per-tier send allowance here would invent a second, wrong cap.
   space_sms: 'On/off capability (group SMS); send volume is governed by the A2P 10DLC registration, not the plan.',
   // ── Personal leadership on/off unlocks (tier axis). The QUANTITIES that pair with these are metered
-  // above (circle_host, practice_publish, event_create, journey_publish); these four are the genuine
-  // switches a number cannot express.
-  event_paid_tickets: 'On/off capability (charge for your own event); the event count is metered on event_create.',
-  personal_payouts: 'On/off capability (personal Stripe Connect payouts), no natural quantity to meter.',
+  // above (circle_host, practice_publish, event_create, journey_publish); these two are the genuine
+  // switches a number cannot express. (`event_paid_tickets` and `personal_payouts` were listed here
+  // until ADR-914 retired both gates: selling is free on every tier, so there is no switch left.)
   journey_library_list: 'On/off capability (list a Journey in the public library); the publish count is metered on journey_publish.',
   entry_points: 'On/off capability (entry points: QR codes, short links, flyers); per-Space QR volume is metered on space_qr.',
 }
@@ -621,4 +630,97 @@ export function withinAllowance(
   const allowance = allowanceAt(featureKey, tier)
   if (allowance == null) return true // not metered, or an unlimited tier → never blocked
   return usage <= allowance
+}
+
+// ── THE WRITE SEAM: may ONE MORE be added? (ADR-917, Phase 3b) ───────────────────────────────────
+//
+// `withinAllowance` answers a DISPLAY question ("is the usage I am showing inside the allowance?").
+// A write seam asks a different one: "may this Space add ONE more?" The two differ at the boundary
+// (200 contacts is WITHIN a 200 allowance and is also exactly FULL), and conflating them is how a
+// cap ends up off by one in the direction that wrongly refuses a member. So the write question gets
+// its own, explicitly-named answer.
+//
+// 🔴 THE GRANDFATHER RULE, and why it is not optional (docs/VALUE-LADDER.md Phase 8). A cap applies
+// to GROWTH FROM TODAY, never retroactively to work already done. The EFFECTIVE cap is therefore the
+// published allowance OR the owner's current count, whichever is HIGHER, so an existing owner is
+// never blocked BELOW where they already stand and no "delete 367 contacts to get back under the
+// limit" state is reachable. A full meter stops the NEXT write; it never hides, deletes, or blocks
+// read/export of what is already there (§1 dark pattern #1).
+//
+// `floor` is the seam for a MORE GENEROUS, explicitly granted grandfather entitlement (Phase 8 item
+// 2: a stored headroom row rather than a silent break). It is deliberately optional and deliberately
+// unused today: a stored floor that is stale or missed a Space is a LOCKOUT, and a lockout is the one
+// direction this model cannot recover from. Passing the live count (which every IO caller does)
+// gives the safe rule with no backfill to get wrong; a stored row can only ever widen it later.
+
+/** The full answer to a metered write, plain data so a surface can render it without re-deriving. */
+export interface AllowanceVerdict {
+  /** May ONE more be added right now? The only field a write seam needs. */
+  allowed: boolean
+  /** The tier's PUBLISHED allowance (a cap, or null = unlimited). What the pricing page promises. */
+  allowance: Allowance
+  /** The allowance actually applied, after the grandfather floor. Never below `used`. */
+  effective: Allowance
+  /** The usage this verdict was measured against (floored at 0, integral). */
+  used: number
+  /** Writes left before the effective cap, or null when unlimited. Never negative. */
+  remaining: number | null
+  /** True when the effective cap is above the published one, i.e. this owner is grandfathered. */
+  grandfathered: boolean
+  /** True when a finite cap is actually being applied (gates live AND the tier has a cap). */
+  enforced: boolean
+}
+
+/** THE metered-write seam: may this tier add ONE more on this feature, given `used` already in hand?
+ *
+ *   - Grants (and reports `enforced: false`) while the feature GATES are not live, so nothing bites
+ *     during the beta grace window. Same switch, same reason as `withinAllowance`.
+ *   - Grants for a NON-METERED feature, an unknown key, or an unlimited tier.
+ *   - Otherwise compares `used` against the EFFECTIVE cap = max(published allowance, grandfather
+ *     floor, used) — so the answer is only ever "no" for growth PAST where the owner already stands.
+ *
+ *  PURE. `gatesLive` is resolved by the caller (lib/pricing/settings.ts featureGatesLive()), and the
+ *  IO wrapper (lib/pricing/space-allowance.ts) is the one place that does the reads. */
+export function allowanceVerdict(
+  featureKey: string,
+  tier: string,
+  used: number,
+  opts: { gatesLive: boolean; floor?: number | null },
+): AllowanceVerdict {
+  const u = Math.max(0, Math.trunc(Number.isFinite(used) ? used : 0))
+  const allowance = allowanceAt(featureKey, tier)
+  const unmetered: AllowanceVerdict = {
+    allowed: true,
+    allowance,
+    effective: null,
+    used: u,
+    remaining: null,
+    grandfathered: false,
+    enforced: false,
+  }
+  if (!opts.gatesLive) return unmetered
+  if (allowance == null) return unmetered
+  // The grandfather floor: never below the owner's current count, and at least the published cap.
+  const floor = Math.max(u, Math.max(0, Math.trunc(opts.floor ?? 0)))
+  const effective = Math.max(allowance, floor)
+  return {
+    allowed: u < effective,
+    allowance,
+    effective,
+    used: u,
+    remaining: Math.max(0, effective - u),
+    grandfathered: effective > allowance,
+    enforced: true,
+  }
+}
+
+/** How many more writes fit, or null for unlimited / unenforced. The bulk form of `allowanceVerdict`
+ *  (a CSV import needs a headroom number, not a yes/no per row). PURE. */
+export function allowanceHeadroom(
+  featureKey: string,
+  tier: string,
+  used: number,
+  opts: { gatesLive: boolean; floor?: number | null },
+): number | null {
+  return allowanceVerdict(featureKey, tier, used, opts).remaining
 }

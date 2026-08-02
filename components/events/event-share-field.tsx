@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition, useRef, useCallback } from 'react'
+import { useState, useEffect, useTransition, useRef, useCallback, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import Image from 'next/image'
 import { Share2, Check, Clock } from 'lucide-react'
 import {
@@ -200,6 +200,37 @@ function SpaceSearch({ pending, onPick }: { pending: boolean; onPick: (spaceId: 
   const [query, setQuery] = useState('')
   const [spaces, setSpaces] = useState<ScopeHit[]>([])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const boxRef = useRef<HTMLDivElement>(null)
+
+  // 🔴 SAME STUCK-LIST BUG as the host picker, and it predates it. Owner report was against the host
+  // field, but this Collaborator picker sits in the SAME rail with the same shape: results render in
+  // flow (an absolute overlay is clipped by the module's @container), and nothing here cleared them
+  // — not a pick, not Escape, not a click away. `ScopeSearch` in event-placement-field.tsx has always
+  // cleared on pick; these two never did.
+  const dismiss = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    setQuery('')
+    setSpaces([])
+  }, [])
+
+  const onKeyDown = useCallback(
+    (e: ReactKeyboardEvent) => {
+      if (e.key === 'Escape' && (query || spaces.length > 0)) {
+        e.stopPropagation() // do not also close the admin rail
+        dismiss()
+      }
+    },
+    [query, spaces.length, dismiss],
+  )
+
+  useEffect(() => {
+    if (spaces.length === 0) return
+    function onDocClick(e: MouseEvent) {
+      if (!boxRef.current?.contains(e.target as Node)) dismiss()
+    }
+    document.addEventListener('click', onDocClick, true)
+    return () => document.removeEventListener('click', onDocClick, true)
+  }, [spaces.length, dismiss])
 
   const search = useCallback((q: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -222,7 +253,7 @@ function SpaceSearch({ pending, onPick }: { pending: boolean; onPick: (spaceId: 
   }, [])
 
   return (
-    <div>
+    <div ref={boxRef} onKeyDown={onKeyDown}>
       <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5">
         <Share2 className="h-4 w-4 shrink-0 text-subtle" />
         <input
@@ -246,7 +277,10 @@ function SpaceSearch({ pending, onPick }: { pending: boolean; onPick: (spaceId: 
             <button
               key={h.id}
               type="button"
-              onClick={() => onPick(h.id)}
+              onClick={() => {
+                dismiss()
+                onPick(h.id)
+              }}
               disabled={pending}
               className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-elevated disabled:opacity-40"
             >

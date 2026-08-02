@@ -22,10 +22,10 @@ As you take part, the Quest's rewards (Zaps, Gems, milestones) **accrue for ever
 
 ## Cashing in (membership)
 
-To **claim** what's in your Vault (spend Gems, compete in the live season, and show your rank publicly) you need an active membership. That paid personal tier is **Crew**: one honest price, and Member joins free, so you take part long before you ever pay. Hosts can also grant access to a Circle member who can't pay, so cost never keeps someone out.
+To **claim** what's in your Vault (spend Gems, compete in the live season, and show your rank publicly) you need an active membership. That paid personal tier is **Crew**, and you pick what you pay for it. Member joins free, so you take part long before you ever pay. Hosts can also grant access to a Circle member who can't pay, so cost never keeps someone out.
 
 Either way, everything you earn keeps building: your Gems, your season trophies, and your **Amplitude** (the lifetime total behind your rank that never resets). What Gems actually buy (cosmetics, titles, collectible badges, membership credits) is covered in [Spending Gems in the Vault Store](/help/membership/the-gem-store).
 
 ## During the beta
 
-Everything you earned in the free beta stays yours. Crew is the paid personal tier, and the only one: $9 a month, or $90 a year. It lives on the upgrade page. If you want to put more in, the Supporter badge on the same page lets you back the Foundation for whatever amount you choose.
+Everything you earned in the free beta stays yours. Crew is the paid personal tier, and the only one. It is pay what you want: pick any monthly amount from $4.99 up, and every amount buys exactly the same Crew. Pay the suggested amount or more and you wear the Supporter badge. It all lives on the [upgrade page](/upgrade).

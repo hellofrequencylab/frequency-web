@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { PLACEHOLDER_METER_LIMITS } from '@/lib/pricing/feature-meters'
 
 // LICENSED SEATS + SEAT-LIMIT ENFORCEMENT (Pricing ladder Phase D, ADR-465). Two halves locked here:
 //   1. The PURE seat arithmetic (operatorRoleConsumesSeat / licensedSeats / seatLimitReached /
@@ -42,6 +43,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 
 import {
   BASE_SEAT_ALLOWANCE,
+  baseSeatAllowance,
   operatorRoleConsumesSeat,
   licensedSeats,
   seatsRemaining,
@@ -129,6 +131,31 @@ describe('IO reads (FAIL-SAFE)', () => {
   })
 })
 
+describe('the seat base reads the ONE quantity map (ADR-917, no second ladder)', () => {
+  it('baseSeatAllowance is the space_team meter allowance for the plan', () => {
+    // `BASE_SEAT_ALLOWANCE = 1` was a flat constant here while the meter promised Collective three
+    // included seats, so a Collective Space that bought the tier for its team got the free base.
+    expect(baseSeatAllowance('free')).toBe(PLACEHOLDER_METER_LIMITS.space_team!.free)
+    expect(baseSeatAllowance('collective')).toBe(PLACEHOLDER_METER_LIMITS.space_team!.collective)
+    // Non Profit and Independent rank at/above Collective, so they read the Collective rung.
+    expect(baseSeatAllowance('nonprofit')).toBe(baseSeatAllowance('collective'))
+    expect(baseSeatAllowance('independent')).toBe(baseSeatAllowance('collective'))
+    // Business sits below the Collective rung, so it reads the free rung (no included team seats).
+    expect(baseSeatAllowance('business')).toBe(baseSeatAllowance('free'))
+    // Unknown / unset narrows to free (fail-small: never an over-grant), and never to 0.
+    expect(baseSeatAllowance(null)).toBe(baseSeatAllowance('free'))
+    expect(baseSeatAllowance('enterprise-xl')).toBe(baseSeatAllowance('free'))
+    expect(BASE_SEAT_ALLOWANCE).toBe(baseSeatAllowance('free'))
+  })
+
+  it('licensedSeats adds the licensed count on top of the PLAN base, not a flat 1', () => {
+    expect(licensedSeats(2, 'free')).toBe(baseSeatAllowance('free') + 2)
+    expect(licensedSeats(2, 'collective')).toBe(baseSeatAllowance('collective') + 2)
+    // An omitted plan keeps the pre-ADR-917 answer exactly (the free base).
+    expect(licensedSeats(2)).toBe(licensedSeats(2, 'free'))
+  })
+})
+
 describe('checkSeatForOperatorInvite (the billing_live-GATED enforcement)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -173,6 +200,7 @@ describe('checkSeatForOperatorInvite (the billing_live-GATED enforcement)', () =
     seatQuantityMaybeSingle.mockResolvedValue({ data: { seat_quantity: 4 } }) // licensed 5
     membersCount.mockResolvedValue({ count: 3, error: null })
     const usage = await getSeatUsage('s1')
-    expect(usage).toEqual({ seatQuantity: 4, licensed: 5, used: 3, remaining: 2, full: false })
+    // `base` is the PLAN's included seats (ADR-917), read from the space_team meter's free rung.
+    expect(usage).toEqual({ seatQuantity: 4, base: 1, licensed: 5, used: 3, remaining: 2, full: false })
   })
 })
