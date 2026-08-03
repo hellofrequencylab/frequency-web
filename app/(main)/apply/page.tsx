@@ -11,6 +11,13 @@ import { APPLICATION_TRACK_DEFS, type ApplicationTrack } from '@/lib/application
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = {
+  title: 'Apply',
+  description:
+    'Two doors into Frequency: host a Circle and we hand you the format, or bring what you do as an operator.',
+  alternates: { canonical: '/apply' },
+}
+
 // The host track leads; the operator tracks follow. (Practitioner/partner are the
 // surfaced personas; coach/business/nonprofit/collective are reachable by deep link
 // and from the operator pages, kept out of the top picker to stay plain.)

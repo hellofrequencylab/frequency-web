@@ -7,6 +7,36 @@
 > Legend: ✅ done · ⏳ partial / in flight · 📋 specced, not built · 🔴 blocked / gated.
 > Spec detail still lives in the per-topic docs; this is the **order of operations**.
 
+## 🏗️ App Platform + white-label sites — deferred by owner decision — 2026-08-03 ([ADR-920](DECISIONS.md), specs [WHITE-LABEL-SITES.md](WHITE-LABEL-SITES.md) · [LOOM-PLATFORM.md](LOOM-PLATFORM.md) · [SPACES.md](SPACES.md))
+
+The two back phases of the 2026-08-03 master production plan, parked here so the work is on the
+list without being in flight. The active runway (ground truth → tenancy walls → instant shell →
+design-system completion → DAWN 2 redesign → uniform fabric) proceeds now; these resume when the
+owner calls them. **Shared prerequisite for both: the tenancy-walls phase** (RLS policy quads on
+the `space_*`/CRM tables, `app_instances` applied with its Phase-2 restrictive policies, pgTAP
+cross-tenant proof) — neither phase starts until that is verified in prod.
+
+### App Platform (packaged tenant apps) — 🔴 deferred
+
+| # | Scope | Lift | Status |
+|---|---|---|---|
+| A1 | **Feature modules with enforced boundaries.** `modules/<app>/{components,server,db,index.ts}`, ESLint import-boundary rule (public API via barrel only); CRM · booking · email-design · QR first. Generalizes then retires `check:crm-parity`. | M | 📋 |
+| A2 | **Instance contract live.** Four layers per ADR-499: function (git) ◁ global config (`library_assets kind='app'`) ◁ instance (`app_instances`: space_id, surface, slot, zod-validated `config`) ◁ style (`library_styles` + `style_override`). Placement stays in `page_settings.layout` (block_id = instance id). | M | 📋 |
+| A3 | **Enablement inside RLS.** Per-tenant module enablement via `spaces.entitlements` + the function grid + Module Manager (all existing); module-table policies also check the enablement key so a disabled module's data is unreachable even via direct API. | M | 📋 |
+| A4 | **Flagship packaged apps.** CRM shipped as ONE module on `/admin/crm` (root instance), `/spaces/[slug]/crm` (tenant instance), and entity consoles — each reading only its tenant's rows under the new policies. Then booking, then email design. pgTAP enablement tests per app. | L | 📋 |
+| A5 | **Meters go live.** The decorative freemium meters (200 contacts · 300 sends/mo · 3 QR codes · 1 journey · 1 seat) enforced at the module boundary with upgrade prompts, behind the existing `gatesLive` switch. | M | 📋 |
+
+### White-label sites (ADR-509 architecture) — 🔴 deferred
+
+| # | Scope | Lift | Status |
+|---|---|---|---|
+| W1 | **Foundations.** `space_domains` table (host unique, kind subdomain/custom, status lifecycle, verification token, is_primary); `pages` drops global-unique slug for `unique(space_id, slug)`; `site_templates` + `pages.template_version`; `custom_domain` entitlement key created (unenforced). Owner decision D1: converge `spaces.preferences.pageDocs` → `pages` (dual-read fallback window, lazy migrate on publish). | M | 📋 |
+| W2 | **Subdomains live.** Sites apex purchased (owner decision D2 — DNS lead time); Vercel wildcard; host router in `proxy.ts` (tenant hosts short-circuit before session/cookies, rewrite to internal `app/_site/[spaceId]`, set `x-space-id`); resurrect the ADR-508 BlockRender public renderer from git history; per-tenant SEO (metadata, canonical, robots, sitemap, OG); per-Space site nav via the `menus` space_id seam; 301 from `/sites/[slug]`. | L | 📋 |
+| W3 | **Per-Space editor.** Replace the hardcoded 8-slug `EDITABLE_PAGES` with per-Space page resolution (create/rename/reorder/delete under quota); Website tool row in the Space console; `site_templates` gallery; publish via `revalidateTag('site:<spaceId>')`; website-surface Puck blocks incl. packaged apps as site blocks. | L | 📋 |
+| W4 | **Custom domains + billing.** `lib/vercel/domains.ts` (Domains API), DNS wizard, `pending→verifying→active→error`, bind-time entitlement gate, downgrade→redirect (never 404); rebuild the white-label purchase/lead flow (owner decision D8: self-serve Independent vs high-touch). Blocked on Stripe connector authorization. | L | 🔴 |
+| W5 | **Hardening.** Per-site CSP, embed sandbox + allowlist, abuse kill switch honored at the edge, dangling-DNS monitor cron, per-tenant quotas (pages/domains/bandwidth), optional per-Space sender domains/DKIM. | M | 📋 |
+| W6 | **Members + marketplace.** Member sites on the same rails; theme/template marketplace on DTCG portable themes + `site_templates`. | L | 📋 |
+
 ## 🎨 Site re-theme — every surface unified, one parent to change — 2026-07-18 ([ADR-781](DECISIONS.md), full plan [RETHEME-PLAN.md](RETHEME-PLAN.md), protocol [THEME-PROTOCOL.md](THEME-PROTOCOL.md))
 
 Finish the parent/child theme so any look change (color · radius · font · header · card · copy) is a

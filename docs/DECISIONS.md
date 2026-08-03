@@ -16760,3 +16760,19 @@ Around that gap, six other structures had each grown their own answer to "what d
 **Consequences.** Production needs no migration: the stale `tier.crew` row is inert. ⚠️ The three cash-paid Collectives on `founding_members` ($490/yr) and the **Founding Business** cohort are a different mechanism on the plan axis and are untouched — this ADR removes the personal purchase path only. ⚠️ `grantFoundingStatus({kind:'member'})` still fires at beta graduation; it grants a badge and charges nothing, and its `locked_rate_cents` is now decorative. ⚠️ Space plan grandfathering (`lib/pricing/beta.ts`) is unaffected, but marketing copy that promised members an "Opening Beta price locked in for life" is corrected: members have no launch price to lock.
 
 The durable rule: **an offer with no price must have no place to put one.** Every fallback, every second editable field, and every "optional" amount is somewhere a made-up number will eventually be charged.
+
+---
+
+## ADR-920 — App Platform and white-label sites are committed to the build list, not to the runway (2026-08-03)
+
+**Status.** Accepted. Owner decision: *"I'm going to wait on full white label and app production for now. Let's commit those parts of the plan to the build list."*
+
+**Context.** The 2026-08-03 master production plan sequenced eight phases: ground truth, tenancy walls, instant shell, design-system completion, the DAWN 2 redesign, uniform page fabric, the App Platform (packaged per-tenant apps on `app_instances`), and white-label sites (the ADR-509 architecture: subdomains on a dedicated apex, then custom domains via the Vercel Domains API). The two back phases are the largest, carry the only external lead times (apex domain purchase, DNS, Stripe connector authorization), and both stand on the tenancy-walls phase being verified in prod. A Design System round is arriving from Claude Design imminently, which makes the design-side runway (snapshot harness, token adoption, DAWN 2 rounds) the highest-leverage place to spend the coming weeks.
+
+**Decision.** The App Platform (A1–A5) and white-label sites (W1–W6) move to `BUILD-LIST.md` as specced, deferred workstreams with their prerequisites and owner decisions (D1 page-store convergence, D2 sites apex, D8 go-to-market) recorded inline. They are not scheduled. The active runway proceeds now: Phase 0 ground truth started with this ADR's PR (new `check:adr` + `check:docs-links` CI gates, dead-component and dead-dependency removal, noindex on utility surfaces, metadata on the bare crawlable pages). Nothing in the active runway may take a dependency on the deferred phases.
+
+**Alternatives considered.** *Keep P5/P6 on the schedule with soft dates* (rejected — a date nobody intends to hit is drift by another name; the build list is the honest home for specced-not-scheduled work). *Drop the phases entirely and re-plan later* (rejected — the specs, prerequisites, and decision register are the expensive part; parking them preserves that work verbatim).
+
+**Consequences.** Tenancy-walls work (RLS policy quads, `app_instances` Phase-2 policies, pgTAP cross-tenant matrix) stays on the active runway on its own security merits — deferring the platforms that need it does not defer the walls themselves. ⚠️ `/sites/[slug]` remains a coming-soon stub and `space_whitelabel`/`custom_domain` remain unenforced until W-phases resume; pricing copy must not promise either. ⚠️ The two new CI gates are deliberately narrow: `check:adr` grandfathers the seven historical duplicate numbers at their current counts (renumbering them would break existing citations), and `check:docs-links` checks markdown links only, never backticked code paths in prose (an ADR describing a file that later moved is history, not rot).
+
+The durable rule: **deferred work lives on the list with its prerequisites attached, or it is not deferred, it is lost.**

@@ -22,6 +22,8 @@
     "check:collective": "node scripts/check-collective.mjs",
     "check:crm-parity": "node scripts/check-crm-parity.mjs",
     "check:vocab": "node scripts/check-vocab.mjs",
+    "check:adr": "node scripts/check-adr.mjs",
+    "check:docs-links": "node scripts/check-docs-links.mjs",
     "check:cron-freshness": "node scripts/cron-freshness.mjs",
     "help:coverage": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-coverage.mts",
     "help:index": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-index.mts",
@@ -30,7 +32,6 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
-    "@iconify/react": "^6.0.2",
     "@iconify/utils": "^3.1.4",
     "@resvg/resvg-wasm": "^2.6.2",
     "@sentry/nextjs": "^10.68.0",
