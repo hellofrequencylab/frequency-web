@@ -55,6 +55,16 @@ the fine-grained behavioral signal the AI + reward engine read history from:
   after `INTERACTION_RETENTION_DAYS` (90) by the nightly cron; the durable aggregate is the PI.2
   rollups. Use this for *behavioral telemetry*; keep `track()` for *semantic events*.
 
+There is one deliberate **third stream** beside those two: **anonymous Core Web Vitals**
+([ADR-922](DECISIONS.md)). `components/analytics/web-vitals.tsx` (mounted in the ROOT layout, so
+anonymous marketing/discover/help traffic is covered) buffers LCP/INP/CLS/FCP/TTFB per page load →
+`POST /api/vitals` → `interaction_events` rows with **`profile_id` NULL and `surface` NULL**, so both
+member rollups ignore them by their existing filters. Vitals describe the page + device, never the
+person — that is what keeps this stream **outside the `analytics` consent scope** (account-tied data);
+adding a profile id here would immediately require the gate. Paths are templated (`/circles/:id`),
+`props.mid` (the per-page-load metric id) dedupes retried beacons, the 90-day purge bounds the table,
+and Sentry's incidental vitals (tracing default) are NOT the dashboard source of truth — this is.
+
 ## Event taxonomy (canonical)
 
 Every key action in the member journey emits a named event. Initial set:

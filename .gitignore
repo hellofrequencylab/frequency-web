@@ -55,3 +55,4 @@ supabase/backups/*.json
 
 # Editor/filesystem artifacts
 .fuse_hidden*
+test-results/

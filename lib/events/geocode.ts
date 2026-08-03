@@ -91,12 +91,11 @@ export async function saveEventLocation(
   // Whenever we land a real point, derive + persist the event's IANA time_zone from its
   // coordinates (lib/time/zone). This is the ONE place every save path (create, edit, the
   // on-page location editor, the admin editor) resolves a venue, so pinning the zone here
-  // keeps events.time_zone correct without each caller repeating the lookup. Written via an
-  // untyped cast — time_zone is newer than the generated DB types (repo convention).
+  // keeps events.time_zone correct without each caller repeating the lookup.
   const persistTimeZone = async (p: GeoPoint): Promise<void> => {
     await admin
       .from('events')
-      .update({ time_zone: tzFromLatLng(p.lat, p.lng) } as never)
+      .update({ time_zone: tzFromLatLng(p.lat, p.lng) })
       .eq('id', eventId)
   }
 

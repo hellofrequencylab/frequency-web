@@ -2,12 +2,11 @@
 // (docs/EVENTS-SYSTEM.md §3). One 384-d gte-small vector per event, built from
 // title + description + category + energy_tag, stored in event_embeddings.
 //
-// Server-only (admin client). event_embeddings isn't in the generated DB types →
-// untyped cast (repo convention, see lib/ai/room-search.ts). Degrades gracefully:
+// Server-only (admin client). event_embeddings is in the generated DB types, so access
+// goes through the typed client. Degrades gracefully:
 // embedEvent never throws and no-ops when AI/embeddings are unavailable, so the
 // orchestrator's createEvent can call it inline without risk.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { embedText } from '@/lib/ai/embed'
 import { aiAvailable } from '@/lib/ai/usage'
@@ -33,7 +32,7 @@ import { seriesKey } from '@/lib/events/series'
 // finds them), they are simply redundant, so the cleanup is a script a human reads first —
 // scripts/adr-897-prune-occurrence-embeddings.sql — not a migration.
 
-function db(): SupabaseClient {
+function db() {
   return createAdminClient()
 }
 

@@ -16801,3 +16801,19 @@ The durable rule: **a lifecycle without an exit is a leak.** Any row a flow can 
 **Consequences.** Tenancy-walls work (RLS policy quads, `app_instances` Phase-2 policies, pgTAP cross-tenant matrix) stays on the active runway on its own security merits — deferring the platforms that need it does not defer the walls themselves. ⚠️ `/sites/[slug]` remains a coming-soon stub and `space_whitelabel`/`custom_domain` remain unenforced until W-phases resume; pricing copy must not promise either. ⚠️ The two new CI gates are deliberately narrow: `check:adr` grandfathers the seven historical duplicate numbers at their current counts (renumbering them would break existing citations), and `check:docs-links` checks markdown links only, never backticked code paths in prose (an ADR describing a file that later moved is history, not rot).
 
 The durable rule: **deferred work lives on the list with its prerequisites attached, or it is not deferred, it is lost.**
+
+---
+
+## ADR-922 — Web vitals are a page property, so their stream is anonymous by design (2026-08-03)
+
+**Status.** Accepted. Implements the audit's "zero performance measurement" finding as field RUM with no new vendor.
+
+**Context.** Neither existing sink could carry Core Web Vitals for the visitors who matter most for them: `/api/track` drops anonymous requests and feeds the semantic ledger (and through it the gamification engine), and `/api/observe` is member-tied AND consent-gated by the `analytics` scope. Marketing, discover, and help traffic — the SEO surface whose INP/LCP actually move rankings — was invisible. Meanwhile Sentry's tracing already collects vitals incidentally at a 0.1 sample as error context, and `interaction_events` was built with a nullable `profile_id` "to keep an anonymous-session path open later".
+
+**Decision.** A third, deliberately anonymous stream: `components/analytics/web-vitals.tsx` in the ROOT layout (client leaf, no cookies, root stays static) → `lib/analytics/vitals.ts` (pure normalizer + per-page-load head-sampled buffer, one beacon per load) → `POST /api/vitals` → `interaction_events` with `profile_id` NULL, `surface` NULL, `kind='web_vital'`, templated `path`. Never member-tied — that is the property that keeps it outside the `analytics` consent scope, and adding a profile id is the one change that would require revisiting this ADR. No rate limiter on the route: `lib/rate-limit` fails closed in prod when KV is unconfigured, which would silently drop all vitals; the batch cap and normalizer bound each request instead.
+
+**Alternatives considered.** *Relax `/api/observe` for anon* (rejected — breaks the ADR-166 member-tied/consent-gated invariant and pollutes the rollups the traits store reads). *Register `perf.web_vital` in the semantic taxonomy* (rejected — per-page-load noise in `engagement_events` feeds the activation funnel and rewards engine). *Vercel Speed Insights / other vendor* (rejected — first-party is the declared source of truth; the stale `vitals.vercel-insights.com` CSP allowlist entry should go rather than grow a third collector).
+
+**Consequences.** p75 LCP/INP/CLS per templated route, split anon/member-agnostic, 90-day bounded, queryable today. ⚠️ Sampling is 1.0 during beta; drop `SAMPLE_RATE` to 0.25 once daily loads pass ~10k. ⚠️ If `surface` is ever set on these rows, `interaction_surface_stats` needs a `kind <> 'web_vital'` filter first. ⚠️ Attribution fields (element, interaction target) are not available from `next/web-vitals` in this Next version; adding them means adopting the `web-vitals` package directly — a separate decision.
+
+The durable rule: **data that never touches an account needs no account consent — and the way to keep that true is to make the account link structurally impossible, not merely omitted.**

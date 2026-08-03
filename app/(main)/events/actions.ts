@@ -1171,8 +1171,6 @@ export async function setRsvpStatus(
     }
   } else {
     // maybe / not_going: a soft state, no email, no capacity consumed.
-    // `plus_ones` isn't in the generated DB types yet → untyped cast (repo
-    // convention for not-yet-regenerated columns; see lib/events/capacity.ts).
     const db = supabase
     if (existing) {
       if (existing.status !== intent) {
@@ -1237,9 +1235,7 @@ export async function setRsvpPlusOnes(eventId: string, plusOnes: number) {
   // Only a confirmed attendee can bring guests — guard rather than create rows.
   if (!existing || existing.status !== 'going') return
 
-  // `plus_ones` isn't in the generated DB types yet → untyped cast (repo
-  // convention for not-yet-regenerated columns; see lib/events/capacity.ts).
-  await (supabase)
+  await supabase
     .from('event_rsvps')
     .update({ plus_ones: n })
     .eq('id', existing.id)

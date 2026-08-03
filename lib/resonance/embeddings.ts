@@ -14,9 +14,8 @@
 // degrades to graph-traversal candidates only and the product still works. The embedding is purely
 // additive precision, never a dependency.
 //
-// Server-only (admin client). resonance_embeddings is not in the generated DB types until it is
-// regenerated (ADR-246), so it is reached through an untyped cast (the lib/events/embeddings.ts +
-// lib/ai/room-search.ts convention). The 384-d gte-small model + the bracketed-literal vector
+// Server-only (admin client). resonance_embeddings is in the generated DB types, so access goes
+// through the typed client. The 384-d gte-small model + the bracketed-literal vector
 // parameter + the hnsw vector_cosine_ops index all mirror lib/events/embeddings.ts exactly.
 //
 // authz-delegated: this is the nightly, platform-wide embedding refresh (no per-caller scope by
@@ -71,11 +70,7 @@ export async function embedPerson(profileId: string, signal: ResonanceContentSig
     const embedding = await embedText(text)
     if (!Array.isArray(embedding) || embedding.length !== EMBED_DIM) return false
 
-    const admin = createAdminClient() as unknown as {
-      from: (t: string) => {
-        upsert: (row: Record<string, unknown>) => Promise<{ error: unknown }>
-      }
-    }
+    const admin = createAdminClient()
     const { error } = await admin.from('resonance_embeddings').upsert({
       profile_id: profileId,
       embedding: toVectorLiteral(embedding),
@@ -107,12 +102,10 @@ export async function nearestNeighbors(profileId: string, limit = 20): Promise<R
   const capped = Math.max(1, Math.min(100, limit))
   try {
     const admin = createAdminClient()
-    const { data, error } = await (admin as unknown as {
-      rpc: (
-        fn: string,
-        args: Record<string, unknown>,
-      ) => Promise<{ data: { profile_id: string; similarity: number | null }[] | null; error: unknown }>
-    }).rpc('resonance_neighbors', { _profile_id: profileId, _limit: capped })
+    const { data, error } = await admin.rpc('resonance_neighbors', {
+      _profile_id: profileId,
+      _limit: capped,
+    })
     if (error || !data) return []
     return data
       .filter((r) => r.profile_id && r.profile_id !== profileId)
@@ -132,14 +125,11 @@ export async function nearestNeighbors(profileId: string, limit = 20): Promise<R
  */
 export async function embeddingLayerAvailable(): Promise<boolean> {
   try {
-    const admin = createAdminClient() as unknown as {
-      from: (t: string) => {
-        select: (c: string, opts: { head: boolean; count: 'exact' }) => {
-          limit: (n: number) => Promise<{ error: unknown; count: number | null }>
-        }
-      }
-    }
-    const { error, count } = await admin.from('resonance_embeddings').select('profile_id', { head: true, count: 'exact' }).limit(1)
+    const admin = createAdminClient()
+    const { error, count } = await admin
+      .from('resonance_embeddings')
+      .select('profile_id', { head: true, count: 'exact' })
+      .limit(1)
     if (error) return false
     return (count ?? 0) > 0
   } catch {
