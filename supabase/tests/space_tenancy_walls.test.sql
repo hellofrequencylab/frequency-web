@@ -29,6 +29,19 @@ insert into public.profiles (id, auth_user_id, display_name, handle) values
   ('00000000-0000-4000-b000-000000000002', '00000000-0000-4000-a000-000000000002', 'Walls Member A', 'walls-member-a'),
   ('00000000-0000-4000-b000-000000000003', '00000000-0000-4000-a000-000000000003', 'Walls Op B', 'walls-op-b');
 
+-- trg_on_auth_user_created auto-provisions a profile per auth.users row (a bare profiles insert,
+-- no dependents), so each seeded user now has TWO profiles and get_my_profile_id()'s scalar
+-- subquery would error with "more than one row". Keep only the fixed-id profiles above.
+delete from public.profiles
+where auth_user_id in (
+    '00000000-0000-4000-a000-000000000001',
+    '00000000-0000-4000-a000-000000000002',
+    '00000000-0000-4000-a000-000000000003')
+  and id not in (
+    '00000000-0000-4000-b000-000000000001',
+    '00000000-0000-4000-b000-000000000002',
+    '00000000-0000-4000-b000-000000000003');
+
 -- entities.key is constrained to foundation | labs and may already be seeded; reuse if present.
 insert into public.entities (id, key, name, kind)
 select gen_random_uuid(), 'labs', 'Labs', 'for_profit'
