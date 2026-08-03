@@ -1,0 +1,217 @@
+<!-- @dsCard group="Screens · Operator" viewport="1600x950" name="Vera Action Queue" subtitle="Propose-and-confirm by construction: every AI write waits for a human, the four guards are visible, and autonomy is off by default." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Vera Action Queue</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  a { color: var(--color-primary-strong); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--color-primary); }html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+// Stand-ins used only until the compiled bundle carries the newest kit pieces.
+const __Meter = ({ label, used = 0, cap, hint }) => React.createElement('div', null,
+  React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-meta)' } },
+    React.createElement('span', { style: { fontWeight: 600 } }, label),
+    React.createElement('span', { style: { fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)' } }, cap == null ? used : used + ' / ' + cap)),
+  React.createElement('div', { style: { height: 7, marginTop: 5, borderRadius: 99, background: 'var(--color-surface-elevated)', border: '1px solid var(--color-border)', overflow: 'hidden' } },
+    React.createElement('div', { style: { width: (cap ? Math.min(100, (used / cap) * 100) : 100) + '%', height: '100%', background: 'var(--color-signal)' } })),
+  hint ? React.createElement('p', { style: { margin: '5px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-subtle)' } }, hint) : null);
+const __GateNotice = ({ title, children, action, inline }) => inline
+  ? React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 9px', borderRadius: 99, background: 'var(--color-primary-bg)', color: 'var(--color-primary-strong)', fontSize: 'var(--text-2xs)', fontWeight: 700 } }, title || 'Not on yet')
+  : React.createElement('div', { style: { background: 'var(--color-primary-bg)', borderRadius: 'var(--radius-card)', padding: '0.95rem 1.1rem' } },
+      React.createElement('div', { style: { fontWeight: 700, fontSize: '0.98rem' } }, title || 'Not on yet'),
+      children ? React.createElement('p', { style: { margin: '3px 0 0', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--color-text-muted)' } }, children) : null,
+      action ? React.createElement('div', { style: { marginTop: 11 } }, action) : null);
+K.Meter = K.Meter || __Meter;
+K.GateNotice = K.GateNotice || __GateNotice;
+
+const { PageHeading, UnderlineTabs, SectionHeader, StatCard, RowCard, Button, IconButton, Badge, Card, Switch, GateNotice, Meter, Avatar, ProgressTrack } = K;
+
+const QUEUE = [
+  { id: 1, kind: 'Dispatch', icon: 'megaphone', tone: 'broadcast',
+    t: 'Send Thursday\u2019s reminder to the Sound Bath circle',
+    why: 'Eleven RSVPs, and nine of them have not opened anything this week.',
+    body: 'Your Circle meets tonight at 7. Bring a blanket, the floor is concrete. Someone is bringing oranges.',
+    conf: 'high', reach: 11 },
+  { id: 2, kind: 'Reply', icon: 'message-square', tone: 'primary',
+    t: 'Answer Ana about Tuesday\u2019s class',
+    why: 'She asked 14 minutes ago. Median reply time is the thing that wins the booking.',
+    body: 'Tuesday is 6:30pm at The Sound Room, and there are four spots. Want me to hold one for you?',
+    conf: 'high', reach: 1 },
+  { id: 3, kind: 'Draft', icon: 'sparkles', tone: 'signal',
+    t: 'Fill week 4 of The 28 Day Reset',
+    why: 'One block in week 4, and the Run reaches it on Monday.',
+    body: 'One practice per Pillar, drawn from your outline. You edit everything before it publishes.',
+    conf: 'medium', reach: 11 },
+  { id: 4, kind: 'Segment', icon: 'users', tone: 'primary',
+    t: 'Group the 26 people who went quiet',
+    why: 'Nothing logged for 30 days. A plain check in beats a campaign.',
+    body: 'Creates a segment. Sends nothing.',
+    conf: 'high', reach: 26 },
+];
+
+const GUARDS = [
+  ['Kill switch', 'ai_enabled is the master. Off means nothing runs, and it fails closed.', 'power', true],
+  ['Rate caps', 'Per-feature daily budgets under a $25 global cap.', 'gauge', true],
+  ['Anomaly trip', 'An unusual spike halts sends and pages a human.', 'siren', true],
+  ['Audit', 'Every proposal, decision and send is append-only.', 'scroll-text', true],
+];
+
+function Proposal({ p }) {
+  const [state, setState] = React.useState('open');
+  return (
+    <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)',
+      padding: '1rem 1.15rem', opacity: state === 'open' ? 1 : 0.72 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 11 }}>
+        <span style={{ width: 32, height: 32, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-control)',
+          background: `var(--color-${p.tone}-bg)`, color: `var(--color-${p.tone}-strong)` }}>
+          <window.Ico n={p.icon} style={{ width: 16, height: 16 }} />
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span className="eyebrow" style={{ fontSize: 'var(--text-2xs)', color: `var(--color-${p.tone}-strong)` }}>{p.kind}</span>
+            <Badge tone={p.conf === 'high' ? 'signal' : 'warning'}>{p.conf} confidence</Badge>
+            <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>reaches {p.reach}</span>
+            {state === 'approved' ? <Badge tone="signal" solid>Sent</Badge> : state === 'declined' ? <Badge>Declined</Badge> : null}
+          </div>
+          <h3 style={{ margin: '5px 0 4px', fontSize: '1.02rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>{p.t}</h3>
+          <p style={{ margin: '0 0 10px', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>
+            <b style={{ color: 'var(--color-text)' }}>Why.</b> {p.why}
+          </p>
+          <div style={{ padding: '0.7rem 0.85rem', borderRadius: 'var(--radius-control)', background: 'var(--color-surface-elevated)',
+            borderLeft: `2px solid var(--color-${p.tone})`, fontSize: '0.93rem', lineHeight: 1.6 }}>{p.body}</div>
+          {state === 'open' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
+              <Button size="sm" onClick={() => setState('approved')}>Approve</Button>
+              <Button size="sm" variant="ghost" onClick={() => setState('open')}>Edit first</Button>
+              <Button size="sm" variant="ghost" onClick={() => setState('declined')}>Not this one</Button>
+              <span style={{ marginLeft: 'auto', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>Nothing sends until you press it</span>
+            </div>
+          ) : (
+            <div style={{ marginTop: 12 }}>
+              <Button size="sm" variant="ghost" onClick={() => setState('open')}>Undo</Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Page() {
+  const [tab, setTab] = React.useState('queue');
+  const [auto, setAuto] = React.useState(false);
+  return (
+    <window.Screen active="admin-vera-ai" wide collapseLeft
+      dock={<window.PageDock page="Vera Action Queue" stats={[{ value: '17', label: 'Proposed', sub: 'awaiting you' }, { value: '9', label: 'Confirmed today' }, { value: '2', label: 'Declined', sub: 'Vera learns from these' }, { value: '0', label: 'Sent alone', sub: 'autonomy is off' }]}
+      settings={[{ label: 'Propose and confirm', hint: 'The only mode in beta', on: true }, { label: 'Include draft copy', on: true }, { label: 'Batch the morning digest', on: false }]}
+      note="Vera never acts unattended. Every guard is on and cannot be turned off in the beta." />}
+      rail={
+      <window.Rail>
+        <div>
+          <SectionHeader title="Autonomy" />
+          <Card tone="feature" padding="1rem">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>Let Vera send on her own</div>
+                <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>Default off, and it stays off until you decide</div>
+              </div>
+              <Switch checked={auto} onChange={setAuto} />
+            </div>
+            <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {GUARDS.map(([t, d, ic]) => (
+                <div key={t} style={{ display: 'flex', gap: 9 }}>
+                  <window.Ico n={ic} style={{ width: 15, height: 15, marginTop: 2, flexShrink: 0, color: 'var(--color-signal)' }} />
+                  <span>
+                    <span style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600 }}>{t}</span>
+                    <span style={{ display: 'block', fontSize: 'var(--text-2xs)', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>{d}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="Budget today" />
+          <Card tone="soft" padding="1rem">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+              <Meter label="Spend" used={6} cap={25} unit="USD" size="sm" />
+              <Meter label="Help answers" used={88} cap={400} size="sm" />
+              <Meter label="Autonomous sends" used={0} cap={0} size="sm" hint="Autonomy is off, so the cap is zero on purpose." />
+            </div>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="The doctrine" />
+          <Card tone="soft" padding="0.95rem">
+            <p style={{ margin: 0, fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--color-text-muted)' }}>
+              Vera is a bridge to humans, not a destination. A member who talks to her every day is a bug, not a win.
+            </p>
+          </Card>
+        </div>
+      </window.Rail>
+    }>
+      <PageHeading eyebrow="Studio · Vera" title="Vera proposes. You decide."
+        subtitle={<>Every write Vera makes arrives here first. <strong>Four proposals</strong> waiting, and <strong>none</strong> of them have touched anybody yet — see the <a href="#guards">four guards</a>.</>}
+        actions={<><Button size="sm" variant="ghost" iconLeft={<window.Ico n="scroll-text" style={{ width: 15, height: 15 }} />}>Audit log</Button><Button size="sm" variant="ghost" iconLeft={<window.Ico n="power" style={{ width: 15, height: 15 }} />}>Kill switch</Button></>} />
+
+      <div style={{ marginTop: 20 }}>
+        <GateNotice kind="dormant" title="AI is switched off platform-wide"
+          action={<Button size="sm" disabled>Turn AI on</Button>}>
+          Everything below is the real queue rendered from real signals. Vera writes nothing while the master flag is off, and she fails closed rather than guessing.
+        </GateNotice>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginTop: 20 }}>
+        <StatCard label="Proposed today" value="12" delta="+4" direction="up" spark={[3,5,4,8,6,9,12]} />
+        <StatCard label="Approved" value="9" delta="75%" direction="up" hint="Of everything proposed" />
+        <StatCard label="Handed to a human" value="12" delta="+2" direction="up" hint="Vera stepping out of the way" />
+        <StatCard label="Autonomous sends" value="0" direction="flat" hint="Autonomy off by design" />
+      </div>
+
+      <div style={{ marginTop: 26 }}>
+        <UnderlineTabs value={tab} onChange={setTab}
+          tabs={[{ id: 'queue', label: 'Waiting on you', count: 4 }, { id: 'today', label: 'Owner brief' }, { id: 'memory', label: 'Memory' }, { id: 'gaps', label: 'Help gaps', count: 7 }]} />
+      </div>
+
+      <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {QUEUE.map((p) => <Proposal key={p.id} p={p} />)}
+      </div>
+
+      <div style={{ marginTop: 26 }}>
+        <SectionHeader title="What she is not allowed to do" />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {[['Send money anywhere', 'ban'], ['Message somebody who muted the topic', 'bell-off'],
+            ['Write in the mission register', 'quote'], ['Guess when she is unsure', 'help-circle']].map(([t, ic]) => (
+            <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.7rem 0.9rem',
+              background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)' }}>
+              <window.Ico n={ic} style={{ width: 16, height: 16, color: 'var(--color-danger)', flexShrink: 0 }} />
+              <span style={{ fontSize: '0.93rem' }}>{t}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

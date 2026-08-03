@@ -1,0 +1,55 @@
+<!-- @dsCard group="Foundations · Space & feel" viewport="1180x460" name="Feel · radius, motion, density" subtitle="The non-color half of the look. Radius by role (what a skin retunes), three motion durations, and the one density root every rem derives from." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body{margin:0;padding:22px;background:var(--color-surface);font-family:var(--font-sans);color:var(--color-text)}
+  h2{font-size:var(--text-meta);text-transform:uppercase;letter-spacing:.16em;color:var(--color-text-subtle);margin:0 0 10px;font-weight:800}
+  section+section{margin-top:22px}
+  .row{display:flex;gap:12px;align-items:flex-end}
+  .item{text-align:center}
+  .shape{background:var(--color-primary-bg);border:1px solid color-mix(in srgb,var(--color-primary) 34%,transparent);height:60px}
+  .nm{font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--color-text-muted);margin-top:6px}
+  .use{font-size:var(--text-2xs);color:var(--color-text-subtle)}
+  .bars{display:grid;gap:8px}
+  .bar{display:grid;grid-template-columns:9rem 1fr 5rem;align-items:center;gap:12px;font-size:var(--text-body-sm)}
+  .track{height:8px;border-radius:var(--radius-pill);background:var(--color-surface-elevated);border:1px solid var(--color-border);overflow:hidden}
+  .fill{height:100%;background:var(--color-primary);border-radius:var(--radius-pill)}
+  .mono{font-family:var(--font-mono);font-size:var(--text-meta);color:var(--color-text-muted);text-align:right}
+  .dens{display:flex;align-items:baseline;gap:14px;padding:14px;border:1px solid var(--color-border);border-radius:var(--radius-card);background:var(--color-surface-elevated)}
+  .big{font-family:var(--font-mono);font-size:1.75rem;font-weight:600;color:var(--color-primary-strong)}
+  .note{font-size:var(--text-body-sm);color:var(--color-text-muted);line-height:1.6;margin:8px 0 0}
+</style>
+<style>html{background:var(--color-surface);min-height:100vh}body{background:var(--color-surface);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+  <section>
+    <h2>Radius by role</h2>
+    <div class="row">
+      <div class="item"><div class="shape" style="width:132px;border-radius:var(--radius-control)"></div><div class="nm">--radius-control</div><div class="use">buttons, inputs</div></div>
+      <div class="item"><div class="shape" style="width:132px;border-radius:var(--radius-card)"></div><div class="nm">--radius-card</div><div class="use">cards</div></div>
+      <div class="item"><div class="shape" style="width:132px;border-radius:var(--radius-pill)"></div><div class="nm">--radius-pill</div><div class="use">pills, chips, avatars</div></div>
+      <div class="item" data-skin="midnight"><div class="shape" style="width:132px;border-radius:var(--radius-card)"></div><div class="nm">card · Midnight</div><div class="use">the skin sharpens it</div></div>
+    </div>
+    <p class="note">Reach for the role token, not the step scale, in anything a skin should be able to restyle. The step scale (sm / xl / 2xl) stays for shapes that are not role bound: a date square, a marketing media frame.</p>
+  </section>
+  <section>
+    <h2>Motion</h2>
+    <div class="bars">
+      <div class="bar"><span>--motion-fast</span><div class="track"><div class="fill" style="width:18%"></div></div><span class="mono">130ms</span></div>
+      <div class="bar"><span>--motion-base</span><div class="track"><div class="fill" style="width:37%"></div></div><span class="mono">260ms</span></div>
+      <div class="bar"><span>--motion-slow</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="mono">700ms</span></div>
+    </div>
+    <p class="note">Fast for a press or hover tint, base for anything that arrives (the cue-pop beat), slow for a wash or scroll reveal. Nothing in the system exceeds 700ms, and reduced motion collapses all three.</p>
+  </section>
+  <section>
+    <h2>Density</h2>
+    <div class="dens">
+      <span class="big">106.25%</span>
+      <div><div style="font-weight:800">--density-root</div><div class="note" style="margin:0">The <code style="font-family:var(--font-mono)">html</code> font-size, about 17px. Every rem in the system derives from it, so the whole interface can be loosened or tightened from one line.</div></div>
+    </div>
+  </section>
+</body>
+</html>

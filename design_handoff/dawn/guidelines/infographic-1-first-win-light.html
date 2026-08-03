@@ -1,0 +1,136 @@
+<!-- @dsCard group="Teasers" viewport="1180x996" name="Teaser · The First Win (light)" subtitle="Light-canvas version. Warm cream, Anton headers, one amber payoff. Feed (1080×1800) + phone story (1080×1920)." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency, The First Win (light)</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  :root{ --accent:var(--color-primary); --accInk:var(--color-primary-strong); --arrow:#c9a06a; }
+  html,body{margin:0}
+  body{background:var(--color-canvas);font-family:var(--font-sans);color:var(--color-text);padding:40px 24px 80px}
+  .wrap{max-width:900px;margin:0 auto}
+  .head .eyebrow{color:var(--color-primary-strong);margin:0 0 10px}
+  .head h1{font-family:var(--font-display);text-transform:uppercase;font-size:32px;margin:0}
+  .head p{max-width:640px;color:var(--color-text-muted);font-size:15px;line-height:1.6;margin:12px 0 0}
+  .row{display:flex;gap:40px;align-items:flex-start;margin-top:34px;flex-wrap:wrap}
+  .fmt{display:flex;flex-direction:column;gap:10px}
+  .fmtlabel{font-family:var(--font-mono);font-size:11px;color:var(--color-text-subtle);text-transform:uppercase;letter-spacing:0.08em}
+
+  .scale-feed{width:378px;height:630px;overflow:hidden;border-radius:18px;box-shadow:var(--shadow-pop-lg);flex:0 0 auto}
+  .scale-feed .card{transform:scale(0.35);transform-origin:top left}
+  .scale-story{width:378px;height:672px;overflow:hidden;border-radius:22px;box-shadow:var(--shadow-pop-lg);flex:0 0 auto}
+  .scale-story .card{transform:scale(0.35);transform-origin:top left}
+
+  .card{position:relative;background:var(--color-marketing-canvas);color:var(--color-text);box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column}
+  .card.feed{width:1080px;height:1800px;padding:80px 88px 76px}
+  .card.story{width:1080px;height:1920px;padding:112px 90px 96px}
+  .glowtop{position:absolute;left:0;right:0;top:-160px;height:520px;pointer-events:none;
+    background:radial-gradient(ellipse 60% 100% at 50% 0,color-mix(in srgb,var(--accent) 20%,transparent),transparent 70%)}
+
+  .hd{position:relative}
+  .wordmark{position:absolute;top:0;right:0;font-size:26px;font-weight:800;color:var(--color-primary-strong)}
+  .eyb{font-size:24px;font-weight:700;letter-spacing:0.24em;text-transform:uppercase;color:var(--accInk);margin:0 0 26px}
+  .hl{font-family:var(--font-display);text-transform:uppercase;font-size:68px;font-weight:400;line-height:0.92;letter-spacing:0.012em;margin:0;color:var(--color-text);max-width:920px}
+  .hl .g{color:var(--accInk)}
+  .intro{font-size:30px;line-height:1.5;color:var(--color-text-muted);margin:30px 0 0;max-width:840px;font-weight:400}
+
+  .flow{position:relative;margin:48px 0 0;flex:1;display:flex;flex-direction:column;justify-content:center}
+  .story .flow{margin-top:64px}
+  .spine{position:absolute;left:63px;top:64px;bottom:64px;width:0;border-left:3px dashed var(--arrow)}
+  .step{position:relative;display:flex;gap:44px;align-items:flex-start;padding-bottom:48px}
+  .story .step{padding-bottom:54px}
+  .step:last-child{padding-bottom:0}
+  .glyph{position:relative;z-index:2;width:128px;height:128px;border-radius:50%;flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--accent) 14%,var(--color-surface));border:2px solid var(--color-border);box-shadow:var(--shadow-sm)}
+  .glyph svg{width:60px;height:60px;stroke:var(--accInk);stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .payoff{background:var(--accent);border-color:transparent;box-shadow:0 0 0 12px color-mix(in srgb,var(--accent) 16%,transparent),0 0 44px 6px color-mix(in srgb,var(--accent) 28%,transparent)}
+  .payoff svg{stroke:#231708}
+  .txt{padding-top:8px}
+  .step .lbl{font-family:var(--font-display);text-transform:uppercase;font-size:44px;font-weight:400;letter-spacing:0.012em;color:var(--color-text);margin:0;line-height:1.02}
+  .step .sub{font-size:25px;font-weight:700;color:var(--accInk);margin:8px 0 0}
+  .step .desc{font-size:26px;font-weight:400;line-height:1.5;color:var(--color-text-muted);margin:14px 0 0;max-width:640px}
+  .daytag{display:inline-block;font-size:19px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;
+    color:var(--accInk);border:1.5px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:999px;padding:4px 14px;margin-bottom:10px}
+
+  .foot{margin-top:40px}
+  .divider{height:1px;background:var(--color-border);margin-bottom:30px}
+  .stat{font-size:29px;line-height:1.45;color:var(--color-text-muted);font-weight:400;margin:0}
+  .stat b{color:var(--color-text);font-weight:800}
+  .cta{display:inline-flex;align-items:center;gap:12px;margin-top:30px;font-size:27px;font-weight:800;color:var(--accInk)}
+  .cta svg{width:26px;height:26px;stroke:var(--accInk);stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <p class="eyebrow">Feature teaser · 01 · light</p>
+    <h1>The First Win, light</h1>
+    <p>Light-canvas version of the week-one story, for placements on the warm cream surface. Anton headers, one amber payoff.</p>
+  </div>
+  <div class="row">
+    <div class="fmt">
+      <div class="fmtlabel">Feed / web · 1080 × 1800</div>
+      <div class="scale-feed"><div class="card feed" id="feed"></div></div>
+    </div>
+    <div class="fmt">
+      <div class="fmtlabel">Phone story · 1080 × 1920</div>
+      <div class="scale-story"><div class="card story" id="story"></div></div>
+    </div>
+  </div>
+</div>
+<script>
+const GLYPHS = {
+  circle:`<svg viewBox="0 0 48 48"><circle cx="24" cy="9" r="3.2"/><circle cx="38" cy="18.5" r="3.2"/><circle cx="33" cy="35" r="3.2"/><circle cx="15" cy="35" r="3.2"/><circle cx="10" cy="18.5" r="3.2"/></svg>`,
+  journey:`<svg viewBox="0 0 48 48"><path d="M9 39 C 20 34 12 24 24 21 C 36 18 30 11 40 9"/><path d="M40 9 v -3 M40 6 l 7 2 -7 2 z" fill="currentColor" stroke="none"/></svg>`,
+  mug:`<svg viewBox="0 0 48 48"><path d="M11 22 h22 v10 a7 7 0 0 1 -7 7 h-8 a7 7 0 0 1 -7 -7 z"/><path d="M33 24 h4 a4 4 0 0 1 0 8 h-4"/><path d="M18 15 c -2 -2 2 -4 0 -6 M26 15 c -2 -2 2 -4 0 -6"/></svg>`,
+  spark:`<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="4" fill="currentColor" stroke="none"/><path d="M24 4 v8 M24 36 v8 M4 24 h8 M36 24 h8 M10 10 l6 6 M32 32 l6 6 M38 10 l-6 6 M16 32 l-6 6"/></svg>`,
+};
+const STEPS = [
+  { n:'n1', g:'circle',  lbl:'Join a Circle',   sub:'+ your first Zaps',
+    desc:'Find your people by what you love. One tap in, and your first Zaps land before you have done a thing.' },
+  { n:'n2', g:'journey', lbl:'Start a Journey',  sub:'a guided 4 weeks',
+    desc:'Pick Mind, Body, or Spirit. A short daily practice gives the week a shape and somewhere to go.' },
+  { n:'n3', g:'mug',     lbl:'First Practice',   sub:'5 minutes before coffee',
+    desc:'The whole ritual is five minutes. Small enough to keep, real enough to feel by day two.' },
+  { n:'payoff', g:'spark', lbl:'Day 3: the Spark', sub:'you showed up',
+    day:'Day 3', desc:'Show up three days running and the Spark lights. Not a badge for logging in, proof that you came back.' },
+];
+function stepHTML(s){
+  return `<div class="step">
+    <div class="glyph ${s.n}">${GLYPHS[s.g]}</div>
+    <div class="txt ${s.n==='payoff'?'payoff-txt':''}">
+      ${s.day?`<span class="daytag">${s.day}</span><br>`:''}
+      <p class="lbl">${s.lbl}</p>
+      <p class="sub">${s.sub}</p>
+      <p class="desc">${s.desc}</p>
+    </div>
+  </div>`;
+}
+const ARROW = `<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
+function build(el){
+  el.innerHTML = `
+    <div class="glowtop"></div>
+    <div class="hd">
+      <span class="wordmark">Frequency</span>
+      <p class="eyb">The first win</p>
+      <h1 class="hl">Yes, it's meditation.<br><span class="g">We made it a game</span> so you'd actually do it.</h1>
+      <p class="intro">The hardest part of any wellness app is week one. Frequency front-loads the payoff so you feel it before you quit.</p>
+    </div>
+    <div class="flow">
+      <div class="spine"></div>
+      ${STEPS.map(stepHTML).join('')}
+    </div>
+    <div class="foot">
+      <div class="divider"></div>
+      <p class="stat">Most wellness apps lose <b>85%</b> of people in week one. The first win keeps them.</p>
+      <span class="cta">Start your first Journey, free ${ARROW}</span>
+    </div>`;
+}
+build(document.getElementById('feed'));
+build(document.getElementById('story'));
+</script>
+</body>
+</html>

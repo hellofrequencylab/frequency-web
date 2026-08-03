@@ -1,0 +1,57 @@
+<!-- @dsCard group="Patterns · Chrome" viewport="1180x1200" name="The three docks · law of place" subtitle="Top right is the system, bottom left is you and what you run, bottom right is the Vault (member) or this page (operator). Nothing is offered twice." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DAWN · The three docks</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="card.css">
+<style>.map{position:relative;height:320px;border-radius:var(--radius-card);border:1px solid var(--color-border);background:var(--color-surface);overflow:hidden}.bar{position:absolute;inset:0 0 auto 0;height:46px;display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--color-chrome);border-bottom:1px solid var(--color-chrome-border)}.nav{position:absolute;top:46px;bottom:0;left:0;width:168px;border-right:1px solid var(--color-border)}.zone{position:absolute;border-radius:var(--radius-control);border:1.5px dashed color-mix(in srgb, var(--color-primary) 55%, transparent);background:var(--color-primary-bg);padding:8px 10px}.zone b{display:block;font-size:0.8rem}.zone span{display:block;margin-top:2px;font-size:var(--text-2xs);color:var(--color-text-muted);line-height:1.45}.z1{top:54px;right:10px;width:210px}.z2{bottom:12px;left:10px;width:190px}.z3{bottom:12px;right:10px;width:210px}.panel ul{margin:0;padding-left:1.05rem}.panel li{font-size:0.88rem;line-height:1.7;color:var(--color-text-muted)}.panel .k{margin:2px 0 10px;font-size:var(--text-2xs);text-transform:uppercase;letter-spacing:0.12em;color:var(--color-primary-strong);font-weight:700}</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <span class="eyebrow">Patterns · Chrome</span>
+    <h1>The three docks</h1>
+    <p>One question decides where a control lives: <strong>whose is it</strong> — the system’s, mine, or this page’s? Answer that and there is exactly one dock it can go in, which is why nothing in the product is ever offered twice.</p>
+    <hr class="rule-amber">
+  </div>
+  <h2>Where each dock sits</h2>
+  <div class="map">
+    <div class="bar"><span style="width:120px;height:16px;border-radius:4px;background:var(--color-border)"></span><span style="flex:1"></span><span style="width:120px;height:20px;border-radius:99px;background:var(--color-surface);border:1px solid var(--color-chrome-border)"></span><span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary-bg)"></span></div>
+    <div class="nav"></div>
+    <div class="zone z1"><b>System · top right</b><span>Region, account, billing, appearance, language, help, sign out.</span></div>
+    <div class="zone z2"><b>You · bottom left</b><span>Profile, standing, journal, notification prefs — then what you run: Circles, events, listings, Spaces, payouts.</span></div>
+    <div class="zone z3"><b>Score or page · bottom right</b><span>Member: the Vault — sparks, the stash, streak, season. Operator: this page's stats and switches.</span></div>
+  </div>
+
+  <h2>What belongs in each</h2>
+  <div class="g g3">
+    <div class="panel">
+      <h3 style="margin:0;font-size:1rem;letter-spacing:var(--tracking-tight)">Top right</h3>
+      <p class="k">The system</p>
+      <ul><li>Which region am I in</li><li>Account and security</li><li>Plan and billing</li><li>Appearance: skin and mode</li><li>Language, data export</li><li>Help, shortcuts, sign out</li></ul>
+    </div>
+    <div class="panel">
+      <h3 style="margin:0;font-size:1rem;letter-spacing:var(--tracking-tight)">Bottom left</h3>
+      <p class="k">You, and what you run</p>
+      <ul><li>Profile, standing, journal, saved</li><li>Notification preferences</li><li>My Circles, events, listings</li><li>Business Spaces, QR studio</li><li>Payouts, orders and passes</li><li>Switch to operator view</li></ul>
+    </div>
+    <div class="panel">
+      <h3 style="margin:0;font-size:1rem;letter-spacing:var(--tracking-tight)">Bottom right</h3>
+      <p class="k">The Vault, or this page</p>
+      <ul><li>Sparks and today's loose sparks</li><li>Stash — the one primary action</li><li>Streak, freezes, the week</li><li>Season counts and recent ledger</li><li>Operator: four page stats</li><li>Operator: that page's switches</li></ul>
+    </div>
+  </div>
+  <div class="laws">
+    <p><b>Never twice.</b> A control appears in exactly one dock. The streak left the top bar when the Vault took it.</p>
+    <p><b>One shell.</b> All three use the same popover: glass, lift-3, cue-pop, Esc or an outside click to close.</p>
+    <p><b>Open inward.</b> Each dock grows toward the middle of the screen, never off its own edge.</p>
+    <p><b>Score is never a scold.</b> The Vault has no red, no countdown, and nothing purchasable with money.</p>
+    <p><b>Page settings are the page’s.</b> Global admin lives in the rail; the dock holds only what belongs to the screen you are on.</p>
+    <p><b>Rails are not docks.</b> The rails carry content. Controls belong to the docks.</p>
+  </div>
+</div>
+</body>
+</html>

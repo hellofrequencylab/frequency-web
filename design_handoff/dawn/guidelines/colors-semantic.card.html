@@ -1,0 +1,40 @@
+<!-- @dsCard group="Foundations · Color" viewport="1180x430" name="Semantic states" subtitle="Success is a TEAL, not a green. Four states, each with a tint, and a rule about when to reach for them at all." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DAWN · Semantic states</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="card.css">
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <span class="eyebrow">Foundations · Color</span>
+    <h1>Semantic states</h1>    <p>Four states, used sparingly. Success is a teal so "done" stays cohesive with Signal and green never enters the palette. Danger is the rarest colour in the system: it belongs to destruction and failure, never to urgency, scarcity or a streak that lapsed.</p>
+    <hr class="rule-amber">
+  </div>
+  <h2>The four states</h2>
+  <div class="g g4">
+    <div class="sw"><div class="chip" style="background:var(--color-success)"></div><div class="lab"><div class="tok">--color-success</div><div class="hex">#11827A</div><div class="use">Done, confirmed, paid. A teal.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-warning)"></div><div class="lab"><div class="tok">--color-warning</div><div class="hex">#B07515</div><div class="use">Needs attention, nothing is broken.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-danger)"></div><div class="lab"><div class="tok">--color-danger</div><div class="hex">#BA3B30</div><div class="use">Destructive actions and real failures only.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-info)"></div><div class="lab"><div class="tok">--color-info</div><div class="hex">#2F6FB0</div><div class="use">Neutral notice. Rare — most notices are just text.</div></div></div>
+  </div>
+  <h2>Their tints</h2>
+  <div class="g g4">
+    <div class="sw"><div class="chip" style="background:var(--color-success-bg)"></div><div class="lab"><div class="tok">--color-success-bg</div><div class="hex">#D7EFEA</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-warning-bg)"></div><div class="lab"><div class="tok">--color-warning-bg</div><div class="hex">#F6ECD8</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-danger-bg)"></div><div class="lab"><div class="tok">--color-danger-bg</div><div class="hex">#F7E4E1</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-info-bg)"></div><div class="lab"><div class="tok">--color-info-bg</div><div class="hex">#E3EDF7</div></div></div>
+  </div>
+  <div class="laws">
+    <p><b>Green never appears.</b> Success is <code>#11827A</code>. A true green would break the warm-editorial palette on sight.</p>
+    <p><b>Danger is for damage.</b> Deleting, failing, losing. A missed day is a hollow dot, not a red one.</p>
+    <p><b>Never colour alone.</b> Every state carries a word or a glyph too — colour is the second signal, not the only one.</p>
+    <p><b>Tints, not borders.</b> Reach for the <code>-bg</code> tint before adding a coloured left border.</p>
+  </div>
+</div>
+</body>
+</html>

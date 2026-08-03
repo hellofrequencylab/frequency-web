@@ -1,0 +1,296 @@
+<!-- @dsCard group="Screens · Marketing" viewport="1280x820" name="Marketing — Pricing" subtitle="Current canon: ADR-914 (the rate is the ladder, 0% on your own audience, tips free), ADR-908 (Crew is pay-what-you-want, first one free), ADR-875/878 (six listed tiers, Opening Beta rates). Closes on Captured/Booked/Return, never a dollar." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Pricing</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="reveal.js"></script>
+<style>
+  html, body { margin: 0; }
+  body { background: var(--color-marketing-canvas); font-family: var(--font-sans); color: var(--color-text); }
+  a { color: var(--color-primary-strong); }
+  a:hover { color: var(--color-primary); }
+  @media (max-width: 980px) { .pr-2up, .pr-3up, .pr-4up, .pr-5up, .pr-6up { grid-template-columns: repeat(2, 1fr) !important; }
+    .pr-feature { grid-template-columns: 1fr !important; }
+    .pr-feature > * { margin-block: 0 !important; } }
+</style>
+<style>html{background:var(--color-marketing-canvas);min-height:100vh}body{background:var(--color-marketing-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="icon.jsx"></script>
+<script type="text/babel" src="header.jsx"></script>
+<script type="text/babel" src="footer.jsx"></script>
+<script type="text/babel" src="sections.jsx"></script>
+<script type="text/babel" data-presets="react">
+const NSP = window.DAWNFrequencyDesignSystem_c868e3;
+const I = ({ n, s = 18 }) => <window.MkIco n={n} style={{ width: s, height: s }} />;
+
+// Every price below is a list anchor with a lower founding price, grandfathered
+// for the life of the subscription. And every billing button is a PREVIEW: billing
+// does not turn on until graduation, so a live-looking Subscribe would be a lie.
+const FREE = [
+  { name: 'Member', price: '$0', unit: 'forever', body: 'The whole product, and the first of everything: host a Circle, publish a Journey, run two events, sell a ticket. Nothing here is a trial.',
+    lines: ['Host 1 Circle — and you are made a Host', 'Publish 1 Journey, 3 Practices', '2 active events, and you may charge', 'Sell tickets and take donations day one', 'Sparks accrue; spending them is Crew'],
+    rate: '10%', cta: 'Start free', live: true },
+  { name: 'Crew', price: 'You choose', unit: 'from $4.99/mo · $12 suggested', body: 'The leadership tier. A Member does each thing once; Crew does it repeatedly, publicly, and for money — and picks what to pay for the privilege.',
+    lines: ['Unlimited Circles, Journeys, Practices', 'Journeys listed in the public library', 'Recurring event series and entry points', 'Spend the Vault, full rewards loop, unlimited Vera', 'Annual is ten months for twelve'],
+    rate: '8%', cta: 'Choose your amount', live: true, feature: true },
+  { name: 'Space', price: '$0', unit: 'free, forever', body: 'A real, claimable, public Space. It sells from day one — we never gate the transaction, only the repeat.',
+    lines: ['A public page that ranks', 'Bookings, tickets, donations', 'CRM contacts with a free allowance', 'QR entry points', 'Payouts to your own account'],
+    rate: '10%', cta: 'Claim your Space', live: true },
+];
+
+const BUSINESS = [
+  { name: 'Business', price: '$19', list: '$29', unit: '/mo', body: 'The working operator plan. Two of the three walls open here: selling memberships, and campaigns and funnels.',
+    lines: ['Sell memberships and subscriptions', 'Campaigns, funnels, email automation', 'Full CRM and analytics', '3 hosted collaborators', 'Branded site on your own domain'], rate: '5%', cta: 'Start free', live: true },
+  { name: 'Collective', price: '$49', list: '$79', unit: '/mo', body: 'For the operator who runs money through other people. The third wall opens: automatic revenue splits.',
+    lines: ['Everything in Business', 'Automatic revenue splits', 'Unlimited collaborators', 'SMS on a registered number', 'The lowest rate on the network'], rate: '3%', cta: 'Start free', live: true, feature: true },
+  { name: 'Non Profit', price: '$39', unit: '/mo flat', body: 'Everything a Collective gets, at a flat price, and nothing taken off what you raise. Verified 501(c)(3) only.',
+    lines: ['Everything in Collective', 'Donations built in', 'Flat — seats are not the axis', 'Verified 501(c)(3)'], rate: '0%', cta: 'Apply', live: true },
+];
+
+// The rate ladder, on NETWORK-SOURCED sales only. Your own audience is 0% on every
+// tier, forever, and a tip is never touched.
+const RATES = [
+  ['Member', '10%', 'free'],
+  ['Space', '10%', 'free'],
+  ['Crew', '8%', 'pwyw'],
+  ['Business', '5%', '$19'],
+  ['Collective', '3%', '$49'],
+  ['Non Profit', '0%', '$39'],
+];
+const WALLS = [
+  ['Selling memberships', 'Business', 'A one-off sale is free. Charging the same person every month is the business.', 'repeat'],
+  ['Campaigns and funnels', 'Business', 'Sending once is free. Sequencing, automating and measuring it is the business.', 'send'],
+  ['Revenue splits', 'Collective', 'Hosting a partner is Business. Paying them automatically is the collaboration engine.', 'split'],
+];
+
+function Plan({ p, tone = 'light' }) {
+  const { Button } = NSP;
+  const ink = tone === 'ink';
+  return (
+    <article className={'reveal ' + (p.feature ? 'lift-3 edge-light' : 'lift-1')} style={{ position: 'relative', display: 'flex', flexDirection: 'column',
+      borderRadius: 'var(--radius-2xl)', padding: p.feature ? '2.3rem 1.8rem 2rem' : '1.7rem 1.5rem',
+      marginBlock: p.feature ? 'calc(-1 * var(--space-4))' : 0,
+      background: ink ? 'color-mix(in srgb, var(--color-on-ink) 6%, transparent)' : 'var(--color-surface)',
+      border: p.feature
+        ? '1.5px solid color-mix(in srgb, var(--color-primary) 58%, transparent)'
+        : ink ? '1px solid color-mix(in srgb, var(--color-on-ink) 12%, transparent)' : '1px solid var(--color-border)',
+      color: ink ? 'var(--color-on-ink)' : 'var(--color-text)' }}>
+      {p.feature ? (
+        <span className="eyebrow" style={{ position: 'absolute', top: -10, left: '1.5rem', padding: '0.2rem 0.7rem', borderRadius: 'var(--radius-pill)',
+          background: 'var(--color-primary)', color: 'var(--color-text-on-primary)', fontSize: 'var(--text-3xs)' }}>Best choice</span>
+      ) : null}
+      <h3 style={{ margin: 0, fontSize: p.feature ? '1.3rem' : '1.1rem', letterSpacing: 'var(--tracking-tight)' }}>{p.name}</h3>
+      {p.list ? (
+        <span style={{ display: 'flex', alignItems: 'baseline', gap: 7, margin: '0.6rem 0 -0.2rem', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-2xs)',
+          color: ink ? 'var(--color-on-ink-subtle)' : 'var(--color-text-subtle)' }}>
+          <span style={{ textDecoration: 'line-through' }}>{p.list}{p.unit}</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--color-primary-strong)' }}>Beta price</span>
+        </span>
+      ) : null}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '0.7rem 0 0', flexWrap: 'wrap' }}>
+        <span className="font-display" style={{ fontSize: p.price.length > 6 ? '2rem' : (p.feature ? '3.4rem' : '2.9rem'), lineHeight: 0.9, letterSpacing: '-0.03em' }}>{p.price}</span>
+        <span style={{ fontSize: 'var(--text-meta)', color: ink ? 'var(--color-on-ink-muted)' : 'var(--color-text-muted)' }}>{p.unit}</span>
+      </div>
+      {p.rate ? (
+        <div style={{ display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', gap: 7, marginTop: '0.8rem',
+          padding: '0.22rem 0.6rem', borderRadius: 'var(--radius-pill)',
+          background: ink ? 'color-mix(in srgb, var(--color-primary) 18%, transparent)' : 'var(--color-primary-bg)',
+          color: ink ? 'var(--color-primary)' : 'var(--color-primary-strong)' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 500 }}>{p.rate}</span>
+          <span style={{ fontSize: 'var(--text-3xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>on network sales</span>
+        </div>
+      ) : null}
+      <p style={{ margin: '0.8rem 0 0', fontSize: '0.95rem', lineHeight: 1.65, color: ink ? 'var(--color-on-ink-muted)' : 'var(--color-text-muted)' }}>{p.body}</p>
+      <hr className="rule-amber" style={{ margin: '1.1rem 0' }} />
+      <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+        {p.lines.map((l) => (
+          <li key={l} style={{ display: 'flex', gap: 9, fontSize: '0.92rem', lineHeight: 1.5, color: ink ? 'var(--color-on-ink-muted)' : 'var(--color-text-muted)' }}>
+            <span style={{ flexShrink: 0, color: 'var(--color-primary-strong)', marginTop: 2 }}><I n="check" s={14} /></span>{l}
+          </li>
+        ))}
+      </ul>
+      {p.cta ? (
+        <div style={{ marginTop: '1.4rem' }}>
+          <Button size="md" variant={p.feature ? 'primary' : 'secondary'} tone={ink ? 'ink' : undefined}
+            disabled={!p.live} style={{ width: '100%' }} iconRight={p.live ? <I n="arrow-right" s={16} /> : null}>
+            {p.cta}
+          </Button>
+          {p.list ? (
+            <p style={{ margin: '0.55rem 0 0', textAlign: 'center', fontSize: 'var(--text-2xs)', color: ink ? 'var(--color-on-ink-subtle)' : 'var(--color-text-subtle)' }}>
+              Opening Beta rate — yours for as long as you keep the plan
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function Page() {
+  const { Button, Badge } = NSP;
+  const { MkEdHead: H } = window;
+  return (
+    <>
+      {/* Hero. Type on cream, not photography: a pricing page opens as a plain
+          statement, and the plainest true statement right now is "nothing yet". */}
+      <section className="grain mk-band mk-cream" style={{ position: 'relative' }}>
+        <div className="reveal" style={{ position: 'relative', zIndex: 2, maxWidth: 'var(--width-hero)', margin: '0 auto', textAlign: 'center' }}>
+          <p className="eyebrow" style={{ margin: 0, color: 'var(--color-primary-strong)' }}>Pricing</p>
+          <h1 className="font-display" style={{ margin: '1rem 0 0', fontSize: 'clamp(2.8rem, 6.2vw, 4.8rem)', lineHeight: 0.94, letterSpacing: '-0.028em' }}>
+            The rate is the ladder
+          </h1>
+          <p style={{ margin: '0.1rem 0 0', fontFamily: 'var(--font-editorial)', fontStyle: 'italic', fontSize: 'clamp(1.5rem, 3.2vw, 2.5rem)', lineHeight: 1.1, color: 'var(--color-primary)' }}>
+            and your own people are always free
+          </p>
+          <p style={{ margin: '1.5rem auto 0', maxWidth: 'var(--width-read)', fontSize: '1.15rem', lineHeight: 1.7, color: 'var(--color-text-muted)' }}>
+            You can sell on the free tier, from the first day, with no upgrade. What a subscription buys is a lower rate on the people <em>we</em> bring you — and on the people you brought yourself, the rate is zero on every tier, forever.
+          </p>
+          <div className="glass lift-1" style={{ display: 'inline-flex', alignItems: 'center', gap: 12, margin: '2rem 0 0', padding: '0.7rem 1.1rem', borderRadius: 'var(--radius-pill)' }}>
+            <span className="halo" style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'var(--color-primary)' }} />
+            <span style={{ fontSize: '0.92rem', fontWeight: 700 }}>Opening Beta</span>
+            <span style={{ width: 1, height: 16, background: 'var(--color-border-strong)' }} />
+            <span style={{ fontSize: '0.92rem', color: 'var(--color-text-muted)' }}>Beta rates are grandfathered. Allowances start counting September 1, 2026 — nothing is taken away before then.</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Personal. Two plans, and the free one is not a trial. */}
+      <section className="mk-cont mk-cream" >
+        <div style={{ maxWidth: 'var(--width-wide)', margin: '0 auto' }}>
+          <H eyebrow="Free to start, all three" title="The first one" script="is always free" blurb="A Member does each thing once. Crew does all of it repeatedly, publicly, and for a living, and picks what to pay. A Space is a public page that sells from day one — and none of the three asks for a card." />
+          <div className="pr-feature stagger" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr)', gap: 18, marginTop: 'var(--space-10)', alignItems: 'center' }}>
+            {FREE.map((p) => <Plan key={p.name} p={p} />)}
+          </div>
+        </div>
+      </section>
+
+      {/* Business, on ink. The operator plans are the money story, so they get the
+          dark band — and the band is where the sheen and edge-light live. */}
+      <section className="bg-slat grain mk-band mk-ink" style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 'var(--width-wide)', margin: '0 auto' }}>
+          <H tone="ink" eyebrow="When it becomes the business" title="Never gate" script="the transaction" blurb="A free Space sells from day one — tickets, bookings, donations, payouts. Gate the sale and an operator does not upgrade, they send people to Venmo, and the sale and the contact are both gone. So the free Space is real, and the ladder is the rate plus three walls." />
+          <div className="pr-feature stagger" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr)', gap: 18, marginTop: 'var(--space-10)', alignItems: 'center' }}>
+            {BUSINESS.map((p) => <Plan key={p.name} p={p} tone="ink" />)}
+          </div>
+          <p style={{ margin: '1.6rem auto 0', maxWidth: 'var(--width-read)', textAlign: 'center', fontSize: '0.92rem', lineHeight: 1.65, color: 'var(--color-on-ink-subtle)' }}>
+            Annual is ten months for twelve on every plan. Independent, the off-network build, is not sold here — ask us.
+          </p>
+        </div>
+        <span className="light-strip" style={{ position: 'absolute', left: 0, right: 0, top: 0, zIndex: 3 }} />
+        <span className="light-strip" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 3 }} />
+      </section>
+
+      {/* The one number that matters, and the honest asterisk beside it: the rate only
+          applies to sales WE sourced. Said in the largest type on the page, once. */}
+      <section className="arc-top dot-grid mk-beat mk-arc mk-cream" style={{ position: 'relative', marginTop: -1, background: 'var(--color-surface)' }}>
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 'var(--width-wide)', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', maxWidth: 'var(--width-read)', margin: '0 auto' }}>
+            <p className="eyebrow" style={{ margin: 0, color: 'var(--color-primary-strong)' }}>On your own audience</p>
+            <div className="font-display" style={{ margin: '0.9rem 0 0', fontSize: 'clamp(4rem, 11vw, 8rem)', lineHeight: 0.86, letterSpacing: '-0.04em' }}>
+              0%
+            </div>
+            <p style={{ margin: '0.6rem 0 0', fontSize: '1.1rem', lineHeight: 1.65, color: 'var(--color-text-muted)' }}>
+              On every tier, forever. A follower, an active member, a CRM contact, a personal contact, or anyone who has bought from you before — any one of those proves the relationship is yours. We charge for the introduction, never for the relationship. Tips are never touched, on any tier.
+            </p>
+          </div>
+          <hr className="rule-amber" style={{ margin: '2.6rem 0' }} />
+          <p className="eyebrow" style={{ margin: '0 0 1.2rem', textAlign: 'center', color: 'var(--color-text-subtle)' }}>And on the people we bring you</p>
+          <div className="pr-6up" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10 }}>
+            {RATES.map(([t, r, p], i) => (
+              <div key={t} className="lift-1" style={{ textAlign: 'center', background: i === RATES.length - 1 ? 'var(--color-primary-bg)' : 'var(--color-canvas)',
+                borderRadius: 'var(--radius-2xl)', padding: '1.2rem 0.7rem',
+                border: '1px solid ' + (i === RATES.length - 1 ? 'color-mix(in srgb, var(--color-primary) 32%, transparent)' : 'var(--color-border)') }}>
+                <div className="font-display" style={{ fontSize: '2rem', lineHeight: 1, color: 'var(--color-primary-strong)' }}>{r}</div>
+                <h3 style={{ margin: '0.45rem 0 0', fontSize: '0.88rem', letterSpacing: 'var(--tracking-tight)' }}>{t}</h3>
+                <p style={{ margin: '0.2rem 0 0', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-3xs)', color: 'var(--color-text-subtle)' }}>{p}</p>
+              </div>
+            ))}
+          </div>
+          <p style={{ margin: '1.6rem auto 0', maxWidth: 'var(--width-read)', textAlign: 'center', fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--color-text-subtle)' }}>
+            Card processing at cost on top, and payouts land in your account rather than ours. The incumbents stack about 23.5% on the same sale, whoever brought the buyer.
+          </p>
+        </div>
+      </section>
+
+      {/* The three walls. Naming them is the point: an operator should be able to tell
+          in one read whether they have hit one, and every other limit is a meter with a
+          real allowance rather than a locked door. */}
+      <section className="mk-cont mk-cream" style={{ background: 'var(--color-surface)' }}>
+        <div style={{ maxWidth: 'var(--width-wide)', margin: '0 auto' }}>
+          <H eyebrow="Three walls, and that is all of them" title="Gate the repeat" script="not the sale" />
+          <div className="pr-3up stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18, marginTop: 'var(--space-10)' }}>
+            {WALLS.map(([t, plan, d], i) => (
+              <article key={t} className="reveal lift-2" style={{ background: 'var(--color-canvas)', borderRadius: 'var(--radius-2xl)', padding: '1.6rem 1.5rem', border: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>{'0' + (i + 1)}</span>
+                  <span style={{ padding: '0.18rem 0.6rem', borderRadius: 'var(--radius-pill)', background: 'var(--color-primary-bg)',
+                    color: 'var(--color-primary-strong)', fontSize: 'var(--text-3xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>{plan}</span>
+                </div>
+                <h3 style={{ margin: '0.8rem 0 0', fontSize: '1.15rem', letterSpacing: 'var(--tracking-tight)' }}>{t}</h3>
+                <p style={{ margin: '0.4rem 0 0', fontSize: '0.95rem', lineHeight: 1.7, color: 'var(--color-text-muted)' }}>{d}</p>
+              </article>
+            ))}
+          </div>
+          <p style={{ margin: '1.5rem auto 0', maxWidth: 'var(--width-read)', textAlign: 'center', fontSize: '0.95rem', lineHeight: 1.65, color: 'var(--color-text-muted)' }}>
+            Everything else is a meter with a real free allowance, not a lock. One CTA everywhere: <strong>Start free</strong>. You never talk to sales to find out a price.
+          </p>
+        </div>
+      </section>
+
+      {/* Money is dark: the page does NOT close on a dollar. It closes on the three
+          numbers a host actually cares about. */}
+      <section className="bg-slat scanlines mk-band mk-ink" style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', zIndex: 3, maxWidth: 'var(--width-wide)', margin: '0 auto', textAlign: 'center' }}>
+          <p className="eyebrow" style={{ margin: 0, color: 'var(--color-primary)' }}>What we count instead</p>
+          <p className="font-display" style={{ margin: '1rem 0 0', fontSize: 'clamp(1.9rem, 4.2vw, 3.2rem)', lineHeight: 1.02, color: 'var(--color-on-ink)' }}>
+            Nobody opened a studio
+          </p>
+          <p style={{ margin: '0.15rem 0 0', fontFamily: 'var(--font-editorial)', fontStyle: 'italic', fontSize: 'clamp(1.3rem, 2.9vw, 2.2rem)', color: 'var(--color-primary)' }}>
+            to watch a revenue chart
+          </p>
+          <div className="pr-3up" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginTop: 'var(--space-10)', textAlign: 'left' }}>
+            {[['captured', 'Captured', 'Somebody scanned the code and became a name you can reach.'],
+              ['booked', 'Booked', 'That name took a seat on a specific day.'],
+              ['return', 'Return', 'They came back inside thirty days. This is the only one that compounds.']].map(([k, t, d], i) => (
+              <div key={k} className="sheen edge-light" style={{ borderRadius: 'var(--radius-2xl)', padding: '1.5rem 1.4rem',
+                background: 'color-mix(in srgb, var(--color-on-ink) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--color-on-ink) 12%, transparent)' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-2xs)', color: 'var(--color-primary)' }}>{'0' + (i + 1)}</span>
+                <h3 style={{ margin: '0.5rem 0 0', fontSize: '1.15rem', color: 'var(--color-on-ink)' }}>{t}</h3>
+                <p style={{ margin: '0.4rem 0 0', fontSize: '0.95rem', lineHeight: 1.65, color: 'var(--color-on-ink-muted)' }}>{d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <span className="light-strip" style={{ position: 'absolute', left: 0, right: 0, top: 0 }} />
+        <span className="light-strip" style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }} />
+      </section>
+
+      <window.FaqList items={[
+        { q: 'Can I really sell on the free tier?', a: 'Yes. Tickets, bookings, donations and payouts, from the first day, with no upgrade. The rate on a sale we sourced is 10%, and on your own audience it is nothing. We would rather take 10% of a sale that happened than 0% of one you took to Venmo.' },
+        { q: 'What counts as my own audience?', a: 'A follower, an active member, a contact in your CRM, a personal contact, or anyone who has already bought from you. Any one of those is enough, and it is checked on every sale. We charge for the introduction, never the relationship.' },
+        { q: 'How does pay-what-you-want work on Crew?', a: 'You choose the amount. The floor is $4.99 a month, $12 is suggested and pre-selected, and there is always an "another amount" field. Every amount buys exactly the same access — the moment a higher amount bought more it would be a tier ladder with a friendly name. Above the suggested amount you get the Supporter mark, which is thanks, not capability.' },
+        { q: 'What does Crew actually change?', a: 'It removes the "once". A Member hosts one Circle, publishes one Journey and three Practices, runs two events. Crew does all of it without limit, gets listed in the public library, runs recurring series, spends the Vault, and drops to 8% on network sales. It buys no standing you did not earn by turning up.' },
+        { q: 'Will the beta rate go up on me?', a: 'Not while you keep the plan. Business at $19 and Collective at $49 are Opening Beta rates against $29 and $79, and they are grandfathered for as long as the subscription runs. Non Profit has one price and no anchor.' },
+        { q: 'Do you charge per seat?', a: 'Seats are not the axis. Business includes three hosted collaborators and Collective is unlimited; Non Profit is flat by promise. If we ever price a seat it will be published here like everything else.' },
+        { q: 'What happens on September 1, 2026?', a: 'The free allowances start counting. Nothing is removed before then, and nothing about your rate changes on that date — it is when the meters begin, not when the price does.' },
+      ]} />
+      <window.BetaCTA />
+    </>
+  );
+}
+
+function Mount() { return (<><window.MarketingHeader onNav={() => {}} /><Page /><window.MarketingFooter onNav={() => {}} /></>); }
+ReactDOM.createRoot(document.getElementById('root')).render(<Mount />);
+</script>
+</body>
+</html>

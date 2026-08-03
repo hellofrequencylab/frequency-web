@@ -1,0 +1,90 @@
+<!-- @dsCard group="Patterns · The Quest" viewport="1180x607" name="Reward badges · challenges" subtitle="Achievement medals for completing challenges. Icon-forward (distinct from rank coins) + a currency chip paid in-kind: zaps for real-world, gems for online." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+  body { margin: 0; padding: 26px 22px; background: var(--color-surface); font-family: var(--font-sans); color: var(--color-text); }
+  .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 10px; }
+  .ach { text-align: center; }
+  .medal {
+    width: 76px; height: 76px; margin: 0 auto; border-radius: 50%;
+    background: var(--color-surface);
+    border: 2.5px solid var(--color-primary);
+    box-shadow: var(--shadow-md), inset 0 0 0 5px var(--color-primary-bg);
+    display: flex; align-items: center; justify-content: center; position: relative;
+    color: var(--color-primary-strong);
+  }
+  .medal i { width: 30px; height: 30px; }
+  /* ribbon tails */
+  .medal::before, .medal::after {
+    content: ''; position: absolute; bottom: -7px; width: 12px; height: 18px; background: var(--color-primary);
+    border-radius: 0 0 2px 2px; z-index: -1;
+  }
+  .medal::before { left: 24px; transform: rotate(10deg); }
+  .medal::after  { right: 24px; transform: rotate(-10deg); }
+  .nm { font-size: 13px; font-weight: 800; color: var(--color-text); margin-top: 13px; }
+  .dsc { font-size: 11px; color: var(--color-text-subtle); margin-top: 2px; line-height: 1.4; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; margin-top: 7px; padding: 2px 9px; border-radius: var(--radius-full);
+    font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .chip i { width: 12px; height: 12px; }
+  .chip.zap { background: var(--color-primary-bg); color: var(--color-primary-strong); }
+  .chip.gem { background: var(--color-surface-elevated); color: var(--color-text-muted); border: 1px solid var(--color-border); }
+  /* locked */
+  .ach.locked .medal { border-color: var(--color-border-strong); box-shadow: var(--shadow-sm), inset 0 0 0 5px var(--color-surface-elevated);
+    color: var(--color-text-subtle); }
+  .ach.locked .medal::before, .ach.locked .medal::after { background: var(--color-border-strong); }
+  .ach.locked .lockchip { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .ach.locked .lockchip i { width: 22px; height: 22px; color: var(--color-text-subtle); }
+  .ach.locked .medal > i:first-child { opacity: 0.35; }
+</style>
+<style>html{background:var(--color-surface);min-height:100vh}body{background:var(--color-surface);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+  <div class="row">
+    <div class="ach">
+      <div class="medal"><i data-lucide="users"></i></div>
+      <div class="nm">First Circle</div><div class="dsc">Found a real circle</div>
+      <span class="chip zap"><i data-lucide="zap"></i> 100</span>
+    </div>
+    <div class="ach">
+      <div class="medal"><i data-lucide="calendar-plus"></i></div>
+      <div class="nm">Host</div><div class="dsc">Hosted an in-person event</div>
+      <span class="chip zap"><i data-lucide="zap"></i> 60</span>
+    </div>
+    <div class="ach">
+      <div class="medal"><i data-lucide="user-plus"></i></div>
+      <div class="nm">Connector</div><div class="dsc">An invite you sent joined</div>
+      <span class="chip zap"><i data-lucide="zap"></i> 40</span>
+    </div>
+    <div class="ach">
+      <div class="medal"><i data-lucide="heart-handshake"></i></div>
+      <div class="nm">Welcomer</div><div class="dsc">Welcomed 5 newcomers</div>
+      <span class="chip gem"><i data-lucide="gem"></i> 8</span>
+    </div>
+    <div class="ach locked">
+      <div class="medal"><i data-lucide="footprints"></i><span class="lockchip"><i data-lucide="lock"></i></span></div>
+      <div class="nm">Regular</div><div class="dsc">Show up 8 times</div>
+      <span class="chip zap"><i data-lucide="zap"></i> 25</span>
+    </div>
+    <div class="ach locked">
+      <div class="medal"><i data-lucide="calendar-check"></i><span class="lockchip"><i data-lucide="lock"></i></span></div>
+      <div class="nm">Anchor month</div><div class="dsc">One practice, every day, all month</div>
+      <span class="chip gem"><i data-lucide="gem"></i> 30</span>
+    </div>
+    <div class="ach locked">
+      <div class="medal"><i data-lucide="target"></i><span class="lockchip"><i data-lucide="lock"></i></span></div>
+      <div class="nm">Season Finisher</div><div class="dsc">Complete a season challenge</div>
+      <span class="chip gem"><i data-lucide="gem"></i> 15</span>
+    </div>
+    <div class="ach locked">
+      <div class="medal"><i data-lucide="flame"></i><span class="lockchip"><i data-lucide="lock"></i></span></div>
+      <div class="nm">Kept the Fire</div><div class="dsc">30-day practice streak</div>
+      <span class="chip zap"><i data-lucide="zap"></i> 50</span>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

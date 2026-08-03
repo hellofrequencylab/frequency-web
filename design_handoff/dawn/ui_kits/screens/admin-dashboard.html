@@ -1,0 +1,173 @@
+<!-- @dsCard group="Screens · Operator" viewport="1600x950" name="Admin dashboard" subtitle="Dashboard template: the operator workshop. StatCard wall, a density read, WAM over time, the graduation countdown, and the moderation queue." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Admin dashboard</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  a { color: var(--color-primary-strong); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--color-primary); }html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+
+const { PageHeading, UnderlineTabs, SectionHeader, StatCard, RowCard, Button, Avatar, Badge, Card, ProgressTrack } = K;
+
+const WEEKS = [64, 71, 68, 82, 79, 94, 103, 98, 121, 134, 128, 149, 163, 158, 181, 196, 212];
+const CITIES = [['Encinitas', 96, 41],['Leucadia', 74, 22],['Carlsbad', 58, 17],['Solana Beach', 41, 9],['Oceanside', 33, 6],['Del Mar', 21, 3]];
+
+function Bars() {
+  const max = Math.max(...WEEKS);
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 132 }}>
+      {WEEKS.map((v, i) => (
+        <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%' }}>
+          <div style={{ height: (v / max) * 100 + '%', borderRadius: 'var(--radius-sm)',
+            background: i === WEEKS.length - 1 ? 'var(--color-primary)' : 'color-mix(in srgb, var(--color-primary) 34%, var(--color-surface-elevated))' }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Page() {
+  const [tab, setTab] = React.useState('now');
+  return (
+    <window.Screen active="admin-home" wide
+      dock={<window.PageDock page="Operator dashboard" stats={[{ value: '212', label: 'Turned up', sub: 'last 7 days' }, { value: '18', label: 'Circles met' }, { value: '4', label: 'Events live' }, { value: '$0', label: 'Fees taken', sub: 'beta' }]}
+      settings={[{ label: 'Show seeded demo data', hint: 'Dimmed, so nobody mistakes it for real', on: true }, { label: 'Weekly digest email', on: true }, { label: 'Feature the space in Around You', on: false }]} />}
+      rail={
+      <window.Rail>
+        <div>
+          <SectionHeader title="Graduation" />
+          <Card tone="feature" padding="1rem">
+            <p className="eyebrow" style={{ margin: 0, color: 'var(--color-primary-strong)' }}>September 1</p>
+            <h3 style={{ margin: '4px 0 10px', fontSize: '1.05rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>29 days of wet paint</h3>
+            <ProgressTrack label="Beta window" hint="Day 63 of 92" value={63} total={92} />
+            <p style={{ margin: '12px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
+              Billing is off until then. Every billing CTA in the product is a disabled preview.
+            </p>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="Needs a human" count={4} action="Queue" />
+          <RowCard icon="flag" title="Reported post" meta="Introductions · 20m" trailing={<Badge tone="danger">New</Badge>} onClick={() => {}} />
+          <RowCard icon="building-2" title="Space claim" meta="The Sound Room" trailing={<Badge tone="warning">Verify</Badge>} onClick={() => {}} />
+          <RowCard icon="user-plus" title="Host application" meta="Mira Vance" trailing={<Badge tone="signal">Ready</Badge>} onClick={() => {}} />
+          <RowCard icon="bug" title="Bug report" meta="Composer, mobile" trailing="1h" divider={false} onClick={() => {}} />
+        </div>
+        <div>
+          <SectionHeader title="Vera, last 24h" />
+          <Card tone="soft" padding="0.95rem">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+              {[['Conversations','88'],['Handed to a human','12'],['Next actions taken','31']].map(([k, v]) => (
+                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-meta)' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>{k}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>{v}</span>
+                </div>
+              ))}
+            </div>
+            <p style={{ margin: '10px 0 0', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
+              A member who talks to Vera every day is a bug, not a win.
+            </p>
+          </Card>
+        </div>
+      </window.Rail>
+    }>
+      <PageHeading eyebrow="Platform · Monday, August 3" title="Did people show up"
+        subtitle={<><a href="#wam"><strong>Weekly active members</strong></a> is the only number that decides anything here. Time on site is <strong>not measured</strong>, on purpose.</>}
+        actions={<><Button size="sm" variant="ghost" iconLeft={<window.Ico n="calendar" style={{ width: 16, height: 16 }} />}>Last 90 days</Button><Button size="sm" iconLeft={<window.Ico n="download" style={{ width: 16, height: 16 }} />}>Export</Button></>} />
+
+      <div style={{ marginTop: 20 }}>
+        <UnderlineTabs value={tab} onChange={setTab}
+          tabs={[{ id: 'now', label: 'This week' }, { id: 'growth', label: 'Growth' }, { id: 'density', label: 'Density' }, { id: 'health', label: 'Health' }]} />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginTop: 20 }}>
+        <StatCard label="Weekly active members" value="212" delta="+8%" direction="up" spark={[128,149,163,158,181,196,212]} hint="Practised at least once" />
+        <StatCard label="Circles that met" value="34" delta="+2" direction="up" hint="Of 39 scheduled" />
+        <StatCard label="Solo activation" value="61" unit="%" delta="+4%" direction="up" hint="First Practice inside 7 days" />
+        <StatCard label="Graduation rate" value="9" unit="%" delta="flat" direction="flat" hint="Solo members who went on to host" />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16, marginTop: 16 }}>
+        <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '1.1rem 1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div>
+              <p className="eyebrow" style={{ margin: 0, color: 'var(--color-text-muted)' }}>Weekly active members</p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.9rem', fontWeight: 500, letterSpacing: '-0.03em', lineHeight: 1 }}>212</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 'var(--text-meta)', fontWeight: 700, color: 'var(--color-success)' }}>
+                  <window.Ico n="trending-up" style={{ width: 13, height: 13 }} /> +8% week on week
+                </span>
+              </div>
+            </div>
+            <span style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-subtle)' }}>17 weeks</span>
+          </div>
+          <Bars />
+        </div>
+        <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '1.1rem 1.25rem' }}>
+          <p className="eyebrow" style={{ margin: '0 0 4px', color: 'var(--color-text-muted)' }}>Density</p>
+          <p style={{ margin: '0 0 14px', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+            Where it is self-forming. This decides the next Lab.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {CITIES.map(([c, heat, circles]) => (
+              <div key={c} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ width: 92, flexShrink: 0, fontSize: 'var(--text-meta)', color: 'var(--color-text)' }}>{c}</span>
+                <span style={{ flex: 1, height: 8, borderRadius: 'var(--radius-pill)', background: 'var(--color-surface-elevated)', overflow: 'hidden' }}>
+                  <span style={{ display: 'block', width: heat + '%', height: '100%', borderRadius: 'var(--radius-pill)',
+                    background: heat > 80 ? 'var(--color-primary)' : heat > 50 ? 'color-mix(in srgb, var(--color-primary) 66%, var(--color-surface-elevated))' : 'color-mix(in srgb, var(--color-primary) 38%, var(--color-surface-elevated))' }} />
+                </span>
+                <span style={{ width: 58, textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-2xs)', color: 'var(--color-text-muted)' }}>{circles} circles</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 24 }}>
+        <div>
+          <SectionHeader title="Rooms that met this week" count={34} action="All" />
+          <RowCard icon="users" title="Thursday Sound Bath" meta="11 of 14 regulars" trailing={<Badge tone="signal">Met</Badge>} onClick={() => {}} />
+          <RowCard icon="users" title="River Run" meta="8 of 9 regulars" trailing={<Badge tone="signal">Met</Badge>} onClick={() => {}} />
+          <RowCard icon="users" title="Encinitas Supper Club" meta="Nobody logged it" trailing={<Badge tone="warning">Quiet</Badge>} onClick={() => {}} />
+          <RowCard icon="users" title="Morning Plunge" meta="6 of 6 regulars" trailing={<Badge tone="signal">Met</Badge>} divider={false} onClick={() => {}} />
+        </div>
+        <div>
+          <SectionHeader title="Season 1 · Stretch" action="The Quest" />
+          <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '1.1rem 1.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <ProgressTrack label="Ghost" hint="88 members" value={88} total={214} size="sm" />
+              <ProgressTrack label="Initiate" hint="76 members" value={76} total={214} size="sm" />
+              <ProgressTrack label="Adept" hint="34 members" value={34} total={214} size="sm" />
+              <ProgressTrack label="Master" hint="16 members" value={16} total={214} size="sm" accent="signal" />
+            </div>
+            <p style={{ margin: '14px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-subtle)', lineHeight: 1.6 }}>
+              Ghost is a real status, not a funnel leak. Season ends in five weeks, when Zaps roll into Gems at five to one.
+            </p>
+          </div>
+        </div>
+      </div>
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

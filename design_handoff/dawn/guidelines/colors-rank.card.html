@@ -1,0 +1,37 @@
+<!-- @dsCard group="Foundations · Color" viewport="1180x253" name="Rank spectrum · The Quest" subtitle="Ten earthy primitives, each with core / deep / bright variants. The four season ranks draw from the first four; the rest serve Pillars, Amplitude tiers and Space accents." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px; background: var(--color-surface); font-family: var(--font-sans); }
+  .dots { display: flex; gap: 10px; margin-bottom: 16px; }
+  .d { flex: 1; text-align: center; }
+  .dot { width: 28px; height: 28px; border-radius: 50%; margin: 0 auto; }
+  .dl { font-size: 9px; color: var(--color-text-subtle); margin-top: 6px; font-family: var(--font-mono); }
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; }
+</style>
+<style>html{background:var(--color-surface);min-height:100vh}body{background:var(--color-surface);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+  <div class="dots">
+    <div class="d"><div class="dot" style="background:var(--rank-stone)"></div><div class="dl">stone</div></div>
+    <div class="d"><div class="dot" style="background:var(--rank-clay)"></div><div class="dl">clay</div></div>
+    <div class="d"><div class="dot" style="background:var(--rank-gold)"></div><div class="dl">gold</div></div>
+    <div class="d"><div class="dot" style="background:var(--rank-olive)"></div><div class="dl">olive</div></div>
+    <div class="d"><div class="dot" style="background:var(--rank-jade)"></div><div class="dl">jade</div></div>
+    <div class="d"><div class="dot" style="background:var(--rank-teal)"></div><div class="dl">teal</div></div>
+    <div class="d"><div class="dot" style="background:var(--rank-slate)"></div><div class="dl">slate</div></div>
+    <div class="d"><div class="dot" style="background:var(--rank-indigo)"></div><div class="dl">indigo</div></div>
+    <div class="d"><div class="dot" style="background:var(--rank-plum)"></div><div class="dl">plum</div></div>
+    <div class="d"><div class="dot" style="background:var(--rank-rose)"></div><div class="dl">rose</div></div>
+  </div>
+  <div class="badges">
+    <span class="rank-badge" style="--rank:var(--rank-stone);--rank-deep:var(--rank-stone-deep);--rank-bright:var(--rank-stone-bright)"><span class="rank-dot"></span>Ghost</span>
+    <span class="rank-badge" style="--rank:var(--rank-clay);--rank-deep:var(--rank-clay-deep);--rank-bright:var(--rank-clay-bright)"><span class="rank-dot"></span>Initiate</span>
+    <span class="rank-badge" style="--rank:var(--rank-gold);--rank-deep:var(--rank-gold-deep);--rank-bright:var(--rank-gold-bright)"><span class="rank-dot"></span>Adept</span>
+    <span class="rank-badge" style="--rank:var(--rank-jade);--rank-deep:var(--rank-jade-deep);--rank-bright:var(--rank-jade-bright)"><span class="rank-dot"></span>Master</span>
+  </div>
+</body>
+</html>

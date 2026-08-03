@@ -1,0 +1,30 @@
+<!-- @dsCard group="Brand & voice" viewport="1180x388" name="Wordmark" subtitle="Rounded-geometric wordmark with the Community Collective lockup. Dark on light, warm cream on ink, and engraved as chrome." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-sans); }
+  .panel { padding: 30px 32px; }
+  .light { background: var(--color-marketing-canvas); }
+  .cap { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.05em; margin-bottom: 16px; text-transform: uppercase; }
+  .light .cap { color: var(--color-text-subtle); }
+  .ink .cap { color: var(--color-on-ink-subtle); }
+  .logo { height: 40px; display: block; }
+  /* black PNG → warm cream on the ink band */
+  .logo.cream { filter: brightness(0) invert(0.95) sepia(0.18) saturate(1.3) hue-rotate(338deg); }
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+  <div class="panel light">
+    <div class="cap">On light · the wordmark as-is</div>
+    <img class="logo" src="../assets/frequency-logo.png" alt="Frequency · Community Collective">
+  </div>
+  <div class="panel ink bg-slat">
+    <div class="cap">On ink · warm cream knockout</div>
+    <img class="logo cream" src="../assets/frequency-logo.png" alt="Frequency · Community Collective">
+  </div>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!-- @dsCard group="Screens · Operator" viewport="1600x950" name="Admin rail editor" subtitle="The permission grid as a design surface: nav areas by section, access level per row, drag order, staff axis, and a live rail preview." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Admin rail editor</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  a { color: var(--color-primary-strong); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--color-primary); }html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+
+const { PageHeading, UnderlineTabs, SectionHeader, Button, Badge, Card, Switch, Select, Input, RowCard } = K;
+
+const ACCESS = ['visitor', 'member', 'crew', 'host', 'guide', 'mentor', 'admin', 'janitor'];
+
+const AREAS = [
+  { s: null, rows: [['feed','Feed','home','visitor'],['profile','Profile','user','member']] },
+  { s: 'Community', rows: [
+    ['broadcast','Around You','megaphone','visitor'],
+    ['circles','Circles','users','visitor'],
+    ['channels','Channels','radio','visitor'],
+    ['events','Events','calendar-days','visitor'],
+    ['market','Market','store','member'],
+    ['housing','Housing','map-pin-house','member'],
+    ['messageBoards','Message Boards','message-square','member'],
+    ['people','Members','book-user','member'],
+    ['connections','My Contacts','contact-round','member'],
+    ['my-spaces','Business Spaces','building-2','member'] ] },
+  { s: 'The Quest', rows: [
+    ['quest','My Quest','compass','member'],
+    ['journeys','Journeys','route','member'],
+    ['practices','Practices','sparkles','member'],
+    ['library','Library','library','member'],
+    ['journal','Journal','notebook-pen','member'],
+    ['vault','The Vault','gem','member','preview'] ] },
+  { s: 'Admin', rows: [
+    ['admin-home','Dashboard','layout-dashboard','admin'],
+    ['lead','Leadership','flag','host'],
+    ['admin-programs','Programs','gamepad-2','host','community'],
+    ['admin-growth','Growth','trending-up','host','marketing'],
+    ['admin-crm','Resonance CRM','contact','janitor'],
+    ['admin-qr','QR Studio','qr-code','admin','qr'] ] },
+];
+
+function AccessPill({ level }) {
+  const tone = level === 'visitor' ? 'signal' : level === 'member' ? 'primary' : level === 'janitor' || level === 'admin' ? 'danger' : 'warning';
+  return <Badge tone={tone}>{level}</Badge>;
+}
+
+function Page() {
+  const [tab, setTab] = React.useState('rail');
+  const [sel, setSel] = React.useState('vault');
+  const [drag, setDrag] = React.useState(null);
+  return (
+    <window.Screen active="admin-home" wide collapseLeft
+      dock={<window.PageDock page="Rail editor" stats={[{ value: '24', label: 'Rows', sub: 'across 4 groups' }, { value: '3', label: 'Hidden' }, { value: '1', label: 'Unsaved change' }, { value: '2h', label: 'Since last publish' }]}
+      settings={[{ label: 'Apply to every member', hint: 'Off means this preview only', on: false }, { label: 'Keep Admin group at the foot', on: true }, { label: 'Let members reorder their own rail', on: true }]}
+      note="Publishing changes the rail for everyone in this Space." />}
+      rail={
+      <window.Rail>
+        <div>
+          <SectionHeader title="Rail preview" />
+          <Card tone="feature" padding="0.85rem">
+            <p style={{ margin: '0 0 10px', fontSize: 'var(--text-2xs)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-subtle)' }}>viewing as · member</p>
+            {[['home','Feed',1],['user','Profile',0],['megaphone','Around You',0],['users','Circles',0],['calendar-days','Events',0],['compass','My Quest',0],['route','Journeys',0],['gem','The Vault',0,true]].map(([ic, t, on, dim]) => (
+              <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.35rem 0.5rem', borderRadius: 'var(--radius-control)',
+                background: on ? 'var(--color-primary-bg)' : 'transparent', opacity: dim ? 0.55 : 1,
+                color: on ? 'var(--color-primary-strong)' : 'var(--color-text-muted)', fontSize: '0.85rem', fontWeight: on ? 700 : 500 }}>
+                <window.Ico n={ic} style={{ width: 15, height: 15 }} />{t}
+                {dim ? <window.Ico n="eye" style={{ width: 12, height: 12, marginLeft: 'auto' }} /> : null}
+              </div>
+            ))}
+            <p style={{ margin: '10px 0 0', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
+              Below access, an item is hidden. The Vault is the one exception: it previews, then gates the spend.
+            </p>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="Selected" />
+          <Card tone="feature" padding="1rem">
+            <p className="eyebrow" style={{ margin: 0, color: 'var(--color-primary-strong)' }}>vault</p>
+            <h3 style={{ margin: '4px 0 10px', fontSize: '1.05rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>The Vault</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <Select label="Default access" defaultValue="member" options={ACCESS.map((a) => ({ value: a, label: a }))} />
+              <Input label="Route" defaultValue="/crew/store" readOnly />
+              <Switch checked label="Preview below access" />
+              <Switch label="Requires an operated Space" />
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <Button size="sm" variant="ghost" style={{ flex: 1 }}>Reset</Button>
+              <Button size="sm" style={{ flex: 1 }}>Save</Button>
+            </div>
+          </Card>
+        </div>
+      </window.Rail>
+    }>
+      <PageHeading eyebrow="Platform · Navigation" title="Rail editor"
+        subtitle={<><strong>Order here is render order.</strong> <a href="#access">Access</a> is a baseline you can override per area, and an override persists over the default.</>}
+        actions={<><Button size="sm" variant="ghost" iconLeft={<window.Ico n="rotate-ccw" style={{ width: 16, height: 16 }} />}>Revert</Button><Button size="sm">Publish rail</Button></>} />
+
+      <div style={{ marginTop: 20 }}>
+        <UnderlineTabs value={tab} onChange={setTab}
+          tabs={[{ id: 'rail', label: 'Rail order' }, { id: 'grid', label: 'Permission grid' }, { id: 'menus', label: 'Custom menus', count: 2 }]} />
+      </div>
+
+      <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 22 }}>
+        {AREAS.map((g, gi) => (
+          <section key={gi}>
+            <SectionHeader title={g.s || 'Home anchor'} count={g.rows.length} action={g.s ? 'Add area' : undefined} />
+            <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', overflow: 'hidden' }}>
+              {g.rows.map(([key, label, icon, level, extra], i) => {
+                const on = sel === key;
+                return (
+                  <div key={key} onClick={() => setSel(key)}
+                    onMouseEnter={() => setDrag(key)} onMouseLeave={() => setDrag(null)}
+                    style={{ display: 'grid', gridTemplateColumns: '26px 1.6fr 1fr 1.1fr 90px', gap: 12, alignItems: 'center',
+                      padding: '0.6rem 0.9rem', cursor: 'pointer',
+                      background: on ? 'var(--color-primary-bg)' : 'transparent',
+                      borderBottom: i < g.rows.length - 1 ? '1px solid var(--color-border)' : 'none' }}>
+                    <window.Ico n="grip-vertical" style={{ width: 15, height: 15, color: drag === key ? 'var(--color-text-muted)' : 'var(--color-border-strong)' }} />
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+                      <window.Ico n={icon} style={{ width: 16, height: 16, color: on ? 'var(--color-primary-strong)' : 'var(--color-text-muted)' }} />
+                      <span style={{ fontSize: '0.93rem', fontWeight: 600, letterSpacing: 'var(--tracking-tight)', color: on ? 'var(--color-primary-strong)' : 'var(--color-text)' }}>{label}</span>
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>{key}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <AccessPill level={level} />
+                      {extra === 'preview' ? <Badge>preview</Badge> : extra ? <Badge tone="broadcast">staff · {extra}</Badge> : null}
+                    </span>
+                    <span style={{ display: 'inline-flex', justifyContent: 'flex-end' }}><Switch checked={key !== 'journal'} /></span>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+      <p style={{ margin: '16px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-subtle)', maxWidth: '46rem', lineHeight: 1.6 }}>
+        The operator world telescopes: a member never sees an Admin row, and an item below a viewer's access is hidden rather than greyed out. Messages, notifications and search live in the header, so they are not rail areas.
+      </p>
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

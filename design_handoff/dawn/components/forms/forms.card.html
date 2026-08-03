@@ -1,0 +1,51 @@
+<!-- @dsCard group="Components" viewport="1180x944" name="Forms" subtitle="Input · Textarea · Select · Checkbox · Switch — calm neutral focus, amber controls" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 26px; background: var(--color-canvas); font-family: var(--font-sans); color: var(--color-text); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 28px; max-width: 640px; }
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Input, Textarea, Select, Checkbox, Switch } = window.DAWNFrequencyDesignSystem_c868e3;
+const Mail = () => <i data-lucide="mail" style={{ width: 16, height: 16 }} />;
+
+function Demo() {
+  const [agreed, setAgreed] = React.useState(true);
+  const [demo, setDemo] = React.useState(true);
+  const [notif, setNotif] = React.useState(false);
+  return (
+    <div className="grid">
+      <Input label="Your name" placeholder="Maya Ortiz" defaultValue="Maya Ortiz" />
+      <Input label="Email" type="email" icon={<Mail />} placeholder="you@email.com" hint="We send a magic link — no password." />
+      <Select label="Channel" options={['Mind', 'Body', 'Spirit', 'Expression']} />
+      <Input label="Handle" invalid defaultValue="maya" hint="That handle is taken." />
+      <div style={{ gridColumn: '1 / -1' }}>
+        <Textarea label="What's happening near you?" rows={3} defaultValue="Sunrise plunge at the Lab, then coffee. Six of us showed." />
+      </div>
+      <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <Checkbox checked={agreed} onChange={setAgreed} label="I agree to be a Frequency Web Founder." />
+        <div style={{ display: 'flex', gap: 28 }}>
+          <Switch checked={demo} onChange={setDemo} label="Show demo content" />
+          <Switch checked={notif} onChange={setNotif} label="Event reminders" />
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+setTimeout(() => window.lucide && window.lucide.createIcons(), 60);
+</script>
+</body>
+</html>

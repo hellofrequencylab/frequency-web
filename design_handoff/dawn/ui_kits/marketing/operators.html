@@ -1,0 +1,159 @@
+<!-- @dsCard group="Screens · Marketing" viewport="1280x820" name="Marketing — For hosts" subtitle="The operator pitch. dot-grid on cream, glass dock over photography, arc-top rise out of ink, lift-2 cards, sheen on the dark modules" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · For hosts and spaces</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="reveal.js"></script>
+<style>
+  html, body { margin: 0; }
+  body { background: var(--color-marketing-canvas); font-family: var(--font-sans); color: var(--color-text); }
+  a { color: var(--color-primary-strong); }
+  a:hover { color: var(--color-primary); }
+  @media (max-width: 900px) { .op-3up, .op-2up, .op-4up, .mk-trio, .mk-hero-grid { grid-template-columns: 1fr !important; } .op-dock { position: static !important; } }
+</style>
+<style>html{background:var(--color-marketing-canvas);min-height:100vh}body{background:var(--color-marketing-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="icon.jsx"></script>
+<script type="text/babel" src="header.jsx"></script>
+<script type="text/babel" src="footer.jsx"></script>
+<script type="text/babel" src="sections.jsx"></script>
+<script type="text/babel" data-presets="react">
+const NSO = window.DAWNFrequencyDesignSystem_c868e3;
+const I = ({ n, s = 18 }) => <window.MkIco n={n} style={{ width: s, height: s }} />;
+
+const MODULES = [
+  { i: 'calendar-days', t: 'Events & ticketing', d: 'Free and paid, tiered seats, QR at the door.' },
+  { i: 'users', t: 'Circles', d: 'Small groups that meet on a rhythm, with attendance.' },
+  { i: 'route', t: 'Journeys', d: 'A multi-week path with lessons and practice logging.' },
+  { i: 'credit-card', t: 'Offerings', d: 'Classes, memberships, packs, one-to-ones.' },
+  { i: 'megaphone', t: 'Broadcast', d: 'Email and in-app. SMS when the carrier clears.' },
+  { i: 'contact', t: 'CRM', d: 'Every member, every visit, one timeline.' },
+];
+
+const STEPS = [
+  ['01', 'Claim the space', 'A page with your rooms, your hours and your rules. Fifteen minutes, no call with sales.'],
+  ['02', 'Turn on what you need', 'Twenty-nine modules, all off by default. A yoga studio and a coworking floor should not look the same.'],
+  ['03', 'Let the room fill', 'Members nearby see you in Around You. The Circles that meet in your space bring their own people.'],
+];
+
+function Page() {
+  const { Button, Stat, Badge } = NSO;
+  const { MkSection: S, MkEdHead: H } = window;
+  return (
+    <>
+      <window.PageHero
+        image="../../assets/images/lawn-practice.jpg"
+        alt="Thirty people on mats across a lawn at golden hour"
+        eyebrow="For hosts, studios and spaces"
+        title="You have the room"
+        script="we bring the rhythm"
+        lead="Nobody opens a studio to run software. Frequency is the operating layer under your space: who came, what they booked, when they are back."
+        primary="Claim your space"
+        secondary="Talk to a human"
+        facts={[['0%', 'On your own audience'], ['29', 'Modules, all optional'], ['15 min', 'To a live page']]} />
+
+      {/* Cream, with the dot lattice: this is the schematic half of the page, so the
+          texture is a grid rather than grain. */}
+      <section className="dot-grid mk-beat mk-cream" style={{ position: 'relative', background: 'var(--color-marketing-canvas)' }}>
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 'var(--width-wide)', margin: '0 auto' }}>
+          <H eyebrow="Three steps" title="How a space goes live" script="this week, not this quarter" />
+          <div className="op-3up stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginTop: 'var(--space-10)' }}>
+            {STEPS.map(([n, t, d]) => (
+              <article key={n} className="reveal lift-2" style={{ background: 'var(--color-surface)', borderRadius: 'var(--radius-2xl)', padding: '1.7rem 1.5rem', border: '1px solid var(--color-border)' }}>
+                <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-meta)', color: 'var(--color-primary-strong)' }}>{n}</span>
+                <h3 className="font-display" style={{ margin: '0.6rem 0 0', fontSize: '1.5rem' }}>{t}</h3>
+                <p style={{ margin: '0.5rem 0 0', fontSize: '0.98rem', lineHeight: 1.65, color: 'var(--color-text-muted)' }}>{d}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* The modules, on ink. Each panel sheens on hover: the light moves, the panel
+          does not, which is the dark-surface counterpart to lift. */}
+      <section className="bg-slat grain mk-band mk-ink" style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 'var(--width-wide)', margin: '0 auto' }}>
+          <H tone="ink" eyebrow="Twenty-nine modules" title="Turn on only" script="what your room does" blurb="Every module is off until you switch it on, and off is a real state: no empty tabs, no half-features waiting to embarrass you in front of a member." />
+          <div className="op-3up" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginTop: 'var(--space-10)' }}>
+            {MODULES.map((m) => (
+              <article key={m.t} className="sheen edge-light" style={{ borderRadius: 'var(--radius-2xl)', padding: '1.4rem 1.3rem',
+                background: 'color-mix(in srgb, var(--color-on-ink) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--color-on-ink) 12%, transparent)' }}>
+                <span style={{ width: 34, height: 34, display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-control)',
+                  background: 'color-mix(in srgb, var(--color-primary) 20%, transparent)', color: 'var(--color-primary)' }}>
+                  <I n={m.i} s={17} />
+                </span>
+                <h3 style={{ margin: '0.85rem 0 0', fontSize: '1.05rem', color: 'var(--color-on-ink)' }}>{m.t}</h3>
+                <p style={{ margin: '0.35rem 0 0', fontSize: '0.93rem', lineHeight: 1.6, color: 'var(--color-on-ink-muted)' }}>{m.d}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <window.PhotoBeat
+        image="../../assets/images/closing-circle.jpg"
+        alt="A wide circle of people with arms around each other above the beach"
+        eyebrow="What a full room looks like"
+        line="The software is not the point"
+        script="the Thursday is"
+        note="Every number in the console is a count of somebody who walked through your door. That is the only metric we are willing to put on a dashboard." />
+
+      {/* The money section rises out of the ink on the arc, the one soft shoulder on
+          the page. This is the part operators scroll for, so it gets the shape. */}
+      <section className="arc-top mk-beat mk-arc mk-cream" style={{ position: 'relative', marginTop: -1, background: 'var(--color-surface)' }}>
+        <div style={{ maxWidth: 'var(--width-read)', margin: '0 auto', textAlign: 'center' }}>
+          <H eyebrow="The deal, in one line" title="Nothing on the people" script="you brought yourself" blurb="A free Space sells from day one, and on your own audience the rate is zero on every tier, forever. What a subscription buys is a lower rate on the people we introduce you to — never a seat licence, never a fee for switching a feature on." />
+          <hr className="rule-amber" style={{ margin: '2.6rem 0' }} />
+          <div className="op-3up" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 22, textAlign: 'left' }}>
+            {[['Your own audience', '0%', 'A follower, a member, a contact, or anyone who has bought from you before. Forever, on every tier.'], ['Business', '5%', 'On the people we introduce you to. $19 a month at the Opening Beta rate.'], ['Collective', '3%', 'The lowest rate on the network, and automatic revenue splits with your partners.']].map(([t, v, d]) => (
+              <div key={t} className="lift-1" style={{ background: 'var(--color-canvas)', borderRadius: 'var(--radius-2xl)', padding: '1.5rem 1.4rem', border: '1px solid var(--color-border)' }}>
+                <div className="eyebrow" style={{ color: 'var(--color-text-muted)' }}>{t}</div>
+                <div className="font-display" style={{ fontSize: '2.6rem', lineHeight: 1, margin: '0.4rem 0 0.4rem' }}>{v}</div>
+                <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: 1.6, color: 'var(--color-text-muted)' }}>{d}</p>
+              </div>
+            ))}
+          </div>
+          <p style={{ margin: '2rem 0 0', fontSize: '0.9rem', color: 'var(--color-text-subtle)' }}>
+            Payouts land in your account, not ours, and a tip is never touched on any tier. Non Profit pays nothing on anything it raises.
+          </p>
+        </div>
+      </section>
+
+      {/* The operator's week, in photographs and three plain counts. Money-is-dark:
+          it closes on Captured, Booked, Return rather than a revenue figure. */}
+      <section className="mk-beat mk-cream" style={{ background: 'var(--color-marketing-canvas)' }}>
+        <div style={{ maxWidth: 'var(--width-wide)', margin: '0 auto' }}>
+          <H eyebrow="Your week, in three numbers" title="Captured, booked" script="and back again" blurb="Not revenue. The three counts that actually tell you whether the room is working, on the console and in every weekly digest." />
+          <window.PhotoTrio items={[
+            ['../../assets/images/service-day-card.jpg', 'Captured', 'Somebody scanned the code at the door and became a name you can reach.'],
+            ['../../assets/images/lawn-practice-card.jpg', 'Booked', 'That name took a seat on a specific day, and the seat is paid or it is not.'],
+            ['../../assets/images/circle-morning-card.jpg', 'Return', 'They came back inside thirty days. This is the only one that compounds.'],
+          ]} />
+        </div>
+      </section>
+
+      <window.FaqList items={[
+        { q: 'Do I have to move off my current booking system?', a: 'No. Run both for a season. Offerings can be read-only while your existing system stays the source of truth, and you switch when the numbers agree.' },
+        { q: 'Who owns the member list?', a: 'You do. Export it whole, any time, without asking us. If that ever stops being true, leave.' },
+        { q: 'What if I am one person with a living room?', a: 'That is the common case. A Circle needs a host and a rhythm, not a lease.' },
+      ]} />
+      <window.BetaCTA />
+    </>
+  );
+}
+
+function Mount() { return (<><window.MarketingHeader onNav={() => {}} /><Page /><window.MarketingFooter onNav={() => {}} /></>); }
+ReactDOM.createRoot(document.getElementById('root')).render(<Mount />);
+</script>
+</body>
+</html>

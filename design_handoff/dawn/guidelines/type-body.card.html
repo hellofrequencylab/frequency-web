@@ -1,0 +1,50 @@
+<!-- @dsCard group="Foundations · Type" viewport="1180x560" name="Body · Nunito" subtitle="Rounded, friendly body and in-app heading face. Headings sit at 700 with negative tracking — never 800." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DAWN · Body · Nunito</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="card.css">
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <span class="eyebrow">Foundations · Type</span>
+    <h1>Body · Nunito</h1>    <p>Nunito is the readable voice: rounded, warm, and legible small. It carries all body copy and every in-app heading. Headings sit at <strong>700</strong>, not 800 — Nunito is already soft, and extra-bold makes it read scholastic. Bold plus negative tracking is what gives it an edge.</p>
+    <hr class="rule-amber">
+  </div>
+  <h2>Roles</h2>
+  <div class="panel">
+    <div style="font-size:var(--text-page-title);font-weight:700;letter-spacing:var(--tracking-tight-display)">The in-app page title</div>
+    <div class="tok" style="margin-top:4px">--text-page-title · 1.5rem / 700</div>
+    <hr class="rule-amber" style="margin:0.9rem 0">
+    <div style="font-size:var(--text-lead);color:var(--color-text-muted)">The lead paragraph, which introduces a section without repeating its heading.</div>
+    <div class="tok" style="margin-top:4px">--text-lead · 1.25rem / 400</div>
+    <hr class="rule-amber" style="margin:0.9rem 0">
+    <div style="font-size:var(--text-body);line-height:var(--leading-relaxed)">Default body copy at a relaxed 1.65 line height. This is the size most sentences on a marketing page are set in, and the floor for anything a member has to read carefully.</div>
+    <div class="tok" style="margin-top:4px">--text-body · 1rem / 1.65</div>
+    <hr class="rule-amber" style="margin:0.9rem 0">
+    <div style="font-size:var(--text-body-sm);color:var(--color-text-muted)">In-app body and descriptions. Denser screens use this step so more fits without shrinking the reading size below the floor.</div>
+    <div class="tok" style="margin-top:4px">--text-body-sm · 0.875rem</div>
+    <hr class="rule-amber" style="margin:0.9rem 0">
+    <div style="font-size:var(--text-meta);color:var(--color-text-muted)">Meta: counts, timestamps, labels. This is the FLOOR for content.</div>
+    <div class="tok" style="margin-top:4px">--text-meta · 0.75rem</div>
+  </div>
+  <h2>Weights in play</h2>
+  <div class="g g4">
+    <div class="panel"><div style="font-weight:400;font-size:1.1rem">Regular 400</div><p class="use">Body.</p></div>
+    <div class="panel"><div style="font-weight:600;font-size:1.1rem">Semibold 600</div><p class="use">UI labels, rows.</p></div>
+    <div class="panel"><div style="font-weight:700;font-size:1.1rem">Bold 700</div><p class="use">Every heading.</p></div>
+    <div class="panel"><div style="font-weight:800;font-size:1.1rem">Extrabold 800</div><p class="use">One numeral or one deliberate emphasis. Not titles.</p></div>
+  </div>
+  <div class="laws">
+    <p><b>Headings are 700.</b> 800 and 900 are reserved for a single numeral or one deliberate emphasis.</p>
+    <p><b>Negative tracking on titles.</b> <code>--tracking-tight</code> for cards and sections; the display step for page titles.</p>
+    <p><b>0.75rem is the floor.</b> Below <code>--text-meta</code> is chrome only — a rank chip, a tab count, a legal line.</p>
+    <p><b>Relaxed leading for prose.</b> 1.65 on anything longer than two lines.</p>
+  </div>
+</div>
+</body>
+</html>

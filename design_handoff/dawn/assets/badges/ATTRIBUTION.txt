@@ -1,0 +1,19 @@
+Rank & reward badge artwork
+===========================
+
+The badge emblems in this folder are derived from game-icons.net and are used
+under the Creative Commons Attribution 3.0 license (CC BY 3.0).
+
+  Source:  https://game-icons.net
+  License: https://creativecommons.org/licenses/by/3.0/
+
+Icons used (recolored to the DAWN rank spectrum; black background removed):
+  - "Laurels"      by Lorc        — rank wreath (lower tiers)
+  - "Laurel crown" by Lorc        — rank wreath (top tiers)
+  - "Trophy"       by Lorc        — reward / season trophy
+  - "Crown"        by Lorc        — reward
+  - "Podium"       by Delapouite   — leaderboard / ranking
+  - "Round star"   by Delapouite   — rarity / achievement
+
+Attribution line to surface in product (footer / about):
+  "Some game icons by Lorc and Delapouite — game-icons.net (CC BY 3.0)."

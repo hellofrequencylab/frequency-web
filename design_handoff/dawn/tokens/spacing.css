@@ -1,0 +1,102 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   DAWN — Spacing, radius, elevation & rhythm.
+   Soft warm-tinted shadows over hard borders; hairline warm borders; a small
+   role-based radius set; a named vertical rhythm so the site breathes evenly.
+   (DESIGN.md "warm editorial", DESIGN-LANGUAGE §2.2/2.5/2.6)
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Spacing scale (rem). The three rhythms in use:
+     section = space-8 (rail modules / page sections) ·
+     group   = space-3 (rows, card grids) ·
+     tight   = space-1 (within a row). */
+  --space-0:   0;
+  --space-1:   0.25rem;
+  --space-2:   0.5rem;
+  --space-3:   0.75rem;
+  --space-4:   1rem;
+  --space-5:   1.25rem;
+  --space-6:   1.5rem;
+  --space-7:   1.75rem;
+  --space-8:   2rem;
+  --space-10:  2.5rem;
+  --space-12:  3rem;
+  --space-16:  4rem;
+  --space-20:  5rem;
+  --space-24:  6rem;
+
+  /* ── Marketing vertical rhythm (section padding). One heartbeat sitewide.
+     These are HALF-gaps: two stacked bands each contribute their own padding, so a
+     token that looks right in isolation reads as a hole in a pair. The pair is
+     corrected in utilities.css (a section followed by another gives up a third of
+     its bottom), and these values are tuned for the corrected total. */
+  --space-section:        clamp(4.25rem, 8vw, 5.5rem); /* default content section */
+  --space-section-tight:  clamp(3rem, 5.5vw, 3.75rem); /* statements, banners     */
+  --space-section-loose:  clamp(5rem, 9.5vw, 7rem);    /* hero beats, dark band   */
+  --space-cta:            clamp(5rem, 9vw, 6.5rem);    /* BetaCTA close           */
+
+  /* ── Container widths (one width per job). ─────────────────────────────── */
+  --width-narrow:  42rem;  /* event rows, post previews, CTA copy   */
+  --width-read:    48rem;  /* prose, FAQ, SectionHeading text       */
+  --width-hero:    56rem;  /* hero copy, Statement                  */
+  --width-wide:    64rem;  /* card grids, ZigZag two-column         */
+  --width-app:     90rem;  /* in-app shell max                      */
+
+  /* ── Feel · radius by ROLE. These three are the contract a skin retunes
+     (Midnight sharpens control + card; see tokens/skins.css). Reach for the
+     role token, not the step scale, in anything a skin should be able to
+     restyle. */
+  --radius-control: 0.5rem;  /* buttons, inputs, small controls        */
+  --radius-card:    1rem;    /* cards                                  */
+  --radius-pill:    9999px;  /* pills, chips, avatars                  */
+
+  /* Step scale — for the shapes that are NOT role-bound (tiny date squares,
+     marketing media frames). */
+  --radius-sm:    6px;     /* chips, badges, tiny date squares         */
+  --radius-md:    10px;    /* legacy control alias                     */
+  --radius-lg:    14px;    /* legacy                                   */
+  --radius-xl:    16px;    /* in-app cards & tiles                     */
+  --radius-2xl:   24px;    /* marketing feature cards & framed media   */
+  --radius-full:  9999px;  /* alias of --radius-pill                   */
+
+  /* ── Feel · motion. Three durations, one base beat. Every transition in the
+     system picks one of these; prefers-reduced-motion collapses them all
+     (tokens/effects.css). */
+  /* fast = micro-interactions (press, hover tint) · base = the interaction beat
+     (cue-pop, anything that arrives) · slow = washes and scroll reveals.
+     ease-pop overshoots; ease-out is the reveal curve. */
+  --motion-fast: 130ms; /* @kind other */
+  --motion-base: 260ms; /* @kind other */
+  --motion-slow: 700ms; /* @kind other */
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1); /* @kind other */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* @kind other */
+
+  /* ── Feel · density. The <html> font-size the whole rem scale derives from
+     (≈17px). Set on the root in tokens/typography.css. */
+  --density-root: 106.25%;
+
+  /* ── Elevation — soft, warm-tinted (near-espresso, low alpha, wide blur).
+     Overrides hard pure-black box edges. A resting card is `--shadow-sm`;
+     hover lifts to `--shadow-md`. */
+  --shadow-2xs: 0 1px 2px rgb(40 30 16 / 0.04);
+  --shadow-xs:  0 1px 3px rgb(40 30 16 / 0.05);
+  --shadow-sm:  0 1px 2px rgb(40 30 16 / 0.04), 0 2px 6px -1px rgb(40 30 16 / 0.06);
+  --shadow-md:  0 2px 4px rgb(40 30 16 / 0.05), 0 6px 16px -4px rgb(40 30 16 / 0.08);
+  --shadow-lg:  0 4px 8px rgb(40 30 16 / 0.06), 0 12px 28px -6px rgb(40 30 16 / 0.10);
+  --shadow-xl:  0 8px 16px rgb(40 30 16 / 0.08), 0 24px 48px -12px rgb(40 30 16 / 0.12);
+
+  /* ── Marketing "pop" elevation — one step stronger, for the splash hero
+     card, pricing tiers, the demo device frame, image frames on ink. */
+  --shadow-pop:    0 4px 12px -2px rgb(20 16 10 / 0.16), 0 16px 40px -10px rgb(20 16 10 / 0.22);
+  --shadow-pop-lg: 0 10px 24px -6px rgb(20 16 10 / 0.20), 0 36px 70px -16px rgb(20 16 10 / 0.30);
+
+  /* ── Mega-menu panel — downward-only depth, no upward bleed, so the panel
+     reads as sliding out from UNDER the opaque bar above it. */
+  --shadow-menu:   0 14px 24px -10px rgb(20 16 10 / 0.18), 0 28px 50px -20px rgb(20 16 10 / 0.20);
+}
+
+/* ── Text-shadow presets (operator text-style control, ADR-569). Two steps
+   only: a soft lift for text over photography, a strong one for text over
+   busy imagery. Never for body copy on a flat surface. */
+.text-shadow-soft   { text-shadow: 0 1px 2px rgb(40 30 16 / 0.18); }
+.text-shadow-strong { text-shadow: 0 1px 1px rgb(20 16 10 / 0.28), 0 2px 6px rgb(20 16 10 / 0.24); }

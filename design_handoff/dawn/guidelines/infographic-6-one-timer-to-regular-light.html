@@ -1,0 +1,57 @@
+<!-- @dsCard group="Teasers" viewport="1180x996" name="Teaser · One-Timer to Regular (light)" subtitle="Light-canvas version. Warm cream, Anton headers. Feed (1080×1800) + phone story (1080×1920)." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency, One-Timer to Regular (light)</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="infographics-light.css">
+<style>
+  /* flow 6 carries an extra loop note, so tighten step rhythm to fit both frames */
+  .card.feed .step{padding-bottom:32px}
+  .card.story .step{padding-bottom:40px}
+  .loopnote{margin-top:12px;padding:20px 30px}
+  .loopnote p{font-size:25px}
+  .loopnote .licon{width:60px;height:60px}
+  .loopnote .licon svg{width:48px;height:48px}
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <p class="eyebrow">Feature teaser · 06 · light</p>
+    <h1>One-Timer to Regular, light</h1>
+    <p>Light-canvas version, for placements on the warm cream surface. Anton headers, same accent and payoff.</p>
+  </div>
+  <div class="row">
+    <div class="fmt"><div class="fmtlabel">Feed / web · 1080 × 1800</div><div class="scale-feed"><div class="card feed" id="feed"></div></div></div>
+    <div class="fmt"><div class="fmtlabel">Phone story · 1080 × 1920</div><div class="scale-story"><div class="card story" id="story"></div></div></div>
+  </div>
+</div>
+<script>
+window.DATA = {
+  accent:'var(--flow-olive)', ramp:['#3a2b2f','#4a2f2a','#5a3a24'],
+  eyebrow:'One-timer to regular',
+  headline:`We measure whether <span class="g">you showed up Thursday.</span>`,
+  intro:`One event becomes a reason to come back, because the next date is already set.`,
+  steps:[
+    {n:'n1', g:'doorcheck', lbl:'They show up Thursday', sub:'check-in, verified',
+     desc:'A verified check-in at your event. Real attendance, not a screen tap.'},
+    {n:'n2', g:'house', lbl:'Join the Space', sub:'a home, not a one-off',
+     desc:'They join your Space, so the one-off becomes a place they belong.'},
+    {n:'n3', g:'table', lbl:'A Run keeps them', sub:'Meetup + Weekend Gathering',
+     desc:'A recurring Run gives them a standing reason to return each week.'},
+    {lit:true, g:'calendar', lbl:'They come back', sub:'the next date is set',
+     desc:'The next Gathering is already on the calendar. The return is built in, not begged for.'},
+  ],
+  loop:true,
+  loopText:`Because Thursday is already scheduled, the loop closes itself. They come back.`,
+  stat:`Repeat guests are about <b>21%</b> of your people and <b>44%</b> of your revenue. Keep them.`,
+  cta:'Open your Space, free',
+};
+</script>
+<script src="infographics.js"></script>
+</body>
+</html>

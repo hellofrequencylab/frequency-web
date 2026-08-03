@@ -1,0 +1,119 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   DAWN — Utility helpers.
+   A small, deliberate set of token-bound utilities so specimen cards and UI
+   kits stay hex-free without pulling in a CSS framework. These map 1:1 to the
+   semantic color tokens. NOT a full utility framework — reach for the token
+   variable directly when you need anything beyond these.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Base sizing reset — padding and borders must never widen a laid-out box.
+   Without this, any padded component sized at 100% overflows its track. */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Surfaces */
+.bg-canvas            { background: var(--color-canvas); }
+.bg-marketing-canvas  { background: var(--color-marketing-canvas); }
+.bg-surface           { background: var(--color-surface); }
+.bg-surface-elevated  { background: var(--color-surface-elevated); }
+.bg-primary           { background: var(--color-primary); }
+.bg-primary-bg        { background: var(--color-primary-bg); }
+.bg-signal            { background: var(--color-signal); }
+.bg-signal-bg         { background: var(--color-signal-bg); }
+.bg-broadcast         { background: var(--color-broadcast); }
+.bg-broadcast-bg      { background: var(--color-broadcast-bg); }
+.bg-surface-post      { background: var(--color-surface-post); }
+.bg-chrome            { background: var(--color-chrome); }
+.bg-move              { background: var(--color-move); }
+.bg-move-bg           { background: var(--color-move-bg); }
+.bg-ink               { background: var(--color-ink); }
+.bg-ink-elevated      { background: var(--color-ink-elevated); }
+
+/* Text colors */
+.text-text            { color: var(--color-text); }
+.text-muted           { color: var(--color-text-muted); }
+.text-subtle          { color: var(--color-text-subtle); }
+.text-primary         { color: var(--color-primary); }
+.text-primary-strong  { color: var(--color-primary-strong); }
+.text-signal          { color: var(--color-signal); }
+.text-signal-strong   { color: var(--color-signal-strong); }
+.text-broadcast       { color: var(--color-broadcast); }
+.text-move            { color: var(--color-move); }
+.text-move-strong     { color: var(--color-move-strong); }
+.text-success         { color: var(--color-success); }
+.text-warning         { color: var(--color-warning); }
+.text-danger          { color: var(--color-danger); }
+.text-on-primary      { color: var(--color-text-on-primary); }
+.text-on-ink          { color: var(--color-on-ink); }
+.text-on-ink-muted    { color: var(--color-on-ink-muted); }
+.text-on-ink-subtle   { color: var(--color-on-ink-subtle); }
+
+/* Borders */
+.border-hair          { border: 1px solid var(--color-border); }
+.border-strong        { border: 1px solid var(--color-border-strong); }
+
+/* Elevation */
+.shadow-sm  { box-shadow: var(--shadow-sm); }
+.shadow-md  { box-shadow: var(--shadow-md); }
+.shadow-pop { box-shadow: var(--shadow-pop); }
+.shadow-pop-lg { box-shadow: var(--shadow-pop-lg); }
+.shadow-menu   { box-shadow: var(--shadow-menu); }
+
+/* Radius by role */
+.r-control { border-radius: var(--radius-control); }
+.r-card    { border-radius: var(--radius-card); }
+.r-pill    { border-radius: var(--radius-pill); }
+
+/* ── Marketing vertical rhythm ────────────────────────────────────────────────
+   A public page is a sequence of BEATS, and the spacing is what tells a reader
+   which beat matters. Uniform padding on every section is the failure mode: the
+   page reads flat, and two same-tone sections stacked make one dead 170px void
+   with nothing in it.
+                                     
+   So there are four roles, and a section takes exactly one:
+                                     
+     .mk-band   a tone change — the ink beat, a full-bleed photograph, the close.
+                Loose, because punctuation needs room around it.
+     .mk-beat   a standard content section. The workhorse.
+     .mk-cont   CONTINUES the section above it at the same tone: no top padding,
+                so the two read as one argument instead of two blocks.
+     .mk-tight  a statement or a banner — short, so it does not need the full beat.
+                                     
+   Each pairs the vertical rhythm with the standard 1.5rem gutter, so a section
+   never needs an inline padding string at all. Add .mk-arc when a cream section
+   rises out of ink on the arc — the shoulder eats the first 3.2rem. */
+.mk-band, .mk-beat, .mk-cont, .mk-tight { padding-inline: 1.5rem; }
+.mk-band  { padding-block: var(--space-section-loose); }
+.mk-beat  { padding-block: var(--space-section); }
+.mk-cont  { padding-block: 0 var(--space-section); }
+.mk-tight { padding-block: var(--space-section-tight); }
+/* Two beats of a NEARLY identical tone stacked — cream on cream, say. A full beat
+   on both sides makes one dead 170px hole; zero makes the tone shift look like a
+   bug. Half above, full below. */
+.mk-cont-soft { padding-block: calc(var(--space-section) / 2) var(--space-section); }
+/* And the same correction, automatically. Tag a section .mk-cream or .mk-ink and
+   two of the SAME tone in a row halve the gap between them, while a tone CHANGE
+   keeps the full beat — which is what makes a tone change read as a change. */
+.mk-cream + .mk-cream, .mk-ink + .mk-ink { padding-top: calc(var(--space-section) / 2); }
+/* And the double-count correction. Two stacked sections EACH pay for the gap between
+   them, so a padding that reads right at the end of a page reads as a hole in the
+   middle of one. A section that is followed by another gives up a third of its
+   bottom; the last section on the page keeps all of it, because below it is the end
+   of the document rather than a neighbour. */
+:is(.mk-band, .mk-beat, .mk-cont, .mk-cont-soft, .mk-tight):has(+ :is(.mk-band, .mk-beat, .mk-cont, .mk-cont-soft, .mk-tight)) {
+  padding-bottom: calc(var(--space-section) * 0.62);
+}
+.mk-arc   { padding-top: calc(var(--space-section) + 1.5rem); }
+/* The hero already carries its own bottom room; a beat straight after it must not
+   add a second gap. */
+.mk-hero:not(.mk-hero-dock) + .mk-beat, .mk-hero:not(.mk-hero-dock) + .mk-band { padding-top: 0; }
+/* A hero with a fact dock overhangs its own bottom edge by 2rem, so whatever comes
+   next has to clear the dock before its own rhythm starts. The HERO carries the tag
+   (PageHero adds .mk-hero-dock when it is given facts), so no page has to remember
+   this and no future dock can collide. The adjacency rule beats .mk-cont's zero.
+   Clearance is HALF a beat plus the overhang: the hero's own bottom room is already
+   generous, and a full beat on top of it opened a 246px hole under every dock. */
+.mk-dock-clear,
+.mk-hero-dock + section,
+.mk-hero-dock + .mk-beat,
+.mk-hero-dock + .mk-band,
+.mk-hero-dock + .mk-cont { padding-top: calc(var(--space-section) / 2 + 3rem); }

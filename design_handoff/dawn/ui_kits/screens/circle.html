@@ -1,0 +1,220 @@
+<!-- @dsCard group="Screens · Member" viewport="1440x900" name="Circle page" subtitle="Detail template: context band, underline tabs, the Run in progress, members and events. Skin switcher bottom right." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Circle</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  a { color: var(--color-primary-strong); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--color-primary); }html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+
+const { SectionHeader, RowCard, PersonCard, Button, IconButton, Badge, Card, Counter, CounterRow, ProgressTrack, Avatar, Input, UnderlineTabs, GateNotice } = K;
+const F = window; // Breadcrumb · Cover · TitleRow · ChipRow · DetailBody
+
+const FACTS = [['🧘', 'bring nothing'], ['🛏️', 'blankets provided'], ['☕', 'stay after to talk'], ['🔁', 'every Thursday']];
+
+// Round pictures, name under each, host and guide marked. Eleven regulars shown
+// and the rest counted — a roster that scrolls is a directory, not a Circle.
+const MEMBERS = [
+  ['Sana Idris', 'Host'], ['Leo Park', null], ['Mira Vance', 'Guide'], ['Theo Brandt', null],
+  ['Ada Reyes', null], ['Sam Ott', null], ['Nia Cole', null], ['Jonah Vale', null],
+  ['Priya Raman', null], ['Eli Booker', null], ['Wren Adler', null],
+];
+
+function MembersBlock() {
+  return (
+    <section id="members" style={{ marginTop: 26 }}>
+      <SectionHeader title="Who turns up" count={34} action="See all" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(78px, 1fr))', gap: 14, marginTop: 4 }}>
+        {MEMBERS.map(([n, role]) => (
+          <a key={n} href="#members" title={n}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, textDecoration: 'none', color: 'inherit' }}>
+            <span style={{ position: 'relative', display: 'grid' }}>
+              {/* The ring is the affordance: a plain circle reads as decoration, a
+                  ringed one reads as a person you can open. */}
+              <span style={{ padding: 2, borderRadius: '50%', background: role ? 'var(--color-primary)' : 'var(--color-border)' }}>
+                <span style={{ display: 'grid', padding: 2, borderRadius: '50%', background: 'var(--color-canvas)' }}>
+                  <Avatar name={n} size={52} />
+                </span>
+              </span>
+              {role ? (
+                <span style={{ position: 'absolute', bottom: -2, left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap',
+                  padding: '0.05rem 0.4rem', borderRadius: 'var(--radius-pill)', background: 'var(--color-primary)',
+                  color: 'var(--color-text-on-primary)', fontSize: 'var(--text-3xs)', fontWeight: 700, letterSpacing: '0.02em' }}>{role}</span>
+              ) : null}
+            </span>
+            <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 600, textAlign: 'center', lineHeight: 1.3,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{n.split(' ')[0]}</span>
+          </a>
+        ))}
+        <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
+          <span style={{ width: 60, height: 60, display: 'grid', placeItems: 'center', borderRadius: '50%',
+            background: 'var(--color-surface-elevated)', border: '1px dashed var(--color-border-strong)',
+            fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>+23</span>
+          <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 600, color: 'var(--color-text-subtle)' }}>more</span>
+        </span>
+      </div>
+      <p style={{ margin: '12px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-subtle)' }}>
+        Eleven of the thirty-four are regulars — they have made three of the last four Thursdays.
+      </p>
+    </section>
+  );
+}
+
+function Page() {
+  const [tab, setTab] = React.useState('stream');
+  const [joined, setJoined] = React.useState(false);
+  return (
+    <window.Screen active="circles" rail={
+      <window.Rail>
+        <div>
+          <SectionHeader title="The Run" />
+          <Card tone="feature" padding="1rem">
+            <p className="eyebrow" style={{ margin: 0, color: 'var(--color-signal-strong)' }}>Journey in progress</p>
+            <h3 style={{ margin: '4px 0 8px', fontSize: '1.02rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>The 28 Day Reset</h3>
+            <ProgressTrack steps={4} value={2} accent="signal" hint="Week 2 of 4" />
+            <p style={{ margin: '10px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>Nine of eleven checked in this week.</p>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="Regulars" count={11} action="All" />
+          {[['Sana Idris','Guide','Hosts Thursdays'],['Leo Park',null,'11 weeks running'],['Mira Vance','Host','Also runs River Run'],['Theo Brandt',null,'New this month']].map(([n, role, line], i) => (
+            <RowCard key={n} avatar={<Avatar name={n} size={30} />} title={n} meta={role ? role + ' · ' + line : line} divider={i < 3} onClick={() => {}} />
+          ))}
+        </div>
+      </window.Rail>
+    }>
+      <F.Breadcrumb trail={['Circles', 'Thursday Sound Bath']} />
+      <F.FeatureHero src="../../assets/images/gathering-2.jpg" kicker="🔔 Meets Thursdays" title="Sound Bath" script="on the studio floor"
+        blurb={<><strong>Eleven of us</strong>, bowls for forty minutes, and an hour of talking after.</>} height={280} />
+      <F.TitleRow title="Thursday Sound Bath" status={<Badge tone="success">Active</Badge>}
+        meta={[
+          { icon: 'calendar-days', text: <><strong>Thursdays, 7:00pm</strong> · <a href="#venue">The Sound Room, Leucadia</a></> },
+          { icon: 'users', text: <><a href="#members"><strong>34 members</strong></a>, 11 of them regulars</> },
+          { icon: 'user-check', text: <>Hosted by <a href="#host"><strong>Sana Idris</strong></a></> },
+        ]}
+        actions={[{ label: 'QR and share', icon: 'qr-code' }, { label: 'Manage this Circle', icon: 'settings' }]} />
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
+        {FACTS.map(([e, t]) => (
+          <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-meta)', fontWeight: 600,
+            padding: '0.3rem 0.75rem', borderRadius: 'var(--radius-pill)', background: 'var(--color-primary-bg)', color: 'var(--color-primary-strong)' }}>
+            <span style={{ fontSize: '0.95rem', lineHeight: 1 }}>{e}</span>{t}
+          </span>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 22 }}>
+        <UnderlineTabs value={tab} onChange={setTab}
+          tabs={[{ id: 'stream', label: 'Stream' }, { id: 'events', label: 'Events', count: 3 }, { id: 'about', label: 'About' }]} />
+      </div>
+
+      <MembersBlock />
+
+      <F.DetailBody aside={
+        <>
+          <Card tone="feature" padding="1.1rem">
+            <p className="eyebrow" style={{ margin: 0, color: 'var(--color-primary-strong)' }}>Next meetup</p>
+            <h3 style={{ margin: '4px 0 2px', fontSize: '1.1rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>Thursday, Aug 6</h3>
+            <p style={{ margin: '0 0 12px', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>Doors at 6:45, bowls at ten past.</p>
+            <Button style={{ width: '100%' }} onClick={() => setJoined((j) => !j)}>{joined ? "You're in" : 'Join this Circle'}</Button>
+            <p style={{ margin: '10px 0 0', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)', textAlign: 'center' }}>
+              One tap. Leave whenever you want to.
+            </p>
+          </Card>
+          <div>
+            <SectionHeader title="Upcoming" count={3} action="All" />
+            <RowCard date={{ mon: 'Aug', day: 6 }} accent="signal" title="Weekly sound bath" meta="The Sound Room" trailing="7:00p" onClick={() => {}} />
+            <RowCard date={{ mon: 'Aug', day: 9 }} accent="signal" title="Weekend Gathering" meta="Beacons Beach" trailing="8:00a" onClick={() => {}} />
+            <RowCard date={{ mon: 'Aug', day: 13 }} accent="signal" title="Weekly sound bath" meta="The Sound Room" trailing="7:00p" divider={false} onClick={() => {}} />
+          </div>
+          <div>
+            <SectionHeader title="Host" />
+            <PersonCard avatar={<Avatar name="Sana Idris" size={38} />} name="Sana Idris" handle="sana" role="Guide"
+              line="Hosting since March" action={<Button size="sm" variant="ghost">Message</Button>} />
+          </div>
+        </>
+      }>
+        {tab === 'about' ? (
+          <div style={{ maxWidth: 'var(--width-read)', fontSize: '1.08rem', lineHeight: 1.75 }}>
+            <p style={{ margin: '0 0 1.1rem' }}>
+              Eleven or twelve of us most weeks, on the floor of a shop that sells nothing after six. The bowls run about forty minutes. You do not have to be good at anything.
+            </p>
+            <p style={{ margin: 0 }}>
+              Afterwards most people stay an hour. That part is the actual point, and it is why this repeats every week instead of being something you attend once.
+            </p>
+          </div>
+        ) : tab === 'events' ? (
+          <div>
+            <SectionHeader title="Next four weeks" count={4} />
+            <RowCard date={{ mon: 'Aug', day: 6 }} accent="signal" title="Weekly sound bath" meta="19 going · The Sound Room" trailing="7:00p" onClick={() => {}} />
+            <RowCard date={{ mon: 'Aug', day: 9 }} accent="signal" title="Weekend Gathering" meta="Walk, then coffee" trailing="8:00a" onClick={() => {}} />
+            <RowCard date={{ mon: 'Aug', day: 13 }} accent="signal" title="Weekly sound bath" meta="The Sound Room" trailing="7:00p" onClick={() => {}} />
+            <RowCard date={{ mon: 'Aug', day: 20 }} accent="signal" title="Guest facilitator" meta="Bowls plus a gong" trailing="7:00p" divider={false} onClick={() => {}} />
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11, background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-card)', padding: '0.75rem 0.9rem' }}>
+              <Avatar name="Daniel Tyack" size={34} />
+              <div style={{ flex: 1 }}><Input placeholder="Say something to the Circle" /></div>
+              <Button size="sm">Post</Button>
+            </div>
+            {[['Sana Idris','Guide','Bring a blanket this week. The floor is concrete and the mats only go so far. Someone is bringing oranges.','2d','9'],
+              ['Theo Brandt',null,'First time last week. I did not know anyone and it was fine. Coming back Thursday.','4d','14']].map(([who, role, body, when, hearts]) => (
+              <article key={who} style={{ background: 'var(--color-surface-post)', border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-card)', padding: '1rem 1.1rem' }}>
+                <div style={{ display: 'flex', gap: 11, alignItems: 'center' }}>
+                  <Avatar name={who} size={36} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <span style={{ fontSize: '0.98rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>{who}</span>
+                      {role ? <Badge tone="signal">{role}</Badge> : null}
+                    </div>
+                    <div style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-subtle)' }}>{when}</div>
+                  </div>
+                  <IconButton label="More" size={30}><window.Ico n="more-horizontal" style={{ width: 16, height: 16 }} /></IconButton>
+                </div>
+                <p style={{ margin: '0.7rem 0 0', fontSize: '0.98rem', lineHeight: 1.65, textWrap: 'pretty' }}>{body}</p>
+                <div style={{ display: 'flex', gap: 14, marginTop: 12, fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>
+                  <span>❤️ {hearts}</span><span>🙌🏽 4</span>
+                  <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    <window.Ico n="message-circle" style={{ width: 15, height: 15 }} /> 3
+                  </span>
+                </div>
+              </article>
+            ))}
+            <p style={{ margin: 0, textAlign: 'center', fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>
+              <b style={{ color: 'var(--color-text)' }}>Leo Park</b>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700, color: 'var(--color-primary-strong)', margin: '0 6px' }}>
+                <window.Ico n="zap" style={{ width: 12, height: 12 }} />25
+              </span>
+              checked in on Thursday
+            </p>
+          </div>
+        )}
+      </F.DetailBody>
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

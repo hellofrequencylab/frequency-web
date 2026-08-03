@@ -1,0 +1,453 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   DAWN — Signature brand motifs & effects.
+   The treatments that make Frequency unmistakable: the wood-slat ink band, the
+   glowing amber light-strip seam, the warm radial glow, the engraved brand
+   mark, the rank badge, and the global focus ring. All token-driven; lifted
+   from app/globals.css. Decorative layers carry no a11y dependence.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ── Global focus ring. Brand amber on actionable chrome; a calmer neutral
+   ring on text fields so typing never glows orange (WCAG 2.4.7). */
+:where(button, a, select, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-focus-ring) 45%, transparent);
+}
+:where(input, textarea):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-border-strong) 60%, transparent);
+}
+
+/* ── bg-slat — vertical wood-slat texture over an ink surface. A faint warm
+   sheen at the top mimics the LED grazing the slats. `<div class="bg-slat">`
+   is enough; it sets its own ink background. */
+.bg-slat {
+  background-color: var(--color-ink);
+  color: var(--color-on-ink);
+  background-image:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 7%, transparent) 0%, transparent 22%),
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-on-ink) 6%, transparent) 0,
+      color-mix(in srgb, var(--color-on-ink) 6%, transparent) 1px,
+      transparent 1px,
+      transparent 11px
+    );
+}
+
+/* ── light-strip — a glowing amber hairline like the LED strips in the spaces.
+   Drop between sections (especially at a dark↔light seam) for a crisp,
+   intentional transition. The signature "seam." */
+.light-strip {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+  box-shadow: 0 0 16px 1px color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+
+/* ── amber-glow — a soft radial glow backdrop, e.g. behind a hero CTA or within
+   a dark band. Place as an absolutely-positioned, pointer-events-none layer. */
+.amber-glow {
+  background: radial-gradient(
+    ellipse 60% 55% at 50% 42%,
+    color-mix(in srgb, var(--color-primary) 28%, transparent) 0%,
+    transparent 70%
+  );
+}
+
+/* ── Embossed label text — warm two-tone catch-light/shadow, for button text so
+   it reads raised/engraved into a filled button. */
+.text-emboss {
+  text-shadow:
+    0 -0.5px 0 var(--brand-emboss-light),
+    0 1px 1.5px var(--brand-emboss-dark);
+}
+
+/* ── Brand mark (engraved wordmark) ────────────────────────────────────────
+   The Frequency logo rendered not as a flat image but as a tinted, engraved
+   fill: the PNG is an alpha MASK, filled with warm dark-sandy-brown
+   (--brand-mark), with a two-tone drop-shadow stack for a carved, burnt-in
+   look. Set width/height + `--brand-logo: url(...)` on the element.
+     <a class="brandmark-link"><span class="brandmark"
+        style="--brand-logo:url(../assets/frequency-logo.png);
+               width:180px;height:36px"></span></a> */
+.brandmark {
+  display: block;
+  background-color: var(--brand-mark);
+  background-image: linear-gradient(
+    105deg,
+    transparent 28%,
+    var(--brand-shine) 43%,
+    var(--brand-wash) 50%,
+    var(--brand-shine) 57%,
+    transparent 72%
+  );
+  background-repeat: no-repeat;
+  background-size: 240% 100%;
+  background-position: 240% 0;
+  -webkit-mask-image: var(--brand-logo);
+          mask-image: var(--brand-logo);
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-position: left center;
+          mask-position: left center;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  opacity: 0.9;
+  filter:
+    drop-shadow(0 -0.5px 0 var(--brand-emboss-light))
+    drop-shadow(0 1px 1px var(--brand-emboss-dark));
+  transition: opacity 280ms ease, filter 280ms ease, transform 130ms ease;
+  will-change: opacity, filter, transform, background-position;
+  animation: brand-shine 6s ease-in-out 2.5s infinite;
+}
+.brandmark-link {
+  display: inline-block;
+  animation: brand-wiggle 6s ease-in-out 2.5s infinite;
+}
+.brandmark-link:hover .brandmark {
+  opacity: 1;
+  filter:
+    brightness(1.12) saturate(1.06)
+    drop-shadow(0 -0.5px 0 var(--brand-emboss-light))
+    drop-shadow(0 1.5px 1.5px var(--brand-emboss-dark));
+}
+.brandmark-link:hover,
+.brandmark-link:hover .brandmark { animation-play-state: paused; }
+.brandmark-link:active .brandmark {
+  opacity: 1;
+  transform: translateY(0.5px) scale(0.99);
+  filter:
+    brightness(0.9)
+    drop-shadow(0 0.5px 0 var(--brand-emboss-light))
+    drop-shadow(0 -1px 1.5px var(--brand-emboss-dark))
+    drop-shadow(0 0 3px var(--brand-burn));
+}
+@keyframes brand-shine {
+  0%   { background-position: 240% 0; }
+  20%  { background-position: -140% 0; }
+  100% { background-position: -140% 0; }
+}
+@keyframes brand-wiggle {
+  0%, 4%    { transform: rotate(0deg) translateX(0); }
+  7%        { transform: rotate(-1.1deg) translateX(-0.3px); }
+  9%        { transform: rotate(0.9deg); }
+  11%       { transform: rotate(-0.5deg); }
+  13%, 100% { transform: rotate(0deg) translateX(0); }
+}
+
+/* ── Rank badge primitive (The Quest season ranks: Ghost → Initiate → Adept →
+   Master). Drives off three CSS vars set inline:
+     <span class="rank-badge" style="--rank:var(--rank-jade);
+        --rank-deep:var(--rank-jade-deep);--rank-bright:var(--rank-jade-bright)">
+        <span class="rank-dot"></span> Adept</span> */
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-medium);
+  background: color-mix(in srgb, var(--rank) 14%, var(--color-surface));
+  color: var(--rank-deep);
+  border: 0.5px solid color-mix(in srgb, var(--rank) 32%, transparent);
+}
+.rank-badge .rank-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--rank);
+}
+.dark .rank-badge {
+  background: color-mix(in srgb, var(--rank) 24%, var(--color-surface));
+  color: var(--rank-bright);
+}
+
+/* ── Small interaction utilities ───────────────────────────────────────────
+   .press — the kit-card / tile press. The ONLY hover-transform in the system;
+   ad-hoc lifts and scales are banned.
+   .dimmed — beta demo content recedes so a newcomer never mistakes seeded
+   content for real members. */
+.press:active { transform: scale(0.99); }
+.dimmed { opacity: 0.72; filter: grayscale(0.5); }
+
+/* ── Motion ────────────────────────────────────────────────────────────────
+   The full inventory: the base interaction beat (cue-pop), scroll reveal,
+   marquee, hero cue, signature bloom, beta badge, count-in wash, toast.
+   All honor prefers-reduced-motion. */
+
+/* cue-pop — THE base interaction beat. Vera coachmarks, toasts, anything that
+   arrives. 260ms with a slight overshoot. */
+@keyframes cue-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.92); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-cue-pop { animation: cue-pop var(--motion-base) var(--ease-pop) both; }
+
+/* freq-glow — the Frequency Signature bloom halo, breathing at the Mindless
+   breath cadence. */
+@keyframes freq-glow {
+  0%, 100% { transform: scale(0.985); opacity: 0.85; }
+  50%      { transform: scale(1.015); opacity: 1; }
+}
+.animate-glow { animation: freq-glow 6s ease-in-out infinite; }
+
+/* wiggle — the beta badge. Still for most of the loop, then a quick shake. */
+@keyframes wiggle {
+  0%, 88%, 100% { transform: rotate(0deg); }
+  91%           { transform: rotate(-3deg); }
+  94%           { transform: rotate(3deg); }
+  97%           { transform: rotate(-1.5deg); }
+}
+.animate-wiggle { animation: wiggle 4.5s ease-in-out infinite; }
+
+/* warmup-flash — the Mindless count-in wash. */
+@keyframes warmup-flash {
+  from { opacity: 0.9; }
+  to   { opacity: 0; }
+}
+.animate-warmup { animation: warmup-flash 0.7s ease-out both; }
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 32s linear infinite;
+  will-change: transform;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.reveal.is-revealed { opacity: 1; transform: none; }
+
+@keyframes cue-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(6px); }
+}
+.animate-cue { animation: cue-bounce 2.4s ease-in-out infinite; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-cue,
+  .animate-cue-pop,
+  .animate-glow,
+  .animate-wiggle,
+  .animate-warmup,
+  .brandmark,
+  .brandmark-link { animation: none; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .press:active { transform: none; }
+}
+@media (scripting: none) {
+  .reveal { opacity: 1; transform: none; }
+}
+
+
+/* ══ Texture & light, added for the marketing surfaces ═══════════════════════
+   Every one of these is a decorative layer: absolutely positioned, pointer-events
+   none, carrying no meaning a screen reader needs. They exist because a dark band
+   with nothing on it reads as a hole, and photography alone cannot carry a whole
+   page. Use ONE texture per band, never two stacked. */
+
+/* ── scanlines — fine horizontal light rule, like an LED wall seen close up. The
+   Airwaves motif. Sits over ink, never over cream. */
+.scanlines::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-on-ink) 5%, transparent) 0px,
+    color-mix(in srgb, var(--color-on-ink) 5%, transparent) 1px,
+    transparent 1px, transparent 4px
+  );
+  opacity: 0.55; mix-blend-mode: soft-light;
+}
+
+/* ── grain — a still film grain. The one texture that works on cream AND ink, and
+   the cheapest way to stop a large flat field looking synthetic. */
+.grain::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── vignette — pulls the corners down so centred type holds the middle. Pair with
+   photography, never with flat colour. */
+.vignette::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 78% 68% at 50% 46%, transparent 42%, color-mix(in srgb, var(--color-ink) 62%, transparent) 100%);
+}
+
+/* ── edge-light — a one-pixel warm rim along the top of a raised dark element, the
+   way the LED catches the lip of a bench. Reads as craft at close range. */
+.edge-light { position: relative; }
+.edge-light::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-primary) 62%, transparent) 22%, color-mix(in srgb, var(--color-primary) 62%, transparent) 78%, transparent);
+}
+
+/* ── halo — a tight amber bloom behind a small object (a rank tile, a play button,
+   a numeral). Smaller and hotter than amber-glow, which is a whole-band wash. */
+.halo::before {
+  content: ''; position: absolute; inset: -45%; pointer-events: none; z-index: 0;
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-primary) 42%, transparent) 0%, transparent 68%);
+  filter: blur(14px);
+}
+
+/* ── slat-fade — the slat texture dissolving downward, for a band that has to end
+   in cream without a hard seam. */
+.slat-fade { position: relative; }
+.slat-fade::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, transparent 55%, var(--color-marketing-canvas) 100%);
+}
+
+/* ── card-lift — the marketing card shadow. Two shadows: a tight contact shadow so
+   the card sits ON something, and a wide soft one for depth. */
+.card-lift {
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 8%, transparent),
+              0 18px 40px -12px color-mix(in srgb, var(--color-ink) 22%, transparent);
+  transition: box-shadow var(--motion-base) var(--ease-out), transform var(--motion-base) var(--ease-out);
+}
+.card-lift:hover {
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 10%, transparent),
+              0 26px 60px -14px color-mix(in srgb, var(--color-ink) 30%, transparent);
+  transform: translateY(-2px);
+}
+
+/* ── amber-underline — a text accent that survives on cream, where the amber fill
+   fails contrast. Underline the word, do not colour it. */
+.amber-underline {
+  background: linear-gradient(180deg,
+    transparent 0 84%,
+    color-mix(in srgb, var(--color-primary) 62%, transparent) 84% 95%,
+    transparent 95%);
+  padding: 0 0.06em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-lift, .card-lift:hover { transition: none; transform: none; }
+}
+
+/* ══ The unified light-and-lift layer ════════════════════════════════════════
+   Everything above grew page by page. This is the settled system, and new work
+   uses THESE. Four families, and a law for each:
+
+     LIFT   .lift-1 / .lift-2 / .lift-3     how far off the page a thing sits
+     LIGHT  .sheen · .halo · .spot · .edge-light   where the amber lands
+     TEXTURE .grain · .scanlines · .dot-grid · .vignette   one per band, never two
+     SHAPE  .arc-top · .rule-amber · .glass  the silhouette and the chrome
+
+   Two shadows per elevation, always: a 1px contact shadow so the object rests on
+   something, and one wide soft shadow for depth. A single big blur is what makes
+   a card look pasted on. */
+
+.lift-1, .lift-2, .lift-3 {
+  transition: box-shadow var(--motion-base) var(--ease-out), transform var(--motion-base) var(--ease-out);
+}
+/* lift-1 — rests on the page. Rows, chips, inline panels. No hover travel. */
+.lift-1 {
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 7%, transparent),
+              0 6px 16px -8px color-mix(in srgb, var(--color-ink) 14%, transparent);
+}
+/* lift-2 — the card. THE default for anything clickable on a marketing page. */
+.lift-2 {
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 8%, transparent),
+              0 18px 40px -12px color-mix(in srgb, var(--color-ink) 22%, transparent);
+}
+.lift-2:hover {
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 10%, transparent),
+              0 26px 60px -14px color-mix(in srgb, var(--color-ink) 30%, transparent);
+  transform: translateY(-2px);
+}
+/* lift-3 — floats. Reserve for ONE object per page: the hero object, the sticky
+   action card, an open sheet. Three floating things read as none. */
+.lift-3 {
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-ink) 10%, transparent),
+              0 40px 80px -24px color-mix(in srgb, var(--color-ink) 34%, transparent);
+}
+
+/* ── sheen — a slow diagonal light sweep across a dark object on hover, the way a
+   hand passing over cedar catches the LED. The hover companion to lift; it moves
+   light, not the object. Needs position:relative + overflow:hidden on the host. */
+.sheen { position: relative; overflow: hidden; }
+.sheen::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%; pointer-events: none;
+  background: linear-gradient(105deg, transparent, color-mix(in srgb, var(--color-on-ink) 16%, transparent), transparent);
+  transform: skewX(-14deg); opacity: 0; transition: none;
+}
+.sheen:hover::after { animation: sheen-pass 820ms var(--ease-out) both; }
+@keyframes sheen-pass {
+  from { left: -60%; opacity: 0; }
+  35%  { opacity: 1; }
+  to   { left: 120%; opacity: 0; }
+}
+
+/* ── spot — a wide overhead spotlight, cooler and higher than amber-glow. For a
+   dark band that needs a centre of gravity without an amber wash. */
+.spot::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 70% 44% at 50% 0%,
+    color-mix(in srgb, var(--color-on-ink) 13%, transparent) 0%, transparent 72%);
+}
+
+/* ── dot-grid — a sparse dot lattice. The cream-surface texture, where grain would
+   read as noise and scanlines cannot go: schematics, plans, operator pages. */
+.dot-grid::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
+  background-image: radial-gradient(color-mix(in srgb, var(--color-ink) 16%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 76% 70% at 50% 50%, #000 30%, transparent 78%);
+}
+
+/* ── arc-top — the soft shoulder. A band whose top edge is a wide arc instead of a
+   ruled line, so a cream section can rise out of ink without a seam. ONE per page. */
+.arc-top { border-radius: 50% 50% 0 0 / 3.2rem 3.2rem 0 0; }
+
+/* ── rule-amber — a hairline divider that warms at the centre. Between beats of the
+   same tone, where the light-strip would be too loud. */
+.rule-amber {
+  height: 1px; border: 0; margin: 0;
+  background: linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--color-border-strong) 90%, transparent) 18%,
+    color-mix(in srgb, var(--color-primary) 55%, transparent) 50%,
+    color-mix(in srgb, var(--color-border-strong) 90%, transparent) 82%, transparent);
+}
+
+/* ── glass — frosted chrome over moving content: a sticky header, a floating dock.
+   Only ever over an image or a scrolling surface; over flat colour it is just a
+   tint with a cost. */
+.glass {
+  background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+  backdrop-filter: saturate(1.4) blur(14px);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+}
+.glass-ink {
+  background: color-mix(in srgb, var(--color-ink) 58%, transparent);
+  backdrop-filter: saturate(1.3) blur(16px);
+  -webkit-backdrop-filter: saturate(1.3) blur(16px);
+  border: 1px solid color-mix(in srgb, var(--color-on-ink) 14%, transparent);
+  color: var(--color-on-ink);
+}
+
+/* ── stagger — children reveal one after another. Put .reveal on the children and
+   .stagger on the parent; the delay is positional, so no per-element inline style. */
+.stagger > *:nth-child(1) { transition-delay: 0ms; }
+.stagger > *:nth-child(2) { transition-delay: 70ms; }
+.stagger > *:nth-child(3) { transition-delay: 140ms; }
+.stagger > *:nth-child(4) { transition-delay: 210ms; }
+.stagger > *:nth-child(5) { transition-delay: 280ms; }
+.stagger > *:nth-child(6) { transition-delay: 350ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lift-1, .lift-2, .lift-3, .lift-2:hover { transition: none; transform: none; }
+  .sheen:hover::after { animation: none; }
+}

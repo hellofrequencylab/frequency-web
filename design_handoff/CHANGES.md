@@ -290,3 +290,51 @@ the splash FAQ); `quest.html` never loaded `sections.jsx` and rendered blank; th
 marketing reveal observer latched only on `isIntersecting`, so any element the
 viewport skipped past stayed at `opacity: 0` forever — worth checking if the repo
 uses the same pattern.
+
+
+## 2026-08-03 · templates, and a bug + compatibility sweep
+
+**`@startingPoint` is retired; two templates replace it.** Consuming projects read
+`templates/` now, so the four old tags (app shell, marketing shell, Button, Card) are
+gone and `templates/app-shell/` + `templates/marketing-site/` are the starting points.
+No repo action — this is how DAWN is consumed, not how it ships.
+
+### Bugs found and fixed this round
+
+1. **`createIcons()` was still live in five places** — both UI-kit shells (on every
+   render), the core, feedback and kit component cards. Since `Glyph` landed, nothing in
+   the system draws `<i data-lucide>`, so the call had no upside and one real downside:
+   it replaces React-created nodes, and the next state change unmounts the tree. The
+   core card was the live case — it has a stateful Like toggle, so clicking it twice
+   could take the card down. **Repo-side: the same pattern in any client component is
+   the same bug.** `lucide-react` is not exposed to it.
+2. **Dead `Ic` helper in `sections.jsx`** drawing the forbidden node type. Deleted.
+3. Verified after the fix: the feed renders 71 React-owned SVGs and zero `<i
+   data-lucide>`; the core card survives repeated re-render.
+
+4. **The marketing header's tone sensor assumed a `#root` mount.** It asked for
+   `#root section, body > section`, so wherever the mount was named differently or the
+   sections were not direct children of `body` (a Design Component wraps them in its own
+   hosts) it found nothing, bailed before reading the tone, and a dark photographic hero
+   got the light treatment — a brown wordmark on a photograph at ~1.3:1. The sensor now
+   takes the first `section` in document order outside the header's own subtree, which is
+   shape-agnostic, and retries for up to 12 frames in case the hero mounts late.
+   **Repo-side:** any DOM-shape assumption like this breaks the moment the component is
+   reused in a different mount; sense from relationships, not from mount names.
+
+### Compatibility notes (these matter for the repo's browser floor)
+
+| Feature | Where | Floor |
+|---|---|---|
+| `:has()` | `tokens/utilities.css` — the section-adjacency rhythm correction | Chrome 105 / Safari 15.4 / Firefox 121 |
+| `color-mix()` | everywhere a tone is derived from a token | Chrome 111 / Safari 16.2 / Firefox 113 |
+| `mix-blend-mode: screen` | the hero's warm horizon light | universal |
+| `backdrop-filter` | `.glass` / `.glass-ink`, the marketing header scrim | `-webkit-` prefix included |
+| `aspect-ratio` | `PhotoTrio` figures | Chrome 88 / Safari 15 |
+| `scrollbar-width: none` | rail scroll containers | has a `::-webkit-scrollbar` fallback |
+
+The two that could actually bite: **`:has()`** — if it is unsupported the marketing
+rhythm degrades to slightly generous gaps, never a broken layout, so it is safe as
+progressive enhancement; and **`color-mix()`**, which has no graceful fallback. If the
+repo's floor is below Safari 16.2, the derived tones need resolving to static values at
+build time. Everything else is comfortably inside a 2023 baseline.

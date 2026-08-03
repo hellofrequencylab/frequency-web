@@ -1,0 +1,256 @@
+<!-- @dsCard group="Screens · Operator" viewport="1600x950" name="Space console" subtitle="The operator world: 29 modules in 12 boxes, the Module Manager, freemium meters, and the fee-buydown maths. Money stays dark: nothing here ends on a sale." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Space console</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  a { color: var(--color-primary-strong); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--color-primary); }html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+// Stand-ins used only until the compiled bundle carries the newest kit pieces.
+const __Meter = ({ label, used = 0, cap, hint }) => React.createElement('div', null,
+  React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-meta)' } },
+    React.createElement('span', { style: { fontWeight: 600 } }, label),
+    React.createElement('span', { style: { fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)' } }, cap == null ? used : used + ' / ' + cap)),
+  React.createElement('div', { style: { height: 7, marginTop: 5, borderRadius: 99, background: 'var(--color-surface-elevated)', border: '1px solid var(--color-border)', overflow: 'hidden' } },
+    React.createElement('div', { style: { width: (cap ? Math.min(100, (used / cap) * 100) : 100) + '%', height: '100%', background: 'var(--color-signal)' } })),
+  hint ? React.createElement('p', { style: { margin: '5px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-subtle)' } }, hint) : null);
+const __GateNotice = ({ title, children, action, inline }) => inline
+  ? React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 9px', borderRadius: 99, background: 'var(--color-primary-bg)', color: 'var(--color-primary-strong)', fontSize: 'var(--text-2xs)', fontWeight: 700 } }, title || 'Not on yet')
+  : React.createElement('div', { style: { background: 'var(--color-primary-bg)', borderRadius: 'var(--radius-card)', padding: '0.95rem 1.1rem' } },
+      React.createElement('div', { style: { fontWeight: 700, fontSize: '0.98rem' } }, title || 'Not on yet'),
+      children ? React.createElement('p', { style: { margin: '3px 0 0', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--color-text-muted)' } }, children) : null,
+      action ? React.createElement('div', { style: { marginTop: 11 } }, action) : null);
+K.Meter = K.Meter || __Meter;
+K.GateNotice = K.GateNotice || __GateNotice;
+K.Counter = K.Counter || (({ value, caption }) => React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5 } }, React.createElement('span', { style: { fontFamily: 'var(--font-mono)', fontWeight: 500 } }, value), caption ? React.createElement('span', { style: { fontSize: 'var(--text-2xs)', color: 'var(--color-text-muted)' } }, caption) : null));
+
+const { PageHeading, UnderlineTabs, SectionHeader, StatCard, RowCard, Button, IconButton, Badge, Card, Meter, GateNotice, Counter, CounterRow, Avatar, Switch, ProgressTrack } = K;
+const F = window; // Ico · Breadcrumb · TitleRow · ChipRow · DetailBody
+
+// Grounded in lib/admin/modules/space-hub.ts + space-modules.ts. The hub's six
+// categories stay the organizing idea, but Home is now a real dashboard: the
+// numbers, the queue, the money read, and every primary tool reachable without
+// leaving the page.
+const CATEGORIES = [
+  { id: 'resonance', label: 'Resonance', ic: 'contact', tone: 'primary',
+    blurb: 'People and every conversation.',
+    tools: [['CRM', 'briefcase', '148 contacts'], ['Conversations', 'messages-square', '3 open'], ['Lead capture', 'user-plus', '37 this week'], ['Capture links', 'link-2', '4 live'], ['Shared with team', 'share-2', '2 new']] },
+  { id: 'marketing', label: 'Marketing', ic: 'megaphone', tone: 'broadcast',
+    blurb: 'Reach and grow.',
+    tools: [['Email', 'mail', '287 of 300'], ['Email design', 'paintbrush', '2 drafts'], ['QR codes', 'qr-code', '3 of 3 used'], ['Automation', 'workflow', 'Collective']] },
+  { id: 'offerings', label: 'Offerings & Money', ic: 'hand-coins', tone: 'signal',
+    blurb: 'Everything the space sells.',
+    tools: [['Calendar', 'calendar-days', '6 upcoming'], ['Booking', 'calendar-clock', '9 of 15'], ['Memberships', 'badge-check', '24 members'], ['Donations', 'heart-handshake', 'On'], ['Tickets', 'ticket', '19 reserved'], ['Check in', 'door-open', 'Code ready'], ['Shop', 'store', '11 items']] },
+  { id: 'programs', label: 'Content & Programs', ic: 'sparkles', tone: 'primary',
+    blurb: 'What the space teaches and hosts.',
+    tools: [['Practices', 'sparkles', '7 live'], ['Journeys', 'route', '1 of 1 published'], ['Circles', 'users-round', '2 running'], ['Program', 'network', 'Collective'], ['Airwaves', 'radio', '4 recordings'], ['Loom Studio', 'images', '38 images']] },
+  { id: 'settings', label: 'Profile & Settings', ic: 'id-card', tone: 'primary',
+    blurb: 'Identity, team, plan.',
+    tools: [['Profile and Settings', 'id-card', 'Public'], ['People', 'users', '1 of 1 seat'], ['Reviews', 'star', '4.9 from 22'], ['Plan and billing', 'credit-card', 'Free plan'], ['Danger zone', 'trash-2', '']] },
+];
+
+function Tool({ t }) {
+  const [label, ic, meta] = t;
+  const [hover, setHover] = React.useState(false);
+  const danger = label === 'Danger zone';
+  return (
+    <button className="press" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+        padding: '0.6rem 0.7rem', borderRadius: 'var(--radius-control)',
+        background: hover ? 'var(--color-surface-elevated)' : 'var(--color-surface)',
+        border: `1px solid ${danger ? 'color-mix(in srgb, var(--color-danger) 26%, var(--color-border))' : 'var(--color-border)'}`,
+        transition: 'background var(--motion-fast) ease' }}>
+      <F.Ico n={ic} style={{ width: 16, height: 16, color: danger ? 'var(--color-danger)' : 'var(--color-primary-strong)' }} />
+      <span style={{ flex: 1, minWidth: 0, fontSize: '0.93rem', fontWeight: 600, letterSpacing: 'var(--tracking-tight)',
+        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+      {meta ? <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)', flexShrink: 0 }}>{meta}</span> : null}
+    </button>
+  );
+}
+
+function CategoryBlock({ c }) {
+  return (
+    <section>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 9 }}>
+        <span style={{ width: 26, height: 26, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-control)',
+          background: `var(--color-${c.tone}-bg)`, color: `var(--color-${c.tone}-strong)` }}>
+          <F.Ico n={c.ic} style={{ width: 14, height: 14 }} />
+        </span>
+        <h3 style={{ margin: 0, fontSize: '1rem', letterSpacing: 'var(--tracking-tight)' }}>{c.label}</h3>
+        <span style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>{c.blurb}</span>
+        <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-3xs)', color: 'var(--color-text-subtle)' }}>{c.tools.length}</span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 8 }}>
+        {c.tools.map((t) => <Tool key={t[0]} t={t} />)}
+      </div>
+    </section>
+  );
+}
+
+function Page() {
+  const [tab, setTab] = React.useState('dashboard');
+  return (
+    <window.Screen active="my-spaces" wide collapseLeft
+      dock={<window.PageDock page="The Lab · console" stats={[{ value: '29', label: 'Modules', sub: '11 on' }, { value: '184', label: 'Members' }, { value: '62', label: 'Visits', sub: 'this week' }, { value: '3%', label: 'Fee rate', sub: 'bought down' }]}
+      settings={[{ label: 'Space is published', on: true }, { label: 'Accept new members', on: true }, { label: 'Show the day pass price publicly', hint: 'Money is in preview until graduation', on: false }]} />}
+      rail={
+      <window.Rail>
+        <div>
+          <SectionHeader title="Free plan, this month" />
+          <Card tone="feature" padding="1rem">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+              <Meter label="Contacts" used={148} cap={200} size="sm" />
+              <Meter label="Emails" used={287} cap={300} period="this month" size="sm" />
+              <Meter label="QR codes" used={3} cap={3} size="sm" />
+              <Meter label="Bookings" used={9} cap={15} period="this month" size="sm" />
+              <Meter label="Published Journeys" used={1} cap={1} size="sm" />
+              <Meter label="Team seats" used={1} cap={1} size="sm" hint="Three come with Collective." />
+            </div>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="What a plan changes" />
+          <Card tone="soft" padding="1rem">
+            <p style={{ margin: '0 0 10px', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--color-text-muted)' }}>
+              Nothing is locked. Every tool is here on the free plan, capped, and it is always 0% on your own people.
+            </p>
+            <GateNotice kind="preview" title="Billing turns on September 1"
+              action={<Button size="sm" disabled>Go Business</Button>}>
+              This is the real screen. The button does not charge anyone yet.
+            </GateNotice>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="Module Manager" action="Open" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[['Airwaves', false], ['Donations', true], ['Enrollment', false], ['Program', false]].map(([m, on]) => (
+              <div key={m} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ flex: 1, fontSize: '0.92rem' }}>{m}</span>
+                <Switch checked={on} />
+              </div>
+            ))}
+          </div>
+          <p style={{ margin: '10px 0 0', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
+            Hide what you do not run and reorder the rest. Nothing is deleted, and a Space never shows a lock.
+          </p>
+        </div>
+      </window.Rail>
+    }>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+        <span style={{ width: 44, height: 44, borderRadius: 'var(--radius-control)', background: 'var(--color-signal-bg)',
+          display: 'grid', placeItems: 'center', color: 'var(--color-signal-strong)', flexShrink: 0 }}>
+          <F.Ico n="waves" style={{ width: 22, height: 22 }} />
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: '1.05rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>The Sound Room</span>
+            <Badge tone="signal">Business</Badge>
+            <Badge>Free plan</Badge>
+          </div>
+          <div style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>frequencylocal.com/spaces/the-sound-room</div>
+        </div>
+        <Button size="sm" variant="ghost" iconLeft={<F.Ico n="external-link" style={{ width: 15, height: 15 }} />}>View public page</Button>
+      </div>
+
+      <PageHeading eyebrow="Space console · Monday, August 3" title="Good morning. Four things need you."
+        subtitle={<>The whole space in one place: the numbers that matter, <strong>what is waiting</strong>, and <a href="#tools">every tool</a> you run it with.</>}
+        actions={<><Button size="sm" variant="ghost" iconLeft={<F.Ico n="search" style={{ width: 15, height: 15 }} />}>Find a tool</Button><Button size="sm" iconLeft={<F.Ico n="plus" style={{ width: 15, height: 15 }} />}>Create</Button></>} />
+
+      <div style={{ marginTop: 22 }}>
+        <UnderlineTabs value={tab} onChange={setTab}
+          tabs={[{ id: 'dashboard', label: 'Dashboard' }, { id: 'tools', label: 'All tools', count: 27 }, { id: 'people', label: 'People', count: 412 }, { id: 'insights', label: 'Insights' }]} />
+      </div>
+
+      {tab === 'tools' ? (
+        <div style={{ marginTop: 22, display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {CATEGORIES.map((c) => <CategoryBlock key={c.id} c={c} />)}
+        </div>
+      ) : (
+        <>
+          {/* The numbers, first and unmissable. */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginTop: 20 }}>
+            <StatCard label="Followers" value="412" delta="+18" direction="up" spark={[6,9,7,12,10,15,18]} />
+            <StatCard label="Captured" value="37" delta="+11" direction="up" hint="QR, RSVP and check-in" />
+            <StatCard label="Booked" value="24" delta="+6" direction="up" hint="Sessions on the calendar" />
+            <StatCard label="Return" value="61" unit="%" delta="+4%" direction="up" hint="Came back within 30 days" />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(0, 1fr)', gap: 16, marginTop: 16 }}>
+            {/* What is waiting. The operator's actual first job each morning. */}
+            <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '1.1rem 1.2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
+                <span style={{ width: 26, height: 26, display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-control)',
+                  background: 'var(--color-danger-bg)', color: 'var(--color-danger)' }}>
+                  <F.Ico n="bell-ring" style={{ width: 14, height: 14 }} />
+                </span>
+                <h3 style={{ margin: 0, fontSize: '1.02rem', letterSpacing: 'var(--tracking-tight)' }}>Needs you today</h3>
+                <span style={{ marginLeft: 'auto', fontSize: 'var(--text-meta)', fontWeight: 700, color: 'var(--color-primary-strong)', cursor: 'pointer' }}>All</span>
+              </div>
+              <RowCard icon="message-square" accent="broadcast" title="Ana asked about Tuesday's class" meta="Enquiry opened a DM · 14m" trailing={<Badge tone="danger">Reply</Badge>} onClick={() => {}} />
+              <RowCard icon="calendar-check" title="Three RSVPs need approval" meta="Sound bath, Thursday" trailing="7:00p" onClick={() => {}} />
+              <RowCard icon="footprints" accent="signal" title="Two people checked in with a code" meta="The Sound Room plaque" trailing={<Counter kind="checkins" value="2" size="xs" />} onClick={() => {}} />
+              <RowCard icon="mail" title="Weekly note is drafted" meta="287 of 300 sends used" trailing={<Badge tone="warning">Near cap</Badge>} divider={false} onClick={() => {}} />
+            </div>
+
+            {/* The money read, without ending on a sale. */}
+            <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '1.1rem 1.2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
+                <span style={{ width: 26, height: 26, display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-control)',
+                  background: 'var(--color-signal-bg)', color: 'var(--color-signal-strong)' }}>
+                  <F.Ico n="hand-coins" style={{ width: 14, height: 14 }} />
+                </span>
+                <h3 style={{ margin: 0, fontSize: '1.02rem', letterSpacing: 'var(--tracking-tight)' }}>This month</h3>
+              </div>
+              <CounterRow size="md" items={[
+                { kind: 'checkins', value: '37', caption: 'Captured', icon: 'user-plus' },
+                { kind: 'events', value: '24', caption: 'Booked' },
+                { kind: 'members', value: '61%', caption: 'Return' },
+              ]} />
+              <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--color-border)' }}>
+                <ProgressTrack label="Fee buydown" hint="3% vs 5%" value={68} total={100} accent="signal" />
+                <p style={{ margin: '10px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)', lineHeight: 1.55 }}>
+                  At this volume the flat rate is the cheaper of the two. Break even sits near $2,500 a month in sales.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Every primary tool, on the dashboard, grouped the way the hub groups them. */}
+          <div style={{ marginTop: 26, display: 'flex', flexDirection: 'column', gap: 22 }}>
+            <SectionHeader title="Your tools" count={27} action="Manage modules" />
+            {CATEGORIES.map((c) => <CategoryBlock key={c.id} c={c} />)}
+          </div>
+
+          <div style={{ marginTop: 24 }}>
+            <GateNotice kind="hold" title="Your own website on your own domain">
+              Approved and sequenced, not built yet: subdomains first, then custom domains. Your public Space page already ranks in the meantime, which is the part that matters most.
+            </GateNotice>
+          </div>
+        </>
+      )}
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

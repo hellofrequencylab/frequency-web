@@ -34,6 +34,35 @@
 | **Rank → color mapping** | wherever season ranks set the `.rank-badge` `--rank*` vars (search `rank-` in `lib/` + components) | Change the rank's spectrum color name only. |
 | **Component / layout visual** | the existing component in `components/**` | Recreate in Tailwind/TSX; do NOT paste inline-style JSX. |
 
+## Templates (new)
+
+DAWN now ships two starting points as **templates** rather than the retired
+`@startingPoint` tags. Each is a folder that runs standalone in a browser:
+
+| Template | Entry | What it is |
+|---|---|---|
+| App shell | `templates/app-shell/AppShell.dc.html` | Top bar, left area rail + account dock, centre column, status rail, Vault dock |
+| Marketing page | `templates/marketing-site/MarketingSite.dc.html` | Photographic hero + fact dock, the four-role section rhythm, photo beats, FAQ, beta close |
+
+`chrome.jsx` / `site.jsx` in those folders are **concatenations** of the design-system
+kit, assembled so one import loads the whole shell. They are reading material, not
+shippable code: recreate them in Tailwind/TSX. `ds-base.js` is the one file a consumer
+edits — it points at wherever the compiled system lives.
+
+## Going the other way (repo → DAWN)
+
+Sync is two-directional. When the repo changes something DAWN documents, say so in the
+PR body and DAWN picks it up on the next round. The four files DAWN's recreations are
+built from — change any of them and the kit needs a matching pass:
+
+| Repo file | What DAWN built from it |
+|---|---|
+| `lib/nav-areas.ts` | The nav rail's areas, order, section grouping and labels |
+| `components/layout/nav-icons.ts` | `AREA_ICONS` glyph choices |
+| `components/feed/post-card.tsx`, `post-replies.tsx`, `lib/feed/reactions.ts` | The post card and its reaction row |
+| `app/globals.css` | Every token value, effect class and keyframe |
+| `components/layout/app-shell.tsx` | The shell: top bar, both rails, their widths |
+
 ## Golden rule
 Raw hex appears only in `app/globals.css`; everything else reads semantic tokens
 (`bg-primary`, `text-muted`, `var(--color-signal)`). A palette change should be a

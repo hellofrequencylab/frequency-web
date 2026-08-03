@@ -1,0 +1,303 @@
+<!-- @dsCard group="Screens · Operator" viewport="1440x900" name="Event page" subtitle="The deepest domain: RSVP or approval, tiered tickets in preview, QR check-in at +25 Zaps, recurring series, guest list, wall and Q&A." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Event page</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  a { color: var(--color-primary-strong); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--color-primary); }html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+// Stand-ins used only until the compiled bundle carries the newest kit pieces.
+const __Meter = ({ label, used = 0, cap, hint }) => React.createElement('div', null,
+  React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-meta)' } },
+    React.createElement('span', { style: { fontWeight: 600 } }, label),
+    React.createElement('span', { style: { fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)' } }, cap == null ? used : used + ' / ' + cap)),
+  React.createElement('div', { style: { height: 7, marginTop: 5, borderRadius: 99, background: 'var(--color-surface-elevated)', border: '1px solid var(--color-border)', overflow: 'hidden' } },
+    React.createElement('div', { style: { width: (cap ? Math.min(100, (used / cap) * 100) : 100) + '%', height: '100%', background: 'var(--color-signal)' } })),
+  hint ? React.createElement('p', { style: { margin: '5px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-subtle)' } }, hint) : null);
+const __GateNotice = ({ title, children, action, inline }) => inline
+  ? React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 9px', borderRadius: 99, background: 'var(--color-primary-bg)', color: 'var(--color-primary-strong)', fontSize: 'var(--text-2xs)', fontWeight: 700 } }, title || 'Not on yet')
+  : React.createElement('div', { style: { background: 'var(--color-primary-bg)', borderRadius: 'var(--radius-card)', padding: '0.95rem 1.1rem' } },
+      React.createElement('div', { style: { fontWeight: 700, fontSize: '0.98rem' } }, title || 'Not on yet'),
+      children ? React.createElement('p', { style: { margin: '3px 0 0', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--color-text-muted)' } }, children) : null,
+      action ? React.createElement('div', { style: { marginTop: 11 } }, action) : null);
+K.GateNotice = K.GateNotice || __GateNotice;
+K.Counter = K.Counter || (({ value, caption }) => React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5 } }, React.createElement('span', { style: { fontFamily: 'var(--font-mono)', fontWeight: 500 } }, value), caption ? React.createElement('span', { style: { fontSize: 'var(--text-2xs)', color: 'var(--color-text-muted)' } }, caption) : null));
+
+const { SectionHeader, RowCard, PersonCard, Button, IconButton, Badge, Card, Counter, CounterRow, GateNotice, ProgressTrack, Avatar, Input, RankBadge } = K;
+const F = window; // Breadcrumb · Cover · TitleRow · ChipRow · DetailBody · Ico
+
+const DATES = ['Wed, Aug 5', 'Wed, Aug 12', 'Wed, Aug 19', 'Wed, Aug 26', 'Wed, Sep 2'];
+const TIERS = [
+  { t: 'Day pass', p: '$22.00', note: 'Covers the room, 10 to 8.', emoji: '🎟️' },
+  { t: 'Royal Temple Member', p: 'Included', note: 'You are a member here.', mine: true, emoji: '✅' },
+];
+// Facts carry one emoji each: the chips are the fastest read on the page, and a
+// glyph does that work faster than a fourth colour would.
+const FACTS = [['🍲', 'potluck'], ['🏊', 'pool and shade'], ['🤫', 'quiet nooks'], ['🔁', 'every Wednesday'], ['🐕', 'dogs fine']];
+
+function Rsvp() {
+  const [state, setState] = React.useState(null);
+  const [guests, setGuests] = React.useState(0);
+  const OPTS = [['going', 'Going', 'check', 'signal', '🙌'], ['maybe', 'Maybe', 'star', 'primary', '🤔'], ['no', "Can't", 'x', 'neutral', '👋']];
+  return (
+    <div style={{ borderRadius: 'var(--radius-card)', overflow: 'hidden', border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)',
+      background: 'var(--color-surface)', boxShadow: 'var(--shadow-sm)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.7rem 1rem', background: 'var(--color-primary)', color: 'var(--color-text-on-primary)' }}>
+        <F.Ico n="calendar-check" style={{ width: 16, height: 16 }} />
+        <span className="eyebrow" style={{ flex: 1, fontSize: 'var(--text-2xs)', color: 'var(--color-text-on-primary)' }}>RSVP</span>
+        <span style={{ fontSize: 'var(--text-meta)', fontWeight: 700 }}>Wed, Aug 5</span>
+      </div>
+      <div style={{ padding: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {TIERS.map((t) => (
+            <div key={t.t} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-control)',
+              background: t.mine ? 'var(--color-signal-bg)' : 'var(--color-surface-elevated)',
+              border: `1px solid ${t.mine ? 'color-mix(in srgb, var(--color-signal) 34%, transparent)' : 'var(--color-border)'}` }}>
+              <span style={{ fontSize: '1.05rem', lineHeight: 1 }}>{t.emoji}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.93rem', fontWeight: 700, letterSpacing: 'var(--tracking-tight)' }}>{t.t}</div>
+                <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-muted)' }}>{t.note}</div>
+              </div>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem',
+                color: t.mine ? 'var(--color-signal-strong)' : 'var(--color-text)' }}>{t.p}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+          {OPTS.map(([id, label, ic, tone, emoji]) => {
+            const on = state === id;
+            const tint = tone === 'neutral' ? 'var(--color-surface-elevated)' : `var(--color-${tone}-bg)`;
+            const ink = tone === 'neutral' ? 'var(--color-text-muted)' : `var(--color-${tone}-strong)`;
+            return (
+              <button key={id} onClick={() => setState(on ? null : id)} className="press"
+                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '0.55rem 0.3rem', cursor: 'pointer',
+                  fontFamily: 'inherit', borderRadius: 'var(--radius-control)',
+                  background: on ? tint : 'var(--color-surface)',
+                  border: `1px solid ${on ? ink : 'var(--color-border)'}`,
+                  color: on ? ink : 'var(--color-text-muted)' }}>
+                <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>{emoji}</span>
+                <span style={{ fontSize: 'var(--text-meta)', fontWeight: on ? 800 : 600 }}>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p style={{ margin: '8px 0 0', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)', textAlign: 'center' }}>
+          {state ? 'Tap it again to undo.' : 'The host approves RSVPs for this one.'}
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--color-border)' }}>
+          <span style={{ flex: 1, fontSize: '0.92rem' }}>{guests ? `Bringing ${guests}` : 'Bringing no guests'}</span>
+          <IconButton label="One fewer" size={28} onClick={() => setGuests((g) => Math.max(0, g - 1))}><F.Ico n="minus" style={{ width: 14, height: 14 }} /></IconButton>
+          <span style={{ fontFamily: 'var(--font-mono)', minWidth: 14, textAlign: 'center' }}>{guests}</span>
+          <IconButton label="One more" size={28} onClick={() => setGuests((g) => g + 1)}><F.Ico n="plus" style={{ width: 14, height: 14 }} /></IconButton>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '0.7rem 1rem', background: 'var(--color-surface-elevated)', borderTop: '1px solid var(--color-border)' }}>
+        <span style={{ display: 'flex' }}>
+          {['Daniel Tyack', 'Audrey DeWitt', 'Toni Vance'].map((n, i) => (
+            <span key={n} style={{ marginLeft: i ? -9 : 0, borderRadius: '50%', border: '2px solid var(--color-surface-elevated)', display: 'inline-flex' }}>
+              <Avatar name={n} size={24} />
+            </span>
+          ))}
+        </span>
+        <span style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>19 going, 3 from your Circle</span>
+      </div>
+    </div>
+  );
+}
+
+function Page() {
+  const [date, setDate] = React.useState(0);
+  return (
+    <window.Screen active="events" rail={
+      <window.Rail>
+        <div>
+          <SectionHeader title="Your Quest" />
+          <Card tone="feature" padding="1rem">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <span className="eyebrow" style={{ flex: 1, color: 'var(--color-primary-strong)' }}>Season standing</span>
+              <RankBadge rank="initiate" />
+            </div>
+            <ProgressTrack label="Climbing to Adept" hint="1 Journey to go" value={2} total={3} />
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid color-mix(in srgb, var(--color-primary) 22%, transparent)' }}>
+              <CounterRow size="md" items={[
+                { kind: 'zaps', value: '2,105', caption: 'Zaps' },
+                { kind: 'gems', value: '169', caption: 'Gems' },
+                { kind: 'streak', value: '50', caption: 'Streak' },
+              ]} />
+            </div>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="Circle standing" count={4} action="Full board" />
+          {[['Daniel Tyack', 'initiate', '2,105'], ['Aiden Tyack', 'ghost', '480'], ['Toni Vance', 'ghost', '136'], ['Psalm Pollock', 'ghost', '50']].map(([n, rank, z], i) => (
+            <div key={n} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.5rem 0', borderBottom: i < 3 ? '1px solid var(--color-border)' : 'none' }}>
+              <span style={{ width: 14, fontFamily: 'var(--font-mono)', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>{i + 1}</span>
+              <Avatar name={n} size={28} />
+              <span style={{ flex: 1, minWidth: 0, fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n}</span>
+              <Counter kind="zaps" value={z} size="xs" />
+            </div>
+          ))}
+          <p style={{ margin: '10px 0 0', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
+            Your Circle only. There is no global leaderboard, on purpose.
+          </p>
+        </div>
+      </window.Rail>
+    }>
+      <F.Breadcrumb trail={['Events', 'Meld at Royal Temple']} />
+      <F.FeatureHero src="../../assets/images/moonlight-2.jpg" kicker="🔥 Every Wednesday" title="Meld" script="at Royal Temple"
+        blurb={<>Community coworking in a house with a pool. <strong>Bring the half-finished thing.</strong></>} />
+
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginTop: 18 }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <F.MetaRow icon="calendar-days"><strong>Wednesdays, 10:00am to 8:00pm</strong> PDT</F.MetaRow>
+          <F.MetaRow icon="map-pin"><a href="#venue"><strong>Royal Temple, Vista</strong></a> · RSVP for the address</F.MetaRow>
+          <F.MetaRow icon="users">Part of the <a href="#circle"><strong>Meld Coworking Circle</strong></a> · hosted by Royal Temple</F.MetaRow>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <IconButton label="QR and share" size={34}><F.Ico n="qr-code" style={{ width: 15, height: 15 }} /></IconButton>
+          <IconButton label="Manage this event" size={34}><F.Ico n="settings" style={{ width: 15, height: 15 }} /></IconButton>
+        </div>
+      </div>
+
+      {/* The earn line gets the amber tint and the glyph, so the game reads as the game. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16, padding: '0.65rem 0.9rem',
+        borderRadius: 'var(--radius-pill)', background: 'var(--color-primary-bg)', alignSelf: 'flex-start' }}>
+        <span style={{ fontSize: '1.05rem', lineHeight: 1 }}>⚡</span>
+        <span style={{ fontSize: '0.95rem', color: 'var(--color-text)' }}>
+          <b>Check in at the door</b> to earn 25 Zaps
+        </span>
+      </div>
+
+      <F.ChipRow label="Upcoming" items={DATES} value={date} onChange={setDate} />
+
+      <F.DetailBody aside={
+        <>
+          <Rsvp />
+          <div>
+            <SectionHeader title="Hosts" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <PersonCard avatar={<Avatar name="Royal Temple" size={38} />} name="Royal Temple" role="Host" line="The venue, hosting this one" />
+              <PersonCard avatar={<Avatar name="Audrey DeWitt" size={38} />} name="Audrey DeWitt" line="Co-hosting" />
+              <PersonCard avatar={<Avatar name="Daniel Tyack" size={38} />} name="Daniel Tyack" line="Co-hosting" />
+            </div>
+          </div>
+          <Card tone="feature" padding="1rem">
+            <span className="eyebrow" style={{ color: 'var(--color-text-muted)' }}>Add it to your calendar</span>
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <Button size="sm" style={{ flex: 1 }} iconLeft={<F.Ico n="calendar-plus" style={{ width: 14, height: 14 }} />}>Calendar</Button>
+              <Button size="sm" variant="ghost" style={{ flex: 1 }}>Google</Button>
+            </div>
+            <p style={{ margin: '10px 0 0', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
+              Subscribing adds every Wednesday, and updates when the host changes something.
+            </p>
+          </Card>
+          <GateNotice kind="preview" title="Paid passes turn on September 1"
+            action={<Button size="sm" disabled>Pay for a day pass</Button>}>
+            The day pass is real and priced. Nobody is charged during the beta, and members are included either way.
+          </GateNotice>
+        </>
+      }>
+        <p style={{ margin: 0, fontSize: '1.2rem', lineHeight: 1.6, textWrap: 'pretty' }}>
+          Every Wednesday, Royal Temple opens from 10 to 8. Bring a project, a laptop, a sketchbook, a business plan, or the half-finished thing you have been avoiding. Find a spot. Get to work.
+        </p>
+        <div style={{ marginTop: 16, fontSize: '1.02rem', lineHeight: 1.7, color: 'var(--color-text-muted)' }}>
+          <p style={{ margin: '0 0 1rem' }}>
+            The main space runs warm and social, the kind of energy that carries you through the flat part of the afternoon. When you need quiet, the house is full of nooks: a shaded corner, a chair by a window, a room where nobody finds you until you want to be found.
+          </p>
+          <p style={{ margin: 0 }}>
+            This is not networking. It is a house full of people making things, where the good conversations happen sideways. Come for an hour or stay all day.
+          </p>
+        </div>
+
+        <F.Beat icon="sparkles" title="Good to know">
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {FACTS.map(([e, t]) => (
+              <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-meta)', fontWeight: 600,
+                padding: '0.3rem 0.75rem', borderRadius: 'var(--radius-pill)', background: 'var(--color-primary-bg)', color: 'var(--color-primary-strong)' }}>
+                <span style={{ fontSize: '0.95rem', lineHeight: 1 }}>{e}</span>{t}
+              </span>
+            ))}
+          </div>
+        </F.Beat>
+
+        <F.Beat icon="briefcase" tone="signal" title="Bring">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+            {[['🛠️', 'Something to work on', 'The half-finished thing counts'],
+              ['🥘', 'A dish or drinks', 'It runs potluck most weeks'],
+              ['🩱', 'Swimsuit and towel', 'Sun one side, shade the other']].map(([e, t, d]) => (
+              <div key={t} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-card)', padding: '0.85rem 0.9rem' }}>
+                <span style={{ fontSize: '1.3rem', lineHeight: 1 }}>{e}</span>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, letterSpacing: 'var(--tracking-tight)', marginTop: 7 }}>{t}</div>
+                <div style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)', marginTop: 2, lineHeight: 1.45 }}>{d}</div>
+              </div>
+            ))}
+          </div>
+        </F.Beat>
+
+        <F.Beat icon="message-circle" tone="broadcast" title="Before the event" count={2}>
+          <div style={{ display: 'flex', gap: 11, background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-card)', padding: '0.75rem 0.9rem' }}>
+            <Avatar name="Daniel Tyack" size={34} />
+            <div style={{ flex: 1 }}><Input placeholder="Say hi before the event" /></div>
+            <Button size="sm">Post</Button>
+          </div>
+          {[['Daniel Tyack', 'Going', 'Bringing the good coffee and a folding table this week. ☕', 'Jul 25', '🙌 6'],
+            ['Audrey DeWitt', null, 'Pool is open all day, water is warm by noon. 🏊', 'Jul 26', '❤️ 4']].map(([who, tag, body, when, react]) => (
+            <div key={who} style={{ display: 'flex', gap: 11, marginTop: 12, padding: '0.85rem 0.95rem', background: 'var(--color-surface-post)',
+              border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)' }}>
+              <Avatar name={who} size={34} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 700 }}>{who}</span>
+                  {tag ? <Badge tone="signal">{tag}</Badge> : null}
+                  <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>{when}</span>
+                </div>
+                <p style={{ margin: '3px 0 0', fontSize: '0.95rem', lineHeight: 1.6 }}>{body}</p>
+                <div style={{ marginTop: 8, fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>{react}</div>
+              </div>
+            </div>
+          ))}
+        </F.Beat>
+
+        <F.Beat icon="map-pin" tone="move" title="Where">
+          <div style={{ borderRadius: 'var(--radius-card)', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+            <div style={{ height: 200, background: 'var(--color-move-bg)', position: 'relative', display: 'grid', placeItems: 'center' }}>
+              <span style={{ position: 'relative', width: 34, height: 34, borderRadius: '50%', background: 'var(--color-primary)',
+                display: 'grid', placeItems: 'center', color: 'var(--color-text-on-primary)', boxShadow: 'var(--shadow-md)' }}>
+                <F.Ico n="map-pin" style={{ width: 17, height: 17 }} />
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.7rem 0.9rem', background: 'var(--color-surface)', borderTop: '1px solid var(--color-border)' }}>
+              <span style={{ flex: 1, fontSize: '0.92rem' }}>3598 Royal Road, Vista, California</span>
+              <Button size="sm" variant="ghost" iconLeft={<F.Ico n="navigation" style={{ width: 14, height: 14 }} />}>Directions</Button>
+            </div>
+          </div>
+        </F.Beat>
+      </F.DetailBody>
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!-- @dsCard group="Screens · Member" viewport="1440x900" name="Journey page" subtitle="Detail template for a Journey: phases and modules, the cohort Run, step progress, and the Expression Challenge payoff." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Journey page</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  a { color: var(--color-primary-strong); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--color-primary); }html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+// Stand-ins used only until the compiled bundle carries the newest kit pieces.
+const __num = (v) => React.createElement('span', { style: { fontFamily: 'var(--font-mono)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' } }, v);
+const __Counter = ({ value, caption }) => React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5 } }, __num(value),
+  caption ? React.createElement('span', { style: { fontSize: 'var(--text-2xs)', color: 'var(--color-text-muted)' } }, caption) : null);
+const __CounterRow = ({ items = [] }) => React.createElement('div', { style: { display: 'flex', gap: 14 } }, items.map((it, i) => React.createElement(__Counter, { key: i, ...it })));
+const __StreakMeter = ({ days = 0, hint }) => React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 8 } },
+  __num(days), React.createElement('span', { style: { fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' } }, hint || 'days'));
+K.CounterRow = K.CounterRow || __CounterRow;
+
+const { SectionHeader, RowCard, PersonCard, Button, IconButton, Badge, Card, Counter, CounterRow, ProgressTrack, Avatar, UnderlineTabs, GateNotice } = K;
+const F = window; // Breadcrumb · Cover · TitleRow · ChipRow · DetailBody
+
+const PHASES = [
+  { n: 'Week 1', t: 'Put it down', done: true, mods: [
+    { t: 'The five minute version', kind: 'Practice', min: 5, done: true },
+    { t: 'Why the phone wins', kind: 'Reading', min: 6, done: true },
+    { t: 'Pick your anchor', kind: 'Exercise', min: 10, done: true } ] },
+  { n: 'Week 2', t: 'Make it boring', current: true, mods: [
+    { t: 'Same time, same chair', kind: 'Practice', min: 5, done: true },
+    { t: 'The Thursday problem', kind: 'Reading', min: 8, current: true },
+    { t: 'Tell one person', kind: 'Check', min: 2 } ] },
+  { n: 'Week 3', t: 'Take it outside', mods: [
+    { t: 'Walk without the podcast', kind: 'Practice', min: 20 },
+    { t: 'Bring it to the Circle', kind: 'Challenge', min: 60 } ] },
+  { n: 'Week 4', t: 'Hand it on', mods: [
+    { t: 'The Expression Challenge', kind: 'Capstone', min: 45 } ] },
+];
+
+function Block({ m }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '0.62rem 0', borderBottom: '1px solid var(--color-border)' }}>
+      <span style={{ width: 21, height: 21, flexShrink: 0, borderRadius: '50%', display: 'grid', placeItems: 'center',
+        background: m.done ? 'var(--color-success)' : m.current ? 'var(--color-primary)' : 'transparent',
+        border: m.done || m.current ? 'none' : '1.5px solid var(--color-border-strong)', color: 'var(--color-surface)' }}>
+        {m.done ? <window.Ico n="check" style={{ width: 12, height: 12 }} /> : m.current ? <window.Ico n="play" style={{ width: 10, height: 10 }} /> : null}
+      </span>
+      <span style={{ flex: 1, minWidth: 0, fontSize: '0.96rem', fontWeight: m.current ? 700 : 500, letterSpacing: 'var(--tracking-tight)',
+        color: m.done && !m.current ? 'var(--color-text-muted)' : 'var(--color-text)' }}>{m.t}</span>
+      <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>{m.kind}</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)', width: 30, textAlign: 'right' }}>{m.min}m</span>
+    </div>
+  );
+}
+
+function Page() {
+  const [tab, setTab] = React.useState('plan');
+  return (
+    <window.Screen active="journeys" rail={
+      <window.Rail>
+        <div>
+          <SectionHeader title="Your Run" />
+          <Card tone="feature" padding="1rem">
+            <ProgressTrack label="Week 2 of 4" hint="9 days in" steps={4} value={2} />
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--color-border)' }}>
+              <CounterRow size="md" items={[
+                { kind: 'practices', value: '8', caption: 'Logged' },
+                { kind: 'zaps', value: '240', caption: 'Zaps' },
+                { kind: 'streak', value: '9', caption: 'Streak' },
+              ]} />
+            </div>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="Running it with you" count={11} action="All" />
+          {[['Sana Idris','Guide · week 2','8 logs'],['Leo Park','Week 2','7 logs'],['Mira Vance','Week 3, ahead','11 logs'],['Theo Brandt','Week 1','3 logs']].map(([n, meta, t], i) => (
+            <RowCard key={n} avatar={<Avatar name={n} size={30} />} title={n} meta={meta} trailing={t} divider={i < 3} onClick={() => {}} />
+          ))}
+        </div>
+      </window.Rail>
+    }>
+      <F.Breadcrumb trail={['Journeys', 'The 28 Day Reset']} />
+      <F.FeatureHero src="../../assets/images/moonlight-1.jpg" kicker="⚡ 4 weeks · Mind" title="The 28 Day" script="Reset"
+        blurb={<><strong>Five minutes a day</strong>, the same chair, and <strong>ten people</strong> who notice.</>} height={280} />
+      <F.TitleRow title="The 28 Day Reset" status={<Badge tone="signal">Mind</Badge>}
+        meta={[
+          { icon: 'calendar-days', text: <><strong>4 weeks</strong> · 5 to 10 minutes a day · weekly drip</> },
+          { icon: 'users', text: <>Run with <a href="#circle"><strong>your Circle</strong></a>, 11 people, kickoff Thursday</> },
+          { icon: 'user-check', text: 'Written by Sana Idris' },
+        ]}
+        actions={[{ label: 'Share', icon: 'share-2' }, { label: 'Save', icon: 'bookmark' }]} />
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
+        {[['🆓', 'free, always'], ['⭐', 'official Journey'], ['📈', 'cohorts finish at 91%'], ['🔗', 'anchor practice daily']].map(([e, t]) => (
+          <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-meta)', fontWeight: 600,
+            padding: '0.3rem 0.75rem', borderRadius: 'var(--radius-pill)', background: 'var(--color-primary-bg)', color: 'var(--color-primary-strong)' }}>
+            <span style={{ fontSize: '0.95rem', lineHeight: 1 }}>{e}</span>{t}
+          </span>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 22 }}>
+        <UnderlineTabs value={tab} onChange={setTab}
+          tabs={[{ id: 'plan', label: 'The plan', count: 9 }, { id: 'about', label: 'About' }, { id: 'run', label: 'Your Run' }]} />
+      </div>
+
+      <F.DetailBody aside={
+        <>
+          <Card tone="feature" padding="1.1rem">
+            <p className="eyebrow" style={{ margin: 0, color: 'var(--color-primary-strong)' }}>Where you are</p>
+            <h3 style={{ margin: '4px 0 10px', fontSize: '1.1rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>Week 2, one block left</h3>
+            <ProgressTrack steps={4} value={2} />
+            <div style={{ marginTop: 14 }}><Button style={{ width: '100%' }}>Continue Week 2</Button></div>
+            <p style={{ margin: '10px 0 0', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)', textAlign: 'center' }}>
+              Two minutes gets you to the end of the week.
+            </p>
+          </Card>
+          <div>
+            <SectionHeader title="What finishing pays" />
+            <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '1rem' }}>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <Counter kind="zaps" value="75" caption="on finish" size="sm" />
+                <Counter kind="trophies" value="1" caption="Trophy" size="sm" />
+              </div>
+              <p style={{ margin: '10px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)', lineHeight: 1.55 }}>
+                Finishing is also the rank advance: two Journeys makes you Adept.
+              </p>
+            </div>
+          </div>
+        </>
+      }>
+        {tab === 'about' ? (
+          <div style={{ maxWidth: 'var(--width-read)', fontSize: '1.08rem', lineHeight: 1.75 }}>
+            <p style={{ margin: '0 0 1.1rem' }}>
+              Day one is easy. The fourth or fifth day is the one that decides whether this becomes a thing you do, and that day is what the whole Journey is built around.
+            </p>
+            <p style={{ margin: 0 }}>
+              Five minutes, the same chair, and ten people who notice. No app blocking, no shame, and no streak threats.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {PHASES.map((p) => (
+              <section key={p.n}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
+                  <span className="eyebrow" style={{ color: p.current ? 'var(--color-primary-strong)' : 'var(--color-text-subtle)' }}>{p.n}</span>
+                  <h2 style={{ margin: 0, fontSize: '1.15rem', letterSpacing: 'var(--tracking-tight)' }}>{p.t}</h2>
+                  {p.done ? (
+                    <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 'var(--text-meta)', fontWeight: 700, color: 'var(--color-success)' }}>
+                      <window.Ico n="circle-check-big" style={{ width: 14, height: 14 }} /> Done
+                    </span>
+                  ) : p.current ? <Badge tone="primary" solid style={{ marginLeft: 'auto' }}>You are here</Badge> : null}
+                </div>
+                <div>{p.mods.map((m) => <Block key={m.t} m={m} />)}</div>
+              </section>
+            ))}
+            <div style={{ background: 'var(--color-signal-bg)', borderRadius: 'var(--radius-card)', padding: '1.1rem 1.25rem' }}>
+              <p className="eyebrow" style={{ margin: 0, color: 'var(--color-signal-strong)' }}>The capstone</p>
+              <h3 style={{ margin: '4px 0 6px', fontSize: '1.15rem', letterSpacing: 'var(--tracking-tight)' }}>The Expression Challenge</h3>
+              <p style={{ margin: '0 0 12px', fontSize: '0.95rem', lineHeight: 1.6, color: 'var(--color-text-muted)', maxWidth: '36rem' }}>
+                Teach the five minute version to one person who has never done it. In person at your Circle, or posted solo.
+              </p>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <Counter kind="zaps" value="50" caption="in person" size="sm" />
+                <Counter kind="gems" value="30" caption="posted solo" size="sm" />
+              </div>
+            </div>
+          </div>
+        )}
+      </F.DetailBody>
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

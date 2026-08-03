@@ -1,0 +1,48 @@
+<!-- @dsCard group="Foundations · Color" viewport="1180x520" name="Primary · Amber-gold" subtitle="The single chrome accent: every CTA, glow and active state. Four steps, each with one job." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DAWN · Primary · amber-gold</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="card.css">
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <span class="eyebrow">Foundations · Color</span>
+    <h1>Primary · amber-gold</h1>    <p>One accent carries the whole system. Amber is a CTA, an active state, a glow, and a number worth noticing — nothing else. A second accent competing for the same job is the fastest way to make a page look generic.</p>
+    <hr class="rule-amber">
+  </div>
+  <h2>The four steps</h2>
+  <div class="g g4">
+    <div class="sw"><div class="chip" style="background:var(--color-primary)"></div><div class="lab"><div class="tok">--color-primary</div><div class="hex">#E2912F</div><div class="use">Fills. Buttons, the active rail row’s tint source, every glow.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-primary-hover)"></div><div class="lab"><div class="tok">--color-primary-hover</div><div class="hex">#CE8023</div><div class="use">Hover and press only. Never a resting fill.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-primary-strong)"></div><div class="lab"><div class="tok">--color-primary-strong</div><div class="hex">#9A5E12</div><div class="use">Amber as TEXT on light. The only step that passes on cream.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-primary-bg)"></div><div class="lab"><div class="tok">--color-primary-bg</div><div class="hex">#FBEFD9</div><div class="use">The tint behind an active row, a chip, a callout.</div></div></div>
+  </div>
+  <h2>In use</h2>
+  <div class="g g3">
+    <div class="panel" style="display:flex;align-items:center;gap:0.7rem">
+      <span style="padding:0.5rem 1.1rem;border-radius:var(--radius-control);background:var(--color-primary);color:var(--color-text-on-primary);font-weight:700;font-size:0.9rem">Create</span>
+      <span class="tok">primary</span>
+    </div>
+    <div class="panel" style="display:flex;align-items:center;gap:0.7rem">
+      <span style="padding:0.42rem 0.7rem;border-radius:var(--radius-control);background:var(--color-primary-bg);color:var(--color-primary-strong);font-weight:800;font-size:0.88rem">Active row</span>
+      <span class="tok">primary-bg + strong</span>
+    </div>
+    <div class="panel ink" style="display:flex;align-items:center;gap:0.8rem">
+      <span class="halo" style="position:relative;width:26px;height:26px;border-radius:50%;background:var(--color-primary)"></span>
+      <span class="tok">primary + .halo</span>
+    </div>
+  </div>
+  <div class="laws">
+    <p><b>One accent.</b> If something needs to stand out next to amber, make it quieter — do not introduce a second colour.</p>
+    <p><b>Never amber text on cream.</b> Use <code>primary-strong</code>. The base step fails contrast below 24px.</p>
+    <p><b>Dark mode inverts the pair.</b> <code>primary</code> lightens to #F2B14E and <code>primary-strong</code> becomes the same value, because deep amber disappears on ink.</p>
+    <p><b>Amber marks, it does not decorate.</b> Every amber pixel should be answering "where do I click" or "what changed".</p>
+  </div>
+</div>
+</body>
+</html>

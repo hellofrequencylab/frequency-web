@@ -1,0 +1,46 @@
+<!-- @dsCard group="Teasers" viewport="1180x996" name="Teaser · Never Miss Twice" subtitle="Standalone sales tool. Ice-blue accent, warm→grey→protected arc. Feed (1080×1800) + phone story (1080×1920)." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency, Never Miss Twice</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="infographics.css">
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <p class="eyebrow">Feature teaser · 03</p>
+    <h1>Never Miss Twice</h1>
+    <p>The anti-Duolingo beat: a missed day is forgiven, not punished. Warm, then a cold-grey miss, then protected in ice blue. No shame iconography.</p>
+  </div>
+  <div class="row">
+    <div class="fmt"><div class="fmtlabel">Feed / web · 1080 × 1800</div><div class="scale-feed"><div class="card feed" id="feed"></div></div></div>
+    <div class="fmt"><div class="fmtlabel">Phone story · 1080 × 1920</div><div class="scale-story"><div class="card story" id="story"></div></div></div>
+  </div>
+</div>
+<script>
+window.DATA = {
+  accent:'var(--flow-ice)', ramp:['#4a2f2a','#2e2a30','#4a2f2a'],
+  eyebrow:'Never miss twice',
+  headline:`One miss is nothing. <span class="g">Two is a pattern.</span>`,
+  intro:`Most apps punish a missed day. Frequency catches you at one and protects the streak you built.`,
+  steps:[
+    {n:'n1', g:'flame', lbl:'Log a Practice', sub:'streak running, Spark banked',
+     desc:'Every practice keeps the streak alive and banks your Spark.'},
+    {dim:true, g:'flame', lbl:'Miss a day', sub:'life happens',
+     desc:'One missed day barely dents a habit. No red, no guilt, no broken heart.'},
+    {n:'n1', g:'chat', lbl:'Vera nudges', sub:'a fact, not a guilt trip',
+     desc:'A quiet nudge the next day. A plain fact about your streak, never a lecture.'},
+    {lit:true, g:'snow', lbl:'Freeze the streak', sub:'spend a few Gems',
+     desc:'Lock the streak with a few Gems, so one off day never becomes two.'},
+  ],
+  stat:`A single missed day barely dents a habit. Most apps punish it. This one protects it.`,
+  cta:'Keep your streak alive, free',
+};
+</script>
+<script src="infographics.js"></script>
+</body>
+</html>

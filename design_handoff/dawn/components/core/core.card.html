@@ -1,0 +1,95 @@
+<!-- @dsCard group="Components" viewport="1180x944" name="Core" subtitle="Button · Badge · RankBadge · Avatar · IconButton · Stat · Card · BrandMark" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 24px; background: var(--color-canvas); font-family: var(--font-sans); color: var(--color-text); }
+  .group { margin-bottom: 22px; }
+  .glab { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-text-subtle); margin-bottom: 11px; }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .i { width: 16px; height: 16px; }
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Button, Badge, RankBadge, Avatar, IconButton, Stat, Card, BrandMark, Glyph } = window.DAWNFrequencyDesignSystem_c868e3;
+const Ic = ({ n, s = 16 }) => <Glyph name={n} size={s} />;
+
+function Demo() {
+  const [liked, setLiked] = React.useState(true);
+  return (
+    <div>
+      <div className="group">
+        <div className="glab">Button</div>
+        <div className="row">
+          <Button variant="primary" iconRight={<Ic n="arrow-right" />}>Join the Beta</Button>
+          <Button variant="secondary">See the space</Button>
+          <Button variant="ghost">Learn more</Button>
+          <Button variant="primary" size="sm">Small</Button>
+          <Button variant="primary" disabled>Disabled</Button>
+        </div>
+      </div>
+
+      <div className="group">
+        <div className="glab">Badge &amp; RankBadge</div>
+        <div className="row">
+          <Badge tone="primary">Founder</Badge>
+          <Badge tone="broadcast" icon={<Ic n="megaphone" s={12} />}>Dispatch</Badge>
+          <Badge tone="success">Verified</Badge>
+          <Badge tone="signal">Founding</Badge>
+          <Badge tone="primary" solid>New</Badge>
+          <RankBadge rank="initiate" />
+          <RankBadge rank="master" showStep />
+        </div>
+      </div>
+
+      <div className="group">
+        <div className="glab">Avatar &amp; IconButton</div>
+        <div className="row">
+          <Avatar name="Maya Ortiz" size={44} online />
+          <Avatar name="Leo Park" size={44} />
+          <Avatar name="River Run" size={36} />
+          <span style={{ width: 16 }} />
+          <IconButton label="Like" tone="danger" active={liked} onClick={() => setLiked(v => !v)}><Ic n="heart" /></IconButton>
+          <IconButton label="Plus one"><Ic n="thumbs-up" /></IconButton>
+          <IconButton label="More"><Ic n="more-horizontal" /></IconButton>
+        </div>
+      </div>
+
+      <div className="group">
+        <div className="glab">Stat</div>
+        <div className="row" style={{ gap: 40 }}>
+          <Stat value={24} label="Circles near you" />
+          <Stat value="1.2k" label="Practices this week" />
+          <Stat value={38} label="Events" />
+        </div>
+      </div>
+
+      <div className="group" style={{ marginBottom: 0 }}>
+        <div className="glab">Card &amp; BrandMark</div>
+        <div className="row" style={{ alignItems: 'stretch' }}>
+          <Card tone="feature" hover style={{ width: 230 }}>
+            <div style={{ fontSize: 17, fontWeight: 700 }}>River Run Circle</div>
+            <div className="text-muted" style={{ fontSize: 14, marginTop: 2 }}>Encinitas · 18 members</div>
+          </Card>
+          <Card tone="soft" style={{ width: 230, display: 'flex', alignItems: 'center' }}>
+            <BrandMark logo="../../assets/frequency-logo.png" width={170} height={34} />
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

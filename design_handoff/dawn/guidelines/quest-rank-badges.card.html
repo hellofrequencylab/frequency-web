@@ -1,0 +1,182 @@
+<!-- @dsCard group="Patterns · The Quest" viewport="1180x1460" name="Season ranks · three directions" subtitle="Pick one. The laurel crests are gone. All three are flat, filled, token-driven Loom shapes, and all three make the mechanic legible: ranks are Journeys finished, so the badge itself counts to three." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DAWN · season ranks</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="card.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+  a{color:var(--color-primary-strong)}a:hover{color:var(--color-primary)}
+  /* Each direction is one panel, and the specimen row is CENTRED inside it. The row
+     used to be a left-aligned 600px grid inside a 68rem card, which read as a
+     column of badges pushed against one edge with a page of nothing beside it. */
+  .dir+.dir{margin-top:1.1rem}
+  .dir .hd{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;margin:0 0 1.35rem;padding-bottom:0.9rem;border-bottom:1px solid var(--color-border)}
+  .tag{display:grid;place-items:center;width:22px;height:22px;flex-shrink:0;border-radius:var(--radius-control);background:var(--color-primary);color:var(--color-text-on-primary);font-family:var(--font-grotesk);font-size:var(--text-3xs);font-weight:700}
+  .nm{font-weight:var(--weight-heading);letter-spacing:var(--tracking-tight);font-size:1.05rem}
+  .why{flex:1;min-width:16rem;font-size:var(--text-meta);line-height:1.55;color:var(--color-text-muted)}
+  .row{display:grid;grid-template-columns:repeat(4,7.5rem);gap:2.25rem;justify-content:center;justify-items:center}
+  /* One fixed-height badge bay per column, so the four labels sit on one line no
+     matter which shape the direction uses. */
+  .t{display:flex;flex-direction:column;align-items:center;text-align:center}
+  .bay{height:82px;display:grid;place-items:center}
+  .lbl{font-weight:600;font-size:.95rem;margin-top:10px;letter-spacing:var(--tracking-tight)}
+  .sub{font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--color-text-subtle);margin-top:3px;font-variant-numeric:tabular-nums}
+  .here{font-family:var(--font-grotesk);font-size:var(--text-3xs);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--color-primary-strong);margin-top:5px}
+
+  /* ── A · Squircle tile. The pips under the tile are the three Journeys. ── */
+  .tile{width:72px;height:72px;border-radius:22px;display:grid;place-items:center;
+        background:color-mix(in srgb, var(--c) 15%, var(--color-surface));
+        border:1px solid color-mix(in srgb, var(--c) 32%, transparent)}
+  .tile i,.tile svg{width:30px;height:30px;color:var(--d)}
+  .tile.on{background:var(--c);border-color:transparent;box-shadow:var(--shadow-sm)}
+  .tile.on i,.tile.on svg{color:var(--color-surface)}
+  .pips{display:flex;gap:4px;justify-content:center;margin-top:10px}
+  .pip{width:16px;height:4px;border-radius:99px;background:var(--color-border-strong)}
+  .pip.f{background:var(--c)}
+
+  /* ── B · Ring of three. Each arc is one Journey. ── */
+  .ring{width:74px;height:74px;position:relative}
+  .ring svg{position:absolute;inset:0}
+  .core{position:absolute;inset:11px;border-radius:50%;display:grid;place-items:center;
+         background:color-mix(in srgb, var(--c) 14%, var(--color-surface))}
+  .core i,.core svg{position:static;width:26px;height:26px;color:var(--d)}
+  .core.on{background:var(--c)}
+  .core.on i,.core.on svg{color:var(--color-surface)}
+
+  /* ── C · Flat plate. A modern shield, no heraldry. ── */
+  .plate{width:66px;height:76px;display:grid;place-items:center;position:relative;
+         background:var(--c);clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%);border-radius:12px}
+  .plate.q{background:color-mix(in srgb, var(--c) 20%, var(--color-surface))}
+  .plate i,.plate svg{width:28px;height:28px;color:var(--color-surface);margin-bottom:8px}
+  .plate.q i,.plate.q svg{color:var(--d)}
+  .bars{position:absolute;bottom:22px;display:flex;gap:3px}
+  .bar{width:12px;height:3px;border-radius:99px;background:color-mix(in srgb, var(--color-surface) 55%, transparent)}
+  .bar.f{background:var(--color-surface)}
+  .plate.q .bar{background:color-mix(in srgb, var(--d) 25%, transparent)}
+  .plate.q .bar.f{background:var(--d)}
+  /* A block (no inline baseline, so labels stay level) that still shrink-wraps to
+     the badge, so the absolutely-positioned glow resolves against the badge box
+     rather than the whole grid track. */
+  .wrap{position:relative;display:block;width:fit-content;line-height:0}
+  .glow{position:absolute;inset:-9px;border-radius:26px;z-index:-1;pointer-events:none}
+  @media (max-width:900px){.row{grid-template-columns:repeat(2,7.5rem);gap:1.6rem 2rem}}
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <span class="eyebrow">Patterns · The Quest</span>
+    <h1>Season ranks</h1>
+    <p>Three directions for the same mechanic. A rank is Journeys finished this season, so the badge counts to three on its own — no laurel, no heraldry, no gloss. Pick a letter and the other two get retired.</p>
+    <hr class="rule-amber">
+  </div>
+
+  <h2>A · Squircle tile</h2>
+  <div class="dir panel">
+    <div class="hd"><span class="tag">A</span><span class="nm">Squircle tile</span><span class="why">Same shape language as the icon chips and cards. The quietest of the three and the most product-native — it looks like it came from the app, not from a trophy cabinet.</span></div>
+    <div class="row">
+      <div class="t" style="--c:var(--rank-stone);--d:var(--rank-stone-deep)">
+        <div class="bay"><div class="tile"><i data-lucide="ghost"></i></div></div>
+        <div class="pips"><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+        <div class="lbl">Ghost</div><div class="sub">0 of 3</div>
+      </div>
+      <div class="t" style="--c:var(--rank-clay);--d:var(--rank-clay-deep)">
+        <div class="bay"><div class="tile"><i data-lucide="footprints"></i></div></div>
+        <div class="pips"><span class="pip f"></span><span class="pip"></span><span class="pip"></span></div>
+        <div class="lbl">Initiate</div><div class="sub">1 of 3</div>
+      </div>
+      <div class="t" style="--c:var(--rank-gold);--d:var(--rank-gold-deep)">
+        <div class="bay"><span class="wrap"><span class="glow amber-glow"></span><span class="tile on"><i data-lucide="route"></i></span></span></div>
+        <div class="pips"><span class="pip f"></span><span class="pip f"></span><span class="pip"></span></div>
+        <div class="lbl">Adept</div><div class="sub">2 of 3</div><div class="here">You are here</div>
+      </div>
+      <div class="t" style="--c:var(--rank-jade);--d:var(--rank-jade-deep)">
+        <div class="bay"><div class="tile on"><i data-lucide="trophy"></i></div></div>
+        <div class="pips"><span class="pip f"></span><span class="pip f"></span><span class="pip f"></span></div>
+        <div class="lbl">Master</div><div class="sub">3 of 3</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>B · Ring of three</h2>
+  <div class="dir panel">
+    <div class="hd"><span class="tag">B</span><span class="nm">Ring of three</span><span class="why">The ring <em>is</em> the season: three arcs, one per Journey. Reads as progress rather than prestige, which is the honest description of what a rank measures.</span></div>
+    <div class="row" id="rings">
+      <div class="t" style="--c:var(--rank-stone);--d:var(--rank-stone-deep)" data-done="0">
+        <div class="bay"><div class="ring"><div class="core"><i data-lucide="ghost"></i></div></div></div>
+        <div class="lbl">Ghost</div><div class="sub">0 of 3</div>
+      </div>
+      <div class="t" style="--c:var(--rank-clay);--d:var(--rank-clay-deep)" data-done="1">
+        <div class="bay"><div class="ring"><div class="core"><i data-lucide="footprints"></i></div></div></div>
+        <div class="lbl">Initiate</div><div class="sub">1 of 3</div>
+      </div>
+      <div class="t" style="--c:var(--rank-gold);--d:var(--rank-gold-deep)" data-done="2">
+        <div class="bay"><span class="wrap"><span class="glow amber-glow" style="border-radius:50%"></span><span class="ring"><span class="core on"><i data-lucide="route"></i></span></span></span></div>
+        <div class="lbl">Adept</div><div class="sub">2 of 3</div><div class="here">You are here</div>
+      </div>
+      <div class="t" style="--c:var(--rank-jade);--d:var(--rank-jade-deep)" data-done="3">
+        <div class="bay"><div class="ring"><div class="core on"><i data-lucide="trophy"></i></div></div></div>
+        <div class="lbl">Master</div><div class="sub">3 of 3</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>C · Flat plate</h2>
+  <div class="dir panel">
+    <div class="hd"><span class="tag">C</span><span class="nm">Flat plate</span><span class="why">One flat notched plate with the count as bars. The most game-like of the three, and still with zero heraldry or gloss.</span></div>
+    <div class="row">
+      <div class="t" style="--c:var(--rank-stone);--d:var(--rank-stone-deep)">
+        <div class="bay"><div class="plate q"><i data-lucide="ghost"></i><span class="bars"><span class="bar"></span><span class="bar"></span><span class="bar"></span></span></div></div>
+        <div class="lbl">Ghost</div><div class="sub">0 of 3</div>
+      </div>
+      <div class="t" style="--c:var(--rank-clay);--d:var(--rank-clay-deep)">
+        <div class="bay"><div class="plate"><i data-lucide="footprints"></i><span class="bars"><span class="bar f"></span><span class="bar"></span><span class="bar"></span></span></div></div>
+        <div class="lbl">Initiate</div><div class="sub">1 of 3</div>
+      </div>
+      <div class="t" style="--c:var(--rank-gold);--d:var(--rank-gold-deep)">
+        <div class="bay"><span class="wrap"><span class="glow amber-glow" style="border-radius:16px"></span><span class="plate"><i data-lucide="route"></i><span class="bars"><span class="bar f"></span><span class="bar f"></span><span class="bar"></span></span></span></span></div>
+        <div class="lbl">Adept</div><div class="sub">2 of 3</div><div class="here">You are here</div>
+      </div>
+      <div class="t" style="--c:var(--rank-jade);--d:var(--rank-jade-deep)">
+        <div class="bay"><div class="plate"><i data-lucide="trophy"></i><span class="bars"><span class="bar f"></span><span class="bar f"></span><span class="bar f"></span></span></div></div>
+        <div class="lbl">Master</div><div class="sub">3 of 3</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="laws">
+    <p><b>Ghost is a badge, not an empty state.</b> Nought of three is where everybody starts, so it gets stone and a real shape — never a dashed outline or a padlock.</p>
+    <p><b>The amber glow marks where you stand.</b> One rank at a time carries it, and it never means "best" — ranks expire at the end of a season.</p>
+    <p><b>The in-app read stays the <code style="font-family:var(--font-mono)">RankBadge</code> pill.</b> These shapes are for profiles, the season recap and the Certificate.</p>
+    <p><b>Colour comes from the rank spectrum.</b> Stone, clay, gold, jade — and the deep pair for glyphs on a quiet ground. Never a new hue.</p>
+  </div>
+</div>
+<script>
+  lucide.createIcons();
+  // B's arcs: three segments on one circle, drawn from the rank colour.
+  document.querySelectorAll('#rings .t').forEach(function (t) {
+    const done = +t.dataset.done, R = 33, C = 2 * Math.PI * R, seg = C / 3, gap = 7;
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 74 74');
+    for (let i = 0; i < 3; i++) {
+      const c = document.createElementNS(ns, 'circle');
+      c.setAttribute('cx', 37); c.setAttribute('cy', 37); c.setAttribute('r', R);
+      c.setAttribute('fill', 'none');
+      c.setAttribute('stroke', i < done ? 'var(--c)' : 'var(--color-border-strong)');
+      c.setAttribute('stroke-width', 5);
+      c.setAttribute('stroke-linecap', 'round');
+      c.setAttribute('stroke-dasharray', (seg - gap) + ' ' + (C - seg + gap));
+      c.setAttribute('stroke-dashoffset', -(i * seg) + gap / 2);
+      c.setAttribute('transform', 'rotate(-90 37 37)');
+      svg.appendChild(c);
+    }
+    t.querySelector('.ring').prepend(svg);
+  });
+</script>
+</body>
+</html>

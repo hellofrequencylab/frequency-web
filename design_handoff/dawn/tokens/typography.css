@@ -1,0 +1,107 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   DAWN — Typography scale & base.
+   One face split into two voices: `--font-display` (Anton, uppercase, tight)
+   for headlines + big numerals, `--font-sans` (Nunito) for everything
+   readable. Sizes are roles, never set ad hoc. (DESIGN-LANGUAGE §2.1)
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Display scale (Anton). Marketing H1/H2, pull-quotes, big stats. ───── */
+  --text-display-hero:  clamp(3rem, 6vw, 5rem);    /* PhotoHero H1 — one per page   */
+  --text-display-h1:    clamp(2.75rem, 5vw, 4.5rem);
+  --text-display-h2:    clamp(2.25rem, 4vw, 3rem); /* SectionHeading default        */
+  --text-display-h3:    clamp(1.75rem, 3vw, 2.25rem);
+  --text-display-card:  1.5rem;                    /* card title (display variant)  */
+  --text-stat:          clamp(3.5rem, 6vw, 4.5rem);/* big stat numeral              */
+
+  /* ── Sans scale (Nunito). Body, in-app headings, UI. ───────────────────── */
+  --text-page-title:    1.5rem;     /* in-app template header (text-2xl bold)      */
+  --text-lead:          1.25rem;    /* intro paragraph / kicker                    */
+  --text-card-title:    1.0625rem;  /* sans card title (text-base/lg bold)         */
+  --text-body:          1rem;       /* default body                                */
+  --text-body-sm:       0.875rem;   /* in-app body, descriptions (text-sm)         */
+  --text-meta:          0.75rem;    /* counts, timestamps, labels (text-xs, FLOOR) */
+  --text-eyebrow:       0.875rem;   /* uppercase tracked eyebrow                   */
+
+  /* ── Sub-xs steps. These exist so nobody writes text-[10px] ad hoc again.
+     Chrome only: a rank chip, a tab count, a legal line. NEVER content type. */
+  --text-2xs:           0.6875rem;  /* 11px */
+  --text-3xs:           0.625rem;   /* 10px */
+
+  /* ── Weights. The heading role is the one to reach for; 800 and 900 are
+     reserved for a numeral or a single deliberate emphasis, never for every
+     title on the page. */
+  --weight-heading:   700;
+  --weight-normal:    400;
+  --weight-medium:    500;
+  --weight-semibold:  600;
+  --weight-bold:      700;
+  --weight-extrabold: 800;
+  --weight-black:     900;
+
+  /* ── Line heights ──────────────────────────────────────────────────────── */
+  --leading-display: 0.95;  /* tight, for Anton headlines */
+  --leading-snug:    1.2;   /* headings                   */
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.65;  /* body copy                  */
+
+  /* ── Tracking. Headings pull in; eyebrows push out. ───────────────────── */
+  --tracking-tight:         -0.015em;  /* card + section titles */
+  --tracking-tight-display: -0.03em;   /* page titles, big headings */
+  --tracking-eyebrow:        0.18em;   /* uppercase tracked eyebrow */
+}
+
+/* ── Base element styling ──────────────────────────────────────────────────── */
+/* The density root. Every rem in the system derives from this one number, so
+   the whole interface can be tuned in one place (≈17px base). */
+html {
+  font-size: var(--density-root, 106.25%);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  line-height: var(--leading-relaxed);
+}
+
+/* Headings sit at 700, not 800. Nunito is a rounded face, so extra-bold reads
+   scholastic; bold plus negative tracking gives it an edge. Larger roles tighten
+   further (see --tracking-tight-display). */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--weight-heading);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+}
+h1, h2 { letter-spacing: var(--tracking-tight-display); }
+
+/* Links. Defined here so a link added later never renders browser-default
+   blue. Amber, underlined on hover only. */
+a { color: var(--color-primary-strong); text-decoration: none; }
+a:hover { color: var(--color-primary); text-decoration: underline; text-underline-offset: 0.2em; }
+.dark a { color: var(--color-primary); }
+.dark a:hover { color: var(--color-primary-hover); }
+
+/* Sub-xs chrome utilities (retiring the text-[10/11px] anti-pattern). */
+.text-2xs { font-size: var(--text-2xs); }
+.text-3xs { font-size: var(--text-3xs); }
+
+/* Locked eyebrow utility — uppercase, tracked, bold. Color is set by context
+   (text-primary-strong on light, text-primary on dark/photo). */
+.eyebrow {
+  font-family: var(--font-grotesk);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+}
+
+/* Editorial kicker — the italic "deck" under a heading. */
+.kicker {
+  font-size: var(--text-lead);
+  font-style: italic;
+  color: var(--color-text-muted);
+}

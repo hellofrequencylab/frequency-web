@@ -1,0 +1,40 @@
+<!-- @dsCard group="Foundations · Space & feel" viewport="1180x440" name="Radius · by role" subtitle="Role decides radius, not preference. Three role tokens are the skin contract; the step scale serves everything else." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DAWN · Radius · by role</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="card.css">
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <span class="eyebrow">Foundations · Space & feel</span>
+    <h1>Radius · by role</h1>    <p>Three role tokens carry the feel, and they are the contract a skin retunes — Midnight sharpens control and card without touching anything else. Reach for the role token in anything a skin should be able to restyle; the step scale is for shapes that are not role-bound.</p>
+    <hr class="rule-amber">
+  </div>
+  <h2>The role contract</h2>
+  <div class="g g3">
+    <div class="panel" style="text-align:center"><div style="height:64px;background:var(--color-primary-bg);border:1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);border-radius:var(--radius-control)"></div><div class="tok" style="margin-top:9px">--radius-control · 0.5rem</div><p class="use">Buttons, inputs, small controls.</p></div>
+    <div class="panel" style="text-align:center"><div style="height:64px;background:var(--color-primary-bg);border:1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);border-radius:var(--radius-card)"></div><div class="tok" style="margin-top:9px">--radius-card · 1rem</div><p class="use">Cards.</p></div>
+    <div class="panel" style="text-align:center"><div style="height:64px;background:var(--color-primary-bg);border:1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);border-radius:var(--radius-pill)"></div><div class="tok" style="margin-top:9px">--radius-pill · 9999px</div><p class="use">Pills, chips, avatars.</p></div>
+  </div>
+  <h2>The step scale</h2>
+  <div class="g g5">
+    <div class="panel" style="text-align:center"><div style="height:48px;background:var(--color-surface-elevated);border:1px solid var(--color-border);border-radius:var(--radius-sm)"></div><div class="tok" style="margin-top:8px">--radius-sm · 6px</div><p class="use">Chips, badges, tiny date squares.</p></div>
+    <div class="panel" style="text-align:center"><div style="height:48px;background:var(--color-surface-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md)"></div><div class="tok" style="margin-top:8px">--radius-md · 10px</div><p class="use">Legacy control alias.</p></div>
+    <div class="panel" style="text-align:center"><div style="height:48px;background:var(--color-surface-elevated);border:1px solid var(--color-border);border-radius:var(--radius-lg)"></div><div class="tok" style="margin-top:8px">--radius-lg · 14px</div><p class="use">Legacy.</p></div>
+    <div class="panel" style="text-align:center"><div style="height:48px;background:var(--color-surface-elevated);border:1px solid var(--color-border);border-radius:var(--radius-xl)"></div><div class="tok" style="margin-top:8px">--radius-xl · 16px</div><p class="use">In-app cards and tiles.</p></div>
+    <div class="panel" style="text-align:center"><div style="height:48px;background:var(--color-surface-elevated);border:1px solid var(--color-border);border-radius:var(--radius-2xl)"></div><div class="tok" style="margin-top:8px">--radius-2xl · 24px</div><p class="use">Marketing feature cards and framed media.</p></div>
+  </div>
+  <div class="laws">
+    <p><b>Role first.</b> A button takes <code>--radius-control</code>, not <code>--radius-md</code>, so a skin can retune it.</p>
+    <p><b>Never mix radii on one object.</b> A card and the image inside it share a family, not two unrelated values.</p>
+    <p><b>Marketing rounds more.</b> 2xl on feature cards and framed media; in-app stays at xl.</p>
+    <p><b>Pill means pill.</b> If it is a chip or an avatar it is fully round, not "almost".</p>
+  </div>
+</div>
+</body>
+</html>

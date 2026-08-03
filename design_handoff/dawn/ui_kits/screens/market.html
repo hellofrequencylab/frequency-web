@@ -1,0 +1,173 @@
+<!-- @dsCard group="Screens · Member" viewport="1440x900" name="Market listing" subtitle="A Classifieds listing on the shared detail grammar: featured hero, meta rows, fact chips, seller standing, the 0%-on-your-own-people note" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Market listing</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  a { color: var(--color-primary-strong); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--color-primary); }html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+
+const { SectionHeader, RowCard, PersonCard, Button, IconButton, Badge, Card, Counter, CounterRow, GateNotice, Avatar, Input, RankBadge, Meter } = K;
+const F = window;
+
+function Page() {
+  const [saved, setSaved] = React.useState(false);
+  return (
+    <window.Screen active="market" rail={
+      <window.Rail>
+        <div>
+          <SectionHeader title="The seller" />
+          <Card tone="feature" padding="1rem">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+              <Avatar name="Mira Vance" size={40} online />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '0.98rem', fontWeight: 700, letterSpacing: 'var(--tracking-tight)' }}>Mira Vance</div>
+                <div style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>Leucadia · 3 Circles</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
+              <RankBadge rank="adept" />
+              <Badge tone="signal">Verified</Badge>
+            </div>
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid color-mix(in srgb, var(--color-primary) 22%, transparent)' }}>
+              <Meter label="Trust Score" used={92} cap={100} size="sm" hint="Eleven weeks in the Thursday Circle, four completed trades." />
+            </div>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="More from Mira" count={4} action="All" />
+          {[['Ceramic mugs, set of four', '$40'], ['Standing desk', '$120'], ['Bread starter, free', 'Free'], ['Wetsuit, 3/2 mens M', '$85']].map(([t, p], i) => (
+            <RowCard key={t} icon="package" title={t} trailing={p} divider={i < 3} onClick={() => {}} />
+          ))}
+        </div>
+      </window.Rail>
+    }>
+      <F.Breadcrumb trail={['Market', 'Classifieds', 'Sourdough starter']} />
+      <F.FeatureHero src="../../assets/images/community-1.jpg" kicker="🍞 Free to a good home" title="Sourdough" script="starter, fed since 2019"
+        blurb={<><strong>Six years old</strong>, lives in a jar, will outlive us all. <strong>Bring a container.</strong></>} height={280} />
+      <F.TitleRow title="Sourdough starter, fed since 2019" status={<Badge tone="success">Available</Badge>}
+        meta={[
+          { icon: 'tag', text: <><strong>Free</strong> · <a href="#classifieds">Classifieds</a> · Food and kitchen</> },
+          { icon: 'map-pin', text: <><strong>Leucadia</strong> · <a href="#pickup">pickup only</a>, about 2 miles from you</> },
+          { icon: 'clock', text: 'Posted 2 days ago · 14 people looking' },
+        ]}
+        actions={[{ label: 'Share', icon: 'share-2' }, { label: 'Report', icon: 'flag' }]} />
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
+        {[['🤝', 'pickup only'], ['🫙', 'bring a jar'], ['💬', 'message to arrange'], ['🚫', 'no shipping']].map(([e, t]) => (
+          <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-meta)', fontWeight: 600,
+            padding: '0.3rem 0.75rem', borderRadius: 'var(--radius-pill)', background: 'var(--color-primary-bg)', color: 'var(--color-primary-strong)' }}>
+            <span style={{ fontSize: '0.95rem', lineHeight: 1 }}>{e}</span>{t}
+          </span>
+        ))}
+      </div>
+
+      <F.DetailBody aside={
+        <>
+          <Card tone="feature" padding="1.1rem">
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
+              <span className="font-display" style={{ fontSize: '2.2rem', lineHeight: 1 }}>Free</span>
+              <span style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>pickup only</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
+              <Button style={{ width: '100%' }} iconLeft={<F.Ico n="message-circle" style={{ width: 15, height: 15 }} />}>Message Mira</Button>
+              <Button variant="secondary" style={{ width: '100%' }} onClick={() => setSaved((v) => !v)}
+                iconLeft={<F.Ico n={saved ? 'bookmark-check' : 'bookmark'} style={{ width: 15, height: 15 }} />}>
+                {saved ? 'Saved' : 'Save it'}
+              </Button>
+            </div>
+            <p style={{ margin: '11px 0 0', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)', lineHeight: 1.5, textAlign: 'center' }}>
+              Messages open a normal DM. Nothing is escrowed on a free listing.
+            </p>
+          </Card>
+          <GateNotice kind="preview" title="Paid listings settle in September">
+            When money moves it is 0% on somebody you already knew, and the take rate only applies to a buyer Frequency found for you.
+          </GateNotice>
+          <div>
+            <SectionHeader title="Where" />
+            <div style={{ borderRadius: 'var(--radius-card)', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+              <div style={{ height: 130, background: 'var(--color-move-bg)', display: 'grid', placeItems: 'center' }}>
+                <span style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--color-primary)', display: 'grid', placeItems: 'center', color: 'var(--color-text-on-primary)' }}>
+                  <F.Ico n="map-pin" style={{ width: 15, height: 15 }} />
+                </span>
+              </div>
+              <div style={{ padding: '0.65rem 0.85rem', background: 'var(--color-surface)', borderTop: '1px solid var(--color-border)', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>
+                Leucadia. The exact address comes in the DM, never on the listing.
+              </div>
+            </div>
+          </div>
+        </>
+      }>
+        <p style={{ margin: 0, fontSize: '1.2rem', lineHeight: 1.6, textWrap: 'pretty' }}>
+          Started in a Leucadia kitchen in 2019 and fed every week since. It is vigorous, forgiving, and doubles in about four hours on the counter.
+        </p>
+        <div style={{ marginTop: 16, fontSize: '1.02rem', lineHeight: 1.7, color: 'var(--color-text-muted)' }}>
+          <p style={{ margin: '0 0 1rem' }}>
+            I am splitting it because a jar this size makes more than two people can eat. You get roughly a cup, enough for a loaf on Saturday and plenty left to keep going.
+          </p>
+          <p style={{ margin: 0 }}>
+            If you have never kept one, I will write down what to do on the back of an envelope. It takes about a minute a day.
+          </p>
+        </div>
+
+        <F.Beat icon="package" title="What you get">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 10 }}>
+            {[['🫙', 'About a cup', 'Enough for a loaf and a refresh'], ['📝', 'The instructions', 'Handwritten, one minute a day'], ['🍞', 'A starter loaf', 'If I have baked that week']].map(([e, t, d]) => (
+              <div key={t} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '0.85rem 0.9rem' }}>
+                <span style={{ fontSize: '1.3rem', lineHeight: 1 }}>{e}</span>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, letterSpacing: 'var(--tracking-tight)', marginTop: 7 }}>{t}</div>
+                <div style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)', marginTop: 2, lineHeight: 1.45 }}>{d}</div>
+              </div>
+            ))}
+          </div>
+        </F.Beat>
+
+        <F.Beat icon="shield-check" tone="signal" title="Why this is safer than an anonymous board">
+          <div style={{ background: 'var(--color-signal-bg)', borderRadius: 'var(--radius-card)', padding: '1rem 1.15rem' }}>
+            <p style={{ margin: 0, fontSize: '0.98rem', lineHeight: 1.65 }}>
+              Mira is verified, has a Trust Score built from eleven weeks of turning up, and you share a Circle. That is the whole pitch: you are not meeting a stranger from the internet in a car park.
+            </p>
+          </div>
+        </F.Beat>
+
+        <F.Beat icon="message-circle" tone="broadcast" title="Questions" count={2}>
+          {[['Theo Brandt', 'Is it whole wheat or white flour fed?', 'White, but it takes whole wheat fine.'],
+            ['Ana Ruiz', 'Could I pick up Saturday morning?', 'Saturday works. I am at the Circle until noon.']].map(([who, q, a]) => (
+            <div key={who} style={{ marginTop: 10, padding: '0.85rem 0.95rem', background: 'var(--color-surface-post)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                <Avatar name={who} size={28} />
+                <span style={{ fontSize: '0.93rem', fontWeight: 700 }}>{who}</span>
+              </div>
+              <p style={{ margin: '7px 0 0', fontSize: '0.95rem', lineHeight: 1.6 }}>{q}</p>
+              <p style={{ margin: '8px 0 0 1.1rem', paddingLeft: '0.8rem', borderLeft: '2px solid var(--color-primary)', fontSize: '0.95rem', lineHeight: 1.6, color: 'var(--color-text-muted)' }}>
+                <b style={{ color: 'var(--color-text)' }}>Mira</b> {a}
+              </p>
+            </div>
+          ))}
+        </F.Beat>
+      </F.DetailBody>
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

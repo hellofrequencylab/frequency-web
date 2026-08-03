@@ -1,0 +1,228 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   DAWN — Frequency's semantic color layer.
+   Raw hex appears ONLY in this file (and tokens/skins.css, which overrides a
+   subset for the Midnight skin). Everything else references the semantic custom
+   properties below. Light is the default; `.dark` mirrors on warm espresso.
+   Synced wholesale from app/globals.css via design_handoff/HANDOFF-TO-DAWN
+   -2026-08-03.md §2 (production is the source of truth this round).
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  color-scheme: light;
+
+  /* ── Surfaces ──────────────────────────────────────────────────────────
+     The in-app community canvas is light and airy. The warmer sand
+     (--color-marketing-canvas) carries the brand vibe on the public site.
+     Post cards sit a step warmer than the white composer above them. */
+  --color-canvas:            #FAF8F4;
+  --color-marketing-canvas:  #F5EEE2;
+  --color-surface:           #FFFFFF;
+  --color-surface-elevated:  #F5F2EC;
+  --color-surface-post:      #F7F5F0;
+  /* Chrome. The app frame (top bar, rails, menus) sits a step DOWN from the
+     canvas instead of white, so the frame reads as frame and the white content
+     cards are the thing that pops. */
+  --color-chrome:            #F2EFE8;
+  --color-chrome-border:     #E5E0D6;
+
+  /* ── Borders (hairline, warm) ─────────────────────────────────────────── */
+  --color-border:            #EAE6DE;
+  --color-border-strong:     #D9D3C8;
+
+  /* ── Text. Body ink is a soft warm charcoal (~10:1 on canvas), not near
+     black: the editorial direction wants ink that reads printed, not harsh. */
+  --color-text:              #3D352A;
+  --color-text-muted:        #6B6253;
+  --color-text-subtle:       #8F8675;
+
+  /* ── Ink. The cinematic dark band, drawn from Frequency's black wood-slat
+     interiors. Near-neutral warm, NOT brown. Load-bearing half of the bold
+     dark to light contrast on marketing pages. Max ~2 bands per page. */
+  --color-ink:               #141210;
+  --color-ink-elevated:      #211D17;
+  --color-ink-border:        #393227;
+  --color-on-ink:            #F3EEE3;
+  --color-on-ink-muted:      #B5A893;
+  --color-on-ink-subtle:     #857A66;
+
+  /* ── Brand · Primary (amber-gold) — the single chrome accent ──────────── */
+  --color-primary:           #E2912F;
+  --color-primary-hover:     #CE8023;
+  --color-primary-strong:    #9A5E12;
+  --color-primary-bg:        #FBEFD9;
+  --color-text-on-primary:   #FFFFFF;
+
+  /* ── Brand · Signal (emerald-teal) — the rare secondary. A deep, green-leaning
+     jewel teal, cohesive with the teal success. "Pool water in shade." */
+  --color-signal:            #0F8E78;
+  --color-signal-strong:     #0A5C4D;
+  --color-signal-bg:         #D2EDE6;
+  --color-text-on-signal:    #04231E;
+
+  /* ── Brand · Broadcast (robin's-egg / Tiffany blue) — comms, Dispatches and
+     onboarding ONLY. Never general-purpose chrome. */
+  --color-broadcast:         #1EB6C5;
+  --color-broadcast-strong:  #0E808D;
+  --color-broadcast-bg:      #D8F2F5;
+  --color-text-on-broadcast: #FFFFFF;
+
+  /* ── Brand · Move (cerulean blue-teal) — the Get Moving accent for the
+     Mindless door. Deliberately BLUER than the green-leaning success and
+     signal teals so it never collides with "done"; sits opposite the amber. */
+  --color-move:              #1C7FB5;
+  --color-move-hover:        #176A98;
+  --color-move-strong:       #0F4E72;
+  --color-move-bg:           #DCEFF8;
+  --color-text-on-move:      #FFFFFF;
+
+  /* ── Semantic states. NOTE: success is a TEAL, not a true green, so
+     "done / progress" reads cohesive with Signal. Green never appears in
+     marketing chrome. */
+  --color-success:           #11827A;
+  --color-success-bg:        #D7EFEA;
+  --color-warning:           #B07515;
+  --color-warning-bg:        #F6ECD8;
+  --color-danger:            #BA3B30;
+  --color-danger-bg:         #F7E4E1;
+  --color-info:              #2F6FB0;
+  --color-info-bg:           #E3EDF7;
+
+  /* ── Focus ─────────────────────────────────────────────────────────────── */
+  --color-focus-ring:        #E2912F;
+
+  /* ── Rank spectrum. Ten primitives, same in both modes. The season-rank
+     ladder (Ghost → Initiate → Adept → Master) draws from the first four;
+     the rest serve Amplitude tiers, Pillars and Space accents.
+     core = solid dot/fill · deep = text on light · bright = text on dark. */
+  --rank-stone:  #8A8073; --rank-stone-deep:  #4E4A40; --rank-stone-bright:  #CBC2B2;
+  --rank-clay:   #C26B45; --rank-clay-deep:   #7C3D22; --rank-clay-bright:   #E9A484;
+  --rank-gold:   #D69A3C; --rank-gold-deep:   #875A14; --rank-gold-bright:   #F0C173;
+  --rank-olive:  #8A9A5B; --rank-olive-deep:  #4F5A2E; --rank-olive-bright:  #C2CE96;
+  --rank-jade:   #3FA191; --rank-jade-deep:   #245A4E; --rank-jade-bright:   #88D6C5;
+  --rank-teal:   #1F9BA6; --rank-teal-deep:   #0F5C63; --rank-teal-bright:   #74D2DA;
+  --rank-slate:  #5B7CA6; --rank-slate-deep:  #324862; --rank-slate-bright:  #9FB6D4;
+  --rank-indigo: #7A77C4; --rank-indigo-deep: #444180; --rank-indigo-bright: #B3B0E4;
+  --rank-plum:   #9E6B9E; --rank-plum-deep:   #5C3A5C; --rank-plum-bright:   #CFA3CF;
+  --rank-rose:   #BD6A7E; --rank-rose-deep:   #743A48; --rank-rose-bright:   #E2A2B0;
+
+  /* ── Brand mark (engraved wordmark). Warm dark-sandy-brown fill + two-tone
+     emboss that makes the logo read as burnt-in. Drives `.brandmark`. */
+  --brand-mark:         #6E4A2A;
+  --brand-emboss-light: rgba(255, 248, 235, 0.85);
+  --brand-emboss-dark:  rgba(42, 24, 8, 0.50);
+  --brand-burn:         rgba(74, 40, 12, 0.45);
+  --brand-shine:        rgba(255, 244, 222, 0.65);
+  --brand-wash:         rgba(194, 88, 18, 0.62);
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* Warmed toward dark wood — the reference spaces are espresso slats lit by
+     amber. A golden-brown undertone so surfaces read as warm timber rather
+     than neutral charcoal. */
+  --color-canvas:            #17120B;
+  --color-marketing-canvas:  #120E07;
+  --color-surface:           #211A10;
+  --color-surface-elevated:  #2B2415;
+  --color-surface-post:      #2B2415;
+  --color-chrome:            #1C1710;
+  --color-chrome-border:     #33291A;
+
+  --color-border:            #3C3220;
+  --color-border-strong:     #50432B;
+
+  --color-text:              #EFE8DB;
+  --color-text-muted:        #A99C88;
+  --color-text-subtle:       #7E735F;
+
+  /* Ink runs deeper than the dark canvas so marketing dark bands still read as
+     a deliberate, cinematic black in dark mode. */
+  --color-ink:               #0E0C09;
+  --color-ink-elevated:      #1A1611;
+  --color-ink-border:        #2F281F;
+  --color-on-ink:            #EFE8DB;
+  --color-on-ink-muted:      #A99C88;
+  --color-on-ink-subtle:     #7E735F;
+
+  --color-primary:           #F2B14E;
+  --color-primary-hover:     #F8C56F;
+  --color-primary-strong:    #F2B14E;
+  --color-primary-bg:        #30240F;
+  --color-text-on-primary:   #FFFFFF;
+
+  --color-signal:            #53CFAC;
+  --color-signal-strong:     #53CFAC;
+  --color-signal-bg:         #0C2C25;
+  --color-text-on-signal:    #04231E;
+
+  --color-broadcast:         #69D6E6;
+  --color-broadcast-strong:  #69D6E6;
+  --color-broadcast-bg:      #0F2A34;
+  --color-text-on-broadcast: #FFFFFF;
+
+  --color-move:              #58B4E0;
+  --color-move-hover:        #76C2E7;
+  --color-move-strong:       #58B4E0;
+  --color-move-bg:           #102836;
+  --color-text-on-move:      #08161F;
+
+  --color-success:           #5FD3BE;
+  --color-success-bg:        #103029;
+  --color-warning:           #F2B14E;
+  --color-warning-bg:        #2C2310;
+  --color-danger:            #F0857A;
+  --color-danger-bg:         #2E1714;
+  --color-info:              #6FA8DC;
+  --color-info-bg:           #15212E;
+
+  --color-focus-ring:        #F2B14E;
+  /* rank primitives inherited from :root */
+
+  --brand-mark:         #A2723F;
+  --brand-emboss-light: rgba(255, 226, 184, 0.22);
+  --brand-emboss-dark:  rgba(0, 0, 0, 0.66);
+  --brand-burn:         rgba(20, 9, 0, 0.60);
+  --brand-shine:        rgba(255, 230, 190, 0.42);
+  --brand-wash:         rgba(232, 134, 54, 0.55);
+}
+
+/* ── Always-light lock ─────────────────────────────────────────────────────
+   The cinematic beta induction stays cream even when the visitor's OS or app
+   is dark (a dark induction reads as broken). Put `.theme-light-lock` on the
+   wrapper: it re-asserts the light palette for its whole subtree. */
+.theme-light-lock {
+  color-scheme: light;
+  --color-canvas:            #FAF8F4;
+  --color-marketing-canvas:  #F5EEE2;
+  --color-surface:           #FFFFFF;
+  --color-surface-elevated:  #F5F2EC;
+  --color-surface-post:      #F7F5F0;
+  /* Chrome. The app frame (top bar, rails, menus) sits a step DOWN from the
+     canvas instead of white, so the frame reads as frame and the white content
+     cards are the thing that pops. */
+  --color-chrome:            #F2EFE8;
+  --color-chrome-border:     #E5E0D6;
+  --color-border:            #E9E1D4;
+  --color-border-strong:     #D8CDBB;
+  --color-text:              #3D352A;
+  --color-text-muted:        #6B6253;
+  --color-text-subtle:       #8F8675;
+  --color-primary:           #E2912F;
+  --color-primary-hover:     #CE8023;
+  --color-primary-strong:    #9A5E12;
+  --color-primary-bg:        #FBEFD9;
+  --color-text-on-primary:   #FFFFFF;
+  --color-success:           #11827A;
+  --color-success-bg:        #D7EFEA;
+  --color-danger:            #BA3B30;
+  --color-danger-bg:         #F7E4E1;
+  --color-move:              #1C7FB5;
+  --color-move-hover:        #176A98;
+  --color-move-strong:       #0F4E72;
+  --color-move-bg:           #DCEFF8;
+  --color-text-on-move:      #FFFFFF;
+  --color-focus-ring:        #E2912F;
+  background: var(--color-canvas);
+  color: var(--color-text);
+}

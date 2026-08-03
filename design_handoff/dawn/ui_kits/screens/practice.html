@@ -1,0 +1,195 @@
+<!-- @dsCard group="Screens · Member" viewport="1440x900" name="Practice page" subtitle="The Mindless timer: Be Still and Get Moving doors, the amber and Move accents, ring timer, streak freeze, and the honest log." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Practice page</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  a { color: var(--color-primary-strong); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--color-primary); }html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+// Stand-ins used only until the compiled bundle carries the newest kit pieces.
+const __num = (v) => React.createElement('span', { style: { fontFamily: 'var(--font-mono)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' } }, v);
+const __Counter = ({ value, caption }) => React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5 } }, __num(value),
+  caption ? React.createElement('span', { style: { fontSize: 'var(--text-2xs)', color: 'var(--color-text-muted)' } }, caption) : null);
+const __CounterRow = ({ items = [] }) => React.createElement('div', { style: { display: 'flex', gap: 14 } }, items.map((it, i) => React.createElement(__Counter, { key: i, ...it })));
+const __StreakMeter = ({ days = 0, hint }) => React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 8 } },
+  __num(days), React.createElement('span', { style: { fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' } }, hint || 'days'));
+K.Counter = K.Counter || __Counter;
+K.CounterRow = K.CounterRow || __CounterRow;
+K.StreakMeter = K.StreakMeter || __StreakMeter;
+
+const { PageHeading, SectionHeader, ProgressTrack, RowCard, Button, IconButton, Badge, Card, Stat, RankBadge, Avatar, Counter, CounterRow, StreakMeter, GateNotice } = K;
+
+const STILL = [['Meditate','brain'],['Breathe','wind'],['Sigh','waves'],['Stillness','snowflake'],['Ritual','flame'],['Journal','notebook-pen']];
+const MOVE  = [['Walk','footprints'],['Run','rabbit'],['Yoga','activity'],['Strength','dumbbell'],['Stretch','move'],['Play','volleyball']];
+
+function Ring({ mode }) {
+  const accent = mode === 'still' ? 'var(--color-primary)' : 'var(--color-move)';
+  const R = 92, C = 2 * Math.PI * R;
+  return (
+    <div style={{ position: 'relative', width: 216, height: 216, flexShrink: 0 }}>
+      <span className="amber-glow animate-glow" style={{ position: 'absolute', inset: -18, pointerEvents: 'none', opacity: mode === 'still' ? 0.9 : 0 }} />
+      <svg viewBox="0 0 216 216" style={{ position: 'absolute', inset: 0 }}>
+        <circle cx="108" cy="108" r={R} fill="none" stroke="var(--color-border)" strokeWidth="8" />
+        <circle cx="108" cy="108" r={R} fill="none" stroke={accent} strokeWidth="8" strokeLinecap="round"
+          strokeDasharray={C} strokeDashoffset={C * 0.42} transform="rotate(-90 108 108)" />
+      </svg>
+      <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2.6rem', fontWeight: 500, letterSpacing: '-0.03em', lineHeight: 1 }}>5:48</div>
+          <div className="eyebrow" style={{ marginTop: 6, color: 'var(--color-text-muted)' }}>of 10 min</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Page() {
+  const [mode, setMode] = React.useState('still');
+  const list = mode === 'still' ? STILL : MOVE;
+  const accent = mode === 'still' ? 'primary' : 'move';
+  return (
+    <window.Screen active="practices" rail={
+      <window.Rail>
+        <Card tone="feature" padding="1rem">
+          <p className="eyebrow" style={{ margin: 0, color: 'var(--color-primary-strong)' }}>Your practice</p>
+          <div style={{ marginTop: 12 }}>
+            <CounterRow size="md" items={[
+              { kind: 'streak', value: '50', caption: 'Streak' },
+              { kind: 'airtime', value: '41h', caption: 'Airtime' },
+              { kind: 'gems', value: '169', caption: 'Gems' },
+            ]} />
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <StreakMeter days={50} freezes={2} week={['logged','logged','frozen','logged','logged','logged','today']} />
+          </div>
+          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--color-border)' }}>
+            <ProgressTrack label="Anchor practice" hint="19 of 31 days" value={19} total={31} size="sm" />
+          </div>
+        </Card>
+        <div>
+          <SectionHeader title="Adopted practices" count={3} action="All" />
+          <RowCard icon="wind" title="Morning breath" meta="Be Still · 5 min · daily" trailing="19d" onClick={() => {}} />
+          <RowCard icon="footprints" accent="move" title="Walk without the podcast" meta="Get Moving · 20 min" trailing="6d" onClick={() => {}} />
+          <RowCard icon="notebook-pen" title="Three lines" meta="Be Still · 2 min" trailing="4d" divider={false} onClick={() => {}} />
+        </div>
+        <div>
+          <SectionHeader title="Dispatch from Vera" />
+          <div style={{ background: 'var(--color-broadcast-bg)', borderRadius: 'var(--radius-card)', padding: '0.95rem 1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <Avatar name="Vera" size={26} />
+              <span style={{ fontSize: 'var(--text-meta)', fontWeight: 700, color: 'var(--color-broadcast-strong)' }}>Vera · Moderator</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.93rem', lineHeight: 1.6, color: 'var(--color-text)' }}>
+              Day 50. Sana is two doors down and does hers at seven. Go say that out loud to somebody today.
+            </p>
+          </div>
+        </div>
+      </window.Rail>
+    }>
+      <PageHeading eyebrow="Mindless" title="Get out of your head, and into your life"
+        subtitle={<>Pick a door, set a length, put the phone face down. <strong>Real life earns Zaps</strong>, online earns <a href="#gems">Gems</a>.</>} />
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+        {[['still','Be Still','wind','primary'],['moving','Get Moving','footprints','move']].map(([id, label, icon, tone]) => {
+          const on = mode === id;
+          return (
+            <button key={id} onClick={() => setMode(id)} className="press"
+              style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, padding: '0.9rem 1rem', cursor: 'pointer', fontFamily: 'inherit',
+                borderRadius: 'var(--radius-card)', textAlign: 'left',
+                background: on ? `var(--color-${tone}-bg)` : 'var(--color-surface)',
+                border: `1px solid ${on ? `color-mix(in srgb, var(--color-${tone}) 40%, transparent)` : 'var(--color-border)'}`,
+                boxShadow: on ? 'var(--shadow-sm)' : 'none', transition: 'background var(--motion-fast) ease' }}>
+              <span style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 'var(--radius-control)', display: 'grid', placeItems: 'center',
+                background: on ? `var(--color-${tone})` : 'var(--color-surface-elevated)',
+                color: on ? `var(--color-text-on-${tone})` : 'var(--color-text-muted)' }}>
+                <window.Ico n={icon} style={{ width: 20, height: 20 }} />
+              </span>
+              <span>
+                <span style={{ display: 'block', fontSize: '1.05rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>{label}</span>
+                <span style={{ display: 'block', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>
+                  {id === 'still' ? 'Meditate, breathe, sigh, journal' : 'Walk, run, yoga, strength, play'}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display: 'flex', gap: 28, alignItems: 'center', marginTop: 26, background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '1.5rem' }}>
+        <Ring mode={mode} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p className="eyebrow" style={{ margin: 0, color: `var(--color-${accent}-strong)` }}>{mode === 'still' ? 'Be Still · Breathe' : 'Get Moving · Walk'}</p>
+          <h2 style={{ margin: '5px 0 4px', fontSize: '1.5rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight-display)' }}>
+            {mode === 'still' ? 'Morning breath' : 'Walk without the podcast'}
+          </h2>
+          <p style={{ margin: '0 0 16px', fontSize: '0.95rem', color: 'var(--color-text-muted)', maxWidth: '30rem', lineHeight: 1.6 }}>
+            {mode === 'still'
+              ? 'Four counts in, six out, nothing clever. Your jaw usually unclenches somewhere in the third minute.'
+              : 'Twenty minutes, no headphones. Notice what your street sounds like. That is the whole assignment.'}
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {['5 min', '10 min', '20 min', 'Open'].map((t, i) => (
+              <span key={t} style={{ padding: '0.35rem 0.8rem', borderRadius: 'var(--radius-pill)', fontSize: 'var(--text-meta)', fontWeight: 600,
+                background: i === 1 ? `var(--color-${accent})` : 'var(--color-surface-elevated)',
+                color: i === 1 ? `var(--color-text-on-${accent})` : 'var(--color-text-muted)',
+                border: i === 1 ? 'none' : '1px solid var(--color-border)' }}>{t}</span>
+            ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 20 }}>
+            <Button iconLeft={<window.Ico n="pause" style={{ width: 16, height: 16 }} />}>Pause</Button>
+            <Button variant="ghost" iconLeft={<window.Ico n="check" style={{ width: 16, height: 16 }} />}>Log it</Button>
+            <Counter kind="zaps" value="15" caption="on log" size="sm" style={{ marginLeft: 'auto' }} />
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 28 }}>
+        <SectionHeader title={mode === 'still' ? 'Be Still' : 'Get Moving'} action="Adopt a practice" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {list.map(([t, icon]) => (
+            <button key={t} className="press" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.75rem 0.85rem', cursor: 'pointer',
+              fontFamily: 'inherit', textAlign: 'left', background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-card)', color: 'var(--color-text)' }}>
+              <span style={{ width: 32, height: 32, flexShrink: 0, borderRadius: 'var(--radius-control)', display: 'grid', placeItems: 'center',
+                background: `var(--color-${accent}-bg)`, color: `var(--color-${accent}-strong)` }}>
+                <window.Ico n={icon} style={{ width: 16, height: 16 }} />
+              </span>
+              <span style={{ fontSize: '0.95rem', fontWeight: 600, letterSpacing: 'var(--tracking-tight)' }}>{t}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginTop: 28 }}>
+        <SectionHeader title="Today, near you" count={4} action="All" />
+        <RowCard avatar={<Avatar name="Sana Idris" size={32} />} title="Sana logged Morning breath" meta="7:04am · 10 min" trailing={<Badge tone="signal">+15 ⚡</Badge>} onClick={() => {}} />
+        <RowCard avatar={<Avatar name="Leo Park" size={32} online />} title="Leo logged a walk" meta="6:20am · 24 min" trailing={<Badge tone="signal">+25 ⚡</Badge>} onClick={() => {}} />
+        <RowCard avatar={<Avatar name="Theo Brandt" size={32} />} title="Theo came back after nine days" meta="Welcome Back bonus" trailing={<Badge tone="primary">+10 ⚡</Badge>} divider={false} onClick={() => {}} />
+      </div>
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!-- @dsCard group="Brand & voice" viewport="1180x564" name="Loom · illustration language" subtitle="Flat, warm, FILLED shapes in the DAWN palette. Amber led, teal accent, big rounded corners, one focal point. Never thin line-art, gradients, 3D, or realistic anatomy." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+  body{margin:0;padding:24px;background:var(--color-canvas);font-family:var(--font-sans);color:var(--color-text)}
+  .wrap{display:grid;grid-template-columns:1.15fr 1fr;gap:24px;align-items:start}
+  h2{font-size:var(--text-meta);text-transform:uppercase;letter-spacing:.16em;color:var(--color-text-subtle);margin:0 0 12px;font-weight:800}
+  /* A Loom scene: a product moment framed as a screen with faint inner cards. */
+  .scene{background:var(--color-marketing-canvas);border-radius:var(--radius-2xl);padding:26px;display:flex;align-items:center;gap:22px}
+  .screen{flex:1;background:var(--color-surface);border-radius:20px;padding:16px;box-shadow:var(--shadow-sm)}
+  .bar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .pip{width:9px;height:9px;border-radius:50%;background:var(--color-primary)}
+  .pip.s{background:var(--color-signal)}
+  .pip.n{background:var(--color-border-strong)}
+  .inner{border-radius:14px;background:var(--color-surface-elevated);padding:11px;display:flex;align-items:center;gap:10px}
+  .inner+.inner{margin-top:8px}
+  .glyph{width:32px;height:32px;border-radius:11px;flex:none;display:grid;place-items:center;background:var(--color-primary);color:var(--color-text-on-primary)}
+  .glyph.teal{background:var(--color-signal);color:var(--color-text-on-signal)}
+  .glyph i,.glyph svg{width:17px;height:17px}
+  .l1{height:8px;border-radius:4px;background:var(--color-border-strong);width:64%}
+  .l2{height:7px;border-radius:4px;background:var(--color-border);width:42%;margin-top:5px}
+  /* Figures: recognizable by pose only. No faces, no fingers. */
+  .figs{display:flex;align-items:flex-end;gap:8px;flex:none}
+  .fig{width:34px;display:flex;flex-direction:column;align-items:center}
+  .head{width:17px;height:17px;border-radius:50%}
+  .torso{width:28px;height:38px;border-radius:14px 14px 8px 8px;margin-top:3px}
+  .lists{display:grid;gap:18px}
+  ul{margin:0;padding-left:1.1rem;font-size:.93rem;line-height:1.7;color:var(--color-text-muted)}
+  li b{color:var(--color-text)}
+  .dont li{text-decoration-color:var(--color-danger)}
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+  <div class="wrap">
+    <div>
+      <h2>A Loom scene</h2>
+      <div class="scene">
+        <div class="screen">
+          <div class="bar"><span class="pip"></span><span class="pip s"></span><span class="pip n"></span></div>
+          <div class="inner"><span class="glyph"><i data-lucide="flame"></i></span><div style="flex:1"><div class="l1"></div><div class="l2"></div></div></div>
+          <div class="inner"><span class="glyph teal"><i data-lucide="calendar-days"></i></span><div style="flex:1"><div class="l1" style="width:52%"></div><div class="l2" style="width:34%"></div></div></div>
+        </div>
+        <div class="figs">
+          <div class="fig"><span class="head" style="background:var(--rank-clay)"></span><span class="torso" style="background:var(--color-signal)"></span></div>
+          <div class="fig"><span class="head" style="background:var(--rank-gold)"></span><span class="torso" style="background:var(--color-primary)"></span></div>
+          <div class="fig"><span class="head" style="background:var(--rank-stone)"></span><span class="torso" style="background:var(--rank-olive)"></span></div>
+        </div>
+      </div>
+      <p style="font-size:.92rem;color:var(--color-text-muted);line-height:1.6;margin:12px 0 0">Frame a product moment as a screen or card with faint inner cards. Figures stay minimal and are recognizable by pose, never by face.</p>
+    </div>
+    <div class="lists">
+      <div>
+        <h2>Always</h2>
+        <ul>
+          <li><b>Filled shapes</b>, flat and warm, in the DAWN palette.</li>
+          <li><b>Amber led, teal accent.</b> Color comes from tokens.</li>
+          <li>Big rounded corners, roomy spacing, calm product-UI feel.</li>
+          <li><b>One focal point</b> per illustration.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Never</h2>
+        <ul class="dont">
+          <li>Thin line-art only, or an outline style.</li>
+          <li>Gradients, drop shadows for drama, 3D, isometric.</li>
+          <li>Photorealism, faces, fingers, realistic anatomy.</li>
+          <li>Raw hex, clutter, more than one idea per frame.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

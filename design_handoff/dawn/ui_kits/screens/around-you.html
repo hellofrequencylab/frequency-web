@@ -1,0 +1,147 @@
+<!-- @dsCard group="Screens · Member" viewport="1440x900" name="Around You" subtitle="The discovery index on the shared grammar: what is on tonight, Circles taking people, Spaces near you, and the plain radius control" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Around You</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+
+const { SectionHeader, RowCard, Button, IconButton, Badge, Card, Counter, CounterRow, Avatar, Input, Select, GateNotice, EmptyState } = K;
+const F = window;
+
+const TONIGHT = [
+  { d: { mon: 'Aug', day: 3 }, t: 'Sound bath at The Sound Room', m: '19 going · 2 from your Circles', tr: '7:00p', a: 'signal' },
+  { d: { mon: 'Aug', day: 3 }, t: 'Run club, Beacons carpark', m: '8 going · easy 5k', tr: '6:00a', a: 'move' },
+  { d: { mon: 'Aug', day: 4 }, t: 'Meld coworking at Royal Temple', m: 'All day, potluck lunch', tr: '10:00a', a: 'primary' },
+];
+const CIRCLES = [
+  ['Thursday Sound Bath', 'Leucadia · 34 members', 'Taking people'],
+  ['Beacons Run Club', 'Encinitas · 51 members', 'Taking people'],
+  ['Tuesday Ceramics', 'Vista · 12 members', 'Waitlist'],
+];
+const SPACES = [['The Sound Room', 'Studio · Leucadia', '4.9'], ['Royal Temple', 'Venue · Vista', '4.8'], ['The Lab', 'Sauna and plunge · Vista', 'New']];
+
+function Page() {
+  const [radius, setRadius] = React.useState('15 miles');
+  return (
+    <window.Screen active="around-you" rail={
+      <window.Rail>
+        <div>
+          <SectionHeader title="Your radius" />
+          <Card tone="feature" padding="1rem">
+            <Select label="How far" value={radius} onChange={(e) => setRadius(e.target.value)} options={['5 miles', '15 miles', '30 miles', 'The whole county']} />
+            <p style={{ margin: '11px 0 0', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
+              Your city, never your street. Precise location is only ever used to verify a check-in.
+            </p>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="This week near you" />
+          <Card tone="soft" padding="1rem">
+            <CounterRow size="md" items={[
+              { kind: 'events', value: '11', caption: 'Events' },
+              { kind: 'members', value: '6', caption: 'Circles' },
+              { kind: 'checkins', value: '3', caption: 'Spaces' },
+            ]} />
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="Nothing near you?" />
+          <Card tone="soft" padding="1rem">
+            <p style={{ margin: '0 0 11px', fontSize: '0.93rem', lineHeight: 1.6, color: 'var(--color-text-muted)' }}>
+              Starting a Circle takes about four minutes and the first one you run is always the hardest.
+            </p>
+            <Button size="sm" style={{ width: '100%' }}>Start a Circle</Button>
+          </Card>
+        </div>
+      </window.Rail>
+    }>
+      <F.Breadcrumb trail={['Around You']} />
+      <F.FeatureHero src="../../assets/images/gathering-1.jpg" kicker="📍 North County San Diego" title="Around you" script="within 15 miles"
+        blurb={<><strong>Eleven things</strong> on this week, <strong>six Circles</strong> taking people, three Spaces open.</>} height={260} />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 18 }}>
+        <div style={{ flex: 1 }}><Input placeholder="Search Circles, events, Spaces" /></div>
+        <Button size="sm" variant="ghost" iconLeft={<F.Ico n="sliders-horizontal" style={{ width: 15, height: 15 }} />}>Filters</Button>
+      </div>
+
+      <F.DetailBody aside={
+        <>
+          <div>
+            <SectionHeader title="Spaces near you" count={3} action="All" />
+            {SPACES.map(([t, m, r], i) => (
+              <RowCard key={t} icon="store" title={t} meta={m} trailing={r === 'New' ? <Badge tone="primary">New</Badge> : r} divider={i < 2} onClick={() => {}} />
+            ))}
+          </div>
+          <Card tone="feature" padding="1.1rem">
+            <p className="eyebrow" style={{ margin: 0, color: 'var(--color-primary-strong)' }}>Your streak</p>
+            <div style={{ marginTop: 10, display: 'flex', gap: 16 }}>
+              <Counter kind="streak" value="50" caption="days" size="sm" />
+              <Counter kind="checkins" value="3" caption="this week" size="sm" />
+            </div>
+            <p style={{ margin: '11px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)', lineHeight: 1.55 }}>
+              Turning up in person pays five times what posting about it does.
+            </p>
+          </Card>
+        </>
+      }>
+        <F.Beat first icon="calendar-days" tone="signal" title="On this week" count={11} action="All events">
+          {TONIGHT.map((e, i) => (
+            <RowCard key={e.t} date={e.d} accent={e.a} title={e.t} meta={e.m} trailing={e.tr} divider={i < TONIGHT.length - 1} onClick={() => {}} />
+          ))}
+        </F.Beat>
+
+        <F.Beat icon="users-round" title="Circles taking people" count={6} action="All Circles">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 12 }}>
+            {CIRCLES.map(([t, m, s]) => (
+              <div key={t} className="card-lift" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '1rem 1.05rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: 'var(--tracking-tight)', flex: 1, minWidth: 0 }}>{t}</span>
+                  {s === 'Waitlist' ? <Badge tone="warning">Waitlist</Badge> : <Badge tone="success">Open</Badge>}
+                </div>
+                <div style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)', marginTop: 3 }}>{m}</div>
+                <div style={{ marginTop: 12 }}>
+                  <Button size="sm" variant="secondary" style={{ width: '100%' }}>{s === 'Waitlist' ? 'Join the waitlist' : 'Join this Circle'}</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </F.Beat>
+
+        <F.Beat icon="hand-heart" tone="broadcast" title="Asks and offers nearby" count={4} action="The Market">
+          <RowCard icon="package" title="Sourdough starter, free" meta="Mira Vance · Leucadia" trailing="2d" onClick={() => {}} />
+          <RowCard icon="hammer" title="Someone with a truck, Saturday" meta="Leo Park · Encinitas" trailing="1d" onClick={() => {}} />
+          <RowCard icon="home" title="Room in a Leucadia house" meta="$1,250 · from Sep 1" trailing="4h" divider={false} onClick={() => {}} />
+        </F.Beat>
+
+        <F.Beat icon="radio" tone="move" title="Further out">
+          <GateNotice kind="hold" title="Other regions are seeded, not live">
+            Frequency is taking root in North County San Diego first. Everywhere else shows the framework with seeded examples, clearly labelled, until there are real Circles to show.
+          </GateNotice>
+        </F.Beat>
+      </F.DetailBody>
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

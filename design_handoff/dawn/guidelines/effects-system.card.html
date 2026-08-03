@@ -1,0 +1,64 @@
+<!-- @dsCard group="Foundations · Space & feel" viewport="1180x1220" name="Texture, light & lift" subtitle="The settled effects system: three elevations, four lights, four textures, three shapes. One texture per band, one lift-3 per page." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DAWN · Texture, light &amp; lift</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="card.css">
+<style>.tile{position:relative;overflow:hidden;min-height:104px}.tile.ink{background:var(--color-ink);border-color:var(--color-ink-border);color:var(--color-on-ink)}.tile .tok,.tile .use{position:relative;z-index:3}</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <span class="eyebrow">Foundations · Space & feel</span>
+    <h1>Texture, light &amp; lift</h1>
+    <p>Four families and a law for each. Everything here is decorative: absolutely positioned, pointer-events none, carrying nothing a screen reader needs. The purpose is craft at close range — a dark band with nothing on it reads as a hole.</p>
+    <hr class="rule-amber">
+  </div>
+  <h2>Lift · how far off the page a thing sits</h2>
+  <div class="g g3">
+    <div class="panel tile lift-1"><div class="tok">.lift-1</div><p class="use">Rests on the page. Rows, chips, inline panels. No hover travel.</p></div>
+    <div class="panel tile lift-2"><div class="tok">.lift-2</div><p class="use">The card. Default for anything clickable on a marketing page — hover raises it 2px.</p></div>
+    <div class="panel tile lift-3"><div class="tok">.lift-3</div><p class="use">Floats. One per page: the hero object, the sticky action card, an open dock.</p></div>
+  </div>
+
+  <h2>Light · where the amber lands</h2>
+  <div class="g g4">
+    <div class="panel tile ink sheen"><div class="tok">.sheen</div><p class="use">A slow diagonal sweep on hover. Moves light, not the object.</p></div>
+    <div class="panel tile ink"><span class="halo" style="position:absolute;left:22px;top:60px;width:26px;height:26px;border-radius:50%;background:var(--color-primary)"></span><div class="tok">.halo</div><p class="use">A tight bloom behind one small object.</p></div>
+    <div class="panel tile ink spot"><div class="tok">.spot</div><p class="use">A wide overhead spotlight. Cooler than amber-glow.</p></div>
+    <div class="panel tile ink edge-light"><div class="tok">.edge-light</div><p class="use">A one-pixel warm rim along the top lip.</p></div>
+  </div>
+
+  <h2>Texture · one per band, never two</h2>
+  <div class="g g4">
+    <div class="panel tile grain"><div class="tok">.grain</div><p class="use">Still film grain. The only texture that works on cream and ink alike.</p></div>
+    <div class="panel tile ink scanlines"><div class="tok">.scanlines</div><p class="use">Fine light rule, an LED wall up close. Ink only.</p></div>
+    <div class="panel tile dot-grid"><div class="tok">.dot-grid</div><p class="use">Sparse lattice for schematics and operator pages.</p></div>
+    <div class="panel tile ink vignette"><div class="tok">.vignette</div><p class="use">Corners pulled down so centred type holds. Photography only.</p></div>
+  </div>
+
+  <h2>Shape &amp; seam</h2>
+  <div class="g g3">
+    <div class="panel tile" style="padding:0">
+      <div class="bg-slat" style="height:52px"></div>
+      <div style="margin-top:-16px;background:var(--color-surface);border-radius:50% 50% 0 0 / 2.2rem 2.2rem 0 0;padding:1rem 1.2rem 1.1rem">
+        <div class="tok">.arc-top</div><p class="use">The soft shoulder: cream rises out of ink without a seam. One per page.</p>
+      </div>
+    </div>
+    <div class="panel tile"><div class="tok">.rule-amber</div><hr class="rule-amber" style="margin:12px 0"><p class="use">A hairline that warms at the centre. Between beats of the same tone.</p></div>
+    <div class="panel tile ink" style="padding:0"><div style="padding:1.1rem 1.2rem 1.4rem"><div class="tok">.light-strip</div><p class="use">The signature seam. At a dark/light transition, and nowhere else.</p></div><div class="light-strip" style="position:absolute;left:0;right:0;bottom:0"></div></div>
+  </div>
+  <div class="laws">
+    <p><b>Two shadows per elevation.</b> A 1px contact shadow so the object rests on something, plus one wide soft shadow. A single big blur looks pasted on.</p>
+    <p><b>One texture per band.</b> Stacked textures read as noise. The exception is photography, which may carry vignette plus one.</p>
+    <p><b>One lift-3 per page.</b> Three floating things read as none.</p>
+    <p><b>Sheen answers the cursor, lift answers the hand.</b> Dark bands sheen; cards lift. Never both on one object.</p>
+    <p><b>Glass only over movement.</b> A sticky header or a dock over content. Over flat colour it is a tint with a cost.</p>
+    <p><b>All of it yields.</b> Every transform and animation is off under prefers-reduced-motion.</p>
+  </div>
+</div>
+</body>
+</html>
