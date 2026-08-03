@@ -23,6 +23,7 @@ import Image from 'next/image'
 import { ArrowRight, ChevronDown } from 'lucide-react'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { SiteImage } from '@/components/marketing/site-image'
+import { Reveal } from '@/components/marketing/motion'
 import { safeHref } from '@/lib/page-editor/richtext'
 
 // Full-bleed photo hero — the editorial counterpart to PageHero, for pages that
@@ -38,6 +39,7 @@ export function PhotoHero({
   footer,
   focal = 'object-center',
   minHeight,
+  facts,
 }: {
   image: string
   alt?: string
@@ -50,11 +52,25 @@ export function PhotoHero({
   focal?: string
   /** `'screen'` makes the hero a full-viewport, center-anchored landing beat. */
   minHeight?: 'screen'
+  /** The DAWN fact dock: up to three short `[value, label]` figures on a glass panel that
+   *  overhangs the hero's bottom edge. Glass earns its cost only over photography, which is
+   *  why the dock lives here and nowhere else. The hero tags itself `.mk-hero-dock` so the
+   *  next section clears the overhang automatically (globals.css adjacency rule) — no page
+   *  has to remember the clearance. */
+  facts?: readonly (readonly [string, string])[]
 }) {
   const isScreen = minHeight === 'screen'
+  // The dock overhangs the section's bottom edge by 2rem, so a hero carrying one must not
+  // clip its own children; nothing else in the hero can overflow (every layer is inset-0).
+  const shape = facts ? 'mk-hero mk-hero-dock' : 'overflow-hidden'
+  const padY = isScreen
+    ? 'py-16 sm:py-28'
+    : facts
+      ? 'pt-16 sm:pt-32 pb-36 sm:pb-40'
+      : 'py-16 sm:py-32'
   return (
     <section
-      className={`relative overflow-hidden ${
+      className={`relative ${shape} ${
         isScreen ? 'min-h-screen flex flex-col items-center justify-center' : ''
       }`}
     >
@@ -69,8 +85,8 @@ export function PhotoHero({
       <div className="amber-glow absolute inset-0 pointer-events-none" />
       <div
         className={`relative z-10 mx-auto px-6 text-center ${
-          isScreen ? 'max-w-5xl py-16 sm:py-28' : 'max-w-4xl py-16 sm:py-32'
-        }`}
+          isScreen ? 'max-w-5xl' : 'max-w-4xl'
+        } ${padY}`}
       >
         {eyebrow && (
           <p
@@ -100,6 +116,20 @@ export function PhotoHero({
         {children && <div className={isScreen ? 'mt-7' : 'mt-9'}>{children}</div>}
         {footer}
       </div>
+      {facts && (
+        <div className="glass-ink lift-3 absolute -bottom-8 left-1/2 z-20 flex w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-start justify-center gap-6 rounded-2xl px-6 py-4 sm:gap-10 sm:px-9">
+          {facts.map(([value, label]) => (
+            <div key={label} className="text-center">
+              <div className="font-display text-2xl leading-none text-primary sm:text-3xl">
+                {value}
+              </div>
+              <div className="mt-1.5 text-3xs font-bold uppercase tracking-widest text-on-ink-muted">
+                {label}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
     </section>
   )
@@ -190,20 +220,46 @@ export function SectionHeading({
   eyebrow,
   title,
   kicker,
+  tone = 'light',
+  align = 'left',
 }: {
   eyebrow?: string
   title: React.ReactNode
   kicker?: string
+  /** `'ink'` for a heading sitting on a dark band (bg-slat / PhotoBeat). */
+  tone?: 'light' | 'ink'
+  /** DAWN centers a heading that opens a full-width band; the default stays left. */
+  align?: 'left' | 'center'
 }) {
+  const isInk = tone === 'ink'
+  const centered = align === 'center'
   return (
-    <div className="mb-9">
+    <div className={`mb-9 ${centered ? 'text-center' : ''}`}>
       {eyebrow && (
-        <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+        <p
+          className={`text-sm font-bold uppercase tracking-[0.25em] mb-4 ${
+            isInk ? 'text-primary' : 'text-primary-strong'
+          }`}
+        >
           {eyebrow}
         </p>
       )}
-      <h2 className="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)]">{title}</h2>
-      {kicker && <p className="mt-4 text-lg sm:text-xl italic text-muted">{kicker}</p>}
+      <h2
+        className={`font-display uppercase text-[clamp(1.875rem,5.5vw,3rem)] ${
+          isInk ? 'text-on-ink' : 'text-text'
+        }`}
+      >
+        {title}
+      </h2>
+      {kicker && (
+        <p
+          className={`mt-4 text-lg sm:text-xl italic ${isInk ? 'text-on-ink-muted' : 'text-muted'} ${
+            centered ? 'mx-auto max-w-2xl' : ''
+          }`}
+        >
+          {kicker}
+        </p>
+      )}
     </div>
   )
 }
@@ -550,6 +606,85 @@ export function Statement({
         {children}
       </p>
     </section>
+  )
+}
+
+// ── PhotoBeat — a full-bleed photograph carrying one sentence (DAWN) ──────────
+// The rhythm alternative to the slat Statement: same job in the page's heartbeat,
+// but the picture is the argument. Ink scrim + light-strip seams top and bottom so
+// it reads as one printed thing against the cream around it. Accent a phrase in
+// `line` with <span className="text-primary">.
+export function PhotoBeat({
+  image,
+  alt = '',
+  eyebrow,
+  line,
+  note,
+  focal = 'object-center',
+}: {
+  image: string
+  alt?: string
+  eyebrow?: string
+  line: React.ReactNode
+  note?: React.ReactNode
+  focal?: string
+}) {
+  return (
+    <section className="mk-band relative grid min-h-[58vh] place-items-center overflow-hidden">
+      <Image src={image} alt={alt} fill sizes="100vw" className={`object-cover ${focal}`} />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(180deg, color-mix(in srgb, var(--color-ink) 82%, transparent), color-mix(in srgb, var(--color-ink) 58%, transparent) 45%, color-mix(in srgb, var(--color-ink) 86%, transparent))',
+        }}
+      />
+      <div className="relative z-10 mx-auto max-w-4xl text-center">
+        {eyebrow && (
+          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">{eyebrow}</p>
+        )}
+        <p className="mt-4 font-display uppercase text-on-ink text-balance text-[clamp(2rem,4.6vw,3.5rem)] leading-[1.05]">
+          {line}
+        </p>
+        {note && (
+          <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-on-ink-muted">{note}</p>
+        )}
+      </div>
+      <div className="light-strip absolute inset-x-0 top-0 z-10" />
+      <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
+    </section>
+  )
+}
+
+// ── PhotoTrio — three framed photographs with a caption each (DAWN) ───────────
+// The figure row. lift-1, because a figure rests on the page rather than floating
+// off it; children reveal in sequence via the positional `.stagger` delays.
+export function PhotoTrio({
+  items,
+}: {
+  items: readonly { img: string; alt?: string; title: string; caption: string }[]
+}) {
+  return (
+    <div className="stagger mt-10 grid gap-5 sm:grid-cols-3">
+      {items.map((item) => (
+        <Reveal
+          as="figure"
+          key={item.title}
+          className="lift-1 overflow-hidden rounded-2xl border border-border bg-surface"
+        >
+          <SiteImage
+            src={item.img}
+            alt={item.alt ?? ''}
+            aspect="4/3"
+            sizes="(min-width: 640px) 22rem, 100vw"
+          />
+          <figcaption className="p-5">
+            <h3 className="text-base font-bold text-text">{item.title}</h3>
+            <p className="mt-1.5 text-sm leading-relaxed text-muted">{item.caption}</p>
+          </figcaption>
+        </Reveal>
+      ))}
+    </div>
   )
 }
 
