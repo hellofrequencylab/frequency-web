@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { Plus, Check, X } from 'lucide-react'
-import { adoptPracticeAction, dropPracticeAction } from '@/app/(main)/practices/actions'
-import { TERM_PRESETS } from '@/lib/practices/adoption'
+import { Plus, Check, X, ArrowLeftRight } from 'lucide-react'
+import { adoptPracticeAction, swapPracticeAction, dropPracticeAction } from '@/app/(main)/practices/actions'
+import { isError } from '@/lib/action-result'
+import { TERM_PRESETS, ACTIVE_PRACTICE_CAP } from '@/lib/practices/adoption'
 
 // Toggle a practice in/out of your personal practices — with the COMMITMENT picker (ADR-920).
 // Tapping Adopt opens a small panel: four term chips (2 / 4 / 8 weeks / Ongoing; 4 is the
@@ -29,6 +30,9 @@ export function AdoptPracticeButton({
   const [pending, start] = useTransition()
   const [panel, setPanel] = useState<{ top: number; left: number } | null>(null)
   const [cue, setCue] = useState('')
+  // The cap's swap prompt (ADR-920 Phase 4): set when adopting bounced at 5 active — the
+  // member picks one to make room, or backs out. Carries the term they chose.
+  const [swap, setSwap] = useState<{ held: { id: string; title: string }[]; termWeeks: number | null } | null>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const defaultChipRef = useRef<HTMLButtonElement>(null)
@@ -98,9 +102,27 @@ export function AdoptPracticeButton({
   }
 
   const adoptWith = (termWeeks: number | null) => {
-    setPanel(null)
     start(async () => {
-      await adoptPracticeAction(practiceId, { termWeeks, cue: cue.trim() || null })
+      const res = await adoptPracticeAction(practiceId, { termWeeks, cue: cue.trim() || null })
+      if (!isError(res) && res.data.atCap && res.data.held) {
+        // At the cap: keep the panel open, switch it to the swap prompt.
+        setSwap({ held: res.data.held, termWeeks })
+        return
+      }
+      setPanel(null)
+      setSwap(null)
+    })
+  }
+
+  const swapWith = (dropId: string) => {
+    const chosen = swap
+    start(async () => {
+      await swapPracticeAction(dropId, practiceId, {
+        termWeeks: chosen?.termWeeks ?? null,
+        cue: cue.trim() || null,
+      })
+      setPanel(null)
+      setSwap(null)
     })
   }
 
@@ -118,7 +140,49 @@ export function AdoptPracticeButton({
         <Plus className="h-4 w-4 shrink-0" /> {pending ? 'Adding…' : 'Adopt'}
       </button>
 
-      {panel && (
+      {panel && swap && (
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-label="Your practice list is full"
+          style={{ position: 'fixed', top: panel.top, left: panel.left, width: PANEL_W }}
+          className="z-50 rounded-xl border border-border bg-surface-elevated p-3 shadow-lg"
+        >
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-text">
+            <ArrowLeftRight className="h-3.5 w-3.5 text-primary-strong" aria-hidden />
+            You hold {ACTIVE_PRACTICE_CAP} already. Swap one out?
+          </p>
+          <p className="mt-1 text-2xs text-subtle">
+            A short list is the point: the ones you keep are the ones that happen. Pick one to
+            set down. Its history stays yours.
+          </p>
+          <div className="mt-2 space-y-1">
+            {swap.held.map((h) => (
+              <button
+                key={h.id}
+                type="button"
+                disabled={pending}
+                onClick={() => swapWith(h.id)}
+                className="block w-full truncate rounded-lg border border-border px-2 py-1.5 text-left text-xs font-medium text-text transition-colors hover:border-primary hover:bg-primary-bg/20 disabled:opacity-60"
+              >
+                {h.title}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setSwap(null)
+              setPanel(null)
+            }}
+            className="mt-2 text-2xs text-muted transition-colors hover:text-text"
+          >
+            Never mind, keep my list as it is
+          </button>
+        </div>
+      )}
+
+      {panel && !swap && (
         <div
           ref={panelRef}
           role="dialog"

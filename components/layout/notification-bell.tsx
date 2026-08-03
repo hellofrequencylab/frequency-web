@@ -24,6 +24,7 @@ const TYPE_ICON: Record<string, string> = {
   event_placement_declined: '📍',
   practice_reminder:        '🧘',
   practice_term_complete:   '🏁',
+  practice_stale_check:     '🍂',
   journey_next_step:        '🗺️',
   journey_phase_unlocked:   '🗺️',
 }

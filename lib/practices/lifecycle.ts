@@ -98,12 +98,18 @@ export interface LifecycleSweepResult {
   completionsRetired: number
   completionNotices: number
   remindersSent: number
+  stalePrompts: number
   errors: number
 }
 
+/** Days of silence before an ONGOING self adoption earns the one quiet "still keeping this?"
+ *  prompt. Two weeks: one missed day is noise (Lally), a fortnight of silence is a real
+ *  signal the list is carrying dead weight against the few-held-practices aim. */
+export const STALE_AFTER_DAYS = 14
+
 /** One sweep pass. `now` injectable for tests. Never throws. */
 export async function runPracticeLifecycleSweep(now: Date = new Date()): Promise<LifecycleSweepResult> {
-  const result: LifecycleSweepResult = { completionsRetired: 0, completionNotices: 0, remindersSent: 0, errors: 0 }
+  const result: LifecycleSweepResult = { completionsRetired: 0, completionNotices: 0, remindersSent: 0, stalePrompts: 0, errors: 0 }
   const admin = db()
 
   // ── 1. Term completions ─────────────────────────────────────────────────────────
@@ -271,6 +277,64 @@ export async function runPracticeLifecycleSweep(now: Date = new Date()): Promise
         } catch {
           result.errors++
         }
+      }
+    }
+  } catch {
+    result.errors++
+  }
+
+  // ── 3. The staleness prompt (ADR-920 Phase 4) ───────────────────────────────────
+  // An ONGOING self adoption that has gone STALE_AFTER_DAYS with no log gets ONE quiet
+  // "still keeping this?" in-app note — the aim is few, held practices, so dead weight
+  // earns a prompt, never an auto-drop. One per (member, practice), ever: the existing
+  // notification is the dedupe. Termed rows are excluded (their end is the sweep above);
+  // journey rows are excluded (their lifecycle is the journey's).
+  try {
+    const cutoff = new Date(now.getTime() - STALE_AFTER_DAYS * 86_400_000).toISOString().slice(0, 10)
+    const { data: staleCandidates } = await admin
+      .from('member_practices')
+      .select('profile_id, practice_id, practice:practices(title)')
+      .eq('active', true)
+      .eq('source', 'self')
+      .is('ends_on', null)
+      .lte('starts_on', cutoff)
+      .limit(SWEEP_CAP)
+    type StaleRow = { profile_id: string; practice_id: string; practice: { title: string } | null }
+    const candidates = (staleCandidates ?? []) as unknown as StaleRow[]
+    for (const row of candidates) {
+      try {
+        // Any log inside the window clears it.
+        const { data: recent } = await admin
+          .from('practice_logs')
+          .select('id')
+          .eq('profile_id', row.profile_id)
+          .eq('practice_id', row.practice_id)
+          .gte('logged_for', cutoff)
+          .limit(1)
+        if ((recent ?? []).length) continue
+        // One prompt per (member, practice), ever.
+        const { data: prior } = await admin
+          .from('notifications')
+          .select('id')
+          .eq('recipient_id', row.profile_id)
+          .eq('type', 'practice_stale_check')
+          .eq('reference_id', row.practice_id)
+          .limit(1)
+        if ((prior ?? []).length) continue
+        const prefs = await getPreferences(row.profile_id)
+        if (!prefs.inapp_practice) continue
+        const title = row.practice?.title ?? 'One of your practices'
+        await admin.from('notifications').insert({
+          recipient_id: row.profile_id,
+          actor_id: null,
+          type: 'practice_stale_check',
+          reference_type: 'practice',
+          reference_id: row.practice_id,
+          body: `${title} has been quiet for two weeks. Keep it, or set it down to make room.`,
+        })
+        result.stalePrompts++
+      } catch {
+        result.errors++
       }
     }
   } catch {

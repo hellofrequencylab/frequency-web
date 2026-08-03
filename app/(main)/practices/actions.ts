@@ -114,16 +114,65 @@ export async function unlogPracticeAction(
   return ok(res)
 }
 
+/** What adopting returned: adopted, or AT THE CAP with the currently-held five so the member
+ *  can swap one out (ADR-920 Phase 4: the cap is a swap prompt, never a data-losing wall). */
+export interface AdoptOutcome {
+  adopted: boolean
+  atCap?: boolean
+  held?: { id: string; title: string }[]
+}
+
 /** Adopt with a commitment shape (ADR-920): preset weeks (2/4/8), null = ongoing, plus an
  *  optional cue. Both are re-validated in adoptPractice (coerceTermWeeks / cleanCue), so a
- *  hostile payload can only ever produce a preset term and a capped cue. */
+ *  hostile payload can only ever produce a preset term and a capped cue. At the 5-active
+ *  cap (self adoptions only; journey rows ride outside it) nothing is written — the caller
+ *  gets the held list back and offers a swap. */
 export async function adoptPracticeAction(
   practiceId: string,
+  opts?: { termWeeks?: number | null; cue?: string | null },
+): Promise<ActionResult<AdoptOutcome>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  const { countActiveSelfAdoptions, getMemberAdoptions } = await import('@/lib/practices')
+  const { withinActiveCap } = await import('@/lib/practices/adoption')
+  const activeSelf = await countActiveSelfAdoptions(profileId)
+  if (!withinActiveCap(activeSelf)) {
+    // Re-adopting something already held is not a cap event (the upsert re-commits in place).
+    const adoptions = await getMemberAdoptions(profileId)
+    const alreadyHeld = adoptions.some((a) => a.source === 'self' && a.practice.id === practiceId)
+    if (!alreadyHeld) {
+      return ok({
+        adopted: false,
+        atCap: true,
+        held: adoptions
+          .filter((a) => a.source === 'self')
+          .map((a) => ({ id: a.practice.id, title: a.practice.title })),
+      })
+    }
+  }
+  await adoptPractice(profileId, practiceId, {
+    termWeeks: opts?.termWeeks ?? null,
+    ...(opts && 'cue' in opts ? { cue: opts.cue } : {}),
+  })
+  revalidatePath('/practices')
+  return ok({ adopted: true })
+}
+
+/** The swap at the cap: retire one held practice (reason 'swapped') and adopt the new one in
+ *  its place, atomically enough for the UI (retire first; the adopt then passes the cap).
+ *  Self-scoped. */
+export async function swapPracticeAction(
+  dropPracticeId: string,
+  adoptPracticeId: string,
   opts?: { termWeeks?: number | null; cue?: string | null },
 ): Promise<ActionResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
-  await adoptPractice(profileId, practiceId, {
+  if (!dropPracticeId || !adoptPracticeId || dropPracticeId === adoptPracticeId) {
+    return fail('Pick a practice to make room for.')
+  }
+  await dropMemberPractice(profileId, dropPracticeId, 'swapped')
+  await adoptPractice(profileId, adoptPracticeId, {
     termWeeks: opts?.termWeeks ?? null,
     ...(opts && 'cue' in opts ? { cue: opts.cue } : {}),
   })
