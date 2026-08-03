@@ -402,6 +402,7 @@ export async function enrollInProgram(spaceId: string): Promise<ActionResult> {
   // The program must be a real, PUBLISHED program of THIS Space (no cross-space / draft enrolls).
   const program = await readProgram(spaceId, true)
   if (!program || !program.id) return fail('Enrollment is not open right now. Check back soon.')
+  const programId = program.id
 
   // Already enrolled? (A fast pre-check for a friendly message; the unique index is the real guard.)
   const existing = await readMyActiveEnrollment(spaceId, profileId)
@@ -419,7 +420,7 @@ export async function enrollInProgram(spaceId: string): Promise<ActionResult> {
       .insert([
         {
           space_id: spaceId,
-          program_id: program.id,
+          program_id: programId,
           member_profile_id: profileId,
           status: 'active',
         },

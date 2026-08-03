@@ -71,10 +71,8 @@ export function atLeastSpaceRole(role: SpaceRole | string | null | undefined, mi
   return r >= 0 && r >= spaceRoleRank(min)
 }
 
-// ── The server seam (admin client; untyped casts until the types regenerate) ─────────────
+// ── The server seam (typed admin client) ──────────────────────────────────────────────────
 
-// `space_members` is not in the generated DB types yet — reach it with an untyped client (ADR-246),
-// the same shape lib/page-settings/store.ts uses for the not-yet-typed space_id column.
 type MemberRow = {
   id: string
   space_id: string
@@ -87,26 +85,9 @@ type MemberRow = {
 
 const MEMBER_COLS = 'id, space_id, profile_id, role, status, invited_by, created_at'
 
-// The chainable query-builder surface these helpers use. `space_members` is not in the generated
-// DB types, so `createAdminClient().from('space_members')` would fail the typed-table overload —
-// reach the table through an untyped `from` accessor (ADR-246) and type the builder loosely here.
-type MembersQuery = {
-  select: (cols: string) => MembersQuery
-  eq: (col: string, val: string) => MembersQuery
-  order: (col: string, opts: { ascending: boolean }) => MembersQuery
-  upsert: (rows: Record<string, unknown>, opts: { onConflict: string }) => MembersQuery
-  update: (patch: Record<string, unknown>) => MembersQuery
-  delete: () => MembersQuery
-  maybeSingle: () => Promise<{ data: MemberRow | null; error: unknown }>
-  then: (
-    resolve: (r: { data: MemberRow[] | null; error: unknown }) => unknown,
-  ) => Promise<unknown>
-}
-
-/** The untyped `space_members` query builder (the table isn't in the generated types yet, ADR-246). */
-function membersTable(): MembersQuery {
-  const db = createAdminClient() as unknown as { from: (table: string) => MembersQuery }
-  return db.from('space_members')
+/** The typed `space_members` query builder. */
+function membersTable() {
+  return createAdminClient().from('space_members')
 }
 
 /** Map a raw row to a typed SpaceMembership, fail-closed: an unknown role/status drops the row
