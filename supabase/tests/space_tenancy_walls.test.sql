@@ -77,6 +77,15 @@ insert into public.space_follows (space_id, follower_profile_id) values
   ('00000000-0000-4000-c000-00000000000b', '00000000-0000-4000-b000-000000000002'),
   ('00000000-0000-4000-c000-00000000000b', '00000000-0000-4000-b000-000000000001');
 
+-- A fresh local stack applies migrations as postgres WITHOUT the hosted platform's
+-- default-privilege grants to anon/authenticated (production has them; verified). The POLICIES
+-- are what this file tests, not the grant baseline, so grant the fixture tables inside this
+-- rolled-back transaction to let the client roles reach the tables at all.
+grant select, insert, update, delete on
+  public.contacts, public.crm_tasks, public.space_membership_tiers,
+  public.app_instances, public.space_follows
+to anon, authenticated;
+
 -- ── Seat 1: Space A's operator (owner) ───────────────────────────────────────────────────────────
 set local role authenticated;
 select set_config('request.jwt.claims',
