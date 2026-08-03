@@ -222,5 +222,3 @@ comment on table public.contact_channel_preferences is
 --     authenticated insert policy; writes are service-role only).
 --  F. Space owner SELECT contact_channel_preferences for their space -> visible.
 -- =============================================================================
-</content>
-</invoke>
