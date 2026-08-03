@@ -19,7 +19,6 @@ import {
 import { parseStyle, type QrStyle } from '@/lib/qr/style'
 import { summarizePageScans, type ScanRow } from '@/lib/qr/analytics'
 import type { Json } from '@/lib/database.types'
-import type { Database } from '@/lib/database.types'
 
 export interface LinkInput {
   title: string
@@ -182,9 +181,7 @@ export async function setLinkActive(id: string, active: boolean): Promise<Action
 
 // ── Per-page QR folders (ADR-179) ────────────────────────────────────────────
 // A code "owned" by a page: created from that page's Settings panel, pointing back
-// at the page, and filed under `page_path` (its Studio folder). The column isn't in
-// the generated DB types yet, so reads/writes touching it go through an untyped cast
-// (repo convention).
+// at the page, and filed under `page_path` (its Studio folder).
 
 export interface PageQrInput {
   /** The app route this code belongs to (its folder key), e.g. /circles/sunset-skate. */
@@ -217,7 +214,6 @@ export async function createPageQr(
   if (!isValidTargetUrl(target)) return fail('That doesn’t look like a valid URL.')
 
   const style = parseStyle(input.style) as unknown as Json
-  // Untyped client so we can write the not-yet-typed `page_path` column.
   const db = createAdminClient()
 
   for (let attempt = 0; attempt < 6; attempt++) {
@@ -232,13 +228,13 @@ export async function createPageQr(
         page_path: pagePath,
         style,
         created_by: profileId,
-      } as Database['public']['Tables']['qr_codes']['Insert'])
+      })
       .select('id, slug')
       .single()
     if (!error && data) {
       revalidatePath('/admin/qr')
       revalidatePath(pagePath)
-      return ok({ id: data.id as string, slug: data.slug as string })
+      return ok({ id: data.id, slug: data.slug })
     }
     if (error?.code === UNIQUE_VIOLATION) continue // generated collision — retry
     return fail('Could not create the code.')
@@ -298,7 +294,6 @@ export async function getPageQrScanStats(pagePath: string): Promise<ActionResult
   const path = pagePath.trim()
   if (!path.startsWith('/')) return ok(EMPTY_PAGE_QR_STATS)
 
-  // Untyped client: filtering on the not-yet-typed `page_path` column (ADR-179).
   const db = createAdminClient()
   const { data: codes, error } = await db
     .from('qr_codes')

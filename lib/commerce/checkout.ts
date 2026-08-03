@@ -338,17 +338,8 @@ export async function abandonCommerceOrderFromSession(session: Stripe.Checkout.S
 async function bookingPartialRefundCents(order: { id: string; amount_cents: number }): Promise<number | undefined> {
   if (!(order.amount_cents > 0)) return undefined
   try {
-    // space_bookings is not in the generated DB types (ADR-246); read it through an untyped cast,
-    // the same seam lib/spaces/booking.ts uses. order_id ↔ booking is 1:1.
-    const admin = createAdminClient() as unknown as {
-      from: (t: string) => {
-        select: (c: string) => {
-          eq: (col: string, val: string) => {
-            maybeSingle: () => Promise<{ data: { starts_at: string | null; product_id: string | null } | null }>
-          }
-        }
-      }
-    }
+    // order_id ↔ booking is 1:1.
+    const admin = createAdminClient()
     const { data: bk } = await admin
       .from('space_bookings')
       .select('starts_at, product_id')

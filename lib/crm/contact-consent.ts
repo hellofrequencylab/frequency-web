@@ -8,9 +8,8 @@
 // bolt on later.
 //
 // SHAPE (mirrors lib/comms/send-gate.ts): a PURE decision (`evaluateContactConsent`) over explicit
-// state, exhaustively unit-tested, plus thin async resolvers that gather the state. `contacts` is in
-// the generated types (used directly, like lib/crm/person.ts); `sms_consent` is not yet (untyped cast,
-// the repo convention, ADR-246).
+// state, exhaustively unit-tested, plus thin async resolvers that gather the state. `contacts` and
+// `sms_consent` are both in the generated types, so access goes through the typed client.
 //
 // authz-delegated: recordGlobalStop is a COMPLIANCE / system write front door (a STOP reply, an
 // unsubscribe click, or an operator opt-out). It has no per-caller scope by design, it propagates a
@@ -77,7 +76,7 @@ async function contactConsentState(email: string, spaceId?: string): Promise<Con
       .eq('space_id', scope)
       .ilike('email', escapeLike(norm(email)))
       .maybeSingle()
-    const raw = (data as { consent_state?: string } | null)?.consent_state
+    const raw = data?.consent_state
     return raw === 'subscribed' || raw === 'unsubscribed' ? raw : 'unknown'
   } catch {
     return 'unknown'
@@ -157,15 +156,7 @@ export async function recordGlobalStop(input: GlobalStopInput): Promise<GlobalSt
   if (input.phone && input.phone.trim()) {
     const phone = input.phone.trim()
     try {
-      // sms_consent is not in the generated types yet (ADR-246) — untyped cast, like lib/comms/sms.ts.
-      const db = createAdminClient() as unknown as {
-        from: (t: string) => {
-          select: (c: string) => {
-            eq: (col: string, v: string) => Promise<{ data: { profile_id: string }[] | null; error: unknown }>
-          }
-          insert: (rows: Record<string, unknown>[]) => Promise<{ error: unknown }>
-        }
-      }
+      const db = createAdminClient()
       const { data } = await db.from('sms_consent').select('profile_id').eq('phone', phone)
       const profileIds = [...new Set((data ?? []).map((r) => r.profile_id).filter(Boolean))]
       if (profileIds.length > 0) {
