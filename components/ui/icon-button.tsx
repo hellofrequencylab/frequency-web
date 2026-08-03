@@ -9,11 +9,14 @@ import { cn } from '@/lib/utils'
 // the visible text. Compose these side by side in a `flex items-center gap-1` cluster.
 // `danger` tints the hover for destructive actions. Token-only, with a focus ring.
 
+// DAWN alignment (dawn/components/core/IconButton.jsx): role radius on the control,
+// and the quiet-by-default color pair — subtle icon at rest, muted on the warm
+// hover wash (one step quieter than text, so icon clusters never shout).
 const iconControl =
-  'inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50'
+  'inline-flex h-8 w-8 items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50'
 
 function tone(danger?: boolean) {
-  return danger ? 'hover:text-danger' : 'hover:text-text'
+  return danger ? 'hover:text-danger' : 'hover:text-muted'
 }
 
 /** An icon-only <button> for a row action. `label` names it for a11y + the tooltip. */
